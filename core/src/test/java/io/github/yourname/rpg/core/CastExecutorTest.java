@@ -199,8 +199,11 @@ class CastExecutorTest {
 
         cast(world, caster, ability(new CastSpec.Ray(30),
                 new EffectSpec.Area(6.0, 20, 20, List.of(new EffectSpec.Damage(2, Element.SOLAR)))));
-        world.runScheduled(10);
 
-        assertTrue(atTheEnd.health < 100, "the area should land at the ray's end point");
+        // A ray resolves on the frame it is cast, but its area is a field: the single
+        // pulse is one tick_interval later. Advancing 10 ticks would stop short of it.
+        world.advanceTicks(20);
+
+        assertEquals(98, atTheEnd.health, 1e-9, "the area should land at the ray's end point");
     }
 }

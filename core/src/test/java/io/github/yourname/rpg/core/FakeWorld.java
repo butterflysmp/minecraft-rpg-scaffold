@@ -6,11 +6,30 @@ import io.github.yourname.rpg.core.combat.RayHit;
 import io.github.yourname.rpg.core.element.Element;
 import java.util.*;
 
-/** A whole Minecraft world, in eighty lines, with no Minecraft. */
+/**
+ * A whole Minecraft world, in a hundred lines, with no Minecraft.
+ *
+ * The scheduler is a clock, not a queue. An earlier version appended every task to a
+ * FIFO deque and threw delayTicks away, which made an instantaneous effect and one
+ * delayed by a second indistinguishable to every test in the suite. Timing bugs shipped
+ * because nothing could see time.
+ */
 public final class FakeWorld implements CombatWorld {
+
+    /** Trips on a task that reschedules itself at a rate the clock can never outrun. */
+    private static final int MAX_TASKS_PER_ADVANCE = 100_000;
+
     public final List<Combatant> entities = new ArrayList<>();
     public final List<String> presented = new ArrayList<>();
-    private final Deque<Runnable> pending = new ArrayDeque<>();
+
+    private record Scheduled(long dueTick, long seq, Runnable task) {}
+
+    /** Ordered by due time, then insertion, so a tie runs in the order it was queued. */
+    private final PriorityQueue<Scheduled> queue = new PriorityQueue<>(
+            Comparator.comparingLong(Scheduled::dueTick).thenComparingLong(Scheduled::seq));
+
+    private long now = 0L;
+    private long seq = 0L;
 
     /** How close a ray must pass to a combatant to strike it. A hitbox, roughly. */
     public double hitRadius = 0.6;
@@ -78,16 +97,49 @@ public final class FakeWorld implements CombatWorld {
         return Optional.of(RayHit.ofCombatant(nearest.position(), nearest));
     }
 
-    @Override public void schedule(Vec3 near, int delayTicks, Runnable task) { pending.add(task); }
+    /**
+     * Stricter than production on purpose. PaperScheduler.onRegionLater clamps a delay of
+     * 0 UP to 1 tick, so a fake that ran such a task on the current frame would be more
+     * permissive than the server -- the one direction a fake must never be wrong in, since
+     * the resulting bug exists only where no test can reach it. Refuse instead.
+     */
+    @Override public void schedule(Vec3 near, int delayTicks, Runnable task) {
+        if (delayTicks < 1) {
+            throw new IllegalArgumentException(
+                    "schedule requires delayTicks >= 1, got " + delayTicks
+                            + "; to act on the current frame, act inline");
+        }
+        queue.add(new Scheduled(now + delayTicks, seq++, task));
+    }
 
     @Override public void present(Vec3 at, String visualId) { presented.add(visualId); }
 
-    /** Drain the scheduler deterministically. No sleeping, no flakiness. */
-    public void runScheduled(int maxIterations) {
-        for (int i = 0; i < maxIterations && !pending.isEmpty(); i++) pending.poll().run();
+    /**
+     * Run the clock forward, firing every task that comes due. Deterministic: no sleeping,
+     * no flakiness.
+     *
+     * A task scheduled with delay 1 while tick t is running lands at t+1, not t, because
+     * `now` already equals the running task's own due tick. That is what makes a projectile
+     * fly one block per tick instead of teleporting.
+     */
+    public void advanceTicks(int ticks) {
+        long target = now + ticks;
+        int ran = 0;
+        while (!queue.isEmpty() && queue.peek().dueTick() <= target) {
+            if (++ran > MAX_TASKS_PER_ADVANCE) {
+                throw new IllegalStateException("runaway scheduling: more than "
+                        + MAX_TASKS_PER_ADVANCE + " tasks in one advance");
+            }
+            Scheduled next = queue.poll();
+            now = next.dueTick(); // never moves backward; the queue pops in due order
+            next.task().run();
+        }
+        now = target;
     }
 
-    public int pendingTasks() { return pending.size(); }
+    public int pendingTasks() { return queue.size(); }
+
+    public long now() { return now; }
 
     public static final class Dummy implements Combatant {
         private final UUID id = UUID.randomUUID();

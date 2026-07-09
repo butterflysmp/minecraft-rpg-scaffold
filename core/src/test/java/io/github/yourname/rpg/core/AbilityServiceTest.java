@@ -95,30 +95,41 @@ class AbilityServiceTest {
         var service = serviceWith(solarGrenade(), () -> 0L);
         dispatch(world, service.cast(caster, "solar_grenade", FORWARD));
 
-        world.runScheduled(20);
+        // The opening flight segment covers x in [0, 1.2], short of the bystander at
+        // x=2, so the grenade strikes on tick 1 and its pulses land at 21/41/61/81/101.
+        world.advanceTicks(101);
         // 12 direct + 5 area ticks x 2 damage
         assertEquals(78, bystander.health, 0.001);
     }
 
     /**
-     * A target standing on the impact point must take the direct hit only. The
-     * lingering area starts pulsing one tick_interval later, not on the landing
-     * frame -- otherwise a point-blank grenade silently deals bonus damage.
+     * The lingering damage Area is a field: it starts pulsing one tick_interval after it
+     * is placed, not on the frame it lands. A target on the impact point takes the direct
+     * hit that frame and nothing from the Area until the first pulse.
+     *
+     * Immediate splash, when wanted, is a Burst -- an explicit effect -- not an accident
+     * of Area timing.
      */
     @Test
-    void impactTargetDoesNotTakeAreaPulseOnLandingFrame() {
+    void lingeringAreaFirstPulseLandsOneIntervalAfterImpact() {
         var world = new FakeWorld();
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        // x=1 lies inside the opening 1.2-block segment, so this detonates at tick 0.
         var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
         world.entities.add(target);
 
         var service = serviceWith(solarGrenade(), () -> 0L);
 
         dispatch(world, service.cast(caster, "solar_grenade", FORWARD));
-        assertEquals(88, target.health, 0.001); // 12 direct, no area pulse yet
+        assertEquals(88, target.health, 0.001); // launch-frame detonation: direct hit only
 
-        world.runScheduled(20);
-        // then exactly 5 pulses x 2 damage, at ticks 20/40/60/80/100
+        world.advanceTicks(19);
+        assertEquals(88, target.health, 0.001); // the first pulse is at 20, not yet
+
+        world.advanceTicks(1);
+        assertEquals(86, target.health, 0.001); // pulse @ 20
+
+        world.advanceTicks(80);                 // pulses @ 40/60/80/100
         assertEquals(78, target.health, 0.001);
     }
 
@@ -138,13 +149,13 @@ class AbilityServiceTest {
         var service = serviceWith(solarGrenade(), () -> 0L);
         dispatch(world, service.cast(caster, "solar_grenade", new Aim(Vec3.ZERO, new Vec3(0, -1, 0))));
 
-        world.runScheduled(1); // first pulse: caster is present and excluded
+        world.advanceTicks(20); // first pulse @ 20: caster is present and excluded
         assertEquals(100, caster.health, 0.001);
         assertEquals(98, victim.health, 0.001);
 
         world.entities.remove(caster); // thrower logs out mid-duration
 
-        assertDoesNotThrow(() -> world.runScheduled(20));
+        assertDoesNotThrow(() -> world.advanceTicks(80)); // pulses @ 40/60/80/100
         assertEquals(90, victim.health, 0.001); // 4 further pulses x 2
         assertEquals(100, caster.health, 0.001); // never resurrected, never hit
     }

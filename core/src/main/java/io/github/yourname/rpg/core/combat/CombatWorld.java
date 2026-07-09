@@ -31,6 +31,14 @@ public interface CombatWorld {
      */
     Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId);
 
+    /**
+     * Defer {@code task} by at least {@code delayTicks}, on the thread owning
+     * {@code near}'s region.
+     *
+     * {@code delayTicks} must be >= 1. There is no "schedule this for the current
+     * frame": the Paper adapter clamps a delay of 0 up to 1 tick, so asking for 0
+     * would quietly get you 1. To act on the current frame, act inline.
+     */
     void schedule(Vec3 near, int delayTicks, Runnable task);
 
     /** Fire-and-forget presentation hook. Particles, sounds, damage numbers. */

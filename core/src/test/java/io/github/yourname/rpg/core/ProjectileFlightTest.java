@@ -51,10 +51,10 @@ class ProjectileFlightTest {
         assertEquals(100, target.health, 1e-9, "must not hit on the launch frame");
         assertTrue(world.pendingTasks() > 0, "it should be in flight");
 
-        world.runScheduled(3); // ticks carry it to x=4, still short
+        world.advanceTicks(3); // ticks carry it to x=4, still short
         assertEquals(100, target.health, 1e-9);
 
-        world.runScheduled(1); // this segment covers [4,5] and strikes
+        world.advanceTicks(1); // this segment covers [4,5] and strikes
         assertEquals(88, target.health, 1e-9);
     }
 
@@ -66,7 +66,7 @@ class ProjectileFlightTest {
         world.entities.add(target);
 
         cast(world, caster, grenade(1.0, 0, 100, HIT), FORWARD);
-        world.runScheduled(50);
+        world.advanceTicks(50);
 
         assertEquals(88, target.health, 1e-9, "hit exactly once");
         assertEquals(0, world.pendingTasks(), "no further flight ticks are queued");
@@ -82,7 +82,7 @@ class ProjectileFlightTest {
 
         // 40 blocks per tick: the target sits mid-segment, never at an endpoint.
         cast(world, caster, grenade(40.0, 0, 100, HIT), FORWARD);
-        world.runScheduled(10);
+        world.advanceTicks(10);
 
         assertEquals(88, target.health, 1e-9);
     }
@@ -99,7 +99,7 @@ class ProjectileFlightTest {
         world.entities.add(lowerDown);
 
         cast(world, caster, grenade(1.0, 0.1, 100, HIT), FORWARD);
-        world.runScheduled(50);
+        world.advanceTicks(50);
 
         assertEquals(100, straightAhead.health, 1e-9, "gravity should carry it under this one");
         assertTrue(lowerDown.health < 100, "and into this one");
@@ -114,7 +114,7 @@ class ProjectileFlightTest {
         world.wallX = 4; // it flies four blocks, then splats
 
         cast(world, caster, grenade(1.0, 0, 100, HIT), FORWARD);
-        world.runScheduled(50);
+        world.advanceTicks(50);
 
         assertEquals(100, behindTheWall.health, 1e-9);
         assertEquals(0, world.pendingTasks());
@@ -127,7 +127,7 @@ class ProjectileFlightTest {
         world.entities.add(caster);
 
         cast(world, caster, grenade(1.0, 0, 5, HIT), FORWARD);
-        world.runScheduled(50);
+        world.advanceTicks(50);
 
         assertEquals(100, caster.health, 1e-9, "must not detonate in the thrower's face");
     }
@@ -145,7 +145,7 @@ class ProjectileFlightTest {
                 new EffectSpec.Visual("boom"),
                 new EffectSpec.Area(3.0, 20, 20, List.of(new EffectSpec.Damage(2, Element.SOLAR)))),
                 FORWARD);
-        world.runScheduled(100);
+        world.advanceTicks(100);
 
         assertEquals(List.of("boom"), world.presented, "the fuse detonation must fire visuals");
         assertTrue(nearTheEnd.health < 100, "and leave an area where it expired");
@@ -160,7 +160,7 @@ class ProjectileFlightTest {
         cast(world, caster, grenade(1.0, 0, 3, HIT), FORWARD);
 
         // Launch frame plus 2 scheduled ticks, then the fuse expires. Never endless.
-        world.runScheduled(1000);
+        world.advanceTicks(1000);
         assertEquals(0, world.pendingTasks());
     }
 
@@ -177,11 +177,11 @@ class ProjectileFlightTest {
         world.entities.add(target);
 
         cast(world, caster, grenade(1.0, 0, 100, HIT), FORWARD);
-        world.runScheduled(2); // it is airborne, around x=3
+        world.advanceTicks(2); // it is airborne, around x=3
 
         world.entities.remove(caster); // the thrower logs out
 
-        assertDoesNotThrow(() -> world.runScheduled(50));
+        assertDoesNotThrow(() -> world.advanceTicks(50));
         assertEquals(88, target.health, 1e-9, "the grenade still lands");
     }
 }
