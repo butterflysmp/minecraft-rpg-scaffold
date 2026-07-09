@@ -9,6 +9,7 @@ import io.github.yourname.rpg.paper.adapter.AdapterContext;
 import io.github.yourname.rpg.paper.adapter.Keys;
 import io.github.yourname.rpg.paper.command.RpgCommand;
 import io.github.yourname.rpg.paper.content.AbilityLoader;
+import io.github.yourname.rpg.paper.content.ContentValidator;
 import io.github.yourname.rpg.paper.content.StatusLoader;
 import io.github.yourname.rpg.paper.content.StatusRegistry;
 import io.github.yourname.rpg.paper.content.VisualLoader;
@@ -22,9 +23,11 @@ import io.github.yourname.rpg.storage.FilePlayerRepository;
 import io.github.yourname.rpg.storage.PlayerRepository;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
+import org.bukkit.Registry;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -77,6 +80,11 @@ public final class RpgPlugin extends JavaPlugin {
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses");
 
+        // A visual_id that resolves to nothing should be found now, by name, not by
+        // a player casting the ability in six weeks' time. Registry is only reachable
+        // here, with the server up, which is why these arrive as predicates.
+        validateContent();
+
         // Built once and shared: the adapters' warn-once set must outlive the
         // short-lived BukkitCombatant and PaperCombatWorld instances.
         this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, getLogger());
@@ -112,6 +120,25 @@ public final class RpgPlugin extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
                         RpgCommand.build(abilities, abilityService, adapters), "RPG commands"));
+    }
+
+    /**
+     * Warns, never disables the plugin. Fail-soft: the ability still loads and still
+     * deals its damage; it just tells you which reference is dangling.
+     */
+    private void validateContent() {
+        var validator = new ContentValidator(visuals, statuses,
+                key -> Registry.MOB_EFFECT.get(key) != null,
+                key -> Registry.SOUND_EVENT.get(key) != null);
+
+        List<String> problems = validator.validate(abilities);
+        for (String problem : problems) {
+            getLogger().warning("Content: " + problem);
+        }
+        if (!problems.isEmpty()) {
+            getLogger().warning(problems.size() + " dangling content reference(s). "
+                    + "The server is still running, but those effects will do nothing.");
+        }
     }
 
     @Override
