@@ -14,3 +14,13 @@ dependencies:
       load: BEFORE
       required: true
       join-classpath: true
+
+# An undeclared node defaults to op-only, so a missing entry here silently locks
+# players out of their own abilities. Keep this in step with Permissions.java.
+permissions:
+  rpg.command.cast:
+    description: Cast an ability. Everyone -- this is the game.
+    default: true
+  rpg.command.admin:
+    description: Inspect loaded ability content.
+    default: op

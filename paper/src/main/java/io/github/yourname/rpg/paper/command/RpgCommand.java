@@ -19,6 +19,9 @@ public final class RpgCommand {
     public static LiteralCommandNode<CommandSourceStack> build(AbilityRegistry registry) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
+                        // requires() gates the whole branch: an unpermitted sender
+                        // cannot run it, and does not see it in tab completion.
+                        .requires(source -> source.getSender().hasPermission(Permissions.ADMIN))
                         .executes(ctx -> {
                             ctx.getSource().getSender().sendMessage(
                                     Component.text("Loaded abilities: " + registry.size(),
@@ -30,6 +33,7 @@ public final class RpgCommand {
                             return 1;
                         }))
                 .then(Commands.literal("cast")
+                        .requires(source -> source.getSender().hasPermission(Permissions.CAST))
                         .then(Commands.argument("ability", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
                                     registry.all().forEach(a -> builder.suggest(a.id()));
