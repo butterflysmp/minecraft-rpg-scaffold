@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.Optional;
@@ -67,9 +68,5 @@ public final class FilePlayerRepository implements PlayerRepository {
     @Override
     public CompletableFuture<Void> releaseLock(UUID playerId, String serverId) {
         return CompletableFuture.completedFuture(null);
-    }
-
-    private static final class UncheckedIOException extends RuntimeException {
-        UncheckedIOException(IOException e) { super(e); }
     }
 }
