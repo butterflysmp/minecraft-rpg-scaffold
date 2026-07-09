@@ -86,7 +86,8 @@ public final class RpgPlugin extends JavaPlugin {
                 .registerListener(new ExampleTelegraphListener(scheduler));
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
-                event.registrar().register(RpgCommand.build(abilities), "RPG commands"));
+                event.registrar().register(
+                        RpgCommand.build(abilities, abilityService, scheduler, keys), "RPG commands"));
     }
 
     @Override
