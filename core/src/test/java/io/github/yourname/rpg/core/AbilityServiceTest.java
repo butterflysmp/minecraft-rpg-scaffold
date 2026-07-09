@@ -74,6 +74,30 @@ class AbilityServiceTest {
         assertEquals(78, bystander.health, 0.001);
     }
 
+    /**
+     * A target standing on the impact point must take the direct hit only. The
+     * lingering area starts pulsing one tick_interval later, not on the landing
+     * frame -- otherwise a point-blank grenade silently deals bonus damage.
+     */
+    @Test
+    void impactTargetDoesNotTakeAreaPulseOnLandingFrame() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        world.entities.add(target);
+
+        var registry = new AbilityRegistry();
+        registry.register(solarGrenade());
+        var service = new AbilityService(registry, new CooldownTracker(() -> 0L), world);
+
+        service.cast(caster, "solar_grenade", target, target.position());
+        assertEquals(88, target.health, 0.001); // 12 direct, no area pulse yet
+
+        world.runScheduled(20);
+        // then exactly 5 pulses x 2 damage, at ticks 20/40/60/80/100
+        assertEquals(78, target.health, 0.001);
+    }
+
     @Test
     void abilityRespectsCooldown() {
         var world = new FakeWorld();

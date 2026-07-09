@@ -47,7 +47,10 @@ public final class EffectApplier {
 
             case EffectSpec.Visual v -> world.present(origin, v.visualId());
 
-            case EffectSpec.Area a -> tickArea(a, caster, origin, 0);
+            // The first pulse lands one interval in, not on the landing frame:
+            // a target at the impact point already took the direct hit.
+            case EffectSpec.Area a -> world.schedule(origin, a.tickInterval(),
+                    () -> tickArea(a, caster, origin, a.tickInterval()));
         }
     }
 
@@ -57,7 +60,7 @@ public final class EffectApplier {
             applyAll(area.effects(), caster, c, origin);
         }
         int next = elapsed + area.tickInterval();
-        if (next < area.durationTicks()) {
+        if (next <= area.durationTicks()) {
             world.schedule(origin, area.tickInterval(),
                     () -> tickArea(area, caster, origin, next));
         }
