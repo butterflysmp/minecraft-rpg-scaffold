@@ -4,6 +4,7 @@ import com.github.retrooper.packetevents.PacketEvents;
 import io.github.yourname.rpg.core.ability.AbilityRegistry;
 import io.github.yourname.rpg.core.ability.AbilityService;
 import io.github.yourname.rpg.core.combat.CooldownTracker;
+import io.github.yourname.rpg.paper.adapter.Keys;
 import io.github.yourname.rpg.paper.command.RpgCommand;
 import io.github.yourname.rpg.paper.content.AbilityLoader;
 import io.github.yourname.rpg.paper.listener.RpgListeners;
@@ -19,6 +20,7 @@ import java.io.File;
 public final class RpgPlugin extends JavaPlugin {
 
     private Scheduler scheduler;
+    private Keys keys;
     private AbilityRegistry abilities;
     private CooldownTracker cooldowns;
     private AbilityService abilityService;
@@ -26,6 +28,9 @@ public final class RpgPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         this.scheduler = new PaperScheduler(this);
+
+        // Every NamespacedKey in the plugin, built once. Never inline at a call site.
+        this.keys = new Keys(this);
 
         // Content: YAML -> AbilityDefinition. No abilities are hardcoded.
         saveResource("content/abilities/solar_grenade.yml", false);
@@ -57,6 +62,7 @@ public final class RpgPlugin extends JavaPlugin {
     }
 
     public Scheduler scheduler() { return scheduler; }
+    public Keys keys() { return keys; }
     public AbilityRegistry abilities() { return abilities; }
     public CooldownTracker cooldowns() { return cooldowns; }
 

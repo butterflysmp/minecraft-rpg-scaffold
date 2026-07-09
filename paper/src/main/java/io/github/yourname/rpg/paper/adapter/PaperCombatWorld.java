@@ -13,10 +13,12 @@ import java.util.Collection;
 public final class PaperCombatWorld implements CombatWorld {
     private final World world;
     private final Scheduler scheduler;
+    private final Keys keys;
 
-    public PaperCombatWorld(World world, Scheduler scheduler) {
+    public PaperCombatWorld(World world, Scheduler scheduler, Keys keys) {
         this.world = world;
         this.scheduler = scheduler;
+        this.keys = keys;
     }
 
     private Location toLocation(Vec3 v) {
@@ -37,7 +39,7 @@ public final class PaperCombatWorld implements CombatWorld {
         return world.getNearbyEntities(toLocation(center), radius, radius, radius).stream()
                 .filter(LivingEntity.class::isInstance)
                 .map(LivingEntity.class::cast)
-                .map(e -> (Combatant) new BukkitCombatant(e, scheduler))
+                .map(e -> (Combatant) new BukkitCombatant(e, scheduler, keys))
                 .toList();
     }
 

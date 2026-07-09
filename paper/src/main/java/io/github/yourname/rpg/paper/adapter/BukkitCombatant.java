@@ -14,10 +14,12 @@ import java.util.UUID;
 public final class BukkitCombatant implements Combatant {
     private final LivingEntity entity;
     private final Scheduler scheduler;
+    private final Keys keys;
 
-    public BukkitCombatant(LivingEntity entity, Scheduler scheduler) {
+    public BukkitCombatant(LivingEntity entity, Scheduler scheduler, Keys keys) {
         this.entity = entity;
         this.scheduler = scheduler;
+        this.keys = keys;
     }
 
     public LivingEntity handle() { return entity; }
@@ -34,7 +36,7 @@ public final class BukkitCombatant implements Combatant {
     @Override public Element shieldElement() {
         // Shield element stored in the entity's PDC -- no NBT reflection.
         String raw = entity.getPersistentDataContainer()
-                .get(Keys.SHIELD_ELEMENT, PersistentDataType.STRING);
+                .get(keys.shieldElement, PersistentDataType.STRING);
         return raw == null ? null : Element.valueOf(raw);
     }
 
