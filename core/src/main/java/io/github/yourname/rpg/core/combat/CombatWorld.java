@@ -2,6 +2,8 @@ package io.github.yourname.rpg.core.combat;
 
 import io.github.yourname.rpg.core.Vec3;
 import java.util.Collection;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * The world, as far as core cares. This is the seam between game logic and
@@ -14,6 +16,20 @@ import java.util.Collection;
  */
 public interface CombatWorld {
     Collection<Combatant> combatantsNear(Vec3 center, double radius);
+
+    /**
+     * The first combatant or block struck by the segment from {@code from} to
+     * {@code to}, ignoring {@code ignoreId} (the caster, who is standing at the
+     * origin of their own ray).
+     *
+     * One method serves both shapes that need it: a Ray cast walks the whole
+     * range at once, and a Projectile casts the short segment it travelled this
+     * tick. Empty means the segment reached {@code to} unobstructed.
+     *
+     * Like combatantsNear, this reads the world and is only legal on the thread
+     * that owns the region containing the segment.
+     */
+    Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId);
 
     void schedule(Vec3 near, int delayTicks, Runnable task);
 

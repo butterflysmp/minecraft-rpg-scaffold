@@ -1,25 +1,23 @@
 package io.github.yourname.rpg.core.ability;
 
-import io.github.yourname.rpg.core.Vec3;
-import io.github.yourname.rpg.core.ability.effect.EffectSpec;
+import io.github.yourname.rpg.core.combat.Aim;
 import io.github.yourname.rpg.core.combat.Combatant;
 import io.github.yourname.rpg.core.combat.CooldownTracker;
 import io.github.yourname.rpg.core.combat.ResourcePool;
-
-import java.util.List;
 
 /**
  * Casting an ability, end to end, with zero knowledge of Minecraft.
  * Everything here is exercised by unit tests, not by restarting a server.
  *
  * cast() DECIDES; it does not EXECUTE. It resolves the ability, checks and
- * consumes the cooldown, and hands back a description of what should happen.
- * The caller is responsible for running the effects on the thread that owns
- * the impact point -- on Paper, Scheduler.onRegion(impactPoint, ...).
+ * consumes the cooldown and the resource cost, and hands back a description of
+ * what should happen. The caller passes the Success to a CastExecutor on the
+ * thread that owns the impact point -- on Paper, Scheduler.onRegion(...).
  *
- * This split exists because CombatWorld.combatantsNear is backed by
- * World#getNearbyEntities, which is only legal on the region thread owning that
- * chunk. Applying effects inline would run it on whatever thread called cast().
+ * This split exists because resolving where a cast lands reads the world:
+ * combatantsNear and castRay are backed by World#getNearbyEntities and
+ * World#rayTrace, which are only legal on the region thread owning that chunk.
+ * Resolving inline would run them on whatever thread called cast().
  */
 public final class AbilityService {
     private final AbilityRegistry registry;
@@ -38,17 +36,14 @@ public final class AbilityService {
      */
     public sealed interface CastResult {
         /**
-         * Dispatch this immediately, then drop it. It holds live Combatant
-         * references and must never be stored across ticks -- see EffectApplier.
+         * Hand this to a CastExecutor immediately, then drop it. It holds a live
+         * Combatant reference and must never be stored across ticks -- see
+         * EffectApplier.
+         *
+         * Note it carries the AIM, not a resolved target: nothing has looked at
+         * the world yet, because nothing here is on the right thread to do so.
          */
-        record Success(AbilityDefinition ability, Combatant caster,
-                       Combatant target, Vec3 impactPoint) implements CastResult {
-
-            /** The effects to run, on the thread owning {@link #impactPoint()}. */
-            public List<EffectSpec> effects() {
-                return ability.onHit();
-            }
-        }
+        record Success(AbilityDefinition ability, Combatant caster, Aim aim) implements CastResult {}
 
         record OnCooldown(long ticksRemaining) implements CastResult {}
 
@@ -58,7 +53,7 @@ public final class AbilityService {
         record UnknownAbility(String id) implements CastResult {}
     }
 
-    public CastResult cast(Combatant caster, String abilityId, Combatant target, Vec3 impactPoint) {
+    public CastResult cast(Combatant caster, String abilityId, Aim aim) {
         AbilityDefinition def = registry.find(abilityId).orElse(null);
         if (def == null) return new CastResult.UnknownAbility(abilityId);
 
@@ -80,6 +75,6 @@ public final class AbilityService {
         // were consumed at execution time, a player could spam-cast during the
         // hop onto the region thread.
         cooldowns.trigger(caster.id(), abilityId, def.cooldownTicks());
-        return new CastResult.Success(def, caster, target, impactPoint);
+        return new CastResult.Success(def, caster, aim);
     }
 }
