@@ -9,21 +9,34 @@ import io.github.yourname.rpg.paper.command.RpgCommand;
 import io.github.yourname.rpg.paper.content.AbilityLoader;
 import io.github.yourname.rpg.paper.listener.RpgListeners;
 import io.github.yourname.rpg.paper.packet.ExampleTelegraphListener;
+import io.github.yourname.rpg.paper.profile.ProfileService;
 import io.github.yourname.rpg.paper.scheduler.PaperScheduler;
 import io.github.yourname.rpg.paper.scheduler.Scheduler;
+import io.github.yourname.rpg.storage.FilePlayerRepository;
+import io.github.yourname.rpg.storage.PlayerRepository;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 public final class RpgPlugin extends JavaPlugin {
+
+    /** Long enough for a flush of everyone online; short enough not to hang a restart. */
+    private static final long SHUTDOWN_TIMEOUT_SECONDS = 15;
 
     private Scheduler scheduler;
     private Keys keys;
     private AbilityRegistry abilities;
     private CooldownTracker cooldowns;
     private AbilityService abilityService;
+    private ExecutorService storageIo;
+    private PlayerRepository repository;
+    private ProfileService profiles;
 
     @Override
     public void onEnable() {
@@ -42,8 +55,20 @@ public final class RpgPlugin extends JavaPlugin {
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
         this.abilityService = new AbilityService(abilities, cooldowns);
 
+        // One thread: file writes for a single player must not race each other,
+        // and a serialised queue is plenty for milestone-1 storage. Not a daemon
+        // thread -- a pending write must finish even if the JVM is winding down.
+        this.storageIo = Executors.newSingleThreadExecutor(task -> {
+            Thread thread = new Thread(task, "rpg-storage-io");
+            thread.setDaemon(false);
+            return thread;
+        });
+        this.repository = new FilePlayerRepository(
+                new File(getDataFolder(), "players").toPath(), storageIo);
+        this.profiles = new ProfileService(repository, getLogger(), System::currentTimeMillis);
+
         // The one and only registerEvents call. Keep it that way.
-        getServer().getPluginManager().registerEvents(new RpgListeners(cooldowns), this);
+        getServer().getPluginManager().registerEvents(new RpgListeners(cooldowns, profiles), this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
         // paper-plugin.yml. We do NOT call PacketEvents.setAPI() or .load()
@@ -58,6 +83,33 @@ public final class RpgPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // PlayerQuitEvent is not guaranteed to fire for everyone on shutdown, so
+        // flush whoever is left. Blocking is correct here: the server is stopping
+        // and unwritten profiles are lost progress.
+        if (profiles != null) {
+            try {
+                profiles.saveAllAndClear().get(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                getLogger().warning("Interrupted while saving profiles on shutdown");
+            } catch (Exception e) {
+                getLogger().log(Level.SEVERE, "Failed to save all profiles on shutdown", e);
+            }
+        }
+
+        if (storageIo != null) {
+            storageIo.shutdown();
+            try {
+                if (!storageIo.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                    getLogger().severe("Storage I/O did not drain; some profiles may be unsaved");
+                    storageIo.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                storageIo.shutdownNow();
+            }
+        }
+
         // PacketEvents terminates itself; it owns its own lifecycle.
     }
 
@@ -65,6 +117,8 @@ public final class RpgPlugin extends JavaPlugin {
     public Keys keys() { return keys; }
     public AbilityRegistry abilities() { return abilities; }
     public CooldownTracker cooldowns() { return cooldowns; }
+    public PlayerRepository repository() { return repository; }
+    public ProfileService profiles() { return profiles; }
 
     /**
      * cast() only decides; the caller must run the returned effects on the
