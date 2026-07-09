@@ -4,6 +4,7 @@ import io.github.yourname.rpg.core.Vec3;
 import io.github.yourname.rpg.core.ability.effect.EffectSpec;
 import io.github.yourname.rpg.core.combat.Combatant;
 import io.github.yourname.rpg.core.combat.CooldownTracker;
+import io.github.yourname.rpg.core.combat.ResourcePool;
 
 import java.util.List;
 
@@ -23,10 +24,12 @@ import java.util.List;
 public final class AbilityService {
     private final AbilityRegistry registry;
     private final CooldownTracker cooldowns;
+    private final ResourcePool resources;
 
-    public AbilityService(AbilityRegistry registry, CooldownTracker cooldowns) {
+    public AbilityService(AbilityRegistry registry, CooldownTracker cooldowns, ResourcePool resources) {
         this.registry = registry;
         this.cooldowns = cooldowns;
+        this.resources = resources;
     }
 
     /**
@@ -49,6 +52,9 @@ public final class AbilityService {
 
         record OnCooldown(long ticksRemaining) implements CastResult {}
 
+        record InsufficientResource(String resourceId, double required, double available)
+                implements CastResult {}
+
         record UnknownAbility(String id) implements CastResult {}
     }
 
@@ -58,6 +64,16 @@ public final class AbilityService {
 
         if (!cooldowns.isReady(caster.id(), abilityId)) {
             return new CastResult.OnCooldown(cooldowns.ticksRemaining(caster.id(), abilityId));
+        }
+
+        // Energy before cooldown, and both before returning Success. tryConsume is
+        // all-or-nothing, so a refusal here leaves the cooldown untouched and the
+        // player can immediately try again -- rather than eating the cooldown for
+        // an ability that never fired.
+        ResourceCost cost = def.cost();
+        if (!resources.tryConsume(caster.id(), cost.resourceId(), cost.amount())) {
+            return new CastResult.InsufficientResource(cost.resourceId(), cost.amount(),
+                    resources.current(caster.id(), cost.resourceId()));
         }
 
         // Consumed here, at call time -- not when the effects finally run. If it

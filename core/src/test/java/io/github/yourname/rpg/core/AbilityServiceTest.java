@@ -4,6 +4,7 @@ import io.github.yourname.rpg.core.ability.*;
 import io.github.yourname.rpg.core.ability.effect.EffectApplier;
 import io.github.yourname.rpg.core.ability.effect.EffectSpec;
 import io.github.yourname.rpg.core.combat.CooldownTracker;
+import io.github.yourname.rpg.core.combat.ResourcePool;
 import io.github.yourname.rpg.core.element.Element;
 import org.junit.jupiter.api.Test;
 
@@ -26,10 +27,21 @@ class AbilityServiceTest {
                 ));
     }
 
+    /** 100 energy, 1 per tick, so the grenade's cost of 40 is affordable twice. */
+    private static ResourcePool pool(java.util.function.LongSupplier tick) {
+        return new ResourcePool(tick, 100, 1.0);
+    }
+
     private static AbilityService serviceWith(AbilityDefinition def, java.util.function.LongSupplier tick) {
+        return serviceWith(def, tick, pool(tick));
+    }
+
+    private static AbilityService serviceWith(AbilityDefinition def,
+                                              java.util.function.LongSupplier tick,
+                                              ResourcePool resources) {
         var registry = new AbilityRegistry();
         registry.register(def);
-        return new AbilityService(registry, new CooldownTracker(tick));
+        return new AbilityService(registry, new CooldownTracker(tick), resources);
     }
 
     /**
@@ -170,8 +182,71 @@ class AbilityServiceTest {
     @Test
     void unknownAbilityIsReportedNotThrown() {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
-        var service = new AbilityService(new AbilityRegistry(), new CooldownTracker(() -> 0L));
+        var service = new AbilityService(new AbilityRegistry(), new CooldownTracker(() -> 0L),
+                pool(() -> 0L));
         assertInstanceOf(AbilityService.CastResult.UnknownAbility.class,
                 service.cast(caster, "nope", null, Vec3.ZERO));
+    }
+
+    @Test
+    void castingSpendsTheAbilitysEnergyCost() {
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var resources = pool(() -> 0L);
+        var service = serviceWith(solarGrenade(), () -> 0L, resources);
+
+        service.cast(caster, "solar_grenade", null, Vec3.ZERO);
+
+        assertEquals(60, resources.current(caster.id(), "energy"), 1e-9); // 100 - 40
+    }
+
+    @Test
+    void castingWithoutEnoughEnergyIsRefused() {
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var resources = pool(() -> 0L);
+        resources.tryConsume(caster.id(), "energy", 70); // 30 left, grenade costs 40
+        var service = serviceWith(solarGrenade(), () -> 0L, resources);
+
+        var result = service.cast(caster, "solar_grenade", null, Vec3.ZERO);
+
+        var refused = assertInstanceOf(AbilityService.CastResult.InsufficientResource.class, result);
+        assertEquals("energy", refused.resourceId());
+        assertEquals(40, refused.required(), 1e-9);
+        assertEquals(30, refused.available(), 1e-9);
+    }
+
+    /**
+     * A refused cast must not eat the cooldown. Otherwise running out of energy
+     * would also lock the ability out for its full cooldown, having fired nothing.
+     */
+    @Test
+    void aCastRefusedForEnergyDoesNotConsumeTheCooldown() {
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var tick = new AtomicLong(0);
+        var resources = pool(tick::get);
+        resources.tryConsume(caster.id(), "energy", 70); // 30 left, grenade costs 40
+        var service = serviceWith(solarGrenade(), tick::get, resources);
+
+        assertInstanceOf(AbilityService.CastResult.InsufficientResource.class,
+                service.cast(caster, "solar_grenade", null, Vec3.ZERO));
+
+        // Let energy regenerate. The grenade's 200-tick cooldown has NOT started,
+        // so the same service must cast successfully well before it would elapse.
+        tick.set(40);
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.cast(caster, "solar_grenade", null, Vec3.ZERO));
+    }
+
+    /** Being on cooldown must not spend energy either. */
+    @Test
+    void aCastRefusedForCooldownDoesNotSpendEnergy() {
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var resources = pool(() -> 0L);
+        var service = serviceWith(solarGrenade(), () -> 0L, resources);
+
+        service.cast(caster, "solar_grenade", null, Vec3.ZERO); // 100 -> 60
+        assertInstanceOf(AbilityService.CastResult.OnCooldown.class,
+                service.cast(caster, "solar_grenade", null, Vec3.ZERO));
+
+        assertEquals(60, resources.current(caster.id(), "energy"), 1e-9);
     }
 }

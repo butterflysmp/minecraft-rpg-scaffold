@@ -1,6 +1,7 @@
 package io.github.yourname.rpg.paper.listener;
 
 import io.github.yourname.rpg.core.combat.CooldownTracker;
+import io.github.yourname.rpg.core.combat.ResourcePool;
 import io.github.yourname.rpg.paper.profile.ProfileService;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,10 +19,12 @@ import java.util.UUID;
 public final class RpgListeners implements Listener {
 
     private final CooldownTracker cooldowns;
+    private final ResourcePool resources;
     private final ProfileService profiles;
 
-    public RpgListeners(CooldownTracker cooldowns, ProfileService profiles) {
+    public RpgListeners(CooldownTracker cooldowns, ResourcePool resources, ProfileService profiles) {
         this.cooldowns = cooldowns;
+        this.resources = resources;
         this.profiles = profiles;
     }
 
@@ -32,14 +35,18 @@ public final class RpgListeners implements Listener {
     }
 
     /**
-     * Without the cooldown clear, every player who has ever cast anything keeps
-     * a bucket until the server restarts. CooldownTracker is concurrent, so no
-     * scheduler hop is needed to drop it.
+     * Without these clears, every player who has ever cast anything keeps a
+     * cooldown and resource bucket until the server restarts. Both structures
+     * are concurrent, so no scheduler hop is needed to drop them.
+     *
+     * Dropping the energy pool is also correct game behaviour, not just hygiene:
+     * an absent pool reads as full, so a returning player starts charged.
      */
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
         cooldowns.clear(playerId);
+        resources.clear(playerId);
         profiles.onQuit(playerId);
     }
 }

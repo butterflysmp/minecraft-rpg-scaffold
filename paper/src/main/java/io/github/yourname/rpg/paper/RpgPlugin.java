@@ -4,6 +4,7 @@ import com.github.retrooper.packetevents.PacketEvents;
 import io.github.yourname.rpg.core.ability.AbilityRegistry;
 import io.github.yourname.rpg.core.ability.AbilityService;
 import io.github.yourname.rpg.core.combat.CooldownTracker;
+import io.github.yourname.rpg.core.combat.ResourcePool;
 import io.github.yourname.rpg.paper.adapter.Keys;
 import io.github.yourname.rpg.paper.command.RpgCommand;
 import io.github.yourname.rpg.paper.content.AbilityLoader;
@@ -29,10 +30,15 @@ public final class RpgPlugin extends JavaPlugin {
     /** Long enough for a flush of everyone online; short enough not to hang a restart. */
     private static final long SHUTDOWN_TIMEOUT_SECONDS = 15;
 
+    /** Ability energy. A full bar in 60 seconds. Belongs in archetype content later. */
+    private static final double MAX_ENERGY = 100.0;
+    private static final double ENERGY_PER_TICK = MAX_ENERGY / (60 * 20);
+
     private Scheduler scheduler;
     private Keys keys;
     private AbilityRegistry abilities;
     private CooldownTracker cooldowns;
+    private ResourcePool resources;
     private AbilityService abilityService;
     private ExecutorService storageIo;
     private PlayerRepository repository;
@@ -53,7 +59,8 @@ public final class RpgPlugin extends JavaPlugin {
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
-        this.abilityService = new AbilityService(abilities, cooldowns);
+        this.resources = new ResourcePool(Bukkit::getCurrentTick, MAX_ENERGY, ENERGY_PER_TICK);
+        this.abilityService = new AbilityService(abilities, cooldowns, resources);
 
         // One thread: file writes for a single player must not race each other,
         // and a serialised queue is plenty for milestone-1 storage. Not a daemon
@@ -68,7 +75,8 @@ public final class RpgPlugin extends JavaPlugin {
         this.profiles = new ProfileService(repository, getLogger(), System::currentTimeMillis);
 
         // The one and only registerEvents call. Keep it that way.
-        getServer().getPluginManager().registerEvents(new RpgListeners(cooldowns, profiles), this);
+        getServer().getPluginManager().registerEvents(
+                new RpgListeners(cooldowns, resources, profiles), this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
         // paper-plugin.yml. We do NOT call PacketEvents.setAPI() or .load()
@@ -117,6 +125,7 @@ public final class RpgPlugin extends JavaPlugin {
     public Keys keys() { return keys; }
     public AbilityRegistry abilities() { return abilities; }
     public CooldownTracker cooldowns() { return cooldowns; }
+    public ResourcePool resources() { return resources; }
     public PlayerRepository repository() { return repository; }
     public ProfileService profiles() { return profiles; }
 
