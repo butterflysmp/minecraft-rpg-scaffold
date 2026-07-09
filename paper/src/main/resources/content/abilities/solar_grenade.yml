@@ -18,13 +18,30 @@ cast:
   max_lifetime_ticks: 100
 
 on_hit:
+  # The direct hit. Only whatever the grenade actually struck takes this, and a
+  # grenade that lands on the ground strikes nothing at all.
   - type: damage
-    amount: 12
+    amount: 8
     element: solar
 
   - type: visual
     visual_id: solar_detonation
 
+  # The blast. Lands on the detonation frame, on everyone in radius, whether or
+  # not the grenade hit anything directly. This is what makes it read as an
+  # explosion rather than as a delayed fire.
+  - type: burst
+    radius: 4.0
+    effects:
+      - type: damage
+        amount: 6
+        element: solar
+      - type: status
+        status_id: scorch
+        duration_ticks: 40
+
+  # The field left behind. Its first pulse is one tick_interval later, by design.
+  # It re-applies scorch so that standing in the fire keeps you burning.
   - type: area
     radius: 4.0
     duration_ticks: 100

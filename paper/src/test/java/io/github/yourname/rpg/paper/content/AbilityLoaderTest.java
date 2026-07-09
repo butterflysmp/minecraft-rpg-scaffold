@@ -311,9 +311,9 @@ class AbilityLoaderTest {
     }
 
     /**
-     * The content we actually ship, parsed by the loader we actually run. Its
-     * area nests a status effect, which is exactly the shape that used to NPE
-     * at runtime and the shape the Targeted-only nesting rule must still allow.
+     * The content we actually ship, parsed by the loader we actually run. Both its burst
+     * and its area nest a status effect, which is the shape that used to NPE at runtime
+     * and the shape the Targeted-only nesting rule must still allow.
      */
     @Test
     void bundledSolarGrenadeContentLoads() throws IOException {
@@ -332,6 +332,17 @@ class AbilityLoaderTest {
         assertEquals(200, def.cooldownTicks());
         assertEquals("energy", def.cost().resourceId());
 
+        // The blast: splash damage plus the ignition, on the detonation frame.
+        var burst = def.onHit().stream()
+                .filter(EffectSpec.Burst.class::isInstance)
+                .map(EffectSpec.Burst.class::cast)
+                .findFirst().orElseThrow(() -> new AssertionError("no burst: mobs would ignite late"));
+        assertEquals(2, burst.effects().size());
+        assertInstanceOf(EffectSpec.Damage.class, burst.effects().get(0));
+        var ignition = assertInstanceOf(EffectSpec.Status.class, burst.effects().get(1));
+        assertEquals("scorch", ignition.statusId());
+
+        // The field: a damage pulse, and a scorch that refreshes the burn.
         var area = def.onHit().stream()
                 .filter(EffectSpec.Area.class::isInstance)
                 .map(EffectSpec.Area.class::cast)
