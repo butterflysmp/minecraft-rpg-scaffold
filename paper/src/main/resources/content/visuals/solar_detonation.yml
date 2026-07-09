@@ -1,0 +1,13 @@
+# A visual is a list of steps, played in order at the impact point.
+# The id of this visual is its filename: solar_detonation.
+
+steps:
+  - type: particle
+    particle: FLAME          # must take no data object -- checked at load
+    count: 40
+    spread: 0.6
+
+  - type: sound
+    key: entity.blaze.shoot  # a vanilla key, not the ENTITY_BLAZE_SHOOT constant
+    volume: 1.0
+    pitch: 1.0
