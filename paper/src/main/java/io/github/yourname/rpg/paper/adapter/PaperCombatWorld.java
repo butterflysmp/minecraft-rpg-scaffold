@@ -9,7 +9,6 @@ import org.bukkit.World;
 import org.bukkit.entity.LivingEntity;
 
 import java.util.Collection;
-import java.util.List;
 
 public final class PaperCombatWorld implements CombatWorld {
     private final World world;
