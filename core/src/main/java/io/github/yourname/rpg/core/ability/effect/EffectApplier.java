@@ -21,7 +21,7 @@ public final class EffectApplier {
         this.world = world;
     }
 
-    public void applyAll(List<EffectSpec> specs, Combatant caster, Combatant target, Vec3 origin) {
+    public void applyAll(List<? extends EffectSpec> specs, Combatant caster, Combatant target, Vec3 origin) {
         applyAll(specs, idOf(caster), target, origin);
     }
 
@@ -33,35 +33,48 @@ public final class EffectApplier {
         return c == null ? null : c.id();
     }
 
-    private void applyAll(List<EffectSpec> specs, UUID casterId, Combatant target, Vec3 origin) {
+    private void applyAll(List<? extends EffectSpec> specs, UUID casterId, Combatant target, Vec3 origin) {
         for (EffectSpec spec : specs) {
             apply(spec, casterId, target, origin);
         }
     }
 
+    /**
+     * The one place a missing target is handled. Everything below this point
+     * may assume a live target, because the type says so.
+     */
     private void apply(EffectSpec spec, UUID casterId, Combatant target, Vec3 origin) {
         switch (spec) {
+            case EffectSpec.Targeted t -> {
+                if (target != null) applyTargeted(t, target, origin);
+            }
+            case EffectSpec.Untargeted u -> applyUntargeted(u, casterId, origin);
+        }
+    }
+
+    private void applyTargeted(EffectSpec.Targeted spec, Combatant target, Vec3 origin) {
+        switch (spec) {
             case EffectSpec.Damage d -> {
-                if (target != null && target.isAlive()) {
+                if (target.isAlive()) {
                     double mult = d.element().multiplierAgainst(target.shieldElement());
                     target.applyDamage(d.amount() * mult, d.element());
                 }
             }
-            case EffectSpec.Heal h -> {
-                if (target != null) target.applyHeal(h.amount());
-            }
+            case EffectSpec.Heal h -> target.applyHeal(h.amount());
             case EffectSpec.Knockback k -> {
-                if (target != null) {
-                    Vec3 dir = new Vec3(
-                            target.position().x() - origin.x(),
-                            target.position().y() - origin.y(),
-                            target.position().z() - origin.z());
-                    target.applyKnockback(dir, k.strength());
-                }
+                Vec3 dir = new Vec3(
+                        target.position().x() - origin.x(),
+                        target.position().y() - origin.y(),
+                        target.position().z() - origin.z());
+                target.applyKnockback(dir, k.strength());
             }
             case EffectSpec.Status s ->
                     target.applyStatus(s.statusId(), s.durationTicks(), s.amplifier());
+        }
+    }
 
+    private void applyUntargeted(EffectSpec.Untargeted spec, UUID casterId, Vec3 origin) {
+        switch (spec) {
             case EffectSpec.Visual v -> world.present(origin, v.visualId());
 
             // The first pulse lands one interval in, not on the landing frame:
@@ -76,7 +89,9 @@ public final class EffectApplier {
             // Once the caster is gone it is no longer near anything, so this
             // simply stops matching. No need to resolve it to check.
             if (c.id().equals(casterId)) continue;
-            applyAll(area.effects(), casterId, c, origin);
+            for (EffectSpec.Targeted t : area.effects()) {
+                applyTargeted(t, c, origin);
+            }
         }
         int next = elapsed + area.tickInterval();
         if (next <= area.durationTicks()) {

@@ -75,26 +75,48 @@ public final class AbilityLoader {
         };
     }
 
-    @SuppressWarnings("unchecked")
     private List<EffectSpec> parseEffects(List<java.util.Map<?, ?>> raw) {
         List<EffectSpec> out = new ArrayList<>();
         for (java.util.Map<?, ?> m : raw) {
-            String type = String.valueOf(m.get("type")).toLowerCase(Locale.ROOT);
-            out.add(switch (type) {
-                case "damage" -> new EffectSpec.Damage(
-                        num(m, "amount"), Element.valueOf(str(m, "element").toUpperCase(Locale.ROOT)));
-                case "heal" -> new EffectSpec.Heal(num(m, "amount"));
-                case "knockback" -> new EffectSpec.Knockback(num(m, "strength"));
-                case "status" -> new EffectSpec.Status(
-                        str(m, "status_id"), (int) num(m, "duration_ticks"), (int) num(m, "amplifier"));
-                case "visual" -> new EffectSpec.Visual(str(m, "visual_id"));
-                case "area" -> new EffectSpec.Area(
-                        num(m, "radius"), (int) num(m, "duration_ticks"), (int) num(m, "tick_interval"),
-                        parseEffects((List<java.util.Map<?, ?>>) m.get("effects")));
-                default -> throw new IllegalArgumentException("Unknown effect type: " + type);
-            });
+            out.add(parseEffect(m));
         }
         return out;
+    }
+
+    /**
+     * An Area may only nest targeted effects. YAML is untyped, so what the
+     * compiler enforces in core has to be checked here at load time.
+     */
+    @SuppressWarnings("unchecked")
+    private List<EffectSpec.Targeted> parseNestedEffects(Object raw) {
+        List<EffectSpec.Targeted> out = new ArrayList<>();
+        for (java.util.Map<?, ?> m : (List<java.util.Map<?, ?>>) raw) {
+            EffectSpec spec = parseEffect(m);
+            if (!(spec instanceof EffectSpec.Targeted t)) {
+                throw new IllegalArgumentException(
+                        "Effect '" + m.get("type") + "' cannot be nested inside an area; "
+                                + "only targeted effects (damage, heal, knockback, status) can");
+            }
+            out.add(t);
+        }
+        return out;
+    }
+
+    private EffectSpec parseEffect(java.util.Map<?, ?> m) {
+        String type = String.valueOf(m.get("type")).toLowerCase(Locale.ROOT);
+        return switch (type) {
+            case "damage" -> new EffectSpec.Damage(
+                    num(m, "amount"), Element.valueOf(str(m, "element").toUpperCase(Locale.ROOT)));
+            case "heal" -> new EffectSpec.Heal(num(m, "amount"));
+            case "knockback" -> new EffectSpec.Knockback(num(m, "strength"));
+            case "status" -> new EffectSpec.Status(
+                    str(m, "status_id"), (int) num(m, "duration_ticks"), (int) num(m, "amplifier"));
+            case "visual" -> new EffectSpec.Visual(str(m, "visual_id"));
+            case "area" -> new EffectSpec.Area(
+                    num(m, "radius"), (int) num(m, "duration_ticks"), (int) num(m, "tick_interval"),
+                    parseNestedEffects(m.get("effects")));
+            default -> throw new IllegalArgumentException("Unknown effect type: " + type);
+        };
     }
 
     private static double num(java.util.Map<?, ?> m, String k) {

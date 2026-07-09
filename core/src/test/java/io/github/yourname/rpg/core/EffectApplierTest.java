@@ -1,0 +1,75 @@
+package io.github.yourname.rpg.core;
+
+import io.github.yourname.rpg.core.ability.effect.EffectApplier;
+import io.github.yourname.rpg.core.ability.effect.EffectSpec;
+import io.github.yourname.rpg.core.element.Element;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class EffectApplierTest {
+
+    /**
+     * Every effect variant, applied with no target. A projectile that lands in
+     * an empty field resolves no target, and the bundled solar_grenade.yml
+     * carries a status effect. None of these may throw.
+     */
+    @Test
+    void noEffectThrowsWhenThereIsNoTarget() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var applier = new EffectApplier(world);
+
+        List<EffectSpec> everyVariant = List.of(
+                new EffectSpec.Damage(12, Element.SOLAR),
+                new EffectSpec.Heal(5),
+                new EffectSpec.Knockback(1.5),
+                new EffectSpec.Status("scorch", 40, 0),
+                new EffectSpec.Visual("solar_detonation"),
+                new EffectSpec.Area(4.0, 100, 20,
+                        List.of(new EffectSpec.Damage(2, Element.SOLAR))));
+
+        assertDoesNotThrow(() -> applier.applyAll(everyVariant, caster, null, Vec3.ZERO));
+    }
+
+    /** The specific regression: a status effect with nobody to apply it to. */
+    @Test
+    void statusWithNullTargetIsSkippedNotThrown() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var applier = new EffectApplier(world);
+
+        assertDoesNotThrow(() -> applier.applyAll(
+                List.of(new EffectSpec.Status("scorch", 40, 0)), caster, null, Vec3.ZERO));
+    }
+
+    /** Untargeted effects still run when there is no target. */
+    @Test
+    void visualStillPresentsWithNoTarget() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var applier = new EffectApplier(world);
+
+        applier.applyAll(List.of(new EffectSpec.Visual("solar_detonation")), caster, null, Vec3.ZERO);
+
+        assertEquals(List.of("solar_detonation"), world.presented);
+    }
+
+    /** And a targeted effect still lands when there is one. */
+    @Test
+    void targetedEffectsStillApplyWhenTargetPresent() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        var applier = new EffectApplier(world);
+
+        applier.applyAll(List.of(
+                new EffectSpec.Damage(12, Element.SOLAR),
+                new EffectSpec.Status("scorch", 40, 0)), caster, target, Vec3.ZERO);
+
+        assertEquals(88, target.health, 0.001);
+        assertEquals(List.of("scorch"), target.statuses);
+    }
+}
