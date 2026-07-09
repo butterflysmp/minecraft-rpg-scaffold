@@ -4,10 +4,15 @@ import io.github.yourname.rpg.core.Vec3;
 import io.github.yourname.rpg.core.combat.CombatWorld;
 import io.github.yourname.rpg.core.combat.Combatant;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Interprets EffectSpec against the world. This is the beating heart of the
  * combat system and it is 100% unit-testable -- no server required.
+ *
+ * Nothing here may retain a Combatant beyond the tick it was handed. A lingering
+ * area outlives its caster: the caster can die, log out, or unload with its
+ * chunk. Areas therefore carry the caster's UUID, never the Combatant itself.
  */
 public final class EffectApplier {
     private final CombatWorld world;
@@ -17,12 +22,24 @@ public final class EffectApplier {
     }
 
     public void applyAll(List<EffectSpec> specs, Combatant caster, Combatant target, Vec3 origin) {
-        for (EffectSpec spec : specs) {
-            apply(spec, caster, target, origin);
-        }
+        applyAll(specs, idOf(caster), target, origin);
     }
 
     public void apply(EffectSpec spec, Combatant caster, Combatant target, Vec3 origin) {
+        apply(spec, idOf(caster), target, origin);
+    }
+
+    private static UUID idOf(Combatant c) {
+        return c == null ? null : c.id();
+    }
+
+    private void applyAll(List<EffectSpec> specs, UUID casterId, Combatant target, Vec3 origin) {
+        for (EffectSpec spec : specs) {
+            apply(spec, casterId, target, origin);
+        }
+    }
+
+    private void apply(EffectSpec spec, UUID casterId, Combatant target, Vec3 origin) {
         switch (spec) {
             case EffectSpec.Damage d -> {
                 if (target != null && target.isAlive()) {
@@ -50,19 +67,21 @@ public final class EffectApplier {
             // The first pulse lands one interval in, not on the landing frame:
             // a target at the impact point already took the direct hit.
             case EffectSpec.Area a -> world.schedule(origin, a.tickInterval(),
-                    () -> tickArea(a, caster, origin, a.tickInterval()));
+                    () -> tickArea(a, casterId, origin, a.tickInterval()));
         }
     }
 
-    private void tickArea(EffectSpec.Area area, Combatant caster, Vec3 origin, int elapsed) {
+    private void tickArea(EffectSpec.Area area, UUID casterId, Vec3 origin, int elapsed) {
         for (Combatant c : world.combatantsNear(origin, area.radius())) {
-            if (c.id().equals(caster.id())) continue;
-            applyAll(area.effects(), caster, c, origin);
+            // Once the caster is gone it is no longer near anything, so this
+            // simply stops matching. No need to resolve it to check.
+            if (c.id().equals(casterId)) continue;
+            applyAll(area.effects(), casterId, c, origin);
         }
         int next = elapsed + area.tickInterval();
         if (next <= area.durationTicks()) {
             world.schedule(origin, area.tickInterval(),
-                    () -> tickArea(area, caster, origin, next));
+                    () -> tickArea(area, casterId, origin, next));
         }
     }
 }

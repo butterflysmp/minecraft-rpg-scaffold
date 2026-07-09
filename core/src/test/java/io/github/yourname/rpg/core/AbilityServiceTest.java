@@ -98,6 +98,34 @@ class AbilityServiceTest {
         assertEquals(78, target.health, 0.001);
     }
 
+    /**
+     * A grenade does not stop burning because the thrower died or logged out.
+     * The area must keep pulsing, and must not hold the caster alive to do it.
+     */
+    @Test
+    void areaKeepsBurningAfterCasterDespawns() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(victim);
+
+        var registry = new AbilityRegistry();
+        registry.register(solarGrenade());
+        var service = new AbilityService(registry, new CooldownTracker(() -> 0L), world);
+        service.cast(caster, "solar_grenade", null, Vec3.ZERO); // lands near nobody
+
+        world.runScheduled(1); // first pulse: caster is present and excluded
+        assertEquals(100, caster.health, 0.001);
+        assertEquals(98, victim.health, 0.001);
+
+        world.entities.remove(caster); // thrower logs out mid-duration
+
+        assertDoesNotThrow(() -> world.runScheduled(20));
+        assertEquals(90, victim.health, 0.001); // 4 further pulses x 2
+        assertEquals(100, caster.health, 0.001); // never resurrected, never hit
+    }
+
     @Test
     void abilityRespectsCooldown() {
         var world = new FakeWorld();
