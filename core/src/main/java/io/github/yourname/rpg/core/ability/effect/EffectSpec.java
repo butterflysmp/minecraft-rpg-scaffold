@@ -47,6 +47,18 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
                 List<Targeted> effects) implements Untargeted {
 
         public Area {
+            // A tickInterval of 0 makes EffectApplier.tickArea reschedule itself forever
+            // at zero delay: next = elapsed + 0 never exceeds durationTicks. On a server
+            // that is an unbounded task storm, not a hang you would notice in a test.
+            // Checked here rather than in AbilityLoader so every caller is defended; the
+            // loader's catch(RuntimeException) still turns it into a named, skipped file.
+            if (tickInterval <= 0) {
+                throw new IllegalArgumentException("Effect 'area' tick_interval must be > 0, got: "
+                        + tickInterval);
+            }
+            if (radius <= 0) {
+                throw new IllegalArgumentException("Effect 'area' radius must be > 0, got: " + radius);
+            }
             effects = List.copyOf(effects);
         }
     }

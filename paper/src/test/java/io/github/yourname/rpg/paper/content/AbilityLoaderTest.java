@@ -124,6 +124,34 @@ class AbilityLoaderTest {
         assertTrue(warningText().contains("effects"), warningText());
     }
 
+    /**
+     * A tick_interval of 0 would make the area reschedule itself forever at zero delay.
+     * EffectSpec.Area rejects it; the loader must report it like any content mistake.
+     */
+    @Test
+    void areaWithZeroTickIntervalIsSkippedNotCrashed() throws IOException {
+        write("aaa_storm.yml", """
+                id: storm
+                element: solar
+                on_hit:
+                  - type: area
+                    radius: 4.0
+                    duration_ticks: 100
+                    tick_interval: 0
+                    effects:
+                      - type: damage
+                        amount: 2
+                        element: solar
+                """);
+        write("solar_grenade.yml", VALID);
+
+        AbilityRegistry registry = assertDoesNotThrow(this::load);
+
+        assertEquals(1, registry.size(), "the valid ability must still load");
+        assertTrue(warningText().contains("aaa_storm.yml"), warningText());
+        assertTrue(warningText().contains("tick_interval"), warningText());
+    }
+
     @Test
     void unknownElementIsSkippedNotCrashed() throws IOException {
         write("aaa_typo.yml", """

@@ -57,6 +57,35 @@ class EffectApplierTest {
         assertEquals(List.of("solar_detonation"), world.presented);
     }
 
+    /**
+     * tickArea computes next = elapsed + tickInterval and reschedules while
+     * next <= durationTicks. With tickInterval 0 that condition never fails, so the
+     * area reschedules itself forever at zero delay. Reject it at construction.
+     */
+    @Test
+    void areaRejectsANonPositiveTickInterval() {
+        List<EffectSpec.Targeted> effects = List.of(new EffectSpec.Damage(2, Element.SOLAR));
+
+        var zero = assertThrows(IllegalArgumentException.class,
+                () -> new EffectSpec.Area(4.0, 100, 0, effects));
+        assertTrue(zero.getMessage().contains("tick_interval"), zero.getMessage());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new EffectSpec.Area(4.0, 100, -20, effects));
+    }
+
+    @Test
+    void areaRejectsANonPositiveRadius() {
+        List<EffectSpec.Targeted> effects = List.of(new EffectSpec.Damage(2, Element.SOLAR));
+
+        var zero = assertThrows(IllegalArgumentException.class,
+                () -> new EffectSpec.Area(0, 100, 20, effects));
+        assertTrue(zero.getMessage().contains("radius"), zero.getMessage());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new EffectSpec.Area(-1.0, 100, 20, effects));
+    }
+
     /** And a targeted effect still lands when there is one. */
     @Test
     void targetedEffectsStillApplyWhenTargetPresent() {
