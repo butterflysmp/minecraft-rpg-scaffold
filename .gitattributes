@@ -1,0 +1,4 @@
+# mvnw and dev-server.sh are POSIX shell scripts. CRLF breaks their shebang.
+mvnw        text eol=lf
+*.sh        text eol=lf
+mvnw.cmd    text eol=crlf

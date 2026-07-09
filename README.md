@@ -2,9 +2,12 @@
 
 Minecraft action RPG. Paper plugin, Maven, Java 25.
 
-    mvn clean package        # build
-    mvn -pl core test        # fast unit tests, no server needed
+    ./mvnw clean package     # build
+    ./mvnw -pl core test     # fast unit tests, no server needed
     ./scripts/dev-server.sh  # build + deploy + boot local Paper
+
+Use the wrapper (`./mvnw`, or `mvnw.cmd` on cmd/PowerShell). It pins Maven 3.9.9
+and downloads it on first use, so no system Maven install is needed.
 
 Read `CLAUDE.md` before writing code — it documents the banned patterns,
 the PacketEvents threading contract, and the module boundaries.

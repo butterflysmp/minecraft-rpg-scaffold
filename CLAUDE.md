@@ -5,12 +5,15 @@ Read this before writing any code in this repository.
 ## Commands
 
 ```bash
-mvn clean package        # build all modules
-mvn -pl core test        # unit tests (fast, no server)
+./mvnw clean package     # build all modules
+./mvnw -pl core test     # unit tests (fast, no server)
 ./scripts/dev-server.sh  # build + deploy + boot a local Paper server
 ```
 
-Always run `mvn -pl core test` after changing anything in `core/`. Prefer adding
+Always use the wrapper, never a system `mvn`. It pins Maven 3.9.9 so the build is
+reproducible; there is no system Maven on this machine.
+
+Always run `./mvnw -pl core test` after changing anything in `core/`. Prefer adding
 a unit test to `core/` over testing in-game. In-game testing is a 60-second loop;
 unit tests are a 2-second loop.
 
@@ -94,7 +97,7 @@ Do **not** bump `paper.version` alone. Order of operations:
    Minecraft release by 1–2 weeks. It is the gate.
 2. Bump `packetevents.version` first, confirm it builds.
 3. Bump `paper.version`.
-4. Run `mvn -pl core test`. If `core` tests break on a Paper bump, `core` has an
+4. Run `./mvnw -pl core test`. If `core` tests break on a Paper bump, `core` has an
    illegal dependency — that is the real bug.
 5. Boot `./scripts/dev-server.sh` and smoke-test one ability end to end.
 

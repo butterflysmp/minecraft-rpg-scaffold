@@ -27,7 +27,7 @@ if [ ! -f "$RUN_DIR/eula.txt" ]; then
 fi
 
 echo "==> Building"
-mvn -q -T 1C clean package
+"$(dirname "$0")/../mvnw" -q -T 1C clean package
 
 echo "==> Deploying"
 rm -f "$RUN_DIR"/plugins/rpg-*.jar
