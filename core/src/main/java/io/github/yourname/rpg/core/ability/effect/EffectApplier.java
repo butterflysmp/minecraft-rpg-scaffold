@@ -87,22 +87,35 @@ public final class EffectApplier {
         switch (spec) {
             case EffectSpec.Visual v -> world.present(origin, v.visualId());
 
-            // The first pulse lands one interval in, not on the landing frame:
-            // a target at the impact point already took the direct hit.
+            // Inline, on this very frame. Scheduling it -- even at delay 0 -- would put
+            // the splash a tick behind the visual, because Paper clamps 0 up to 1.
+            case EffectSpec.Burst b -> applyToNearby(b.effects(), casterId, origin, b.radius());
+
+            // A field, not a blast. Its first pulse lands one interval in; anything that
+            // should happen at the moment of impact belongs in a Burst.
             case EffectSpec.Area a -> world.schedule(origin, a.tickInterval(),
                     () -> tickArea(a, casterId, origin, a.tickInterval()));
         }
     }
 
-    private void tickArea(EffectSpec.Area area, UUID casterId, Vec3 origin, int elapsed) {
-        for (Combatant c : world.combatantsNear(origin, area.radius())) {
-            // Once the caster is gone it is no longer near anything, so this
-            // simply stops matching. No need to resolve it to check.
+    /**
+     * Everything in radius except the caster. You do not scorch yourself with your own
+     * grenade, and once the caster is gone it is no longer near anything, so the check
+     * simply stops matching -- no need to resolve the UUID back to a Combatant.
+     */
+    private void applyToNearby(List<EffectSpec.Targeted> effects, UUID casterId,
+                               Vec3 origin, double radius) {
+        for (Combatant c : world.combatantsNear(origin, radius)) {
             if (c.id().equals(casterId)) continue;
-            for (EffectSpec.Targeted t : area.effects()) {
+            for (EffectSpec.Targeted t : effects) {
                 applyTargeted(t, c, origin);
             }
         }
+    }
+
+    private void tickArea(EffectSpec.Area area, UUID casterId, Vec3 origin, int elapsed) {
+        applyToNearby(area.effects(), casterId, origin, area.radius());
+
         int next = elapsed + area.tickInterval();
         if (next <= area.durationTicks()) {
             world.schedule(origin, area.tickInterval(),

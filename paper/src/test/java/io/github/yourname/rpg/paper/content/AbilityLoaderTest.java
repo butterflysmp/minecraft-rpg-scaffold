@@ -180,6 +180,77 @@ class AbilityLoaderTest {
         assertTrue(warningText().contains("id"), warningText());
     }
 
+    @Test
+    void loadsABurst() throws IOException {
+        write("blast.yml", """
+                id: blast
+                element: solar
+                on_hit:
+                  - type: burst
+                    radius: 4.0
+                    effects:
+                      - type: damage
+                        amount: 6
+                        element: solar
+                      - type: status
+                        status_id: scorch
+                        duration_ticks: 40
+                """);
+
+        var burst = (EffectSpec.Burst) load().find("blast").orElseThrow().onHit().get(0);
+
+        assertEquals(4.0, burst.radius(), 1e-9);
+        assertEquals(2, burst.effects().size());
+        assertInstanceOf(EffectSpec.Damage.class, burst.effects().get(0));
+        assertInstanceOf(EffectSpec.Status.class, burst.effects().get(1));
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** A burst nesting an untargeted effect cannot be represented in core, same as an area. */
+    @Test
+    void burstNestingAnUntargetedEffectIsSkippedNotCrashed() throws IOException {
+        write("aaa_nested_burst.yml", """
+                id: nested
+                element: solar
+                on_hit:
+                  - type: burst
+                    radius: 4.0
+                    effects:
+                      - type: visual
+                        visual_id: sparkles
+                """);
+        write("solar_grenade.yml", VALID);
+
+        AbilityRegistry registry = load();
+
+        assertEquals(1, registry.size());
+        assertTrue(warningText().contains("aaa_nested_burst.yml"), warningText());
+        assertTrue(warningText().contains("cannot be nested"), warningText());
+        assertTrue(warningText().contains("burst"), warningText());
+    }
+
+    @Test
+    void burstWithZeroRadiusIsSkippedNotCrashed() throws IOException {
+        write("aaa_flat.yml", """
+                id: flat
+                element: solar
+                on_hit:
+                  - type: burst
+                    radius: 0
+                    effects:
+                      - type: damage
+                        amount: 6
+                        element: solar
+                """);
+        write("solar_grenade.yml", VALID);
+
+        AbilityRegistry registry = assertDoesNotThrow(this::load);
+
+        assertEquals(1, registry.size());
+        assertTrue(warningText().contains("aaa_flat.yml"), warningText());
+        assertTrue(warningText().contains("radius"), warningText());
+    }
+
     /** An area nesting an untargeted effect cannot be represented in core. */
     @Test
     void areaNestingAnUntargetedEffectIsSkippedNotCrashed() throws IOException {

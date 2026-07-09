@@ -106,6 +106,27 @@ class ContentValidatorTest {
         assertTrue(problems.get(0).contains("status_id"), problems.toString());
     }
 
+    /**
+     * The same trap as the nested-area case, one effect type over. When scorch moved into
+     * a burst, a validator that only knew about Area would have stopped checking it --
+     * silently, and while still passing every other test.
+     */
+    @Test
+    void danglingStatusIdNestedInsideABurstIsReported() {
+        var abilities = abilitiesWith(List.of(
+                new EffectSpec.Visual("solar_detonation"),                 // resolves
+                new EffectSpec.Burst(4.0, List.of(
+                        new EffectSpec.Damage(6, Element.SOLAR),           // no reference
+                        new EffectSpec.Status("nope", 40, 0)))));          // dangles
+
+        var problems = validator(visualsWith("solar_detonation"), statusesWith("scorch")).validate(abilities);
+
+        assertEquals(1, problems.size(), "the status nested in the burst must be found: " + problems);
+        assertTrue(problems.get(0).contains("solar_grenade"), problems.toString());
+        assertTrue(problems.get(0).contains("nope"), problems.toString());
+        assertTrue(problems.get(0).contains("status_id"), problems.toString());
+    }
+
     @Test
     void effectsWithoutReferencesAreIgnored() {
         var abilities = abilitiesWith(List.of(

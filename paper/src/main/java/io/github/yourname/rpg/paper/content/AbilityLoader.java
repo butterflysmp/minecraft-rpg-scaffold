@@ -112,16 +112,16 @@ public final class AbilityLoader {
     }
 
     /**
-     * An Area may only nest targeted effects. YAML is untyped, so what the
+     * An Area or a Burst may only nest targeted effects. YAML is untyped, so what the
      * compiler enforces in core has to be checked here at load time.
      */
-    private List<EffectSpec.Targeted> parseNestedEffects(java.util.Map<?, ?> area) {
+    private List<EffectSpec.Targeted> parseNestedEffects(java.util.Map<?, ?> parent, String parentType) {
         List<EffectSpec.Targeted> out = new ArrayList<>();
-        for (java.util.Map<?, ?> m : mapList(area, "effects")) {
+        for (java.util.Map<?, ?> m : mapList(parent, parentType, "effects")) {
             EffectSpec spec = parseEffect(m);
             if (!(spec instanceof EffectSpec.Targeted t)) {
                 throw new IllegalArgumentException(
-                        "Effect '" + m.get("type") + "' cannot be nested inside an area; "
+                        "Effect '" + m.get("type") + "' cannot be nested inside " + parentType + "; "
                                 + "only targeted effects (damage, heal, knockback, status) can");
             }
             out.add(t);
@@ -143,21 +143,27 @@ public final class AbilityLoader {
                     // Optional: most statuses have a single tier.
                     (int) numOr(m, type, "amplifier", 0));
             case "visual" -> new EffectSpec.Visual(str(m, type, "visual_id"));
+            // A blast: lands once, on the detonation frame. Contrast 'area', a field.
+            case "burst" -> new EffectSpec.Burst(
+                    num(m, type, "radius"),
+                    parseNestedEffects(m, type));
             case "area" -> new EffectSpec.Area(
                     num(m, type, "radius"),
                     (int) num(m, type, "duration_ticks"),
                     (int) num(m, type, "tick_interval"),
-                    parseNestedEffects(m));
+                    parseNestedEffects(m, type));
             default -> throw new IllegalArgumentException("Unknown effect type: " + type);
         };
     }
 
     @SuppressWarnings("unchecked")
-    private static List<java.util.Map<?, ?>> mapList(java.util.Map<?, ?> m, String k) {
+    private static List<java.util.Map<?, ?>> mapList(java.util.Map<?, ?> m, String type, String k) {
         Object v = m.get(k);
-        if (v == null) throw new IllegalArgumentException("Effect 'area' is missing its '" + k + "' list");
+        if (v == null) {
+            throw new IllegalArgumentException("Effect '" + type + "' is missing its '" + k + "' list");
+        }
         if (!(v instanceof List<?> list)) {
-            throw new IllegalArgumentException("Effect 'area' field '" + k + "' must be a list");
+            throw new IllegalArgumentException("Effect '" + type + "' field '" + k + "' must be a list");
         }
         return (List<java.util.Map<?, ?>>) list;
     }

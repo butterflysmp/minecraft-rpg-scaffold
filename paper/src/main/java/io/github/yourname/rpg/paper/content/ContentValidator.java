@@ -66,14 +66,19 @@ public final class ContentValidator {
     }
 
     /**
-     * Descends into Area.effects(). solar_grenade nests its status_id inside its
-     * area, so a walk over only the top-level on_hit list would check the visual,
-     * miss the status entirely, and pass while validating nothing that matters.
+     * Descends into Area.effects() and Burst.effects(). solar_grenade nests its
+     * status_id inside one of them, so a walk over only the top-level on_hit list
+     * would check the visual, miss the status entirely, and pass while validating
+     * nothing that matters.
      *
-     * Today Area holds List<Targeted>, and no Targeted nests, so this bottoms out
-     * one level down. It is written as a recursion over the sealed EffectSpec
-     * anyway: if Area ever admits untargeted children, the exhaustive switch drags
+     * Today Area and Burst hold List<Targeted>, and no Targeted nests, so this bottoms
+     * out one level down. It is written as a recursion over the sealed EffectSpec
+     * anyway: if either ever admits untargeted children, the exhaustive switch drags
      * this method back into the light rather than silently skipping them.
+     *
+     * Caveat learned the hard way: that exhaustiveness error only surfaces on a CLEAN
+     * build. Maven will not recompile this file just because EffectSpec changed in
+     * another module.
      */
     private void checkEffect(EffectSpec effect, String abilityId, List<String> problems) {
         switch (effect) {
@@ -91,6 +96,11 @@ public final class ContentValidator {
             }
             case EffectSpec.Area area -> {
                 for (EffectSpec.Targeted nested : area.effects()) {
+                    checkEffect(nested, abilityId, problems);
+                }
+            }
+            case EffectSpec.Burst burst -> {
+                for (EffectSpec.Targeted nested : burst.effects()) {
                     checkEffect(nested, abilityId, problems);
                 }
             }

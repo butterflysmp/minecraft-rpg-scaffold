@@ -58,6 +58,48 @@ class EffectApplierTest {
     }
 
     /**
+     * A burst is a blast, not a field: it lands on the frame it is applied, with no
+     * scheduling at all. Anything scheduled would arrive at least one tick late, because
+     * the Paper adapter clamps a zero delay up to one tick.
+     *
+     * It needs no target -- a grenade that detonates on bare ground still splashes.
+     */
+    @Test
+    void burstAppliesNestedEffectsImmediatelyExcludingCaster() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        var farAway = new FakeWorld.Dummy(new Vec3(50, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(victim);
+        world.entities.add(farAway);
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Burst(4.0, List.of(
+                        new EffectSpec.Damage(6, Element.SOLAR),
+                        new EffectSpec.Status("scorch", 40, 0)))),
+                caster, null, Vec3.ZERO);
+
+        assertEquals(0, world.pendingTasks(), "a burst is inline; it must schedule nothing");
+        assertEquals(94, victim.health, 0.001);
+        assertEquals(List.of("scorch"), victim.statuses);
+
+        assertEquals(100, caster.health, 0.001, "you do not splash yourself");
+        assertTrue(caster.statuses.isEmpty(), "you do not scorch yourself");
+
+        assertEquals(100, farAway.health, 0.001, "outside the radius");
+    }
+
+    @Test
+    void burstRejectsANonPositiveRadius() {
+        List<EffectSpec.Targeted> effects = List.of(new EffectSpec.Damage(6, Element.SOLAR));
+
+        var zero = assertThrows(IllegalArgumentException.class,
+                () -> new EffectSpec.Burst(0, effects));
+        assertTrue(zero.getMessage().contains("radius"), zero.getMessage());
+    }
+
+    /**
      * tickArea computes next = elapsed + tickInterval and reschedules while
      * next <= durationTicks. With tickInterval 0 that condition never fails, so the
      * area reschedules itself forever at zero delay. Reject it at construction.

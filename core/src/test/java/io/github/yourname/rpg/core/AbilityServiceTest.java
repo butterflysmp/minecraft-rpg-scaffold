@@ -103,6 +103,44 @@ class AbilityServiceTest {
     }
 
     /**
+     * The reported bug: "mobs hit by it ignite shortly after the initial explosion."
+     *
+     * scorch lived only inside the area, whose first pulse is one tick_interval (a full
+     * second) after impact. A burst puts the ignition on the detonation frame, where a
+     * player expects to see it.
+     */
+    @Test
+    void solarGrenadeIgnitesOnDetonationNotOneIntervalLater() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        var bystander = new FakeWorld.Dummy(new Vec3(3, 0, 0));
+        world.entities.add(target);
+        world.entities.add(bystander);
+
+        var grenade = new AbilityDefinition(
+                "solar_grenade", "Solar Grenade", Element.SOLAR, "hunter",
+                200, new ResourceCost("energy", 40),
+                new CastSpec.Projectile(1.2, 0.03, 100),
+                List.of(
+                        new EffectSpec.Damage(8, Element.SOLAR),
+                        new EffectSpec.Burst(4.0, List.of(
+                                new EffectSpec.Damage(6, Element.SOLAR),
+                                new EffectSpec.Status("scorch", 40, 0))),
+                        new EffectSpec.Area(4.0, 100, 20,
+                                List.of(new EffectSpec.Damage(2, Element.SOLAR)))));
+
+        dispatch(world, serviceWith(grenade, () -> 0L).cast(caster, "solar_grenade", FORWARD));
+
+        // No advanceTicks: everything below happened on the detonation frame itself.
+        assertEquals(List.of("scorch"), target.statuses, "the struck mob must ignite at once");
+        assertEquals(List.of("scorch"), bystander.statuses, "so must a bystander in radius");
+
+        assertEquals(86, target.health, 0.001);      // 8 direct + 6 splash
+        assertEquals(94, bystander.health, 0.001);   // 6 splash, no direct hit
+    }
+
+    /**
      * The lingering damage Area is a field: it starts pulsing one tick_interval after it
      * is placed, not on the frame it lands. A target on the impact point takes the direct
      * hit that frame and nothing from the Area until the first pulse.

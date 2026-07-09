@@ -24,7 +24,7 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
 
     /** Acts on the world rather than a victim. Always runs. */
     sealed interface Untargeted extends EffectSpec
-            permits Area, Visual {}
+            permits Area, Burst, Visual {}
 
     record Damage(double amount, Element element) implements Targeted {}
 
@@ -34,6 +34,27 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
 
     /** e.g. "scorch", "slow", "suppress" -- resolved by the status registry. */
     record Status(String statusId, int durationTicks, int amplifier) implements Targeted {}
+
+    /**
+     * Applies nested effects to everything in radius ONCE, on the frame it is applied.
+     * An explosion's splash, as against Area's lingering field.
+     *
+     * Applied inline, never scheduled. The Paper adapter clamps a zero delay up to one
+     * tick, so scheduling this would put the splash a frame behind the bang -- and it is
+     * a bang: the whole point is that it lands with the visual, not after it.
+     *
+     * Nested effects are Targeted only, for the same reason Area's are: it forbids a
+     * Burst of Bursts, and a Visual that would present once per victim.
+     */
+    record Burst(double radius, List<Targeted> effects) implements Untargeted {
+
+        public Burst {
+            if (radius <= 0) {
+                throw new IllegalArgumentException("Effect 'burst' radius must be > 0, got: " + radius);
+            }
+            effects = List.copyOf(effects);
+        }
+    }
 
     /**
      * Applies nested effects to everything in radius, repeatedly.
