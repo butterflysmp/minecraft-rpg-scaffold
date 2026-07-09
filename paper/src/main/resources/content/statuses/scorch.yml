@@ -1,0 +1,9 @@
+# What "scorch" means. The ability that applies it decides for how long.
+# The id of this status is its filename: scorch.
+
+kind: fire
+
+# The other kind is a vanilla potion effect:
+#
+# kind: potion
+# potion_type: slowness   # a lowercase key, not the SLOWNESS constant
