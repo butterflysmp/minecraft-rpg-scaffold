@@ -8,8 +8,10 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Logger;
 
 /**
  * Turns YAML into AbilityDefinition. This is the ONLY place that knows the
@@ -18,21 +20,38 @@ import java.util.Locale;
  * Adding a new ability = adding a .yml file. No recompile. That is the whole
  * point of the content pipeline; do not break it by special-casing abilities
  * in Java.
+ *
+ * Fails soft. A typo in the 400th weapon must not take the server down: a
+ * malformed file is logged, named, and skipped, and every other ability still
+ * loads. Errors here are content-authoring mistakes, not programming errors.
  */
 public final class AbilityLoader {
+
+    private final Logger log;
+
+    public AbilityLoader(Logger log) {
+        this.log = log;
+    }
 
     public AbilityRegistry loadAll(File abilitiesDir) {
         AbilityRegistry registry = new AbilityRegistry();
         File[] files = abilitiesDir.listFiles((d, n) -> n.endsWith(".yml"));
         if (files == null) return registry;
 
+        Arrays.sort(files); // deterministic load order across filesystems
+        int skipped = 0;
         for (File f : files) {
-            YamlConfiguration yaml = YamlConfiguration.loadConfiguration(f);
             try {
+                YamlConfiguration yaml = YamlConfiguration.loadConfiguration(f);
                 registry.register(parse(yaml));
             } catch (RuntimeException ex) {
-                throw new IllegalStateException("Failed to load ability: " + f.getName(), ex);
+                skipped++;
+                log.warning("Skipping malformed ability '" + f.getName() + "': " + ex.getMessage());
             }
+        }
+        if (skipped > 0) {
+            log.warning(skipped + " ability file(s) were skipped. The server is still running, "
+                    + "but that content is not loaded.");
         }
         return registry;
     }
@@ -41,7 +60,7 @@ public final class AbilityLoader {
         return new AbilityDefinition(
                 req(s, "id"),
                 s.getString("display_name", req(s, "id")),
-                Element.valueOf(req(s, "element").toUpperCase(Locale.ROOT)),
+                element(req(s, "element")),
                 s.getString("archetype", "none"),
                 s.getInt("cooldown_ticks", 0),
                 parseCost(s.getConfigurationSection("cost")),
@@ -54,6 +73,15 @@ public final class AbilityLoader {
         String v = s.getString(path);
         if (v == null) throw new IllegalArgumentException("Missing required field: " + path);
         return v;
+    }
+
+    private static Element element(String raw) {
+        try {
+            return Element.valueOf(raw.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException(
+                    "Unknown element '" + raw + "'; expected one of " + Arrays.toString(Element.values()));
+        }
     }
 
     private ResourceCost parseCost(ConfigurationSection s) {
@@ -87,10 +115,9 @@ public final class AbilityLoader {
      * An Area may only nest targeted effects. YAML is untyped, so what the
      * compiler enforces in core has to be checked here at load time.
      */
-    @SuppressWarnings("unchecked")
-    private List<EffectSpec.Targeted> parseNestedEffects(Object raw) {
+    private List<EffectSpec.Targeted> parseNestedEffects(java.util.Map<?, ?> area) {
         List<EffectSpec.Targeted> out = new ArrayList<>();
-        for (java.util.Map<?, ?> m : (List<java.util.Map<?, ?>>) raw) {
+        for (java.util.Map<?, ?> m : mapList(area, "effects")) {
             EffectSpec spec = parseEffect(m);
             if (!(spec instanceof EffectSpec.Targeted t)) {
                 throw new IllegalArgumentException(
@@ -103,31 +130,55 @@ public final class AbilityLoader {
     }
 
     private EffectSpec parseEffect(java.util.Map<?, ?> m) {
-        String type = String.valueOf(m.get("type")).toLowerCase(Locale.ROOT);
+        Object rawType = m.get("type");
+        if (rawType == null) throw new IllegalArgumentException("Effect is missing its 'type' field");
+        String type = String.valueOf(rawType).toLowerCase(Locale.ROOT);
         return switch (type) {
-            case "damage" -> new EffectSpec.Damage(
-                    num(m, "amount"), Element.valueOf(str(m, "element").toUpperCase(Locale.ROOT)));
-            case "heal" -> new EffectSpec.Heal(num(m, "amount"));
-            case "knockback" -> new EffectSpec.Knockback(num(m, "strength"));
+            case "damage" -> new EffectSpec.Damage(num(m, type, "amount"), element(str(m, type, "element")));
+            case "heal" -> new EffectSpec.Heal(num(m, type, "amount"));
+            case "knockback" -> new EffectSpec.Knockback(num(m, type, "strength"));
             case "status" -> new EffectSpec.Status(
-                    str(m, "status_id"), (int) num(m, "duration_ticks"), (int) num(m, "amplifier"));
-            case "visual" -> new EffectSpec.Visual(str(m, "visual_id"));
+                    str(m, type, "status_id"),
+                    (int) num(m, type, "duration_ticks"),
+                    // Optional: most statuses have a single tier.
+                    (int) numOr(m, type, "amplifier", 0));
+            case "visual" -> new EffectSpec.Visual(str(m, type, "visual_id"));
             case "area" -> new EffectSpec.Area(
-                    num(m, "radius"), (int) num(m, "duration_ticks"), (int) num(m, "tick_interval"),
-                    parseNestedEffects(m.get("effects")));
+                    num(m, type, "radius"),
+                    (int) num(m, type, "duration_ticks"),
+                    (int) num(m, type, "tick_interval"),
+                    parseNestedEffects(m));
             default -> throw new IllegalArgumentException("Unknown effect type: " + type);
         };
     }
 
-    private static double num(java.util.Map<?, ?> m, String k) {
+    @SuppressWarnings("unchecked")
+    private static List<java.util.Map<?, ?>> mapList(java.util.Map<?, ?> m, String k) {
         Object v = m.get(k);
-        if (v == null) throw new IllegalArgumentException("Missing effect field: " + k);
-        return ((Number) v).doubleValue();
+        if (v == null) throw new IllegalArgumentException("Effect 'area' is missing its '" + k + "' list");
+        if (!(v instanceof List<?> list)) {
+            throw new IllegalArgumentException("Effect 'area' field '" + k + "' must be a list");
+        }
+        return (List<java.util.Map<?, ?>>) list;
     }
 
-    private static String str(java.util.Map<?, ?> m, String k) {
+    private static double num(java.util.Map<?, ?> m, String type, String k) {
         Object v = m.get(k);
-        if (v == null) throw new IllegalArgumentException("Missing effect field: " + k);
+        if (v == null) throw new IllegalArgumentException("Effect '" + type + "' is missing field: " + k);
+        if (!(v instanceof Number n)) {
+            throw new IllegalArgumentException(
+                    "Effect '" + type + "' field '" + k + "' must be a number, got: " + v);
+        }
+        return n.doubleValue();
+    }
+
+    private static double numOr(java.util.Map<?, ?> m, String type, String k, double fallback) {
+        return m.get(k) == null ? fallback : num(m, type, k);
+    }
+
+    private static String str(java.util.Map<?, ?> m, String type, String k) {
+        Object v = m.get(k);
+        if (v == null) throw new IllegalArgumentException("Effect '" + type + "' is missing field: " + k);
         return String.valueOf(v);
     }
 }

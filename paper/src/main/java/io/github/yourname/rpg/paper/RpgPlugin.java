@@ -35,7 +35,7 @@ public final class RpgPlugin extends JavaPlugin {
         // Content: YAML -> AbilityDefinition. No abilities are hardcoded.
         saveResource("content/abilities/solar_grenade.yml", false);
         File abilitiesDir = new File(getDataFolder(), "content/abilities");
-        this.abilities = new AbilityLoader().loadAll(abilitiesDir);
+        this.abilities = new AbilityLoader(getLogger()).loadAll(abilitiesDir);
         getLogger().info("Loaded " + abilities.size() + " abilities");
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
