@@ -23,6 +23,15 @@ public final class PaperCombatWorld implements CombatWorld {
         return new Location(world, v.x(), v.y(), v.z());
     }
 
+    /**
+     * MUST run on the thread that owns {@code center}'s region.
+     * World#getNearbyEntities is illegal anywhere else.
+     *
+     * Two entry points reach here, and both satisfy that:
+     *   - EffectApplier's first application, which the caller is required to
+     *     wrap in Scheduler.onRegion(impactPoint, ...) -- see AbilityService.cast.
+     *   - Rescheduled area pulses, which arrive via schedule() -> onRegionLater.
+     */
     @Override
     public Collection<Combatant> combatantsNear(Vec3 center, double radius) {
         return world.getNearbyEntities(toLocation(center), radius, radius, radius).stream()
