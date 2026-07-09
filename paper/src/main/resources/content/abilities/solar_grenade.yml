@@ -1,0 +1,39 @@
+# The content pipeline. Adding an ability = adding a file like this one.
+# If you ever find yourself adding an ability in Java, something has gone wrong.
+
+id: solar_grenade
+display_name: "<gold>Solar Grenade</gold>"   # MiniMessage, not legacy color codes
+element: solar
+archetype: hunter
+cooldown_ticks: 200
+
+cost:
+  resource: energy
+  amount: 40
+
+cast:
+  type: projectile
+  speed: 1.2
+  gravity: 0.03
+  max_lifetime_ticks: 100
+
+on_hit:
+  - type: damage
+    amount: 12
+    element: solar
+
+  - type: visual
+    visual_id: solar_detonation
+
+  - type: area
+    radius: 4.0
+    duration_ticks: 100
+    tick_interval: 20
+    effects:
+      - type: damage
+        amount: 2
+        element: solar
+      - type: status
+        status_id: scorch
+        duration_ticks: 40
+        amplifier: 0

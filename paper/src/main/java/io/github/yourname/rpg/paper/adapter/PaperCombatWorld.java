@@ -1,0 +1,49 @@
+package io.github.yourname.rpg.paper.adapter;
+
+import io.github.yourname.rpg.core.Vec3;
+import io.github.yourname.rpg.core.combat.CombatWorld;
+import io.github.yourname.rpg.core.combat.Combatant;
+import io.github.yourname.rpg.paper.scheduler.Scheduler;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.LivingEntity;
+
+import java.util.Collection;
+import java.util.List;
+
+public final class PaperCombatWorld implements CombatWorld {
+    private final World world;
+    private final Scheduler scheduler;
+
+    public PaperCombatWorld(World world, Scheduler scheduler) {
+        this.world = world;
+        this.scheduler = scheduler;
+    }
+
+    private Location toLocation(Vec3 v) {
+        return new Location(world, v.x(), v.y(), v.z());
+    }
+
+    @Override
+    public Collection<Combatant> combatantsNear(Vec3 center, double radius) {
+        return world.getNearbyEntities(toLocation(center), radius, radius, radius).stream()
+                .filter(LivingEntity.class::isInstance)
+                .map(LivingEntity.class::cast)
+                .map(e -> (Combatant) new BukkitCombatant(e, scheduler))
+                .toList();
+    }
+
+    @Override
+    public void schedule(Vec3 near, int delayTicks, Runnable task) {
+        scheduler.onRegionLater(toLocation(near), task, delayTicks);
+    }
+
+    @Override
+    public void present(Vec3 at, String visualId) {
+        scheduler.onRegion(toLocation(at), () -> {
+            // TODO: look visualId up in a VisualRegistry.
+            // Vanilla particles first. Reach for PacketEvents only when the
+            // Bukkit API genuinely cannot express the effect.
+        });
+    }
+}

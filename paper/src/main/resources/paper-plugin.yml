@@ -1,0 +1,18 @@
+name: Rpg
+version: '${project.version}'
+main: io.github.yourname.rpg.paper.RpgPlugin
+description: Class-based action RPG
+authors: [ yourname ]
+
+# NOTE: verify this value against the Paper docs for the exact paper-api build
+# you pinned. The api-version string did not obviously follow Minecraft's move
+# to year-based versioning, and getting it wrong means the plugin silently
+# refuses to load. This is worth checking before your first boot.
+api-version: '1.21'
+
+dependencies:
+  server:
+    packetevents:
+      load: BEFORE
+      required: true
+      join-classpath: true

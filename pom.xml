@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.github.yourname</groupId>
+  <artifactId>rpg-parent</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>RPG Network</name>
+
+  <modules>
+    <module>core</module>
+    <module>storage</module>
+    <module>paper</module>
+  </modules>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>25</maven.compiler.release>
+
+    <!-- ==========================================================
+         VERSION PINS. Do not use ranges. Do not bump paper.version
+         without first confirming PacketEvents supports that MC drop.
+         See CLAUDE.md > "Upgrade procedure".
+
+         26.1.2 is the current stable line. 26.2 builds exist but are
+         still published with the -alpha suffix (e.g. 26.2.build.53-alpha).
+         Move to 26.2 once Paper marks builds -stable and you have a
+         reason to.
+         ========================================================== -->
+    <paper.version>26.1.2.build.74-stable</paper.version>
+    <packetevents.version>2.13.0</packetevents.version>
+    <junit.version>5.11.4</junit.version>
+    <gson.version>2.11.0</gson.version>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>papermc</id>
+      <url>https://repo.papermc.io/repository/maven-public/</url>
+    </repository>
+    <repository>
+      <id>codemc</id>
+      <url>https://repo.codemc.io/repository/maven-releases/</url>
+    </repository>
+  </repositories>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.papermc.paper</groupId>
+        <artifactId>paper-api</artifactId>
+        <version>${paper.version}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <!-- provided, NOT shaded. PacketEvents is GPL-3.0-only; we depend on
+           the standalone plugin jar at runtime instead of bundling it.
+           See paper-plugin.yml. -->
+      <dependency>
+        <groupId>com.github.retrooper</groupId>
+        <artifactId>packetevents-spigot</artifactId>
+        <version>${packetevents.version}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <!-- Paper bundles Gson on the server classpath. -->
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>${gson.version}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.13.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.5.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.6.0</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>
