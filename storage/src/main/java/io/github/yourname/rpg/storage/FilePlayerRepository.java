@@ -38,7 +38,9 @@ public final class FilePlayerRepository implements PlayerRepository {
             if (!Files.exists(f)) return Optional.empty();
             try {
                 String json = Files.readString(f, StandardCharsets.UTF_8);
-                return Optional.ofNullable(GSON.fromJson(json, PlayerProfile.class));
+                PlayerProfile raw = GSON.fromJson(json, PlayerProfile.class);
+                // Bring an older on-disk shape up to date before anyone sees it.
+                return Optional.ofNullable(raw).map(ProfileMigrations::migrate);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
