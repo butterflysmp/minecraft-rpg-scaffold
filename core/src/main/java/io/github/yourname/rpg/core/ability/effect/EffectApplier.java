@@ -33,6 +33,16 @@ public final class EffectApplier {
         return c == null ? null : c.id();
     }
 
+    /**
+     * For callers that already hold only the caster's id, because the caster may
+     * be long gone -- a projectile in flight, or a lingering area. Prefer this
+     * over resolving the Combatant back just to pass it in.
+     */
+    public void applyAllFromCaster(List<? extends EffectSpec> specs, UUID casterId,
+                                   Combatant target, Vec3 origin) {
+        applyAll(specs, casterId, target, origin);
+    }
+
     private void applyAll(List<? extends EffectSpec> specs, UUID casterId, Combatant target, Vec3 origin) {
         for (EffectSpec spec : specs) {
             apply(spec, casterId, target, origin);

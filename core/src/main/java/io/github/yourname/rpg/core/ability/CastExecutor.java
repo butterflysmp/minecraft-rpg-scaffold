@@ -45,13 +45,44 @@ public final class CastExecutor {
 
             case CastSpec.Ray ray -> resolveAlongAim(ability, caster, aim, ray.range());
 
-            // TODO(4.4): a projectile must fly, tick by tick. Resolved here as an
-            // instantaneous ray over its maximum travel so that the effect
-            // pipeline is exercised end to end; replaced by real flight next.
-            case CastSpec.Projectile projectile ->
-                    resolveAlongAim(ability, caster, aim,
-                            projectile.speed() * projectile.maxLifetimeTicks());
+            case CastSpec.Projectile projectile -> launch(ability, caster.id(), aim, projectile);
         }
+    }
+
+    /**
+     * Throw it. The caster is captured by UUID and never dereferenced again: a
+     * grenade with a 100-tick fuse outlives its thrower's logout, and holding the
+     * Combatant would pin a Bukkit entity for five seconds. Same rule as an Area.
+     */
+    private void launch(AbilityDefinition ability, UUID casterId, Aim aim, CastSpec.Projectile spec) {
+        step(ability, casterId, aim.origin(), aim.direction().scale(spec.speed()), 0, spec);
+    }
+
+    /**
+     * One tick of flight. Trace the segment actually travelled rather than
+     * sampling the endpoint, or a fast projectile tunnels straight through a
+     * target thinner than its per-tick step.
+     */
+    private void step(AbilityDefinition ability, UUID casterId, Vec3 position,
+                      Vec3 velocity, int elapsed, CastSpec.Projectile spec) {
+        Vec3 next = position.add(velocity);
+
+        Optional<RayHit> hit = world.castRay(position, next, casterId);
+        if (hit.isPresent()) {
+            detonate(ability, casterId, hit.get().combatant(), hit.get().point());
+            return;
+        }
+
+        int nextElapsed = elapsed + 1;
+        if (nextElapsed >= spec.maxLifetimeTicks()) {
+            // The fuse ran out mid-air. It still goes off -- a grenade that
+            // quietly vanishes because it hit nothing would be a bug, not a miss.
+            detonate(ability, casterId, null, next);
+            return;
+        }
+
+        Vec3 nextVelocity = velocity.add(new Vec3(0, -spec.gravity(), 0));
+        world.schedule(next, 1, () -> step(ability, casterId, next, nextVelocity, nextElapsed, spec));
     }
 
     /** Walk the aim to its first obstruction, or to its full range if there is none. */
@@ -95,5 +126,9 @@ public final class CastExecutor {
 
     private void detonate(AbilityDefinition ability, Combatant caster, Combatant target, Vec3 impact) {
         effects.applyAll(ability.onHit(), caster, target, impact);
+    }
+
+    private void detonate(AbilityDefinition ability, UUID casterId, Combatant target, Vec3 impact) {
+        effects.applyAllFromCaster(ability.onHit(), casterId, target, impact);
     }
 }

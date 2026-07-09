@@ -15,8 +15,18 @@ public final class FakeWorld implements CombatWorld {
     /** How close a ray must pass to a combatant to strike it. A hitbox, roughly. */
     public double hitRadius = 0.6;
 
-    /** Distance from a ray's origin to a wall, along the ray. Infinity means open sky. */
+    /**
+     * A wall this far along EVERY segment, measured from that segment's start.
+     * Convenient for "there is a block right in front of you". Infinity is open sky.
+     */
     public double blockDistance = Double.POSITIVE_INFINITY;
+
+    /**
+     * A wall standing at this x coordinate. Unlike blockDistance this is fixed in
+     * the world, so a projectile can fly toward it for several ticks and then hit
+     * it. Infinity is open sky.
+     */
+    public double wallX = Double.POSITIVE_INFINITY;
 
     @Override public Collection<Combatant> combatantsNear(Vec3 center, double radius) {
         double r2 = radius * radius;
@@ -54,9 +64,15 @@ public final class FakeWorld implements CombatWorld {
             }
         }
 
-        boolean wallIsCloser = blockDistance <= Math.min(nearestDistance, length);
-        if (wallIsCloser) {
-            return Optional.of(RayHit.ofBlock(from.add(direction.scale(blockDistance))));
+        // Distance along this segment at which we meet a wall, if any.
+        double wallAt = blockDistance;
+        if (Double.isFinite(wallX) && direction.x() != 0) {
+            double toPlane = (wallX - from.x()) / direction.x();
+            if (toPlane >= 0) wallAt = Math.min(wallAt, toPlane);
+        }
+
+        if (wallAt <= Math.min(nearestDistance, length)) {
+            return Optional.of(RayHit.ofBlock(from.add(direction.scale(wallAt))));
         }
         if (nearest == null) return Optional.empty();
         return Optional.of(RayHit.ofCombatant(nearest.position(), nearest));
