@@ -3,9 +3,13 @@ package io.github.yourname.rpg.paper.adapter;
 import io.github.yourname.rpg.core.Vec3;
 import io.github.yourname.rpg.core.combat.Combatant;
 import io.github.yourname.rpg.core.element.Element;
-import io.github.yourname.rpg.paper.scheduler.Scheduler;
+import io.github.yourname.rpg.paper.content.StatusDefinition;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import java.util.UUID;
@@ -13,13 +17,11 @@ import java.util.UUID;
 /** Wraps a Bukkit LivingEntity so core can hit it without knowing what it is. */
 public final class BukkitCombatant implements Combatant {
     private final LivingEntity entity;
-    private final Scheduler scheduler;
-    private final Keys keys;
+    private final AdapterContext ctx;
 
-    public BukkitCombatant(LivingEntity entity, Scheduler scheduler, Keys keys) {
+    public BukkitCombatant(LivingEntity entity, AdapterContext ctx) {
         this.entity = entity;
-        this.scheduler = scheduler;
-        this.keys = keys;
+        this.ctx = ctx;
     }
 
     public LivingEntity handle() { return entity; }
@@ -36,16 +38,16 @@ public final class BukkitCombatant implements Combatant {
     @Override public Element shieldElement() {
         // Shield element stored in the entity's PDC -- no NBT reflection.
         String raw = entity.getPersistentDataContainer()
-                .get(keys.shieldElement, PersistentDataType.STRING);
+                .get(ctx.keys().shieldElement, PersistentDataType.STRING);
         return raw == null ? null : Element.valueOf(raw);
     }
 
     @Override public void applyDamage(double amount, Element element) {
-        scheduler.onEntity(entity, () -> entity.damage(amount));
+        ctx.scheduler().onEntity(entity, () -> entity.damage(amount));
     }
 
     @Override public void applyHeal(double amount) {
-        scheduler.onEntity(entity, () -> {
+        ctx.scheduler().onEntity(entity, () -> {
             var attr = entity.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
             double max = attr == null ? 20.0 : attr.getValue();
             entity.setHealth(Math.min(max, entity.getHealth() + amount));
@@ -53,16 +55,51 @@ public final class BukkitCombatant implements Combatant {
     }
 
     @Override public void applyKnockback(Vec3 direction, double strength) {
-        scheduler.onEntity(entity, () -> {
+        ctx.scheduler().onEntity(entity, () -> {
             Vector v = new Vector(direction.x(), direction.y(), direction.z());
             if (v.lengthSquared() > 0) v.normalize().multiply(strength);
             entity.setVelocity(entity.getVelocity().add(v));
         });
     }
 
+    /**
+     * duration and amplifier come from the ability; the status definition only says
+     * what kind of thing a "scorch" is. An unknown id is a content mistake, not a
+     * programming error: warn once and let the rest of the detonation land.
+     */
     @Override public void applyStatus(String statusId, int durationTicks, int amplifier) {
-        scheduler.onEntity(entity, () -> {
-            // TODO: route through your StatusRegistry. Placeholder no-op.
+        StatusDefinition def = ctx.statuses().find(statusId).orElse(null);
+        if (def == null) {
+            ctx.warnOnce("Unknown status_id '" + statusId + "'; no status applied");
+            return;
+        }
+        ctx.scheduler().onEntity(entity, () -> {
+            switch (def) {
+                // Extend a burn, never shorten it. A 2s scorch pulse must not stomp
+                // the 10s burn someone already took from flint and steel.
+                case StatusDefinition.Fire ignored ->
+                        entity.setFireTicks(Math.max(entity.getFireTicks(), durationTicks));
+
+                case StatusDefinition.Potion potion -> {
+                    PotionEffectType type = potionEffect(potion.potionType());
+                    if (type == null) {
+                        ctx.warnOnce("Unknown potion_type '" + potion.potionType()
+                                + "' for status '" + statusId + "'; no status applied");
+                        return;
+                    }
+                    // PotionEffect's amplifier is 0-based: 0 is level I.
+                    entity.addPotionEffect(new PotionEffect(type, durationTicks, amplifier));
+                }
+            }
         });
+    }
+
+    /**
+     * The key's syntax was validated at load, so this cannot throw. A null means the
+     * key is well-formed but names no effect -- which ContentValidator already warned
+     * about at startup. MOB_EFFECT, not the obsolete EFFECT alias.
+     */
+    private static PotionEffectType potionEffect(NamespacedKey key) {
+        return Registry.MOB_EFFECT.get(key);
     }
 }

@@ -4,7 +4,8 @@ import io.github.yourname.rpg.core.Vec3;
 import io.github.yourname.rpg.core.combat.CombatWorld;
 import io.github.yourname.rpg.core.combat.Combatant;
 import io.github.yourname.rpg.core.combat.RayHit;
-import io.github.yourname.rpg.paper.scheduler.Scheduler;
+import io.github.yourname.rpg.paper.content.VisualDefinition;
+import io.github.yourname.rpg.paper.content.VisualSpec;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -22,13 +23,11 @@ public final class PaperCombatWorld implements CombatWorld {
     private static final double RAY_SIZE = 0.0;
 
     private final World world;
-    private final Scheduler scheduler;
-    private final Keys keys;
+    private final AdapterContext ctx;
 
-    public PaperCombatWorld(World world, Scheduler scheduler, Keys keys) {
+    public PaperCombatWorld(World world, AdapterContext ctx) {
         this.world = world;
-        this.scheduler = scheduler;
-        this.keys = keys;
+        this.ctx = ctx;
     }
 
     private Location toLocation(Vec3 v) {
@@ -49,7 +48,7 @@ public final class PaperCombatWorld implements CombatWorld {
         return world.getNearbyEntities(toLocation(center), radius, radius, radius).stream()
                 .filter(LivingEntity.class::isInstance)
                 .map(LivingEntity.class::cast)
-                .map(e -> (Combatant) new BukkitCombatant(e, scheduler, keys))
+                .map(e -> (Combatant) new BukkitCombatant(e, ctx))
                 .toList();
     }
 
@@ -78,22 +77,44 @@ public final class PaperCombatWorld implements CombatWorld {
         Vec3 point = new Vec3(hit.getX(), hit.getY(), hit.getZ());
 
         if (result.getHitEntity() instanceof LivingEntity living) {
-            return Optional.of(RayHit.ofCombatant(point, new BukkitCombatant(living, scheduler, keys)));
+            return Optional.of(RayHit.ofCombatant(point, new BukkitCombatant(living, ctx)));
         }
         return Optional.of(RayHit.ofBlock(point));
     }
 
     @Override
     public void schedule(Vec3 near, int delayTicks, Runnable task) {
-        scheduler.onRegionLater(toLocation(near), task, delayTicks);
+        ctx.scheduler().onRegionLater(toLocation(near), task, delayTicks);
     }
 
+    /**
+     * Play a named visual at a point. An unknown id is a content mistake, not a
+     * programming error: warn once and let the rest of the detonation land.
+     *
+     * The onRegion hop is not redundant. Callers reach here already on a region
+     * thread, but not necessarily the one owning {@code at}: RpgCommand hops onto
+     * the region of the caster's EYE, and a Ray can land its impact thirty blocks
+     * away, in another region. spawnParticle and playSound are world writes and
+     * are only legal on the thread owning this location.
+     */
     @Override
     public void present(Vec3 at, String visualId) {
-        scheduler.onRegion(toLocation(at), () -> {
-            // TODO: look visualId up in a VisualRegistry.
-            // Vanilla particles first. Reach for PacketEvents only when the
-            // Bukkit API genuinely cannot express the effect.
+        VisualDefinition visual = ctx.visuals().find(visualId).orElse(null);
+        if (visual == null) {
+            ctx.warnOnce("Unknown visual_id '" + visualId + "'; nothing presented");
+            return;
+        }
+        Location loc = toLocation(at);
+        ctx.scheduler().onRegion(loc, () -> {
+            for (VisualSpec step : visual.steps()) {
+                switch (step) {
+                    case VisualSpec.Particles p ->
+                            world.spawnParticle(p.particle(), loc, p.count(),
+                                    p.spread(), p.spread(), p.spread());
+                    case VisualSpec.Sound s ->
+                            world.playSound(loc, s.key(), s.volume(), s.pitch());
+                }
+            }
         });
     }
 }

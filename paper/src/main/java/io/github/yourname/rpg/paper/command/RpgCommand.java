@@ -7,10 +7,9 @@ import io.github.yourname.rpg.core.ability.AbilityRegistry;
 import io.github.yourname.rpg.core.ability.AbilityService;
 import io.github.yourname.rpg.core.ability.CastExecutor;
 import io.github.yourname.rpg.core.combat.Aim;
+import io.github.yourname.rpg.paper.adapter.AdapterContext;
 import io.github.yourname.rpg.paper.adapter.BukkitCombatant;
-import io.github.yourname.rpg.paper.adapter.Keys;
 import io.github.yourname.rpg.paper.adapter.PaperCombatWorld;
-import io.github.yourname.rpg.paper.scheduler.Scheduler;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
@@ -30,8 +29,7 @@ public final class RpgCommand {
 
     public static LiteralCommandNode<CommandSourceStack> build(AbilityRegistry registry,
                                                                AbilityService abilityService,
-                                                               Scheduler scheduler,
-                                                               Keys keys) {
+                                                               AdapterContext adapters) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
                         // requires() gates the whole branch: an unpermitted sender
@@ -61,13 +59,13 @@ public final class RpgCommand {
                                                 Component.text("Players only.", NamedTextColor.RED));
                                         return 0;
                                     }
-                                    return cast(player, id, abilityService, scheduler, keys);
+                                    return cast(player, id, abilityService, adapters);
                                 })))
                 .build();
     }
 
     private static int cast(Player player, String abilityId, AbilityService abilityService,
-                            Scheduler scheduler, Keys keys) {
+                            AdapterContext adapters) {
 
         Location eye = player.getEyeLocation();
         Aim aim = new Aim(toVec3(eye), toVec3(eye.getDirection()));
@@ -76,15 +74,15 @@ public final class RpgCommand {
         // and energy here -- rather than inside the region hop below -- is what
         // stops a player spamming the command faster than the hop resolves.
         AbilityService.CastResult result =
-                abilityService.cast(new BukkitCombatant(player, scheduler, keys), abilityId, aim);
+                abilityService.cast(new BukkitCombatant(player, adapters), abilityId, aim);
 
         switch (result) {
             case AbilityService.CastResult.Success success -> {
                 // Resolve and apply on the thread that owns the aim's origin.
                 // Everything past this point reads the world: castRay and
                 // combatantsNear are illegal anywhere else.
-                scheduler.onRegion(eye, () ->
-                        new CastExecutor(new PaperCombatWorld(player.getWorld(), scheduler, keys))
+                adapters.scheduler().onRegion(eye, () ->
+                        new CastExecutor(new PaperCombatWorld(player.getWorld(), adapters))
                                 .execute(success));
 
                 player.sendMessage(Component.text("Cast ", NamedTextColor.AQUA)

@@ -5,9 +5,14 @@ import io.github.yourname.rpg.core.ability.AbilityRegistry;
 import io.github.yourname.rpg.core.ability.AbilityService;
 import io.github.yourname.rpg.core.combat.CooldownTracker;
 import io.github.yourname.rpg.core.combat.ResourcePool;
+import io.github.yourname.rpg.paper.adapter.AdapterContext;
 import io.github.yourname.rpg.paper.adapter.Keys;
 import io.github.yourname.rpg.paper.command.RpgCommand;
 import io.github.yourname.rpg.paper.content.AbilityLoader;
+import io.github.yourname.rpg.paper.content.StatusLoader;
+import io.github.yourname.rpg.paper.content.StatusRegistry;
+import io.github.yourname.rpg.paper.content.VisualLoader;
+import io.github.yourname.rpg.paper.content.VisualRegistry;
 import io.github.yourname.rpg.paper.listener.RpgListeners;
 import io.github.yourname.rpg.paper.packet.ExampleTelegraphListener;
 import io.github.yourname.rpg.paper.profile.ProfileService;
@@ -30,13 +35,23 @@ public final class RpgPlugin extends JavaPlugin {
     /** Long enough for a flush of everyone online; short enough not to hang a restart. */
     private static final long SHUTDOWN_TIMEOUT_SECONDS = 15;
 
+    /** Shipped as defaults on first boot. Never overwritten -- saveResource(.., false). */
+    private static final String[] DEFAULT_CONTENT = {
+            "content/abilities/solar_grenade.yml",
+            "content/visuals/solar_detonation.yml",
+            "content/statuses/scorch.yml",
+    };
+
     /** Ability energy. A full bar in 60 seconds. Belongs in archetype content later. */
     private static final double MAX_ENERGY = 100.0;
     private static final double ENERGY_PER_TICK = MAX_ENERGY / (60 * 20);
 
     private Scheduler scheduler;
     private Keys keys;
+    private AdapterContext adapters;
     private AbilityRegistry abilities;
+    private VisualRegistry visuals;
+    private StatusRegistry statuses;
     private CooldownTracker cooldowns;
     private ResourcePool resources;
     private AbilityService abilityService;
@@ -51,11 +66,20 @@ public final class RpgPlugin extends JavaPlugin {
         // Every NamespacedKey in the plugin, built once. Never inline at a call site.
         this.keys = new Keys(this);
 
-        // Content: YAML -> AbilityDefinition. No abilities are hardcoded.
-        saveResource("content/abilities/solar_grenade.yml", false);
-        File abilitiesDir = new File(getDataFolder(), "content/abilities");
-        this.abilities = new AbilityLoader(getLogger()).loadAll(abilitiesDir);
-        getLogger().info("Loaded " + abilities.size() + " abilities");
+        // Content: YAML -> definitions. Nothing here is hardcoded in Java.
+        for (String path : DEFAULT_CONTENT) {
+            saveResource(path, false);
+        }
+        File contentDir = new File(getDataFolder(), "content");
+        this.abilities = new AbilityLoader(getLogger()).loadAll(new File(contentDir, "abilities"));
+        this.visuals = new VisualLoader(getLogger()).loadAll(new File(contentDir, "visuals"));
+        this.statuses = new StatusLoader(getLogger()).loadAll(new File(contentDir, "statuses"));
+        getLogger().info("Loaded " + abilities.size() + " abilities, "
+                + visuals.size() + " visuals, " + statuses.size() + " statuses");
+
+        // Built once and shared: the adapters' warn-once set must outlive the
+        // short-lived BukkitCombatant and PaperCombatWorld instances.
+        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, getLogger());
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
@@ -87,7 +111,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, scheduler, keys), "RPG commands"));
+                        RpgCommand.build(abilities, abilityService, adapters), "RPG commands"));
     }
 
     @Override
@@ -124,7 +148,10 @@ public final class RpgPlugin extends JavaPlugin {
 
     public Scheduler scheduler() { return scheduler; }
     public Keys keys() { return keys; }
+    public AdapterContext adapters() { return adapters; }
     public AbilityRegistry abilities() { return abilities; }
+    public VisualRegistry visuals() { return visuals; }
+    public StatusRegistry statuses() { return statuses; }
     public CooldownTracker cooldowns() { return cooldowns; }
     public ResourcePool resources() { return resources; }
     public PlayerRepository repository() { return repository; }
