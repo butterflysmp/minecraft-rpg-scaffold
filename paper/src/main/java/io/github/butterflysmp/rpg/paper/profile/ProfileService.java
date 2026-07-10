@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.profile;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.github.butterflysmp.rpg.storage.PlayerRepository;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,7 +19,8 @@ import java.util.logging.Logger;
  *
  * Every callback in here runs on the repository's I/O thread. NOTHING here may
  * touch the Bukkit API -- that is the same rule as the PacketEvents contract,
- * for the same reason.
+ * for the same reason. (setArchetype is the one method called FROM the command
+ * thread instead; it still touches no Bukkit API, so the rule holds either way.)
  *
  * A player is keyed to the *future* of their profile, not the profile itself,
  * because a player can quit before the load completes. Chaining the save onto
@@ -71,6 +73,32 @@ public final class ProfileService {
             return Optional.empty();
         }
         return Optional.ofNullable(loading.getNow(null));
+    }
+
+    /**
+     * Pick a class: set the player's archetype and grant its abilities, then persist.
+     * Called on the command thread (not the I/O thread), so it reads the cached profile
+     * synchronously the way {@link #profile(UUID)} does.
+     *
+     * @return false if the profile is not loaded yet or failed to load -- the caller
+     *         should tell the player to try again rather than silently doing nothing.
+     */
+    public boolean setArchetype(UUID playerId, String archetypeId, List<String> unlockedAbilities) {
+        CompletableFuture<PlayerProfile> loading = profiles.get(playerId);
+        if (loading == null || !loading.isDone() || loading.isCompletedExceptionally()) {
+            return false;
+        }
+        PlayerProfile current = loading.getNow(null);
+        if (current == null) return false;
+
+        PlayerProfile updated = current.withArchetype(archetypeId, unlockedAbilities);
+        // Replace the cached future so the very next cast sees the new grant.
+        profiles.put(playerId, CompletableFuture.completedFuture(updated));
+        repository.save(updated).exceptionally(error -> {
+            log.log(Level.SEVERE, "Failed to persist class change for " + playerId, error);
+            return null;
+        });
+        return true;
     }
 
     public int trackedPlayers() {

@@ -167,4 +167,46 @@ class ProfileServiceTest {
     void saveAllAndClearOnAnEmptyServerCompletes() {
         assertDoesNotThrow(() -> service.saveAllAndClear().join());
     }
+
+    // --- setArchetype: the archetype -> castable-set resolution core cannot defend ---
+
+    /**
+     * The load-bearing paper-side test. core proves the gate works given a set; it is
+     * structurally blind to paper handing it the wrong one. This is where that is
+     * caught: a class must grant EXACTLY the abilities it names, no more, no fewer.
+     */
+    @Test
+    void setArchetypeGrantsExactlyTheNamedAbilitiesAndPersistsOnce() {
+        service.onJoin(player);
+        assertEquals("none", service.profile(player).orElseThrow().archetypeId());
+        assertEquals(List.of(), service.profile(player).orElseThrow().unlockedAbilities());
+
+        boolean set = service.setArchetype(player, "hunter",
+                List.of("solar_grenade", "solar_lance"));
+
+        assertTrue(set);
+        var profile = service.profile(player).orElseThrow();
+        assertEquals("hunter", profile.archetypeId());
+        assertEquals(List.of("solar_grenade", "solar_lance"), profile.unlockedAbilities(),
+                "the granted set must be exactly what the class names -- not a superset, not empty");
+        assertEquals(1, repo.saveCount.get(), "the class change must be persisted immediately");
+        assertEquals(List.of("solar_grenade", "solar_lance"),
+                repo.saved.get(player).unlockedAbilities());
+    }
+
+    @Test
+    void setArchetypeIsRefusedWhileTheProfileIsStillLoading() {
+        repo.pendingLoad = new CompletableFuture<>();
+        service.onJoin(player);
+
+        assertFalse(service.setArchetype(player, "hunter", List.of("solar_grenade")),
+                "must not invent a profile out of an in-flight load");
+        assertEquals(0, repo.saveCount.get());
+    }
+
+    @Test
+    void setArchetypeIsRefusedForSomeoneWhoNeverJoined() {
+        assertFalse(service.setArchetype(player, "hunter", List.of("solar_grenade")));
+        assertEquals(0, repo.saveCount.get());
+    }
 }

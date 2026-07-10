@@ -48,4 +48,14 @@ public record PlayerProfile(
         return new PlayerProfile(schemaVersion, playerId, archetypeId, level, experience,
                 unlockedAbilities, epochMillis);
     }
+
+    /**
+     * Pick a class. Set together because they move together: choosing an archetype
+     * grants exactly that archetype's abilities. The compact constructor copies the
+     * list, so a caller cannot alias it into the stored profile.
+     */
+    public PlayerProfile withArchetype(String archetypeId, List<String> unlockedAbilities) {
+        return new PlayerProfile(schemaVersion, playerId, archetypeId, level, experience,
+                unlockedAbilities, lastSeenEpochMillis);
+    }
 }

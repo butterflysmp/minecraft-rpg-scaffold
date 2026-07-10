@@ -11,6 +11,9 @@ public final class Permissions {
     /** Cast an ability. Granted to everyone by default -- it is the game. */
     public static final String CAST = "rpg.command.cast";
 
+    /** Pick a class. Granted to everyone by default -- choosing one is the game too. */
+    public static final String CLASS = "rpg.command.class";
+
     /** Inspect loaded content. Operators only; it exposes the content pipeline. */
     public static final String ADMIN = "rpg.command.admin";
 }

@@ -3,9 +3,11 @@ package io.github.butterflysmp.rpg.paper.content;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
+import io.github.butterflysmp.rpg.core.archetype.Archetype;
 import org.bukkit.NamespacedKey;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -60,6 +62,45 @@ public final class ContentValidator {
                     problems.add("visual '" + visual.id() + "' names sound '"
                             + sound.key() + "', which is not a sound event");
                 }
+            }
+        }
+        return problems;
+    }
+
+    /**
+     * The archetype -> ability cross-reference, the same shape as visual_id and
+     * status_id above. It is the one that fails most invisibly: a dangling visual is
+     * a missing particle you can see, but a dangling ability in a class is a permission
+     * gap that looks exactly like intended design -- the class silently cannot cast it,
+     * the ability works when cast directly, and you debug it as game logic, not a typo.
+     *
+     * Two problems are reported per class:
+     *   - each ability id no ability declares (the per-id dangling reference), and
+     *   - a class whose RESOLVED (existing-only) set is empty -- a class nobody can
+     *     play. A per-id check alone passes that: every remaining id is fine because
+     *     none remain.
+     *
+     * abilityExists arrives as a predicate for the same reason the potion/sound checks
+     * do: so the walk is unit-testable with no AbilityRegistry and no server.
+     *
+     * @return every problem found, each naming the archetype at fault. Empty is good.
+     */
+    public List<String> validateArchetypes(Collection<Archetype> archetypes,
+                                            Predicate<String> abilityExists) {
+        List<String> problems = new ArrayList<>();
+        for (Archetype archetype : archetypes) {
+            int resolved = 0;
+            for (String abilityId : archetype.abilityIds()) {
+                if (abilityExists.test(abilityId)) {
+                    resolved++;
+                } else {
+                    problems.add("archetype '" + archetype.id() + "' grants ability '"
+                            + abilityId + "', which no ability defines");
+                }
+            }
+            if (resolved == 0) {
+                problems.add("archetype '" + archetype.id()
+                        + "' grants no ability that exists -- nobody can play this class");
             }
         }
         return problems;

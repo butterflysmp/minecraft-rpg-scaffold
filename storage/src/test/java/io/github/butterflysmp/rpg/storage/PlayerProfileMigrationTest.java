@@ -70,4 +70,32 @@ class PlayerProfileMigrationTest {
 
         assertEquals(List.of("a"), profile.unlockedAbilities());
     }
+
+    @Test
+    void withArchetypeSetsClassAndGrantsAndCarriesTheRest() {
+        var classless = PlayerProfile.fresh(UUID.randomUUID());
+        assertEquals("none", classless.archetypeId());
+        assertEquals(List.of(), classless.unlockedAbilities());
+
+        var hunter = classless.withArchetype("hunter", List.of("solar_grenade", "solar_lance"));
+
+        assertEquals("hunter", hunter.archetypeId());
+        assertEquals(List.of("solar_grenade", "solar_lance"), hunter.unlockedAbilities());
+        // Everything else is carried unchanged.
+        assertEquals(classless.playerId(), hunter.playerId());
+        assertEquals(classless.schemaVersion(), hunter.schemaVersion());
+        assertEquals(classless.level(), hunter.level());
+        assertEquals(classless.experience(), hunter.experience());
+        assertEquals(classless.lastSeenEpochMillis(), hunter.lastSeenEpochMillis());
+    }
+
+    @Test
+    void withArchetypeDefensivelyCopiesTheGrantedList() {
+        var mutable = new java.util.ArrayList<>(List.of("solar_grenade"));
+        var hunter = PlayerProfile.fresh(UUID.randomUUID()).withArchetype("hunter", mutable);
+
+        mutable.add("sneaked_in");
+
+        assertEquals(List.of("solar_grenade"), hunter.unlockedAbilities());
+    }
 }

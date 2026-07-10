@@ -3,12 +3,14 @@ package io.github.butterflysmp.rpg.paper;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
+import io.github.butterflysmp.rpg.core.archetype.ArchetypeRegistry;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.command.RpgCommand;
 import io.github.butterflysmp.rpg.paper.content.AbilityLoader;
+import io.github.butterflysmp.rpg.paper.content.ArchetypeLoader;
 import io.github.butterflysmp.rpg.paper.content.ContentValidator;
 import io.github.butterflysmp.rpg.paper.content.StatusLoader;
 import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
@@ -63,6 +65,7 @@ public final class RpgPlugin extends JavaPlugin {
     private AbilityRegistry abilities;
     private VisualRegistry visuals;
     private StatusRegistry statuses;
+    private ArchetypeRegistry archetypes;
     private CooldownTracker cooldowns;
     private ResourcePool resources;
     private AbilityService abilityService;
@@ -84,8 +87,10 @@ public final class RpgPlugin extends JavaPlugin {
         this.abilities = new AbilityLoader(getLogger()).loadAll(new File(contentDir, "abilities"));
         this.visuals = new VisualLoader(getLogger()).loadAll(new File(contentDir, "visuals"));
         this.statuses = new StatusLoader(getLogger()).loadAll(new File(contentDir, "statuses"));
+        this.archetypes = new ArchetypeLoader(getLogger()).loadAll(new File(contentDir, "archetypes"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
-                + visuals.size() + " visuals, " + statuses.size() + " statuses");
+                + visuals.size() + " visuals, " + statuses.size() + " statuses, "
+                + archetypes.size() + " archetypes");
 
         // A visual_id that resolves to nothing should be found now, by name, not by
         // a player casting the ability in six weeks' time. Registry is only reachable
@@ -126,7 +131,8 @@ public final class RpgPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters), "RPG commands"));
+                        RpgCommand.build(abilities, abilityService, adapters, archetypes, profiles),
+                        "RPG commands"));
     }
 
     /**
@@ -184,6 +190,11 @@ public final class RpgPlugin extends JavaPlugin {
                 key -> Registry.SOUND_EVENT.get(key) != null);
 
         List<String> problems = validator.validate(abilities);
+        // An archetype naming an ability nothing defines is the most invisible dangling
+        // reference of all: it reads as a deliberate permission gap, not a typo. The
+        // registry lookup is available here, so it arrives as the predicate seam.
+        problems.addAll(validator.validateArchetypes(archetypes.all(),
+                id -> abilities.find(id).isPresent()));
         for (String problem : problems) {
             getLogger().warning("Content: " + problem);
         }
@@ -231,6 +242,7 @@ public final class RpgPlugin extends JavaPlugin {
     public AbilityRegistry abilities() { return abilities; }
     public VisualRegistry visuals() { return visuals; }
     public StatusRegistry statuses() { return statuses; }
+    public ArchetypeRegistry archetypes() { return archetypes; }
     public CooldownTracker cooldowns() { return cooldowns; }
     public ResourcePool resources() { return resources; }
     public PlayerRepository repository() { return repository; }

@@ -24,6 +24,9 @@ permissions:
   rpg.command.cast:
     description: Cast an ability. Everyone -- this is the game.
     default: true
+  rpg.command.class:
+    description: Pick a class. Everyone -- choosing one is the game too.
+    default: true
   rpg.command.admin:
     description: Inspect loaded ability content.
     default: op

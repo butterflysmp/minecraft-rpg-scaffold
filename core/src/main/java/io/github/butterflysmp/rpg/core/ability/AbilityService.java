@@ -5,6 +5,8 @@ import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 
+import java.util.Set;
+
 /**
  * Casting an ability, end to end, with zero knowledge of Minecraft.
  * Everything here is exercised by unit tests, not by restarting a server.
@@ -70,11 +72,29 @@ public final class AbilityService {
                 implements CastResult {}
 
         record UnknownAbility(String id) implements CastResult {}
+
+        /**
+         * The ability exists, but this caster is not permitted to cast it -- it is not
+         * in their granted set. core is handed that set; it never learns what an
+         * archetype is. Returned BEFORE the cooldown and energy checks, so a caster
+         * who cannot cast never trips a cooldown or spends energy.
+         */
+        record Locked(String id) implements CastResult {}
     }
 
-    public CastResult cast(CombatantSnapshot caster, String abilityId, Aim aim) {
+    /**
+     * @param castable the ability ids this caster may cast (resolved from their class,
+     *                 in paper). An id absent from this set is refused with Locked,
+     *                 before any cooldown or resource is touched.
+     */
+    public CastResult cast(CombatantSnapshot caster, String abilityId, Aim aim, Set<String> castable) {
         AbilityDefinition def = registry.find(abilityId).orElse(null);
         if (def == null) return new CastResult.UnknownAbility(abilityId);
+
+        // Access before cost. A locked cast must leave the cooldown ready and the
+        // energy untouched, so this precedes both checks below -- and a reorder that
+        // moved it after them is what AbilityServiceTest's order-pinning test guards.
+        if (!castable.contains(abilityId)) return new CastResult.Locked(abilityId);
 
         if (!cooldowns.isReady(caster.id(), abilityId)) {
             return new CastResult.OnCooldown(cooldowns.ticksRemaining(caster.id(), abilityId));

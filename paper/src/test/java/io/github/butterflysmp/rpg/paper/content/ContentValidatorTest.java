@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
+import io.github.butterflysmp.rpg.core.archetype.Archetype;
 import io.github.butterflysmp.rpg.core.element.Element;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
@@ -198,6 +199,50 @@ class ContentValidatorTest {
         var problems = validator(visuals, statuses).validate(abilities);
 
         assertTrue(problems.isEmpty(), problems.toString());
+    }
+
+    // --- archetype -> ability cross-reference, behind the Predicate<String> seam ---
+
+    private static ContentValidator bareValidator() {
+        return new ContentValidator(visualsWith(), statusesWith(), ALL_EXIST, ALL_EXIST);
+    }
+
+    @Test
+    void archetypeWhoseAbilitiesAllExistProducesNoProblems() {
+        var hunter = new Archetype("hunter", "Hunter", List.of("solar_grenade", "solar_lance"));
+
+        var problems = bareValidator().validateArchetypes(List.of(hunter), id -> true);
+
+        assertTrue(problems.isEmpty(), problems.toString());
+    }
+
+    @Test
+    void archetypeNamingAnUnknownAbilityIsReported() {
+        var hunter = new Archetype("hunter", "Hunter", List.of("solar_grenade", "typo_lance"));
+        // Everything resolves except the typo.
+        Predicate<String> exists = id -> id.equals("solar_grenade");
+
+        var problems = bareValidator().validateArchetypes(List.of(hunter), exists);
+
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("hunter"), problems.toString());
+        assertTrue(problems.get(0).contains("typo_lance"), problems.toString());
+    }
+
+    /**
+     * The case a per-id check passes and still gets wrong: every id dangles, so there
+     * is no "remaining id" to complain about -- but the class is unplayable. This must
+     * report the empty resolved set on top of the per-id problems.
+     */
+    @Test
+    void archetypeWithNoExistingAbilityIsReportedAsUnplayable() {
+        var ghost = new Archetype("ghost", "Ghost", List.of("gone_a", "gone_b"));
+
+        var problems = bareValidator().validateArchetypes(List.of(ghost), id -> false);
+
+        // two dangling ids + one "nobody can play this class"
+        assertEquals(3, problems.size(), problems.toString());
+        assertTrue(problems.stream().anyMatch(p -> p.contains("nobody can play")), problems.toString());
     }
 
     /** Copies one shipped resource into its own directory and returns that directory. */

@@ -6,11 +6,15 @@ import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.CastExecutor;
+import io.github.butterflysmp.rpg.core.archetype.Archetype;
+import io.github.butterflysmp.rpg.core.archetype.ArchetypeRegistry;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
+import io.github.butterflysmp.rpg.paper.profile.ProfileService;
+import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
@@ -19,6 +23,8 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
+
+import java.util.Set;
 
 /**
  * Brigadier commands, registered through the plugin lifecycle manager.
@@ -30,7 +36,9 @@ public final class RpgCommand {
 
     public static LiteralCommandNode<CommandSourceStack> build(AbilityRegistry registry,
                                                                AbilityService abilityService,
-                                                               AdapterContext adapters) {
+                                                               AdapterContext adapters,
+                                                               ArchetypeRegistry archetypes,
+                                                               ProfileService profiles) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
                         // requires() gates the whole branch: an unpermitted sender
@@ -49,8 +57,14 @@ public final class RpgCommand {
                 .then(Commands.literal("cast")
                         .requires(source -> source.getSender().hasPermission(Permissions.CAST))
                         .then(Commands.argument("ability", StringArgumentType.word())
+                                // Suggest only what this caster can actually cast -- their
+                                // class's grants. A list that offers abilities that answer
+                                // "you have not unlocked that" is worse than no list.
                                 .suggests((ctx, builder) -> {
-                                    registry.all().forEach(a -> builder.suggest(a.id()));
+                                    if (ctx.getSource().getExecutor() instanceof Player player) {
+                                        profiles.profile(player.getUniqueId()).ifPresent(profile ->
+                                                profile.unlockedAbilities().forEach(builder::suggest));
+                                    }
                                     return builder.buildFuture();
                                 })
                                 .executes(ctx -> {
@@ -60,13 +74,40 @@ public final class RpgCommand {
                                                 Component.text("Players only.", NamedTextColor.RED));
                                         return 0;
                                     }
-                                    return cast(player, id, abilityService, adapters);
+                                    return cast(player, id, abilityService, adapters, profiles);
+                                })))
+                .then(Commands.literal("class")
+                        .requires(source -> source.getSender().hasPermission(Permissions.CLASS))
+                        .then(Commands.argument("archetype", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    archetypes.all().forEach(a -> builder.suggest(a.id()));
+                                    return builder.buildFuture();
+                                })
+                                .executes(ctx -> {
+                                    String id = StringArgumentType.getString(ctx, "archetype");
+                                    if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+                                        ctx.getSource().getSender().sendMessage(
+                                                Component.text("Players only.", NamedTextColor.RED));
+                                        return 0;
+                                    }
+                                    return chooseClass(player, id, archetypes, profiles);
                                 })))
                 .build();
     }
 
     private static int cast(Player player, String abilityId, AbilityService abilityService,
-                            AdapterContext adapters) {
+                            AdapterContext adapters, ProfileService profiles) {
+
+        // The gate's input: the abilities this caster's class grants. If the profile is
+        // not loaded yet we cannot know it, so we refuse rather than guess -- casting is
+        // not urgent enough to risk letting an unloaded player through.
+        PlayerProfile profile = profiles.profile(player.getUniqueId()).orElse(null);
+        if (profile == null) {
+            player.sendMessage(Component.text("Your profile is still loading -- try again in a moment.",
+                    NamedTextColor.GRAY));
+            return 0;
+        }
+        Set<String> castable = Set.copyOf(profile.unlockedAbilities());
 
         Location eye = player.getEyeLocation();
         Aim aim = new Aim(toVec3(eye), toVec3(eye.getDirection()));
@@ -80,7 +121,7 @@ public final class RpgCommand {
         // Decide INLINE. cast() reads no world state, and consuming the cooldown
         // and energy here -- rather than inside the region hop below -- is what
         // stops a player spamming the command faster than the hop resolves.
-        AbilityService.CastResult result = abilityService.cast(caster, abilityId, aim);
+        AbilityService.CastResult result = abilityService.cast(caster, abilityId, aim, castable);
 
         switch (result) {
             case AbilityService.CastResult.Success success -> {
@@ -113,7 +154,46 @@ public final class RpgCommand {
                         NamedTextColor.RED));
                 return 0;
             }
+            case AbilityService.CastResult.Locked locked -> {
+                // A classless player and a wrong-class player fail the same gate but
+                // want different advice: one needs to pick a class, the other has one.
+                if (profile.archetypeId().equals("none")) {
+                    player.sendMessage(Component.text(
+                            "You have no class. Pick one: /rpg class <name>", NamedTextColor.YELLOW));
+                } else {
+                    player.sendMessage(Component.text(
+                            "Your class has not unlocked " + locked.id() + ".", NamedTextColor.YELLOW));
+                }
+                return 0;
+            }
         }
+    }
+
+    private static int chooseClass(Player player, String archetypeId,
+                                   ArchetypeRegistry archetypes, ProfileService profiles) {
+        Archetype archetype = archetypes.find(archetypeId).orElse(null);
+        if (archetype == null) {
+            player.sendMessage(Component.text("Unknown class: " + archetypeId, NamedTextColor.RED));
+            String available = String.join(", ", archetypes.all().stream().map(Archetype::id).toList());
+            player.sendMessage(Component.text("Available: " + available, NamedTextColor.GRAY));
+            return 0;
+        }
+
+        // setArchetype resolves the class -> granted-abilities set and persists it. It
+        // returns false only when the profile has not finished loading, which is the
+        // one case we cannot proceed through.
+        boolean set = profiles.setArchetype(player.getUniqueId(), archetype.id(), archetype.abilityIds());
+        if (!set) {
+            player.sendMessage(Component.text("Your profile is still loading -- try again in a moment.",
+                    NamedTextColor.GRAY));
+            return 0;
+        }
+
+        player.sendMessage(Component.text("You are now ", NamedTextColor.AQUA)
+                .append(MiniMessage.miniMessage().deserialize(archetype.displayName())));
+        player.sendMessage(Component.text("Unlocked: " + String.join(", ", archetype.abilityIds()),
+                NamedTextColor.GRAY));
+        return 1;
     }
 
     private static Vec3 toVec3(Location location) {
