@@ -58,22 +58,12 @@ jobs:
         run: ./scripts/check-jar.sh
 
       # A green build that ran no tests is indistinguishable from a green build
-      # that ran all of them. Surefire prints nothing at all when a bad -Dtest
-      # pattern matches nothing, and BUILD SUCCESS looks the same either way.
-      # Fail loudly rather than let that read as a pass.
-      - name: Assert tests actually ran
+      # that ran all of them. This asserts PER-MODULE report presence, not a
+      # non-zero total: the previous version summed every module and failed only
+      # at 0, so <skip>true</skip> on paper's surefire gave 101 tests -- non-zero,
+      # green, and a whole module's 55 tests missing. Measured, not supposed.
+      #
+      # Lives in a script so CI and a laptop run identical bytes.
+      - name: Assert tests actually ran, in every module
         if: success()
-        run: |
-          set -euo pipefail
-          reports=$(find . -path '*/target/surefire-reports/*.txt' | wc -l)
-          if [ "$reports" -eq 0 ]; then
-            echo "::error::No surefire reports found. Zero tests ran."
-            exit 1
-          fi
-          total=$(grep -h -o 'Tests run: [0-9]*' $(find . -path '*/target/surefire-reports/*.txt') \
-                  | awk '{s += $3} END {print s+0}')
-          echo "Tests run across all modules: $total (from $reports report files)"
-          if [ "$total" -eq 0 ]; then
-            echo "::error::Surefire reports exist but ran 0 tests."
-            exit 1
-          fi
+        run: ./scripts/check-tests.sh
