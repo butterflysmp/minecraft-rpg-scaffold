@@ -123,6 +123,11 @@ paper/    adapters. The only module that knows Minecraft exists.
 
 Do **not** bump `paper.version` alone. Order of operations:
 
+0. **Notice the release. Nothing does this for you.** There is no bot on this
+   repo, by decision — see `NEXT.md` D4. Check
+   <https://modrinth.com/plugin/packetevents/versions> yourself. An absent
+   notification looks exactly like nothing to notify, and this step is the one
+   that silently never happens.
 1. Check PacketEvents supports the new Minecraft drop. It typically lags a
    Minecraft release by 1–2 weeks. It is the gate.
 2. Bump `packetevents.version` first, confirm it builds.

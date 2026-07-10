@@ -282,7 +282,7 @@ criterion here — neither silent failure above is a compile error.
 > *exactly one package root, and it is `$ROOT`* — no predecessor named, no second
 > source of truth, and it catches the next rename too.
 
-### D4 — Dependency automation — **PARTIALLY DONE** (`b2aaa44`)
+### D4 — Dependency automation — **guard DONE** (`b2aaa44`); **bot DECLINED**
 
 Renovate or Dependabot on `paper.version` and `packetevents.version`. Per
 `CLAUDE.md`'s upgrade procedure, PacketEvents is the gate: it must bump first,
@@ -322,21 +322,47 @@ you learn the gate opened.
 > That green run is also `check-jar.sh`'s first execution on `ubuntu-latest`. It had
 > only ever run on Windows — the environment where its CRLF hazard does *not* bite.
 >
-> **The bot is NOT done.** `renovate.json5` covers `packetevents.version` only;
-> `paper.version` is deliberately excluded and the config says why at length.
-> **It was committed unvalidated.** `renovate-config-validator` and `renovate
-> --dry-run` both need Node, and this machine has no node, npm, or python beyond the
-> Store shim. Neither would have been the real proof: they check schema and
-> resolution, not whether the Renovate App, against this repo, with real permissions,
-> detects `packetevents-spigot` inside a Maven `<properties>` value and holds
-> `paper-api`.
+> #### 2026-07-10 — the bot is declined, and `renovate.json5` is deleted
 >
-> **Owed, and D4 is not done until it is met:** install the Renovate GitHub App and
-> read its first Dependency Dashboard. It must list
-> `com.github.retrooper:packetevents-spigot` as detected and must **not** list
-> `io.papermc.paper:paper-api`. `dependencyDashboard: true` is load-bearing for
-> exactly this — without it, "no PRs opened" is indistinguishable from
-> "misconfigured". A config that has never opened a PR is a check that has never run.
+> It was written, committed unvalidated in `b2aaa44`, and removed again. Recording
+> why, because the argument for adding it later will be the same argument that added
+> it this time.
+>
+> **It could not be validated here.** `renovate-config-validator` and
+> `renovate --dry-run` both need Node; this machine has no node, npm, or python
+> beyond the Store shim. Neither would have been the real proof anyway — they check
+> schema and resolution, not whether the App, against this repo, with real
+> permissions, finds `packetevents-spigot` inside a Maven `<properties>` value.
+>
+> **The only proof was the App's first Dependency Dashboard**, which nobody had read.
+> So the config sat in the tree in the one state this project does not tolerate:
+> a check that has never run, indistinguishable from one that passed. A
+> misconfigured `renovate.json5` does not fail loudly. Renovate simply opens no PR —
+> and "no PR" is exactly what a correctly-configured bot looks like on a day when
+> nothing needs bumping. The failure mode of the thing meant to watch the gate is
+> silence, and silence is also its success mode.
+>
+> **One repo, one maintainer.** The bot would have watched a single property. The
+> cost of checking Modrinth by hand is a minute, once every few weeks. The cost of a
+> silently-dead bot is believing the gate is watched when it is not — and that belief
+> is worse than knowing it is unwatched, because it stops you looking.
+>
+> `paper.version` was never a candidate: a PR on it arrives at step 3 of the upgrade
+> procedure, before the step-1 information that decides whether to act; and
+> `26.2.build.53-alpha` sorts *above* `26.1.2.build.74-stable` under Maven ordering,
+> because the `-stable`/`-alpha` channel is a Paper convention with no representation
+> in artifact metadata.
+>
+> **What replaces it:** `CLAUDE.md`'s upgrade procedure now opens at **step 0** —
+> notice the release; nothing does this for you — naming
+> <https://modrinth.com/plugin/packetevents/versions> and pointing back here. An
+> absent notification looks exactly like nothing to notify. Making the manual step
+> explicit is the honest version of automating it badly.
+>
+> If this is revisited: the acceptance criterion is not "the config is committed."
+> It is a Dependency Dashboard listing `com.github.retrooper:packetevents-spigot` as
+> detected and **not** listing `io.papermc.paper:paper-api`. Until someone has read
+> that, there is no bot — only a file.
 
 ---
 
