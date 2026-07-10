@@ -1,0 +1,187 @@
+package io.github.butterflysmp.rpg.core.ability;
+
+import io.github.butterflysmp.rpg.core.Vec3;
+import io.github.butterflysmp.rpg.core.ability.effect.EffectApplier;
+import io.github.butterflysmp.rpg.core.combat.Aim;
+import io.github.butterflysmp.rpg.core.combat.ChunkTraversal;
+import io.github.butterflysmp.rpg.core.combat.CombatWorld;
+import io.github.butterflysmp.rpg.core.combat.Combatant;
+import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
+import io.github.butterflysmp.rpg.core.combat.RayHit;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Turns an aim into an impact, then applies the ability's effects there.
+ *
+ * This is the half of a cast that reads the world, so every entry point MUST
+ * already be on the thread that owns the region containing the aim's origin.
+ * On Paper that means inside Scheduler.onRegion(...). AbilityService.cast()
+ * deliberately does none of this.
+ *
+ * The caster arrives as a snapshot and is thereafter referred to by UUID alone. Nothing
+ * here holds a live handle across a tick: a projectile's fuse and a lingering area both
+ * outlive the frame that started them.
+ */
+public final class CastExecutor {
+
+    private final CombatWorld world;
+    private final EffectApplier effects;
+
+    public CastExecutor(CombatWorld world) {
+        this.world = world;
+        this.effects = new EffectApplier(world);
+    }
+
+    public void execute(AbilityService.CastResult.Success success) {
+        AbilityDefinition ability = success.ability();
+        CombatantSnapshot caster = success.caster();
+        Aim aim = success.aim();
+
+        switch (ability.cast()) {
+            // The caster is their own target: heals, buffs, self-detonations. Their handle
+            // is fetched here rather than carried in the Success, which holds a snapshot.
+            // The detonation lands at their FEET -- caster.position(), not the aim's
+            // origin, which in production is an eye a metre and a half higher.
+            case CastSpec.Self ignored ->
+                    detonate(ability, caster.id(), self(caster), caster.position());
+
+            case CastSpec.Melee melee -> {
+                Combatant target = meleeTarget(caster, aim, melee);
+                Vec3 impact = target != null ? target.state().position() : aim.pointAt(melee.reach());
+                detonate(ability, caster.id(), target, impact);
+            }
+
+            case CastSpec.Ray ray -> launchRay(ability, caster.id(), aim, ray.range());
+
+            case CastSpec.Projectile projectile -> launch(ability, caster.id(), aim, projectile);
+        }
+    }
+
+    /**
+     * The caster's own handle, or null if they are already gone -- a Self cast decided on
+     * one frame and resolved on another. Targeted effects skip a null target, so a dead
+     * man's heal simply does not land.
+     */
+    private Combatant self(CombatantSnapshot caster) {
+        return world.combatant(caster.id()).orElse(null);
+    }
+
+    /**
+     * Throw it. The caster is captured by UUID and never dereferenced again: a
+     * grenade with a 100-tick fuse outlives its thrower's logout, and holding the
+     * Combatant would pin a Bukkit entity for five seconds. Same rule as an Area.
+     */
+    private void launch(AbilityDefinition ability, UUID casterId, Aim aim, CastSpec.Projectile spec) {
+        step(ability, casterId, aim.origin(), aim.direction().scale(spec.speed()), 0, spec);
+    }
+
+    /**
+     * One tick of flight. Trace the segment actually travelled rather than
+     * sampling the endpoint, or a fast projectile tunnels straight through a
+     * target thinner than its per-tick step.
+     */
+    private void step(AbilityDefinition ability, UUID casterId, Vec3 position,
+                      Vec3 velocity, int elapsed, CastSpec.Projectile spec) {
+        Vec3 next = position.add(velocity);
+
+        Optional<RayHit> hit = world.castRay(position, next, casterId);
+        if (hit.isPresent()) {
+            detonate(ability, casterId, hit.get().combatant(), hit.get().point());
+            return;
+        }
+
+        int nextElapsed = elapsed + 1;
+        if (nextElapsed >= spec.maxLifetimeTicks()) {
+            // The fuse ran out mid-air. It still goes off -- a grenade that
+            // quietly vanishes because it hit nothing would be a bug, not a miss.
+            detonate(ability, casterId, null, next);
+            return;
+        }
+
+        Vec3 nextVelocity = velocity.add(new Vec3(0, -spec.gravity(), 0));
+        world.schedule(next, 1, () -> step(ability, casterId, next, nextVelocity, nextElapsed, spec));
+    }
+
+    /**
+     * Walk the aim to its first obstruction, or to its full range if there is none.
+     *
+     * Chunk column by chunk column, not all at once. A single trace over a 30-block range
+     * reads every chunk it crosses, and a chunk belongs to exactly one region -- so one
+     * trace could read several regions from a thread that owns only the first. Ending each
+     * segment on a chunk plane confines it to one column, and therefore to one region. A
+     * fixed segment length would not: it straddles a plane whatever length you pick.
+     *
+     * The first segment runs inline, on the cast frame, exactly as launch() calls step()
+     * inline. So a ray that never leaves its column is still hitscan. Every segment after
+     * the first costs a tick, which means A RAY IS NO LONGER HITSCAN in general, and its
+     * cost varies with aim -- a diagonal crosses more planes than an axis-aligned shot.
+     */
+    private void launchRay(AbilityDefinition ability, UUID casterId, Aim aim, double range) {
+        List<Vec3> endpoints = ChunkTraversal.segmentEndpoints(aim.origin(), aim.direction(), range);
+        stepRay(ability, casterId, aim.origin(), endpoints, 0);
+    }
+
+    /**
+     * One chunk column of a ray. Mirrors step(): trace, act, or hand the next segment to
+     * the region that owns it. The caster is a UUID, never a handle -- a ray now outlives
+     * the frame that fired it, so the rule that governs projectiles governs this too.
+     *
+     * The walk stops at the first body. Nothing here needs to remember who has already been
+     * struck; if rays are ever made to PIERCE, that changes, and a set of already-hit ids
+     * would have to be threaded through these calls.
+     */
+    private void stepRay(AbilityDefinition ability, UUID casterId, Vec3 from,
+                         List<Vec3> endpoints, int index) {
+        Vec3 to = endpoints.get(index);
+
+        Optional<RayHit> hit = world.castRay(from, to, casterId);
+        if (hit.isPresent()) {
+            detonate(ability, casterId, hit.get().combatant(), hit.get().point());
+            return;
+        }
+
+        boolean lastSegment = index == endpoints.size() - 1;
+        if (lastSegment) {
+            // A clean miss still goes off at the end of the aim, as it always has.
+            detonate(ability, casterId, null, to);
+            return;
+        }
+
+        world.schedule(to, 1, () -> stepRay(ability, casterId, to, endpoints, index + 1));
+    }
+
+    /**
+     * The nearest living thing inside the swing. arcDegrees is the full width of
+     * the cone, so a 90-degree swing reaches 45 degrees either side of the aim.
+     */
+    private Combatant meleeTarget(CombatantSnapshot caster, Aim aim, CastSpec.Melee melee) {
+        double minimumDot = Math.cos(Math.toRadians(melee.arcDegrees() / 2.0));
+        UUID casterId = caster.id();
+
+        Combatant nearest = null;
+        double nearestDistanceSquared = Double.POSITIVE_INFINITY;
+
+        for (Combatant candidate : world.combatantsNear(aim.origin(), melee.reach())) {
+            if (candidate.id().equals(casterId)) continue;
+
+            Vec3 toCandidate = candidate.state().position().subtract(aim.origin());
+            // Both are unit vectors, so the dot product is the cosine of the
+            // angle between them: larger means closer to straight ahead.
+            if (toCandidate.normalize().dot(aim.direction()) < minimumDot) continue;
+
+            double distanceSquared = toCandidate.lengthSquared();
+            if (distanceSquared < nearestDistanceSquared) {
+                nearestDistanceSquared = distanceSquared;
+                nearest = candidate;
+            }
+        }
+        return nearest;
+    }
+
+    private void detonate(AbilityDefinition ability, UUID casterId, Combatant target, Vec3 impact) {
+        effects.applyAll(ability.onHit(), casterId, target, impact);
+    }
+}

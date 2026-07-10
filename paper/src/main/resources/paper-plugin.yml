@@ -1,8 +1,8 @@
 name: Rpg
 version: '${project.version}'
-main: io.github.yourname.rpg.paper.RpgPlugin
+main: io.github.butterflysmp.rpg.paper.RpgPlugin
 description: Class-based action RPG
-authors: [ yourname ]
+authors: [ CreaperCrusher ]
 
 # Minimum server version, not the pinned one. Minecraft moved to year-based
 # versioning at 26.1, and Paper accepts the drop-level string here.

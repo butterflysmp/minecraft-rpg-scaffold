@@ -113,6 +113,27 @@ for m in core storage; do
   esac
 done
 
+# --- 4. exactly one package root, and it is ours ------------------------------
+# Assertions 1-3 all pass on a jar that was renamed correctly but still carries
+# stale classes from a warm target/: ROOT is right, main: is right, core and
+# storage are present -- alongside a second copy under the superseded root.
+#
+# Stated as "no root but ours" rather than "not <the old name>". Naming the
+# predecessor would hardcode a second source of truth that goes stale the moment
+# a rename lands, and would only ever catch that one predecessor. It would also
+# spell the superseded package inside the very file asserting it is gone -- which
+# the rename's own acceptance grep duly flagged when this was written that way.
+#
+# grep -oE reads to EOF, so no SIGPIPE hazard; `|| true` absorbs its exit 1 when
+# nothing matches (which assertion 3 has already ruled out).
+ROOTS=$(printf '%s\n' "$LISTING" | grep -oE 'io/github/[^/]+/rpg/' | sort -u || true)
+if [ "$ROOTS" != "$ROOT/" ]; then
+  echo "::error::jar carries a package root that is not $ROOT/" >&2
+  printf '         found: %s\n' $ROOTS >&2
+  echo "         (stale classes from a warm target/? run a clean build)" >&2
+  exit 1
+fi
+
 SUMMARY="Jar OK: $(basename "$JAR") -- $MAIN present under $ROOT; core and storage bundled."
 
 # In --print-jar mode stdout carries the path and nothing else; the summary goes
