@@ -76,9 +76,26 @@ public final class ContentValidator {
      * anyway: if either ever admits untargeted children, the exhaustive switch drags
      * this method back into the light rather than silently skipping them.
      *
-     * Caveat learned the hard way: that exhaustiveness error only surfaces on a CLEAN
-     * build. Maven will not recompile this file just because EffectSpec changed in
-     * another module.
+     * The switch below is checked whenever paper/ is compiled. That is the whole
+     * mechanism -- there is nothing subtler to it.
+     *
+     * What makes a hole here survivable is that the daily loop, `./mvnw -pl core test`,
+     * never compiles paper/ at all. So a missing arm sits undiscovered until somebody
+     * runs a full build. That gap is what CI fills, by compiling paper/ on every push.
+     *
+     * This javadoc used to claim the error "only surfaces on a CLEAN build", because
+     * Maven would not recompile this file when EffectSpec changed in another module.
+     * That was measured on 2026-07-10 and is false. Adding a permitted record to
+     * EffectSpec.Targeted (handled in EffectApplier, deliberately not handled here):
+     *
+     *   ./mvnw -pl paper -am compile   -> BUILD FAILURE, "does not cover all possible
+     *                                     input values"
+     *   ./mvnw -B compile              -> same, on a warm target/, having first printed
+     *                                     "Compiling 24 source files"
+     *   ./mvnw clean compile           -> same
+     *
+     * maven-compiler-plugin sees the changed dependency and recompiles the module.
+     * `clean` catches nothing here that a plain build does not. Do not re-add the claim.
      */
     private void checkEffect(EffectSpec effect, String abilityId, List<String> problems) {
         switch (effect) {

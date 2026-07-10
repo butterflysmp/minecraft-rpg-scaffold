@@ -97,9 +97,10 @@ fi
 
 if [ "$DO_BUILD" -eq 1 ]; then
   echo "==> Building"
-  # 'clean' is not optional. Maven will not recompile a paper/ file just because
-  # a core/ file changed, so an incremental build can miss a non-exhaustive
-  # switch over a sealed interface. See ContentValidator's javadoc.
+  # 'clean' here is belt and braces, not a correctness requirement. A plain build
+  # already recompiles paper/ when core/ changes -- measured, see ContentValidator's
+  # javadoc. What we do want before booting a server is a jar with nothing stale in
+  # it, and the seconds this costs are lost in the JVM's startup anyway.
   ./mvnw -q clean package
 fi
 

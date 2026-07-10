@@ -86,6 +86,48 @@ this by pushing one to a scratch branch, confirming red, then deleting it. Per
 check that passed. That rule applies to the CI job itself.
 **Commit:** `ci: build and test on push, with clean to enforce exhaustiveness`
 
+> #### 2026-07-10 — everything above about `clean` is wrong
+>
+> The text stands as written. What follows is what happened when it was measured.
+>
+> **Predicted:** `mvn -pl paper -am compile` succeeds on a non-exhaustive switch in
+> `paper/`; only `mvn clean compile` reports the error.
+>
+> **Ran.** A new record added to `EffectSpec.Targeted`'s `permits`, handled in
+> `EffectApplier` so `core/` stays green, deliberately *not* handled in
+> `ContentValidator.checkEffect`. Then, against a warm `target/`:
+>
+> ```
+> ./mvnw -pl paper -am compile   BUILD FAILURE   ContentValidator.java:[84,9]
+>                                                the switch statement does not cover
+>                                                all possible input values
+> ./mvnw -B compile              BUILD FAILURE   same error, after first printing
+>                                                "Compiling 24 source files"
+> ./mvnw clean compile           BUILD FAILURE   same error
+> ```
+>
+> **True:** maven-compiler-plugin 3.13 sees the changed dependency module and
+> recompiles all of `paper/`. There is no incremental hole. `clean` catches nothing a
+> plain build does not, and on a fresh CI runner there is no `target/` to delete, so
+> it cannot be the mechanism there either.
+>
+> The switch is checked whenever `paper/` is compiled. Full stop. What actually let
+> `ContentValidator`'s original hole survive is that the daily loop —
+> `./mvnw -pl core test` — never compiles `paper/` at all. **That** is the gap CI
+> fills, and it would be filled just as well by `verify` without `clean`.
+>
+> **The shape of the error.** A real observation (Maven's incremental compilation is
+> conservative) was extended to a plausible, unmeasured conclusion (*therefore* `clean`
+> is what catches exhaustiveness). Nobody ran the two commands side by side. The
+> conclusion was then written into `ContentValidator`'s javadoc, cited from there into
+> this file, cited from this file into `scripts/dev-server.sh`'s build comment, and
+> cited again into the implementation plan. Four documents in agreement, none of them
+> in agreement with the compiler. Each new citation read as corroboration.
+>
+> `clean` is kept in the workflow and in `dev-server.sh` as defence-in-depth — against
+> a `target/` cache action, a self-hosted runner, some future warm checkout — and is
+> labelled there as measurably inert today. Not as the thing that makes the check work.
+
 ### D3 — Rename the package
 
 `io.github.yourname` appears in 70 files. Do it after D2 so CI watches the
