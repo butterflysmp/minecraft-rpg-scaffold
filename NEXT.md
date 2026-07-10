@@ -495,7 +495,7 @@ console is clean.
 
 ---
 
-## Commit F — One class
+## Commit F — One class — **DONE** (`4f3032a`)
 
 `PlayerProfile.archetypeId` and `unlockedAbilities` are persisted and read by
 nothing. `/rpg cast` lets any permitted player cast any loaded ability.
@@ -511,6 +511,54 @@ distinction is the one this codebase has been enforcing all along.
 **Done when:** a player with no class cannot cast, and `/rpg class hunter` grants
 exactly the abilities `hunter.yml` names.
 **Commit:** `feat: gate ability casting on the player's archetype`
+
+> #### 2026-07-10 — what shipped, and the one line still owed to a human
+>
+> **The gate lives in `core`.** `AbilityService.cast` gained a `Set<String> castable`
+> and a fifth `CastResult` variant, `Locked`, returned after the registry lookup and
+> *before* the cooldown and energy checks. `paper` resolves archetype → granted abilities
+> → the set and passes it in; core never learns what an archetype is. Adding `Locked` to
+> the sealed interface was a compile error at exactly one site — `RpgCommand`'s switch,
+> confirmed by grep to carry no `default` arm before the change — so the compiler found it,
+> not a test at runtime.
+>
+> **The cast gate keys on `unlockedAbilities`, not on the archetype re-resolved each cast.**
+> `/rpg class` writes the grant into `unlockedAbilities` once (via a new
+> `ProfileService.setArchetype`, a command-thread mutator that persists immediately); the
+> cast reads that list. So both persisted fields are finally read, `archetypeId` decides
+> the *message* a locked classless player sees, and the two can never drift because
+> `/rpg class` sets them together. This is the resolution of the "gate on archetype AND
+> unlocked list" phrasing — the archetype is enforced transitively through the list it
+> populates.
+>
+> **Two mutations, reported separately, because they guard different things.** Both on
+> `AbilityService.cast`, restored from a scratchpad copy, never `git checkout`:
+> - *Deleting* the `castable.contains` check reddened **both** gate tests — a non-granted
+>   ability returned `Success`. That guards the check's existence.
+> - *Reordering* it after the energy spend reddened **only** the order-pinning test
+>   (`expected 100.0 but was 60.0` — a silent 40-energy drain), while the plain
+>   "Locked returns" test stayed green. That is the reorder the sealed switch cannot catch
+>   — every arm still exists — and the reason the order test was written at all.
+>
+> **`ContentValidator` now checks archetypes** behind a `Predicate<String>` seam: a warning
+> per ability id no ability declares, plus one when a class's *resolved* set is empty (a
+> class nobody can play, which a per-id check passes). The most invisible dangling
+> reference of the four — a missing visual is a missing particle you can see; a dangling
+> ability in a class is a permission gap that reads as intended design.
+>
+> **What the boot proved, and what it did not.** `./mvnw clean package` → 176 tests
+> (core 94, storage 15, paper 67), both modules shaded. Booted Paper 26.1.2 build 74:
+> `Loaded 4 abilities, 4 visuals, 2 statuses, 1 archetypes`, `Done (5.257s)!`, no
+> dangling-archetype warning. `hunter.yml` shipped into a *fresh* `archetypes/` data
+> folder — the `saveResource(false)` tuning-loop defect does not bite a new directory, so
+> there was no "already exists" WARN for it, only for the pre-existing three content types.
+>
+> **The acceptance criterion is not machine-executable.** `/rpg cast` and `/rpg class` both
+> gate on `instanceof Player` — "Players only." — so the console cannot walk them. The
+> classless-refusal → `/rpg class hunter` → cast sequence is owed by a human on a client,
+> the same shape as the grenade cast this file recorded for the rename. Until someone runs
+> it, "a player with no class cannot cast" is verified only by the unit test that asserts
+> `Locked`, not by a player who was told so.
 
 ---
 
