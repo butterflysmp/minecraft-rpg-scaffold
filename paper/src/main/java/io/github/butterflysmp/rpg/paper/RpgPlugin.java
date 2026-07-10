@@ -27,10 +27,13 @@ import org.bukkit.Registry;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.logging.Level;
 
 public final class RpgPlugin extends JavaPlugin {
@@ -38,12 +41,17 @@ public final class RpgPlugin extends JavaPlugin {
     /** Long enough for a flush of everyone online; short enough not to hang a restart. */
     private static final long SHUTDOWN_TIMEOUT_SECONDS = 15;
 
-    /** Shipped as defaults on first boot. Never overwritten -- saveResource(.., false). */
-    private static final String[] DEFAULT_CONTENT = {
-            "content/abilities/solar_grenade.yml",
-            "content/visuals/solar_detonation.yml",
-            "content/statuses/scorch.yml",
-    };
+    /**
+     * Everything under this prefix in the plugin jar is shipped as a default on first
+     * boot. There is no list. Adding an ability means adding a .yml, and nothing else.
+     *
+     * This used to be a hardcoded String[] of three paths, which meant the 500th weapon
+     * needed a line of Java -- the exact thing CLAUDE.md invariant 2 forbids. The
+     * pipeline was intact in the direction the invariant is usually read (an operator
+     * drops a .yml into plugins/Rpg/content/ and it loads) and broken in the direction
+     * the project needed (shipping that .yml in the jar).
+     */
+    private static final String CONTENT_PREFIX = "content/";
 
     /** Ability energy. A full bar in 60 seconds. Belongs in archetype content later. */
     private static final double MAX_ENERGY = 100.0;
@@ -70,9 +78,8 @@ public final class RpgPlugin extends JavaPlugin {
         this.keys = new Keys(this);
 
         // Content: YAML -> definitions. Nothing here is hardcoded in Java.
-        for (String path : DEFAULT_CONTENT) {
-            saveResource(path, false);
-        }
+        saveDefaultContent();
+
         File contentDir = new File(getDataFolder(), "content");
         this.abilities = new AbilityLoader(getLogger()).loadAll(new File(contentDir, "abilities"));
         this.visuals = new VisualLoader(getLogger()).loadAll(new File(contentDir, "visuals"));
@@ -120,6 +127,51 @@ public final class RpgPlugin extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
                         RpgCommand.build(abilities, abilityService, adapters), "RPG commands"));
+    }
+
+    /**
+     * Copy every content/**.yml out of the plugin jar into the data folder, once.
+     *
+     * Enumerated with JarFile rather than through the resource API, and that is not a
+     * stylistic choice. JavaPlugin.getResource returns an InputStream, so it cannot list
+     * a directory at all; and a URLClassLoader reaching for the same thing gets a
+     * jar:file:...!/content/ URL that opens to a ZERO-BYTE stream and whose getFile()
+     * is not a path -- new File(url.getFile()).list() returns null. Measured against the
+     * real shaded jar. A scan built on that route does not crash. It silently finds
+     * nothing, which on a server whose data folder is already populated looks exactly
+     * like a scan that works.
+     *
+     * Hence the warning below: finding zero shipped files is a defect, not a quiet no-op.
+     *
+     * saveResource(.., false) never overwrites. So this ships defaults; it does not
+     * update them. Editing a .yml in the repo does NOT propagate to a data folder that
+     * already holds it -- see NEXT.md's deferred list, "the tuning loop".
+     */
+    private void saveDefaultContent() {
+        List<String> shipped;
+        try (JarFile jar = new JarFile(getFile())) {
+            shipped = jar.stream()
+                    .map(JarEntry::getName)
+                    .filter(name -> name.startsWith(CONTENT_PREFIX) && name.endsWith(".yml"))
+                    .sorted() // deterministic, like the loaders' Arrays.sort
+                    .toList();
+        } catch (IOException ex) {
+            getLogger().log(Level.SEVERE,
+                    "Could not read the plugin jar to find default content under " + CONTENT_PREFIX
+                            + "; no defaults will be written", ex);
+            return;
+        }
+
+        if (shipped.isEmpty()) {
+            getLogger().warning("No default content found in the plugin jar under '" + CONTENT_PREFIX
+                    + "'. If the data folder is already populated the server will still run, and this"
+                    + " will look like it worked. It did not.");
+            return;
+        }
+
+        for (String path : shipped) {
+            saveResource(path, false);
+        }
     }
 
     /**
