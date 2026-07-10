@@ -104,13 +104,14 @@ if [ "$DO_BUILD" -eq 1 ]; then
   ./mvnw -q clean package
 fi
 
-# find, not `ls | head`: under `set -o pipefail`, a failing ls is a silent trap.
-JAR="$(find paper/target -maxdepth 1 -name 'rpg-*.jar' -print -quit 2>/dev/null || true)"
-
-if [ -z "$JAR" ]; then
-  echo "ERROR: no plugin jar in paper/target/. Did the build succeed?" >&2
-  exit 1
-fi
+# check-jar.sh owns jar identity. It asserts there is exactly one candidate --
+# `find -print -quit`, which used to live here, silently took whichever entry
+# readdir yielded first -- and it refuses to hand back a jar whose main: names a
+# class the jar does not contain, or that shade forgot to bundle core into.
+#
+# Deploying is exactly when you want that refusal. set -e aborts on a non-zero
+# exit, so a bad jar never reaches run/plugins/.
+JAR="$(./scripts/check-jar.sh --print-jar)"
 
 echo "==> Deploying $(basename "$JAR")"
 rm -f "$PLUGINS_DIR"/rpg-*.jar

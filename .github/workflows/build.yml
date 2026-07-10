@@ -47,6 +47,16 @@ jobs:
       - name: Build and test
         run: ./mvnw -B clean verify
 
+      # A green build proves the code compiled. It does not prove the jar is
+      # loadable. Two failure modes here are invisible to javac: a stale `main:`
+      # in paper-plugin.yml (Paper resolves the plugin by fully-qualified class
+      # name at runtime), and stale <artifactSet> coordinates in paper/pom.xml
+      # (shade silently stops bundling rpg-core, and the plugin dies on the first
+      # linkage). Both are plainly visible inside the jar. So look in the jar.
+      - name: Assert the jar is internally consistent
+        if: success()
+        run: ./scripts/check-jar.sh
+
       # A green build that ran no tests is indistinguishable from a green build
       # that ran all of them. Surefire prints nothing at all when a bad -Dtest
       # pattern matches nothing, and BUILD SUCCESS looks the same either way.
