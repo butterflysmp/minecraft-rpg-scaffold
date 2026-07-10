@@ -7,6 +7,7 @@ import io.github.yourname.rpg.core.ability.AbilityRegistry;
 import io.github.yourname.rpg.core.ability.AbilityService;
 import io.github.yourname.rpg.core.ability.CastExecutor;
 import io.github.yourname.rpg.core.combat.Aim;
+import io.github.yourname.rpg.core.combat.CombatantSnapshot;
 import io.github.yourname.rpg.paper.adapter.AdapterContext;
 import io.github.yourname.rpg.paper.adapter.BukkitCombatant;
 import io.github.yourname.rpg.paper.adapter.PaperCombatWorld;
@@ -70,11 +71,16 @@ public final class RpgCommand {
         Location eye = player.getEyeLocation();
         Aim aim = new Aim(toVec3(eye), toVec3(eye.getDirection()));
 
+        // Photograph the caster HERE, on the caster's own thread, before the hop below.
+        // Taken after the hop it would be the same cross-region read wearing a new type --
+        // and on Paper, where both sides of the hop are the main thread, no test could
+        // tell. BukkitCombatant.snapshot enforces the thread; this ordering does not.
+        CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters);
+
         // Decide INLINE. cast() reads no world state, and consuming the cooldown
         // and energy here -- rather than inside the region hop below -- is what
         // stops a player spamming the command faster than the hop resolves.
-        AbilityService.CastResult result =
-                abilityService.cast(new BukkitCombatant(player, adapters), abilityId, aim);
+        AbilityService.CastResult result = abilityService.cast(caster, abilityId, aim);
 
         switch (result) {
             case AbilityService.CastResult.Success success -> {

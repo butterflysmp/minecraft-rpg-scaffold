@@ -5,6 +5,7 @@ import io.github.yourname.rpg.core.ability.effect.EffectApplier;
 import io.github.yourname.rpg.core.combat.Aim;
 import io.github.yourname.rpg.core.combat.CombatWorld;
 import io.github.yourname.rpg.core.combat.Combatant;
+import io.github.yourname.rpg.core.combat.CombatantSnapshot;
 import io.github.yourname.rpg.core.combat.RayHit;
 
 import java.util.Optional;
@@ -17,6 +18,10 @@ import java.util.UUID;
  * already be on the thread that owns the region containing the aim's origin.
  * On Paper that means inside Scheduler.onRegion(...). AbilityService.cast()
  * deliberately does none of this.
+ *
+ * The caster arrives as a snapshot and is thereafter referred to by UUID alone. Nothing
+ * here holds a live handle across a tick: a projectile's fuse and a lingering area both
+ * outlive the frame that started them.
  */
 public final class CastExecutor {
 
@@ -30,23 +35,36 @@ public final class CastExecutor {
 
     public void execute(AbilityService.CastResult.Success success) {
         AbilityDefinition ability = success.ability();
-        Combatant caster = success.caster();
+        CombatantSnapshot caster = success.caster();
         Aim aim = success.aim();
 
         switch (ability.cast()) {
-            // The caster is their own target: heals, buffs, self-detonations.
-            case CastSpec.Self ignored -> detonate(ability, caster, caster, caster.position());
+            // The caster is their own target: heals, buffs, self-detonations. Their handle
+            // is fetched here rather than carried in the Success, which holds a snapshot.
+            // The detonation lands at their FEET -- caster.position(), not the aim's
+            // origin, which in production is an eye a metre and a half higher.
+            case CastSpec.Self ignored ->
+                    detonate(ability, caster.id(), self(caster), caster.position());
 
             case CastSpec.Melee melee -> {
                 Combatant target = meleeTarget(caster, aim, melee);
-                Vec3 impact = target != null ? target.position() : aim.pointAt(melee.reach());
-                detonate(ability, caster, target, impact);
+                Vec3 impact = target != null ? target.state().position() : aim.pointAt(melee.reach());
+                detonate(ability, caster.id(), target, impact);
             }
 
-            case CastSpec.Ray ray -> resolveAlongAim(ability, caster, aim, ray.range());
+            case CastSpec.Ray ray -> resolveAlongAim(ability, caster.id(), aim, ray.range());
 
             case CastSpec.Projectile projectile -> launch(ability, caster.id(), aim, projectile);
         }
+    }
+
+    /**
+     * The caster's own handle, or null if they are already gone -- a Self cast decided on
+     * one frame and resolved on another. Targeted effects skip a null target, so a dead
+     * man's heal simply does not land.
+     */
+    private Combatant self(CombatantSnapshot caster) {
+        return world.combatant(caster.id()).orElse(null);
     }
 
     /**
@@ -86,21 +104,21 @@ public final class CastExecutor {
     }
 
     /** Walk the aim to its first obstruction, or to its full range if there is none. */
-    private void resolveAlongAim(AbilityDefinition ability, Combatant caster, Aim aim, double range) {
+    private void resolveAlongAim(AbilityDefinition ability, UUID casterId, Aim aim, double range) {
         Vec3 end = aim.pointAt(range);
-        Optional<RayHit> hit = world.castRay(aim.origin(), end, caster.id());
+        Optional<RayHit> hit = world.castRay(aim.origin(), end, casterId);
 
         Combatant target = hit.map(RayHit::combatant).orElse(null);
         Vec3 impact = hit.map(RayHit::point).orElse(end);
 
-        detonate(ability, caster, target, impact);
+        detonate(ability, casterId, target, impact);
     }
 
     /**
      * The nearest living thing inside the swing. arcDegrees is the full width of
      * the cone, so a 90-degree swing reaches 45 degrees either side of the aim.
      */
-    private Combatant meleeTarget(Combatant caster, Aim aim, CastSpec.Melee melee) {
+    private Combatant meleeTarget(CombatantSnapshot caster, Aim aim, CastSpec.Melee melee) {
         double minimumDot = Math.cos(Math.toRadians(melee.arcDegrees() / 2.0));
         UUID casterId = caster.id();
 
@@ -110,7 +128,7 @@ public final class CastExecutor {
         for (Combatant candidate : world.combatantsNear(aim.origin(), melee.reach())) {
             if (candidate.id().equals(casterId)) continue;
 
-            Vec3 toCandidate = candidate.position().subtract(aim.origin());
+            Vec3 toCandidate = candidate.state().position().subtract(aim.origin());
             // Both are unit vectors, so the dot product is the cosine of the
             // angle between them: larger means closer to straight ahead.
             if (toCandidate.normalize().dot(aim.direction()) < minimumDot) continue;
@@ -124,11 +142,7 @@ public final class CastExecutor {
         return nearest;
     }
 
-    private void detonate(AbilityDefinition ability, Combatant caster, Combatant target, Vec3 impact) {
-        effects.applyAll(ability.onHit(), caster, target, impact);
-    }
-
     private void detonate(AbilityDefinition ability, UUID casterId, Combatant target, Vec3 impact) {
-        effects.applyAllFromCaster(ability.onHit(), casterId, target, impact);
+        effects.applyAll(ability.onHit(), casterId, target, impact);
     }
 }

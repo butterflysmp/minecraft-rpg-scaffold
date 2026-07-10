@@ -62,8 +62,21 @@ public final class PaperCombatWorld implements CombatWorld {
         return world.getNearbyEntities(toLocation(center), radius, radius, radius).stream()
                 .filter(LivingEntity.class::isInstance)
                 .map(LivingEntity.class::cast)
-                .map(e -> (Combatant) new BukkitCombatant(e, ctx))
+                .map(e -> BukkitCombatant.of(e, ctx)) // snapshot taken here, on this thread
                 .toList();
+    }
+
+    /**
+     * Fetches the caster's handle for a Self cast, whose Success carries only a snapshot.
+     * Null-safe by way of Optional: the caster may have died or logged out between deciding
+     * the cast and resolving it.
+     */
+    @Override
+    public Optional<Combatant> combatant(UUID id) {
+        if (world.getEntity(id) instanceof LivingEntity living) {
+            return Optional.of(BukkitCombatant.of(living, ctx));
+        }
+        return Optional.empty();
     }
 
     /**
@@ -96,7 +109,7 @@ public final class PaperCombatWorld implements CombatWorld {
         Vec3 point = new Vec3(hit.getX(), hit.getY(), hit.getZ());
 
         if (result.getHitEntity() instanceof LivingEntity living) {
-            return Optional.of(RayHit.ofCombatant(point, new BukkitCombatant(living, ctx)));
+            return Optional.of(RayHit.ofCombatant(point, BukkitCombatant.of(living, ctx)));
         }
         return Optional.of(RayHit.ofBlock(point));
     }

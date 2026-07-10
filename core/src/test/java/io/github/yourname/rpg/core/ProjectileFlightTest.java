@@ -31,7 +31,7 @@ class ProjectileFlightTest {
         var service = new AbilityService(registry, new CooldownTracker(() -> 0L),
                 new ResourcePool(() -> 0L, 100, 1));
         var success = assertInstanceOf(AbilityService.CastResult.Success.class,
-                service.cast(caster, "grenade", aim));
+                service.cast(caster.snapshot(), "grenade", aim));
         new CastExecutor(world).execute(success);
     }
 

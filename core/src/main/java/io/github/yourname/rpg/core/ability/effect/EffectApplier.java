@@ -10,9 +10,13 @@ import java.util.UUID;
  * Interprets EffectSpec against the world. This is the beating heart of the
  * combat system and it is 100% unit-testable -- no server required.
  *
- * Nothing here may retain a Combatant beyond the tick it was handed. A lingering
- * area outlives its caster: the caster can die, log out, or unload with its
- * chunk. Areas therefore carry the caster's UUID, never the Combatant itself.
+ * Nothing here may retain a Combatant beyond the tick it was handed: its handle wraps a
+ * live entity. A lingering area outlives its caster, who can die, log out, or unload with
+ * their chunk. Areas therefore carry the caster's UUID, never the Combatant itself -- and
+ * that same UUID is what attributes the damage.
+ *
+ * Reads come off the snapshot, writes go to the handle. Neither is interchangeable, and
+ * the types enforce it: you cannot ask a handle a question, and you cannot hit a snapshot.
  */
 public final class EffectApplier {
     private final CombatWorld world;
@@ -21,29 +25,12 @@ public final class EffectApplier {
         this.world = world;
     }
 
-    public void applyAll(List<? extends EffectSpec> specs, Combatant caster, Combatant target, Vec3 origin) {
-        applyAll(specs, idOf(caster), target, origin);
-    }
-
-    public void apply(EffectSpec spec, Combatant caster, Combatant target, Vec3 origin) {
-        apply(spec, idOf(caster), target, origin);
-    }
-
-    private static UUID idOf(Combatant c) {
-        return c == null ? null : c.id();
-    }
-
     /**
-     * For callers that already hold only the caster's id, because the caster may
-     * be long gone -- a projectile in flight, or a lingering area. Prefer this
-     * over resolving the Combatant back just to pass it in.
+     * The caster is identified, never held. Callers already have only an id by the time an
+     * effect lands: a projectile in flight, a lingering area, a ray mid-walk.
      */
-    public void applyAllFromCaster(List<? extends EffectSpec> specs, UUID casterId,
-                                   Combatant target, Vec3 origin) {
-        applyAll(specs, casterId, target, origin);
-    }
-
-    private void applyAll(List<? extends EffectSpec> specs, UUID casterId, Combatant target, Vec3 origin) {
+    public void applyAll(List<? extends EffectSpec> specs, UUID casterId,
+                         Combatant target, Vec3 origin) {
         for (EffectSpec spec : specs) {
             apply(spec, casterId, target, origin);
         }
@@ -56,30 +43,34 @@ public final class EffectApplier {
     private void apply(EffectSpec spec, UUID casterId, Combatant target, Vec3 origin) {
         switch (spec) {
             case EffectSpec.Targeted t -> {
-                if (target != null) applyTargeted(t, target, origin);
+                if (target != null) applyTargeted(t, casterId, target, origin);
             }
             case EffectSpec.Untargeted u -> applyUntargeted(u, casterId, origin);
         }
     }
 
-    private void applyTargeted(EffectSpec.Targeted spec, Combatant target, Vec3 origin) {
+    private void applyTargeted(EffectSpec.Targeted spec, UUID casterId,
+                               Combatant target, Vec3 origin) {
         switch (spec) {
             case EffectSpec.Damage d -> {
-                if (target.isAlive()) {
-                    double mult = d.element().multiplierAgainst(target.shieldElement());
-                    target.applyDamage(d.amount() * mult, d.element());
+                if (target.state().alive()) {
+                    // The elemental multiplier is resolved HERE, against the snapshot's
+                    // shield. The port downstream carries only a number and a culprit.
+                    double mult = d.element().multiplierAgainst(target.state().shieldElement());
+                    target.handle().applyDamage(d.amount() * mult, casterId);
                 }
             }
-            case EffectSpec.Heal h -> target.applyHeal(h.amount());
+            case EffectSpec.Heal h -> target.handle().applyHeal(h.amount());
             case EffectSpec.Knockback k -> {
+                Vec3 position = target.state().position();
                 Vec3 dir = new Vec3(
-                        target.position().x() - origin.x(),
-                        target.position().y() - origin.y(),
-                        target.position().z() - origin.z());
-                target.applyKnockback(dir, k.strength());
+                        position.x() - origin.x(),
+                        position.y() - origin.y(),
+                        position.z() - origin.z());
+                target.handle().applyKnockback(dir, k.strength());
             }
             case EffectSpec.Status s ->
-                    target.applyStatus(s.statusId(), s.durationTicks(), s.amplifier());
+                    target.handle().applyStatus(s.statusId(), s.durationTicks(), s.amplifier());
         }
     }
 
@@ -108,7 +99,7 @@ public final class EffectApplier {
         for (Combatant c : world.combatantsNear(origin, radius)) {
             if (c.id().equals(casterId)) continue;
             for (EffectSpec.Targeted t : effects) {
-                applyTargeted(t, c, origin);
+                applyTargeted(t, casterId, c, origin);
             }
         }
     }

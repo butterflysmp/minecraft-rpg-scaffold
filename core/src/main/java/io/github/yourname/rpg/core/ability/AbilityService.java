@@ -1,7 +1,7 @@
 package io.github.yourname.rpg.core.ability;
 
 import io.github.yourname.rpg.core.combat.Aim;
-import io.github.yourname.rpg.core.combat.Combatant;
+import io.github.yourname.rpg.core.combat.CombatantSnapshot;
 import io.github.yourname.rpg.core.combat.CooldownTracker;
 import io.github.yourname.rpg.core.combat.ResourcePool;
 
@@ -50,22 +50,19 @@ public final class AbilityService {
      */
     public sealed interface CastResult {
         /**
-         * Hand this to a CastExecutor immediately, then drop it. It holds a live
-         * Combatant reference, so it must never be stored across ticks -- see
-         * EffectApplier, which carries a caster's UUID for exactly this reason.
+         * Carries a SNAPSHOT of the caster, never the caster. RpgCommand closes over a
+         * Success in the lambda it hands to onRegion(...), and RegionScheduler.execute
+         * promises only to run the task on the owning region -- not to run it inline, this
+         * tick. A live handle crossing that boundary would be an entity outliving its tick.
+         * An immutable record crossing it is merely a photograph.
+         *
+         * The snapshot rather than a bare UUID, because a Self cast detonates at the
+         * caster's feet, and a UUID cannot say where those are.
          *
          * Note it carries the AIM, not a resolved target: nothing has looked at
          * the world yet, because nothing here is on the right thread to do so.
-         *
-         * Known violation, stated rather than assumed: RpgCommand closes over a
-         * Success inside the lambda it hands to onRegion(...), and
-         * RegionScheduler.execute promises only to run the task on the owning
-         * region -- not to run it inline, this tick. On Paper that region is the
-         * main thread and the lambda runs immediately, so the reference never
-         * actually outlives its tick. On Folia it could. The fix is for Success to
-         * carry a UUID rather than a Combatant; see NEXT.md, Commit C.
          */
-        record Success(AbilityDefinition ability, Combatant caster, Aim aim) implements CastResult {}
+        record Success(AbilityDefinition ability, CombatantSnapshot caster, Aim aim) implements CastResult {}
 
         record OnCooldown(long ticksRemaining) implements CastResult {}
 
@@ -75,7 +72,7 @@ public final class AbilityService {
         record UnknownAbility(String id) implements CastResult {}
     }
 
-    public CastResult cast(Combatant caster, String abilityId, Aim aim) {
+    public CastResult cast(CombatantSnapshot caster, String abilityId, Aim aim) {
         AbilityDefinition def = registry.find(abilityId).orElse(null);
         if (def == null) return new CastResult.UnknownAbility(abilityId);
 

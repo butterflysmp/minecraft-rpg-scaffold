@@ -66,7 +66,7 @@ class AbilityServiceTest {
 
         var service = serviceWith(solarGrenade(), () -> 0L);
 
-        dispatch(world, service.cast(caster, "solar_grenade", FORWARD));
+        dispatch(world, service.cast(caster.snapshot(), "solar_grenade", FORWARD));
 
         assertEquals(88, target.health, 0.001); // 100 - 12 direct
     }
@@ -80,7 +80,7 @@ class AbilityServiceTest {
         world.entities.add(target);
 
         var service = serviceWith(solarGrenade(), () -> 0L);
-        dispatch(world, service.cast(caster, "solar_grenade", FORWARD));
+        dispatch(world, service.cast(caster.snapshot(), "solar_grenade", FORWARD));
 
         assertEquals(82, target.health, 0.001); // 100 - (12 * 1.5)
     }
@@ -93,7 +93,7 @@ class AbilityServiceTest {
         world.entities.add(bystander);
 
         var service = serviceWith(solarGrenade(), () -> 0L);
-        dispatch(world, service.cast(caster, "solar_grenade", FORWARD));
+        dispatch(world, service.cast(caster.snapshot(), "solar_grenade", FORWARD));
 
         // The opening flight segment covers x in [0, 1.2], short of the bystander at
         // x=2, so the grenade strikes on tick 1 and its pulses land at 21/41/61/81/101.
@@ -130,7 +130,7 @@ class AbilityServiceTest {
                         new EffectSpec.Area(4.0, 100, 20,
                                 List.of(new EffectSpec.Damage(2, Element.SOLAR)))));
 
-        dispatch(world, serviceWith(grenade, () -> 0L).cast(caster, "solar_grenade", FORWARD));
+        dispatch(world, serviceWith(grenade, () -> 0L).cast(caster.snapshot(), "solar_grenade", FORWARD));
 
         // No advanceTicks: everything below happened on the detonation frame itself.
         assertEquals(List.of("scorch"), target.statuses, "the struck mob must ignite at once");
@@ -158,7 +158,7 @@ class AbilityServiceTest {
 
         var service = serviceWith(solarGrenade(), () -> 0L);
 
-        dispatch(world, service.cast(caster, "solar_grenade", FORWARD));
+        dispatch(world, service.cast(caster.snapshot(), "solar_grenade", FORWARD));
         assertEquals(88, target.health, 0.001); // launch-frame detonation: direct hit only
 
         world.advanceTicks(19);
@@ -185,7 +185,7 @@ class AbilityServiceTest {
         world.blockDistance = 0; // detonates at the caster's feet, hitting nobody directly
 
         var service = serviceWith(solarGrenade(), () -> 0L);
-        dispatch(world, service.cast(caster, "solar_grenade", new Aim(Vec3.ZERO, new Vec3(0, -1, 0))));
+        dispatch(world, service.cast(caster.snapshot(), "solar_grenade", new Aim(Vec3.ZERO, new Vec3(0, -1, 0))));
 
         world.advanceTicks(20); // first pulse @ 20: caster is present and excluded
         assertEquals(100, caster.health, 0.001);
@@ -205,12 +205,12 @@ class AbilityServiceTest {
         var tick = new AtomicLong(0);
         var service = serviceWith(solarGrenade(), tick::get);
 
-        service.cast(caster, "solar_grenade", FORWARD);
-        var second = service.cast(caster, "solar_grenade", FORWARD);
+        service.cast(caster.snapshot(), "solar_grenade", FORWARD);
+        var second = service.cast(caster.snapshot(), "solar_grenade", FORWARD);
         assertInstanceOf(AbilityService.CastResult.OnCooldown.class, second);
 
         tick.set(200);
-        var third = service.cast(caster, "solar_grenade", FORWARD);
+        var third = service.cast(caster.snapshot(), "solar_grenade", FORWARD);
         assertInstanceOf(AbilityService.CastResult.Success.class, third);
     }
 
@@ -226,9 +226,9 @@ class AbilityServiceTest {
 
         // Note: the returned cast is deliberately never executed.
         assertInstanceOf(AbilityService.CastResult.Success.class,
-                service.cast(caster, "solar_grenade", FORWARD));
+                service.cast(caster.snapshot(), "solar_grenade", FORWARD));
         assertInstanceOf(AbilityService.CastResult.OnCooldown.class,
-                service.cast(caster, "solar_grenade", FORWARD));
+                service.cast(caster.snapshot(), "solar_grenade", FORWARD));
     }
 
     @Test
@@ -237,7 +237,7 @@ class AbilityServiceTest {
         var service = new AbilityService(new AbilityRegistry(), new CooldownTracker(() -> 0L),
                 pool(() -> 0L));
         assertInstanceOf(AbilityService.CastResult.UnknownAbility.class,
-                service.cast(caster, "nope", FORWARD));
+                service.cast(caster.snapshot(), "nope", FORWARD));
     }
 
     @Test
@@ -246,7 +246,7 @@ class AbilityServiceTest {
         var resources = pool(() -> 0L);
         var service = serviceWith(solarGrenade(), () -> 0L, resources);
 
-        service.cast(caster, "solar_grenade", FORWARD);
+        service.cast(caster.snapshot(), "solar_grenade", FORWARD);
 
         assertEquals(60, resources.current(caster.id(), "energy"), 1e-9); // 100 - 40
     }
@@ -258,7 +258,7 @@ class AbilityServiceTest {
         resources.tryConsume(caster.id(), "energy", 70); // 30 left, grenade costs 40
         var service = serviceWith(solarGrenade(), () -> 0L, resources);
 
-        var result = service.cast(caster, "solar_grenade", FORWARD);
+        var result = service.cast(caster.snapshot(), "solar_grenade", FORWARD);
 
         var refused = assertInstanceOf(AbilityService.CastResult.InsufficientResource.class, result);
         assertEquals("energy", refused.resourceId());
@@ -279,13 +279,13 @@ class AbilityServiceTest {
         var service = serviceWith(solarGrenade(), tick::get, resources);
 
         assertInstanceOf(AbilityService.CastResult.InsufficientResource.class,
-                service.cast(caster, "solar_grenade", FORWARD));
+                service.cast(caster.snapshot(), "solar_grenade", FORWARD));
 
         // Let energy regenerate. The grenade's 200-tick cooldown has NOT started,
         // so the same service must cast successfully well before it would elapse.
         tick.set(40);
         assertInstanceOf(AbilityService.CastResult.Success.class,
-                service.cast(caster, "solar_grenade", FORWARD));
+                service.cast(caster.snapshot(), "solar_grenade", FORWARD));
     }
 
     /** Being on cooldown must not spend energy either. */
@@ -295,9 +295,9 @@ class AbilityServiceTest {
         var resources = pool(() -> 0L);
         var service = serviceWith(solarGrenade(), () -> 0L, resources);
 
-        service.cast(caster, "solar_grenade", FORWARD); // 100 -> 60
+        service.cast(caster.snapshot(), "solar_grenade", FORWARD); // 100 -> 60
         assertInstanceOf(AbilityService.CastResult.OnCooldown.class,
-                service.cast(caster, "solar_grenade", FORWARD));
+                service.cast(caster.snapshot(), "solar_grenade", FORWARD));
 
         assertEquals(60, resources.current(caster.id(), "energy"), 1e-9);
     }

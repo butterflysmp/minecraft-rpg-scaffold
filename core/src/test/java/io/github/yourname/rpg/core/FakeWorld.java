@@ -2,6 +2,8 @@ package io.github.yourname.rpg.core;
 
 import io.github.yourname.rpg.core.combat.CombatWorld;
 import io.github.yourname.rpg.core.combat.Combatant;
+import io.github.yourname.rpg.core.combat.CombatantHandle;
+import io.github.yourname.rpg.core.combat.CombatantSnapshot;
 import io.github.yourname.rpg.core.combat.RayHit;
 import io.github.yourname.rpg.core.element.Element;
 import java.util.*;
@@ -19,7 +21,7 @@ public final class FakeWorld implements CombatWorld {
     /** Trips on a task that reschedules itself at a rate the clock can never outrun. */
     private static final int MAX_TASKS_PER_ADVANCE = 100_000;
 
-    public final List<Combatant> entities = new ArrayList<>();
+    public final List<Dummy> entities = new ArrayList<>();
     public final List<String> presented = new ArrayList<>();
 
     private record Scheduled(long dueTick, long seq, Runnable task) {}
@@ -47,11 +49,24 @@ public final class FakeWorld implements CombatWorld {
      */
     public double wallX = Double.POSITIVE_INFINITY;
 
+    /** The snapshot is taken HERE, when the entity is found -- as the real adapter does. */
+    private static Combatant pair(Dummy dummy) {
+        return new Combatant(dummy.snapshot(), dummy);
+    }
+
     @Override public Collection<Combatant> combatantsNear(Vec3 center, double radius) {
         double r2 = radius * radius;
         return entities.stream()
                 .filter(c -> c.position().distanceSquared(center) <= r2)
+                .map(FakeWorld::pair)
                 .toList();
+    }
+
+    @Override public Optional<Combatant> combatant(UUID id) {
+        return entities.stream()
+                .filter(d -> d.id().equals(id))
+                .findFirst()
+                .map(FakeWorld::pair);
     }
 
     /**
@@ -64,10 +79,10 @@ public final class FakeWorld implements CombatWorld {
         if (length == 0) return Optional.empty();
         Vec3 direction = along.scale(1 / length);
 
-        Combatant nearest = null;
+        Dummy nearest = null;
         double nearestDistance = Double.POSITIVE_INFINITY;
 
-        for (Combatant candidate : entities) {
+        for (Dummy candidate : entities) {
             if (candidate.id().equals(ignoreId)) continue;
 
             Vec3 toCandidate = candidate.position().subtract(from);
@@ -94,7 +109,7 @@ public final class FakeWorld implements CombatWorld {
             return Optional.of(RayHit.ofBlock(from.add(direction.scale(wallAt))));
         }
         if (nearest == null) return Optional.empty();
-        return Optional.of(RayHit.ofCombatant(nearest.position(), nearest));
+        return Optional.of(RayHit.ofCombatant(nearest.position(), pair(nearest)));
     }
 
     /**
@@ -141,22 +156,35 @@ public final class FakeWorld implements CombatWorld {
 
     public long now() { return now; }
 
-    public static final class Dummy implements Combatant {
+    /**
+     * A combatant that can be acted on. It is the HANDLE half of the port; its snapshot is
+     * taken by the world at the moment it is found, exactly as the Paper adapter does.
+     */
+    public static final class Dummy implements CombatantHandle {
         private final UUID id = UUID.randomUUID();
         private Vec3 pos;
         public double health = 100;
         public Element shield;
         public final List<String> statuses = new ArrayList<>();
 
+        /** Who last damaged this dummy. Null means the damage was unattributed. */
+        public UUID lastDamageSource;
+
         public Dummy(Vec3 pos) { this.pos = pos; }
 
         public void moveTo(Vec3 to) { this.pos = to; }
 
+        public Vec3 position() { return pos; }
+
+        public CombatantSnapshot snapshot() {
+            return new CombatantSnapshot(id, pos, health > 0, shield);
+        }
+
         @Override public UUID id() { return id; }
-        @Override public Vec3 position() { return pos; }
-        @Override public boolean isAlive() { return health > 0; }
-        @Override public Element shieldElement() { return shield; }
-        @Override public void applyDamage(double a, Element e) { health -= a; }
+        @Override public void applyDamage(double amount, UUID sourceId) {
+            health -= amount;
+            lastDamageSource = sourceId;
+        }
         @Override public void applyHeal(double a) { health += a; }
         @Override public void applyKnockback(Vec3 d, double s) { }
         @Override public void applyStatus(String id, int dur, int amp) { statuses.add(id); }

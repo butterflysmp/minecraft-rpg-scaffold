@@ -2,6 +2,7 @@ package io.github.yourname.rpg.core;
 
 import io.github.yourname.rpg.core.ability.effect.EffectApplier;
 import io.github.yourname.rpg.core.ability.effect.EffectSpec;
+import io.github.yourname.rpg.core.combat.Combatant;
 import io.github.yourname.rpg.core.element.Element;
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +11,11 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class EffectApplierTest {
+
+    /** What the world hands out: a snapshot to read, a handle to act on. */
+    private static Combatant pair(FakeWorld.Dummy dummy) {
+        return new Combatant(dummy.snapshot(), dummy);
+    }
 
     /**
      * Every effect variant, applied with no target. A projectile that lands in
@@ -31,7 +37,7 @@ class EffectApplierTest {
                 new EffectSpec.Area(4.0, 100, 20,
                         List.of(new EffectSpec.Damage(2, Element.SOLAR))));
 
-        assertDoesNotThrow(() -> applier.applyAll(everyVariant, caster, null, Vec3.ZERO));
+        assertDoesNotThrow(() -> applier.applyAll(everyVariant, caster.id(), null, Vec3.ZERO));
     }
 
     /** The specific regression: a status effect with nobody to apply it to. */
@@ -42,7 +48,7 @@ class EffectApplierTest {
         var applier = new EffectApplier(world);
 
         assertDoesNotThrow(() -> applier.applyAll(
-                List.of(new EffectSpec.Status("scorch", 40, 0)), caster, null, Vec3.ZERO));
+                List.of(new EffectSpec.Status("scorch", 40, 0)), caster.id(), null, Vec3.ZERO));
     }
 
     /** Untargeted effects still run when there is no target. */
@@ -52,7 +58,7 @@ class EffectApplierTest {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var applier = new EffectApplier(world);
 
-        applier.applyAll(List.of(new EffectSpec.Visual("solar_detonation")), caster, null, Vec3.ZERO);
+        applier.applyAll(List.of(new EffectSpec.Visual("solar_detonation")), caster.id(), null, Vec3.ZERO);
 
         assertEquals(List.of("solar_detonation"), world.presented);
     }
@@ -78,7 +84,7 @@ class EffectApplierTest {
                 List.of(new EffectSpec.Burst(4.0, List.of(
                         new EffectSpec.Damage(6, Element.SOLAR),
                         new EffectSpec.Status("scorch", 40, 0)))),
-                caster, null, Vec3.ZERO);
+                caster.id(), null, Vec3.ZERO);
 
         assertEquals(0, world.pendingTasks(), "a burst is inline; it must schedule nothing");
         assertEquals(94, victim.health, 0.001);
@@ -138,9 +144,48 @@ class EffectApplierTest {
 
         applier.applyAll(List.of(
                 new EffectSpec.Damage(12, Element.SOLAR),
-                new EffectSpec.Status("scorch", 40, 0)), caster, target, Vec3.ZERO);
+                new EffectSpec.Status("scorch", 40, 0)), caster.id(), pair(target), Vec3.ZERO);
 
         assertEquals(88, target.health, 0.001);
         assertEquals(List.of("scorch"), target.statuses);
+    }
+
+    /**
+     * Damage names its culprit. The port carries the caster's id, never the caster, so a
+     * grenade that outlives its thrower still knows whom to credit.
+     *
+     * And the elemental multiplier is resolved HERE, before the port is called: 12 solar
+     * into a solar shield is 18, and the handle is told 18 -- not 12 and an element.
+     */
+    @Test
+    void damageIsAttributedToTheCasterAndAlreadyMultiplied() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        target.shield = Element.SOLAR;
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(12, Element.SOLAR)),
+                caster.id(), pair(target), Vec3.ZERO);
+
+        assertEquals(caster.id(), target.lastDamageSource, "the caster must be blamed");
+        assertEquals(82, target.health, 0.001, "12 solar x1.5 against a solar shield");
+    }
+
+    /** Splash damage carries the same culprit, and still never splashes the caster. */
+    @Test
+    void burstDamageCarriesTheCasterIdToEveryVictim() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(victim);
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Burst(4.0, List.of(new EffectSpec.Damage(6, Element.SOLAR)))),
+                caster.id(), null, Vec3.ZERO);
+
+        assertEquals(caster.id(), victim.lastDamageSource);
+        assertNull(caster.lastDamageSource, "a burst never splashes its own caster");
     }
 }

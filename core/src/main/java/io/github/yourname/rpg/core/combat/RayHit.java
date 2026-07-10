@@ -17,8 +17,4 @@ public record RayHit(Vec3 point, Combatant combatant) {
     public static RayHit ofCombatant(Vec3 point, Combatant combatant) {
         return new RayHit(point, combatant);
     }
-
-    public boolean hitCombatant() {
-        return combatant != null;
-    }
 }

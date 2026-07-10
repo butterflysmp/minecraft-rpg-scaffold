@@ -1,23 +1,22 @@
 package io.github.yourname.rpg.core.combat;
 
-import io.github.yourname.rpg.core.Vec3;
-import io.github.yourname.rpg.core.element.Element;
 import java.util.UUID;
 
 /**
- * Anything that can be hit. A player, a boss, a training dummy in a unit test.
- * The Paper adapter wraps org.bukkit.entity.LivingEntity in one of these.
+ * Anything that can be hit: a player, a boss, a training dummy in a unit test.
+ *
+ * Two halves, deliberately. {@code state} is what was true when the world found this
+ * combatant, read on the thread that owned it. {@code handle} is how to act on it. Nothing
+ * in core may read the world through a handle, and nothing may act through a snapshot; the
+ * types say which is which, so it is no longer possible to issue a read too late.
+ *
+ * @param state  a photograph, taken on the owning thread. Safe to carry; may go stale.
+ * @param handle a dispatcher. Holds a live entity in the Paper adapter, so it must NOT be
+ *               carried across a tick -- see EffectApplier, which keeps only a UUID.
  */
-public interface Combatant {
-    UUID id();
-    Vec3 position();
-    boolean isAlive();
+public record Combatant(CombatantSnapshot state, CombatantHandle handle) {
 
-    /** Shield element, or null if unshielded. Drives Element.multiplierAgainst. */
-    Element shieldElement();
-
-    void applyDamage(double amount, Element element);
-    void applyHeal(double amount);
-    void applyKnockback(Vec3 direction, double strength);
-    void applyStatus(String statusId, int durationTicks, int amplifier);
+    public UUID id() {
+        return state.id();
+    }
 }

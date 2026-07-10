@@ -15,7 +15,24 @@ import java.util.UUID;
  * knowing threads exist.
  */
 public interface CombatWorld {
+
+    /**
+     * Every combatant within {@code radius} of {@code center}, each paired with a snapshot
+     * read here, on this thread. Only legal on the thread owning {@code center}'s region.
+     */
     Collection<Combatant> combatantsNear(Vec3 center, double radius);
+
+    /**
+     * The combatant with this id, if it is here.
+     *
+     * Exists for Self casts: CastResult.Success carries only an immutable snapshot of the
+     * caster, so acting on the caster needs its handle fetched again on the thread that
+     * owns it. The alternative -- carrying a live handle across the region hop -- is the
+     * bug this port was split to prevent.
+     *
+     * Only legal on the thread owning that combatant.
+     */
+    Optional<Combatant> combatant(UUID id);
 
     /**
      * The first combatant or block struck by the segment from {@code from} to

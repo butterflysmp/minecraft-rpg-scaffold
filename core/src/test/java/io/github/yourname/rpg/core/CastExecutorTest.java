@@ -33,7 +33,7 @@ class CastExecutorTest {
         var service = new AbilityService(registry, new CooldownTracker(() -> 0L),
                 new ResourcePool(() -> 0L, 100, 1));
         var success = assertInstanceOf(AbilityService.CastResult.Success.class,
-                service.cast(caster, "test", aim));
+                service.cast(caster.snapshot(), "test", aim));
         new CastExecutor(world).execute(success);
     }
 
