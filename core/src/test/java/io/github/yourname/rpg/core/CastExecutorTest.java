@@ -124,6 +124,11 @@ class CastExecutorTest {
         cast(world, caster, ability(new CastSpec.Ray(30),
                 new EffectSpec.Damage(12, Element.SOLAR), new EffectSpec.Visual("boom")));
 
+        // The miss detonates at the END of the aim, which is now a segment away: the ray
+        // crosses x=16 and the second segment resolves a tick later.
+        assertEquals(List.of(), world.presented, "the far end has not been reached yet");
+        world.advanceTicks(1);
+
         assertEquals(100, offToTheSide.health, 1e-9);
         assertEquals(List.of("boom"), world.presented, "an untargeted effect still fires on a miss");
     }
@@ -151,6 +156,106 @@ class CastExecutorTest {
         cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, Element.SOLAR)));
 
         assertEquals(100, distant.health, 1e-9);
+    }
+
+    /**
+     * A ray no longer resolves in one trace. Its first chunk column runs inline on the cast
+     * frame; every column after that costs a tick, because crossing a chunk plane means
+     * handing the trace to the region that owns the next chunk.
+     */
+    @Test
+    void rayCrossingAChunkPlaneCostsATick() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var beyondThePlane = new FakeWorld.Dummy(new Vec3(20, 0, 0)); // x=20 is column 1
+        world.entities.add(caster);
+        world.entities.add(beyondThePlane);
+
+        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, Element.SOLAR)));
+
+        assertEquals(100, beyondThePlane.health, 1e-9,
+                "the first segment stops at x=16 and cannot see into the next column");
+
+        world.advanceTicks(1);
+        assertEquals(88, beyondThePlane.health, 1e-9, "the second segment strikes it");
+    }
+
+    /** Two planes crossed, two ticks. The cost of a ray varies with how far it reaches. */
+    @Test
+    void rayCrossingTwoChunkPlanesCostsTwoTicks() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var far = new FakeWorld.Dummy(new Vec3(35, 0, 0)); // column 2
+        world.entities.add(caster);
+        world.entities.add(far);
+
+        cast(world, caster, ability(new CastSpec.Ray(40), new EffectSpec.Damage(12, Element.SOLAR)));
+
+        assertEquals(100, far.health, 1e-9);
+        world.advanceTicks(1);
+        assertEquals(100, far.health, 1e-9, "still only in column 1");
+        world.advanceTicks(1);
+        assertEquals(88, far.health, 1e-9, "column 2, on tick 2");
+    }
+
+    /** Stopping at the first body is what makes an already-hit set unnecessary. */
+    @Test
+    void rayStrikesExactlyOneBodyEvenAcrossColumns() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var first = new FakeWorld.Dummy(new Vec3(20, 0, 0));  // column 1
+        var second = new FakeWorld.Dummy(new Vec3(35, 0, 0)); // column 2
+        world.entities.add(caster);
+        world.entities.add(first);
+        world.entities.add(second);
+
+        cast(world, caster, ability(new CastSpec.Ray(40), new EffectSpec.Damage(12, Element.SOLAR)));
+        world.advanceTicks(10);
+
+        assertEquals(88, first.health, 1e-9);
+        assertEquals(100, second.health, 1e-9, "the walk stops at the first body");
+        assertEquals(0, world.pendingTasks(), "and schedules no further segments");
+    }
+
+    /**
+     * A KNOWN, ACCEPTED DEFECT. This test asserts the bug, not the fix.
+     *
+     * >>> If you fix this, the assertion INVERTS: expect 88, not 100. <<<
+     *
+     * Confining a segment to one chunk column means the trace only sees entities that
+     * column's region owns. This mob's CENTRE is at x=16.05, in column 1. The ray runs up
+     * the z axis at x=15.7, entirely inside column 0, and passes 0.35 blocks from the mob
+     * -- comfortably inside the 0.6 hitRadius, so it WOULD be struck if it were visible.
+     * It is not: column 0's segment cannot see into column 1, and the ray never enters it.
+     *
+     * The 0.35 matters. An earlier version of this test put the mob at x=16.3, exactly
+     * hitRadius away, where 16.3 - 15.7 = 0.6000000000000014 and the fake skipped it for
+     * floating-point reasons. It asserted the right answer for the wrong reason, and passed
+     * even with the column filter deleted.
+     *
+     * So a hitbox straddling a chunk plane can be missed. Fixing it needs a widened trace,
+     * or a second query into the neighbouring column. Both are out of scope; what is in
+     * scope is that FakeWorld can now SEE this, where before it scanned the whole world and
+     * could not.
+     */
+    @Test
+    void rayMissesAnEntityWhoseCentreLiesAcrossAChunkPlane() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(new Vec3(15.7, 0, 0));
+        var straddler = new FakeWorld.Dummy(new Vec3(16.05, 0, 5)); // centre in column 1
+        world.entities.add(caster);
+        world.entities.add(straddler);
+
+        // Straight up +z, staying at x=15.7: never leaves column 0.
+        Aim upTheZAxis = new Aim(new Vec3(15.7, 0, 0), new Vec3(0, 0, 1));
+        cast(world, caster, ability(new CastSpec.Ray(20),
+                new EffectSpec.Damage(12, Element.SOLAR)), upTheZAxis);
+        world.advanceTicks(10);
+
+        assertTrue(straddler.position().subtract(new Vec3(15.7, 0, 5)).length() < world.hitRadius,
+                "it is well inside hitRadius, so only the column check can hide it");
+        assertEquals(100, straddler.health, 1e-9,
+                "MISSED: its centre is in a column the ray never traces. See the javadoc.");
     }
 
     @Test
@@ -232,9 +337,9 @@ class CastExecutorTest {
         cast(world, caster, ability(new CastSpec.Ray(30),
                 new EffectSpec.Area(6.0, 20, 20, List.of(new EffectSpec.Damage(2, Element.SOLAR)))));
 
-        // A ray resolves on the frame it is cast, but its area is a field: the single
-        // pulse is one tick_interval later. Advancing 10 ticks would stop short of it.
-        world.advanceTicks(20);
+        // The ray crosses x=16, so its far end resolves on tick 1, not on the cast frame.
+        // The area placed there pulses one tick_interval later: 1 + 20 = 21.
+        world.advanceTicks(21);
 
         assertEquals(98, atTheEnd.health, 1e-9, "the area should land at the ray's end point");
     }

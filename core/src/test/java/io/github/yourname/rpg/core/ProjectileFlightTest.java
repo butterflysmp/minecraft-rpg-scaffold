@@ -72,6 +72,31 @@ class ProjectileFlightTest {
         assertEquals(0, world.pendingTasks(), "no further flight ticks are queued");
     }
 
+    /**
+     * FakeWorld.castRay only shows entities in chunk columns the segment passes through.
+     * A projectile's segment is NOT confined to one column -- unlike a ray's, it is one
+     * tick of flight and may cross several planes -- so it must still see targets in every
+     * column it traverses.
+     *
+     * This is the clause of the prediction that the port-split commit could not check,
+     * because the column filter did not exist yet. The target sits at x=25, in column 1;
+     * the 40-block segment starts in column 0. A filter that looked only at the segment's
+     * starting column would hide it, and every other projectile test would still pass,
+     * because their targets all sit in column 0.
+     */
+    @Test
+    void aProjectileSegmentSeesTargetsInEveryColumnItCrosses() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(25, 0, 0)); // column 1, mid-segment
+        world.entities.add(target);
+
+        cast(world, caster, grenade(40.0, 0, 100, HIT), FORWARD);
+
+        assertEquals(88, target.health, 1e-9,
+                "a 40-block segment crosses x=16 and must still see into column 1");
+    }
+
     /** A fast projectile must not tunnel through a target thinner than its step. */
     @Test
     void aFastProjectileDoesNotTunnelThroughItsTarget() {

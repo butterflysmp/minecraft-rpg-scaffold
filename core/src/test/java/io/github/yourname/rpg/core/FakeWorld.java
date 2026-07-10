@@ -1,5 +1,6 @@
 package io.github.yourname.rpg.core;
 
+import io.github.yourname.rpg.core.combat.ChunkTraversal;
 import io.github.yourname.rpg.core.combat.CombatWorld;
 import io.github.yourname.rpg.core.combat.Combatant;
 import io.github.yourname.rpg.core.combat.CombatantHandle;
@@ -69,9 +70,40 @@ public final class FakeWorld implements CombatWorld {
                 .map(FakeWorld::pair);
     }
 
+    /** Identifies a chunk column. Two coordinates packed into one key. */
+    private static long columnKey(Vec3 at) {
+        return ((long) ChunkTraversal.columnOf(at.x()) << 32)
+                ^ (ChunkTraversal.columnOf(at.z()) & 0xffffffffL);
+    }
+
+    /**
+     * Every chunk column this segment passes through, found by walking its own chunk-plane
+     * crossings and taking the midpoint of each piece.
+     */
+    private static Set<Long> columnsAlong(Vec3 from, Vec3 direction, double length) {
+        Set<Long> columns = new HashSet<>();
+        Vec3 previous = from;
+        for (Vec3 end : ChunkTraversal.segmentEndpoints(from, direction, length)) {
+            Vec3 midpoint = previous.add(end.subtract(previous).scale(0.5));
+            columns.add(columnKey(midpoint));
+            previous = end;
+        }
+        return columns;
+    }
+
     /**
      * Nearest combatant whose centre lies within hitRadius of the segment, or the
      * wall at blockDistance, whichever comes first.
+     *
+     * Only entities whose CENTRE lies in a chunk column this segment actually passes
+     * through are visible -- because on a real server a trace only sees entities in the
+     * chunks it reads, and those chunks belong to the region running the trace.
+     *
+     * This makes a real defect observable: an entity centred just across a plane, whose
+     * hitbox reaches into a column the ray does walk, is missed. Before this the fake
+     * scanned every entity in the world, which is more permissive than any server -- the
+     * same shape of lie as the old scheduler discarding delayTicks, and the reason a
+     * one-second bug once shipped past a green suite.
      */
     @Override public Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId) {
         Vec3 along = to.subtract(from);
@@ -79,11 +111,14 @@ public final class FakeWorld implements CombatWorld {
         if (length == 0) return Optional.empty();
         Vec3 direction = along.scale(1 / length);
 
+        Set<Long> visibleColumns = columnsAlong(from, direction, length);
+
         Dummy nearest = null;
         double nearestDistance = Double.POSITIVE_INFINITY;
 
         for (Dummy candidate : entities) {
             if (candidate.id().equals(ignoreId)) continue;
+            if (!visibleColumns.contains(columnKey(candidate.position()))) continue;
 
             Vec3 toCandidate = candidate.position().subtract(from);
             double projected = toCandidate.dot(direction);       // distance along the ray

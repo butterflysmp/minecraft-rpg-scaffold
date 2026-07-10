@@ -3,11 +3,13 @@ package io.github.yourname.rpg.core.ability;
 import io.github.yourname.rpg.core.Vec3;
 import io.github.yourname.rpg.core.ability.effect.EffectApplier;
 import io.github.yourname.rpg.core.combat.Aim;
+import io.github.yourname.rpg.core.combat.ChunkTraversal;
 import io.github.yourname.rpg.core.combat.CombatWorld;
 import io.github.yourname.rpg.core.combat.Combatant;
 import io.github.yourname.rpg.core.combat.CombatantSnapshot;
 import io.github.yourname.rpg.core.combat.RayHit;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -52,7 +54,7 @@ public final class CastExecutor {
                 detonate(ability, caster.id(), target, impact);
             }
 
-            case CastSpec.Ray ray -> resolveAlongAim(ability, caster.id(), aim, ray.range());
+            case CastSpec.Ray ray -> launchRay(ability, caster.id(), aim, ray.range());
 
             case CastSpec.Projectile projectile -> launch(ability, caster.id(), aim, projectile);
         }
@@ -103,15 +105,52 @@ public final class CastExecutor {
         world.schedule(next, 1, () -> step(ability, casterId, next, nextVelocity, nextElapsed, spec));
     }
 
-    /** Walk the aim to its first obstruction, or to its full range if there is none. */
-    private void resolveAlongAim(AbilityDefinition ability, UUID casterId, Aim aim, double range) {
-        Vec3 end = aim.pointAt(range);
-        Optional<RayHit> hit = world.castRay(aim.origin(), end, casterId);
+    /**
+     * Walk the aim to its first obstruction, or to its full range if there is none.
+     *
+     * Chunk column by chunk column, not all at once. A single trace over a 30-block range
+     * reads every chunk it crosses, and a chunk belongs to exactly one region -- so one
+     * trace could read several regions from a thread that owns only the first. Ending each
+     * segment on a chunk plane confines it to one column, and therefore to one region. A
+     * fixed segment length would not: it straddles a plane whatever length you pick.
+     *
+     * The first segment runs inline, on the cast frame, exactly as launch() calls step()
+     * inline. So a ray that never leaves its column is still hitscan. Every segment after
+     * the first costs a tick, which means A RAY IS NO LONGER HITSCAN in general, and its
+     * cost varies with aim -- a diagonal crosses more planes than an axis-aligned shot.
+     */
+    private void launchRay(AbilityDefinition ability, UUID casterId, Aim aim, double range) {
+        List<Vec3> endpoints = ChunkTraversal.segmentEndpoints(aim.origin(), aim.direction(), range);
+        stepRay(ability, casterId, aim.origin(), endpoints, 0);
+    }
 
-        Combatant target = hit.map(RayHit::combatant).orElse(null);
-        Vec3 impact = hit.map(RayHit::point).orElse(end);
+    /**
+     * One chunk column of a ray. Mirrors step(): trace, act, or hand the next segment to
+     * the region that owns it. The caster is a UUID, never a handle -- a ray now outlives
+     * the frame that fired it, so the rule that governs projectiles governs this too.
+     *
+     * The walk stops at the first body. Nothing here needs to remember who has already been
+     * struck; if rays are ever made to PIERCE, that changes, and a set of already-hit ids
+     * would have to be threaded through these calls.
+     */
+    private void stepRay(AbilityDefinition ability, UUID casterId, Vec3 from,
+                         List<Vec3> endpoints, int index) {
+        Vec3 to = endpoints.get(index);
 
-        detonate(ability, casterId, target, impact);
+        Optional<RayHit> hit = world.castRay(from, to, casterId);
+        if (hit.isPresent()) {
+            detonate(ability, casterId, hit.get().combatant(), hit.get().point());
+            return;
+        }
+
+        boolean lastSegment = index == endpoints.size() - 1;
+        if (lastSegment) {
+            // A clean miss still goes off at the end of the aim, as it always has.
+            detonate(ability, casterId, null, to);
+            return;
+        }
+
+        world.schedule(to, 1, () -> stepRay(ability, casterId, to, endpoints, index + 1));
     }
 
     /**
