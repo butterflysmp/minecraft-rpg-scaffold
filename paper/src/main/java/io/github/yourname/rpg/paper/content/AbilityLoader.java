@@ -75,13 +75,21 @@ public final class AbilityLoader {
         return v;
     }
 
+    /**
+     * The one caller of Element.fromName that wants a throw. Failing the file is right
+     * here: a misspelled element in content is an authoring mistake, and the loader's
+     * catch(RuntimeException) turns it into a named, skipped file.
+     *
+     * BukkitCombatant calls the same lookup and does NOT throw, because it reads the
+     * same enum on the damage path. One place knows the names; two decide what a miss means.
+     */
     private static Element element(String raw) {
-        try {
-            return Element.valueOf(raw.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
+        Element parsed = Element.fromName(raw);
+        if (parsed == null) {
             throw new IllegalArgumentException(
                     "Unknown element '" + raw + "'; expected one of " + Arrays.toString(Element.values()));
         }
+        return parsed;
     }
 
     private ResourceCost parseCost(ConfigurationSection s) {

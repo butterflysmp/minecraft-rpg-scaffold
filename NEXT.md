@@ -274,6 +274,14 @@ stepped resolver exists for, and shipping it earlier ships a Folia bug as conten
   dispatched, so an area pulse hitting five mobs sees five living targets and
   schedules five hits. Harmless today. The moment you add an on-kill effect, it
   double-fires. Leave a comment in `EffectApplier` now; fix it when on-kill lands.
+- **A throw inside `tickArea` kills the field permanently.** `applyToNearby` runs
+  before `world.schedule`, so any exception from any effect skips the reschedule and
+  the lingering area never pulses again. Commit B removed the only known thrower
+  (`Element.valueOf` on an untrusted PDC string); it did not make the path safe in
+  general. Deliberately not hardened: a `finally` that reschedules would convert one
+  loud failure into a quiet one repeated every `tick_interval`, and a per-combatant
+  `catch` would swallow real bugs exactly where the threading rules say they surface
+  at scale. Revisit only if a second thrower appears.
 - **Energy constants.** `MAX_ENERGY` and `ENERGY_PER_TICK` are Java constants in
   `RpgPlugin`. In a class-based RPG, energy is per-archetype content. Same
   cheap-now/migration-later argument that moved `VisualSpec` to a `steps:` list.

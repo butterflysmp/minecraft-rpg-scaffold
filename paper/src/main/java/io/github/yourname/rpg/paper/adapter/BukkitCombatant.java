@@ -35,11 +35,29 @@ public final class BukkitCombatant implements Combatant {
 
     @Override public boolean isAlive() { return !entity.isDead(); }
 
+    /**
+     * Shield element stored in the entity's PDC -- no NBT reflection.
+     *
+     * Nothing in this plugin writes that key, so every value in it came from somewhere
+     * else: another plugin, a datapack, an operator's /data. It is untrusted input, and
+     * it is read on the damage path. Element.valueOf used to be called here directly,
+     * which meant one badly tagged mob threw mid-detonation -- aborting the remaining
+     * targets of the burst, and stopping the lingering area from ever rescheduling
+     * itself, because tickArea applies its effects before it schedules the next pulse.
+     *
+     * So: warn once, treat it as unshielded, and let the detonation finish.
+     */
     @Override public Element shieldElement() {
-        // Shield element stored in the entity's PDC -- no NBT reflection.
         String raw = entity.getPersistentDataContainer()
                 .get(ctx.keys().shieldElement, PersistentDataType.STRING);
-        return raw == null ? null : Element.valueOf(raw);
+        if (raw == null) return null; // unshielded, and the overwhelmingly common case
+
+        Element element = Element.fromName(raw);
+        if (element == null) {
+            ctx.warnOnce("Entity " + entity.getUniqueId() + " has an unrecognised "
+                    + ctx.keys().shieldElement + " of '" + raw + "'; treating as unshielded");
+        }
+        return element;
     }
 
     @Override public void applyDamage(double amount, Element element) {
