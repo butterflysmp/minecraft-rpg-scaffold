@@ -66,7 +66,24 @@ later without a rewrite. `async` must never touch the Bukkit API.
 
 **Verify a check ran before believing it passed.**
 
-This has bitten four times:
+**And when a guard fires and you have an explanation for why it does not count, the
+explanation is a hypothesis. Test it.** A guard that ran and was argued with is worse
+than one that never ran, because you now believe you checked.
+
+> 2026-07-10: `*** MUTATION STILL IN DEPLOYED JAR ***` fired, correctly, and was
+> dismissed as a race condition — a plausible story, since the build had been
+> backgrounded. It was a file lock. The previous test server was still running, `rm -f`
+> on the deployed jar failed with `Device or resource busy`, and `set -e` aborted
+> `dev-server.sh` before it deployed anything. The mtimes settled it: target `05:40:54`,
+> deployed `05:39:43`. Had the explanation been trusted, the mutated build would have
+> booted a second time and the restore would have been blamed for the result.
+
+This is a distinct failure from the four below, not a variant of them. Those are checks
+that never ran. This is a check that ran, fired, and got talked out of. It survives
+every other fix on this page: you can make every check run, confirm every mutation
+applied, and still lose to a plausible story about why the red does not count.
+
+The four below have bitten in the other direction:
 
 1. `FakeWorld.schedule` discarded `delayTicks`, so no test could see *when* anything
    fired. A one-second bug shipped past 118 green tests.
@@ -83,6 +100,12 @@ So:
   not a mutation.
 - Before believing a **test guards** something, **break the thing and watch it fail.**
   A test that cannot fail is worth nothing, however green.
+- Anything that **discovers** rather than asserts — a scan, a glob, a registry walk —
+  must **fail loudly when it discovers nothing.** Finding zero items is a defect, not a
+  quiet no-op. `getResource("content/")` on a shaded jar returns a non-null URL whose
+  stream is zero bytes and whose `list()` is `null`: it does not throw, it silently
+  finds nothing, and on a server whose data folder is already populated that is
+  indistinguishable from working. Only a *fresh* data folder exposes it.
 - `BUILD SUCCESS` with no `Tests run:` line means **zero tests ran**. Surefire's
   `-Dtest=` takes commas, not `+`; a bad pattern reports success having executed nothing.
 - Never `git checkout --` a file with uncommitted work to undo a mutation. Copy it to the
