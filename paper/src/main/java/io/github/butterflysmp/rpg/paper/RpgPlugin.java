@@ -6,6 +6,8 @@ import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.archetype.ArchetypeRegistry;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
+import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
+import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.command.RpgCommand;
@@ -16,6 +18,7 @@ import io.github.butterflysmp.rpg.paper.content.StatusLoader;
 import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
 import io.github.butterflysmp.rpg.paper.content.VisualLoader;
 import io.github.butterflysmp.rpg.paper.content.VisualRegistry;
+import io.github.butterflysmp.rpg.paper.content.WeaponLoader;
 import io.github.butterflysmp.rpg.paper.listener.RpgListeners;
 import io.github.butterflysmp.rpg.paper.packet.ExampleTelegraphListener;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
@@ -66,9 +69,11 @@ public final class RpgPlugin extends JavaPlugin {
     private VisualRegistry visuals;
     private StatusRegistry statuses;
     private ArchetypeRegistry archetypes;
+    private WeaponRegistry weapons;
     private CooldownTracker cooldowns;
     private ResourcePool resources;
     private AbilityService abilityService;
+    private WeaponService weaponService;
     private ExecutorService storageIo;
     private PlayerRepository repository;
     private ProfileService profiles;
@@ -88,9 +93,10 @@ public final class RpgPlugin extends JavaPlugin {
         this.visuals = new VisualLoader(getLogger()).loadAll(new File(contentDir, "visuals"));
         this.statuses = new StatusLoader(getLogger()).loadAll(new File(contentDir, "statuses"));
         this.archetypes = new ArchetypeLoader(getLogger()).loadAll(new File(contentDir, "archetypes"));
+        this.weapons = new WeaponLoader(getLogger()).loadAll(new File(contentDir, "weapons"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
-                + archetypes.size() + " archetypes");
+                + archetypes.size() + " archetypes, " + weapons.size() + " weapons");
 
         // A visual_id that resolves to nothing should be found now, by name, not by
         // a player casting the ability in six weeks' time. Registry is only reachable
@@ -105,6 +111,8 @@ public final class RpgPlugin extends JavaPlugin {
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
         this.resources = new ResourcePool(Bukkit::getCurrentTick, MAX_ENERGY, ENERGY_PER_TICK);
         this.abilityService = new AbilityService(abilities, cooldowns, resources);
+        // A weapon trigger fires through the same cooldown/energy machinery, gate-free.
+        this.weaponService = new WeaponService(abilityService);
 
         // One thread: file writes for a single player must not race each other,
         // and a serialised queue is plenty for milestone-1 storage. Not a daemon
@@ -131,7 +139,8 @@ public final class RpgPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters, archetypes, profiles),
+                        RpgCommand.build(abilities, abilityService, adapters, archetypes, profiles,
+                                weapons, weaponService),
                         "RPG commands"));
     }
 
@@ -195,6 +204,10 @@ public final class RpgPlugin extends JavaPlugin {
         // registry lookup is available here, so it arrives as the predicate seam.
         problems.addAll(validator.validateArchetypes(archetypes.all(),
                 id -> abilities.find(id).isPresent()));
+        // A weapon trigger's on_hit can dangle a visual_id or status_id the same way an
+        // ability's can, and is checked the same walk. Naming the file at boot beats a
+        // silent no-visual the first time someone swings it.
+        problems.addAll(validator.validateWeapons(weapons.all()));
         for (String problem : problems) {
             getLogger().warning("Content: " + problem);
         }
@@ -243,6 +256,7 @@ public final class RpgPlugin extends JavaPlugin {
     public VisualRegistry visuals() { return visuals; }
     public StatusRegistry statuses() { return statuses; }
     public ArchetypeRegistry archetypes() { return archetypes; }
+    public WeaponRegistry weapons() { return weapons; }
     public CooldownTracker cooldowns() { return cooldowns; }
     public ResourcePool resources() { return resources; }
     public PlayerRepository repository() { return repository; }
@@ -254,4 +268,7 @@ public final class RpgPlugin extends JavaPlugin {
      * the one owning the impact. See AbilityService for why, and what it costs.
      */
     public AbilityService abilityService() { return abilityService; }
+
+    /** Fires a weapon trigger through the shared cooldown/energy path, gate-free. */
+    public WeaponService weaponService() { return weaponService; }
 }

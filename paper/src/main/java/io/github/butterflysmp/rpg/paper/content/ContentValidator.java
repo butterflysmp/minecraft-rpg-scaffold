@@ -4,6 +4,8 @@ import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.archetype.Archetype;
+import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
+import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import org.bukkit.NamespacedKey;
 
 import java.util.ArrayList;
@@ -46,7 +48,7 @@ public final class ContentValidator {
         List<String> problems = new ArrayList<>();
         for (AbilityDefinition ability : abilities.all()) {
             for (EffectSpec effect : ability.onHit()) {
-                checkEffect(effect, ability.id(), problems);
+                checkEffect(effect, "ability '" + ability.id() + "'", problems);
             }
         }
         for (StatusDefinition status : statuses.all()) {
@@ -107,6 +109,28 @@ public final class ContentValidator {
     }
 
     /**
+     * The weapon -> visual/status cross-reference, the same walk as abilities. A weapon's
+     * triggers are ability bodies, so their on_hit effects can dangle a visual_id or
+     * status_id exactly the way an ability can, and are checked the identical way. The
+     * owner label names the weapon AND the trigger, so the warning points at the file and
+     * the input, not just "somewhere in ironblade".
+     *
+     * @return every problem found, each naming the weapon and trigger at fault. Empty is good.
+     */
+    public List<String> validateWeapons(Collection<WeaponDefinition> weapons) {
+        List<String> problems = new ArrayList<>();
+        for (WeaponDefinition weapon : weapons) {
+            for (TriggerBinding binding : weapon.triggers()) {
+                String label = "weapon '" + weapon.id() + "' trigger '" + binding.input() + "'";
+                for (EffectSpec effect : binding.ability().onHit()) {
+                    checkEffect(effect, label, problems);
+                }
+            }
+        }
+        return problems;
+    }
+
+    /**
      * Descends into Area.effects() and Burst.effects(). solar_grenade nests its
      * status_id inside one of them, so a walk over only the top-level on_hit list
      * would check the visual, miss the status entirely, and pass while validating
@@ -138,28 +162,28 @@ public final class ContentValidator {
      * maven-compiler-plugin sees the changed dependency and recompiles the module.
      * `clean` catches nothing here that a plain build does not. Do not re-add the claim.
      */
-    private void checkEffect(EffectSpec effect, String abilityId, List<String> problems) {
+    private void checkEffect(EffectSpec effect, String ownerLabel, List<String> problems) {
         switch (effect) {
             case EffectSpec.Visual visual -> {
                 if (visuals.find(visual.visualId()).isEmpty()) {
-                    problems.add("ability '" + abilityId + "' names visual_id '"
+                    problems.add(ownerLabel + " names visual_id '"
                             + visual.visualId() + "', which no visual defines");
                 }
             }
             case EffectSpec.Status status -> {
                 if (statuses.find(status.statusId()).isEmpty()) {
-                    problems.add("ability '" + abilityId + "' names status_id '"
+                    problems.add(ownerLabel + " names status_id '"
                             + status.statusId() + "', which no status defines");
                 }
             }
             case EffectSpec.Area area -> {
                 for (EffectSpec.Targeted nested : area.effects()) {
-                    checkEffect(nested, abilityId, problems);
+                    checkEffect(nested, ownerLabel, problems);
                 }
             }
             case EffectSpec.Burst burst -> {
                 for (EffectSpec.Targeted nested : burst.effects()) {
-                    checkEffect(nested, abilityId, problems);
+                    checkEffect(nested, ownerLabel, problems);
                 }
             }
             case EffectSpec.Damage ignored -> { }

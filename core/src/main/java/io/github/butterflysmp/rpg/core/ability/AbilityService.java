@@ -96,8 +96,32 @@ public final class AbilityService {
         // moved it after them is what AbilityServiceTest's order-pinning test guards.
         if (!castable.contains(abilityId)) return new CastResult.Locked(abilityId);
 
-        if (!cooldowns.isReady(caster.id(), abilityId)) {
-            return new CastResult.OnCooldown(cooldowns.ticksRemaining(caster.id(), abilityId));
+        return resolve(caster, def, aim);
+    }
+
+    /**
+     * Fire a pre-resolved cast that is NOT a registered, granted ability -- a weapon
+     * trigger. Skips the registry lookup and the castable gate cast() applies, because
+     * a weapon is obtained and swung, not unlocked by a class. Everything past the gate
+     * is identical: it checks and commits the cooldown and energy atomically here, so
+     * there is no check-then-commit window a fast second swing could slip through.
+     *
+     * The trigger's own id (weaponId/input) is what keys its cooldown, so a weapon's
+     * triggers cooldown independently and do not share a timer with any ability.
+     */
+    public CastResult fireTrigger(CombatantSnapshot caster, AbilityDefinition trigger, Aim aim) {
+        return resolve(caster, trigger, aim);
+    }
+
+    /**
+     * The shared tail of cast() and fireTrigger(): cooldown check -> energy spend ->
+     * cooldown trigger -> Success, all before returning. One code path, so the
+     * order-pinning mutation test guards both callers.
+     */
+    private CastResult resolve(CombatantSnapshot caster, AbilityDefinition def, Aim aim) {
+        String id = def.id();
+        if (!cooldowns.isReady(caster.id(), id)) {
+            return new CastResult.OnCooldown(cooldowns.ticksRemaining(caster.id(), id));
         }
 
         // Energy before cooldown, and both before returning Success. tryConsume is
@@ -113,7 +137,7 @@ public final class AbilityService {
         // Consumed here, at call time -- not when the effects finally run. If it
         // were consumed at execution time, a player could spam-cast during the
         // hop onto the region thread.
-        cooldowns.trigger(caster.id(), abilityId, def.cooldownTicks());
+        cooldowns.trigger(caster.id(), id, def.cooldownTicks());
         return new CastResult.Success(def, caster, aim);
     }
 }

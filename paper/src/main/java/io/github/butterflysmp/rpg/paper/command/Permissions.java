@@ -16,4 +16,7 @@ public final class Permissions {
 
     /** Inspect loaded content. Operators only; it exposes the content pipeline. */
     public static final String ADMIN = "rpg.command.admin";
+
+    /** Mint a weapon into your inventory. Operators only; it spawns items from nothing. */
+    public static final String GIVE = "rpg.command.give";
 }

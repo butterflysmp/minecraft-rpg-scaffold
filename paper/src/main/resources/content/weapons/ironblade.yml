@@ -1,0 +1,29 @@
+# The first weapon. A plain sword: one trigger, free, no special element.
+#
+# A weapon is a container of triggers, and each trigger is an ability body -- the
+# same cast / cost / cooldown / on_hit grammar an ability uses -- bound to an input.
+# So `left_click` below reads exactly like an ability, minus the id/element the
+# weapon supplies. The trigger's cooldown keys on ironblade/left_click, so it is
+# independent of every ability and every other weapon's triggers.
+#
+# element and rarity are inert in Phase 1: they load and colour the item name and
+# nothing else. `kinetic` is the neutral element -- unflavoured, never absent.
+
+id: ironblade
+display_name: "Ironblade"
+element: kinetic
+rarity: common
+
+triggers:
+  # Left-click swing. No `cost:` section means free -- energy regenerates while you
+  # swing, rather than competing with your abilities.
+  left_click:
+    cooldown_ticks: 10   # swing speed: half a second between hits
+    cast:
+      type: melee
+      reach: 3.5
+      arc_degrees: 120
+    on_hit:
+      - type: damage
+        amount: 8
+        element: kinetic
