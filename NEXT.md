@@ -28,6 +28,29 @@ field pulses, mobs aggro the caster, and killing one credits them.
 
 Four code paths, proven by a fake and nothing else. Commit E is what walks them.
 
+> #### 2026-07-10 — the `requireOwned` half of that list is wrong
+>
+> **Measured, by grepping for the call site rather than reasoning about it.**
+> `Regions.requireOwned` has exactly one caller: `BukkitCombatant.java:43`, inside
+> `snapshot()`. Three methods reach `snapshot()` via `BukkitCombatant.of` —
+> `combatantsNear` (`PaperCombatWorld.java:65`), `combatant(UUID)` (`:77`), and
+> `castRay` (`:112`).
+>
+> `EffectApplier.java:99` calls `combatantsNear` for every `Burst` and every `Area`
+> pulse; `castRay` runs on every tick of a projectile's flight. So one cast of
+> `solar_grenade` walks that line six-plus times. It is among the **most-executed**
+> lines in the plugin, not an unexecuted one.
+>
+> What is genuinely virgin is narrower, and worth stating exactly: **`combatant(UUID)`
+> itself** — the `world.getEntity(id) instanceof LivingEntity` branch and its
+> `Optional` — which only `CastSpec.Self` reaches. `arc_surge` walks that. It does not
+> light up `requireOwned`, which needs no lighting.
+>
+> Same shape as the `clean` claim above: a plausible inference, never measured,
+> corroborated only by its own restatements. It was asserted here, repeated in three
+> messages, and propagated into two implementation plans before anyone grepped for the
+> call site. The correction stays; the wrong text stays above it.
+
 ---
 
 ## Commit D — Housekeeping
@@ -262,6 +285,14 @@ criterion here — neither silent failure above is a compile error.
 > on `instanceof Player` — "Players only." Everything else was verified; the grenade
 > is still owed by a human.
 >
+> — **Met. This sentence was false the day after it was written.** The grenade was
+> cast on the renamed build: particles, blaze sound, ignition on the detonation frame,
+> lingering pulses, mob aggro, kill credit. Attribution and the rename both survive on
+> a real server. Line 15 of this file already recorded the pre-rename cast, so the
+> sentence above contradicted its own document. A doc asserting an unmet obligation
+> that was met is the same defect class as a javadoc asserting a property that does not
+> hold — here, in the file that exists to catch them.
+>
 > **What was actually run.** `git grep` clean; 65/65 `.java` files' `package` line
 > equals their directory path; 6/6 source roots moved, recorded by git as 65 renames
 > rather than add+delete; `./mvnw -pl core test` → 88 tests; `clean package` → two
@@ -386,6 +417,29 @@ want to discover that now with three abilities rather than later with three
 hundred. Do not fix it by adding Java. Stop, report what the schema cannot
 express, and treat that as the finding.
 
+> #### 2026-07-10 — it does require touching Java, and the schema is not why
+>
+> The criterion worked. It found a real defect at three abilities rather than three
+> hundred, and a **different** one than it was written to find. What the schema cannot
+> express is the empty set: `melee`, `self`, `ray`, `heal`, `knockback`, `status`,
+> `burst`, `kind: potion` and the `VOID`/`ARC`/`SOLAR` elements are all already there.
+>
+> The blocker is **packaging**. `RpgPlugin.java:42` names its shipped content in a
+> hardcoded `String[]`, `saveResource` copies only the paths in it, and the loaders read
+> the *data folder*, not the jar. There is no resource scan anywhere in `paper/`. So a
+> `.yml` committed to `paper/src/main/resources/content/` reaches a running server only
+> if somebody adds a line of Java. Seven new files, seven new lines.
+>
+> `CLAUDE.md` invariant 2 says "adding the 500th weapon must not require a recompile."
+> **The pipeline is intact in the direction the invariant is usually read, and broken in
+> the direction Commit E needs.** A server operator drops a `.yml` into
+> `plugins/Rpg/content/abilities/` and it loads, zero Java. The *project*, shipping
+> default content, cannot. Milestone 4 asks whether a whole class can be added through
+> config alone. The answer was no, and nobody knew.
+>
+> Fixed by **Commit E0** before E, so that E is genuinely `.yml`-only — the same
+> structure that put `check-jar.sh` before the rename.
+
 Adding `.yml` under `content/visuals/` and `content/statuses/` is still zero
 Java. Adding a `case` to `VisualLoader` is not.
 
@@ -400,6 +454,9 @@ First in-game execution of the melee arc.
 
 - it is the only path through `PaperCombatWorld.combatant(UUID)`, hence the only
   live exercise of a `Regions.requireOwned` capture site that has never executed;
+  <br>**— wrong. See the correction at the top of this file.** `combatant(UUID)` is
+  the virgin path. Its `requireOwned` capture site is one of the hottest lines in the
+  plugin, reached by `combatantsNear` on every `Burst` and every `Area` pulse.
 - it is the first time `Registry.MOB_EFFECT.get(...)` runs. `ContentValidator`
   checks potion types at startup, but nothing has ever resolved one.
 
@@ -424,6 +481,13 @@ it will look like a bug when it happens to you. It is a known one.
 Watch the console. `Regions.requireOwned` has never thrown, and on Paper it never
 can — but `combatant(UUID)` is a path nothing has walked. Silence there is new
 information, not the absence of it.
+
+> The first clause is sound and the second is not. `requireOwned` throwing would be
+> news; it has run thousands of times without doing so. `combatant(UUID)` is the path
+> nothing has walked — but it reaches `requireOwned` through the same `snapshot()` as
+> everything else, so **`requireOwned`'s silence during `arc_surge` carries no
+> information at all.** What is new is `world.getEntity(id)` resolving, and the
+> `Optional` coming back non-empty. Watch for *that*.
 
 **Done when:** three abilities cast, `git diff --stat` shows only `.yml`, and the
 console is clean.
@@ -483,6 +547,28 @@ Before milestone 2, two things worth measuring rather than assuming:
   which point five area pulses will all see a living target and all fire.
 - ~~**The zero-test CI guard passes at 101.**~~ **DONE** (`b2aaa44`) —
   `scripts/check-tests.sh`, proven red at 101 and green at 156. See D4 above.
+- **The tuning loop is silently broken, and has been all along.** `RpgPlugin` ships
+  defaults with `saveResource(path, false)`, which **never overwrites**. So editing
+  `paper/src/main/resources/content/abilities/solar_lance.yml` in the repo, rebuilding,
+  and rebooting does **nothing** to a server whose data folder already holds that file.
+  You tune, you restart, you cast, nothing changed, and the only complaint is a `WARN`
+  you have been reading past since the first boot:
+
+  ```
+  [Rpg] Could not save solar_grenade.yml to plugins\Rpg\content\abilities\solar_grenade.yml
+        because solar_grenade.yml already exists.
+  ```
+
+  Three of those, every boot. Not an error, so nobody looks. This is the loop "Then
+  stop and play it" asks you to *time*, and it would have measured the wrong thing.
+
+  **Workaround, until fixed:** delete the file from `run/plugins/Rpg/content/` before
+  rebooting. Or edit `run/plugins/Rpg/content/…` directly and copy back to the repo
+  when you like the numbers — which is what the tuning-loop text actually describes.
+
+  The real fix is a content *reload* that reads the data folder without `saveResource`
+  in the path, or a `--refresh-content` flag on `dev-server.sh`. Not folded into E.
+
 - **`*.gitattributes` does not pin `*.yml` to LF**, and `core.autocrlf=true` on the
   dev machine. So a fresh clone checks `paper-plugin.yml` out as CRLF, `main:` carries
   a `\r`, and `check-jar.sh` goes red locally while staying green on `ubuntu-latest`.
