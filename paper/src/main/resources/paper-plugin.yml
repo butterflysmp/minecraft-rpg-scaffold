@@ -6,6 +6,9 @@ authors: [ yourname ]
 
 # Minimum server version, not the pinned one. Minecraft moved to year-based
 # versioning at 26.1, and Paper accepts the drop-level string here.
+#
+# Confirmed loading: Paper 26.1.2 build 74. Not assumed -- the plugin enabled and
+# logged its content counts. Any other drop is untested.
 api-version: '26.1'
 
 dependencies:

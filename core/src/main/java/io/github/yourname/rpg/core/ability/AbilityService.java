@@ -11,13 +11,27 @@ import io.github.yourname.rpg.core.combat.ResourcePool;
  *
  * cast() DECIDES; it does not EXECUTE. It resolves the ability, checks and
  * consumes the cooldown and the resource cost, and hands back a description of
- * what should happen. The caller passes the Success to a CastExecutor on the
- * thread that owns the impact point -- on Paper, Scheduler.onRegion(...).
+ * what should happen. The caller passes the Success to a CastExecutor.
  *
  * This split exists because resolving where a cast lands reads the world:
  * combatantsNear and castRay are backed by World#getNearbyEntities and
  * World#rayTrace, which are only legal on the region thread owning that chunk.
  * Resolving inline would run them on whatever thread called cast().
+ *
+ * On which thread, exactly? Today: the one owning the caster's AIM ORIGIN -- their
+ * eye. See RpgCommand, which wraps the CastExecutor in onRegion(eye, ...).
+ *
+ * That is correct for Self and for Melee, whose reach is a few blocks. It is NOT
+ * correct for Ray, whose 30-block range can cross into another region, nor for any
+ * Burst or Area whose origin is that distant impact. An earlier version of this
+ * javadoc claimed the caller hops to "the thread that owns the impact point". That
+ * is unimplementable: the impact point is what CastExecutor computes. You cannot hop
+ * to the region owning a location you have not yet resolved.
+ *
+ * The consequence is a Folia-only defect -- on Paper every region scheduler runs on
+ * the main thread, so it cannot be reproduced here. Fixing it means stepping a ray
+ * across regions the way CastExecutor.step already steps a projectile. See NEXT.md,
+ * Commit C.
  */
 public final class AbilityService {
     private final AbilityRegistry registry;
@@ -37,11 +51,19 @@ public final class AbilityService {
     public sealed interface CastResult {
         /**
          * Hand this to a CastExecutor immediately, then drop it. It holds a live
-         * Combatant reference and must never be stored across ticks -- see
-         * EffectApplier.
+         * Combatant reference, so it must never be stored across ticks -- see
+         * EffectApplier, which carries a caster's UUID for exactly this reason.
          *
          * Note it carries the AIM, not a resolved target: nothing has looked at
          * the world yet, because nothing here is on the right thread to do so.
+         *
+         * Known violation, stated rather than assumed: RpgCommand closes over a
+         * Success inside the lambda it hands to onRegion(...), and
+         * RegionScheduler.execute promises only to run the task on the owning
+         * region -- not to run it inline, this tick. On Paper that region is the
+         * main thread and the lambda runs immediately, so the reference never
+         * actually outlives its tick. On Folia it could. The fix is for Success to
+         * carry a UUID rather than a Combatant; see NEXT.md, Commit C.
          */
         record Success(AbilityDefinition ability, Combatant caster, Aim aim) implements CastResult {}
 

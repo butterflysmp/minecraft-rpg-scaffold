@@ -185,8 +185,9 @@ public final class RpgPlugin extends JavaPlugin {
     public ProfileService profiles() { return profiles; }
 
     /**
-     * cast() only decides; the caller must run the returned effects on the
-     * region thread owning the impact point. See AbilityService.
+     * cast() only decides; the caller must run the returned effects on a region
+     * thread. Today that is the region owning the caster's eye, which is not always
+     * the one owning the impact. See AbilityService for why, and what it costs.
      */
     public AbilityService abilityService() { return abilityService; }
 }

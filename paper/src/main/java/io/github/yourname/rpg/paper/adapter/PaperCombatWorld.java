@@ -38,10 +38,24 @@ public final class PaperCombatWorld implements CombatWorld {
      * MUST run on the thread that owns {@code center}'s region.
      * World#getNearbyEntities is illegal anywhere else.
      *
-     * Two entry points reach here, and both satisfy that:
-     *   - EffectApplier's first application, which the caller is required to
-     *     wrap in Scheduler.onRegion(impactPoint, ...) -- see AbilityService.cast.
-     *   - Rescheduled area pulses, which arrive via schedule() -> onRegionLater.
+     * Three entry points reach here. Only one of them provably satisfies that:
+     *
+     *   - Rescheduled area pulses, via EffectApplier.tickArea -> schedule() ->
+     *     onRegionLater(origin, ...). Correct: the hop names the area's own origin.
+     *
+     *   - EffectApplier's inline Burst, and CastExecutor.meleeTarget. Both run on
+     *     whatever thread CastExecutor.execute was called on, which RpgCommand sets
+     *     to the region owning the caster's EYE -- not the burst's origin.
+     *
+     * For Melee the eye and the target are within a few blocks, so they share a
+     * region in practice. For a Burst at the far end of a 30-block Ray they need
+     * not. This method is therefore called, today, on a thread that may not own
+     * {@code center}.
+     *
+     * Do not read this as permission. It is a Folia-only defect: on Paper every
+     * region scheduler runs on the main thread, so no test and no local server can
+     * reproduce it. See NEXT.md, Commit C -- and the javadoc on present(), which
+     * hops correctly and explains why.
      */
     @Override
     public Collection<Combatant> combatantsNear(Vec3 center, double radius) {
@@ -53,8 +67,13 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
-     * MUST run on the thread that owns the segment's region -- World#rayTrace
-     * reads blocks and entities. See combatantsNear for who calls in here.
+     * MUST run on the thread owning every region the segment touches -- World#rayTrace
+     * reads blocks and entities along its whole length, not just at its ends.
+     *
+     * A projectile's segment is one tick of flight, a block or two, so it lies inside
+     * one region and CastExecutor.step re-enters the correct one each tick. A Ray's
+     * segment is its entire range -- CastSpec.Ray defaults to 30 blocks -- and no
+     * single thread owns all of it. That call is the Folia defect on combatantsNear.
      *
      * One trace covers blocks and entities together, so a grenade cannot pass
      * through a wall to reach someone standing behind it.
