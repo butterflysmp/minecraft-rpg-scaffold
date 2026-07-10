@@ -1,0 +1,15 @@
+# The id of this visual is its filename: arc_surge.
+#
+# A Self cast with no visual is a health bar twitching. ELECTRIC_SPARK takes no
+# data object; see void_slash.yml.
+
+steps:
+  - type: particle
+    particle: ELECTRIC_SPARK
+    count: 30
+    spread: 0.9
+
+  - type: sound
+    key: block.beacon.activate
+    volume: 0.7
+    pitch: 1.4

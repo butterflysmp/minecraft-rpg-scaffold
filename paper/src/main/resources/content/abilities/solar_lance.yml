@@ -1,0 +1,36 @@
+# A stepped ray. Thirty blocks, and it does NOT arrive instantly.
+#
+# ChunkTraversal.segmentEndpoints splits the line at every chunk-plane crossing,
+# and CastExecutor walks one segment per tick so that each castRay happens on the
+# region that owns the chunk it is reading. A 30-block ray is therefore one or two
+# ticks depending on aim: down an axis it crosses fewer planes than diagonally.
+#
+# Known, deliberately unfixed: a mob whose centre sits across a chunk plane is
+# invisible to the segment walking past it. Pinned by the core test
+# rayMissesAnEntityWhoseCentreLiesAcrossAChunkPlane. It will look like a bug.
+
+id: solar_lance
+display_name: "<gold>Solar Lance</gold>"
+element: solar
+archetype: hunter
+cooldown_ticks: 100
+
+cost:
+  resource: energy
+  amount: 25
+
+cast:
+  type: ray
+  range: 30
+
+on_hit:
+  - type: visual
+    visual_id: solar_lance
+
+  - type: damage
+    amount: 12
+    element: solar
+
+  - type: status
+    status_id: scorch
+    duration_ticks: 60

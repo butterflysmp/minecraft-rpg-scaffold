@@ -1,0 +1,5 @@
+# What "surge" means. arc_surge decides for how long.
+# The id of this status is its filename: surge.
+
+kind: potion
+potion_type: speed

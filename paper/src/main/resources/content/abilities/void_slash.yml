@@ -1,0 +1,41 @@
+# A melee arc. The first ability in this project that is not a projectile.
+#
+# CastExecutor.meleeTarget picks the nearest combatant within `reach` whose
+# bearing from the caster's aim falls inside `arc_degrees`. A miss is not an
+# error: the burst still lands, at aim.pointAt(reach), on whatever is standing
+# there. That is what makes a swing feel like a swing rather than a hitscan.
+
+id: void_slash
+display_name: "<dark_purple>Void Slash</dark_purple>"
+element: void
+archetype: hunter
+cooldown_ticks: 40
+
+cost:
+  resource: energy
+  amount: 15
+
+cast:
+  type: melee
+  reach: 3.5
+  arc_degrees: 120
+
+on_hit:
+  - type: visual
+    visual_id: void_slash
+
+  # The direct hit. Only the combatant the arc actually resolved takes this.
+  - type: damage
+    amount: 7
+    element: void
+
+  # The sweep. Everything inside the arc's radius on the swing frame, whether or
+  # not the arc resolved a primary target. Knockback is what sells the weight.
+  - type: burst
+    radius: 3.5
+    effects:
+      - type: damage
+        amount: 4
+        element: void
+      - type: knockback
+        strength: 0.6

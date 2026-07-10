@@ -1,0 +1,16 @@
+# The id of this visual is its filename: void_slash.
+#
+# SWEEP_ATTACK takes no data object. VisualLoader rejects any particle whose
+# getDataType() != Void.class -- DUST wants DustOptions, BLOCK wants BlockData --
+# and fails the file at load, naming it, rather than at the first cast.
+
+steps:
+  - type: particle
+    particle: SWEEP_ATTACK
+    count: 12
+    spread: 0.8
+
+  - type: sound
+    key: entity.player.attack.sweep
+    volume: 1.0
+    pitch: 0.8

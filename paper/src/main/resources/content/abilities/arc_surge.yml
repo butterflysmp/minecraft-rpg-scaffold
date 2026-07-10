@@ -1,0 +1,36 @@
+# A Self cast. The caster is their own target.
+#
+# This is the only ability that reaches PaperCombatWorld.combatant(UUID) --
+# world.getEntity(id) resolving to a LivingEntity, and the Optional coming back
+# non-empty. Nothing else walks that branch.
+#
+# It is also the first content to use a potion status, so the first time
+# Registry.MOB_EFFECT.get(...) resolves anything. StatusLoader has always parsed
+# `kind: potion`; nothing ever asked the server whether the key named a real effect.
+#
+# The detonation lands at the caster's FEET -- caster.position(), not the aim's
+# origin, which in production is an eye a metre and a half higher. See CastExecutor.
+
+id: arc_surge
+display_name: "<aqua>Arc Surge</aqua>"
+element: arc
+archetype: hunter
+cooldown_ticks: 300
+
+cost:
+  resource: energy
+  amount: 30
+
+cast:
+  type: self
+
+on_hit:
+  - type: visual
+    visual_id: arc_surge
+
+  - type: heal
+    amount: 6
+
+  - type: status
+    status_id: surge
+    duration_ticks: 200

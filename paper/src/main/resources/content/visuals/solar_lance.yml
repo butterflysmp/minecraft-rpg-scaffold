@@ -1,0 +1,20 @@
+# The id of this visual is its filename: solar_lance.
+#
+# This presents at the IMPACT POINT, once. It tells you where the lance hit, not
+# that it took two ticks to get there. Feeling the flight would want a visual
+# along the beam, and VisualSpec permits Particles and Sound -- there is no Beam.
+# Do not add one before casting the lance and finding out whether the delay is
+# legible without it.
+#
+# END_ROD takes no data object; see void_slash.yml.
+
+steps:
+  - type: particle
+    particle: END_ROD
+    count: 25
+    spread: 0.3
+
+  - type: sound
+    key: item.trident.throw
+    volume: 1.0
+    pitch: 1.2
