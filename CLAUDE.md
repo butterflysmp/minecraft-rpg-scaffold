@@ -62,6 +62,33 @@ Separately: all scheduling goes through `Scheduler` (`onEntity`, `onRegion`,
 `onRegionLater`, `onGlobal`, `async`). This exists so the project runs on Folia
 later without a rewrite. `async` must never touch the Bukkit API.
 
+## VERIFICATION — a check that did not run looks exactly like a check that passed
+
+**Verify a check ran before believing it passed.**
+
+This has bitten four times:
+
+1. `FakeWorld.schedule` discarded `delayTicks`, so no test could see *when* anything
+   fired. A one-second bug shipped past 118 green tests.
+2. Mutation checks run after `git checkout --` had destroyed the code being tested.
+   The suite could not compile; the empty output read as "passed".
+3. A mutation that was a compile error, not a mutation. It printed nothing.
+4. A defect-asserting test that passed on a floating-point accident rather than on the
+   filter it was written to guard. Deleting that filter did not fail it.
+
+So:
+
+- Before believing a **mutation** result, confirm the mutation **compiled and applied**.
+  `grep` for your marker; run `test-compile` first. A mutation that does not compile is
+  not a mutation.
+- Before believing a **test guards** something, **break the thing and watch it fail.**
+  A test that cannot fail is worth nothing, however green.
+- `BUILD SUCCESS` with no `Tests run:` line means **zero tests ran**. Surefire's
+  `-Dtest=` takes commas, not `+`; a bad pattern reports success having executed nothing.
+- Never `git checkout --` a file with uncommitted work to undo a mutation. Copy it to the
+  scratchpad first and restore from there.
+- When you report something as verified, **say what you executed** and what it printed.
+
 ## Architecture invariants
 
 ```
@@ -73,7 +100,10 @@ paper/    adapters. The only module that knows Minecraft exists.
 1. **`core/` must never import `org.bukkit`, `io.papermc`, or
    `com.github.retrooper`.** Its `pom.xml` has no dependencies on purpose. If you
    need a Bukkit type in `core`, you are modelling the wrong thing — define a
-   port interface (see `Combatant`, `CombatWorld`) and implement it in `paper/`.
+   port interface (see `CombatantHandle`, `CombatWorld`) and implement it in `paper/`.
+   Reads and writes are separate ports: `CombatantSnapshot` is a value captured on the
+   thread that owns the entity, `CombatantHandle` only dispatches. You cannot hop a
+   thread and still return a value.
 
 2. **Content is data, not code.** Abilities, weapons, elements' *instances*,
    loot tables, boss phases live in YAML under `content/`. `AbilityLoader` is the
