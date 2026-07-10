@@ -37,6 +37,38 @@ class CastExecutorTest {
         new CastExecutor(world).execute(success);
     }
 
+    /**
+     * A Self cast detonates at the caster's FEET, not at the aim's origin -- which in
+     * production is their eye, a metre and a half higher (RpgCommand builds the Aim from
+     * getEyeLocation(); a Combatant's position is getLocation()).
+     *
+     * Nothing pinned this before. Every other Self test heals, and Heal never reads the
+     * origin; and in this fake the dummy's position happens to equal the aim origin. So a
+     * refactor that resolved the Self origin from the Aim would have moved the detonation
+     * 1.62 blocks upward in silence.
+     *
+     * The bystander is 0.5 blocks from the feet (inside a radius-1 burst) and 1.69 blocks
+     * from the eye (outside it). It is damaged if and only if we detonate at the feet.
+     */
+    @Test
+    void selfCastDetonatesAtTheCastersFeetNotTheirEye() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var bystander = new FakeWorld.Dummy(new Vec3(0.5, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(bystander);
+
+        Aim fromTheEye = new Aim(new Vec3(0, 1.62, 0), new Vec3(1, 0, 0));
+
+        cast(world, caster, ability(new CastSpec.Self(),
+                new EffectSpec.Burst(1.0, List.of(new EffectSpec.Damage(10, Element.SOLAR)))),
+                fromTheEye);
+
+        assertEquals(90, bystander.health, 1e-9,
+                "the burst must be centred on the caster's feet, not on their eye");
+        assertEquals(100, caster.health, 1e-9, "a burst never splashes its own caster");
+    }
+
     @Test
     void selfCastTargetsTheCaster() {
         var world = new FakeWorld();
