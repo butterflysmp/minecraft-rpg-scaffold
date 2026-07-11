@@ -146,4 +146,21 @@ class KitLoaderTest {
                 "the bow is granted and auto-equipped");
         assertTrue(kit.abilityIds().contains("arc_surge"));
     }
+
+    /** The shipped Mage cell -- the commit half of the head-to-head. */
+    @Test
+    void bundledMageFireKitLoads() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/kits/mage_fire.yml")) {
+            assertNotNull(in, "bundled mage_fire is missing from the classpath");
+            Files.write(dir.resolve("mage_fire.yml"), in.readAllBytes());
+        }
+
+        KitRegistry registry = load();
+
+        assertTrue(warnings.isEmpty(), warningText());
+        KitDefinition kit = registry.find("mage", "fire").orElseThrow();
+        assertTrue(kit.weapons().stream().anyMatch(w -> w.weaponId().equals("ember_staff") && w.equip()),
+                "the staff is granted and auto-equipped");
+        assertTrue(kit.abilityIds().containsAll(List.of("solar_grenade", "solar_lance")));
+    }
 }

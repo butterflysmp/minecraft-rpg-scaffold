@@ -1,0 +1,39 @@
+# The Mage's primary: a fire staff. Where the bow's shot is FREE and sustained, the staff's
+# is COSTED and burst -- high-per-hit, slower, and it spends the same energy pool the Mage's
+# spells do. That shared budget is the whole of the Mage identity: the verb is commit. You
+# cannot spam the staff and grenade and lance; you pick your moments.
+#
+# blaze_rod is the staff item (per-weapon material, from the bow commit). Reuses the shipped
+# solar_detonation visual and scorch status, so no new visual/status files.
+
+id: ember_staff
+display_name: "<gold>Ember Staff</gold>"
+element: fire
+rarity: rare
+material: blaze_rod
+
+triggers:
+  # Costed burst bolt. cost 30, cooldown 20 (burst, not the bow's sustained 15). Left-click
+  # is unbound -- a staff is not a melee weapon.
+  right_click:
+    cooldown_ticks: 20
+    cost:
+      resource: energy
+      amount: 30
+    cast:
+      type: projectile
+      speed: 2.0
+      gravity: 0.03
+      max_lifetime_ticks: 80
+    on_hit:
+      - type: visual
+        visual_id: solar_detonation
+      - type: burst
+        radius: 3.5
+        effects:
+          - type: damage
+            amount: 16
+            element: fire
+          - type: status
+            status_id: scorch
+            duration_ticks: 60

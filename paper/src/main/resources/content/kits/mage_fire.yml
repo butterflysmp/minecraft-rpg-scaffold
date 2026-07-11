@@ -1,0 +1,21 @@
+# The second cell: the Fire Mage. Its whole point is to be played back-to-back with the Fire
+# Ranger -- same element, so the ONLY difference is the class.
+#
+# The Mage economy: costed staff + costed spells, all drawing one energy bar. The verb is
+# commit -- managing that budget across the ember_staff, solar_grenade, and solar_lance IS
+# the class. Contrast the Ranger: free bow damage, energy spent only to survive.
+#
+# If, played side by side, kite and commit feel like two different games, the axis holds and
+# the grid is worth filling. If they feel like one loop with different numbers, the class axis
+# needs more than economy+tempo -- and we learn it here, at two kits, not twenty-four.
+
+class: mage
+element: fire
+display_name: "<gold>Fire Mage</gold>"
+
+weapons:
+  - { id: ember_staff, equip: true }
+
+abilities:
+  - solar_grenade
+  - solar_lance

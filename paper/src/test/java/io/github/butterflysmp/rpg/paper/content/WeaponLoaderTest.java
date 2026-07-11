@@ -319,4 +319,25 @@ class WeaponLoaderTest {
         assertInstanceOf(CastSpec.Projectile.class, shot.cast());
         assertEquals(15, shot.cooldownTicks(), "cooldown is the fire rate");
     }
+
+    /** The shipped staff: a costed right-click projectile -- the Mage's commit primary. */
+    @Test
+    void bundledEmberStaffContentLoads() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/weapons/ember_staff.yml")) {
+            assertNotNull(in, "bundled ember_staff is missing from the classpath");
+            Files.write(dir.resolve("ember_staff.yml"), in.readAllBytes());
+        }
+
+        WeaponRegistry registry = load();
+
+        assertTrue(warnings.isEmpty(), warningText());
+        WeaponDefinition weapon = registry.find("ember_staff").orElseThrow();
+        assertEquals("blaze_rod", weapon.material(), "a staff, not a sword or a bow");
+
+        // COSTED, unlike the bow's free shot -- the Mage spends energy to deal damage.
+        var shot = weapon.trigger("right_click").orElseThrow().ability();
+        assertEquals("energy", shot.cost().resourceId());
+        assertEquals(30, shot.cost().amount(), 1e-9);
+        assertInstanceOf(CastSpec.Projectile.class, shot.cast());
+    }
 }
