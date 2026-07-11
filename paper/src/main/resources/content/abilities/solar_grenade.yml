@@ -39,6 +39,14 @@ on_hit:
       - type: status
         status_id: scorch
         duration_ticks: 40
+      # rooted_TEMP: a boot-test fixture, NOT Rooted's real home. The grenade burst
+      # hits mobs reliably, so it is a convenient trigger to witness the per-tick
+      # Immobilize primitive in-game (mob held in place; killed rooted mob = clean
+      # console). REMOVE this when Rooted gets its own ability in the status content
+      # pass -- the way /rpg swing_TEMP came out once the swing listener shipped.
+      - type: status
+        status_id: rooted
+        duration_ticks: 60
 
   # The field left behind. Its first pulse is one tick_interval later, by design.
   # It re-applies scorch so that standing in the fire keeps you burning.
