@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class PlayerProfileMigrationTest {
 
     private static PlayerProfile at(int schemaVersion) {
-        return new PlayerProfile(schemaVersion, UUID.randomUUID(), "hunter", 7, 1234,
+        return new PlayerProfile(schemaVersion, UUID.randomUUID(), "hunter", "fire", 7, 1234,
                 List.of("solar_grenade"), 99L);
     }
 
@@ -22,18 +22,39 @@ class PlayerProfileMigrationTest {
 
     /** A profile written before schemaVersion existed deserialises as 0. */
     @Test
-    void versionZeroIsMigratedToOneWithoutLosingData() {
+    void versionZeroIsMigratedToCurrentWithoutLosingData() {
         PlayerProfile legacy = at(0);
 
         PlayerProfile migrated = ProfileMigrations.migrate(legacy);
 
-        assertEquals(1, migrated.schemaVersion());
+        assertEquals(PlayerProfile.CURRENT_SCHEMA_VERSION, migrated.schemaVersion());
         assertEquals(legacy.playerId(), migrated.playerId());
         assertEquals("hunter", migrated.archetypeId());
+        assertEquals("fire", migrated.elementId());
         assertEquals(7, migrated.level());
         assertEquals(1234, migrated.experience());
         assertEquals(List.of("solar_grenade"), migrated.unlockedAbilities());
         assertEquals(99L, migrated.lastSeenEpochMillis());
+    }
+
+    /**
+     * The v1->v2 step: a v1 profile has no elementId key, so Gson leaves it null and the
+     * compact constructor defaults it to NONE -- a half-selected player who re-picks. The
+     * class and every other field survive.
+     */
+    @Test
+    void versionOneGainsAnElementOfNoneAndKeepsTheRest() {
+        // A v1 JSON has no elementId -> null on read -> NONE via the compact constructor.
+        PlayerProfile v1 = new PlayerProfile(1, UUID.randomUUID(), "hunter", null, 7, 1234,
+                List.of("solar_grenade"), 99L);
+        assertEquals(PlayerProfile.NONE, v1.elementId(), "absent elementId defaults to NONE");
+
+        PlayerProfile migrated = ProfileMigrations.migrate(v1);
+
+        assertEquals(PlayerProfile.CURRENT_SCHEMA_VERSION, migrated.schemaVersion());
+        assertEquals("hunter", migrated.archetypeId());
+        assertEquals(PlayerProfile.NONE, migrated.elementId());
+        assertEquals(List.of("solar_grenade"), migrated.unlockedAbilities());
     }
 
     @Test
@@ -57,14 +78,20 @@ class PlayerProfileMigrationTest {
     /** Legacy JSON has no unlockedAbilities key at all; it must not NPE. */
     @Test
     void nullUnlockedAbilitiesBecomesEmptyList() {
-        var profile = new PlayerProfile(1, UUID.randomUUID(), "none", 1, 0, null, 0L);
+        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, null, 0L);
         assertEquals(List.of(), profile.unlockedAbilities());
+    }
+
+    @Test
+    void nullElementIdBecomesNone() {
+        var profile = new PlayerProfile(2, UUID.randomUUID(), "ranger", null, 1, 0, List.of(), 0L);
+        assertEquals(PlayerProfile.NONE, profile.elementId());
     }
 
     @Test
     void unlockedAbilitiesIsDefensivelyCopied() {
         var mutable = new java.util.ArrayList<>(List.of("a"));
-        var profile = new PlayerProfile(1, UUID.randomUUID(), "none", 1, 0, mutable, 0L);
+        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, mutable, 0L);
 
         mutable.add("b");
 
@@ -72,30 +99,32 @@ class PlayerProfileMigrationTest {
     }
 
     @Test
-    void withArchetypeSetsClassAndGrantsAndCarriesTheRest() {
-        var classless = PlayerProfile.fresh(UUID.randomUUID());
-        assertEquals("none", classless.archetypeId());
-        assertEquals(List.of(), classless.unlockedAbilities());
+    void withKitSetsClassElementAndGrantsAndCarriesTheRest() {
+        var unchosen = PlayerProfile.fresh(UUID.randomUUID());
+        assertEquals("none", unchosen.archetypeId());
+        assertEquals("none", unchosen.elementId());
+        assertEquals(List.of(), unchosen.unlockedAbilities());
 
-        var hunter = classless.withArchetype("hunter", List.of("solar_grenade", "solar_lance"));
+        var ranger = unchosen.withKit("ranger", "fire", List.of("arc_surge"));
 
-        assertEquals("hunter", hunter.archetypeId());
-        assertEquals(List.of("solar_grenade", "solar_lance"), hunter.unlockedAbilities());
+        assertEquals("ranger", ranger.archetypeId());
+        assertEquals("fire", ranger.elementId());
+        assertEquals(List.of("arc_surge"), ranger.unlockedAbilities());
         // Everything else is carried unchanged.
-        assertEquals(classless.playerId(), hunter.playerId());
-        assertEquals(classless.schemaVersion(), hunter.schemaVersion());
-        assertEquals(classless.level(), hunter.level());
-        assertEquals(classless.experience(), hunter.experience());
-        assertEquals(classless.lastSeenEpochMillis(), hunter.lastSeenEpochMillis());
+        assertEquals(unchosen.playerId(), ranger.playerId());
+        assertEquals(unchosen.schemaVersion(), ranger.schemaVersion());
+        assertEquals(unchosen.level(), ranger.level());
+        assertEquals(unchosen.experience(), ranger.experience());
+        assertEquals(unchosen.lastSeenEpochMillis(), ranger.lastSeenEpochMillis());
     }
 
     @Test
-    void withArchetypeDefensivelyCopiesTheGrantedList() {
-        var mutable = new java.util.ArrayList<>(List.of("solar_grenade"));
-        var hunter = PlayerProfile.fresh(UUID.randomUUID()).withArchetype("hunter", mutable);
+    void withKitDefensivelyCopiesTheGrantedList() {
+        var mutable = new java.util.ArrayList<>(List.of("arc_surge"));
+        var ranger = PlayerProfile.fresh(UUID.randomUUID()).withKit("ranger", "fire", mutable);
 
         mutable.add("sneaked_in");
 
-        assertEquals(List.of("solar_grenade"), hunter.unlockedAbilities());
+        assertEquals(List.of("arc_surge"), ranger.unlockedAbilities());
     }
 }

@@ -5,7 +5,8 @@ import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
-import io.github.butterflysmp.rpg.core.archetype.Archetype;
+import io.github.butterflysmp.rpg.core.kit.KitDefinition;
+import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.junit.jupiter.api.Test;
@@ -212,46 +213,62 @@ class ContentValidatorTest {
         assertTrue(problems.isEmpty(), problems.toString());
     }
 
-    // --- archetype -> ability cross-reference, behind the Predicate<String> seam ---
+    // --- kit -> ability/weapon/element cross-reference, behind the Predicate<String> seams ---
 
     private static ContentValidator bareValidator() {
         return new ContentValidator(visualsWith(), statusesWith(), elementsWith(REAL_ELEMENTS), ALL_EXIST, ALL_EXIST);
     }
 
-    @Test
-    void archetypeWhoseAbilitiesAllExistProducesNoProblems() {
-        var hunter = new Archetype("hunter", "Hunter", List.of("solar_grenade", "solar_lance"));
+    private static final Predicate<String> ANY_ID = id -> true;
 
-        var problems = bareValidator().validateArchetypes(List.of(hunter), id -> true);
+    @Test
+    void kitWhoseGrantsAllExistProducesNoProblems() {
+        var kit = new KitDefinition("ranger", "fire", "Fire Ranger",
+                List.of(new WeaponGrant("hunters_bow", true)), List.of("arc_surge"));
+
+        var problems = bareValidator().validateKits(List.of(kit), ANY_ID, ANY_ID);
 
         assertTrue(problems.isEmpty(), problems.toString());
     }
 
     @Test
-    void archetypeNamingAnUnknownAbilityIsReported() {
-        var hunter = new Archetype("hunter", "Hunter", List.of("solar_grenade", "typo_lance"));
-        // Everything resolves except the typo.
-        Predicate<String> exists = id -> id.equals("solar_grenade");
+    void kitNamingAnUnknownAbilityOrWeaponIsReported() {
+        var kit = new KitDefinition("ranger", "fire", "Fire Ranger",
+                List.of(new WeaponGrant("real_bow", true), new WeaponGrant("typo_bow", false)),
+                List.of("arc_surge", "typo_surge"));
 
-        var problems = bareValidator().validateArchetypes(List.of(hunter), exists);
+        var problems = bareValidator().validateKits(List.of(kit),
+                id -> id.equals("arc_surge"), id -> id.equals("real_bow"));
 
-        assertEquals(1, problems.size(), problems.toString());
-        assertTrue(problems.get(0).contains("hunter"), problems.toString());
-        assertTrue(problems.get(0).contains("typo_lance"), problems.toString());
+        assertEquals(2, problems.size(), problems.toString());
+        assertTrue(problems.stream().anyMatch(p -> p.contains("typo_surge") && p.contains("ability")), problems.toString());
+        assertTrue(problems.stream().anyMatch(p -> p.contains("typo_bow") && p.contains("weapon")), problems.toString());
+    }
+
+    /** An unknown element on a kit warns, the same checkElement seam as a damage effect. */
+    @Test
+    void kitNamingAnUnknownElementIsReported() {
+        var kit = new KitDefinition("ranger", "plasma", "Plasma Ranger",
+                List.of(), List.of("arc_surge"));
+
+        var problems = bareValidator().validateKits(List.of(kit), ANY_ID, ANY_ID);
+
+        assertTrue(problems.stream().anyMatch(p -> p.contains("plasma") && p.contains("element")), problems.toString());
     }
 
     /**
-     * The case a per-id check passes and still gets wrong: every id dangles, so there
-     * is no "remaining id" to complain about -- but the class is unplayable. This must
-     * report the empty resolved set on top of the per-id problems.
+     * The case a per-id check passes and still gets wrong: every grant dangles, so there is
+     * no "remaining id" to complain about -- but the cell is unplayable. Report the empty
+     * resolved set on top of the per-id problems.
      */
     @Test
-    void archetypeWithNoExistingAbilityIsReportedAsUnplayable() {
-        var ghost = new Archetype("ghost", "Ghost", List.of("gone_a", "gone_b"));
+    void kitWithNoExistingGrantIsReportedAsUnplayable() {
+        var ghost = new KitDefinition("ghost", "fire", "Ghost",
+                List.of(new WeaponGrant("gone_bow", true)), List.of("gone_a"));
 
-        var problems = bareValidator().validateArchetypes(List.of(ghost), id -> false);
+        var problems = bareValidator().validateKits(List.of(ghost), id -> false, id -> false);
 
-        // two dangling ids + one "nobody can play this class"
+        // one dangling ability + one dangling weapon + one "nobody can play this cell"
         assertEquals(3, problems.size(), problems.toString());
         assertTrue(problems.stream().anyMatch(p -> p.contains("nobody can play")), problems.toString());
     }

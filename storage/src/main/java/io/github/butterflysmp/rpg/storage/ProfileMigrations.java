@@ -34,7 +34,15 @@ public final class ProfileMigrations {
             profile = profile.withSchemaVersion(1);
         }
 
-        // v1 -> v2: add the next step here.
+        // v1 -> v2: added elementId (the second identity axis). A v1 profile has no such
+        // field, so Gson leaves it null and the compact constructor already defaulted it to
+        // NONE -- a v1 player becomes half-selected (a class, no element) and re-picks. Only
+        // the stamp is new here.
+        if (profile.schemaVersion() < 2) {
+            profile = profile.withSchemaVersion(2);
+        }
+
+        // v2 -> v3: add the next step here.
 
         return profile;
     }

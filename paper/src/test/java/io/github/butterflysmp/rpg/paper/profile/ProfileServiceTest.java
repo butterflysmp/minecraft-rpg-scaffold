@@ -73,7 +73,7 @@ class ProfileServiceTest {
 
     @Test
     void joinLoadsAnExistingProfile() {
-        repo.saved.put(player, new PlayerProfile(1, player, "hunter", 9, 500, List.of("x"), 1L));
+        repo.saved.put(player, new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of("x"), 1L));
 
         service.onJoin(player);
 
@@ -114,7 +114,7 @@ class ProfileServiceTest {
 
         // The read finally lands.
         repo.pendingLoad.complete(Optional.of(
-                new PlayerProfile(1, player, "hunter", 9, 500, List.of(), 1L)));
+                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of(), 1L)));
 
         assertEquals(1, repo.saveCount.get());
         assertEquals(9, repo.saved.get(player).level());
@@ -168,45 +168,48 @@ class ProfileServiceTest {
         assertDoesNotThrow(() -> service.saveAllAndClear().join());
     }
 
-    // --- setArchetype: the archetype -> castable-set resolution core cannot defend ---
+    // --- setKit: the (class, element) -> castable-set resolution core cannot defend ---
 
     /**
      * The load-bearing paper-side test. core proves the gate works given a set; it is
      * structurally blind to paper handing it the wrong one. This is where that is
-     * caught: a class must grant EXACTLY the abilities it names, no more, no fewer.
+     * caught: a kit must grant EXACTLY the abilities it names, no more, no fewer, and
+     * both identity axes must land on the profile together.
      */
     @Test
-    void setArchetypeGrantsExactlyTheNamedAbilitiesAndPersistsOnce() {
+    void setKitGrantsExactlyTheNamedAbilitiesAndPersistsOnce() {
         service.onJoin(player);
         assertEquals("none", service.profile(player).orElseThrow().archetypeId());
+        assertEquals("none", service.profile(player).orElseThrow().elementId());
         assertEquals(List.of(), service.profile(player).orElseThrow().unlockedAbilities());
 
-        boolean set = service.setArchetype(player, "hunter",
-                List.of("solar_grenade", "solar_lance"));
+        boolean set = service.setKit(player, "ranger", "fire",
+                List.of("arc_surge", "solar_lance"));
 
         assertTrue(set);
         var profile = service.profile(player).orElseThrow();
-        assertEquals("hunter", profile.archetypeId());
-        assertEquals(List.of("solar_grenade", "solar_lance"), profile.unlockedAbilities(),
-                "the granted set must be exactly what the class names -- not a superset, not empty");
-        assertEquals(1, repo.saveCount.get(), "the class change must be persisted immediately");
-        assertEquals(List.of("solar_grenade", "solar_lance"),
+        assertEquals("ranger", profile.archetypeId());
+        assertEquals("fire", profile.elementId());
+        assertEquals(List.of("arc_surge", "solar_lance"), profile.unlockedAbilities(),
+                "the granted set must be exactly what the kit names -- not a superset, not empty");
+        assertEquals(1, repo.saveCount.get(), "the kit change must be persisted immediately");
+        assertEquals(List.of("arc_surge", "solar_lance"),
                 repo.saved.get(player).unlockedAbilities());
     }
 
     @Test
-    void setArchetypeIsRefusedWhileTheProfileIsStillLoading() {
+    void setKitIsRefusedWhileTheProfileIsStillLoading() {
         repo.pendingLoad = new CompletableFuture<>();
         service.onJoin(player);
 
-        assertFalse(service.setArchetype(player, "hunter", List.of("solar_grenade")),
+        assertFalse(service.setKit(player, "ranger", "fire", List.of("arc_surge")),
                 "must not invent a profile out of an in-flight load");
         assertEquals(0, repo.saveCount.get());
     }
 
     @Test
-    void setArchetypeIsRefusedForSomeoneWhoNeverJoined() {
-        assertFalse(service.setArchetype(player, "hunter", List.of("solar_grenade")));
+    void setKitIsRefusedForSomeoneWhoNeverJoined() {
+        assertFalse(service.setKit(player, "ranger", "fire", List.of("arc_surge")));
         assertEquals(0, repo.saveCount.get());
     }
 }

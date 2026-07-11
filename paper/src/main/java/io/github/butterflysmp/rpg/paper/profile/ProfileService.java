@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  *
  * Every callback in here runs on the repository's I/O thread. NOTHING here may
  * touch the Bukkit API -- that is the same rule as the PacketEvents contract,
- * for the same reason. (setArchetype is the one method called FROM the command
+ * for the same reason. (setKit is the one method called FROM the command
  * thread instead; it still touches no Bukkit API, so the rule holds either way.)
  *
  * A player is keyed to the *future* of their profile, not the profile itself,
@@ -76,14 +76,20 @@ public final class ProfileService {
     }
 
     /**
-     * Pick a class: set the player's archetype and grant its abilities, then persist.
+     * Pick a (class, element) cell: set both axes and the grant that the cell resolves to,
+     * then persist. Class, element, and abilities are set together because they are
+     * re-derived as one whenever either axis changes -- the caller passes the new pair and
+     * the abilities it resolves to (the kit's, or empty when half-selected or unauthored),
+     * so a stale class's abilities cannot outlive a class change.
+     *
      * Called on the command thread (not the I/O thread), so it reads the cached profile
-     * synchronously the way {@link #profile(UUID)} does.
+     * synchronously the way {@link #profile(UUID)} does. Touches no Bukkit API -- weapon
+     * minting is the command's job, on the command thread, after this returns.
      *
      * @return false if the profile is not loaded yet or failed to load -- the caller
      *         should tell the player to try again rather than silently doing nothing.
      */
-    public boolean setArchetype(UUID playerId, String archetypeId, List<String> unlockedAbilities) {
+    public boolean setKit(UUID playerId, String classId, String elementId, List<String> unlockedAbilities) {
         CompletableFuture<PlayerProfile> loading = profiles.get(playerId);
         if (loading == null || !loading.isDone() || loading.isCompletedExceptionally()) {
             return false;
@@ -91,11 +97,11 @@ public final class ProfileService {
         PlayerProfile current = loading.getNow(null);
         if (current == null) return false;
 
-        PlayerProfile updated = current.withArchetype(archetypeId, unlockedAbilities);
+        PlayerProfile updated = current.withKit(classId, elementId, unlockedAbilities);
         // Replace the cached future so the very next cast sees the new grant.
         profiles.put(playerId, CompletableFuture.completedFuture(updated));
         repository.save(updated).exceptionally(error -> {
-            log.log(Level.SEVERE, "Failed to persist class change for " + playerId, error);
+            log.log(Level.SEVERE, "Failed to persist kit change for " + playerId, error);
             return null;
         });
         return true;

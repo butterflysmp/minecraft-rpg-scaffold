@@ -3,7 +3,7 @@ package io.github.butterflysmp.rpg.paper;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
-import io.github.butterflysmp.rpg.core.archetype.ArchetypeRegistry;
+import io.github.butterflysmp.rpg.core.kit.KitRegistry;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
@@ -12,7 +12,7 @@ import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.command.RpgCommand;
 import io.github.butterflysmp.rpg.paper.content.AbilityLoader;
-import io.github.butterflysmp.rpg.paper.content.ArchetypeLoader;
+import io.github.butterflysmp.rpg.paper.content.KitLoader;
 import io.github.butterflysmp.rpg.paper.content.ContentValidator;
 import io.github.butterflysmp.rpg.paper.content.ElementLoader;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
@@ -72,7 +72,7 @@ public final class RpgPlugin extends JavaPlugin {
     private VisualRegistry visuals;
     private StatusRegistry statuses;
     private ElementRegistry elements;
-    private ArchetypeRegistry archetypes;
+    private KitRegistry kits;
     private WeaponRegistry weapons;
     private CooldownTracker cooldowns;
     private ResourcePool resources;
@@ -97,12 +97,12 @@ public final class RpgPlugin extends JavaPlugin {
         this.visuals = new VisualLoader(getLogger()).loadAll(new File(contentDir, "visuals"));
         this.statuses = new StatusLoader(getLogger()).loadAll(new File(contentDir, "statuses"));
         this.elements = new ElementLoader(getLogger()).loadAll(new File(contentDir, "elements"));
-        this.archetypes = new ArchetypeLoader(getLogger()).loadAll(new File(contentDir, "archetypes"));
+        this.kits = new KitLoader(getLogger()).loadAll(new File(contentDir, "kits"));
         this.weapons = new WeaponLoader(getLogger()).loadAll(new File(contentDir, "weapons"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, "
-                + archetypes.size() + " archetypes, " + weapons.size() + " weapons");
+                + kits.size() + " kits, " + weapons.size() + " weapons");
 
         // A visual_id that resolves to nothing should be found now, by name, not by
         // a player casting the ability in six weeks' time. Registry is only reachable
@@ -151,7 +151,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters, archetypes, profiles, weapons),
+                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons),
                         "RPG commands"));
     }
 
@@ -210,11 +210,12 @@ public final class RpgPlugin extends JavaPlugin {
                 key -> Registry.SOUND_EVENT.get(key) != null);
 
         List<String> problems = validator.validate(abilities);
-        // An archetype naming an ability nothing defines is the most invisible dangling
-        // reference of all: it reads as a deliberate permission gap, not a typo. The
-        // registry lookup is available here, so it arrives as the predicate seam.
-        problems.addAll(validator.validateArchetypes(archetypes.all(),
-                id -> abilities.find(id).isPresent()));
+        // A kit naming an ability or weapon nothing defines is the most invisible dangling
+        // reference of all: it reads as a deliberate gap, not a typo. Both registries are
+        // available here, so they arrive as the predicate seams.
+        problems.addAll(validator.validateKits(kits.all(),
+                id -> abilities.find(id).isPresent(),
+                id -> weapons.find(id).isPresent()));
         // A weapon trigger's on_hit can dangle a visual_id or status_id the same way an
         // ability's can, and is checked the same walk. Naming the file at boot beats a
         // silent no-visual the first time someone swings it.
@@ -266,7 +267,7 @@ public final class RpgPlugin extends JavaPlugin {
     public AbilityRegistry abilities() { return abilities; }
     public VisualRegistry visuals() { return visuals; }
     public StatusRegistry statuses() { return statuses; }
-    public ArchetypeRegistry archetypes() { return archetypes; }
+    public KitRegistry kits() { return kits; }
     public WeaponRegistry weapons() { return weapons; }
     public CooldownTracker cooldowns() { return cooldowns; }
     public ResourcePool resources() { return resources; }

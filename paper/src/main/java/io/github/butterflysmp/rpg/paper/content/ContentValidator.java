@@ -3,7 +3,8 @@ package io.github.butterflysmp.rpg.paper.content;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
-import io.github.butterflysmp.rpg.core.archetype.Archetype;
+import io.github.butterflysmp.rpg.core.kit.KitDefinition;
+import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import org.bukkit.NamespacedKey;
@@ -73,39 +74,49 @@ public final class ContentValidator {
     }
 
     /**
-     * The archetype -> ability cross-reference, the same shape as visual_id and
-     * status_id above. It is the one that fails most invisibly: a dangling visual is
-     * a missing particle you can see, but a dangling ability in a class is a permission
-     * gap that looks exactly like intended design -- the class silently cannot cast it,
-     * the ability works when cast directly, and you debug it as game logic, not a typo.
+     * The kit -> ability/weapon/element cross-reference. A kit is a (class, element) cell that
+     * grants weapons and abilities; each grant fails most invisibly -- a dangling ability in a
+     * kit is a permission gap that looks like intended design, a dangling weapon is a class you
+     * pick and get nothing to swing.
      *
-     * Two problems are reported per class:
-     *   - each ability id no ability declares (the per-id dangling reference), and
-     *   - a class whose RESOLVED (existing-only) set is empty -- a class nobody can
-     *     play. A per-id check alone passes that: every remaining id is fine because
-     *     none remain.
+     * Problems reported per kit:
+     *   - its element, if no element defines it (the same checkElement seam as damage);
+     *   - each ability id no ability declares, and each weapon id no weapon declares;
+     *   - a kit whose RESOLVED (existing-only) grants are zero -- a cell nobody can play. A
+     *     per-id check alone passes that: every remaining id is fine because none remain.
      *
-     * abilityExists arrives as a predicate for the same reason the potion/sound checks
-     * do: so the walk is unit-testable with no AbilityRegistry and no server.
+     * The existence checks arrive as predicates so the walk is unit-testable with no registries
+     * and no server, exactly as the archetype check it replaces did.
      *
-     * @return every problem found, each naming the archetype at fault. Empty is good.
+     * @return every problem found, each naming the kit at fault. Empty is good.
      */
-    public List<String> validateArchetypes(Collection<Archetype> archetypes,
-                                            Predicate<String> abilityExists) {
+    public List<String> validateKits(Collection<KitDefinition> kits,
+                                     Predicate<String> abilityExists,
+                                     Predicate<String> weaponExists) {
         List<String> problems = new ArrayList<>();
-        for (Archetype archetype : archetypes) {
+        for (KitDefinition kit : kits) {
+            String label = "kit '" + kit.classId() + "/" + kit.elementId() + "'";
+            checkElement(kit.elementId(), label, problems);
+
             int resolved = 0;
-            for (String abilityId : archetype.abilityIds()) {
+            for (String abilityId : kit.abilityIds()) {
                 if (abilityExists.test(abilityId)) {
                     resolved++;
                 } else {
-                    problems.add("archetype '" + archetype.id() + "' grants ability '"
-                            + abilityId + "', which no ability defines");
+                    problems.add(label + " grants ability '" + abilityId
+                            + "', which no ability defines");
+                }
+            }
+            for (WeaponGrant grant : kit.weapons()) {
+                if (weaponExists.test(grant.weaponId())) {
+                    resolved++;
+                } else {
+                    problems.add(label + " grants weapon '" + grant.weaponId()
+                            + "', which no weapon defines");
                 }
             }
             if (resolved == 0) {
-                problems.add("archetype '" + archetype.id()
-                        + "' grants no ability that exists -- nobody can play this class");
+                problems.add(label + " grants nothing that exists -- nobody can play this cell");
             }
         }
         return problems;

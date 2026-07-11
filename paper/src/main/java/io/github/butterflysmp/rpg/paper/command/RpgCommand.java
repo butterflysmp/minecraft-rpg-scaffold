@@ -6,15 +6,17 @@ import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.CastExecutor;
-import io.github.butterflysmp.rpg.core.archetype.Archetype;
-import io.github.butterflysmp.rpg.core.archetype.ArchetypeRegistry;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
+import io.github.butterflysmp.rpg.core.kit.KitDefinition;
+import io.github.butterflysmp.rpg.core.kit.KitRegistry;
+import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
+import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
@@ -25,8 +27,11 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -40,7 +45,8 @@ public final class RpgCommand {
     public static LiteralCommandNode<CommandSourceStack> build(AbilityRegistry registry,
                                                                AbilityService abilityService,
                                                                AdapterContext adapters,
-                                                               ArchetypeRegistry archetypes,
+                                                               KitRegistry kits,
+                                                               ElementRegistry elements,
                                                                ProfileService profiles,
                                                                WeaponRegistry weapons) {
         return Commands.literal("rpg")
@@ -82,19 +88,35 @@ public final class RpgCommand {
                                 })))
                 .then(Commands.literal("class")
                         .requires(source -> source.getSender().hasPermission(Permissions.CLASS))
-                        .then(Commands.argument("archetype", StringArgumentType.word())
+                        .then(Commands.argument("class", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
-                                    archetypes.all().forEach(a -> builder.suggest(a.id()));
+                                    kits.classes().forEach(builder::suggest);
                                     return builder.buildFuture();
                                 })
                                 .executes(ctx -> {
-                                    String id = StringArgumentType.getString(ctx, "archetype");
+                                    String id = StringArgumentType.getString(ctx, "class");
                                     if (!(ctx.getSource().getExecutor() instanceof Player player)) {
                                         ctx.getSource().getSender().sendMessage(
                                                 Component.text("Players only.", NamedTextColor.RED));
                                         return 0;
                                     }
-                                    return chooseClass(player, id, archetypes, profiles);
+                                    return chooseClass(player, id, kits, profiles, weapons, adapters);
+                                })))
+                .then(Commands.literal("element")
+                        .requires(source -> source.getSender().hasPermission(Permissions.CLASS))
+                        .then(Commands.argument("element", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    elements.all().forEach(e -> builder.suggest(e.id()));
+                                    return builder.buildFuture();
+                                })
+                                .executes(ctx -> {
+                                    String id = StringArgumentType.getString(ctx, "element");
+                                    if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+                                        ctx.getSource().getSender().sendMessage(
+                                                Component.text("Players only.", NamedTextColor.RED));
+                                        return 0;
+                                    }
+                                    return chooseElement(player, id, kits, elements, profiles, weapons, adapters);
                                 })))
                 .then(Commands.literal("give")
                         .requires(source -> source.getSender().hasPermission(Permissions.GIVE))
@@ -200,45 +222,146 @@ public final class RpgCommand {
                 return 0;
             }
             case AbilityService.CastResult.Locked locked -> {
-                // A classless player and a wrong-class player fail the same gate but
-                // want different advice: one needs to pick a class, the other has one.
-                if (profile.archetypeId().equals("none")) {
+                // A half-chosen player and a wrong-kit player fail the same gate but want
+                // different advice: one still owes an axis, the other's kit lacks the ability.
+                if (!chosen(profile.archetypeId()) || !chosen(profile.elementId())) {
                     player.sendMessage(Component.text(
-                            "You have no class. Pick one: /rpg class <name>", NamedTextColor.YELLOW));
+                            "Choose a class and an element: /rpg class <class> and /rpg element <element>.",
+                            NamedTextColor.YELLOW));
                 } else {
                     player.sendMessage(Component.text(
-                            "Your class has not unlocked " + locked.id() + ".", NamedTextColor.YELLOW));
+                            "Your kit has not unlocked " + locked.id() + ".", NamedTextColor.YELLOW));
                 }
                 return 0;
             }
         }
     }
 
-    private static int chooseClass(Player player, String archetypeId,
-                                   ArchetypeRegistry archetypes, ProfileService profiles) {
-        Archetype archetype = archetypes.find(archetypeId).orElse(null);
-        if (archetype == null) {
-            player.sendMessage(Component.text("Unknown class: " + archetypeId, NamedTextColor.RED));
-            String available = String.join(", ", archetypes.all().stream().map(Archetype::id).toList());
+    /** An axis is chosen once it is anything but the NONE sentinel. */
+    private static boolean chosen(String axis) {
+        return !PlayerProfile.NONE.equals(axis);
+    }
+
+    /** Set the class axis; the element is carried unchanged, and the kit is re-resolved. */
+    private static int chooseClass(Player player, String classId, KitRegistry kits,
+                                   ProfileService profiles, WeaponRegistry weapons, AdapterContext adapters) {
+        PlayerProfile profile = profiles.profile(player.getUniqueId()).orElse(null);
+        if (profile == null) {
+            player.sendMessage(Component.text("Your profile is still loading -- try again in a moment.",
+                    NamedTextColor.GRAY));
+            return 0;
+        }
+        if (!kits.classes().contains(classId)) {
+            player.sendMessage(Component.text("Unknown class: " + classId, NamedTextColor.RED));
+            player.sendMessage(Component.text("Available: " + String.join(", ", kits.classes()),
+                    NamedTextColor.GRAY));
+            return 0;
+        }
+        return applyKit(player, classId, profile.elementId(), kits, profiles, weapons, adapters);
+    }
+
+    /** Set the element axis; the class is carried unchanged, and the kit is re-resolved. */
+    private static int chooseElement(Player player, String elementId, KitRegistry kits,
+                                     ElementRegistry elements, ProfileService profiles,
+                                     WeaponRegistry weapons, AdapterContext adapters) {
+        PlayerProfile profile = profiles.profile(player.getUniqueId()).orElse(null);
+        if (profile == null) {
+            player.sendMessage(Component.text("Your profile is still loading -- try again in a moment.",
+                    NamedTextColor.GRAY));
+            return 0;
+        }
+        if (elements.find(elementId).isEmpty()) {
+            player.sendMessage(Component.text("Unknown element: " + elementId, NamedTextColor.RED));
+            String available = String.join(", ",
+                    elements.all().stream().map(io.github.butterflysmp.rpg.paper.content.ElementDefinition::id).toList());
             player.sendMessage(Component.text("Available: " + available, NamedTextColor.GRAY));
             return 0;
         }
+        return applyKit(player, profile.archetypeId(), elementId, kits, profiles, weapons, adapters);
+    }
 
-        // setArchetype resolves the class -> granted-abilities set and persists it. It
-        // returns false only when the profile has not finished loading, which is the
-        // one case we cannot proceed through.
-        boolean set = profiles.setArchetype(player.getUniqueId(), archetype.id(), archetype.abilityIds());
+    /**
+     * Set (class, element) together and grant what the pair resolves to -- FAIL CLOSED, with the
+     * precedence: half-selected -> "pick both"; both set but no authored kit -> "not available
+     * yet"; a real kit -> unlock its abilities and mint its weapons. Abilities are always
+     * re-derived from the new pair (empty when incomplete or unauthored), so a stale class's
+     * grants cannot outlive a class change -- and the gate refuses casting either way.
+     */
+    private static int applyKit(Player player, String classId, String elementId, KitRegistry kits,
+                                ProfileService profiles, WeaponRegistry weapons, AdapterContext adapters) {
+        boolean complete = chosen(classId) && chosen(elementId);
+        KitDefinition kit = complete ? kits.find(classId, elementId).orElse(null) : null;
+        List<String> abilities = kit == null ? List.of() : kit.abilityIds();
+
+        boolean set = profiles.setKit(player.getUniqueId(), classId, elementId, abilities);
         if (!set) {
             player.sendMessage(Component.text("Your profile is still loading -- try again in a moment.",
                     NamedTextColor.GRAY));
             return 0;
         }
 
+        if (!complete) {
+            player.sendMessage(Component.text(
+                    "Choose a class and an element: /rpg class <class> and /rpg element <element>.",
+                    NamedTextColor.YELLOW));
+            return 1;
+        }
+        if (kit == null) {
+            player.sendMessage(Component.text(
+                    "The " + classId + " / " + elementId + " combination isn't available yet.",
+                    NamedTextColor.YELLOW));
+            return 1;
+        }
+
+        grantWeapons(player, kit, weapons, adapters);
         player.sendMessage(Component.text("You are now ", NamedTextColor.AQUA)
-                .append(MiniMessage.miniMessage().deserialize(archetype.displayName())));
-        player.sendMessage(Component.text("Unlocked: " + String.join(", ", archetype.abilityIds()),
-                NamedTextColor.GRAY));
+                .append(MiniMessage.miniMessage().deserialize(kit.displayName())));
+        if (!kit.abilityIds().isEmpty()) {
+            player.sendMessage(Component.text("Unlocked: " + String.join(", ", kit.abilityIds()),
+                    NamedTextColor.GRAY));
+        }
         return 1;
+    }
+
+    /**
+     * Mint a kit's weapons. The equip weapon goes into a free hotbar slot and is selected, so a
+     * fresh player has it in hand and the class is playable at once; the rest go to inventory. A
+     * dangling weapon (already warned at boot) is skipped rather than crashing the grant. Never
+     * overwrites a held item -- a full hotbar falls back to inventory, and a full inventory says so.
+     */
+    private static void grantWeapons(Player player, KitDefinition kit, WeaponRegistry weapons,
+                                     AdapterContext adapters) {
+        List<String> given = new ArrayList<>();
+        for (WeaponGrant grant : kit.weapons()) {
+            WeaponDefinition weapon = weapons.find(grant.weaponId()).orElse(null);
+            if (weapon == null) continue; // validated at boot; skip a dangling grant
+            ItemStack item = WeaponItems.mint(weapon, adapters.keys());
+
+            int hotbar = grant.equip() ? firstEmptyHotbarSlot(player) : -1;
+            if (hotbar >= 0) {
+                player.getInventory().setItem(hotbar, item);
+                player.getInventory().setHeldItemSlot(hotbar);
+            } else if (player.getInventory().firstEmpty() >= 0) {
+                player.getInventory().addItem(item);
+            } else {
+                player.sendMessage(Component.text(
+                        "Inventory full -- couldn't give you " + weapon.id() + ".", NamedTextColor.YELLOW));
+                continue;
+            }
+            given.add(weapon.id());
+        }
+        if (!given.isEmpty()) {
+            player.sendMessage(Component.text("Given: " + String.join(", ", given), NamedTextColor.GRAY));
+        }
+    }
+
+    /** The first empty hotbar slot (0-8), or -1 if the hotbar is full. */
+    private static int firstEmptyHotbarSlot(Player player) {
+        for (int slot = 0; slot <= 8; slot++) {
+            ItemStack existing = player.getInventory().getItem(slot);
+            if (existing == null || existing.getType().isAir()) return slot;
+        }
+        return -1;
     }
 
     private static Vec3 toVec3(Location location) {

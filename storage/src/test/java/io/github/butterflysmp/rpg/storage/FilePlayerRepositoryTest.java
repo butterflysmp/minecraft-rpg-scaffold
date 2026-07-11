@@ -33,7 +33,8 @@ class FilePlayerRepositoryTest {
     @Test
     void saveThenLoadRoundTrips() {
         var id = UUID.randomUUID();
-        var profile = new PlayerProfile(1, id, "hunter", 7, 1234, List.of("solar_grenade"), 99L);
+        var profile = new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, id, "hunter", "fire",
+                7, 1234, List.of("solar_grenade"), 99L);
         var repo = repo();
 
         repo.save(profile).join();
@@ -61,9 +62,11 @@ class FilePlayerRepositoryTest {
 
         PlayerProfile loaded = repo().load(id).join().orElseThrow();
 
-        assertEquals(1, loaded.schemaVersion(), "v0 profile must be stamped as v1");
+        assertEquals(PlayerProfile.CURRENT_SCHEMA_VERSION, loaded.schemaVersion(),
+                "a v0 profile must be migrated all the way to the current version");
         assertEquals(id, loaded.playerId());
         assertEquals("hunter", loaded.archetypeId());
+        assertEquals(PlayerProfile.NONE, loaded.elementId(), "no elementId in old JSON -> NONE");
         assertEquals(7, loaded.level());
         assertEquals(List.of("solar_grenade"), loaded.unlockedAbilities());
     }
@@ -79,7 +82,7 @@ class FilePlayerRepositoryTest {
         PlayerProfile loaded = repo().load(id).join().orElseThrow();
 
         assertEquals(List.of(), loaded.unlockedAbilities());
-        assertEquals(1, loaded.schemaVersion());
+        assertEquals(PlayerProfile.CURRENT_SCHEMA_VERSION, loaded.schemaVersion());
     }
 
     @Test

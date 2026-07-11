@@ -1,0 +1,25 @@
+# The first cell of the (class, element) grid: the Fire Ranger.
+#
+# The Ranger economy: the bow carries the damage FREE, so energy is freed for utility.
+# The verb is kite -- shoot sustained, spend energy to survive and reposition, not to deal
+# damage. Its energy sink is arc_surge (a costed heal + Speed), the one existing utility
+# template. Thin but real; if kiting turns out to need true mobility in play, that becomes a
+# general dash primitive (Mage blink, Melee lunge) built THEN, not guessed now.
+#
+# This cell exists to exercise the machinery and be played. It cannot, alone, prove that
+# kite differs from a Mage's commit -- that takes the Mage cell, played back to back. The
+# next step is "author the Mage cell", never "start filling the grid".
+#
+# A kit declares its (class, element) key; the filename is a convention, not parsed.
+
+class: ranger
+element: fire
+display_name: "<gold>Fire Ranger</gold>"
+
+weapons:
+  # Auto-equipped into the hand on selection, so a fresh Ranger has the bow ready and does
+  # not swing an empty hand thinking the class is broken.
+  - { id: hunters_bow, equip: true }
+
+abilities:
+  - arc_surge
