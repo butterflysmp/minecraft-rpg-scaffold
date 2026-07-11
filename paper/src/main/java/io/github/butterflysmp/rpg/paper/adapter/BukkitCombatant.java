@@ -5,11 +5,13 @@ import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.paper.content.StatusDefinition;
+import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTaskTarget;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
@@ -110,6 +112,15 @@ public final class BukkitCombatant {
                         }
                         // PotionEffect's amplifier is 0-based: 0 is level I.
                         entity.addPotionEffect(new PotionEffect(type, durationTicks, amplifier));
+                    }
+
+                    // Mob-only for now. A player would fight the client's own movement
+                    // prediction and get a broken half-immobilize; skip rather than half-work.
+                    case StatusDefinition.Immobilize ignored -> {
+                        if (entity instanceof Player) return;
+                        RepeatingTaskTarget target = new EntityTaskTarget(entity, ctx.scheduler());
+                        ctx.immobilize().apply(entity.getUniqueId(), target, durationTicks,
+                                () -> entity.setVelocity(new Vector(0, 0, 0)));
                     }
                 }
             });

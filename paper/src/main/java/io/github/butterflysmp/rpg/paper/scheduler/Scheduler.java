@@ -21,6 +21,13 @@ public interface Scheduler {
     /** Run on the thread that owns this entity. Use for anything entity-scoped. */
     void onEntity(Entity entity, Runnable task);
 
+    /**
+     * Run on the thread that owns this entity, {@code delayTicks} from now. The entity
+     * counterpart of onRegionLater; a repeating entity task re-arms through this each tick.
+     * If the entity is gone before the delay elapses, the task simply never runs.
+     */
+    void onEntityLater(Entity entity, Runnable task, long delayTicks);
+
     /** Run on the thread that owns this location's region. Use for block/world edits. */
     void onRegion(Location location, Runnable task);
 

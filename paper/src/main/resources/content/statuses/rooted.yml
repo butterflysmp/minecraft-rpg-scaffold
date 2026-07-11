@@ -1,0 +1,7 @@
+# What "rooted" means: the mob cannot move. The ability that applies it decides
+# for how long. The id of this status is its filename: rooted.
+#
+# "rooted" maps to the Immobilize mechanic -- velocity is zeroed every tick, which
+# (unlike vanilla Slowness) also stops the mob jumping away. Mob-only.
+
+kind: rooted

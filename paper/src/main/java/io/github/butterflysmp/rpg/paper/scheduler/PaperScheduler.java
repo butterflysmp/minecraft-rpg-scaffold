@@ -21,6 +21,13 @@ public final class PaperScheduler implements Scheduler {
     }
 
     @Override
+    public void onEntityLater(Entity entity, Runnable task, long delayTicks) {
+        // The entity scheduler rejects a delay of 0; clamp to 1 tick, as onRegionLater does.
+        // The `retired` runnable is null: if the entity is gone before the delay, do nothing.
+        entity.getScheduler().runDelayed(plugin, t -> task.run(), null, Math.max(1L, delayTicks));
+    }
+
+    @Override
     public void onRegion(Location location, Runnable task) {
         Bukkit.getRegionScheduler().execute(plugin, location, task);
     }

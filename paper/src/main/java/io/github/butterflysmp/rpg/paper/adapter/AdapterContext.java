@@ -20,11 +20,12 @@ import java.util.logging.Logger;
  */
 public record AdapterContext(Scheduler scheduler, Keys keys,
                              VisualRegistry visuals, StatusRegistry statuses,
-                             Logger log, Set<String> warned) {
+                             Logger log, Set<String> warned, ImmobilizeStatus immobilize) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, Logger log) {
-        this(scheduler, keys, visuals, statuses, log, ConcurrentHashMap.newKeySet());
+        this(scheduler, keys, visuals, statuses, log,
+                ConcurrentHashMap.newKeySet(), new ImmobilizeStatus());
     }
 
     /**

@@ -60,6 +60,7 @@ public final class StatusLoader {
         return switch (kind) {
             case "fire" -> new StatusDefinition.Fire(id);
             case "potion" -> new StatusDefinition.Potion(id, potionType(req(s, "potion_type")));
+            case "rooted" -> new StatusDefinition.Immobilize(id);
             default -> throw new IllegalArgumentException("Unknown status kind: " + kind);
         };
     }

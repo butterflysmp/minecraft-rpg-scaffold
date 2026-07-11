@@ -33,6 +33,9 @@ class PacketListenerBaseTest {
             this.task = task;
             this.onEntityCalls++;
         }
+        @Override public void onEntityLater(Entity entity, Runnable task, long delayTicks) {
+            throw new AssertionError("unexpected onEntityLater");
+        }
         @Override public void onRegion(Location location, Runnable task) {
             throw new AssertionError("bukkit(...) must hop onto the entity, not a region");
         }

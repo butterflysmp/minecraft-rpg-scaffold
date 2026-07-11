@@ -68,6 +68,17 @@ class StatusLoaderTest {
         assertEquals("scorch", fire.id());
     }
 
+    @Test
+    void loadsARootedStatusAsImmobilizeFromTheKind() throws IOException {
+        write("rooted.yml", "kind: rooted\n");
+
+        var immobilize = assertInstanceOf(StatusDefinition.Immobilize.class,
+                load().find("rooted").orElseThrow());
+
+        assertEquals("rooted", immobilize.id());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
     /**
      * The key is parsed, not resolved. Resolving it would need Registry.MOB_EFFECT,
      * which would need a server, which would make this test impossible.
