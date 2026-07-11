@@ -12,7 +12,6 @@ import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
-import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
@@ -43,8 +42,7 @@ public final class RpgCommand {
                                                                AdapterContext adapters,
                                                                ArchetypeRegistry archetypes,
                                                                ProfileService profiles,
-                                                               WeaponRegistry weapons,
-                                                               WeaponService weaponService) {
+                                                               WeaponRegistry weapons) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
                         // requires() gates the whole branch: an unpermitted sender
@@ -114,21 +112,6 @@ public final class RpgCommand {
                                     }
                                     return give(player, id, weapons, adapters);
                                 })))
-                // TEMPORARY. /rpg swing_TEMP stands in for the PacketEvents left-click
-                // listener that Commit 1b adds. It exists ONLY to prove the weapon spine
-                // with zero packet code, and it MUST be deleted when 1b lands -- a swing
-                // is a real left-click, never a command. The loud _TEMP suffix is the
-                // reminder that this cannot ship to players.
-                .then(Commands.literal("swing_TEMP")
-                        .requires(source -> source.getSender().hasPermission(Permissions.GIVE))
-                        .executes(ctx -> {
-                            if (!(ctx.getSource().getExecutor() instanceof Player player)) {
-                                ctx.getSource().getSender().sendMessage(
-                                        Component.text("Players only.", NamedTextColor.RED));
-                                return 0;
-                            }
-                            return swingTemp(player, weapons, weaponService, adapters);
-                        }))
                 .build();
     }
 
@@ -156,70 +139,6 @@ public final class RpgCommand {
         return 1;
     }
 
-    /**
-     * TEMPORARY -- see the swing_TEMP registration above. Fires the held weapon's
-     * left_click trigger through the same core path an ability uses, then hops to the
-     * region owning the caster's eye to run the effects, exactly like cast().
-     */
-    private static int swingTemp(Player player, WeaponRegistry weapons,
-                                 WeaponService weaponService, AdapterContext adapters) {
-        String weaponId = WeaponItems.heldWeaponId(player, adapters.keys()).orElse(null);
-        if (weaponId == null) {
-            player.sendMessage(Component.text("You are not holding a weapon.", NamedTextColor.GRAY));
-            return 0;
-        }
-        WeaponDefinition weapon = weapons.find(weaponId).orElse(null);
-        if (weapon == null) {
-            player.sendMessage(Component.text(
-                    "Held item names weapon '" + weaponId + "', which is not loaded.", NamedTextColor.RED));
-            return 0;
-        }
-
-        Location eye = player.getEyeLocation();
-        Aim aim = new Aim(toVec3(eye), toVec3(eye.getDirection()));
-        // Photograph the caster on their own thread, before the hop -- same discipline as cast().
-        CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters);
-
-        // Decide INLINE: fire() checks and commits cooldown and energy atomically here,
-        // so a fast second swing cannot double-spend during the region hop below.
-        var maybe = weaponService.fire(caster, weapon, "left_click", aim);
-        if (maybe.isEmpty()) {
-            player.sendMessage(Component.text("This weapon has no left-click trigger.", NamedTextColor.GRAY));
-            return 0;
-        }
-
-        switch (maybe.get()) {
-            case AbilityService.CastResult.Success success -> {
-                adapters.scheduler().onRegion(eye, () ->
-                        new CastExecutor(new PaperCombatWorld(player.getWorld(), adapters))
-                                .execute(success));
-                return 1;
-            }
-            case AbilityService.CastResult.OnCooldown onCooldown -> {
-                player.sendMessage(Component.text(
-                        "Weapon on cooldown for %.1fs".formatted(onCooldown.ticksRemaining() / 20.0),
-                        NamedTextColor.GRAY));
-                return 0;
-            }
-            case AbilityService.CastResult.InsufficientResource lacking -> {
-                player.sendMessage(Component.text(
-                        "Not enough %s: %.0f needed, %.0f available".formatted(
-                                lacking.resourceId(), lacking.required(), lacking.available()),
-                        NamedTextColor.GRAY));
-                return 0;
-            }
-            // fire() never yields these -- a weapon touches neither the ability registry
-            // nor the archetype gate -- but the switch stays exhaustive over the sealed type.
-            case AbilityService.CastResult.UnknownAbility unknown -> {
-                player.sendMessage(Component.text("Weapon trigger error: " + unknown.id(), NamedTextColor.RED));
-                return 0;
-            }
-            case AbilityService.CastResult.Locked locked -> {
-                player.sendMessage(Component.text("Weapon trigger locked: " + locked.id(), NamedTextColor.RED));
-                return 0;
-            }
-        }
-    }
 
     private static int cast(Player player, String abilityId, AbilityService abilityService,
                             AdapterContext adapters, ProfileService profiles) {

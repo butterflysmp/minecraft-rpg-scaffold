@@ -17,9 +17,13 @@ public final class Keys {
     public final NamespacedKey weaponId;
     public final NamespacedKey abilityId;
 
+    /** Identity of the attack-damage modifier that cancels a weapon's vanilla melee. */
+    public final NamespacedKey meleeSuppressor;
+
     public Keys(Plugin plugin) {
         this.shieldElement = new NamespacedKey(plugin, "shield_element");
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
+        this.meleeSuppressor = new NamespacedKey(plugin, "vanilla_melee_suppressor");
     }
 }

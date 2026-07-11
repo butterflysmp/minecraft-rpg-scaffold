@@ -5,7 +5,12 @@ import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -25,21 +30,50 @@ public final class WeaponItems {
     private WeaponItems() {}
 
     /**
+     * The vanilla melee a held item deals is a SEPARATE damage path from a weapon's trigger.
+     * A left-click swing (1b) would otherwise land both -- the iron sword's vanilla ~6 AND
+     * the trigger's content damage -- double-hitting. We cancel the vanilla path so the
+     * trigger's number stays authoritative.
+     *
+     * These two are the single source of truth for that decision, kept server-free so the
+     * choice is unit-testable without constructing an ItemStack (which needs a running
+     * server). mint() DERIVES the Bukkit Attribute from ATTACK_DAMAGE_ATTRIBUTE below, so
+     * the constant the test asserts is the same one that reaches the item -- they cannot
+     * drift. The load-bearing property: this touches ONLY vanilla attack damage; the
+     * weapon's own damage flows through EffectSpec.Damage -> CombatantHandle.applyDamage,
+     * which never goes through an attribute (see WeaponServiceTest, which damages with no
+     * item at all).
+     */
+    public static final String ATTACK_DAMAGE_ATTRIBUTE = "attack_damage";
+
+    /** A player's base attack_damage is 1.0, so -1.0 brings a held swing to a flat 0. */
+    public static final double VANILLA_MELEE_SUPPRESSION = -1.0;
+
+    /**
      * The item a weapon is carried in. Its display name is coloured by rarity (an authored
-     * colour in the name wins), and it carries weapon_id in its PDC -- which is the whole
-     * of its identity. Everything else about the weapon lives in its content file.
+     * colour in the name wins), it carries weapon_id in its PDC -- the whole of its identity
+     * -- and it carries the attack-damage suppressor above so the swing's vanilla melee is
+     * zeroed. Everything else about the weapon lives in its content file.
      *
      * Phase 1 has no per-weapon material, so every weapon mints as a sword; that becomes a
      * weapon field when a non-melee weapon (the bow) needs a different item.
      */
     public static ItemStack mint(WeaponDefinition weapon, Keys keys) {
         ItemStack item = new ItemStack(Material.IRON_SWORD);
+        Attribute attackDamage = Registry.ATTRIBUTE.getOrThrow(
+                NamespacedKey.minecraft(ATTACK_DAMAGE_ATTRIBUTE));
+        AttributeModifier suppressor = new AttributeModifier(
+                keys.meleeSuppressor, VANILLA_MELEE_SUPPRESSION,
+                AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND);
         item.editMeta(meta -> {
             meta.displayName(MiniMessage.miniMessage().deserialize(weapon.displayName())
                     .colorIfAbsent(RarityColors.of(weapon.rarity()))
                     // Item names render italic by default; a weapon name should read plainly.
                     .decoration(TextDecoration.ITALIC, false));
             meta.getPersistentDataContainer().set(keys.weaponId, PersistentDataType.STRING, weapon.id());
+            // Setting an explicit attack_damage modifier suppresses the item's vanilla
+            // default (+6 for iron), so the swing's melee is base 1.0 + (-1.0) = 0.
+            meta.addAttributeModifier(attackDamage, suppressor);
         });
         return item;
     }

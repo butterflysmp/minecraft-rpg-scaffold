@@ -31,5 +31,5 @@ permissions:
     description: Inspect loaded ability content.
     default: op
   rpg.command.give:
-    description: Mint a weapon into your inventory. Also gates the temporary swing_TEMP.
+    description: Mint a weapon into your inventory.
     default: op

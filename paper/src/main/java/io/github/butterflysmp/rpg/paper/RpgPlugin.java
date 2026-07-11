@@ -21,6 +21,7 @@ import io.github.butterflysmp.rpg.paper.content.VisualRegistry;
 import io.github.butterflysmp.rpg.paper.content.WeaponLoader;
 import io.github.butterflysmp.rpg.paper.listener.RpgListeners;
 import io.github.butterflysmp.rpg.paper.packet.ExampleTelegraphListener;
+import io.github.butterflysmp.rpg.paper.packet.WeaponSwingListener;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.scheduler.PaperScheduler;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
@@ -134,13 +135,18 @@ public final class RpgPlugin extends JavaPlugin {
         // paper-plugin.yml. We do NOT call PacketEvents.setAPI() or .load()
         // here -- that is only for shaded builds, and shading it would drag
         // GPL-3.0 onto this project.
+        //
+        // The swing listener reads the arm-swing packet to fire a weapon's left_click
+        // trigger. It runs on Netty I/O threads and hops via PacketListenerBase before
+        // touching anything Bukkit -- the one piece of Phase 1 that must not race.
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new ExampleTelegraphListener(scheduler));
+        PacketEvents.getAPI().getEventManager()
+                .registerListener(new WeaponSwingListener(adapters, weapons, weaponService));
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters, archetypes, profiles,
-                                weapons, weaponService),
+                        RpgCommand.build(abilities, abilityService, adapters, archetypes, profiles, weapons),
                         "RPG commands"));
     }
 
