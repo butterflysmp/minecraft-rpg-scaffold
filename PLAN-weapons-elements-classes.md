@@ -59,7 +59,42 @@ serves.
 
 ---
 
-# PHASE 1 — WEAPONS
+# PHASE 1 — WEAPONS — **DONE** (`1dcaf0a`…`559aa68`)
+
+> #### 2026-07-10 — all three archetypes shipped and proven on a real server
+>
+> Phase 1's weapons are complete. The three-weapon vertical slice below was built and
+> booted, each played before the next, exactly as planned:
+>
+> - **`ironblade`** — the spine, in two commits. 1a (`e3d5b74`): weapon content type,
+>   `WeaponLoader`, `WeaponDefinition`, held-item lookup, `/rpg give`, a gate-free
+>   `WeaponService.fire`, and a temporary `/rpg swing_TEMP`, all proven server-free in
+>   `core` with `FakeWorld`. 1b (`d5a2012`): the PacketEvents swing listener replaced the
+>   temp command — a real left-click, on a Netty thread, hopping via `PacketListenerBase`
+>   before touching Bukkit. The hop's deferral and the packet filter are unit-tested; the
+>   region-thread identity was witnessed on a real-server boot (`isOwnedByCurrentRegion`
+>   true), the requireOwned discipline. Vanilla melee is neutralised by an attack-damage
+>   item modifier at mint, so the swing deals only the trigger's damage.
+> - **`emberblade`** (`d0d1f38`) — the free + costed sword. Right-click via Bukkit
+>   `PlayerInteractEvent` (reliable for right-click, main-thread, no packet cache), a
+>   dispatch-only handler in the one `RpgListeners`. The costed special spends the shared
+>   `energy` pool and is blocked when drained — the shared-resource model, proven server-free
+>   and on a real server. Per-trigger cancellation: only a weapon that binds `right_click`
+>   suppresses the vanilla interaction, so ironblade still opens doors.
+> - **`hunters_bow`** (`559aa68`) — the ranged weapon. A free `Projectile` shot on
+>   right-click, click-to-shoot, fire rate as a cooldown (no charge). The right-click firing
+>   and per-trigger cancellation were **reused unchanged** — the bow is content plus one new
+>   piece, per-weapon `material` (the bow is the first non-sword item). The vanilla draw is
+>   suppressed for the bow (it binds right_click) but a plain vanilla bow still draws.
+>
+> Booted and played: all three weapons load, `/rpg give` mints each, left-click swings,
+> right-click specials fire and spend, fire rate gates the bow, no double-hit or double-spend,
+> and vanilla interactions are suppressed only for the inputs a weapon binds. 208 tests green,
+> each new guard confirmed falsifiable by a reverted mutation.
+>
+> What is **not** yet done in Phase 1: nothing in the weapon slice. Elements remain the
+> Destiny placeholders (`SOLAR` etc.) until Phase 2; `emberblade`/`hunters_bow` carry `solar`
+> as the fire-theme placeholder. The record below is the plan as written, kept intact.
 
 The insight that makes this small: **a weapon is a container of triggers, and each
 trigger is an ability with an input attached.** Left-click fires one trigger,
