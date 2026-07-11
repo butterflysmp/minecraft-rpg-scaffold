@@ -202,11 +202,13 @@ class ContentValidatorTest {
         var log = Logger.getLogger("ContentValidatorTest-" + System.nanoTime());
         var abilities = new AbilityLoader(log).loadAll(copyBundled(dir, "abilities", "solar_grenade.yml"));
         var visuals = new VisualLoader(log).loadAll(copyBundled(dir, "visuals", "solar_detonation.yml"));
-        var statuses = new StatusLoader(log).loadAll(copyBundled(dir, "statuses", "scorch.yml"));
+        // rooted.yml is staged alongside scorch because the grenade now references rooted
+        // (the rooted_TEMP burst fixture). Back to scorch.yml only / size 1 when it is removed.
+        var statuses = new StatusLoader(log).loadAll(copyBundled(dir, "statuses", "scorch.yml", "rooted.yml"));
 
         assertEquals(1, abilities.size(), "bundled ability failed to load");
         assertEquals(1, visuals.size(), "bundled visual failed to load");
-        assertEquals(1, statuses.size(), "bundled status failed to load");
+        assertEquals(2, statuses.size(), "bundled statuses failed to load");
 
         var problems = validator(visuals, statuses).validate(abilities);
 
@@ -306,12 +308,14 @@ class ContentValidatorTest {
         assertTrue(validator(visualsWith(), statusesWith()).validate(abilities).isEmpty());
     }
 
-    /** Copies one shipped resource into its own directory and returns that directory. */
-    private static File copyBundled(Path root, String kind, String file) throws IOException {
+    /** Copies the named shipped resources into their own directory and returns that directory. */
+    private static File copyBundled(Path root, String kind, String... files) throws IOException {
         Path dir = Files.createDirectories(root.resolve(kind));
-        try (var in = ContentValidatorTest.class.getResourceAsStream("/content/" + kind + "/" + file)) {
-            assertNotNull(in, "bundled content is missing from the classpath: " + kind + "/" + file);
-            Files.write(dir.resolve(file), in.readAllBytes());
+        for (String file : files) {
+            try (var in = ContentValidatorTest.class.getResourceAsStream("/content/" + kind + "/" + file)) {
+                assertNotNull(in, "bundled content is missing from the classpath: " + kind + "/" + file);
+                Files.write(dir.resolve(file), in.readAllBytes());
+            }
         }
         return dir.toFile();
     }

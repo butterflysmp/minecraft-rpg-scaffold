@@ -340,10 +340,15 @@ class AbilityLoaderTest {
                 .filter(EffectSpec.Burst.class::isInstance)
                 .map(EffectSpec.Burst.class::cast)
                 .findFirst().orElseThrow(() -> new AssertionError("no burst: mobs would ignite late"));
-        assertEquals(2, burst.effects().size());
+        // 3 effects: splash damage, the scorch ignition, and rooted_TEMP -- a boot-test
+        // fixture on the grenade burst. When rooted_TEMP is removed in the status content
+        // pass, this count returns to 2 and the get(2) assertion below is deleted.
+        assertEquals(3, burst.effects().size());
         assertInstanceOf(EffectSpec.Damage.class, burst.effects().get(0));
         var ignition = assertInstanceOf(EffectSpec.Status.class, burst.effects().get(1));
         assertEquals("scorch", ignition.statusId());
+        var rootedTemp = assertInstanceOf(EffectSpec.Status.class, burst.effects().get(2));
+        assertEquals("rooted", rootedTemp.statusId()); // rooted_TEMP: remove with the fixture
 
         // The field: a damage pulse, and a scorch that refreshes the burn.
         var area = def.onHit().stream()
