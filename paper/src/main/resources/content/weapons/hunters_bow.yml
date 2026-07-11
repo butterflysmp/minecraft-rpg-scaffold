@@ -1,0 +1,37 @@
+# The third weapon, and the last Phase 1 piece: a bow. Proves the ranged (Projectile)
+# trigger from a weapon, and the right-click/vanilla-draw collision.
+#
+# The shot is on RIGHT-click, not left. That is deliberate: a vanilla bow's draw is a
+# right-click action, and the per-trigger cancellation (emberblade's rule) cancels exactly
+# the input a weapon binds -- so binding the shot to right_click is what suppresses the
+# vanilla draw, with no new mechanism. A left-click shot would leave the right-click draw
+# firing real vanilla arrows. Left-click stays free for a future melee/special.
+#
+# Click-to-shoot, cooldown-gated -- no draw-and-charge. Fire rate IS the cooldown, so it
+# composes with future fire-rate buffs (the reason charge was rejected in the plan).
+#
+# material: bow is the first non-sword weapon -- the reason WeaponDefinition gained a
+# material field. Reuses the shipped solar_detonation visual on impact, so no new file.
+
+id: hunters_bow
+display_name: "<gold>Hunter's Bow</gold>"
+element: solar
+rarity: uncommon
+material: bow
+
+triggers:
+  # Free shot -- the Ranger economy: the bow carries the damage, energy stays free for
+  # utility. cooldown_ticks is the fire rate: ~0.75s between shots.
+  right_click:
+    cooldown_ticks: 15
+    cast:
+      type: projectile
+      speed: 2.5
+      gravity: 0.05
+      max_lifetime_ticks: 60
+    on_hit:
+      - type: visual
+        visual_id: solar_detonation
+      - type: damage
+        amount: 6
+        element: solar

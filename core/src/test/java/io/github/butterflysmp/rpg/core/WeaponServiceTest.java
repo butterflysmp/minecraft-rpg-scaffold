@@ -210,4 +210,41 @@ class WeaponServiceTest {
                 service.fire(caster.snapshot(), weapon, "left_click", FORWARD).orElseThrow());
         assertEquals(20, resources.current(caster.id(), "energy"), 1e-9);
     }
+
+    /**
+     * The bow, proven server-free: a FREE right-click Projectile trigger (the first
+     * projectile fired through the weapon path, not just an ability), whose fire rate is a
+     * cooldown -- click-to-shoot, no draw-and-charge. The shot spends nothing (the Ranger
+     * economy), the projectile flies rather than teleporting, and the next shot is gated by
+     * the cooldown, not by any charge state.
+     */
+    @Test
+    void aBowShotIsAFreeProjectileGatedByItsFireRateCooldown() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(5, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(target);
+        var resources = pool(() -> 0L); // tick frozen: within the 15-tick fire-rate cooldown
+        var service = serviceWith(() -> 0L, resources);
+        var bow = new WeaponDefinition("hunters_bow", "Bow", Element.SOLAR, Rarity.UNCOMMON, "bow",
+                List.of(new TriggerBinding("right_click",
+                        new AbilityDefinition("hunters_bow/right_click", "Shot", Element.SOLAR, "none",
+                                15, ResourceCost.FREE,
+                                new CastSpec.Projectile(1.0, 0, 60),
+                                List.of(new EffectSpec.Damage(6, Element.SOLAR))))));
+
+        // The shot fires -- a projectile through the weapon path -- and is free.
+        dispatch(world, service.fire(caster.snapshot(), bow, "right_click", FORWARD));
+        assertEquals(100, resources.current(caster.id(), "energy"), 1e-9); // the bow carries the damage
+
+        // Fire rate is the cooldown, not a charge: the immediate next shot is OnCooldown.
+        assertInstanceOf(CastResult.OnCooldown.class,
+                service.fire(caster.snapshot(), bow, "right_click", FORWARD).orElseThrow());
+
+        // The arrow flies rather than teleporting: nothing is hit on the launch frame.
+        assertEquals(100, target.health, 1e-9, "no hit on the launch frame");
+        world.advanceTicks(5);
+        assertEquals(94, target.health, 1e-9); // 100 - 6, struck downrange
+    }
 }

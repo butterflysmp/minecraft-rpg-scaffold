@@ -292,4 +292,28 @@ class WeaponLoaderTest {
         assertEquals(40, right.cost().amount(), 1e-9);
         assertInstanceOf(CastSpec.Projectile.class, right.cast());
     }
+
+    /** The shipped bow: a non-sword material, and a free right-click projectile shot. */
+    @Test
+    void bundledHuntersBowContentLoads() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/weapons/hunters_bow.yml")) {
+            assertNotNull(in, "bundled hunters_bow is missing from the classpath");
+            Files.write(dir.resolve("hunters_bow.yml"), in.readAllBytes());
+        }
+
+        WeaponRegistry registry = load();
+
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(1, registry.size());
+        WeaponDefinition weapon = registry.find("hunters_bow").orElseThrow();
+        assertEquals("bow", weapon.material(), "the bow is the first non-sword weapon");
+
+        // The shot is on right_click (so the per-trigger cancellation suppresses the draw),
+        // free (the Ranger economy), and a projectile (the ranged trigger).
+        assertTrue(weapon.trigger("left_click").isEmpty(), "no left-click binding: left-click is free");
+        var shot = weapon.trigger("right_click").orElseThrow().ability();
+        assertEquals(ResourceCost.FREE, shot.cost(), "the shot is free -- the bow carries the damage");
+        assertInstanceOf(CastSpec.Projectile.class, shot.cast());
+        assertEquals(15, shot.cooldownTicks(), "cooldown is the fire rate");
+    }
 }

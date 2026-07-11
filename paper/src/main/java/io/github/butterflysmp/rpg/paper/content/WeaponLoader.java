@@ -74,6 +74,9 @@ public final class WeaponLoader {
         String displayName = s.getString("display_name", id);
         Element element = AbilitySchema.element(s.getString("element", "kinetic"));
         Rarity rarity = rarity(s.getString("rarity", "common"));
+        // The item the weapon renders as; paper resolves the string to a Material. Defaults
+        // to a sword, so every weapon before the bow needs no material field.
+        String material = s.getString("material", WeaponDefinition.DEFAULT_MATERIAL);
 
         ConfigurationSection triggers = s.getConfigurationSection("triggers");
         if (triggers == null) {
@@ -102,7 +105,7 @@ public final class WeaponLoader {
         }
 
         // WeaponDefinition rejects an empty trigger list -- caught above, named, skipped.
-        return new WeaponDefinition(id, displayName, element, rarity, bindings);
+        return new WeaponDefinition(id, displayName, element, rarity, material, bindings);
     }
 
     private static Rarity rarity(String raw) {

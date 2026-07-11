@@ -59,7 +59,7 @@ public final class WeaponItems {
      * weapon field when a non-melee weapon (the bow) needs a different item.
      */
     public static ItemStack mint(WeaponDefinition weapon, Keys keys) {
-        ItemStack item = new ItemStack(Material.IRON_SWORD);
+        ItemStack item = new ItemStack(materialOf(weapon.material()));
         Attribute attackDamage = Registry.ATTRIBUTE.getOrThrow(
                 NamespacedKey.minecraft(ATTACK_DAMAGE_ATTRIBUTE));
         AttributeModifier suppressor = new AttributeModifier(
@@ -76,6 +76,16 @@ public final class WeaponItems {
             meta.addAttributeModifier(attackDamage, suppressor);
         });
         return item;
+    }
+
+    /**
+     * Resolve a weapon's material string ("bow", "iron_sword") to a Bukkit Material. An
+     * unknown material falls back to a sword rather than crashing the give -- a wrong item
+     * is visible in-game, where it can be fixed, and never blocks a boot.
+     */
+    private static Material materialOf(String material) {
+        Material resolved = Material.matchMaterial(material);
+        return resolved != null ? resolved : Material.IRON_SWORD;
     }
 
     /**
