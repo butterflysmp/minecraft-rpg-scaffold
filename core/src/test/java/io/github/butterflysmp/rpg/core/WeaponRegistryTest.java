@@ -4,7 +4,6 @@ import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
-import io.github.butterflysmp.rpg.core.element.Element;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
@@ -20,13 +19,13 @@ class WeaponRegistryTest {
 
     /** A trigger's ability, synthesized the way WeaponLoader will: id = weaponId/input. */
     static AbilityDefinition trigger(String weaponId, String input) {
-        return new AbilityDefinition(weaponId + "/" + input, "Test", Element.KINETIC, "none",
+        return new AbilityDefinition(weaponId + "/" + input, "Test", "kinetic", "none",
                 0, ResourceCost.FREE, new CastSpec.Melee(3.0, 90),
-                List.of(new EffectSpec.Damage(8, Element.KINETIC)));
+                List.of(new EffectSpec.Damage(8, "kinetic")));
     }
 
     static WeaponDefinition ironblade() {
-        return new WeaponDefinition("ironblade", "Ironblade", Element.KINETIC, Rarity.COMMON,
+        return new WeaponDefinition("ironblade", "Ironblade", "kinetic", Rarity.COMMON,
                 List.of(new TriggerBinding("left_click", trigger("ironblade", "left_click"))));
     }
 
@@ -59,7 +58,7 @@ class WeaponRegistryTest {
     void triggersAreImmutableAfterConstruction() {
         var mutable = new ArrayList<>(List.of(
                 new TriggerBinding("left_click", trigger("ironblade", "left_click"))));
-        var weapon = new WeaponDefinition("ironblade", "Ironblade", Element.KINETIC, Rarity.COMMON, mutable);
+        var weapon = new WeaponDefinition("ironblade", "Ironblade", "kinetic", Rarity.COMMON, mutable);
 
         mutable.add(new TriggerBinding("right_click", trigger("ironblade", "right_click")));
         assertEquals(1, weapon.triggers().size());
@@ -68,7 +67,7 @@ class WeaponRegistryTest {
     @Test
     void aWeaponWithNoTriggersIsRejected() {
         assertThrows(IllegalArgumentException.class,
-                () -> new WeaponDefinition("empty", "Empty", Element.KINETIC, Rarity.COMMON, List.of()));
+                () -> new WeaponDefinition("empty", "Empty", "kinetic", Rarity.COMMON, List.of()));
     }
 
     @Test

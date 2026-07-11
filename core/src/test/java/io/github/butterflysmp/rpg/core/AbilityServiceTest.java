@@ -5,7 +5,6 @@ import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
-import io.github.butterflysmp.rpg.core.element.Element;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -24,13 +23,13 @@ class AbilityServiceTest {
 
     private static AbilityDefinition solarGrenade() {
         return new AbilityDefinition(
-                "solar_grenade", "Solar Grenade", Element.SOLAR, "hunter",
+                "solar_grenade", "Solar Grenade", "fire", "hunter",
                 200, new ResourceCost("energy", 40),
                 new CastSpec.Projectile(1.2, 0.03, 100),
                 List.of(
-                        new EffectSpec.Damage(12, Element.SOLAR),
+                        new EffectSpec.Damage(12, "fire"),
                         new EffectSpec.Area(4.0, 100, 20,
-                                List.of(new EffectSpec.Damage(2, Element.SOLAR)))
+                                List.of(new EffectSpec.Damage(2, "fire")))
                 ));
     }
 
@@ -109,16 +108,16 @@ class AbilityServiceTest {
         world.entities.add(bystander);
 
         var grenade = new AbilityDefinition(
-                "solar_grenade", "Solar Grenade", Element.SOLAR, "hunter",
+                "solar_grenade", "Solar Grenade", "fire", "hunter",
                 200, new ResourceCost("energy", 40),
                 new CastSpec.Projectile(1.2, 0.03, 100),
                 List.of(
-                        new EffectSpec.Damage(8, Element.SOLAR),
+                        new EffectSpec.Damage(8, "fire"),
                         new EffectSpec.Burst(4.0, List.of(
-                                new EffectSpec.Damage(6, Element.SOLAR),
+                                new EffectSpec.Damage(6, "fire"),
                                 new EffectSpec.Status("scorch", 40, 0))),
                         new EffectSpec.Area(4.0, 100, 20,
-                                List.of(new EffectSpec.Damage(2, Element.SOLAR)))));
+                                List.of(new EffectSpec.Damage(2, "fire")))));
 
         dispatch(world, serviceWith(grenade, () -> 0L).cast(caster.snapshot(), "solar_grenade", FORWARD, GRANTED));
 

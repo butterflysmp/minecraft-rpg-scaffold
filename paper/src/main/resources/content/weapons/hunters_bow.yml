@@ -15,7 +15,7 @@
 
 id: hunters_bow
 display_name: "<gold>Hunter's Bow</gold>"
-element: solar
+element: fire
 rarity: uncommon
 material: bow
 
@@ -34,4 +34,4 @@ triggers:
         visual_id: solar_detonation
       - type: damage
         amount: 6
-        element: solar
+        element: fire

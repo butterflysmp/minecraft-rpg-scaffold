@@ -6,7 +6,6 @@ import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.archetype.Archetype;
-import io.github.butterflysmp.rpg.core.element.Element;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.junit.jupiter.api.Test;
@@ -33,7 +32,7 @@ class ContentValidatorTest {
 
     private static AbilityRegistry abilitiesWith(List<EffectSpec> onHit) {
         var registry = new AbilityRegistry();
-        registry.register(new AbilityDefinition("solar_grenade", "Solar Grenade", Element.SOLAR,
+        registry.register(new AbilityDefinition("solar_grenade", "Solar Grenade", "fire",
                 "hunter", 200, new ResourceCost("energy", 40),
                 new CastSpec.Projectile(1.2, 0.03, 100), onHit));
         return registry;
@@ -56,8 +55,20 @@ class ContentValidatorTest {
         return registry;
     }
 
+    /** The seven real elements, so any test content wearing a valid element resolves. */
+    private static final String[] REAL_ELEMENTS =
+            {"fire", "water", "nature", "undead", "void", "wither", "kinetic"};
+
+    private static ElementRegistry elementsWith(String... ids) {
+        var registry = new ElementRegistry();
+        for (String id : ids) {
+            registry.register(new ElementDefinition(id, id));
+        }
+        return registry;
+    }
+
     private static ContentValidator validator(VisualRegistry visuals, StatusRegistry statuses) {
-        return new ContentValidator(visuals, statuses, ALL_EXIST, ALL_EXIST);
+        return new ContentValidator(visuals, statuses, elementsWith(REAL_ELEMENTS), ALL_EXIST, ALL_EXIST);
     }
 
     private static EffectSpec.Area areaContaining(EffectSpec.Targeted... effects) {
@@ -96,7 +107,7 @@ class ContentValidatorTest {
         var abilities = abilitiesWith(List.of(
                 new EffectSpec.Visual("solar_detonation"),          // resolves
                 areaContaining(
-                        new EffectSpec.Damage(2, Element.SOLAR),    // no reference
+                        new EffectSpec.Damage(2, "fire"),    // no reference
                         new EffectSpec.Status("nope", 40, 0))));    // dangles, one level down
 
         var problems = validator(visualsWith("solar_detonation"), statusesWith("scorch")).validate(abilities);
@@ -117,7 +128,7 @@ class ContentValidatorTest {
         var abilities = abilitiesWith(List.of(
                 new EffectSpec.Visual("solar_detonation"),                 // resolves
                 new EffectSpec.Burst(4.0, List.of(
-                        new EffectSpec.Damage(6, Element.SOLAR),           // no reference
+                        new EffectSpec.Damage(6, "fire"),           // no reference
                         new EffectSpec.Status("nope", 40, 0)))));          // dangles
 
         var problems = validator(visualsWith("solar_detonation"), statusesWith("scorch")).validate(abilities);
@@ -131,7 +142,7 @@ class ContentValidatorTest {
     @Test
     void effectsWithoutReferencesAreIgnored() {
         var abilities = abilitiesWith(List.of(
-                new EffectSpec.Damage(12, Element.SOLAR),
+                new EffectSpec.Damage(12, "fire"),
                 new EffectSpec.Heal(5),
                 new EffectSpec.Knockback(1.5)));
 
@@ -155,7 +166,7 @@ class ContentValidatorTest {
         var statuses = new StatusRegistry();
         statuses.register(new StatusDefinition.Potion("sluggish", NamespacedKey.minecraft("slowness")));
 
-        var problems = new ContentValidator(visualsWith(), statuses, NONE_EXIST, ALL_EXIST)
+        var problems = new ContentValidator(visualsWith(), statuses, elementsWith(REAL_ELEMENTS), NONE_EXIST, ALL_EXIST)
                 .validate(new AbilityRegistry());
 
         assertEquals(1, problems.size(), problems.toString());
@@ -170,7 +181,7 @@ class ContentValidatorTest {
                 new VisualSpec.Sound("entity.blaze.shoot",
                         NamespacedKey.minecraft("entity.blaze.shoot"), 1.0f, 1.0f))));
 
-        var problems = new ContentValidator(visuals, statusesWith(), ALL_EXIST, NONE_EXIST)
+        var problems = new ContentValidator(visuals, statusesWith(), elementsWith(REAL_ELEMENTS), ALL_EXIST, NONE_EXIST)
                 .validate(new AbilityRegistry());
 
         assertEquals(1, problems.size(), problems.toString());
@@ -204,7 +215,7 @@ class ContentValidatorTest {
     // --- archetype -> ability cross-reference, behind the Predicate<String> seam ---
 
     private static ContentValidator bareValidator() {
-        return new ContentValidator(visualsWith(), statusesWith(), ALL_EXIST, ALL_EXIST);
+        return new ContentValidator(visualsWith(), statusesWith(), elementsWith(REAL_ELEMENTS), ALL_EXIST, ALL_EXIST);
     }
 
     @Test
@@ -243,6 +254,39 @@ class ContentValidatorTest {
         // two dangling ids + one "nobody can play this class"
         assertEquals(3, problems.size(), problems.toString());
         assertTrue(problems.stream().anyMatch(p -> p.contains("nobody can play")), problems.toString());
+    }
+
+    // --- element -> definition validation (element is inert identity; a bad one warns) ---
+
+    @Test
+    void danglingElementOnAnAbilityIsReported() {
+        var abilities = new AbilityRegistry();
+        abilities.register(new AbilityDefinition("x", "X", "plasma", "none",
+                0, ResourceCost.FREE, new CastSpec.Self(), List.of()));
+
+        var problems = validator(visualsWith(), statusesWith()).validate(abilities);
+
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("plasma"), problems.toString());
+        assertTrue(problems.get(0).contains("element"), problems.toString());
+    }
+
+    /** The Damage arm of checkEffect, reached by the Area recursion -- nested elements too. */
+    @Test
+    void danglingElementOnANestedDamageEffectIsReported() {
+        var abilities = abilitiesWith(List.of(areaContaining(new EffectSpec.Damage(2, "plasma"))));
+
+        var problems = validator(visualsWith(), statusesWith()).validate(abilities);
+
+        assertTrue(problems.stream().anyMatch(p -> p.contains("plasma") && p.contains("element")),
+                problems.toString());
+    }
+
+    @Test
+    void aValidElementProducesNoProblem() {
+        var abilities = abilitiesWith(List.of(new EffectSpec.Damage(2, "void")));
+
+        assertTrue(validator(visualsWith(), statusesWith()).validate(abilities).isEmpty());
     }
 
     /** Copies one shipped resource into its own directory and returns that directory. */

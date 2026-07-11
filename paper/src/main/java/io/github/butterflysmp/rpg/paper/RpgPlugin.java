@@ -14,6 +14,8 @@ import io.github.butterflysmp.rpg.paper.command.RpgCommand;
 import io.github.butterflysmp.rpg.paper.content.AbilityLoader;
 import io.github.butterflysmp.rpg.paper.content.ArchetypeLoader;
 import io.github.butterflysmp.rpg.paper.content.ContentValidator;
+import io.github.butterflysmp.rpg.paper.content.ElementLoader;
+import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.content.StatusLoader;
 import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
 import io.github.butterflysmp.rpg.paper.content.VisualLoader;
@@ -69,6 +71,7 @@ public final class RpgPlugin extends JavaPlugin {
     private AbilityRegistry abilities;
     private VisualRegistry visuals;
     private StatusRegistry statuses;
+    private ElementRegistry elements;
     private ArchetypeRegistry archetypes;
     private WeaponRegistry weapons;
     private CooldownTracker cooldowns;
@@ -93,10 +96,12 @@ public final class RpgPlugin extends JavaPlugin {
         this.abilities = new AbilityLoader(getLogger()).loadAll(new File(contentDir, "abilities"));
         this.visuals = new VisualLoader(getLogger()).loadAll(new File(contentDir, "visuals"));
         this.statuses = new StatusLoader(getLogger()).loadAll(new File(contentDir, "statuses"));
+        this.elements = new ElementLoader(getLogger()).loadAll(new File(contentDir, "elements"));
         this.archetypes = new ArchetypeLoader(getLogger()).loadAll(new File(contentDir, "archetypes"));
         this.weapons = new WeaponLoader(getLogger()).loadAll(new File(contentDir, "weapons"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
+                + elements.size() + " elements, "
                 + archetypes.size() + " archetypes, " + weapons.size() + " weapons");
 
         // A visual_id that resolves to nothing should be found now, by name, not by
@@ -200,7 +205,7 @@ public final class RpgPlugin extends JavaPlugin {
      * deals its damage; it just tells you which reference is dangling.
      */
     private void validateContent() {
-        var validator = new ContentValidator(visuals, statuses,
+        var validator = new ContentValidator(visuals, statuses, elements,
                 key -> Registry.MOB_EFFECT.get(key) != null,
                 key -> Registry.SOUND_EVENT.get(key) != null);
 

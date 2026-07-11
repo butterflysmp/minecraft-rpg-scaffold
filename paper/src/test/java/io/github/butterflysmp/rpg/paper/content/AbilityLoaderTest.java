@@ -3,7 +3,6 @@ package io.github.butterflysmp.rpg.paper.content;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
-import io.github.butterflysmp.rpg.core.element.Element;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -62,14 +61,14 @@ class AbilityLoaderTest {
 
     private static final String VALID = """
             id: solar_grenade
-            element: solar
+            element: fire
             cooldown_ticks: 200
             cast:
               type: projectile
             on_hit:
               - type: damage
                 amount: 12
-                element: solar
+                element: fire
             """;
 
     @Test
@@ -80,7 +79,7 @@ class AbilityLoaderTest {
 
         assertEquals(1, registry.size());
         AbilityDefinition def = registry.find("solar_grenade").orElseThrow();
-        assertEquals(Element.SOLAR, def.element());
+        assertEquals("fire", def.element());
         assertTrue(warnings.isEmpty(), warningText());
     }
 
@@ -152,20 +151,24 @@ class AbilityLoaderTest {
         assertTrue(warningText().contains("tick_interval"), warningText());
     }
 
+    /**
+     * A misspelled element no longer skips the file. Element is a content id now, validated
+     * by ContentValidator at boot -- not by the loader, which carries whatever string it is
+     * given. A bad value warns later; it does not lose the ability.
+     */
     @Test
-    void unknownElementIsSkippedNotCrashed() throws IOException {
-        write("aaa_typo.yml", """
+    void anUnknownElementValueStillLoads() throws IOException {
+        write("typo.yml", """
                 id: typo
-                element: sloar
+                element: fyre
                 on_hit: []
                 """);
-        write("solar_grenade.yml", VALID);
 
         AbilityRegistry registry = load();
 
         assertEquals(1, registry.size());
-        assertTrue(warningText().contains("aaa_typo.yml"), warningText());
-        assertTrue(warningText().contains("sloar"), warningText());
+        assertEquals("fyre", registry.find("typo").orElseThrow().element(), "carried as-is, not resolved");
+        assertTrue(warnings.isEmpty(), warningText());
     }
 
     @Test
@@ -295,8 +298,8 @@ class AbilityLoaderTest {
     /** Every file broken: the server still boots, with zero abilities. */
     @Test
     void allFilesBrokenStillReturnsAnEmptyRegistry() throws IOException {
-        write("a.yml", "element: solar\n");
-        write("b.yml", "id: b\nelement: nonsense\n");
+        write("a.yml", "element: fire\n");                              // no id -> skipped
+        write("b.yml", "id: b\nelement: fire\non_hit:\n  - type: teleport\n"); // unknown effect -> skipped
 
         AbilityRegistry registry = assertDoesNotThrow(this::load);
 
@@ -328,7 +331,7 @@ class AbilityLoaderTest {
         assertEquals(1, registry.size());
 
         AbilityDefinition def = registry.find("solar_grenade").orElseThrow();
-        assertEquals(Element.SOLAR, def.element());
+        assertEquals("fire", def.element());
         assertEquals(200, def.cooldownTicks());
         assertEquals("energy", def.cost().resourceId());
 

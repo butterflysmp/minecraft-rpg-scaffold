@@ -3,11 +3,9 @@ package io.github.butterflysmp.rpg.paper.content;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
-import io.github.butterflysmp.rpg.core.element.Element;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -31,23 +29,6 @@ final class AbilitySchema {
         String v = s.getString(path);
         if (v == null) throw new IllegalArgumentException("Missing required field: " + path);
         return v;
-    }
-
-    /**
-     * The one caller of Element.fromName that wants a throw. Failing the file is right
-     * here: a misspelled element in content is an authoring mistake, and the loader's
-     * catch(RuntimeException) turns it into a named, skipped file.
-     *
-     * BukkitCombatant calls the same lookup and does NOT throw, because it reads the
-     * same enum on the damage path. One place knows the names; two decide what a miss means.
-     */
-    static Element element(String raw) {
-        Element parsed = Element.fromName(raw);
-        if (parsed == null) {
-            throw new IllegalArgumentException(
-                    "Unknown element '" + raw + "'; expected one of " + Arrays.toString(Element.values()));
-        }
-        return parsed;
     }
 
     static ResourceCost parseCost(ConfigurationSection s) {
@@ -100,7 +81,9 @@ final class AbilitySchema {
         if (rawType == null) throw new IllegalArgumentException("Effect is missing its 'type' field");
         String type = String.valueOf(rawType).toLowerCase(Locale.ROOT);
         return switch (type) {
-            case "damage" -> new EffectSpec.Damage(num(m, type, "amount"), element(str(m, type, "element")));
+            // element is a plain content id now -- carried, not resolved. ContentValidator
+            // checks it against the loaded element set at boot; a bad value warns, never skips.
+            case "damage" -> new EffectSpec.Damage(num(m, type, "amount"), str(m, type, "element"));
             case "heal" -> new EffectSpec.Heal(num(m, type, "amount"));
             case "knockback" -> new EffectSpec.Knockback(num(m, type, "strength"));
             case "status" -> new EffectSpec.Status(

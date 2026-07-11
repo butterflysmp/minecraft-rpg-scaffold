@@ -1,7 +1,5 @@
 package io.github.butterflysmp.rpg.core.weapon;
 
-import io.github.butterflysmp.rpg.core.element.Element;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -22,7 +20,7 @@ import java.util.Optional;
 public record WeaponDefinition(
         String id,
         String displayName,
-        Element element,
+        String element,
         Rarity rarity,
         String material,
         List<TriggerBinding> triggers
@@ -32,7 +30,7 @@ public record WeaponDefinition(
 
     public WeaponDefinition {
         if (id == null || id.isBlank()) throw new IllegalArgumentException("weapon id required");
-        if (element == null) throw new IllegalArgumentException("weapon element required (use KINETIC, never null)");
+        if (element == null || element.isBlank()) throw new IllegalArgumentException("weapon element required (use kinetic, never absent)");
         if (rarity == null) throw new IllegalArgumentException("weapon rarity required");
         if (material == null || material.isBlank()) throw new IllegalArgumentException("weapon material required");
         if (triggers == null || triggers.isEmpty()) {
@@ -42,7 +40,7 @@ public record WeaponDefinition(
     }
 
     /** A sword-shaped weapon: the common case, and what the tests use. */
-    public WeaponDefinition(String id, String displayName, Element element, Rarity rarity,
+    public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
                             List<TriggerBinding> triggers) {
         this(id, displayName, element, rarity, DEFAULT_MATERIAL, triggers);
     }

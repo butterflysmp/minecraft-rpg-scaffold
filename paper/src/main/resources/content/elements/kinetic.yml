@@ -1,0 +1,3 @@
+# The neutral element -- mandatory, never absent. An unflavored weapon or ability is
+# kinetic, not elementless.
+display_name: "<white>Kinetic</white>"

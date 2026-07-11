@@ -5,7 +5,6 @@ import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
-import io.github.butterflysmp.rpg.core.element.Element;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -18,7 +17,7 @@ class CastExecutorTest {
     private static final Aim FORWARD = new Aim(Vec3.ZERO, new Vec3(1, 0, 0));
 
     private static AbilityDefinition ability(CastSpec cast, EffectSpec... onHit) {
-        return new AbilityDefinition("test", "Test", Element.SOLAR, "none",
+        return new AbilityDefinition("test", "Test", "fire", "none",
                 0, ResourceCost.FREE, cast, List.of(onHit));
     }
 
@@ -61,7 +60,7 @@ class CastExecutorTest {
         Aim fromTheEye = new Aim(new Vec3(0, 1.62, 0), new Vec3(1, 0, 0));
 
         cast(world, caster, ability(new CastSpec.Self(),
-                new EffectSpec.Burst(1.0, List.of(new EffectSpec.Damage(10, Element.SOLAR)))),
+                new EffectSpec.Burst(1.0, List.of(new EffectSpec.Damage(10, "fire")))),
                 fromTheEye);
 
         assertEquals(90, bystander.health, 1e-9,
@@ -94,7 +93,7 @@ class CastExecutorTest {
         world.entities.add(near);
         world.entities.add(far);
 
-        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, Element.SOLAR)));
+        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, "fire")));
 
         assertEquals(88, near.health, 1e-9);
         assertEquals(100, far.health, 1e-9, "the ray must stop at the first body");
@@ -108,7 +107,7 @@ class CastExecutorTest {
         world.entities.add(caster);
         world.entities.add(target);
 
-        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, Element.SOLAR)));
+        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, "fire")));
 
         assertEquals(100, caster.health, 1e-9);
         assertEquals(88, target.health, 1e-9);
@@ -122,7 +121,7 @@ class CastExecutorTest {
         world.entities.add(offToTheSide);
 
         cast(world, caster, ability(new CastSpec.Ray(30),
-                new EffectSpec.Damage(12, Element.SOLAR), new EffectSpec.Visual("boom")));
+                new EffectSpec.Damage(12, "fire"), new EffectSpec.Visual("boom")));
 
         // The miss detonates at the END of the aim, which is now a segment away: the ray
         // crosses x=16 and the second segment resolves a tick later.
@@ -141,7 +140,7 @@ class CastExecutorTest {
         world.entities.add(behindTheWall);
         world.blockDistance = 3; // wall between caster and target
 
-        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, Element.SOLAR)));
+        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, "fire")));
 
         assertEquals(100, behindTheWall.health, 1e-9, "terrain must block the ray");
     }
@@ -153,7 +152,7 @@ class CastExecutorTest {
         var distant = new FakeWorld.Dummy(new Vec3(40, 0, 0));
         world.entities.add(distant);
 
-        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, Element.SOLAR)));
+        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, "fire")));
 
         assertEquals(100, distant.health, 1e-9);
     }
@@ -171,7 +170,7 @@ class CastExecutorTest {
         world.entities.add(caster);
         world.entities.add(beyondThePlane);
 
-        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, Element.SOLAR)));
+        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, "fire")));
 
         assertEquals(100, beyondThePlane.health, 1e-9,
                 "the first segment stops at x=16 and cannot see into the next column");
@@ -189,7 +188,7 @@ class CastExecutorTest {
         world.entities.add(caster);
         world.entities.add(far);
 
-        cast(world, caster, ability(new CastSpec.Ray(40), new EffectSpec.Damage(12, Element.SOLAR)));
+        cast(world, caster, ability(new CastSpec.Ray(40), new EffectSpec.Damage(12, "fire")));
 
         assertEquals(100, far.health, 1e-9);
         world.advanceTicks(1);
@@ -209,7 +208,7 @@ class CastExecutorTest {
         world.entities.add(first);
         world.entities.add(second);
 
-        cast(world, caster, ability(new CastSpec.Ray(40), new EffectSpec.Damage(12, Element.SOLAR)));
+        cast(world, caster, ability(new CastSpec.Ray(40), new EffectSpec.Damage(12, "fire")));
         world.advanceTicks(10);
 
         assertEquals(88, first.health, 1e-9);
@@ -249,7 +248,7 @@ class CastExecutorTest {
         // Straight up +z, staying at x=15.7: never leaves column 0.
         Aim upTheZAxis = new Aim(new Vec3(15.7, 0, 0), new Vec3(0, 0, 1));
         cast(world, caster, ability(new CastSpec.Ray(20),
-                new EffectSpec.Damage(12, Element.SOLAR)), upTheZAxis);
+                new EffectSpec.Damage(12, "fire")), upTheZAxis);
         world.advanceTicks(10);
 
         assertTrue(straddler.position().subtract(new Vec3(15.7, 0, 5)).length() < world.hitRadius,
@@ -268,7 +267,7 @@ class CastExecutorTest {
         world.entities.add(near);
         world.entities.add(alsoInArc);
 
-        cast(world, caster, ability(new CastSpec.Melee(3, 90), new EffectSpec.Damage(12, Element.SOLAR)));
+        cast(world, caster, ability(new CastSpec.Melee(3, 90), new EffectSpec.Damage(12, "fire")));
 
         assertEquals(88, near.health, 1e-9);
         assertEquals(100, alsoInArc.health, 1e-9, "melee strikes one target, the nearest");
@@ -282,7 +281,7 @@ class CastExecutorTest {
         world.entities.add(caster);
         world.entities.add(behind);
 
-        cast(world, caster, ability(new CastSpec.Melee(3, 90), new EffectSpec.Damage(12, Element.SOLAR)));
+        cast(world, caster, ability(new CastSpec.Melee(3, 90), new EffectSpec.Damage(12, "fire")));
 
         assertEquals(100, behind.health, 1e-9);
     }
@@ -297,7 +296,7 @@ class CastExecutorTest {
         world.entities.add(justInside);
         world.entities.add(justOutside);
 
-        cast(world, caster, ability(new CastSpec.Melee(3, 90), new EffectSpec.Damage(12, Element.SOLAR)));
+        cast(world, caster, ability(new CastSpec.Melee(3, 90), new EffectSpec.Damage(12, "fire")));
 
         assertEquals(88, justInside.health, 1e-9);
         assertEquals(100, justOutside.health, 1e-9);
@@ -310,7 +309,7 @@ class CastExecutorTest {
         var tooFar = new FakeWorld.Dummy(new Vec3(5, 0, 0));
         world.entities.add(tooFar);
 
-        cast(world, caster, ability(new CastSpec.Melee(3, 90), new EffectSpec.Damage(12, Element.SOLAR)));
+        cast(world, caster, ability(new CastSpec.Melee(3, 90), new EffectSpec.Damage(12, "fire")));
 
         assertEquals(100, tooFar.health, 1e-9);
     }
@@ -321,7 +320,7 @@ class CastExecutorTest {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         world.entities.add(caster);
 
-        cast(world, caster, ability(new CastSpec.Melee(3, 360), new EffectSpec.Damage(12, Element.SOLAR)));
+        cast(world, caster, ability(new CastSpec.Melee(3, 360), new EffectSpec.Damage(12, "fire")));
 
         assertEquals(100, caster.health, 1e-9);
     }
@@ -335,7 +334,7 @@ class CastExecutorTest {
         world.entities.add(atTheEnd);
 
         cast(world, caster, ability(new CastSpec.Ray(30),
-                new EffectSpec.Area(6.0, 20, 20, List.of(new EffectSpec.Damage(2, Element.SOLAR)))));
+                new EffectSpec.Area(6.0, 20, 20, List.of(new EffectSpec.Damage(2, "fire")))));
 
         // The ray crosses x=16, so its far end resolves on tick 1, not on the cast frame.
         // The area placed there pulses one tick_interval later: 1 + 20 = 21.

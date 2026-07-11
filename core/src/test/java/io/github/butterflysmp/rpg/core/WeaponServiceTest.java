@@ -11,7 +11,6 @@ import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
-import io.github.butterflysmp.rpg.core.element.Element;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
@@ -57,28 +56,28 @@ class WeaponServiceTest {
 
     /** A trigger's ability, ids synthesized as WeaponLoader will: weaponId/input. */
     private static AbilityDefinition ability(String id, ResourceCost cost, int cooldownTicks) {
-        return new AbilityDefinition(id, "Trigger", Element.KINETIC, "none",
+        return new AbilityDefinition(id, "Trigger", "kinetic", "none",
                 cooldownTicks, cost, new CastSpec.Melee(3.0, 120),
-                List.of(new EffectSpec.Damage(8, Element.KINETIC)));
+                List.of(new EffectSpec.Damage(8, "kinetic")));
     }
 
     /** Free left-click only, a basic sword. */
     private static WeaponDefinition ironblade() {
-        return new WeaponDefinition("ironblade", "Ironblade", Element.KINETIC, Rarity.COMMON,
+        return new WeaponDefinition("ironblade", "Ironblade", "kinetic", Rarity.COMMON,
                 List.of(new TriggerBinding("left_click",
                         ability("ironblade/left_click", ResourceCost.FREE, 10))));
     }
 
     /** A costed, cooldowned left-click, for the spend/refuse paths. */
     private static WeaponDefinition costedSword() {
-        return new WeaponDefinition("staff", "Staff", Element.KINETIC, Rarity.RARE,
+        return new WeaponDefinition("staff", "Staff", "kinetic", Rarity.RARE,
                 List.of(new TriggerBinding("left_click",
                         ability("staff/left_click", new ResourceCost("energy", 40), 10))));
     }
 
     /** Two triggers, both cooldowned, for the independence proof. */
     private static WeaponDefinition twoTriggerSword() {
-        return new WeaponDefinition("emberblade", "Emberblade", Element.KINETIC, Rarity.EPIC,
+        return new WeaponDefinition("emberblade", "Emberblade", "kinetic", Rarity.EPIC,
                 List.of(
                         new TriggerBinding("left_click", ability("emberblade/left_click", ResourceCost.FREE, 200)),
                         new TriggerBinding("right_click", ability("emberblade/right_click", ResourceCost.FREE, 200))));
@@ -181,7 +180,7 @@ class WeaponServiceTest {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var resources = pool(() -> 0L); // tick frozen: no regen, and cd 0 means no cooldown gate
         var service = serviceWith(() -> 0L, resources);
-        var weapon = new WeaponDefinition("emberblade", "Emberblade", Element.KINETIC, Rarity.RARE,
+        var weapon = new WeaponDefinition("emberblade", "Emberblade", "kinetic", Rarity.RARE,
                 List.of(
                         new TriggerBinding("left_click", ability("emberblade/left_click", ResourceCost.FREE, 0)),
                         new TriggerBinding("right_click",
@@ -227,12 +226,12 @@ class WeaponServiceTest {
         world.entities.add(target);
         var resources = pool(() -> 0L); // tick frozen: within the 15-tick fire-rate cooldown
         var service = serviceWith(() -> 0L, resources);
-        var bow = new WeaponDefinition("hunters_bow", "Bow", Element.SOLAR, Rarity.UNCOMMON, "bow",
+        var bow = new WeaponDefinition("hunters_bow", "Bow", "fire", Rarity.UNCOMMON, "bow",
                 List.of(new TriggerBinding("right_click",
-                        new AbilityDefinition("hunters_bow/right_click", "Shot", Element.SOLAR, "none",
+                        new AbilityDefinition("hunters_bow/right_click", "Shot", "fire", "none",
                                 15, ResourceCost.FREE,
                                 new CastSpec.Projectile(1.0, 0, 60),
-                                List.of(new EffectSpec.Damage(6, Element.SOLAR))))));
+                                List.of(new EffectSpec.Damage(6, "fire"))))));
 
         // The shot fires -- a projectile through the weapon path -- and is free.
         dispatch(world, service.fire(caster.snapshot(), bow, "right_click", FORWARD));

@@ -1,7 +1,6 @@
 package io.github.butterflysmp.rpg.paper.content;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
-import io.github.butterflysmp.rpg.core.element.Element;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
@@ -72,7 +71,7 @@ public final class WeaponLoader {
 
     private WeaponDefinition parse(String id, ConfigurationSection s) {
         String displayName = s.getString("display_name", id);
-        Element element = AbilitySchema.element(s.getString("element", "kinetic"));
+        String element = s.getString("element", "kinetic");
         Rarity rarity = rarity(s.getString("rarity", "common"));
         // The item the weapon renders as; paper resolves the string to a Material. Defaults
         // to a sword, so every weapon before the bow needs no material field.

@@ -1,6 +1,5 @@
 package io.github.butterflysmp.rpg.core.ability.effect;
 
-import io.github.butterflysmp.rpg.core.element.Element;
 import java.util.List;
 
 /**
@@ -26,7 +25,8 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
     sealed interface Untargeted extends EffectSpec
             permits Area, Burst, Visual {}
 
-    record Damage(double amount, Element element) implements Targeted {}
+    /** element is a content id ("fire", "kinetic", ...) -- pure identity, validated at boot; never null. */
+    record Damage(double amount, String element) implements Targeted {}
 
     record Heal(double amount) implements Targeted {}
 

@@ -56,7 +56,7 @@ public final class AbilityLoader {
         return new AbilityDefinition(
                 AbilitySchema.req(s, "id"),
                 s.getString("display_name", AbilitySchema.req(s, "id")),
-                AbilitySchema.element(AbilitySchema.req(s, "element")),
+                AbilitySchema.req(s, "element"),
                 s.getString("archetype", "none"),
                 s.getInt("cooldown_ticks", 0),
                 AbilitySchema.parseCost(s.getConfigurationSection("cost")),

@@ -11,7 +11,7 @@
 
 id: solar_lance
 display_name: "<gold>Solar Lance</gold>"
-element: solar
+element: fire
 archetype: hunter
 cooldown_ticks: 100
 
@@ -29,7 +29,7 @@ on_hit:
 
   - type: damage
     amount: 12
-    element: solar
+    element: fire
 
   - type: status
     status_id: scorch

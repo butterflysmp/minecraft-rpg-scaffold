@@ -1,0 +1,3 @@
+# An element is pure identity: an id (the filename) and a display name. No logic --
+# it flavors a hit and will gate kits in Phase 3, but it never touches damage.
+display_name: "<red>Fire</red>"

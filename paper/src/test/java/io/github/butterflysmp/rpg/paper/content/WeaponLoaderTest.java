@@ -4,7 +4,6 @@ import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
-import io.github.butterflysmp.rpg.core.element.Element;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
@@ -92,7 +91,7 @@ class WeaponLoaderTest {
 
         assertEquals(1, registry.size());
         WeaponDefinition weapon = registry.find("ironblade").orElseThrow();
-        assertEquals(Element.KINETIC, weapon.element());
+        assertEquals("kinetic", weapon.element());
         assertEquals(Rarity.COMMON, weapon.rarity());
 
         TriggerBinding binding = weapon.trigger("left_click").orElseThrow();
@@ -121,7 +120,7 @@ class WeaponLoaderTest {
 
         WeaponRegistry registry = load();
 
-        assertEquals(Element.KINETIC, registry.find("plainsword").orElseThrow().element());
+        assertEquals("kinetic", registry.find("plainsword").orElseThrow().element());
         assertTrue(warnings.isEmpty(), warningText());
     }
 
@@ -168,10 +167,15 @@ class WeaponLoaderTest {
         assertTrue(warningText().contains("mythic"), warningText());
     }
 
+    /**
+     * A misspelled element no longer skips the weapon. Element is a content id now, carried
+     * by the loader and validated by ContentValidator at boot -- a bad value warns, it does
+     * not lose the weapon.
+     */
     @Test
-    void unknownElementIsSkippedNotCrashed() throws IOException {
-        write("aaa_typo.yml", """
-                id: typo
+    void anUnknownElementValueStillLoads() throws IOException {
+        write("plasmasword.yml", """
+                id: plasmasword
                 element: plasma
                 triggers:
                   left_click:
@@ -182,13 +186,12 @@ class WeaponLoaderTest {
                         amount: 5
                         element: kinetic
                 """);
-        write("ironblade.yml", VALID);
 
         WeaponRegistry registry = load();
 
         assertEquals(1, registry.size());
-        assertTrue(warningText().contains("aaa_typo.yml"), warningText());
-        assertTrue(warningText().contains("plasma"), warningText());
+        assertEquals("plasma", registry.find("plasmasword").orElseThrow().element(), "carried as-is");
+        assertTrue(warnings.isEmpty(), warningText());
     }
 
     @Test
@@ -232,8 +235,8 @@ class WeaponLoaderTest {
 
     @Test
     void everyFileBrokenStillBootsWithZeroWeapons() throws IOException {
-        write("a.yml", "id: a\nelement: kinetic\n");            // no triggers
-        write("b.yml", "id: b\nelement: nonsense\ntriggers:\n  left_click:\n    cast:\n      type: melee\n");
+        write("a.yml", "id: a\nelement: kinetic\n");            // no triggers -> skipped
+        write("b.yml", "id: b\nelement: fire\ntriggers:\n  left_click:\n    cast:\n      type: teleport\n"); // unknown cast -> skipped
 
         WeaponRegistry registry = assertDoesNotThrow(this::load);
 
@@ -260,7 +263,7 @@ class WeaponLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
         assertEquals(1, registry.size());
         WeaponDefinition weapon = registry.find("ironblade").orElseThrow();
-        assertEquals(Element.KINETIC, weapon.element());
+        assertEquals("kinetic", weapon.element());
         assertEquals(Rarity.COMMON, weapon.rarity());
         assertEquals("ironblade/left_click", weapon.trigger("left_click").orElseThrow().ability().id());
     }
@@ -278,7 +281,7 @@ class WeaponLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
         assertEquals(1, registry.size());
         WeaponDefinition weapon = registry.find("emberblade").orElseThrow();
-        assertEquals(Element.SOLAR, weapon.element());
+        assertEquals("fire", weapon.element());
         assertEquals(Rarity.RARE, weapon.rarity());
 
         // Free left-click swing.

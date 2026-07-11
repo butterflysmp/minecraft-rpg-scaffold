@@ -10,7 +10,7 @@
 
 id: emberblade
 display_name: "<blue>Emberblade</blue>"
-element: solar
+element: fire
 rarity: rare
 
 triggers:
@@ -24,7 +24,7 @@ triggers:
     on_hit:
       - type: damage
         amount: 7
-        element: solar
+        element: fire
 
   # The costed special: a fireball that bursts on impact. Spends 40 energy (about two casts
   # on a full 100 bar) and waits 3 seconds. A drained pool blocks it -- that is the proof.
@@ -46,7 +46,7 @@ triggers:
         effects:
           - type: damage
             amount: 12
-            element: solar
+            element: fire
           - type: status
             status_id: scorch
             duration_ticks: 40

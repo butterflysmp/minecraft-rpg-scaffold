@@ -3,7 +3,6 @@ package io.github.butterflysmp.rpg.core;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectApplier;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
-import io.github.butterflysmp.rpg.core.element.Element;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -29,13 +28,13 @@ class EffectApplierTest {
         var applier = new EffectApplier(world);
 
         List<EffectSpec> everyVariant = List.of(
-                new EffectSpec.Damage(12, Element.SOLAR),
+                new EffectSpec.Damage(12, "fire"),
                 new EffectSpec.Heal(5),
                 new EffectSpec.Knockback(1.5),
                 new EffectSpec.Status("scorch", 40, 0),
                 new EffectSpec.Visual("solar_detonation"),
                 new EffectSpec.Area(4.0, 100, 20,
-                        List.of(new EffectSpec.Damage(2, Element.SOLAR))));
+                        List.of(new EffectSpec.Damage(2, "fire"))));
 
         assertDoesNotThrow(() -> applier.applyAll(everyVariant, caster.id(), null, Vec3.ZERO));
     }
@@ -82,7 +81,7 @@ class EffectApplierTest {
 
         new EffectApplier(world).applyAll(
                 List.of(new EffectSpec.Burst(4.0, List.of(
-                        new EffectSpec.Damage(6, Element.SOLAR),
+                        new EffectSpec.Damage(6, "fire"),
                         new EffectSpec.Status("scorch", 40, 0)))),
                 caster.id(), null, Vec3.ZERO);
 
@@ -98,7 +97,7 @@ class EffectApplierTest {
 
     @Test
     void burstRejectsANonPositiveRadius() {
-        List<EffectSpec.Targeted> effects = List.of(new EffectSpec.Damage(6, Element.SOLAR));
+        List<EffectSpec.Targeted> effects = List.of(new EffectSpec.Damage(6, "fire"));
 
         var zero = assertThrows(IllegalArgumentException.class,
                 () -> new EffectSpec.Burst(0, effects));
@@ -112,7 +111,7 @@ class EffectApplierTest {
      */
     @Test
     void areaRejectsANonPositiveTickInterval() {
-        List<EffectSpec.Targeted> effects = List.of(new EffectSpec.Damage(2, Element.SOLAR));
+        List<EffectSpec.Targeted> effects = List.of(new EffectSpec.Damage(2, "fire"));
 
         var zero = assertThrows(IllegalArgumentException.class,
                 () -> new EffectSpec.Area(4.0, 100, 0, effects));
@@ -124,7 +123,7 @@ class EffectApplierTest {
 
     @Test
     void areaRejectsANonPositiveRadius() {
-        List<EffectSpec.Targeted> effects = List.of(new EffectSpec.Damage(2, Element.SOLAR));
+        List<EffectSpec.Targeted> effects = List.of(new EffectSpec.Damage(2, "fire"));
 
         var zero = assertThrows(IllegalArgumentException.class,
                 () -> new EffectSpec.Area(0, 100, 20, effects));
@@ -143,7 +142,7 @@ class EffectApplierTest {
         var applier = new EffectApplier(world);
 
         applier.applyAll(List.of(
-                new EffectSpec.Damage(12, Element.SOLAR),
+                new EffectSpec.Damage(12, "fire"),
                 new EffectSpec.Status("scorch", 40, 0)), caster.id(), pair(target), Vec3.ZERO);
 
         assertEquals(88, target.health, 0.001);
@@ -161,7 +160,7 @@ class EffectApplierTest {
         var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
 
         new EffectApplier(world).applyAll(
-                List.of(new EffectSpec.Damage(12, Element.SOLAR)),
+                List.of(new EffectSpec.Damage(12, "fire")),
                 caster.id(), pair(target), Vec3.ZERO);
 
         assertEquals(caster.id(), target.lastDamageSource, "the caster must be blamed");
@@ -181,9 +180,9 @@ class EffectApplierTest {
         var voidTarget = new FakeWorld.Dummy(new Vec3(2, 0, 0));
 
         var applier = new EffectApplier(world);
-        applier.applyAll(List.of(new EffectSpec.Damage(10, Element.SOLAR)),
+        applier.applyAll(List.of(new EffectSpec.Damage(10, "fire")),
                 caster.id(), pair(solarTarget), Vec3.ZERO);
-        applier.applyAll(List.of(new EffectSpec.Damage(10, Element.VOID)),
+        applier.applyAll(List.of(new EffectSpec.Damage(10, "void")),
                 caster.id(), pair(voidTarget), Vec3.ZERO);
 
         assertEquals(90, solarTarget.health, 1e-9);
@@ -200,7 +199,7 @@ class EffectApplierTest {
         world.entities.add(victim);
 
         new EffectApplier(world).applyAll(
-                List.of(new EffectSpec.Burst(4.0, List.of(new EffectSpec.Damage(6, Element.SOLAR)))),
+                List.of(new EffectSpec.Burst(4.0, List.of(new EffectSpec.Damage(6, "fire")))),
                 caster.id(), null, Vec3.ZERO);
 
         assertEquals(caster.id(), victim.lastDamageSource);

@@ -31,14 +31,16 @@ public final class ContentValidator {
 
     private final VisualRegistry visuals;
     private final StatusRegistry statuses;
+    private final ElementRegistry elements;
     private final Predicate<NamespacedKey> potionEffectExists;
     private final Predicate<NamespacedKey> soundExists;
 
-    public ContentValidator(VisualRegistry visuals, StatusRegistry statuses,
+    public ContentValidator(VisualRegistry visuals, StatusRegistry statuses, ElementRegistry elements,
                             Predicate<NamespacedKey> potionEffectExists,
                             Predicate<NamespacedKey> soundExists) {
         this.visuals = visuals;
         this.statuses = statuses;
+        this.elements = elements;
         this.potionEffectExists = potionEffectExists;
         this.soundExists = soundExists;
     }
@@ -47,6 +49,7 @@ public final class ContentValidator {
     public List<String> validate(AbilityRegistry abilities) {
         List<String> problems = new ArrayList<>();
         for (AbilityDefinition ability : abilities.all()) {
+            checkElement(ability.element(), "ability '" + ability.id() + "'", problems);
             for (EffectSpec effect : ability.onHit()) {
                 checkEffect(effect, "ability '" + ability.id() + "'", problems);
             }
@@ -120,6 +123,7 @@ public final class ContentValidator {
     public List<String> validateWeapons(Collection<WeaponDefinition> weapons) {
         List<String> problems = new ArrayList<>();
         for (WeaponDefinition weapon : weapons) {
+            checkElement(weapon.element(), "weapon '" + weapon.id() + "'", problems);
             for (TriggerBinding binding : weapon.triggers()) {
                 String label = "weapon '" + weapon.id() + "' trigger '" + binding.input() + "'";
                 for (EffectSpec effect : binding.ability().onHit()) {
@@ -128,6 +132,18 @@ public final class ContentValidator {
             }
         }
         return problems;
+    }
+
+    /**
+     * Every element named -- a weapon's, an ability's, a damage effect's -- must resolve to
+     * a loaded element. Element is inert identity now, so a dangling one is not a crash, it
+     * is a warning: the hit still lands, it just wears a colour nothing defines. This is the
+     * same warn-not-skip shape as visual_id and status_id.
+     */
+    private void checkElement(String element, String ownerLabel, List<String> problems) {
+        if (elements.find(element).isEmpty()) {
+            problems.add(ownerLabel + " names element '" + element + "', which no element defines");
+        }
     }
 
     /**
@@ -186,7 +202,7 @@ public final class ContentValidator {
                     checkEffect(nested, ownerLabel, problems);
                 }
             }
-            case EffectSpec.Damage ignored -> { }
+            case EffectSpec.Damage damage -> checkElement(damage.element(), ownerLabel, problems);
             case EffectSpec.Heal ignored -> { }
             case EffectSpec.Knockback ignored -> { }
         }

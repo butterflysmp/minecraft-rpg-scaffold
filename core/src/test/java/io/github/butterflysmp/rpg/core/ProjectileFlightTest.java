@@ -5,7 +5,6 @@ import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
-import io.github.butterflysmp.rpg.core.element.Element;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -20,7 +19,7 @@ class ProjectileFlightTest {
     /** speed 1 block/tick, no gravity unless asked, generous fuse. */
     private static AbilityDefinition grenade(double speed, double gravity, int lifetime,
                                              EffectSpec... onHit) {
-        return new AbilityDefinition("grenade", "Grenade", Element.SOLAR, "hunter",
+        return new AbilityDefinition("grenade", "Grenade", "fire", "hunter",
                 0, ResourceCost.FREE, new CastSpec.Projectile(speed, gravity, lifetime),
                 List.of(onHit));
     }
@@ -35,7 +34,7 @@ class ProjectileFlightTest {
         new CastExecutor(world).execute(success);
     }
 
-    private static final EffectSpec.Damage HIT = new EffectSpec.Damage(12, Element.SOLAR);
+    private static final EffectSpec.Damage HIT = new EffectSpec.Damage(12, "fire");
 
     @Test
     void aProjectileTakesTimeToReachItsTarget() {
@@ -168,7 +167,7 @@ class ProjectileFlightTest {
 
         cast(world, caster, grenade(1.0, 0, 5,
                 new EffectSpec.Visual("boom"),
-                new EffectSpec.Area(3.0, 20, 20, List.of(new EffectSpec.Damage(2, Element.SOLAR)))),
+                new EffectSpec.Area(3.0, 20, 20, List.of(new EffectSpec.Damage(2, "fire")))),
                 FORWARD);
         world.advanceTicks(100);
 

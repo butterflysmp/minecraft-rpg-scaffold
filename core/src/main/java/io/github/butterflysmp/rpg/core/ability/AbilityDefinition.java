@@ -1,7 +1,6 @@
 package io.github.butterflysmp.rpg.core.ability;
 
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
-import io.github.butterflysmp.rpg.core.element.Element;
 import java.util.List;
 
 /**
@@ -11,7 +10,7 @@ import java.util.List;
 public record AbilityDefinition(
         String id,
         String displayName,
-        Element element,
+        String element,
         String archetypeId,
         int cooldownTicks,
         ResourceCost cost,

@@ -23,8 +23,8 @@ public enum Rarity {
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the
-     * caller decides what a bad name means -- the loader throws (a named, skipped
-     * file), matching how Element.fromName is used on the ability path.
+     * caller decides what a bad name means -- the weapon loader throws, turning a bad
+     * rarity into a named, skipped file.
      */
     public static Rarity fromName(String name) {
         if (name == null) return null;
