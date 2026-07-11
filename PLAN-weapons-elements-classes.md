@@ -380,7 +380,54 @@ starts. No `SOLAR`/`ARC`/`KINETIC` anywhere.
 
 ---
 
-# PHASE 3 — CLASSES
+# PHASE 3 — CLASSES — **3A + 3B SHIPPED & CI-VERIFIED** (`b721c92`, `385864b`)
+
+> #### 2026-07-11 — the (class, element) gate and two cells shipped; the grid is deliberately NOT filled
+>
+> Phase 3's engine (3A) and its vertical slice (3B) are built, booted, and CI-verified.
+> `master` is at `385864b`, pushed to `origin` as part of run
+> [29141597199](https://github.com/butterflysmp/minecraft-rpg-scaffold/actions/runs/29141597199):
+> **214 tests green** across three modules (core 101, storage 17, paper 96 — the
+> per-module guard counted report files, not just a total), `check-jar.sh` printed
+> `Jar OK` (RpgPlugin present, core+storage bundled), no guard step skipped.
+>
+> - **3A — the gate (`b721c92`).** Commit F's archetype gate is generalized from
+>   `archetype` to the composite **(class, element)**. The Archetype content type is
+>   fully retired (`Archetype`/`ArchetypeRegistry`/`ArchetypeLoader`/`hunter.yml` and
+>   their tests deleted), replaced by a **kit** system: `KitDefinition`/`KitRegistry`
+>   keyed on a `KitKey(classId, elementId)` **record — never a concatenated string**
+>   (the `("ranger_f","ire")` vs `("ranger","fire")` collision is impossible by
+>   construction, proven by a reverted-mutation test). `PlayerProfile` gained
+>   `elementId` (schema v1→v2, additive migration). A kit grants **weapons and
+>   abilities together**; weapons carry a `WeaponGrant(weaponId, equip)` so the
+>   `equip: true` weapon lands in the main hand on selection — a fresh class never
+>   swings an empty hand. `/rpg class` + `/rpg element` set the two axes; the gate
+>   **fails closed** with explicit precedence (half-selected → "choose a class and an
+>   element"; both-set-but-no-kit → "that combination isn't available yet"; real kit →
+>   grant). `ContentValidator.validateKits` warns on a kit whose grants don't resolve.
+> - **3B — TWO cells, not one (`b721c92` Ranger, `385864b` Mage).** The written plan
+>   below says "author *one* cell." Execution deliberately authored **two, same
+>   element** — `ranger_fire` (kite: free sustained bow, energy freed for the
+>   `arc_surge` utility) and `mage_fire` (commit: a costed `ember_staff` + costed
+>   spells all drawing one energy bar). The reason is honest: one cell proves the
+>   *wiring*, but it **cannot** prove the Ranger-vs-Mage economy axis is a real
+>   distinction — that needs kite and commit played back-to-back. Same element on both
+>   isolates the class as the only variable.
+>
+> **What is NOT done, and is deliberately withheld:**
+> - **The grid is unfilled — 2 of 24 cells.** This is not an omission; it is the plan.
+>   The verdict "does kite differ from commit, or is it one loop with different
+>   numbers?" is owed to **head-to-head play**, and it decides whether the remaining 22
+>   cells are worth authoring. A fun Ranger cell does **not** greenlight the grid.
+> - **The design verdict is unrecorded** because it hasn't been played yet. When it is,
+>   it belongs here.
+> - **3C (Summoner) remains a deferred milestone** — the engine still has no
+>   owned-autonomous-entity system; unchanged by this work.
+> - Elements are still combat-inert (Phase 2's decision); a kit's element flavors and
+>   gates, it does not multiply damage.
+>
+> The record below is the plan as written, kept intact — including the "author one
+> cell" instruction that execution refined to two.
 
 Depends on Commit F (`4f3032a`), which gates casting on a player's archetype and
 made `PlayerProfile.archetypeId` load-bearing. Phase 3 generalizes that gate from
