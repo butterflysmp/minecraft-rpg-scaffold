@@ -6,7 +6,6 @@ import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.RayHit;
-import io.github.butterflysmp.rpg.core.element.Element;
 import java.util.*;
 
 /**
@@ -199,7 +198,6 @@ public final class FakeWorld implements CombatWorld {
         private final UUID id = UUID.randomUUID();
         private Vec3 pos;
         public double health = 100;
-        public Element shield;
         public final List<String> statuses = new ArrayList<>();
 
         /** Who last damaged this dummy. Null means the damage was unattributed. */
@@ -212,7 +210,7 @@ public final class FakeWorld implements CombatWorld {
         public Vec3 position() { return pos; }
 
         public CombatantSnapshot snapshot() {
-            return new CombatantSnapshot(id, pos, health > 0, shield);
+            return new CombatantSnapshot(id, pos, health > 0);
         }
 
         @Override public UUID id() { return id; }

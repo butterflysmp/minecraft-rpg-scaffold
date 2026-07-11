@@ -153,23 +153,41 @@ class EffectApplierTest {
     /**
      * Damage names its culprit. The port carries the caster's id, never the caster, so a
      * grenade that outlives its thrower still knows whom to credit.
-     *
-     * And the elemental multiplier is resolved HERE, before the port is called: 12 solar
-     * into a solar shield is 18, and the handle is told 18 -- not 12 and an element.
      */
     @Test
-    void damageIsAttributedToTheCasterAndAlreadyMultiplied() {
+    void damageIsAttributedToTheCaster() {
         var world = new FakeWorld();
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
-        target.shield = Element.SOLAR;
 
         new EffectApplier(world).applyAll(
                 List.of(new EffectSpec.Damage(12, Element.SOLAR)),
                 caster.id(), pair(target), Vec3.ZERO);
 
         assertEquals(caster.id(), target.lastDamageSource, "the caster must be blamed");
-        assertEquals(82, target.health, 0.001, "12 solar x1.5 against a solar shield");
+        assertEquals(88, target.health, 0.001, "12 damage, no element multiplier");
+    }
+
+    /**
+     * Element is identity, not math. The same amount deals the same damage whatever the
+     * element -- there is no multiplier, no shield, no triangle. This is the subtraction's
+     * proof: re-introduce a multiplier and these two numbers diverge.
+     */
+    @Test
+    void damageIsTheAmountRegardlessOfElement() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var solarTarget = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        var voidTarget = new FakeWorld.Dummy(new Vec3(2, 0, 0));
+
+        var applier = new EffectApplier(world);
+        applier.applyAll(List.of(new EffectSpec.Damage(10, Element.SOLAR)),
+                caster.id(), pair(solarTarget), Vec3.ZERO);
+        applier.applyAll(List.of(new EffectSpec.Damage(10, Element.VOID)),
+                caster.id(), pair(voidTarget), Vec3.ZERO);
+
+        assertEquals(90, solarTarget.health, 1e-9);
+        assertEquals(voidTarget.health, solarTarget.health, 1e-9, "element must not touch the number");
     }
 
     /** Splash damage carries the same culprit, and still never splashes the caster. */

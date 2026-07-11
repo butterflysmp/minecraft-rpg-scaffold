@@ -18,11 +18,10 @@ public interface CombatantHandle {
     /**
      * Deal {@code amount} damage, attributed to {@code sourceId}.
      *
-     * The elemental multiplier is ALREADY APPLIED by EffectApplier before this is called
-     * (Element.multiplierAgainst, against the target's shield). Do not re-add an Element
-     * parameter: this port carries a number and a culprit, nothing else. An element only
-     * regains meaning when a real resistance system exists, and that belongs in core, not
-     * in a call to the server.
+     * This port carries a number and a culprit, nothing else -- element is identity, not
+     * math, and never reaches here. An element would only regain a bearing on the number if
+     * a real resistance system existed, and that would belong in core, not in a call to the
+     * server.
      *
      * @param sourceId who to blame -- for aggro and kill credit. Never an entity
      *                 reference: a lingering area outlives its caster, and holding one

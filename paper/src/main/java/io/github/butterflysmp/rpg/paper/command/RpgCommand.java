@@ -161,7 +161,7 @@ public final class RpgCommand {
         // Taken after the hop it would be the same cross-region read wearing a new type --
         // and on Paper, where both sides of the hop are the main thread, no test could
         // tell. BukkitCombatant.snapshot enforces the thread; this ordering does not.
-        CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters);
+        CombatantSnapshot caster = BukkitCombatant.snapshot(player);
 
         // Decide INLINE. cast() reads no world state, and consuming the cooldown
         // and energy here -- rather than inside the region hop below -- is what

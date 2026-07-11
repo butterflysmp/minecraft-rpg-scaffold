@@ -76,20 +76,6 @@ class AbilityServiceTest {
     }
 
     @Test
-    void solarDamageIsAmplifiedAgainstSolarShields() {
-        var world = new FakeWorld();
-        var caster = new FakeWorld.Dummy(Vec3.ZERO);
-        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
-        target.shield = Element.SOLAR;
-        world.entities.add(target);
-
-        var service = serviceWith(solarGrenade(), () -> 0L);
-        dispatch(world, service.cast(caster.snapshot(), "solar_grenade", FORWARD, GRANTED));
-
-        assertEquals(82, target.health, 0.001); // 100 - (12 * 1.5)
-    }
-
-    @Test
     void lingeringAreaTicksOverTime() {
         var world = new FakeWorld();
         var caster = new FakeWorld.Dummy(Vec3.ZERO);

@@ -57,7 +57,7 @@ public final class WeaponFire {
         Location eye = player.getEyeLocation();
         Aim aim = new Aim(toVec3(eye), toVec3(eye.getDirection()));
         // Snapshot on the player's own thread, before the region hop below.
-        CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters);
+        CombatantSnapshot caster = BukkitCombatant.snapshot(player);
 
         Optional<CastResult> result = weaponService.fire(caster, weapon, input, aim);
         result.ifPresent(r -> {

@@ -54,10 +54,9 @@ public final class EffectApplier {
         switch (spec) {
             case EffectSpec.Damage d -> {
                 if (target.state().alive()) {
-                    // The elemental multiplier is resolved HERE, against the snapshot's
-                    // shield. The port downstream carries only a number and a culprit.
-                    double mult = d.element().multiplierAgainst(target.state().shieldElement());
-                    target.handle().applyDamage(d.amount() * mult, casterId);
+                    // Element is identity, not math -- it flavors the hit and gates kits, but
+                    // never multiplies the number. The port downstream carries the amount and a culprit.
+                    target.handle().applyDamage(d.amount(), casterId);
                 }
             }
             case EffectSpec.Heal h -> target.handle().applyHeal(h.amount());

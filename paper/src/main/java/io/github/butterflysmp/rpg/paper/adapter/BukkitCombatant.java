@@ -4,14 +4,12 @@ import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
-import io.github.butterflysmp.rpg.core.element.Element;
 import io.github.butterflysmp.rpg.paper.content.StatusDefinition;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
@@ -32,41 +30,20 @@ public final class BukkitCombatant {
 
     /** State to read plus a handle to act on. MUST be called on the thread owning {@code entity}. */
     public static Combatant of(LivingEntity entity, AdapterContext ctx) {
-        return new Combatant(snapshot(entity, ctx), new Handle(entity, ctx));
+        return new Combatant(snapshot(entity), new Handle(entity, ctx));
     }
 
     /**
      * Freeze everything core needs to know. MUST be called on the thread owning
      * {@code entity} -- enforced, not merely asked for.
      */
-    public static CombatantSnapshot snapshot(LivingEntity entity, AdapterContext ctx) {
+    public static CombatantSnapshot snapshot(LivingEntity entity) {
         Regions.requireOwned(entity);
         var location = entity.getLocation();
         return new CombatantSnapshot(
                 entity.getUniqueId(),
                 new Vec3(location.getX(), location.getY(), location.getZ()),
-                !entity.isDead(),
-                shieldElement(entity, ctx));
-    }
-
-    /**
-     * Shield element stored in the entity's PDC -- no NBT reflection.
-     *
-     * Nothing in this plugin writes that key, so every value in it came from somewhere
-     * else: another plugin, a datapack, an operator's /data. It is untrusted input, so an
-     * unrecognised value warns once and reads as unshielded rather than throwing.
-     */
-    private static Element shieldElement(LivingEntity entity, AdapterContext ctx) {
-        String raw = entity.getPersistentDataContainer()
-                .get(ctx.keys().shieldElement, PersistentDataType.STRING);
-        if (raw == null) return null; // unshielded, and the overwhelmingly common case
-
-        Element element = Element.fromName(raw);
-        if (element == null) {
-            ctx.warnOnce("Entity " + entity.getUniqueId() + " has an unrecognised "
-                    + ctx.keys().shieldElement + " of '" + raw + "'; treating as unshielded");
-        }
-        return element;
+                !entity.isDead());
     }
 
     /** Dispatches onto the entity's own thread. Never reads the world, never returns state. */

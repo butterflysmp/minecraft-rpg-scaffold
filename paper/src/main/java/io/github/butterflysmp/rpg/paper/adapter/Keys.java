@@ -13,7 +13,6 @@ import org.bukkit.plugin.Plugin;
  */
 public final class Keys {
 
-    public final NamespacedKey shieldElement;
     public final NamespacedKey weaponId;
     public final NamespacedKey abilityId;
 
@@ -21,7 +20,6 @@ public final class Keys {
     public final NamespacedKey meleeSuppressor;
 
     public Keys(Plugin plugin) {
-        this.shieldElement = new NamespacedKey(plugin, "shield_element");
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
         this.meleeSuppressor = new NamespacedKey(plugin, "vanilla_melee_suppressor");

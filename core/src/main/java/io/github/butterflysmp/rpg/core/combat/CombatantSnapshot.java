@@ -1,7 +1,6 @@
 package io.github.butterflysmp.rpg.core.combat;
 
 import io.github.butterflysmp.rpg.core.Vec3;
-import io.github.butterflysmp.rpg.core.element.Element;
 
 import java.util.UUID;
 
@@ -17,7 +16,5 @@ import java.util.UUID;
  * A record is an immutable data carrier, so this may safely cross a tick or a thread
  * boundary where a live entity may not. It may of course be STALE by then: a snapshot is a
  * photograph, not a window.
- *
- * @param shieldElement null when unshielded, which Element.multiplierAgainst reads as 1.0x
  */
-public record CombatantSnapshot(UUID id, Vec3 position, boolean alive, Element shieldElement) {}
+public record CombatantSnapshot(UUID id, Vec3 position, boolean alive) {}

@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * PROJECT.md keeps the elemental matrix in code rather than config so that it is
- * "unit-testable and typo-proof". It was neither until this class existed: nothing
- * tested multiplierAgainst directly, and nothing tested how a name becomes an Element.
+ * Element carries no combat math -- it is pure identity now. All that remains to test is
+ * how a name becomes an Element: the case-insensitive, null-on-miss resolution the loaders
+ * lean on. (This whole enum becomes content in 2B; this file goes with it.)
  */
 class ElementTest {
 
@@ -50,29 +50,5 @@ class ElementTest {
         assertNull(Element.fromName("sol"));
         assertNull(Element.fromName("solar "));
         assertNull(Element.fromName("solarium"));
-    }
-
-    @Test
-    void matchingShieldTakesAmplifiedDamage() {
-        assertEquals(1.5, Element.SOLAR.multiplierAgainst(Element.SOLAR), 1e-9);
-        assertEquals(1.5, Element.VOID.multiplierAgainst(Element.VOID), 1e-9);
-    }
-
-    @Test
-    void differingShieldTakesNormalDamage() {
-        assertEquals(1.0, Element.SOLAR.multiplierAgainst(Element.VOID), 1e-9);
-        assertEquals(1.0, Element.ARC.multiplierAgainst(Element.STASIS), 1e-9);
-    }
-
-    /**
-     * The path a garbage shield tag now takes: unrecognised resolves to null, and an
-     * unshielded defender takes normal damage.
-     */
-    @Test
-    void anUnshieldedDefenderTakesNormalDamage() {
-        for (Element attacker : Element.values()) {
-            assertEquals(1.0, attacker.multiplierAgainst(null), 1e-9);
-        }
-        assertEquals(1.0, Element.SOLAR.multiplierAgainst(Element.fromName("nonsense")), 1e-9);
     }
 }
