@@ -1,0 +1,52 @@
+# The second weapon: a free + costed sword. Left-click is a free swing like ironblade;
+# right-click is a costed special that spends the SAME energy pool an ability does, and is
+# blocked when that pool runs dry. That shared-resource tension is the whole point of it.
+#
+# The special reuses the already-shipped solar_detonation visual and scorch status, so it
+# adds no new visual/status files and dangles no references.
+#
+# element/rarity remain inert reserved data: solar is the fire-theme placeholder (re-elemented
+# in Phase 2), rare colours the name BLUE.
+
+id: emberblade
+display_name: "<blue>Emberblade</blue>"
+element: solar
+rarity: rare
+
+triggers:
+  # Free swing. No cost section -> free; energy regenerates while you swing.
+  left_click:
+    cooldown_ticks: 10
+    cast:
+      type: melee
+      reach: 3.5
+      arc_degrees: 120
+    on_hit:
+      - type: damage
+        amount: 7
+        element: solar
+
+  # The costed special: a fireball that bursts on impact. Spends 40 energy (about two casts
+  # on a full 100 bar) and waits 3 seconds. A drained pool blocks it -- that is the proof.
+  right_click:
+    cooldown_ticks: 60
+    cost:
+      resource: energy
+      amount: 40
+    cast:
+      type: projectile
+      speed: 1.6
+      gravity: 0.03
+      max_lifetime_ticks: 100
+    on_hit:
+      - type: visual
+        visual_id: solar_detonation
+      - type: burst
+        radius: 3.0
+        effects:
+          - type: damage
+            amount: 12
+            element: solar
+          - type: status
+            status_id: scorch
+            duration_ticks: 40

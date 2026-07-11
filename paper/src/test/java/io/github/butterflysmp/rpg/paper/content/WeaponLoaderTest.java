@@ -264,4 +264,32 @@ class WeaponLoaderTest {
         assertEquals(Rarity.COMMON, weapon.rarity());
         assertEquals("ironblade/left_click", weapon.trigger("left_click").orElseThrow().ability().id());
     }
+
+    /** The shipped emberblade: a free left-click and a costed right-click on one weapon. */
+    @Test
+    void bundledEmberbladeContentLoads() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/weapons/emberblade.yml")) {
+            assertNotNull(in, "bundled emberblade is missing from the classpath");
+            Files.write(dir.resolve("emberblade.yml"), in.readAllBytes());
+        }
+
+        WeaponRegistry registry = load();
+
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(1, registry.size());
+        WeaponDefinition weapon = registry.find("emberblade").orElseThrow();
+        assertEquals(Element.SOLAR, weapon.element());
+        assertEquals(Rarity.RARE, weapon.rarity());
+
+        // Free left-click swing.
+        var left = weapon.trigger("left_click").orElseThrow().ability();
+        assertEquals(ResourceCost.FREE, left.cost(), "the left-click swing is free");
+        assertInstanceOf(CastSpec.Melee.class, left.cast());
+
+        // Costed right-click special -- the shared-energy proof, at the content level.
+        var right = weapon.trigger("right_click").orElseThrow().ability();
+        assertEquals("energy", right.cost().resourceId());
+        assertEquals(40, right.cost().amount(), 1e-9);
+        assertInstanceOf(CastSpec.Projectile.class, right.cast());
+    }
 }

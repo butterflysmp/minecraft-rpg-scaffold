@@ -167,4 +167,47 @@ class WeaponServiceTest {
         assertInstanceOf(CastResult.Success.class,
                 service.fire(caster.snapshot(), weapon, "right_click", FORWARD).orElseThrow());
     }
+
+    /**
+     * emberblade's exact model, proven server-free: one weapon, a FREE left-click and a
+     * COSTED right-click, sharing the one energy pool. The free trigger spends nothing; the
+     * costed one draws from the shared pool; a drained pool blocks the costed trigger while
+     * the free one keeps firing. Cooldowns are 0 here so nothing but energy can gate a
+     * trigger -- this isolates the shared-pool interaction, which 1a's tests (a single costed
+     * trigger, or two free ones) do not cover on one weapon.
+     */
+    @Test
+    void freeLeftClickCostsNothingWhileCostedRightClickSpendsTheSharedPool() {
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var resources = pool(() -> 0L); // tick frozen: no regen, and cd 0 means no cooldown gate
+        var service = serviceWith(() -> 0L, resources);
+        var weapon = new WeaponDefinition("emberblade", "Emberblade", Element.KINETIC, Rarity.RARE,
+                List.of(
+                        new TriggerBinding("left_click", ability("emberblade/left_click", ResourceCost.FREE, 0)),
+                        new TriggerBinding("right_click",
+                                ability("emberblade/right_click", new ResourceCost("energy", 40), 0))));
+
+        // Free left-click fires and spends nothing from the shared pool.
+        assertInstanceOf(CastResult.Success.class,
+                service.fire(caster.snapshot(), weapon, "left_click", FORWARD).orElseThrow());
+        assertEquals(100, resources.current(caster.id(), "energy"), 1e-9);
+
+        // Each costed right-click draws 40 from the SAME pool.
+        assertInstanceOf(CastResult.Success.class,
+                service.fire(caster.snapshot(), weapon, "right_click", FORWARD).orElseThrow());
+        assertEquals(60, resources.current(caster.id(), "energy"), 1e-9);
+        assertInstanceOf(CastResult.Success.class,
+                service.fire(caster.snapshot(), weapon, "right_click", FORWARD).orElseThrow());
+        assertEquals(20, resources.current(caster.id(), "energy"), 1e-9);
+
+        // Drained below the 40 cost: the right-click is blocked, and the refusal spends nothing.
+        assertInstanceOf(CastResult.InsufficientResource.class,
+                service.fire(caster.snapshot(), weapon, "right_click", FORWARD).orElseThrow());
+        assertEquals(20, resources.current(caster.id(), "energy"), 1e-9);
+
+        // ...but the FREE left-click still fires -- a drained pool does not block it.
+        assertInstanceOf(CastResult.Success.class,
+                service.fire(caster.snapshot(), weapon, "left_click", FORWARD).orElseThrow());
+        assertEquals(20, resources.current(caster.id(), "energy"), 1e-9);
+    }
 }

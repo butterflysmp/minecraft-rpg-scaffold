@@ -6,18 +6,10 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.InteractionHand;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientAnimation;
-import io.github.butterflysmp.rpg.core.Vec3;
-import io.github.butterflysmp.rpg.core.ability.AbilityService;
-import io.github.butterflysmp.rpg.core.ability.CastExecutor;
-import io.github.butterflysmp.rpg.core.combat.Aim;
-import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
-import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
-import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
-import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
-import org.bukkit.Location;
+import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import org.bukkit.entity.Player;
 
 /**
@@ -82,35 +74,11 @@ public final class WeaponSwingListener extends PacketListenerBase {
 
     /**
      * Runs on the thread that owns the player. Bukkit is legal here. This is where the
-     * weapon_id reject (step 4) happens -- reading the held item is a Bukkit call.
+     * weapon_id reject happens -- reading the held item is a Bukkit call -- and it is
+     * delegated to WeaponFire, shared with the right-click handler. Silent: a swing that
+     * lands nothing because you are mid-cooldown or out of energy does not deserve chat spam.
      */
     private void onSwing(Player player) {
-        WeaponItems.heldWeaponId(player, adapters.keys())
-                .flatMap(weapons::find)
-                .ifPresent(weapon -> {
-                    Location eye = player.getEyeLocation();
-                    Aim aim = new Aim(toVec3(eye), toVec3(eye.getDirection()));
-                    // Snapshot on the player's own thread, before the region hop below.
-                    CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters);
-
-                    weaponService.fire(caster, weapon, "left_click", aim).ifPresent(result -> {
-                        // Only a Success runs effects. OnCooldown / InsufficientResource are
-                        // silent for a swing -- a click that lands nothing because you are
-                        // mid-cooldown does not deserve chat spam.
-                        if (result instanceof AbilityService.CastResult.Success success) {
-                            adapters.scheduler().onRegion(eye, () ->
-                                    new CastExecutor(new PaperCombatWorld(player.getWorld(), adapters))
-                                            .execute(success));
-                        }
-                    });
-                });
-    }
-
-    private static Vec3 toVec3(Location location) {
-        return new Vec3(location.getX(), location.getY(), location.getZ());
-    }
-
-    private static Vec3 toVec3(org.bukkit.util.Vector vector) {
-        return new Vec3(vector.getX(), vector.getY(), vector.getZ());
+        WeaponFire.attempt(player, "left_click", weapons, weaponService, adapters);
     }
 }
