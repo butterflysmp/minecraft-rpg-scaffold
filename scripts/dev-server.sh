@@ -2,9 +2,10 @@
 #
 # Build the plugin, deploy it to a local Paper server, boot it.
 #
-#   ./scripts/dev-server.sh            build, deploy, run
-#   ./scripts/dev-server.sh --setup    check run/ is ready, don't build
-#   ./scripts/dev-server.sh --no-build skip Maven, boot what is deployed
+#   ./scripts/dev-server.sh                  build, deploy, run
+#   ./scripts/dev-server.sh --setup          check run/ is ready, don't build
+#   ./scripts/dev-server.sh --no-build       skip Maven, boot what is deployed
+#   ./scripts/dev-server.sh --refresh-content clear deployed content, re-copy from the jar
 #
 # Run from Git Bash or WSL on Windows. Not cmd. Not by double-clicking, which
 # closes the window before you can read the error.
@@ -32,14 +33,20 @@ PACKETEVENTS_VERSION="2.13.0"
 
 DO_BUILD=1
 SETUP_ONLY=0
+DO_REFRESH_CONTENT=0
 for arg in "$@"; do
   case "$arg" in
-    --setup)    SETUP_ONLY=1 ;;
-    --no-build) DO_BUILD=0 ;;
-    -h|--help)  sed -n '2,10p' "$SELF" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    *)          echo "Unknown option: $arg" >&2; exit 2 ;;
+    --setup)           SETUP_ONLY=1 ;;
+    --no-build)        DO_BUILD=0 ;;
+    --refresh-content) DO_REFRESH_CONTENT=1 ;;
+    -h|--help)         sed -n '2,11p' "$SELF" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *)                 echo "Unknown option: $arg" >&2; exit 2 ;;
   esac
 done
+
+# The plugin's data folder, where Paper copies default content on first boot. Named
+# after the plugin (paper-plugin.yml name: Rpg).
+CONTENT_DIR="$PLUGINS_DIR/Rpg/content"
 
 mkdir -p "$PLUGINS_DIR"
 
@@ -116,6 +123,22 @@ JAR="$(./scripts/check-jar.sh --print-jar)"
 echo "==> Deploying $(basename "$JAR")"
 rm -f "$PLUGINS_DIR"/rpg-*.jar
 cp "$JAR" "$PLUGINS_DIR/"
+
+# --- Refresh content -------------------------------------------------------
+# The plugin ships defaults with saveResource(path, false), which NEVER overwrites an
+# existing file. That is correct for a real server -- it must not clobber an operator's
+# intentional edits -- but it is the reason the tuning loop is broken locally: edit a
+# content .yml, rebuild, reboot, and the running server still loads the STALE copy the
+# data folder already holds. (This stranded the Phase 2 re-elementing: source said fire,
+# the deployed folder still said solar, and the boot warned about 12 dangling elements.)
+#
+# --refresh-content is the dev-only opt-in: clear the deployed content so the plugin
+# re-copies it fresh from the jar on this boot. It touches only this local run/ folder and
+# leaves saveResource(false)'s no-clobber protection intact for real deployments.
+if [ "$DO_REFRESH_CONTENT" -eq 1 ]; then
+  echo "==> Refreshing content: clearing $CONTENT_DIR (will re-copy fresh from the jar)"
+  rm -rf "$CONTENT_DIR"
+fi
 
 # --- Boot ------------------------------------------------------------------
 

@@ -617,6 +617,28 @@ Before milestone 2, two things worth measuring rather than assuming:
   The real fix is a content *reload* that reads the data folder without `saveResource`
   in the path, or a `--refresh-content` flag on `dev-server.sh`. Not folded into E.
 
+  > #### 2026-07-10 — the `--refresh-content` flag, and what re-triggered it
+  >
+  > It bit exactly as predicted, one phase later. Phase 2B re-elemented the sample content
+  > (solar→fire, arc→nature) in the source and committed it clean; a source grep confirmed
+  > no `element: solar` remained. The boot then warned about **12 dangling elements** anyway
+  > — because it loads `run/plugins/Rpg/content/`, not the source, and `saveResource(false)`
+  > had left the Phase-1 files (weapons AND abilities, all `solar`/`arc`) untouched. The
+  > acceptance grep checked the source; the server read the stale data folder; the two
+  > diverged silently. Same false-green shape as a check aimed at the wrong artifact.
+  >
+  > **`dev-server.sh --refresh-content`** is the fix the text above named. It clears
+  > `plugins/Rpg/content` after deploy so the plugin re-copies fresh from the jar on boot.
+  > Deliberately opt-in, and deliberately NOT `saveResource(path, true)`: overwrite-on-boot
+  > would clobber an operator's intentional edits on a real server. The flag touches only the
+  > local `run/` folder and leaves `saveResource(false)`'s protection intact.
+  >
+  > Proven both ways, on a real boot: dirty the deployed `emberblade` to `solar`, then
+  > `--refresh-content` re-copies it to `fire` and the log reads `7 elements, 0 dangling`;
+  > a *plain* boot of the same dirtied folder leaves it `solar` and warns on 3 dangling —
+  > the no-clobber default is unchanged. The tuning loop now actually works: edit source,
+  > `dev-server.sh --refresh-content`, and the running server loads what you wrote.
+
 - **`*.gitattributes` does not pin `*.yml` to LF**, and `core.autocrlf=true` on the
   dev machine. So a fresh clone checks `paper-plugin.yml` out as CRLF, `main:` carries
   a `\r`, and `check-jar.sh` goes red locally while staying green on `ubuntu-latest`.
