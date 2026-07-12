@@ -1,0 +1,9 @@
+# What "soaked" means: a stacking movement-slow. Each application multiplies the
+# mob's speed by 0.9 (0.9, 0.81, 0.729, ...), floored at 0.6x, and refreshes the
+# whole duration; at expiry every stack drops together. The ability that applies it
+# decides how long. The id of this status is its filename: soaked.
+#
+# The 0.9/0.6 tuning is named-constant in SoakedStatus for now; it moves here to the
+# yaml when the curve is tuned in play. Mob-only.
+
+kind: soaked

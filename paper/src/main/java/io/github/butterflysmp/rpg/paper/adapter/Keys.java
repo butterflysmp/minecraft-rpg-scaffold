@@ -19,9 +19,13 @@ public final class Keys {
     /** Identity of the attack-damage modifier that cancels a weapon's vanilla melee. */
     public final NamespacedKey meleeSuppressor;
 
+    /** Identity of Soaked's movement-speed modifier, so it can be removed by key on expiry. */
+    public final NamespacedKey soaked;
+
     public Keys(Plugin plugin) {
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
         this.meleeSuppressor = new NamespacedKey(plugin, "vanilla_melee_suppressor");
+        this.soaked = new NamespacedKey(plugin, "soaked_slow");
     }
 }

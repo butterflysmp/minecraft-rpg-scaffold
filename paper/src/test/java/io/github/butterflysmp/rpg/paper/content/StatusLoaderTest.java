@@ -79,6 +79,17 @@ class StatusLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
     }
 
+    @Test
+    void loadsASoakedStatusFromTheKind() throws IOException {
+        write("soaked.yml", "kind: soaked\n");
+
+        var soaked = assertInstanceOf(StatusDefinition.Soaked.class,
+                load().find("soaked").orElseThrow());
+
+        assertEquals("soaked", soaked.id());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
     /**
      * The key is parsed, not resolved. Resolving it would need Registry.MOB_EFFECT,
      * which would need a server, which would make this test impossible.

@@ -61,6 +61,7 @@ public final class StatusLoader {
             case "fire" -> new StatusDefinition.Fire(id);
             case "potion" -> new StatusDefinition.Potion(id, potionType(req(s, "potion_type")));
             case "rooted" -> new StatusDefinition.Immobilize(id);
+            case "soaked" -> new StatusDefinition.Soaked(id);
             default -> throw new IllegalArgumentException("Unknown status kind: " + kind);
         };
     }

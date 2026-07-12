@@ -10,7 +10,8 @@ import org.bukkit.NamespacedKey;
  * Sealed so BukkitCombatant.applyStatus switches exhaustively over the kinds.
  */
 public sealed interface StatusDefinition
-        permits StatusDefinition.Fire, StatusDefinition.Potion, StatusDefinition.Immobilize {
+        permits StatusDefinition.Fire, StatusDefinition.Potion,
+                StatusDefinition.Immobilize, StatusDefinition.Soaked {
 
     String id();
 
@@ -32,4 +33,13 @@ public sealed interface StatusDefinition
      * startup, once Registry.MOB_EFFECT is reachable.
      */
     record Potion(String id, NamespacedKey potionType) implements StatusDefinition {}
+
+    /**
+     * A stacking, multiplicative movement-slow: each stack multiplies speed by 0.9, floored
+     * at 0.6x base. The stack count is real per-target state, and the speed modifier must be
+     * fully removed at expiry -- a leaked modifier is a permanently-slow mob. The 0.9/0.6
+     * tuning is named-constant in SoakedStatus for now; it moves to YAML when the curve is
+     * tuned in play. Config-named (not "StackingSlow") because nothing else reuses it yet.
+     */
+    record Soaked(String id) implements StatusDefinition {}
 }

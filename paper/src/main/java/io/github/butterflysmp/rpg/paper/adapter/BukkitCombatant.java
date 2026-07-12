@@ -122,6 +122,15 @@ public final class BukkitCombatant {
                         ctx.immobilize().apply(entity.getUniqueId(), target, durationTicks,
                                 () -> entity.setVelocity(new Vector(0, 0, 0)));
                     }
+
+                    // Stacking slow. Mob-only for the same reason as Immobilize. The stack +
+                    // cleanup logic lives in SoakedStatus; here we only bind the two seams.
+                    case StatusDefinition.Soaked ignored -> {
+                        if (entity instanceof Player) return;
+                        RepeatingTaskTarget target = new EntityTaskTarget(entity, ctx.scheduler());
+                        SpeedAttribute speed = new EntitySpeedAttribute(entity, ctx.keys().soaked);
+                        ctx.soaked().apply(entity.getUniqueId(), target, speed, durationTicks);
+                    }
                 }
             });
         }
