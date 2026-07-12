@@ -39,3 +39,12 @@ on_hit:
         element: void
       - type: knockback
         strength: 0.6
+      # soaked_TEMP: a boot-test fixture, NOT Soaked's real home. void_slash is the
+      # non-rooting, low-cooldown (40t) repeated-hit ability, so re-swinging stacks
+      # Soaked on a mob to witness the slow deepen toward the 0.6 floor and then --
+      # once you stop and it expires -- the mob return to EXACTLY normal speed (a
+      # residual slow would mean a leaked modifier). REMOVE this when Soaked gets its
+      # own ability in the status content pass, like rooted_TEMP / swing_TEMP before it.
+      - type: status
+        status_id: soaked
+        duration_ticks: 100
