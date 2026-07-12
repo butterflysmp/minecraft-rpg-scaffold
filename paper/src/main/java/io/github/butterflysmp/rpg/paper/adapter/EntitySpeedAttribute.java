@@ -26,19 +26,19 @@ public final class EntitySpeedAttribute implements SpeedAttribute {
         this.key = key;
     }
 
-    @Override public boolean hasSoakModifier() {
+    @Override public boolean hasSpeedModifier() {
         AttributeInstance attr = entity.getAttribute(Attribute.MOVEMENT_SPEED);
         return attr != null && attr.getModifier(key) != null;
     }
 
-    @Override public void addSoakModifier(double factor) {
+    @Override public void addSpeedModifier(double factor) {
         AttributeInstance attr = entity.getAttribute(Attribute.MOVEMENT_SPEED);
         if (attr == null) return;
         attr.addModifier(new AttributeModifier(
                 key, factor - 1.0, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
     }
 
-    @Override public void removeSoakModifier() {
+    @Override public void removeSpeedModifier() {
         AttributeInstance attr = entity.getAttribute(Attribute.MOVEMENT_SPEED);
         if (attr != null && attr.getModifier(key) != null) attr.removeModifier(key);
     }

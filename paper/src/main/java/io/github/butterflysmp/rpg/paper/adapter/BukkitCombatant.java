@@ -116,10 +116,12 @@ public final class BukkitCombatant {
 
                     // Mob-only for now. A player would fight the client's own movement
                     // prediction and get a broken half-immobilize; skip rather than half-work.
+                    // MOVEMENT_SPEED=0 kills the AI drive; velocity-zero kills knockback/jumps.
                     case StatusDefinition.Immobilize ignored -> {
                         if (entity instanceof Player) return;
                         RepeatingTaskTarget target = new EntityTaskTarget(entity, ctx.scheduler());
-                        ctx.immobilize().apply(entity.getUniqueId(), target, durationTicks,
+                        SpeedAttribute speed = new EntitySpeedAttribute(entity, ctx.keys().rooted);
+                        ctx.immobilize().apply(entity.getUniqueId(), target, speed, durationTicks,
                                 () -> entity.setVelocity(new Vector(0, 0, 0)));
                     }
 

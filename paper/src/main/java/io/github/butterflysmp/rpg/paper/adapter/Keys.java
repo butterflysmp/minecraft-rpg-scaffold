@@ -22,10 +22,14 @@ public final class Keys {
     /** Identity of Soaked's movement-speed modifier, so it can be removed by key on expiry. */
     public final NamespacedKey soaked;
 
+    /** Identity of Rooted's movement-speed=0 modifier, the immobilize's AI-drive kill. */
+    public final NamespacedKey rooted;
+
     public Keys(Plugin plugin) {
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
         this.meleeSuppressor = new NamespacedKey(plugin, "vanilla_melee_suppressor");
         this.soaked = new NamespacedKey(plugin, "soaked_slow");
+        this.rooted = new NamespacedKey(plugin, "rooted_immobilize");
     }
 }

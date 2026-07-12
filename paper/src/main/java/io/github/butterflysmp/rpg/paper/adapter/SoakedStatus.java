@@ -62,7 +62,7 @@ public final class SoakedStatus {
         setSlow(speed, na.stacks);             // set on stack change, NOT every tick
         BooleanSupplier tick = () -> {
             if (na.remaining <= 0) {
-                speed.removeSoakModifier();    // expiry, on the entity's own thread: base restored
+                speed.removeSpeedModifier();   // expiry, on the entity's own thread: base restored
                 return false;
             }
             na.remaining--;
@@ -74,8 +74,8 @@ public final class SoakedStatus {
 
     /** Replace the one keyed modifier so a stack change never leaves two -- the guard bug 4 tests. */
     private static void setSlow(SpeedAttribute speed, int stacks) {
-        if (speed.hasSoakModifier()) speed.removeSoakModifier();
-        speed.addSoakModifier(factor(stacks));
+        if (speed.hasSpeedModifier()) speed.removeSpeedModifier();
+        speed.addSpeedModifier(factor(stacks));
     }
 
     /** True while {@code id} has a live soak. For tests and future multi-status composition. */

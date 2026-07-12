@@ -7,85 +7,97 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * The acceptance is the cleanup, not the effect. Rooted is the simplest per-tick status --
- * velocity-zero, nothing to revert -- so a lifecycle leak surfaces here, not tangled in
- * stacking. Each test names the mutation it forces to redden, so a green here means the test
- * SEES the lifecycle, not just the happy path. (The fake it runs on is proved faithful in
- * RepeatingTaskFidelityTest first.)
+ * The acceptance is the cleanup, not the effect. Rooted now carries removable state -- a
+ * MOVEMENT_SPEED=0 modifier that kills the mob's AI drive -- alongside the per-tick velocity-zero
+ * that kills imparted movement (knockback, jumps). So the same modifier-cleanup hazard Soaked
+ * hardened applies here: a leaked 0-modifier is a permanently-frozen mob. Each test names the
+ * mutation it forces to redden. (The fakes are proved faithful in RepeatingTaskFidelityTest.)
  *
- * The perTick action is a counter, never a real velocity write, so this is a pure unit test:
- * `./mvnw -pl paper test`, no server. That the velocity-zero actually holds a mob in place is
- * the one boot observation.
+ * These are server-free unit tests of the LIFECYCLE. That MOVEMENT_SPEED=0 + velocity-zero
+ * actually stops a mob dead in the world -- zero creep, even when aggro'd -- is the boot gate.
  */
 class ImmobilizeStatusTest {
 
+    private static final double EPS = 1e-9;
+
     @Test
-    void applyingRootRegistersExactlyOneRepeatingTask() {
+    void applyingRootRegistersOneTaskAndSetsSpeedToZero() {
         var status = new ImmobilizeStatus();
         var target = new FakeTickTarget();
+        var speed = new FakeSpeedAttribute(target);
         UUID id = UUID.randomUUID();
 
-        status.apply(id, target, 100, () -> {});
+        status.apply(id, target, speed, 100, () -> {});
 
         assertTrue(status.isRooted(id), "the mob is rooted");
         assertEquals(1, target.pending(), "exactly one repeating task is scheduled");
+        assertEquals(1, speed.modifierCount(), "one speed modifier, set on apply");
+        assertEquals(0.0, speed.speedFactor(), EPS, "MOVEMENT_SPEED driven to zero -- the AI-drive kill");
         // Mutation: an apply() that never calls RepeatingTask.start leaves pending() == 0.
     }
 
     @Test
-    void theTaskSelfCancelsWhenTheDurationExpires() {
+    void theTaskExpiresAndRestoresBaseSpeedExactly() {
         var status = new ImmobilizeStatus();
         var target = new FakeTickTarget();
+        var speed = new FakeSpeedAttribute(target);
         UUID id = UUID.randomUUID();
         int[] zeroed = {0};
 
-        status.apply(id, target, 3, () -> zeroed[0]++);
+        status.apply(id, target, speed, 3, () -> zeroed[0]++);
         target.advance(10);
 
-        assertEquals(3, zeroed[0], "the effect ran once per tick for the duration, then stopped");
+        assertEquals(3, zeroed[0], "velocity-zero ran once per tick for the duration");
         assertEquals(0, target.pending(), "no task is still scheduled after expiry");
         assertFalse(status.isRooted(id), "and the registry entry is gone");
-        // Mutation: a body that never returns false leaves the task re-arming -> pending() stays 1
-        //           (or the fake's due-order clock keeps firing) -> reddens.
+        assertEquals(0, speed.modifierCount(), "the speed modifier was removed");
+        assertEquals(1.0, speed.speedFactor(), EPS, "base speed restored EXACTLY -- no permanently-frozen mob");
+        // Mutation: drop removeSpeedModifier() at expiry -> speedFactor stuck at 0 -> reddens.
     }
 
     @Test
-    void theTaskSelfCancelsWhenTheMobIsRemovedAndNeverTouchesIt() {
+    void whenTheMobDiesCleanupTouchesNothingAndLeavesNoState() {
         var status = new ImmobilizeStatus();
         var target = new FakeTickTarget();
+        var speed = new FakeSpeedAttribute(target);
         UUID id = UUID.randomUUID();
         int[] zeroed = {0};
 
-        status.apply(id, target, 100, () -> zeroed[0]++);
+        status.apply(id, target, speed, 100, () -> zeroed[0]++);
         target.advance(1);
         assertEquals(1, zeroed[0], "one tick happened while alive");
 
         target.active = false; // the mob dies / is removed -- the common case
-        target.advance(1);
 
+        assertDoesNotThrow(() -> target.advance(1),
+                "cleanup must not touch the removed entity (the fake throws if it does)");
         assertEquals(0, target.pending(), "the task self-cancelled: nothing still scheduled at the dead mob");
         assertFalse(status.isRooted(id), "the registry entry is gone");
-        assertEquals(1, zeroed[0], "the effect did NOT run against the removed mob");
-        // Mutation: delete the isActive() guard in RepeatingTask.step -> the loop re-arms,
-        //           pending() stays 1 and zeroed[0] becomes 2 (touching a removed mob) -> reddens.
+        assertEquals(1, zeroed[0], "velocity-zero did NOT run against the removed mob");
+        // The 0-modifier died with the entity; removing it would mean touching a gone entity.
+        // Mutation A: delete the isActive() guard in RepeatingTask.step -> ticks the dead mob ->
+        //             pending() stays 1 -> reddens.
+        // Mutation B: move removeSpeedModifier into onStop -> touches the dead entity -> the fake
+        //             throws "touched a removed entity" -> reddens.
     }
 
     @Test
     void reRootingRefreshesTheOneTaskInsteadOfStackingASecond() {
         var status = new ImmobilizeStatus();
         var target = new FakeTickTarget();
+        var speed = new FakeSpeedAttribute(target);
         UUID id = UUID.randomUUID();
 
-        status.apply(id, target, 40, () -> {});
-        target.advance(10);                       // 30 ticks left
+        status.apply(id, target, speed, 40, () -> {});
+        target.advance(10);                              // 30 ticks left
         assertEquals(30, status.remainingTicks(id));
 
-        status.apply(id, target, 40, () -> {});   // re-root the already-rooted mob
+        status.apply(id, target, speed, 40, () -> {});   // re-root the already-rooted mob
 
         assertEquals(1, target.pending(), "still ONE task, not two");
         assertEquals(40, status.remainingTicks(id), "its duration was refreshed, not stacked");
+        assertEquals(1, speed.modifierCount(), "still one speed modifier, not re-added");
         // Mutation: remove the find-existing-and-refresh branch so the second apply() starts a
-        //           second task -> pending() == 2 -> reddens. Without this mutation, "one not two"
-        //           could pass merely because the second-application path was never exercised.
+        //           second task -> pending() == 2 -> reddens.
     }
 }

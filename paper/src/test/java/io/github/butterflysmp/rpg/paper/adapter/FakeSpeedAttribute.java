@@ -23,9 +23,9 @@ final class FakeSpeedAttribute implements SpeedAttribute {
         if (!target.isActive()) throw new AssertionError("touched a removed entity");
     }
 
-    @Override public boolean hasSoakModifier() { guard(); return modifiers > 0; }
-    @Override public void addSoakModifier(double f) { guard(); modifiers++; factor = f; }
-    @Override public void removeSoakModifier() { guard(); modifiers = 0; factor = 1.0; }
+    @Override public boolean hasSpeedModifier() { guard(); return modifiers > 0; }
+    @Override public void addSpeedModifier(double f) { guard(); modifiers++; factor = f; }
+    @Override public void removeSpeedModifier() { guard(); modifiers = 0; factor = 1.0; }
 
     /** How many of our modifiers are on the entity. The single-stable-modifier probe. */
     int modifierCount() { return modifiers; }
