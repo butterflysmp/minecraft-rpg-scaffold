@@ -20,9 +20,14 @@ Grounded in the current tree (HEAD `883c65a`):
 Rooted, Soaked, and Freeze are all mob-only and all need the same thing vanilla
 cannot give: **an effect that runs every tick for a duration and cleans up.**
 
-- **Rooted** — set velocity to zero every tick (Slowness is useless: it doesn't
-  stop jumping, so a slowed mob hops away. Only per-tick velocity control actually
-  immobilizes).
+- **Rooted** — set the movement-speed attribute to zero (kills the mob's self-propelled
+  AI drive) *and* zero velocity every tick (kills imparted movement: knockback, jumps).
+  Vanilla Slowness is useless: it is capped and doesn't stop jumping. **Correction:** an
+  earlier version of this line claimed "only per-tick velocity control immobilizes." The
+  code investigation disproved it — velocity-zero alone only cancels the AI's *output* each
+  tick and leaves ~1% creep; the speed-attribute-0 is what actually immobilizes. This matches
+  `DESIGN-status-effects.md` (which had it right) and the shipped `fix: Rooted is a real
+  immobilize` commit.
 - **Soaked** — recompute `max(0.6, 0.9^stacks)` and apply it every tick.
 - **Freeze** — Rooted's velocity-zero plus attack suppression.
 
