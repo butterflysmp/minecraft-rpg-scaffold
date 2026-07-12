@@ -112,6 +112,24 @@ class SoakedStatusTest {
     }
 
     @Test
+    void fiveApplicationsShareOneRefreshedTimerNotFiveAccumulated() {
+        var soaked = new SoakedStatus();
+        var target = new FakeTickTarget();
+        var speed = new FakeSpeedAttribute(target);
+        UUID id = UUID.randomUUID();
+
+        for (int i = 0; i < 5; i++) soaked.apply(id, target, speed, 100); // what /rpg apply soaked 100 5 does
+        assertEquals(5, soaked.stacks(id), "five calls stacked to five");
+
+        target.advance(101);                          // just past ONE 100-tick timer
+
+        assertFalse(soaked.isSoaked(id), "expired on one refreshed 100-tick timer, not a 500-tick one");
+        assertEquals(1.0, speed.speedFactor(), EPS, "base restored -- duration refreshed, did not accumulate");
+        // Mutation: change `a.remaining = durationTicks` to `+=` -> accumulates to 500 -> still
+        // soaked after 101 ticks -> reddens. This is the code-level guard on the boot's merge gate.
+    }
+
+    @Test
     void whenTheMobDiesCleanupRunsWithoutTouchingItAndLeavesNoState() {
         var soaked = new SoakedStatus();
         var target = new FakeTickTarget();

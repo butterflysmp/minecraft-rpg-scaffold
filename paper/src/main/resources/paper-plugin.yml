@@ -33,3 +33,6 @@ permissions:
   rpg.command.give:
     description: Mint a weapon into your inventory.
     default: op
+  rpg.command.dev:
+    description: Apply any status to a mob for testing.
+    default: op

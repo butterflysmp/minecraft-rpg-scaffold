@@ -1,6 +1,8 @@
 package io.github.butterflysmp.rpg.paper.command;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
@@ -26,8 +28,10 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Location;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -41,6 +45,11 @@ import java.util.Set;
 public final class RpgCommand {
 
     private RpgCommand() {}
+
+    /** How far /rpg apply's aim-ray reaches for a mob. Named, and within the 20-30 block ask. */
+    private static final double TARGET_RANGE = 25.0;
+    /** Hitbox inflation for the aim-ray -- a forgiving crosshair, since this is a dev tool. */
+    private static final double TARGET_LENIENCE = 0.3;
 
     public static LiteralCommandNode<CommandSourceStack> build(AbilityRegistry registry,
                                                                AbilityService abilityService,
@@ -134,7 +143,71 @@ public final class RpgCommand {
                                     }
                                     return give(player, id, weapons, adapters);
                                 })))
+                // A dev instrument: apply any loaded status, at any stack count and duration,
+                // to the mob you are aiming at -- bypassing the class/element/kit gate, which is
+                // exactly why it is DEV-gated. It reuses the same applyStatus seam an ability
+                // uses, so what it tests is what an ability triggers.
+                .then(Commands.literal("apply")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .then(Commands.argument("status", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    adapters.statuses().all().forEach(s -> builder.suggest(s.id()));
+                                    return builder.buildFuture();
+                                })
+                                .executes(ctx -> apply(ctx, adapters, null, null))
+                                .then(Commands.argument("duration", IntegerArgumentType.integer(1, 12000))
+                                        .executes(ctx -> apply(ctx, adapters,
+                                                IntegerArgumentType.getInteger(ctx, "duration"), null))
+                                        .then(Commands.argument("stacks", IntegerArgumentType.integer(1, ApplyArgs.MAX_STACKS))
+                                                .executes(ctx -> apply(ctx, adapters,
+                                                        IntegerArgumentType.getInteger(ctx, "duration"),
+                                                        IntegerArgumentType.getInteger(ctx, "stacks")))))))
                 .build();
+    }
+
+    /**
+     * Apply a status to the mob the player is aiming at. Reuses BukkitCombatant.applyStatus --
+     * the exact path an ability's onHit takes -- so /rpg apply is a faithful test instrument.
+     * `stacks` is the number of applyStatus calls, because Soaked (and any future stacking
+     * status) accumulates by repeated application, not by an amplifier field.
+     */
+    private static int apply(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                             Integer duration, Integer stacks) {
+        String statusId = StringArgumentType.getString(ctx, "status");
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+
+        ApplyArgs.Resolution resolution = ApplyArgs.resolve(statusId, duration, stacks,
+                id -> adapters.statuses().find(id).isPresent());
+        if (!resolution.ok()) {
+            player.sendMessage(Component.text(resolution.error(), NamedTextColor.RED));
+            return 0;
+        }
+        ApplyArgs args = resolution.args();
+
+        // Resolve the target and apply on the thread owning the aim -- rayTraceEntities is a
+        // world read. Entity-only trace (no block occlusion): a dev tool should hit the mob the
+        // crosshair is roughly on, even through a fence. Mob-only: skip players, self, non-living.
+        Location eye = player.getEyeLocation();
+        adapters.scheduler().onRegion(eye, () -> {
+            RayTraceResult hit = player.getWorld().rayTraceEntities(
+                    eye, eye.getDirection(), TARGET_RANGE, TARGET_LENIENCE,
+                    e -> e instanceof LivingEntity living && !(living instanceof Player));
+            if (hit == null || !(hit.getHitEntity() instanceof LivingEntity target)) {
+                player.sendMessage(Component.text("Look at a mob to apply a status.", NamedTextColor.RED));
+                return;
+            }
+            var handle = BukkitCombatant.of(target, adapters).handle();
+            for (int i = 0; i < args.stacks(); i++) {
+                handle.applyStatus(args.statusId(), args.durationTicks(), 0);
+            }
+            player.sendMessage(Component.text(
+                    "Applied " + args.statusId() + " x" + args.stacks() + " (" + args.durationTicks()
+                            + "t) to " + target.getType().name(), NamedTextColor.GREEN));
+        });
+        return 1;
     }
 
     private static int give(Player player, String weaponId, WeaponRegistry weapons,
