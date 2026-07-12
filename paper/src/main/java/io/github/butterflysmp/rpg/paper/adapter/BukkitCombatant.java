@@ -9,6 +9,7 @@ import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTaskTarget;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
+import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -117,12 +118,30 @@ public final class BukkitCombatant {
                     // Mob-only for now. A player would fight the client's own movement
                     // prediction and get a broken half-immobilize; skip rather than half-work.
                     // MOVEMENT_SPEED=0 kills the AI drive; velocity-zero kills knockback/jumps.
-                    case StatusDefinition.Immobilize ignored -> {
+                    // Rooted and Freeze are the two configurations: Freeze uses its own instance
+                    // and key (so all three movement modifiers coexist) and adds attack
+                    // suppression -- the RpgListeners cancel a frozen mob's attacks while
+                    // ctx.freeze().isImmobilized(id) holds.
+                    case StatusDefinition.Immobilize immobilize -> {
                         if (entity instanceof Player) return;
                         RepeatingTaskTarget target = new EntityTaskTarget(entity, ctx.scheduler());
-                        SpeedAttribute speed = new EntitySpeedAttribute(entity, ctx.keys().rooted);
-                        ctx.immobilize().apply(entity.getUniqueId(), target, speed, durationTicks,
-                                () -> entity.setVelocity(new Vector(0, 0, 0)));
+                        if (immobilize.suppressAttacks()) {
+                            SpeedAttribute speed = new EntitySpeedAttribute(entity, ctx.keys().freeze);
+                            ctx.freeze().apply(entity.getUniqueId(), target, speed, durationTicks, () -> {
+                                entity.setVelocity(new Vector(0, 0, 0));
+                                // A frozen creeper does not explode: pause its swell each tick so it
+                                // never sits primed and detonates the instant it unfreezes. The
+                                // ExplosionPrimeEvent cancel in RpgListeners is the guaranteed backstop.
+                                if (entity instanceof Creeper creeper) {
+                                    creeper.setIgnited(false);
+                                    creeper.setFuseTicks(creeper.getMaxFuseTicks());
+                                }
+                            });
+                        } else {
+                            SpeedAttribute speed = new EntitySpeedAttribute(entity, ctx.keys().rooted);
+                            ctx.immobilize().apply(entity.getUniqueId(), target, speed, durationTicks,
+                                    () -> entity.setVelocity(new Vector(0, 0, 0)));
+                        }
                     }
 
                     // Stacking slow. Mob-only for the same reason as Immobilize. The stack +

@@ -10,9 +10,13 @@ import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.ExplosionPrimeEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -115,5 +119,35 @@ public final class RpgListeners implements Listener {
         cooldowns.clear(playerId);
         resources.clear(playerId);
         profiles.onQuit(playerId);
+    }
+
+    // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is
+    // frozen (its freeze immobilize task is live), cancel the attack. The suppression lifts
+    // automatically when the freeze ends -- isFrozen goes false on expiry and on death -- so
+    // there is no separate suppression state to clean up.
+
+    /** Melee: a frozen mob deals no damage. The player can still damage IT (damager is the player). */
+    @EventHandler
+    public void onFrozenMeleeAttack(EntityDamageByEntityEvent event) {
+        if (isFrozen(event.getDamager())) event.setCancelled(true);
+    }
+
+    /** Ranged: a frozen mob looses nothing -- a skeleton frozen mid-draw never fires. */
+    @EventHandler
+    public void onFrozenProjectileLaunch(ProjectileLaunchEvent event) {
+        if (event.getEntity().getShooter() instanceof Entity shooter && isFrozen(shooter)) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** Creeper: detonation is an attack -- a frozen creeper does not explode (the per-tick fuse
+        reset pauses the swell; this is the guaranteed no-boom backstop). */
+    @EventHandler
+    public void onFrozenExplosionPrime(ExplosionPrimeEvent event) {
+        if (isFrozen(event.getEntity())) event.setCancelled(true);
+    }
+
+    private boolean isFrozen(Entity entity) {
+        return adapters.freeze().isImmobilized(entity.getUniqueId());
     }
 }

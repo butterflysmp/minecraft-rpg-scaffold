@@ -25,11 +25,15 @@ public final class Keys {
     /** Identity of Rooted's movement-speed=0 modifier, the immobilize's AI-drive kill. */
     public final NamespacedKey rooted;
 
+    /** Identity of Freeze's movement-speed=0 modifier -- distinct from rooted so both coexist. */
+    public final NamespacedKey freeze;
+
     public Keys(Plugin plugin) {
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
         this.meleeSuppressor = new NamespacedKey(plugin, "vanilla_melee_suppressor");
         this.soaked = new NamespacedKey(plugin, "soaked_slow");
         this.rooted = new NamespacedKey(plugin, "rooted_immobilize");
+        this.freeze = new NamespacedKey(plugin, "freeze_immobilize");
     }
 }

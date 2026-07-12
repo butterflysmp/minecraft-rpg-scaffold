@@ -69,13 +69,26 @@ class StatusLoaderTest {
     }
 
     @Test
-    void loadsARootedStatusAsImmobilizeFromTheKind() throws IOException {
+    void loadsARootedStatusAsImmobilizeThatDoesNotSuppressAttacks() throws IOException {
         write("rooted.yml", "kind: rooted\n");
 
         var immobilize = assertInstanceOf(StatusDefinition.Immobilize.class,
                 load().find("rooted").orElseThrow());
 
         assertEquals("rooted", immobilize.id());
+        assertFalse(immobilize.suppressAttacks(), "Rooted immobilizes but does not suppress attacks");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    @Test
+    void loadsAFreezeStatusAsImmobilizeThatSuppressesAttacks() throws IOException {
+        write("freeze.yml", "kind: freeze\n");
+
+        var immobilize = assertInstanceOf(StatusDefinition.Immobilize.class,
+                load().find("freeze").orElseThrow());
+
+        assertEquals("freeze", immobilize.id());
+        assertTrue(immobilize.suppressAttacks(), "Freeze is Immobilize + attack suppression");
         assertTrue(warnings.isEmpty(), warningText());
     }
 

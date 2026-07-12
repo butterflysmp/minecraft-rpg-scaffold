@@ -68,13 +68,17 @@ public final class ImmobilizeStatus {
         active.put(id, a);
     }
 
-    /** True while {@code id} has a live root. For tests and future multi-status composition. */
-    public boolean isRooted(UUID id) {
+    /**
+     * True while {@code id} has a live immobilize on this instance. Two instances use it:
+     * {@code ctx.immobilize()} (Rooted) and {@code ctx.freeze()} (Freeze), so the Freeze
+     * listeners read {@code ctx.freeze().isImmobilized(id)} as their "is this mob frozen?" flag.
+     */
+    public boolean isImmobilized(UUID id) {
         Active a = active.get(id);
         return a != null && a.task.isRunning();
     }
 
-    /** Ticks remaining on {@code id}'s root, or 0 if it is not rooted. For tests. */
+    /** Ticks remaining on {@code id}'s immobilize, or 0 if not immobilized. For tests. */
     public int remainingTicks(UUID id) {
         Active a = active.get(id);
         return a != null && a.task.isRunning() ? a.remaining : 0;

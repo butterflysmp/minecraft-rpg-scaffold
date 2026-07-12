@@ -19,13 +19,15 @@ public sealed interface StatusDefinition
     record Fire(String id) implements StatusDefinition {}
 
     /**
-     * A movement lock: zero the mob's velocity every tick for the duration. Vanilla Slowness
-     * won't do -- it doesn't stop jumping, so a slowed mob hops away. Rooted is the first
-     * configuration; Freeze will reuse this kind and add attack suppression. The general name
-     * is chosen now because the sealed switch is compiler-enforced, so renaming later would
-     * touch it. Carries no state beyond its id -- duration comes from the ability.
+     * A movement lock: MOVEMENT_SPEED to zero (kills the mob's AI drive) plus per-tick
+     * velocity-zero (kills knockback/jumps). The two configurations of this one mechanic:
+     *   - Rooted = {@code suppressAttacks=false} -- cannot move; can still turn and melee in range.
+     *   - Freeze = {@code suppressAttacks=true}  -- cannot move OR attack; the listeners cancel a
+     *              frozen mob's melee, projectiles, and creeper detonation.
+     * The general kind name is deliberate -- Freeze reuses the immobilize rather than forcing a
+     * second sealed kind. Duration comes from the ability.
      */
-    record Immobilize(String id) implements StatusDefinition {}
+    record Immobilize(String id, boolean suppressAttacks) implements StatusDefinition {}
 
     /**
      * A vanilla potion effect. The key's syntax is validated at load, which needs

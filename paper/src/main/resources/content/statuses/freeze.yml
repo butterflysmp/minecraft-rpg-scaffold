@@ -1,0 +1,9 @@
+# What "freeze" means: the mob cannot move AND cannot attack. The ability that
+# applies it decides how long. The id of this status is its filename: freeze.
+#
+# Freeze reuses Rooted's immobilize (MOVEMENT_SPEED=0 + per-tick velocity-zero, its
+# own key) and adds attack suppression -- while frozen, the mob's melee, projectiles,
+# and creeper detonation are cancelled. It still turns to face you; it just can't
+# move or land a hit. Mob-only.
+
+kind: freeze
