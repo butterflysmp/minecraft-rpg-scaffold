@@ -16,12 +16,14 @@ public final class ImmobilizePhysics {
     private ImmobilizePhysics() {}
 
     /**
-     * The one tuning knob, boot-dialled like SoakedStatus's DECAY_PER_STACK. Horizontal drift
-     * (blocks) tolerated before the anchor snaps a mob back. It controls BOTH failure modes:
-     * too tight -> teleports every tick and the mob vibrates; too loose -> the mob visibly creeps
-     * between corrections. The sweet spot is "neither buzzes nor drifts." Squared at the call site.
+     * DEFAULT for the one tuning knob; the live value is {@code immobilize.anchor-drift-blocks}
+     * in config.yml (edit + restart, no rebuild), read into {@code AdapterContext.anchorDrift()}.
+     * Horizontal drift (blocks) tolerated before the anchor snaps a mob back. It controls BOTH
+     * failure modes: too tight -> corrects every tick and the mob vibrates; too loose -> the mob
+     * visibly creeps between corrections. The sweet spot is "neither buzzes nor drifts." 0.1 was
+     * too tight (per-tick buzz); 0.4 is the loosened default to dial from. Squared at the call site.
      */
-    public static final double ANCHOR_DRIFT = 0.1;
+    public static final double ANCHOR_DRIFT = 0.4;
 
     /**
      * Minimum teleport distance (blocks) that counts as a "real" teleport to suppress, so the

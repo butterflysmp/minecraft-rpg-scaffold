@@ -9,6 +9,7 @@ import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
+import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.command.RpgCommand;
 import io.github.butterflysmp.rpg.paper.content.AbilityLoader;
@@ -109,9 +110,16 @@ public final class RpgPlugin extends JavaPlugin {
         // here, with the server up, which is why these arrive as predicates.
         validateContent();
 
+        // The immobilize anchor's drift tolerance -- the one tuning knob, in config.yml so it
+        // can be dialled without a rebuild (edit + restart). Clamped so a typo can't break it.
+        saveDefaultConfig();
+        double anchorDrift = Math.max(0.0, Math.min(2.0,
+                getConfig().getDouble("immobilize.anchor-drift-blocks", ImmobilizePhysics.ANCHOR_DRIFT)));
+        getLogger().info("Immobilize anchor drift tolerance: " + anchorDrift + " blocks");
+
         // Built once and shared: the adapters' warn-once set must outlive the
         // short-lived BukkitCombatant and PaperCombatWorld instances.
-        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, getLogger());
+        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, getLogger(), anchorDrift);
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);

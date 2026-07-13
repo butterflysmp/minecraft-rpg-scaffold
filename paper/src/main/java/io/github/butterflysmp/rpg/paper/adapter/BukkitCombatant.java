@@ -134,7 +134,7 @@ public final class BukkitCombatant {
                         if (immobilize.suppressAttacks()) {
                             SpeedAttribute speed = new EntitySpeedAttribute(entity, ctx.keys().freeze);
                             ctx.freeze().apply(entity.getUniqueId(), target, speed, durationTicks, () -> {
-                                holdInPlace(entity, anchor);
+                                holdInPlace(entity, anchor, ctx.anchorDrift());
                                 // A frozen creeper does not explode: pause its swell each tick so it
                                 // never sits primed and detonates the instant it unfreezes. The
                                 // ExplosionPrimeEvent cancel in RpgListeners is the guaranteed backstop.
@@ -146,7 +146,7 @@ public final class BukkitCombatant {
                         } else {
                             SpeedAttribute speed = new EntitySpeedAttribute(entity, ctx.keys().rooted);
                             ctx.immobilize().apply(entity.getUniqueId(), target, speed, durationTicks,
-                                    () -> holdInPlace(entity, anchor));
+                                    () -> holdInPlace(entity, anchor, ctx.anchorDrift()));
                         }
                     }
 
@@ -179,11 +179,10 @@ public final class BukkitCombatant {
          * is its Bukkit binding, run on the entity's own thread from the immobilize's per-tick.
          * (Fliers are not specially handled -- an accepted compromise; see DESIGN-status-effects.md.)
          */
-        private static void holdInPlace(LivingEntity entity, Location anchor) {
+        private static void holdInPlace(LivingEntity entity, Location anchor, double drift) {
             Location cur = entity.getLocation();
             double[] fix = ImmobilizePhysics.correction(cur.getX(), cur.getY(), cur.getZ(),
-                    anchor.getX(), anchor.getY(), anchor.getZ(),
-                    ImmobilizePhysics.ANCHOR_DRIFT * ImmobilizePhysics.ANCHOR_DRIFT);
+                    anchor.getX(), anchor.getY(), anchor.getZ(), drift * drift);
             if (fix != null) {
                 entity.teleport(new Location(cur.getWorld(), fix[0], fix[1], fix[2],
                         cur.getYaw(), cur.getPitch()));

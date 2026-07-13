@@ -1,0 +1,10 @@
+# Rpg plugin configuration. Edit and restart the server to apply (no rebuild).
+
+immobilize:
+  # How far (in blocks) an immobilized mob may drift before the per-tick position
+  # anchor snaps it back. This is the one tuning knob for the anchor, and it controls
+  # BOTH failure modes:
+  #   too tight (e.g. 0.1) -> corrects every tick -> the mob VIBRATES
+  #   too loose (e.g. 1.0) -> visible slide between corrections -> the mob CREEPS
+  # The target is "neither buzzes nor drifts." Dial from 0.4; try 0.3-0.6.
+  anchor-drift-blocks: 0.4

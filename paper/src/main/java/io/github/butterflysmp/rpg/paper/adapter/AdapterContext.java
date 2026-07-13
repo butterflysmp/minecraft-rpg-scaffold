@@ -22,12 +22,12 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              VisualRegistry visuals, StatusRegistry statuses,
                              Logger log, Set<String> warned,
                              ImmobilizeStatus immobilize, SoakedStatus soaked,
-                             ImmobilizeStatus freeze) {
+                             ImmobilizeStatus freeze, double anchorDrift) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
-                          StatusRegistry statuses, Logger log) {
+                          StatusRegistry statuses, Logger log, double anchorDrift) {
         this(scheduler, keys, visuals, statuses, log, ConcurrentHashMap.newKeySet(),
-                new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus());
+                new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), anchorDrift);
     }
 
     /**
