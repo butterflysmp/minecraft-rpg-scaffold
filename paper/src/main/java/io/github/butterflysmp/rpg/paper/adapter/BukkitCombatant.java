@@ -179,20 +179,23 @@ public final class BukkitCombatant {
          * tracking and can still shoot you. The pure decision is ImmobilizePhysics.correction; this
          * is its Bukkit binding, run on the entity's own thread from the immobilize's per-tick.
          * (Fliers are not specially handled -- an accepted compromise; see DESIGN-status-effects.md.)
-         */
-        /**
-         * The per-tick belts behind immobilization. DO NOT delete these as "redundant" with the
-         * EntityMoveEvent veto (RpgListeners.onImmobilizedMove) -- that veto is the PRIMARY stop, but
-         * it fires for every entity (a cost) and could miss an edge case; these are the defense that
-         * keeps a mob still if the veto ever doesn't fire, and each stops a DIFFERENT motion source.
-         * Delete them and the strafe creep comes back. The layers, and why each exists:
-         *   - EntityMoveEvent veto (elsewhere): vetoes AI-committed translation before it commits.
-         *   - MOVEMENT_SPEED=0 (the speed modifier, in ImmobilizeStatus): kills the AI's movement DRIVE.
-         *   - stopPathfinding (here): cancels the navigation approach path so there's less to veto.
-         *   - velocity-zero (here): stops momentum/knockback velocity ACCUMULATING behind the veto, so
-         *     a mob doesn't lurch when it unfreezes or if one move slips.
-         *   - the position anchor (here): the SAFETY NET -- if a move ever slips the event, snap back.
-         *     With the veto working it never triggers (the mob never drifts), so it stays dormant.
+         *
+         * <p>These are the per-tick belts behind immobilization. DO NOT delete them as "redundant"
+         * with the EntityMoveEvent veto (RpgListeners.onImmobilizedMove) -- that veto is the PRIMARY
+         * stop, but it fires for every entity (a cost) and could miss an edge case; these are the
+         * defense that keeps a mob still if the veto ever doesn't fire, and each stops a DIFFERENT
+         * motion source. Delete them and the strafe creep comes back. The layers, and why each exists:
+         *
+         * <ul>
+         *   <li>EntityMoveEvent veto (elsewhere): vetoes AI-committed translation before it commits.
+         *   <li>MOVEMENT_SPEED=0 (the speed modifier, in ImmobilizeStatus): kills the AI's movement DRIVE.
+         *   <li>stopPathfinding (here): cancels the navigation approach path so there's less to veto.
+         *   <li>velocity-zero (here): stops momentum/knockback velocity ACCUMULATING behind the veto,
+         *       so a mob doesn't lurch when it unfreezes or if one move slips.
+         *   <li>the position anchor (here): the SAFETY NET -- if a move ever slips the event, snap
+         *       back. With the veto working it never triggers (the mob never drifts), so it stays
+         *       dormant.
+         * </ul>
          */
         private static void holdInPlace(LivingEntity entity, Location anchor, double drift) {
             if (entity instanceof Mob mob) mob.getPathfinder().stopPathfinding();

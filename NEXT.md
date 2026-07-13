@@ -656,6 +656,39 @@ Before milestone 2, two things worth measuring rather than assuming:
   is where real warnings go to hide, and the day a genuine overlapping-resource
   warning appears you want to see it. A `ManifestResourceTransformer`, or filtering
   the manifest out of the dependencies, silences it.
+- **`rooted_TEMP` and `soaked_TEMP` owe removal in the content pass.** They are throwaway
+  fixtures wired onto real abilities to make statuses castable in-game before `/rpg apply`
+  existed. `/rpg apply` is the permanent replacement — it applies any status at any
+  stack/duration without touching ability content, which is the entire reason the `_TEMP`
+  pattern existed. Deliberately left in place through the Freeze merge (`5620943`); removing
+  them is content work, not status work. Five reference sites:
+
+  ```
+  paper/src/main/resources/content/abilities/solar_grenade.yml
+  paper/src/main/resources/content/abilities/void_slash.yml
+  paper/src/test/java/io/github/butterflysmp/rpg/paper/content/AbilityLoaderTest.java
+  paper/src/test/java/io/github/butterflysmp/rpg/paper/content/ContentValidatorTest.java
+  PLAN-dev-apply-command.md            # context only, no fixture to remove
+  ```
+
+  **The ambush: the last two are guards that assert `rooted_TEMP` is PRESENT.** So this is
+  not a delete-two-YAML-keys job. Strip the fixture without touching the tests in the *same*
+  change and the suite goes red — bundled-content assertions failing on content you
+  legitimately removed. Measured, not inferred; the three that break, exactly:
+
+  - `AbilityLoaderTest` — `assertEquals(3, burst.effects().size())` becomes 2.
+  - `AbilityLoaderTest` — `burst.effects().get(2)` throws `IndexOutOfBounds`, so it fails
+    on an exception rather than a clean assertion diff. Delete the `rootedTemp` block.
+  - `ContentValidatorTest` — stages `rooted.yml` beside `scorch.yml` and asserts
+    `assertEquals(2, statuses.size())`. Back to `scorch.yml` only, and 1.
+
+  Both test files already carry in-place comments saying so at the assertion; this entry
+  exists because the content pass starts here, not there.
+
+  **`soaked_TEMP` is NOT test-guarded** — it lives only in `void_slash.yml` and comes out
+  clean. The asymmetry is the trap: removing `soaked_TEMP` first will pass and teach you
+  that removing `rooted_TEMP` is the same job. It is not.
+
 - **`Element.multiplierAgainst`** is still the placeholder 1.5x/1.0x rule.
 - **`RpgCommand`'s hop is on the caster's eye**, not the impact point. Now
   harmless: reads are snapshots captured under `requireOwned`, and the ray steps
