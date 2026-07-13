@@ -7,6 +7,7 @@ import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.paper.content.StatusDefinition;
 import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTaskTarget;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.entity.Creeper;
@@ -125,10 +126,15 @@ public final class BukkitCombatant {
                     case StatusDefinition.Immobilize immobilize -> {
                         if (entity instanceof Player) return;
                         RepeatingTaskTarget target = new EntityTaskTarget(entity, ctx.scheduler());
+                        // Captured ONCE here, on the entity thread. A refresh (re-apply) reuses the
+                        // running task and its original anchor -- the mob is already pinned there, so
+                        // it can't have walked between casts. holdInPlace pins position while the AI
+                        // keeps running (so a rooted archer still shoots and tracks you).
+                        Location anchor = entity.getLocation().clone();
                         if (immobilize.suppressAttacks()) {
                             SpeedAttribute speed = new EntitySpeedAttribute(entity, ctx.keys().freeze);
                             ctx.freeze().apply(entity.getUniqueId(), target, speed, durationTicks, () -> {
-                                entity.setVelocity(new Vector(0, 0, 0));
+                                holdInPlace(entity, anchor);
                                 // A frozen creeper does not explode: pause its swell each tick so it
                                 // never sits primed and detonates the instant it unfreezes. The
                                 // ExplosionPrimeEvent cancel in RpgListeners is the guaranteed backstop.
@@ -140,7 +146,7 @@ public final class BukkitCombatant {
                         } else {
                             SpeedAttribute speed = new EntitySpeedAttribute(entity, ctx.keys().rooted);
                             ctx.immobilize().apply(entity.getUniqueId(), target, speed, durationTicks,
-                                    () -> entity.setVelocity(new Vector(0, 0, 0)));
+                                    () -> holdInPlace(entity, anchor));
                         }
                     }
 
@@ -163,6 +169,26 @@ public final class BukkitCombatant {
          */
         private static PotionEffectType potionEffect(NamespacedKey key) {
             return Registry.MOB_EFFECT.get(key);
+        }
+
+        /**
+         * Pin an immobilized mob to its anchor each tick: lock X/Z (walk, strafe), cap Y (slime
+         * hop, climb; falling still allowed), then zero velocity (knockback). The teleport keeps
+         * the mob's CURRENT yaw/pitch -- live facing, not the anchor's -- so a rooted archer keeps
+         * tracking and can still shoot you. The pure decision is ImmobilizePhysics.correction; this
+         * is its Bukkit binding, run on the entity's own thread from the immobilize's per-tick.
+         * (Fliers are not specially handled -- an accepted compromise; see DESIGN-status-effects.md.)
+         */
+        private static void holdInPlace(LivingEntity entity, Location anchor) {
+            Location cur = entity.getLocation();
+            double[] fix = ImmobilizePhysics.correction(cur.getX(), cur.getY(), cur.getZ(),
+                    anchor.getX(), anchor.getY(), anchor.getZ(),
+                    ImmobilizePhysics.ANCHOR_DRIFT * ImmobilizePhysics.ANCHOR_DRIFT);
+            if (fix != null) {
+                entity.teleport(new Location(cur.getWorld(), fix[0], fix[1], fix[2],
+                        cur.getYaw(), cur.getPitch()));
+            }
+            entity.setVelocity(new Vector(0, 0, 0));
         }
     }
 }

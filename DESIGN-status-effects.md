@@ -74,6 +74,17 @@ Target cannot move. Maps to a vanilla movement lock (max slowness / a movement
 attribute set to zero for the duration). **No new engine** beyond applying and
 cleanly removing the effect on expiry.
 
+> **Immobilize covers a movement-class matrix; fliers are a deliberate non-fix.**
+> MOVEMENT_SPEED-0 + velocity-zero clamp attribute-scaled locomotion (walk, climb).
+> AI re-issues other movement each tick, so the shared immobilize adds a per-tick
+> position **anchor** (lock X/Z, cap Y) for the ranged-mob **strafe** (skeleton/stray/
+> pillager/crossbow-piglin share one bow-attack goal) and the slime **hop** (jump
+> impulse), and cancels `EntityTeleportEvent` for the enderman **teleport**.
+> **Fliers (ghast/blaze/phantom) are NOT specially handled** — a frozen flier may
+> drift; that is an accepted compromise, not a regression. The anchor tolerance
+> (`ImmobilizePhysics.ANCHOR_DRIFT`) is a boot-tuned knob: too tight vibrates, too
+> loose creeps; the target is "neither."
+
 > **The +20%-damage-taken clause was cut, deliberately.** An early spec had Rooted
 > also amplify damage taken. That reintroduces a **damage-taken multiplier** — the
 > exact thing Phase 2A deleted (`multiplierAgainst` gone, damage is the flat

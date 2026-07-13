@@ -6,15 +6,18 @@ import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
+import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -147,7 +150,35 @@ public final class RpgListeners implements Listener {
         if (isFrozen(event.getEntity())) event.setCancelled(true);
     }
 
+    /**
+     * Movement suppression for the teleport class: an immobilized mob (Rooted OR Freeze) cannot
+     * teleport away -- a frozen enderman stays put even when hit (getting hit is what triggers its
+     * teleport). Only REAL (large) teleports are cancelled, so the immobilize's own sub-block anchor
+     * corrections -- which also fire this event -- pass through and aren't self-cancelled.
+     */
+    @EventHandler
+    public void onImmobilizedTeleport(EntityTeleportEvent event) {
+        Location from = event.getFrom(), to = event.getTo();
+        if (to == null) return;
+        boolean immobilized = isImmobilized(event.getEntity());
+        if (!from.getWorld().equals(to.getWorld())) {          // cross-world is always a real teleport
+            if (immobilized) event.setCancelled(true);
+            return;
+        }
+        double minSq = ImmobilizePhysics.MIN_TELEPORT * ImmobilizePhysics.MIN_TELEPORT;
+        if (ImmobilizePhysics.suppressTeleport(immobilized, from.distanceSquared(to), minSq)) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** Frozen only: attack suppression is a Freeze mechanic. */
     private boolean isFrozen(Entity entity) {
         return adapters.freeze().isImmobilized(entity.getUniqueId());
+    }
+
+    /** Rooted OR Freeze: movement suppression (teleport) belongs to both immobilize configs. */
+    private boolean isImmobilized(Entity entity) {
+        return adapters.immobilize().isImmobilized(entity.getUniqueId())
+                || adapters.freeze().isImmobilized(entity.getUniqueId());
     }
 }
