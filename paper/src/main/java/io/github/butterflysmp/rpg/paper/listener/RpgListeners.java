@@ -16,6 +16,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import io.papermc.paper.event.entity.EntityMoveEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
@@ -168,6 +169,33 @@ public final class RpgListeners implements Listener {
         double minSq = ImmobilizePhysics.MIN_TELEPORT * ImmobilizePhysics.MIN_TELEPORT;
         if (ImmobilizePhysics.suppressTeleport(immobilized, from.distanceSquared(to), minSq)) {
             event.setCancelled(true);
+        }
+    }
+
+    /**
+     * The source-level movement stop for immobilized mobs: veto the translation BEFORE it commits.
+     * A strafing skeleton applies its move via deltaMovement during its own tick, after our per-tick
+     * velocity-zero has run -- so the zero is stale and the move commits (the creep). Teleporting it
+     * back after fights a lost battle (creep-then-snap). EntityMoveEvent fires before the move
+     * applies and is source-agnostic (MoveControl, navigation, momentum all funnel through it), so
+     * pinning the position here means the mob never moves -- zero creep, nothing to snap back from.
+     *
+     * This handler is on the hot path -- EntityMoveEvent fires for EVERY moving living entity every
+     * tick -- so the bail-out is cheapest-first: a hasChangedPosition() field check, then an O(1)
+     * concurrent-map get in isImmobilized() (on the small set of currently-immobilized mobs, not a
+     * scan). Rotation-only moves are let through so the mob still turns to face and aim.
+     */
+    @EventHandler
+    public void onImmobilizedMove(EntityMoveEvent event) {
+        if (!event.hasChangedPosition()) return;         // cheapest: no translation -> nothing to veto (mob may still aim)
+        if (!isImmobilized(event.getEntity())) return;   // O(1) map get on the immobilized set
+        Location from = event.getFrom(), to = event.getTo();
+        // Zero tolerance: veto ANY translation (keep from x/z, cap y so a hop can't rise, allow
+        // falling). Keep the mob's INTENDED facing (to yaw/pitch) so a rooted archer still shoots.
+        double[] fix = ImmobilizePhysics.correction(to.getX(), to.getY(), to.getZ(),
+                from.getX(), from.getY(), from.getZ(), 0.0);
+        if (fix != null) {
+            event.setTo(new Location(to.getWorld(), fix[0], fix[1], fix[2], to.getYaw(), to.getPitch()));
         }
     }
 
