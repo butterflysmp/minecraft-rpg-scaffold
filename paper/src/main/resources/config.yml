@@ -2,9 +2,10 @@
 
 immobilize:
   # How far (in blocks) an immobilized mob may drift before the per-tick position
-  # anchor snaps it back. This is the one tuning knob for the anchor, and it controls
-  # BOTH failure modes:
-  #   too tight (e.g. 0.1) -> corrects every tick -> the mob VIBRATES
-  #   too loose (e.g. 1.0) -> visible slide between corrections -> the mob CREEPS
-  # The target is "neither buzzes nor drifts." Dial from 0.4; try 0.3-0.6.
-  anchor-drift-blocks: 0.4
+  # anchor snaps it back.
+  #
+  # DEFAULT 0 = snap every tick = genuinely still. The anchor correction runs AFTER the
+  # AI has moved the mob, so any nonzero value is the amplitude of a sawtooth (drift up
+  # to the value, then snap): small -> jitter, large -> creep. There is no good nonzero
+  # value; 0 is the fix. This knob exists only as an escape hatch.
+  anchor-drift-blocks: 0.0

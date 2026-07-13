@@ -13,6 +13,7 @@ import org.bukkit.Registry;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -180,6 +181,9 @@ public final class BukkitCombatant {
          * (Fliers are not specially handled -- an accepted compromise; see DESIGN-status-effects.md.)
          */
         private static void holdInPlace(LivingEntity entity, Location anchor, double drift) {
+            // Cancel any navigation path so the approach phase (moveTo) has nothing to drive; the
+            // strafe itself is MoveControl (not navigation), which the anchor below handles.
+            if (entity instanceof Mob mob) mob.getPathfinder().stopPathfinding();
             Location cur = entity.getLocation();
             double[] fix = ImmobilizePhysics.correction(cur.getX(), cur.getY(), cur.getZ(),
                     anchor.getX(), anchor.getY(), anchor.getZ(), drift * drift);

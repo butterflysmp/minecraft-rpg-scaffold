@@ -16,14 +16,16 @@ public final class ImmobilizePhysics {
     private ImmobilizePhysics() {}
 
     /**
-     * DEFAULT for the one tuning knob; the live value is {@code immobilize.anchor-drift-blocks}
-     * in config.yml (edit + restart, no rebuild), read into {@code AdapterContext.anchorDrift()}.
-     * Horizontal drift (blocks) tolerated before the anchor snaps a mob back. It controls BOTH
-     * failure modes: too tight -> corrects every tick and the mob vibrates; too loose -> the mob
-     * visibly creeps between corrections. The sweet spot is "neither buzzes nor drifts." 0.1 was
-     * too tight (per-tick buzz); 0.4 is the loosened default to dial from. Squared at the call site.
+     * DEFAULT for the tuning knob {@code immobilize.anchor-drift-blocks} in config.yml (edit +
+     * restart, no rebuild), read into {@code AdapterContext.anchorDrift()}. Horizontal drift
+     * (blocks) tolerated before the anchor snaps a mob back.
+     *
+     * DEFAULT IS 0: snap EVERY tick. The anchor correction runs after the AI has already moved
+     * the mob, so any nonzero tolerance T is the amplitude of a sawtooth -- the mob drifts up to
+     * T, then snaps -- which reads as jitter (small T) or creep (large T). Zero means the reported
+     * position is always the anchor: genuinely still. Left configurable only as an escape hatch.
      */
-    public static final double ANCHOR_DRIFT = 0.4;
+    public static final double ANCHOR_DRIFT = 0.0;
 
     /**
      * Minimum teleport distance (blocks) that counts as a "real" teleport to suppress, so the
