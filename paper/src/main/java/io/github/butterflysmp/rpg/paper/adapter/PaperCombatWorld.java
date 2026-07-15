@@ -8,8 +8,11 @@ import io.github.butterflysmp.rpg.paper.content.VisualDefinition;
 import io.github.butterflysmp.rpg.paper.content.VisualSpec;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
@@ -129,6 +132,39 @@ public final class PaperCombatWorld implements CombatWorld {
      * away, in another region. spawnParticle and playSound are world writes and
      * are only legal on the thread owning this location.
      */
+    /**
+     * The project's only spawned entity: a display-only marker showing where a delayed burst
+     * will go off. An ItemDisplay is inert -- no gravity, no pickup, no physics -- so it does
+     * nothing but sit and be seen. setPersistent(false) is the unload backstop: if the chunk
+     * unloads mid-fuse (a 1-second window) the marker does not survive a restart. Its normal
+     * removal is the fuse task, which calls removeMarker below.
+     *
+     * A world write, so like every other here it is only legal on the thread owning {@code at}
+     * -- the caller (a projectile impact on its region thread) already satisfies that, the same
+     * as an inline Burst.
+     */
+    @Override
+    public UUID spawnMarker(Vec3 at, String markerId) {
+        Material material = Material.matchMaterial(markerId);
+        if (material == null || !material.isItem()) {
+            ctx.warnOnce("Unknown marker material '" + markerId + "'; using BLAZE_POWDER");
+            material = Material.BLAZE_POWDER;
+        }
+        ItemStack item = new ItemStack(material);
+        ItemDisplay display = world.spawn(toLocation(at), ItemDisplay.class, d -> {
+            d.setItemStack(item);
+            d.setPersistent(false);
+        });
+        return display.getUniqueId();
+    }
+
+    @Override
+    public void removeMarker(UUID markerId) {
+        if (world.getEntity(markerId) instanceof ItemDisplay display) {
+            display.remove();
+        }
+    }
+
     @Override
     public void present(Vec3 at, String visualId) {
         VisualDefinition visual = ctx.visuals().find(visualId).orElse(null);

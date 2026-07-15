@@ -31,9 +31,27 @@ public final class DashAim {
      * regardless, so only the direction matters here.
      */
     public static CastResult.Success resolve(Player player, CastResult.Success success) {
-        if (!(success.ability().cast() instanceof CastSpec.Dash)) return success;
-        Aim dashAim = new Aim(success.aim().origin(), movementDirection(player));
+        if (!(success.ability().cast() instanceof CastSpec.Dash dash)) return success;
+        Vec3 direction = switch (dash.direction()) {
+            case MOVEMENT_ELSE_FORWARD -> movementDirection(player);
+            case REVERSE_FACING -> reverseFacing(player.getLocation().getYaw());
+        };
+        Aim dashAim = new Aim(success.aim().origin(), direction);
         return new CastResult.Success(success.ability(), success.caster(), dashAim);
+    }
+
+    /**
+     * A straight backpedal: the facing flattened to the ground plane (yaw only, pitch
+     * DROPPED), then negated. WASD is ignored entirely -- a retreat that went sideways
+     * because you happened to be strafing would defeat the purpose. Reuses the same yaw-only
+     * flatten as the stationary fallback, so the "no vertical dash" guarantee holds here too:
+     * looking up and casting Rekindle dashes back-and-flat, not down-and-back.
+     *
+     * Player-free and package-visible on purpose, like {@link #directionFromInput}: the
+     * horizontal-and-opposite guarantee is unit-tested, not left to a boot.
+     */
+    static Vec3 reverseFacing(double yawDegrees) {
+        return directionFromInput(yawDegrees, false, false, false, false).negate();
     }
 
     /** Reads the live player, then hands the pure decision to {@link #directionFromInput}. */

@@ -49,12 +49,83 @@ class CastExecutorTest {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         world.entities.add(caster); // so world.combatant(casterId) resolves the dasher
 
-        cast(world, caster, ability(new CastSpec.Dash(12, 1.6, 0.4))); // FORWARD aim = +X, unit
+        cast(world, caster, ability(new CastSpec.Dash(12, 1.6, 0.4,
+                CastSpec.DashDirection.MOVEMENT_ELSE_FORWARD))); // FORWARD aim = +X, unit
 
         assertNotNull(caster.lastImpulse, "the dash must move the caster");
         assertEquals(1.6, caster.lastImpulse.x(), 1e-9, "horizontal drive = direction * speed");
         assertEquals(0.4, caster.lastImpulse.y(), 1e-9, "the up component is lift");
         assertEquals(0.0, caster.lastImpulse.z(), 1e-9);
+    }
+
+    // --- Rekindle: the reverse-facing dash that throws a forward fan of embers. ---
+
+    private static EffectSpec.ThrowEmbers embers(List<Double> angles, EffectSpec... onImpact) {
+        return new EffectSpec.ThrowEmbers(angles, 1.2, 0.05, 0.25, 40, List.of(onImpact));
+    }
+
+    private static EffectSpec.DelayedBurst delayedBurst(EffectSpec.Targeted... burst) {
+        return new EffectSpec.DelayedBurst("blaze_powder", 20, new EffectSpec.Burst(4.0, List.of(burst)));
+    }
+
+    /**
+     * The three embers fly along the caster's facing, rotated horizontally by each angle.
+     * Pure geometry: break the rotation and the wings are no longer 25 degrees off centre.
+     */
+    @Test
+    void emberFanIsFacingRotatedHorizontallyByEachAngle() {
+        Vec3 facing = new Vec3(1, 0, 0);
+        var dirs = EffectSpec.ThrowEmbers.fan(facing, List.of(0.0, 25.0, -25.0));
+
+        double cos = Math.cos(Math.toRadians(25));
+        double sin = Math.sin(Math.toRadians(25));
+
+        assertEquals(3, dirs.size());
+        assertEquals(1.0, dirs.get(0).x(), 1e-9, "the centre ember flies straight ahead");
+        assertEquals(0.0, dirs.get(0).z(), 1e-9);
+
+        for (Vec3 wing : List.of(dirs.get(1), dirs.get(2))) {
+            assertEquals(0.0, wing.y(), 1e-9, "the fan is horizontal");
+            assertEquals(cos, wing.dot(facing), 1e-9, "each wing is 25 degrees off centre");
+        }
+        // Pin the exact wings, not just their symmetry -- +25 and -25 land on OPPOSITE sides.
+        // A rotation that flips the z sign is a mirror image that preserves symmetry, so only
+        // pinning z catches it.
+        assertEquals(-sin, dirs.get(1).z(), 1e-9, "+25 fans to -z");
+        assertEquals(+sin, dirs.get(2).z(), 1e-9, "-25 fans to +z, the opposite side");
+    }
+
+    /**
+     * The embers launch from where the caster STOOD, not where the dash is carrying them. The
+     * origin is the pre-dash snapshot, so it survives the live entity drifting after the
+     * snapshot was taken (as it does between the player-thread snapshot and the executor, and
+     * as the impulse itself will). Read the live position instead and this reddens.
+     */
+    @Test
+    void embersLaunchFromThePreDashSnapshotOriginNotTheLivePosition() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+
+        var def = ability(new CastSpec.Dash(12, 2.3, 0.3, CastSpec.DashDirection.REVERSE_FACING),
+                embers(List.of(0.0), delayedBurst(new EffectSpec.Damage(8, "fire"))));
+
+        var registry = new AbilityRegistry();
+        registry.register(def);
+        var service = new AbilityService(registry, new CooldownTracker(() -> 0L),
+                new ResourcePool(() -> 0L, 100, 1));
+        var success = assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.cast(caster.snapshot(), "test", FORWARD, java.util.Set.of(def.id())));
+
+        // The live caster is elsewhere by the time the executor runs.
+        caster.moveTo(new Vec3(-5, 0, 0));
+        new CastExecutor(world).execute(success);
+
+        assertFalse(world.castRayFrom.isEmpty(), "the ember must have been launched");
+        Vec3 launchedFrom = world.castRayFrom.get(0);
+        assertEquals(0.0, launchedFrom.x(), 1e-9,
+                "embers launch from the pre-dash feet, not the drifted live position");
+        assertEquals(0.0, launchedFrom.z(), 1e-9);
     }
 
     /**

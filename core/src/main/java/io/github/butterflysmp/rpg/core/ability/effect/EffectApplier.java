@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.core.ability.effect;
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
+import io.github.butterflysmp.rpg.core.combat.ProjectileFlight;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,8 +32,18 @@ public final class EffectApplier {
      */
     public void applyAll(List<? extends EffectSpec> specs, UUID casterId,
                          Combatant target, Vec3 origin) {
+        applyAll(specs, casterId, target, origin, Vec3.ZERO);
+    }
+
+    /**
+     * With a facing {@code direction} for the untargeted effects that need one (an ember fan
+     * points where the caster faces). Most effects ignore it; the plain four-arg entry point
+     * passes {@link Vec3#ZERO}, since a self/melee/ray/projectile impact has no fan to aim.
+     */
+    private void applyAll(List<? extends EffectSpec> specs, UUID casterId,
+                          Combatant target, Vec3 origin, Vec3 direction) {
         for (EffectSpec spec : specs) {
-            apply(spec, casterId, target, origin);
+            apply(spec, casterId, target, origin, direction);
         }
     }
 
@@ -40,12 +51,12 @@ public final class EffectApplier {
      * The one place a missing target is handled. Everything below this point
      * may assume a live target, because the type says so.
      */
-    private void apply(EffectSpec spec, UUID casterId, Combatant target, Vec3 origin) {
+    private void apply(EffectSpec spec, UUID casterId, Combatant target, Vec3 origin, Vec3 direction) {
         switch (spec) {
             case EffectSpec.Targeted t -> {
                 if (target != null) applyTargeted(t, casterId, target, origin);
             }
-            case EffectSpec.Untargeted u -> applyUntargeted(u, casterId, origin);
+            case EffectSpec.Untargeted u -> applyUntargeted(u, casterId, origin, direction);
         }
     }
 
@@ -73,7 +84,7 @@ public final class EffectApplier {
         }
     }
 
-    private void applyUntargeted(EffectSpec.Untargeted spec, UUID casterId, Vec3 origin) {
+    private void applyUntargeted(EffectSpec.Untargeted spec, UUID casterId, Vec3 origin, Vec3 direction) {
         switch (spec) {
             case EffectSpec.Visual v -> world.present(origin, v.visualId());
 
@@ -85,7 +96,34 @@ public final class EffectApplier {
             // should happen at the moment of impact belongs in a Burst.
             case EffectSpec.Area a -> world.schedule(origin, a.tickInterval(),
                     () -> tickArea(a, casterId, origin, a.tickInterval()));
+
+            // A fan of arcing projectiles toward the facing. Each ember's impact runs its
+            // onImpact list through the ordinary path -- the same impact-fires-an-effect route
+            // a grenade uses, here carrying a scheduling effect (a DelayedBurst).
+            case EffectSpec.ThrowEmbers te -> throwEmbers(te, casterId, origin, direction);
+
+            // Plant a timed detonator: a marker now, a mob-only burst after the fuse, the
+            // marker removed by the same task so display and detonation cannot diverge.
+            case EffectSpec.DelayedBurst db -> plantDelayedBurst(db, casterId, origin);
         }
+    }
+
+    private void throwEmbers(EffectSpec.ThrowEmbers te, UUID casterId, Vec3 origin, Vec3 facing) {
+        List<Vec3> directions = EffectSpec.ThrowEmbers.fan(facing, te.anglesDegrees());
+        for (Vec3 direction : directions) {
+            Vec3 velocity = direction.scale(te.speed()).add(new Vec3(0, te.launchLift(), 0));
+            ProjectileFlight.launch(world, casterId, origin, velocity, te.gravity(), te.maxLifetimeTicks(),
+                    (target, point) -> applyAll(te.onImpact(), casterId, target, point, direction));
+        }
+    }
+
+    private void plantDelayedBurst(EffectSpec.DelayedBurst db, UUID casterId, Vec3 origin) {
+        UUID markerId = world.spawnMarker(origin, db.markerId());
+        world.schedule(origin, db.fuseTicks(), () -> {
+            // Mob-only, like a dash's payload: a denial zone burns mobs, not players.
+            applyToNearbyMobs(db.burst().effects(), casterId, origin, db.burst().radius());
+            world.removeMarker(markerId);
+        });
     }
 
     /**
@@ -109,9 +147,9 @@ public final class EffectApplier {
      * cast arm never re-implements it.
      */
     public void applyToSet(List<? extends EffectSpec> specs, UUID casterId,
-                           Iterable<Combatant> targets, Vec3 origin) {
+                           Iterable<Combatant> targets, Vec3 origin, Vec3 direction) {
         for (EffectSpec spec : specs) {
-            if (spec instanceof EffectSpec.Untargeted u) applyUntargeted(u, casterId, origin);
+            if (spec instanceof EffectSpec.Untargeted u) applyUntargeted(u, casterId, origin, direction);
         }
         for (Combatant c : targets) {
             if (c.id().equals(casterId)) continue;
@@ -125,6 +163,22 @@ public final class EffectApplier {
                              Iterable<Combatant> targets, Vec3 origin) {
         for (Combatant c : targets) {
             if (c.id().equals(casterId)) continue;
+            for (EffectSpec.Targeted t : effects) {
+                applyTargeted(t, casterId, c, origin);
+            }
+        }
+    }
+
+    /**
+     * Everything in radius except the caster AND players -- a mob-only blast. The player skip
+     * is the same rule SweptLine applies to a dash's payload, read off the frozen snapshot so
+     * a core test can guard it: delete the skip and an in-radius player is wrongly burned.
+     */
+    private void applyToNearbyMobs(List<EffectSpec.Targeted> effects, UUID casterId,
+                                   Vec3 origin, double radius) {
+        for (Combatant c : world.combatantsNear(origin, radius)) {
+            if (c.id().equals(casterId)) continue;
+            if (c.state().player()) continue;
             for (EffectSpec.Targeted t : effects) {
                 applyTargeted(t, casterId, c, origin);
             }

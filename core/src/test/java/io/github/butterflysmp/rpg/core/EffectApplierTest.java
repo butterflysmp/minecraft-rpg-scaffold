@@ -95,6 +95,46 @@ class EffectApplierTest {
         assertEquals(100, farAway.health, 0.001, "outside the radius");
     }
 
+    /**
+     * A delayed burst plants a marker at once, waits out its fuse, then detonates mob-only and
+     * removes the marker in the SAME task -- so display and detonation cannot diverge and no
+     * display entity leaks. Three mutations redden here: drop the player skip and the player
+     * burns; drop removeMarker and the marker leaks; slip the fuse and the timing shifts.
+     */
+    @Test
+    void delayedBurstFiresAfterItsFuseMobOnlyAndRemovesItsMarker() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var mob = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        var player = new FakeWorld.Dummy(new Vec3(2, 0, 0));
+        player.player = true;
+        world.entities.add(caster);
+        world.entities.add(mob);
+        world.entities.add(player);
+
+        var delayed = new EffectSpec.DelayedBurst("blaze_powder", 20,
+                new EffectSpec.Burst(4.0, List.of(
+                        new EffectSpec.Damage(8, "fire"),
+                        new EffectSpec.Status("scorch", 60, 0))));
+
+        new EffectApplier(world).applyAll(List.of(delayed), caster.id(), null, Vec3.ZERO);
+
+        assertEquals(1, world.markers.size(), "the marker is planted at once, showing where");
+        assertEquals(100, mob.health, 1e-9, "nothing detonates before the fuse");
+
+        world.advanceTicks(19);
+        assertEquals(100, mob.health, 1e-9, "the fuse is 20 ticks -- not at 19");
+        assertEquals(1, world.markers.size(), "the marker lives exactly as long as the fuse");
+
+        world.advanceTicks(1);
+        assertEquals(92, mob.health, 1e-9, "detonates at 20 ticks: 8 fire damage");
+        assertEquals(List.of("scorch"), mob.statuses);
+        assertEquals(100, player.health, 1e-9, "mob-only: the burst spares players");
+        assertTrue(player.statuses.isEmpty(), "mob-only: no scorch on players");
+        assertEquals(100, caster.health, 1e-9, "you do not burn yourself");
+        assertTrue(world.markers.isEmpty(), "marker removed on detonation -- no leak");
+    }
+
     @Test
     void burstRejectsANonPositiveRadius() {
         List<EffectSpec.Targeted> effects = List.of(new EffectSpec.Damage(6, "fire"));

@@ -60,4 +60,19 @@ public interface CombatWorld {
 
     /** Fire-and-forget presentation hook. Particles, sounds, damage numbers. */
     void present(Vec3 at, String visualId);
+
+    /**
+     * Spawn a display-only marker named {@code markerId} at {@code at}, and return its id.
+     * The id, never the entity, is what core keeps -- the same discipline as a caster's UUID:
+     * a marker outlives the frame that plants it, and holding the entity would pin it.
+     *
+     * Only legal on the thread owning {@code at}'s region, like every other world write.
+     */
+    UUID spawnMarker(Vec3 at, String markerId);
+
+    /**
+     * Remove a marker spawned by {@link #spawnMarker}. A no-op if it is already gone, so the
+     * fuse task can call it unconditionally. Only legal on the thread owning the marker.
+     */
+    void removeMarker(UUID markerId);
 }

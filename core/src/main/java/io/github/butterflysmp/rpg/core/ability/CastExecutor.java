@@ -7,6 +7,7 @@ import io.github.butterflysmp.rpg.core.combat.ChunkTraversal;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
+import io.github.butterflysmp.rpg.core.combat.ProjectileFlight;
 import io.github.butterflysmp.rpg.core.combat.RayHit;
 import io.github.butterflysmp.rpg.core.combat.SweptLine;
 
@@ -90,14 +91,21 @@ public final class CastExecutor {
             self.handle().applyImpulse(impulse);
         }
 
+        Vec3 drive = aim.direction();
         Vec3 origin = caster.position();
         double reach = dash.distance();
-        Vec3 midpoint = origin.add(aim.direction().scale(reach / 2));
+        Vec3 midpoint = origin.add(drive.scale(reach / 2));
         var candidates = world.combatantsNear(midpoint, reach / 2 + DASH_HIT_RADIUS);
 
         List<Combatant> hits = SweptLine.enemiesAlong(
-                origin, aim.direction(), reach, DASH_HIT_RADIUS, candidates, caster.id());
-        effects.applyToSet(ability.onHit(), caster.id(), hits, origin);
+                origin, drive, reach, DASH_HIT_RADIUS, candidates, caster.id());
+
+        // Directed untargeted effects (an ember fan) fire toward the caster's FACING. For a
+        // reverse-facing dash that is the opposite of the drive: you throw forward, then
+        // retreat away from what you threw. Origin is the caster's PRE-dash snapshot feet, so
+        // the embers launch from where you stood, not from where the impulse is carrying you.
+        Vec3 facing = dash.direction() == CastSpec.DashDirection.REVERSE_FACING ? drive.negate() : drive;
+        effects.applyToSet(ability.onHit(), caster.id(), hits, origin, facing);
     }
 
     /**
@@ -113,36 +121,14 @@ public final class CastExecutor {
      * Throw it. The caster is captured by UUID and never dereferenced again: a
      * grenade with a 100-tick fuse outlives its thrower's logout, and holding the
      * Combatant would pin a Bukkit entity for five seconds. Same rule as an Area.
+     *
+     * The flight itself is {@link ProjectileFlight}, shared with the throw_embers effect;
+     * impact simply detonates the ability's onHit here, exactly as before the extraction.
      */
     private void launch(AbilityDefinition ability, UUID casterId, Aim aim, CastSpec.Projectile spec) {
-        step(ability, casterId, aim.origin(), aim.direction().scale(spec.speed()), 0, spec);
-    }
-
-    /**
-     * One tick of flight. Trace the segment actually travelled rather than
-     * sampling the endpoint, or a fast projectile tunnels straight through a
-     * target thinner than its per-tick step.
-     */
-    private void step(AbilityDefinition ability, UUID casterId, Vec3 position,
-                      Vec3 velocity, int elapsed, CastSpec.Projectile spec) {
-        Vec3 next = position.add(velocity);
-
-        Optional<RayHit> hit = world.castRay(position, next, casterId);
-        if (hit.isPresent()) {
-            detonate(ability, casterId, hit.get().combatant(), hit.get().point());
-            return;
-        }
-
-        int nextElapsed = elapsed + 1;
-        if (nextElapsed >= spec.maxLifetimeTicks()) {
-            // The fuse ran out mid-air. It still goes off -- a grenade that
-            // quietly vanishes because it hit nothing would be a bug, not a miss.
-            detonate(ability, casterId, null, next);
-            return;
-        }
-
-        Vec3 nextVelocity = velocity.add(new Vec3(0, -spec.gravity(), 0));
-        world.schedule(next, 1, () -> step(ability, casterId, next, nextVelocity, nextElapsed, spec));
+        ProjectileFlight.launch(world, casterId, aim.origin(), aim.direction().scale(spec.speed()),
+                spec.gravity(), spec.maxLifetimeTicks(),
+                (target, point) -> detonate(ability, casterId, target, point));
     }
 
     /**

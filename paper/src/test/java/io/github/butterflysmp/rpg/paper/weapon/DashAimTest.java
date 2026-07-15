@@ -51,4 +51,30 @@ class DashAimTest {
         // forward + strafe-left at an arbitrary yaw -> still flat.
         assertEquals(0.0, DashAim.directionFromInput(37, true, false, true, false).y(), 1e-9);
     }
+
+    // --- Rekindle's reverse-facing dash: horizontal, and the exact opposite of facing. ---
+
+    @Test
+    void reverseFacingIsHorizontalNeverVertical() {
+        for (double yaw : new double[] {0, 30, 45, 90, 135, 180, -45, -90, 270}) {
+            assertEquals(0.0, DashAim.reverseFacing(yaw).y(), 1e-9,
+                    "a reverse dash is flat on the ground -- no down-and-back (yaw " + yaw + ")");
+        }
+    }
+
+    @Test
+    void reverseFacingIsExactlyOppositeTheForwardDash() {
+        // Yaw 0 faces +Z, so the forward dash is +Z and the reverse is -Z.
+        Vec3 atZero = DashAim.reverseFacing(0);
+        assertEquals(0.0, atZero.x(), 1e-9);
+        assertEquals(0.0, atZero.y(), 1e-9);
+        assertEquals(-1.0, atZero.z(), 1e-9, "yaw 0 faces +Z, so a reverse dash goes -Z");
+
+        // Yaw 90 faces -X, so the forward dash is -X and the reverse is +X. A mutation that
+        // forgets to negate would return the forward direction and redden here.
+        Vec3 atNinety = DashAim.reverseFacing(90);
+        assertEquals(1.0, atNinety.x(), 1e-9, "yaw 90 faces -X, so a reverse dash goes +X");
+        assertEquals(0.0, atNinety.y(), 1e-9);
+        assertEquals(0.0, atNinety.z(), 1e-9);
+    }
 }

@@ -213,6 +213,12 @@ public final class ContentValidator {
                     checkEffect(nested, ownerLabel, problems);
                 }
             }
+            case EffectSpec.ThrowEmbers embers -> {
+                for (EffectSpec nested : embers.onImpact()) {
+                    checkEffect(nested, ownerLabel, problems);
+                }
+            }
+            case EffectSpec.DelayedBurst delayed -> checkEffect(delayed.burst(), ownerLabel, problems);
             case EffectSpec.Damage damage -> checkElement(damage.element(), ownerLabel, problems);
             case EffectSpec.Heal ignored -> { }
             case EffectSpec.Knockback ignored -> { }

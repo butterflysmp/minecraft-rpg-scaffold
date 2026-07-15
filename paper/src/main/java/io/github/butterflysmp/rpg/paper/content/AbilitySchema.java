@@ -47,8 +47,17 @@ final class AbilitySchema {
                     s.getDouble("speed", 1.0), s.getDouble("gravity", 0.03),
                     s.getInt("max_lifetime_ticks", 100));
             case "dash"       -> new CastSpec.Dash(
-                    s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4));
+                    s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4),
+                    parseDashDirection(s.getString("direction", "movement_else_forward")));
             default -> throw new IllegalArgumentException("Unknown cast type: " + type);
+        };
+    }
+
+    private static CastSpec.DashDirection parseDashDirection(String raw) {
+        return switch (raw.toLowerCase(Locale.ROOT)) {
+            case "movement_else_forward" -> CastSpec.DashDirection.MOVEMENT_ELSE_FORWARD;
+            case "reverse_facing"        -> CastSpec.DashDirection.REVERSE_FACING;
+            default -> throw new IllegalArgumentException("Unknown dash direction: " + raw);
         };
     }
 
@@ -103,8 +112,67 @@ final class AbilitySchema {
                     (int) num(m, type, "duration_ticks"),
                     (int) num(m, type, "tick_interval"),
                     parseNestedEffects(m, type));
+            // A fan of arcing projectiles; each ember's impact runs on_impact (any effects,
+            // including a scheduling delayed_burst) -- so on_impact is a general effect list,
+            // not the Targeted-only nesting a burst/area allows.
+            case "throw_embers" -> new EffectSpec.ThrowEmbers(
+                    numberList(m, type, "angles_degrees"),
+                    num(m, type, "speed"),
+                    num(m, type, "gravity"),
+                    num(m, type, "launch_lift"),
+                    (int) num(m, type, "max_lifetime_ticks"),
+                    parseEffectList(m, type, "on_impact"));
+            // A timed detonator: a marker, a fuse, then a (mob-only) burst where it was planted.
+            case "delayed_burst" -> new EffectSpec.DelayedBurst(
+                    str(m, type, "marker"),
+                    (int) num(m, type, "fuse_ticks"),
+                    parseBurst(mapOf(m, type, "burst")));
             default -> throw new IllegalArgumentException("Unknown effect type: " + type);
         };
+    }
+
+    /** A nested burst section ({@code radius} + Targeted {@code effects}), for delayed_burst. */
+    private static EffectSpec.Burst parseBurst(Map<?, ?> burst) {
+        return new EffectSpec.Burst(num(burst, "burst", "radius"), parseNestedEffects(burst, "burst"));
+    }
+
+    /** A nested list of ANY effects (unlike parseNestedEffects, which forbids untargeted ones). */
+    private static List<EffectSpec> parseEffectList(Map<?, ?> parent, String parentType, String key) {
+        List<EffectSpec> out = new ArrayList<>();
+        for (Map<?, ?> m : mapList(parent, parentType, key)) {
+            out.add(parseEffect(m));
+        }
+        return out;
+    }
+
+    private static List<Double> numberList(Map<?, ?> m, String type, String key) {
+        Object v = m.get(key);
+        if (v == null) {
+            throw new IllegalArgumentException("Effect '" + type + "' is missing its '" + key + "' list");
+        }
+        if (!(v instanceof List<?> list)) {
+            throw new IllegalArgumentException("Effect '" + type + "' field '" + key + "' must be a list");
+        }
+        List<Double> out = new ArrayList<>();
+        for (Object o : list) {
+            if (!(o instanceof Number n)) {
+                throw new IllegalArgumentException(
+                        "Effect '" + type + "' field '" + key + "' must be a list of numbers, got: " + o);
+            }
+            out.add(n.doubleValue());
+        }
+        return out;
+    }
+
+    private static Map<?, ?> mapOf(Map<?, ?> m, String type, String key) {
+        Object v = m.get(key);
+        if (v == null) {
+            throw new IllegalArgumentException("Effect '" + type + "' is missing its '" + key + "' section");
+        }
+        if (!(v instanceof Map<?, ?> section)) {
+            throw new IllegalArgumentException("Effect '" + type + "' field '" + key + "' must be a section");
+        }
+        return section;
     }
 
     @SuppressWarnings("unchecked")

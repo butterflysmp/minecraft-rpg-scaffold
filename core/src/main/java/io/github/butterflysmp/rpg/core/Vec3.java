@@ -24,4 +24,18 @@ public record Vec3(double x, double y, double z) {
         double len = length();
         return len == 0 ? ZERO : new Vec3(x / len, y / len, z / len);
     }
+
+    /** The opposite direction. A reverse-facing dash is a facing, negated. */
+    public Vec3 negate() { return new Vec3(-x, -y, -z); }
+
+    /**
+     * Rotate about the vertical (Y) axis by {@code degrees}, leaving Y untouched -- a
+     * horizontal fan-out. The ember spread rotates the caster's facing by each of its
+     * angles; a purely horizontal rotation keeps a flat facing flat.
+     */
+    public Vec3 rotateAboutY(double degrees) {
+        double r = Math.toRadians(degrees);
+        double cos = Math.cos(r), sin = Math.sin(r);
+        return new Vec3(x * cos + z * sin, y, -x * sin + z * cos);
+    }
 }

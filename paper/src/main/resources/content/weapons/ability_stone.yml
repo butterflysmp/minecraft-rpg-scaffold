@@ -18,17 +18,30 @@ material: amethyst_shard
 
 triggers:
   # Left-click casts the ability under test. Free and no cooldown so you can spam it while
-  # tuning -- retune per ability under test. Mirrors ember_step.yml so the stone casts the
-  # REAL Ember Step (same dash + same payload), not a look-alike.
+  # tuning -- retune per ability under test. Currently mirrors rekindle.yml so the stone casts
+  # the REAL Rekindle (reverse-facing dash + forward ember fan), not a look-alike. To test a
+  # different ability, replace this trigger and --refresh-content.
   left_click:
     cooldown_ticks: 0
     cast:
       type: dash
+      direction: reverse_facing
       distance: 12
-      speed: 2.3          # dialed up for a bit more reach; tune on the --refresh-content loop
-      lift: 0.3           # the ground-friction fix -- arcs the dash off the floor so it carries (flatter now)
+      speed: 2.3
+      lift: 0.3
     on_hit:
-      - { type: damage, amount: 8, element: fire }
-      - { type: knockback, strength: 1.0 }
-      - { type: status, status_id: scorch, duration_ticks: 60 }
-      - { type: visual, visual_id: solar_detonation }
+      - type: throw_embers
+        angles_degrees: [0, 25, -25]
+        speed: 1.2
+        gravity: 0.05
+        launch_lift: 0.25
+        max_lifetime_ticks: 40
+        on_impact:
+          - type: delayed_burst
+            marker: blaze_powder
+            fuse_ticks: 20
+            burst:
+              radius: 4.0
+              effects:
+                - { type: damage, amount: 8, element: fire }
+                - { type: status, status_id: scorch, duration_ticks: 60 }

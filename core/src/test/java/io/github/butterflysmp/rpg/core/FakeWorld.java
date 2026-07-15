@@ -24,6 +24,12 @@ public final class FakeWorld implements CombatWorld {
     public final List<Dummy> entities = new ArrayList<>();
     public final List<String> presented = new ArrayList<>();
 
+    /** The start point of every castRay -- a projectile's launch origin is its first one. */
+    public final List<Vec3> castRayFrom = new ArrayList<>();
+
+    /** Live display markers, id -> where they sit. A marker leak shows up as a stale entry. */
+    public final Map<UUID, String> markers = new HashMap<>();
+
     private record Scheduled(long dueTick, long seq, Runnable task) {}
 
     /** Ordered by due time, then insertion, so a tie runs in the order it was queued. */
@@ -105,6 +111,7 @@ public final class FakeWorld implements CombatWorld {
      * one-second bug once shipped past a green suite.
      */
     @Override public Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId) {
+        castRayFrom.add(from);
         Vec3 along = to.subtract(from);
         double length = along.length();
         if (length == 0) return Optional.empty();
@@ -162,6 +169,14 @@ public final class FakeWorld implements CombatWorld {
     }
 
     @Override public void present(Vec3 at, String visualId) { presented.add(visualId); }
+
+    @Override public UUID spawnMarker(Vec3 at, String markerId) {
+        UUID id = UUID.randomUUID();
+        markers.put(id, markerId);
+        return id;
+    }
+
+    @Override public void removeMarker(UUID markerId) { markers.remove(markerId); }
 
     /**
      * Run the clock forward, firing every task that comes due. Deterministic: no sleeping,
