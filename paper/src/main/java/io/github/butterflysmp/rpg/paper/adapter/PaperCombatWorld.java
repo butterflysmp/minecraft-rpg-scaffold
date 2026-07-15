@@ -124,23 +124,29 @@ public final class PaperCombatWorld implements CombatWorld {
 
     /**
      * The project's only spawned entity: a marker showing where a delayed burst will go off.
-     * A real dropped Item that lands where it was thrown and rests, bobbing and spinning like
-     * any dropped item.
+     * A real dropped Item so it bobs and spins like any dropped item, spawned at the landing
+     * point and made to STAY exactly there.
      *
-     * Gravity stays ON, deliberately. An earlier version set gravity off to pin it exactly;
-     * that fought vanilla physics -- an item cannot reach its resting state with gravity off,
-     * so vanilla's per-tick settle kept nudging it and it buzzed. The fix was to stop fighting.
-     * But a plain dropped item keeps dropItem's random "pop", which slides it a block or so
-     * before it settles. So the ONE constraint we apply is to cancel the pop's HORIZONTAL
-     * velocity (leaving the vertical to gravity): it drops straight down and settles where
-     * thrown, no slide. This does NOT bring the jitter back -- the jitter came from blocking the
-     * rest state (gravity off), not from horizontal motion, so gravity-on + horizontal-cancel
-     * settles clean.
+     * The history matters. Freezing it (velocity 0 + gravity off) buzzed: with gravity off it
+     * could never reach its onGround rest, so vanilla's per-tick block-collision settle kept
+     * nudging it. Letting it settle naturally (gravity on) stopped the buzz but three embers
+     * land in a tight fan, and clustered Item entities on the ground get shoved by vanilla
+     * collision -- they popped up and pushed a block apart.
      *
-     * setPickupDelay(MAX) keeps it un-collectible; the ~1s fuse makes vanilla item edge cases
-     * (despawn, water, hoppers) irrelevant. setPersistent(false) is the unload backstop. Its
-     * normal removal is the fuse task, which calls removeMarker below -- a leaked real Item is
-     * the identical hazard to a leaked display, unchanged.
+     * The fix is setNoPhysics(true): the item ignores block AND entity collision, so nothing
+     * ejects or shoves it. Per the Paper API, noPhysics and gravity are INDEPENDENT -- noPhysics
+     * is pure noclip and does not disable gravity -- so on its own a noPhysics item would fall
+     * THROUGH the world. Hence setGravity(false) is required alongside it. That gravity-off does
+     * NOT bring the buzz back, because the buzz was the block-collision settle loop, and
+     * setNoPhysics(true) turns that loop off entirely: there is no collision left to fight, so
+     * nothing nudges it. velocity zeroed once (not per-tick) kills the drop's pop so noclip has
+     * no residual to drift on. Net: it sits exactly where it landed.
+     *
+     * setPickupDelay(MAX) keeps it un-collectible (and, at the 32767 clamp, non-mergable and
+     * non-despawning); the ~1s fuse makes vanilla item edge cases irrelevant anyway.
+     * setPersistent(false) is the unload backstop. Its normal removal is the fuse task, which
+     * calls removeMarker below -- a leaked real Item is the identical hazard to a leaked display,
+     * unchanged.
      *
      * A world write, so like every other here it is only legal on the thread owning {@code at}
      * -- the caller (a projectile impact on its region thread) already satisfies that, the same
@@ -156,10 +162,11 @@ public final class PaperCombatWorld implements CombatWorld {
         Item marker = world.dropItem(toLocation(at), new ItemStack(material), item -> {
             item.setPickupDelay(Integer.MAX_VALUE);  // never collectible
             item.setPersistent(false);               // unload backstop
+            item.setGravity(false);                  // don't fall -- REQUIRED, noPhysics is noclip
+            item.setNoPhysics(true);                 // ignore block/entity collision: no eject, no shove
         });
-        // Cancel the pop's horizontal drift so it drops straight and stays where thrown.
-        // Gravity stays on (untouched) so it still reaches the ground and rests -- no freeze.
-        marker.setVelocity(new Vector(0, marker.getVelocity().getY(), 0));
+        // Kill the drop's pop once so noclip has no residual velocity to drift on. Not per-tick.
+        marker.setVelocity(new Vector(0, 0, 0));
         return marker.getUniqueId();
     }
 
