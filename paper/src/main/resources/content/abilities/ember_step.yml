@@ -15,8 +15,8 @@ cost:
 cast:
   type: dash
   distance: 12               # intended length on flat ground; the swept hit-line
-  speed: 2.0                 # horizontal impulse; bumped from 1.6 (~10 blocks) toward ~12 -- dial on the loop
-  lift: 0.4                  # upward arc so ground friction doesn't eat the dash; trim if the bumped speed feels too skimmy
+  speed: 2.3                 # horizontal impulse; dialed up for a bit more reach -- tune on the loop
+  lift: 0.3                  # upward arc so ground friction doesn't eat the dash; trimmed for a flatter dash
 
 # Applied to each MOB the dash sweeps through (players are spared -- mob-only).
 # damage/knockback/status land per-mob; the visual fires once at the launch point.
