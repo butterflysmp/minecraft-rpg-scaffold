@@ -115,12 +115,14 @@ class EffectApplierTest {
         var delayed = new EffectSpec.DelayedBurst("blaze_powder", 20,
                 new EffectSpec.Burst(4.0, List.of(
                         new EffectSpec.Damage(8, "fire"),
-                        new EffectSpec.Status("scorch", 60, 0))));
+                        new EffectSpec.Status("scorch", 60, 0))),
+                "ember_burst");   // the boom/flash at detonation
 
         new EffectApplier(world).applyAll(List.of(delayed), caster.id(), null, Vec3.ZERO);
 
         assertEquals(1, world.markers.size(), "the marker is planted at once, showing where");
         assertEquals(100, mob.health, 1e-9, "nothing detonates before the fuse");
+        assertFalse(world.presented.contains("ember_burst"), "the boom waits for the fuse");
 
         world.advanceTicks(19);
         assertEquals(100, mob.health, 1e-9, "the fuse is 20 ticks -- not at 19");
@@ -133,6 +135,7 @@ class EffectApplierTest {
         assertTrue(player.statuses.isEmpty(), "mob-only: no scorch on players");
         assertEquals(100, caster.health, 1e-9, "you do not burn yourself");
         assertTrue(world.markers.isEmpty(), "marker removed on detonation -- no leak");
+        assertTrue(world.presented.contains("ember_burst"), "the boom fires with the blast");
     }
 
     @Test

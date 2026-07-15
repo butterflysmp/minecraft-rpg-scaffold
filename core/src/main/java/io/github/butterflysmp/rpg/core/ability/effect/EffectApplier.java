@@ -121,6 +121,8 @@ public final class EffectApplier {
     private void plantDelayedBurst(EffectSpec.DelayedBurst db, UUID casterId, Vec3 origin) {
         UUID markerId = world.spawnMarker(origin, db.markerId());
         world.schedule(origin, db.fuseTicks(), () -> {
+            // The boom lands with the blast: same task, so they cannot diverge.
+            if (db.visual() != null) world.present(origin, db.visual());
             // Mob-only, like a dash's payload: a denial zone burns mobs, not players.
             applyToNearbyMobs(db.burst().effects(), casterId, origin, db.burst().radius());
             world.removeMarker(markerId);

@@ -30,6 +30,7 @@ triggers:
       speed: 2.3
       lift: 0.3
     on_hit:
+      - { type: visual, visual_id: rekindle_cast }
       - type: throw_embers
         angles_degrees: [0, 40, -40]
         speed: 0.6          # ~6-block landing distance; tune on the --refresh-content loop
@@ -41,6 +42,7 @@ triggers:
           - type: delayed_burst
             marker: blaze_powder
             fuse_ticks: 20
+            visual: ember_burst
             burst:
               radius: 4.0
               effects:

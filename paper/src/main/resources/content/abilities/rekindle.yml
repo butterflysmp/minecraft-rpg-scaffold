@@ -27,6 +27,7 @@ cast:
 # Fired once from the caster's PRE-dash feet (throw_embers is untargeted). The fan points
 # FORWARD (opposite the reverse dash); the dash sweeps backward through nothing in particular.
 on_hit:
+  - { type: visual, visual_id: rekindle_cast }   # the whoosh, once at the caster on cast
   - type: throw_embers
     angles_degrees: [0, 40, -40]   # a wide three-ember fan, centred on facing
     speed: 0.6                     # sets the landing distance (~speed * 10 ticks aloft = ~6 blocks); tune on the loop
@@ -38,6 +39,7 @@ on_hit:
       - type: delayed_burst        # planted where the ember lands (a wall stops it short)
         marker: blaze_powder       # display-only; shows where it will go off
         fuse_ticks: 20             # 1 second
+        visual: ember_burst        # flame flash + explosion crack when it detonates
         burst:
           radius: 4.0
           effects:

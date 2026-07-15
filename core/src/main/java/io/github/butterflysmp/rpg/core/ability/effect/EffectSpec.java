@@ -99,8 +99,15 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
      * delayed explosion, the same general-mechanic / specific-content split as the rest of
      * the effect grammar. Marker lifetime is exactly the fuse: its removal is tied to the same
      * scheduled task that fires the burst, so display and detonation can never diverge.
+     *
+     * {@code visual} is presented at the detonation point when the fuse fires (a boom/flash),
+     * or null for none. It rides the same scheduled task as the burst so the sound lands with
+     * the blast; it is separate from {@code burst} because a Burst may only nest TARGETED
+     * effects, and a visual is untargeted -- and because the burst is mob-only while the
+     * visual just plays at the point.
      */
-    record DelayedBurst(String markerId, int fuseTicks, Burst burst) implements Untargeted {
+    record DelayedBurst(String markerId, int fuseTicks, Burst burst, String visual)
+            implements Untargeted {
 
         public DelayedBurst {
             if (fuseTicks < 1) {

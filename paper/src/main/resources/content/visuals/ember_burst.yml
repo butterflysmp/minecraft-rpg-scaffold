@@ -1,0 +1,13 @@
+# The detonation of a planted ember: a flame flash and an explosion crack, played at the
+# landing point when the 1-second fuse fires. Id is the filename: ember_burst.
+
+steps:
+  - type: particle
+    particle: FLAME          # a flash filling the ~4-block burst
+    count: 30
+    spread: 1.0
+
+  - type: sound
+    key: entity.generic.explode
+    volume: 1.0
+    pitch: 1.0

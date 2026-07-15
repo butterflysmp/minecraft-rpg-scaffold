@@ -1,9 +1,11 @@
-# A thin flame trail left along a thrown ember's arc. Particles only, no sound: it is a
-# trail, not a bang -- it fires every tick the ember is airborne, so keep it subtle.
+# A clean flame LINE following a thrown ember. The trail already presents once per tick at
+# the ember's exact position, so the line is drawn by ONE un-scattered particle per tick:
+# count 1 + spread 0 places a single flame at the ember and nowhere else. count>1 or spread>0
+# would scatter a puff at each tick instead of a continuous line.
 # The id of this visual is its filename: ember_trail.
 
 steps:
   - type: particle
     particle: FLAME          # no-data particle, proven in solar_detonation.yml
-    count: 3
-    spread: 0.05
+    count: 1
+    spread: 0.0

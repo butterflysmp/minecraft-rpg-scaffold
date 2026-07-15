@@ -127,7 +127,8 @@ final class AbilitySchema {
             case "delayed_burst" -> new EffectSpec.DelayedBurst(
                     str(m, type, "marker"),
                     (int) num(m, type, "fuse_ticks"),
-                    parseBurst(mapOf(m, type, "burst")));
+                    parseBurst(mapOf(m, type, "burst")),
+                    strOrNull(m, "visual"));   // optional boom/flash at detonation
             default -> throw new IllegalArgumentException("Unknown effect type: " + type);
         };
     }

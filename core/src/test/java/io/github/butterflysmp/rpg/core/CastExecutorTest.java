@@ -65,7 +65,7 @@ class CastExecutorTest {
     }
 
     private static EffectSpec.DelayedBurst delayedBurst(EffectSpec.Targeted... burst) {
-        return new EffectSpec.DelayedBurst("blaze_powder", 20, new EffectSpec.Burst(4.0, List.of(burst)));
+        return new EffectSpec.DelayedBurst("blaze_powder", 20, new EffectSpec.Burst(4.0, List.of(burst)), null);
     }
 
     /**

@@ -1,0 +1,8 @@
+# The whoosh when Rekindle is cast -- a clean sweep as the Ranger throws and retreats.
+# Sound only; the throw itself is drawn by the ember trails. Id is the filename: rekindle_cast.
+
+steps:
+  - type: sound
+    key: entity.player.attack.sweep
+    volume: 1.0
+    pitch: 1.0

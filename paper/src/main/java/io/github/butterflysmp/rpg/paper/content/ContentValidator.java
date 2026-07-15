@@ -222,7 +222,13 @@ public final class ContentValidator {
                     checkEffect(nested, ownerLabel, problems);
                 }
             }
-            case EffectSpec.DelayedBurst delayed -> checkEffect(delayed.burst(), ownerLabel, problems);
+            case EffectSpec.DelayedBurst delayed -> {
+                if (delayed.visual() != null && visuals.find(delayed.visual()).isEmpty()) {
+                    problems.add(ownerLabel + " names delayed_burst visual '"
+                            + delayed.visual() + "', which no visual defines");
+                }
+                checkEffect(delayed.burst(), ownerLabel, problems);
+            }
             case EffectSpec.Damage damage -> checkElement(damage.element(), ownerLabel, problems);
             case EffectSpec.Heal ignored -> { }
             case EffectSpec.Knockback ignored -> { }
