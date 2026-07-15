@@ -124,18 +124,23 @@ public final class PaperCombatWorld implements CombatWorld {
 
     /**
      * The project's only spawned entity: a marker showing where a delayed burst will go off.
-     * A real dropped Item, left to settle NATURALLY -- it falls the hair from the impact point
-     * to the ground and comes to rest, bobbing and spinning like any dropped item.
+     * A real dropped Item that lands where it was thrown and rests, bobbing and spinning like
+     * any dropped item.
      *
-     * It is deliberately NOT frozen. An earlier version set velocity 0 and gravity off to pin
-     * it exactly; that fought vanilla physics -- an item cannot reach its resting state with
-     * gravity off, so vanilla's per-tick settle kept nudging it against the surface it spawned
-     * on and it buzzed. The fix is to stop fighting: a normal item settles in a tick or two and
-     * a settled item does not move. setPickupDelay(MAX) keeps it un-collectible; the ~1-second
-     * fuse makes vanilla item edge cases (despawn, water, hoppers) and a few cm of settle drift
-     * irrelevant. setPersistent(false) is the unload backstop: if the chunk unloads mid-fuse it
-     * does not survive a restart. Its normal removal is the fuse task, which calls removeMarker
-     * below -- a leaked real Item is the identical hazard to a leaked display, unchanged.
+     * Gravity stays ON, deliberately. An earlier version set gravity off to pin it exactly;
+     * that fought vanilla physics -- an item cannot reach its resting state with gravity off,
+     * so vanilla's per-tick settle kept nudging it and it buzzed. The fix was to stop fighting.
+     * But a plain dropped item keeps dropItem's random "pop", which slides it a block or so
+     * before it settles. So the ONE constraint we apply is to cancel the pop's HORIZONTAL
+     * velocity (leaving the vertical to gravity): it drops straight down and settles where
+     * thrown, no slide. This does NOT bring the jitter back -- the jitter came from blocking the
+     * rest state (gravity off), not from horizontal motion, so gravity-on + horizontal-cancel
+     * settles clean.
+     *
+     * setPickupDelay(MAX) keeps it un-collectible; the ~1s fuse makes vanilla item edge cases
+     * (despawn, water, hoppers) irrelevant. setPersistent(false) is the unload backstop. Its
+     * normal removal is the fuse task, which calls removeMarker below -- a leaked real Item is
+     * the identical hazard to a leaked display, unchanged.
      *
      * A world write, so like every other here it is only legal on the thread owning {@code at}
      * -- the caller (a projectile impact on its region thread) already satisfies that, the same
@@ -151,8 +156,10 @@ public final class PaperCombatWorld implements CombatWorld {
         Item marker = world.dropItem(toLocation(at), new ItemStack(material), item -> {
             item.setPickupDelay(Integer.MAX_VALUE);  // never collectible
             item.setPersistent(false);               // unload backstop
-            // No velocity/gravity freeze: let it fall the hair to the ground and settle.
         });
+        // Cancel the pop's horizontal drift so it drops straight and stays where thrown.
+        // Gravity stays on (untouched) so it still reaches the ground and rests -- no freeze.
+        marker.setVelocity(new Vector(0, marker.getVelocity().getY(), 0));
         return marker.getUniqueId();
     }
 

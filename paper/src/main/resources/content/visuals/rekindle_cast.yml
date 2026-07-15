@@ -3,6 +3,6 @@
 
 steps:
   - type: sound
-    key: entity.player.attack.sweep
+    key: item.firecharge.use   # an airy, fiery fwoosh -- not a sword swing
     volume: 1.0
     pitch: 1.0

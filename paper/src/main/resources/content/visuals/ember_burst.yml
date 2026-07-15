@@ -3,9 +3,9 @@
 
 steps:
   - type: particle
-    particle: FLAME          # a flash filling the ~4-block burst
-    count: 30
-    spread: 1.0
+    particle: FLAME          # a MODEST flash -- kept tight so three near-simultaneous
+    count: 10                # detonations don't read as scattered clutter (was 30 / spread 1.0)
+    spread: 0.3
 
   - type: sound
     key: entity.generic.explode

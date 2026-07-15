@@ -20,7 +20,7 @@ cost:
 cast:
   type: dash
   direction: reverse_facing  # ALWAYS opposite facing -- a straight backpedal, ignoring WASD
-  distance: 12               # match Ember Step's reach
+  distance: 8                # the retreat distance -- shorter than Ember Step's 12
   speed: 2.3                 # match Ember Step
   lift: 0.3                  # match Ember Step
 
