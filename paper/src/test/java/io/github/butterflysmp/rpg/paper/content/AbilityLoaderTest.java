@@ -95,6 +95,7 @@ class AbilityLoaderTest {
                   type: dash
                   distance: 12
                   speed: 1.6
+                  lift: 0.4
                 on_hit:
                   - type: damage
                     amount: 8
@@ -113,6 +114,7 @@ class AbilityLoaderTest {
         var dash = assertInstanceOf(CastSpec.Dash.class, def.cast());
         assertEquals(12, dash.distance(), 1e-9);
         assertEquals(1.6, dash.speed(), 1e-9);
+        assertEquals(0.4, dash.lift(), 1e-9);
         assertEquals(4, def.onHit().size(), "damage + knockback + status + visual");
         assertTrue(warnings.isEmpty(), warningText());
     }

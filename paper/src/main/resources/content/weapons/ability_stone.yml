@@ -1,0 +1,34 @@
+# The Ability Stone -- a dev instrument, not a real weapon. Its click casts the ability
+# under test WHILE YOU MOVE, which a command cannot do: opening chat to type /rpg cast
+# releases WASD, so a command can only ever produce the stationary look-fallback. Hold the
+# stone, hold movement keys, click -> getCurrentInput() reads live movement.
+#
+# It is a weapon only because a weapon trigger IS an ability's cast plus an input -- so the
+# whole hardened click-to-fire path (packet swing listener, WeaponFire) is reused, no new
+# casting code. To test a different ability, edit the trigger below and --refresh-content.
+#
+# Permanent, like /rpg apply -- NOT a _TEMP fixture. Ships in NO kit; a normal player never
+# has it. Gated only by /rpg give needing rpg.command.give.
+
+id: ability_stone
+display_name: "<light_purple>Ability Stone</light_purple>"
+element: kinetic          # neutral -- it is a tool, not a themed weapon
+rarity: common
+material: amethyst_shard
+
+triggers:
+  # Left-click casts the ability under test. Free and no cooldown so you can spam it while
+  # tuning -- retune per ability under test. Mirrors ember_step.yml so the stone casts the
+  # REAL Ember Step (same dash + same payload), not a look-alike.
+  left_click:
+    cooldown_ticks: 0
+    cast:
+      type: dash
+      distance: 12
+      speed: 1.6
+      lift: 0.4           # the ground-friction fix -- arcs the dash off the floor so it carries
+    on_hit:
+      - { type: damage, amount: 8, element: fire }
+      - { type: knockback, strength: 1.0 }
+      - { type: status, status_id: scorch, duration_ticks: 60 }
+      - { type: visual, visual_id: solar_detonation }

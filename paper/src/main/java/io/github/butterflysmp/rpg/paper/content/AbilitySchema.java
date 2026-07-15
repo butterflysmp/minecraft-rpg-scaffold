@@ -46,7 +46,8 @@ final class AbilitySchema {
             case "projectile" -> new CastSpec.Projectile(
                     s.getDouble("speed", 1.0), s.getDouble("gravity", 0.03),
                     s.getInt("max_lifetime_ticks", 100));
-            case "dash"       -> new CastSpec.Dash(s.getDouble("distance", 12), s.getDouble("speed", 1.6));
+            case "dash"       -> new CastSpec.Dash(
+                    s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4));
             default -> throw new IllegalArgumentException("Unknown cast type: " + type);
         };
     }

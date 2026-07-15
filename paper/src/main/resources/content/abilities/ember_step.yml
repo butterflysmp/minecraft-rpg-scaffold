@@ -16,6 +16,7 @@ cast:
   type: dash
   distance: 12               # intended length on flat ground; the swept hit-line
   speed: 1.6                 # velocity-impulse magnitude; dial down if it overshoots
+  lift: 0.4                  # upward arc so ground friction doesn't eat the dash; tune vs speed
 
 # Applied to each MOB the dash sweeps through (players are spared -- mob-only).
 # damage/knockback/status land per-mob; the visual fires once at the launch point.

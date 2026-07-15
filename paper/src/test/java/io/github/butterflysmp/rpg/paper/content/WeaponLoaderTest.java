@@ -104,6 +104,39 @@ class WeaponLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
     }
 
+    /**
+     * A trigger's cast is the shared AbilitySchema, so any cast type an ability supports works
+     * in a weapon trigger unchanged -- including `dash`, which the Ability Stone leans on. This
+     * pins that shared-grammar guarantee: if a weapon-specific cast path ever crept back in and
+     * hardcoded a subset, `dash` in a trigger would break and this reddens.
+     */
+    @Test
+    void loadsADashCastInATrigger() throws IOException {
+        write("ability_stone.yml", """
+                id: ability_stone
+                element: kinetic
+                triggers:
+                  left_click:
+                    cast:
+                      type: dash
+                      distance: 12
+                      speed: 1.6
+                      lift: 0.4
+                    on_hit:
+                      - type: damage
+                        amount: 8
+                        element: fire
+                """);
+
+        WeaponRegistry registry = load();
+
+        TriggerBinding binding = registry.find("ability_stone").orElseThrow().trigger("left_click").orElseThrow();
+        var dash = assertInstanceOf(CastSpec.Dash.class, binding.ability().cast());
+        assertEquals(12, dash.distance(), 1e-9);
+        assertEquals(0.4, dash.lift(), 1e-9);
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
     @Test
     void elementDefaultsToKineticWhenOmitted() throws IOException {
         write("plainsword.yml", """

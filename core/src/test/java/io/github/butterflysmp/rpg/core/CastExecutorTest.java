@@ -37,6 +37,27 @@ class CastExecutorTest {
     }
 
     /**
+     * A dash impulses the caster: direction * speed horizontally, plus lift straight up. The
+     * up component is not decoration -- without it a flat-ground dash is friction-damped to
+     * ~half a block. Guards the wiring (that lift reaches the impulse), not the feel (that the
+     * velocity travels 12 blocks), which is inherently boot. Drop the `+ lift` in the executor
+     * and the y assertion reddens.
+     */
+    @Test
+    void dashImpulsesTheCasterByDirectionTimesSpeedPlusLift() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster); // so world.combatant(casterId) resolves the dasher
+
+        cast(world, caster, ability(new CastSpec.Dash(12, 1.6, 0.4))); // FORWARD aim = +X, unit
+
+        assertNotNull(caster.lastImpulse, "the dash must move the caster");
+        assertEquals(1.6, caster.lastImpulse.x(), 1e-9, "horizontal drive = direction * speed");
+        assertEquals(0.4, caster.lastImpulse.y(), 1e-9, "the up component is lift");
+        assertEquals(0.0, caster.lastImpulse.z(), 1e-9);
+    }
+
+    /**
      * A Self cast detonates at the caster's FEET, not at the aim's origin -- which in
      * production is their eye, a metre and a half higher (RpgCommand builds the Aim from
      * getEyeLocation(); a Combatant's position is getLocation()).

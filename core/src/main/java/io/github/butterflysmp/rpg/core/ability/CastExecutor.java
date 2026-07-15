@@ -82,8 +82,13 @@ public final class CastExecutor {
      * the caster is excluded, players are excluded (mob-only), any visual fires once.
      */
     private void dash(AbilityDefinition ability, CombatantSnapshot caster, Aim aim, CastSpec.Dash dash) {
+        // Horizontal drive along the resolved direction, plus a touch of up so the caster
+        // leaves the ground and first-tick friction does not eat the horizontal velocity.
         Combatant self = world.combatant(caster.id()).orElse(null);
-        if (self != null) self.handle().applyImpulse(aim.direction().scale(dash.speed()));
+        if (self != null) {
+            Vec3 impulse = aim.direction().scale(dash.speed()).add(new Vec3(0, dash.lift(), 0));
+            self.handle().applyImpulse(impulse);
+        }
 
         Vec3 origin = caster.position();
         double reach = dash.distance();
