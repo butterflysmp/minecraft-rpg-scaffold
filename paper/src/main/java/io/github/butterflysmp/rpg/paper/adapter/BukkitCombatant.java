@@ -48,7 +48,8 @@ public final class BukkitCombatant {
         return new CombatantSnapshot(
                 entity.getUniqueId(),
                 new Vec3(location.getX(), location.getY(), location.getZ()),
-                !entity.isDead());
+                !entity.isDead(),
+                entity instanceof Player);
     }
 
     /** Dispatches onto the entity's own thread. Never reads the world, never returns state. */
@@ -86,6 +87,17 @@ public final class BukkitCombatant {
                 if (v.lengthSquared() > 0) v.normalize().multiply(strength);
                 entity.setVelocity(entity.getVelocity().add(v));
             });
+        }
+
+        /**
+         * The dash impulse. REPLACES velocity rather than adding to it (unlike knockback), so a
+         * dash covers its intended distance no matter what momentum the caster was already
+         * carrying -- direction*speed is a whole velocity, computed core-side. Vanilla physics
+         * takes it from here: walls stop them, ledges drop them.
+         */
+        @Override public void applyImpulse(Vec3 velocity) {
+            ctx.scheduler().onEntity(entity, () ->
+                    entity.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z())));
         }
 
         /**

@@ -95,7 +95,35 @@ public final class EffectApplier {
      */
     private void applyToNearby(List<EffectSpec.Targeted> effects, UUID casterId,
                                Vec3 origin, double radius) {
-        for (Combatant c : world.combatantsNear(origin, radius)) {
+        applyToEach(effects, casterId, world.combatantsNear(origin, radius), origin);
+    }
+
+    /**
+     * A payload against a PRE-RESOLVED set of targets -- the seam a Burst (radius set) and a
+     * Dash (swept-line set) share. They differ only in who is in the set; the per-target
+     * application, and the caster-exclusion that goes with it, is one loop, here.
+     *
+     * Targeted effects land on each target; Untargeted effects (a visual, a lingering field)
+     * fire ONCE at {@code origin}, hit or miss -- a dash still flashes its flame when it
+     * catches no one. Callers pass their whole {@code onHit} list; the split is made here so a
+     * cast arm never re-implements it.
+     */
+    public void applyToSet(List<? extends EffectSpec> specs, UUID casterId,
+                           Iterable<Combatant> targets, Vec3 origin) {
+        for (EffectSpec spec : specs) {
+            if (spec instanceof EffectSpec.Untargeted u) applyUntargeted(u, casterId, origin);
+        }
+        for (Combatant c : targets) {
+            if (c.id().equals(casterId)) continue;
+            for (EffectSpec spec : specs) {
+                if (spec instanceof EffectSpec.Targeted t) applyTargeted(t, casterId, c, origin);
+            }
+        }
+    }
+
+    private void applyToEach(List<EffectSpec.Targeted> effects, UUID casterId,
+                             Iterable<Combatant> targets, Vec3 origin) {
+        for (Combatant c : targets) {
             if (c.id().equals(casterId)) continue;
             for (EffectSpec.Targeted t : effects) {
                 applyTargeted(t, casterId, c, origin);

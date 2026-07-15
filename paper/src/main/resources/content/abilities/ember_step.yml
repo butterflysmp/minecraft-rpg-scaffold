@@ -1,0 +1,32 @@
+# Ember Step -- the Fire Mage's dash. The first ability that moves the caster.
+# The dash is the new engine capability (cast: dash); the payload below is all
+# existing effects, applied to every mob the intended line passes through.
+
+id: ember_step
+display_name: "<gold>Ember Step</gold>"   # MiniMessage, not legacy color codes
+element: fire
+archetype: mage
+cooldown_ticks: 160          # tune on the --refresh-content loop, not in Java
+
+cost:
+  resource: energy
+  amount: 30
+
+cast:
+  type: dash
+  distance: 12               # intended length on flat ground; the swept hit-line
+  speed: 1.6                 # velocity-impulse magnitude; dial down if it overshoots
+
+# Applied to each MOB the dash sweeps through (players are spared -- mob-only).
+# damage/knockback/status land per-mob; the visual fires once at the launch point.
+on_hit:
+  - type: damage
+    amount: 8
+    element: fire
+  - type: knockback
+    strength: 1.0
+  - type: status
+    status_id: scorch
+    duration_ticks: 60
+  - type: visual
+    visual_id: solar_detonation   # reuse an existing fire visual; a dedicated one is later polish

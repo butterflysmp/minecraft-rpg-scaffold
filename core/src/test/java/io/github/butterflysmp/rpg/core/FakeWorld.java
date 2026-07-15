@@ -200,6 +200,12 @@ public final class FakeWorld implements CombatWorld {
         public double health = 100;
         public final List<String> statuses = new ArrayList<>();
 
+        /** A player is spared mob-only effects; a mob is not. Defaults to mob. */
+        public boolean player = false;
+
+        /** The last velocity a dash impulse set on this dummy, or null if never dashed. */
+        public Vec3 lastImpulse;
+
         /** Who last damaged this dummy. Null means the damage was unattributed. */
         public UUID lastDamageSource;
 
@@ -210,7 +216,7 @@ public final class FakeWorld implements CombatWorld {
         public Vec3 position() { return pos; }
 
         public CombatantSnapshot snapshot() {
-            return new CombatantSnapshot(id, pos, health > 0);
+            return new CombatantSnapshot(id, pos, health > 0, player);
         }
 
         @Override public UUID id() { return id; }
@@ -220,6 +226,7 @@ public final class FakeWorld implements CombatWorld {
         }
         @Override public void applyHeal(double a) { health += a; }
         @Override public void applyKnockback(Vec3 d, double s) { }
+        @Override public void applyImpulse(Vec3 velocity) { this.lastImpulse = velocity; }
         @Override public void applyStatus(String id, int dur, int amp) { statuses.add(id); }
     }
 }

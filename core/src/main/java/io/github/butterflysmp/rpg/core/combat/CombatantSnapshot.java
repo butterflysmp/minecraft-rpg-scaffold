@@ -16,5 +16,11 @@ import java.util.UUID;
  * A record is an immutable data carrier, so this may safely cross a tick or a thread
  * boundary where a live entity may not. It may of course be STALE by then: a snapshot is a
  * photograph, not a window.
+ *
+ * {@code player} is the one piece of faction the engine currently needs: mob-only effects
+ * (statuses, and a dash's payload) read it to leave players out of the target set. It is a
+ * read like any other -- captured on the owning thread, frozen here -- so the rule that
+ * excludes players can be exercised by a core unit test rather than living in adapter wiring
+ * no test reaches.
  */
-public record CombatantSnapshot(UUID id, Vec3 position, boolean alive) {}
+public record CombatantSnapshot(UUID id, Vec3 position, boolean alive, boolean player) {}

@@ -19,3 +19,4 @@ weapons:
 abilities:
   - solar_grenade
   - solar_lance
+  - ember_step        # the Fire Mage's dash -- evasive step that scorches what it passes

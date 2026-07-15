@@ -8,6 +8,7 @@ import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.RayHit;
+import io.github.butterflysmp.rpg.core.combat.SweptLine;
 
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +58,41 @@ public final class CastExecutor {
             case CastSpec.Ray ray -> launchRay(ability, caster.id(), aim, ray.range());
 
             case CastSpec.Projectile projectile -> launch(ability, caster.id(), aim, projectile);
+
+            case CastSpec.Dash dash -> dash(ability, caster, aim, dash);
         }
+    }
+
+    /**
+     * How generous the dash is about "in the way" -- the perpendicular reach of the swept
+     * line. Wide enough that clipping past a mob's shoulder still counts, not so wide it sweeps
+     * bystanders a lane over. A hit-generosity constant, not a feel number, so it lives here
+     * rather than in the yml -- and it is what the swept-line unit test mutates.
+     */
+    private static final double DASH_HIT_RADIUS = 1.5;
+
+    /**
+     * Move the caster, then hit whoever the intended line ran through.
+     *
+     * The impulse is fetched through the caster's live handle -- the only other arm that
+     * touches the caster's own entity is Self, the same way. Direction arrives already resolved
+     * (WASD or look) as the aim; core neither knows nor cares which it was. The hit-set is the
+     * INTENDED line from the caster's feet, not the ballistic path physics will actually carry
+     * them down -- see SweptLine. The payload reuses the same EffectApplier the grenade does:
+     * the caster is excluded, players are excluded (mob-only), any visual fires once.
+     */
+    private void dash(AbilityDefinition ability, CombatantSnapshot caster, Aim aim, CastSpec.Dash dash) {
+        Combatant self = world.combatant(caster.id()).orElse(null);
+        if (self != null) self.handle().applyImpulse(aim.direction().scale(dash.speed()));
+
+        Vec3 origin = caster.position();
+        double reach = dash.distance();
+        Vec3 midpoint = origin.add(aim.direction().scale(reach / 2));
+        var candidates = world.combatantsNear(midpoint, reach / 2 + DASH_HIT_RADIUS);
+
+        List<Combatant> hits = SweptLine.enemiesAlong(
+                origin, aim.direction(), reach, DASH_HIT_RADIUS, candidates, caster.id());
+        effects.applyToSet(ability.onHit(), caster.id(), hits, origin);
     }
 
     /**

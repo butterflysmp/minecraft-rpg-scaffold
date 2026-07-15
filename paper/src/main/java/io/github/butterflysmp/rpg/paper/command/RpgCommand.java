@@ -20,6 +20,7 @@ import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
+import io.github.butterflysmp.rpg.paper.weapon.DashAim;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -265,12 +266,16 @@ public final class RpgCommand {
 
         switch (result) {
             case AbilityService.CastResult.Success success -> {
+                // A dash steers by WASD, not the look-aim above -- resolve it HERE, on the
+                // caster's own thread before the hop, because getCurrentInput() is player
+                // state. Every other cast passes through unchanged.
+                AbilityService.CastResult.Success toRun = DashAim.resolve(player, success);
                 // Resolve and apply on the thread that owns the aim's origin.
                 // Everything past this point reads the world: castRay and
                 // combatantsNear are illegal anywhere else.
                 adapters.scheduler().onRegion(eye, () ->
                         new CastExecutor(new PaperCombatWorld(player.getWorld(), adapters))
-                                .execute(success));
+                                .execute(toRun));
 
                 player.sendMessage(Component.text("Cast ", NamedTextColor.AQUA)
                         .append(MiniMessage.miniMessage().deserialize(success.ability().displayName())));

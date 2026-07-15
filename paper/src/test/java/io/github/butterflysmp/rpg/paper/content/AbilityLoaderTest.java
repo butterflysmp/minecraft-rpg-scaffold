@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.content;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
+import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,6 +81,39 @@ class AbilityLoaderTest {
         assertEquals(1, registry.size());
         AbilityDefinition def = registry.find("solar_grenade").orElseThrow();
         assertEquals("fire", def.element());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** The dash cast: a new shape, parsed like every other, carrying its four-effect payload. */
+    @Test
+    void loadsADashCastWithItsPayload() throws IOException {
+        write("ember_step.yml", """
+                id: ember_step
+                element: fire
+                cooldown_ticks: 160
+                cast:
+                  type: dash
+                  distance: 12
+                  speed: 1.6
+                on_hit:
+                  - type: damage
+                    amount: 8
+                    element: fire
+                  - type: knockback
+                    strength: 1.0
+                  - type: status
+                    status_id: scorch
+                    duration_ticks: 60
+                  - type: visual
+                    visual_id: solar_detonation
+                """);
+
+        AbilityDefinition def = load().find("ember_step").orElseThrow();
+
+        var dash = assertInstanceOf(CastSpec.Dash.class, def.cast());
+        assertEquals(12, dash.distance(), 1e-9);
+        assertEquals(1.6, dash.speed(), 1e-9);
+        assertEquals(4, def.onHit().size(), "damage + knockback + status + visual");
         assertTrue(warnings.isEmpty(), warningText());
     }
 

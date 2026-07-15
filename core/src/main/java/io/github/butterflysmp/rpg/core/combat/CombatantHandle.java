@@ -34,5 +34,13 @@ public interface CombatantHandle {
 
     void applyKnockback(Vec3 direction, double strength);
 
+    /**
+     * Set the combatant's velocity outright to {@code velocity} -- a self-propelled impulse,
+     * the mechanism behind a dash. Distinct from {@link #applyKnockback} on purpose:
+     * knockback is additive and points away from an impact, whereas this REPLACES velocity so
+     * a dash goes a controlled distance regardless of the momentum the caster already carried.
+     */
+    void applyImpulse(Vec3 velocity);
+
     void applyStatus(String statusId, int durationTicks, int amplifier);
 }

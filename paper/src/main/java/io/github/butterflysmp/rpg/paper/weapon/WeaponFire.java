@@ -62,9 +62,13 @@ public final class WeaponFire {
         Optional<CastResult> result = weaponService.fire(caster, weapon, input, aim);
         result.ifPresent(r -> {
             if (r instanceof CastResult.Success success) {
+                // A dash steers by WASD, not by the look-aim built above. Resolve it HERE,
+                // still on the player's thread, before the region hop -- getCurrentInput() is
+                // player state and illegal past the hop. Every other cast passes through.
+                CastResult.Success toRun = DashAim.resolve(player, success);
                 adapters.scheduler().onRegion(eye, () ->
                         new CastExecutor(new PaperCombatWorld(player.getWorld(), adapters))
-                                .execute(success));
+                                .execute(toRun));
             }
         });
         return result;
