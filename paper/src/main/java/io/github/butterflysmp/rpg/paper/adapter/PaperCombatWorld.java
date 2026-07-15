@@ -124,23 +124,25 @@ public final class PaperCombatWorld implements CombatWorld {
 
     /**
      * The project's only spawned entity: a marker showing where a delayed burst will go off.
-     * A real dropped Item so it bobs and spins like any dropped item, spawned at the landing
-     * point and made to STAY exactly there.
+     * A real Item, born AT REST at the landing point, so it just sits there bobbing and
+     * spinning like any settled dropped item.
      *
-     * The history matters. Freezing it (velocity 0 + gravity off) buzzed: with gravity off it
-     * could never reach its onGround rest, so vanilla's per-tick block-collision settle kept
-     * nudging it. Letting it settle naturally (gravity on) stopped the buzz but three embers
-     * land in a tight fan, and clustered Item entities on the ground get shoved by vanilla
-     * collision -- they popped up and pushed a block apart.
+     * The whole saga was one root cause: {@code dropItem} builds a vanilla ItemEntity, and that
+     * constructor assigns a random "pop" velocity by design -- about (+/-0.1, +0.2, +/-0.1),
+     * the loot-scatter behaviour. The +0.2 up was every round's "pop up"; each item's own random
+     * +/-0.1 horizontal, integrated over the ~10 ticks before it settled, was the "drifts up to a
+     * block away", and three embers each drifting their own way looked like they shoved each
+     * other apart (they did not -- non-mergable items overlap, they do not push). The earlier
+     * fixes fought that motion: horizontal-cancel kept the +0.2 up (still hopped); the freeze and
+     * the noPhysics flags suppressed it after the fact.
      *
-     * The fix is setNoPhysics(true): the item ignores block AND entity collision, so nothing
-     * ejects or shoves it. Per the Paper API, noPhysics and gravity are INDEPENDENT -- noPhysics
-     * is pure noclip and does not disable gravity -- so on its own a noPhysics item would fall
-     * THROUGH the world. Hence setGravity(false) is required alongside it. That gravity-off does
-     * NOT bring the buzz back, because the buzz was the block-collision settle loop, and
-     * setNoPhysics(true) turns that loop off entirely: there is no collision left to fight, so
-     * nothing nudges it. velocity zeroed once (not per-tick) kills the drop's pop so noclip has
-     * no residual to drift on. Net: it sits exactly where it landed.
+     * So do not fight it -- do not create it. spawn the Item directly and zero its velocity in the
+     * pre-add function, BEFORE it ever ticks: it is born motionless, so there is no pop to hop, no
+     * drift to cancel, nothing to settle. Gravity stays ON (default) and there are no noPhysics or
+     * gravity-off flags: with zero initial velocity the item is already at rest on the ground, so
+     * gravity has nothing to do and the block-collision jitter (which needed a gravity-less item
+     * that could never reach rest) never arises. (world.spawn uses the same popping constructor as
+     * dropItem; the fix is the pre-tick velocity zero, not the spawn method.)
      *
      * setPickupDelay(MAX) keeps it un-collectible (and, at the 32767 clamp, non-mergable and
      * non-despawning); the ~1s fuse makes vanilla item edge cases irrelevant anyway.
@@ -159,14 +161,13 @@ public final class PaperCombatWorld implements CombatWorld {
             ctx.warnOnce("Unknown marker material '" + markerId + "'; using BLAZE_POWDER");
             material = Material.BLAZE_POWDER;
         }
-        Item marker = world.dropItem(toLocation(at), new ItemStack(material), item -> {
+        ItemStack stack = new ItemStack(material);
+        Item marker = world.spawn(toLocation(at), Item.class, item -> {
+            item.setItemStack(stack);
+            item.setVelocity(new Vector(0, 0, 0));   // born at rest: kill the ItemEntity pop BEFORE it ticks
             item.setPickupDelay(Integer.MAX_VALUE);  // never collectible
             item.setPersistent(false);               // unload backstop
-            item.setGravity(false);                  // don't fall -- REQUIRED, noPhysics is noclip
-            item.setNoPhysics(true);                 // ignore block/entity collision: no eject, no shove
         });
-        // Kill the drop's pop once so noclip has no residual velocity to drift on. Not per-tick.
-        marker.setVelocity(new Vector(0, 0, 0));
         return marker.getUniqueId();
     }
 
