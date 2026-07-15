@@ -28,8 +28,8 @@ cast:
 # FORWARD (opposite the reverse dash); the dash sweeps backward through nothing in particular.
 on_hit:
   - type: throw_embers
-    angles_degrees: [0, 25, -25]   # a three-ember fan, centred on facing
-    speed: 0.4                     # sets the landing distance (~speed * 10 ticks aloft = ~4 blocks); tune on the loop
+    angles_degrees: [0, 40, -40]   # a wide three-ember fan, centred on facing
+    speed: 0.6                     # sets the landing distance (~speed * 10 ticks aloft = ~6 blocks); tune on the loop
     gravity: 0.05                  # the arc
     launch_lift: 0.25              # a touch of up so the ember arcs rather than skims
     max_lifetime_ticks: 40         # if it somehow lands on nothing, it still goes off

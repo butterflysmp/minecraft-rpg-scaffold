@@ -123,23 +123,19 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
-     * Play a named visual at a point. An unknown id is a content mistake, not a
-     * programming error: warn once and let the rest of the detonation land.
-     *
-     * The onRegion hop is not redundant. Callers reach here already on a region
-     * thread, but not necessarily the one owning {@code at}: RpgCommand hops onto
-     * the region of the caster's EYE, and a Ray can land its impact thirty blocks
-     * away, in another region. spawnParticle and playSound are world writes and
-     * are only legal on the thread owning this location.
-     */
-    /**
      * The project's only spawned entity: a marker showing where a delayed burst will go off.
-     * A real dropped Item, frozen and un-collectible, so it gets the vanilla bob/spin an
-     * ItemDisplay lacks: velocity zeroed (no pop -- it stays where it lands), gravity off
-     * (frozen at the spot), pickup delay maxed (never collectible). setPersistent(false) is the
-     * unload backstop: if the chunk unloads mid-fuse (a 1-second window) it does not survive a
-     * restart. Its normal removal is the fuse task, which calls removeMarker below -- a leaked
-     * real Item is the identical hazard to a leaked display, so that discipline is unchanged.
+     * A real dropped Item, left to settle NATURALLY -- it falls the hair from the impact point
+     * to the ground and comes to rest, bobbing and spinning like any dropped item.
+     *
+     * It is deliberately NOT frozen. An earlier version set velocity 0 and gravity off to pin
+     * it exactly; that fought vanilla physics -- an item cannot reach its resting state with
+     * gravity off, so vanilla's per-tick settle kept nudging it against the surface it spawned
+     * on and it buzzed. The fix is to stop fighting: a normal item settles in a tick or two and
+     * a settled item does not move. setPickupDelay(MAX) keeps it un-collectible; the ~1-second
+     * fuse makes vanilla item edge cases (despawn, water, hoppers) and a few cm of settle drift
+     * irrelevant. setPersistent(false) is the unload backstop: if the chunk unloads mid-fuse it
+     * does not survive a restart. Its normal removal is the fuse task, which calls removeMarker
+     * below -- a leaked real Item is the identical hazard to a leaked display, unchanged.
      *
      * A world write, so like every other here it is only legal on the thread owning {@code at}
      * -- the caller (a projectile impact on its region thread) already satisfies that, the same
@@ -153,10 +149,9 @@ public final class PaperCombatWorld implements CombatWorld {
             material = Material.BLAZE_POWDER;
         }
         Item marker = world.dropItem(toLocation(at), new ItemStack(material), item -> {
-            item.setVelocity(new Vector(0, 0, 0));   // no pop -- stays where it lands
-            item.setGravity(false);                  // frozen at the landing spot
             item.setPickupDelay(Integer.MAX_VALUE);  // never collectible
             item.setPersistent(false);               // unload backstop
+            // No velocity/gravity freeze: let it fall the hair to the ground and settle.
         });
         return marker.getUniqueId();
     }
@@ -168,6 +163,16 @@ public final class PaperCombatWorld implements CombatWorld {
         }
     }
 
+    /**
+     * Play a named visual at a point. An unknown id is a content mistake, not a
+     * programming error: warn once and let the rest of the detonation land.
+     *
+     * The onRegion hop is not redundant. Callers reach here already on a region
+     * thread, but not necessarily the one owning {@code at}: RpgCommand hops onto
+     * the region of the caster's EYE, and a Ray can land its impact thirty blocks
+     * away, in another region. spawnParticle and playSound are world writes and
+     * are only legal on the thread owning this location.
+     */
     @Override
     public void present(Vec3 at, String visualId) {
         VisualDefinition visual = ctx.visuals().find(visualId).orElse(null);
