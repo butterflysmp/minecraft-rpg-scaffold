@@ -25,7 +25,7 @@ triggers:
     cast:
       type: dash
       distance: 12
-      speed: 1.6
+      speed: 2.0          # bumped from 1.6 (~10 blocks) toward ~12; dial on the --refresh-content loop
       lift: 0.4           # the ground-friction fix -- arcs the dash off the floor so it carries
     on_hit:
       - { type: damage, amount: 8, element: fire }

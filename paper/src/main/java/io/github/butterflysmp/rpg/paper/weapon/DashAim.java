@@ -36,27 +36,37 @@ public final class DashAim {
         return new CastResult.Success(success.ability(), success.caster(), dashAim);
     }
 
-    /**
-     * WASD as a world-space direction. Forward/back run along the player's facing, strafe
-     * runs perpendicular -- both flattened to the ground, because movement keys are horizontal:
-     * you cannot press W to climb. When no movement key is held there is no movement to follow,
-     * so a standing Ember Step falls back to the look direction and lunges where the caster
-     * faces. The cast never whiffs; WASD is the enhancement, look is the floor.
-     *
-     * Aim normalises the returned vector, so a diagonal keypress still dashes the intended
-     * distance rather than root-two times it.
-     */
+    /** Reads the live player, then hands the pure decision to {@link #directionFromInput}. */
     private static Vec3 movementDirection(Player player) {
         Input input = player.getCurrentInput();
-        double forward = (input.isForward() ? 1 : 0) - (input.isBackward() ? 1 : 0);
-        double strafe = (input.isLeft() ? 1 : 0) - (input.isRight() ? 1 : 0);
+        return directionFromInput(player.getLocation().getYaw(),
+                input.isForward(), input.isBackward(), input.isLeft(), input.isRight());
+    }
 
-        if (forward == 0 && strafe == 0) {
-            var look = player.getEyeLocation().getDirection();
-            return new Vec3(look.getX(), look.getY(), look.getZ());
-        }
+    /**
+     * WASD as a horizontal, ground-plane direction from the facing yaw. Forward/back run along
+     * facing, strafe runs perpendicular, all with a ZERO vertical component -- a dash is a
+     * reposition across the ground, never a launch.
+     *
+     * When no movement key is held the fallback is a W-equivalent forward dash: facing
+     * FLATTENED to the horizontal (yaw only, pitch DROPPED). It deliberately does NOT use the
+     * look direction -- looking up and casting must not fling the caster straight up. So there
+     * is no way to dash vertically at all, standing or moving; that is why this takes only yaw,
+     * never pitch. WASD is the enhancement, W-forward is the floor; the cast never whiffs.
+     *
+     * Player-free and package-visible on purpose: the horizontal-only guarantee is unit-tested,
+     * not left to a boot. Aim normalises the result, so a diagonal keypress still dashes the
+     * intended distance rather than root-two times it.
+     */
+    static Vec3 directionFromInput(double yawDegrees, boolean forwardKey, boolean backKey,
+                                   boolean leftKey, boolean rightKey) {
+        double forward = (forwardKey ? 1 : 0) - (backKey ? 1 : 0);
+        double strafe = (leftKey ? 1 : 0) - (rightKey ? 1 : 0);
 
-        double yaw = Math.toRadians(player.getLocation().getYaw());
+        // Stationary -> press W for them: a forward dash along facing, on the ground plane.
+        if (forward == 0 && strafe == 0) forward = 1;
+
+        double yaw = Math.toRadians(yawDegrees);
         // Bukkit yaw: 0 faces +Z, 90 faces -X. Horizontal facing, then 90 degrees to the left.
         Vec3 forwardHorizontal = new Vec3(-Math.sin(yaw), 0, Math.cos(yaw));
         Vec3 leftHorizontal = new Vec3(Math.cos(yaw), 0, Math.sin(yaw));
