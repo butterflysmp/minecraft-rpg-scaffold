@@ -33,11 +33,13 @@ public final class ProjectileFlight {
 
     /**
      * Throw it. {@code velocity} is the full first-tick step (direction * speed, plus any
-     * launch lift); {@code gravity} is subtracted from the vertical each tick.
+     * launch lift); {@code gravity} is subtracted from the vertical each tick. {@code trail}
+     * is a visual id presented at the projectile's position each tick, or null for none -- a
+     * bare grenade leaves nothing, a thrown ember leaves flame.
      */
     public static void launch(CombatWorld world, UUID casterId, Vec3 origin, Vec3 velocity,
-                              double gravity, int maxLifetimeTicks, Impact onImpact) {
-        step(world, casterId, origin, velocity, gravity, maxLifetimeTicks, 0, onImpact);
+                              double gravity, int maxLifetimeTicks, String trail, Impact onImpact) {
+        step(world, casterId, origin, velocity, gravity, maxLifetimeTicks, 0, trail, onImpact);
     }
 
     /**
@@ -46,7 +48,10 @@ public final class ProjectileFlight {
      * The first step runs inline on the launch frame, exactly as before the extraction.
      */
     private static void step(CombatWorld world, UUID casterId, Vec3 position, Vec3 velocity,
-                             double gravity, int maxLifetimeTicks, int elapsed, Impact onImpact) {
+                             double gravity, int maxLifetimeTicks, int elapsed,
+                             String trail, Impact onImpact) {
+        if (trail != null) world.present(position, trail);
+
         Vec3 next = position.add(velocity);
 
         Optional<RayHit> hit = world.castRay(position, next, casterId);
@@ -65,6 +70,6 @@ public final class ProjectileFlight {
 
         Vec3 nextVelocity = velocity.add(new Vec3(0, -gravity, 0));
         world.schedule(next, 1, () ->
-                step(world, casterId, next, nextVelocity, gravity, maxLifetimeTicks, nextElapsed, onImpact));
+                step(world, casterId, next, nextVelocity, gravity, maxLifetimeTicks, nextElapsed, trail, onImpact));
     }
 }

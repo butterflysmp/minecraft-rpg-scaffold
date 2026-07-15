@@ -1,0 +1,9 @@
+# A thin flame trail left along a thrown ember's arc. Particles only, no sound: it is a
+# trail, not a bang -- it fires every tick the ember is airborne, so keep it subtle.
+# The id of this visual is its filename: ember_trail.
+
+steps:
+  - type: particle
+    particle: FLAME          # no-data particle, proven in solar_detonation.yml
+    count: 3
+    spread: 0.05

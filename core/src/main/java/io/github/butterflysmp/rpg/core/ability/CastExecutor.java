@@ -127,7 +127,7 @@ public final class CastExecutor {
      */
     private void launch(AbilityDefinition ability, UUID casterId, Aim aim, CastSpec.Projectile spec) {
         ProjectileFlight.launch(world, casterId, aim.origin(), aim.direction().scale(spec.speed()),
-                spec.gravity(), spec.maxLifetimeTicks(),
+                spec.gravity(), spec.maxLifetimeTicks(), null, // a bare projectile leaves no trail
                 (target, point) -> detonate(ability, casterId, target, point));
     }
 

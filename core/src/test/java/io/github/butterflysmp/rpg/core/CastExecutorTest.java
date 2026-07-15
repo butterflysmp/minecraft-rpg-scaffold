@@ -61,7 +61,7 @@ class CastExecutorTest {
     // --- Rekindle: the reverse-facing dash that throws a forward fan of embers. ---
 
     private static EffectSpec.ThrowEmbers embers(List<Double> angles, EffectSpec... onImpact) {
-        return new EffectSpec.ThrowEmbers(angles, 1.2, 0.05, 0.25, 40, List.of(onImpact));
+        return new EffectSpec.ThrowEmbers(angles, 1.2, 0.05, 0.25, 40, null, List.of(onImpact));
     }
 
     private static EffectSpec.DelayedBurst delayedBurst(EffectSpec.Targeted... burst) {
@@ -93,6 +93,32 @@ class CastExecutorTest {
         // pinning z catches it.
         assertEquals(-sin, dirs.get(1).z(), 1e-9, "+25 fans to -z");
         assertEquals(+sin, dirs.get(2).z(), 1e-9, "-25 fans to +z, the opposite side");
+    }
+
+    /**
+     * The ember leaves its trail visual along the flight -- attached to the shared projectile
+     * loop, so it fires each tick the ember is airborne. A trail that is declared but never
+     * wired would only show (by its absence) at boot; this catches it in core.
+     */
+    @Test
+    void embersLeaveTheirTrailVisualAlongTheFlight() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+
+        // A single ember with a trail, flat (no gravity/lift) so it flies openly through empty
+        // space -- no wall, no target -- and we can watch several ticks of flight. Cast through
+        // the dash path so it gets a real facing direction (a Self cast hands effects none).
+        var oneEmber = new EffectSpec.ThrowEmbers(List.of(0.0), 1.0, 0.0, 0.0, 20, "ember_trail",
+                List.of(delayedBurst(new EffectSpec.Damage(8, "fire"))));
+        cast(world, caster, ability(
+                new CastSpec.Dash(12, 2.3, 0.3, CastSpec.DashDirection.REVERSE_FACING), oneEmber));
+        world.advanceTicks(5);
+
+        assertTrue(world.presented.contains("ember_trail"),
+                "the ember must present its trail visual as it flies");
+        assertTrue(world.presented.stream().filter("ember_trail"::equals).count() > 1,
+                "the trail is left every tick of flight, not just once");
     }
 
     /**

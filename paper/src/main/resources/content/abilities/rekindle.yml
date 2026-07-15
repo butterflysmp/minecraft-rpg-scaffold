@@ -29,10 +29,11 @@ cast:
 on_hit:
   - type: throw_embers
     angles_degrees: [0, 25, -25]   # a three-ember fan, centred on facing
-    speed: 1.2                     # projectile speed; tune the landing distance on the loop
+    speed: 0.4                     # sets the landing distance (~speed * 10 ticks aloft = ~4 blocks); tune on the loop
     gravity: 0.05                  # the arc
     launch_lift: 0.25              # a touch of up so the ember arcs rather than skims
     max_lifetime_ticks: 40         # if it somehow lands on nothing, it still goes off
+    trail: ember_trail             # flame trail so the throw reads as a thrown ember
     on_impact:
       - type: delayed_burst        # planted where the ember lands (a wall stops it short)
         marker: blaze_powder       # display-only; shows where it will go off

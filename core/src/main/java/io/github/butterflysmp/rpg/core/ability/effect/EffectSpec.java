@@ -121,9 +121,12 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
      *
      * The embers arc: it reuses the shared projectile flight loop, not a copy of it. A wall
      * in the way stops an ember short and fires {@code onImpact} AT the wall, not past it.
+     *
+     * {@code trail} is a visual id left along each ember's arc (a flame trail so the throw
+     * reads as a thrown ember, not a bare item), or null for no trail.
      */
     record ThrowEmbers(List<Double> anglesDegrees, double speed, double gravity,
-                       double launchLift, int maxLifetimeTicks,
+                       double launchLift, int maxLifetimeTicks, String trail,
                        List<EffectSpec> onImpact) implements Untargeted {
 
         public ThrowEmbers {

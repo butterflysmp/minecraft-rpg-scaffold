@@ -214,6 +214,10 @@ public final class ContentValidator {
                 }
             }
             case EffectSpec.ThrowEmbers embers -> {
+                if (embers.trail() != null && visuals.find(embers.trail()).isEmpty()) {
+                    problems.add(ownerLabel + " names trail visual '"
+                            + embers.trail() + "', which no visual defines");
+                }
                 for (EffectSpec nested : embers.onImpact()) {
                     checkEffect(nested, ownerLabel, problems);
                 }

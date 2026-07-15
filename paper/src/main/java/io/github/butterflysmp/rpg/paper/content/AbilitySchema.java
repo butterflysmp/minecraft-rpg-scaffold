@@ -121,6 +121,7 @@ final class AbilitySchema {
                     num(m, type, "gravity"),
                     num(m, type, "launch_lift"),
                     (int) num(m, type, "max_lifetime_ticks"),
+                    strOrNull(m, "trail"),   // optional flame trail along the arc
                     parseEffectList(m, type, "on_impact"));
             // A timed detonator: a marker, a fuse, then a (mob-only) burst where it was planted.
             case "delayed_burst" -> new EffectSpec.DelayedBurst(
@@ -205,5 +206,11 @@ final class AbilitySchema {
         Object v = m.get(k);
         if (v == null) throw new IllegalArgumentException("Effect '" + type + "' is missing field: " + k);
         return String.valueOf(v);
+    }
+
+    /** An optional string field: null when absent, rather than a thrown error. */
+    private static String strOrNull(Map<?, ?> m, String k) {
+        Object v = m.get(k);
+        return v == null ? null : String.valueOf(v);
     }
 }

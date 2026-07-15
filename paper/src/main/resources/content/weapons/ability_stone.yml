@@ -32,10 +32,11 @@ triggers:
     on_hit:
       - type: throw_embers
         angles_degrees: [0, 25, -25]
-        speed: 1.2
+        speed: 0.4          # ~4-block landing distance; tune on the --refresh-content loop
         gravity: 0.05
         launch_lift: 0.25
         max_lifetime_ticks: 40
+        trail: ember_trail
         on_impact:
           - type: delayed_burst
             marker: blaze_powder

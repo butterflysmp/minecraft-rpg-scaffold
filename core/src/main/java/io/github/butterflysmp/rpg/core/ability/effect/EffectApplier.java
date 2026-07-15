@@ -113,6 +113,7 @@ public final class EffectApplier {
         for (Vec3 direction : directions) {
             Vec3 velocity = direction.scale(te.speed()).add(new Vec3(0, te.launchLift(), 0));
             ProjectileFlight.launch(world, casterId, origin, velocity, te.gravity(), te.maxLifetimeTicks(),
+                    te.trail(),
                     (target, point) -> applyAll(te.onImpact(), casterId, target, point, direction));
         }
     }
