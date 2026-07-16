@@ -395,4 +395,39 @@ class AbilityLoaderTest {
         assertInstanceOf(EffectSpec.Damage.class, area.effects().get(0));
         assertInstanceOf(EffectSpec.Status.class, area.effects().get(1));
     }
+
+    /**
+     * The shipped Rekindle, parsed by the loader we actually run. No unit test loaded this
+     * file before, so a mistyped key in the throw_embers grammar would have surfaced only at
+     * a server boot (where the loader's fail-soft would quietly skip it). This pins the new
+     * thrown-item shape -- item + fuse_ticks + burst -- on the real content.
+     */
+    @Test
+    void bundledRekindleContentLoads() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/abilities/rekindle.yml")) {
+            assertNotNull(in, "bundled content is missing from the classpath");
+            Files.write(dir.resolve("rekindle.yml"), in.readAllBytes());
+        }
+
+        AbilityRegistry registry = load();
+
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(1, registry.size());
+
+        AbilityDefinition def = registry.find("rekindle").orElseThrow();
+        assertInstanceOf(CastSpec.Dash.class, def.cast());
+
+        var embers = def.onHit().stream()
+                .filter(EffectSpec.ThrowEmbers.class::isInstance)
+                .map(EffectSpec.ThrowEmbers.class::cast)
+                .findFirst().orElseThrow(() -> new AssertionError("no throw_embers: the ember fan is gone"));
+        assertEquals(List.of(0.0, 40.0, -40.0), embers.anglesDegrees());
+        assertEquals("blaze_powder", embers.itemId());
+        assertTrue(embers.fuseTicks() >= 1, "fuse must be a positive number of ticks");
+        assertEquals("ember_burst", embers.visual());
+        // The detonation carries the mob-only burn: damage + scorch.
+        assertEquals(4.0, embers.burst().radius(), 1e-9);
+        assertInstanceOf(EffectSpec.Damage.class, embers.burst().effects().get(0));
+        assertInstanceOf(EffectSpec.Status.class, embers.burst().effects().get(1));
+    }
 }

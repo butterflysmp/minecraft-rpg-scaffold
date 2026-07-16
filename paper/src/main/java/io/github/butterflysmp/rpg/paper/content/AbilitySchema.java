@@ -112,23 +112,17 @@ final class AbilitySchema {
                     (int) num(m, type, "duration_ticks"),
                     (int) num(m, type, "tick_interval"),
                     parseNestedEffects(m, type));
-            // A fan of arcing projectiles; each ember's impact runs on_impact (any effects,
-            // including a scheduling delayed_burst) -- so on_impact is a general effect list,
-            // not the Targeted-only nesting a burst/area allows.
+            // A fan of thrown items, each tracked by a per-tick loop: draw the trail, count the
+            // fuse, then a (mob-only) burst at its live position. The item IS the marker.
             case "throw_embers" -> new EffectSpec.ThrowEmbers(
                     numberList(m, type, "angles_degrees"),
                     num(m, type, "speed"),
-                    num(m, type, "gravity"),
                     num(m, type, "launch_lift"),
-                    (int) num(m, type, "max_lifetime_ticks"),
-                    strOrNull(m, "trail"),   // optional flame trail along the arc
-                    parseEffectList(m, type, "on_impact"));
-            // A timed detonator: a marker, a fuse, then a (mob-only) burst where it was planted.
-            case "delayed_burst" -> new EffectSpec.DelayedBurst(
-                    str(m, type, "marker"),
+                    str(m, type, "item"),
                     (int) num(m, type, "fuse_ticks"),
                     parseBurst(mapOf(m, type, "burst")),
-                    strOrNull(m, "visual"));   // optional boom/flash at detonation
+                    strOrNull(m, "visual"),    // optional boom/flash at detonation
+                    strOrNull(m, "trail"));    // optional per-tick flame trail along the arc
             default -> throw new IllegalArgumentException("Unknown effect type: " + type);
         };
     }
@@ -136,15 +130,6 @@ final class AbilitySchema {
     /** A nested burst section ({@code radius} + Targeted {@code effects}), for delayed_burst. */
     private static EffectSpec.Burst parseBurst(Map<?, ?> burst) {
         return new EffectSpec.Burst(num(burst, "burst", "radius"), parseNestedEffects(burst, "burst"));
-    }
-
-    /** A nested list of ANY effects (unlike parseNestedEffects, which forbids untargeted ones). */
-    private static List<EffectSpec> parseEffectList(Map<?, ?> parent, String parentType, String key) {
-        List<EffectSpec> out = new ArrayList<>();
-        for (Map<?, ?> m : mapList(parent, parentType, key)) {
-            out.add(parseEffect(m));
-        }
-        return out;
     }
 
     private static List<Double> numberList(Map<?, ?> m, String type, String key) {

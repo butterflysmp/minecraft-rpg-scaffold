@@ -33,18 +33,14 @@ triggers:
       - { type: visual, visual_id: rekindle_cast }
       - type: throw_embers
         angles_degrees: [0, 40, -40]
-        speed: 0.6          # ~6-block landing distance; tune on the --refresh-content loop
-        gravity: 0.05
-        launch_lift: 0.25
-        max_lifetime_ticks: 40
-        trail: ember_trail
-        on_impact:
-          - type: delayed_burst
-            marker: blaze_powder
-            fuse_ticks: 20
-            visual: ember_burst
-            burst:
-              radius: 4.0
-              effects:
-                - { type: damage, amount: 8, element: fire }
-                - { type: status, status_id: scorch, duration_ticks: 60 }
+        speed: 0.6          # real Bukkit launch velocity (blocks/tick); tuned by feel, boot-confirmed
+        launch_lift: 0.25   # up-arc off the throw
+        item: blaze_powder  # the REAL item thrown -- it IS the marker
+        fuse_ticks: 30      # from LAUNCH: ~0.5s flight + ~1s sit; tuned by feel
+        trail: ember_trail  # one clean flame per tick at the item's live position -- traces the real arc
+        visual: ember_burst
+        burst:
+          radius: 4.0
+          effects:
+            - { type: damage, amount: 8, element: fire }
+            - { type: status, status_id: scorch, duration_ticks: 60 }

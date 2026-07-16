@@ -62,29 +62,29 @@ public interface CombatWorld {
     void present(Vec3 at, String visualId);
 
     /**
-     * Spawn a display-only marker named {@code markerId} at {@code at}, and return its id.
-     * The id, never the entity, is what core keeps -- the same discipline as a caster's UUID:
-     * a marker outlives the frame that plants it, and holding the entity would pin it.
+     * Throw a real item of material {@code itemId} from {@code origin} moving at {@code velocity},
+     * and return its id. The item flies and lands under ordinary physics -- it IS the marker for
+     * a thrown detonator, so no separate display entity is planted. The id, never the entity, is
+     * what core keeps -- the same discipline as a caster's UUID: it outlives the frame that threw
+     * it, and holding the entity would pin it.
      *
-     * Only legal on the thread owning {@code at}'s region, like every other world write.
+     * Only legal on the thread owning {@code origin}'s region, like every other world write.
      */
-    UUID spawnMarker(Vec3 at, String markerId);
+    UUID throwMarker(Vec3 origin, Vec3 velocity, String itemId);
 
     /**
-     * Remove a marker spawned by {@link #spawnMarker}. A no-op if it is already gone, so the
+     * Remove a marker thrown by {@link #throwMarker}. A no-op if it is already gone, so the
      * fuse task can call it unconditionally. Only legal on the thread owning the marker.
      */
     void removeMarker(UUID markerId);
 
     /**
-     * Where the marker with this id currently sits, or empty if it is gone (removed, or
-     * unloaded with its chunk). A read, like {@link #combatantsNear} -- only legal on the
-     * thread owning the marker.
+     * Where the marker with this id currently is, or empty if it is gone (removed, or unloaded
+     * with its chunk). A read, like {@link #combatantsNear} -- only legal on the thread owning
+     * the marker.
      *
-     * Lets a fuse detonate where the marker actually IS at fuse-end, not merely where it
-     * was planted: the marker is spawned at, and the fuse scheduled onto, the same planted
-     * origin, so a marker that only falls (same X/Z) stays in that origin's region column
-     * and this read stays on the right thread.
+     * Lets a fuse detonate where the thrown item actually IS at fuse-end, wherever physics has
+     * carried it, rather than where it was thrown.
      */
     Optional<Vec3> markerLocation(UUID markerId);
 }

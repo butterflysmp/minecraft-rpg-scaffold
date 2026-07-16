@@ -301,6 +301,35 @@ class WeaponLoaderTest {
         assertEquals("ironblade/left_click", weapon.trigger("left_click").orElseThrow().ability().id());
     }
 
+    /**
+     * The shipped Ability Stone -- the dev instrument the boot test fires. Its left-click
+     * mirrors Rekindle, so it carries the same throw_embers grammar; no test loaded it before,
+     * so a mistyped key would have failed silently at boot on the very weapon used to test.
+     * This pins the thrown-item shape on the real file.
+     */
+    @Test
+    void bundledAbilityStoneContentLoads() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/weapons/ability_stone.yml")) {
+            assertNotNull(in, "bundled ability_stone is missing from the classpath");
+            Files.write(dir.resolve("ability_stone.yml"), in.readAllBytes());
+        }
+
+        WeaponRegistry registry = load();
+
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(1, registry.size());
+        var stone = registry.find("ability_stone").orElseThrow();
+
+        var cast = stone.trigger("left_click").orElseThrow().ability();
+        assertInstanceOf(CastSpec.Dash.class, cast.cast());
+        var embers = cast.onHit().stream()
+                .filter(EffectSpec.ThrowEmbers.class::isInstance)
+                .map(EffectSpec.ThrowEmbers.class::cast)
+                .findFirst().orElseThrow(() -> new AssertionError("no throw_embers on the boot weapon"));
+        assertEquals("blaze_powder", embers.itemId());
+        assertEquals(4.0, embers.burst().radius(), 1e-9);
+    }
+
     /** The shipped emberblade: a free left-click and a costed right-click on one weapon. */
     @Test
     void bundledEmberbladeContentLoads() throws IOException {

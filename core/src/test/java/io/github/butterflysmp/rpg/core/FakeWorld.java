@@ -174,10 +174,12 @@ public final class FakeWorld implements CombatWorld {
 
     @Override public void present(Vec3 at, String visualId) { presented.add(visualId); }
 
-    @Override public UUID spawnMarker(Vec3 at, String markerId) {
+    @Override public UUID throwMarker(Vec3 origin, Vec3 velocity, String itemId) {
         UUID id = UUID.randomUUID();
-        markers.put(id, markerId);
-        markerPositions.put(id, at);
+        markers.put(id, itemId);
+        // No physics here: the item is recorded at its launch origin. A test that needs to
+        // exercise where it LANDS drifts it with moveMarker, standing in for vanilla flight.
+        markerPositions.put(id, origin);
         return id;
     }
 

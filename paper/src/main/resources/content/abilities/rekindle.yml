@@ -3,9 +3,10 @@
 # embers, then dash straight BACKWARD, leaving a denial zone between you and what you fled.
 #
 # The cast is a reverse-facing dash (the retreat); the embers ride its on_hit as a
-# throw_embers effect, which fires ONCE from the pre-dash feet -- so the embers land in
-# front of where you stood, then you back away from them. Each ember arcs, lands, marks the
-# spot, and after a 1-second fuse bursts (mob-only) in a 4-block radius.
+# throw_embers effect, which fires ONCE from the pre-dash feet -- so the embers launch in
+# front of where you stood, then you back away from them. Each ember is a REAL thrown item
+# that arcs and lands under vanilla physics; a single fuse counts from launch, and after it
+# the ember bursts (mob-only) in a 4-block radius wherever it has come to rest.
 
 id: rekindle
 display_name: "<gold>Rekindle</gold>"   # MiniMessage, not legacy color codes
@@ -30,18 +31,14 @@ on_hit:
   - { type: visual, visual_id: rekindle_cast }   # the whoosh, once at the caster on cast
   - type: throw_embers
     angles_degrees: [0, 40, -40]   # a wide three-ember fan, centred on facing
-    speed: 0.6                     # sets the landing distance (~speed * 10 ticks aloft = ~6 blocks); tune on the loop
-    gravity: 0.05                  # the arc
+    speed: 0.6                     # real Bukkit launch velocity (blocks/tick); tuned by feel, boot-confirmed
     launch_lift: 0.25              # a touch of up so the ember arcs rather than skims
-    max_lifetime_ticks: 40         # if it somehow lands on nothing, it still goes off
-    trail: ember_trail             # flame trail so the throw reads as a thrown ember
-    on_impact:
-      - type: delayed_burst        # planted where the ember lands (a wall stops it short)
-        marker: blaze_powder       # display-only; shows where it will go off
-        fuse_ticks: 20             # 1 second
-        visual: ember_burst        # flame flash + explosion crack when it detonates
-        burst:
-          radius: 4.0
-          effects:
-            - { type: damage, amount: 8, element: fire }
-            - { type: status, status_id: scorch, duration_ticks: 60 }
+    item: blaze_powder             # the REAL item thrown -- it IS the marker
+    fuse_ticks: 30                 # from LAUNCH: ~0.5s flight + ~1s sit; tuned by feel
+    trail: ember_trail             # one clean flame per tick at the item's live position -- traces the real arc
+    visual: ember_burst            # flame flash + explosion crack when it detonates
+    burst:
+      radius: 4.0
+      effects:
+        - { type: damage, amount: 8, element: fire }
+        - { type: status, status_id: scorch, duration_ticks: 60 }

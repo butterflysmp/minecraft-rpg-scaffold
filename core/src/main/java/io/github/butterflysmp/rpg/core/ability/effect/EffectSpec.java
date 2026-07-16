@@ -25,7 +25,7 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
 
     /** Acts on the world rather than a victim. Always runs. */
     sealed interface Untargeted extends EffectSpec
-            permits Area, Burst, DelayedBurst, ThrowEmbers, Visual {}
+            permits Area, Burst, ThrowEmbers, Visual {}
 
     /** element is a content id ("fire", "kinetic", ...) -- pure identity, validated at boot; never null. */
     record Damage(double amount, String element) implements Targeted {}
@@ -90,62 +90,43 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
     record Visual(String visualId) implements Untargeted {}
 
     /**
-     * A blast that goes off later. Plants a display-only {@code markerId} at the point it is
-     * applied, then after {@code fuseTicks} detonates {@code burst} there (mob-only) and
-     * removes the marker. A pure timer -- it fires whether or not anything is near, with no
-     * contact detection; the marker only shows where.
+     * Throws a fan of REAL items from the caster, then runs ONE per-tick loop per ember: each
+     * tick it draws {@code trail} at the item's LIVE position and counts the fuse down, and when
+     * the fuse reaches zero it detonates {@code burst} (mob-only) right there and removes the
+     * item. The thrown item IS the marker: vanilla physics flies and lands it, so there is no
+     * landing detection, no separate marker, and no resting-item pop. This is the old Blast
+     * Fungus mechanism.
      *
-     * The general mechanic behind Rekindle's ember, and reusable for any mine / trap /
-     * delayed explosion, the same general-mechanic / specific-content split as the rest of
-     * the effect grammar. Marker lifetime is exactly the fuse: its removal is tied to the same
-     * scheduled task that fires the burst, so display and detonation can never diverge.
+     * The per-tick loop earns two things at once. The {@code trail} is a clean particle LINE:
+     * one flame per tick at where the item actually is, so the item's own motion draws the arc
+     * (as opposed to the old scattered trail, or a computed flight path that no longer exists).
+     * And because the loop re-enters the item's region every tick to read its position, the
+     * detonation runs on the region that owns the item -- region-correct on Folia, exactly as
+     * ProjectileFlight re-enters each tick for the grenade.
      *
-     * {@code visual} is presented at the detonation point when the fuse fires (a boom/flash),
-     * or null for none. It rides the same scheduled task as the burst so the sound lands with
-     * the blast; it is separate from {@code burst} because a Burst may only nest TARGETED
-     * effects, and a visual is untargeted -- and because the burst is mob-only while the
-     * visual just plays at the point.
+     * Directions are the caster's facing rotated horizontally by each of {@code anglesDegrees};
+     * each item launches at {@code speed} with a touch of {@code launchLift} so it arcs.
+     * {@code itemId} is the material thrown (e.g. blaze_powder). {@code visual} is presented at
+     * the detonation point when the fuse fires (a boom/flash), or null for none. {@code trail}
+     * is the per-tick flight particle id, or null for a bare item.
+     *
+     * {@code speed} is a real launch velocity (blocks/tick), interpreted by the adapter's
+     * physical item -- NOT the old virtual per-tick flight step, so it lives on a different
+     * scale and is tuned by feel on the content loop.
      */
-    record DelayedBurst(String markerId, int fuseTicks, Burst burst, String visual)
+    record ThrowEmbers(List<Double> anglesDegrees, double speed, double launchLift,
+                       String itemId, int fuseTicks, Burst burst, String visual, String trail)
             implements Untargeted {
-
-        public DelayedBurst {
-            if (fuseTicks < 1) {
-                throw new IllegalArgumentException(
-                        "Effect 'delayed_burst' fuse_ticks must be >= 1, got: " + fuseTicks);
-            }
-        }
-    }
-
-    /**
-     * Launches a fan of arcing projectiles from the caster and runs {@code onImpact} where
-     * each one lands. Directions are the caster's facing rotated by each of
-     * {@code anglesDegrees}, horizontally; each projectile flies with {@code gravity} and a
-     * touch of {@code launchLift} so it arcs, and its impact (a body, a wall, or lifetime
-     * expiry) fires {@code onImpact} through the ordinary effect path -- exactly the grenade's
-     * impact-fires-an-effect route, just with a scheduling effect (a {@link DelayedBurst}) in
-     * the list instead of an immediate one.
-     *
-     * The embers arc: it reuses the shared projectile flight loop, not a copy of it. A wall
-     * in the way stops an ember short and fires {@code onImpact} AT the wall, not past it.
-     *
-     * {@code trail} is a visual id left along each ember's arc (a flame trail so the throw
-     * reads as a thrown ember, not a bare item), or null for no trail.
-     */
-    record ThrowEmbers(List<Double> anglesDegrees, double speed, double gravity,
-                       double launchLift, int maxLifetimeTicks, String trail,
-                       List<EffectSpec> onImpact) implements Untargeted {
 
         public ThrowEmbers {
             if (anglesDegrees.isEmpty()) {
                 throw new IllegalArgumentException("Effect 'throw_embers' needs at least one angle");
             }
-            if (maxLifetimeTicks < 1) {
+            if (fuseTicks < 1) {
                 throw new IllegalArgumentException(
-                        "Effect 'throw_embers' max_lifetime_ticks must be >= 1, got: " + maxLifetimeTicks);
+                        "Effect 'throw_embers' fuse_ticks must be >= 1, got: " + fuseTicks);
             }
             anglesDegrees = List.copyOf(anglesDegrees);
-            onImpact = List.copyOf(onImpact);
         }
 
         /**

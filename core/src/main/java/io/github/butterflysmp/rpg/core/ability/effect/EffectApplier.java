@@ -3,7 +3,6 @@ package io.github.butterflysmp.rpg.core.ability.effect;
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
-import io.github.butterflysmp.rpg.core.combat.ProjectileFlight;
 import java.util.List;
 import java.util.UUID;
 
@@ -97,14 +96,10 @@ public final class EffectApplier {
             case EffectSpec.Area a -> world.schedule(origin, a.tickInterval(),
                     () -> tickArea(a, casterId, origin, a.tickInterval()));
 
-            // A fan of arcing projectiles toward the facing. Each ember's impact runs its
-            // onImpact list through the ordinary path -- the same impact-fires-an-effect route
-            // a grenade uses, here carrying a scheduling effect (a DelayedBurst).
+            // A fan of REAL thrown items, each tracked by its own per-tick loop: draw the trail
+            // at the live position, count the fuse, detonate mob-only where it lies. No landing
+            // detection, no separate marker -- the thrown item IS the marker.
             case EffectSpec.ThrowEmbers te -> throwEmbers(te, casterId, origin, direction);
-
-            // Plant a timed detonator: a marker now, a mob-only burst after the fuse, the
-            // marker removed by the same task so display and detonation cannot diverge.
-            case EffectSpec.DelayedBurst db -> plantDelayedBurst(db, casterId, origin);
         }
     }
 
@@ -112,28 +107,38 @@ public final class EffectApplier {
         List<Vec3> directions = EffectSpec.ThrowEmbers.fan(facing, te.anglesDegrees());
         for (Vec3 direction : directions) {
             Vec3 velocity = direction.scale(te.speed()).add(new Vec3(0, te.launchLift(), 0));
-            ProjectileFlight.launch(world, casterId, origin, velocity, te.gravity(), te.maxLifetimeTicks(),
-                    te.trail(),
-                    (target, point) -> applyAll(te.onImpact(), casterId, target, point, direction));
+            UUID itemId = world.throwMarker(origin, velocity, te.itemId());
+            // First tick runs inline on the launch frame -- the same shape as ProjectileFlight,
+            // which draws its trail and steps inline before scheduling the next tick.
+            trackEmber(te, casterId, itemId, origin, te.fuseTicks());
         }
     }
 
-    private void plantDelayedBurst(EffectSpec.DelayedBurst db, UUID casterId, Vec3 origin) {
-        UUID markerId = world.spawnMarker(origin, db.markerId());
-        world.schedule(origin, db.fuseTicks(), () -> {
-            // Detonate where the marker actually IS at fuse-end, not merely where it was
-            // planted -- the blast-fungus principle: do not depend on the marker having
-            // stayed put. Falls back to the planted origin if the marker is gone (unloaded),
-            // so this stays a pure timer that fires regardless. The marker is planted at, and
-            // this fuse scheduled onto, the same origin, so a marker that only falls keeps the
-            // same X/Z and this read stays on the origin's region thread.
-            Vec3 at = world.markerLocation(markerId).orElse(origin);
-            // The boom lands with the blast: same task, so they cannot diverge.
-            if (db.visual() != null) world.present(at, db.visual());
+    /**
+     * One tick of a thrown ember. Reads where the item IS now, draws the trail there, and then
+     * either detonates (fuse spent) or schedules the next tick AT that live position.
+     *
+     * Scheduling the next tick at the item's current position is what re-enters the region that
+     * owns the item, so every read, particle, and the eventual burst run on the correct region
+     * thread -- the same per-tick region re-entry ProjectileFlight uses for the grenade, which is
+     * why the detonation is region-correct on Folia and needs no caveat. {@code lastKnown} is
+     * only the fallback if the item has already vanished (removed / unloaded).
+     */
+    private void trackEmber(EffectSpec.ThrowEmbers te, UUID casterId, UUID itemId,
+                            Vec3 lastKnown, int fuseLeft) {
+        Vec3 at = world.markerLocation(itemId).orElse(lastKnown);
+        // One clean flame at the live position; the item's motion between ticks draws the line.
+        if (te.trail() != null) world.present(at, te.trail());
+
+        if (fuseLeft <= 0) {
+            // The boom lands with the blast: same tick, same place, so they cannot diverge.
+            if (te.visual() != null) world.present(at, te.visual());
             // Mob-only, like a dash's payload: a denial zone burns mobs, not players.
-            applyToNearbyMobs(db.burst().effects(), casterId, at, db.burst().radius());
-            world.removeMarker(markerId);
-        });
+            applyToNearbyMobs(te.burst().effects(), casterId, at, te.burst().radius());
+            world.removeMarker(itemId);
+            return;
+        }
+        world.schedule(at, 1, () -> trackEmber(te, casterId, itemId, at, fuseLeft - 1));
     }
 
     /**

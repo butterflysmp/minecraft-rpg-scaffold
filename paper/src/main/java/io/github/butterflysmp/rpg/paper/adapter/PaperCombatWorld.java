@@ -25,6 +25,14 @@ public final class PaperCombatWorld implements CombatWorld {
     /** How much to inflate entity hitboxes when tracing. 0 = exact bounding box. */
     private static final double RAY_SIZE = 0.0;
 
+    /**
+     * How far ABOVE the caster's feet to release a thrown marker item, so it leaves from about
+     * hand/eye height rather than the ground -- the old Blast Fungus threw from eye level and
+     * kept the item moving, which is why it never rested inside a block and never popped. A
+     * Y-only lift: X/Z stay the throw origin, so the item keeps the caster's column.
+     */
+    private static final double THROW_ORIGIN_LIFT = 1.4;
+
     private final World world;
     private final AdapterContext ctx;
 
@@ -123,48 +131,40 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
-     * The project's only spawned entity: a marker showing where a delayed burst will go off.
-     * A real Item, born AT REST at the landing point, so it just sits there bobbing and
-     * spinning like any settled dropped item.
+     * The project's only spawned entity: a thrown ember. A real Item launched from the caster
+     * with {@code velocity}; vanilla physics flies and lands it, so it arcs, bounces, and rolls
+     * to rest like any thrown item. The item IS the marker -- the fuse detonates at its LIVE
+     * position (see {@link #markerLocation}), so where or how it settles does not matter, and
+     * there is no landing detection and no separate display entity.
      *
-     * The whole saga was one root cause: {@code dropItem} builds a vanilla ItemEntity, and that
-     * constructor assigns a random "pop" velocity by design -- about (+/-0.1, +0.2, +/-0.1),
-     * the loot-scatter behaviour. The +0.2 up was every round's "pop up"; each item's own random
-     * +/-0.1 horizontal, integrated over the ~10 ticks before it settled, was the "drifts up to a
-     * block away", and three embers each drifting their own way looked like they shoved each
-     * other apart (they did not -- non-mergable items overlap, they do not push). The earlier
-     * fixes fought that motion: horizontal-cancel kept the +0.2 up (still hopped); the freeze and
-     * the noPhysics flags suppressed it after the fact.
-     *
-     * So do not fight it -- do not create it. spawn the Item directly and zero its velocity in the
-     * pre-add function, BEFORE it ever ticks: it is born motionless, so there is no pop to hop, no
-     * drift to cancel, nothing to settle. Gravity stays ON (default) and there are no noPhysics or
-     * gravity-off flags: with zero initial velocity the item is already at rest on the ground, so
-     * gravity has nothing to do and the block-collision jitter (which needed a gravity-less item
-     * that could never reach rest) never arises. (world.spawn uses the same popping constructor as
-     * dropItem; the fix is the pre-tick velocity zero, not the spawn method.)
+     * It is released {@link #THROW_ORIGIN_LIFT} above {@code origin} (the caster's feet) so it
+     * leaves from about hand height, not the ground. This is the whole reason the earlier
+     * resting-marker approach could be thrown out: that one PLACED an item at a computed landing
+     * point on a block face, and vanilla ejected it upward to resolve the intersection -- the
+     * pop that six rounds of velocity-zeroing and settle-fighting never cured. A thrown item is
+     * never set down inside a block, so the pop cannot arise. We do NOT zero the velocity here:
+     * the point is that it flies.
      *
      * setPickupDelay(MAX) keeps it un-collectible (and, at the 32767 clamp, non-mergable and
-     * non-despawning); the ~1s fuse makes vanilla item edge cases irrelevant anyway.
+     * non-despawning); the short fuse makes vanilla item edge cases irrelevant anyway.
      * setPersistent(false) is the unload backstop. Its normal removal is the fuse task, which
-     * calls removeMarker below -- a leaked real Item is the identical hazard to a leaked display,
-     * unchanged.
+     * calls removeMarker below -- a leaked real Item is the leak-on-death hazard one more time.
      *
-     * A world write, so like every other here it is only legal on the thread owning {@code at}
-     * -- the caller (a projectile impact on its region thread) already satisfies that, the same
-     * as an inline Burst.
+     * A world write, so only legal on the thread owning {@code origin} -- the caller (a cast
+     * resolving on the caster's region) already satisfies that.
      */
     @Override
-    public UUID spawnMarker(Vec3 at, String markerId) {
-        Material material = Material.matchMaterial(markerId);
+    public UUID throwMarker(Vec3 origin, Vec3 velocity, String itemId) {
+        Material material = Material.matchMaterial(itemId);
         if (material == null || !material.isItem()) {
-            ctx.warnOnce("Unknown marker material '" + markerId + "'; using BLAZE_POWDER");
+            ctx.warnOnce("Unknown marker material '" + itemId + "'; using BLAZE_POWDER");
             material = Material.BLAZE_POWDER;
         }
         ItemStack stack = new ItemStack(material);
-        Item marker = world.spawn(toLocation(at), Item.class, item -> {
+        Location spawnAt = toLocation(origin).add(0, THROW_ORIGIN_LIFT, 0);
+        Item marker = world.spawn(spawnAt, Item.class, item -> {
             item.setItemStack(stack);
-            item.setVelocity(new Vector(0, 0, 0));   // born at rest: kill the ItemEntity pop BEFORE it ticks
+            item.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z())); // thrown -- it flies
             item.setPickupDelay(Integer.MAX_VALUE);  // never collectible
             item.setPersistent(false);               // unload backstop
         });
@@ -179,11 +179,10 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
-     * The marker's live location, so a fuse can detonate where it actually IS rather than
-     * where it was planted -- an ember that popped or fell still bursts under itself. Empty
-     * when the marker is gone (removed, or unloaded with its chunk), which sends the fuse
-     * back to its planted origin. A read of the entity's own position; getEntity mirrors
-     * removeMarker above.
+     * The marker's live location, so a fuse can detonate where the thrown item actually IS at
+     * fuse-end -- wherever physics carried it -- rather than where it was thrown. Empty when the
+     * item is gone (removed, or unloaded with its chunk), which sends the fuse back to its throw
+     * origin. A read of the entity's own position; getEntity mirrors removeMarker above.
      */
     @Override
     public Optional<Vec3> markerLocation(UUID markerId) {

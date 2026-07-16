@@ -97,13 +97,13 @@ class EffectApplierTest {
     }
 
     /**
-     * A delayed burst plants a marker at once, waits out its fuse, then detonates mob-only and
-     * removes the marker in the SAME task -- so display and detonation cannot diverge and no
-     * display entity leaks. Three mutations redden here: drop the player skip and the player
-     * burns; drop removeMarker and the marker leaks; slip the fuse and the timing shifts.
+     * A thrown ember lands as a real item at once, waits out its single launch fuse, then
+     * detonates mob-only and removes the item in the SAME task -- so item and detonation cannot
+     * diverge and no item leaks. Three mutations redden here: drop the player skip and the
+     * player burns; drop removeMarker and the item leaks; slip the fuse and the timing shifts.
      */
     @Test
-    void delayedBurstFiresAfterItsFuseMobOnlyAndRemovesItsMarker() {
+    void throwEmbersFiresAfterItsFuseMobOnlyAndRemovesItsItem() {
         var world = new FakeWorld();
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var mob = new FakeWorld.Dummy(new Vec3(1, 0, 0));
@@ -113,21 +113,21 @@ class EffectApplierTest {
         world.entities.add(mob);
         world.entities.add(player);
 
-        var delayed = new EffectSpec.DelayedBurst("blaze_powder", 20,
+        var embers = new EffectSpec.ThrowEmbers(List.of(0.0), 0.6, 0.25, "blaze_powder", 20,
                 new EffectSpec.Burst(4.0, List.of(
                         new EffectSpec.Damage(8, "fire"),
                         new EffectSpec.Status("scorch", 60, 0))),
-                "ember_burst");   // the boom/flash at detonation
+                "ember_burst", null);   // visual = boom at detonation; trail unused here
 
-        new EffectApplier(world).applyAll(List.of(delayed), caster.id(), null, Vec3.ZERO);
+        new EffectApplier(world).applyAll(List.of(embers), caster.id(), null, Vec3.ZERO);
 
-        assertEquals(1, world.markers.size(), "the marker is planted at once, showing where");
+        assertEquals(1, world.markers.size(), "the item is thrown at once");
         assertEquals(100, mob.health, 1e-9, "nothing detonates before the fuse");
         assertFalse(world.presented.contains("ember_burst"), "the boom waits for the fuse");
 
         world.advanceTicks(19);
         assertEquals(100, mob.health, 1e-9, "the fuse is 20 ticks -- not at 19");
-        assertEquals(1, world.markers.size(), "the marker lives exactly as long as the fuse");
+        assertEquals(1, world.markers.size(), "the item lives exactly as long as the fuse");
 
         world.advanceTicks(1);
         assertEquals(92, mob.health, 1e-9, "detonates at 20 ticks: 8 fire damage");
@@ -135,44 +135,66 @@ class EffectApplierTest {
         assertEquals(100, player.health, 1e-9, "mob-only: the burst spares players");
         assertTrue(player.statuses.isEmpty(), "mob-only: no scorch on players");
         assertEquals(100, caster.health, 1e-9, "you do not burn yourself");
-        assertTrue(world.markers.isEmpty(), "marker removed on detonation -- no leak");
+        assertTrue(world.markers.isEmpty(), "item removed on detonation -- no leak");
         assertTrue(world.presented.contains("ember_burst"), "the boom fires with the blast");
     }
 
     /**
-     * The blast-fungus guarantee: the fuse detonates where the marker actually IS at
-     * fuse-end, not where it was planted. Plant at the origin, drift the marker 10 blocks
-     * away (a marker that popped or fell), fire the fuse -- the mob under the LIVE marker
-     * burns, the mob still sitting at the planted origin does not. Revert the burst point
-     * to {@code origin} and the two mobs swap fates: this test reddens.
+     * The blast-fungus guarantee: the fuse detonates where the thrown item actually IS at
+     * fuse-end, not where it was thrown. Throw at the origin, drift the item 10 blocks away
+     * (standing in for its flight and landing), fire the fuse -- the mob under the LIVE item
+     * burns, the mob still sitting at the throw origin does not. Revert the burst point to
+     * {@code origin} and the two mobs swap fates: this test reddens.
      */
     @Test
-    void delayedBurstDetonatesAtTheMarkersLivePositionNotWhereItWasPlanted() {
+    void throwEmbersDetonatesAtTheItemsLivePositionNotWhereItWasThrown() {
         var world = new FakeWorld();
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
-        var mobAtPlanted = new FakeWorld.Dummy(new Vec3(1, 0, 0));   // within 4 of origin
-        var mobAtDrift = new FakeWorld.Dummy(new Vec3(10, 0, 0));    // within 4 of the drift
+        var mobAtThrow = new FakeWorld.Dummy(new Vec3(1, 0, 0));     // within 4 of the throw origin
+        var mobAtLanding = new FakeWorld.Dummy(new Vec3(10, 0, 0));  // within 4 of where it lands
         world.entities.add(caster);
-        world.entities.add(mobAtPlanted);
-        world.entities.add(mobAtDrift);
+        world.entities.add(mobAtThrow);
+        world.entities.add(mobAtLanding);
 
-        var delayed = new EffectSpec.DelayedBurst("blaze_powder", 20,
-                new EffectSpec.Burst(4.0, List.of(new EffectSpec.Damage(8, "fire"))),
-                null);
+        var embers = new EffectSpec.ThrowEmbers(List.of(0.0), 0.6, 0.25, "blaze_powder", 20,
+                new EffectSpec.Burst(4.0, List.of(new EffectSpec.Damage(8, "fire"))), null, null);
 
-        new EffectApplier(world).applyAll(List.of(delayed), caster.id(), null, Vec3.ZERO);
+        new EffectApplier(world).applyAll(List.of(embers), caster.id(), null, Vec3.ZERO);
 
-        // The marker was planted at the origin; drift it before the fuse fires.
-        UUID markerId = world.markers.keySet().iterator().next();
-        world.moveMarker(markerId, new Vec3(10, 0, 0));
+        // The item flew and landed 10 blocks away before the fuse fired.
+        UUID itemId = world.markers.keySet().iterator().next();
+        world.moveMarker(itemId, new Vec3(10, 0, 0));
 
         world.advanceTicks(20);
 
-        assertEquals(92, mobAtDrift.health, 1e-9,
-                "detonates at the marker's LIVE position: the mob there burns");
-        assertEquals(100, mobAtPlanted.health, 1e-9,
-                "not where it was planted: the mob at the origin is 9 blocks from the blast");
-        assertTrue(world.markers.isEmpty(), "marker still removed on detonation -- no leak");
+        assertEquals(92, mobAtLanding.health, 1e-9,
+                "detonates at the item's LIVE position: the mob there burns");
+        assertEquals(100, mobAtThrow.health, 1e-9,
+                "not where it was thrown: the mob at the origin is 9 blocks from the blast");
+        assertTrue(world.markers.isEmpty(), "item still removed on detonation -- no leak");
+    }
+
+    /**
+     * The per-tick tracking loop draws the trail every tick the ember is alive, at its live
+     * position -- so a clean particle LINE follows the arc, not a single puff. A trail declared
+     * but never wired would only show (by its absence) at boot; this catches it in core. Drop
+     * the per-tick present(trail) and the count falls to zero.
+     */
+    @Test
+    void throwEmbersLeavesATrailEveryTickOfFlight() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+
+        var embers = new EffectSpec.ThrowEmbers(List.of(0.0), 0.6, 0.25, "blaze_powder", 5,
+                new EffectSpec.Burst(4.0, List.of(new EffectSpec.Damage(8, "fire"))), null, "ember_trail");
+
+        new EffectApplier(world).applyAll(List.of(embers), caster.id(), null, Vec3.ZERO);
+        world.advanceTicks(5);
+
+        long trailCount = world.presented.stream().filter("ember_trail"::equals).count();
+        assertTrue(trailCount > 1,
+                "the trail is emitted every tick of flight, not just once; got " + trailCount);
     }
 
     @Test
