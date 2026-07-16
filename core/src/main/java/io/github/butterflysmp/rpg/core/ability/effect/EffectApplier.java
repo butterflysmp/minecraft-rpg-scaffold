@@ -121,10 +121,17 @@ public final class EffectApplier {
     private void plantDelayedBurst(EffectSpec.DelayedBurst db, UUID casterId, Vec3 origin) {
         UUID markerId = world.spawnMarker(origin, db.markerId());
         world.schedule(origin, db.fuseTicks(), () -> {
+            // Detonate where the marker actually IS at fuse-end, not merely where it was
+            // planted -- the blast-fungus principle: do not depend on the marker having
+            // stayed put. Falls back to the planted origin if the marker is gone (unloaded),
+            // so this stays a pure timer that fires regardless. The marker is planted at, and
+            // this fuse scheduled onto, the same origin, so a marker that only falls keeps the
+            // same X/Z and this read stays on the origin's region thread.
+            Vec3 at = world.markerLocation(markerId).orElse(origin);
             // The boom lands with the blast: same task, so they cannot diverge.
-            if (db.visual() != null) world.present(origin, db.visual());
+            if (db.visual() != null) world.present(at, db.visual());
             // Mob-only, like a dash's payload: a denial zone burns mobs, not players.
-            applyToNearbyMobs(db.burst().effects(), casterId, origin, db.burst().radius());
+            applyToNearbyMobs(db.burst().effects(), casterId, at, db.burst().radius());
             world.removeMarker(markerId);
         });
     }

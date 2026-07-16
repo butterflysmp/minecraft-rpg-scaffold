@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.core.combat.Combatant;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -136,6 +137,42 @@ class EffectApplierTest {
         assertEquals(100, caster.health, 1e-9, "you do not burn yourself");
         assertTrue(world.markers.isEmpty(), "marker removed on detonation -- no leak");
         assertTrue(world.presented.contains("ember_burst"), "the boom fires with the blast");
+    }
+
+    /**
+     * The blast-fungus guarantee: the fuse detonates where the marker actually IS at
+     * fuse-end, not where it was planted. Plant at the origin, drift the marker 10 blocks
+     * away (a marker that popped or fell), fire the fuse -- the mob under the LIVE marker
+     * burns, the mob still sitting at the planted origin does not. Revert the burst point
+     * to {@code origin} and the two mobs swap fates: this test reddens.
+     */
+    @Test
+    void delayedBurstDetonatesAtTheMarkersLivePositionNotWhereItWasPlanted() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var mobAtPlanted = new FakeWorld.Dummy(new Vec3(1, 0, 0));   // within 4 of origin
+        var mobAtDrift = new FakeWorld.Dummy(new Vec3(10, 0, 0));    // within 4 of the drift
+        world.entities.add(caster);
+        world.entities.add(mobAtPlanted);
+        world.entities.add(mobAtDrift);
+
+        var delayed = new EffectSpec.DelayedBurst("blaze_powder", 20,
+                new EffectSpec.Burst(4.0, List.of(new EffectSpec.Damage(8, "fire"))),
+                null);
+
+        new EffectApplier(world).applyAll(List.of(delayed), caster.id(), null, Vec3.ZERO);
+
+        // The marker was planted at the origin; drift it before the fuse fires.
+        UUID markerId = world.markers.keySet().iterator().next();
+        world.moveMarker(markerId, new Vec3(10, 0, 0));
+
+        world.advanceTicks(20);
+
+        assertEquals(92, mobAtDrift.health, 1e-9,
+                "detonates at the marker's LIVE position: the mob there burns");
+        assertEquals(100, mobAtPlanted.health, 1e-9,
+                "not where it was planted: the mob at the origin is 9 blocks from the blast");
+        assertTrue(world.markers.isEmpty(), "marker still removed on detonation -- no leak");
     }
 
     @Test

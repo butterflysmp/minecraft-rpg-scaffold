@@ -27,8 +27,12 @@ public final class FakeWorld implements CombatWorld {
     /** The start point of every castRay -- a projectile's launch origin is its first one. */
     public final List<Vec3> castRayFrom = new ArrayList<>();
 
-    /** Live display markers, id -> where they sit. A marker leak shows up as a stale entry. */
+    /** Live display markers, id -> marker material id. A marker leak shows up as a stale entry. */
     public final Map<UUID, String> markers = new HashMap<>();
+
+    /** Where each live marker sits, id -> position. Parallel to {@link #markers}, so the leak
+     *  assertions on that map stay untouched while a fuse can read a marker's live position. */
+    public final Map<UUID, Vec3> markerPositions = new HashMap<>();
 
     private record Scheduled(long dueTick, long seq, Runnable task) {}
 
@@ -173,10 +177,23 @@ public final class FakeWorld implements CombatWorld {
     @Override public UUID spawnMarker(Vec3 at, String markerId) {
         UUID id = UUID.randomUUID();
         markers.put(id, markerId);
+        markerPositions.put(id, at);
         return id;
     }
 
-    @Override public void removeMarker(UUID markerId) { markers.remove(markerId); }
+    @Override public void removeMarker(UUID markerId) {
+        markers.remove(markerId);
+        markerPositions.remove(markerId);
+    }
+
+    @Override public Optional<Vec3> markerLocation(UUID markerId) {
+        return Optional.ofNullable(markerPositions.get(markerId));
+    }
+
+    /** Drift a marker to a new spot, so a test can prove a fuse detonates at the LIVE
+     *  position, not where the marker was planted. The production analogue is a marker
+     *  that pops or falls before the fuse fires. */
+    public void moveMarker(UUID markerId, Vec3 to) { markerPositions.put(markerId, to); }
 
     /**
      * Run the clock forward, firing every task that comes due. Deterministic: no sleeping,

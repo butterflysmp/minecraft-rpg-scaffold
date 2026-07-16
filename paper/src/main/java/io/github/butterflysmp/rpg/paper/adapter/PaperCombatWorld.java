@@ -179,6 +179,22 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
+     * The marker's live location, so a fuse can detonate where it actually IS rather than
+     * where it was planted -- an ember that popped or fell still bursts under itself. Empty
+     * when the marker is gone (removed, or unloaded with its chunk), which sends the fuse
+     * back to its planted origin. A read of the entity's own position; getEntity mirrors
+     * removeMarker above.
+     */
+    @Override
+    public Optional<Vec3> markerLocation(UUID markerId) {
+        if (world.getEntity(markerId) instanceof Item marker) {
+            Location loc = marker.getLocation();
+            return Optional.of(new Vec3(loc.getX(), loc.getY(), loc.getZ()));
+        }
+        return Optional.empty();
+    }
+
+    /**
      * Play a named visual at a point. An unknown id is a content mistake, not a
      * programming error: warn once and let the rest of the detonation land.
      *

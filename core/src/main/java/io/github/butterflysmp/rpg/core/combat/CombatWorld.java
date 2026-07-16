@@ -75,4 +75,16 @@ public interface CombatWorld {
      * fuse task can call it unconditionally. Only legal on the thread owning the marker.
      */
     void removeMarker(UUID markerId);
+
+    /**
+     * Where the marker with this id currently sits, or empty if it is gone (removed, or
+     * unloaded with its chunk). A read, like {@link #combatantsNear} -- only legal on the
+     * thread owning the marker.
+     *
+     * Lets a fuse detonate where the marker actually IS at fuse-end, not merely where it
+     * was planted: the marker is spawned at, and the fuse scheduled onto, the same planted
+     * origin, so a marker that only falls (same X/Z) stays in that origin's region column
+     * and this read stays on the right thread.
+     */
+    Optional<Vec3> markerLocation(UUID markerId);
 }
