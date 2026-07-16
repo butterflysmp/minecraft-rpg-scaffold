@@ -6,6 +6,8 @@ import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.kit.KitRegistry;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
+import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
+import io.github.butterflysmp.rpg.core.combat.stat.CompositeHealthListener;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -22,6 +24,9 @@ import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
 import io.github.butterflysmp.rpg.paper.content.VisualLoader;
 import io.github.butterflysmp.rpg.paper.content.VisualRegistry;
 import io.github.butterflysmp.rpg.paper.content.WeaponLoader;
+import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
+import io.github.butterflysmp.rpg.paper.health.PacketNameplateSender;
+import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.listener.RpgListeners;
 import io.github.butterflysmp.rpg.paper.packet.ExampleTelegraphListener;
 import io.github.butterflysmp.rpg.paper.packet.WeaponSwingListener;
@@ -77,6 +82,9 @@ public final class RpgPlugin extends JavaPlugin {
     private WeaponRegistry weapons;
     private CooldownTracker cooldowns;
     private ResourcePool resources;
+    private CombatantStats stats;
+    private PlayerHealthSystem healthSystem;
+    private MobNameplateManager nameplates;
     private AbilityService abilityService;
     private WeaponService weaponService;
     private ExecutorService storageIo;
@@ -117,9 +125,18 @@ public final class RpgPlugin extends JavaPlugin {
                 getConfig().getDouble("immobilize.anchor-drift-blocks", ImmobilizePhysics.ANCHOR_DRIFT)));
         getLogger().info("Immobilize anchor drift tolerance: " + anchorDrift + " blocks");
 
+        // Custom health: the store is the source of truth; TWO displays ride its HealthChange seam,
+        // fanned out by a composite listener -- the player heart bar and the per-viewer mob nameplate.
+        // Two-step bind breaks the cycle (the store needs a listener, each display needs the store).
+        this.healthSystem = new PlayerHealthSystem(scheduler, keys);
+        this.nameplates = new MobNameplateManager(scheduler, new PacketNameplateSender(), keys);
+        this.stats = new CombatantStats(new CompositeHealthListener(healthSystem, nameplates));
+        this.healthSystem.bind(stats);
+        this.nameplates.bind(stats);
+
         // Built once and shared: the adapters' warn-once set must outlive the
         // short-lived BukkitCombatant and PaperCombatWorld instances.
-        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, getLogger(), anchorDrift);
+        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, getLogger(), stats, anchorDrift);
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
@@ -142,7 +159,8 @@ public final class RpgPlugin extends JavaPlugin {
 
         // The one and only registerEvents call. Keep it that way.
         getServer().getPluginManager().registerEvents(
-                new RpgListeners(cooldowns, resources, profiles, weapons, weaponService, adapters), this);
+                new RpgListeners(cooldowns, resources, profiles, weapons, weaponService, adapters,
+                        healthSystem, nameplates), this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
         // paper-plugin.yml. We do NOT call PacketEvents.setAPI() or .load()
@@ -279,6 +297,7 @@ public final class RpgPlugin extends JavaPlugin {
     public WeaponRegistry weapons() { return weapons; }
     public CooldownTracker cooldowns() { return cooldowns; }
     public ResourcePool resources() { return resources; }
+    public CombatantStats stats() { return stats; }
     public PlayerRepository repository() { return repository; }
     public ProfileService profiles() { return profiles; }
 

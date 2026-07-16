@@ -10,6 +10,7 @@ import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.CastExecutor;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
+import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.kit.KitDefinition;
 import io.github.butterflysmp.rpg.core.kit.KitRegistry;
 import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
@@ -19,6 +20,7 @@ import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
+import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.DashAim;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
@@ -38,6 +40,7 @@ import org.bukkit.util.Vector;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Brigadier commands, registered through the plugin lifecycle manager.
@@ -163,7 +166,118 @@ public final class RpgCommand {
                                                 .executes(ctx -> apply(ctx, adapters,
                                                         IntegerArgumentType.getInteger(ctx, "duration"),
                                                         IntegerArgumentType.getInteger(ctx, "stacks")))))))
+                // Dev instruments for the custom-health phase: drive the player's OWN custom HP so
+                // the heart bar can be witnessed before the damage system (next phase) exists. They
+                // mutate through CombatantStats -- the same observable path the popup hooks later --
+                // never a side door that skips the seam. DEV-gated, like /rpg apply.
+                .then(Commands.literal("damage")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000))
+                                .executes(ctx -> damageSelf(ctx, adapters))))
+                .then(Commands.literal("heal")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000))
+                                .executes(ctx -> healSelf(ctx, adapters))))
+                // Mint a health_boost_TEMP into your inventory to prove the equip/unequip modifier
+                // lifecycle: hold it -> max rises (headroom), drop/clear/swap -> max falls (clamp).
+                .then(Commands.literal("healthboost")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> healthBoost(ctx, adapters, null))
+                        .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000))
+                                .executes(ctx -> healthBoost(ctx, adapters,
+                                        IntegerArgumentType.getInteger(ctx, "amount")))))
+                // Damage/heal the LOOKED-AT mob's custom health, through the same observable store path
+                // the nameplate hooks -- so the mob nameplate's HP-change update is witnessable this
+                // phase (the real damage system, which would drive mob HP for real, is a later phase).
+                .then(Commands.literal("mobdamage")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000))
+                                .executes(ctx -> mobMutate(ctx, adapters, false))))
+                .then(Commands.literal("mobheal")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000))
+                                .executes(ctx -> mobMutate(ctx, adapters, true))))
                 .build();
+    }
+
+    /**
+     * Damage or heal the mob the player is aiming at, on its custom health, via the same
+     * {@link CombatantStats} path that emits the nameplate's {@link ... HealthChange}. Reuses the
+     * /rpg apply aim-ray. Bootstraps the target from vanilla max if it is not tracked yet.
+     */
+    private static int mobMutate(CommandContext<CommandSourceStack> ctx, AdapterContext adapters, boolean heal) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        double amount = IntegerArgumentType.getInteger(ctx, "amount");
+        Location eye = player.getEyeLocation();
+        adapters.scheduler().onRegion(eye, () -> {
+            RayTraceResult hit = player.getWorld().rayTraceEntities(
+                    eye, eye.getDirection(), TARGET_RANGE, TARGET_LENIENCE,
+                    e -> e instanceof LivingEntity living && !(living instanceof Player));
+            if (hit == null || !(hit.getHitEntity() instanceof LivingEntity target)) {
+                player.sendMessage(Component.text("Look at a mob.", NamedTextColor.RED));
+                return;
+            }
+            UUID id = target.getUniqueId();
+            var maxAttr = target.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+            double vanillaMax = maxAttr != null ? maxAttr.getValue() : target.getHealth();
+            CombatantStats stats = adapters.stats();
+            stats.bootstrapIfAbsent(id, vanillaMax, false);
+            if (heal) stats.heal(id, amount, player.getUniqueId(), true);
+            else stats.damage(id, amount, player.getUniqueId(), true);
+            player.sendMessage(Component.text(
+                    "%s %s: %.0f/%.0f custom HP".formatted(target.getType().name(),
+                            heal ? "healed" : "damaged", stats.current(id), stats.max(id)),
+                    NamedTextColor.GREEN));
+        });
+        return 1;
+    }
+
+    /** Damage the calling player's OWN custom health, through the observable store path. Heart bar follows. */
+    private static int damageSelf(CommandContext<CommandSourceStack> ctx, AdapterContext adapters) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        double amount = IntegerArgumentType.getInteger(ctx, "amount");
+        CombatantStats stats = adapters.stats();
+        UUID id = player.getUniqueId();
+        if (!stats.tracks(id)) stats.register(id, CombatantStats.DEFAULT_PLAYER_BASE, true);
+        stats.damage(id, amount, id, true);
+        player.sendMessage(Component.text("Custom HP: %.0f/%.0f".formatted(stats.current(id), stats.max(id)),
+                NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /** Heal the calling player's OWN custom health (capped at max), through the observable store path. */
+    private static int healSelf(CommandContext<CommandSourceStack> ctx, AdapterContext adapters) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        double amount = IntegerArgumentType.getInteger(ctx, "amount");
+        CombatantStats stats = adapters.stats();
+        UUID id = player.getUniqueId();
+        if (!stats.tracks(id)) stats.register(id, CombatantStats.DEFAULT_PLAYER_BASE, true);
+        stats.heal(id, amount, id, true);
+        player.sendMessage(Component.text("Custom HP: %.0f/%.0f".formatted(stats.current(id), stats.max(id)),
+                NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /** Mint a health_boost_TEMP (default +300) into the caller's inventory. */
+    private static int healthBoost(CommandContext<CommandSourceStack> ctx, AdapterContext adapters, Integer amount) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        double boost = amount == null ? HealthModifierItems.DEFAULT_BOOST : amount;
+        player.getInventory().addItem(HealthModifierItems.mint(adapters.keys(), boost));
+        player.sendMessage(Component.text("Gave health_boost_TEMP (+" + (int) boost + "). Hold it to raise max HP.",
+                NamedTextColor.GREEN));
+        return 1;
     }
 
     /**

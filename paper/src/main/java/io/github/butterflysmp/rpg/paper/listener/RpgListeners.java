@@ -7,6 +7,8 @@ import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
+import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
+import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import net.kyori.adventure.text.Component;
@@ -16,7 +18,11 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
+import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import io.papermc.paper.event.entity.EntityMoveEvent;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
@@ -42,21 +48,53 @@ public final class RpgListeners implements Listener {
     private final WeaponRegistry weapons;
     private final WeaponService weaponService;
     private final AdapterContext adapters;
+    private final PlayerHealthSystem healthSystem;
+    private final MobNameplateManager nameplates;
 
     public RpgListeners(CooldownTracker cooldowns, ResourcePool resources, ProfileService profiles,
-                        WeaponRegistry weapons, WeaponService weaponService, AdapterContext adapters) {
+                        WeaponRegistry weapons, WeaponService weaponService, AdapterContext adapters,
+                        PlayerHealthSystem healthSystem, MobNameplateManager nameplates) {
         this.cooldowns = cooldowns;
         this.resources = resources;
         this.profiles = profiles;
         this.weapons = weapons;
         this.weaponService = weaponService;
         this.adapters = adapters;
+        this.healthSystem = healthSystem;
+        this.nameplates = nameplates;
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         // Returns immediately; the read happens on the storage I/O thread.
         profiles.onJoin(event.getPlayer().getUniqueId());
+        // Register custom health at base 100, render the heart bar, and start the equip reconcile loop.
+        healthSystem.onJoin(event.getPlayer());
+        // Start this viewer's per-viewer mob-nameplate LOS loop.
+        nameplates.onViewerJoin(event.getPlayer());
+    }
+
+    /**
+     * A mob appeared (spawn OR chunk-load, both funnel here) -- bootstrap its custom HP from vanilla max
+     * and cache its nameplate, on the entity's own thread. Dispatch-only; the manager filters armor
+     * stands / opt-outs and does the work.
+     */
+    @EventHandler
+    public void onEntityAdd(EntityAddToWorldEvent event) {
+        if (event.getEntity() instanceof LivingEntity mob && !(mob instanceof Player)) {
+            nameplates.onMobAppear(mob);
+        }
+    }
+
+    /**
+     * A mob was removed (death, despawn, chunk-unload) -- drop its nameplate and custom-health state so
+     * neither leaks past the entity. Mirrors onQuit for players.
+     */
+    @EventHandler
+    public void onEntityRemove(EntityRemoveFromWorldEvent event) {
+        if (event.getEntity() instanceof LivingEntity mob && !(mob instanceof Player)) {
+            nameplates.onMobRemove(mob.getUniqueId());
+        }
     }
 
     /**
@@ -123,6 +161,8 @@ public final class RpgListeners implements Listener {
         cooldowns.clear(playerId);
         resources.clear(playerId);
         profiles.onQuit(playerId);
+        // Drop custom-health state so no modifier or entry leaks across sessions.
+        healthSystem.onQuit(playerId);
     }
 
     // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is

@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
+import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
 import io.github.butterflysmp.rpg.paper.content.VisualRegistry;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
@@ -22,12 +23,12 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              VisualRegistry visuals, StatusRegistry statuses,
                              Logger log, Set<String> warned,
                              ImmobilizeStatus immobilize, SoakedStatus soaked,
-                             ImmobilizeStatus freeze, double anchorDrift) {
+                             ImmobilizeStatus freeze, CombatantStats stats, double anchorDrift) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
-                          StatusRegistry statuses, Logger log, double anchorDrift) {
+                          StatusRegistry statuses, Logger log, CombatantStats stats, double anchorDrift) {
         this(scheduler, keys, visuals, statuses, log, ConcurrentHashMap.newKeySet(),
-                new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), anchorDrift);
+                new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), stats, anchorDrift);
     }
 
     /**

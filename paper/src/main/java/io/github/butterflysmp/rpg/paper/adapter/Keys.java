@@ -28,6 +28,12 @@ public final class Keys {
     /** Identity of Freeze's movement-speed=0 modifier -- distinct from rooted so both coexist. */
     public final NamespacedKey freeze;
 
+    /** Marks the health_boost_TEMP dev item and stores its +max-HP amount (a DOUBLE) in the item's PDC. */
+    public final NamespacedKey healthBoost;
+
+    /** Reserved opt-out: a mob carrying this (BYTE) PDC gets no health nameplate. For future NPCs/cosmetics. */
+    public final NamespacedKey nameplateOptOut;
+
     public Keys(Plugin plugin) {
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
@@ -35,5 +41,7 @@ public final class Keys {
         this.soaked = new NamespacedKey(plugin, "soaked_slow");
         this.rooted = new NamespacedKey(plugin, "rooted_immobilize");
         this.freeze = new NamespacedKey(plugin, "freeze_immobilize");
+        this.healthBoost = new NamespacedKey(plugin, "health_boost_temp");
+        this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
     }
 }
