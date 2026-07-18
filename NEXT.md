@@ -613,6 +613,16 @@ Before milestone 2, two things worth measuring rather than assuming:
   raises *vanilla* health and never fires the seam — the heart bar / nameplate don't follow. Same class
   as the damage gap 1a fixed, on the heal side. `/rpg mobheal` sidesteps it by calling `stats.heal`
   directly. Wire `applyHeal` to the custom store in the status/heal pass.
+- **Mob projectile→player bypasses custom HP.** Pass 2 (`onMobMeleeAttack`) owns *melee* mob→player
+  only — it gates on a `LivingEntity` damager. A skeleton's arrow fires `EntityDamageByEntityEvent`
+  with the *arrow* (`Projectile`) as damager, not the mob, so the gate skips it and the shot ticks
+  vanilla hearts with no `applyDamage` / no seam. Owning it needs shooter resolution off the
+  projectile (`ProjectileSource`), then the same ride-and-token treatment. Its own follow-up, same
+  isolate-risk discipline.
+- **PvP (player→player) is a rules decision, not wired.** `onMobMeleeAttack` deliberately skips a
+  `Player` damager (`attacker instanceof Player → return`), so a player hitting a player currently
+  does nothing custom. Whether/how PvP drains custom HP (factions, safe zones, friendly-fire) is a
+  design fork for its own pass, not a mechanical gap to quietly fill.
 - **A ray misses an entity whose hitbox straddles a chunk plane.** Observable in
   `FakeWorld`, pinned by a test asserting the miss, carrying an inversion warning
   in its javadoc. Fixing it needs a widened trace or a neighbour-column query.
