@@ -43,4 +43,15 @@ class DamagePopupManagerTest {
         // Mutation: drop the dealerIsPlayer or dealer != null clause -> reddens (and the null case NPEs
         // the manager at Bukkit.getPlayer(null) in the field).
     }
+
+    @Test
+    void jitterMapsUnitRandomToACenteredHorizontalOffset() {
+        assertEquals(-0.3, DamagePopupManager.jitter(0.0), 1e-9, "0.0 -> the left edge, -HORIZONTAL_JITTER");
+        assertEquals(0.0, DamagePopupManager.jitter(0.5), 1e-9, "0.5 -> dead centre, no offset");
+        assertEquals(0.3, DamagePopupManager.jitter(1.0), 1e-9,
+                "1.0 -> the right edge (nextDouble() never returns 1.0, but the map is symmetric)");
+        double near = DamagePopupManager.jitter(0.999999);
+        assertTrue(near > -0.3 && near < 0.3, "every real draw lands within [-0.3, 0.3), centred on the target");
+        // Mutation: drop the -0.5 centering -> [0, 0.6) (off-centre); drop the *2 -> range halves -> reddens.
+    }
 }

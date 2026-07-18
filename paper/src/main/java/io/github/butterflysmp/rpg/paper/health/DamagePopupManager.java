@@ -9,6 +9,8 @@ import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * The THIRD display on the {@link HealthChange} seam (after the heart bar and the mob nameplate): a
  * floating damage number shown to the DEALER only, over the target, for ~0.75s, as a fake client-side
@@ -26,6 +28,9 @@ public final class DamagePopupManager implements HealthListener {
     static final long LIFETIME_TICKS = 15L;
     /** Spawn the number this far above the target's head. Tuned at boot. */
     private static final double HEIGHT_OFFSET = 0.4;
+    /** Half-block horizontal scatter so rapid multi-hits cluster instead of stacking. Widen at boot if a
+     *  one-tick burst still overlaps. (Old project: {@code (Math.random() - 0.5) * 0.6}, i.e. +/-0.3.) */
+    private static final double HORIZONTAL_JITTER = 0.3;
 
     private final Scheduler scheduler;
     private final DamagePopupSender sender;
@@ -45,11 +50,18 @@ public final class DamagePopupManager implements HealthListener {
         // Target position: legal to read here (this runs on the target's owning thread).
         Entity target = Bukkit.getEntity(change.target());
         if (target == null) return;
-        Location at = target.getLocation().add(0, target.getHeight() + HEIGHT_OFFSET, 0);
+        // Scatter each number horizontally so a rapid multi-hit reads as a cluster, not one overlapping
+        // number. X and Z jitter INDEPENDENTLY (two draws -> a cloud; one shared draw would scatter on a
+        // diagonal). Y is left alone -- a vertical bob reads worse. ThreadLocalRandom, not Math.random():
+        // onChange can fire on many region threads at once and Math.random() is a synchronized global.
+        Location base = target.getLocation();
+        double x = base.getX() + jitter(ThreadLocalRandom.current().nextDouble());
+        double z = base.getZ() + jitter(ThreadLocalRandom.current().nextDouble());
+        double y = base.getY() + target.getHeight() + HEIGHT_OFFSET;
 
         Component text = DamageNumberText.of(change.amount());
         int id = ids.next();
-        sender.spawn(dealer, id, at.getX(), at.getY(), at.getZ(), text);
+        sender.spawn(dealer, id, x, y, z, text);
         // Destroy through the project Scheduler (never a BukkitRunnable), tied to the dealer: if they
         // log off the destroy never fires -- and the fake entity only existed on their now-gone client,
         // so there is nothing to leak.
@@ -65,5 +77,14 @@ public final class DamagePopupManager implements HealthListener {
         return change.kind() == HealthChange.Kind.DAMAGE
                 && change.dealerIsPlayer()
                 && change.dealer() != null;
+    }
+
+    /**
+     * Maps a unit random ({@code [0,1)}, from {@code ThreadLocalRandom.nextDouble()}) to a centred
+     * horizontal offset in {@code [-HORIZONTAL_JITTER, +HORIZONTAL_JITTER)}. Pure and static so the
+     * scatter is reddening-testable without a random source -- the old {@code (Math.random() - 0.5) * 0.6}.
+     */
+    static double jitter(double unitRandom) {
+        return (unitRandom - 0.5) * 2 * HORIZONTAL_JITTER;
     }
 }
