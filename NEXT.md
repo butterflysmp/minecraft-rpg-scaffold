@@ -623,6 +623,15 @@ Before milestone 2, two things worth measuring rather than assuming:
   `Player` damager (`attacker instanceof Player → return`), so a player hitting a player currently
   does nothing custom. Whether/how PvP drains custom HP (factions, safe zones, friendly-fire) is a
   design fork for its own pass, not a mechanical gap to quietly fill.
+- **Player death is not wired — a player at 0 custom HP sits at the floor, alive.** Death Pass A
+  (`MobDeathSystem`) consumes `reachedZero` for *mobs* only (`!targetIsPlayer()`). The player respawn
+  lifecycle — release the display floor on the lethal hit, vanilla death → respawn → reset custom HP to
+  base 100 (and decide drops/keep-inventory) — is the next death pass. Deliberate boundary, not a bug.
+- **Players are immortal to environmental damage.** Fall/fire/lava/drowning hit *vanilla* health, which
+  the heart bar floors at half a heart, so they never kill and never touch custom HP. A known
+  consequence of the environmental→custom-HP gap (same class as the Scorch DoT bypass above), surfaced
+  by Death Pass A: even once player death lands, environmental sources won't trigger it until an
+  environmental-damage pass routes them through `applyDamage`. Note now; revisit there.
 - **A ray misses an entity whose hitbox straddles a chunk plane.** Observable in
   `FakeWorld`, pinned by a test asserting the miss, carrying an inversion warning
   in its javadoc. Fixing it needs a widened trace or a neighbour-column query.
