@@ -581,6 +581,13 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+- **Combat via the manual-flash path is silent (no hurt sound).** `applyDamage` uses
+  `playHurtAnimation(0f)` (flash only), so ability hits and `/rpg mobdamage` flash but play no hurt
+  sound; melee weapons keep the vanilla hurt sound via their tokened `EntityDamageByEntityEvent`.
+  The design wanted flash AND sound kept — the sound is a casualty of dropping vanilla
+  `entity.damage()`. **Boot-confirmed 2026-07-18:** no *stray* sound either (the old vanilla-damage
+  path that produced the stray first-cast sound is gone — the Step 5 check, resolved). If the ability
+  path should sound, play the mob's hurt sound alongside `playHurtAnimation`. Polish, not blocking.
 - **A mob's nameplate `baseName` does not refresh on rename while tracked.** With `onMobAppear`
   register-if-absent (the fix for the `/rpg mobdamage` every-other-cast bug), renaming a mob while
   it is already plated won't update the plate's base name until it is removed and re-added
