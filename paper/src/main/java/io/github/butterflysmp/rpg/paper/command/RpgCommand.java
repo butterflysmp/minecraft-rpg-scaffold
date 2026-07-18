@@ -21,6 +21,7 @@ import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
+import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.DashAim;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
@@ -61,7 +62,8 @@ public final class RpgCommand {
                                                                KitRegistry kits,
                                                                ElementRegistry elements,
                                                                ProfileService profiles,
-                                                               WeaponRegistry weapons) {
+                                                               WeaponRegistry weapons,
+                                                               MobNameplateManager nameplates) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
                         // requires() gates the whole branch: an unpermitted sender
@@ -192,20 +194,28 @@ public final class RpgCommand {
                 .then(Commands.literal("mobdamage")
                         .requires(source -> source.getSender().hasPermission(Permissions.DEV))
                         .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000))
-                                .executes(ctx -> mobMutate(ctx, adapters, false))))
+                                .executes(ctx -> mobMutate(ctx, adapters, nameplates, false))))
                 .then(Commands.literal("mobheal")
                         .requires(source -> source.getSender().hasPermission(Permissions.DEV))
                         .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000))
-                                .executes(ctx -> mobMutate(ctx, adapters, true))))
+                                .executes(ctx -> mobMutate(ctx, adapters, nameplates, true))))
                 .build();
     }
 
     /**
-     * Damage or heal the mob the player is aiming at, on its custom health, via the same
-     * {@link CombatantStats} path that emits the nameplate's {@link ... HealthChange}. Reuses the
-     * /rpg apply aim-ray. Bootstraps the target from vanilla max if it is not tracked yet.
+     * Damage or heal the mob the player is aiming at, on its custom health. Reuses the /rpg apply
+     * aim-ray. DAMAGE routes through the REAL combat path -- {@code BukkitCombatant.applyDamage},
+     * the same entry point abilities use -- so the command exercises it (flash, aggro, and the
+     * {@code HealthChange} seam) exactly the way /rpg apply exercises {@code applyStatus}. HEAL stays
+     * on {@code CombatantStats.heal} directly, because {@code applyHeal} is vanilla-only and would not
+     * touch custom HP (a separate gap; see NEXT.md).
+     *
+     * Ensures the target is nameplated first ({@code onMobAppear}, idempotent): the seam always fires,
+     * but {@code MobNameplateManager.onChange} no-ops for a mob that was never nameplated, so without
+     * this the HP change would drain the store yet never reach the plate.
      */
-    private static int mobMutate(CommandContext<CommandSourceStack> ctx, AdapterContext adapters, boolean heal) {
+    private static int mobMutate(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                                 MobNameplateManager nameplates, boolean heal) {
         if (!(ctx.getSource().getExecutor() instanceof Player player)) {
             ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
             return 0;
@@ -224,12 +234,22 @@ public final class RpgCommand {
             var maxAttr = target.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
             double vanillaMax = maxAttr != null ? maxAttr.getValue() : target.getHealth();
             CombatantStats stats = adapters.stats();
+            // Track AND nameplate the target (idempotent) so the seam fire actually reaches the plate.
             stats.bootstrapIfAbsent(id, vanillaMax, false);
-            if (heal) stats.heal(id, amount, player.getUniqueId(), true);
-            else stats.damage(id, amount, player.getUniqueId(), true);
+            nameplates.onMobAppear(target);
+            double displayCurrent;
+            if (heal) {
+                stats.heal(id, amount, player.getUniqueId(), true);   // seam directly; applyHeal is vanilla-only
+                displayCurrent = stats.current(id);
+            } else {
+                // applyDamage hops to the entity thread, so compute the result now for the message
+                // (it clamps at 0, exactly as HealthState.damage does).
+                displayCurrent = Math.max(0.0, stats.current(id) - amount);
+                BukkitCombatant.of(target, adapters).handle().applyDamage(amount, player.getUniqueId());
+            }
             player.sendMessage(Component.text(
                     "%s %s: %.0f/%.0f custom HP".formatted(target.getType().name(),
-                            heal ? "healed" : "damaged", stats.current(id), stats.max(id)),
+                            heal ? "healed" : "damaged", displayCurrent, stats.max(id)),
                     NamedTextColor.GREEN));
         });
         return 1;

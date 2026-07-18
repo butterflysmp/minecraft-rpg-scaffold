@@ -581,6 +581,17 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+- **Status DoT bypasses custom HP — `scorch` burns *vanilla* health.** `StatusDefinition.Fire`
+  applies via `entity.setFireTicks(...)` (vanilla fire), so the burn ticks down vanilla HP with no
+  `applyDamage` and no `HealthChange` seam — the mob nameplate never moves as it burns, and the DoT
+  is disconnected from the custom-HP source of truth. Confirmed at the damage-pass-1a boot (2026-07-17).
+  A later **status-damage pass** should route DoT ticks through `applyDamage` (a per-tick task dealing
+  custom damage), the way basic attacks and abilities now do. Deliberately out of scope for pass 1a.
+- **`BukkitCombatant.applyHeal` is vanilla-only — ability heals bypass custom HP.** It calls
+  `entity.setHealth(...)`, not `CombatantStats.heal`, so an ability `Heal` effect (e.g. `arc_surge`)
+  raises *vanilla* health and never fires the seam — the heart bar / nameplate don't follow. Same class
+  as the damage gap 1a fixed, on the heal side. `/rpg mobheal` sidesteps it by calling `stats.heal`
+  directly. Wire `applyHeal` to the custom store in the status/heal pass.
 - **A ray misses an entity whose hitbox straddles a chunk plane.** Observable in
   `FakeWorld`, pinned by a test asserting the miss, carrying an inversion warning
   in its javadoc. Fixing it needs a widened trace or a neighbour-column query.
