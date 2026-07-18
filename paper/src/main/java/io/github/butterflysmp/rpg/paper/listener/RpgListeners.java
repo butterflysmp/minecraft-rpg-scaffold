@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
+import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
@@ -16,6 +17,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
@@ -217,6 +219,39 @@ public final class RpgListeners implements Listener {
             double vanillaMax = attr == null ? victim.getHealth() : attr.getValue();
             victim.setHealth(Math.min(vanillaMax, VANILLA_LIVE_FLOOR)); // survive the token; death is next pass
         }
+    }
+
+    /**
+     * Pass 2 -- ride a MOB's melee hit on a PLAYER: keep vanilla's cosmetics (red flash, hurt sound,
+     * i-frames), own the mechanics. Token the vanilla damage so the player's vanilla hearts barely
+     * move and the token can't kill (death is deferred), then drain the player's CUSTOM HP via
+     * applyDamage -- the heart bar follows. i-frames are PRESERVED: we ride only what vanilla fires
+     * and touch noDamageTicks nowhere, so a player is hit at most once per ~0.5s window regardless of
+     * swarm size (the swarm-melt bypass is a deliberate later fork).
+     *
+     * Runs at HIGH, not NORMAL: {@link #onFrozenMeleeAttack} cancels a frozen mob's hit at NORMAL, and
+     * same-priority order is undefined -- HIGH runs strictly after, so ignoreCancelled then skips a
+     * frozen attacker's suppressed hit. getDamage() is still BASE at HIGH, so the amount bridge holds.
+     *
+     * Amount bridge: the mob's vanilla attack damage (event.getDamage(), BASE, pre-token) IS the
+     * custom amount, until mob attack-damage becomes a custom stat (a later pass) -- the mob analog of
+     * bootstrapping mob HP from vanilla MAX_HEALTH. Read getDamage(), not getFinalDamage(): no vanilla
+     * armor/reduction baked in (we own that later, if ever).
+     *
+     * No new token-can't-kill floor here (unlike the mob victim above): the player heart bar already
+     * floors vanilla health at ~half a heart, which is >> the 0.01 token, so it cannot kill.
+     * Knockback stays vanilla: onCombatKnockback skips players, and mobs have no declared KB spec.
+     * No damage popup: the dealer is a mob (dealerIsPlayer resolves false in applyDamage).
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onMobMeleeAttack(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) return;          // mob->player only
+        if (!(event.getDamager() instanceof LivingEntity attacker)) return; // a living melee attacker
+        if (attacker instanceof Player) return;                             // player->player is a later rules decision
+
+        double incoming = event.getDamage();          // vanilla attack damage = the custom amount (interim bridge)
+        event.setDamage(TOKEN_DAMAGE);                // ride: keep flash/sound/i-frames, no double, can't kill
+        BukkitCombatant.of(victim, adapters).handle().applyDamage(incoming, attacker.getUniqueId());
     }
 
     /**
