@@ -26,8 +26,9 @@ public final class DamagePopupManager implements HealthListener {
 
     /** How long a number lives before it is destroyed. ~0.75s at 20 tps. */
     static final long LIFETIME_TICKS = 15L;
-    /** Spawn the number this far above the target's head. Tuned at boot. */
-    private static final double HEIGHT_OFFSET = 0.4;
+    /** Spawn the number at this fraction of the target's height -- mid-body reads best, not up at the
+     *  nameplate. Tuned at boot. */
+    private static final double CENTER_MASS_FRACTION = 0.5;
     /** Half-block horizontal scatter so rapid multi-hits cluster instead of stacking. Widen at boot if a
      *  one-tick burst still overlaps. (Old project: {@code (Math.random() - 0.5) * 0.6}, i.e. +/-0.3.) */
     private static final double HORIZONTAL_JITTER = 0.3;
@@ -57,7 +58,7 @@ public final class DamagePopupManager implements HealthListener {
         Location base = target.getLocation();
         double x = base.getX() + jitter(ThreadLocalRandom.current().nextDouble());
         double z = base.getZ() + jitter(ThreadLocalRandom.current().nextDouble());
-        double y = base.getY() + target.getHeight() + HEIGHT_OFFSET;
+        double y = base.getY() + target.getHeight() * CENTER_MASS_FRACTION;
 
         Component text = DamageNumberText.of(change.amount());
         int id = ids.next();
