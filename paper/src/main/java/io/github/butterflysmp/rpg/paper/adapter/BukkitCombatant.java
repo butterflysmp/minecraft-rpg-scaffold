@@ -83,6 +83,16 @@ public final class BukkitCombatant {
                 boolean dealerIsPlayer = source instanceof Player;
                 ctx.stats().damage(entity.getUniqueId(), amount, sourceId, dealerIsPlayer);
 
+                // Aggro-on-hit: the target turns on its attacker -- vanilla's expected default.
+                // Ability damage flashes without a vanilla hit, so it would otherwise provoke
+                // nothing (mobs wander off while you whittle them); a mob caught in Rekindle's burst
+                // must turn on the caster, who has already dashed away -- correct for a kite tool.
+                // Melee already aggros via its tokened vanilla event, so re-targeting the same player
+                // here is harmless. Unresolvable/cross-region sources (null) simply don't aggro.
+                if (entity instanceof Mob mob && source instanceof LivingEntity attacker) {
+                    mob.setTarget(attacker);
+                }
+
                 // Manual red hurt flash for the ability path (no vanilla event fired). The i-frame
                 // gate keeps melee (flashed by its own vanilla event) from flashing twice.
                 if (entity.getNoDamageTicks() == 0) {
