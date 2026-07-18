@@ -235,6 +235,34 @@ class EffectApplierTest {
                 () -> new EffectSpec.Area(-1.0, 100, 20, effects));
     }
 
+    /**
+     * Knockback is DECLARED, not default. An on-hit with no {@code Knockback} effect pushes the
+     * target NOWHERE -- the common case (a quarter of weapons, Mage staves especially, deal none),
+     * so absence must mean zero, never a sneaked-in fallback. Declared, it applies exactly that
+     * strength, away from the origin.
+     *
+     * Mutation: a default knockback when none is declared -> knockbackCalls on the no-KB target
+     * goes to 1 -> reddens.
+     */
+    @Test
+    void knockbackIsAppliedOnlyWhenDeclared() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var noKb = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        var withKb = new FakeWorld.Dummy(new Vec3(2, 0, 0));
+        var applier = new EffectApplier(world);
+
+        // Damage only -- the Mage case: hurt, but not moved.
+        applier.applyAll(List.of(new EffectSpec.Damage(6, "fire")), caster.id(), pair(noKb), Vec3.ZERO);
+        assertEquals(0, noKb.knockbackCalls, "no Knockback effect declared -> no knockback (default is none)");
+
+        // Damage + declared Knockback -- the Melee case: hurt AND shoved.
+        applier.applyAll(List.of(new EffectSpec.Damage(6, "fire"), new EffectSpec.Knockback(1.5)),
+                caster.id(), pair(withKb), Vec3.ZERO);
+        assertEquals(1, withKb.knockbackCalls, "a declared Knockback applies exactly one push");
+        assertEquals(1.5, withKb.lastKnockbackStrength, 1e-9, "at the declared strength");
+    }
+
     /** And a targeted effect still lands when there is one. */
     @Test
     void targetedEffectsStillApplyWhenTargetPresent() {

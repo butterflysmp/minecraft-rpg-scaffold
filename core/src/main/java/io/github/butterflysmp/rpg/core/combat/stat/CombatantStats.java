@@ -71,9 +71,9 @@ public final class CombatantStats {
     public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer) {
         HealthState state = states.get(id);
         if (state == null) return;
-        state.damage(amount);
+        boolean reachedZero = state.damage(amount);
         listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.DAMAGE, amount,
-                dealer, dealerIsPlayer, state.current(), state.max()));
+                dealer, dealerIsPlayer, state.current(), state.max(), reachedZero));
     }
 
     /** Heal {@code id} by {@code amount}, capped at max. No-op on an untracked combatant. */
@@ -82,7 +82,7 @@ public final class CombatantStats {
         if (state == null) return;
         state.heal(amount);
         listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.HEAL, amount,
-                dealer, dealerIsPlayer, state.current(), state.max()));
+                dealer, dealerIsPlayer, state.current(), state.max(), false));
     }
 
     /**
@@ -99,7 +99,7 @@ public final class CombatantStats {
         boolean changed = ModifierReconciler.reconcile(state, desired);
         if (changed) {
             listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.MAX_CHANGE, 0.0,
-                    null, false, state.current(), state.max()));
+                    null, false, state.current(), state.max(), false));
         }
     }
 

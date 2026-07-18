@@ -16,6 +16,11 @@ import java.util.UUID;
  * by the caller, who holds the snapshot, and frozen here. If health mutated silently, every future
  * consumer (popup, combat log, aggro) would need the engine reopened; it does not.
  *
+ * {@code reachedZero} is the death hook, built now and UNCONSUMED this phase: it is true exactly on
+ * the DAMAGE hit that brings custom current to 0 (the transition, once -- never on a later hit to an
+ * already-0 target). Nothing reacts to it yet; the next-phase death system hooks {@code reachedZero
+ * -> die} without reopening the damage path. HEAL and MAX_CHANGE always carry false.
+ *
  * @param target         who was affected
  * @param targetIsPlayer whether the target is a player (the heart bar renders only for players)
  * @param kind           what kind of change this was
@@ -24,9 +29,11 @@ import java.util.UUID;
  * @param dealerIsPlayer whether the dealer was a player -- so the popup can target that player's screen
  * @param newCurrent     the target's custom current health AFTER the change
  * @param max            the target's custom max health AFTER the change
+ * @param reachedZero    true only on the DAMAGE hit that brings current to 0 (the death hook; unconsumed)
  */
 public record HealthChange(UUID target, boolean targetIsPlayer, Kind kind, double amount,
-                           UUID dealer, boolean dealerIsPlayer, double newCurrent, double max) {
+                           UUID dealer, boolean dealerIsPlayer, double newCurrent, double max,
+                           boolean reachedZero) {
 
     public enum Kind {
         /** Current health fell. */

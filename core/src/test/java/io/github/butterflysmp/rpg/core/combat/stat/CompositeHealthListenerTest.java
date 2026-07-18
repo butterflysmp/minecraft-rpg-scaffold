@@ -17,7 +17,7 @@ class CompositeHealthListenerTest {
 
     private static HealthChange sample() {
         return new HealthChange(UUID.randomUUID(), false, HealthChange.Kind.DAMAGE, 5,
-                null, false, 15, 20);
+                null, false, 15, 20, false);
     }
 
     @Test

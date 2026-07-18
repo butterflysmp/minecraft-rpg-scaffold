@@ -363,6 +363,42 @@ class CastExecutorTest {
         assertEquals(100, alsoInArc.health, 1e-9, "melee strikes one target, the nearest");
     }
 
+    /**
+     * The unified-path invariant: a BASIC ATTACK (a Melee cast) and an ABILITY payload (a Ray cast)
+     * both land their damage through the SAME one route -- {@code CombatantHandle.applyDamage(amount,
+     * sourceId)} -- with the same call shape: one call, the same amount off custom current, the same
+     * caster blamed. There is NO second damage route that a later popup / death (reachedZero) / custom
+     * knockback would silently miss for one of the two sources.
+     *
+     * Guards against reintroducing a bypass: route ability damage (or basic-attack damage) through
+     * anything other than applyDamage and one of these `damageCalls == 1` / attribution assertions
+     * reddens.
+     */
+    @Test
+    void basicAttackAndAbilityDealDamageThroughTheOneApplyDamageRoute() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        // Melee target sits inside the 90-degree swing (~42 degrees off aim) but 0.9 off the +X
+        // axis -- wider than the ray's 0.6 hitRadius, so the ray passes it and strikes only the
+        // one on the axis. Each cast lands on a DISTINCT target, so a double-hit is unambiguous.
+        var meleeTarget = new FakeWorld.Dummy(new Vec3(1, 0, 0.9));
+        var abilityTarget = new FakeWorld.Dummy(new Vec3(5, 0, 0)); // first body down the 30-block ray
+        world.entities.add(caster);
+        world.entities.add(meleeTarget);
+        world.entities.add(abilityTarget);
+
+        // Basic attack: a melee swing carrying the same 12-damage payload.
+        cast(world, caster, ability(new CastSpec.Melee(3, 90), new EffectSpec.Damage(12, "fire")));
+        // Ability: a ray carrying the identical payload. (abilityTarget is the first body along it.)
+        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Damage(12, "fire")));
+
+        for (var landed : List.of(meleeTarget, abilityTarget)) {
+            assertEquals(1, landed.damageCalls, "damage arrived exactly once, through the one port");
+            assertEquals(88, landed.health, 1e-9, "the same 12 came off custom current for both sources");
+            assertEquals(caster.id(), landed.lastDamageSource, "and both blame the same caster -- one call shape");
+        }
+    }
+
     @Test
     void meleeMissesSomeoneBehindTheCaster() {
         var world = new FakeWorld();

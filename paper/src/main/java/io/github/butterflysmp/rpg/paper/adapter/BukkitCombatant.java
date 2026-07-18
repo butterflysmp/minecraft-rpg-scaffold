@@ -58,17 +58,35 @@ public final class BukkitCombatant {
         @Override public UUID id() { return entity.getUniqueId(); }
 
         /**
-         * The amount arrives already multiplied by the elemental matrix; EffectApplier did
-         * that against the snapshot's shield. All this port carries is a number and a culprit.
+         * The one custom-damage path -- BOTH basic attacks (weapon swings) and ability payloads
+         * (Ember Step, Rekindle) land here (via EffectApplier). It drains CUSTOM HP, the source of
+         * truth, and fires the {@code HealthChange} seam that drives the nameplate / hearts / (later)
+         * the popup and death. It does NOT deal vanilla damage: vanilla health is a puppet, not truth.
+         *
+         * <p>Flash is ABILITY-PATH ONLY here, and gated so it never overlaps melee. A weapon swing
+         * already fires a vanilla event that flashes the mob (see {@code RpgListeners}'
+         * player-melee handler, which tokens it and cancels its knockback); that event sets vanilla
+         * i-frames as a side effect, and it runs BEFORE this deferred packet-path call. So when
+         * {@code noDamageTicks > 0} a vanilla event just flashed this target -- skip the manual flash,
+         * no double. When it is 0 (an ability, which fires no vanilla event) play the hurt animation
+         * ourselves. Do NOT reset i-frames here: that reset is exactly what would defeat the gate.
+         *
+         * <p>The amount arrives already multiplied by the elemental matrix; EffectApplier did that
+         * against the snapshot's shield. All this port carries is a number and a culprit.
          */
         @Override public void applyDamage(double amount, UUID sourceId) {
             ctx.scheduler().onEntity(entity, () -> {
+                // Drain custom HP + fire the seam. dealerIsPlayer reuses the source's faction bit;
+                // the nameplate ignores the dealer this phase, the popup (1b) will need it.
                 Entity source = Attribution.attributableSource(
                         sourceId, entity.getWorld()::getEntity, Bukkit::isOwnedByCurrentRegion);
-                if (source != null) {
-                    entity.damage(amount, source); // mobs aggro the caster; kills are credited
-                } else {
-                    entity.damage(amount);         // unresolvable or another region's: no lie
+                boolean dealerIsPlayer = source instanceof Player;
+                ctx.stats().damage(entity.getUniqueId(), amount, sourceId, dealerIsPlayer);
+
+                // Manual red hurt flash for the ability path (no vanilla event fired). The i-frame
+                // gate keeps melee (flashed by its own vanilla event) from flashing twice.
+                if (entity.getNoDamageTicks() == 0) {
+                    entity.playHurtAnimation(0f);
                 }
             });
         }
