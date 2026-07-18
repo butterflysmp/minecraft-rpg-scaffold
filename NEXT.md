@@ -581,6 +581,11 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+- **A mob's nameplate `baseName` does not refresh on rename while tracked.** With `onMobAppear`
+  register-if-absent (the fix for the `/rpg mobdamage` every-other-cast bug), renaming a mob while
+  it is already plated won't update the plate's base name until it is removed and re-added
+  (despawn/chunk-unload → re-appear). Consistent with "custom truth drives display," not a
+  regression; note only.
 - **Status DoT bypasses custom HP — `scorch` burns *vanilla* health.** `StatusDefinition.Fire`
   applies via `entity.setFireTicks(...)` (vanilla fire), so the burn ticks down vanilla HP with no
   `applyDamage` and no `HealthChange` seam — the mob nameplate never moves as it burns, and the DoT

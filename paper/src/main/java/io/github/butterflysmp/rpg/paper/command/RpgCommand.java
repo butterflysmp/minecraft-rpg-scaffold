@@ -210,9 +210,10 @@ public final class RpgCommand {
      * on {@code CombatantStats.heal} directly, because {@code applyHeal} is vanilla-only and would not
      * touch custom HP (a separate gap; see NEXT.md).
      *
-     * Ensures the target is nameplated first ({@code onMobAppear}, idempotent): the seam always fires,
-     * but {@code MobNameplateManager.onChange} no-ops for a mob that was never nameplated, so without
-     * this the HP change would drain the store yet never reach the plate.
+     * Ensures the target is nameplated first via {@code onMobAppear} -- which is register-if-absent, so
+     * re-calling it each cast leaves an existing plate (and its version) untouched. The seam always
+     * fires, but {@code MobNameplateManager.onChange} no-ops for a mob that was never nameplated, so
+     * without this the HP change would drain the store yet never reach the plate.
      */
     private static int mobMutate(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
                                  MobNameplateManager nameplates, boolean heal) {
@@ -242,8 +243,9 @@ public final class RpgCommand {
                 stats.heal(id, amount, player.getUniqueId(), true);   // seam directly; applyHeal is vanilla-only
                 displayCurrent = stats.current(id);
             } else {
-                // applyDamage hops to the entity thread, so compute the result now for the message
-                // (it clamps at 0, exactly as HealthState.damage does).
+                // applyDamage defers to the next tick, so compute the expected result now for the
+                // message -- an estimate (clamps at 0, as HealthState.damage does). The nameplate,
+                // updated when applyDamage lands, is the source of truth.
                 displayCurrent = Math.max(0.0, stats.current(id) - amount);
                 BukkitCombatant.of(target, adapters).handle().applyDamage(amount, player.getUniqueId());
             }
