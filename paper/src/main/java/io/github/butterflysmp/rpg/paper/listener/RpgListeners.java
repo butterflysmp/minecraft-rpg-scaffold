@@ -30,10 +30,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
 import java.util.UUID;
@@ -179,6 +181,31 @@ public final class RpgListeners implements Listener {
         profiles.onQuit(playerId);
         // Drop custom-health state so no modifier or entry leaks across sessions.
         healthSystem.onQuit(playerId);
+    }
+
+    /**
+     * Death is a setback, not a loot loss: keep inventory + XP, drop nothing. The only path that kills a
+     * player is our own setHealth(0) on a custom-HP-zero (PlayerHealthSystem.onChange), so this is global
+     * -- there is no vanilla-death path to scope around. Sets flags only; it never touches the store.
+     */
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        event.setKeepInventory(true);
+        event.getDrops().clear();
+        event.setKeepLevel(true);
+        event.setDroppedExp(0);
+    }
+
+    /**
+     * Respawn after a custom-HP death: reset custom HP to full and RESTART the two per-entity loops that
+     * self-cancelled on the death screen (EntityTaskTarget is inactive while dead). Mirrors onJoin's
+     * health + nameplate wiring; the profile is not reloaded (it persists across death). The nameplate
+     * loop restart is the easy-to-miss one -- without it a respawned player stops seeing mob nameplates.
+     */
+    @EventHandler
+    public void onPlayerRespawn(PlayerRespawnEvent event) {
+        healthSystem.onRespawn(event.getPlayer());     // reset to base 100, render, restart the reconcile loop
+        nameplates.onViewerJoin(event.getPlayer());    // restart the per-viewer nameplate LOS loop
     }
 
     // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is
