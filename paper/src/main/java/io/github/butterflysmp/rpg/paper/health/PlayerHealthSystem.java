@@ -52,15 +52,25 @@ public final class PlayerHealthSystem implements HealthListener {
     }
 
     /**
-     * A health change: refresh the player's heart bar. Only players have a heart bar; a mob change
-     * (its nameplate is the next phase) is ignored. Resolves the player and hops onto its own thread
-     * before touching the Bukkit attribute -- the change may have been emitted from any thread.
+     * A health change: refresh the player's heart bar, OR kill the player if this change zeroed their
+     * custom HP. Only players are handled here; a mob change (the nameplate/mob-death phase) is ignored.
+     * Resolves the player and hops onto its own thread before touching Bukkit -- the change may have
+     * been emitted from any thread.
+     *
+     * The kill lives here, not in a separate death listener, so it and the floored render never race on
+     * the same reachedZero change: on reachedZero we kill INSTEAD OF rendering. setHealth(0) fires a
+     * normal PlayerDeathEvent (keep-inventory forced in RpgListeners); the display floor stays correct
+     * for every non-lethal render. onQuit does not run on death, so custom HP sits at 0 until onRespawn.
      */
     @Override
     public void onChange(HealthChange change) {
         if (!change.targetIsPlayer()) return;
         Player player = Bukkit.getPlayer(change.target());
         if (player == null) return;
+        if (change.reachedZero()) {
+            scheduler.onEntity(player, () -> player.setHealth(0));   // real death; no floor render competes
+            return;
+        }
         scheduler.onEntity(player, () ->
                 renderer.render(new EntityHeartBar(player), change.newCurrent(), change.max()));
     }
@@ -80,6 +90,22 @@ public final class PlayerHealthSystem implements HealthListener {
     /** Drop the player's health state on logout, so no modifier or entry leaks across sessions. */
     public void onQuit(UUID id) {
         stats.clear(id);
+    }
+
+    /**
+     * Respawn after a custom-HP death: reset to full base and RESTART the reconcile loop. Mirrors
+     * {@link #onJoin}. The reset is owned here because onQuit does not run on death -- custom HP sat at 0
+     * through the death screen. The loop restart is the load-bearing part: it self-cancelled on the death
+     * screen (EntityTaskTarget is inactive while dead), so without this a respawned player would never
+     * track gear +HP again. Equipment headroom re-applies on the loop's next tick (the bar may show full
+     * base for a tick, then dip as gear reconciles). Profile is NOT reloaded -- it persists across death.
+     */
+    public void onRespawn(Player player) {
+        UUID id = player.getUniqueId();
+        stats.register(id, CombatantStats.DEFAULT_PLAYER_BASE, true);
+        scheduler.onEntity(player, () ->
+                renderer.render(new EntityHeartBar(player), stats.current(id), stats.max(id)));
+        startReconcileLoop(player);
     }
 
     /**
