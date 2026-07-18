@@ -581,6 +581,15 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+- **`DamagePopupManager.onChange` reads Bukkit inline on the seam thread — a Folia cross-region
+  hazard.** The popup listener resolves `Bukkit.getPlayer` / `Bukkit.getEntity` / `getLocation`
+  directly in `onChange`. For the **combat** path that runs on the target's owning thread (safe). But
+  `/rpg damage` (self) emits `DAMAGE` on the **command thread**, so once Folia is on, reading the
+  target/dealer entity there is a cross-region read. On Paper today it's all one thread — safe now.
+  The nameplate avoids this (pure `onChange`; entity reads happen in the per-viewer loop on the
+  viewer's thread). **Robust fix:** source the target `Location` from `applyDamage` (which already
+  holds the entity on its owning thread) and hand it to the popup, rather than re-reading in
+  `onChange`. Note now; don't reopen the seam yet — revisit before Folia. (Pass 1b.)
 - **Combat via the manual-flash path is silent (no hurt sound).** `applyDamage` uses
   `playHurtAnimation(0f)` (flash only), so ability hits and `/rpg mobdamage` flash but play no hurt
   sound; melee weapons keep the vanilla hurt sound via their tokened `EntityDamageByEntityEvent`.

@@ -24,7 +24,9 @@ import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
 import io.github.butterflysmp.rpg.paper.content.VisualLoader;
 import io.github.butterflysmp.rpg.paper.content.VisualRegistry;
 import io.github.butterflysmp.rpg.paper.content.WeaponLoader;
+import io.github.butterflysmp.rpg.paper.health.DamagePopupManager;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
+import io.github.butterflysmp.rpg.paper.health.PacketDamagePopupSender;
 import io.github.butterflysmp.rpg.paper.health.PacketNameplateSender;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.listener.RpgListeners;
@@ -85,6 +87,7 @@ public final class RpgPlugin extends JavaPlugin {
     private CombatantStats stats;
     private PlayerHealthSystem healthSystem;
     private MobNameplateManager nameplates;
+    private DamagePopupManager popups;
     private AbilityService abilityService;
     private WeaponService weaponService;
     private ExecutorService storageIo;
@@ -130,7 +133,10 @@ public final class RpgPlugin extends JavaPlugin {
         // Two-step bind breaks the cycle (the store needs a listener, each display needs the store).
         this.healthSystem = new PlayerHealthSystem(scheduler, keys);
         this.nameplates = new MobNameplateManager(scheduler, new PacketNameplateSender(), keys);
-        this.stats = new CombatantStats(new CompositeHealthListener(healthSystem, nameplates));
+        // Third display: the per-dealer damage-number popup. Pure seam consumer -- reads amount/dealer
+        // off the event, so no bind(stats) and no mob-lifecycle hooks (unlike the nameplate).
+        this.popups = new DamagePopupManager(scheduler, new PacketDamagePopupSender());
+        this.stats = new CombatantStats(new CompositeHealthListener(healthSystem, nameplates, popups));
         this.healthSystem.bind(stats);
         this.nameplates.bind(stats);
 
