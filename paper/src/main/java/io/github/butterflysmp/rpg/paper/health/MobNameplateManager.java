@@ -87,8 +87,26 @@ public final class MobNameplateManager implements HealthListener {
         if (mob.getPersistentDataContainer().has(keys.nameplateOptOut, PersistentDataType.BYTE)) return;
         UUID id = mob.getUniqueId();
         HealthState state = stats.bootstrapIfAbsent(id, maxHealthOf(mob), false);
-        Component baseName = mob.name();
-        nameplates.put(id, new Nameplate(baseName, NameplateText.of(baseName, state.current(), state.max())));
+        // Register-if-absent, NOT replace -- mirrors bootstrapIfAbsent (the store half). onMobAppear
+        // runs once on spawn, but EVERY /rpg mobdamage cast re-calls it. A replace would build a fresh
+        // Nameplate at version 1 each cast; the NEXT TICK's applyDamage bump (1->2) then races the
+        // viewer's 4-tick LOS sample, so some casts are missed ("every-other-cast"). The version must
+        // climb monotonically for ViewerNameplateState.decide() to resend. Real combat never re-appears
+        // a mob, so it was always monotonic there -- only the dev command re-appeared per hit.
+        registerIfAbsent(nameplates, id, mob.name(), state.current(), state.max());
+    }
+
+    /**
+     * The pure map half of {@link #onMobAppear}: create the plate only if absent, and return its
+     * resulting version. Bukkit-free and {@code static} so it is unit-testable on a plain map -- no
+     * manager instance, scheduler, sender, or {@code LivingEntity} needed. The player / armor-stand /
+     * opt-out filtering stays in {@code onMobAppear}, so this is reached only for a mob that should be
+     * plated.
+     */
+    static long registerIfAbsent(Map<UUID, Nameplate> plates, UUID id, Component baseName,
+                                 double current, double max) {
+        return plates.computeIfAbsent(id, k ->
+                new Nameplate(baseName, NameplateText.of(baseName, current, max))).version();
     }
 
     /** A mob was removed (death, despawn, chunk-unload). Drop its nameplate and health state -- no leak. */
@@ -144,7 +162,7 @@ public final class MobNameplateManager implements HealthListener {
      * a viewer loop reads a consistent (text, version) pair even while onChange rebuilds from another
      * thread. Version bumps on each rebuild so viewers know to resend the text.
      */
-    private static final class Nameplate {
+    static final class Nameplate {   // package-private so the register-if-absent test can read it
 
         private record Versioned(Component text, long version) {}
 
@@ -164,8 +182,18 @@ public final class MobNameplateManager implements HealthListener {
             current.updateAndGet(v -> new Versioned(text, v.version() + 1));
         }
 
+        /** Atomic (text, version) pair -- the viewer loop reads both consistently across a concurrent update. */
         Versioned snapshot() {
             return current.get();
+        }
+
+        /** For tests: the current version / text (not the atomic pair the loop needs). */
+        long version() {
+            return current.get().version();
+        }
+
+        Component text() {
+            return current.get().text();
         }
     }
 }

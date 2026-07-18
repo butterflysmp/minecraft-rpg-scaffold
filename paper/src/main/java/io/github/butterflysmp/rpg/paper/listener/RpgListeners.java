@@ -20,7 +20,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
+import io.papermc.paper.event.entity.EntityKnockbackEvent;
 import io.papermc.paper.event.entity.EntityMoveEvent;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -41,6 +43,18 @@ import java.util.UUID;
  * hands the event to something that does the actual work; the logic belongs there.
  */
 public final class RpgListeners implements Listener {
+
+    /**
+     * The vanilla damage a ridden melee swing is capped to: enough for the mob to react (red flash,
+     * hurt sound, i-frames), too small to matter mechanically -- the real number is custom HP.
+     */
+    private static final double TOKEN_DAMAGE = 0.01;
+
+    /**
+     * Where a tracked mob's vanilla health is floored so the token can't kill it (death is deferred).
+     * The mob analog of the player heart floor; small, since vanilla health is a puppet display only.
+     */
+    private static final double VANILLA_LIVE_FLOOR = 1.0;
 
     private final CooldownTracker cooldowns;
     private final ResourcePool resources;
@@ -174,6 +188,48 @@ public final class RpgListeners implements Listener {
     @EventHandler
     public void onFrozenMeleeAttack(EntityDamageByEntityEvent event) {
         if (isFrozen(event.getDamager())) event.setCancelled(true);
+    }
+
+    /**
+     * Ride a player's melee swing on a mob for its COSMETICS, own its mechanics. The vanilla event
+     * still fires (separate from the packet-driven custom damage), so we cannot ignore it: we TOKEN
+     * its damage -- kept just non-zero so the mob still flashes red + gets i-frames, but small enough
+     * that it cannot double the custom number the packet path deals via applyDamage -> custom HP.
+     * Its knockback is cancelled in {@link #onCombatKnockback}; custom KB is a declared effect.
+     *
+     * Player-initiated player->mob only. Mob->player is Pass 2 (it drains the player's custom HP and
+     * carries an i-frame feel decision) -- deliberately untouched here.
+     *
+     * Token-can't-kill: death is deferred this phase, so the token must never drop a tracked mob to
+     * <=0 while its custom HP is positive. If the token would be lethal, floor the mob's vanilla
+     * health first -- the mob analog of the player heart floor. Custom HP stays the source of truth.
+     */
+    @EventHandler
+    public void onPlayerMeleeAttack(EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Player)) return;             // player-initiated
+        if (!(event.getEntity() instanceof LivingEntity victim)) return;
+        if (victim instanceof Player) return;                            // player->mob only (Pass 2 = mob->player)
+
+        event.setDamage(TOKEN_DAMAGE);                                   // flash + i-frames, no double-damage
+        if (adapters.stats().tracks(victim.getUniqueId())
+                && victim.getHealth() - TOKEN_DAMAGE <= 0.0) {
+            var attr = victim.getAttribute(Attribute.MAX_HEALTH);
+            double vanillaMax = attr == null ? victim.getHealth() : attr.getValue();
+            victim.setHealth(Math.min(vanillaMax, VANILLA_LIVE_FLOOR)); // survive the token; death is next pass
+        }
+    }
+
+    /**
+     * We own knockback now. Cancel the vanilla ATTACK knockback on a mob so the declared custom KB
+     * (an EffectSpec.Knockback, or none for a Mage weapon) is the only push -- the design's
+     * "always cancel vanilla KB, then apply the declared one." Left alone: knockback on players
+     * (mob->player is Pass 2) and non-attack causes (explosions, sweep) which aren't ours to own.
+     */
+    @EventHandler
+    public void onCombatKnockback(EntityKnockbackEvent event) {
+        if (event.getCause() != EntityKnockbackEvent.Cause.ENTITY_ATTACK) return;
+        if (event.getEntity() instanceof Player) return;                 // player->mob only
+        event.setCancelled(true);
     }
 
     /** Ranged: a frozen mob looses nothing -- a skeleton frozen mid-draw never fires. */

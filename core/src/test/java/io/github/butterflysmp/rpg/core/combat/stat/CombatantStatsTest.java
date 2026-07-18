@@ -67,6 +67,28 @@ class CombatantStatsTest {
     }
 
     @Test
+    void reachedZeroFiresExactlyOnTheHitThatBringsCustomHealthToZero() {
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID mob = UUID.randomUUID();
+        stats.register(mob, 100, false);                  // 100/100
+
+        stats.damage(mob, 30, null, false);               // 70/100 -- above 0
+        assertFalse(recorder.last().reachedZero(), "a non-lethal hit does not flag reachedZero");
+
+        stats.damage(mob, 70, null, false);               // 0/100 -- the crossing
+        assertEquals(0, stats.current(mob), EPS, "custom current floored at 0, still tracked (not killed)");
+        assertTrue(recorder.last().reachedZero(), "the hit that brings custom HP to 0 flags reachedZero -- the death hook");
+
+        stats.damage(mob, 5, null, false);                // already 0 -- another hit
+        assertFalse(recorder.last().reachedZero(),
+                "a later hit on an already-0 target does NOT re-fire -- death fires once, on the transition");
+        // Mutation A: drop `before > 0.0` in HealthState.damage -> the already-0 hit re-fires -> the death
+        //   system would double-kill -> this reddens.
+        // Mutation B: hardcode reachedZero=false at the emit -> the crossing hit never flags -> reddens.
+    }
+
+    @Test
     void healRaisesCustomHealthCappedAtMaxAndEmits() {
         var recorder = new Recorder();
         var stats = new CombatantStats(recorder);

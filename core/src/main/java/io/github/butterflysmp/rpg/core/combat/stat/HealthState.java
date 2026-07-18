@@ -87,10 +87,21 @@ public final class HealthState {
         return max.modifierCount();
     }
 
-    /** Reduce current by {@code amount}, never below 0. The custom health is what damage touches. */
-    public void damage(double amount) {
-        if (amount <= 0) return;
+    /**
+     * Reduce current by {@code amount}, never below 0. The custom health is what damage touches.
+     *
+     * Custom current FLOORS at 0 and does NOT kill -- an entity at 0 custom HP is a deliberate,
+     * documented TEMPORARY state this phase (death is the next pass; it sits at the display floor,
+     * alive). Do not add a kill here; the death system consumes {@link #damage}'s return instead.
+     *
+     * @return true only when this hit CROSSED to 0 (was above 0, now exactly 0) -- the death hook,
+     *         fired once on the transition, never on a subsequent hit to an already-0 target.
+     */
+    public boolean damage(double amount) {
+        if (amount <= 0) return false;
+        double before = current;
         current = Math.max(0.0, current - amount);
+        return before > 0.0 && current == 0.0;
     }
 
     /** Raise current by {@code amount}, never above max. Healing cannot exceed the ceiling. */

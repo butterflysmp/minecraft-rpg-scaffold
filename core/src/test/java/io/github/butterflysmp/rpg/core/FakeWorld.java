@@ -243,6 +243,15 @@ public final class FakeWorld implements CombatWorld {
         /** Who last damaged this dummy. Null means the damage was unattributed. */
         public UUID lastDamageSource;
 
+        /** How many times damage arrived through the one port -- so a second, seam-skipping route shows up. */
+        public int damageCalls;
+
+        /** The last knockback pushed onto this dummy, and how many landed. Knockback is DECLARED, not
+         *  default: with no {@code EffectSpec.Knockback} the count stays 0. */
+        public Vec3 lastKnockbackDir;
+        public double lastKnockbackStrength = Double.NaN;
+        public int knockbackCalls;
+
         public Dummy(Vec3 pos) { this.pos = pos; }
 
         public void moveTo(Vec3 to) { this.pos = to; }
@@ -257,9 +266,14 @@ public final class FakeWorld implements CombatWorld {
         @Override public void applyDamage(double amount, UUID sourceId) {
             health -= amount;
             lastDamageSource = sourceId;
+            damageCalls++;
         }
         @Override public void applyHeal(double a) { health += a; }
-        @Override public void applyKnockback(Vec3 d, double s) { }
+        @Override public void applyKnockback(Vec3 d, double s) {
+            lastKnockbackDir = d;
+            lastKnockbackStrength = s;
+            knockbackCalls++;
+        }
         @Override public void applyImpulse(Vec3 velocity) { this.lastImpulse = velocity; }
         @Override public void applyStatus(String id, int dur, int amp) { statuses.add(id); }
     }
