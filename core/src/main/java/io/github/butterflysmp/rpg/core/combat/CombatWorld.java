@@ -35,6 +35,20 @@ public interface CombatWorld {
     Optional<Combatant> combatant(UUID id);
 
     /**
+     * The caster's resolved attack damage (base + modifiers), for a {@code WeaponDamage} effect. 0 if
+     * the combatant is not tracked -- an untracked or unarmed caster deals nothing, the weapon-only
+     * melee rule.
+     *
+     * Only legal on the thread owning that combatant, exactly like {@link #combatantsNear} and
+     * {@link #combatant}. It is NOT a free global lookup. This is safe for MELEE, where the caster is
+     * within reach of the target and so shares its region/thread. When {@code WeaponDamage} is reused
+     * for a RANGED weapon the caster is cross-region at impact and this hit-time read becomes a Folia
+     * race -- ranged must snapshot the caster's attack damage at CAST time into the effect payload
+     * instead. See NEXT.md.
+     */
+    double attackDamage(UUID id);
+
+    /**
      * The first combatant or block struck by the segment from {@code from} to
      * {@code to}, ignoring {@code ignoreId} (the caster, who is standing at the
      * origin of their own ray).

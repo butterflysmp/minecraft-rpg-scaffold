@@ -738,6 +738,26 @@ Before milestone 2, two things worth measuring rather than assuming:
   clean. The asymmetry is the trap: removing `soaked_TEMP` first will pass and teach you
   that removing `rooted_TEMP` is the same job. It is not.
 
+- **`WeaponDamage` reused for a RANGED weapon is a Folia cross-region race.** The attack-damage pass made
+  the basic melee hit deal the caster's `ATTACK_DAMAGE` stat, read at HIT time via
+  `CombatWorld.attackDamage(casterId)` (`PaperCombatWorld` -> `CombatantStats.attackValue`). That read is
+  only legal on the thread owning the caster, and is safe for MELEE because the caster is within reach of
+  the target and so shares its region/thread. A **ranged** weapon (bow/staff) whose projectile carried a
+  `WeaponDamage` payload would resolve the effect on the target's region, cross-region from the caster --
+  a Folia race reading the caster's store off-thread. When ranged/costed payloads are promoted from their
+  literal `amount:` to stat-scaled, they must **snapshot the caster's attack damage at CAST time** (on the
+  caster's thread, into the effect payload), not read it at hit time. Do not let ranged inherit the
+  hit-time read. (Melee-only was the deliberate, symmetric slice this pass shipped.)
+- **Attack-SPEED is deferred.** The attack-damage pass built the stat machinery (a second `Stat` on
+  `HealthState`, a `reconcileAttackModifiers` loop, `WeaponAttackItems`); attack-speed slots in as the next
+  stat using the same machinery, modifying the per-trigger `cooldown_ticks` fire rate. Not started.
+- **Ranged/costed/ability payloads keep their LITERAL `amount:`.** bow (`hunters_bow`), staff
+  (`ember_staff`), the emberblade right-click special, `solar_grenade`, and Rekindle still deal a literal
+  `EffectSpec.Damage`, not `WeaponDamage`. Whether a bow has "attack damage" is a later design call; the
+  attack-damage pass promoted only the basic melee swing (ironblade/emberblade `left_click`).
+- **Elemental damage is still identity, not math.** The attack-damage pass did not add a multiplier;
+  `WeaponDamage.element()` flavours the hit and gates kits exactly as `Damage.element()` does. See
+  `Element.multiplierAgainst` below.
 - **`Element.multiplierAgainst`** is still the placeholder 1.5x/1.0x rule.
 - **`RpgCommand`'s hop is on the caster's eye**, not the impact point. Now
   harmless: reads are snapshots captured under `requireOwned`, and the ray steps

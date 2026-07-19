@@ -28,35 +28,48 @@ public final class ModifierReconciler {
     private ModifierReconciler() {}
 
     /**
-     * Make {@code state}'s max modifiers exactly {@code desired} (source -> amount).
+     * Make {@code target}'s modifiers exactly {@code desired} (source -> amount). Stat-agnostic: the
+     * same leak-proof diff converges max HP and attack damage alike -- the {@link ModifierTarget} seam
+     * hides which stat it is, so this method (and the leak story it carries) exists once, not per stat.
      *
      * @return true if anything changed (a source added, removed, or its amount altered) -- so the
      *         caller emits a change event once, only on a real transition.
      */
-    public static boolean reconcile(HealthState state, Map<String, Double> desired) {
+    public static boolean reconcile(ModifierTarget target, Map<String, Double> desired) {
         boolean changed = false;
 
         // Remove every applied source no longer desired. This is the whole leak story: an item that
         // left the hand -- by ANY path -- is simply absent from `desired`, so its source is dropped.
-        for (String source : state.maxModifierSources()) {
+        for (String source : target.sources()) {
             if (!desired.containsKey(source)) {
-                changed |= state.clearMaxModifier(source);
+                changed |= target.clearModifier(source);
             }
         }
 
         // Add sources newly present, and update any whose amount changed. A source already applied
         // at the same amount reports no change and fires nothing -- the steady-state silence.
         for (Map.Entry<String, Double> entry : desired.entrySet()) {
-            changed |= state.setMaxModifier(entry.getKey(), entry.getValue());
+            changed |= target.setModifier(entry.getKey(), entry.getValue());
         }
 
         return changed;
     }
 
+    /** Converge {@code state}'s MAX-HP modifiers. The original entry point, kept so its callers and
+     *  tests are unchanged; delegates to the stat-agnostic diff above via the max target. */
+    public static boolean reconcile(HealthState state, Map<String, Double> desired) {
+        return reconcile(state.maxTarget(), desired);
+    }
+
     /** The applied sources that {@code desired} would drop -- exposed for tests that assert the diff. */
-    public static Set<String> wouldRemove(HealthState state, Map<String, Double> desired) {
-        Set<String> applied = new HashSet<>(state.maxModifierSources());
+    public static Set<String> wouldRemove(ModifierTarget target, Map<String, Double> desired) {
+        Set<String> applied = new HashSet<>(target.sources());
         applied.removeIf(desired::containsKey);
         return applied;
+    }
+
+    /** {@link #wouldRemove(ModifierTarget, Map)} against a state's MAX-HP modifiers. */
+    public static Set<String> wouldRemove(HealthState state, Map<String, Double> desired) {
+        return wouldRemove(state.maxTarget(), desired);
     }
 }

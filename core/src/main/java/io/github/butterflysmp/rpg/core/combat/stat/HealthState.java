@@ -23,14 +23,29 @@ import java.util.Set;
 public final class HealthState {
 
     private final Stat max;
+    private final Stat attack;
     private final boolean player;
     private double current;
 
-    /** A combatant starting full at {@code baseMax}. {@code player} is frozen faction, as on the snapshot. */
-    public HealthState(double baseMax, boolean player) {
+    /**
+     * A combatant starting full at {@code baseMax}, with attack-damage base {@code baseAttack}.
+     * {@code player} is frozen faction, as on the snapshot.
+     *
+     * Attack damage is the second {@link Stat} on the same combatant -- {@code base + Σ(modifiers)},
+     * exactly like max HP, but with no current and no clamp, because attack damage is read on demand,
+     * never depleted. A player bases at 0 (weapon-only: no weapon, no hit); a mob bases from its
+     * vanilla attack-damage attribute (the mirror of bootstrapping mob HP from vanilla max).
+     */
+    public HealthState(double baseMax, double baseAttack, boolean player) {
         this.max = new Stat(baseMax);
+        this.attack = new Stat(baseAttack);
         this.player = player;
         this.current = baseMax;
+    }
+
+    /** A combatant with attack base 0 -- the player/default case, and what HP-focused tests construct. */
+    public HealthState(double baseMax, boolean player) {
+        this(baseMax, 0.0, player);
     }
 
     public double max() {
@@ -85,6 +100,63 @@ public final class HealthState {
 
     public int maxModifierCount() {
         return max.modifierCount();
+    }
+
+    // --- Attack damage: a second Stat, resolved on demand, no current, no clamp --------------------
+
+    /** The resolved attack damage: {@code base + Σ(modifiers)}. Read on demand; never depleted. */
+    public double attackValue() {
+        return attack.value();
+    }
+
+    /** Set (or replace) the attack modifier from {@code source}; true if the resolved value changed. */
+    public boolean setAttackModifier(String source, double amount) {
+        return attack.putModifier(source, amount);
+    }
+
+    /** Remove {@code source}'s attack modifier; true if one was actually removed. */
+    public boolean clearAttackModifier(String source) {
+        return attack.removeModifier(source);
+    }
+
+    public double attackModifierAmount(String source) {
+        return attack.amountOf(source);
+    }
+
+    public Set<String> attackModifierSources() {
+        return attack.sources();
+    }
+
+    public int attackModifierCount() {
+        return attack.modifierCount();
+    }
+
+    // --- Modifier targets: one per stat, so the reconcile diff is written once (see ModifierTarget) --
+
+    /**
+     * The max-HP modifier surface. Its {@code setModifier} routes through {@link #setMaxModifier}, so a
+     * reconcile that raises max gives headroom and one that lowers it clamps current -- the transition
+     * rules stay here, the diff stays in {@link ModifierReconciler}.
+     */
+    ModifierTarget maxTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return max.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return setMaxModifier(source, amount);   // clamps current on a decrease
+            }
+            @Override public boolean clearModifier(String source) { return clearMaxModifier(source); }
+        };
+    }
+
+    /** The attack-damage modifier surface. A plain {@link Stat} -- no current, so nothing to clamp. */
+    ModifierTarget attackTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return attack.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return attack.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) { return attack.removeModifier(source); }
+        };
     }
 
     /**

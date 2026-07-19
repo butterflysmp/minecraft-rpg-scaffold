@@ -91,6 +91,16 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
+     * The caster's resolved ATTACK_DAMAGE, off the same custom store the reconcile loop feeds. Runs on
+     * the caster's own thread (a melee WeaponDamage lands with the caster within reach), so reading the
+     * store here is safe -- see the port javadoc and the NEXT.md note about ranged reuse.
+     */
+    @Override
+    public double attackDamage(UUID id) {
+        return ctx.stats().attackValue(id);
+    }
+
+    /**
      * MUST run on the thread owning every region the segment touches -- World#rayTrace
      * reads blocks and entities along its whole length, not just at its ends.
      *

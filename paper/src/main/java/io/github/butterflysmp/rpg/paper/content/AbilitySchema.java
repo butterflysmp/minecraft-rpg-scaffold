@@ -95,6 +95,9 @@ final class AbilitySchema {
             // element is a plain content id now -- carried, not resolved. ContentValidator
             // checks it against the loaded element set at boot; a bad value warns, never skips.
             case "damage" -> new EffectSpec.Damage(num(m, type, "amount"), str(m, type, "element"));
+            // The basic melee hit: no literal amount -- deals the caster's ATTACK_DAMAGE stat (the
+            // weapon's declared attack_damage, as a MAIN_HAND modifier). element is identity, as for damage.
+            case "weapon_damage" -> new EffectSpec.WeaponDamage(str(m, type, "element"));
             case "heal" -> new EffectSpec.Heal(num(m, type, "amount"));
             case "knockback" -> new EffectSpec.Knockback(num(m, type, "strength"));
             case "status" -> new EffectSpec.Status(

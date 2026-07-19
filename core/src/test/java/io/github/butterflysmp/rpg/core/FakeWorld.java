@@ -30,6 +30,10 @@ public final class FakeWorld implements CombatWorld {
     /** Live display markers, id -> marker material id. A marker leak shows up as a stale entry. */
     public final Map<UUID, String> markers = new HashMap<>();
 
+    /** Each combatant's resolved attack damage, id -> amount. A WeaponDamage effect reads this;
+     *  an id absent here resolves to 0 (untracked/unarmed), as the real store does. */
+    public final Map<UUID, Double> attackDamage = new HashMap<>();
+
     /** Where each live marker sits, id -> position. Parallel to {@link #markers}, so the leak
      *  assertions on that map stay untouched while a fuse can read a marker's live position. */
     public final Map<UUID, Vec3> markerPositions = new HashMap<>();
@@ -77,6 +81,10 @@ public final class FakeWorld implements CombatWorld {
                 .filter(d -> d.id().equals(id))
                 .findFirst()
                 .map(FakeWorld::pair);
+    }
+
+    @Override public double attackDamage(UUID id) {
+        return attackDamage.getOrDefault(id, 0.0);
     }
 
     /** Identifies a chunk column. Two coordinates packed into one key. */

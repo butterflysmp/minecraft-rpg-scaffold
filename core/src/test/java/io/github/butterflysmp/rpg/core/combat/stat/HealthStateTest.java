@@ -103,4 +103,23 @@ class HealthStateTest {
         assertFalse(state.setMaxModifier("mainhand", 300), "re-applying the same amount changed nothing");
         // Mutation: always return true -> a change fires every reconcile tick -> steady-state spam -> reddens.
     }
+
+    @Test
+    void attackDamageIsASecondStatIndependentOfHealth() {
+        var state = new HealthState(100, 6, false);        // mob: 100 HP, attack base 6
+        assertEquals(6, state.attackValue(), EPS, "attack resolves base + modifiers, like max");
+
+        state.setAttackModifier("MAIN_HAND", 4);           // e.g. a wielded weapon
+        assertEquals(10, state.attackValue(), EPS, "an attack modifier adds, keyed by source");
+
+        // Health and attack do not bleed into each other.
+        state.damage(50);                                  // 50/100
+        assertEquals(10, state.attackValue(), EPS, "damaging HP leaves attack untouched");
+        assertEquals(50, state.current(), EPS, "and setting an attack modifier never moved current");
+        assertEquals(100, state.max(), EPS, "nor max");
+
+        assertTrue(state.clearAttackModifier("MAIN_HAND"), "the attack modifier removes by its source");
+        assertEquals(6, state.attackValue(), EPS, "back to base attack");
+        // Mutation: back attackValue() by the max Stat (or share one Stat) -> attack tracks HP changes -> reddens.
+    }
 }

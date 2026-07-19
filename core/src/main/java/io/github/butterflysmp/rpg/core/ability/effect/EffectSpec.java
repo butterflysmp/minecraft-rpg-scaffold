@@ -21,7 +21,7 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
 
     /** Needs a victim. Skipped entirely when the cast resolved no target. */
     sealed interface Targeted extends EffectSpec
-            permits Damage, Heal, Knockback, Status {}
+            permits Damage, Heal, Knockback, Status, WeaponDamage {}
 
     /** Acts on the world rather than a victim. Always runs. */
     sealed interface Untargeted extends EffectSpec
@@ -29,6 +29,15 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
 
     /** element is a content id ("fire", "kinetic", ...) -- pure identity, validated at boot; never null. */
     record Damage(double amount, String element) implements Targeted {}
+
+    /**
+     * Deals the CASTER'S attack-damage stat (base + modifiers), resolved at hit time -- not a literal
+     * amount. This is the basic melee hit: a weapon's declared attack_damage flows into the caster's
+     * ATTACK_DAMAGE stat (a MAIN_HAND modifier), and this reads it back, so the swing and the tooltip
+     * share one source of truth. element carries identity exactly like {@link Damage}'s (flavour + kit
+     * gating), never a multiplier. Costed/ranged payloads keep the literal {@link Damage}.
+     */
+    record WeaponDamage(String element) implements Targeted {}
 
     record Heal(double amount) implements Targeted {}
 

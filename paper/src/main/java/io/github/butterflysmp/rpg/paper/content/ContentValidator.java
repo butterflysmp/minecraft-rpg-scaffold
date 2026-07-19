@@ -225,6 +225,7 @@ public final class ContentValidator {
                 checkEffect(embers.burst(), ownerLabel, problems);
             }
             case EffectSpec.Damage damage -> checkElement(damage.element(), ownerLabel, problems);
+            case EffectSpec.WeaponDamage weaponDamage -> checkElement(weaponDamage.element(), ownerLabel, problems);
             case EffectSpec.Heal ignored -> { }
             case EffectSpec.Knockback ignored -> { }
         }

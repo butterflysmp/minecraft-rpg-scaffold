@@ -69,6 +69,15 @@ public final class EffectApplier {
                     target.handle().applyDamage(d.amount(), casterId);
                 }
             }
+            case EffectSpec.WeaponDamage wd -> {
+                // The basic melee hit: the amount is the CASTER'S attack-damage stat, resolved now.
+                // 0 means unarmed (or untracked) -- deal nothing rather than fire a spurious 0-damage
+                // seam. Element is identity here too, never a multiplier.
+                double amount = world.attackDamage(casterId);
+                if (amount > 0 && target.state().alive()) {
+                    target.handle().applyDamage(amount, casterId);
+                }
+            }
             case EffectSpec.Heal h -> target.handle().applyHeal(h.amount());
             case EffectSpec.Knockback k -> {
                 Vec3 position = target.state().position();
