@@ -140,14 +140,56 @@ class CombatantStatsTest {
     void bootstrapDoesNotClobberAnExistingCombatant() {
         var stats = new CombatantStats();
         UUID id = UUID.randomUUID();
-        stats.register(id, 5000, false);                  // a boss already set up
+        stats.register(id, 5000, false);                  // a boss already set up (attack base 0)
         stats.damage(id, 1000, null, false);              // 4000/5000
 
-        stats.bootstrapIfAbsent(id, 20, false);           // a later touch tries to bootstrap from vanilla
+        stats.bootstrapIfAbsent(id, 20, 3, false);        // a later touch tries to bootstrap from vanilla
 
         assertEquals(5000, stats.max(id), EPS, "bootstrap left the existing boss max alone");
         assertEquals(4000, stats.current(id), EPS, "and its current");
-        // Mutation: bootstrap uses put instead of computeIfAbsent -> the boss resets to 20/20 -> reddens.
+        assertEquals(0, stats.attackValue(id), EPS, "and its attack -- computeIfAbsent, so no re-seed to 3");
+        // Mutation: bootstrap uses put instead of computeIfAbsent -> the boss resets to 20/20 and attack 3 -> reddens.
+    }
+
+    @Test
+    void bootstrapSeedsAttackDamageForaFreshCombatant() {
+        var stats = new CombatantStats();
+        UUID mob = UUID.randomUUID();
+
+        stats.bootstrapIfAbsent(mob, 40, 6, false);       // a fresh mob, HP + attack from vanilla
+
+        assertEquals(6, stats.attackValue(mob), EPS, "a fresh mob seeds its attack from the bootstrap value");
+        // Mutation: bootstrap ignores baseAttack (seeds 0) -> a mob deals no custom melee -> reddens.
+    }
+
+    @Test
+    void attackValueOfAnUntrackedCombatantIsZeroNotAThrow() {
+        var stats = new CombatantStats();
+        assertEquals(0, stats.attackValue(UUID.randomUUID()), EPS,
+                "an untracked/unarmed combatant resolves 0 attack -- the melee read paths deal nothing, not crash");
+        // Mutation: require() (throw) instead of 0 default -> a hit by an unbootstrapped mob crashes the tick -> reddens.
+    }
+
+    @Test
+    void reconcileAttackModifiersConvergesTheMainHandAndIsSilent() {
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID id = UUID.randomUUID();
+        stats.register(id, 100, true);                    // player: attack base 0
+
+        stats.reconcileAttackModifiers(id, Map.of("MAIN_HAND", 8.0));   // hold ironblade (8)
+        assertEquals(8, stats.attackValue(id), EPS, "the held weapon's attack_damage lands as a MAIN_HAND modifier");
+
+        stats.reconcileAttackModifiers(id, Map.of("MAIN_HAND", 7.0));   // swap to emberblade (7)
+        assertEquals(7, stats.attackValue(id), EPS, "a weapon swap converges the modifier -- no leak of the old 8");
+
+        stats.reconcileAttackModifiers(id, Map.of());                  // unarmed
+        assertEquals(0, stats.attackValue(id), EPS, "empty-handed drops the source back to base 0");
+
+        assertTrue(recorder.seen.isEmpty(),
+                "attack reconcile is SILENT -- attack has no display seam, the tooltip reads it on demand");
+        // Mutation A: drop the remove-loop (reconcile only adds) -> a swap leaks the old 8, unarmed stays 8 -> reddens.
+        // Mutation B: emit a HealthChange from reconcileAttackModifiers -> the recorder is non-empty -> reddens.
     }
 
     @Test

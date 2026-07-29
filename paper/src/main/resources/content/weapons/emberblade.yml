@@ -12,6 +12,9 @@ id: emberblade
 display_name: "<blue>Emberblade</blue>"
 element: fire
 rarity: rare
+# Melee attack damage as a stat -- see ironblade. Lower than ironblade (7 vs 8): the emberblade trades
+# a little swing damage for its costed fireball special below.
+attack_damage: 7
 
 triggers:
   # Free swing. No cost section -> free; energy regenerates while you swing.
@@ -22,8 +25,9 @@ triggers:
       reach: 3.5
       arc_degrees: 120
     on_hit:
-      - type: damage
-        amount: 7
+      # The wielder's ATTACK_DAMAGE stat (= this weapon's attack_damage). The costed special below
+      # keeps a LITERAL amount -- an ability payload, not a basic swing.
+      - type: weapon_damage
         element: fire
 
   # The costed special: a fireball that bursts on impact. Spends 40 energy (about two casts

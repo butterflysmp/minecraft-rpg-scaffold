@@ -36,17 +36,20 @@ public final class CombatantStats {
      * rejoining starts clean, with no leaked modifier from a previous session.
      */
     public void register(UUID id, double baseMax, boolean player) {
-        states.put(id, new HealthState(baseMax, player));
+        // Players base attack at 0 -- weapon-only melee: the held weapon contributes a MAIN_HAND
+        // attack modifier via the reconcile loop, so an unarmed player deals nothing.
+        states.put(id, new HealthState(baseMax, 0.0, player));
     }
 
     /**
-     * Register {@code id} at {@code baseMax} only if it is not already tracked, and return its
-     * state. The mob path: a mob first touched by a dev command (or, later, real damage) bootstraps
-     * its custom health from its vanilla max, so its nameplate reads a real number, without
-     * clobbering state a later phase's content-driven mob HP may have set.
+     * Register {@code id} at {@code baseMax}/{@code baseAttack} only if it is not already tracked, and
+     * return its state. The mob path: a mob first touched by a dev command (or real damage) bootstraps
+     * its custom health from its vanilla max AND its custom attack damage from its vanilla attack-damage
+     * attribute, so its nameplate reads a real number and its hits drain a real amount -- without
+     * clobbering state a later phase's content-driven mob stats may have set.
      */
-    public HealthState bootstrapIfAbsent(UUID id, double baseMax, boolean player) {
-        return states.computeIfAbsent(id, ignored -> new HealthState(baseMax, player));
+    public HealthState bootstrapIfAbsent(UUID id, double baseMax, double baseAttack, boolean player) {
+        return states.computeIfAbsent(id, ignored -> new HealthState(baseMax, baseAttack, player));
     }
 
     public boolean tracks(UUID id) {
@@ -61,6 +64,17 @@ public final class CombatantStats {
     /** Custom max health. Throws if {@code id} is not tracked. */
     public double max(UUID id) {
         return require(id).max();
+    }
+
+    /**
+     * Resolved attack damage (base + modifiers). Returns {@code 0.0} for an untracked combatant -- unlike
+     * {@link #current}/{@link #max}, this is read on the melee hit paths (a weapon swing's WeaponDamage,
+     * a mob's melee), where an untracked or unbootstrapped combatant should simply deal nothing rather
+     * than throw. Weapon-only melee already makes 0 the correct "no hit" answer.
+     */
+    public double attackValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.attackValue();
     }
 
     /**
@@ -101,6 +115,18 @@ public final class CombatantStats {
             listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.MAX_CHANGE, 0.0,
                     null, false, state.current(), state.max(), false));
         }
+    }
+
+    /**
+     * Converge {@code id}'s ATTACK-DAMAGE modifiers to exactly {@code desired} (source -> amount, from
+     * the combatant's equipped weapon). Same leak-proof diff as {@link #reconcileMaxModifiers}, on the
+     * attack stat. SILENT: attack damage has no display seam (no heart bar, no nameplate) -- the tooltip
+     * reads it on demand -- so this emits no {@link HealthChange}. No-op on an untracked combatant.
+     */
+    public void reconcileAttackModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.attackTarget(), desired);
     }
 
     /** Drop {@code id}'s state. O(1), safe for an unknown id. Call on logout and on mob removal. */

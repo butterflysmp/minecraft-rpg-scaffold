@@ -258,12 +258,14 @@ public final class RpgListeners implements Listener {
      *
      * Runs at HIGH, not NORMAL: {@link #onFrozenMeleeAttack} cancels a frozen mob's hit at NORMAL, and
      * same-priority order is undefined -- HIGH runs strictly after, so ignoreCancelled then skips a
-     * frozen attacker's suppressed hit. getDamage() is still BASE at HIGH, so the amount bridge holds.
+     * frozen attacker's suppressed hit.
      *
-     * Amount bridge: the mob's vanilla attack damage (event.getDamage(), BASE, pre-token) IS the
-     * custom amount, until mob attack-damage becomes a custom stat (a later pass) -- the mob analog of
-     * bootstrapping mob HP from vanilla MAX_HEALTH. Read getDamage(), not getFinalDamage(): no vanilla
-     * armor/reduction baked in (we own that later, if ever).
+     * Amount = the mob's custom ATTACK_DAMAGE stat, NOT event.getDamage(): the vanilla bridge is retired.
+     * We seed the mob's stat from its vanilla attack-damage attribute (seedCombatStats, opt-out-agnostic
+     * so a nameplate-less mob still hits) and read it back -- the mob analog of bootstrapping mob HP from
+     * vanilla MAX_HEALTH, and reading it from the store the way player melee does. Same number initially
+     * (the path reads the store, proven; magnitude can now be scaled past vanilla, the attack-side >1024
+     * mirror). We still token the vanilla damage for cosmetics only.
      *
      * No new token-can't-kill floor here (unlike the mob victim above): the player heart bar already
      * floors vanilla health at ~half a heart, which is >> the 0.01 token, so it cannot kill.
@@ -276,7 +278,8 @@ public final class RpgListeners implements Listener {
         if (!(event.getDamager() instanceof LivingEntity attacker)) return; // a living melee attacker
         if (attacker instanceof Player) return;                             // player->player is a later rules decision
 
-        double incoming = event.getDamage();          // vanilla attack damage = the custom amount (interim bridge)
+        nameplates.seedCombatStats(attacker);         // idempotent, opt-out-agnostic: seed HP + attack from vanilla
+        double incoming = adapters.stats().attackValue(attacker.getUniqueId());  // the STAT, not event.getDamage()
         event.setDamage(TOKEN_DAMAGE);                // ride: keep flash/sound/i-frames, no double, can't kill
         BukkitCombatant.of(victim, adapters).handle().applyDamage(incoming, attacker.getUniqueId());
     }

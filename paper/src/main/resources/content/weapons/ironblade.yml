@@ -13,6 +13,10 @@ id: ironblade
 display_name: "Ironblade"
 element: kinetic
 rarity: common
+# The melee attack damage a basic swing deals. This is now a real STAT (the weapon contributes it as
+# a MAIN_HAND modifier on the wielder's ATTACK_DAMAGE), read back by the weapon_damage on_hit below --
+# not a literal buried in the effect. One source of truth the lore tooltip can later display.
+attack_damage: 8
 
 triggers:
   # Left-click swing. No `cost:` section means free -- energy regenerates while you
@@ -24,6 +28,6 @@ triggers:
       reach: 3.5
       arc_degrees: 120
     on_hit:
-      - type: damage
-        amount: 8
+      # Deals the wielder's ATTACK_DAMAGE stat (= this weapon's attack_damage), not a literal amount.
+      - type: weapon_damage
         element: kinetic

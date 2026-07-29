@@ -3,10 +3,12 @@ package io.github.butterflysmp.rpg.paper.health;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthChange;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthListener;
+import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.EntityTaskTarget;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTask;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
+import io.github.butterflysmp.rpg.paper.weapon.WeaponAttackItems;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -33,12 +35,14 @@ public final class PlayerHealthSystem implements HealthListener {
 
     private final Scheduler scheduler;
     private final Keys keys;
+    private final WeaponRegistry weapons;
     private final HeartBarRenderer renderer = new HeartBarRenderer();
     private CombatantStats stats;
 
-    public PlayerHealthSystem(Scheduler scheduler, Keys keys) {
+    public PlayerHealthSystem(Scheduler scheduler, Keys keys, WeaponRegistry weapons) {
         this.scheduler = scheduler;
         this.keys = keys;
+        this.weapons = weapons;
     }
 
     /** Wire the store this renders. Called once in onEnable, right after the store is built. */
@@ -119,8 +123,13 @@ public final class PlayerHealthSystem implements HealthListener {
         EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
         UUID id = player.getUniqueId();
         RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, () -> {
-            Map<String, Double> desired = HealthModifierItems.desiredModifiers(player, keys);
-            stats.reconcileMaxModifiers(id, desired);
+            // Two stats converge on the same scan: max HP from +HP items, and attack damage from the
+            // held weapon's declared attack_damage (a MAIN_HAND modifier). Same leak-proof diff, so a
+            // weapon swap/drop follows within a tick and respawn re-derives both for free.
+            Map<String, Double> desiredMax = HealthModifierItems.desiredModifiers(player, keys);
+            stats.reconcileMaxModifiers(id, desiredMax);
+            Map<String, Double> desiredAttack = WeaponAttackItems.desiredAttackModifiers(player, keys, weapons);
+            stats.reconcileAttackModifiers(id, desiredAttack);
             return true;
         }, () -> { });
     }

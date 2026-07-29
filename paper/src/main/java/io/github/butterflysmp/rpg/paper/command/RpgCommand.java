@@ -234,9 +234,13 @@ public final class RpgCommand {
             UUID id = target.getUniqueId();
             var maxAttr = target.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
             double vanillaMax = maxAttr != null ? maxAttr.getValue() : target.getHealth();
+            var atkAttr = target.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE);
+            double vanillaAttack = atkAttr != null ? atkAttr.getValue() : 0.0;
             CombatantStats stats = adapters.stats();
             // Track AND nameplate the target (idempotent) so the seam fire actually reaches the plate.
-            stats.bootstrapIfAbsent(id, vanillaMax, false);
+            // Seed attack too for signature consistency with the melee path -- this dev command only
+            // damages/heals HP, so it does not read the attack value, but the store shape is uniform.
+            stats.bootstrapIfAbsent(id, vanillaMax, vanillaAttack, false);
             nameplates.onMobAppear(target);
             double displayCurrent;
             if (heal) {
