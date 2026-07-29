@@ -76,6 +76,10 @@ public final class WeaponLoader {
         // The item the weapon renders as; paper resolves the string to a Material. Defaults
         // to a sword, so every weapon before the bow needs no material field.
         String material = s.getString("material", WeaponDefinition.DEFAULT_MATERIAL);
+        // The weapon's melee attack damage: the number a basic swing (weapon_damage on_hit) deals,
+        // read back off the caster's ATTACK_DAMAGE stat. 0 for ranged/costed weapons with no melee.
+        // A negative is rejected by WeaponDefinition -> the file is skipped, named, like any malformed one.
+        double attackDamage = s.getDouble("attack_damage", 0.0);
 
         ConfigurationSection triggers = s.getConfigurationSection("triggers");
         if (triggers == null) {
@@ -103,8 +107,9 @@ public final class WeaponLoader {
             bindings.add(new TriggerBinding(input, ability));
         }
 
-        // WeaponDefinition rejects an empty trigger list -- caught above, named, skipped.
-        return new WeaponDefinition(id, displayName, element, rarity, material, bindings);
+        // WeaponDefinition rejects an empty trigger list (and a negative attack_damage) -- caught above,
+        // named, skipped.
+        return new WeaponDefinition(id, displayName, element, rarity, material, attackDamage, bindings);
     }
 
     private static Rarity rarity(String raw) {

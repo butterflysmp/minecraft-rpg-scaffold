@@ -23,6 +23,7 @@ public record WeaponDefinition(
         String element,
         Rarity rarity,
         String material,
+        double attackDamage,
         List<TriggerBinding> triggers
 ) {
     /** The item a weapon renders as when its content does not say otherwise: a sword. */
@@ -33,16 +34,25 @@ public record WeaponDefinition(
         if (element == null || element.isBlank()) throw new IllegalArgumentException("weapon element required (use kinetic, never absent)");
         if (rarity == null) throw new IllegalArgumentException("weapon rarity required");
         if (material == null || material.isBlank()) throw new IllegalArgumentException("weapon material required");
+        // Attack damage is a stat the basic melee hit reads (via WeaponDamage). 0 is legal -- a
+        // ranged/costed weapon (bow, staff) has no melee and declares none; negative is a content bug.
+        if (attackDamage < 0) throw new IllegalArgumentException("weapon '" + id + "' attack_damage must be >= 0, got: " + attackDamage);
         if (triggers == null || triggers.isEmpty()) {
             throw new IllegalArgumentException("weapon '" + id + "' has no triggers");
         }
         triggers = List.copyOf(triggers);
     }
 
-    /** A sword-shaped weapon: the common case, and what the tests use. */
+    /** A sword-shaped weapon with no declared attack damage: the shape older tests use. */
     public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
                             List<TriggerBinding> triggers) {
-        this(id, displayName, element, rarity, DEFAULT_MATERIAL, triggers);
+        this(id, displayName, element, rarity, DEFAULT_MATERIAL, 0.0, triggers);
+    }
+
+    /** A weapon with an explicit material but no declared attack damage (kept for existing callers). */
+    public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
+                            String material, List<TriggerBinding> triggers) {
+        this(id, displayName, element, rarity, material, 0.0, triggers);
     }
 
     /** The binding fired by this input, if the weapon has one. */

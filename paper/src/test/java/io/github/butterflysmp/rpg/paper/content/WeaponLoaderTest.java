@@ -227,6 +227,53 @@ class WeaponLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
     }
 
+    /** attack_damage is optional: a ranged/costed weapon (bow, staff) has no melee and declares none. */
+    @Test
+    void attackDamageDefaultsToZeroWhenOmitted() throws IOException {
+        write("plainsword.yml", """
+                id: plainsword
+                element: kinetic
+                triggers:
+                  left_click:
+                    cast:
+                      type: melee
+                    on_hit:
+                      - type: damage
+                        amount: 5
+                        element: kinetic
+                """);
+
+        assertEquals(0, load().find("plainsword").orElseThrow().attackDamage(), 1e-9,
+                "no attack_damage field -> 0 (no melee stat)");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** A negative attack_damage is a content bug: WeaponDefinition rejects it, so the file is skipped
+     *  and named, exactly like any other malformed weapon -- not silently loaded as a heal-on-hit. */
+    @Test
+    void aNegativeAttackDamageIsSkippedNotCrashed() throws IOException {
+        write("aaa_cursed.yml", """
+                id: cursed
+                element: kinetic
+                attack_damage: -5
+                triggers:
+                  left_click:
+                    cast:
+                      type: melee
+                    on_hit:
+                      - type: weapon_damage
+                        element: kinetic
+                """);
+        write("ironblade.yml", VALID);
+
+        WeaponRegistry registry = load();
+
+        assertEquals(1, registry.size(), "the valid weapon still loads");
+        assertTrue(warningText().contains("aaa_cursed.yml"), warningText());
+        assertTrue(warningText().contains("attack_damage"), warningText());
+        // Mutation: drop the attackDamage < 0 guard in WeaponDefinition -> the cursed weapon loads -> reddens.
+    }
+
     @Test
     void aWeaponWithNoTriggersSectionIsSkippedNotCrashed() throws IOException {
         write("aaa_bare.yml", """
@@ -299,6 +346,15 @@ class WeaponLoaderTest {
         assertEquals("kinetic", weapon.element());
         assertEquals(Rarity.COMMON, weapon.rarity());
         assertEquals("ironblade/left_click", weapon.trigger("left_click").orElseThrow().ability().id());
+
+        // The melee damage is a STAT now: a top-level attack_damage, and a weapon_damage on_hit that
+        // reads it (no literal amount buried in the effect). This locks the promotion on the shipped file.
+        assertEquals(8, weapon.attackDamage(), 1e-9, "ironblade declares attack_damage 8");
+        var swing = weapon.trigger("left_click").orElseThrow().ability().onHit().get(0);
+        var weaponDamage = assertInstanceOf(EffectSpec.WeaponDamage.class, swing,
+                "the swing deals weapon_damage (the caster's stat), not a literal Damage");
+        assertEquals("kinetic", weaponDamage.element());
+        // Mutation: revert the swing to `type: damage` / drop attack_damage -> reddens.
     }
 
     /**
@@ -346,10 +402,13 @@ class WeaponLoaderTest {
         assertEquals("fire", weapon.element());
         assertEquals(Rarity.RARE, weapon.rarity());
 
-        // Free left-click swing.
+        // Free left-click swing -- weapon_damage reading the weapon's attack_damage stat (7).
         var left = weapon.trigger("left_click").orElseThrow().ability();
         assertEquals(ResourceCost.FREE, left.cost(), "the left-click swing is free");
         assertInstanceOf(CastSpec.Melee.class, left.cast());
+        assertEquals(7, weapon.attackDamage(), 1e-9, "emberblade declares attack_damage 7");
+        assertInstanceOf(EffectSpec.WeaponDamage.class, left.onHit().get(0),
+                "the swing deals weapon_damage; the costed special below keeps a literal");
 
         // Costed right-click special -- the shared-energy proof, at the content level.
         var right = weapon.trigger("right_click").orElseThrow().ability();

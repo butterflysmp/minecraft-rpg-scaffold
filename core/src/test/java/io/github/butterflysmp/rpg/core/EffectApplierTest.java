@@ -319,6 +319,45 @@ class EffectApplierTest {
         assertEquals(voidTarget.health, solarTarget.health, 1e-9, "element must not touch the number");
     }
 
+    /**
+     * WeaponDamage deals the CASTER'S attack-damage stat, resolved at hit time -- not a literal. The
+     * world resolves it (here, the fake's attackDamage map, in production CombatantStats.attackValue),
+     * so the swing and the tooltip share one number. A damage effect and a weapon-damage effect on the
+     * same target must land the same amount when the caster's stat equals that literal.
+     */
+    @Test
+    void weaponDamageDealsTheCastersAttackStat() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        world.attackDamage.put(caster.id(), 8.0);          // the caster's resolved ATTACK_DAMAGE
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.id(), pair(target), Vec3.ZERO);
+
+        assertEquals(92, target.health, 1e-9, "the hit dealt the caster's attack stat (8), not a literal");
+        assertEquals(caster.id(), target.lastDamageSource, "attributed to the caster");
+        // Mutation: read a fixed literal / the target's stat instead of the caster's -> the number is wrong -> reddens.
+    }
+
+    /**
+     * Weapon-only melee: an unarmed caster (attack 0, or untracked) deals NOTHING and fires no damage
+     * seam at all -- the amt>0 guard. This is why base attack is 0 for players.
+     */
+    @Test
+    void weaponDamageWithZeroAttackDealsNothingAndDoesNotFireTheSeam() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);       // no attackDamage entry -> resolves 0
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.id(), pair(target), Vec3.ZERO);
+
+        assertEquals(100, target.health, 1e-9, "unarmed (0 attack) deals nothing");
+        assertEquals(0, target.damageCalls, "and does not fire a spurious 0-damage seam");
+        // Mutation: drop the amt>0 guard -> applyDamage(0,..) fires, damageCalls == 1 -> reddens.
+    }
+
     /** Splash damage carries the same culprit, and still never splashes the caster. */
     @Test
     void burstDamageCarriesTheCasterIdToEveryVictim() {

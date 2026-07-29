@@ -78,22 +78,38 @@ public final class MobNameplateManager implements HealthListener {
     // --- Mob lifecycle (driven by RpgListeners' entity add/remove events) --------------------------
 
     /**
-     * A mob appeared (spawn or chunk-load) on its own thread. Bootstrap its custom max from vanilla and
-     * cache the initial nameplate. Skips players, armor stands (utility/markers), and the reserved
-     * opt-out flag.
+     * Seed a mob's custom combat stats -- HP from vanilla max, attack damage from vanilla ATTACK_DAMAGE
+     * -- if not already tracked, and return its state (null for a player / armor stand). Register-if-
+     * absent, so a later content-driven value is never clobbered and repeat calls are idempotent.
+     *
+     * OPT-OUT-AGNOSTIC on purpose: the {@code nameplateOptOut} flag suppresses only the nameplate
+     * DISPLAY, never a mob's combat stats. A mob's damage must not depend on whether it shows a health
+     * bar -- so this seeds regardless of the flag, and {@link #onMobMeleeAttack in RpgListeners} reads
+     * the attack stat through here. (An opt-out mob whose stats were gated behind the flag would read
+     * attackValue 0 and deal zero custom damage -- a silent regression from the old event.getDamage().)
+     */
+    public HealthState seedCombatStats(LivingEntity mob) {
+        if (mob instanceof Player || mob instanceof ArmorStand) return null;
+        return stats.bootstrapIfAbsent(mob.getUniqueId(), maxHealthOf(mob), attackDamageOf(mob), false);
+    }
+
+    /**
+     * A mob appeared (spawn or chunk-load) on its own thread. Seed its combat stats (always), then cache
+     * the initial nameplate -- UNLESS it opts out, in which case the stats are still seeded and only the
+     * display is skipped.
      */
     public void onMobAppear(LivingEntity mob) {
-        if (mob instanceof Player || mob instanceof ArmorStand) return;
+        HealthState state = seedCombatStats(mob);   // opt-out-AGNOSTIC: combat stats always seed
+        if (state == null) return;                  // player / armor stand: no plate, no stats
+        // The opt-out flag suppresses only the NAMEPLATE display -- the stats above are already seeded.
         if (mob.getPersistentDataContainer().has(keys.nameplateOptOut, PersistentDataType.BYTE)) return;
-        UUID id = mob.getUniqueId();
-        HealthState state = stats.bootstrapIfAbsent(id, maxHealthOf(mob), false);
         // Register-if-absent, NOT replace -- mirrors bootstrapIfAbsent (the store half). onMobAppear
         // runs once on spawn, but EVERY /rpg mobdamage cast re-calls it. A replace would build a fresh
         // Nameplate at version 1 each cast; the NEXT TICK's applyDamage bump (1->2) then races the
         // viewer's 4-tick LOS sample, so some casts are missed ("every-other-cast"). The version must
         // climb monotonically for ViewerNameplateState.decide() to resend. Real combat never re-appears
         // a mob, so it was always monotonic there -- only the dev command re-appeared per hit.
-        registerIfAbsent(nameplates, id, mob.name(), state.current(), state.max());
+        registerIfAbsent(nameplates, mob.getUniqueId(), mob.name(), state.current(), state.max());
     }
 
     /**
@@ -155,6 +171,16 @@ public final class MobNameplateManager implements HealthListener {
     private static double maxHealthOf(LivingEntity mob) {
         AttributeInstance attr = mob.getAttribute(Attribute.MAX_HEALTH);
         return attr != null ? attr.getValue() : mob.getHealth();
+    }
+
+    /**
+     * A mob's custom attack damage, bootstrapped from its vanilla ATTACK_DAMAGE attribute -- the attack
+     * mirror of {@link #maxHealthOf}. A mob with no such attribute (many passive mobs) deals 0 custom
+     * melee, which is correct: it had no vanilla melee to bridge either.
+     */
+    private static double attackDamageOf(LivingEntity mob) {
+        AttributeInstance attr = mob.getAttribute(Attribute.ATTACK_DAMAGE);
+        return attr != null ? attr.getValue() : 0.0;
     }
 
     /**
