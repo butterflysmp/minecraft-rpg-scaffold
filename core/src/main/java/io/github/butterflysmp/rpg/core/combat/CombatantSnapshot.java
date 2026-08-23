@@ -22,5 +22,14 @@ import java.util.UUID;
  * read like any other -- captured on the owning thread, frozen here -- so the rule that
  * excludes players can be exercised by a core unit test rather than living in adapter wiring
  * no test reaches.
+ *
+ * {@code attackSpeed} is the caster's resolved attack-speed multiplier, and it rides here for a
+ * specific reason: {@code AbilityService.resolve} scales a basic attack's cooldown by it, and
+ * resolve runs wherever the caster happened to call in from. Reading the stat store at that point
+ * would be a cross-thread read of another combatant's state -- the exact defect the snapshot/handle
+ * split exists to prevent, and the same one documented on {@code CombatWorld.attackDamage} for
+ * ranged {@code WeaponDamage}. Captured on the caster's own thread at snapshot time, it is just
+ * another frozen read. A photograph, so it may be stale by a tick; that is fine for a cadence.
  */
-public record CombatantSnapshot(UUID id, Vec3 position, boolean alive, boolean player) {}
+public record CombatantSnapshot(UUID id, Vec3 position, boolean alive, boolean player,
+                                double attackSpeed) {}

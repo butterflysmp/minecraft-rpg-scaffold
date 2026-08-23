@@ -192,6 +192,49 @@ class CombatantStatsTest {
         // Mutation B: emit a HealthChange from reconcileAttackModifiers -> the recorder is non-empty -> reddens.
     }
 
+    /**
+     * The divisor-safety rule, and the reason attack speed's absent value differs from attack
+     * damage's. Attack damage is a SUMMAND, so 0 correctly means "deals nothing". Attack speed is a
+     * DIVISOR: 0 would mean an infinite cooldown, so an untracked caster would silently never swing
+     * again. Neutral is the only safe absent value.
+     */
+    @Test
+    void anUntrackedCombatantsAttackSpeedIsNeutralNotZero() {
+        var stats = new CombatantStats(new Recorder());
+
+        assertEquals(1.0, stats.attackSpeedValue(UUID.randomUUID()), EPS,
+                "an untracked caster swings at the authored cadence, not never");
+        // ...and the deliberate contrast with the other stat, so the difference reads as a decision.
+        assertEquals(0.0, stats.attackValue(UUID.randomUUID()), EPS,
+                "attack damage is a summand, so 0 is the correct absent value there");
+        // Mutation: return 0.0 for an untracked attack speed -> AttackSpeed clamps to MIN_SPEED and
+        // every untracked caster's cadence becomes 10x slower -> reddens here and in AttackSpeedTest.
+    }
+
+    @Test
+    void attackSpeedBasesAtNeutralAndReconcilesLeakProof() {
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID id = UUID.randomUUID();
+        stats.register(id, 100, true);
+
+        assertEquals(1.0, stats.attackSpeedValue(id), EPS, "no modifiers -> neutral");
+
+        stats.reconcileAttackSpeedModifiers(id, Map.of("MAIN_HAND", 1.0));
+        assertEquals(2.0, stats.attackSpeedValue(id), EPS, "+1.0 on a base of 1.0 is a 2.0 multiplier");
+
+        stats.reconcileAttackSpeedModifiers(id, Map.of("OFF_HAND", 0.5));  // swapped source
+        assertEquals(1.5, stats.attackSpeedValue(id), EPS, "the old source must not leak");
+
+        stats.reconcileAttackSpeedModifiers(id, Map.of());                 // unequipped
+        assertEquals(1.0, stats.attackSpeedValue(id), EPS, "back to neutral, exactly");
+
+        assertTrue(recorder.seen.isEmpty(),
+                "attack-speed reconcile is SILENT -- no display seam; it is felt as a faster swing");
+        // Mutation A: drop the remove-loop -> the swap leaks and unequip stays boosted -> reddens.
+        // Mutation B: emit a HealthChange here -> the recorder is non-empty -> reddens.
+    }
+
     @Test
     void mutatingAnUntrackedCombatantIsANoOpNotAThrow() {
         var recorder = new Recorder();

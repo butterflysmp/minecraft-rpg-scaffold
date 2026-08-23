@@ -8,6 +8,7 @@ import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
+import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.content.ElementDefinition;
@@ -155,6 +156,29 @@ class WeaponLoreTest {
         assertTrue(lines.contains("Melee Damage: 7"), () -> lines.toString());
     }
 
+    /**
+     * The tooltip shows the WEAPON's base attack speed, never the holder's resolved stat.
+     *
+     * This is the rule that makes lore mint-time safe and non-drifting -- "lore describes the weapon,
+     * not whoever is holding it" -- and it is worth a test of its own precisely because wiring the
+     * resolved stat in would feel like an improvement. A 10-tick basic attack reads 2.0 for everyone,
+     * whether they are swinging at 1.0 or 5.0, so a tooltip minted for one player cannot mislead the
+     * next one who picks the item up.
+     *
+     * Structurally guaranteed today: WeaponLore.build takes only the weapon and the element registry
+     * -- there is no CombatantStats in reach to read. If that ever changes, this test is the reason
+     * to think twice.
+     */
+    @Test
+    void theTooltipShowsTheWeaponsBaseSpeedNotAnyHoldersResolvedStat() {
+        List<String> lines = textLines(WeaponLore.build(rareFireSword(), elementsWithFire()));
+
+        assertTrue(lines.contains("Attack Speed: 2.0"),
+                () -> "10 cooldown_ticks is 2.0 attacks/sec, for every holder; got " + lines);
+        assertEquals(1, lines.stream().filter(l -> l.startsWith("Attack Speed: ")).count(),
+                () -> "exactly one attack-speed line: " + lines);
+    }
+
     @Test
     void aWeaponWithNoBasicAttackRendersNoStatBlock() {
         List<String> lines = textLines(WeaponLore.build(bowWithNoBasicAttack(), elementsWithFire()));
@@ -256,8 +280,8 @@ class WeaponLoreTest {
             // A class label appears at most once, and only on a weapon that HAS a basic attack.
             long classLabelled = lines.stream().filter(l -> l.startsWith(ownLabel)).count();
             boolean hasBasicAttack = weapon.triggers().stream().anyMatch(t ->
-                    WeaponLoreLines.triggerDamage(t.ability().onHit(), weapon.attackDamage())
-                            .map(d -> d.source() == WeaponLoreLines.DamageSource.WEAPON_STAT)
+                    DamagePayload.of(t.ability().onHit(), weapon.attackDamage())
+                            .map(d -> d.source() == DamagePayload.DamageSource.WEAPON_STAT)
                             .orElse(false));
             assertEquals(hasBasicAttack ? 1 : 0, classLabelled,
                     () -> weapon.id() + " should have " + (hasBasicAttack ? "exactly one" : "no")
@@ -270,8 +294,8 @@ class WeaponLoreTest {
         // Ironblade and Emberblade are the two weapon_damage weapons in shipped content. If that
         // ever stops being true this test has quietly stopped covering the stat block.
         assertEquals(2, weapons.all().stream().filter(w -> w.triggers().stream().anyMatch(t ->
-                        WeaponLoreLines.triggerDamage(t.ability().onHit(), w.attackDamage())
-                                .map(d -> d.source() == WeaponLoreLines.DamageSource.WEAPON_STAT)
+                        DamagePayload.of(t.ability().onHit(), w.attackDamage())
+                                .map(d -> d.source() == DamagePayload.DamageSource.WEAPON_STAT)
                                 .orElse(false))).count(),
                 "exactly two shipped weapons have a basic attack (ironblade, emberblade)");
     }

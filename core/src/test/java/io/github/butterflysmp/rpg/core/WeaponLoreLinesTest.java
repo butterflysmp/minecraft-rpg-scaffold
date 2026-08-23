@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core;
 
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
+import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines;
 import org.junit.jupiter.api.Test;
@@ -99,7 +100,7 @@ class WeaponLoreLinesTest {
 
         assertEquals(8, damage.amount());
         assertEquals("kinetic", damage.element());
-        assertEquals(WeaponLoreLines.DamageSource.WEAPON_STAT, damage.source(),
+        assertEquals(DamagePayload.DamageSource.WEAPON_STAT, damage.source(),
                 "weapon_damage READS the attack-damage stat, so it is a basic attack");
     }
 
@@ -111,7 +112,7 @@ class WeaponLoreLinesTest {
 
         assertEquals(6, damage.amount(), "the literal wins; the weapon's attack damage is ignored");
         assertEquals("fire", damage.element());
-        assertEquals(WeaponLoreLines.DamageSource.ABILITY_LITERAL, damage.source(),
+        assertEquals(DamagePayload.DamageSource.ABILITY_LITERAL, damage.source(),
                 "a literal reads no stat, so no class-typed modifier can reach it");
     }
 
@@ -129,7 +130,7 @@ class WeaponLoreLinesTest {
 
         assertEquals(12, damage.amount());
         assertEquals("fire", damage.element());
-        assertEquals(WeaponLoreLines.DamageSource.ABILITY_LITERAL, damage.source());
+        assertEquals(DamagePayload.DamageSource.ABILITY_LITERAL, damage.source());
     }
 
     @Test

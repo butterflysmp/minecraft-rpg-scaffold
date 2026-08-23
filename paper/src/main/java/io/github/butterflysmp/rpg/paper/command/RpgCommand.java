@@ -1,11 +1,13 @@
 package io.github.butterflysmp.rpg.paper.command;
 
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
+import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.CastExecutor;
 import io.github.butterflysmp.rpg.core.combat.Aim;
@@ -23,6 +25,7 @@ import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
+import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.DashAim;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
@@ -188,6 +191,16 @@ public final class RpgCommand {
                         .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000))
                                 .executes(ctx -> healthBoost(ctx, adapters,
                                         IntegerArgumentType.getInteger(ctx, "amount")))))
+                // Mint an attack_speed_boost_TEMP. The attack-speed stat bases at 1.0 and no content
+                // grants a bonus yet, so without this the feature is invisible at boot: hold it and a
+                // basic attack's cooldown scales (10 ticks -> 5 at +1.0), drop it and the cadence
+                // returns. An ability's cooldown is deliberately unaffected.
+                .then(Commands.literal("attackspeed")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> attackSpeedBoost(ctx, adapters, null))
+                        .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 20.0))
+                                .executes(ctx -> attackSpeedBoost(ctx, adapters,
+                                        DoubleArgumentType.getDouble(ctx, "bonus")))))
                 // Damage/heal the LOOKED-AT mob's custom health, through the same observable store path
                 // the nameplate hooks -- so the mob nameplate's HP-change update is witnessable this
                 // phase (the real damage system, which would drive mob HP for real, is a later phase).
@@ -307,6 +320,24 @@ public final class RpgCommand {
     }
 
     /**
+     * Mint an attack_speed_boost_TEMP (default +1.0, i.e. a resolved 2.0) into the caller's inventory.
+     * The amount is the BONUS on a base of 1.0, not the multiplier itself.
+     */
+    private static int attackSpeedBoost(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                                        Double bonus) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        double amount = bonus == null ? AttackSpeedModifierItems.DEFAULT_BOOST : bonus;
+        player.getInventory().addItem(AttackSpeedModifierItems.mint(adapters.keys(), amount));
+        player.sendMessage(Component.text(
+                "Gave attack_speed_boost_TEMP (+" + amount + " -> " + (AttackSpeed.BASE + amount)
+                        + "x). Hold it and swing a basic attack.", NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /**
      * Apply a status to the mob the player is aiming at. Reuses BukkitCombatant.applyStatus --
      * the exact path an ability's onHit takes -- so /rpg apply is a faithful test instrument.
      * `stacks` is the number of applyStatus calls, because Soaked (and any future stacking
@@ -399,7 +430,7 @@ public final class RpgCommand {
         // Taken after the hop it would be the same cross-region read wearing a new type --
         // and on Paper, where both sides of the hop are the main thread, no test could
         // tell. BukkitCombatant.snapshot enforces the thread; this ordering does not.
-        CombatantSnapshot caster = BukkitCombatant.snapshot(player);
+        CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters.stats());
 
         // Decide INLINE. cast() reads no world state, and consuming the cooldown
         // and energy here -- rather than inside the region hop below -- is what

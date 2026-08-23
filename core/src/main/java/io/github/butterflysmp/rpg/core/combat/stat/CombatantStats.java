@@ -1,5 +1,7 @@
 package io.github.butterflysmp.rpg.core.combat.stat;
 
+import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
+
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -78,6 +80,20 @@ public final class CombatantStats {
     }
 
     /**
+     * Resolved attack-speed MULTIPLIER (1.0 + modifiers), for scaling a basic attack's cooldown.
+     *
+     * An untracked combatant returns {@link AttackSpeed#BASE} (1.0), NOT 0.0 -- and the difference
+     * from {@link #attackValue} above is deliberate, not an inconsistency. Attack damage is a
+     * summand, so 0 is the correct "deals nothing" answer for an untracked caster. Attack speed is a
+     * DIVISOR: 0 would mean an infinite cooldown, so an untracked caster would silently never swing
+     * again. Neutral is the only safe absent value for a divisor.
+     */
+    public double attackSpeedValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? AttackSpeed.BASE : state.attackSpeedValue();
+    }
+
+    /**
      * Deal {@code amount} of custom damage to {@code id}, attributed to {@code dealer}. No-op on an
      * untracked combatant. Emits a DAMAGE change carrying the new custom current and max, and the
      * dealer's identity -- the seam the popup hooks next phase.
@@ -127,6 +143,18 @@ public final class CombatantStats {
         HealthState state = states.get(id);
         if (state == null) return;
         ModifierReconciler.reconcile(state.attackTarget(), desired);
+    }
+
+    /**
+     * Converge {@code id}'s ATTACK-SPEED modifiers to exactly {@code desired}. Same leak-proof diff as
+     * the two above, on the attack-speed stat. SILENT, like attack damage: there is no display seam
+     * for it -- the effect is felt as a faster swing, and the tooltip deliberately shows the weapon's
+     * BASE speed rather than the resolved stat. No-op on an untracked combatant.
+     */
+    public void reconcileAttackSpeedModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.attackSpeedTarget(), desired);
     }
 
     /** Drop {@code id}'s state. O(1), safe for an unknown id. Call on logout and on mob removal. */

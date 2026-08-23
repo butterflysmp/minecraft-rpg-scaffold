@@ -56,8 +56,10 @@ public final class WeaponFire {
 
         Location eye = player.getEyeLocation();
         Aim aim = new Aim(toVec3(eye), toVec3(eye.getDirection()));
-        // Snapshot on the player's own thread, before the region hop below.
-        CombatantSnapshot caster = BukkitCombatant.snapshot(player);
+        // Snapshot on the player's own thread, before the region hop below. This is also where the
+        // caster's attack speed is frozen -- the swing's cadence is decided from it a moment later,
+        // and reading the store after the hop would be the cross-thread read this split prevents.
+        CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters.stats());
 
         Optional<CastResult> result = weaponService.fire(caster, weapon, input, aim);
         result.ifPresent(r -> {
