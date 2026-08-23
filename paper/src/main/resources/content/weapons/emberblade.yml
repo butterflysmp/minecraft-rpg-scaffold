@@ -25,9 +25,7 @@ flavor:
 triggers:
   # Free swing. No cost section -> free; energy regenerates while you swing.
   left_click:
-    name: "Ember Slash"
-    description:
-      - "A cut that smoulders."
+    # No name/description -- this is the basic attack, rendered as a stat block. See ironblade.
     cooldown_ticks: 10
     cast:
       type: melee

@@ -31,11 +31,10 @@ triggers:
   # Left-click swing. No `cost:` section means free -- energy regenerates while you
   # swing, rather than competing with your abilities.
   left_click:
-    # Authored ability name (gold line) + description (prose lines) shown in the tooltip.
-    name: "Slash"
-    description:
-      - "A clean, honest swing."
-    cooldown_ticks: 10   # swing speed: half a second between hits
+    # No name/description: a weapon_damage trigger IS the basic attack, and the tooltip renders it
+    # as a stat block ("Melee Damage: 8" / "Attack Speed: 2.0"), not an ability section. Prose here
+    # would never be read. A costed special (see emberblade's right_click) still authors both.
+    cooldown_ticks: 10   # swing speed: half a second between hits -> Attack Speed 2.0
     cast:
       type: melee
       reach: 3.5

@@ -6,7 +6,6 @@ import io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.OptionalDouble;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,29 +66,70 @@ class WeaponLoreLinesTest {
         assertEquals("", WeaponLoreLines.cadenceLine(0, ResourceCost.FREE));
     }
 
-    // --- triggerDamage: the weapon's static number, recursing into a Burst. ---
+    // --- attackSpeedLabel: ATTACKS PER SECOND (20/ticks), not seconds. Redden by changing the 20. ---
 
     @Test
-    void weaponDamageReadsTheWeaponAttackDamage() {
+    void attackSpeedIsAttacksPerSecondNotSeconds() {
+        // 10 ticks between swings is TWO attacks a second. The number must be 2.0, not 0.5 --
+        // higher is better here, the opposite of the cooldown lines.
+        assertEquals("2.0", WeaponLoreLines.attackSpeedLabel(10));
+    }
+
+    @Test
+    void attackSpeedRoundsToOneDecimal() {
+        assertEquals("1.3", WeaponLoreLines.attackSpeedLabel(15));
+    }
+
+    @Test
+    void attackSpeedOfAZeroCooldownIsBlankRatherThanInfinity() {
+        // The guard that keeps a divide-by-zero off a player's tooltip; the caller drops the line.
+        assertEquals("", WeaponLoreLines.attackSpeedLabel(0));
+        assertEquals("", WeaponLoreLines.attackSpeedLabel(-5));
+    }
+
+    // --- triggerDamage: the number, its element, and WHERE IT CAME FROM. ---
+    // The source discriminates a basic attack from an ability payload, which is what decides
+    // whether the tooltip renders a stat block or an ability block. Redden by collapsing it.
+
+    @Test
+    void weaponDamageReadsTheWeaponAttackDamageAndIsAWeaponStat() {
         var onHit = List.<EffectSpec>of(new EffectSpec.WeaponDamage("kinetic"));
-        assertEquals(OptionalDouble.of(8), WeaponLoreLines.triggerDamage(onHit, 8));
+
+        var damage = WeaponLoreLines.triggerDamage(onHit, 8).orElseThrow();
+
+        assertEquals(8, damage.amount());
+        assertEquals("kinetic", damage.element());
+        assertEquals(WeaponLoreLines.DamageSource.WEAPON_STAT, damage.source(),
+                "weapon_damage READS the attack-damage stat, so it is a basic attack");
     }
 
     @Test
-    void literalDamageUsesItsOwnAmount() {
+    void literalDamageUsesItsOwnAmountAndIsAnAbilityLiteral() {
         var onHit = List.<EffectSpec>of(new EffectSpec.Damage(6, "fire"));
-        assertEquals(OptionalDouble.of(6), WeaponLoreLines.triggerDamage(onHit, 0));
+
+        var damage = WeaponLoreLines.triggerDamage(onHit, 99).orElseThrow();
+
+        assertEquals(6, damage.amount(), "the literal wins; the weapon's attack damage is ignored");
+        assertEquals("fire", damage.element());
+        assertEquals(WeaponLoreLines.DamageSource.ABILITY_LITERAL, damage.source(),
+                "a literal reads no stat, so no class-typed modifier can reach it");
     }
 
     @Test
-    void damageInsideABurstIsFound() {
-        // A cosmetic visual, then a burst carrying the damage -- the number must come from inside it.
+    void damageInsideABurstIsFoundWithItsElementAndSource() {
+        // A cosmetic visual, then a burst carrying the damage -- the number must come from inside it,
+        // and the element and source must survive the recursion rather than being lost on the way up.
         var onHit = List.<EffectSpec>of(
                 new EffectSpec.Visual("solar_detonation"),
                 new EffectSpec.Burst(3.0, List.of(
                         new EffectSpec.Damage(12, "fire"),
                         new EffectSpec.Status("scorch", 40, 0))));
-        assertEquals(OptionalDouble.of(12), WeaponLoreLines.triggerDamage(onHit, 0));
+
+        var damage = WeaponLoreLines.triggerDamage(onHit, 0).orElseThrow();
+
+        assertEquals(12, damage.amount());
+        assertEquals("fire", damage.element());
+        assertEquals(WeaponLoreLines.DamageSource.ABILITY_LITERAL, damage.source());
     }
 
     @Test
@@ -103,7 +143,6 @@ class WeaponLoreLinesTest {
         var onHit = List.<EffectSpec>of(
                 new EffectSpec.Damage(3, "fire"),
                 new EffectSpec.Damage(99, "fire"));
-        assertEquals(OptionalDouble.of(3), WeaponLoreLines.triggerDamage(onHit, 0));
-        assertTrue(true);
+        assertEquals(3, WeaponLoreLines.triggerDamage(onHit, 0).orElseThrow().amount());
     }
 }

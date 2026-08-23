@@ -8,6 +8,7 @@ import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
+import io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.content.ElementDefinition;
 import io.github.butterflysmp.rpg.paper.content.ElementLoader;
@@ -61,6 +62,39 @@ class WeaponLoreTest {
                 List.of(new TriggerBinding("left_click", slash)), List.of("Flavour."));
     }
 
+    /** A costed special alongside the basic attack: a literal payload, so an ABILITY block. */
+    private static WeaponDefinition swordWithFireball() {
+        AbilityDefinition slash = new AbilityDefinition(
+                "emberblade/left_click", "Ember Slash", "fire", "none",
+                10, ResourceCost.FREE, new CastSpec.Melee(3.5, 120),
+                List.of(new EffectSpec.WeaponDamage("fire")), List.of("A cut that smoulders."));
+        AbilityDefinition fireball = new AbilityDefinition(
+                "emberblade/right_click", "Fireball", "fire", "none",
+                60, new ResourceCost("energy", 40), new CastSpec.Projectile(1.6, 0.03, 100),
+                List.of(new EffectSpec.Burst(3.0, List.of(new EffectSpec.Damage(12, "fire")))),
+                List.of("Hurl a bursting ember."));
+        return new WeaponDefinition("emberblade", "Emberblade", "fire", Rarity.RARE,
+                WeaponClass.MELEE, "iron_sword", 7.0,
+                List.of(new TriggerBinding("left_click", slash),
+                        new TriggerBinding("right_click", fireball)),
+                List.of("Flavour."));
+    }
+
+    /** A bow shape: one literal-damage trigger, no weapon_damage anywhere -- so NO stat block. */
+    private static WeaponDefinition bowWithNoBasicAttack() {
+        AbilityDefinition shot = new AbilityDefinition(
+                "hunters_bow/right_click", "Quick Shot", "fire", "none",
+                15, ResourceCost.FREE, new CastSpec.Projectile(2.5, 0.05, 60),
+                List.of(new EffectSpec.Damage(6, "fire")), List.of("A swift arrow."));
+        return new WeaponDefinition("hunters_bow", "Hunter's Bow", "fire", Rarity.UNCOMMON,
+                WeaponClass.RANGER, "bow", 0.0,
+                List.of(new TriggerBinding("right_click", shot)), List.of());
+    }
+
+    private static List<String> textLines(List<Component> lore) {
+        return lore.stream().map(WeaponLoreTest::textOf).toList();
+    }
+
     /** The effective colour of a line: MiniMessage may hang the colour on a child, not the root. */
     private static TextColor colorOf(Component component) {
         if (component.color() != null) return component.color();
@@ -73,6 +107,65 @@ class WeaponLoreTest {
 
     private static String textOf(Component component) {
         return PlainTextComponentSerializer.plainText().serialize(component);
+    }
+
+    // --- basic attack renders as a STAT BLOCK, not an ability section ---
+
+    /**
+     * The whole point of this pass. A basic attack is a stat: two lines, no gold ability name, no
+     * authored prose, no cadence line. The prose is deliberately still present on the definition
+     * here -- the renderer must ignore it on a weapon_damage trigger, not merely happen to have
+     * empty content.
+     */
+    @Test
+    void aBasicAttackRendersAsTwoStatLinesWithNoAbilitySection() {
+        List<String> lines = textLines(WeaponLore.build(rareFireSword(), elementsWithFire()));
+
+        assertTrue(lines.contains("Melee Damage: 7"), () -> "expected a class-typed stat line in " + lines);
+        assertTrue(lines.contains("Attack Speed: 2.0"),
+                () -> "10 ticks between swings is 2.0 attacks/sec; got " + lines);
+        assertFalse(lines.contains("Ember Slash  Left-Click"),
+                () -> "a basic attack must not render a gold ability line; got " + lines);
+        assertFalse(lines.contains("A cut that smoulders."),
+                () -> "authored prose on a basic attack must not render; got " + lines);
+        assertFalse(lines.stream().anyMatch(l -> l.startsWith("Cooldown:")),
+                () -> "a basic attack shows Attack Speed, never a cooldown; got " + lines);
+    }
+
+    /**
+     * The label collision this pass resolves. The stat line and the fireball are both damage, but
+     * only the stat line reads the ATTACK_DAMAGE stat -- so only it may wear the CLASS label. The
+     * fireball is a literal and wears its ELEMENT, or the tooltip promises a "+N Melee Damage"
+     * modifier relationship that cannot exist.
+     */
+    @Test
+    void anAbilityPayloadIsLabelledByItsElementNotTheWeaponsClass() {
+        List<String> lines = textLines(WeaponLore.build(swordWithFireball(), elementsWithFire()));
+
+        assertTrue(lines.contains("Fire Damage: 12"), () -> "expected an element-typed line in " + lines);
+        assertFalse(lines.contains("Melee Damage: 12"),
+                () -> "a literal payload reads no stat, so it must not wear the class label; got " + lines);
+        // The ability block itself is otherwise untouched.
+        assertTrue(lines.contains("Fireball  Right-Click"), () -> lines.toString());
+        assertTrue(lines.contains("Hurl a bursting ember."), () -> lines.toString());
+        assertTrue(lines.contains("Cooldown: 3.0s | Energy Cost: 40"), () -> lines.toString());
+        // ...and the basic attack still owns the class label, exactly once.
+        assertEquals(1, lines.stream().filter(l -> l.startsWith("Melee Damage: ")).count(),
+                () -> "exactly one class-labelled damage line: " + lines);
+        assertTrue(lines.contains("Melee Damage: 7"), () -> lines.toString());
+    }
+
+    @Test
+    void aWeaponWithNoBasicAttackRendersNoStatBlock() {
+        List<String> lines = textLines(WeaponLore.build(bowWithNoBasicAttack(), elementsWithFire()));
+
+        assertFalse(lines.stream().anyMatch(l -> l.startsWith("Ranged Damage:")),
+                () -> "no weapon_damage trigger means no stat block at all; got " + lines);
+        assertFalse(lines.stream().anyMatch(l -> l.startsWith("Attack Speed:")),
+                () -> "no basic attack means no attack speed; got " + lines);
+        // Its shot is an ability block, element-typed like any other literal payload.
+        assertTrue(lines.contains("Quick Shot  Right-Click"), () -> lines.toString());
+        assertTrue(lines.contains("Fire Damage: 6"), () -> lines.toString());
     }
 
     @Test
@@ -149,7 +242,38 @@ class WeaponLoreTest {
             assertEquals(RarityColors.of(weapon.rarity()),
                     colorOf(WeaponItems.displayName(weapon.displayName(), weapon.rarity())),
                     () -> weapon.id() + "'s item name must wear its rarity tier's colour");
+
+            // No weapon may show another class's damage label -- the label comes from its own class.
+            List<String> lines = textLines(lore);
+            String ownLabel = WeaponClassLabel.of(weapon.weaponClass()) + " Damage: ";
+            for (String other : new String[]{"Melee Damage: ", "Ranged Damage: ", "Magic Damage: "}) {
+                if (other.equals(ownLabel)) continue;
+                assertFalse(lines.stream().anyMatch(l -> l.startsWith(other)),
+                        () -> weapon.id() + " (" + weapon.weaponClass() + ") must not render " + other
+                                + "; got " + lines);
+            }
+
+            // A class label appears at most once, and only on a weapon that HAS a basic attack.
+            long classLabelled = lines.stream().filter(l -> l.startsWith(ownLabel)).count();
+            boolean hasBasicAttack = weapon.triggers().stream().anyMatch(t ->
+                    WeaponLoreLines.triggerDamage(t.ability().onHit(), weapon.attackDamage())
+                            .map(d -> d.source() == WeaponLoreLines.DamageSource.WEAPON_STAT)
+                            .orElse(false));
+            assertEquals(hasBasicAttack ? 1 : 0, classLabelled,
+                    () -> weapon.id() + " should have " + (hasBasicAttack ? "exactly one" : "no")
+                            + " class-labelled damage line; got " + lines);
+            assertEquals(hasBasicAttack,
+                    lines.stream().anyMatch(l -> l.startsWith("Attack Speed: ")),
+                    () -> weapon.id() + ": attack speed must appear iff it has a basic attack; got " + lines);
         }
+
+        // Ironblade and Emberblade are the two weapon_damage weapons in shipped content. If that
+        // ever stops being true this test has quietly stopped covering the stat block.
+        assertEquals(2, weapons.all().stream().filter(w -> w.triggers().stream().anyMatch(t ->
+                        WeaponLoreLines.triggerDamage(t.ability().onHit(), w.attackDamage())
+                                .map(d -> d.source() == WeaponLoreLines.DamageSource.WEAPON_STAT)
+                                .orElse(false))).count(),
+                "exactly two shipped weapons have a basic attack (ironblade, emberblade)");
     }
 
     private static void copyBundled(String resource, Path target) throws IOException {

@@ -10,11 +10,11 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.OptionalDouble;
 
 /**
  * The colour/layout half of the weapon tooltip: wraps the plain strings/numbers from
@@ -24,8 +24,16 @@ import java.util.OptionalDouble;
  *
  * Every number here is the weapon's STATIC content (declared attack_damage, or an ability's literal
  * Damage amount), never the holder's resolved stat, so the lore is mint-time only and cannot drift.
- * Layout top to bottom: element, one block per trigger (name+input, authored description, class-typed
- * damage, cadence), the weapon-level flavour, and the "<Rarity> <Class> Weapon" footer.
+ * Layout top to bottom: element, the basic-attack STAT BLOCK, one ABILITY BLOCK per remaining
+ * trigger (name+input, authored description, element-typed damage, cadence), the weapon-level
+ * flavour, and the "<Rarity> <Class> Weapon" footer.
+ *
+ * A basic attack is a stat, not an ability, so it renders as two stat lines rather than a section
+ * with a name and prose. The split is by {@link WeaponLoreLines.DamageSource} -- an effect that
+ * READS the attack-damage stat is a basic attack; one carrying its own literal is an ability --
+ * never by the input name. That is also why the two damage lines are labelled differently: the
+ * class label ("Melee Damage") goes only on the stat-reading line a "+N Melee Damage" modifier
+ * could actually reach, and ability payloads are labelled by their element ("Fire Damage").
  *
  * Two colour axes, owned by two different places on purpose: the ELEMENT line wears the element's
  * own colour from its content file (open axis -> content owns it), and the footer wears the rarity
@@ -38,15 +46,40 @@ public final class WeaponLore {
 
     public static List<Component> build(WeaponDefinition weapon, ElementRegistry elements) {
         List<Component> lore = new ArrayList<>();
-        String classLabel = WeaponClassLabel.of(weapon.weaponClass());
 
         // Element on its own line at the very top, in the ELEMENT's own colour -- not the rarity's.
         lore.add(elementLine(weapon.element(), elements));
 
-        // One block per trigger: gold name + input, authored prose, the class-typed damage number,
-        // and the cadence. Each block is preceded by a blank so they read as distinct abilities.
+        // A basic attack is a STAT, not an ability: it gets two stat lines directly under the
+        // element, with no name, no prose and no cadence. Everything else is an ability block.
+        // The split is by DamageSource, never by input name -- see WeaponLoreLines.DamageSource.
+        boolean statBlockPlaced = false;
         for (TriggerBinding binding : weapon.triggers()) {
             AbilityDefinition ability = binding.ability();
+            var damage = WeaponLoreLines.triggerDamage(ability.onHit(), weapon.attackDamage());
+            boolean isBasicAttack = damage
+                    .map(d -> d.source() == WeaponLoreLines.DamageSource.WEAPON_STAT)
+                    .orElse(false);
+
+            // Only the FIRST basic attack becomes the stat block; a second weapon_damage trigger
+            // would have nowhere to go, and no shipped weapon declares one.
+            if (isBasicAttack && !statBlockPlaced) {
+                statBlockPlaced = true;
+                lore.add(blank());
+                lore.add(plain(WeaponClassLabel.of(weapon.weaponClass()) + " Damage: ", NamedTextColor.GRAY)
+                        .append(plain(number(damage.orElseThrow().amount()), NamedTextColor.RED)));
+
+                String speed = WeaponLoreLines.attackSpeedLabel(ability.cooldownTicks());
+                if (!speed.isBlank()) {
+                    lore.add(plain("Attack Speed: ", NamedTextColor.GRAY)
+                            .append(plain(speed, NamedTextColor.RED)));
+                }
+                continue;
+            }
+            if (isBasicAttack) continue;
+
+            // An ability block: gold name + input, authored prose, the ELEMENT-typed damage number,
+            // and the cadence. Each is preceded by a blank so they read as distinct abilities.
             lore.add(blank());
 
             // Ability name (gold) with the click that fires it (yellow), e.g. "Fireball  Right-Click".
@@ -57,10 +90,12 @@ public final class WeaponLore {
                 lore.add(plain(line, NamedTextColor.GRAY));
             }
 
-            OptionalDouble damage = WeaponLoreLines.triggerDamage(ability.onHit(), weapon.attackDamage());
+            // Element-typed, NOT class-typed: this payload reads no stat, so no "+N Melee Damage"
+            // modifier can reach it and claiming otherwise would be a lie the tooltip tells.
             if (damage.isPresent()) {
-                lore.add(plain(classLabel + " Damage: ", NamedTextColor.GRAY)
-                        .append(plain(number(damage.getAsDouble()), NamedTextColor.RED)));
+                WeaponLoreLines.TriggerDamage d = damage.get();
+                lore.add(plain(elementName(d.element(), elements) + " Damage: ", NamedTextColor.GRAY)
+                        .append(plain(number(d.amount()), NamedTextColor.RED)));
             }
 
             String cadence = WeaponLoreLines.cadenceLine(ability.cooldownTicks(), ability.cost());
@@ -80,7 +115,8 @@ public final class WeaponLore {
 
         // Rarity + class footer at the very bottom, coloured by tier: "Rare Magic Weapon".
         lore.add(blank());
-        lore.add(plain(titleCase(weapon.rarity().name()) + " " + classLabel + " Weapon",
+        lore.add(plain(titleCase(weapon.rarity().name()) + " "
+                        + WeaponClassLabel.of(weapon.weaponClass()) + " Weapon",
                 RarityColors.of(weapon.rarity())));
 
         return lore;
@@ -106,6 +142,20 @@ public final class WeaponLore {
         return MiniMessage.miniMessage().deserialize(element.displayName())
                 // Lore renders italic by default; every other line here opts out, so this must too.
                 .decoration(TextDecoration.ITALIC, false);
+    }
+
+    /**
+     * An element's name as PLAIN words for use inside a longer line ("Fire Damage: 12"), taken from
+     * the same content {@code display_name} {@link #elementLine} renders -- so a two-word or
+     * oddly-cased element reads the way its content authored it, not the way its id happens to be
+     * spelled. The colour is stripped here on purpose: this is a fragment of a gray label line, and
+     * the element already wears its own colour on its own line at the top.
+     */
+    private static String elementName(String elementId, ElementRegistry elements) {
+        return elements.find(elementId)
+                .map(e -> PlainTextComponentSerializer.plainText()
+                        .serialize(MiniMessage.miniMessage().deserialize(e.displayName())))
+                .orElseGet(() -> titleCase(elementId));
     }
 
     /** A non-italic lore line in one colour. */
