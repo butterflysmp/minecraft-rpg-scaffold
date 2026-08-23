@@ -308,6 +308,47 @@ class ContentValidatorTest {
         assertTrue(validator(visualsWith(), statusesWith()).validate(abilities).isEmpty());
     }
 
+    // --- mobs: base_entity must name a real LIVING entity -------------------------------------------
+
+    private static final java.util.function.Predicate<String> LIVING = name -> name.equals("wither_skeleton");
+    private static final java.util.function.Predicate<String> EXISTS =
+            name -> name.equals("wither_skeleton") || name.equals("arrow");
+
+    private static java.util.List<io.github.butterflysmp.rpg.core.mob.MobDefinition> mob(String baseEntity) {
+        return java.util.List.of(
+                new io.github.butterflysmp.rpg.core.mob.MobDefinition("knell", baseEntity, "Knell", 360));
+    }
+
+    @Test
+    void aMobNamingARealLivingEntityIsClean() {
+        assertTrue(validator(visualsWith(), statusesWith())
+                .validateMobs(mob("wither_skeleton"), EXISTS, LIVING).isEmpty());
+    }
+
+    @Test
+    void aMobNamingNoEntityAtAllIsReported() {
+        var problems = validator(visualsWith(), statusesWith())
+                .validateMobs(mob("wither_skeletn"), EXISTS, LIVING);
+
+        assertEquals(1, problems.size());
+        assertTrue(problems.get(0).contains("knell"), problems.toString());
+        assertTrue(problems.get(0).contains("wither_skeletn"), problems.toString());
+    }
+
+    /**
+     * The check that earns its keep. "arrow" is a perfectly real EntityType, so an existence-only
+     * check passes it -- and then /rpg spawn ClassCastExceptions on a non-LivingEntity, weeks later,
+     * for whoever tries it. Redden by dropping the isAlive half and this is the test that fails.
+     */
+    @Test
+    void aMobNamingARealButNonLivingEntityIsReported() {
+        var problems = validator(visualsWith(), statusesWith())
+                .validateMobs(mob("arrow"), EXISTS, LIVING);
+
+        assertEquals(1, problems.size());
+        assertTrue(problems.get(0).contains("not a living entity"), problems.toString());
+    }
+
     /** Copies the named shipped resources into their own directory and returns that directory. */
     private static File copyBundled(Path root, String kind, String... files) throws IOException {
         Path dir = Files.createDirectories(root.resolve(kind));

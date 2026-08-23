@@ -22,8 +22,14 @@ import java.util.Optional;
  * A wrong index would silently route the HP bar into another field, so this must be boot-witnessed
  * (the name lands in the right place, and the mob's REAL name is never touched).
  *
- * The mob's server-side name is deliberately never set: index 2 here is a per-VIEWER override, so the
- * real CustomName stays empty (death messages say "Zombie", /data is clean). Name is sent only when
+ * The HP TEXT is deliberately never written to the mob's server-side name: index 2 here is a
+ * per-VIEWER override, so a health bar can never leak into a death message or /data.
+ *
+ * That rule has one exception, and it is about identity rather than health. A CUSTOM mob
+ * ({@code content/mobs/*.yml}, spawned via {@code /rpg spawn}) DOES get a real CustomName -- its
+ * display name alone, "Knell", set at spawn with CustomNameVisible false. Its identity is genuine, so
+ * it belongs in a death message and in /data; its HP is still packet-only, exactly as here. An
+ * ordinary mob's CustomName stays empty as before (death messages say "Zombie"). Name is sent only when
  * present (first sight / health change); visibility rides every send. A fresh wrapper is built per
  * send -- PacketEvents frees a wrapper's buffer after encoding, so one must never be shared across
  * sends.

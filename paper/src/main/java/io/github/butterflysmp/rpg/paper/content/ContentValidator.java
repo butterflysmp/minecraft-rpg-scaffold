@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.kit.KitDefinition;
+import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
@@ -140,6 +141,40 @@ public final class ContentValidator {
                 for (EffectSpec effect : binding.ability().onHit()) {
                     checkEffect(effect, label, problems);
                 }
+            }
+        }
+        return problems;
+    }
+
+    /**
+     * A custom mob's {@code base_entity} must name a real, LIVING entity type.
+     *
+     * The loader cannot check this: resolving a name to an {@code EntityType} needs the Bukkit
+     * registry, which needs a running server -- the same reason a dangling {@code visual_id} is
+     * checked here rather than at parse time. So the check arrives as a predicate seam and this stays
+     * unit-testable with no server.
+     *
+     * The {@code isAlive} half is the one that earns its keep. {@code base_entity: arrow} resolves to
+     * a perfectly real EntityType and would sail past a mere existence check, then fail at spawn time
+     * with a ClassCastException on the first {@code /rpg spawn} -- weeks later, to whoever tries it.
+     * Named at boot instead.
+     *
+     * @param entityExists  does this name resolve to an entity type at all
+     * @param entityIsAlive does it resolve to a LivingEntity (not an arrow, item or display)
+     * @return every problem found, each naming the mob at fault. Empty is good.
+     */
+    public List<String> validateMobs(Collection<MobDefinition> mobs,
+                                     Predicate<String> entityExists,
+                                     Predicate<String> entityIsAlive) {
+        List<String> problems = new ArrayList<>();
+        for (MobDefinition mob : mobs) {
+            String label = "mob '" + mob.id() + "'";
+            if (!entityExists.test(mob.baseEntity())) {
+                problems.add(label + " names base_entity '" + mob.baseEntity()
+                        + "', which is not an entity type");
+            } else if (!entityIsAlive.test(mob.baseEntity())) {
+                problems.add(label + " names base_entity '" + mob.baseEntity()
+                        + "', which is not a living entity and cannot carry health or a nameplate");
             }
         }
         return problems;

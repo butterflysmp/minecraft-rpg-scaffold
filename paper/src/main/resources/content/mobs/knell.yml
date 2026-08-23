@@ -1,0 +1,29 @@
+# The first custom mob, and the proof of the whole mechanism: an identity that is DISTINCT from the
+# vanilla entity it spawns as.
+#
+# The Knell is a wither skeleton with 360 HP. An ordinary wither skeleton is still an ordinary wither
+# skeleton with 20 -- because a custom mob is keyed by the mob_id PDC tag on the SPECIFIC entity that
+# was spawned, never by its entity type. Keying on type would scale every wither skeleton on the
+# server, which is the bug this design exists to make impossible.
+#
+# Spawn it with /rpg spawn knell. That path tags the entity BEFORE it enters the world, which is
+# load-bearing: the seed runs on the entity-add event, and a tag applied afterwards would arrive to
+# find the mob already seeded from vanilla.
+
+# The id is the filename (knell.yml -> knell), as with every other content type.
+
+# REQUIRED, and deliberately not defaulted. Rarity defaults to common and material defaults to a
+# sword because a wrong guess there is cosmetic; a wrong guess at which creature to spawn is not.
+# Must name a LIVING entity -- `arrow` is a real entity type and would spawn nothing killable, so
+# ContentValidator rejects it by name at boot rather than at the first /rpg spawn.
+base_entity: wither_skeleton
+
+# Set as the entity's REAL CustomName at spawn, so death messages and /data read "Knell". Its HP is
+# NOT part of the name -- the health bar stays a per-viewer packet override, so a nameplate can never
+# leak into a death message.
+display_name: "Knell"
+
+# The custom health store is uncapped, so this is the same mechanism at 360 as at 5000 -- vanilla's
+# 1024 attribute cap does not apply, because nothing here touches the vanilla attribute. A boss is
+# a bigger number in this field, not a different feature.
+max_health: 360

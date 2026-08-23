@@ -4,6 +4,8 @@ import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthChange;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthListener;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthState;
+import io.github.butterflysmp.rpg.core.mob.MobRegistry;
+import io.github.butterflysmp.rpg.core.mob.MobSeeding;
 import io.github.butterflysmp.rpg.paper.adapter.EntityTaskTarget;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTask;
@@ -28,8 +30,11 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * The mob health nameplate: the SECOND display on the {@link HealthChange} seam (the player heart bar
  * is the first). It shows {@code <name> <cur>/<max> ❤} with the CUSTOM cur/max, gated per viewer by
- * line of sight, sent via per-viewer packets. The mob's real server-side name is never touched --
- * name text is a per-viewer metadata override, so death messages and /data stay clean.
+ * line of sight, sent via per-viewer packets. The HP text is never written to the mob's real
+ * server-side name -- it is a per-viewer metadata override, so death messages and /data never carry a
+ * health bar. (A CUSTOM mob does carry a real CustomName, set at spawn: its identity is genuine, so
+ * "Knell" belongs in a death message. Its HP still lives only in the packet. See
+ * {@code PacketNameplateSender}.)
  *
  * Three roles:
  *  - as a {@link HealthListener}: on a mob health change, rebuild the cached name text and bump its
@@ -51,13 +56,23 @@ public final class MobNameplateManager implements HealthListener {
     private final Scheduler scheduler;
     private final NameplateSender sender;
     private final Keys keys;
+    private final MobRegistry mobs;
     private final Map<UUID, Nameplate> nameplates = new ConcurrentHashMap<>();
     private CombatantStats stats;
 
-    public MobNameplateManager(Scheduler scheduler, NameplateSender sender, Keys keys) {
+    /**
+     * The mob registry arrives by CONSTRUCTOR rather than on {@code AdapterContext}, unlike the
+     * element registry the tooltip needed. Not a style choice -- it is forced: this manager is built
+     * in onEnable BEFORE the AdapterContext exists, and it has to be, because the context needs the
+     * stat store and the store needs this manager as a HealthListener. Mirrors
+     * {@code PlayerHealthSystem(scheduler, keys, weapons)}, which already takes a content registry
+     * exactly this way.
+     */
+    public MobNameplateManager(Scheduler scheduler, NameplateSender sender, Keys keys, MobRegistry mobs) {
         this.scheduler = scheduler;
         this.sender = sender;
         this.keys = keys;
+        this.mobs = mobs;
     }
 
     /** Wire the store; called once in onEnable after the store is built (breaks the listener/store cycle). */
@@ -78,9 +93,15 @@ public final class MobNameplateManager implements HealthListener {
     // --- Mob lifecycle (driven by RpgListeners' entity add/remove events) --------------------------
 
     /**
-     * Seed a mob's custom combat stats -- HP from vanilla max, attack damage from vanilla ATTACK_DAMAGE
-     * -- if not already tracked, and return its state (null for a player / armor stand). Register-if-
-     * absent, so a later content-driven value is never clobbered and repeat calls are idempotent.
+     * Seed a mob's custom combat stats if not already tracked, and return its state (null for a player
+     * / armor stand). HP comes from the mob's CONTENT DEFINITION when it carries a {@code mob_id} tag,
+     * and from its vanilla max otherwise; attack damage is still vanilla ATTACK_DAMAGE for both (the
+     * mob stat block grows in a later pass). Register-if-absent, so repeat calls are idempotent.
+     *
+     * Register-if-absent is also why the spawn path MUST tag the entity before it enters the world:
+     * {@code EntityAddToWorldEvent} lands here first, and a tag applied afterwards would arrive to find
+     * the mob already seeded from vanilla -- a Knell with 20 HP and no visible sign of it. See
+     * {@code RpgCommand}'s pre-spawn consumer.
      *
      * OPT-OUT-AGNOSTIC on purpose: the {@code nameplateOptOut} flag suppresses only the nameplate
      * DISPLAY, never a mob's combat stats. A mob's damage must not depend on whether it shows a health
@@ -90,7 +111,13 @@ public final class MobNameplateManager implements HealthListener {
      */
     public HealthState seedCombatStats(LivingEntity mob) {
         if (mob instanceof Player || mob instanceof ArmorStand) return null;
-        return stats.bootstrapIfAbsent(mob.getUniqueId(), maxHealthOf(mob), attackDamageOf(mob), false);
+        // A CUSTOM mob seeds from its content definition; everything else takes the vanilla path
+        // below, byte for byte as it did before custom mobs existed. Keyed by the entity's own
+        // mob_id tag, never by its type -- the Knell is a wither skeleton, and ordinary wither
+        // skeletons must stay ordinary. MobSeeding owns that decision so it is core-testable.
+        String mobId = mob.getPersistentDataContainer().get(keys.mobId, PersistentDataType.STRING);
+        double max = MobSeeding.maxHealth(mobs, mobId, maxHealthOf(mob));
+        return stats.bootstrapIfAbsent(mob.getUniqueId(), max, attackDamageOf(mob), false);
     }
 
     /**

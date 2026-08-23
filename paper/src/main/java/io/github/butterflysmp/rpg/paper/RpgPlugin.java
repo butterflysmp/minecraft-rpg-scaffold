@@ -9,6 +9,7 @@ import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.combat.stat.CompositeHealthListener;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
+import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
@@ -16,6 +17,7 @@ import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.command.RpgCommand;
 import io.github.butterflysmp.rpg.paper.content.AbilityLoader;
 import io.github.butterflysmp.rpg.paper.content.KitLoader;
+import io.github.butterflysmp.rpg.paper.content.MobLoader;
 import io.github.butterflysmp.rpg.paper.content.ContentValidator;
 import io.github.butterflysmp.rpg.paper.content.ElementLoader;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
@@ -40,12 +42,15 @@ import io.github.butterflysmp.rpg.storage.FilePlayerRepository;
 import io.github.butterflysmp.rpg.storage.PlayerRepository;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
+import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -83,6 +88,7 @@ public final class RpgPlugin extends JavaPlugin {
     private ElementRegistry elements;
     private KitRegistry kits;
     private WeaponRegistry weapons;
+    private MobRegistry mobs;
     private CooldownTracker cooldowns;
     private ResourcePool resources;
     private CombatantStats stats;
@@ -113,10 +119,12 @@ public final class RpgPlugin extends JavaPlugin {
         this.elements = new ElementLoader(getLogger()).loadAll(new File(contentDir, "elements"));
         this.kits = new KitLoader(getLogger()).loadAll(new File(contentDir, "kits"));
         this.weapons = new WeaponLoader(getLogger()).loadAll(new File(contentDir, "weapons"));
+        this.mobs = new MobLoader(getLogger()).loadAll(new File(contentDir, "mobs"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, "
-                + kits.size() + " kits, " + weapons.size() + " weapons");
+                + kits.size() + " kits, " + weapons.size() + " weapons, "
+                + mobs.size() + " mobs");
 
         // A visual_id that resolves to nothing should be found now, by name, not by
         // a player casting the ability in six weeks' time. Registry is only reachable
@@ -134,7 +142,7 @@ public final class RpgPlugin extends JavaPlugin {
         // fanned out by a composite listener -- the player heart bar and the per-viewer mob nameplate.
         // Two-step bind breaks the cycle (the store needs a listener, each display needs the store).
         this.healthSystem = new PlayerHealthSystem(scheduler, keys, weapons);
-        this.nameplates = new MobNameplateManager(scheduler, new PacketNameplateSender(), keys);
+        this.nameplates = new MobNameplateManager(scheduler, new PacketNameplateSender(), keys, mobs);
         // Third display: the per-dealer damage-number popup. Pure seam consumer -- reads amount/dealer
         // off the event, so no bind(stats) and no mob-lifecycle hooks (unlike the nameplate).
         this.popups = new DamagePopupManager(scheduler, new PacketDamagePopupSender());
@@ -188,7 +196,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, nameplates),
+                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, mobs, nameplates),
                         "RPG commands"));
     }
 
@@ -241,6 +249,17 @@ public final class RpgPlugin extends JavaPlugin {
      * Warns, never disables the plugin. Fail-soft: the ability still loads and still
      * deals its damage; it just tells you which reference is dangling.
      */
+    /**
+     * A content {@code base_entity} name -> Bukkit EntityType, or null if it names nothing. Uses the
+     * Registry rather than {@code EntityType.valueOf}, matching how the plugin resolves attributes,
+     * potion effects and sounds -- and unlike valueOf it returns null instead of throwing, which is
+     * what lets the validator report a typo by name instead of blowing up the boot.
+     */
+    private static EntityType entityType(String name) {
+        if (name == null || name.isBlank()) return null;
+        return Registry.ENTITY_TYPE.get(NamespacedKey.minecraft(name.toLowerCase(Locale.ROOT)));
+    }
+
     private void validateContent() {
         var validator = new ContentValidator(visuals, statuses, elements,
                 key -> Registry.MOB_EFFECT.get(key) != null,
@@ -257,6 +276,16 @@ public final class RpgPlugin extends JavaPlugin {
         // ability's can, and is checked the same walk. Naming the file at boot beats a
         // silent no-visual the first time someone swings it.
         problems.addAll(validator.validateWeapons(weapons.all()));
+        // A mob's base_entity must name a real LIVING entity. Resolving that needs the Bukkit registry,
+        // which is only reachable here -- so it arrives as predicates, like the potion/sound checks.
+        // "arrow" is a real EntityType and would pass a mere existence check, then ClassCastException
+        // at the first /rpg spawn; isAlive() is what turns that into a named boot warning instead.
+        problems.addAll(validator.validateMobs(mobs.all(),
+                name -> entityType(name) != null,
+                name -> {
+                    EntityType type = entityType(name);
+                    return type != null && type.isAlive();
+                }));
         for (String problem : problems) {
             getLogger().warning("Content: " + problem);
         }

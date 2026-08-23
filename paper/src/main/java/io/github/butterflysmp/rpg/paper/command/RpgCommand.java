@@ -16,6 +16,8 @@ import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.kit.KitDefinition;
 import io.github.butterflysmp.rpg.core.kit.KitRegistry;
 import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
+import io.github.butterflysmp.rpg.core.mob.MobDefinition;
+import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -35,6 +37,11 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.entity.EntityType;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -43,6 +50,7 @@ import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -66,6 +74,7 @@ public final class RpgCommand {
                                                                ElementRegistry elements,
                                                                ProfileService profiles,
                                                                WeaponRegistry weapons,
+                                                               MobRegistry mobs,
                                                                MobNameplateManager nameplates) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
@@ -191,6 +200,24 @@ public final class RpgCommand {
                         .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000))
                                 .executes(ctx -> healthBoost(ctx, adapters,
                                         IntegerArgumentType.getInteger(ctx, "amount")))))
+                // Spawn a custom mob: the mob analogue of /rpg give <weapon>. Dev-gated, because
+                // spawning a 360-HP boss on demand is a test instrument, not a player verb.
+                .then(Commands.literal("spawn")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .then(Commands.argument("mob", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    mobs.all().forEach(m -> builder.suggest(m.id()));
+                                    return builder.buildFuture();
+                                })
+                                .executes(ctx -> {
+                                    String id = StringArgumentType.getString(ctx, "mob");
+                                    if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+                                        ctx.getSource().getSender().sendMessage(
+                                                Component.text("Players only.", NamedTextColor.RED));
+                                        return 0;
+                                    }
+                                    return spawnMob(player, id, mobs, adapters);
+                                })))
                 // Mint an attack_speed_boost_TEMP. The attack-speed stat bases at 1.0 and no content
                 // grants a bonus yet, so without this the feature is invisible at boot: hold it and a
                 // basic attack's cooldown scales (10 ticks -> 5 at +1.0), drop it and the cadence
@@ -317,6 +344,63 @@ public final class RpgCommand {
         player.sendMessage(Component.text("Gave health_boost_TEMP (+" + (int) boost + "). Hold it to raise max HP.",
                 NamedTextColor.GREEN));
         return 1;
+    }
+
+    /**
+     * Spawn a custom mob at the caller's feet.
+     *
+     * The load-bearing detail is WHEN the tag is applied, not that it is. {@code EntityAddToWorldEvent}
+     * fires as the entity enters the world and runs {@code MobNameplateManager.onMobAppear} ->
+     * {@code seedCombatStats}, which is register-IF-ABSENT. Tag the entity after spawning and the mob
+     * has already been seeded from its vanilla MAX_HEALTH; the tag then changes nothing, and the Knell
+     * quietly has 20 HP with no error anywhere. So the PDC tag and the name are set inside the
+     * PRE-SPAWN CONSUMER, which runs before the add event.
+     *
+     * {@code randomizeData: false} keeps a dev spawn deterministic -- no random equipment or variant --
+     * so two spawns of the same mob are the same mob.
+     *
+     * The CustomName is the mob's IDENTITY only, never its HP: the health bar stays a per-viewer packet
+     * override (see PacketNameplateSender). CustomNameVisible is false so vanilla does not float the
+     * bare name alongside our nameplate -- death messages and /data read "Knell" either way.
+     */
+    private static int spawnMob(Player player, String mobId, MobRegistry mobs, AdapterContext adapters) {
+        MobDefinition def = mobs.find(mobId).orElse(null);
+        if (def == null) {
+            player.sendMessage(Component.text("Unknown mob: " + mobId, NamedTextColor.RED));
+            String available = String.join(", ", mobs.all().stream().map(MobDefinition::id).toList());
+            player.sendMessage(Component.text("Available: " + available, NamedTextColor.GRAY));
+            return 0;
+        }
+
+        EntityType type = Registry.ENTITY_TYPE.get(
+                NamespacedKey.minecraft(def.baseEntity().toLowerCase(Locale.ROOT)));
+        // Both already warned at boot by ContentValidator; refuse here rather than throw, so a bad
+        // content file is a red chat line and not a stack trace in the command dispatcher.
+        if (type == null || !type.isAlive()) {
+            player.sendMessage(Component.text(
+                    "Mob '" + def.id() + "' has base_entity '" + def.baseEntity()
+                            + "', which is not a living entity. See the boot log.", NamedTextColor.RED));
+            return 0;
+        }
+
+        Class<? extends LivingEntity> entityClass = type.getEntityClass().asSubclass(LivingEntity.class);
+        Component name = MiniMessage.miniMessage().deserialize(def.displayName());
+
+        LivingEntity spawned = player.getWorld().spawn(
+                player.getLocation(), entityClass, CreatureSpawnEvent.SpawnReason.CUSTOM, false,
+                entity -> {
+                    // BEFORE the add event -- see the javadoc above. Order is the whole trick.
+                    entity.getPersistentDataContainer()
+                            .set(adapters.keys().mobId, PersistentDataType.STRING, def.id());
+                    entity.customName(name);
+                    entity.setCustomNameVisible(false);
+                });
+
+        player.sendMessage(Component.text("Spawned ", NamedTextColor.AQUA)
+                .append(name)
+                .append(Component.text(" (" + def.baseEntity() + ", "
+                        + Math.round(def.maxHealth()) + " HP)", NamedTextColor.GRAY)));
+        return spawned != null ? 1 : 0;
     }
 
     /**
