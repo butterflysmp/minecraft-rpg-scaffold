@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core;
 
+import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
 import io.github.butterflysmp.rpg.core.combat.ChunkTraversal;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
@@ -245,6 +246,12 @@ public final class FakeWorld implements CombatWorld {
         /** A player is spared mob-only effects; a mob is not. Defaults to mob. */
         public boolean player = false;
 
+        /**
+         * The attack-speed multiplier this dummy's snapshot carries. Defaults to neutral, so every
+         * existing test's cadence is unchanged; a cooldown-scaling test sets it.
+         */
+        public double attackSpeed = AttackSpeed.BASE;
+
         /** The last velocity a dash impulse set on this dummy, or null if never dashed. */
         public Vec3 lastImpulse;
 
@@ -267,7 +274,7 @@ public final class FakeWorld implements CombatWorld {
         public Vec3 position() { return pos; }
 
         public CombatantSnapshot snapshot() {
-            return new CombatantSnapshot(id, pos, health > 0, player);
+            return new CombatantSnapshot(id, pos, health > 0, player, attackSpeed);
         }
 
         @Override public UUID id() { return id; }

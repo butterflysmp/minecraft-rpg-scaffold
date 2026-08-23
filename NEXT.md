@@ -652,13 +652,14 @@ Before milestone 2, two things worth measuring rather than assuming:
   unconditionally via `WeaponItems.displayName` (a closed enum — so `RarityColors` in code). An
   authored colour in a weapon's `display_name` no longer wins; the tags were stripped from content
   so no file claims a control it lacks. Deliberately left for later, each its own refinement:
-  - ~~**Attack-speed line.**~~ **DONE, with a caveat that matters.** Basic attacks now show
+  - ~~**Attack-speed line.**~~ **DONE — and the stat behind it now exists too.** Basic attacks show
     `Attack Speed: 2.0` (attacks per second, vanilla's convention, via
-    `WeaponLoreLines.attackSpeedLabel`). But the number is **derived from the trigger's
-    `cooldown_ticks`** — `20.0 / ticks` — and is *not* read from an `attack_speed` stat, because
-    there still is no such stat. Nothing modifies it; it restates the swing cooldown in the units
-    a player expects. When a real attack-speed stat lands it becomes the source and this display
-    follows it, at which point the line becomes modifiable like any other stat.
+    `WeaponLoreLines.attackSpeedLabel`), derived from the trigger's `cooldown_ticks` (`20.0 / ticks`).
+    Attack speed is now a real, modifiable `Stat` (a multiplier, base 1.0) that scales a basic
+    attack's **effective cooldown** — see the attack-speed entry below.
+    **The tooltip deliberately still shows the weapon's BASE speed, not the holder's resolved stat**,
+    per the standing "lore describes the weapon, not whoever holds it" rule that keeps a minted
+    tooltip from lying to the next player who picks the item up. `WeaponLoreTest` pins that.
   - **Rarity/enchant stat bonuses on the tooltip.** Phase 4. Rarity only colours + labels the footer
     now; when rarity/enchant grant real stat deltas, surface them in the ability blocks.
   - ~~**Per-trigger authored prose.**~~ **DONE** — a per-trigger `name:` (gold ability line) and
@@ -678,6 +679,29 @@ Before milestone 2, two things worth measuring rather than assuming:
     trigger's Status/Knockback/Heal payloads render nothing — the Emberblade fireball's `scorch` is
     invisible on the tooltip, and only the authored `description:` prose mentions it. A plain
     completeness item: surface non-damage payloads ("Scorch (2s)", AoE radius) in the ability block.
+- **Attack speed is a real Stat now — what it does and what it deliberately does not.** A third
+  `Stat` on `HealthState` (multiplier, base 1.0) via the same `ModifierTarget` seam as attack damage,
+  converged by the same per-player reconcile loop (`CombatantStats.reconcileAttackSpeedModifiers`).
+  `AbilityService.resolve` scales the cooldown it arms by it — `AttackSpeed.effectiveCooldownTicks`,
+  `max(1, round(ticks / speed))` — but **only for basic attacks**, keyed on the shared
+  `DamagePayload.isBasicAttack`, the same call the tooltip uses to pick a stat block. Decisions worth
+  not rediscovering:
+  - **Ability cooldowns are untouched, by decision.** An ability's cadence is its balance, not a swing
+    rate. A haste stat that also shortened Fireball is a much larger balance question; if it is ever
+    wanted, it is its own pass.
+  - **A speed change mid-cooldown does not retroactively adjust a running timer.** `isReady` reads
+    whatever was armed, so the swing you committed to keeps the cadence it was committed at.
+  - **The caster's speed rides `CombatantSnapshot`**, frozen on the caster's own thread, never read
+    live from the store inside `resolve` — that would be the same cross-region read documented on
+    `CombatWorld.attackDamage`. `BukkitCombatant.snapshot` takes the store rather than offering a
+    neutral-defaulting overload, so no call site can quietly ignore modifiers.
+  - **Untracked reads 1.0, not 0.0**, unlike `attackValue`. Attack speed is a DIVISOR; 0 would mean an
+    untracked caster never swings again.
+  - **`attack_speed_boost_TEMP` (`/rpg attackspeed`) owes removal**, with the other `_TEMP` fixtures.
+    It exists only because no content grants attack speed yet, so the stat would otherwise be
+    invisible at boot and provable only by unit test.
+  - Still deferred: showing the RESOLVED (not base) speed anywhere — that belongs to the stat-screen
+    pass, alongside `+N Melee Damage` and the rarity/enchant bonuses already parked there.
 - **Ranged and magic have no stat-reading basic attack, so class-typed modifiers have nothing to
   grip. Decide this UP FRONT in the modifier pass, not during it.** Only a `weapon_damage` effect
   reads ATTACK_DAMAGE, and in shipped content exactly two triggers use one: `ironblade/left_click`
@@ -685,12 +709,22 @@ Before milestone 2, two things worth measuring rather than assuming:
   carry **literal** `damage:` payloads and declare `attack_damage: 0`, so a `+N Ranged Damage` or
   `+N Magic Damage` modifier would have no stat to modify and would silently do nothing. The tooltip
   already tells this truth (neither weapon renders a class-labelled damage line at all), which is how
-  it surfaced. The modifier pass must choose deliberately, before writing the modifier:
+  it surfaced.
+
+  **The attack-speed pass widened this.** Because attack speed also keys on
+  `DamagePayload.isBasicAttack`, bow and staff get **no attack-speed scaling either** — an
+  `attack_speed_boost_TEMP` visibly speeds up a sword and does nothing at all to a bow. So the same
+  root gap now costs ranged/magic two stats, not one, and the question is correspondingly bigger.
+
+  The modifier pass must choose deliberately, before writing the modifier:
   - **Convert bow/staff first** — give them `attack_damage:` and a `weapon_damage` on_hit so their
-    basic attacks become stat-driven, then all three classes have something to modify. This is a
-    *mechanical* change: their damage starts scaling with modifiers, which is arguably what a
-    Ranger's and Mage's basic attack should do. Note the staff's bolt is costed, so "basic attack"
-    may not even be the right shape for it.
+    basic attacks become stat-driven, and both `+N Ranged/Magic Damage` and attack speed start
+    working for them. **This is NOT a content-only edit, and the entry below is the reason:** a
+    `weapon_damage` payload on a PROJECTILE resolves on the target's region, cross-region from the
+    caster, which is the documented Folia race. Converting them requires first snapshotting the
+    caster's attack damage at CAST time into the effect payload. Budget that work as part of the
+    choice, not as a surprise inside it. Note also the staff's bolt is costed, so "basic attack" may
+    not be the right shape for it regardless.
   - **Or ship melee-only** — accept that `+Ranged`/`+Magic` are inert until those weapons get real
     basic attacks, and say so in the modifier's own lore rather than shipping a dead stat.
   Either is defensible; picking by accident is not.

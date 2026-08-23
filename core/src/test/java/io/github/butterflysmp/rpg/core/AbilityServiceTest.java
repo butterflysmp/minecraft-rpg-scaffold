@@ -326,4 +326,79 @@ class AbilityServiceTest {
 
         assertEquals(60, resources.current(caster.id(), "energy"), 1e-9);
     }
+
+    // --- Attack speed scales a BASIC ATTACK's cooldown, and only a basic attack's ------------------
+
+    /** A weapon_damage trigger: the swing shape, 10 ticks, free -- ironblade's left-click. */
+    private static AbilityDefinition basicAttack() {
+        return new AbilityDefinition(
+                "ironblade/left_click", "Ironblade", "kinetic", "none",
+                10, ResourceCost.FREE, new CastSpec.Melee(3.5, 120),
+                List.of(new EffectSpec.WeaponDamage("kinetic")));
+    }
+
+    /** A literal-damage trigger: the ability shape, 60 ticks -- emberblade's fireball. */
+    private static AbilityDefinition costedAbility() {
+        return new AbilityDefinition(
+                "emberblade/right_click", "Fireball", "fire", "none",
+                60, ResourceCost.FREE, new CastSpec.Projectile(1.6, 0.03, 100),
+                List.of(new EffectSpec.Damage(12, "fire")));
+    }
+
+    /** Fire a trigger and report the cooldown it actually armed, read back off the tracker. */
+    private static long cooldownAfterFiring(AbilityDefinition trigger, double attackSpeed) {
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        caster.attackSpeed = attackSpeed;
+        var cooldowns = new CooldownTracker(() -> 0L);
+        var service = new AbilityService(new AbilityRegistry(), cooldowns, pool(() -> 0L));
+
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.fireTrigger(caster.snapshot(), trigger, FORWARD));
+
+        return cooldowns.ticksRemaining(caster.id(), trigger.id());
+    }
+
+    @Test
+    void attackSpeedShortensABasicAttacksCooldown() {
+        // The point of the whole pass: at 2.0 the 10-tick swing arms a 5-tick cooldown.
+        assertEquals(10, cooldownAfterFiring(basicAttack(), 1.0), "neutral speed is an identity");
+        assertEquals(5, cooldownAfterFiring(basicAttack(), 2.0));
+        assertEquals(20, cooldownAfterFiring(basicAttack(), 0.5), "a slow debuff lengthens it");
+    }
+
+    /**
+     * The scope boundary, and the test that catches a discriminator collapsed to always-true.
+     * An ability's cooldown is its balance, not a swing rate -- attack speed must not touch it,
+     * however fast the caster swings.
+     */
+    @Test
+    void attackSpeedLeavesAnAbilitysDeclaredCooldownAlone() {
+        assertEquals(60, cooldownAfterFiring(costedAbility(), 1.0));
+        assertEquals(60, cooldownAfterFiring(costedAbility(), 2.0),
+                "a literal payload reads no stat, so its cadence is untouched by attack speed");
+        assertEquals(60, cooldownAfterFiring(costedAbility(), 0.25));
+    }
+
+    /**
+     * Gaining speed mid-cooldown does not retroactively shorten a timer already running. Recorded as
+     * a decision rather than left to be rediscovered as a bug: the swing you committed to keeps the
+     * cadence it was committed at.
+     */
+    @Test
+    void aSpeedChangeDoesNotRetroactivelyAlterARunningCooldown() {
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        caster.attackSpeed = 1.0;
+        var cooldowns = new CooldownTracker(() -> 0L);
+        var service = new AbilityService(new AbilityRegistry(), cooldowns, pool(() -> 0L));
+        var trigger = basicAttack();
+
+        service.fireTrigger(caster.snapshot(), trigger, FORWARD);   // arms 10 ticks at 1.0
+        caster.attackSpeed = 10.0;                                   // buff arrives mid-cooldown
+
+        assertEquals(10, cooldowns.ticksRemaining(caster.id(), trigger.id()),
+                "the running timer keeps the cadence it was armed with");
+        assertInstanceOf(AbilityService.CastResult.OnCooldown.class,
+                service.fireTrigger(caster.snapshot(), trigger, FORWARD),
+                "and the buff does not unlock the swing early");
+    }
 }

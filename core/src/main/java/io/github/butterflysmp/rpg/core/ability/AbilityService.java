@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core.ability;
 
+import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
@@ -134,10 +135,26 @@ public final class AbilityService {
                     resources.current(caster.id(), cost.resourceId()));
         }
 
+        // A BASIC ATTACK's cadence is scaled by the caster's attack-speed stat; an ability's declared
+        // cooldown is its balance, not a swing rate, and is left exactly as authored. Same
+        // discriminator the tooltip uses (DamagePayload), so a weapon cannot render as one thing and
+        // behave as the other.
+        //
+        // The speed comes off the SNAPSHOT, frozen on the caster's own thread -- never a live store
+        // read here, which would be cross-thread for a caster who has since hopped regions.
+        //
+        // Note this scales only what the cooldown is SET to. The isReady/ticksRemaining checks above
+        // read whatever was already stored, so gaining or losing attack speed mid-cooldown does not
+        // retroactively lengthen or shorten a timer already running. Deliberate: the swing you have
+        // already committed to keeps the cadence it was committed at.
+        int cooldownTicks = DamagePayload.isBasicAttack(def.onHit())
+                ? AttackSpeed.effectiveCooldownTicks(def.cooldownTicks(), caster.attackSpeed())
+                : def.cooldownTicks();
+
         // Consumed here, at call time -- not when the effects finally run. If it
         // were consumed at execution time, a player could spam-cast during the
         // hop onto the region thread.
-        cooldowns.trigger(caster.id(), id, def.cooldownTicks());
+        cooldowns.trigger(caster.id(), id, cooldownTicks);
         return new CastResult.Success(def, caster, aim);
     }
 }

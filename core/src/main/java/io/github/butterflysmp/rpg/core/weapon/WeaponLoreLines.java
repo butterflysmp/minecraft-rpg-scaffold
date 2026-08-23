@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core.weapon;
 
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
+import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 
 import java.util.ArrayList;
@@ -18,10 +19,16 @@ import java.util.Optional;
  * {@code Damage.amount} for a costed payload -- never the holder's resolved ATTACK_DAMAGE stat.
  * The tooltip describes the weapon, not whoever swings it, so it is mint-time only and cannot drift.
  *
- * {@link DamageSource} is the load-bearing distinction here: it is what lets the tooltip render a
- * basic attack as a STAT BLOCK (class-labelled damage + attack speed, no prose) and an ability as
- * an ABILITY BLOCK (name, prose, element-labelled damage, cadence). A basic attack is a stat, not
- * an ability, and it should not need a whole section to say so.
+ * {@link DamagePayload.DamageSource} is the load-bearing distinction here: it is what lets the
+ * tooltip render a basic attack as a STAT BLOCK (class-labelled damage + attack speed, no prose) and
+ * an ability as an ABILITY BLOCK (name, prose, element-labelled damage, cadence). A basic attack is a
+ * stat, not an ability, and it should not need a whole section to say so. That distinction now lives
+ * in {@link DamagePayload} rather than here, because the cooldown scaler asks the same question --
+ * see its javadoc for why one shared answer matters.
+ *
+ * Note what this class does NOT do: the {@code Attack Speed} it formats is the weapon's BASE
+ * ({@code 20 / cooldown_ticks}), never the holder's resolved attack-speed stat. Lore describes the
+ * weapon, not whoever is holding it -- that is what makes it mint-time safe and non-drifting.
  */
 public final class WeaponLoreLines {
 
@@ -56,58 +63,13 @@ public final class WeaponLoreLines {
     }
 
     /**
-     * Where a trigger's damage number comes from. This is the line between a BASIC ATTACK and an
-     * ABILITY, and the tooltip renders the two completely differently, so it is modelled rather
-     * than guessed at from the input name.
-     *
-     * {@code WEAPON_STAT} means the effect reads the wielder's ATTACK_DAMAGE stat (which the weapon
-     * contributes) -- a plain swing. A future class-typed modifier ("+N Melee Damage") genuinely
-     * reaches it, so labelling it with the weapon's CLASS is honest.
-     *
-     * {@code ABILITY_LITERAL} means the effect carries its own hardcoded amount and reads no stat
-     * at all. No class-typed modifier can ever touch it, so labelling it with the weapon's class
-     * would promise a relationship that does not exist -- it is labelled by its ELEMENT instead.
+     * The damage a trigger deals. Delegates to {@link DamagePayload}, which owns the walk and the
+     * basic-attack/ability distinction -- the tooltip and the cooldown scaler both ask it, so the
+     * two cannot disagree about the same weapon. Kept here so the lore call sites read naturally.
      */
-    public enum DamageSource { WEAPON_STAT, ABILITY_LITERAL }
-
-    /** A trigger's headline damage: how much, of what element, and where the number came from. */
-    public record TriggerDamage(double amount, String element, DamageSource source) {}
-
-    /**
-     * The damage a trigger deals, taken from the weapon's static content: the FIRST damage-bearing
-     * effect found (recursing into a Burst/Area's inner effects). A {@code WeaponDamage} reads the
-     * weapon's declared {@code attackDamage}; a literal {@code Damage} uses its own amount. Empty
-     * when the trigger deals no direct damage (a pure heal/status, or a cosmetic-only payload) --
-     * the caller drops the line.
-     */
-    public static Optional<TriggerDamage> triggerDamage(List<EffectSpec> onHit, double weaponAttackDamage) {
-        return firstDamage(onHit, weaponAttackDamage);
-    }
-
-    private static Optional<TriggerDamage> firstDamage(List<? extends EffectSpec> effects,
-                                                       double weaponAttackDamage) {
-        for (EffectSpec effect : effects) {
-            Optional<TriggerDamage> d = damageOf(effect, weaponAttackDamage);
-            if (d.isPresent()) return d;
-        }
-        return Optional.empty();
-    }
-
-    /** The direct damage a single effect contributes, if any. Exhaustive over the sealed EffectSpec. */
-    private static Optional<TriggerDamage> damageOf(EffectSpec effect, double weaponAttackDamage) {
-        return switch (effect) {
-            case EffectSpec.WeaponDamage w ->
-                    Optional.of(new TriggerDamage(weaponAttackDamage, w.element(), DamageSource.WEAPON_STAT));
-            case EffectSpec.Damage d ->
-                    Optional.of(new TriggerDamage(d.amount(), d.element(), DamageSource.ABILITY_LITERAL));
-            case EffectSpec.Burst b        -> firstDamage(b.effects(), weaponAttackDamage);
-            case EffectSpec.Area a         -> firstDamage(a.effects(), weaponAttackDamage);
-            case EffectSpec.Heal h         -> Optional.empty();
-            case EffectSpec.Knockback k    -> Optional.empty();
-            case EffectSpec.Status s       -> Optional.empty();
-            case EffectSpec.Visual v       -> Optional.empty();
-            case EffectSpec.ThrowEmbers t  -> Optional.empty();
-        };
+    public static Optional<DamagePayload.TriggerDamage> triggerDamage(List<EffectSpec> onHit,
+                                                                      double weaponAttackDamage) {
+        return DamagePayload.of(onHit, weaponAttackDamage);
     }
 
     /**

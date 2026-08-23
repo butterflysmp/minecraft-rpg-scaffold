@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
+import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.paper.content.StatusDefinition;
 import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTaskTarget;
 import org.bukkit.Bukkit;
@@ -35,21 +36,32 @@ public final class BukkitCombatant {
 
     /** State to read plus a handle to act on. MUST be called on the thread owning {@code entity}. */
     public static Combatant of(LivingEntity entity, AdapterContext ctx) {
-        return new Combatant(snapshot(entity), new Handle(entity, ctx));
+        return new Combatant(snapshot(entity, ctx.stats()), new Handle(entity, ctx));
     }
 
     /**
      * Freeze everything core needs to know. MUST be called on the thread owning
      * {@code entity} -- enforced, not merely asked for.
+     *
+     * Takes the stat store rather than defaulting the attack speed to neutral, deliberately. An
+     * overload that quietly used 1.0 would compile everywhere and look identical to a working one
+     * while silently ignoring every modifier a caster had -- the failure mode that only shows up as
+     * "the buff item does nothing" long after the fact. Making it a parameter turns each call site
+     * into a decision the compiler forces.
+     *
+     * The stat read sits after {@link Regions#requireOwned}, so it happens on the thread that owns
+     * this entity's state -- the same rule {@code PaperCombatWorld.attackDamage} documents. That is
+     * what makes the value safe to carry across the region hop that follows.
      */
-    public static CombatantSnapshot snapshot(LivingEntity entity) {
+    public static CombatantSnapshot snapshot(LivingEntity entity, CombatantStats stats) {
         Regions.requireOwned(entity);
         var location = entity.getLocation();
         return new CombatantSnapshot(
                 entity.getUniqueId(),
                 new Vec3(location.getX(), location.getY(), location.getZ()),
                 !entity.isDead(),
-                entity instanceof Player);
+                entity instanceof Player,
+                stats.attackSpeedValue(entity.getUniqueId()));
     }
 
     /** Dispatches onto the entity's own thread. Never reads the world, never returns state. */

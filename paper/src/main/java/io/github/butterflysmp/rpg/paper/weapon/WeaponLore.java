@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.weapon;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
+import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines;
 import io.github.butterflysmp.rpg.paper.content.ElementDefinition;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
@@ -29,7 +30,7 @@ import java.util.Locale;
  * flavour, and the "<Rarity> <Class> Weapon" footer.
  *
  * A basic attack is a stat, not an ability, so it renders as two stat lines rather than a section
- * with a name and prose. The split is by {@link WeaponLoreLines.DamageSource} -- an effect that
+ * with a name and prose. The split is by {@link DamagePayload.DamageSource} -- an effect that
  * READS the attack-damage stat is a basic attack; one carrying its own literal is an ability --
  * never by the input name. That is also why the two damage lines are labelled differently: the
  * class label ("Melee Damage") goes only on the stat-reading line a "+N Melee Damage" modifier
@@ -52,22 +53,25 @@ public final class WeaponLore {
 
         // A basic attack is a STAT, not an ability: it gets two stat lines directly under the
         // element, with no name, no prose and no cadence. Everything else is an ability block.
-        // The split is by DamageSource, never by input name -- see WeaponLoreLines.DamageSource.
+        // The split is by DamagePayload, never by input name -- and it is the SAME call the cooldown
+        // scaler makes, so a weapon cannot render as one thing and behave as the other.
         boolean statBlockPlaced = false;
         for (TriggerBinding binding : weapon.triggers()) {
             AbilityDefinition ability = binding.ability();
             var damage = WeaponLoreLines.triggerDamage(ability.onHit(), weapon.attackDamage());
-            boolean isBasicAttack = damage
-                    .map(d -> d.source() == WeaponLoreLines.DamageSource.WEAPON_STAT)
-                    .orElse(false);
+            boolean isBasicAttack = DamagePayload.isBasicAttack(ability.onHit());
 
             // Only the FIRST basic attack becomes the stat block; a second weapon_damage trigger
             // would have nowhere to go, and no shipped weapon declares one.
-            if (isBasicAttack && !statBlockPlaced) {
+            //
+            // damage.isPresent() is implied by isBasicAttack (the source comes OFF that damage), and
+            // is asked anyway rather than orElseThrow: the two are computed separately, and a
+            // cosmetic tooltip must never be what crashes a /rpg give if that ever stops holding.
+            if (isBasicAttack && !statBlockPlaced && damage.isPresent()) {
                 statBlockPlaced = true;
                 lore.add(blank());
                 lore.add(plain(WeaponClassLabel.of(weapon.weaponClass()) + " Damage: ", NamedTextColor.GRAY)
-                        .append(plain(number(damage.orElseThrow().amount()), NamedTextColor.RED)));
+                        .append(plain(number(damage.get().amount()), NamedTextColor.RED)));
 
                 String speed = WeaponLoreLines.attackSpeedLabel(ability.cooldownTicks());
                 if (!speed.isBlank()) {
@@ -93,7 +97,7 @@ public final class WeaponLore {
             // Element-typed, NOT class-typed: this payload reads no stat, so no "+N Melee Damage"
             // modifier can reach it and claiming otherwise would be a lie the tooltip tells.
             if (damage.isPresent()) {
-                WeaponLoreLines.TriggerDamage d = damage.get();
+                DamagePayload.TriggerDamage d = damage.get();
                 lore.add(plain(elementName(d.element(), elements) + " Damage: ", NamedTextColor.GRAY)
                         .append(plain(number(d.amount()), NamedTextColor.RED)));
             }

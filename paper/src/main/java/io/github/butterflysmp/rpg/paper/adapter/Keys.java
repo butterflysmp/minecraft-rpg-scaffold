@@ -31,6 +31,9 @@ public final class Keys {
     /** Marks the health_boost_TEMP dev item and stores its +max-HP amount (a DOUBLE) in the item's PDC. */
     public final NamespacedKey healthBoost;
 
+    /** Marks the attack_speed_boost_TEMP dev item and stores its attack-speed bonus (a DOUBLE) in the PDC. */
+    public final NamespacedKey attackSpeedBoost;
+
     /** Reserved opt-out: a mob carrying this (BYTE) PDC gets no health nameplate. For future NPCs/cosmetics. */
     public final NamespacedKey nameplateOptOut;
 
@@ -42,6 +45,7 @@ public final class Keys {
         this.rooted = new NamespacedKey(plugin, "rooted_immobilize");
         this.freeze = new NamespacedKey(plugin, "freeze_immobilize");
         this.healthBoost = new NamespacedKey(plugin, "health_boost_temp");
+        this.attackSpeedBoost = new NamespacedKey(plugin, "attack_speed_boost_temp");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
     }
 }

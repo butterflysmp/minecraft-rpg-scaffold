@@ -24,6 +24,13 @@ public final class HealthState {
 
     private final Stat max;
     private final Stat attack;
+    /**
+     * Attack speed: a MULTIPLIER on a basic attack's authored cadence, so it bases at 1.0 (neutral)
+     * for every combatant rather than being handed in. Nothing in content sets a base -- a weapon's
+     * cadence is its {@code cooldown_ticks}, and this scales it -- so unlike max HP and attack
+     * damage there is no constructor parameter and no bootstrap-from-vanilla story.
+     */
+    private final Stat attackSpeed = new Stat(io.github.butterflysmp.rpg.core.ability.AttackSpeed.BASE);
     private final boolean player;
     private double current;
 
@@ -131,6 +138,40 @@ public final class HealthState {
         return attack.modifierCount();
     }
 
+    // --- Attack speed: a third Stat, a multiplier, base 1.0 -----------------------------------------
+
+    /**
+     * The resolved attack-speed multiplier: {@code 1.0 + Σ(modifiers)}. A source granting "+50%
+     * attack speed" contributes {@code 0.5}, so the additive {@link Stat} resolves to the multiplier
+     * without needing multiplicative stacking -- which also keeps two +50% sources at 2.0 rather than
+     * 2.25, the saner balance answer.
+     */
+    public double attackSpeedValue() {
+        return attackSpeed.value();
+    }
+
+    /** Set (or replace) the attack-speed modifier from {@code source}; true if the value changed. */
+    public boolean setAttackSpeedModifier(String source, double amount) {
+        return attackSpeed.putModifier(source, amount);
+    }
+
+    /** Remove {@code source}'s attack-speed modifier; true if one was actually removed. */
+    public boolean clearAttackSpeedModifier(String source) {
+        return attackSpeed.removeModifier(source);
+    }
+
+    public double attackSpeedModifierAmount(String source) {
+        return attackSpeed.amountOf(source);
+    }
+
+    public Set<String> attackSpeedModifierSources() {
+        return attackSpeed.sources();
+    }
+
+    public int attackSpeedModifierCount() {
+        return attackSpeed.modifierCount();
+    }
+
     // --- Modifier targets: one per stat, so the reconcile diff is written once (see ModifierTarget) --
 
     /**
@@ -156,6 +197,17 @@ public final class HealthState {
                 return attack.putModifier(source, amount);
             }
             @Override public boolean clearModifier(String source) { return attack.removeModifier(source); }
+        };
+    }
+
+    /** The attack-speed modifier surface. A plain {@link Stat}, like attack damage. */
+    ModifierTarget attackSpeedTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return attackSpeed.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return attackSpeed.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) { return attackSpeed.removeModifier(source); }
         };
     }
 

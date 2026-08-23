@@ -8,6 +8,7 @@ import io.github.butterflysmp.rpg.paper.adapter.EntityTaskTarget;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTask;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
+import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponAttackItems;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -123,13 +124,16 @@ public final class PlayerHealthSystem implements HealthListener {
         EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
         UUID id = player.getUniqueId();
         RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, () -> {
-            // Two stats converge on the same scan: max HP from +HP items, and attack damage from the
-            // held weapon's declared attack_damage (a MAIN_HAND modifier). Same leak-proof diff, so a
-            // weapon swap/drop follows within a tick and respawn re-derives both for free.
+            // Three stats converge on the same scan: max HP from +HP items, attack damage from the
+            // held weapon's declared attack_damage (a MAIN_HAND modifier), and attack speed from
+            // equipped speed sources. Same leak-proof diff for all three, so a weapon swap/drop
+            // follows within a tick and respawn re-derives every one of them for free.
             Map<String, Double> desiredMax = HealthModifierItems.desiredModifiers(player, keys);
             stats.reconcileMaxModifiers(id, desiredMax);
             Map<String, Double> desiredAttack = WeaponAttackItems.desiredAttackModifiers(player, keys, weapons);
             stats.reconcileAttackModifiers(id, desiredAttack);
+            Map<String, Double> desiredSpeed = AttackSpeedModifierItems.desiredModifiers(player, keys);
+            stats.reconcileAttackSpeedModifiers(id, desiredSpeed);
             return true;
         }, () -> { });
     }
