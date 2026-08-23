@@ -602,6 +602,23 @@ Before milestone 2, two things worth measuring rather than assuming:
   it is already plated won't update the plate's base name until it is removed and re-added
   (despawn/chunk-unload → re-appear). Consistent with "custom truth drives display," not a
   regression; note only.
+- **A custom mob's nameplate sometimes shows its NAME but no HP until it is first hit.** Observed at
+  the custom-mob boot (2026-08-23). Repro: `/rpg spawn knell` shortly after another mob spawns
+  nearby — the plate reads `Knell` with no `360/360 ❤` until the Knell takes a hit, at which point the
+  `HealthChange` version bump forces a resend and the numbers appear. Minor, cosmetic, and
+  self-correcting.
+
+  **Two unconfirmed hypotheses, and do not act on either without measuring first.** It may be a
+  per-viewer first-sight / version-state timing race (`ViewerNameplateState.decide` and the 4-tick LOS
+  sample against a plate registered on the entity-add event), or it may be the interaction between the
+  mob's server-side CustomName — which custom mobs now set, unlike every other mob — and the
+  per-viewer packet override of the same metadata index on first sight. Those are different bugs with
+  different fixes, and the symptom does not distinguish them.
+
+  **If it proves repeatable, instrument the per-viewer first-sight sends (text + version) and read
+  what actually happens. Do not pattern-match a fix.** This is the failure mode CLAUDE.md's
+  verification section is about: a plausible story about a race is exactly the kind of explanation
+  that gets believed without being tested.
 - **Status DoT bypasses custom HP — `scorch` burns *vanilla* health.** `StatusDefinition.Fire`
   applies via `entity.setFireTicks(...)` (vanilla fire), so the burn ticks down vanilla HP with no
   `applyDamage` and no `HealthChange` seam — the mob nameplate never moves as it burns, and the DoT
@@ -623,6 +640,28 @@ Before milestone 2, two things worth measuring rather than assuming:
   `Player` damager (`attacker instanceof Player → return`), so a player hitting a player currently
   does nothing custom. Whether/how PvP drains custom HP (factions, safe zones, friendly-fire) is a
   design fork for its own pass, not a mechanical gap to quietly fill.
+- **Custom HP moves ONLY through the `applyDamage` pipeline, and that pipeline is player↔mob.** The
+  umbrella over the four entries above, made concrete at the custom-mob boot (2026-08-23): an iron
+  golem fighting a wither skeleton does not touch the custom store at all. Mob→mob, vanilla mob
+  combat, fall damage, fire, drowning, cactus — none of it enters `applyDamage`, so none of it fires a
+  `HealthChange`, so **the nameplate diverges from the mob's real state**. Measured on the golem
+  specifically: its damage state is not tied to its nameplate HP; it can be badly hurt by vanilla
+  means while its plate still reads full, and it can die with a full-looking plate.
+
+  **Fine for now, and deliberately so** — players are the only dealer of custom damage, so within the
+  loop the game actually has, custom HP is the truth and the plate follows it. The divergence is only
+  visible in fights the player is not part of.
+
+  Two consequences, both later passes, neither an optimisation:
+  - **Mob→mob is a hard prerequisite for SUMMONER.** A summoner's minions fight mobs; if minion→mob
+    and mob→minion damage never enter the pipeline, a minion cannot meaningfully hurt anything and
+    cannot meaningfully be hurt. This is why `WeaponClass.SUMMONER` is still deliberately absent from
+    the enum — the class needs this before it needs a weapon.
+  - **Vanilla/environmental → custom HP is the existing recorded gap**, in its several forms: `scorch`
+    burning vanilla health, `applyHeal` raising vanilla health, and mob projectile→player skipping the
+    melee gate (all above). They are one problem wearing four hats — *every* route into an entity's
+    health that is not `applyDamage` is invisible to the custom store — and are best solved as one
+    decision about where the boundary sits, rather than four independent patches.
 - **Players are immortal to environmental damage.** Fall/fire/lava/drowning hit *vanilla* health, which
   the heart bar floors at half a heart, so they never kill and never touch custom HP. A known
   consequence of the environmental→custom-HP gap (same class as the Scorch DoT bypass above): player
