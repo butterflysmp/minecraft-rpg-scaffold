@@ -679,6 +679,30 @@ Before milestone 2, two things worth measuring rather than assuming:
     trigger's Status/Knockback/Heal payloads render nothing — the Emberblade fireball's `scorch` is
     invisible on the tooltip, and only the authored `description:` prose mentions it. A plain
     completeness item: surface non-damage payloads ("Scorch (2s)", AoE radius) in the ability block.
+- **Custom mobs: what shipped, and the four things deliberately left out.** `content/mobs/*.yml` →
+  `MobDefinition` (`core/mob`), tagged onto a spawned entity with a `mob_id` PDC and looked up by that
+  tag in `MobNameplateManager.seedCombatStats` via the pure `MobSeeding.maxHealth`. Keyed by mob id,
+  **never by entity type** — the Knell is a wither skeleton with 360 HP and ordinary wither skeletons
+  are untouched. An entity with no tag takes the vanilla path byte for byte. Deferred:
+  - **Natural-spawn integration.** Custom mobs currently appear only via `/rpg spawn <id>`. Making
+    them occur in the world — spawn tables, biome/light/condition rules, replacing a proportion of
+    natural spawns, spawner blocks — is its own layer. This pass ships the identity and the stat;
+    *where they come from* is a separate problem with its own balance questions.
+  - **The rest of the mob stat block.** `MobDefinition` is shaped to grow, but only `max_health` is
+    wired; attack damage still bootstraps from the vanilla `ATTACK_DAMAGE` attribute for custom and
+    ordinary mobs alike. `attack_damage` is the obvious next component.
+  - **A damaged custom mob heals to full on chunk unload/reload.** Pre-existing and true of *all*
+    mobs — `onMobRemove` clears the store, and `onMobAppear` re-seeds from scratch — but it stops
+    being a curiosity once bosses exist. A Knell at 12/360 that the player walks away from comes back
+    at 360/360, and a raid boss that resets when a chunk unloads is unfightable. **Custom-HP
+    persistence becomes a requirement for the boss use case**, not an optimisation: it needs current
+    HP written to the entity's PDC (or a store keyed beyond the entity's lifetime) and re-read on
+    appear, instead of the bootstrap-from-max the seed does today.
+  - **`randomizeData: false` leaves a spawned mob without vanilla default equipment.** A `/rpg spawn`
+    wither skeleton has no stone sword, where a naturally-spawned one does. Deliberate now — a dev
+    spawn should be deterministic, and two spawns of the same mob should be the same mob — but
+    revisit it with mob equipment in the stat-block layer: content will want to say what a mob
+    carries, at which point "no equipment" and "random vanilla equipment" are both wrong defaults.
 - **Attack speed is a real Stat now — what it does and what it deliberately does not.** A third
   `Stat` on `HealthState` (multiplier, base 1.0) via the same `ModifierTarget` seam as attack damage,
   converged by the same per-player reconcile loop (`CombatantStats.reconcileAttackSpeedModifiers`).

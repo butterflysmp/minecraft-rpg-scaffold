@@ -34,6 +34,14 @@ public final class Keys {
     /** Marks the attack_speed_boost_TEMP dev item and stores its attack-speed bonus (a DOUBLE) in the PDC. */
     public final NamespacedKey attackSpeedBoost;
 
+    /**
+     * A spawned entity's custom-mob id (a STRING), the mob mirror of {@link #weaponId}. An entity
+     * carrying this IS one of ours and seeds its stats from content; an entity without it is vanilla
+     * and is left entirely alone. Keyed per-ENTITY, never per-type: the Knell is a wither skeleton,
+     * and ordinary wither skeletons must stay ordinary.
+     */
+    public final NamespacedKey mobId;
+
     /** Reserved opt-out: a mob carrying this (BYTE) PDC gets no health nameplate. For future NPCs/cosmetics. */
     public final NamespacedKey nameplateOptOut;
 
@@ -46,6 +54,7 @@ public final class Keys {
         this.freeze = new NamespacedKey(plugin, "freeze_immobilize");
         this.healthBoost = new NamespacedKey(plugin, "health_boost_temp");
         this.attackSpeedBoost = new NamespacedKey(plugin, "attack_speed_boost_temp");
+        this.mobId = new NamespacedKey(plugin, "mob_id");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
     }
 }
