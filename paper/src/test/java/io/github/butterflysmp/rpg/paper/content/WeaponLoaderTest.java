@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
+import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
@@ -70,6 +71,7 @@ class WeaponLoaderTest {
             id: ironblade
             element: kinetic
             rarity: common
+            class: melee
             triggers:
               left_click:
                 cooldown_ticks: 10
@@ -93,6 +95,7 @@ class WeaponLoaderTest {
         WeaponDefinition weapon = registry.find("ironblade").orElseThrow();
         assertEquals("kinetic", weapon.element());
         assertEquals(Rarity.COMMON, weapon.rarity());
+        assertEquals(WeaponClass.MELEE, weapon.weaponClass());
 
         TriggerBinding binding = weapon.trigger("left_click").orElseThrow();
         AbilityDefinition ability = binding.ability();
@@ -115,6 +118,7 @@ class WeaponLoaderTest {
         write("ability_stone.yml", """
                 id: ability_stone
                 element: kinetic
+                class: mage
                 triggers:
                   left_click:
                     cast:
@@ -141,6 +145,7 @@ class WeaponLoaderTest {
     void elementDefaultsToKineticWhenOmitted() throws IOException {
         write("plainsword.yml", """
                 id: plainsword
+                class: melee
                 triggers:
                   left_click:
                     cast:
@@ -162,6 +167,7 @@ class WeaponLoaderTest {
         write("plainsword.yml", """
                 id: plainsword
                 element: kinetic
+                class: melee
                 triggers:
                   left_click:
                     cast:
@@ -200,6 +206,113 @@ class WeaponLoaderTest {
         assertTrue(warningText().contains("mythic"), warningText());
     }
 
+    /** class is REQUIRED: a weapon that omits it is skipped and named, not silently defaulted. */
+    @Test
+    void missingClassIsSkippedNotCrashed() throws IOException {
+        write("aaa_classless.yml", """
+                id: classless
+                element: kinetic
+                rarity: common
+                triggers:
+                  left_click:
+                    cast:
+                      type: melee
+                    on_hit:
+                      - type: damage
+                        amount: 5
+                        element: kinetic
+                """);
+        write("ironblade.yml", VALID);
+
+        WeaponRegistry registry = load();
+
+        assertEquals(1, registry.size(), "the valid weapon still loads");
+        assertTrue(warningText().contains("aaa_classless.yml"), warningText());
+        assertTrue(warningText().contains("class"), warningText());
+        // Mutation: default the loader's missing class to MELEE -> the classless weapon loads -> reddens.
+    }
+
+    /** An unknown class value skips-and-names, exactly like a bad rarity (and like SUMMONER before it lands). */
+    @Test
+    void unknownClassIsSkippedNotCrashed() throws IOException {
+        write("aaa_summon.yml", """
+                id: summon
+                element: kinetic
+                class: summoner
+                triggers:
+                  left_click:
+                    cast:
+                      type: melee
+                    on_hit:
+                      - type: damage
+                        amount: 5
+                        element: kinetic
+                """);
+        write("ironblade.yml", VALID);
+
+        WeaponRegistry registry = load();
+
+        assertEquals(1, registry.size());
+        assertTrue(warningText().contains("aaa_summon.yml"), warningText());
+        assertTrue(warningText().contains("summoner"), warningText());
+    }
+
+    /** A trigger's authored name and description carry into the ability for the tooltip. */
+    @Test
+    void triggerNameAndDescriptionLoad() throws IOException {
+        write("named.yml", """
+                id: named
+                element: fire
+                class: mage
+                triggers:
+                  right_click:
+                    name: "Fireball"
+                    description:
+                      - "Hurl a bursting ember."
+                      - "Scorches all it catches."
+                    cast:
+                      type: projectile
+                    on_hit:
+                      - type: damage
+                        amount: 12
+                        element: fire
+                """);
+
+        WeaponRegistry registry = load();
+
+        assertTrue(warnings.isEmpty(), warningText());
+        var ability = registry.find("named").orElseThrow().trigger("right_click").orElseThrow().ability();
+        assertEquals("Fireball", ability.displayName());
+        assertEquals(List.of("Hurl a bursting ember.", "Scorches all it catches."), ability.description());
+    }
+
+    /** A scalar description: is a content mistake -- getStringList drops it, so the loader warns, named. */
+    @Test
+    void scalarDescriptionWarnsButStillLoads() throws IOException {
+        write("scalar.yml", """
+                id: scalar
+                element: fire
+                class: mage
+                triggers:
+                  right_click:
+                    name: "Bolt"
+                    description: "this should have been a list"
+                    cast:
+                      type: projectile
+                    on_hit:
+                      - type: damage
+                        amount: 8
+                        element: fire
+                """);
+
+        WeaponRegistry registry = load();
+
+        assertEquals(1, registry.size(), "a scalar description is cosmetic -- the weapon still loads");
+        assertTrue(warningText().contains("scalar.yml") || warningText().contains("description"), warningText());
+        assertTrue(registry.find("scalar").orElseThrow().trigger("right_click").orElseThrow()
+                .ability().description().isEmpty(), "the dropped scalar leaves an empty description");
+    }
+
     /**
      * A misspelled element no longer skips the weapon. Element is a content id now, carried
      * by the loader and validated by ContentValidator at boot -- a bad value warns, it does
@@ -210,6 +323,7 @@ class WeaponLoaderTest {
         write("plasmasword.yml", """
                 id: plasmasword
                 element: plasma
+                class: melee
                 triggers:
                   left_click:
                     cast:
@@ -233,6 +347,7 @@ class WeaponLoaderTest {
         write("plainsword.yml", """
                 id: plainsword
                 element: kinetic
+                class: melee
                 triggers:
                   left_click:
                     cast:
@@ -255,6 +370,7 @@ class WeaponLoaderTest {
         write("aaa_cursed.yml", """
                 id: cursed
                 element: kinetic
+                class: melee
                 attack_damage: -5
                 triggers:
                   left_click:
@@ -280,6 +396,7 @@ class WeaponLoaderTest {
                 id: bare
                 element: kinetic
                 rarity: common
+                class: melee
                 """);
         write("ironblade.yml", VALID);
 
@@ -295,6 +412,7 @@ class WeaponLoaderTest {
         write("aaa_warp.yml", """
                 id: warp
                 element: kinetic
+                class: melee
                 triggers:
                   left_click:
                     cast:
@@ -345,6 +463,7 @@ class WeaponLoaderTest {
         WeaponDefinition weapon = registry.find("ironblade").orElseThrow();
         assertEquals("kinetic", weapon.element());
         assertEquals(Rarity.COMMON, weapon.rarity());
+        assertEquals(WeaponClass.MELEE, weapon.weaponClass(), "ironblade declares class melee");
         assertEquals("ironblade/left_click", weapon.trigger("left_click").orElseThrow().ability().id());
 
         // The melee damage is a STAT now: a top-level attack_damage, and a weapon_damage on_hit that
@@ -431,6 +550,7 @@ class WeaponLoaderTest {
         assertEquals(1, registry.size());
         WeaponDefinition weapon = registry.find("hunters_bow").orElseThrow();
         assertEquals("bow", weapon.material(), "the bow is the first non-sword weapon");
+        assertEquals(WeaponClass.RANGER, weapon.weaponClass(), "the bow is a ranger weapon");
 
         // The shot is on right_click (so the per-trigger cancellation suppresses the draw),
         // free (the Ranger economy), and a projectile (the ranged trigger).
@@ -454,6 +574,7 @@ class WeaponLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
         WeaponDefinition weapon = registry.find("ember_staff").orElseThrow();
         assertEquals("blaze_rod", weapon.material(), "a staff, not a sword or a bow");
+        assertEquals(WeaponClass.MAGE, weapon.weaponClass(), "the staff is a mage weapon");
 
         // COSTED, unlike the bow's free shot -- the Mage spends energy to deal damage.
         var shot = weapon.trigger("right_click").orElseThrow().ability();

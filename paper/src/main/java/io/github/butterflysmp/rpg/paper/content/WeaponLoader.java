@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.content;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
+import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
@@ -73,6 +74,10 @@ public final class WeaponLoader {
         String displayName = s.getString("display_name", id);
         String element = s.getString("element", "kinetic");
         Rarity rarity = rarity(s.getString("rarity", "common"));
+        // class is a REQUIRED mechanical axis, not defaulted like rarity: a missing or bad value is a
+        // named, skipped file, so a forgotten class can never silently ship as some default (future
+        // class-typed modifiers key on it -- a wrong default is a silent-correctness bug).
+        WeaponClass weaponClass = weaponClass(s.getString("class"), id);
         // The item the weapon renders as; paper resolves the string to a Material. Defaults
         // to a sword, so every weapon before the bow needs no material field.
         String material = s.getString("material", WeaponDefinition.DEFAULT_MATERIAL);
@@ -80,6 +85,15 @@ public final class WeaponLoader {
         // read back off the caster's ATTACK_DAMAGE stat. 0 for ranged/costed weapons with no melee.
         // A negative is rejected by WeaponDefinition -> the file is skipped, named, like any malformed one.
         double attackDamage = s.getDouble("attack_damage", 0.0);
+        // Authored tooltip prose. Optional; absent -> empty list. MUST be a YAML list: getStringList
+        // returns [] for a scalar (flavor: "one line" would vanish silently -- the "finds nothing"
+        // trap). So warn, loudly and named, when someone writes it as a scalar, and don't skip the
+        // weapon over cosmetic prose -- it just renders stats-only.
+        if (s.isString("flavor")) {
+            log.warning("weapon '" + id + "' has a scalar 'flavor:'; it must be a YAML list "
+                    + "(one '- ' item per line). Ignoring it.");
+        }
+        List<String> flavor = s.getStringList("flavor");
 
         ConfigurationSection triggers = s.getConfigurationSection("triggers");
         if (triggers == null) {
@@ -95,21 +109,31 @@ public final class WeaponLoader {
             }
             // A trigger IS an ability body plus an input. Identity fields come from the
             // weapon; cast/cost/cooldown/effects parse through the shared AbilitySchema.
+            // The authored ability NAME is the trigger's `name:` (falls back to the weapon name),
+            // rendered as the gold ability-name line. The authored DESCRIPTION is `description:` --
+            // a YAML list, same loud-scalar-warning as the weapon's flavor.
+            String abilityName = t.getString("name", displayName);
+            if (t.isString("description")) {
+                log.warning("weapon '" + id + "' trigger '" + input + "' has a scalar 'description:'; "
+                        + "it must be a YAML list (one '- ' item per line). Ignoring it.");
+            }
+            List<String> description = t.getStringList("description");
             AbilityDefinition ability = new AbilityDefinition(
                     id + "/" + input,
-                    displayName,
+                    abilityName,
                     element,
                     "none",
                     t.getInt("cooldown_ticks", 0),
                     AbilitySchema.parseCost(t.getConfigurationSection("cost")),
                     AbilitySchema.parseCast(t.getConfigurationSection("cast")),
-                    AbilitySchema.parseEffects(t.getMapList("on_hit")));
+                    AbilitySchema.parseEffects(t.getMapList("on_hit")),
+                    description);
             bindings.add(new TriggerBinding(input, ability));
         }
 
         // WeaponDefinition rejects an empty trigger list (and a negative attack_damage) -- caught above,
         // named, skipped.
-        return new WeaponDefinition(id, displayName, element, rarity, material, attackDamage, bindings);
+        return new WeaponDefinition(id, displayName, element, rarity, weaponClass, material, attackDamage, bindings, flavor);
     }
 
     private static Rarity rarity(String raw) {
@@ -117,6 +141,21 @@ public final class WeaponLoader {
         if (parsed == null) {
             throw new IllegalArgumentException(
                     "Unknown rarity '" + raw + "'; expected one of " + Arrays.toString(Rarity.values()));
+        }
+        return parsed;
+    }
+
+    /** Required: a missing (null) or unknown class throws, so the file is skipped and named, like a bad rarity. */
+    private static WeaponClass weaponClass(String raw, String id) {
+        if (raw == null) {
+            throw new IllegalArgumentException("weapon '" + id + "' is missing required 'class' (one of "
+                    + Arrays.toString(WeaponClass.values()) + ")");
+        }
+        WeaponClass parsed = WeaponClass.fromName(raw);
+        if (parsed == null) {
+            throw new IllegalArgumentException(
+                    "Unknown class '" + raw + "' in weapon '" + id + "'; expected one of "
+                            + Arrays.toString(WeaponClass.values()));
         }
         return parsed;
     }

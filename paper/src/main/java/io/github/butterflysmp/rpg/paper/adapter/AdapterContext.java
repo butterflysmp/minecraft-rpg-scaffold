@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
+import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
 import io.github.butterflysmp.rpg.paper.content.VisualRegistry;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
@@ -18,16 +19,24 @@ import java.util.logging.Logger;
  * PaperCombatWorld per cast. A warn-once set living on either would be reborn
  * empty on every area pulse, which turns warn-once into warn-always -- the exact
  * log spam it exists to prevent. It has to live here.
+ *
+ * The content registries ride along for the same reason they always have: the things
+ * that need them are reached through {@code adapters}, not through the plugin. {@code elements}
+ * joined visuals/statuses so {@link io.github.butterflysmp.rpg.paper.weapon.WeaponItems#mint}
+ * can colour a weapon's element line from that element's own content, rather than threading
+ * an ElementRegistry through five RpgCommand signatures to reach two mint call sites.
  */
 public record AdapterContext(Scheduler scheduler, Keys keys,
                              VisualRegistry visuals, StatusRegistry statuses,
+                             ElementRegistry elements,
                              Logger log, Set<String> warned,
                              ImmobilizeStatus immobilize, SoakedStatus soaked,
                              ImmobilizeStatus freeze, CombatantStats stats, double anchorDrift) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
-                          StatusRegistry statuses, Logger log, CombatantStats stats, double anchorDrift) {
-        this(scheduler, keys, visuals, statuses, log, ConcurrentHashMap.newKeySet(),
+                          StatusRegistry statuses, ElementRegistry elements, Logger log,
+                          CombatantStats stats, double anchorDrift) {
+        this(scheduler, keys, visuals, statuses, elements, log, ConcurrentHashMap.newKeySet(),
                 new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), stats, anchorDrift);
     }
 

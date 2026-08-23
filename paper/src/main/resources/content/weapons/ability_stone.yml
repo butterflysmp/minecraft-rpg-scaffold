@@ -11,9 +11,15 @@
 # has it. Gated only by /rpg give needing rpg.command.give.
 
 id: ability_stone
-display_name: "<light_purple>Ability Stone</light_purple>"
+display_name: "Ability Stone"
 element: kinetic          # neutral -- it is a tool, not a themed weapon
-rarity: common
+# Exotic purely for VISIBILITY. The name's colour is now the rarity tier's, always (an authored
+# colour no longer wins), so a `common` dev tool would mint plain white and read as an Ironblade
+# in a crowded hotbar. Exotic is aqua and nothing else ships at that tier, so the stone is
+# unmistakable. A conscious spend of the tier on a tool: it is in no kit and no loot roll, so it
+# cannot cheapen exotic anywhere a player can reach.
+rarity: exotic
+class: mage               # a dev tool; class is required, mage is as good as any here
 material: amethyst_shard
 
 triggers:
@@ -22,6 +28,10 @@ triggers:
   # the REAL Rekindle (reverse-facing dash + forward ember fan), not a look-alike. To test a
   # different ability, replace this trigger and --refresh-content.
   left_click:
+    name: "Test Cast"
+    description:
+      - "Casts the ability under test"
+      - "while you move."
     cooldown_ticks: 0
     cast:
       type: dash

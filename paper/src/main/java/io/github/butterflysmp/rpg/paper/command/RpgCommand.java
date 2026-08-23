@@ -369,9 +369,11 @@ public final class RpgCommand {
             return 0;
         }
 
-        player.getInventory().addItem(WeaponItems.mint(weapon, adapters.keys()));
+        player.getInventory().addItem(WeaponItems.mint(weapon, adapters));
+        // Same rarity-coloured name the item itself carries -- the chat echo must not disagree
+        // with the thing that just landed in the inventory.
         player.sendMessage(Component.text("Given ", NamedTextColor.AQUA)
-                .append(MiniMessage.miniMessage().deserialize(weapon.displayName())));
+                .append(WeaponItems.displayName(weapon.displayName(), weapon.rarity())));
         return 1;
     }
 
@@ -553,7 +555,7 @@ public final class RpgCommand {
         for (WeaponGrant grant : kit.weapons()) {
             WeaponDefinition weapon = weapons.find(grant.weaponId()).orElse(null);
             if (weapon == null) continue; // validated at boot; skip a dangling grant
-            ItemStack item = WeaponItems.mint(weapon, adapters.keys());
+            ItemStack item = WeaponItems.mint(weapon, adapters);
 
             int hotbar = grant.equip() ? firstEmptyHotbarSlot(player) : -1;
             if (hotbar >= 0) {
