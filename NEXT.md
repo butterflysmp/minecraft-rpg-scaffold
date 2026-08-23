@@ -796,7 +796,8 @@ Before milestone 2, two things worth measuring rather than assuming:
   is where real warnings go to hide, and the day a genuine overlapping-resource
   warning appears you want to see it. A `ManifestResourceTransformer`, or filtering
   the manifest out of the dependencies, silences it.
-- **`rooted_TEMP` and `soaked_TEMP` owe removal in the content pass.** They are throwaway
+- **The `_TEMP` fixtures owe removal in the content pass** (`rooted_TEMP`, `soaked_TEMP`, and
+  the two item fixtures noted at the end of this entry). They are throwaway
   fixtures wired onto real abilities to make statuses castable in-game before `/rpg apply`
   existed. `/rpg apply` is the permanent replacement — it applies any status at any
   stack/duration without touching ability content, which is the entire reason the `_TEMP`
@@ -828,6 +829,23 @@ Before milestone 2, two things worth measuring rather than assuming:
   **`soaked_TEMP` is NOT test-guarded** — it lives only in `void_slash.yml` and comes out
   clean. The asymmetry is the trap: removing `soaked_TEMP` first will pass and teach you
   that removing `rooted_TEMP` is the same job. It is not.
+
+  **There are now FOUR `_TEMP` fixtures, not two, and the other two are a different shape.**
+  This entry was written when the debt was status-content only; the stat passes added two
+  ITEM fixtures, which live in Java rather than yml and so will not turn up in a content-pass
+  grep of `content/`:
+
+  | fixture | mints via | lives in | proves |
+  |---|---|---|---|
+  | `rooted_TEMP` | ability content | `content/abilities/*.yml` | status castable in-game |
+  | `soaked_TEMP` | ability content | `content/abilities/void_slash.yml` | as above |
+  | `health_boost_TEMP` | `/rpg healthboost` | `paper/health/HealthModifierItems.java` | the equip/unequip max-HP modifier lifecycle |
+  | `attack_speed_boost_TEMP` | `/rpg attackspeed` | `paper/weapon/AttackSpeedModifierItems.java` | the same lifecycle for attack speed |
+
+  The two item fixtures come out when real content grants those stats (an enchant, a passive,
+  a build aspect) — `WeaponAttackItems` is already the shape that replaces them, sourcing a
+  stat from actual weapon content instead of a fixture. Each also owns a `/rpg` dev subcommand
+  and a `Keys` PDC entry, so removing one is three sites, not one.
 
 - **`WeaponDamage` reused for a RANGED weapon is a Folia cross-region race.** The attack-damage pass made
   the basic melee hit deal the caster's `ATTACK_DAMAGE` stat, read at HIT time via
