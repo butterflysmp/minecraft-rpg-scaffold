@@ -7,15 +7,20 @@
 # solar_detonation visual and scorch status, so no new visual/status files.
 
 id: ember_staff
-display_name: "<gold>Ember Staff</gold>"
+display_name: "Ember Staff"
 element: fire
 rarity: rare
+class: mage
 material: blaze_rod
 
 triggers:
   # Costed burst bolt. cost 30, cooldown 20 (burst, not the bow's sustained 15). Left-click
   # is unbound -- a staff is not a melee weapon.
   right_click:
+    name: "Ember Bolt"
+    description:
+      - "A costed burst of fire —"
+      - "commit your energy to cast."
     cooldown_ticks: 20
     cost:
       resource: energy

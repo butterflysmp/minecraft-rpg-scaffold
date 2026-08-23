@@ -644,6 +644,63 @@ Before milestone 2, two things worth measuring rather than assuming:
   which point five area pulses will all see a living target and all fire.
 - ~~**The zero-test CI guard passes at 101.**~~ **DONE** (`b2aaa44`) —
   `scripts/check-tests.sh`, proven red at 101 and green at 156. See D4 above.
+- **Weapon-lore tooltip — refinements deferred out of the display pass.** The lore pass shipped
+  auto-derived stats + authored `flavor`, applied at `WeaponItems.mint` (`WeaponLore` in paper over
+  `WeaponLoreLines` in core). Colour ownership was settled with it: the **element** line wears the
+  element's own colour, read from `content/elements/*.yml` (an open, content-driven axis — so no
+  `ElementColors` switch, deliberately), and the **item name** wears its rarity tier's colour
+  unconditionally via `WeaponItems.displayName` (a closed enum — so `RarityColors` in code). An
+  authored colour in a weapon's `display_name` no longer wins; the tags were stripped from content
+  so no file claims a control it lacks. Deliberately left for later, each its own refinement:
+  - ~~**Attack-speed line.**~~ **DONE, with a caveat that matters.** Basic attacks now show
+    `Attack Speed: 2.0` (attacks per second, vanilla's convention, via
+    `WeaponLoreLines.attackSpeedLabel`). But the number is **derived from the trigger's
+    `cooldown_ticks`** — `20.0 / ticks` — and is *not* read from an `attack_speed` stat, because
+    there still is no such stat. Nothing modifies it; it restates the swing cooldown in the units
+    a player expects. When a real attack-speed stat lands it becomes the source and this display
+    follows it, at which point the line becomes modifiable like any other stat.
+  - **Rarity/enchant stat bonuses on the tooltip.** Phase 4. Rarity only colours + labels the footer
+    now; when rarity/enchant grant real stat deltas, surface them in the ability blocks.
+  - ~~**Per-trigger authored prose.**~~ **DONE** — a per-trigger `name:` (gold ability line) and
+    `description:` (YAML-list prose) now render in each ability block; `AbilityDefinition` gained a
+    `description` component. Weapon-level `flavor` (italic gray) coexists with it.
+  - **Live tooltip refresh.** Lore is applied at mint (give/kit-grant). A weapon already in an
+    inventory keeps its old lore until re-minted — re-give to refresh. No reactive refresh wired.
+  - ~~**Should an ability payload carry the weapon-class damage label at all?**~~ **ANSWERED: no.**
+    The label now follows `WeaponLoreLines.DamageSource`, which models where a trigger's number comes
+    from. A `WeaponDamage` effect READS the ATTACK_DAMAGE stat, so a future `+N Melee Damage` modifier
+    genuinely reaches it — that line keeps the **class** label. A literal `Damage(12)` reads no stat,
+    so no class-typed modifier can ever touch it; it is labelled by its **element** ("Fire Damage: 12")
+    rather than promising a relationship that does not exist. The same discriminator decides layout:
+    a stat-reading trigger is a basic attack and renders as a stat block, not an ability section.
+  - **Trigger damage stops at the first damage-bearing effect.** `WeaponLoreLines.triggerDamage`
+    returns the first `Damage`/`WeaponDamage` it finds (recursing into Burst/Area) and stops, so a
+    trigger's Status/Knockback/Heal payloads render nothing — the Emberblade fireball's `scorch` is
+    invisible on the tooltip, and only the authored `description:` prose mentions it. A plain
+    completeness item: surface non-damage payloads ("Scorch (2s)", AoE radius) in the ability block.
+- **Ranged and magic have no stat-reading basic attack, so class-typed modifiers have nothing to
+  grip. Decide this UP FRONT in the modifier pass, not during it.** Only a `weapon_damage` effect
+  reads ATTACK_DAMAGE, and in shipped content exactly two triggers use one: `ironblade/left_click`
+  and `emberblade/left_click` — both MELEE. `hunters_bow`'s Quick Shot and `ember_staff`'s Ember Bolt
+  carry **literal** `damage:` payloads and declare `attack_damage: 0`, so a `+N Ranged Damage` or
+  `+N Magic Damage` modifier would have no stat to modify and would silently do nothing. The tooltip
+  already tells this truth (neither weapon renders a class-labelled damage line at all), which is how
+  it surfaced. The modifier pass must choose deliberately, before writing the modifier:
+  - **Convert bow/staff first** — give them `attack_damage:` and a `weapon_damage` on_hit so their
+    basic attacks become stat-driven, then all three classes have something to modify. This is a
+    *mechanical* change: their damage starts scaling with modifiers, which is arguably what a
+    Ranger's and Mage's basic attack should do. Note the staff's bolt is costed, so "basic attack"
+    may not even be the right shape for it.
+  - **Or ship melee-only** — accept that `+Ranged`/`+Magic` are inert until those weapons get real
+    basic attacks, and say so in the modifier's own lore rather than shipping a dead stat.
+  Either is defensible; picking by accident is not.
+- **Class-typed stat modifiers.** `WeaponClass` (MELEE/RANGER/MAGE; SUMMONER deferred until it has
+  mechanics) is now a required weapon axis — it labels the tooltip (`WeaponClassLabel`: Melee/Ranged/
+  Magic) and nothing more. The intended mechanic: a `+N <Class> Damage` modifier that applies **only**
+  while the held weapon's class matches (a mage ring boosts staves, not swords). This pass adds the
+  axis; the modifier + its resolution (a stat screen / the modifier item's own lore, **never** folded
+  into the weapon's static base display) is a later pass. The tooltip's damage numbers stay the
+  weapon's declared base, pre-modifiers, by design — that is why they can't drift.
 - **The tuning loop is silently broken, and has been all along.** `RpgPlugin` ships
   defaults with `saveResource(path, false)`, which **never overwrites**. So editing
   `paper/src/main/resources/content/abilities/solar_lance.yml` in the repo, rebuilding,

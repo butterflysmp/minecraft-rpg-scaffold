@@ -1,5 +1,9 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.weapon.Rarity;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,5 +38,72 @@ class WeaponItemsTest {
         assertEquals(-1.0, WeaponItems.VANILLA_MELEE_SUPPRESSION, 1e-9);
         assertTrue(WeaponItems.VANILLA_MELEE_SUPPRESSION <= 0.0,
                 "a suppressor must cancel vanilla melee, not add to it");
+    }
+
+    /** The effective colour: MiniMessage may hang the colour on a child rather than the root. */
+    private static TextColor colorOf(Component component) {
+        if (component.color() != null) return component.color();
+        for (Component child : component.children()) {
+            TextColor found = colorOf(child);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    /**
+     * Rarity owns the item-name colour outright. This was previously colorIfAbsent(), under which
+     * an authored colour won -- so Hunter's Bow (authored gold, rarity UNCOMMON) minted gold, and
+     * the weapons that looked right did so by coincidence rather than by rule.
+     *
+     * The authored gold here is deliberate: it is the exact input the old behaviour got wrong, and
+     * it also guards the MiniMessage trap that makes this non-trivial. "<gold>X</gold>" puts the
+     * colour on a CHILD component, so a .color(rarity) on the root would leave the gold in place
+     * and this assertion would still see GOLD.
+     */
+    @Test
+    void theItemNameIsColouredByRarityEvenWhenTheContentAuthorsItsOwnColour() {
+        Component name = WeaponItems.displayName("<gold>Hunter's Bow</gold>", Rarity.UNCOMMON);
+
+        assertEquals("Hunter's Bow", PlainTextComponentSerializer.plainText().serialize(name),
+                "the authored text survives; only its colour is overridden");
+        assertEquals(RarityColors.of(Rarity.UNCOMMON), colorOf(name));
+        assertNotEquals(RarityColors.of(Rarity.RARE), colorOf(name),
+                "the tier must be the weapon's own, not another's");
+    }
+
+    /**
+     * The case that rules out the cheaper fix. A tag wrapping the WHOLE name is compacted onto the
+     * root component, so a plain .color(rarity) would override it and pass -- but a tag around only
+     * PART of the name leaves the colour on a child, where a root-level .color never reaches. This
+     * is why displayName flattens to plain text and rebuilds instead. No shipped weapon authors a
+     * name this way; the point is that one could, and the rule would still hold.
+     */
+    @Test
+    void aPartiallyColouredNameIsAlsoFullyRecolouredByRarity() {
+        Component name = WeaponItems.displayName("Hunter's <gold>Bow</gold>", Rarity.UNCOMMON);
+
+        assertEquals("Hunter's Bow", PlainTextComponentSerializer.plainText().serialize(name));
+        assertEquals(RarityColors.of(Rarity.UNCOMMON), colorOf(name));
+        assertFalse(hasAnyColour(name, RarityColors.of(Rarity.LEGENDARY)),
+                "no gold may survive anywhere in the tree, root or child");
+    }
+
+    /** True if the colour appears anywhere in the component tree -- root or any descendant. */
+    private static boolean hasAnyColour(Component component, TextColor colour) {
+        if (colour.equals(component.color())) return true;
+        for (Component child : component.children()) {
+            if (hasAnyColour(child, colour)) return true;
+        }
+        return false;
+    }
+
+    @Test
+    void anUncolouredNameAlsoTakesItsRaritysColour() {
+        // Ironblade's shape: no authored tag at all. This path worked before too -- pinned so the
+        // fix for the authored case cannot regress it.
+        Component name = WeaponItems.displayName("Ironblade", Rarity.COMMON);
+
+        assertEquals("Ironblade", PlainTextComponentSerializer.plainText().serialize(name));
+        assertEquals(RarityColors.of(Rarity.COMMON), colorOf(name));
     }
 }

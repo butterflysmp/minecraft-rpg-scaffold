@@ -1,9 +1,13 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
+import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -50,15 +54,19 @@ public final class WeaponItems {
     public static final double VANILLA_MELEE_SUPPRESSION = -1.0;
 
     /**
-     * The item a weapon is carried in. Its display name is coloured by rarity (an authored
-     * colour in the name wins), it carries weapon_id in its PDC -- the whole of its identity
+     * The item a weapon is carried in. Its display name is coloured by RARITY, unconditionally
+     * (see {@link #displayName}), it carries weapon_id in its PDC -- the whole of its identity
      * -- and it carries the attack-damage suppressor above so the swing's vanilla melee is
      * zeroed. Everything else about the weapon lives in its content file.
+     *
+     * Takes the whole AdapterContext rather than just Keys because the lore needs the element
+     * registry to colour a weapon's element from that element's own content.
      *
      * Phase 1 has no per-weapon material, so every weapon mints as a sword; that becomes a
      * weapon field when a non-melee weapon (the bow) needs a different item.
      */
-    public static ItemStack mint(WeaponDefinition weapon, Keys keys) {
+    public static ItemStack mint(WeaponDefinition weapon, AdapterContext adapters) {
+        Keys keys = adapters.keys();
         ItemStack item = new ItemStack(materialOf(weapon.material()));
         Attribute attackDamage = Registry.ATTRIBUTE.getOrThrow(
                 NamespacedKey.minecraft(ATTACK_DAMAGE_ATTRIBUTE));
@@ -66,16 +74,47 @@ public final class WeaponItems {
                 keys.meleeSuppressor, VANILLA_MELEE_SUPPRESSION,
                 AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND);
         item.editMeta(meta -> {
-            meta.displayName(MiniMessage.miniMessage().deserialize(weapon.displayName())
-                    .colorIfAbsent(RarityColors.of(weapon.rarity()))
-                    // Item names render italic by default; a weapon name should read plainly.
-                    .decoration(TextDecoration.ITALIC, false));
+            meta.displayName(displayName(weapon.displayName(), weapon.rarity()));
             meta.getPersistentDataContainer().set(keys.weaponId, PersistentDataType.STRING, weapon.id());
             // Setting an explicit attack_damage modifier suppresses the item's vanilla
             // default (+6 for iron), so the swing's melee is base 1.0 + (-1.0) = 0.
             meta.addAttributeModifier(attackDamage, suppressor);
+            // Derived stats + authored flavour. Purely additive; the block above is untouched.
+            meta.lore(WeaponLore.build(weapon, adapters.elements()));
         });
         return item;
+    }
+
+    /**
+     * A weapon's item name: the authored text, in its RARITY's colour, always. Rarity owns this
+     * colour outright -- an authored colour in the content no longer wins, because "the name is
+     * the tier" is only readable if it is true every time. It was previously
+     * {@code colorIfAbsent(...)}, under which Hunter's Bow (authored gold, rarity uncommon) and
+     * Ember Staff (authored gold, rarity rare) both rendered gold, and the two weapons that DID
+     * look right did so by coincidence.
+     *
+     * Extracted from mint() so it is unit-testable: {@code new ItemStack(...)} needs a running
+     * server, but this is pure Adventure. Same reason the suppressor constants above are constants.
+     *
+     * The plain-text round trip is not a detour: it is what makes this hold for EVERY authored
+     * string, not just the easy ones. Where a tag wraps the whole name ("<gold>Hunter's Bow</gold>")
+     * MiniMessage compacts the colour onto the root, and a plain {@code .color(rarity)} would in
+     * fact override it. But a PARTIAL tag ("Hunter's <gold>Bow</gold>"), a nested tag, or a gradient
+     * puts colour on CHILD components that a root-level {@code .color} does not touch -- so that
+     * approach would work on today's content and silently fail the first time someone authored a
+     * name with a coloured word in it. Measured, not reasoned: reverting this to {@code .color()}
+     * leaves the two whole-tag tests green and fails only the partial-tag one, with gold surviving
+     * on a child. Flattening to text and rebuilding cannot be defeated that way.
+     *
+     * The cost, accepted deliberately: this also drops authored bold/underline/gradient. No shipped
+     * weapon uses one, and styled names would need their own mechanism regardless.
+     */
+    public static Component displayName(String authoredName, Rarity rarity) {
+        String plain = PlainTextComponentSerializer.plainText()
+                .serialize(MiniMessage.miniMessage().deserialize(authoredName));
+        return Component.text(plain, RarityColors.of(rarity))
+                // Item names render italic by default; a weapon name should read plainly.
+                .decoration(TextDecoration.ITALIC, false);
     }
 
     /**

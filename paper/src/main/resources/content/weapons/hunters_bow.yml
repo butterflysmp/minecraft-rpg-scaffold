@@ -14,15 +14,19 @@
 # material field. Reuses the shipped solar_detonation visual on impact, so no new file.
 
 id: hunters_bow
-display_name: "<gold>Hunter's Bow</gold>"
+display_name: "Hunter's Bow"
 element: fire
 rarity: uncommon
+class: ranger
 material: bow
 
 triggers:
   # Free shot -- the Ranger economy: the bow carries the damage, energy stays free for
   # utility. cooldown_ticks is the fire rate: ~0.75s between shots.
   right_click:
+    name: "Quick Shot"
+    description:
+      - "A swift arrow wreathed in flame."
     cooldown_ticks: 15
     cast:
       type: projectile

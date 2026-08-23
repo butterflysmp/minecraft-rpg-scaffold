@@ -22,9 +22,11 @@ public record WeaponDefinition(
         String displayName,
         String element,
         Rarity rarity,
+        WeaponClass weaponClass,
         String material,
         double attackDamage,
-        List<TriggerBinding> triggers
+        List<TriggerBinding> triggers,
+        List<String> flavor
 ) {
     /** The item a weapon renders as when its content does not say otherwise: a sword. */
     public static final String DEFAULT_MATERIAL = "iron_sword";
@@ -33,6 +35,10 @@ public record WeaponDefinition(
         if (id == null || id.isBlank()) throw new IllegalArgumentException("weapon id required");
         if (element == null || element.isBlank()) throw new IllegalArgumentException("weapon element required (use kinetic, never absent)");
         if (rarity == null) throw new IllegalArgumentException("weapon rarity required");
+        // A required mechanical axis -- future class-typed modifiers key on it, so a silent default
+        // would misapply them. The loader rejects a missing/bad class, so this never fires in
+        // production; it guards the convenience constructors and any future direct caller.
+        if (weaponClass == null) throw new IllegalArgumentException("weapon '" + id + "' class required (melee, ranger, mage)");
         if (material == null || material.isBlank()) throw new IllegalArgumentException("weapon material required");
         // Attack damage is a stat the basic melee hit reads (via WeaponDamage). 0 is legal -- a
         // ranged/costed weapon (bow, staff) has no melee and declares none; negative is a content bug.
@@ -41,18 +47,20 @@ public record WeaponDefinition(
             throw new IllegalArgumentException("weapon '" + id + "' has no triggers");
         }
         triggers = List.copyOf(triggers);
+        // Optional authored prose for the tooltip -- absent is empty, never null.
+        flavor = flavor == null ? List.of() : List.copyOf(flavor);
     }
 
-    /** A sword-shaped weapon with no declared attack damage: the shape older tests use. */
+    /** A sword-shaped MELEE weapon with no declared attack damage: the shape older tests use. */
     public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
                             List<TriggerBinding> triggers) {
-        this(id, displayName, element, rarity, DEFAULT_MATERIAL, 0.0, triggers);
+        this(id, displayName, element, rarity, WeaponClass.MELEE, DEFAULT_MATERIAL, 0.0, triggers, List.of());
     }
 
-    /** A weapon with an explicit material but no declared attack damage (kept for existing callers). */
+    /** A MELEE weapon with an explicit material but no declared attack damage (kept for existing callers). */
     public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
                             String material, List<TriggerBinding> triggers) {
-        this(id, displayName, element, rarity, material, 0.0, triggers);
+        this(id, displayName, element, rarity, WeaponClass.MELEE, material, 0.0, triggers, List.of());
     }
 
     /** The binding fired by this input, if the weapon has one. */

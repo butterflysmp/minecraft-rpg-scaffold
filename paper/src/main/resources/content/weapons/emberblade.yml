@@ -9,16 +9,23 @@
 # in Phase 2), rare colours the name BLUE.
 
 id: emberblade
-display_name: "<blue>Emberblade</blue>"
+display_name: "Emberblade"
 element: fire
 rarity: rare
+class: melee
 # Melee attack damage as a stat -- see ironblade. Lower than ironblade (7 vs 8): the emberblade trades
 # a little swing damage for its costed fireball special below.
 attack_damage: 7
 
+# Authored prose (YAML list required; a scalar is ignored with a warning).
+flavor:
+  - "Its edge remembers the forge-fire."
+  - "Swing to cut; loose to burn."
+
 triggers:
   # Free swing. No cost section -> free; energy regenerates while you swing.
   left_click:
+    # No name/description -- this is the basic attack, rendered as a stat block. See ironblade.
     cooldown_ticks: 10
     cast:
       type: melee
@@ -33,6 +40,10 @@ triggers:
   # The costed special: a fireball that bursts on impact. Spends 40 energy (about two casts
   # on a full 100 bar) and waits 3 seconds. A drained pool blocks it -- that is the proof.
   right_click:
+    name: "Fireball"
+    description:
+      - "Hurl a bursting ember"
+      - "that scorches all it catches."
     cooldown_ticks: 60
     cost:
       resource: energy
