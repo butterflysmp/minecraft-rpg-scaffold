@@ -43,15 +43,17 @@ public final class BukkitCombatant {
      * Freeze everything core needs to know. MUST be called on the thread owning
      * {@code entity} -- enforced, not merely asked for.
      *
-     * Takes the stat store rather than defaulting the attack speed to neutral, deliberately. An
+     * Takes the stat store rather than defaulting the stats to neutral, deliberately. An
      * overload that quietly used 1.0 would compile everywhere and look identical to a working one
      * while silently ignoring every modifier a caster had -- the failure mode that only shows up as
      * "the buff item does nothing" long after the fact. Making it a parameter turns each call site
      * into a decision the compiler forces.
      *
      * The stat read sits after {@link Regions#requireOwned}, so it happens on the thread that owns
-     * this entity's state -- the same rule {@code PaperCombatWorld.attackDamage} documents. That is
-     * what makes the value safe to carry across the region hop that follows.
+     * this entity's state. That is what makes the values safe to carry across the region hop that
+     * follows -- and it is the ONLY place they are read, now that
+     * {@code CombatWorld.attackDamage} has been retired. There is no longer a hit-time route to a
+     * caster's attack damage, only this cast-time freeze.
      */
     public static CombatantSnapshot snapshot(LivingEntity entity, CombatantStats stats) {
         Regions.requireOwned(entity);
@@ -61,7 +63,11 @@ public final class BukkitCombatant {
                 new Vec3(location.getX(), location.getY(), location.getZ()),
                 !entity.isDead(),
                 entity instanceof Player,
-                stats.attackSpeedValue(entity.getUniqueId()));
+                stats.attackSpeedValue(entity.getUniqueId()),
+                // Frozen for the SAME reason, one pass later: a WeaponDamage payload delivered by a
+                // projectile resolves on the target's region, so it cannot read this store at impact.
+                // 0.0 when untracked -- attack damage is a summand, so 0 means "deals nothing".
+                stats.attackValue(entity.getUniqueId()));
     }
 
     /** Dispatches onto the entity's own thread. Never reads the world, never returns state. */

@@ -791,6 +791,32 @@ Before milestone 2, two things worth measuring rather than assuming:
   - **Or ship melee-only** — accept that `+Ranged`/`+Magic` are inert until those weapons get real
     basic attacks, and say so in the modifier's own lore rather than shipping a dead stat.
   Either is defensible; picking by accident is not.
+
+  **RESOLVED FOR RANGER, STILL OPEN FOR MAGE.** The cast-time-snapshot pass paid the plumbing cost the
+  bullet above warned about — the freeze is built and `CombatWorld.attackDamage` is gone — and converted
+  `hunters_bow`: `attack_damage: 6` plus a `weapon_damage` on_hit. So `+N Ranged Damage` now has a stat
+  to grip, and the bow picked up attack-speed scaling in the same move (both key on
+  `DamagePayload.isBasicAttack`). **The staff was deliberately left alone**, because its blocker was
+  never the plumbing — it is a design question, recorded as its own item below. So the modifier pass
+  inherits a narrower version of this choice: `+Ranged` works, `+Magic` still has nothing to modify.
+
+- **DECISION OWED — does the Mage get a basic attack, and is it the staff's bolt?** `ember_staff`'s
+  Ember Bolt is a **costed burst**: 30 energy, a 20-tick cooldown, and its damage nested inside a
+  `burst:` rather than at the top of `on_hit`. Converting it to `weapon_damage` is mechanically trivial
+  now (the projectile freeze is built, and `WeaponDamage` is `Targeted` so it nests inside a burst
+  legally), which is exactly why it must be decided rather than drifted into. It would mean:
+  - declaring a **costed spell to be the Mage's basic attack**, and
+  - **attack-speed-scaling that spell's cooldown** — which the attack-speed pass deliberately excluded
+    for abilities, on the grounds that an ability's declared cooldown is its balance, not a swing rate.
+
+  The alternative is a **separate free basic attack** for the staff (a left-click wand bolt, say), which
+  mages in most games want anyway — something to do when the energy bar is empty — but that is net-new
+  content, not a conversion, and it changes the Mage's "the verb is commit" economy that `ember_staff`'s
+  own comments describe.
+
+  Until this is answered: `+Magic Damage` and attack speed are inert for mage weapons, and **the
+  class-modifier pass must not ship a `+Magic Damage` stat that silently does nothing.** Either convert,
+  or author the free basic attack, or say plainly in the modifier's own lore that Magic is not yet live.
 - **Class-typed stat modifiers.** `WeaponClass` (MELEE/RANGER/MAGE; SUMMONER deferred until it has
   mechanics) is now a required weapon axis — it labels the tooltip (`WeaponClassLabel`: Melee/Ranged/
   Magic) and nothing more. The intended mechanic: a `+N <Class> Damage` modifier that applies **only**
@@ -910,23 +936,38 @@ Before milestone 2, two things worth measuring rather than assuming:
   stat from actual weapon content instead of a fixture. Each also owns a `/rpg` dev subcommand
   and a `Keys` PDC entry, so removing one is three sites, not one.
 
-- **`WeaponDamage` reused for a RANGED weapon is a Folia cross-region race.** The attack-damage pass made
-  the basic melee hit deal the caster's `ATTACK_DAMAGE` stat, read at HIT time via
-  `CombatWorld.attackDamage(casterId)` (`PaperCombatWorld` -> `CombatantStats.attackValue`). That read is
-  only legal on the thread owning the caster, and is safe for MELEE because the caster is within reach of
-  the target and so shares its region/thread. A **ranged** weapon (bow/staff) whose projectile carried a
-  `WeaponDamage` payload would resolve the effect on the target's region, cross-region from the caster --
-  a Folia race reading the caster's store off-thread. When ranged/costed payloads are promoted from their
-  literal `amount:` to stat-scaled, they must **snapshot the caster's attack damage at CAST time** (on the
-  caster's thread, into the effect payload), not read it at hit time. Do not let ranged inherit the
-  hit-time read. (Melee-only was the deliberate, symmetric slice this pass shipped.)
+- **`WeaponDamage` reused for a RANGED weapon was a Folia cross-region race — RETIRED.** The
+  attack-damage pass made the basic melee hit deal the caster's `ATTACK_DAMAGE` stat, read at HIT time
+  via `CombatWorld.attackDamage(casterId)` (`PaperCombatWorld` -> `CombatantStats.attackValue`). That read
+  was only legal on the thread owning the caster: safe for MELEE, where the caster is within reach of the
+  target and so shares its region, but a race for a **ranged** weapon, whose projectile resolves its
+  payload on the TARGET'S region, cross-region from the caster.
+
+  The cast-time-snapshot pass closed it, and closed it **structurally rather than by convention**:
+  `CombatantSnapshot` gained `attackDamage`, captured in `BukkitCombatant.snapshot` under
+  `Regions.requireOwned` exactly as `attackSpeed` already was; `Caster` (`core.combat`) is the frozen
+  projection of a snapshot down to what an effect landing LATER may read — an id plus stats, deliberately
+  not position/liveness — and it is threaded through `CastExecutor`, `ProjectileFlight` and
+  `EffectApplier` in place of the bare `casterId`. **`CombatWorld.attackDamage` no longer exists**, along
+  with its `PaperCombatWorld` implementation and the `FakeWorld` map. So a hit-time read is not merely
+  discouraged; the port offers no method that could perform one.
+
+  Melee moved to the same frozen semantics rather than keeping its live read — a recorded decision, not a
+  side effect. Cast is effectively hit for a swing within reach, so the value is current, and unifying
+  leaves ONE path instead of two with the race half-present.
+
+  Proven by `ProjectileFlightTest.aProjectileDealsTheAttackDamageFrozenAtLaunchNotAtImpact`, which
+  changes the caster's stat mid-flight and asserts the launch-time value lands. That core test is the
+  only possible proof: **Paper is single-region, so no boot can make the two regions differ.**
 - **Attack-SPEED is deferred.** The attack-damage pass built the stat machinery (a second `Stat` on
   `HealthState`, a `reconcileAttackModifiers` loop, `WeaponAttackItems`); attack-speed slots in as the next
   stat using the same machinery, modifying the per-trigger `cooldown_ticks` fire rate. Not started.
-- **Ranged/costed/ability payloads keep their LITERAL `amount:`.** bow (`hunters_bow`), staff
-  (`ember_staff`), the emberblade right-click special, `solar_grenade`, and Rekindle still deal a literal
-  `EffectSpec.Damage`, not `WeaponDamage`. Whether a bow has "attack damage" is a later design call; the
-  attack-damage pass promoted only the basic melee swing (ironblade/emberblade `left_click`).
+- **COSTED/ability payloads keep their LITERAL `amount:`.** The staff (`ember_staff`), the emberblade
+  right-click special, `solar_grenade`, and Rekindle still deal a literal `EffectSpec.Damage`, not
+  `WeaponDamage`. The **bow is no longer on this list** — `hunters_bow` was converted by the
+  cast-time-snapshot pass and now declares `attack_damage: 6` with a `weapon_damage` on_hit, so the
+  Ranger's shot is stat-reading and attack-speed-scaled. The staff was deliberately NOT converted; see
+  the Mage basic-attack decision below.
 - **Elemental damage is still identity, not math.** The attack-damage pass did not add a multiplier;
   `WeaponDamage.element()` flavours the hit and gates kits exactly as `Damage.element()` does. See
   `Element.multiplierAgainst` below.

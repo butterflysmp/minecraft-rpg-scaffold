@@ -8,7 +8,8 @@
 # firing real vanilla arrows. Left-click stays free for a future melee/special.
 #
 # Click-to-shoot, cooldown-gated -- no draw-and-charge. Fire rate IS the cooldown, so it
-# composes with future fire-rate buffs (the reason charge was rejected in the plan).
+# composes with fire-rate buffs -- and since the shot is now a weapon_damage basic attack,
+# the caster's ATTACK_SPEED stat scales that cooldown for free (AbilityService.resolve).
 #
 # material: bow is the first non-sword weapon -- the reason WeaponDefinition gained a
 # material field. Reuses the shipped solar_detonation visual on impact, so no new file.
@@ -19,14 +20,25 @@ element: fire
 rarity: uncommon
 class: ranger
 material: bow
+# The Ranger's basic-attack damage, as a real STAT -- the same shape ironblade uses for melee. The
+# weapon contributes it as a MAIN_HAND modifier on the wielder's ATTACK_DAMAGE, and the weapon_damage
+# on_hit below reads it back. This is what a future "+N Ranged Damage" modifier will have to grip;
+# while this was a literal buried in the effect, there was no stat for one to modify.
+attack_damage: 6
+
+# Authored tooltip prose, italic/gray beneath the derived stats. This line used to live on the
+# trigger as its `description`, which a basic attack never renders -- see the trigger comment below.
+flavor:
+  - "A swift arrow wreathed in flame."
 
 triggers:
   # Free shot -- the Ranger economy: the bow carries the damage, energy stays free for
   # utility. cooldown_ticks is the fire rate: ~0.75s between shots.
   right_click:
-    name: "Quick Shot"
-    description:
-      - "A swift arrow wreathed in flame."
+    # No name/description: a weapon_damage trigger IS the basic attack, and the tooltip renders it
+    # as a stat block ("Ranged Damage: 6" / "Attack Speed: 1.3"), not an ability section, so prose
+    # here would never be read. The stat block does carry the input label, because this basic attack
+    # is NOT on the assumed left-click and nothing else on the tooltip would say so.
     cooldown_ticks: 15
     cast:
       type: projectile
@@ -36,6 +48,12 @@ triggers:
     on_hit:
       - type: visual
         visual_id: solar_detonation
-      - type: damage
-        amount: 6
+      # The wielder's ATTACK_DAMAGE stat (= this weapon's attack_damage), not a literal.
+      #
+      # This is the first shipped weapon_damage that is NOT first in its on_hit list, and the first
+      # delivered by a PROJECTILE. Both are fine and both are deliberate: DamagePayload is
+      # first-wins over DAMAGE-BEARING effects and a visual bears none, so the visual above does not
+      # shadow it; and the amount is frozen on the caster's thread at cast time (CombatantSnapshot
+      # -> Caster), so the impact never reads the caster's store from the target's region.
+      - type: weapon_damage
         element: fire

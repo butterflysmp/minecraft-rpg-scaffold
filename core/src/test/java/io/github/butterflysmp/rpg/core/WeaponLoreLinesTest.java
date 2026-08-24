@@ -146,4 +146,19 @@ class WeaponLoreLinesTest {
                 new EffectSpec.Damage(99, "fire"));
         assertEquals(3, WeaponLoreLines.triggerDamage(onHit, 0).orElseThrow().amount());
     }
+
+    /**
+     * The stat-block input label is CONDITIONAL: silent for the assumed left-click, spoken for
+     * anything else. A stat block has no name or cadence line, so for the bow this label is the
+     * only thing on the whole tooltip that says which button shoots.
+     */
+    @Test
+    void aStatBlockNamesItsInputOnlyWhenItIsNotLeftClick() {
+        assertEquals("", WeaponLoreLines.statBlockInputLabel("left_click"),
+                "a sword's stat block stays bare -- 'Left-Click' would be redundant clutter");
+        assertEquals("Right-Click", WeaponLoreLines.statBlockInputLabel("right_click"),
+                "the bow's shot must say which button fires it");
+        // Mutation: return inputLabel(input) unconditionally -> the first assertion reddens with
+        // "expected: <> but was: <Left-Click>".
+    }
 }

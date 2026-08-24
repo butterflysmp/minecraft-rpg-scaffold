@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.content;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
+import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
@@ -559,6 +560,18 @@ class WeaponLoaderTest {
         assertEquals(ResourceCost.FREE, shot.cost(), "the shot is free -- the bow carries the damage");
         assertInstanceOf(CastSpec.Projectile.class, shot.cast());
         assertEquals(15, shot.cooldownTicks(), "cooldown is the fire rate");
+
+        // The shot is a STAT-READING basic attack, not a literal: attack_damage 6 on the weapon,
+        // and a weapon_damage payload that reads it back. This is what makes a "+N Ranged Damage"
+        // modifier have something to grip, and what earns the shot attack-speed scaling.
+        assertEquals(6, weapon.attackDamage(), 1e-9, "hunters_bow declares attack_damage 6");
+        assertTrue(DamagePayload.isBasicAttack(shot.onHit()),
+                "the bow's shot must be a basic attack, behind its leading visual");
+        assertEquals(DamagePayload.DamageSource.WEAPON_STAT,
+                DamagePayload.of(shot.onHit(), weapon.attackDamage()).orElseThrow().source(),
+                "the amount comes from the stat, not a literal amount: in content");
+        assertEquals(List.of("A swift arrow wreathed in flame."), weapon.flavor(),
+                "the trigger's old description now renders as weapon flavour");
     }
 
     /** The shipped staff: a costed right-click projectile -- the Mage's commit primary. */

@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core.ability.effect;
 
 import io.github.butterflysmp.rpg.core.Vec3;
+import io.github.butterflysmp.rpg.core.combat.Caster;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import java.util.List;
@@ -12,8 +13,10 @@ import java.util.UUID;
  *
  * Nothing here may retain a Combatant beyond the tick it was handed: its handle wraps a
  * live entity. A lingering area outlives its caster, who can die, log out, or unload with
- * their chunk. Areas therefore carry the caster's UUID, never the Combatant itself -- and
- * that same UUID is what attributes the damage.
+ * their chunk. Areas therefore carry a {@link Caster} -- a frozen value, an id plus the stats
+ * captured on the caster's own thread at cast time -- never the Combatant itself, and never the
+ * full CombatantSnapshot, whose position and liveness would be stale by the time a fuse burns
+ * down. That same id is what attributes the damage.
  *
  * Reads come off the snapshot, writes go to the handle. Neither is interchangeable, and
  * the types enforce it: you cannot ask a handle a question, and you cannot hit a snapshot.
@@ -26,12 +29,12 @@ public final class EffectApplier {
     }
 
     /**
-     * The caster is identified, never held. Callers already have only an id by the time an
-     * effect lands: a projectile in flight, a lingering area, a ray mid-walk.
+     * The caster is carried as a frozen value, never held. Callers already have no live handle by
+     * the time an effect lands: a projectile in flight, a lingering area, a ray mid-walk.
      */
-    public void applyAll(List<? extends EffectSpec> specs, UUID casterId,
+    public void applyAll(List<? extends EffectSpec> specs, Caster caster,
                          Combatant target, Vec3 origin) {
-        applyAll(specs, casterId, target, origin, Vec3.ZERO);
+        applyAll(specs, caster, target, origin, Vec3.ZERO);
     }
 
     /**
@@ -39,10 +42,10 @@ public final class EffectApplier {
      * points where the caster faces). Most effects ignore it; the plain four-arg entry point
      * passes {@link Vec3#ZERO}, since a self/melee/ray/projectile impact has no fan to aim.
      */
-    private void applyAll(List<? extends EffectSpec> specs, UUID casterId,
+    private void applyAll(List<? extends EffectSpec> specs, Caster caster,
                           Combatant target, Vec3 origin, Vec3 direction) {
         for (EffectSpec spec : specs) {
-            apply(spec, casterId, target, origin, direction);
+            apply(spec, caster, target, origin, direction);
         }
     }
 
@@ -50,32 +53,38 @@ public final class EffectApplier {
      * The one place a missing target is handled. Everything below this point
      * may assume a live target, because the type says so.
      */
-    private void apply(EffectSpec spec, UUID casterId, Combatant target, Vec3 origin, Vec3 direction) {
+    private void apply(EffectSpec spec, Caster caster, Combatant target, Vec3 origin, Vec3 direction) {
         switch (spec) {
             case EffectSpec.Targeted t -> {
-                if (target != null) applyTargeted(t, casterId, target, origin);
+                if (target != null) applyTargeted(t, caster, target, origin);
             }
-            case EffectSpec.Untargeted u -> applyUntargeted(u, casterId, origin, direction);
+            case EffectSpec.Untargeted u -> applyUntargeted(u, caster, origin, direction);
         }
     }
 
-    private void applyTargeted(EffectSpec.Targeted spec, UUID casterId,
+    private void applyTargeted(EffectSpec.Targeted spec, Caster caster,
                                Combatant target, Vec3 origin) {
         switch (spec) {
             case EffectSpec.Damage d -> {
                 if (target.state().alive()) {
                     // Element is identity, not math -- it flavors the hit and gates kits, but
                     // never multiplies the number. The port downstream carries the amount and a culprit.
-                    target.handle().applyDamage(d.amount(), casterId);
+                    target.handle().applyDamage(d.amount(), caster.id());
                 }
             }
             case EffectSpec.WeaponDamage wd -> {
-                // The basic melee hit: the amount is the CASTER'S attack-damage stat, resolved now.
-                // 0 means unarmed (or untracked) -- deal nothing rather than fire a spurious 0-damage
-                // seam. Element is identity here too, never a multiplier.
-                double amount = world.attackDamage(casterId);
+                // The basic attack: the caster's attack damage, FROZEN AT CAST TIME. Melee and
+                // projectile read the identical value here. For melee, cast is effectively hit --
+                // the caster is within reach -- so freezing costs nothing. For a projectile it is
+                // the only legal reading: impact resolves on the TARGET'S region, which on Folia is
+                // not the caster's, so asking the store for the caster's stat here would be an
+                // off-thread read. There is no longer a world method that could perform one.
+                //
+                // 0 means unarmed (or untracked) -- deal nothing rather than fire a spurious
+                // 0-damage seam. Element is identity here too, never a multiplier.
+                double amount = caster.attackDamage();
                 if (amount > 0 && target.state().alive()) {
-                    target.handle().applyDamage(amount, casterId);
+                    target.handle().applyDamage(amount, caster.id());
                 }
             }
             case EffectSpec.Heal h -> target.handle().applyHeal(h.amount());
@@ -92,34 +101,34 @@ public final class EffectApplier {
         }
     }
 
-    private void applyUntargeted(EffectSpec.Untargeted spec, UUID casterId, Vec3 origin, Vec3 direction) {
+    private void applyUntargeted(EffectSpec.Untargeted spec, Caster caster, Vec3 origin, Vec3 direction) {
         switch (spec) {
             case EffectSpec.Visual v -> world.present(origin, v.visualId());
 
             // Inline, on this very frame. Scheduling it -- even at delay 0 -- would put
             // the splash a tick behind the visual, because Paper clamps 0 up to 1.
-            case EffectSpec.Burst b -> applyToNearby(b.effects(), casterId, origin, b.radius());
+            case EffectSpec.Burst b -> applyToNearby(b.effects(), caster, origin, b.radius());
 
             // A field, not a blast. Its first pulse lands one interval in; anything that
             // should happen at the moment of impact belongs in a Burst.
             case EffectSpec.Area a -> world.schedule(origin, a.tickInterval(),
-                    () -> tickArea(a, casterId, origin, a.tickInterval()));
+                    () -> tickArea(a, caster, origin, a.tickInterval()));
 
             // A fan of REAL thrown items, each tracked by its own per-tick loop: draw the trail
             // at the live position, count the fuse, detonate mob-only where it lies. No landing
             // detection, no separate marker -- the thrown item IS the marker.
-            case EffectSpec.ThrowEmbers te -> throwEmbers(te, casterId, origin, direction);
+            case EffectSpec.ThrowEmbers te -> throwEmbers(te, caster, origin, direction);
         }
     }
 
-    private void throwEmbers(EffectSpec.ThrowEmbers te, UUID casterId, Vec3 origin, Vec3 facing) {
+    private void throwEmbers(EffectSpec.ThrowEmbers te, Caster caster, Vec3 origin, Vec3 facing) {
         List<Vec3> directions = EffectSpec.ThrowEmbers.fan(facing, te.anglesDegrees());
         for (Vec3 direction : directions) {
             Vec3 velocity = direction.scale(te.speed()).add(new Vec3(0, te.launchLift(), 0));
             UUID itemId = world.throwMarker(origin, velocity, te.itemId());
             // First tick runs inline on the launch frame -- the same shape as ProjectileFlight,
             // which draws its trail and steps inline before scheduling the next tick.
-            trackEmber(te, casterId, itemId, origin, te.fuseTicks());
+            trackEmber(te, caster, itemId, origin, te.fuseTicks());
         }
     }
 
@@ -133,7 +142,7 @@ public final class EffectApplier {
      * why the detonation is region-correct on Folia and needs no caveat. {@code lastKnown} is
      * only the fallback if the item has already vanished (removed / unloaded).
      */
-    private void trackEmber(EffectSpec.ThrowEmbers te, UUID casterId, UUID itemId,
+    private void trackEmber(EffectSpec.ThrowEmbers te, Caster caster, UUID itemId,
                             Vec3 lastKnown, int fuseLeft) {
         Vec3 at = world.markerLocation(itemId).orElse(lastKnown);
         // One clean flame at the live position; the item's motion between ticks draws the line.
@@ -143,11 +152,11 @@ public final class EffectApplier {
             // The boom lands with the blast: same tick, same place, so they cannot diverge.
             if (te.visual() != null) world.present(at, te.visual());
             // Mob-only, like a dash's payload: a denial zone burns mobs, not players.
-            applyToNearbyMobs(te.burst().effects(), casterId, at, te.burst().radius());
+            applyToNearbyMobs(te.burst().effects(), caster, at, te.burst().radius());
             world.removeMarker(itemId);
             return;
         }
-        world.schedule(at, 1, () -> trackEmber(te, casterId, itemId, at, fuseLeft - 1));
+        world.schedule(at, 1, () -> trackEmber(te, caster, itemId, at, fuseLeft - 1));
     }
 
     /**
@@ -155,9 +164,9 @@ public final class EffectApplier {
      * grenade, and once the caster is gone it is no longer near anything, so the check
      * simply stops matching -- no need to resolve the UUID back to a Combatant.
      */
-    private void applyToNearby(List<EffectSpec.Targeted> effects, UUID casterId,
+    private void applyToNearby(List<EffectSpec.Targeted> effects, Caster caster,
                                Vec3 origin, double radius) {
-        applyToEach(effects, casterId, world.combatantsNear(origin, radius), origin);
+        applyToEach(effects, caster, world.combatantsNear(origin, radius), origin);
     }
 
     /**
@@ -170,25 +179,25 @@ public final class EffectApplier {
      * catches no one. Callers pass their whole {@code onHit} list; the split is made here so a
      * cast arm never re-implements it.
      */
-    public void applyToSet(List<? extends EffectSpec> specs, UUID casterId,
+    public void applyToSet(List<? extends EffectSpec> specs, Caster caster,
                            Iterable<Combatant> targets, Vec3 origin, Vec3 direction) {
         for (EffectSpec spec : specs) {
-            if (spec instanceof EffectSpec.Untargeted u) applyUntargeted(u, casterId, origin, direction);
+            if (spec instanceof EffectSpec.Untargeted u) applyUntargeted(u, caster, origin, direction);
         }
         for (Combatant c : targets) {
-            if (c.id().equals(casterId)) continue;
+            if (c.id().equals(caster.id())) continue;
             for (EffectSpec spec : specs) {
-                if (spec instanceof EffectSpec.Targeted t) applyTargeted(t, casterId, c, origin);
+                if (spec instanceof EffectSpec.Targeted t) applyTargeted(t, caster, c, origin);
             }
         }
     }
 
-    private void applyToEach(List<EffectSpec.Targeted> effects, UUID casterId,
+    private void applyToEach(List<EffectSpec.Targeted> effects, Caster caster,
                              Iterable<Combatant> targets, Vec3 origin) {
         for (Combatant c : targets) {
-            if (c.id().equals(casterId)) continue;
+            if (c.id().equals(caster.id())) continue;
             for (EffectSpec.Targeted t : effects) {
-                applyTargeted(t, casterId, c, origin);
+                applyTargeted(t, caster, c, origin);
             }
         }
     }
@@ -198,24 +207,24 @@ public final class EffectApplier {
      * is the same rule SweptLine applies to a dash's payload, read off the frozen snapshot so
      * a core test can guard it: delete the skip and an in-radius player is wrongly burned.
      */
-    private void applyToNearbyMobs(List<EffectSpec.Targeted> effects, UUID casterId,
+    private void applyToNearbyMobs(List<EffectSpec.Targeted> effects, Caster caster,
                                    Vec3 origin, double radius) {
         for (Combatant c : world.combatantsNear(origin, radius)) {
-            if (c.id().equals(casterId)) continue;
+            if (c.id().equals(caster.id())) continue;
             if (c.state().player()) continue;
             for (EffectSpec.Targeted t : effects) {
-                applyTargeted(t, casterId, c, origin);
+                applyTargeted(t, caster, c, origin);
             }
         }
     }
 
-    private void tickArea(EffectSpec.Area area, UUID casterId, Vec3 origin, int elapsed) {
-        applyToNearby(area.effects(), casterId, origin, area.radius());
+    private void tickArea(EffectSpec.Area area, Caster caster, Vec3 origin, int elapsed) {
+        applyToNearby(area.effects(), caster, origin, area.radius());
 
         int next = elapsed + area.tickInterval();
         if (next <= area.durationTicks()) {
             world.schedule(origin, area.tickInterval(),
-                    () -> tickArea(area, casterId, origin, next));
+                    () -> tickArea(area, caster, origin, next));
         }
     }
 }

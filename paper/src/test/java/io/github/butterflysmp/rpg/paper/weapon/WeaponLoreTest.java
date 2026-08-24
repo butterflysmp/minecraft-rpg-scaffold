@@ -133,6 +133,56 @@ class WeaponLoreTest {
                 () -> "a basic attack shows Attack Speed, never a cooldown; got " + lines);
     }
 
+    /** The bow: a RANGED basic attack on right-click, behind a leading visual. */
+    private static WeaponDefinition huntersBow() {
+        AbilityDefinition shot = new AbilityDefinition(
+                "hunters_bow/right_click", "Hunter's Bow", "fire", "none",
+                15, ResourceCost.FREE, new CastSpec.Projectile(2.5, 0.05, 60),
+                List.of(new EffectSpec.Visual("solar_detonation"), new EffectSpec.WeaponDamage("fire")),
+                List.of());
+        return new WeaponDefinition("hunters_bow", "Hunter's Bow", "fire", Rarity.UNCOMMON,
+                WeaponClass.RANGER, "bow", 6.0,
+                List.of(new TriggerBinding("right_click", shot)),
+                List.of("A swift arrow wreathed in flame."));
+    }
+
+    /**
+     * A basic attack that is NOT on left-click must say which button fires it. A stat block has no
+     * gold name line and no cadence line, so without this the bow's tooltip would never mention
+     * right-click anywhere -- the one piece of information a player cannot guess from a bow whose
+     * vanilla draw has been suppressed.
+     */
+    @Test
+    void aNonLeftClickBasicAttackNamesItsInputOnTheStatLine() {
+        List<String> lines = textLines(WeaponLore.build(huntersBow(), elementsWithFire()));
+
+        assertTrue(lines.stream().anyMatch(l -> l.startsWith("Ranged Damage: 6")),
+                () -> "the bow's shot is class-labelled RANGED, off its attack_damage; got " + lines);
+        assertTrue(lines.stream().anyMatch(l -> l.startsWith("Ranged Damage: 6") && l.contains("Right-Click")),
+                () -> "the stat line must carry the non-default input; got " + lines);
+        assertTrue(lines.contains("Attack Speed: 1.3"),
+                () -> "15 ticks between shots is ~1.3 shots/sec; got " + lines);
+        assertFalse(lines.stream().anyMatch(l -> l.startsWith("Cooldown:")),
+                () -> "a basic attack shows Attack Speed, never a cooldown; got " + lines);
+        assertTrue(lines.contains("A swift arrow wreathed in flame."),
+                () -> "the prose relocated to weapon flavour must still render; got " + lines);
+    }
+
+    /**
+     * ...and a LEFT-click basic attack still says nothing, so the label is conditional rather than
+     * a blanket addition. This is the half that reddens if the rule is made unconditional, and it
+     * is why the sword tooltips the lore pass tuned are byte-identical after this pass.
+     */
+    @Test
+    void aLeftClickBasicAttackStaysBareOfAnInputLabel() {
+        List<String> lines = textLines(WeaponLore.build(rareFireSword(), elementsWithFire()));
+
+        assertTrue(lines.contains("Melee Damage: 7"),
+                () -> "the sword's stat line must carry no input label at all; got " + lines);
+        assertFalse(lines.stream().anyMatch(l -> l.contains("Left-Click")),
+                () -> "'Left-Click' is the assumed input and must never be spelled out; got " + lines);
+    }
+
     /**
      * The label collision this pass resolves. The stat line and the fireball are both damage, but
      * only the stat line reads the ATTACK_DAMAGE stat -- so only it may wear the CLASS label. The
@@ -291,13 +341,15 @@ class WeaponLoreTest {
                     () -> weapon.id() + ": attack speed must appear iff it has a basic attack; got " + lines);
         }
 
-        // Ironblade and Emberblade are the two weapon_damage weapons in shipped content. If that
-        // ever stops being true this test has quietly stopped covering the stat block.
-        assertEquals(2, weapons.all().stream().filter(w -> w.triggers().stream().anyMatch(t ->
+        // Ironblade, Emberblade and now Hunter's Bow are the weapon_damage weapons in shipped
+        // content. If that ever stops being true this test has quietly stopped covering the stat
+        // block. The bow joining them is the point of the cast-time-snapshot pass: a projectile
+        // basic attack was impossible while WeaponDamage resolved its amount at hit time.
+        assertEquals(3, weapons.all().stream().filter(w -> w.triggers().stream().anyMatch(t ->
                         DamagePayload.of(t.ability().onHit(), w.attackDamage())
                                 .map(d -> d.source() == DamagePayload.DamageSource.WEAPON_STAT)
                                 .orElse(false))).count(),
-                "exactly two shipped weapons have a basic attack (ironblade, emberblade)");
+                "exactly three shipped weapons have a basic attack (ironblade, emberblade, hunters_bow)");
     }
 
     private static void copyBundled(String resource, Path target) throws IOException {
