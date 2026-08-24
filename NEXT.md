@@ -818,6 +818,50 @@ Before milestone 2, two things worth measuring rather than assuming:
     about which modifiers apply.** `WeaponClass`'s "inert beyond labelling the tooltip" and
     `EffectSpec.WeaponDamage`'s inherited "resolved at hit time" (stale since `7af9c43`) went too.
 
+  **The boot record.** Played on a client (`dev-server.sh --refresh-content`; the deploy was
+  confirmed byte-identical to the build output with `cmp`, and the three new classes confirmed
+  present *inside* the running jar, rather than inferred from a green build). The fixture goes in
+  the OFFHAND — the main hand holds the weapon.
+
+  | held | gear | measured |
+  |---|---|---|
+  | `ember_staff` Ember Bolt | +5 Magic | **16 → 21** |
+  | `hunters_bow` Quick Shot | +5 Magic | **inert** (6, unchanged) |
+  | `hunters_bow` Quick Shot | +5 Ranged | **6 → 11** |
+  | `ironblade` swing | +5 Melee | **8 → 13** |
+  | `emberblade` swing | +5 Melee | **7 → 12** |
+  | `emberblade` Fireball | +5 Melee | **12 → 17** |
+  | `ember_staff` tooltip | +5 Magic | still reads base **16** |
+
+  **Two of those lines are the whole argument, and neither could have come from a unit test.**
+
+  - **`ember_staff` 16 → 21 is the blocker retired.** That weapon reads no stat at all — a literal
+    `damage:` payload on `attack_damage: 0` — which is exactly why a modifier keyed on ATTACK_DAMAGE
+    could not have reached it, and why the entry below forbade shipping one. The bonus reaching it
+    without any weapon conversion is the proof that keying on the held weapon's class was the right
+    axis.
+  - **Fireball 12 → 17, NOT 24, is the separate-`Stat` architecture proven.** 24 is what the
+    folded-into-ATTACK_DAMAGE design produces: the 12 literal, plus the emberblade's inherent swing
+    damage of 7, plus the 5 bonus. 17 is what a separate stat produces. **The number distinguishes
+    the two designs**, so this is a positive result about the architecture rather than the absence of
+    a bug — the bonus adds on top of a payload without that payload inheriting the weapon's swing
+    damage. If this line ever reads 24, the fourth `Stat` has been folded into the attack stat.
+  - **The staff tooltip still reading base 16** closes the loop on the doc correction above: the
+    label rule changed its *reason* this pass without changing its *behaviour*, and that is now
+    witnessed rather than argued. The resolved, gear-boosted number remains the stat-screen pass's
+    job.
+
+  **Two qualitative sightings, confirmed as designed, no figures taken.** Recorded because both look
+  like bugs to anyone who has not read the decisions above:
+
+  - A **standalone ability cast while holding a matching-class weapon takes the bonus** — the
+    consequence recorded in its own entry below. Seen, and correct: `CastExecutor` builds the
+    `Caster` for every cast, so this is the design, not a leak.
+  - **`ability_stone` is `class: mage`**, so merely holding it activates `+Magic`. Correct by the
+    rule — it is a weapon of ours and it declares a class — but surprising, since it is a dev tool
+    rather than a combat weapon. Not a defect; if it should be exempt, that is a content decision
+    about whether a utility item should declare a class at all.
+
 - **CONSEQUENCE: standalone ability literals are now gear-scalable.** `CastExecutor` builds the
   `Caster` for **every** cast, so `/rpg cast solar_grenade` with a sword in hand takes +Melee, and a
   kit spell with a staff in hand takes +Magic. This is deliberate, not a leak: `+Class Damage` is a
