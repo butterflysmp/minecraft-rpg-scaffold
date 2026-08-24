@@ -33,6 +33,7 @@ import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.DashAim;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponClassLabel;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
+import io.github.butterflysmp.rpg.paper.weapon.WeaponRefresher;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -164,6 +165,20 @@ public final class RpgCommand {
                                     }
                                     return give(player, id, weapons, adapters);
                                 })))
+                // Force a lore/display refresh of everything you are carrying, without relogging.
+                // Join already does this; this is the same call for the case where reconnecting is
+                // the slow way round. Dev-gated: it is a content-iteration instrument, and it
+                // rewrites items in your inventory.
+                .then(Commands.literal("refresh")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> {
+                            if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+                                ctx.getSource().getSender().sendMessage(
+                                        Component.text("Players only.", NamedTextColor.RED));
+                                return 0;
+                            }
+                            return refresh(player, weapons, adapters);
+                        }))
                 // A dev instrument: apply any loaded status, at any stack count and duration,
                 // to the mob you are aiming at -- bypassing the class/element/kit gate, which is
                 // exactly why it is DEV-gated. It reuses the same applyStatus seam an ability
@@ -540,6 +555,33 @@ public final class RpgCommand {
         // with the thing that just landed in the inventory.
         player.sendMessage(Component.text("Given ", NamedTextColor.AQUA)
                 .append(WeaponItems.displayName(weapon.displayName(), weapon.rarity())));
+        return 1;
+    }
+
+    /**
+     * Rebuild the display of every custom weapon the player is carrying, from the content loaded
+     * now. The same call the join handler makes; this is for iterating on content without a relog.
+     *
+     * Hops to the player's own thread before touching their inventory. A command runs on the
+     * command thread, not the player's region thread, so once Folia is on, scanning an inventory
+     * inline here is a cross-region read. (/rpg give has the same gap today -- not this pass's.)
+     *
+     * Reports the COUNT rather than "done". A scan that finds nothing and a scan that silently did
+     * nothing are indistinguishable from a success message, and "finding zero items is a defect,
+     * not a quiet no-op" is exactly the trap CLAUDE.md's verification section names. The number is
+     * how the boot gate can tell the difference.
+     */
+    private static int refresh(Player player, WeaponRegistry weapons, AdapterContext adapters) {
+        adapters.scheduler().onEntity(player, () -> {
+            int refreshed = WeaponRefresher.refresh(player, weapons, adapters);
+            // Make a mid-session swap visible immediately rather than at the client's next sync.
+            player.updateInventory();
+            player.sendMessage(refreshed > 0
+                    ? Component.text("Refreshed " + refreshed + " weapon(s) from current content.",
+                            NamedTextColor.GREEN)
+                    : Component.text("Refreshed 0 weapons -- you are carrying none of ours.",
+                            NamedTextColor.YELLOW));
+        });
         return 1;
     }
 

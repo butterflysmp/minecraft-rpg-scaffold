@@ -16,6 +16,8 @@ import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Optional;
@@ -130,14 +132,95 @@ public final class WeaponItems {
     /**
      * The weapon id of the player's main-hand item, if it is one of ours.
      *
-     * First branch is the untagged fast-path reject: an empty hand, a dirt block, a
-     * vanilla sword all lack item meta and return empty here having cost nothing. This is
-     * the shape 1b's packet listener calls, so it must stay allocation-free on a miss.
+     * Delegates to {@link #weaponId} so there is still exactly ONE place that reads the tag. The
+     * untagged fast-path reject lives there and is unchanged: an empty hand, a dirt block, a
+     * vanilla sword all lack item meta and return empty having cost nothing. This is the shape
+     * 1b's packet listener calls, so it must stay allocation-free on a miss.
      */
     public static Optional<String> heldWeaponId(Player player, Keys keys) {
-        ItemStack held = player.getInventory().getItemInMainHand();
-        if (!held.hasItemMeta()) return Optional.empty();
-        return Optional.ofNullable(held.getItemMeta().getPersistentDataContainer()
+        return weaponId(player.getInventory().getItemInMainHand(), keys);
+    }
+
+    /**
+     * The weapon id of ANY item, if it is one of ours -- the same read {@link #heldWeaponId} does,
+     * widened from the main hand to an arbitrary stack so the Lore Refresher can walk every
+     * inventory slot.
+     *
+     * The null guard is the one addition. {@code getItemInMainHand()} never returns null, but
+     * {@code Inventory#getContents()} is full of nulls for empty slots, and an inventory is mostly
+     * empty slots. Same shape as the sibling item readers ({@code ClassDamageModifierItems.grantOf},
+     * {@code AttackSpeedModifierItems.boostAmount}).
+     */
+    public static Optional<String> weaponId(ItemStack item, Keys keys) {
+        if (item == null || !item.hasItemMeta()) return Optional.empty();
+        return Optional.ofNullable(item.getItemMeta().getPersistentDataContainer()
                 .get(keys.weaponId, PersistentDataType.STRING));
+    }
+
+    /**
+     * Rebuild an existing weapon item's DISPLAY from the definition loaded NOW, keeping everything
+     * the item itself earned. This is the Lore Refresher's mechanism.
+     *
+     * A full re-mint rather than a lore patch, on purpose: MATERIAL is baked at mint too, so a
+     * weapon that changed from iron_sword to diamond_sword in content cannot be brought up to date
+     * by rewriting meta on the old stack -- it is a different item. Minting fresh and carrying the
+     * instance data over is the only shape that covers every baked field, which is exactly why the
+     * carry-forward has to be explicit rather than incidental.
+     */
+    public static ItemStack remint(ItemStack old, WeaponDefinition current, AdapterContext adapters) {
+        ItemStack fresh = mint(current, adapters);
+        ItemMeta oldMeta = old.getItemMeta();
+        if (oldMeta == null) return fresh;   // no meta means no tag; the caller would not have got here
+        fresh.editMeta(meta -> carryInstanceData(oldMeta, meta, adapters.keys(), fresh.getType()));
+        return fresh;
+    }
+
+    /**
+     * Copy the old item's INSTANCE data onto the freshly minted one -- the explicit half of the
+     * refresh contract, and the half that decides whether this pass needs rewriting later.
+     *
+     * Everything NOT copied here is DISPLAY, and is deliberately rebuilt from current content. This
+     * roster is what separates the two, so a future rarity or enchant roll is one more line in this
+     * method and no change anywhere else.
+     *
+     * Today it is two things:
+     *
+     *  - the weapon id, which mint() already regenerated from the current definition's id -- the
+     *    same value, since that is the id we looked the definition up BY. Copied anyway, so the
+     *    step is a real mechanism rather than a comment describing one;
+     *  - the item's accumulated wear, which mint() cannot know. This is what keeps the refresh
+     *    strictly display-only. Resetting it would silently repair every weapon on every login:
+     *    a gameplay change smuggled into a presentation pass, and a relog-to-repair exploit.
+     *    Whether custom weapons should wear at all is a separate, deferred decision -- if they
+     *    later mint unbreakable, this carry-forward quietly becomes a no-op.
+     */
+    private static void carryInstanceData(ItemMeta from, ItemMeta to, Keys keys, Material material) {
+        String id = from.getPersistentDataContainer().get(keys.weaponId, PersistentDataType.STRING);
+        if (id != null) {
+            to.getPersistentDataContainer().set(keys.weaponId, PersistentDataType.STRING, id);
+        }
+        carryWear(from, to, material);
+    }
+
+    /**
+     * Carry accumulated durability damage across the re-mint.
+     *
+     * The RAW damage value moves, not the wear fraction: if content also changed the material, 50
+     * damage out of iron's 250 becomes 50 out of diamond's 1561, so the item reads as less worn
+     * than it was. Accepted deliberately -- material changes are rare and the discrepancy is
+     * cosmetic.
+     *
+     * The clamp is NOT cosmetic, and is why this is a method rather than a line. A material change
+     * in the other direction -- iron (250) to gold (32) -- would copy a damage value past the new
+     * maximum, and an item damaged beyond its maximum is a BROKEN item. Without the clamp, a
+     * DISPLAY refresh could destroy a player's weapon outright: the exact class of failure this
+     * pass exists to avoid, arriving through the fix rather than the bug. Clamped to max-1, so the
+     * worst case is a weapon one hit from breaking rather than one that is already gone.
+     */
+    private static void carryWear(ItemMeta from, ItemMeta to, Material material) {
+        if (!(from instanceof Damageable worn) || !(to instanceof Damageable fresh)) return;
+        short maxDurability = material.getMaxDurability();
+        if (maxDurability <= 0) return;   // not a damageable material -- nothing to carry
+        fresh.setDamage(Math.min(worn.getDamage(), maxDurability - 1));
     }
 }

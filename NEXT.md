@@ -1127,6 +1127,42 @@ Before milestone 2, two things worth measuring rather than assuming:
   harmless: reads are snapshots captured under `requireOwned`, and the ray steps
   region by region. The comment there should say that rather than apologise for
   it.
+- **Naturally-spawned enchanted equipment is the one leak in the no-vanilla-enchants policy.** The
+  policy holds for player-held items by construction — custom UI replaces both the anvil and the
+  enchanting table, so a player can never apply a vanilla name or enchant, which is why the Lore
+  Refresher regenerates canonically with nothing to preserve on that axis. What it does not cover is
+  gear that arrives already enchanted: a skeleton spawning with an enchanted bow, and any of it that
+  reaches a player's hands as a drop. Out of the refresher's scope and untouched by it (no
+  `weapon_id`, so the scan reads it as not ours and forms no opinion), but a real future decision:
+  **strip / convert to a custom weapon / leave** vanilla-enchanted mob gear.
+- **Is durability an RPG axis at all — should custom weapons be unbreakable?** Raised by the Lore
+  Refresher and deliberately not answered by it. The refresh carries accumulated wear forward
+  (`WeaponItems.carryWear`) so it stays strictly display-only: resetting it would silently repair
+  every weapon on every login, which is a relog-to-repair exploit *and* a balance decision made as a
+  side effect of a presentation pass. Carrying it forward forecloses nothing — if weapons later mint
+  `Unbreakable`, the carry-forward quietly becomes a no-op. Vanilla wear currently accrues untouched:
+  nothing in the codebase sets `Unbreakable` or reads `Damageable`, and the melee suppressor zeroes
+  a swing's *damage*, not the durability the swing costs.
+- **The refresher's coverage boundary: `getContents()` does not reach the ender chest or the inside
+  of a shulker box.** The scan walks a PlayerInventory's 41 slots — storage, hotbar, armour, offhand
+  — so a weapon stashed in an ender chest or boxed up refreshes only once it is back in the main
+  inventory at a join (or on a `/rpg refresh`). Harmless in practice, and worth being explicit about
+  *why*: behaviour is id-driven, so a stashed weapon keeps working the whole time; only its baked
+  display is stale, and only until it is carried again. Not built this pass, same standing as the
+  on-enable sweep below.
+- **The on-enable sweep of already-online players is not built.** It would only cover
+  `/reload`-without-disconnect, which is not in the dev loop — `dev-server.sh` restarts the server,
+  and a restart reconnects you, which is the join trigger. `/rpg refresh` already covers "refresh
+  without relogging" for the case that actually happens. On Folia it would also need a per-player
+  scheduler hop rather than a straight loop, so it is not the three-line freebie it looks like.
+- **The `_TEMP` *item* fixtures cannot be refreshed by this mechanism.** `health_boost_TEMP`,
+  `attack_speed_boost_TEMP` and `class_damage_boost_TEMP` (`HealthModifierItems`,
+  `AttackSpeedModifierItems`, `ClassDamageModifierItems`) do carry real instance-PDC — an amount, and
+  for the last one a class — but they are minted from a **command argument**, not from a content
+  definition. There is nothing to regenerate them *from*, so "re-mint from the current definition"
+  has no meaning for them; they would need their own mechanism. They are therefore **not** the
+  natural next target for the refresher. (Distinct from `rooted_TEMP` / `soaked_TEMP` above, which
+  are YAML status effects carrying no PDC and no item at all.)
 
 ---
 
