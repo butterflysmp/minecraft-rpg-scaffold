@@ -65,11 +65,22 @@ public final class EffectApplier {
     private void applyTargeted(EffectSpec.Targeted spec, Caster caster,
                                Combatant target, Vec3 origin) {
         switch (spec) {
+            // Both direct-damage arms add the caster's CLASS DAMAGE BONUS -- the sum of their equipped
+            // "+N <Class> Damage" gear whose class matches the class of the weapon they hold, frozen
+            // at cast time on the Caster. The bonus is SEPARATE from the weapon's inherent damage: the
+            // sword's 8 and the bow's 6 stay where they are, and this adds on top. That is why the
+            // emberblade's fireball can take +Melee without inheriting the swing's 8.
+            //
+            // Note the gate is the HELD WEAPON'S CLASS, resolved when the desired modifier set was
+            // built -- NOT DamagePayload.isBasicAttack. Keying on the payload would have reached only
+            // stat-reading effects, which is precisely why a "+Magic Damage" modifier used to have
+            // nothing to grip: ember_staff carries a LITERAL amount and declares attack_damage 0.
             case EffectSpec.Damage d -> {
-                if (target.state().alive()) {
-                    // Element is identity, not math -- it flavors the hit and gates kits, but
-                    // never multiplies the number. The port downstream carries the amount and a culprit.
-                    target.handle().applyDamage(d.amount(), caster.id());
+                // Element is identity, not math -- it flavors the hit and gates kits, but
+                // never multiplies the number. The port downstream carries the amount and a culprit.
+                double amount = d.amount() + caster.classDamageBonus();
+                if (amount > 0 && target.state().alive()) {
+                    target.handle().applyDamage(amount, caster.id());
                 }
             }
             case EffectSpec.WeaponDamage wd -> {
@@ -80,9 +91,11 @@ public final class EffectApplier {
                 // not the caster's, so asking the store for the caster's stat here would be an
                 // off-thread read. There is no longer a world method that could perform one.
                 //
-                // 0 means unarmed (or untracked) -- deal nothing rather than fire a spurious
-                // 0-damage seam. Element is identity here too, never a multiplier.
-                double amount = caster.attackDamage();
+                // A resolved 0 means unarmed (or untracked) -- deal nothing rather than fire a
+                // spurious 0-damage seam. Unarmed STAYS 0 structurally, not by convention: no held
+                // weapon means no weapon class means no matching grant means a bonus of 0, so
+                // weapon-only melee cannot be resurrected by gear. Element is identity here too.
+                double amount = caster.attackDamage() + caster.classDamageBonus();
                 if (amount > 0 && target.state().alive()) {
                     target.handle().applyDamage(amount, caster.id());
                 }

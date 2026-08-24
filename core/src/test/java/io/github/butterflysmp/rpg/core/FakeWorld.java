@@ -256,6 +256,17 @@ public final class FakeWorld implements CombatWorld {
          */
         public double attackDamage = 0.0;
 
+        /**
+         * The class-damage bonus this dummy's snapshot carries -- the sum of its equipped
+         * "+N <Class> Damage" gear matching the class of the weapon it holds, frozen at cast time.
+         * Defaults to 0 (no gear, or gear for a class it is not currently wielding), so every test
+         * written before class-typed modifiers existed sees the numbers it always saw.
+         *
+         * On the DUMMY rather than the world, for the same reason attackDamage is: a test can change
+         * it MID-FLIGHT and prove a projectile still lands the value frozen at launch.
+         */
+        public double classDamageBonus = 0.0;
+
         /** The last velocity a dash impulse set on this dummy, or null if never dashed. */
         public Vec3 lastImpulse;
 
@@ -278,7 +289,8 @@ public final class FakeWorld implements CombatWorld {
         public Vec3 position() { return pos; }
 
         public CombatantSnapshot snapshot() {
-            return new CombatantSnapshot(id, pos, health > 0, player, attackSpeed, attackDamage);
+            return new CombatantSnapshot(id, pos, health > 0, player, attackSpeed, attackDamage,
+                    classDamageBonus);
         }
 
         /**

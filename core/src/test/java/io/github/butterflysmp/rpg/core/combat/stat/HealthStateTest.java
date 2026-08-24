@@ -122,4 +122,74 @@ class HealthStateTest {
         assertEquals(6, state.attackValue(), EPS, "back to base attack");
         // Mutation: back attackValue() by the max Stat (or share one Stat) -> attack tracks HP changes -> reddens.
     }
+
+    // --- Class-typed damage: the fourth Stat ---------------------------------------------------
+
+    /**
+     * The class-damage stat bases at 0.0, not 1.0. It is a SUMMAND -- it is ADDED to a damage
+     * number -- where attack speed is a DIVISOR that must base at neutral. Copying attack speed's
+     * base here would silently add 1 damage to every hit in the game.
+     */
+    @Test
+    void classDamageBasesAtZeroNotOne() {
+        var state = new HealthState(100, true);
+        assertEquals(0.0, state.classDamageValue(), EPS,
+                "a combatant with no class gear adds nothing");
+        // Mutation: base it at AttackSpeed.BASE -> 1.0 -> reddens.
+    }
+
+    /** Modifiers add, and two sources sum -- the equipped-gear case. */
+    @Test
+    void classDamageModifiersSumAcrossSources() {
+        var state = new HealthState(100, true);
+        state.setClassDamageModifier("OFF_HAND", 5.0);
+        state.setClassDamageModifier("HEAD", 2.0);
+
+        assertEquals(7.0, state.classDamageValue(), EPS);
+        assertEquals(2, state.classDamageModifierCount());
+    }
+
+    /** Clean removal, the Soaked property: unequip and the base is exactly restored, no leak. */
+    @Test
+    void clearingAClassDamageModifierRestoresTheBaseExactly() {
+        var state = new HealthState(100, true);
+        state.setClassDamageModifier("OFF_HAND", 5.0);
+        assertTrue(state.clearClassDamageModifier("OFF_HAND"), "a real removal reports true");
+
+        assertEquals(0.0, state.classDamageValue(), EPS, "exactly back to base, not 5 and not -5");
+        assertEquals(0, state.classDamageModifierCount(), "and no modifier left parked on the stat");
+        assertFalse(state.clearClassDamageModifier("OFF_HAND"), "removing it twice is not a change");
+    }
+
+    /**
+     * Re-applying the same source REPLACES rather than appending -- exactly one modifier per source,
+     * never N. This is the leak the reconcile loop would otherwise create every 5 ticks.
+     */
+    @Test
+    void reapplyingAClassDamageSourceReplacesItRatherThanStacking() {
+        var state = new HealthState(100, true);
+        state.setClassDamageModifier("OFF_HAND", 5.0);
+        state.setClassDamageModifier("OFF_HAND", 5.0);
+        state.setClassDamageModifier("OFF_HAND", 8.0);
+
+        assertEquals(8.0, state.classDamageValue(), EPS, "the latest amount, not 5+5+8");
+        assertEquals(1, state.classDamageModifierCount(), "one source, one modifier");
+    }
+
+    /**
+     * The four stats are independent: class damage does not leak into attack damage, which is the
+     * whole reason it is a separate Stat rather than class-gated ATTACK_DAMAGE modifiers. Folding it
+     * in there would double-count against the weapon's own MAIN_HAND source.
+     */
+    @Test
+    void classDamageIsSeparateFromAttackDamage() {
+        var state = new HealthState(100, 8.0, true);
+        state.setClassDamageModifier("OFF_HAND", 5.0);
+
+        assertEquals(8.0, state.attackValue(), EPS, "the weapon's inherent damage is untouched");
+        assertEquals(5.0, state.classDamageValue(), EPS, "and the gear bonus stands apart from it");
+        assertEquals(100, state.max(), EPS);
+        assertEquals(1.0, state.attackSpeedValue(), EPS);
+        // Mutation: route setClassDamageModifier at the attack stat -> attackValue 13 -> reddens.
+    }
 }

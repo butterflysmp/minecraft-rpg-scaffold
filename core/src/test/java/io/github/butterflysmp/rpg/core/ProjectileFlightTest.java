@@ -271,4 +271,60 @@ class ProjectileFlightTest {
         assertEquals(94, target.health, 1e-9, "the shot still lands its frozen 6");
         assertEquals(caster.id(), target.lastDamageSource, "and is still attributed to the archer");
     }
+
+    /**
+     * The class-damage bonus is frozen at launch too, and for exactly the reason the attack-damage
+     * freeze exists: a projectile's payload resolves on the TARGET'S region, cross-region from the
+     * caster on Folia, so nothing at impact may read the caster's store.
+     *
+     * This costs no new plumbing -- the bonus rides the same Caster projection -- and this test is
+     * what proves it rather than assuming it. The bonus is 5 at launch and 99 in the air; anything
+     * re-reading live caster state deals the 99.
+     *
+     * The payload is a LITERAL Damage, deliberately: it is the ember_staff shape, the case that had
+     * no stat to grip before this pass. So this single test covers the freeze AND the literal arm on
+     * the ranged path at once. Paper is single-region, so no boot can substitute for it.
+     */
+    @Test
+    void aProjectileDealsTheClassDamageBonusFrozenAtLaunchNotAtImpact() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(6, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(target);
+        caster.classDamageBonus = 5.0;   // +5 Magic, active because a mage weapon is held
+
+        cast(world, caster, grenade(1.0, 0, 100, HIT), FORWARD);   // HIT is a literal Damage(12)
+        assertEquals(100, target.health, 1e-9, "no hit on the launch frame");
+
+        // Mid-flight the wielder swaps to a sword, so +Magic would stop matching -- or a bigger
+        // modifier lands. Either way the shot in the air was paid for at launch.
+        caster.classDamageBonus = 99.0;
+
+        world.advanceTicks(10);
+        assertEquals(83, target.health, 1e-9,
+                "12 literal + the 5 frozen at launch, not the 99 the caster has at impact");
+        // Mutation: read the bonus from a live world.combatant(id) at impact -> 100 - 111 -> reddens.
+    }
+
+    /**
+     * And it survives its own caster, like the attack-damage freeze: a frozen value has nothing left
+     * to look up, so a despawned wielder cannot silently zero a shot already in the air.
+     */
+    @Test
+    void aClassBoostedProjectileStillLandsAfterItsCasterDespawns() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(6, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(target);
+        caster.classDamageBonus = 5.0;
+
+        cast(world, caster, grenade(1.0, 0, 100, HIT), FORWARD);
+        world.advanceTicks(2);
+        world.entities.remove(caster);
+
+        assertDoesNotThrow(() -> world.advanceTicks(50));
+        assertEquals(83, target.health, 1e-9, "the shot still lands its frozen 12 + 5");
+    }
 }

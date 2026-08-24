@@ -765,65 +765,166 @@ Before milestone 2, two things worth measuring rather than assuming:
     invisible at boot and provable only by unit test.
   - Still deferred: showing the RESOLVED (not base) speed anywhere — that belongs to the stat-screen
     pass, alongside `+N Melee Damage` and the rarity/enchant bonuses already parked there.
-- **Ranged and magic have no stat-reading basic attack, so class-typed modifiers have nothing to
-  grip. Decide this UP FRONT in the modifier pass, not during it.** Only a `weapon_damage` effect
-  reads ATTACK_DAMAGE, and in shipped content exactly two triggers use one: `ironblade/left_click`
-  and `emberblade/left_click` — both MELEE. `hunters_bow`'s Quick Shot and `ember_staff`'s Ember Bolt
-  carry **literal** `damage:` payloads and declare `attack_damage: 0`, so a `+N Ranged Damage` or
-  `+N Magic Damage` modifier would have no stat to modify and would silently do nothing. The tooltip
-  already tells this truth (neither weapon renders a class-labelled damage line at all), which is how
-  it surfaced.
+- **Class-typed damage modifiers — DONE.** `+N <Class> Damage` gear is live for all three classes.
+  A per-caster **class-damage bonus** is a fourth `Stat` on `HealthState` (base 0.0, no constructor
+  parameter — the whole value is gear-contributed, like attack speed), converged by the same
+  per-player reconcile loop, frozen onto `CombatantSnapshot` and carried on `Caster`, and added by
+  `EffectApplier` to **both** direct-damage arms. What is worth not rediscovering:
 
-  **The attack-speed pass widened this.** Because attack speed also keys on
-  `DamagePayload.isBasicAttack`, bow and staff get **no attack-speed scaling either** — an
-  `attack_speed_boost_TEMP` visibly speeds up a sword and does nothing at all to a bow. So the same
-  root gap now costs ranged/magic two stats, not one, and the question is correspondingly bigger.
+  - **The gate is the HELD WEAPON'S CLASS, not `DamagePayload.isBasicAttack`.** This is the whole
+    reason the pass works, and it is what the two entries below were blocked on. A grant counts only
+    while a weapon of its class is in the main hand: `+3 Magic` does nothing holding a sword. The
+    rule is `ClassDamageModifiers.matching` in `core` — pure, and tested, because its paper
+    counterpart (`ClassDamageModifierItems`) needs a live `Player` and so cannot be, exactly like
+    `HealthModifierItems` and `AttackSpeedModifierItems` before it.
+  - **It is a SEPARATE stat, not class-gated `ATTACK_DAMAGE` modifiers.** The held weapon already
+    contributes its `attack_damage` under the `MAIN_HAND` source; folding the class bonus in there
+    would double-count through that same source. Keeping them apart is also what keeps the weapon's
+    *inherent* damage distinct from the gear bonus added on top — so the emberblade's fireball takes
+    +Melee **without** inheriting the swing's 8.
+  - **Both arms, so a LITERAL `Damage` gets it too** — `d.amount() + bonus` beside
+    `caster.attackDamage() + bonus`. Burst/Area needed no recursion code: they reach damage only
+    through `applyTargeted`, carrying the same frozen `Caster`, so changing the two leaves covered
+    every nesting. `EffectApplierTest.aLiteralNestedInABurstReceivesTheClassDamageBonus` proves that
+    rather than asserting it in a comment.
+  - **Folia-safety came free.** The bonus rides the existing cast-time freeze
+    (`CombatantSnapshot` to `Caster`), so a bow's `+Ranged` and a mage projectile's `+Magic` are
+    fixed at launch. Pinned by
+    `ProjectileFlightTest.aProjectileDealsTheClassDamageBonusFrozenAtLaunchNotAtImpact`, which
+    changes the bonus mid-flight — **the only possible proof, since Paper is single-region.** Swap
+    weapons mid-flight and the arrow keeps the bonus its launch-time class earned: the shot was paid
+    for when it was taken.
+  - **`amount > 0` now guards the LITERAL arm too**, which previously checked only `alive()`.
+    `Stat` permits negative modifiers, so a future `-N <Class> Damage` curse could drive a literal
+    net-negative, and `applyDamage` would otherwise push a negative amount into the `HealthChange`
+    seam and the damage popup while `HealthState.damage` silently no-ops it. No shipped content
+    changes behaviour. `/rpg classdamage` accepts a negative amount specifically so the case is
+    witnessable before content authors one.
+  - **Unarmed still deals nothing, and now STRUCTURALLY.** No held weapon, so a null held class, so
+    `matching` returns an empty map, so the bonus is 0. Weapon-only melee cannot be resurrected by
+    gear, and that is enforced in the gate rather than by a convention downstream.
+  - **`classDamageValue` returns 0.0 when untracked, NOT 1.0.** A summand, like `attackValue`; the
+    asymmetry with `attackSpeedValue`'s 1.0 (a divisor) is deliberate and must not be flattened.
+    Reddened by a mutation that returns `AttackSpeed.BASE`.
+  - **The reconcile is SILENT** — no `HealthChange`, like attack damage and attack speed. There is
+    no display seam for it.
+  - **Weapon tooltips are unchanged**, per the standing rule that lore describes the weapon, not
+    whoever holds it. `WeaponLoreTest` still pins the base numbers.
+  - **A doc lie was retired with it.** `DamagePayload.DamageSource` justified the element label on an
+    ability literal with *"No class-typed modifier can ever touch it"* — false as of this pass. The
+    labels did not change; the reason did. A basic attack carries the CLASS label because its number
+    IS the class's damage stat; an ability literal carries the ELEMENT label because the element is
+    that ability's identity and its number is an authored base. **The label is identity, not a claim
+    about which modifiers apply.** `WeaponClass`'s "inert beyond labelling the tooltip" and
+    `EffectSpec.WeaponDamage`'s inherited "resolved at hit time" (stale since `7af9c43`) went too.
 
-  The modifier pass must choose deliberately, before writing the modifier:
-  - **Convert bow/staff first** — give them `attack_damage:` and a `weapon_damage` on_hit so their
-    basic attacks become stat-driven, and both `+N Ranged/Magic Damage` and attack speed start
-    working for them. **This is NOT a content-only edit, and the entry below is the reason:** a
-    `weapon_damage` payload on a PROJECTILE resolves on the target's region, cross-region from the
-    caster, which is the documented Folia race. Converting them requires first snapshotting the
-    caster's attack damage at CAST time into the effect payload. Budget that work as part of the
-    choice, not as a surprise inside it. Note also the staff's bolt is costed, so "basic attack" may
-    not be the right shape for it regardless.
-  - **Or ship melee-only** — accept that `+Ranged`/`+Magic` are inert until those weapons get real
-    basic attacks, and say so in the modifier's own lore rather than shipping a dead stat.
-  Either is defensible; picking by accident is not.
+- **CONSEQUENCE: standalone ability literals are now gear-scalable.** `CastExecutor` builds the
+  `Caster` for **every** cast, so `/rpg cast solar_grenade` with a sword in hand takes +Melee, and a
+  kit spell with a staff in hand takes +Magic. This is deliberate, not a leak: `+Class Damage` is a
+  build stat that scales your whole class output, not just the weapon's autoattack, and it is what
+  the held-weapon-gated `Caster` model already produces. Three things follow:
+  - an ability's authored `amount:` is now a **base**, with matching gear adding on top;
+  - an ability that deals no direct damage (a pure dash, a heal, a status) is untouched;
+  - **cross-class casting gates by the held weapon, by design** — cast a mage spell holding a sword
+    and it takes +Melee, not +Magic.
 
-  **RESOLVED FOR RANGER, STILL OPEN FOR MAGE.** The cast-time-snapshot pass paid the plumbing cost the
-  bullet above warned about — the freeze is built and `CombatWorld.attackDamage` is gone — and converted
-  `hunters_bow`: `attack_damage: 6` plus a `weapon_damage` on_hit. So `+N Ranged Damage` now has a stat
-  to grip, and the bow picked up attack-speed scaling in the same move (both key on
-  `DamagePayload.isBasicAttack`). **The staff was deliberately left alone**, because its blocker was
-  never the plumbing — it is a design question, recorded as its own item below. So the modifier pass
-  inherits a narrower version of this choice: `+Ranged` works, `+Magic` still has nothing to modify.
+  The alternative (weapon-trigger-only) was declined on cost: it would need `WeaponService` to mark
+  the cast and `AbilityService`/`CastExecutor` to thread a from-weapon flag, for a distinction the
+  build-stat framing does not want.
 
-- **DECISION OWED — does the Mage get a basic attack, and is it the staff's bolt?** `ember_staff`'s
-  Ember Bolt is a **costed burst**: 30 energy, a 20-tick cooldown, and its damage nested inside a
-  `burst:` rather than at the top of `on_hit`. Converting it to `weapon_damage` is mechanically trivial
-  now (the projectile freeze is built, and `WeaponDamage` is `Targeted` so it nests inside a burst
-  legally), which is exactly why it must be decided rather than drifted into. It would mean:
-  - declaring a **costed spell to be the Mage's basic attack**, and
-  - **attack-speed-scaling that spell's cooldown** — which the attack-speed pass deliberately excluded
-    for abilities, on the grounds that an ability's declared cooldown is its balance, not a swing rate.
+- **What the class bonus deliberately does NOT reach.** Both are pre-existing boundaries, recorded
+  so their absence is not later read as a bug:
+  - **Mob to player melee.** `RpgListeners.onMobMeleeAttack` reads `stats.attackValue(attackerId)`
+    directly at hit time — no snapshot, no `Caster`. Mobs are never reconciled, so a mob's
+    class-damage stat stays at base 0 regardless; `CombatantStatsTest` pins that a bootstrapped mob
+    gets its vanilla attack damage and no class bonus.
+  - **Status DoT.** Unchanged, and part of the separate environmental/custom-HP gap below.
 
-  The alternative is a **separate free basic attack** for the staff (a left-click wand bolt, say), which
-  mages in most games want anyway — something to do when the energy bar is empty — but that is net-new
-  content, not a conversion, and it changes the Mage's "the verb is commit" economy that `ember_staff`'s
-  own comments describe.
+- ~~**Ranged and magic have no stat-reading basic attack, so class-typed modifiers have nothing to
+  grip.**~~ **RESOLVED FOR DAMAGE, ALL THREE CLASSES.** The entry quoted below was written on the
+  assumption that a class-typed modifier would key on the ATTACK_DAMAGE stat, which made a
+  `+Magic Damage` inert on `ember_staff` (a literal `damage:` payload, `attack_damage: 0`) and led
+  to the instruction *"the class-modifier pass must not ship a `+Magic Damage` stat that silently
+  does nothing."* The modifier pass **retired the blocker rather than working around it**: keying on
+  the held weapon's class and adding to both damage arms means `+Magic` grips the staff's literal
+  bolt with no weapon conversion at all. The original text is kept because the reasoning that
+  produced the blocker is worth not repeating.
 
-  Until this is answered: `+Magic Damage` and attack speed are inert for mage weapons, and **the
-  class-modifier pass must not ship a `+Magic Damage` stat that silently does nothing.** Either convert,
-  or author the free basic attack, or say plainly in the modifier's own lore that Magic is not yet live.
-- **Class-typed stat modifiers.** `WeaponClass` (MELEE/RANGER/MAGE; SUMMONER deferred until it has
-  mechanics) is now a required weapon axis — it labels the tooltip (`WeaponClassLabel`: Melee/Ranged/
-  Magic) and nothing more. The intended mechanic: a `+N <Class> Damage` modifier that applies **only**
-  while the held weapon's class matches (a mage ring boosts staves, not swords). This pass adds the
-  axis; the modifier + its resolution (a stat screen / the modifier item's own lore, **never** folded
-  into the weapon's static base display) is a later pass. The tooltip's damage numbers stay the
-  weapon's declared base, pre-modifiers, by design — that is why they can't drift.
+  **Still true, and now the whole of what is left:** `ember_staff` has no stat-reading basic attack,
+  so it gets **no attack-speed scaling**. That is the residue, and the decision entry is narrowed to
+  it.
+
+- **DECISION OWED (narrowed) — does the Mage get a basic attack? An ATTACK-SPEED question only.**
+  `+Magic Damage` is live and needs nothing from this decision. What `ember_staff` still lacks is a
+  `weapon_damage` payload, and the only thing that now costs is attack-speed scaling — which keys on
+  `DamagePayload.isBasicAttack`. The fork is unchanged in shape: convert the costed Ember Bolt (which
+  would declare a costed spell to be the Mage's basic attack, and attack-speed-scale its cooldown —
+  something the attack-speed pass deliberately excluded for abilities), or author a **separate free
+  basic attack** (net-new content, and it changes the "the verb is commit" economy `ember_staff`'s
+  own comments describe). No longer blocking anything.
+
+**The three superseded entries, kept verbatim below — the record gets annotated, not rewritten:**
+
+> - **Ranged and magic have no stat-reading basic attack, so class-typed modifiers have nothing to
+>   grip. Decide this UP FRONT in the modifier pass, not during it.** Only a `weapon_damage` effect
+>   reads ATTACK_DAMAGE, and in shipped content exactly two triggers use one: `ironblade/left_click`
+>   and `emberblade/left_click` — both MELEE. `hunters_bow`'s Quick Shot and `ember_staff`'s Ember Bolt
+>   carry **literal** `damage:` payloads and declare `attack_damage: 0`, so a `+N Ranged Damage` or
+>   `+N Magic Damage` modifier would have no stat to modify and would silently do nothing. The tooltip
+>   already tells this truth (neither weapon renders a class-labelled damage line at all), which is how
+>   it surfaced.
+> 
+>   **The attack-speed pass widened this.** Because attack speed also keys on
+>   `DamagePayload.isBasicAttack`, bow and staff get **no attack-speed scaling either** — an
+>   `attack_speed_boost_TEMP` visibly speeds up a sword and does nothing at all to a bow. So the same
+>   root gap now costs ranged/magic two stats, not one, and the question is correspondingly bigger.
+> 
+>   The modifier pass must choose deliberately, before writing the modifier:
+>   - **Convert bow/staff first** — give them `attack_damage:` and a `weapon_damage` on_hit so their
+>     basic attacks become stat-driven, and both `+N Ranged/Magic Damage` and attack speed start
+>     working for them. **This is NOT a content-only edit, and the entry below is the reason:** a
+>     `weapon_damage` payload on a PROJECTILE resolves on the target's region, cross-region from the
+>     caster, which is the documented Folia race. Converting them requires first snapshotting the
+>     caster's attack damage at CAST time into the effect payload. Budget that work as part of the
+>     choice, not as a surprise inside it. Note also the staff's bolt is costed, so "basic attack" may
+>     not be the right shape for it regardless.
+>   - **Or ship melee-only** — accept that `+Ranged`/`+Magic` are inert until those weapons get real
+>     basic attacks, and say so in the modifier's own lore rather than shipping a dead stat.
+>   Either is defensible; picking by accident is not.
+> 
+>   **RESOLVED FOR RANGER, STILL OPEN FOR MAGE.** The cast-time-snapshot pass paid the plumbing cost the
+>   bullet above warned about — the freeze is built and `CombatWorld.attackDamage` is gone — and converted
+>   `hunters_bow`: `attack_damage: 6` plus a `weapon_damage` on_hit. So `+N Ranged Damage` now has a stat
+>   to grip, and the bow picked up attack-speed scaling in the same move (both key on
+>   `DamagePayload.isBasicAttack`). **The staff was deliberately left alone**, because its blocker was
+>   never the plumbing — it is a design question, recorded as its own item below. So the modifier pass
+>   inherits a narrower version of this choice: `+Ranged` works, `+Magic` still has nothing to modify.
+> 
+> - **DECISION OWED — does the Mage get a basic attack, and is it the staff's bolt?** `ember_staff`'s
+>   Ember Bolt is a **costed burst**: 30 energy, a 20-tick cooldown, and its damage nested inside a
+>   `burst:` rather than at the top of `on_hit`. Converting it to `weapon_damage` is mechanically trivial
+>   now (the projectile freeze is built, and `WeaponDamage` is `Targeted` so it nests inside a burst
+>   legally), which is exactly why it must be decided rather than drifted into. It would mean:
+>   - declaring a **costed spell to be the Mage's basic attack**, and
+>   - **attack-speed-scaling that spell's cooldown** — which the attack-speed pass deliberately excluded
+>     for abilities, on the grounds that an ability's declared cooldown is its balance, not a swing rate.
+> 
+>   The alternative is a **separate free basic attack** for the staff (a left-click wand bolt, say), which
+>   mages in most games want anyway — something to do when the energy bar is empty — but that is net-new
+>   content, not a conversion, and it changes the Mage's "the verb is commit" economy that `ember_staff`'s
+>   own comments describe.
+> 
+>   Until this is answered: `+Magic Damage` and attack speed are inert for mage weapons, and **the
+>   class-modifier pass must not ship a `+Magic Damage` stat that silently does nothing.** Either convert,
+>   or author the free basic attack, or say plainly in the modifier's own lore that Magic is not yet live.
+> - **Class-typed stat modifiers.** `WeaponClass` (MELEE/RANGER/MAGE; SUMMONER deferred until it has
+>   mechanics) is now a required weapon axis — it labels the tooltip (`WeaponClassLabel`: Melee/Ranged/
+>   Magic) and nothing more. The intended mechanic: a `+N <Class> Damage` modifier that applies **only**
+>   while the held weapon's class matches (a mage ring boosts staves, not swords). This pass adds the
+>   axis; the modifier + its resolution (a stat screen / the modifier item's own lore, **never** folded
+>   into the weapon's static base display) is a later pass. The tooltip's damage numbers stay the
+>   weapon's declared base, pre-modifiers, by design — that is why they can't drift.
+
 - **The tuning loop is silently broken, and has been all along.** `RpgPlugin` ships
   defaults with `saveResource(path, false)`, which **never overwrites**. So editing
   `paper/src/main/resources/content/abilities/solar_lance.yml` in the repo, rebuilding,
@@ -919,8 +1020,8 @@ Before milestone 2, two things worth measuring rather than assuming:
   clean. The asymmetry is the trap: removing `soaked_TEMP` first will pass and teach you
   that removing `rooted_TEMP` is the same job. It is not.
 
-  **There are now FOUR `_TEMP` fixtures, not two, and the other two are a different shape.**
-  This entry was written when the debt was status-content only; the stat passes added two
+  **There are now FIVE `_TEMP` fixtures, not two, and three of them are a different shape.**
+  This entry was written when the debt was status-content only; the stat passes added three
   ITEM fixtures, which live in Java rather than yml and so will not turn up in a content-pass
   grep of `content/`:
 
@@ -930,11 +1031,17 @@ Before milestone 2, two things worth measuring rather than assuming:
   | `soaked_TEMP` | ability content | `content/abilities/void_slash.yml` | as above |
   | `health_boost_TEMP` | `/rpg healthboost` | `paper/health/HealthModifierItems.java` | the equip/unequip max-HP modifier lifecycle |
   | `attack_speed_boost_TEMP` | `/rpg attackspeed` | `paper/weapon/AttackSpeedModifierItems.java` | the same lifecycle for attack speed |
+  | `class_damage_boost_TEMP` | `/rpg classdamage <class> [amt]` | `paper/weapon/ClassDamageModifierItems.java` | the same lifecycle again, plus the class GATE: it goes inert when you swap to another class's weapon |
 
-  The two item fixtures come out when real content grants those stats (an enchant, a passive,
+  The three item fixtures come out when real content grants those stats (an enchant, a passive,
   a build aspect) — `WeaponAttackItems` is already the shape that replaces them, sourcing a
   stat from actual weapon content instead of a fixture. Each also owns a `/rpg` dev subcommand
   and a `Keys` PDC entry, so removing one is three sites, not one.
+
+  **`class_damage_boost_TEMP` is FOUR sites, not three.** It is the first fixture needing two PDC
+  values — an amount *and* the class it grants to — so it carries two `Keys` entries
+  (`classDamageBoost`, `classDamageBoostClass`). A grant missing either, or naming a class
+  `WeaponClass.fromName` no longer recognises, is treated as not ours and contributes nothing.
 
 - **`WeaponDamage` reused for a RANGED weapon was a Folia cross-region race — RETIRED.** The
   attack-damage pass made the basic melee hit deal the caster's `ATTACK_DAMAGE` stat, read at HIT time

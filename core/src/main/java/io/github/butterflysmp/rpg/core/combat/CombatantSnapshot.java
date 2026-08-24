@@ -40,6 +40,20 @@ import java.util.UUID;
  * unavailable. 0.0 when the combatant is untracked, matching {@code CombatantStats.attackValue}:
  * attack damage is a summand, so 0 correctly means "deals nothing" (unlike attack speed, a divisor,
  * which defaults to 1.0).
+ *
+ * {@code classDamageBonus} is the caster's resolved CLASS-DAMAGE stat: the sum of their equipped
+ * {@code +N <Class> Damage} gear whose class matches the class of the weapon they are HOLDING. It
+ * rides here for the third time for the same reason -- {@code EffectApplier} adds it to every direct
+ * damage effect, and a projectile's payload lands on the target's region, cross-region from the
+ * caster on Folia. Freezing it at cast time means a bow's {@code +Ranged} and a mage projectile's
+ * {@code +Magic} are fixed at launch, exactly as {@code attackDamage} is, with no new threading rule
+ * to remember. 0.0 when untracked -- a summand, like attack damage.
+ *
+ * Note what the FREEZE implies and the reconcile loop does not: swap weapons mid-flight and the
+ * arrow already in the air keeps the bonus its launch-time class earned. That is the same rule the
+ * attack-damage freeze established, and it is the correct one -- the shot was paid for when it was
+ * taken.
  */
 public record CombatantSnapshot(UUID id, Vec3 position, boolean alive, boolean player,
-                                double attackSpeed, double attackDamage) {}
+                                double attackSpeed, double attackDamage,
+                                double classDamageBonus) {}

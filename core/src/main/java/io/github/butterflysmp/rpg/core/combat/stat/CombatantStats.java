@@ -94,6 +94,24 @@ public final class CombatantStats {
     }
 
     /**
+     * Resolved CLASS-DAMAGE bonus (0.0 + modifiers): the sum of equipped {@code +N <Class> Damage}
+     * sources whose class matches the class of the weapon this combatant is holding. Added on top of
+     * every direct damage effect they deal.
+     *
+     * An untracked combatant returns {@code 0.0}, matching {@link #attackValue} and NOT
+     * {@link #attackSpeedValue}. The asymmetry is the same one documented there and must not be
+     * flattened: this is a SUMMAND, so 0 correctly means "adds nothing", where attack speed is a
+     * DIVISOR whose only safe absent value is neutral.
+     *
+     * Mobs are never reconciled, so a mob's bonus stays at base 0 -- class-typed gear is a player
+     * concern, and a mob has no held-weapon class to gate on.
+     */
+    public double classDamageValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.classDamageValue();
+    }
+
+    /**
      * Deal {@code amount} of custom damage to {@code id}, attributed to {@code dealer}. No-op on an
      * untracked combatant. Emits a DAMAGE change carrying the new custom current and max, and the
      * dealer's identity -- the seam the popup hooks next phase.
@@ -155,6 +173,23 @@ public final class CombatantStats {
         HealthState state = states.get(id);
         if (state == null) return;
         ModifierReconciler.reconcile(state.attackSpeedTarget(), desired);
+    }
+
+    /**
+     * Converge {@code id}'s CLASS-DAMAGE modifiers to exactly {@code desired}. Same leak-proof diff as
+     * the three above, on the class-damage stat. SILENT, like attack damage and attack speed: there is
+     * no display seam for it -- the effect is felt as a bigger number, and the weapon tooltip
+     * deliberately shows the weapon's BASE damage rather than the holder's resolved total. No-op on an
+     * untracked combatant.
+     *
+     * The class GATE is not here. {@code desired} arrives already filtered to the grants matching the
+     * held weapon's class (see {@code ClassDamageModifiers.matching}), so this reconciler stays as
+     * stat-agnostic as the other three -- it never learns what a weapon class is.
+     */
+    public void reconcileClassDamageModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.classDamageTarget(), desired);
     }
 
     /** Drop {@code id}'s state. O(1), safe for an unknown id. Call on logout and on mob removal. */

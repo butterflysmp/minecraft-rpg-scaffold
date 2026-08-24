@@ -244,4 +244,99 @@ class CombatantStatsTest {
         assertTrue(recorder.seen.isEmpty(), "and emits nothing");
         // Mutation: NPE on a missing state -> a stray damage call crashes a region tick -> reddens.
     }
+
+    // --- Class-typed damage ---------------------------------------------------------------------
+
+    /**
+     * An UNTRACKED combatant's class bonus is 0.0, matching attackValue and deliberately NOT
+     * attackSpeedValue's 1.0. The asymmetry is documented on all three and must not be flattened:
+     * this is a summand, so 0 is "adds nothing"; attack speed is a divisor, whose only safe absent
+     * value is neutral. Copy the wrong one here and every untracked caster silently hits for +1.
+     */
+    @Test
+    void anUntrackedCombatantsClassDamageIsZeroNotNeutral() {
+        var stats = new CombatantStats();
+        assertEquals(0.0, stats.classDamageValue(UUID.randomUUID()), EPS,
+                "a summand's absent value is 0, not the divisor's 1.0");
+        // Mutation: return AttackSpeed.BASE -> 1.0 -> reddens.
+    }
+
+    /** The reconcile converges: sources newly present are added, departed ones removed. */
+    @Test
+    void reconcilingClassDamageAddsAndRemovesSourcesCleanly() {
+        var stats = new CombatantStats();
+        UUID id = UUID.randomUUID();
+        stats.register(id, 100, true);
+
+        stats.reconcileClassDamageModifiers(id, Map.of("OFF_HAND", 5.0, "HEAD", 2.0));
+        assertEquals(7.0, stats.classDamageValue(id), EPS, "both equipped grants land");
+
+        // The head slot is emptied -- or its grant stops matching the newly held weapon's class.
+        stats.reconcileClassDamageModifiers(id, Map.of("OFF_HAND", 5.0));
+        assertEquals(5.0, stats.classDamageValue(id), EPS, "the departed source is dropped, not kept");
+
+        stats.reconcileClassDamageModifiers(id, Map.of());
+        assertEquals(0.0, stats.classDamageValue(id), EPS, "an empty desired set clears everything");
+    }
+
+    /**
+     * A WEAPON SWAP is just an empty desired set followed by a different one, and it must leave no
+     * residue. This is the "+3 Magic does nothing while you hold a sword" case end to end, at the
+     * store: the mage grant is gone the moment it stops matching, not merely outvoted.
+     */
+    @Test
+    void swappingWeaponClassReplacesTheActiveGrantWithNoLeak() {
+        var stats = new CombatantStats();
+        UUID id = UUID.randomUUID();
+        stats.register(id, 100, true);
+
+        stats.reconcileClassDamageModifiers(id, Map.of("OFF_HAND", 5.0));   // holding a staff
+        stats.reconcileClassDamageModifiers(id, Map.of("HEAD", 3.0));       // swapped to a sword
+
+        assertEquals(3.0, stats.classDamageValue(id), EPS,
+                "the melee grant alone -- the mage grant did not linger alongside it");
+    }
+
+    /**
+     * The class-damage reconcile is SILENT. It has no display seam -- no heart bar, no nameplate --
+     * so emitting a HealthChange would push spurious events at every one of the loop's ticks into
+     * the popup and nameplate paths.
+     */
+    @Test
+    void reconcilingClassDamageEmitsNoHealthChange() {
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID id = UUID.randomUUID();
+        stats.register(id, 100, true);
+        int afterRegister = recorder.seen.size();
+
+        stats.reconcileClassDamageModifiers(id, Map.of("OFF_HAND", 5.0));
+        stats.reconcileClassDamageModifiers(id, Map.of());
+
+        assertEquals(afterRegister, recorder.seen.size(),
+                "the class-damage stat has no display to notify");
+        // Mutation: emit a MAX_CHANGE like reconcileMaxModifiers does -> two extra events -> reddens.
+    }
+
+    /** No-op on an untracked combatant, like every other reconcile. Must not throw. */
+    @Test
+    void reconcilingClassDamageOnAnUntrackedCombatantIsANoOp() {
+        var stats = new CombatantStats();
+        assertDoesNotThrow(() ->
+                stats.reconcileClassDamageModifiers(UUID.randomUUID(), Map.of("OFF_HAND", 5.0)));
+    }
+
+    /**
+     * A MOB never receives a class bonus. Mobs are not reconciled -- they have no held-weapon class
+     * to gate on -- so a bootstrapped mob's bonus stays at base 0 while its attack damage does not.
+     */
+    @Test
+    void aBootstrappedMobHasNoClassDamageBonus() {
+        var stats = new CombatantStats();
+        UUID id = UUID.randomUUID();
+        stats.bootstrapIfAbsent(id, 20, 3.0, false);
+
+        assertEquals(3.0, stats.attackValue(id), EPS, "its vanilla attack damage bootstrapped");
+        assertEquals(0.0, stats.classDamageValue(id), EPS, "but class-typed gear is a player concern");
+    }
 }

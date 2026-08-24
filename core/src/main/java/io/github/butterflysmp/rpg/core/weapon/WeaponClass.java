@@ -2,9 +2,14 @@ package io.github.butterflysmp.rpg.core.weapon;
 
 /**
  * The weapon's mechanical class -- a fixed, closed axis, so an enum, exactly like {@link Rarity}
- * (and the opposite of the open, logic-free element string). A weapon declares one; a future
- * pass keys class-typed stat modifiers off it (a "+N Magic Damage" bonus that applies only while
- * a MAGE-class weapon is held). Here it is inert beyond labelling the tooltip.
+ * (and the opposite of the open, logic-free element string). A weapon declares one.
+ *
+ * It is no longer inert. Beyond labelling the tooltip, it is the GATE on class-typed damage
+ * modifiers: a {@code +N <Class> Damage} source contributes to its wielder's class-damage stat only
+ * while the class of the weapon they HOLD matches, so a mage ring boosts staves and not swords. See
+ * {@link ClassDamageModifiers}, which owns that rule, and note the gate is the held weapon's class
+ * rather than the payload's shape -- which is what lets the bonus reach a weapon whose damage is an
+ * authored literal rather than a stat read.
  *
  * SUMMONER is deliberately absent until it has mechanics: the class -> label mapping in paper is an
  * exhaustive switch with no default arm, so adding a tier is a compile error at every mapping site
