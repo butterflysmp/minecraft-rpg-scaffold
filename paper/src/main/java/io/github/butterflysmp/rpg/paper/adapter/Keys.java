@@ -35,6 +35,17 @@ public final class Keys {
     public final NamespacedKey attackSpeedBoost;
 
     /**
+     * Marks the class_damage_boost_TEMP dev item and stores its bonus (a DOUBLE) in the item's PDC.
+     * Paired with {@link #classDamageBoostClass} -- this is the first fixture needing TWO values,
+     * because a class-typed grant is meaningless without the class it grants to. An item carrying
+     * one and not the other is treated as not ours.
+     */
+    public final NamespacedKey classDamageBoost;
+
+    /** The {@code WeaponClass} name (a STRING) a class_damage_boost_TEMP boosts. See above. */
+    public final NamespacedKey classDamageBoostClass;
+
+    /**
      * A spawned entity's custom-mob id (a STRING), the mob mirror of {@link #weaponId}. An entity
      * carrying this IS one of ours and seeds its stats from content; an entity without it is vanilla
      * and is left entirely alone. Keyed per-ENTITY, never per-type: the Knell is a wither skeleton,
@@ -54,6 +65,8 @@ public final class Keys {
         this.freeze = new NamespacedKey(plugin, "freeze_immobilize");
         this.healthBoost = new NamespacedKey(plugin, "health_boost_temp");
         this.attackSpeedBoost = new NamespacedKey(plugin, "attack_speed_boost_temp");
+        this.classDamageBoost = new NamespacedKey(plugin, "class_damage_boost_temp");
+        this.classDamageBoostClass = new NamespacedKey(plugin, "class_damage_boost_temp_class");
         this.mobId = new NamespacedKey(plugin, "mob_id");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
     }

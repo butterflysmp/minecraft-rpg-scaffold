@@ -67,7 +67,11 @@ public final class BukkitCombatant {
                 // Frozen for the SAME reason, one pass later: a WeaponDamage payload delivered by a
                 // projectile resolves on the target's region, so it cannot read this store at impact.
                 // 0.0 when untracked -- attack damage is a summand, so 0 means "deals nothing".
-                stats.attackValue(entity.getUniqueId()));
+                stats.attackValue(entity.getUniqueId()),
+                // And the class-damage bonus, frozen for the same reason again: EffectApplier adds it
+                // to BOTH damage arms, and a projectile's payload resolves on the target's region.
+                // 0.0 when untracked -- a summand, like attack damage.
+                stats.classDamageValue(entity.getUniqueId()));
     }
 
     /** Dispatches onto the entity's own thread. Never reads the world, never returns state. */

@@ -31,11 +31,17 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
     record Damage(double amount, String element) implements Targeted {}
 
     /**
-     * Deals the CASTER'S attack-damage stat (base + modifiers), resolved at hit time -- not a literal
-     * amount. This is the basic melee hit: a weapon's declared attack_damage flows into the caster's
-     * ATTACK_DAMAGE stat (a MAIN_HAND modifier), and this reads it back, so the swing and the tooltip
-     * share one source of truth. element carries identity exactly like {@link Damage}'s (flavour + kit
-     * gating), never a multiplier. Costed/ranged payloads keep the literal {@link Damage}.
+     * Deals the CASTER'S attack-damage stat (base + modifiers), FROZEN AT CAST TIME -- not a literal
+     * amount, and not a hit-time read. This is the basic attack: a weapon's declared attack_damage
+     * flows into the wielder's ATTACK_DAMAGE stat (a MAIN_HAND modifier), which is captured onto
+     * {@code CombatantSnapshot} on the caster's own thread and projected into {@code Caster}, so the
+     * swing and the tooltip share one source of truth and a projectile cannot read the store from the
+     * target's region. element carries identity exactly like {@link Damage}'s (flavour + kit gating),
+     * never a multiplier.
+     *
+     * The caster's class-damage bonus is added to this at application, and to a literal {@link Damage}
+     * equally -- so "which effect type" no longer decides whether class-typed gear reaches a payload.
+     * The held weapon's class does. Costed/ability payloads keep the literal {@link Damage}.
      */
     record WeaponDamage(String element) implements Targeted {}
 

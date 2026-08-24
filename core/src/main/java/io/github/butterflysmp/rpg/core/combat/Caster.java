@@ -22,14 +22,24 @@ import java.util.UUID;
  * hit for a swing within reach, so unifying costs nothing and leaves ONE path rather than two with
  * the race half-present.
  *
- * It is the extension point too. Class-typed damage modifiers (a {@code +N Ranged Damage} that
- * applies only while the held weapon's class matches) need more caster-side facts at impact; they
- * become fields here, not a third and fourth parameter on every method that threads a caster.
+ * {@code classDamageBonus} is the class-typed damage modifier pass this record's javadoc used to
+ * PREDICT, now landed. It is the sum of the caster's equipped {@code +N <Class> Damage} gear whose
+ * class matches the class of the weapon they hold, and {@code EffectApplier} adds it to BOTH direct
+ * damage arms -- the {@code WeaponDamage} arm's stat and the literal {@code Damage} arm's authored
+ * amount alike. Being a field here rather than a parameter is what the prediction was about: every
+ * method that threads a caster already carries it, and the cast-time freeze that makes
+ * {@code attackDamage} Folia-safe covers it for free.
+ *
+ * Two things it deliberately is NOT. It is not the weapon's inherent damage -- that stays in
+ * ATTACK_DAMAGE (or in the literal), so the bonus adds on top rather than replacing, and the
+ * emberblade's fireball can take +Melee without inheriting the swing's 8. And it is not gated on
+ * whether the payload is a basic attack: the gate is the HELD WEAPON'S CLASS, which is what lets the
+ * bonus reach a literal-damage weapon like {@code ember_staff} that reads no stat at all.
  */
-public record Caster(UUID id, double attackDamage) {
+public record Caster(UUID id, double attackDamage, double classDamageBonus) {
 
     /** Project a cast-time snapshot down to what an effect landing later is allowed to read. */
     public static Caster of(CombatantSnapshot snapshot) {
-        return new Caster(snapshot.id(), snapshot.attackDamage());
+        return new Caster(snapshot.id(), snapshot.attackDamage(), snapshot.classDamageBonus());
     }
 }

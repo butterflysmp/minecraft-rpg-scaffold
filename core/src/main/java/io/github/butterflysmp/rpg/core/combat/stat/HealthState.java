@@ -31,6 +31,21 @@ public final class HealthState {
      * damage there is no constructor parameter and no bootstrap-from-vanilla story.
      */
     private final Stat attackSpeed = new Stat(io.github.butterflysmp.rpg.core.ability.AttackSpeed.BASE);
+    /**
+     * Class-typed damage: the sum of equipped {@code +N <Class> Damage} sources whose class matches
+     * the class of the weapon the combatant is HOLDING. Base 0.0, and -- like attack speed -- there
+     * is no constructor parameter, because nothing in content declares a base for it: the entire
+     * value is gear-contributed, converged by the same reconcile loop as the other three.
+     *
+     * It is a SEPARATE stat rather than a class-gated set of attack-damage modifiers, and that is
+     * load-bearing. The held weapon already contributes its declared attack_damage as a MAIN_HAND
+     * modifier on the attack stat; folding the class bonus in there too would double-count it
+     * through the same source. Keeping them apart also keeps the weapon's INHERENT damage (the bow's
+     * 6, the sword's 8) distinct from the gear bonus added on top -- which is why the emberblade's
+     * fireball can take +Melee without inheriting the swing's 8.
+     */
+    private final Stat classDamage = new Stat(0.0);
+
     private final boolean player;
     private double current;
 
@@ -172,6 +187,42 @@ public final class HealthState {
         return attackSpeed.modifierCount();
     }
 
+    // --- Class-typed damage: a fourth Stat, a summand, base 0.0 -------------------------------------
+
+    /**
+     * The resolved class-damage bonus: {@code 0.0 + Sum(modifiers)}. Added to every direct damage
+     * effect this combatant deals -- both the {@code WeaponDamage} arm and the literal {@code Damage}
+     * arm -- on top of whatever that effect already deals.
+     *
+     * A SUMMAND, so 0 is the correct "contributes nothing" value, exactly like attack damage and
+     * unlike attack speed (a divisor, which must default to 1.0).
+     */
+    public double classDamageValue() {
+        return classDamage.value();
+    }
+
+    /** Set (or replace) the class-damage modifier from {@code source}; true if the value changed. */
+    public boolean setClassDamageModifier(String source, double amount) {
+        return classDamage.putModifier(source, amount);
+    }
+
+    /** Remove {@code source}'s class-damage modifier; true if one was actually removed. */
+    public boolean clearClassDamageModifier(String source) {
+        return classDamage.removeModifier(source);
+    }
+
+    public double classDamageModifierAmount(String source) {
+        return classDamage.amountOf(source);
+    }
+
+    public Set<String> classDamageModifierSources() {
+        return classDamage.sources();
+    }
+
+    public int classDamageModifierCount() {
+        return classDamage.modifierCount();
+    }
+
     // --- Modifier targets: one per stat, so the reconcile diff is written once (see ModifierTarget) --
 
     /**
@@ -208,6 +259,17 @@ public final class HealthState {
                 return attackSpeed.putModifier(source, amount);
             }
             @Override public boolean clearModifier(String source) { return attackSpeed.removeModifier(source); }
+        };
+    }
+
+    /** The class-damage modifier surface. A plain {@link Stat}, like attack damage. */
+    ModifierTarget classDamageTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return classDamage.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return classDamage.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) { return classDamage.removeModifier(source); }
         };
     }
 

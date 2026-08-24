@@ -394,4 +394,144 @@ class EffectApplierTest {
         assertEquals(caster.id(), victim.lastDamageSource);
         assertNull(caster.lastDamageSource, "a burst never splashes its own caster");
     }
+
+    // --- Class-typed damage modifiers --------------------------------------------------------------
+
+    /**
+     * The WeaponDamage arm adds the caster's class-damage bonus ON TOP of the attack stat. The two
+     * numbers are deliberately different (8 and 5) so neither can stand in for the other, and the
+     * total (13) is reachable by no single one of them.
+     */
+    @Test
+    void weaponDamageAddsTheClassDamageBonusOnTopOfTheAttackStat() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;          // the sword's inherent damage
+        caster.classDamageBonus = 5.0;      // +5 Melee gear, active because a melee weapon is held
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(87, target.health, 1e-9, "8 inherent + 5 gear = 13, not 8 and not 5");
+        // Mutation: drop the + caster.classDamageBonus() addend -> 92 -> reddens.
+    }
+
+    /**
+     * THE ARM THAT RETIRES THE "+MAGIC DAMAGE HAS NOTHING TO GRIP" BLOCKER.
+     *
+     * A LITERAL Damage effect -- the shape ember_staff's Ember Bolt carries, on a weapon that
+     * declares attack_damage 0 and reads no stat at all -- receives the class bonus too. Before this
+     * pass a class-typed modifier keyed on the attack-damage stat would have been silently inert
+     * here, which is exactly what NEXT.md forbade shipping.
+     *
+     * Note the caster's attackDamage stays 0: the literal's number comes from content, and the bonus
+     * is the ONLY stat contribution. So a green here cannot be explained by the WeaponDamage path.
+     */
+    @Test
+    void aLiteralDamageAlsoReceivesTheClassDamageBonus() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.classDamageBonus = 5.0;      // +5 Magic gear, active because a mage weapon is held
+        // caster.attackDamage deliberately left 0 -- a staff declares attack_damage: 0
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(16, "fire")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(79, target.health, 1e-9, "the authored 16 is a BASE; gear adds 5 on top");
+        // Mutation: drop the addend from the Damage arm -> 84 -> reddens. This is the test that
+        // fails if the pass is quietly narrowed back to basic attacks only.
+    }
+
+    /**
+     * The bonus reaches a literal nested inside a BURST -- the emberblade's fireball shape, and the
+     * staff's. This needs no recursion code of its own: Burst reaches damage only through
+     * applyTargeted, carrying the same frozen Caster, so changing the leaf covered every nesting.
+     * The test exists to prove that claim rather than assert it in a comment.
+     */
+    @Test
+    void aLiteralNestedInABurstReceivesTheClassDamageBonus() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(victim);
+        caster.classDamageBonus = 5.0;
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Burst(4.0, List.of(new EffectSpec.Damage(12, "fire")))),
+                caster.asCaster(), null, Vec3.ZERO);
+
+        assertEquals(83, victim.health, 1e-9, "12 + 5 through the burst's nested effect");
+        assertEquals(100, caster.health, 1e-9, "and a burst still never splashes its own caster");
+    }
+
+    /**
+     * The regression pin: with no class gear, every number is exactly what it was before this pass.
+     * Both arms, one test. If the bonus ever stops defaulting to 0 -- a base other than 0.0 on the
+     * stat, a neutral-value mix-up with attack speed's 1.0 -- this is what catches it.
+     */
+    @Test
+    void withNoClassGearBothArmsDealExactlyWhatTheyDealtBefore() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var weaponTarget = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        var literalTarget = new FakeWorld.Dummy(new Vec3(2, 0, 0));
+        caster.attackDamage = 8.0;          // classDamageBonus left at 0
+
+        var applier = new EffectApplier(world);
+        applier.applyAll(List.of(new EffectSpec.WeaponDamage("kinetic")),
+                caster.asCaster(), pair(weaponTarget), Vec3.ZERO);
+        applier.applyAll(List.of(new EffectSpec.Damage(12, "fire")),
+                caster.asCaster(), pair(literalTarget), Vec3.ZERO);
+
+        assertEquals(92, weaponTarget.health, 1e-9, "the attack stat alone");
+        assertEquals(88, literalTarget.health, 1e-9, "the authored literal alone");
+        // Mutation: default classDamageBonus to AttackSpeed.BASE (1.0), copying the divisor's
+        // neutral -> 91 and 87 -> reddens. A summand's absent value is 0, not 1.
+    }
+
+    /**
+     * A net-zero total fires NO seam, on the LITERAL arm. This is the guard the class-modifier pass
+     * added to the Damage arm, which previously checked only alive(): Stat permits negative
+     * modifiers, so a future "-N <Class> Damage" curse could drive a literal to zero or below, and
+     * applyDamage would otherwise push a negative amount into the HealthChange seam and the damage
+     * popup while HealthState.damage silently no-ops it.
+     */
+    @Test
+    void aLiteralCancelledOutByANegativeBonusFiresNoDamageSeam() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.classDamageBonus = -12.0;    // a curse exactly cancelling the literal below
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(12, "fire")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(100, target.health, 1e-9, "nothing dealt");
+        assertEquals(0, target.damageCalls, "and no 0-or-negative seam fired into the popup");
+        // Mutation: revert the Damage arm to the pre-pass `if (target.state().alive())` -> the seam
+        // fires with amount 0 -> damageCalls == 1 -> reddens.
+    }
+
+    /**
+     * The bonus cannot resurrect an unarmed swing. Belt-and-braces on top of the structural gate in
+     * ClassDamageModifiers (a null held class yields no grants at all): even if a bonus somehow
+     * reached a caster with no weapon, the resolved TOTAL is what the amt>0 guard reads.
+     */
+    @Test
+    void aNegativeTotalOnTheWeaponArmDealsNothingAndFiresNoSeam() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 0.0;
+        caster.classDamageBonus = -3.0;     // a total of -3: no hit, no seam
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(100, target.health, 1e-9, "a negative total deals nothing");
+        assertEquals(0, target.damageCalls, "and fires no seam");
+    }
 }

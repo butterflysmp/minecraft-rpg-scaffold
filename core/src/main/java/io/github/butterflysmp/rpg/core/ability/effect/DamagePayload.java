@@ -32,13 +32,24 @@ public final class DamagePayload {
      * ABILITY, modelled rather than guessed at from the input name.
      *
      * {@code WEAPON_STAT} means the effect reads the wielder's ATTACK_DAMAGE stat (which the weapon
-     * contributes) -- a plain swing. A future class-typed modifier ("+N Melee Damage") genuinely
-     * reaches it, so labelling it with the weapon's CLASS is honest, and the attack-speed stat
-     * scales its cooldown.
+     * contributes) -- a plain swing. {@code ABILITY_LITERAL} means the effect carries its own
+     * authored amount and reads no stat at all.
      *
-     * {@code ABILITY_LITERAL} means the effect carries its own hardcoded amount and reads no stat at
-     * all. No class-typed modifier can ever touch it, so it is labelled by its ELEMENT instead, and
-     * its declared cadence is left alone.
+     * <p><b>The label a tooltip picks from this is IDENTITY, not a claim about which modifiers
+     * apply.</b> A basic attack carries the CLASS label because its number IS the class's damage
+     * stat; an ability literal carries the ELEMENT label because the element is that ability's
+     * identity and its number is an authored base. This javadoc used to justify the split
+     * differently -- "no class-typed modifier can ever touch a literal" -- and as of the
+     * class-typed-modifier pass that is FALSE: the class damage bonus is added to every direct
+     * damage effect, literal and basic-attack alike, gated on the held weapon's class. The labels did
+     * not change; the reason did, and the old reason was left standing long enough to be worth naming
+     * here so it is not re-derived.
+     *
+     * <p>What still follows from the distinction is the COOLDOWN: attack speed scales a
+     * {@code WEAPON_STAT} trigger's cadence and leaves an {@code ABILITY_LITERAL}'s declared cadence
+     * alone, because an ability's cooldown is its balance, not a swing rate. Per-effect modifier
+     * applicability and the resolved, gear-boosted number are holder-context, deferred to the
+     * stat-screen pass; the static weapon tooltip shows the base.
      */
     public enum DamageSource { WEAPON_STAT, ABILITY_LITERAL }
 

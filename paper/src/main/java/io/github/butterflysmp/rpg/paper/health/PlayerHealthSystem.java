@@ -9,6 +9,7 @@ import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTask;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
 import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
+import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponAttackItems;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -124,16 +125,24 @@ public final class PlayerHealthSystem implements HealthListener {
         EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
         UUID id = player.getUniqueId();
         RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, () -> {
-            // Three stats converge on the same scan: max HP from +HP items, attack damage from the
-            // held weapon's declared attack_damage (a MAIN_HAND modifier), and attack speed from
-            // equipped speed sources. Same leak-proof diff for all three, so a weapon swap/drop
-            // follows within a tick and respawn re-derives every one of them for free.
+            // Four stats converge on the same scan: max HP from +HP items, attack damage from the
+            // held weapon's declared attack_damage (a MAIN_HAND modifier), attack speed from equipped
+            // speed sources, and the class-damage bonus from equipped "+N <Class> Damage" gear
+            // MATCHING the held weapon's class. Same leak-proof diff for all four, so a weapon
+            // swap/drop follows within a tick and respawn re-derives every one of them for free.
+            //
+            // The class one is why a weapon swap needs no event of its own: the held weapon's class
+            // is re-read every scan, so the same worn gear simply selects a different grant, and a
+            // grant that stops matching is absent from the desired set rather than zeroed.
             Map<String, Double> desiredMax = HealthModifierItems.desiredModifiers(player, keys);
             stats.reconcileMaxModifiers(id, desiredMax);
             Map<String, Double> desiredAttack = WeaponAttackItems.desiredAttackModifiers(player, keys, weapons);
             stats.reconcileAttackModifiers(id, desiredAttack);
             Map<String, Double> desiredSpeed = AttackSpeedModifierItems.desiredModifiers(player, keys);
             stats.reconcileAttackSpeedModifiers(id, desiredSpeed);
+            Map<String, Double> desiredClass =
+                    ClassDamageModifierItems.desiredModifiers(player, keys, weapons);
+            stats.reconcileClassDamageModifiers(id, desiredClass);
             return true;
         }, () -> { });
     }

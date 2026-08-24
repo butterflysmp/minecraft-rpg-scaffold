@@ -18,6 +18,7 @@ import io.github.butterflysmp.rpg.core.kit.KitRegistry;
 import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
+import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -28,7 +29,9 @@ import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
+import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.DashAim;
+import io.github.butterflysmp.rpg.paper.weapon.WeaponClassLabel;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -228,6 +231,25 @@ public final class RpgCommand {
                         .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 20.0))
                                 .executes(ctx -> attackSpeedBoost(ctx, adapters,
                                         DoubleArgumentType.getDouble(ctx, "bonus")))))
+                // Mint a class_damage_boost_TEMP. The class-damage stat bases at 0 and no content
+                // grants it yet, so without this the feature is invisible at boot: hold a MATCHING
+                // weapon and every direct damage effect gains the bonus (the staff's literal bolt
+                // included), swap to another class and the same worn item goes inert.
+                .then(Commands.literal("classdamage")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .then(Commands.argument("class", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    for (WeaponClass c : WeaponClass.values()) {
+                                        builder.suggest(c.name().toLowerCase(Locale.ROOT));
+                                    }
+                                    return builder.buildFuture();
+                                })
+                                .executes(ctx -> classDamageBoost(ctx, adapters,
+                                        StringArgumentType.getString(ctx, "class"), null))
+                                .then(Commands.argument("amount", DoubleArgumentType.doubleArg(-20.0, 100.0))
+                                        .executes(ctx -> classDamageBoost(ctx, adapters,
+                                                StringArgumentType.getString(ctx, "class"),
+                                                DoubleArgumentType.getDouble(ctx, "amount"))))))
                 // Damage/heal the LOOKED-AT mob's custom health, through the same observable store path
                 // the nameplate hooks -- so the mob nameplate's HP-change update is witnessable this
                 // phase (the real damage system, which would drive mob HP for real, is a later phase).
@@ -403,6 +425,35 @@ public final class RpgCommand {
         return spawned != null ? 1 : 0;
     }
 
+
+    /**
+     * Mint a class_damage_boost_TEMP (default +5) for a named class into the caller's inventory.
+     *
+     * The amount range allows NEGATIVES deliberately: a "-N <Class> Damage" curse is the case the
+     * amount>0 guard on both damage arms exists for, and a dev item is the only way to witness it
+     * before any content authors one.
+     */
+    private static int classDamageBoost(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                                        String className, Double amount) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        WeaponClass weaponClass = WeaponClass.fromName(className);
+        if (weaponClass == null) {
+            player.sendMessage(Component.text(
+                    "Unknown class '" + className + "'. Try: melee, ranger, mage.", NamedTextColor.RED));
+            return 0;
+        }
+        double bonus = amount == null ? ClassDamageModifierItems.DEFAULT_BOOST : amount;
+        player.getInventory().addItem(ClassDamageModifierItems.mint(adapters.keys(), weaponClass, bonus));
+        player.sendMessage(Component.text(
+                "Gave class_damage_boost_TEMP (+" + bonus + " " + WeaponClassLabel.of(weaponClass)
+                        + " Damage). Put it in your OFFHAND -- the main hand holds the weapon -- then"
+                        + " hit something with a " + WeaponClassLabel.of(weaponClass) + " weapon.",
+                NamedTextColor.GREEN));
+        return 1;
+    }
     /**
      * Mint an attack_speed_boost_TEMP (default +1.0, i.e. a resolved 2.0) into the caller's inventory.
      * The amount is the BONUS on a base of 1.0, not the multiplier itself.
