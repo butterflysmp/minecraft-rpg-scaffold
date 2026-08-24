@@ -90,30 +90,6 @@ public final class WeaponLoreLines {
         return String.format(Locale.ROOT, "%.1f", 20.0 / cooldownTicks);
     }
 
-
-    /**
-     * The input a basic attack is ASSUMED to be on. Left-click is the melee convention, and every
-     * shipped sword uses it, so saying so on a sword's tooltip is noise.
-     */
-    public static final String ASSUMED_BASIC_ATTACK_INPUT = "left_click";
-
-    /**
-     * The input label a basic attack's STAT BLOCK should carry: "" for the assumed left_click,
-     * otherwise the readable label ("right_click" -> "Right-Click").
-     *
-     * This exists because a stat block has no name line and no cadence line -- that is the point of
-     * rendering a basic attack as a stat rather than an ability -- so for a weapon whose basic
-     * attack is NOT on left-click there would otherwise be nothing anywhere on the tooltip saying
-     * which button fires it. The bow is the first such weapon: its shot is on right_click precisely
-     * so that binding it suppresses the vanilla draw.
-     *
-     * Conditional rather than unconditional on purpose: labelling every sword "Left-Click" is
-     * redundant clutter, and the lore pass deliberately left those two lines bare.
-     */
-    public static String statBlockInputLabel(String input) {
-        return ASSUMED_BASIC_ATTACK_INPUT.equals(input) ? "" : inputLabel(input);
-    }
-
     private static boolean isFree(ResourceCost cost) {
         return cost.amount() == 0 || cost.resourceId().equals("none");
     }

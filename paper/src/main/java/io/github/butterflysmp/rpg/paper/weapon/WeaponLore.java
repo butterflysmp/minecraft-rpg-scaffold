@@ -70,19 +70,8 @@ public final class WeaponLore {
             if (isBasicAttack && !statBlockPlaced && damage.isPresent()) {
                 statBlockPlaced = true;
                 lore.add(blank());
-
-                // The class-labelled damage line, plus -- only when the basic attack is NOT on the
-                // assumed left-click -- the button that fires it. A stat block has no name line and
-                // no cadence line, so for the bow this is the only place the tooltip can say
-                // "right-click". A sword's line stays exactly as the lore pass left it.
-                Component damageLine =
-                        plain(WeaponClassLabel.of(weapon.weaponClass()) + " Damage: ", NamedTextColor.GRAY)
-                                .append(plain(number(damage.get().amount()), NamedTextColor.RED));
-                String input = WeaponLoreLines.statBlockInputLabel(binding.input());
-                if (!input.isBlank()) {
-                    damageLine = damageLine.append(plain("      " + input, NamedTextColor.YELLOW));
-                }
-                lore.add(damageLine);
+                lore.add(plain(WeaponClassLabel.of(weapon.weaponClass()) + " Damage: ", NamedTextColor.GRAY)
+                        .append(plain(number(damage.get().amount()), NamedTextColor.RED)));
 
                 String speed = WeaponLoreLines.attackSpeedLabel(ability.cooldownTicks());
                 if (!speed.isBlank()) {

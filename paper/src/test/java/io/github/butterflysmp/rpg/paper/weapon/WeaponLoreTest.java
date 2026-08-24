@@ -147,40 +147,28 @@ class WeaponLoreTest {
     }
 
     /**
-     * A basic attack that is NOT on left-click must say which button fires it. A stat block has no
-     * gold name line and no cadence line, so without this the bow's tooltip would never mention
-     * right-click anywhere -- the one piece of information a player cannot guess from a bow whose
-     * vanilla draw has been suppressed.
+     * The bow's RANGED stat block: a class-labelled damage line off its attack_damage, an attack
+     * speed, and nothing else -- no gold name, no prose, no cadence, and NO input label.
+     *
+     * The stat block carries no input on any weapon, left-click or not. A bow shooting on
+     * right-click is universal knowledge, so labelling it reads as clutter in-game; the tooltip
+     * says what the weapon IS, not which button to press. The damage assertion is exact-line
+     * equality rather than startsWith precisely so that appending anything to it reddens here.
      */
     @Test
-    void aNonLeftClickBasicAttackNamesItsInputOnTheStatLine() {
+    void aRangedBasicAttackRendersAStatBlockWithNoInputLabel() {
         List<String> lines = textLines(WeaponLore.build(huntersBow(), elementsWithFire()));
 
-        assertTrue(lines.stream().anyMatch(l -> l.startsWith("Ranged Damage: 6")),
-                () -> "the bow's shot is class-labelled RANGED, off its attack_damage; got " + lines);
-        assertTrue(lines.stream().anyMatch(l -> l.startsWith("Ranged Damage: 6") && l.contains("Right-Click")),
-                () -> "the stat line must carry the non-default input; got " + lines);
+        assertTrue(lines.contains("Ranged Damage: 6"),
+                () -> "the bow's shot is class-labelled RANGED, off its attack_damage, and bare; got " + lines);
         assertTrue(lines.contains("Attack Speed: 1.3"),
                 () -> "15 ticks between shots is ~1.3 shots/sec; got " + lines);
+        assertFalse(lines.stream().anyMatch(l -> l.contains("Right-Click")),
+                () -> "a stat block never names its input, not even a non-default one; got " + lines);
         assertFalse(lines.stream().anyMatch(l -> l.startsWith("Cooldown:")),
                 () -> "a basic attack shows Attack Speed, never a cooldown; got " + lines);
         assertTrue(lines.contains("A swift arrow wreathed in flame."),
                 () -> "the prose relocated to weapon flavour must still render; got " + lines);
-    }
-
-    /**
-     * ...and a LEFT-click basic attack still says nothing, so the label is conditional rather than
-     * a blanket addition. This is the half that reddens if the rule is made unconditional, and it
-     * is why the sword tooltips the lore pass tuned are byte-identical after this pass.
-     */
-    @Test
-    void aLeftClickBasicAttackStaysBareOfAnInputLabel() {
-        List<String> lines = textLines(WeaponLore.build(rareFireSword(), elementsWithFire()));
-
-        assertTrue(lines.contains("Melee Damage: 7"),
-                () -> "the sword's stat line must carry no input label at all; got " + lines);
-        assertFalse(lines.stream().anyMatch(l -> l.contains("Left-Click")),
-                () -> "'Left-Click' is the assumed input and must never be spelled out; got " + lines);
     }
 
     /**
