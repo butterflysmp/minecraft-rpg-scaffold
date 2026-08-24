@@ -595,4 +595,43 @@ class WeaponLoaderTest {
         assertEquals(30, shot.cost().amount(), 1e-9);
         assertInstanceOf(CastSpec.Projectile.class, shot.cast());
     }
+
+    /**
+     * WHICH right-click presses are basic attacks -- the fact RpgListeners.onRightClick keys on when
+     * it decides whether a refused press earns chat feedback.
+     *
+     * The bow's shot is a basic attack, so a rejected shot is SILENT: it is bound to right_click
+     * only so that binding suppresses the vanilla draw, and spamming fire is attacking, not casting.
+     * The emberblade's Fireball and the staff's Bolt are costed abilities, so a rejected press still
+     * says "On cooldown for Xs" -- a deliberate special deserves an answer.
+     *
+     * Pinned here because the listener itself is boot-witnessed. If someone later converts
+     * ember_staff to a weapon_damage basic attack (the open Mage decision in NEXT.md), this reddens
+     * and makes them notice they have also just silenced the staff's feedback.
+     */
+    @Test
+    void onlyTheBowsRightClickIsABasicAttack() throws IOException {
+        for (String id : List.of("hunters_bow", "emberblade", "ember_staff")) {
+            try (var in = getClass().getResourceAsStream("/content/weapons/" + id + ".yml")) {
+                assertNotNull(in, "bundled " + id + " is missing from the classpath");
+                Files.write(dir.resolve(id + ".yml"), in.readAllBytes());
+            }
+        }
+
+        WeaponRegistry registry = load();
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(3, registry.size(), "all three weapons must load, or the rest of this proves nothing");
+
+        assertTrue(isBasicAttackOnRightClick(registry, "hunters_bow"),
+                "the bow's shot is a basic attack -- a refused shot must be silent");
+        assertFalse(isBasicAttackOnRightClick(registry, "emberblade"),
+                "the emberblade's Fireball is a costed ability -- it keeps its feedback");
+        assertFalse(isBasicAttackOnRightClick(registry, "ember_staff"),
+                "the staff's Bolt is a costed ability -- it keeps its feedback");
+    }
+
+    private static boolean isBasicAttackOnRightClick(WeaponRegistry registry, String weaponId) {
+        return DamagePayload.isBasicAttack(registry.find(weaponId).orElseThrow()
+                .trigger("right_click").orElseThrow().ability().onHit());
+    }
 }

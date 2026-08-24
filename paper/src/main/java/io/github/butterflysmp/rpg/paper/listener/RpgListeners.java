@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.listener;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
+import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
@@ -12,6 +13,7 @@ import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
+import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
@@ -145,9 +147,23 @@ public final class RpgListeners implements Listener {
                     // Present == this weapon binds right_click. Suppress the vanilla interaction
                     // whether the special fired or was refused -- the player pressed the special.
                     event.setCancelled(true);
+
+                    // A deliberate press deserves feedback, unlike the silent left-click swing --
+                    // EXCEPT when the right-click IS the basic attack. The bow's shot is bound to
+                    // right_click only so that binding it suppresses the vanilla draw; mechanically
+                    // it is a swing, and a player holding down fire is spamming an attack, not
+                    // repeatedly deciding to cast something. Chatting at them once per rejected
+                    // shot is the spam WeaponSwingListener.onSwing already refuses to produce for
+                    // exactly the same reason. A costed special (emberblade's Fireball, the staff's
+                    // bolt) is a real decision and keeps its feedback.
+                    //
+                    // The discriminator is DamagePayload.isBasicAttack -- the same question the
+                    // tooltip and the cooldown scaler ask -- so a weapon cannot render as a stat
+                    // block, swing at stat-block cadence, and then chat like an ability.
+                    if (firesABasicAttack(event.getPlayer())) return;
+
                     switch (result) {
                         case CastResult.Success ignored -> { } // already executed inside attempt()
-                        // A deliberate press deserves feedback, unlike the silent left-click swing.
                         case CastResult.InsufficientResource lacking ->
                                 event.getPlayer().sendMessage(Component.text(
                                         "Not enough %s: %.0f needed, %.0f available".formatted(
@@ -163,6 +179,24 @@ public final class RpgListeners implements Listener {
                         case CastResult.Locked ignored -> { }
                     }
                 });
+    }
+
+    /**
+     * Does the held weapon's right_click trigger deal the wielder's ATTACK_DAMAGE stat -- i.e. is
+     * this press a basic attack rather than an ability? Absent weapon, absent binding, or a literal
+     * payload all read as false, so the feedback stays on by default and only a genuine basic
+     * attack is silenced.
+     *
+     * Re-resolves the held weapon rather than reading it off the CastResult, because only Success
+     * carries the definition and the results being silenced are the refusals. Same tick, same
+     * thread, immediately after WeaponFire.attempt looked it up, so the two cannot disagree.
+     */
+    private boolean firesABasicAttack(Player player) {
+        return WeaponItems.heldWeaponId(player, adapters.keys())
+                .flatMap(weapons::find)
+                .flatMap(weapon -> weapon.trigger("right_click"))
+                .map(binding -> DamagePayload.isBasicAttack(binding.ability().onHit()))
+                .orElse(false);
     }
 
     /**
