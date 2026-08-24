@@ -13,6 +13,7 @@ import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
+import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import org.junit.jupiter.api.Test;
@@ -216,6 +217,11 @@ class WeaponServiceTest {
      * cooldown -- click-to-shoot, no draw-and-charge. The shot spends nothing (the Ranger
      * economy), the projectile flies rather than teleporting, and the next shot is gated by
      * the cooldown, not by any charge state.
+     *
+     * Built in the SHIPPED shape: class RANGER, a declared attack_damage of 6, and a
+     * weapon_damage payload behind a leading visual -- so this exercises the whole real path,
+     * weapon trigger -> cast-time freeze -> flight -> stat-sourced impact, rather than a literal
+     * that happens to be the same number.
      */
     @Test
     void aBowShotIsAFreeProjectileGatedByItsFireRateCooldown() {
@@ -224,14 +230,19 @@ class WeaponServiceTest {
         var target = new FakeWorld.Dummy(new Vec3(5, 0, 0));
         world.entities.add(caster);
         world.entities.add(target);
+        // The wielder's ATTACK_DAMAGE, as the MAIN_HAND reconcile would have set it from the bow.
+        caster.attackDamage = 6.0;
         var resources = pool(() -> 0L); // tick frozen: within the 15-tick fire-rate cooldown
         var service = serviceWith(() -> 0L, resources);
-        var bow = new WeaponDefinition("hunters_bow", "Bow", "fire", Rarity.UNCOMMON, "bow",
+        var bow = new WeaponDefinition("hunters_bow", "Bow", "fire", Rarity.UNCOMMON,
+                WeaponClass.RANGER, "bow", 6.0,
                 List.of(new TriggerBinding("right_click",
                         new AbilityDefinition("hunters_bow/right_click", "Shot", "fire", "none",
                                 15, ResourceCost.FREE,
                                 new CastSpec.Projectile(1.0, 0, 60),
-                                List.of(new EffectSpec.Damage(6, "fire"))))));
+                                List.of(new EffectSpec.Visual("solar_detonation"),
+                                        new EffectSpec.WeaponDamage("fire"))))),
+                List.of());
 
         // The shot fires -- a projectile through the weapon path -- and is free.
         dispatch(world, service.fire(caster.snapshot(), bow, "right_click", FORWARD));
@@ -244,6 +255,6 @@ class WeaponServiceTest {
         // The arrow flies rather than teleporting: nothing is hit on the launch frame.
         assertEquals(100, target.health, 1e-9, "no hit on the launch frame");
         world.advanceTicks(5);
-        assertEquals(94, target.health, 1e-9); // 100 - 6, struck downrange
+        assertEquals(94, target.health, 1e-9); // 100 - 6, the caster's frozen stat, struck downrange
     }
 }

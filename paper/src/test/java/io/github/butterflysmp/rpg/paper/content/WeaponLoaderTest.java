@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.content;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
+import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
@@ -559,6 +560,18 @@ class WeaponLoaderTest {
         assertEquals(ResourceCost.FREE, shot.cost(), "the shot is free -- the bow carries the damage");
         assertInstanceOf(CastSpec.Projectile.class, shot.cast());
         assertEquals(15, shot.cooldownTicks(), "cooldown is the fire rate");
+
+        // The shot is a STAT-READING basic attack, not a literal: attack_damage 6 on the weapon,
+        // and a weapon_damage payload that reads it back. This is what makes a "+N Ranged Damage"
+        // modifier have something to grip, and what earns the shot attack-speed scaling.
+        assertEquals(6, weapon.attackDamage(), 1e-9, "hunters_bow declares attack_damage 6");
+        assertTrue(DamagePayload.isBasicAttack(shot.onHit()),
+                "the bow's shot must be a basic attack, behind its leading visual");
+        assertEquals(DamagePayload.DamageSource.WEAPON_STAT,
+                DamagePayload.of(shot.onHit(), weapon.attackDamage()).orElseThrow().source(),
+                "the amount comes from the stat, not a literal amount: in content");
+        assertEquals(List.of("A swift arrow wreathed in flame."), weapon.flavor(),
+                "the trigger's old description now renders as weapon flavour");
     }
 
     /** The shipped staff: a costed right-click projectile -- the Mage's commit primary. */
@@ -581,5 +594,44 @@ class WeaponLoaderTest {
         assertEquals("energy", shot.cost().resourceId());
         assertEquals(30, shot.cost().amount(), 1e-9);
         assertInstanceOf(CastSpec.Projectile.class, shot.cast());
+    }
+
+    /**
+     * WHICH right-click presses are basic attacks -- the fact RpgListeners.onRightClick keys on when
+     * it decides whether a refused press earns chat feedback.
+     *
+     * The bow's shot is a basic attack, so a rejected shot is SILENT: it is bound to right_click
+     * only so that binding suppresses the vanilla draw, and spamming fire is attacking, not casting.
+     * The emberblade's Fireball and the staff's Bolt are costed abilities, so a rejected press still
+     * says "On cooldown for Xs" -- a deliberate special deserves an answer.
+     *
+     * Pinned here because the listener itself is boot-witnessed. If someone later converts
+     * ember_staff to a weapon_damage basic attack (the open Mage decision in NEXT.md), this reddens
+     * and makes them notice they have also just silenced the staff's feedback.
+     */
+    @Test
+    void onlyTheBowsRightClickIsABasicAttack() throws IOException {
+        for (String id : List.of("hunters_bow", "emberblade", "ember_staff")) {
+            try (var in = getClass().getResourceAsStream("/content/weapons/" + id + ".yml")) {
+                assertNotNull(in, "bundled " + id + " is missing from the classpath");
+                Files.write(dir.resolve(id + ".yml"), in.readAllBytes());
+            }
+        }
+
+        WeaponRegistry registry = load();
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(3, registry.size(), "all three weapons must load, or the rest of this proves nothing");
+
+        assertTrue(isBasicAttackOnRightClick(registry, "hunters_bow"),
+                "the bow's shot is a basic attack -- a refused shot must be silent");
+        assertFalse(isBasicAttackOnRightClick(registry, "emberblade"),
+                "the emberblade's Fireball is a costed ability -- it keeps its feedback");
+        assertFalse(isBasicAttackOnRightClick(registry, "ember_staff"),
+                "the staff's Bolt is a costed ability -- it keeps its feedback");
+    }
+
+    private static boolean isBasicAttackOnRightClick(WeaponRegistry registry, String weaponId) {
+        return DamagePayload.isBasicAttack(registry.find(weaponId).orElseThrow()
+                .trigger("right_click").orElseThrow().ability().onHit());
     }
 }

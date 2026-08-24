@@ -133,6 +133,44 @@ class WeaponLoreTest {
                 () -> "a basic attack shows Attack Speed, never a cooldown; got " + lines);
     }
 
+    /** The bow: a RANGED basic attack on right-click, behind a leading visual. */
+    private static WeaponDefinition huntersBow() {
+        AbilityDefinition shot = new AbilityDefinition(
+                "hunters_bow/right_click", "Hunter's Bow", "fire", "none",
+                15, ResourceCost.FREE, new CastSpec.Projectile(2.5, 0.05, 60),
+                List.of(new EffectSpec.Visual("solar_detonation"), new EffectSpec.WeaponDamage("fire")),
+                List.of());
+        return new WeaponDefinition("hunters_bow", "Hunter's Bow", "fire", Rarity.UNCOMMON,
+                WeaponClass.RANGER, "bow", 6.0,
+                List.of(new TriggerBinding("right_click", shot)),
+                List.of("A swift arrow wreathed in flame."));
+    }
+
+    /**
+     * The bow's RANGED stat block: a class-labelled damage line off its attack_damage, an attack
+     * speed, and nothing else -- no gold name, no prose, no cadence, and NO input label.
+     *
+     * The stat block carries no input on any weapon, left-click or not. A bow shooting on
+     * right-click is universal knowledge, so labelling it reads as clutter in-game; the tooltip
+     * says what the weapon IS, not which button to press. The damage assertion is exact-line
+     * equality rather than startsWith precisely so that appending anything to it reddens here.
+     */
+    @Test
+    void aRangedBasicAttackRendersAStatBlockWithNoInputLabel() {
+        List<String> lines = textLines(WeaponLore.build(huntersBow(), elementsWithFire()));
+
+        assertTrue(lines.contains("Ranged Damage: 6"),
+                () -> "the bow's shot is class-labelled RANGED, off its attack_damage, and bare; got " + lines);
+        assertTrue(lines.contains("Attack Speed: 1.3"),
+                () -> "15 ticks between shots is ~1.3 shots/sec; got " + lines);
+        assertFalse(lines.stream().anyMatch(l -> l.contains("Right-Click")),
+                () -> "a stat block never names its input, not even a non-default one; got " + lines);
+        assertFalse(lines.stream().anyMatch(l -> l.startsWith("Cooldown:")),
+                () -> "a basic attack shows Attack Speed, never a cooldown; got " + lines);
+        assertTrue(lines.contains("A swift arrow wreathed in flame."),
+                () -> "the prose relocated to weapon flavour must still render; got " + lines);
+    }
+
     /**
      * The label collision this pass resolves. The stat line and the fireball are both damage, but
      * only the stat line reads the ATTACK_DAMAGE stat -- so only it may wear the CLASS label. The
@@ -291,13 +329,15 @@ class WeaponLoreTest {
                     () -> weapon.id() + ": attack speed must appear iff it has a basic attack; got " + lines);
         }
 
-        // Ironblade and Emberblade are the two weapon_damage weapons in shipped content. If that
-        // ever stops being true this test has quietly stopped covering the stat block.
-        assertEquals(2, weapons.all().stream().filter(w -> w.triggers().stream().anyMatch(t ->
+        // Ironblade, Emberblade and now Hunter's Bow are the weapon_damage weapons in shipped
+        // content. If that ever stops being true this test has quietly stopped covering the stat
+        // block. The bow joining them is the point of the cast-time-snapshot pass: a projectile
+        // basic attack was impossible while WeaponDamage resolved its amount at hit time.
+        assertEquals(3, weapons.all().stream().filter(w -> w.triggers().stream().anyMatch(t ->
                         DamagePayload.of(t.ability().onHit(), w.attackDamage())
                                 .map(d -> d.source() == DamagePayload.DamageSource.WEAPON_STAT)
                                 .orElse(false))).count(),
-                "exactly two shipped weapons have a basic attack (ironblade, emberblade)");
+                "exactly three shipped weapons have a basic attack (ironblade, emberblade, hunters_bow)");
     }
 
     private static void copyBundled(String resource, Path target) throws IOException {

@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.core.ability;
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectApplier;
 import io.github.butterflysmp.rpg.core.combat.Aim;
+import io.github.butterflysmp.rpg.core.combat.Caster;
 import io.github.butterflysmp.rpg.core.combat.ChunkTraversal;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
@@ -23,9 +24,11 @@ import java.util.UUID;
  * On Paper that means inside Scheduler.onRegion(...). AbilityService.cast()
  * deliberately does none of this.
  *
- * The caster arrives as a snapshot and is thereafter referred to by UUID alone. Nothing
- * here holds a live handle across a tick: a projectile's fuse and a lingering area both
- * outlive the frame that started them.
+ * The caster arrives as a snapshot and is immediately projected to a {@link Caster} -- an id plus
+ * the stats frozen on the caster's own thread -- which is what every arm carries from there. Nothing
+ * here holds a live handle across a tick, nor the full snapshot: a projectile's fuse and a lingering
+ * area both outlive the frame that started them, so a position or a liveness flag would be stale by
+ * the time they land, while a frozen stat stays true.
  */
 public final class CastExecutor {
 
@@ -42,25 +45,31 @@ public final class CastExecutor {
         CombatantSnapshot caster = success.caster();
         Aim aim = success.aim();
 
+        // Project the cast-time snapshot down to what an effect landing LATER may read: the id,
+        // plus the stats frozen on the caster's own thread. Built once, here, because this is the
+        // last point that is still unambiguously the caster's frame -- a projectile's impact and
+        // an area's pulse both resolve on somebody else's region.
+        Caster source = Caster.of(caster);
+
         switch (ability.cast()) {
             // The caster is their own target: heals, buffs, self-detonations. Their handle
             // is fetched here rather than carried in the Success, which holds a snapshot.
             // The detonation lands at their FEET -- caster.position(), not the aim's
             // origin, which in production is an eye a metre and a half higher.
             case CastSpec.Self ignored ->
-                    detonate(ability, caster.id(), self(caster), caster.position());
+                    detonate(ability, source, self(caster), caster.position());
 
             case CastSpec.Melee melee -> {
                 Combatant target = meleeTarget(caster, aim, melee);
                 Vec3 impact = target != null ? target.state().position() : aim.pointAt(melee.reach());
-                detonate(ability, caster.id(), target, impact);
+                detonate(ability, source, target, impact);
             }
 
-            case CastSpec.Ray ray -> launchRay(ability, caster.id(), aim, ray.range());
+            case CastSpec.Ray ray -> launchRay(ability, source, aim, ray.range());
 
-            case CastSpec.Projectile projectile -> launch(ability, caster.id(), aim, projectile);
+            case CastSpec.Projectile projectile -> launch(ability, source, aim, projectile);
 
-            case CastSpec.Dash dash -> dash(ability, caster, aim, dash);
+            case CastSpec.Dash dash -> dash(ability, caster, source, aim, dash);
         }
     }
 
@@ -82,7 +91,8 @@ public final class CastExecutor {
      * them down -- see SweptLine. The payload reuses the same EffectApplier the grenade does:
      * the caster is excluded, players are excluded (mob-only), any visual fires once.
      */
-    private void dash(AbilityDefinition ability, CombatantSnapshot caster, Aim aim, CastSpec.Dash dash) {
+    private void dash(AbilityDefinition ability, CombatantSnapshot caster, Caster source,
+                      Aim aim, CastSpec.Dash dash) {
         // Horizontal drive along the resolved direction, plus a touch of up so the caster
         // leaves the ground and first-tick friction does not eat the horizontal velocity.
         Combatant self = world.combatant(caster.id()).orElse(null);
@@ -105,7 +115,7 @@ public final class CastExecutor {
         // retreat away from what you threw. Origin is the caster's PRE-dash snapshot feet, so
         // the embers launch from where you stood, not from where the impulse is carrying you.
         Vec3 facing = dash.direction() == CastSpec.DashDirection.REVERSE_FACING ? drive.negate() : drive;
-        effects.applyToSet(ability.onHit(), caster.id(), hits, origin, facing);
+        effects.applyToSet(ability.onHit(), source, hits, origin, facing);
     }
 
     /**
@@ -118,17 +128,18 @@ public final class CastExecutor {
     }
 
     /**
-     * Throw it. The caster is captured by UUID and never dereferenced again: a
+     * Throw it. The caster is captured as a frozen value and never dereferenced again: a
      * grenade with a 100-tick fuse outlives its thrower's logout, and holding the
      * Combatant would pin a Bukkit entity for five seconds. Same rule as an Area.
      *
-     * The flight itself is {@link ProjectileFlight}, shared with the throw_embers effect;
-     * impact simply detonates the ability's onHit here, exactly as before the extraction.
+     * The flight itself is {@link ProjectileFlight}; impact simply detonates the ability's onHit
+     * here, exactly as before the extraction. The Caster rides the flight rather than being closed
+     * over, so the freeze is explicit at the boundary where the per-tick region hop happens.
      */
-    private void launch(AbilityDefinition ability, UUID casterId, Aim aim, CastSpec.Projectile spec) {
-        ProjectileFlight.launch(world, casterId, aim.origin(), aim.direction().scale(spec.speed()),
+    private void launch(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec) {
+        ProjectileFlight.launch(world, caster, aim.origin(), aim.direction().scale(spec.speed()),
                 spec.gravity(), spec.maxLifetimeTicks(), null, // a bare projectile leaves no trail
-                (target, point) -> detonate(ability, casterId, target, point));
+                (target, point) -> detonate(ability, caster, target, point));
     }
 
     /**
@@ -145,9 +156,9 @@ public final class CastExecutor {
      * the first costs a tick, which means A RAY IS NO LONGER HITSCAN in general, and its
      * cost varies with aim -- a diagonal crosses more planes than an axis-aligned shot.
      */
-    private void launchRay(AbilityDefinition ability, UUID casterId, Aim aim, double range) {
+    private void launchRay(AbilityDefinition ability, Caster caster, Aim aim, double range) {
         List<Vec3> endpoints = ChunkTraversal.segmentEndpoints(aim.origin(), aim.direction(), range);
-        stepRay(ability, casterId, aim.origin(), endpoints, 0);
+        stepRay(ability, caster, aim.origin(), endpoints, 0);
     }
 
     /**
@@ -159,24 +170,24 @@ public final class CastExecutor {
      * struck; if rays are ever made to PIERCE, that changes, and a set of already-hit ids
      * would have to be threaded through these calls.
      */
-    private void stepRay(AbilityDefinition ability, UUID casterId, Vec3 from,
+    private void stepRay(AbilityDefinition ability, Caster caster, Vec3 from,
                          List<Vec3> endpoints, int index) {
         Vec3 to = endpoints.get(index);
 
-        Optional<RayHit> hit = world.castRay(from, to, casterId);
+        Optional<RayHit> hit = world.castRay(from, to, caster.id());
         if (hit.isPresent()) {
-            detonate(ability, casterId, hit.get().combatant(), hit.get().point());
+            detonate(ability, caster, hit.get().combatant(), hit.get().point());
             return;
         }
 
         boolean lastSegment = index == endpoints.size() - 1;
         if (lastSegment) {
             // A clean miss still goes off at the end of the aim, as it always has.
-            detonate(ability, casterId, null, to);
+            detonate(ability, caster, null, to);
             return;
         }
 
-        world.schedule(to, 1, () -> stepRay(ability, casterId, to, endpoints, index + 1));
+        world.schedule(to, 1, () -> stepRay(ability, caster, to, endpoints, index + 1));
     }
 
     /**
@@ -207,7 +218,7 @@ public final class CastExecutor {
         return nearest;
     }
 
-    private void detonate(AbilityDefinition ability, UUID casterId, Combatant target, Vec3 impact) {
-        effects.applyAll(ability.onHit(), casterId, target, impact);
+    private void detonate(AbilityDefinition ability, Caster caster, Combatant target, Vec3 impact) {
+        effects.applyAll(ability.onHit(), caster, target, impact);
     }
 }

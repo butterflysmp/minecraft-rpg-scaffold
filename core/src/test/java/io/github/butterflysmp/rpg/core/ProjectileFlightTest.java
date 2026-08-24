@@ -36,6 +36,9 @@ class ProjectileFlightTest {
 
     private static final EffectSpec.Damage HIT = new EffectSpec.Damage(12, "fire");
 
+    /** A basic-attack payload: no literal, deals whatever the caster froze at cast time. */
+    private static final EffectSpec.WeaponDamage WEAPON_HIT = new EffectSpec.WeaponDamage("fire");
+
     @Test
     void aProjectileTakesTimeToReachItsTarget() {
         var world = new FakeWorld();
@@ -207,5 +210,65 @@ class ProjectileFlightTest {
 
         assertDoesNotThrow(() -> world.advanceTicks(50));
         assertEquals(88, target.health, 1e-9, "the grenade still lands");
+    }
+
+    /**
+     * THE test this pass exists for. A projectile's payload is resolved at IMPACT, on the region
+     * that owns the TARGET -- which on Folia is not the caster's region. So a WeaponDamage payload
+     * cannot ask the world for the caster's attack damage when it lands; it must use the value
+     * frozen when the shot was fired.
+     *
+     * Proven by making the two answers differ: the caster's attack damage is 6 at launch and 99
+     * while the arrow is still in the air. Anything that re-reads live caster state at impact deals
+     * 99. The frozen carry deals 6.
+     *
+     * This is the core-side proof of the freeze, and it is the only one there can be: Paper is
+     * single-region, so no boot can make the two regions actually differ.
+     */
+    @Test
+    void aProjectileDealsTheAttackDamageFrozenAtLaunchNotAtImpact() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(6, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(target);
+        caster.attackDamage = 6.0;
+
+        cast(world, caster, grenade(1.0, 0, 100, WEAPON_HIT), FORWARD);
+        assertEquals(100, target.health, 1e-9, "no hit on the launch frame");
+
+        // Mid-flight, the caster's stat changes -- a weapon swap, a modifier expiring, a buff.
+        caster.attackDamage = 99.0;
+
+        world.advanceTicks(10);
+        assertEquals(94, target.health, 1e-9,
+                "the arrow deals the 6 frozen at launch, not the 99 the caster has at impact");
+        // Mutation: build the Caster inside the impact lambda from a live world.combatant(id) read
+        // instead of at launch -> "expected: <94> but was: <1>" -> reddens.
+    }
+
+    /**
+     * The freeze also makes a WeaponDamage shot survive its own thrower. Under the retired hit-time
+     * read, a despawned caster resolved to 0 attack damage and the amt>0 guard swallowed the hit
+     * entirely -- an arrow already in the air did nothing because the archer logged out. The frozen
+     * value has nothing left to look up, so it simply lands.
+     */
+    @Test
+    void aWeaponDamageProjectileStillLandsAfterItsCasterDespawns() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(6, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(target);
+        caster.attackDamage = 6.0;
+
+        cast(world, caster, grenade(1.0, 0, 100, WEAPON_HIT), FORWARD);
+        world.advanceTicks(2); // airborne, around x=3
+
+        world.entities.remove(caster); // the archer logs out mid-flight
+
+        assertDoesNotThrow(() -> world.advanceTicks(50));
+        assertEquals(94, target.health, 1e-9, "the shot still lands its frozen 6");
+        assertEquals(caster.id(), target.lastDamageSource, "and is still attributed to the archer");
     }
 }

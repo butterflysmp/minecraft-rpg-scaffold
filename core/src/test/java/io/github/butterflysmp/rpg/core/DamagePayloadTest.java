@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -71,5 +72,27 @@ class DamagePayloadTest {
         // ...and the tooltip genuinely does read it that way, which is the agreement being pinned.
         assertFalse(DamagePayload.of(mixed, 8).orElseThrow().source()
                 == DamagePayload.DamageSource.WEAPON_STAT);
+    }
+
+    /**
+     * A non-damage effect ahead of a weapon_damage does NOT shadow it. "First wins" is first
+     * DAMAGE-BEARING, and a visual bears none.
+     *
+     * This is shipped content now, not a hypothetical: hunters_bow's on_hit is [visual,
+     * weapon_damage], the only shipped basic attack whose payload does not lead with its damage. If
+     * the walk stopped at the first effect outright, the bow would render as an ability, lose its
+     * attack-speed scaling, and have no stat for a "+N Ranged Damage" modifier to reach.
+     */
+    @Test
+    void aVisualAheadOfAWeaponDamageDoesNotShadowIt() {
+        List<EffectSpec> bowPayload = List.of(
+                new EffectSpec.Visual("solar_detonation"),
+                new EffectSpec.WeaponDamage("fire"));
+
+        assertTrue(DamagePayload.isBasicAttack(bowPayload),
+                "a leading visual bears no damage, so the weapon_damage still wins");
+        var damage = DamagePayload.of(bowPayload, 6).orElseThrow();
+        assertEquals(6, damage.amount());
+        assertEquals(DamagePayload.DamageSource.WEAPON_STAT, damage.source());
     }
 }

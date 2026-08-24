@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core;
 
 import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
+import io.github.butterflysmp.rpg.core.combat.Caster;
 import io.github.butterflysmp.rpg.core.combat.ChunkTraversal;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
@@ -30,10 +31,6 @@ public final class FakeWorld implements CombatWorld {
 
     /** Live display markers, id -> marker material id. A marker leak shows up as a stale entry. */
     public final Map<UUID, String> markers = new HashMap<>();
-
-    /** Each combatant's resolved attack damage, id -> amount. A WeaponDamage effect reads this;
-     *  an id absent here resolves to 0 (untracked/unarmed), as the real store does. */
-    public final Map<UUID, Double> attackDamage = new HashMap<>();
 
     /** Where each live marker sits, id -> position. Parallel to {@link #markers}, so the leak
      *  assertions on that map stay untouched while a fuse can read a marker's live position. */
@@ -82,10 +79,6 @@ public final class FakeWorld implements CombatWorld {
                 .filter(d -> d.id().equals(id))
                 .findFirst()
                 .map(FakeWorld::pair);
-    }
-
-    @Override public double attackDamage(UUID id) {
-        return attackDamage.getOrDefault(id, 0.0);
     }
 
     /** Identifies a chunk column. Two coordinates packed into one key. */
@@ -252,6 +245,17 @@ public final class FakeWorld implements CombatWorld {
          */
         public double attackSpeed = AttackSpeed.BASE;
 
+        /**
+         * The attack damage this dummy's snapshot carries -- what a WeaponDamage payload it casts
+         * will deal, frozen at cast time. Defaults to 0 (untracked/unarmed), matching the real
+         * store, so an existing test that never sets it still sees a caster who deals nothing.
+         *
+         * It lives on the DUMMY, not on the world, on purpose: the amount a payload uses is the one
+         * captured when the cast began, so a test can change this MID-FLIGHT and prove a projectile
+         * still lands the frozen value rather than a fresh read.
+         */
+        public double attackDamage = 0.0;
+
         /** The last velocity a dash impulse set on this dummy, or null if never dashed. */
         public Vec3 lastImpulse;
 
@@ -274,7 +278,16 @@ public final class FakeWorld implements CombatWorld {
         public Vec3 position() { return pos; }
 
         public CombatantSnapshot snapshot() {
-            return new CombatantSnapshot(id, pos, health > 0, player, attackSpeed);
+            return new CombatantSnapshot(id, pos, health > 0, player, attackSpeed, attackDamage);
+        }
+
+        /**
+         * This dummy as the SOURCE of an effect: the frozen projection an EffectApplier or a
+         * projectile carries. Deliberately taken through {@link #snapshot()}, so a test cannot
+         * accidentally hand an effect a value the snapshot would not have carried.
+         */
+        public Caster asCaster() {
+            return Caster.of(snapshot());
         }
 
         @Override public UUID id() { return id; }

@@ -37,7 +37,7 @@ class EffectApplierTest {
                 new EffectSpec.Area(4.0, 100, 20,
                         List.of(new EffectSpec.Damage(2, "fire"))));
 
-        assertDoesNotThrow(() -> applier.applyAll(everyVariant, caster.id(), null, Vec3.ZERO));
+        assertDoesNotThrow(() -> applier.applyAll(everyVariant, caster.asCaster(), null, Vec3.ZERO));
     }
 
     /** The specific regression: a status effect with nobody to apply it to. */
@@ -48,7 +48,7 @@ class EffectApplierTest {
         var applier = new EffectApplier(world);
 
         assertDoesNotThrow(() -> applier.applyAll(
-                List.of(new EffectSpec.Status("scorch", 40, 0)), caster.id(), null, Vec3.ZERO));
+                List.of(new EffectSpec.Status("scorch", 40, 0)), caster.asCaster(), null, Vec3.ZERO));
     }
 
     /** Untargeted effects still run when there is no target. */
@@ -58,7 +58,7 @@ class EffectApplierTest {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var applier = new EffectApplier(world);
 
-        applier.applyAll(List.of(new EffectSpec.Visual("solar_detonation")), caster.id(), null, Vec3.ZERO);
+        applier.applyAll(List.of(new EffectSpec.Visual("solar_detonation")), caster.asCaster(), null, Vec3.ZERO);
 
         assertEquals(List.of("solar_detonation"), world.presented);
     }
@@ -84,7 +84,7 @@ class EffectApplierTest {
                 List.of(new EffectSpec.Burst(4.0, List.of(
                         new EffectSpec.Damage(6, "fire"),
                         new EffectSpec.Status("scorch", 40, 0)))),
-                caster.id(), null, Vec3.ZERO);
+                caster.asCaster(), null, Vec3.ZERO);
 
         assertEquals(0, world.pendingTasks(), "a burst is inline; it must schedule nothing");
         assertEquals(94, victim.health, 0.001);
@@ -119,7 +119,7 @@ class EffectApplierTest {
                         new EffectSpec.Status("scorch", 60, 0))),
                 "ember_burst", null);   // visual = boom at detonation; trail unused here
 
-        new EffectApplier(world).applyAll(List.of(embers), caster.id(), null, Vec3.ZERO);
+        new EffectApplier(world).applyAll(List.of(embers), caster.asCaster(), null, Vec3.ZERO);
 
         assertEquals(1, world.markers.size(), "the item is thrown at once");
         assertEquals(100, mob.health, 1e-9, "nothing detonates before the fuse");
@@ -159,7 +159,7 @@ class EffectApplierTest {
         var embers = new EffectSpec.ThrowEmbers(List.of(0.0), 0.6, 0.25, "blaze_powder", 20,
                 new EffectSpec.Burst(4.0, List.of(new EffectSpec.Damage(8, "fire"))), null, null);
 
-        new EffectApplier(world).applyAll(List.of(embers), caster.id(), null, Vec3.ZERO);
+        new EffectApplier(world).applyAll(List.of(embers), caster.asCaster(), null, Vec3.ZERO);
 
         // The item flew and landed 10 blocks away before the fuse fired.
         UUID itemId = world.markers.keySet().iterator().next();
@@ -189,7 +189,7 @@ class EffectApplierTest {
         var embers = new EffectSpec.ThrowEmbers(List.of(0.0), 0.6, 0.25, "blaze_powder", 5,
                 new EffectSpec.Burst(4.0, List.of(new EffectSpec.Damage(8, "fire"))), null, "ember_trail");
 
-        new EffectApplier(world).applyAll(List.of(embers), caster.id(), null, Vec3.ZERO);
+        new EffectApplier(world).applyAll(List.of(embers), caster.asCaster(), null, Vec3.ZERO);
         world.advanceTicks(5);
 
         long trailCount = world.presented.stream().filter("ember_trail"::equals).count();
@@ -253,12 +253,12 @@ class EffectApplierTest {
         var applier = new EffectApplier(world);
 
         // Damage only -- the Mage case: hurt, but not moved.
-        applier.applyAll(List.of(new EffectSpec.Damage(6, "fire")), caster.id(), pair(noKb), Vec3.ZERO);
+        applier.applyAll(List.of(new EffectSpec.Damage(6, "fire")), caster.asCaster(), pair(noKb), Vec3.ZERO);
         assertEquals(0, noKb.knockbackCalls, "no Knockback effect declared -> no knockback (default is none)");
 
         // Damage + declared Knockback -- the Melee case: hurt AND shoved.
         applier.applyAll(List.of(new EffectSpec.Damage(6, "fire"), new EffectSpec.Knockback(1.5)),
-                caster.id(), pair(withKb), Vec3.ZERO);
+                caster.asCaster(), pair(withKb), Vec3.ZERO);
         assertEquals(1, withKb.knockbackCalls, "a declared Knockback applies exactly one push");
         assertEquals(1.5, withKb.lastKnockbackStrength, 1e-9, "at the declared strength");
     }
@@ -273,7 +273,7 @@ class EffectApplierTest {
 
         applier.applyAll(List.of(
                 new EffectSpec.Damage(12, "fire"),
-                new EffectSpec.Status("scorch", 40, 0)), caster.id(), pair(target), Vec3.ZERO);
+                new EffectSpec.Status("scorch", 40, 0)), caster.asCaster(), pair(target), Vec3.ZERO);
 
         assertEquals(88, target.health, 0.001);
         assertEquals(List.of("scorch"), target.statuses);
@@ -291,7 +291,7 @@ class EffectApplierTest {
 
         new EffectApplier(world).applyAll(
                 List.of(new EffectSpec.Damage(12, "fire")),
-                caster.id(), pair(target), Vec3.ZERO);
+                caster.asCaster(), pair(target), Vec3.ZERO);
 
         assertEquals(caster.id(), target.lastDamageSource, "the caster must be blamed");
         assertEquals(88, target.health, 0.001, "12 damage, no element multiplier");
@@ -311,33 +311,53 @@ class EffectApplierTest {
 
         var applier = new EffectApplier(world);
         applier.applyAll(List.of(new EffectSpec.Damage(10, "fire")),
-                caster.id(), pair(solarTarget), Vec3.ZERO);
+                caster.asCaster(), pair(solarTarget), Vec3.ZERO);
         applier.applyAll(List.of(new EffectSpec.Damage(10, "void")),
-                caster.id(), pair(voidTarget), Vec3.ZERO);
+                caster.asCaster(), pair(voidTarget), Vec3.ZERO);
 
         assertEquals(90, solarTarget.health, 1e-9);
         assertEquals(voidTarget.health, solarTarget.health, 1e-9, "element must not touch the number");
     }
 
     /**
-     * WeaponDamage deals the CASTER'S attack-damage stat, resolved at hit time -- not a literal. The
-     * world resolves it (here, the fake's attackDamage map, in production CombatantStats.attackValue),
-     * so the swing and the tooltip share one number. A damage effect and a weapon-damage effect on the
-     * same target must land the same amount when the caster's stat equals that literal.
+     * WeaponDamage deals the CASTER'S attack-damage stat -- not a literal -- so the swing and the
+     * tooltip share one number. The amount rides the Caster, frozen from the caster's snapshot at
+     * cast time; there is no longer any world method that could resolve it at hit time.
      */
     @Test
     void weaponDamageDealsTheCastersAttackStat() {
         var world = new FakeWorld();
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
-        world.attackDamage.put(caster.id(), 8.0);          // the caster's resolved ATTACK_DAMAGE
+        caster.attackDamage = 8.0;                         // the caster's resolved ATTACK_DAMAGE
 
         new EffectApplier(world).applyAll(
-                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.id(), pair(target), Vec3.ZERO);
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
 
         assertEquals(92, target.health, 1e-9, "the hit dealt the caster's attack stat (8), not a literal");
         assertEquals(caster.id(), target.lastDamageSource, "attributed to the caster");
-        // Mutation: read a fixed literal / the target's stat instead of the caster's -> the number is wrong -> reddens.
+        // Mutation: read the TARGET's frozen stat instead of the caster's -> the number is wrong -> reddens.
+    }
+
+    /**
+     * The caster's stat, never the target's. Both carry one, and they differ here on purpose: a
+     * hit must deal what the SWINGER has, not what the thing being swung at happens to have. With
+     * both values non-zero the amt>0 guard cannot mask a mix-up, so only the number can tell them
+     * apart -- which is exactly what makes this reddening.
+     */
+    @Test
+    void weaponDamageReadsTheCasterNotTheTarget() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;
+        target.attackDamage = 30.0;                        // a well-armed victim changes nothing
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(92, target.health, 1e-9, "the caster's 8, not the target's 30");
+        // Mutation: read target.state().attackDamage() -> "expected: <92> but was: <70>" -> reddens.
     }
 
     /**
@@ -347,11 +367,11 @@ class EffectApplierTest {
     @Test
     void weaponDamageWithZeroAttackDealsNothingAndDoesNotFireTheSeam() {
         var world = new FakeWorld();
-        var caster = new FakeWorld.Dummy(Vec3.ZERO);       // no attackDamage entry -> resolves 0
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);       // attackDamage left at 0 -> untracked/unarmed
         var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
 
         new EffectApplier(world).applyAll(
-                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.id(), pair(target), Vec3.ZERO);
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
 
         assertEquals(100, target.health, 1e-9, "unarmed (0 attack) deals nothing");
         assertEquals(0, target.damageCalls, "and does not fire a spurious 0-damage seam");
@@ -369,7 +389,7 @@ class EffectApplierTest {
 
         new EffectApplier(world).applyAll(
                 List.of(new EffectSpec.Burst(4.0, List.of(new EffectSpec.Damage(6, "fire")))),
-                caster.id(), null, Vec3.ZERO);
+                caster.asCaster(), null, Vec3.ZERO);
 
         assertEquals(caster.id(), victim.lastDamageSource);
         assertNull(caster.lastDamageSource, "a burst never splashes its own caster");
