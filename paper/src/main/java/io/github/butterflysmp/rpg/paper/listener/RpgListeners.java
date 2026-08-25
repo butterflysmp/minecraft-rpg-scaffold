@@ -152,7 +152,8 @@ public final class RpgListeners implements Listener {
         Action action = event.getAction();
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
-        WeaponFire.attempt(event.getPlayer(), "right_click", weapons, weaponService, adapters)
+        WeaponFire.attempt(event.getPlayer(), "right_click", weapons, weaponService, adapters,
+                        cooldowns)
                 .ifPresent(result -> {
                     // Present == this weapon binds right_click. Suppress the vanilla interaction
                     // whether the special fired or was refused -- the player pressed the special.

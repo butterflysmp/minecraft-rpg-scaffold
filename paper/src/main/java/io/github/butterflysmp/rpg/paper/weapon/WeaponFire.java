@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.CastExecutor;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
+import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
@@ -32,6 +33,11 @@ import java.util.Optional;
  * through. It is gated HERE rather than in each caller precisely so the packet swing and the
  * interact handler cannot drift apart on what "broken" means.
  *
+ * DURABILITY WEAR is the other half of the same axis and rides through here too, as the use
+ * listener handed to CastExecutor below. It is passed unconditionally: whether a cast charges a
+ * use at all (basic attack, not ability) and whether a melee swing connected are both core's to
+ * answer, so this stays the dispatch it says it is and gains no second copy of that rule.
+ *
  * MUST be called on the thread that owns the player: BukkitCombatant.snapshot enforces it,
  * and CastExecutor.execute is scheduled onto the aim's owning region from there. The swing
  * listener reaches that thread via its Netty hop; the interact handler is already on it.
@@ -55,7 +61,8 @@ public final class WeaponFire {
     public static Optional<CastResult> attempt(Player player, String input,
                                                WeaponRegistry weapons,
                                                WeaponService weaponService,
-                                               AdapterContext adapters) {
+                                               AdapterContext adapters,
+                                               CooldownTracker cooldowns) {
         Optional<WeaponDefinition> held = WeaponItems.heldWeaponId(player, adapters.keys())
                 .flatMap(weapons::find);
         if (held.isEmpty()) return Optional.empty();
@@ -90,8 +97,18 @@ public final class WeaponFire {
                 // still on the player's thread, before the region hop -- getCurrentInput() is
                 // player state and illegal past the hop. Every other cast passes through.
                 CastResult.Success toRun = DashAim.resolve(player, success);
+                // DURABILITY WEAR rides the executor's use listener. Nothing is decided here on
+                // purpose: whether this cast charges at all, and whether a melee swing connected,
+                // are both CastExecutor's to answer -- see the gate in its execute(). Passing the
+                // charge unconditionally is what keeps this wiring from being a second place the
+                // basic-attack rule could drift.
+                //
+                // Safe to touch the player's inventory from inside the hop: the region is the one
+                // owning `eye`, which is the player's own, and the listener only ever runs
+                // synchronously within execute(). Both halves of that are load-bearing.
                 adapters.scheduler().onRegion(eye, () ->
-                        new CastExecutor(new PaperCombatWorld(player.getWorld(), adapters))
+                        new CastExecutor(new PaperCombatWorld(player.getWorld(), adapters),
+                                () -> WeaponDurability.applyWearOnUse(player, cooldowns))
                                 .execute(toRun));
             }
         });

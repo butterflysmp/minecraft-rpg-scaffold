@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import org.bukkit.entity.Player;
@@ -69,6 +70,65 @@ public final class WeaponDurability {
     public static boolean isHeldWeaponBroken(Player player, Keys keys) {
         ItemStack held = player.getInventory().getItemInMainHand();
         return WeaponItems.weaponId(held, keys).isPresent() && isBroken(held);
+    }
+
+    /**
+     * What one basic attack costs. Flat, deliberately: a per-weapon {@code wear:} content field is
+     * the obvious next step and is deferred to NEXT.md, because shipping it now would mean picking
+     * a number for five weapons before a single one has been felt in play.
+     */
+    public static final int WEAR_PER_USE = 1;
+
+    /**
+     * Charge the player's held weapon one use. THE ONE PLACE WEAR IS APPLIED IN PLAY.
+     *
+     * Both hooks -- the melee swing that connects and the shot that launches -- arrive here rather
+     * than each calling {@link #wear}, and that is the entire point of the method existing. WHEN a
+     * use happens is core's decision ({@code CastExecutor.execute}: basic attacks only, melee on
+     * connect, everything else at commit); WHAT it costs is this, and there is one of it so the
+     * enchant below has one seam to plug into instead of two sites to reopen.
+     *
+     * <p><b>The exemptions, in order.</b> A non-Damageable material leaves with nothing done --
+     * ember_staff (blaze_rod) and ability_stone (amethyst_shard) are exactly the two weapons that
+     * should never wear, and {@link #maxOf} being empty is what makes that structural rather than a
+     * rule each caller remembers. An already-broken weapon leaves too: the Pass 1 gate in
+     * {@code WeaponFire} returns Broken before a Success can exist, so this is unreachable in
+     * practice, and it is kept because it is what makes the just-broke test below mean "crossed
+     * into broken ON THIS USE" rather than the weaker "is broken now".
+     *
+     * <p>Runs on the thread that owns the player. Both call sites are already there -- see the
+     * threading note on {@code CastExecutor}'s two-arg constructor, which is what guarantees it.
+     */
+    public static void applyWearOnUse(Player player, CooldownTracker cooldowns) {
+        ItemStack held = player.getInventory().getItemInMainHand();
+
+        OptionalInt max = maxOf(held);
+        if (max.isEmpty()) return;
+        int maximum = max.getAsInt();
+
+        if (Durability.isBroken(damageOf(held), maximum)) return;
+
+        // THE UNBREAKING SEAM. A future custom Unbreaking enchant (part of the enchant system, not
+        // vanilla's -- player-held items can never carry a vanilla enchant here) rolls HERE and
+        // returns without wearing on a skip: roughly a 1/(level+1) chance to consume durability,
+        // mirroring vanilla's own curve. It goes BEFORE the wear and AFTER the exemptions, so a
+        // staff does not roll for something it can never spend. Building the seam now is what makes
+        // that enchant "add the roll" rather than "reopen the two wear sites".
+
+        int damage = wear(held, WEAR_PER_USE);
+        // Write the stack back explicitly rather than trusting the main-hand read to be a live
+        // mirror, and updateInventory so the bar moves on this swing rather than at the client's
+        // next sync -- the same pair, for the same reasons, as RpgCommand's /rpg durability.
+        player.getInventory().setItemInMainHand(held);
+        player.updateInventory();
+
+        // THE JUST-BROKE SIGNAL. This use is what took the weapon from usable to inert, so say so
+        // now instead of leaving the player to discover it on their next dead swing -- a weapon
+        // that silently stops working is indistinguishable from a bug, which is the whole argument
+        // BrokenNotice was written on. Comparing before against after is what makes this fire once,
+        // on the crossing, rather than on every use thereafter; BrokenNotice's 40-tick throttle
+        // then dedups it against the gate's own message on the following action.
+        if (Durability.isBroken(damage, maximum)) BrokenNotice.notify(player, cooldowns);
     }
 
     /**

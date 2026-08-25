@@ -91,7 +91,7 @@ public final class WeaponSwingListener extends PacketListenerBase {
      * which is what preserves the swing-silence above.
      */
     private void onSwing(Player player) {
-        WeaponFire.attempt(player, "left_click", weapons, weaponService, adapters)
+        WeaponFire.attempt(player, "left_click", weapons, weaponService, adapters, cooldowns)
                 .filter(CastResult.Broken.class::isInstance)
                 .ifPresent(broken -> BrokenNotice.notify(player, cooldowns));
     }
