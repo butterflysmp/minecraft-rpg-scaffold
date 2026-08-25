@@ -1173,9 +1173,38 @@ Before milestone 2, two things worth measuring rather than assuming:
   > a wear trigger deliberately regardless, so the mechanism stops being load-bearing the moment
   > wear is ours rather than inherited — which is exactly why this is now closed rather than left
   > open as a story.
+  >
+  > #### 2026-08-25 — ANSWERED by Pass 2: wear is ours now, and the mechanism stopped mattering
+  >
+  > Durability Pass 2 supplies the wear the measurement above proved vanilla will never supply. It
+  > is applied by us, on the actions we choose — a melee basic attack that connects, a ranged basic
+  > attack at launch, flat 1, `Damageable` materials only — through one chokepoint
+  > (`WeaponDurability.applyWearOnUse`), with the *when* decided in `CastExecutor.execute`.
+  >
+  > So the open sub-question — *why* vanilla skipped the charge — is now moot rather than answered,
+  > which is the outcome the entry above predicted. Nothing depends on it: we do not ride vanilla's
+  > trigger, so it does not matter which of the two candidate mechanisms was suppressing it.
+  >
+  > **Two consequences worth naming.** `WeaponItems.carryWear` stops being inert — it now carries
+  > a real accumulated value across a re-mint rather than copying a 0, so its clamp is live code on
+  > the next content re-theme, not insurance against a case that cannot arise. And the *"should
+  > custom weapons be unbreakable"* question this entry opened is answered in the negative by
+  > construction: they wear, they floor, they go inert, they repair. The never-DESTROYED promise is
+  > untouched; it was never the same promise as never-worn.
 - **The Lore Refresher's boot gate step 9 (the lower-durability clamp) is DEFERRED, un-runnable.**
   It needs a *worn* item whose material then changes to a lower-max material (iron 250 → gold 32), and
   per the correction above nothing wears items in the current build, so the case cannot be produced.
+
+  > #### 2026-08-25 — NOW PRODUCIBLE (Pass 2), and no longer needs a forged item
+  >
+  > Pass 2 wears weapons in play, so the *worn item* half of this case is now reachable by simply
+  > swinging: hit a mob a few times and read the bar. That retires the forged-`/give` candidate
+  > below — it was only ever a way to manufacture wear that did not exist, and the `/rpg refresh`
+  > count diagnostic it needed goes with it. Pass 1's `/rpg durability damage <n>` is the faster
+  > path still, since it reaches a chosen value in one command.
+  >
+  > Not run as part of Pass 2, deliberately: this pass was closing the wear axis, and step 9 belongs
+  > to the refresher's gate. It is now a normal runnable step rather than a deferred one.
   Deliberately not held against the refresher: the clamp is correct, inert, and cheap insurance
   against a real data-loss bug (an item copied to a damage value past its new maximum is a *broken*
   item). **Boot-witnessing the clamp is the first gate of the durability pass** — same wear axis,
@@ -1248,6 +1277,42 @@ Before milestone 2, two things worth measuring rather than assuming:
   100/250 iron becomes 13/32 gold and the weapon survives usable. Not taken here — it changes what
   a re-mint means on every material change, not just the lossy direction, and this pass was closing
   the break gate rather than reopening #12's carry-forward contract.
+
+  > #### 2026-08-25 — Pass 2 makes this bite for real
+  >
+  > While nothing wore items, this was a latent bug: `carryWear` copied a damage of 0, so the clamp
+  > could never fire. Pass 2 means players now carry genuinely worn weapons, so the FIRST re-theme
+  > to a lower-max material will hand every owner of that weapon a dead one. Still not fixed here
+  > (same reason — it is #12's contract, not this pass's), but it has moved from theoretical to
+  > waiting, and the fraction-preserving fix above is the one to take when it is.
+- **Per-weapon wear rate is deferred; Pass 2 ships a flat 1.** `WeaponDurability.WEAR_PER_USE` is a
+  constant, and the natural next step is a content `wear:` field on the weapon (default 1) so a
+  heavy weapon can cost more per swing than a light one. Not shipped with Pass 2 because it means
+  picking a number for five weapons before a single one has been felt in play, and the flat value
+  is the honest default until then. The constant is the only thing that has to move.
+- **The custom Unbreaking enchant consumes the seam built in Pass 2.** `WeaponDurability`
+  `.applyWearOnUse` carries a commented `THE UNBREAKING SEAM` block at exactly the point the roll
+  belongs — after the non-Damageable and already-broken exemptions, before the `wear()` — so the
+  enchant is *add the roll*, not *reopen the wear sites*. Shape: roughly a `1/(level+1)` chance to
+  consume durability, mirroring vanilla's own curve, returning without wearing on a skip.
+
+  This is a CUSTOM enchant, not vanilla's: per the no-vanilla-enchants policy above, a player-held
+  item can never carry a vanilla enchant here, so there is nothing to read off the item — it will
+  come from wherever the enchant system puts a level, and that system does not exist yet. The seam
+  is deliberately built ahead of it because building it later means touching wear again.
+- **Pass 2's once-per-swing dedup is guarded by a core test, not by a boot step, and that is not a
+  gap.** The rule is that one swing costs one use however many bodies its payload reaches — vanilla
+  charges a sword once for a sweep. **It cannot be witnessed in-game**, because
+  `CastExecutor.meleeTarget` resolves the single *nearest* body in the arc: ironblade and emberblade
+  damage at most one thing per swing, so no shipped weapon can produce a two-mob swing at all.
+  Witnessing it would mean inventing a throwaway multi-target weapon for a hypothetical.
+
+  `CastExecutorTest.oneMeleeSwingChargesOneUseHoweverManyItSplashes` is the witness instead — a
+  melee cast with a `Burst` payload over two dummies, asserting one use — and it is a real guard,
+  not a green no-op: billing per body in reach reddens it at `expected: <1> but was: <2>` while the
+  single-body test stays green, which is the discrimination it claims. Recorded here rather than
+  left as a boot step that reads runnable and is not, which is the failure the step-7 gate above
+  already paid for once.
 - **The refresher's coverage boundary: `getContents()` does not reach the ender chest or the inside
   of a shulker box.** The scan walks a PlayerInventory's 41 slots — storage, hotbar, armour, offhand
   — so a weapon stashed in an ender chest or boxed up refreshes only once it is back in the main

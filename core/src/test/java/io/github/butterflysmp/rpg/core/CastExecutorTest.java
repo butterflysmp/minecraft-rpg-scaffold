@@ -27,13 +27,24 @@ class CastExecutorTest {
     }
 
     private static void cast(FakeWorld world, FakeWorld.Dummy caster, AbilityDefinition def, Aim aim) {
+        cast(world, caster, def, aim, () -> {});
+    }
+
+    /** With the basic-attack use listener that durability wear rides in production. */
+    private static void cast(FakeWorld world, FakeWorld.Dummy caster, AbilityDefinition def,
+                             Runnable onBasicAttackUse) {
+        cast(world, caster, def, FORWARD, onBasicAttackUse);
+    }
+
+    private static void cast(FakeWorld world, FakeWorld.Dummy caster, AbilityDefinition def,
+                             Aim aim, Runnable onBasicAttackUse) {
         var registry = new AbilityRegistry();
         registry.register(def);
         var service = new AbilityService(registry, new CooldownTracker(() -> 0L),
                 new ResourcePool(() -> 0L, 100, 1));
         var success = assertInstanceOf(AbilityService.CastResult.Success.class,
                 service.cast(caster.snapshot(), "test", aim, java.util.Set.of(def.id())));
-        new CastExecutor(world).execute(success);
+        new CastExecutor(world, onBasicAttackUse).execute(success);
     }
 
     /**
@@ -467,5 +478,134 @@ class CastExecutorTest {
         world.advanceTicks(21);
 
         assertEquals(98, atTheEnd.health, 1e-9, "the area should land at the ray's end point");
+    }
+
+    // --- WHAT COSTS A USE, AND WHEN. The rule durability wear rides: a basic attack charges, an
+    // ability never does; melee charges on CONNECT, every other shape at COMMIT. Core owns the
+    // whole rule (CastExecutor.execute) so the wiring cannot get it wrong or forget it, and these
+    // are what hold it -- the paper half is a one-line durability charge no test can reach.
+
+    /** A basic attack: reads the wielder's ATTACK_DAMAGE stat, which is what isBasicAttack asks. */
+    private static EffectSpec.WeaponDamage basicAttack() {
+        return new EffectSpec.WeaponDamage("kinetic");
+    }
+
+    /** An ability payload: carries its own authored amount. The emberblade Fireball's shape. */
+    private static EffectSpec.Damage abilityPayload() {
+        return new EffectSpec.Damage(12, "fire");
+    }
+
+    @Test
+    void aConnectingMeleeSwingChargesOneUse() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+        world.entities.add(new FakeWorld.Dummy(new Vec3(1, 0, 0)));
+
+        var uses = new int[1];
+        cast(world, caster, ability(new CastSpec.Melee(3, 120), basicAttack()), () -> uses[0]++);
+
+        assertEquals(1, uses[0], "a swing that lands costs exactly one use");
+    }
+
+    /**
+     * Miss is free -- the rule that forced the connect signal into core in the first place. The
+     * paper half cannot answer it: by the time WeaponFire holds a Success, whether the arc resolved
+     * a target is not yet known, and it is decided past the region hop.
+     */
+    @Test
+    void aMeleeSwingThatLandsOnNothingIsFree() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+        world.entities.add(new FakeWorld.Dummy(new Vec3(-1, 0, 0))); // behind, outside the arc
+
+        var uses = new int[1];
+        cast(world, caster, ability(new CastSpec.Melee(3, 120), basicAttack()), () -> uses[0]++);
+
+        assertEquals(0, uses[0], "a swing that touches nothing costs nothing");
+    }
+
+    /**
+     * THE DEDUP. One swing is one use however many bodies its payload reaches -- vanilla charges a
+     * sword once for a sweep, not once per mob caught.
+     *
+     * No SHIPPED weapon can produce this: CastExecutor.meleeTarget resolves the single nearest body
+     * in the arc, so ironblade and emberblade damage at most one thing per swing and the case
+     * cannot be witnessed in-game without inventing a throwaway weapon for a hypothetical. A Burst
+     * payload IS the reachable multi-target melee shape (void_slash is exactly this, as an
+     * ability), so this test is the guard -- and it is a real one: move the onBasicAttackUse call
+     * inside EffectApplier's per-entity loop and it reddens with 2.
+     */
+    @Test
+    void oneMeleeSwingChargesOneUseHoweverManyItSplashes() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+        world.entities.add(new FakeWorld.Dummy(new Vec3(1, 0, 0)));
+        world.entities.add(new FakeWorld.Dummy(new Vec3(1, 0, 0.5)));
+
+        var uses = new int[1];
+        cast(world, caster, ability(new CastSpec.Melee(3, 120),
+                        basicAttack(),
+                        new EffectSpec.Burst(3.0, List.of(new EffectSpec.Damage(5, "fire")))),
+                () -> uses[0]++);
+
+        assertEquals(1, uses[0], "one swing, one use -- not one per body it splashes");
+    }
+
+    /**
+     * The bow: an arrow costs the bow at LAUNCH, hit or miss, like vanilla. Nothing is in the
+     * projectile's path here and the use is still charged on the cast frame, before any flight.
+     */
+    @Test
+    void aProjectileBasicAttackChargesAtLaunchHitOrMiss() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+
+        var uses = new int[1];
+        cast(world, caster, ability(new CastSpec.Projectile(2.5, 0.05, 60), basicAttack()),
+                () -> uses[0]++);
+
+        assertEquals(1, uses[0], "the shot costs the bow at launch, with nothing to hit");
+    }
+
+    /**
+     * THE GATE, on the shape that needs it most. emberblade's Fireball and hunters_bow's shot are
+     * BOTH `type: projectile` -- the cast shape cannot tell them apart, only the payload can. An
+     * ability already spends energy; charging it durability as well bills one press twice.
+     *
+     * Delete the isBasicAttack gate and this reddens, together with the melee case below.
+     */
+    @Test
+    void anAbilityPayloadNeverChargesAUse() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+
+        var uses = new int[1];
+        cast(world, caster, ability(new CastSpec.Projectile(1.6, 0.03, 100), abilityPayload()),
+                () -> uses[0]++);
+
+        assertEquals(0, uses[0], "an ability spends energy, not durability");
+    }
+
+    /**
+     * The gate again, at the OTHER call site. Written separately because the two are separate
+     * `charges &&` conditions: gate the commit point and forget the connect point and only this
+     * one reddens. A melee ability (void_slash's shape) that connects must still cost no use.
+     */
+    @Test
+    void aMeleeAbilityNeverChargesAUseEvenOnConnect() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+        world.entities.add(new FakeWorld.Dummy(new Vec3(1, 0, 0)));
+
+        var uses = new int[1];
+        cast(world, caster, ability(new CastSpec.Melee(3, 120), abilityPayload()), () -> uses[0]++);
+
+        assertEquals(0, uses[0], "a melee ability that connects still spends no durability");
     }
 }
