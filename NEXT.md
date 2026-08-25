@@ -1157,6 +1157,22 @@ Before milestone 2, two things worth measuring rather than assuming:
   > `hurtEnemy` when the attack actually lands damage, and the suppressor brings the swing to 0 — but
   > that is again a story. Swing a weapon thirty times and read the durability bar; that settles it in
   > one observation, and it is worth doing while some other boot is already running.
+  >
+  > #### 2026-08-25 — MEASURED. The bar does not move.
+  >
+  > Taken on the Durability Pass 1 boot: **six iron golems, ~78 swings with a tagged weapon, zero
+  > durability charge** — the bar did not move at all. The standing question is answered on the axis
+  > that matters: **no wear accrues**, so `carryWear` copying a damage of 0 is the real steady state
+  > and not an artefact of a short test. Pass 1 adds no auto-wear either — its `/rpg durability`
+  > command is the only thing in the build that moves the value — so this still holds as shipped.
+  >
+  > Recorded as the observable, which is what the plan depends on. ~78 swings landing zero charge
+  > rules out "it charges slowly"; it does not by itself discriminate between the candidate
+  > mechanisms for *why* (vanilla charging only on the attack path our ANIMATION-packet route never
+  > takes, versus charging only when damage lands and the suppressor zeroing it). Pass 2 has to pick
+  > a wear trigger deliberately regardless, so the mechanism stops being load-bearing the moment
+  > wear is ours rather than inherited — which is exactly why this is now closed rather than left
+  > open as a story.
 - **The Lore Refresher's boot gate step 9 (the lower-durability clamp) is DEFERRED, un-runnable.**
   It needs a *worn* item whose material then changes to a lower-max material (iron 250 → gold 32), and
   per the correction above nothing wears items in the current build, so the case cannot be produced.

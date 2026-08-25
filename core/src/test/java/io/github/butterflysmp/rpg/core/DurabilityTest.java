@@ -62,6 +62,24 @@ class DurabilityTest {
     }
 
     @Test
+    void aClampedWeaponIsAlwaysBrokenBecauseBothFloorsAreTheSameValue() {
+        // The invariant boot gate 10's record ASSERTS in prose, pinned here so the prose cannot
+        // quietly stop being true. clamp() floors at max - MIN_USES and isBroken() fires at
+        // >= max - MIN_USES: the same value. So there is no clamped-but-usable state, by
+        // construction, and a re-mint onto a lower-maximum material always lands exactly on the
+        // broken floor -- useless until repaired, never destroyed. An earlier draft of that gate
+        // said "valid and not broken", which the arithmetic cannot produce; this is what stops
+        // anyone writing that again.
+        assertTrue(Durability.isBroken(Durability.clamp(9999, 32), 32),
+                "a clamped weapon is always broken; clamp floor and broken floor are both max - MIN_USES");
+        // The shipped materials, so the invariant is not an artefact of gold's small maximum.
+        assertTrue(Durability.isBroken(Durability.clamp(9999, IRON_SWORD), IRON_SWORD));
+        assertTrue(Durability.isBroken(Durability.clamp(9999, BOW), BOW));
+        // Mutation: decouple the two constants -- floor clamp at max - MIN_USES - 1, or move
+        // isBroken's threshold -- and a clamped weapon reads usable -> reddens.
+    }
+
+    @Test
     void aNonDamageableMaterialClampsToZeroRatherThanMinusOne() {
         // The guard in clamp, on its own. Without it the expression is min(max(x, 0), 0 - 1) == -1,
         // so every ember_staff and ability_stone would be written a NEGATIVE damage value. Asserted
