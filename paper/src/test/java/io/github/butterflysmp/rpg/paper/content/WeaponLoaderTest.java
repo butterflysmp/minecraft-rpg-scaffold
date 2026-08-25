@@ -467,9 +467,13 @@ class WeaponLoaderTest {
         assertEquals(WeaponClass.MELEE, weapon.weaponClass(), "ironblade declares class melee");
         assertEquals("ironblade/left_click", weapon.trigger("left_click").orElseThrow().ability().id());
 
-        // The melee damage is a STAT now: a top-level attack_damage, and a weapon_damage on_hit that
-        // reads it (no literal amount buried in the effect). This locks the promotion on the shipped file.
-        assertEquals(8, weapon.attackDamage(), 1e-9, "ironblade declares attack_damage 8");
+        // The melee damage is a STAT: a top-level attack_damage, and a weapon_damage on_hit that
+        // reads it (no literal amount buried in the effect). This locks the SHAPE of that promotion
+        // on the shipped file. The magnitude is balance and deliberately floats -- but > 0 is not
+        // decorative: the WeaponDamage check below holds for attack_damage: 0 too, which would be a
+        // sword that reads as a basic attack and deals nothing.
+        assertTrue(weapon.attackDamage() > 0,
+                "ironblade declares a melee damage stat for its weapon_damage swing to read");
         var swing = weapon.trigger("left_click").orElseThrow().ability().onHit().get(0);
         var weaponDamage = assertInstanceOf(EffectSpec.WeaponDamage.class, swing,
                 "the swing deals weapon_damage (the caster's stat), not a literal Damage");
@@ -503,7 +507,7 @@ class WeaponLoaderTest {
                 .map(EffectSpec.ThrowEmbers.class::cast)
                 .findFirst().orElseThrow(() -> new AssertionError("no throw_embers on the boot weapon"));
         assertEquals("blaze_powder", embers.itemId());
-        assertEquals(4.0, embers.burst().radius(), 1e-9);
+        assertTrue(embers.burst().radius() > 0, "the thrown ember bursts with a real radius");
     }
 
     /** The shipped emberblade: a free left-click and a costed right-click on one weapon. */
@@ -522,18 +526,22 @@ class WeaponLoaderTest {
         assertEquals("fire", weapon.element());
         assertEquals(Rarity.RARE, weapon.rarity());
 
-        // Free left-click swing -- weapon_damage reading the weapon's attack_damage stat (7).
+        // Free left-click swing -- weapon_damage reading the weapon's attack_damage stat.
         var left = weapon.trigger("left_click").orElseThrow().ability();
         assertEquals(ResourceCost.FREE, left.cost(), "the left-click swing is free");
         assertInstanceOf(CastSpec.Melee.class, left.cast());
-        assertEquals(7, weapon.attackDamage(), 1e-9, "emberblade declares attack_damage 7");
+        assertTrue(weapon.attackDamage() > 0,
+                "emberblade declares a melee damage stat for its weapon_damage swing to read");
         assertInstanceOf(EffectSpec.WeaponDamage.class, left.onHit().get(0),
                 "the swing deals weapon_damage; the costed special below keeps a literal");
 
         // Costed right-click special -- the shared-energy proof, at the content level.
         var right = weapon.trigger("right_click").orElseThrow().ability();
         assertEquals("energy", right.cost().resourceId());
-        assertEquals(40, right.cost().amount(), 1e-9);
+        // The amount is bounded, not pinned: 40 is balance. But it must be > 0, because
+        // ResourceCost.FREE is new ResourceCost("none", 0) -- a plain record, not a sentinel -- so a
+        // degenerate `energy: 0` is NOT equal to FREE and would slip past the resourceId check above.
+        assertTrue(right.cost().amount() > 0, "the special is costed, not free");
         assertInstanceOf(CastSpec.Projectile.class, right.cast());
     }
 
@@ -559,18 +567,25 @@ class WeaponLoaderTest {
         var shot = weapon.trigger("right_click").orElseThrow().ability();
         assertEquals(ResourceCost.FREE, shot.cost(), "the shot is free -- the bow carries the damage");
         assertInstanceOf(CastSpec.Projectile.class, shot.cast());
-        assertEquals(15, shot.cooldownTicks(), "cooldown is the fire rate");
+        // The fire rate (cooldown_ticks) is deliberately NOT asserted: it is pure balance, and no
+        // bound is defensible either, since ability_stone ships cooldown_ticks: 0. The three
+        // properties this block is about -- on right_click, free, projectile -- are the three above.
 
-        // The shot is a STAT-READING basic attack, not a literal: attack_damage 6 on the weapon,
-        // and a weapon_damage payload that reads it back. This is what makes a "+N Ranged Damage"
-        // modifier have something to grip, and what earns the shot attack-speed scaling.
-        assertEquals(6, weapon.attackDamage(), 1e-9, "hunters_bow declares attack_damage 6");
+        // The shot is a STAT-READING basic attack, not a literal: an attack_damage stat on the
+        // weapon, and a weapon_damage payload that reads it back. This is what makes a "+N Ranged
+        // Damage" modifier have something to grip, and what earns the shot attack-speed scaling.
+        //
+        // The magnitude floats, but > 0 is load-bearing rather than decorative: DamagePayload maps a
+        // WeaponDamage effect to WEAPON_STAT regardless of the number (isBasicAttack passes 0.0
+        // outright), so the two assertions below would BOTH still pass on attack_damage: 0 -- a bow
+        // that renders as a basic attack, gets attack-speed scaled, and deals nothing.
+        assertTrue(weapon.attackDamage() > 0, "hunters_bow declares a ranged damage stat to read");
         assertTrue(DamagePayload.isBasicAttack(shot.onHit()),
                 "the bow's shot must be a basic attack, behind its leading visual");
         assertEquals(DamagePayload.DamageSource.WEAPON_STAT,
                 DamagePayload.of(shot.onHit(), weapon.attackDamage()).orElseThrow().source(),
                 "the amount comes from the stat, not a literal amount: in content");
-        assertEquals(List.of("A swift arrow wreathed in flame."), weapon.flavor(),
+        assertFalse(weapon.flavor().isEmpty(),
                 "the trigger's old description now renders as weapon flavour");
     }
 
@@ -592,7 +607,7 @@ class WeaponLoaderTest {
         // COSTED, unlike the bow's free shot -- the Mage spends energy to deal damage.
         var shot = weapon.trigger("right_click").orElseThrow().ability();
         assertEquals("energy", shot.cost().resourceId());
-        assertEquals(30, shot.cost().amount(), 1e-9);
+        assertTrue(shot.cost().amount() > 0, "the bolt is costed, not free");   // magnitude is balance
         assertInstanceOf(CastSpec.Projectile.class, shot.cast());
     }
 

@@ -368,7 +368,15 @@ class AbilityLoaderTest {
 
         AbilityDefinition def = registry.find("solar_grenade").orElseThrow();
         assertEquals("fire", def.element());
-        assertEquals(200, def.cooldownTicks());
+        // Bounded, not pinned: 200 is balance. The bound is still real -- an ability with no
+        // cooldown is spammable, and no shipped ability declares one.
+        //
+        // Note this is deliberately NOT symmetric with the bow's fire rate in WeaponLoaderTest,
+        // which asserts nothing at all: ability_stone ships `cooldown_ticks: 0` on purpose (a dev
+        // instrument you spam while tuning), so "> 0" is a real invariant for an ABILITY and not one
+        // for a WEAPON TRIGGER. If a cost-gated 0-cooldown ability is ever wanted, delete this line
+        // then -- as a deliberate call, not as a tidy-up of an apparent inconsistency.
+        assertTrue(def.cooldownTicks() > 0, "a shipped ability declares a cooldown");
         assertEquals("energy", def.cost().resourceId());
 
         // The blast: splash damage plus the ignition, on the detonation frame.
@@ -421,12 +429,14 @@ class AbilityLoaderTest {
                 .filter(EffectSpec.ThrowEmbers.class::isInstance)
                 .map(EffectSpec.ThrowEmbers.class::cast)
                 .findFirst().orElseThrow(() -> new AssertionError("no throw_embers: the ember fan is gone"));
-        assertEquals(List.of(0.0, 40.0, -40.0), embers.anglesDegrees());
+        // A three-prong fan. The SPREAD is tuned by feel (the YAML says so), so only the prong
+        // count is pinned -- dropping to one ember is a design change, widening to 50 degrees is not.
+        assertEquals(3, embers.anglesDegrees().size(), "a three-prong ember fan");
         assertEquals("blaze_powder", embers.itemId());
         assertTrue(embers.fuseTicks() >= 1, "fuse must be a positive number of ticks");
         assertEquals("ember_burst", embers.visual());
         // The detonation carries the mob-only burn: damage + scorch.
-        assertEquals(4.0, embers.burst().radius(), 1e-9);
+        assertTrue(embers.burst().radius() > 0, "the detonation bursts with a real radius");
         assertInstanceOf(EffectSpec.Damage.class, embers.burst().effects().get(0));
         assertInstanceOf(EffectSpec.Status.class, embers.burst().effects().get(1));
     }
