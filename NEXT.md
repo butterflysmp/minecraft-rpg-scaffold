@@ -1140,9 +1140,38 @@ Before milestone 2, two things worth measuring rather than assuming:
   (`WeaponItems.carryWear`) so it stays strictly display-only: resetting it would silently repair
   every weapon on every login, which is a relog-to-repair exploit *and* a balance decision made as a
   side effect of a presentation pass. Carrying it forward forecloses nothing — if weapons later mint
-  `Unbreakable`, the carry-forward quietly becomes a no-op. Vanilla wear currently accrues untouched:
-  nothing in the codebase sets `Unbreakable` or reads `Damageable`, and the melee suppressor zeroes
-  a swing's *damage*, not the durability the swing costs.
+  `Unbreakable`, the carry-forward quietly becomes a no-op. Nothing in the codebase sets
+  `Unbreakable` or reads `Damageable` (verified: no `setDamage` / `Damageable` / `setUnbreakable`
+  anywhere in `paper/src/main` or `core/src/main`), so wear is entirely vanilla's business.
+
+  > #### 2026-08-24 — "vanilla wear accrues untouched" was an assumption, and the boot contradicted it
+  >
+  > This entry originally asserted that wear accrues because "the melee suppressor zeroes a swing's
+  > *damage*, not the durability the swing costs." That was reasoning, not a measurement, and the
+  > lore-refresher boot found the opposite: **nothing wears items today.** Melee is packet-driven and
+  > bypasses vanilla's durability charge, so `carryWear` currently copies a damage of 0 and its clamp
+  > `min(0, max-1)` is trivially satisfied. The carry-forward is correct and inert, not load-bearing.
+  >
+  > What this does NOT settle, and should be measured rather than re-reasoned when the durability
+  > pass starts: *why* the charge is skipped. The plausible story is that vanilla only calls
+  > `hurtEnemy` when the attack actually lands damage, and the suppressor brings the swing to 0 — but
+  > that is again a story. Swing a weapon thirty times and read the durability bar; that settles it in
+  > one observation, and it is worth doing while some other boot is already running.
+- **The Lore Refresher's boot gate step 9 (the lower-durability clamp) is DEFERRED, un-runnable.**
+  It needs a *worn* item whose material then changes to a lower-max material (iron 250 → gold 32), and
+  per the correction above nothing wears items in the current build, so the case cannot be produced.
+  Deliberately not held against the refresher: the clamp is correct, inert, and cheap insurance
+  against a real data-loss bug (an item copied to a damage value past its new maximum is a *broken*
+  item). **Boot-witnessing the clamp is the first gate of the durability pass** — same wear axis,
+  exactly where it belongs. Steps 4, 5 and 7 were witnessed and are recorded with that pass.
+
+  There is no existing dev path to force wear: no `/rpg` subcommand mutates an item, and nothing in
+  the plugin touches `Damageable`. The candidate that needs no new code is a forged item via vanilla
+  `/give` — PDC `STRING`s live in `minecraft:custom_data` and the plugin's namespace is `rpg`, so
+  `/give @s iron_sword[minecraft:custom_data={"rpg:weapon_id":"emberblade"},minecraft:damage=200]`
+  *should* mint a pre-worn tagged weapon. Unverified. If it is tried, `/rpg refresh`'s **count** is
+  the diagnostic that keeps a failed forge from being misread as a broken refresher: `0` means the
+  tag never round-tripped, `1` means it did and the re-mint ran.
 - **The refresher's coverage boundary: `getContents()` does not reach the ender chest or the inside
   of a shulker box.** The scan walks a PlayerInventory's 41 slots — storage, hotbar, armour, offhand
   — so a weapon stashed in an ender chest or boxed up refreshes only once it is back in the main
