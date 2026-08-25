@@ -1172,6 +1172,46 @@ Before milestone 2, two things worth measuring rather than assuming:
   *should* mint a pre-worn tagged weapon. Unverified. If it is tried, `/rpg refresh`'s **count** is
   the diagnostic that keeps a failed forge from being misread as a broken refresher: `0` means the
   tag never round-tripped, `1` means it did and the re-mint ran.
+
+  > #### 2026-08-25 — step 7 was witnessed, but NOT by the procedure the gate described
+  >
+  > The gate said *"delete `emberblade.yml`, restart, relog"*. **That cannot run.** Every shipped
+  > weapon is pinned to the classpath by at least two tests, so deleting any of them reddens the
+  > suite and `dev-server.sh` aborts on `set -euo pipefail` (`:13`) before it boots. `emberblade.yml`
+  > alone is asserted by `WeaponLoaderTest:513`, `WeaponLoaderTest:616` (the three-weapon loop, which
+  > also pins `registry.size() == 3` at `:623`) and `WeaponLoreTest:345`. The step was unreachable
+  > rather than merely awkward, and it sat in the PR body looking runnable — which is the failure
+  > worth recording, not the deletion itself.
+  >
+  > Witnessed instead with a **throwaway weapon**: add a minimal `testdangle.yml` (only `class:` and a
+  > `triggers:` section are required, and the id is the *filename*), `/rpg give testdangle`, delete
+  > the file, rebuild, `--refresh-content`, relog. The warn-once line appeared and the item survived
+  > untouched. The fixture was never committed.
+  >
+  > **`--refresh-content` is load-bearing on that second boot.** `saveResource(path, false)` never
+  > *removes*, so without the flag's `rm -rf "$CONTENT_DIR"` the stale deployed copy still loads, the
+  > id never dangles, and the gate passes having tested nothing.
+  >
+  > The asymmetry that makes this work is worth keeping for the next fixture: **nothing in the repo
+  > resolves `content/weapons` as a directory** — every test names its ids explicitly — so an *added*
+  > file is invisible to the suite while a *deleted* one is not. Note that
+  > `WeaponLoreTest.everyShippedWeaponRendersAgainstTheShippedElements` reads as though it scans and
+  > does not; it is a hardcoded five-id array, and its own javadoc names the trap without closing it.
+- **`/rpg refresh` reports the opposite of what the `Dangling` verdict decided.** Carrying only a
+  dangling item, the count is 0 — `refreshed++` lives in the `Remint` arm alone
+  (`WeaponRefresher.java:71`) — so the command says *"Refreshed 0 weapons -- you are carrying none of
+  ours."* That is **false**: the item *is* ours, which is exactly what `RefreshVerdictTest:88-89`
+  pins (*"it IS ours -- silently skipping it would hide a real content break"*). The verdict draws
+  the distinction and the chat line collapses it. The truth reaches the console once via `warnOnce`,
+  so a *second* `/rpg refresh` prints the misleading line with no warning beside it at all.
+
+  Surfaced by the step-7 boot on 2026-08-25, where carrying an ironblade *alongside* the dangling
+  item was what made the count mean anything — `1` rather than `0` proves the scan ran and then
+  deliberately declined to touch the dangling slot. Without that, "found nothing" and "did nothing"
+  are the same observation, which is the trap the count exists to close.
+
+  The fix is a third message ("N refreshed, M unknown"). Not taken in #12: it is a behaviour change
+  to a shipped command, and #12 was closing a documentation gap.
 - **The refresher's coverage boundary: `getContents()` does not reach the ender chest or the inside
   of a shulker box.** The scan walks a PlayerInventory's 41 slots — storage, hotbar, armour, offhand
   — so a weapon stashed in an ender chest or boxed up refreshes only once it is back in the main
