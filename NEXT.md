@@ -1333,6 +1333,15 @@ Before milestone 2, two things worth measuring rather than assuming:
   has no meaning for them; they would need their own mechanism. They are therefore **not** the
   natural next target for the refresher. (Distinct from `rooted_TEMP` / `soaked_TEMP` above, which
   are YAML status effects carrying no PDC and no item at all.)
+- **MAINTENANCE, OUTSTANDING: Paper 26.1.2 → 26.2, gated on PacketEvents supporting 26.2.** The
+  Durability Pass 2 boot (2026-08-25) warned *"you are 2 release(s) behind the latest stable release
+  (26.2)"* — which is upgrade-step-0 (*"Notice the release. Nothing does this for you"*) actually
+  happening, by accident, because a boot printed it. Recorded here so the next person reads it
+  rather than re-noticing it. Follow `CLAUDE.md`'s order: check
+  <https://modrinth.com/plugin/packetevents/versions> first, bump `packetevents.version` and confirm
+  it builds, then `paper.version`, then `./mvnw -pl core test` (a `core` break on a Paper bump means
+  `core` has an illegal dependency — that is the real bug), then boot and smoke-test one ability.
+  Per D4 there is no bot, by decision, so this line IS the notification.
 
 ---
 
