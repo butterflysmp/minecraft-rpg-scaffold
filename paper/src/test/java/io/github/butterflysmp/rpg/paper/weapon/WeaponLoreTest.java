@@ -11,7 +11,10 @@ import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
+import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.paper.content.ElementDefinition;
+import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
+import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
 import io.github.butterflysmp.rpg.paper.content.ElementLoader;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.content.WeaponLoader;
@@ -358,5 +361,41 @@ class WeaponLoreTest {
         Component elementLine = lore.get(0);
         assertEquals("Fire", textOf(elementLine), "falls back to the title-cased id");
         assertEquals(NamedTextColor.GRAY, colorOf(elementLine));
+    }
+
+    @Test
+    void theRarityFooterIsStillLastOnceAnEnchantBlockIsApplied() {
+        // The enchant block is prepended at index 0 specifically so this stays true. The footer's
+        // "always last" promise is what a player reads a weapon's tier off, and an enchant block
+        // appended to the end would quietly push it up one line on every enchanted weapon.
+        EnchantRegistry enchants = new EnchantRegistry();
+        enchants.register(new EnchantDefinition("unbreaking", "Unbreaking", 3));
+        EnchantState state = EnchantState.empty()
+                .addCandidate(0, "unbreaking").withLevel(0, 0, 3).withActive(0, 0);
+
+        List<Component> base = WeaponLore.build(rareFireSword(), elementsWithFire());
+        List<Component> lore = EnchantLore.applied(base, EnchantLore.lines(state, enchants));
+
+        assertEquals("Unbreaking III", textOf(lore.get(0)), "the enchant block leads");
+        assertEquals("Rare Melee Weapon", textOf(lore.get(lore.size() - 1)),
+                "and the rarity footer is still the last line");
+        assertEquals(RarityColors.of(Rarity.RARE), colorOf(lore.get(lore.size() - 1)),
+                "still in its tier's colour");
+        // Mutation: append the enchant block instead of prepending -> the footer is no longer last
+        // -> reddens.
+    }
+
+    @Test
+    void aWeaponWithNoActiveEnchantRendersExactlyTheLoreItAlwaysDid() {
+        // The regression guard for EVERY unenchanted weapon in the game -- which today is all of
+        // them. Threading an enchant applier through mint() must be a strict no-op when there is
+        // nothing active, down to the absence of a leading blank line.
+        List<Component> base = WeaponLore.build(rareFireSword(), elementsWithFire());
+        List<Component> applied = EnchantLore.applied(
+                base, EnchantLore.lines(EnchantState.empty(), new EnchantRegistry()));
+
+        assertEquals(textLines(base), textLines(applied));
+        // Mutation: always insert the blank separator -> every plain weapon grows a leading empty
+        // line -> reddens.
     }
 }

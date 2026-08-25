@@ -108,7 +108,7 @@ public final class WeaponFire {
                 // synchronously within execute(). Both halves of that are load-bearing.
                 adapters.scheduler().onRegion(eye, () ->
                         new CastExecutor(new PaperCombatWorld(player.getWorld(), adapters),
-                                () -> WeaponDurability.applyWearOnUse(player, cooldowns))
+                                () -> WeaponDurability.applyWearOnUse(player, adapters.keys(), cooldowns))
                                 .execute(toRun));
             }
         });
