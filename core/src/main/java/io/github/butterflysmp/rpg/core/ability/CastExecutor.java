@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core.ability;
 
 import io.github.butterflysmp.rpg.core.Vec3;
+import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectApplier;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.Caster;
@@ -35,9 +36,35 @@ public final class CastExecutor {
     private final CombatWorld world;
     private final EffectApplier effects;
 
+    /**
+     * Notified each time a BASIC ATTACK is USED. Default no-op, so a caster with nothing to charge
+     * -- an ability cast from a command, every existing test -- needs no listener and no change.
+     */
+    private final Runnable onBasicAttackUse;
+
     public CastExecutor(CombatWorld world) {
+        this(world, () -> {});
+    }
+
+    /**
+     * With a listener for basic-attack use. WHEN it fires is decided in {@link #execute}, beside
+     * the connect/commit logic, so the whole "what costs a use and when" rule reads in one place.
+     * WHAT a use costs is the caller's business -- in production a durability charge against the
+     * caster's held item, which core neither has nor should.
+     *
+     * <p><b>THREADING -- do not move either call site.</b> This may only ever be run
+     * SYNCHRONOUSLY within {@code execute}, and both calls are. {@code execute} is entered on the
+     * thread owning the aim's origin, which for a weapon is the caster's own eye, so anything
+     * synchronous there is on the caster's thread. A scheduled continuation is NOT: a projectile
+     * impact resolves on the TARGET'S region, a ray's later segments on whatever regions they
+     * cross, an area's pulse a second later. Running this from one of those would write the
+     * caster's inventory from a foreign thread -- the exact bug the snapshot/handle split exists
+     * to prevent.
+     */
+    public CastExecutor(CombatWorld world, Runnable onBasicAttackUse) {
         this.world = world;
         this.effects = new EffectApplier(world);
+        this.onBasicAttackUse = onBasicAttackUse;
     }
 
     public void execute(AbilityService.CastResult.Success success) {
@@ -51,6 +78,20 @@ public final class CastExecutor {
         // an area's pulse both resolve on somebody else's region.
         Caster source = Caster.of(caster);
 
+        // WHAT COSTS A USE, AND WHEN -- the whole rule, here, rather than left to each caller to
+        // remember. Only a BASIC ATTACK charges: an ability already spends energy, and charging it
+        // as well would bill one press twice. The gate is structural for the same reason
+        // Durability's maxDurability <= 0 guard is -- it is the ONLY thing separating the two
+        // shipped projectiles from each other. hunters_bow's shot and emberblade's Fireball are
+        // both `type: projectile`; nothing about the cast shape tells them apart, so a check left
+        // to the wiring is a check a future call site can forget.
+        boolean charges = DamagePayload.isBasicAttack(ability.onHit());
+
+        // A melee use is charged on CONNECT (in the Melee arm below); every other shape is charged
+        // at COMMIT, here. An arrow costs the bow whether or not it lands, like vanilla; a swing
+        // that touches nothing is free.
+        if (charges && !(ability.cast() instanceof CastSpec.Melee)) onBasicAttackUse.run();
+
         switch (ability.cast()) {
             // The caster is their own target: heals, buffs, self-detonations. Their handle
             // is fetched here rather than carried in the Success, which holds a snapshot.
@@ -63,6 +104,10 @@ public final class CastExecutor {
                 Combatant target = meleeTarget(caster, aim, melee);
                 Vec3 impact = target != null ? target.state().position() : aim.pointAt(melee.reach());
                 detonate(ability, source, target, impact);
+                // ONCE per connecting swing. Outside detonate deliberately: a payload that splashes
+                // -- a Burst catching five bodies -- is still ONE use, matching vanilla. Move this
+                // inside the effect's per-entity loop and a sweep bills per body.
+                if (charges && target != null) onBasicAttackUse.run();
             }
 
             case CastSpec.Ray ray -> launchRay(ability, source, aim, ray.range());
