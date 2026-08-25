@@ -18,6 +18,7 @@ import io.github.butterflysmp.rpg.core.kit.KitRegistry;
 import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
+import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
@@ -32,6 +33,7 @@ import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.DashAim;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponClassLabel;
+import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponRefresher;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
@@ -55,6 +57,7 @@ import org.bukkit.util.Vector;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 
@@ -179,6 +182,33 @@ public final class RpgCommand {
                             }
                             return refresh(player, weapons, adapters);
                         }))
+                // Durability dev instruments. /rpg repair stands in for a real repair economy
+                // (anvil UI, materials); /rpg durability is the WEAR SOURCE this pass needs, since
+                // nothing wears items in play yet -- auto-wear is Pass 2's balance question. It is
+                // also what finally makes #12's deferred step-9 clamp boot-witnessable.
+                //
+                // The <amount> bounds are a correctness guard, not tidiness. Durability.wear is
+                // overflow-hardened by its long widening; Durability.repair is NOT, and a negative
+                // amount there is current - (-n) == current + n, which overflows int and lands on a
+                // full repair. Bounding the arg keeps that guard out of the pure kernel. `set`
+                // takes integer(0) because 0 is meaningful there -- it IS fully repaired.
+                .then(Commands.literal("repair")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> durability(ctx, adapters, DurabilityOp.SET, 0)))
+                .then(Commands.literal("durability")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .then(Commands.literal("damage")
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                                        .executes(ctx -> durability(ctx, adapters, DurabilityOp.DAMAGE,
+                                                IntegerArgumentType.getInteger(ctx, "amount")))))
+                        .then(Commands.literal("repair")
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                                        .executes(ctx -> durability(ctx, adapters, DurabilityOp.REPAIR,
+                                                IntegerArgumentType.getInteger(ctx, "amount")))))
+                        .then(Commands.literal("set")
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                        .executes(ctx -> durability(ctx, adapters, DurabilityOp.SET,
+                                                IntegerArgumentType.getInteger(ctx, "amount"))))))
                 // A dev instrument: apply any loaded status, at any stack count and duration,
                 // to the mob you are aiming at -- bypassing the class/element/kit gate, which is
                 // exactly why it is DEV-gated. It reuses the same applyStatus seam an ability
@@ -585,6 +615,78 @@ public final class RpgCommand {
         return 1;
     }
 
+    /** Which direction {@link #durability} moves the held weapon's wear. */
+    private enum DurabilityOp { DAMAGE, REPAIR, SET }
+
+    /**
+     * Move the held weapon's durability, for testing. The wear source Pass 1 needs: nothing wears
+     * items in play yet, so without this the break gate and #12's step-9 clamp cannot be produced
+     * in-game at all.
+     *
+     * Every value goes through the core kernel, so {@code damage} past the floor CLAMPS rather than
+     * destroying the item -- this command cannot break the promise it exists to test.
+     *
+     * Hops to the player's own thread before touching the inventory. A command runs on the command
+     * thread, not the player's region thread, which is the contract {@code WeaponRefresher.refresh}
+     * states and {@code /rpg refresh} honours.
+     *
+     * Reports the resulting numbers rather than "done", for the same reason {@code /rpg refresh}
+     * reports a count: a no-op and a success must not read alike. The uses-left figure is what the
+     * boot gate reads back off the durability bar.
+     */
+    private static int durability(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                                  DurabilityOp op, int amount) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(
+                    Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+
+        adapters.scheduler().onEntity(player, () -> {
+            ItemStack held = player.getInventory().getItemInMainHand();
+
+            // Scope: only our weapons. An untagged vanilla item is not this command's business,
+            // the same boundary the gates draw.
+            if (WeaponItems.weaponId(held, adapters.keys()).isEmpty()) {
+                player.sendMessage(Component.text(
+                        "Hold one of our weapons.", NamedTextColor.RED));
+                return;
+            }
+
+            // A non-Damageable material reports rather than erroring: ember_staff (blaze_rod) and
+            // ability_stone (amethyst_shard) have no durability by design, and "no durability" is
+            // the correct answer, not a failure.
+            OptionalInt max = WeaponDurability.maxOf(held);
+            if (max.isEmpty()) {
+                player.sendMessage(Component.text(
+                        held.getType().name().toLowerCase(Locale.ROOT)
+                                + " has no durability -- it can never break.",
+                        NamedTextColor.YELLOW));
+                return;
+            }
+
+            int damage = switch (op) {
+                case DAMAGE -> WeaponDurability.wear(held, amount);
+                case REPAIR -> WeaponDurability.repair(held, amount);
+                case SET -> WeaponDurability.set(held, amount);
+            };
+            // Write the stack back explicitly rather than relying on the main-hand read being a
+            // live mirror, and follow WeaponRefresher's habit of an explicit set. updateInventory
+            // makes the bar move now rather than at the client's next sync.
+            player.getInventory().setItemInMainHand(held);
+            player.updateInventory();
+
+            int maximum = max.getAsInt();
+            boolean broken = Durability.isBroken(damage, maximum);
+            player.sendMessage(Component.text(
+                    "%d/%d uses left (damage %d)%s".formatted(
+                            maximum - damage, maximum, damage, broken ? " -- BROKEN" : ""),
+                    broken ? NamedTextColor.YELLOW : NamedTextColor.GREEN));
+        });
+        return 1;
+    }
+
+
 
     private static int cast(Player player, String abilityId, AbilityService abilityService,
                             AdapterContext adapters, ProfileService profiles) {
@@ -660,6 +762,13 @@ public final class RpgCommand {
                     player.sendMessage(Component.text(
                             "Your kit has not unlocked " + locked.id() + ".", NamedTextColor.YELLOW));
                 }
+                return 0;
+            }
+            case AbilityService.CastResult.Broken ignored -> {
+                // Unreachable: /rpg cast goes through AbilityService, which never reads a weapon,
+                // and Broken is minted only by WeaponFire.attempt off a held item's durability. The
+                // arm exists because CastResult is sealed and this switch has no default -- which
+                // is precisely how adding Broken forced every caller to decide what it means.
                 return 0;
             }
         }

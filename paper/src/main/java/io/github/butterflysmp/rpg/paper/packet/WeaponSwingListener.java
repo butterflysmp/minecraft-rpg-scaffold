@@ -6,9 +6,12 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.protocol.player.InteractionHand;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientAnimation;
+import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
+import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
+import io.github.butterflysmp.rpg.paper.weapon.BrokenNotice;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import org.bukkit.entity.Player;
 
@@ -37,13 +40,15 @@ public final class WeaponSwingListener extends PacketListenerBase {
     private final AdapterContext adapters;
     private final WeaponRegistry weapons;
     private final WeaponService weaponService;
+    private final CooldownTracker cooldowns;
 
     public WeaponSwingListener(AdapterContext adapters, WeaponRegistry weapons,
-                               WeaponService weaponService) {
+                               WeaponService weaponService, CooldownTracker cooldowns) {
         super(adapters.scheduler(), PacketListenerPriority.NORMAL);
         this.adapters = adapters;
         this.weapons = weapons;
         this.weaponService = weaponService;
+        this.cooldowns = cooldowns;
     }
 
     @Override
@@ -77,8 +82,17 @@ public final class WeaponSwingListener extends PacketListenerBase {
      * weapon_id reject happens -- reading the held item is a Bukkit call -- and it is
      * delegated to WeaponFire, shared with the right-click handler. Silent: a swing that
      * lands nothing because you are mid-cooldown or out of energy does not deserve chat spam.
+     *
+     * BROKEN is the one outcome that speaks, and it is the reason this method now reads the result
+     * at all rather than discarding it. The compiler does NOT catch this: adding an arm to the
+     * sealed CastResult breaks the two exhaustive switches, but an ignored Optional is not a
+     * switch, so a broken weapon would be silently cancelled here and the player would be left
+     * swinging a sword that does nothing with no explanation. Every other outcome stays silent,
+     * which is what preserves the swing-silence above.
      */
     private void onSwing(Player player) {
-        WeaponFire.attempt(player, "left_click", weapons, weaponService, adapters);
+        WeaponFire.attempt(player, "left_click", weapons, weaponService, adapters)
+                .filter(CastResult.Broken.class::isInstance)
+                .ifPresent(broken -> BrokenNotice.notify(player, cooldowns));
     }
 }

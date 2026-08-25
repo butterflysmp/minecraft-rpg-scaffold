@@ -13,6 +13,8 @@ import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
+import io.github.butterflysmp.rpg.paper.weapon.BrokenNotice;
+import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponRefresher;
 import net.kyori.adventure.text.Component;
@@ -156,6 +158,17 @@ public final class RpgListeners implements Listener {
                     // whether the special fired or was refused -- the player pressed the special.
                     event.setCancelled(true);
 
+                    // BROKEN is handled BEFORE the basic-attack silence below, and that ordering is
+                    // the whole reason the bow reports at all: hunters_bow's shot is a
+                    // weapon_damage basic attack, so firesABasicAttack returns early and the switch
+                    // is never reached. A broken weapon must always say so -- doing nothing without
+                    // an explanation reads as a bug -- so it bypasses the silence and relies on
+                    // BrokenNotice's throttle to keep held input from spamming chat.
+                    if (result instanceof CastResult.Broken) {
+                        BrokenNotice.notify(event.getPlayer(), cooldowns);
+                        return;
+                    }
+
                     // A deliberate press deserves feedback, unlike the silent left-click swing --
                     // EXCEPT when the right-click IS the basic attack. The bow's shot is bound to
                     // right_click only so that binding it suppresses the vanilla draw; mechanically
@@ -185,6 +198,8 @@ public final class RpgListeners implements Listener {
                         // so these cannot occur -- but the switch stays exhaustive over CastResult.
                         case CastResult.UnknownAbility ignored -> { }
                         case CastResult.Locked ignored -> { }
+                        // Handled above, ahead of the basic-attack silence, so the bow reports too.
+                        case CastResult.Broken ignored -> { }
                     }
                 });
     }
@@ -277,9 +292,19 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler
     public void onPlayerMeleeAttack(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player)) return;             // player-initiated
+        if (!(event.getDamager() instanceof Player attacker)) return;    // player-initiated
         if (!(event.getEntity() instanceof LivingEntity victim)) return;
         if (victim instanceof Player) return;                            // player->mob only (Pass 2 = mob->player)
+
+        // A BROKEN weapon must be inert, and this handler is the one that would otherwise leak a
+        // cosmetic hit past the gate: it never reads a weapon, so the packet path being cancelled
+        // still leaves the mob flashing red and playing the hurt sound. Cancelling outright also
+        // drops knockback and i-frames, which is correct -- a weapon that deals nothing should not
+        // stagger anything. Scoped by weapon_id, so an untagged vanilla sword is untouched.
+        if (WeaponDurability.isHeldWeaponBroken(attacker, adapters.keys())) {
+            event.setCancelled(true);
+            return;
+        }
 
         event.setDamage(TOKEN_DAMAGE);                                   // flash + i-frames, no double-damage
         if (adapters.stats().tracks(victim.getUniqueId())

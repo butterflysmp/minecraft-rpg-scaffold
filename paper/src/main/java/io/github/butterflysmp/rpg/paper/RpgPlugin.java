@@ -192,7 +192,7 @@ public final class RpgPlugin extends JavaPlugin {
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new ExampleTelegraphListener(scheduler));
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new WeaponSwingListener(adapters, weapons, weaponService));
+                .registerListener(new WeaponSwingListener(adapters, weapons, weaponService, cooldowns));
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
