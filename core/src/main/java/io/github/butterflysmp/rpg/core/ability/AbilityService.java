@@ -81,6 +81,23 @@ public final class AbilityService {
          * who cannot cast never trips a cooldown or spends energy.
          */
         record Locked(String id) implements CastResult {}
+
+        /**
+         * The weapon binds this trigger, but the weapon is BROKEN -- worn to its floor and inert
+         * until repaired. An RPG weapon is never destroyed, so "broken" is a state a gate reads
+         * rather than an item that is gone; see {@code core.weapon.Durability}.
+         *
+         * The only arm minted OUTSIDE this class. {@code AbilityService} never returns it: deciding
+         * it needs the held item's durability, and core cannot read an ItemStack. Paper's
+         * {@code WeaponFire.attempt} mints it, after resolving that the weapon binds the input and
+         * BEFORE any cooldown or resource is touched -- same standing as {@link Locked}, so a broken
+         * weapon spends nothing and trips no cooldown.
+         *
+         * It lives in this sealed interface anyway, rather than being a paper-local signal, so the
+         * two exhaustive switches over CastResult must handle it or fail to compile. A refusal the
+         * caller can forget to render is a weapon that silently does nothing.
+         */
+        record Broken() implements CastResult {}
     }
 
     /**

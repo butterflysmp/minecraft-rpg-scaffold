@@ -27,6 +27,11 @@ import java.util.Optional;
  * shared check-spend-commit tail owns that atomically. A caller must not gate either, or a
  * fast input double-spends through the check-then-fire window.
  *
+ * DURABILITY is the one exception, and it is not that kind of race: a broken weapon stays broken
+ * for the whole tick and spends nothing, so there is no check-then-fire window to double-spend
+ * through. It is gated HERE rather than in each caller precisely so the packet swing and the
+ * interact handler cannot drift apart on what "broken" means.
+ *
  * MUST be called on the thread that owns the player: BukkitCombatant.snapshot enforces it,
  * and CastExecutor.execute is scheduled onto the aim's owning region from there. The swing
  * listener reaches that thread via its Netty hop; the interact handler is already on it.
@@ -41,9 +46,11 @@ public final class WeaponFire {
      * @return empty if the player holds no weapon of ours, or the weapon has no binding for
      *         {@code input} -- in which case nothing was checked, spent, or cancelled, and a
      *         caller should leave vanilla behaviour untouched. Otherwise the fired trigger's
-     *         result (Success already executed, or OnCooldown / InsufficientResource), for
-     *         the caller to react to. Presence means "this weapon binds this input", which is
-     *         exactly the per-trigger signal the right-click handler cancels vanilla on.
+     *         result (Success already executed, or OnCooldown / InsufficientResource / Broken),
+     *         for the caller to react to. Presence means "this weapon binds this input", which is
+     *         exactly the per-trigger signal the right-click handler cancels vanilla on -- and it
+     *         is why Broken is a present result rather than an empty one: the press must still be
+     *         consumed, or a broken weapon would fall through to vanilla behaviour.
      */
     public static Optional<CastResult> attempt(Player player, String input,
                                                WeaponRegistry weapons,
@@ -53,6 +60,21 @@ public final class WeaponFire {
                 .flatMap(weapons::find);
         if (held.isEmpty()) return Optional.empty();
         WeaponDefinition weapon = held.get();
+
+        // Only a trigger this weapon actually BINDS may be gated below. Without this an ironblade,
+        // which binds no right_click, would return present on right-click once broken and the
+        // interact handler would cancel vanilla -- doors and chests would stop working with it in
+        // hand. weaponService.fire answers the same question a few lines down; asking it early is
+        // what keeps the broken gate from widening the set of inputs this weapon consumes.
+        if (weapon.trigger(input).isEmpty()) return Optional.empty();
+
+        // THE BROKEN GATE, for both entry points at once -- the packet swing and the interact
+        // handler both arrive here. Before the snapshot and before weaponService.fire, so a broken
+        // weapon spends no resource and trips no cooldown; same standing as Locked. The weapon_id
+        // is already proven by the lookup above, so this asks the item's durability only.
+        if (WeaponDurability.isBroken(player.getInventory().getItemInMainHand())) {
+            return Optional.of(new CastResult.Broken());
+        }
 
         Location eye = player.getEyeLocation();
         Aim aim = new Aim(toVec3(eye), toVec3(eye.getDirection()));

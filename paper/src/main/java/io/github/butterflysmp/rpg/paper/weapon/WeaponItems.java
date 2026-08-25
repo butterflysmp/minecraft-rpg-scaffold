@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -214,13 +215,18 @@ public final class WeaponItems {
      * in the other direction -- iron (250) to gold (32) -- would copy a damage value past the new
      * maximum, and an item damaged beyond its maximum is a BROKEN item. Without the clamp, a
      * DISPLAY refresh could destroy a player's weapon outright: the exact class of failure this
-     * pass exists to avoid, arriving through the fix rather than the bug. Clamped to max-1, so the
-     * worst case is a weapon one hit from breaking rather than one that is already gone.
+     * pass exists to avoid, arriving through the fix rather than the bug.
+     *
+     * The clamp ITSELF is not here: it is {@link Durability#clamp}, the same floor the durability
+     * pass's break gate and its dev commands apply. One definition of "a damage value that never
+     * destroys the item", unit-tested in core, rather than a second copy of the arithmetic living
+     * in a method no unit test can reach (an ItemStack needs a running server). This method keeps
+     * only the item I/O. Worst case is a weapon one use from broken rather than one already gone.
      */
     private static void carryWear(ItemMeta from, ItemMeta to, Material material) {
         if (!(from instanceof Damageable worn) || !(to instanceof Damageable fresh)) return;
         short maxDurability = material.getMaxDurability();
         if (maxDurability <= 0) return;   // not a damageable material -- nothing to carry
-        fresh.setDamage(Math.min(worn.getDamage(), maxDurability - 1));
+        fresh.setDamage(Durability.clamp(worn.getDamage(), maxDurability));
     }
 }
