@@ -138,6 +138,14 @@ class MobLoaderTest {
         assertEquals("wither_skeleton", knell.baseEntity(),
                 "the Knell is a wither skeleton -- the point is that ordinary ones stay ordinary");
         assertEquals("Knell", knell.displayName());
-        assertEquals(360, knell.maxHealth(), 1e-9);
+        // Bounded, not pinned: 360 is balance, and a boss HP retune must not fail the build. What
+        // matters is that the Knell declares CUSTOM health at all -- that is what makes it one of
+        // ours rather than an ordinary wither skeleton.
+        //
+        // Measured: unlike the attack_damage and cost bounds in WeaponLoaderTest, this one is NOT
+        // the primary guard. MobLoader already rejects max_health <= 0 ("max_health must be > 0"),
+        // so setting it to 0 is caught by warnings.isEmpty() above before reaching here. Kept as a
+        // deliberate restatement of the invariant at the point it is read, not as load-bearing cover.
+        assertTrue(knell.maxHealth() > 0, "the Knell declares custom health");
     }
 }
