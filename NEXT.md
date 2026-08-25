@@ -1127,6 +1127,111 @@ Before milestone 2, two things worth measuring rather than assuming:
   harmless: reads are snapshots captured under `requireOwned`, and the ray steps
   region by region. The comment there should say that rather than apologise for
   it.
+- **Naturally-spawned enchanted equipment is the one leak in the no-vanilla-enchants policy.** The
+  policy holds for player-held items by construction — custom UI replaces both the anvil and the
+  enchanting table, so a player can never apply a vanilla name or enchant, which is why the Lore
+  Refresher regenerates canonically with nothing to preserve on that axis. What it does not cover is
+  gear that arrives already enchanted: a skeleton spawning with an enchanted bow, and any of it that
+  reaches a player's hands as a drop. Out of the refresher's scope and untouched by it (no
+  `weapon_id`, so the scan reads it as not ours and forms no opinion), but a real future decision:
+  **strip / convert to a custom weapon / leave** vanilla-enchanted mob gear.
+- **Is durability an RPG axis at all — should custom weapons be unbreakable?** Raised by the Lore
+  Refresher and deliberately not answered by it. The refresh carries accumulated wear forward
+  (`WeaponItems.carryWear`) so it stays strictly display-only: resetting it would silently repair
+  every weapon on every login, which is a relog-to-repair exploit *and* a balance decision made as a
+  side effect of a presentation pass. Carrying it forward forecloses nothing — if weapons later mint
+  `Unbreakable`, the carry-forward quietly becomes a no-op. Nothing in the codebase sets
+  `Unbreakable` or reads `Damageable` (verified: no `setDamage` / `Damageable` / `setUnbreakable`
+  anywhere in `paper/src/main` or `core/src/main`), so wear is entirely vanilla's business.
+
+  > #### 2026-08-24 — "vanilla wear accrues untouched" was an assumption, and the boot contradicted it
+  >
+  > This entry originally asserted that wear accrues because "the melee suppressor zeroes a swing's
+  > *damage*, not the durability the swing costs." That was reasoning, not a measurement, and the
+  > lore-refresher boot found the opposite: **nothing wears items today.** Melee is packet-driven and
+  > bypasses vanilla's durability charge, so `carryWear` currently copies a damage of 0 and its clamp
+  > `min(0, max-1)` is trivially satisfied. The carry-forward is correct and inert, not load-bearing.
+  >
+  > What this does NOT settle, and should be measured rather than re-reasoned when the durability
+  > pass starts: *why* the charge is skipped. The plausible story is that vanilla only calls
+  > `hurtEnemy` when the attack actually lands damage, and the suppressor brings the swing to 0 — but
+  > that is again a story. Swing a weapon thirty times and read the durability bar; that settles it in
+  > one observation, and it is worth doing while some other boot is already running.
+- **The Lore Refresher's boot gate step 9 (the lower-durability clamp) is DEFERRED, un-runnable.**
+  It needs a *worn* item whose material then changes to a lower-max material (iron 250 → gold 32), and
+  per the correction above nothing wears items in the current build, so the case cannot be produced.
+  Deliberately not held against the refresher: the clamp is correct, inert, and cheap insurance
+  against a real data-loss bug (an item copied to a damage value past its new maximum is a *broken*
+  item). **Boot-witnessing the clamp is the first gate of the durability pass** — same wear axis,
+  exactly where it belongs. Steps 4, 5 and 7 were witnessed and are recorded with that pass.
+
+  There is no existing dev path to force wear: no `/rpg` subcommand mutates an item, and nothing in
+  the plugin touches `Damageable`. The candidate that needs no new code is a forged item via vanilla
+  `/give` — PDC `STRING`s live in `minecraft:custom_data` and the plugin's namespace is `rpg`, so
+  `/give @s iron_sword[minecraft:custom_data={"rpg:weapon_id":"emberblade"},minecraft:damage=200]`
+  *should* mint a pre-worn tagged weapon. Unverified. If it is tried, `/rpg refresh`'s **count** is
+  the diagnostic that keeps a failed forge from being misread as a broken refresher: `0` means the
+  tag never round-tripped, `1` means it did and the re-mint ran.
+
+  > #### 2026-08-25 — step 7 was witnessed, but NOT by the procedure the gate described
+  >
+  > The gate said *"delete `emberblade.yml`, restart, relog"*. **That cannot run.** Every shipped
+  > weapon is pinned to the classpath by at least two tests, so deleting any of them reddens the
+  > suite and `dev-server.sh` aborts on `set -euo pipefail` (`:13`) before it boots. `emberblade.yml`
+  > alone is asserted by `WeaponLoaderTest:513`, `WeaponLoaderTest:616` (the three-weapon loop, which
+  > also pins `registry.size() == 3` at `:623`) and `WeaponLoreTest:345`. The step was unreachable
+  > rather than merely awkward, and it sat in the PR body looking runnable — which is the failure
+  > worth recording, not the deletion itself.
+  >
+  > Witnessed instead with a **throwaway weapon**: add a minimal `testdangle.yml` (only `class:` and a
+  > `triggers:` section are required, and the id is the *filename*), `/rpg give testdangle`, delete
+  > the file, rebuild, `--refresh-content`, relog. The warn-once line appeared and the item survived
+  > untouched. The fixture was never committed.
+  >
+  > **`--refresh-content` is load-bearing on that second boot.** `saveResource(path, false)` never
+  > *removes*, so without the flag's `rm -rf "$CONTENT_DIR"` the stale deployed copy still loads, the
+  > id never dangles, and the gate passes having tested nothing.
+  >
+  > The asymmetry that makes this work is worth keeping for the next fixture: **nothing in the repo
+  > resolves `content/weapons` as a directory** — every test names its ids explicitly — so an *added*
+  > file is invisible to the suite while a *deleted* one is not. Note that
+  > `WeaponLoreTest.everyShippedWeaponRendersAgainstTheShippedElements` reads as though it scans and
+  > does not; it is a hardcoded five-id array, and its own javadoc names the trap without closing it.
+- **`/rpg refresh` reports the opposite of what the `Dangling` verdict decided.** Carrying only a
+  dangling item, the count is 0 — `refreshed++` lives in the `Remint` arm alone
+  (`WeaponRefresher.java:71`) — so the command says *"Refreshed 0 weapons -- you are carrying none of
+  ours."* That is **false**: the item *is* ours, which is exactly what `RefreshVerdictTest:88-89`
+  pins (*"it IS ours -- silently skipping it would hide a real content break"*). The verdict draws
+  the distinction and the chat line collapses it. The truth reaches the console once via `warnOnce`,
+  so a *second* `/rpg refresh` prints the misleading line with no warning beside it at all.
+
+  Surfaced by the step-7 boot on 2026-08-25, where carrying an ironblade *alongside* the dangling
+  item was what made the count mean anything — `1` rather than `0` proves the scan ran and then
+  deliberately declined to touch the dangling slot. Without that, "found nothing" and "did nothing"
+  are the same observation, which is the trap the count exists to close.
+
+  The fix is a third message ("N refreshed, M unknown"). Not taken in #12: it is a behaviour change
+  to a shipped command, and #12 was closing a documentation gap.
+- **The refresher's coverage boundary: `getContents()` does not reach the ender chest or the inside
+  of a shulker box.** The scan walks a PlayerInventory's 41 slots — storage, hotbar, armour, offhand
+  — so a weapon stashed in an ender chest or boxed up refreshes only once it is back in the main
+  inventory at a join (or on a `/rpg refresh`). Harmless in practice, and worth being explicit about
+  *why*: behaviour is id-driven, so a stashed weapon keeps working the whole time; only its baked
+  display is stale, and only until it is carried again. Not built this pass, same standing as the
+  on-enable sweep below.
+- **The on-enable sweep of already-online players is not built.** It would only cover
+  `/reload`-without-disconnect, which is not in the dev loop — `dev-server.sh` restarts the server,
+  and a restart reconnects you, which is the join trigger. `/rpg refresh` already covers "refresh
+  without relogging" for the case that actually happens. On Folia it would also need a per-player
+  scheduler hop rather than a straight loop, so it is not the three-line freebie it looks like.
+- **The `_TEMP` *item* fixtures cannot be refreshed by this mechanism.** `health_boost_TEMP`,
+  `attack_speed_boost_TEMP` and `class_damage_boost_TEMP` (`HealthModifierItems`,
+  `AttackSpeedModifierItems`, `ClassDamageModifierItems`) do carry real instance-PDC — an amount, and
+  for the last one a class — but they are minted from a **command argument**, not from a content
+  definition. There is nothing to regenerate them *from*, so "re-mint from the current definition"
+  has no meaning for them; they would need their own mechanism. They are therefore **not** the
+  natural next target for the refresher. (Distinct from `rooted_TEMP` / `soaked_TEMP` above, which
+  are YAML status effects carrying no PDC and no item at all.)
 
 ---
 

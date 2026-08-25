@@ -14,6 +14,7 @@ import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
+import io.github.butterflysmp.rpg.paper.weapon.WeaponRefresher;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
@@ -86,6 +87,13 @@ public final class RpgListeners implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
+        // Rebuild every carried weapon's display from current content. FIRST, so nothing downstream
+        // reads a stale item -- though nothing does today: the stat reconcile loop sources attack
+        // damage from the DEFINITION, not the item, which is why only the display was ever stale.
+        // Content reloads only on restart and a dev restart reconnects you, so this one handler
+        // covers both the stale emberblade you come back to and the live player logging in after
+        // a content update. Already on the joining player's own thread; no scheduler hop needed.
+        WeaponRefresher.refresh(event.getPlayer(), weapons, adapters);
         // Returns immediately; the read happens on the storage I/O thread.
         profiles.onJoin(event.getPlayer().getUniqueId());
         // Register custom health at base 100, render the heart bar, and start the equip reconcile loop.
