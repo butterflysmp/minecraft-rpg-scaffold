@@ -1212,6 +1212,26 @@ Before milestone 2, two things worth measuring rather than assuming:
 
   The fix is a third message ("N refreshed, M unknown"). Not taken in #12: it is a behaviour change
   to a shipped command, and #12 was closing a documentation gap.
+- **`carryWear` copies ABSOLUTE damage, so re-theming a weapon to a lower-max material arrives
+  BROKEN.** Witnessed on the durability pass's boot gate 10 (2026-08-25): a healthy 100/250 iron
+  ironblade, re-minted onto `golden_sword` (max 32), clamps to damage 31 — which is 1 use, and 1 use
+  IS the broken floor. So a content re-theme silently hands every player who owns that weapon a dead
+  one until they repair it.
+
+  **This is the never-break promise working, not failing.** Without the clamp that item is damaged
+  past its maximum, i.e. destroyed outright; with it, the worst case is useless-until-repaired. But
+  "useless until repaired" is still a gameplay event a *presentation* change caused, and it is worth
+  being explicit that a clamped item is ALWAYS broken rather than merely worn: `Durability.clamp`
+  floors at `max - MIN_USES` and `Durability.isBroken` fires at `>= max - MIN_USES`, the same value.
+  There is no such thing as a clamped-but-usable item, by construction.
+
+  Only bites on a change to a *lower*-maximum material, which is rare — #12 already accepted the
+  fraction shift in the other direction (50/250 iron becoming 50/1561 diamond reads as less worn).
+  If re-theming should never cost a player a working weapon, the fix is to preserve the wear
+  FRACTION across a material change rather than the raw value: 40% worn stays 40% worn, so
+  100/250 iron becomes 13/32 gold and the weapon survives usable. Not taken here — it changes what
+  a re-mint means on every material change, not just the lossy direction, and this pass was closing
+  the break gate rather than reopening #12's carry-forward contract.
 - **The refresher's coverage boundary: `getContents()` does not reach the ender chest or the inside
   of a shulker box.** The scan walks a PlayerInventory's 41 slots — storage, hotbar, armour, offhand
   — so a weapon stashed in an ender chest or boxed up refreshes only once it is back in the main
