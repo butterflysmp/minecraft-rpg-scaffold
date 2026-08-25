@@ -21,6 +21,8 @@ import io.github.butterflysmp.rpg.paper.content.MobLoader;
 import io.github.butterflysmp.rpg.paper.content.ContentValidator;
 import io.github.butterflysmp.rpg.paper.content.ElementLoader;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
+import io.github.butterflysmp.rpg.paper.content.EnchantLoader;
+import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
 import io.github.butterflysmp.rpg.paper.content.StatusLoader;
 import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
 import io.github.butterflysmp.rpg.paper.content.VisualLoader;
@@ -86,6 +88,7 @@ public final class RpgPlugin extends JavaPlugin {
     private VisualRegistry visuals;
     private StatusRegistry statuses;
     private ElementRegistry elements;
+    private EnchantRegistry enchants;
     private KitRegistry kits;
     private WeaponRegistry weapons;
     private MobRegistry mobs;
@@ -117,14 +120,26 @@ public final class RpgPlugin extends JavaPlugin {
         this.visuals = new VisualLoader(getLogger()).loadAll(new File(contentDir, "visuals"));
         this.statuses = new StatusLoader(getLogger()).loadAll(new File(contentDir, "statuses"));
         this.elements = new ElementLoader(getLogger()).loadAll(new File(contentDir, "elements"));
+        this.enchants = new EnchantLoader(getLogger()).loadAll(new File(contentDir, "enchants"));
         this.kits = new KitLoader(getLogger()).loadAll(new File(contentDir, "kits"));
         this.weapons = new WeaponLoader(getLogger()).loadAll(new File(contentDir, "weapons"));
         this.mobs = new MobLoader(getLogger()).loadAll(new File(contentDir, "mobs"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
-                + elements.size() + " elements, "
+                + elements.size() + " elements, " + enchants.size() + " enchants, "
                 + kits.size() + " kits, " + weapons.size() + " weapons, "
                 + mobs.size() + " mobs");
+
+        // ZERO IS A DEFECT, NOT A QUIET NO-OP. A loader that discovers nothing reads exactly like
+        // one that worked, and this is the failure mode CLAUDE.md records twice: getResource on a
+        // shaded jar returns a non-null URL whose stream is zero bytes, and on a data folder that
+        // is already populated the difference is invisible. Said out loud, at WARNING, because the
+        // boot gate's first step is to read this line.
+        if (enchants.size() == 0) {
+            getLogger().warning("No enchants loaded from content/enchants -- every enchant will "
+                    + "render as its raw id, /rpg enchant can grant nothing, and Unbreaking can "
+                    + "never appear on a tooltip. Expected at least unbreaking.yml.");
+        }
 
         // A visual_id that resolves to nothing should be found now, by name, not by
         // a player casting the ability in six weeks' time. Registry is only reachable
@@ -155,7 +170,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         // Built once and shared: the adapters' warn-once set must outlive the
         // short-lived BukkitCombatant and PaperCombatWorld instances.
-        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, elements, getLogger(), stats, anchorDrift);
+        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, elements, enchants, getLogger(), stats, anchorDrift);
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);

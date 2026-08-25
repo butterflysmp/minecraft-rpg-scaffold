@@ -1,0 +1,13 @@
+# An enchant is identity and bounds: a display name, and how high it goes. The id is the filename.
+#
+# There is deliberately NO behaviour field here. An enchant's EFFECT is a mechanism, not a number --
+# unbreaking's durability-skip curve is core/enchant/Unbreaking.java, bound to this file by id and
+# nothing else. Content NAMES an effect and bounds it; it never defines one, the same relationship
+# ability yml has with EffectSpec. Adding `durability_skip: 0.25` here is the obvious next
+# temptation and it belongs to the deferred damage-modifier pass, which needs a typed schema
+# decision rather than an ad-hoc key.
+#
+# This is OUR Unbreaking, not vanilla's: per the no-vanilla-enchants policy a player-held item can
+# never carry a vanilla enchant, so nothing here maps onto Enchantment.UNBREAKING.
+display_name: "Unbreaking"
+max_level: 3

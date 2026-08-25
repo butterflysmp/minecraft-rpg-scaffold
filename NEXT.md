@@ -701,6 +701,23 @@ Before milestone 2, two things worth measuring rather than assuming:
     tooltip from lying to the next player who picks the item up. `WeaponLoreTest` pins that.
   - **Rarity/enchant stat bonuses on the tooltip.** Phase 4. Rarity only colours + labels the footer
     now; when rarity/enchant grant real stat deltas, surface them in the ability blocks.
+
+    > #### 2026-08-25 — PARTLY ADDRESSED. The block renders; no enchant grants a stat yet.
+    >
+    > Enchant Pass 1 added `EnchantLore`, which renders one grey-italic line per ACTIVE enchant
+    > ("Unbreaking III") at the TOP of the tooltip, above the element line, read from the item's own
+    > state. The rarity/class footer is still last, pinned by
+    > `theRarityFooterIsStillLastOnceAnEnchantBlockIsApplied`.
+    >
+    > This entry stays OPEN, because it is about stat DELTAS and Unbreaking grants none — it
+    > modifies a durability roll, not a number on the tooltip. The damage-modifier enchant type
+    > (Sharpness/Power), which is what would actually need a `+N` line in an ability block, is its
+    > own deferred entry below.
+    >
+    > Note what did NOT happen: `WeaponLore.build` still takes only `(WeaponDefinition,
+    > ElementRegistry)`. Its "mint-time only and cannot drift" promise is enforced by that
+    > signature, and `WeaponLoreTest` says so explicitly, so the per-item block went into a separate
+    > class rather than widening it. Whatever surfaces these bonuses should do the same.
   - ~~**Per-trigger authored prose.**~~ **DONE** — a per-trigger `name:` (gold ability line) and
     `description:` (YAML-list prose) now render in each ability block; `AbilityDefinition` gained a
     `description` component. Weapon-level `flavor` (italic gray) coexists with it.
@@ -1135,6 +1152,18 @@ Before milestone 2, two things worth measuring rather than assuming:
   reaches a player's hands as a drop. Out of the refresher's scope and untouched by it (no
   `weapon_id`, so the scan reads it as not ours and forms no opinion), but a real future decision:
   **strip / convert to a custom weapon / leave** vanilla-enchanted mob gear.
+
+  > #### 2026-08-25 — THE POLICY IS NOW LOAD-BEARING, not aspirational.
+  >
+  > Until Enchant Pass 1 nothing depended on it. Now Unbreaking is ours end to end: a custom curve
+  > in `core/enchant/Unbreaking.java`, read off our own PDC blob, applied at our own wear seam. No
+  > vanilla `Enchantment` is consulted anywhere on a player-held item, and none can be.
+  >
+  > Recorded because the shortcut is genuinely tempting and was genuinely taken before: the old repo
+  > (`BSMPMenu`) mapped its custom Unbreaking straight onto vanilla's in
+  > `item/EnchantVanillaSync.java:51` and let the server apply it. That is a one-line "simplification"
+  > someone will re-derive. It is forbidden here, and the leak above — mob gear that spawns already
+  > enchanted — remains the only vanilla enchant that can reach a player.
 - **Is durability an RPG axis at all — should custom weapons be unbreakable?** Raised by the Lore
   Refresher and deliberately not answered by it. The refresh carries accumulated wear forward
   (`WeaponItems.carryWear`) so it stays strictly display-only: resetting it would silently repair
@@ -1290,7 +1319,8 @@ Before milestone 2, two things worth measuring rather than assuming:
   heavy weapon can cost more per swing than a light one. Not shipped with Pass 2 because it means
   picking a number for five weapons before a single one has been felt in play, and the flat value
   is the honest default until then. The constant is the only thing that has to move.
-- **The custom Unbreaking enchant consumes the seam built in Pass 2.** `WeaponDurability`
+- ~~**The custom Unbreaking enchant consumes the seam built in Pass 2.**~~ **DONE** (Enchant Pass 1)
+  `WeaponDurability`
   `.applyWearOnUse` carries a commented `THE UNBREAKING SEAM` block at exactly the point the roll
   belongs — after the non-Damageable and already-broken exemptions, before the `wear()` — so the
   enchant is *add the roll*, not *reopen the wear sites*. Shape: roughly a `1/(level+1)` chance to
@@ -1300,6 +1330,24 @@ Before milestone 2, two things worth measuring rather than assuming:
   item can never carry a vanilla enchant here, so there is nothing to read off the item — it will
   come from wherever the enchant system puts a level, and that system does not exist yet. The seam
   is deliberately built ahead of it because building it later means touching wear again.
+
+  > #### 2026-08-25 — CONSUMED. The seam cost two lines, as predicted.
+  >
+  > `EnchantItems.activeLevel(held, keys, Unbreaking.ID)` then
+  > `if (!Unbreaking.consumes(unbreaking, ThreadLocalRandom.current().nextDouble())) return;`, in
+  > place of the comment block and nowhere else. Neither hook was reopened, which is the whole
+  > claim the Pass 2 seam was built on, now paid off.
+  >
+  > The curve is `core/enchant/Unbreaking.java` — `1/(level+1)`, strict `<` against a half-open
+  > `[0,1)` draw, clamped at both ends. The clamps are not decoration: a NEGATIVE level makes the
+  > unclamped threshold `-1.0`, which no roll is below, so a corrupt blob would produce an
+  > INDESTRUCTIBLE weapon; level 99 makes it `0.01`. Both are pinned in `UnbreakingTest`.
+  >
+  > The sentence above that says *"that system does not exist yet"* is now false. The level comes
+  > from `EnchantItems.activeLevel` → `EnchantState.effective()`, off the item's own PDC blob. The
+  > seam deliberately does NOT consult the enchant registry — `consumes` clamps for itself, so the
+  > hot path stays one PDC read plus a short parse, and a deleted content file leaves the enchant
+  > working rather than silently switching it off.
 - **Pass 2's once-per-swing dedup is guarded by a core test, not by a boot step, and that is not a
   gap.** The rule is that one swing costs one use however many bodies its payload reaches — vanilla
   charges a sword once for a sweep. **It cannot be witnessed in-game**, because
@@ -1342,6 +1390,86 @@ Before milestone 2, two things worth measuring rather than assuming:
   it builds, then `paper.version`, then `./mvnw -pl core test` (a `core` break on a Paper bump means
   `core` has an illegal dependency — that is the real bug), then boot and smoke-test one ability.
   Per D4 there is no bot, by decision, so this line IS the notification.
+- **The per-instance enchant ROLL and the class POOLS are deferred; Pass 1 assigns candidates by
+  hand.** `/rpg enchant candidate <slot> <enchant>` is the stand-in, exactly as `/rpg durability`
+  stood in for auto-wear. `Keys.enchantRolled` (BYTE) is already written and already carried across
+  a re-mint, and nothing reads it — it is reserved precisely so the roster pass adds the roll
+  without reopening the carry. `Rarity`'s own javadoc already anticipates sizing that roll by tier
+  (*"the ordering is load-bearing: Phase 4 compares tiers to size an enchant roll"*).
+
+  Two shapes stay genuinely undecided, and the code is arranged so neither is prejudged.
+  **Fixed-3 versus rolled-1–3 slots**: `EnchantState` deliberately does NOT cap slot count, and the
+  only bound in the tree is `RpgCommand.MAX_DEV_SLOT = 2` — a command-side guard at the reachable
+  surface, not a rule in the kernel. **Same-enchant-across-slots and stacking**: see the next entry.
+- **The same-enchant-across-slots rule is provisionally MAX, and that is a placeholder, not the
+  answer.** `EnchantState.effective()` returns one entry per distinct active id at the HIGHEST level
+  any active slot holds it at. Chosen because it cannot exceed `MAX_LEVEL` (so it can never hand a
+  player a level no tooltip ever showed, which summing can), because it is order-independent (where
+  first-wins would depend on slot order the player cannot see), and because it therefore makes
+  duplicating an enchant strictly non-beneficial while the real rule is undecided — the right
+  direction to be wrong in.
+
+  The aggregation lives in `effective()` rather than at the seam, so the cap holds against a
+  duplicate from ANY source — a hand-edited item, a future roll, an older build's blob — not merely
+  one the dev command could produce. `/rpg enchant active` also warns when it activates a copy, but
+  the resolver is the actual rule. The roster pass replaces the aggregation, and only it.
+
+  Note for whoever writes that: the test case has to make max and sum disagree BELOW the cap.
+  `EnchantStateTest` uses two slots at I each (max 1, sum 2), because an earlier version used I and
+  III — where sum is 4, which the clamp folds back to 3, the same answer max gives. A mutation run
+  proved that version reddened nothing at all.
+- **The enchant TABLE UI is not built; `/rpg enchant` stands in for it.** Pass 2. This pass's
+  relationship to the table is exactly Durability Pass 2's to auto-wear: build the mechanism, drive
+  it with a dev instrument, and leave the thing that will really drive it for a pass that can decide
+  its own questions. The table needs the XP economy and bookshelf power below, neither of which
+  exists.
+- **The XP economy and bookshelf power are deferred; unlocking is free in Pass 1.**
+  `EnchantState.withLevel` is the seam an economy gates, and it is a pure function on an immutable
+  value, so gating it costs nothing structural — the cost check goes in front of the call, not
+  inside the model.
+- **The damage-modifier enchant type (Sharpness / Power) is deferred.** It hooks the Caster
+  projection, not the durability seam, so it shares none of this pass's machinery beyond the state
+  model. This is why `content/enchants/*.yml` carries **no behaviour field**: an enchant's effect is
+  a mechanism, not a number, and content names an effect without defining one — the same
+  relationship ability yml has with `EffectSpec`. Adding `durability_skip: 0.25` to the schema is
+  the obvious next temptation and it is a typed schema decision belonging to that pass, not a
+  one-liner.
+- **`EnchantCodec` is the repo's first string codec, and the carry deliberately never uses it.**
+  `WeaponItems.carryEnchants` moves the RAW string across a re-mint; only READERS parse. That is
+  what makes the never-wipe-unlocks invariant survive a version skew: a v2 blob read by a v1 build
+  renders as unenchanted and is handed back byte for byte, rather than being rewritten into v1 and
+  losing whatever v2 added. It is also the only reason `decode`'s unknown-version arm can safely
+  return empty — that arm would be data loss if the carry round-tripped through it.
+
+  Breaking the house convention (one typed PDC key per scalar, assembled in paper) is justified by
+  genuinely variable arity: slots × candidates, both of them counts the roster pass has not chosen.
+  A per-scalar scheme means either a fixed grid written whether used or not, or a key count that
+  changes with the data, and neither versions atomically.
+
+  Because it is a new pattern the test bar is higher: `EnchantCodecTest` pins the LITERAL wire form,
+  not merely a round trip. A round-trip test stays green when encode and decode break together —
+  the accident CLAUDE.md names as failure #4 — and a mutation run confirmed the discrimination is
+  real: changing the candidate separator reddens the exact-grammar test while `aFullStateRoundTrips`
+  stays green.
+- **`applyWearOnUse` now parses a short string on every basic attack.** One PDC read plus a
+  `split`, per connecting swing. Bounded by the fast-reject at the top of `EnchantItems.activeLevel`
+  — no meta, or no `enchant_data` key, returns 0 having allocated nothing, which is the
+  overwhelmingly common case. Not optimised because it is not measurable next to the two
+  `getItemMeta()` calls already in that method. If it ever is, the cheap fixes in order: a separate
+  INTEGER `unbreaking_level` key written alongside the blob, or caching the decode per stack.
+- **`/rpg enchant` re-mints the whole item on every edit, and that is deliberate.** It writes the
+  state then calls `WeaponItems.remint`, rather than patching lore. The cost is an item replacement
+  per command; the payoff is that there is exactly ONE lore path, so the enchant block cannot be
+  doubled or left stale by any edit route. It also means every use of the command exercises the
+  carry-forward, so the invariant this pass exists to protect is hammered continuously rather than
+  checked once at login.
+- **A dangling enchant id renders but is not warned about.** `EnchantLore` falls back to the
+  title-cased id (matching `WeaponLore.elementLine`'s fail-soft for an unknown element) rather than
+  hiding the line. Deliberate, and it follows from the seam rather than from taste: the seam
+  compares ids and never consults the registry, so deleting `unbreaking.yml` leaves the enchant
+  WORKING — and an enchant that silently skips durability while showing nothing is a far worse bug
+  than one with an ugly name. `EnchantLore` is pure and cannot reach `warnOnce`;
+  `RefreshVerdict.Dangling`'s warn-once route is where a warning would go if one is ever wanted.
 
 ---
 

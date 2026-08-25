@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
@@ -21,6 +22,7 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -82,10 +84,37 @@ public final class WeaponItems {
             // Setting an explicit attack_damage modifier suppresses the item's vanilla
             // default (+6 for iron), so the swing's melee is base 1.0 + (-1.0) = 0.
             meta.addAttributeModifier(attackDamage, suppressor);
-            // Derived stats + authored flavour. Purely additive; the block above is untouched.
-            meta.lore(WeaponLore.build(weapon, adapters.elements()));
+            // Derived stats + authored flavour, plus any enchant block the item's own state calls
+            // for. Purely additive; the block above is untouched.
+            applyLore(meta, weapon, adapters);
         });
         return item;
+    }
+
+    /**
+     * Write this item's whole lore: current content, plus the enchant block THIS ITEM's own state
+     * calls for.
+     *
+     * <p><b>REBUILDS rather than appends</b>, and that is the point. Calling it twice produces the
+     * same lore, so no edit path can double the enchant block or strand a stale line, and it needs
+     * no block-boundary detection to promise that -- the base is regenerated from the definition
+     * every time, so it is never lore that already contains an enchant block.
+     *
+     * <p>It is also where the ordering problem dies. {@code mint} builds display from current
+     * content and cannot know this item's enchants; {@code remint} carries the raw blob across
+     * FIRST and calls this after, so lore is never built before the state it describes has arrived.
+     * Getting this backwards -- the obvious arrangement, where remint prepends onto whatever mint
+     * produced -- is fine today and doubles the block the moment the roster pass gives {@code mint}
+     * a roll of its own to render.
+     *
+     * <p>At a fresh mint the container is empty, {@code lines} is empty, and {@code applied}
+     * returns the base list untouched. So this call is live and exercised from day one rather than
+     * commented, and the roster pass's mint-time roll is a write ABOVE it and nothing else.
+     */
+    private static void applyLore(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters) {
+        List<Component> base = WeaponLore.build(weapon, adapters.elements());
+        EnchantState state = EnchantItems.read(meta, adapters.keys());
+        meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
     }
 
     /**
@@ -172,7 +201,13 @@ public final class WeaponItems {
         ItemStack fresh = mint(current, adapters);
         ItemMeta oldMeta = old.getItemMeta();
         if (oldMeta == null) return fresh;   // no meta means no tag; the caller would not have got here
-        fresh.editMeta(meta -> carryInstanceData(oldMeta, meta, adapters.keys(), fresh.getType()));
+        fresh.editMeta(meta -> {
+            carryInstanceData(oldMeta, meta, adapters.keys(), fresh.getType());
+            // ...and only NOW render the enchant block, from the state that just arrived. mint()
+            // above already ran applyLore against an empty container, which was a no-op; this is
+            // the call that can actually see this item's enchants. Order is load-bearing.
+            applyLore(meta, current, adapters);
+        });
         return fresh;
     }
 
@@ -194,6 +229,10 @@ public final class WeaponItems {
      *    a gameplay change smuggled into a presentation pass, and a relog-to-repair exploit.
      *    Whether custom weapons should wear at all is a separate, deferred decision -- if they
      *    later mint unbreakable, this carry-forward quietly becomes a no-op.
+     *
+     * ...and, since Enchant Pass 1, a third: the item's enchant state. That is the line this
+     * method's javadoc predicted ("a future rarity or enchant roll is one more line in this
+     * method"), and it turned out to be exactly that.
      */
     private static void carryInstanceData(ItemMeta from, ItemMeta to, Keys keys, Material material) {
         String id = from.getPersistentDataContainer().get(keys.weaponId, PersistentDataType.STRING);
@@ -201,6 +240,38 @@ public final class WeaponItems {
             to.getPersistentDataContainer().set(keys.weaponId, PersistentDataType.STRING, id);
         }
         carryWear(from, to, material);
+        carryEnchants(from, to, keys);
+    }
+
+    /**
+     * Carry the item's enchant state across the re-mint. THE INVARIANT ENCHANT PASS 1 PROTECTS
+     * ABOVE ALL: a re-mint regenerates DISPLAY and never touches enchant state, so a content edit,
+     * a {@code /rpg refresh} or a rejoin cannot cost a player an unlock they earned.
+     *
+     * <p><b>The RAW STRING moves. It is deliberately not decoded and re-encoded, and that is the
+     * guarantee rather than an optimisation.</b> A blob written by a future build, in a grammar
+     * this one cannot parse, arrives on the fresh item byte for byte -- so a version skew degrades
+     * to "renders as unenchanted until you update" instead of "silently rewritten into the old
+     * grammar, losing whatever the new one added". Only READERS parse; the carry moves bytes.
+     *
+     * <p>It is also what makes {@code EnchantCodec.decode}'s unknown-version arm safe to write as
+     * "return empty": that arm would be data loss if this method round-tripped through it.
+     *
+     * <p>The two keys are carried INDEPENDENTLY, and a half-tagged item is NOT rejected -- unlike
+     * {@code ClassDamageModifierItems.grantOf}, whose two keys are two halves of one value. State
+     * without the flag is an item enchanted by hand before any roll existed; the flag without state
+     * is a roll that came up empty. Both are legal, and discarding either would be precisely the
+     * data loss this method exists to prevent.
+     */
+    private static void carryEnchants(ItemMeta from, ItemMeta to, Keys keys) {
+        String data = from.getPersistentDataContainer().get(keys.enchantData, PersistentDataType.STRING);
+        if (data != null) {
+            to.getPersistentDataContainer().set(keys.enchantData, PersistentDataType.STRING, data);
+        }
+        Byte rolled = from.getPersistentDataContainer().get(keys.enchantRolled, PersistentDataType.BYTE);
+        if (rolled != null) {
+            to.getPersistentDataContainer().set(keys.enchantRolled, PersistentDataType.BYTE, rolled);
+        }
     }
 
     /**

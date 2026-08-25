@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
+import io.github.butterflysmp.rpg.core.enchant.Unbreaking;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import org.bukkit.entity.Player;
@@ -8,6 +9,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 
 import java.util.OptionalInt;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * The Bukkit half of durability: reading a stack's damage and writing it back. Every DECISION is
@@ -86,7 +88,8 @@ public final class WeaponDurability {
      * than each calling {@link #wear}, and that is the entire point of the method existing. WHEN a
      * use happens is core's decision ({@code CastExecutor.execute}: basic attacks only, melee on
      * connect, everything else at commit); WHAT it costs is this, and there is one of it so the
-     * enchant below has one seam to plug into instead of two sites to reopen.
+     * enchant below had one seam to plug into instead of two sites to reopen. That prediction came
+     * good: Unbreaking arrived as two lines here and no change to either hook.
      *
      * <p><b>The exemptions, in order.</b> A non-Damageable material leaves with nothing done --
      * ember_staff (blaze_rod) and ability_stone (amethyst_shard) are exactly the two weapons that
@@ -99,7 +102,7 @@ public final class WeaponDurability {
      * <p>Runs on the thread that owns the player. Both call sites are already there -- see the
      * threading note on {@code CastExecutor}'s two-arg constructor, which is what guarantees it.
      */
-    public static void applyWearOnUse(Player player, CooldownTracker cooldowns) {
+    public static void applyWearOnUse(Player player, Keys keys, CooldownTracker cooldowns) {
         ItemStack held = player.getInventory().getItemInMainHand();
 
         OptionalInt max = maxOf(held);
@@ -108,12 +111,28 @@ public final class WeaponDurability {
 
         if (Durability.isBroken(damageOf(held), maximum)) return;
 
-        // THE UNBREAKING SEAM. A future custom Unbreaking enchant (part of the enchant system, not
-        // vanilla's -- player-held items can never carry a vanilla enchant here) rolls HERE and
-        // returns without wearing on a skip: roughly a 1/(level+1) chance to consume durability,
-        // mirroring vanilla's own curve. It goes BEFORE the wear and AFTER the exemptions, so a
-        // staff does not roll for something it can never spend. Building the seam now is what makes
-        // that enchant "add the roll" rather than "reopen the two wear sites".
+        // THE UNBREAKING SEAM, OCCUPIED. Read the ACTIVE Unbreaking level off THE HELD ITEM's own
+        // enchant state -- never off a definition -- and roll: a 1/(level+1) chance to consume, so
+        // III skips three uses in four. Level 0 or absent is threshold 1.0, always consume, so an
+        // unenchanted weapon wears exactly as it did before this line existed.
+        //
+        // This is OUR Unbreaking, not vanilla's: a player-held item can never carry a vanilla
+        // enchant here, so there is nothing on the item to delegate to and the curve is written out
+        // in core.
+        //
+        // Placement is load-bearing and unchanged from the comment this replaces. AFTER the
+        // non-Damageable and already-broken exemptions above, so a staff never rolls for something
+        // it can never spend and a spent weapon never rolls at all; BEFORE the wear below, so a
+        // skip returns without touching the item and the just-broke signal cannot fire on a use
+        // that cost nothing.
+        //
+        // The DRAW is here, at the impure call site; the DECISION is Unbreaking.consumes, in core,
+        // reddening-tested against exact boundary doubles. Same split as DamagePopupManager's
+        // jitter -- and ThreadLocalRandom for the reason that class already records: this runs on
+        // whichever thread owns the player, many at once once Folia is on, and Math.random() is a
+        // synchronized global.
+        int unbreaking = EnchantItems.activeLevel(held, keys, Unbreaking.ID);
+        if (!Unbreaking.consumes(unbreaking, ThreadLocalRandom.current().nextDouble())) return;
 
         int damage = wear(held, WEAR_PER_USE);
         // Write the stack back explicitly rather than trusting the main-hand read to be a live

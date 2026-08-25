@@ -20,18 +20,23 @@ import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.enchant.EnchantLoreLines;
+import io.github.butterflysmp.rpg.core.enchant.EnchantState;
+import io.github.butterflysmp.rpg.core.enchant.Unbreaking;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
+import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.DashAim;
+import io.github.butterflysmp.rpg.paper.weapon.EnchantItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponClassLabel;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
@@ -60,6 +65,7 @@ import java.util.Locale;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Brigadier commands, registered through the plugin lifecycle manager.
@@ -209,6 +215,55 @@ public final class RpgCommand {
                                 .then(Commands.argument("amount", IntegerArgumentType.integer(0))
                                         .executes(ctx -> durability(ctx, adapters, DurabilityOp.SET,
                                                 IntegerArgumentType.getInteger(ctx, "amount"))))))
+                // The enchant dev instrument. This pass's /rpg durability: the per-instance ROLL
+                // and the enchant TABLE that will eventually put enchants on items do not exist
+                // yet, so this stands in for both, exactly as /rpg durability stood in for auto-wear.
+                //
+                // <slot> and <candidate> are bounded HERE and deliberately NOT in EnchantState:
+                // fixed-3-versus-rolled-1-3 is the roster pass's decision, so the kernel stays
+                // uncapped and the provisional limit sits at the reachable surface. <level> takes
+                // its bound from the core constant, so the command and the model cannot drift.
+                //
+                // Every branch re-mints the item rather than patching its lore. That is what makes
+                // the enchant block impossible to double, and it means every use of this command
+                // exercises the carry-forward -- the invariant this whole pass exists to protect
+                // gets hammered on every edit instead of being checked once at login.
+                .then(Commands.literal("enchant")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .then(Commands.literal("show")
+                                .executes(ctx -> enchant(ctx, adapters, weapons, EnchantOp.SHOW, 0, 0, 0, null)))
+                        .then(Commands.literal("clear")
+                                .executes(ctx -> enchant(ctx, adapters, weapons, EnchantOp.CLEAR, 0, 0, 0, null)))
+                        .then(Commands.literal("candidate")
+                                .then(Commands.argument("slot", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
+                                        .then(Commands.argument("enchant", StringArgumentType.word())
+                                                .suggests((ctx, builder) -> {
+                                                    adapters.enchants().all().forEach(e -> builder.suggest(e.id()));
+                                                    return builder.buildFuture();
+                                                })
+                                                .executes(ctx -> enchant(ctx, adapters, weapons, EnchantOp.CANDIDATE,
+                                                        IntegerArgumentType.getInteger(ctx, "slot"), 0, 0,
+                                                        StringArgumentType.getString(ctx, "enchant"))))))
+                        .then(Commands.literal("level")
+                                .then(Commands.argument("slot", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
+                                        .then(Commands.argument("candidate", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
+                                                .then(Commands.argument("level", IntegerArgumentType.integer(0, EnchantState.MAX_LEVEL))
+                                                        .executes(ctx -> enchant(ctx, adapters, weapons, EnchantOp.LEVEL,
+                                                                IntegerArgumentType.getInteger(ctx, "slot"),
+                                                                IntegerArgumentType.getInteger(ctx, "candidate"),
+                                                                IntegerArgumentType.getInteger(ctx, "level"), null))))))
+                        .then(Commands.literal("active")
+                                .then(Commands.argument("slot", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
+                                        .then(Commands.argument("candidate", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
+                                                .executes(ctx -> enchant(ctx, adapters, weapons, EnchantOp.ACTIVE,
+                                                        IntegerArgumentType.getInteger(ctx, "slot"),
+                                                        IntegerArgumentType.getInteger(ctx, "candidate"), 0, null)))))
+                        // Its own literal rather than `active <slot> none`: closed arity, no string
+                        // parsing, and no "none" that could collide with an enchant id.
+                        .then(Commands.literal("deactivate")
+                                .then(Commands.argument("slot", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
+                                        .executes(ctx -> enchant(ctx, adapters, weapons, EnchantOp.DEACTIVATE,
+                                                IntegerArgumentType.getInteger(ctx, "slot"), 0, 0, null)))))
                 // A dev instrument: apply any loaded status, at any stack count and duration,
                 // to the mob you are aiming at -- bypassing the class/element/kit gate, which is
                 // exactly why it is DEV-gated. It reuses the same applyStatus seam an ability
@@ -686,7 +741,263 @@ public final class RpgCommand {
         return 1;
     }
 
+    /**
+     * The highest slot and candidate index {@code /rpg enchant} will address.
+     *
+     * A COMMAND-SIDE bound only. {@code EnchantState} deliberately does not cap slot count, because
+     * fixed-3-versus-rolled-1-3 is the roster pass's decision and a cap written now would be a
+     * number invented before the question was asked. This exists so a dev cannot mint a 400-slot
+     * item by typo, which is guarding at the reachable surface rather than in the kernel.
+     */
+    private static final int MAX_DEV_SLOT = 2;
 
+    /** Which edit {@link #enchant} makes to the held weapon's enchant state. */
+    private enum EnchantOp { CANDIDATE, LEVEL, ACTIVE, DEACTIVATE, CLEAR, SHOW }
+
+    /**
+     * Edit the held weapon's enchant state, for testing. The stand-in for both of the things that
+     * will eventually put enchants on an item -- the per-instance roll and the enchant table -- in
+     * exactly the way {@code /rpg durability} stood in for auto-wear.
+     *
+     * Every transition goes through the pure, reddening-tested {@code EnchantState}, so this
+     * command cannot construct a state the model forbids. What it CAN do is ask for one, which is
+     * why each op pre-validates and answers in English: an IllegalArgumentException escaping into
+     * Brigadier reads as an internal error rather than as "you have not unlocked that yet".
+     *
+     * Hops to the player's own thread before touching the inventory, for the reason
+     * {@code /rpg durability} and {@code /rpg refresh} both give: a command runs on the command
+     * thread, not the player's region thread.
+     *
+     * <p><b>Writes then RE-MINTS, rather than patching lore.</b> That routes every edit through
+     * {@code WeaponItems.remint} -> {@code carryInstanceData} -> {@code applyLore}, so the lore is
+     * rebuilt canonically and the enchant block can never be doubled or left stale. It also means
+     * the carry-forward invariant is exercised on every single use of this command rather than
+     * only at login, which is where a regression in it would otherwise hide.
+     */
+    private static int enchant(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                               WeaponRegistry weapons, EnchantOp op,
+                               int slot, int candidate, int level, String enchantId) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(
+                    Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+
+        adapters.scheduler().onEntity(player, () -> {
+            ItemStack held = player.getInventory().getItemInMainHand();
+
+            // Scope: only our weapons, the same boundary /rpg durability and the gates draw.
+            String weaponId = WeaponItems.weaponId(held, adapters.keys()).orElse(null);
+            if (weaponId == null) {
+                player.sendMessage(Component.text("Hold one of our weapons.", NamedTextColor.RED));
+                return;
+            }
+
+            // A re-mint needs the definition. Refuse rather than half-edit: writing the state and
+            // failing to re-mint would leave an item whose PDC and whose lore disagree, which is
+            // the one outcome worse than doing nothing. Same instinct as RefreshVerdict.Dangling.
+            WeaponDefinition definition = weapons.find(weaponId).orElse(null);
+            if (definition == null) {
+                player.sendMessage(Component.text("'" + weaponId + "' has no content file loaded -- "
+                        + "cannot re-mint it, so refusing to edit its enchants.", NamedTextColor.RED));
+                return;
+            }
+
+            EnchantState before = EnchantItems.read(held, adapters.keys());
+
+            if (op == EnchantOp.SHOW) {
+                showEnchants(player, definition, before, adapters);
+                return;
+            }
+
+            if (op == EnchantOp.CLEAR) {
+                if (before.isEmpty() && !EnchantItems.isRolled(held, adapters.keys())) {
+                    player.sendMessage(Component.text("This weapon carries no enchant data.",
+                            NamedTextColor.YELLOW));
+                    return;
+                }
+                held.editMeta(meta -> EnchantItems.clear(meta, adapters.keys()));
+                finishEnchant(player, held, definition, adapters);
+                player.sendMessage(Component.text("Enchant data cleared -- both keys removed.",
+                        NamedTextColor.GREEN));
+                return;
+            }
+
+            // Pre-validation, so every refusal is a sentence rather than a stack trace.
+            EnchantDefinition enchantDef = null;
+            if (op == EnchantOp.CANDIDATE) {
+                enchantDef = adapters.enchants().find(enchantId).orElse(null);
+                if (enchantDef == null) {
+                    player.sendMessage(Component.text("Unknown enchant: " + enchantId, NamedTextColor.RED));
+                    String available = adapters.enchants().all().stream()
+                            .map(EnchantDefinition::id).collect(Collectors.joining(", "));
+                    // An EMPTY list here is the loader having found nothing -- the same defect the
+                    // boot warning names, caught from in-game. Say so rather than printing
+                    // "Available: " and letting it read like a typo.
+                    player.sendMessage(available.isEmpty()
+                            ? Component.text("No enchants are loaded at all -- check the boot log "
+                                    + "for the content/enchants warning.", NamedTextColor.RED)
+                            : Component.text("Available: " + available, NamedTextColor.GRAY));
+                    return;
+                }
+                if (slot > before.slots().size()) {
+                    player.sendMessage(Component.text("This weapon has " + before.slots().size()
+                            + " slot(s); add to slot " + before.slots().size() + " first.",
+                            NamedTextColor.RED));
+                    return;
+                }
+            } else {
+                if (slot >= before.slots().size()) {
+                    player.sendMessage(Component.text("This weapon has " + before.slots().size()
+                            + " slot(s); slot " + slot + " does not exist.", NamedTextColor.RED));
+                    return;
+                }
+                int candidates = before.slots().get(slot).candidates().size();
+                if (op != EnchantOp.DEACTIVATE && candidate >= candidates) {
+                    player.sendMessage(Component.text("Slot " + slot + " has " + candidates
+                            + " candidate(s).", NamedTextColor.RED));
+                    return;
+                }
+                if (op == EnchantOp.LEVEL || op == EnchantOp.ACTIVE) {
+                    String id = before.slots().get(slot).candidates().get(candidate).enchantId();
+                    enchantDef = adapters.enchants().find(id).orElse(null);
+                    // A per-enchant max_level may be LOWER than the model's. Checked here because
+                    // core has no idea which enchants exist.
+                    if (op == EnchantOp.LEVEL && enchantDef != null && level > enchantDef.maxLevel()) {
+                        player.sendMessage(Component.text(enchantDef.displayName()
+                                + "'s maximum level is " + enchantDef.maxLevel() + ".", NamedTextColor.RED));
+                        return;
+                    }
+                    if (op == EnchantOp.ACTIVE
+                            && before.slots().get(slot).candidates().get(candidate).isLocked()) {
+                        player.sendMessage(Component.text("That candidate is locked (level 0) -- "
+                                + "unlock it first: /rpg enchant level " + slot + " " + candidate + " 1",
+                                NamedTextColor.RED));
+                        return;
+                    }
+                }
+            }
+
+            EnchantState after;
+            try {
+                after = switch (op) {
+                    case CANDIDATE -> before.addCandidate(slot, enchantId);
+                    case LEVEL -> before.withLevel(slot, candidate, level);
+                    case ACTIVE -> before.withActive(slot, candidate);
+                    case DEACTIVATE -> before.withoutActive(slot);
+                    // Handled above and returned; listed so the switch stays exhaustive.
+                    case CLEAR, SHOW -> before;
+                };
+            } catch (IllegalArgumentException ex) {
+                // The model's own refusals, surfaced verbatim. Reachable for the cases the
+                // pre-validation above deliberately does not duplicate -- a duplicate candidate id
+                // being the obvious one.
+                player.sendMessage(Component.text(ex.getMessage(), NamedTextColor.RED));
+                return;
+            }
+
+            // A no-op must not wear the same colour as a success. Records give equals() for free,
+            // so this costs nothing and catches "I already did that" before it reads as a change.
+            if (after.equals(before)) {
+                player.sendMessage(Component.text("Nothing changed -- that is already the state.",
+                        NamedTextColor.YELLOW));
+                return;
+            }
+
+            held.editMeta(meta -> EnchantItems.write(meta, after, adapters.keys()));
+            finishEnchant(player, held, definition, adapters);
+
+            String name = enchantDef != null ? enchantDef.displayName()
+                    : (enchantId != null ? enchantId : "that candidate");
+            switch (op) {
+                case CANDIDATE -> player.sendMessage(Component.text("Slot " + slot + " candidate "
+                        + (after.slots().get(slot).candidates().size() - 1) + ": " + name
+                        + " (locked).", NamedTextColor.GREEN));
+                case LEVEL -> player.sendMessage(Component.text(level == 0
+                        ? "Slot " + slot + ": " + name + " re-locked."
+                        : "Slot " + slot + ": " + name + " unlocked to "
+                                + EnchantLoreLines.romanNumeral(level) + ".", NamedTextColor.GREEN));
+                case ACTIVE -> {
+                    int effective = after.activeLevel(
+                            after.slots().get(slot).candidates().get(candidate).enchantId());
+                    player.sendMessage(Component.text("Slot " + slot + " active: " + name + " "
+                            + EnchantLoreLines.romanNumeral(effective) + " -- consumes durability on "
+                            + Math.round(Unbreaking.consumeChance(effective) * 100) + "% of uses.",
+                            NamedTextColor.GREEN));
+                    // Belt and braces on top of effective()'s max rule: say so, rather than letting
+                    // a dev wonder why activating a second copy changed nothing.
+                    long copies = after.slots().stream()
+                            .filter(s -> s.active().isPresent())
+                            .filter(s -> s.active().orElseThrow().enchantId().equals(
+                                    after.slots().get(slot).candidates().get(candidate).enchantId()))
+                            .count();
+                    if (copies > 1) {
+                        player.sendMessage(Component.text("Note: that enchant is active in "
+                                + copies + " slots. The highest level wins -- they do not stack "
+                                + "(provisional; the roster pass decides the real rule).",
+                                NamedTextColor.YELLOW));
+                    }
+                }
+                case DEACTIVATE -> player.sendMessage(Component.text("Slot " + slot
+                        + " deactivated -- every candidate keeps its level.", NamedTextColor.GREEN));
+                case CLEAR, SHOW -> { }
+            }
+        });
+        return 1;
+    }
+
+    /**
+     * Re-mint the edited weapon back into the player's hand.
+     *
+     * The re-mint is what rebuilds the lore, so this is also what makes the enchant block appear,
+     * change and disappear. Explicit set plus updateInventory for the same reason
+     * {@code /rpg durability} does it: the tooltip changes on this command rather than at the
+     * client's next sync.
+     */
+    private static void finishEnchant(Player player, ItemStack held, WeaponDefinition definition,
+                                      AdapterContext adapters) {
+        player.getInventory().setItemInMainHand(WeaponItems.remint(held, definition, adapters));
+        player.updateInventory();
+    }
+
+    /**
+     * Print the decoded state AND the raw blob.
+     *
+     * The raw string is deliberately included: it is the boot gate's evidence that the carry moved
+     * BYTES rather than decoding and re-encoding, which is checkable only by comparing the string
+     * character for character across a restart. It also makes a decode failure visible -- a blob
+     * that is present but reads as empty says so here, where "no enchant data" would not.
+     */
+    private static void showEnchants(Player player, WeaponDefinition definition,
+                                     EnchantState state, AdapterContext adapters) {
+        String raw = player.getInventory().getItemInMainHand().getItemMeta()
+                .getPersistentDataContainer().get(adapters.keys().enchantData, PersistentDataType.STRING);
+
+        if (raw == null) {
+            player.sendMessage(Component.text("This weapon carries no enchant data.", NamedTextColor.YELLOW));
+            return;
+        }
+
+        player.sendMessage(Component.text(definition.displayName() + " -- " + state.slots().size()
+                + " slot(s)", NamedTextColor.AQUA));
+        for (int i = 0; i < state.slots().size(); i++) {
+            var slot = state.slots().get(i);
+            StringBuilder line = new StringBuilder("  Slot " + i + ": [");
+            for (int c = 0; c < slot.candidates().size(); c++) {
+                if (c > 0) line.append(", ");
+                if (c == slot.activeIndex()) line.append('*');
+                var cand = slot.candidates().get(c);
+                line.append(cand.enchantId()).append(' ')
+                        .append(cand.isLocked() ? "locked" : EnchantLoreLines.romanNumeral(cand.level()));
+            }
+            player.sendMessage(Component.text(line.append(']').toString(), NamedTextColor.GRAY));
+        }
+        for (var active : state.effective()) {
+            player.sendMessage(Component.text("  active: " + active.enchantId() + " "
+                    + EnchantLoreLines.romanNumeral(active.level()), NamedTextColor.GRAY));
+        }
+        player.sendMessage(Component.text("  raw: " + raw, NamedTextColor.DARK_GRAY));
+    }
 
     private static int cast(Player player, String abilityId, AbilityService abilityService,
                             AdapterContext adapters, ProfileService profiles) {

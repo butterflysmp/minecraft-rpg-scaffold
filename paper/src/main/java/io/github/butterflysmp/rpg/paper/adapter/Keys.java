@@ -56,6 +56,30 @@ public final class Keys {
     /** Reserved opt-out: a mob carrying this (BYTE) PDC gets no health nameplate. For future NPCs/cosmetics. */
     public final NamespacedKey nameplateOptOut;
 
+    /**
+     * An item's whole custom-enchant state (a STRING): every slot, every candidate, every unlocked
+     * level and every active choice, in one versioned blob. Grammar lives in {@code EnchantCodec}.
+     * Per ITEM, never per player -- the enchant is on the weapon, not on whoever holds it.
+     *
+     * <p>Paired with {@link #enchantRolled}, and note this pair is deliberately NOT the
+     * {@link #classDamageBoost} discipline. Those two keys are two halves of ONE value, so an item
+     * carrying one and not the other is treated as not ours. These two are INDEPENDENT FACTS: state
+     * without the flag is an item enchanted by hand before any roll existed, and the flag without
+     * state is a roll that came up empty. Both are legal, and rejecting either would silently
+     * discard a player's unlocks -- the exact loss this key exists to prevent.
+     */
+    public final NamespacedKey enchantData;
+
+    /**
+     * Set (BYTE 1) once an item's enchant slots have been ROLLED, even when the roll produced
+     * nothing -- so an item can never re-roll on re-insertion and a bad roll cannot be laundered.
+     *
+     * <p>RESERVED this pass: {@code /rpg enchant} writes it and NOTHING reads it. It is carried
+     * across a re-mint now so the roster pass, which is what makes it load-bearing, needs no change
+     * to the carry at all.
+     */
+    public final NamespacedKey enchantRolled;
+
     public Keys(Plugin plugin) {
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
@@ -69,5 +93,7 @@ public final class Keys {
         this.classDamageBoostClass = new NamespacedKey(plugin, "class_damage_boost_temp_class");
         this.mobId = new NamespacedKey(plugin, "mob_id");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
+        this.enchantData = new NamespacedKey(plugin, "enchant_data");
+        this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");
     }
 }
