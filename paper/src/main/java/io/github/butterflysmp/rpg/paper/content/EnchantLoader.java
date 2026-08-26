@@ -71,7 +71,12 @@ public final class EnchantLoader {
                 // enchant therefore lands on the empty list the record requires of it, and a damage
                 // enchant with the key forgotten is refused by the record rather than here -- one
                 // place owns the schema rules, and it is the record.
-                s.getIntegerList("percent_by_level"));
+                s.getIntegerList("percent_by_level"),
+                // Cosmetic, so it DEFAULTS rather than throwing -- a display typo must not drop a
+                // working enchant, which is what skipping the file would do. A name that does not
+                // resolve to a Material is caught at boot by ContentValidator, which can reach the
+                // Bukkit registry that this loader deliberately cannot.
+                s.getString("icon", EnchantDefinition.DEFAULT_ICON));
     }
 
     /**

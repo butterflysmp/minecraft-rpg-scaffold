@@ -44,6 +44,7 @@ import io.github.butterflysmp.rpg.storage.FilePlayerRepository;
 import io.github.butterflysmp.rpg.storage.PlayerRepository;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.entity.EntityType;
@@ -291,6 +292,12 @@ public final class RpgPlugin extends JavaPlugin {
         // ability's can, and is checked the same walk. Naming the file at boot beats a
         // silent no-visual the first time someone swings it.
         problems.addAll(validator.validateWeapons(weapons.all()));
+        // An enchant's icon is the one content field that fails INVISIBLY: a typo neither throws
+        // nor skips the file, and the enchant works perfectly while rendering as the fallback book.
+        // Material.matchMaterial is the same resolver WeaponItems uses, so the check and the render
+        // cannot disagree about what counts as a material.
+        problems.addAll(validator.validateEnchants(enchants.all(),
+                name -> Material.matchMaterial(name) != null));
         // A mob's base_entity must name a real LIVING entity. Resolving that needs the Bukkit registry,
         // which is only reachable here -- so it arrives as predicates, like the potion/sound checks.
         // "arrow" is a real EntityType and would pass a mere existence check, then ClassCastException

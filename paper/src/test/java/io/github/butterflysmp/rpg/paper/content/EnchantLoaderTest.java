@@ -277,4 +277,66 @@ class EnchantLoaderTest {
         assertEquals(0, new EnchantLoader(quietLogger())
                 .loadAll(dir.resolve("does-not-exist").toFile()).size());
     }
+
+    @Test
+    void theShippedEnchantsCarryTheirIcon(@TempDir Path dir) throws IOException {
+        // The shipped VALUES, not merely that the key parses. The enchant table renders one icon
+        // per candidate and three columns of identical books is most of what the layout exists to
+        // avoid, so which material each file names is the thing worth pinning.
+        EnchantRegistry registry = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+
+        assertEquals("iron_sword", registry.find("sharpness").orElseThrow().icon());
+        assertEquals("bow", registry.find("power").orElseThrow().icon());
+        assertEquals("blaze_rod", registry.find("attunement").orElseThrow().icon());
+        // Deliberately NOT enchanted_book: if the shipped value equalled DEFAULT_ICON this
+        // assertion could not tell "the key was read" from "the key was missing and defaulted".
+        assertEquals("anvil", registry.find("unbreaking").orElseThrow().icon());
+        assertNotEquals(EnchantDefinition.DEFAULT_ICON,
+                registry.find("unbreaking").orElseThrow().icon());
+        // Mutation: change any yml's icon -> reddens.
+        // Mutation: drop the icon arg from EnchantLoader.parse -> all four fall back -> reddens.
+    }
+
+    @Test
+    void anEnchantWithNoIconFallsBackRatherThanBeingSkipped(@TempDir Path dir) throws IOException {
+        // The split that matters: effect and class are MECHANICS and are refused when absent, but
+        // an icon is DISPLAY and defaults. A cosmetic omission must never cost a working enchant --
+        // skipping the file would turn "no picture" into "no enchant".
+        Path enchants = Files.createDirectory(dir.resolve("enchants"));
+        Files.writeString(enchants.resolve("nameless.yml"),
+                "display_name: \"Nameless\"\nmax_level: 3\neffect: durability\nclass: universal\n");
+
+        EnchantRegistry registry = new EnchantLoader(quietLogger()).loadAll(enchants.toFile());
+
+        assertEquals(1, registry.size(), "an enchant without an icon must still LOAD");
+        assertEquals(EnchantDefinition.DEFAULT_ICON, registry.find("nameless").orElseThrow().icon());
+        // Mutation: make icon required (throw when null) -> the file is skipped, size is 0 -> reddens.
+    }
+
+    @Test
+    void aBlankIconFallsBackRatherThanRenderingAsNothing(@TempDir Path dir) throws IOException {
+        // Blank is not null and would sail past a null-only guard, then resolve to no Material at
+        // all -- so the table would paint AIR where a candidate should be. An invisible candidate
+        // is unclickable, which reads as the menu being broken rather than as a content typo.
+        Path enchants = Files.createDirectory(dir.resolve("enchants"));
+        Files.writeString(enchants.resolve("blank.yml"),
+                "display_name: \"Blank\"\nicon: \"\"\nmax_level: 3\neffect: durability\nclass: universal\n");
+
+        EnchantRegistry registry = new EnchantLoader(quietLogger()).loadAll(enchants.toFile());
+
+        assertEquals(EnchantDefinition.DEFAULT_ICON, registry.find("blank").orElseThrow().icon());
+        // Mutation: drop the isBlank() arm of the record's normalisation -> "" survives -> reddens.
+    }
+
+    @Test
+    void theSixArgConstructorStillBuildsAUsableEnchant() {
+        // The delegating constructor is what kept this whole commit from touching EnchantLoreTest
+        // and EnchantEffectLineTest. If it stops defaulting, those two go red for a reason that has
+        // nothing to do with them, so the promise is pinned here where it belongs.
+        EnchantDefinition legacy = new EnchantDefinition(
+                "legacy", "Legacy", 3, EnchantEffect.DURABILITY, null, List.of());
+
+        assertEquals(EnchantDefinition.DEFAULT_ICON, legacy.icon());
+        // Mutation: delete the 6-arg constructor -> paper's test sources stop compiling entirely.
+    }
 }

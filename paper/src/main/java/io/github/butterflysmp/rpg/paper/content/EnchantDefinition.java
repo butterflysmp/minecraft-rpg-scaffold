@@ -43,13 +43,29 @@ import java.util.List;
  *                       {@link WeaponClass} itself: a parallel enum would need SUMMONER adding in
  *                       two places the day that class lands, and the exhaustive-switch discipline
  *                       that makes such an addition a compile error only works with one enum.
+ * @param icon           the Material name this enchant renders as in the enchant table, e.g.
+ *                       {@code iron_sword}. Presentational identity, so it is CONTENT rather than an
+ *                       id->Material map in Java: the 500th enchant must not need a recompile to have
+ *                       a picture. Kept as a String, not a Material, so this record stays free of
+ *                       Bukkit and therefore unit-testable; it is resolved at render time exactly as
+ *                       {@code WeaponItems.materialOf} resolves a weapon material.
  * @param percentByLevel the damage percent at levels 1..n, or an EMPTY list for a durability
  *                       enchant. Its size is held equal to {@code maxLevel}, which is what makes
  *                       level -> percent total.
  */
 public record EnchantDefinition(String id, String displayName, int maxLevel,
                                 EnchantEffect effect, WeaponClass weaponClass,
-                                List<Integer> percentByLevel) {
+                                List<Integer> percentByLevel, String icon) {
+
+    /**
+     * The item an enchant renders as in the enchant table when its file names none.
+     *
+     * <p>COSMETIC, so it defaults -- unlike {@code effect} and {@code class}, which are mechanical
+     * gates and are refused when absent. A wrong default on a gate is a silent-correctness bug; a
+     * wrong default on an icon is a picture someone can see is wrong. The same split WeaponLoader
+     * makes between a weapon material and its class.
+     */
+    public static final String DEFAULT_ICON = "enchanted_book";
 
     public EnchantDefinition {
         if (id == null || id.isBlank()) {
@@ -69,6 +85,9 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             throw new IllegalArgumentException("enchant '" + id + "' requires an effect");
         }
         percentByLevel = percentByLevel == null ? List.of() : List.copyOf(percentByLevel);
+        // Blank as well as null: an empty material string resolves to no Material at all, and the
+        // table would paint air where a candidate should be. Falling back beats rendering nothing.
+        icon = (icon == null || icon.isBlank()) ? DEFAULT_ICON : icon;
 
         switch (effect) {
             case DAMAGE -> {
@@ -120,6 +139,12 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                 }
             }
         }
+    }
+
+    /** Without an icon: the shape every caller predating the enchant table uses. */
+    public EnchantDefinition(String id, String displayName, int maxLevel, EnchantEffect effect,
+                             WeaponClass weaponClass, List<Integer> percentByLevel) {
+        this(id, displayName, maxLevel, effect, weaponClass, percentByLevel, DEFAULT_ICON);
     }
 
     /** True when this enchant is gated on no class at all and applies to whatever it sits on. */

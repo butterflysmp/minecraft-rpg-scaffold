@@ -15,6 +15,9 @@
 # the boot gate proves the LEVEL reaches the curve. On the sword it could only prove that SOME
 # multiplier applied.
 display_name: "Attunement"
+# The item this enchant renders as in the enchant table. Cosmetic: it DEFAULTS to enchanted_book
+# when absent, so it is never a reason a working enchant fails to load. Do not make it required.
+icon: blaze_rod
 max_level: 3
 effect: damage
 class: mage

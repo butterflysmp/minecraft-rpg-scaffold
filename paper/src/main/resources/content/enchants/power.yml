@@ -9,6 +9,9 @@
 # away. The boot gate uses this weapon for the CLASS-MISMATCH step instead -- Sharpness active on
 # the bow must leave the shot at exactly 6, and swapping to Power must move it to 7.
 display_name: "Power"
+# The item this enchant renders as in the enchant table. Cosmetic: it DEFAULTS to enchanted_book
+# when absent, so it is never a reason a working enchant fails to load. Do not make it required.
+icon: bow
 max_level: 3
 effect: damage
 class: ranger
