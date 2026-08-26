@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
@@ -31,7 +32,7 @@ class EnchantLoreTest {
 
     private static EnchantRegistry registryWithUnbreaking() {
         EnchantRegistry registry = new EnchantRegistry();
-        registry.register(new EnchantDefinition(UNBREAKING, "Unbreaking", 3));
+        registry.register(new EnchantDefinition(UNBREAKING, "Unbreaking", 3, EnchantEffect.DURABILITY, null, List.of()));
         return registry;
     }
 
@@ -76,7 +77,7 @@ class EnchantLoreTest {
         // The whole reason identity is a yml rather than a Java constant. A literal "Unbreaking" in
         // the renderer is exactly the drift the element registry exists to prevent.
         EnchantRegistry renamed = new EnchantRegistry();
-        renamed.register(new EnchantDefinition(UNBREAKING, "Everlasting", 3));
+        renamed.register(new EnchantDefinition(UNBREAKING, "Everlasting", 3, EnchantEffect.DURABILITY, null, List.of()));
 
         assertEquals(List.of("Everlasting III"),
                 textLines(EnchantLore.lines(active(UNBREAKING, 3), renamed)));
@@ -129,7 +130,7 @@ class EnchantLoreTest {
     void aSingleLevelEnchantOmitsItsNumeralUsingItsOwnDeclaredMaximum() {
         // max_level is read from that enchant's definition, not assumed -- vanilla's Mending rule.
         EnchantRegistry mending = new EnchantRegistry();
-        mending.register(new EnchantDefinition("mending", "Mending", 1));
+        mending.register(new EnchantDefinition("mending", "Mending", 1, EnchantEffect.DURABILITY, null, List.of()));
 
         assertEquals(List.of("Mending"), textLines(EnchantLore.lines(active("mending", 1), mending)));
     }

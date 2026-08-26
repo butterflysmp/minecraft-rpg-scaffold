@@ -9,7 +9,9 @@ import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTask;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
 import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
+import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
 import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
+import io.github.butterflysmp.rpg.paper.weapon.DamageEnchantItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponAttackItems;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -38,13 +40,16 @@ public final class PlayerHealthSystem implements HealthListener {
     private final Scheduler scheduler;
     private final Keys keys;
     private final WeaponRegistry weapons;
+    private final EnchantRegistry enchants;
     private final HeartBarRenderer renderer = new HeartBarRenderer();
     private CombatantStats stats;
 
-    public PlayerHealthSystem(Scheduler scheduler, Keys keys, WeaponRegistry weapons) {
+    public PlayerHealthSystem(Scheduler scheduler, Keys keys, WeaponRegistry weapons,
+                              EnchantRegistry enchants) {
         this.scheduler = scheduler;
         this.keys = keys;
         this.weapons = weapons;
+        this.enchants = enchants;
     }
 
     /** Wire the store this renders. Called once in onEnable, right after the store is built. */
@@ -125,11 +130,13 @@ public final class PlayerHealthSystem implements HealthListener {
         EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
         UUID id = player.getUniqueId();
         RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, () -> {
-            // Four stats converge on the same scan: max HP from +HP items, attack damage from the
+            // Five stats converge on the same scan: max HP from +HP items, attack damage from the
             // held weapon's declared attack_damage (a MAIN_HAND modifier), attack speed from equipped
-            // speed sources, and the class-damage bonus from equipped "+N <Class> Damage" gear
-            // MATCHING the held weapon's class. Same leak-proof diff for all four, so a weapon
-            // swap/drop follows within a tick and respawn re-derives every one of them for free.
+            // speed sources, the class-damage bonus from equipped "+N <Class> Damage" gear
+            // MATCHING the held weapon's class, and the enchant-damage percent from the damage
+            // enchants ON the held weapon matching THAT weapon's class. Same leak-proof diff for all
+            // five, so a weapon swap/drop follows within a tick and respawn re-derives every one of
+            // them for free.
             //
             // The class one is why a weapon swap needs no event of its own: the held weapon's class
             // is re-read every scan, so the same worn gear simply selects a different grant, and a
@@ -143,6 +150,12 @@ public final class PlayerHealthSystem implements HealthListener {
             Map<String, Double> desiredClass =
                     ClassDamageModifierItems.desiredModifiers(player, keys, weapons);
             stats.reconcileClassDamageModifiers(id, desiredClass);
+            // The fifth reads only the MAIN HAND, unlike the four above: a damage enchant is not
+            // worn elsewhere and pointed at your weapon, it is ON the weapon, so the gate compares
+            // the enchant's class against the class of the item carrying it.
+            Map<String, Double> desiredEnchant =
+                    DamageEnchantItems.desiredModifiers(player, keys, weapons, enchants);
+            stats.reconcileEnchantDamageModifiers(id, desiredEnchant);
             return true;
         }, () -> { });
     }

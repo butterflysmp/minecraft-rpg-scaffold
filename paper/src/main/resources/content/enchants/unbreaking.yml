@@ -1,13 +1,28 @@
-# An enchant is identity and bounds: a display name, and how high it goes. The id is the filename.
+# An enchant is identity, bounds, and WHICH mechanism it binds to. The id is the filename.
 #
-# There is deliberately NO behaviour field here. An enchant's EFFECT is a mechanism, not a number --
-# unbreaking's durability-skip curve is core/enchant/Unbreaking.java, bound to this file by id and
-# nothing else. Content NAMES an effect and bounds it; it never defines one, the same relationship
-# ability yml has with EffectSpec. Adding `durability_skip: 0.25` here is the obvious next
-# temptation and it belongs to the deferred damage-modifier pass, which needs a typed schema
-# decision rather than an ad-hoc key.
+# `effect` is the behaviour field Pass 1 deliberately left out and named Pass 2 as the owner of. The
+# rule it was deferred to protect is UNCHANGED: content NAMES an effect and bounds it, and still
+# never defines one. `effect: durability` names core/enchant/Unbreaking.java the way an ability's
+# `type:` names an EffectSpec subtype -- and the `durability_skip: 0.25` key the old comment here
+# warned about is still refused, because an enchant may not describe HOW it works, only which of the
+# known ways it does.
+#
+# Note what a DAMAGE enchant carries that this does not: a `percent_by_level` curve (see
+# sharpness.yml). That is not a relaxation of the rule. Unbreaking is ONE enchant with ONE curve, so
+# its curve IS its mechanism and belongs in Java. Sharpness, Power and Attunement are THREE enchants
+# sharing one mechanism, differing only in a class gate and three numbers -- a Java class each would
+# be three copies of the same arithmetic, and the fourth would be a recompile, which CLAUDE.md
+# invariant 2 forbids. Numbers become data at the point where they stop being the mechanism.
+#
+# `class: universal` means no class gate. It is REQUIRED and spelled out rather than being what you
+# get by omitting the line: an absent gate on a damage enchant is exactly the mistake that would
+# make Sharpness boost every weapon in the game, so it must not be reachable by forgetting something.
+# A durability enchant must be universal -- nothing gates wear by class, so naming one here would be
+# a promise nothing keeps, and the loader refuses it.
 #
 # This is OUR Unbreaking, not vanilla's: per the no-vanilla-enchants policy a player-held item can
 # never carry a vanilla enchant, so nothing here maps onto Enchantment.UNBREAKING.
 display_name: "Unbreaking"
 max_level: 3
+effect: durability
+class: universal

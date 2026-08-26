@@ -1,0 +1,15 @@
+# The Ranger damage enchant. Same mechanism as sharpness.yml, different gate and nothing else --
+# which is the entire argument for the numbers living in content rather than in three Java classes.
+#
+# On the shipped bow (hunters_bow, attack_damage 6) the popup reads:
+#
+#   I 6.3 -> "6"   II 6.6 -> "7"   III 6.9 -> "7"
+#
+# So I is invisible here too, for the same reason it is on the sword: 5% of a small base rounds
+# away. The boot gate uses this weapon for the CLASS-MISMATCH step instead -- Sharpness active on
+# the bow must leave the shot at exactly 6, and swapping to Power must move it to 7.
+display_name: "Power"
+max_level: 3
+effect: damage
+class: ranger
+percent_by_level: [5, 10, 15]

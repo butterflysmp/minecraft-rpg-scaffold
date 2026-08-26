@@ -1,5 +1,7 @@
 package io.github.butterflysmp.rpg.paper.content;
 
+import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
+import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -8,8 +10,14 @@ import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
- * Turns YAML into EnchantDefinition. The only class that knows the enchant schema, which is an id,
- * a display name and a maximum level -- and no behaviour, deliberately (see EnchantDefinition).
+ * Turns YAML into EnchantDefinition. The only class that knows the enchant schema: an id, a display
+ * name, a maximum level, the MECHANISM it binds to, its class gate, and -- for a damage enchant --
+ * its authored curve.
+ *
+ * <p>The {@code effect} and {@code class} keys are the behaviour fields Pass 1 deferred to Pass 2.
+ * The rule they were deferred to protect is intact: content names a mechanism and parameterises it,
+ * and still cannot define one. See {@link EnchantDefinition} for why a damage enchant's percentages
+ * are authored while Unbreaking's curve is Java.
  *
  * An enchant's id is its filename minus .yml, as with the other content types. Fails soft: a
  * malformed file is logged, named, and skipped, and every other enchant still loads.
@@ -56,6 +64,64 @@ public final class EnchantLoader {
     }
 
     private EnchantDefinition parse(String id, ConfigurationSection s) {
-        return new EnchantDefinition(id, s.getString("display_name", id), s.getInt("max_level", 1));
+        return new EnchantDefinition(id, s.getString("display_name", id), s.getInt("max_level", 1),
+                effect(s.getString("effect"), id),
+                weaponClass(s.getString("class"), id),
+                // getIntegerList returns an EMPTY list for an absent key, never null. A durability
+                // enchant therefore lands on the empty list the record requires of it, and a damage
+                // enchant with the key forgotten is refused by the record rather than here -- one
+                // place owns the schema rules, and it is the record.
+                s.getIntegerList("percent_by_level"));
     }
+
+    /**
+     * The mechanism this enchant binds to. REQUIRED, and never defaulted.
+     *
+     * A default would have to be {@code durability}, which would silently turn a damage enchant
+     * whose {@code effect:} line was misspelled into an Unbreaking that grants no damage and skips
+     * wear instead -- working, wrong, and invisible. The same reasoning makes {@code class} required
+     * on a weapon.
+     */
+    private static EnchantEffect effect(String raw, String id) {
+        if (raw == null) {
+            throw new IllegalArgumentException("enchant '" + id + "' is missing required 'effect'"
+                    + " (one of " + Arrays.toString(EnchantEffect.values()) + ")");
+        }
+        EnchantEffect parsed = EnchantEffect.fromName(raw);
+        if (parsed == null) {
+            throw new IllegalArgumentException("Unknown effect '" + raw + "' in enchant '" + id
+                    + "'; expected one of " + Arrays.toString(EnchantEffect.values()));
+        }
+        return parsed;
+    }
+
+    /**
+     * The class gate. REQUIRED, and {@code universal} is spelled out rather than being what you get
+     * by leaving the line off -- an absent gate on a damage enchant is exactly the mistake that
+     * would make Sharpness boost every weapon in the game, and it must not be reachable by
+     * forgetting something.
+     *
+     * <p>Returns null for {@code universal}, which is the no-gate value {@code DamageEnchants}
+     * expects. Every other name goes through {@link WeaponClass#fromName}, so the enchant and the
+     * weapon it sits on are parsed by ONE function and cannot disagree about what "ranger" means.
+     * Note the token is {@code ranger}, matching the enum and every weapon yml; "Ranged" is only the
+     * tooltip's label for it.
+     */
+    private static WeaponClass weaponClass(String raw, String id) {
+        if (raw == null) {
+            throw new IllegalArgumentException("enchant '" + id + "' is missing required 'class'"
+                    + " (universal, or one of " + Arrays.toString(WeaponClass.values()) + ")");
+        }
+        if (UNIVERSAL.equalsIgnoreCase(raw)) return null;
+        WeaponClass parsed = WeaponClass.fromName(raw);
+        if (parsed == null) {
+            throw new IllegalArgumentException("Unknown class '" + raw + "' in enchant '" + id
+                    + "'; expected " + UNIVERSAL + " or one of "
+                    + Arrays.toString(WeaponClass.values()));
+        }
+        return parsed;
+    }
+
+    /** The content token for "no class gate". Not a {@link WeaponClass} constant, by design. */
+    private static final String UNIVERSAL = "universal";
 }
