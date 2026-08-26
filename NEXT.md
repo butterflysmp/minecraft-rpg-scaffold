@@ -1774,13 +1774,22 @@ Before milestone 2, two things worth measuring rather than assuming:
   in the menu, both before the place. Never accept-then-eject — that has a window in which the menu
   holds an item it has already decided it does not want.
 
-- **The input slot accepts exactly one item, and the check is deliberately in TWO places.** Two
-  shipped weapons mint on stackable materials (`ember_staff` is a `blaze_rod`, `ability_stone` an
-  `amethyst_shard`), so a stack of 2 is constructible with `/rpg give` alone. `acceptsInput` stops
-  it at the door; `applyCandidateClick` re-asserts it because THAT is the operation that mints —
-  `editMeta` would enchant every item in the stack and `remint` returns a fresh stack of amount 1,
-  silently collapsing it. The operation that can destroy an item guards itself rather than trusting
-  the seam upstream. Not yet witnessed in-game: the stacking is inferred from identical meta.
+- **A weapon can never stack, and that is fixed at the SOURCE — with two guards kept behind it.**
+  `WeaponItems.mint` sets `meta.setMaxStackSize(1)`, so no shipped path produces a stack at all.
+  It is fixed in `mint` rather than only at the enchant table because durability, enchants and
+  instance data are ALL per-item, and the table is not the only thing that will ever read them —
+  two shipped weapons mint on stackable materials (`ember_staff` is a `blaze_rod`, `ability_stone`
+  an `amethyst_shard`) and two fresh mints are byte-identical, so `/rpg give ember_staff` twice
+  used to produce a stack of two. `remint` calls `mint`, so it inherits the cap.
+
+  **Both `getAmount() != 1` guards stay**, and they are not now redundant: a hand-edited item, or
+  one minted before this change, can still arrive stacked. `acceptsInput` stops it at the door, and
+  `applyCandidateClick` re-asserts it because THAT is the operation that mints — `editMeta` would
+  enchant every item in the stack and `remint` returns a fresh stack of amount 1, silently
+  collapsing it. The operation that can destroy an item guards itself rather than trusting a seam
+  upstream, including a seam as solid as a stack-size component.
+
+  Not yet witnessed in-game, in either direction.
 
 - **A weapon carrying more than 3×3 is REFUSED at the door, not truncated.** The extra slots survive
   every transition and keep working, so rendering the first nine would leave an enchant that is

@@ -100,7 +100,7 @@ Setup: `/rpg give ironblade`, then `/rpg enchant candidate 0 sharpness`, `candid
 | 17 | take it out, `/rpg enchant show` | the raw blob matches what the menu rendered, slot for slot | the menu writes the command's grammar |
 | 18 | build a 4th candidate in slot 0, then open the table | **refused with a red sentence naming the count**, returned, logged **once** | the 3×3 bound refuses loudly; `warnOnce` does not spam |
 | 18b | try to insert a **dirt block**, and a vanilla iron sword | refused; **the item never leaves your cursor** | `acceptsInput` — a refusal is a place that did not happen |
-| 19 | `/rpg give ember_staff` twice, stack them, insert the stack | refused *"one weapon at a time"*; **the stack of 2 is still on your cursor**, both intact | the only shipped path to enchanting two items with one write |
+| 19 | `/rpg give ember_staff` **twice** | **two separate items in two slots — they never stack**, even though a blaze_rod does | `meta.setMaxStackSize(1)` in `WeaponItems.mint`: the source fix, so no shipped path produces a stack to insert |
 | 19a | with staff **A resting in slot 4**, left-click a second identical staff onto it | refused; slot holds **exactly one**; the second stays on your cursor | the empty-slot requirement — vanilla MERGES onto a matching stack |
 | 19b | insert a single staff, enchant it, count after every click | still exactly one staff, never two, never zero | the `applyCandidateClick` amount gate |
 | 19c | with a weapon in slot 4, click several candidates in a row | the weapon is never blanked, swapped or duplicated by the repaint | `render()` does not write `INPUT_SLOT` |
@@ -116,10 +116,12 @@ Rows 11b, 14, 15, 15b, 18 and 19 carry information rather than confirming a chan
 level-retention property the whole candidate model exists for; 18 and 19 are the two silent
 data-loss paths.
 
-Row 19b cannot be reached while `acceptsInput` holds — that is what makes it defence in depth.
-Witness it by temporarily commenting out `acceptsInput`'s amount check, confirming a stack of 2 now
-inserts, and confirming the click **refuses** rather than collapsing it. Restore from a scratchpad
-copy, never with `git checkout --`.
+Row 19b is unreachable by any shipped path now that `WeaponItems.mint` caps weapons at one — that is
+what makes it defence in depth rather than a duplicate of `acceptsInput`. Only a hand-edited item, or
+one minted before that change, can arrive stacked. Witness it by temporarily commenting out
+`acceptsInput`'s amount check **and** `setMaxStackSize(1)`, confirming a stack of 2 now inserts, and
+confirming the click **refuses** rather than collapsing it. Restore from a scratchpad copy, never
+with `git checkout --`.
 
 ## What was verified, and how
 
