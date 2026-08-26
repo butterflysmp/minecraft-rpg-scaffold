@@ -1437,7 +1437,9 @@ Before milestone 2, two things worth measuring rather than assuming:
   `EnchantStateTest` uses two slots at I each (max 1, sum 2), because an earlier version used I and
   III — where sum is 4, which the clamp folds back to 3, the same answer max gives. A mutation run
   proved that version reddened nothing at all.
-- **The enchant TABLE UI is not built; `/rpg enchant` stands in for it.** Pass 2. This pass's
+- ~~**The enchant TABLE UI is not built; `/rpg enchant` stands in for it.**~~ **DONE** (the Enchant
+  UI pass; see `PLAN-enchant-table-ui.md`). The original entry is kept verbatim below; what follows
+  it is what it turned into. Pass 2. This pass's
   relationship to the table is exactly Durability Pass 2's to auto-wear: build the mechanism, drive
   it with a dev instrument, and leave the thing that will really drive it for a pass that can decide
   its own questions. The table needs the XP economy and bookshelf power below, neither of which
@@ -1732,14 +1734,87 @@ Before milestone 2, two things worth measuring rather than assuming:
   not need to know that abilities exist.
 
 - **Still deferred after Pass 2:** the per-instance roll and the class pools (now with a real roster
-  of three damage enchants to draw from), the enchant table UI, the XP economy and bookshelf power,
-  and a SUMMONER enchant — which still waits on the class, which still waits on mob-to-mob damage.
+  of three damage enchants to draw from), ~~the enchant table UI~~ (DONE — the Enchant UI pass), the
+  XP economy and bookshelf power, and a SUMMONER enchant — which still waits on the class, which
+  still waits on mob-to-mob damage.
 
 - **The tooltip shows no percent, and the Phase-4 entry stays OPEN.** Pass 2 grants the first real
   enchant STAT DELTA, which is what that entry was waiting for, but `EnchantLore` still renders only
   "Sharpness III" — no `+15%` line, and the weapon's damage numbers are still its authored base.
   Surfacing a RESOLVED number belongs with the stat screen, beside `+N Melee Damage` and the resolved
   attack speed, per the standing rule that lore describes the weapon and not whoever holds it.
+
+
+- **The enchant table's boot gate is OWED IN FULL BY A HUMAN.** Every one of its 23 rows needs a
+  `Player` — the menu, the clicks, the item-safety cases and the shutdown return — and a console log
+  can only prove the plugin loaded. Nothing in the pass was witnessed in-game. The gate is in
+  `PLAN-enchant-table-ui.md`; rows 6–10c and 18–22 need the item COUNTED before and after, because a
+  dupe that creates a second weapon and a theft that removes one look identical in a screenshot of
+  the after state.
+
+- **The bookshelf readout is a labelled placeholder, not a `0%` count.** Nothing counts bookshelves,
+  and slot 8 says "Not implemented yet" in as many words rather than rendering a zero. A readout
+  reporting `0%` when nothing is measured is indistinguishable from a working readout that measured
+  zero — CLAUDE.md's own failure mode, in a place a player can see. This is a deliberate deviation
+  from the layout brief, which asked for a greyed `0%`.
+
+- **Unlocking is FREE, and the XP economy gates the same click.** `EnchantClickIntent.of` is a pure
+  function and the cost check goes in FRONT of it, never inside: what a click MEANS and whether you
+  can afford it are different questions. So the economy pass adds a guard and a cost to
+  `applyCandidateClick` and changes nothing structural, and the bookshelf discount lands on the
+  readout that is already sitting there saying it does not exist yet.
+
+- **The input model is "an empty slot ← exactly one item", and the ROUTER owns it, not the menu.**
+  Two things a future input-slot menu will otherwise rediscover the hard way.
+  `InventoryClickEvent` fires BEFORE the place applies, so a handler reading the input slot sees it
+  empty — acceptance has to be decided against the CURSOR, in `Menu.acceptsInput`. And vanilla
+  MERGES a place onto a matching stack rather than swapping: two freshly minted weapons of ours
+  share identical meta, so a cursor of one item passes every validity check the menu could make and
+  the slot still ends up holding two. Occupancy is therefore checked in `MenuRouting` and validity
+  in the menu, both before the place. Never accept-then-eject — that has a window in which the menu
+  holds an item it has already decided it does not want.
+
+- **The input slot accepts exactly one item, and the check is deliberately in TWO places.** Two
+  shipped weapons mint on stackable materials (`ember_staff` is a `blaze_rod`, `ability_stone` an
+  `amethyst_shard`), so a stack of 2 is constructible with `/rpg give` alone. `acceptsInput` stops
+  it at the door; `applyCandidateClick` re-asserts it because THAT is the operation that mints —
+  `editMeta` would enchant every item in the stack and `remint` returns a fresh stack of amount 1,
+  silently collapsing it. The operation that can destroy an item guards itself rather than trusting
+  the seam upstream. Not yet witnessed in-game: the stacking is inferred from identical meta.
+
+- **A weapon carrying more than 3×3 is REFUSED at the door, not truncated.** The extra slots survive
+  every transition and keep working, so rendering the first nine would leave an enchant that is
+  ACTIVE and INVISIBLE — the same defect `EnchantLore` refuses to create when it renders an unknown
+  id rather than hiding it. A roll that can exceed three needs either a bigger layout or a real cap,
+  and that is the roster pass's decision, which is why the bound sits in `EnchantMenuLayout` at the
+  reachable surface rather than in `EnchantState`.
+
+- **The table WINS a right-click on an enchanting table; sneaking bypasses to the weapon trigger.**
+  Vanilla's own convention — a block interaction beats an item's use unless you sneak — and the
+  escape hatch is what makes it safe: the other ordering means a Mage holding their staff can never
+  open the table they are standing at. Flagged for tuning; boot rows 3 and 4 are where it is judged.
+
+- **The single-button interaction model is a PROPOSAL.** Locked → unlock-and-activate, unlocked →
+  activate, active → level up, one click each. It is a pure function precisely so tuning it means
+  editing `EnchantClickIntent` and its tests rather than re-reading a Bukkit class. Boot rows 12–15b
+  are where it is judged.
+
+- **The menu framework has ONE consumer, and nothing in it is generalised in advance.**
+  `Menu.inputSlots()`, `Menu.acceptsInput` and `MenuRouting`'s whitelist are the seams a second menu
+  uses. The anvil UI is the reuse test — if it needs changes to the base, the base was wrong. Its
+  `MenuClick` deliberately carries no `InventoryClickEvent`: a consumer that needs the event is a
+  consumer about to introduce a duplication bug.
+
+- **One non-guarantee, written down so nobody spends a pass on it.** A player who logs out while a
+  menu holds their weapon, in a world that then fails to save, loses it. That is true of every item
+  in the game and is not this feature's problem.
+
+- **`setEnchantmentGlintOverride` is the sanctioned glow, and the old shortcut is still forbidden.**
+  The active candidate glints via the display-only flag, which adds no `Enchantment` instance, on an
+  item that is never player-held. `addEnchant(Enchantment.UNBREAKING, 1, true)` + `HIDE_ENCHANTS`
+  remains the thing the vanilla-enchant policy forbids, and is now MORE tempting than before, because
+  there is finally a glinting item in the codebase to copy the idea from. It is not what that item
+  does.
 
 ---
 
