@@ -64,6 +64,12 @@ instance, on an item that is never player-held.
 is indistinguishable from a working readout that measured zero — CLAUDE.md's own failure mode, in a
 place a player can see. *This is the one deliberate deviation from the layout brief.*
 
+**The weapon sits bottom-centre (49) and the hint top-centre (4).** The item travels the shortest
+distance from the player's own inventory, and the thing being enchanted sits nearest the choices
+being made about it. Both slots stay non-cells, and `theFixtureSlotsAreWhereTheLayoutSaysTheyAre`
+pins the four literals -- every other assertion reaches them through the constants and would pass
+unchanged whatever they said.
+
 **An oversized weapon is refused, not truncated.** The extra slots survive every transition and
 keep working, so rendering only the first nine leaves an enchant that is **active and invisible**.
 
@@ -81,14 +87,14 @@ Setup: `/rpg give ironblade`, then `/rpg enchant candidate 0 sharpness`, `candid
 | 2 | right-click a table, empty hand | the custom menu opens; **the vanilla enchant screen never appears** | the intercept and the cancel |
 | 3 | right-click a table holding `emberblade`, **not** sneaking | menu opens; no Fireball, no energy spent | the table wins, ahead of `WeaponFire.attempt` |
 | 4 | same, **sneaking** | Fireball casts; no menu | the escape hatch — without it a Mage can never open the table |
-| 5 | click slots 0/8/49 and any filler | nothing moves, nothing reaches the cursor; slot 0 CLOSES | default-cancel, and the close button |
+| 5 | click slots 0/8/4 and any filler | nothing moves, nothing reaches the cursor; slot 0 CLOSES | default-cancel, and the close button |
 | 6 | **shift-click** `ironblade` from your inventory | it does not move | `MOVE_TO_OTHER_INVENTORY` |
 | 7 | **double-click a glass pane in your OWN inventory** | **no filler panes leave the menu** | `COLLECT_TO_CURSOR` from the BOTTOM inventory — the actual exploit |
 | 8 | **1–9** and **F** over a filler pane | nothing swaps | `NUMBER_KEY` / `SWAP_OFFHAND` |
 | 9 | drag a stack across menu + player slots | nothing lands in the menu | `handleDrag` |
-| 10 | weapon in slot 4, **Esc**; again, **slot 0** | back in your inventory **both times**, identical item | one return path — Close and Esc are the same code |
+| 10 | weapon in slot 49, **Esc**; again, **slot 0** | back in your inventory **both times**, identical item | one return path — Close and Esc are the same code |
 | 10b | inventory 36/36 full, weapon in, Esc | drops at your feet **with the yellow line** | the leftover branch, said out loud |
-| 10c | weapon in slot 4, pick it onto the **cursor**, Esc | returned; not lost, not duplicated | the cursor branch |
+| 10c | weapon in slot 49, pick it onto the **cursor**, Esc | returned; not lost, not duplicated | the cursor branch |
 | 11 | place `ironblade` | col 2 = Sharpness + Unbreaking (grey, "Click to unlock at I."), col 4 = Power, col 6 filler | the layout literals, real icons, empty-slot filler |
 | 11b | hover locked Sharpness, then locked Unbreaking | `+5% damage, x1.05` — **not** `+0%`; and **not** `100% of uses` | described at the level it would BECOME |
 | 12 | click locked Sharpness | it **glints**, reads **I**, and the weapon's tooltip gains `Sharpness I` | unlock+activate in one click, right order, plus the re-mint |
@@ -101,9 +107,9 @@ Setup: `/rpg give ironblade`, then `/rpg enchant candidate 0 sharpness`, `candid
 | 18 | build a 4th candidate in slot 0, then open the table | **refused with a red sentence naming the count**, returned, logged **once** | the 3×3 bound refuses loudly; `warnOnce` does not spam |
 | 18b | try to insert a **dirt block**, and a vanilla iron sword | refused; **the item never leaves your cursor** | `acceptsInput` — a refusal is a place that did not happen |
 | 19 | `/rpg give ember_staff` **twice** | **two separate items in two slots — they never stack**, even though a blaze_rod does | `meta.setMaxStackSize(1)` in `WeaponItems.mint`: the source fix, so no shipped path produces a stack to insert |
-| 19a | with staff **A resting in slot 4**, left-click a second identical staff onto it | refused; slot holds **exactly one**; the second stays on your cursor | the empty-slot requirement — vanilla MERGES onto a matching stack |
+| 19a | with staff **A resting in slot 49**, left-click a second identical staff onto it | refused; slot holds **exactly one**; the second stays on your cursor | the empty-slot requirement — vanilla MERGES onto a matching stack |
 | 19b | insert a single staff, enchant it, count after every click | still exactly one staff, never two, never zero | the `applyCandidateClick` amount gate |
-| 19c | with a weapon in slot 4, click several candidates in a row | the weapon is never blanked, swapped or duplicated by the repaint | `render()` does not write `INPUT_SLOT` |
+| 19c | with a weapon in slot 49, click several candidates in a row | the weapon is never blanked, swapped or duplicated by the repaint | `render()` does not write `INPUT_SLOT` |
 | 20 | menu open with the weapon in it, **`stop`** the server | after restart, the weapon is in your inventory | `onDisable`'s close-all, ahead of the flush |
 | 21 | menu open with the weapon in it, `/kill` | it is in your inventory after respawn | the death path + existing `keepInventory` |
 | 22 | menu open with the weapon in it, **disconnect**, rejoin | it is in your inventory | `onQuit` close, ahead of the save |

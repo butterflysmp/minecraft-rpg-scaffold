@@ -37,14 +37,20 @@ public final class EnchantMenuLayout {
      */
     public static final int CLOSE_SLOT = 0;
 
-    /** The one slot in the whole menu a player may put an item into or take one out of. */
-    public static final int INPUT_SLOT = 4;
+    /**
+     * The one slot in the whole menu a player may put an item into or take one out of.
+     *
+     * <p>Bottom-centre, directly under the three candidate columns, and directly above the player's
+     * own inventory -- so the item travels the shortest distance and the thing being enchanted sits
+     * nearest the choices being made about it.
+     */
+    public static final int INPUT_SLOT = 49;
 
     /** The bookshelf readout. A labelled placeholder this pass -- see EnchantMenu. */
     public static final int BOOKSHELF_SLOT = 8;
 
-    /** The hint line, and where a refusal that needs more than a chat message is shown. */
-    public static final int INFO_SLOT = 49;
+    /** The hint line, top-centre, where a screen is read from. */
+    public static final int INFO_SLOT = 4;
 
     /**
      * The bound: three enchant slots of three candidates each.

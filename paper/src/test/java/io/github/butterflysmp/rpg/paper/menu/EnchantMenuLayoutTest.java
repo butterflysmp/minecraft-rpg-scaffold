@@ -58,6 +58,19 @@ class EnchantMenuLayoutTest {
     }
 
     @Test
+    void theFixtureSlotsAreWhereTheLayoutSaysTheyAre() {
+        // Literals, like the nine cells, and for the same reason: these are design decisions, and
+        // every OTHER assertion in this file reaches them through the constants -- so it would pass
+        // unchanged whatever the constants said. This is the only test that can see them move.
+        assertEquals(0, EnchantMenuLayout.CLOSE_SLOT);
+        assertEquals(4, EnchantMenuLayout.INFO_SLOT, "the hint reads top-centre");
+        assertEquals(8, EnchantMenuLayout.BOOKSHELF_SLOT);
+        assertEquals(49, EnchantMenuLayout.INPUT_SLOT,
+                "the weapon sits bottom-centre, nearest the player's own inventory");
+        // Mutation: swap INPUT_SLOT and INFO_SLOT -> reddens HERE and nowhere else in the suite.
+    }
+
+    @Test
     void chromeAndFillerAddressNoCell() {
         // A click on the input slot must never be read as a candidate: they are different actions
         // on different things, and confusing them would enchant on pickup.
