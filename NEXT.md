@@ -1808,6 +1808,21 @@ Before milestone 2, two things worth measuring rather than assuming:
   editing `EnchantClickIntent` and its tests rather than re-reading a Bukkit class. Boot rows 12–15b
   are where it is judged.
 
+- **Shift-click into an input slot is PERFORMED by the router, never permitted.** The reason it was
+  refused outright at first still stands, and is exactly why it is not simply un-cancelled: vanilla
+  picks the destination across the whole other inventory, so permitting `MOVE_TO_OTHER_INVENTORY`
+  would be accepting a slot chosen by someone other than us, bypassing every check.
+  `MenuRouting.shiftMove` chooses the destination itself, vets it through the SAME `placeAllowed`
+  the click-place uses — one copy of the rules, so the two gestures cannot drift into disagreeing
+  about what an input slot accepts — and moves the item by hand.
+
+  **It must never be added to `OWN_INVENTORY_ACTIONS`**, which would hand the destination straight
+  back to the server. And the fall-through is load-bearing rather than incidental: because the
+  whitelist means a move the router does not perform simply does not happen, a filler pane cannot
+  leak into a player's inventory even though shift-clicking one is now a gesture that reaches that
+  code. A shift-click INSIDE the player's own inventory is cancelled too — a small loss of
+  convenience for the guarantee that the router moves everything or nothing.
+
 - **The menu framework has ONE consumer, and nothing in it is generalised in advance.**
   `Menu.inputSlots()`, `Menu.acceptsInput` and `MenuRouting`'s whitelist are the seams a second menu
   uses. The anvil UI is the reuse test — if it needs changes to the base, the base was wrong. Its

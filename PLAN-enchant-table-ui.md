@@ -43,7 +43,8 @@ registry to keep in step and `RpgListeners`' constructor did not grow.
 unconditionally. `MenuClick` deliberately carries no `InventoryClickEvent`, so a consumer cannot
 un-cancel. "Forgot to cancel" is not a mistake this base permits.
 
-**The router is a whitelist.** A blacklist is one Minecraft drop away from incomplete — a new
+**The router is a whitelist, and shift-click is PERFORMED rather than permitted.** A blacklist is
+one Minecraft drop away from incomplete — a new
 `InventoryAction` constant would fall through it as permitted. Here it lands in the cancelled arm.
 
 **The input model is "an empty slot ← exactly one item", and the router owns it.**
@@ -88,7 +89,11 @@ Setup: `/rpg give ironblade`, then `/rpg enchant candidate 0 sharpness`, `candid
 | 3 | right-click a table holding `emberblade`, **not** sneaking | menu opens; no Fireball, no energy spent | the table wins, ahead of `WeaponFire.attempt` |
 | 4 | same, **sneaking** | Fireball casts; no menu | the escape hatch — without it a Mage can never open the table |
 | 5 | click slots 0/8/4 and any filler | nothing moves, nothing reaches the cursor; slot 0 CLOSES | default-cancel, and the close button |
-| 6 | **shift-click** `ironblade` from your inventory | it does not move | `MOVE_TO_OTHER_INVENTORY` |
+| 6 | **shift-click** the `ironblade` in from your inventory | it lands in the input slot, **exactly one**, and **nothing is left behind** in the source slot | the shift-move is performed by us, not delegated to the server |
+| 6a | **shift-click a filler pane** in the menu | nothing leaves the menu; **no glass pane appears in your inventory** | only an input slot leaves — everything else falls through to the default cancel |
+| 6b | **shift-click a second weapon in** while one is already resting in slot 49 | refused; **both items intact**, one in the slot and one in your inventory | the occupancy gate, shared with the click-place |
+| 6c | **shift-click the resting weapon out** | back in your inventory; the input slot is **empty** | the symmetric take-out, via `MenuSafety.give` |
+| 6d | **shift-click a dirt block** in from your inventory | refused; the block stays where it was | `acceptsInput`, reached through the same `placeAllowed` the click-place uses |
 | 7 | **double-click a glass pane in your OWN inventory** | **no filler panes leave the menu** | `COLLECT_TO_CURSOR` from the BOTTOM inventory — the actual exploit |
 | 8 | **1–9** and **F** over a filler pane | nothing swaps | `NUMBER_KEY` / `SWAP_OFFHAND` |
 | 9 | drag a stack across menu + player slots | nothing lands in the menu | `handleDrag` |
@@ -115,7 +120,8 @@ Setup: `/rpg give ironblade`, then `/rpg enchant candidate 0 sharpness`, `candid
 | 22 | menu open with the weapon in it, **disconnect**, rejoin | it is in your inventory | `onQuit` close, ahead of the save |
 | 23 | boot with `sharpness.yml`'s `icon:` misspelled | `Content: enchant 'sharpness' names icon '...'` at WARNING; server still runs | the typo is named at boot, not rendered as a silent book |
 
-**Count the item before and after every one of rows 6–10c and 18–22.** A dupe that creates a second
+**Count the item before and after every one of rows 6–10c and 18–22** — rows 6–6d especially, since
+the shift-move now writes two inventories itself. A dupe that creates a second
 weapon and a theft that removes one look identical in a screenshot of the *after* state.
 
 Rows 11b, 14, 15, 15b, 18 and 19 carry information rather than confirming a change: 15/15b are the
