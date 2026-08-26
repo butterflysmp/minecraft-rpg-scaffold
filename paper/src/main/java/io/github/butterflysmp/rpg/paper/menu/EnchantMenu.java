@@ -38,8 +38,9 @@ import static io.github.butterflysmp.rpg.paper.menu.EnchantMenuLayout.INPUT_SLOT
  * decide what to spend on, and a locked candidate rendered as "???" removes the informed choice the
  * whole screen is for.
  *
- * <p>The clicks themselves land in the commit after this one; this is the render and the item
- * safety, deliberately proven before any path exists that can write to the weapon.
+ * <p>Unlocks are FREE this pass. The XP economy gates the same click, and gates it in FRONT of
+ * {@code EnchantClickIntent}, never inside it -- what a click MEANS and whether you can afford it
+ * are different questions.
  */
 public final class EnchantMenu extends Menu {
 
@@ -111,7 +112,10 @@ public final class EnchantMenu extends Menu {
             adapters.scheduler().onEntityLater(viewer, this::render, 1);
         }
 
-        // Candidate clicks arrive in the next commit. Everything else is chrome and stays cancelled.
+        // A candidate cell, or chrome. cellAt returns empty for filler, chrome, and every raw slot
+        // in the player's own inventory, so a click that is not a candidate simply is not one.
+        EnchantMenuLayout.cellAt(click.slot())
+                .ifPresent(cell -> applyCandidateClick(cell.slot(), cell.candidate()));
     }
 
     @Override
@@ -248,6 +252,130 @@ public final class EnchantMenu extends Menu {
             return Material.ENCHANTED_BOOK;
         }
         return resolved;
+    }
+
+    /**
+     * A candidate click, applied.
+     *
+     * <p>THE SAME SEVEN STEPS {@code /rpg enchant} takes, in the same order, for the same reasons:
+     * resolve the weapon, read the state, validate in English, transform, reject the no-op, write,
+     * RE-MINT. The only difference is where the item lives -- an input slot rather than the main
+     * hand. No scheduler hop: {@code InventoryClickEvent} already fires on this player's thread.
+     *
+     * <p><b>Never patches lore.</b> Every edit routes through {@code WeaponItems.remint}, which
+     * rebuilds the tooltip from the state that just landed and carries the enchant blob across
+     * raw. Patching would let the enchant block double or go stale.
+     */
+    private void applyCandidateClick(int slotIndex, int candidateIndex) {
+        ItemStack input = getInventory().getItem(INPUT_SLOT);
+        if (input == null || input.getType().isAir()) {
+            say("Put one of your weapons in the slot above.", NamedTextColor.GRAY);
+            return;
+        }
+
+        // DEFENCE IN DEPTH, and NOT a duplicate of acceptsInput's identical-looking check. THIS is
+        // the operation that mints: editMeta would enchant every item in a stack, and remint
+        // returns a FRESH stack of amount 1, silently collapsing a stack of two into one. That is
+        // item destruction rather than a cosmetic glitch, so the operation that can destroy guards
+        // itself instead of trusting the insert seam to have held.
+        if (input.getAmount() != 1) {
+            say("Only one weapon at a time -- take the stack out and re-insert a single one.",
+                    NamedTextColor.RED);
+            return;
+        }
+
+        String weaponId = WeaponItems.weaponId(input, adapters.keys()).orElse(null);
+        if (weaponId == null) {
+            say("Put one of your weapons in the slot above.", NamedTextColor.GRAY);
+            return;
+        }
+
+        // A re-mint needs the definition. REFUSE rather than half-edit: writing state we cannot
+        // re-mint leaves an item whose PDC and whose lore disagree, which is worse than nothing.
+        WeaponDefinition definition = weapons.find(weaponId).orElse(null);
+        if (definition == null) {
+            say("'" + weaponId + "' has no content file loaded -- cannot re-mint it, so refusing"
+                    + " to edit its enchants.", NamedTextColor.RED);
+            return;
+        }
+
+        EnchantState before = EnchantItems.read(input, adapters.keys());
+        if (slotIndex >= before.slots().size()) return;                   // filler, not a refusal
+        EnchantSlot slot = before.slots().get(slotIndex);
+        if (candidateIndex >= slot.candidates().size()) return;           // filler, not a refusal
+
+        EnchantCandidate candidate = slot.candidates().get(candidateIndex);
+        EnchantDefinition enchant = adapters.enchants().find(candidate.enchantId()).orElse(null);
+        String name = enchant != null ? enchant.displayName() : candidate.enchantId();
+        EnchantClickIntent intent = EnchantClickIntent.of(slot, candidateIndex, enchant);
+
+        EnchantState after;
+        try {
+            after = switch (intent) {
+                // ORDER IS LOAD-BEARING: withActive REFUSES a locked candidate, so the level has to
+                // land first and the activation has to run on the RESULT, not on `before`.
+                case UNLOCK -> before.withLevel(slotIndex, candidateIndex, 1)
+                        .withActive(slotIndex, candidateIndex);
+                case ACTIVATE -> before.withActive(slotIndex, candidateIndex);
+                case LEVEL_UP -> before.withLevel(slotIndex, candidateIndex, candidate.level() + 1);
+                case AT_MAX -> {
+                    say(name + " is already at its maximum.", NamedTextColor.GRAY);
+                    yield before;
+                }
+                case UNKNOWN_ENCHANT -> {
+                    say("'" + candidate.enchantId() + "' has no content file loaded -- refusing to"
+                            + " change a level nothing defines a maximum for.", NamedTextColor.RED);
+                    yield before;
+                }
+                case EMPTY -> before;
+            };
+        } catch (IllegalArgumentException ex) {
+            // The model's own refusal, verbatim. It knows why better than a paraphrase here would.
+            say(ex.getMessage(), NamedTextColor.RED);
+            return;
+        }
+
+        // Records give equals() free, so a no-op is exact rather than inferred. The arms above have
+        // already said why, which is what keeps a handled no-op from looking like a dead click.
+        if (after.equals(before)) return;
+
+        input.editMeta(meta -> EnchantItems.write(meta, after, adapters.keys()));
+        // remint returns a NEW stack, so `input` is stale from here and render() must re-read.
+        getInventory().setItem(INPUT_SLOT, WeaponItems.remint(input, definition, adapters));
+        render();
+        viewer.updateInventory();
+
+        say(feedbackFor(intent, name, after, candidate.enchantId(), definition.weaponClass()),
+                NamedTextColor.GRAY);
+
+        // No stat reconcile: PlayerHealthSystem re-reads the held weapon every scan tick, and the
+        // weapon is not held while it is sitting in this menu.
+    }
+
+    /**
+     * What just happened, and what it means ON THIS WEAPON.
+     *
+     * <p>Routed through {@code EnchantEffectLine} so the reply says "inert: a Melee enchant on a
+     * Ranged weapon" when that is the truth -- the moment the mistake is correctable is right after
+     * making it, not on a later inspection. Same reasoning that put the line on
+     * {@code /rpg enchant active}.
+     */
+    private String feedbackFor(EnchantClickIntent intent, String name, EnchantState after,
+                               String enchantId, WeaponClass heldClass) {
+        EnchantDefinition enchant = adapters.enchants().find(enchantId).orElse(null);
+        int level = after.activeLevel(enchantId);
+        String effect = EnchantEffectLine.of(enchant, Math.max(1, level), heldClass);
+
+        return switch (intent) {
+            case UNLOCK -> "Unlocked " + name + " I and made it active." + effect;
+            case ACTIVATE -> name + " is now active." + effect;
+            case LEVEL_UP -> name + " is now "
+                    + EnchantLoreLines.romanNumeral(level) + "." + effect;
+            // Unreachable: these three arms return `before`, so equals() short-circuits above them.
+            // Kept because the switch is exhaustive and a silent default arm is how a new intent
+            // ships with no words.
+            case AT_MAX, UNKNOWN_ENCHANT, EMPTY -> name + " is unchanged.";
+        };
     }
 
     private void say(String message, NamedTextColor color) {
