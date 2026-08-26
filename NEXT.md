@@ -1819,35 +1819,38 @@ Before milestone 2, two things worth measuring rather than assuming:
   editing `EnchantClickIntent` and its tests rather than re-reading a Bukkit class. Boot rows 12–15b
   are where it is judged.
 
-- **The cross-inventory gestures are PERFORMED by the router, never permitted.** Shift-click and the
-  number keys are both supported, and neither is ever un-cancelled. The reason they were refused
+- **All three cross-inventory gestures are PERFORMED by the router, never permitted.** Shift-click,
+  the number keys and F are supported, and none is ever un-cancelled. The reason they were refused
   outright at first still stands and is exactly why: vanilla picks the destination itself — across
-  the whole other inventory for a shift-click, and as a two-way SWAP for a number key — so
-  permitting either would be accepting a slot chosen by someone other than us, bypassing every
-  check. `MenuRouting.shiftMove` and `MenuRouting.hotbarMove` choose the destination themselves and
-  move the item by hand.
+  the whole other inventory for a shift-click, and as a two-way SWAP for a number key or F — so
+  permitting any of them would be accepting a slot chosen by someone other than us, bypassing every
+  check. `MenuRouting`'s `shiftMove`, `hotbarMove` and `offhandMove` choose the destination
+  themselves and move the item by hand.
 
-  **`NUMBER_KEY` is intercepted by TYPE, ahead of even `ALWAYS_REFUSED`**, and that ordering is the
-  point: a number-key press over an EMPTY slot does not resolve to `HOTBAR_SWAP`, so matching on the
-  action alone would miss exactly the case that matters. `HOTBAR_SWAP` and `HOTBAR_MOVE_AND_READD`
-  were therefore removed from the refused set — only a number key produces them, and listing them
-  after the type intercept would be dead weight that reads like a guard.
+  **`NUMBER_KEY` and `SWAP_OFFHAND` are intercepted by TYPE, ahead of even `ALWAYS_REFUSED`**, and
+  that ordering is the point: a number-key press over an EMPTY slot does not resolve to
+  `HOTBAR_SWAP`, so matching on the action alone would miss exactly the case that matters.
+  `HOTBAR_SWAP` and `HOTBAR_MOVE_AND_READD` were therefore removed from the refused set — only a
+  number key produces them, and listing them after the type intercept would be dead weight that
+  reads like a guard. `DOUBLE_CLICK` and `CREATIVE` stay blanket-refused.
 
-  **Neither may ever be added to `OWN_INVENTORY_ACTIONS`**, which would hand the destination
-  straight back to the server. All three entry paths — click-place, shift-click, number-key — share
-  ONE `placeAllowed`, so the "empty slot ← exactly one item" model cannot hold on one and not
-  another.
+  **Nothing may ever be added to `OWN_INVENTORY_ACTIONS`**, which would hand the destination
+  straight back to the server. FOUR inbound paths — click-place, shift-click, number-key, F — share
+  ONE `placeAllowed`, and the number key and F share one `swapWithInput` on top of that, so the
+  "empty slot ← exactly one item" model cannot hold on one gesture and not another.
+
+  **The number key and F are bidirectional, and one rule gives both directions.** Exactly one side
+  must hold something: an empty input slot and a full other slot moves IN, a full input slot and an
+  empty other slot moves OUT, and the two remaining cases are refused — both full is the two-way
+  swap vanilla would do, and both empty is nothing to move. `placeAllowed` is consulted only on the
+  way IN; it asks what may come in, and the only rule going the other way is a destination that is
+  already known to be empty.
 
   The fall-through is load-bearing rather than incidental: because the whitelist means a move the
-  router does not perform simply does not happen, a filler pane cannot leak into an inventory or a
-  hotbar even though shift-clicking and number-keying one now both reach that code. `SWAP_OFFHAND`,
-  `DOUBLE_CLICK` and `CREATIVE` stay blanket-refused. A shift-click INSIDE the player's own
-  inventory is cancelled too — a small loss of convenience for the guarantee that the router moves
-  everything or nothing.
-
-  Only the INWARD direction has a number-key path. Taking the weapon back out is a shift-click or a
-  plain left click, both already supported; a number-key take-out needs its own empty-hotbar-slot
-  rule and nothing asks for it, so it stays out rather than being half-built.
+  router does not perform simply does not happen, a filler pane cannot leak into an inventory, a
+  hotbar or the offhand even though all three gestures now reach that code. A shift-click INSIDE
+  the player's own inventory is cancelled too — a small loss of convenience for the guarantee that
+  the router moves everything or nothing.
 
 - **The menu framework has ONE consumer, and nothing in it is generalised in advance.**
   `Menu.inputSlots()`, `Menu.acceptsInput` and `MenuRouting`'s whitelist are the seams a second menu

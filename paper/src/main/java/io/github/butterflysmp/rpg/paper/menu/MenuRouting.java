@@ -9,6 +9,8 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * The click whitelist: the one page that decides whether anything is allowed to move.
@@ -39,17 +41,17 @@ final class MenuRouting {
      *
      * <p>{@code CLONE_STACK} is creative middle-click, which makes items out of nothing.
      *
-     * <p><b>Neither {@code MOVE_TO_OTHER_INVENTORY} nor the hotbar swaps are here, and their
-     * absence is not a relaxation.</b> Shift-click and the number keys are the gestures a player
-     * actually reaches for, so both are supported -- by being PERFORMED, in {@link #shiftMove} and
-     * {@link #hotbarMove}, never by being permitted. The objection that had them refused outright
-     * still stands and is exactly why neither is ever un-cancelled: the SERVER would pick the
+     * <p><b>None of the three cross-inventory GESTURES is here, and their absence is not a
+     * relaxation.</b> Shift-click, the number keys and F are what a player actually reaches for, so
+     * all three are supported -- by being PERFORMED, in {@link #shiftMove}, {@link #hotbarMove} and
+     * {@link #offhandMove}, never by being permitted. The objection that had them refused outright
+     * still stands and is exactly why none is ever un-cancelled: the SERVER would pick the
      * destination -- across the whole other inventory for a shift-click, and as a two-way swap for
-     * a number key -- which would be a slot chosen by someone other than us.
+     * a number key or F -- which would be a slot chosen by someone other than us.
      *
      * <p>{@code HOTBAR_SWAP} and {@code HOTBAR_MOVE_AND_READD} are produced only by a number-key
-     * press, and that is now caught by TYPE before this set is consulted, so listing them here
-     * would be dead weight that reads like a guard.
+     * press, and both that and F are now caught by TYPE before this set is consulted, so listing
+     * them here would be dead weight that reads like a guard.
      */
     private static final Set<InventoryAction> ALWAYS_REFUSED = Set.of(
             InventoryAction.COLLECT_TO_CURSOR,
@@ -73,9 +75,9 @@ final class MenuRouting {
      * to put down the weapon they just took out of the input slot, so this cannot be "nothing".
      * Everything genuinely dangerous was already refused above.
      *
-     * <p>{@code MOVE_TO_OTHER_INVENTORY} and the hotbar swaps must never be added here. Both are
-     * intercepted before this set is consulted, and adding either would hand the destination back
-     * to the server.
+     * <p>{@code MOVE_TO_OTHER_INVENTORY} and the hotbar swaps must never be added here. All are
+     * intercepted before this set is consulted, and adding any of them would hand the destination
+     * back to the server.
      */
     private static final Set<InventoryAction> OWN_INVENTORY_ACTIONS = Set.of(
             InventoryAction.PICKUP_ALL, InventoryAction.PICKUP_HALF,
@@ -92,24 +94,23 @@ final class MenuRouting {
      * @return the click the menu should act on, or {@code null} for "handled; nothing to dispatch".
      */
     static MenuClick route(InventoryClickEvent event, Menu menu) {
-        // 1. Number keys, by TYPE, ahead of EVERYTHING -- including the action set.
-        //    A number-key press over an EMPTY slot does not resolve to HOTBAR_SWAP, so matching on
-        //    the action alone would let exactly the case we care about through. Performed by us or
-        //    not at all; never un-cancelled.
-        if (event.getClick() == ClickType.NUMBER_KEY) {
-            return hotbarMove(event, menu);
-        }
+        // 1. The two SWAP gestures, by TYPE, ahead of EVERYTHING -- including the action set.
+        //    By type because neither resolves to a predictable action in the case that matters: a
+        //    number-key press over an EMPTY slot does not resolve to HOTBAR_SWAP, so matching on
+        //    the action alone would miss exactly the move we want to allow. Both are performed by
+        //    us or not at all, and neither is ever un-cancelled -- vanilla's version of each is a
+        //    two-way swap, which is two moves on rules that are not ours.
+        ClickType click = event.getClick();
+        if (click == ClickType.NUMBER_KEY) return hotbarMove(event, menu);
+        if (click == ClickType.SWAP_OFFHAND) return offhandMove(event, menu);
 
         // 2. Cross-inventory actions. The ones that matter most are clicked in the player's own
         //    inventory and would sail past every later gate.
         if (ALWAYS_REFUSED.contains(event.getAction())) return null;
 
-        // 2b. And by TYPE as well, so none of these depends on which InventoryAction the server
-        //     happened to resolve them to.
-        ClickType click = event.getClick();
-        if (click == ClickType.SWAP_OFFHAND
-                || click == ClickType.DOUBLE_CLICK
-                || click == ClickType.CREATIVE) {
+        // 2b. And by TYPE as well, so neither depends on which InventoryAction the server happened
+        //     to resolve it to.
+        if (click == ClickType.DOUBLE_CLICK || click == ClickType.CREATIVE) {
             return null;
         }
 
@@ -154,23 +155,69 @@ final class MenuRouting {
     }
 
     /**
+     * Move a weapon between an input slot and ONE other slot -- a hotbar slot, or the offhand --
+     * in whichever direction is unambiguous.
+     *
+     * <p>The shared body of {@link #hotbarMove} and {@link #offhandMove}. Those two differ only in
+     * WHICH slot is "the other one", so the rules live here once. Two copies of an in/out decision
+     * is how the number key and the F key drift into disagreeing about what an input slot accepts
+     * -- the same reason every inbound path shares {@link #placeAllowed}.
+     *
+     * <p><b>Exactly one side must hold something.</b> That single test gives both directions and
+     * refuses vanilla's swap in the same breath: an empty input slot and a full other slot moves
+     * IN, a full input slot and an empty other slot moves OUT, and the two remaining cases are
+     * refused -- both full is the two-way swap vanilla would do, and both empty is nothing to move.
+     *
+     * @param read  the other slot's current contents. May be air; never assumed non-null.
+     * @param write sets the other slot. {@code null} clears it.
+     */
+    private static MenuClick swapWithInput(InventoryClickEvent event, Menu menu, Player player,
+                                           int hovered, Supplier<ItemStack> read,
+                                           Consumer<ItemStack> write) {
+        ItemStack other = read.get();
+        ItemStack resting = menu.getInventory().getItem(hovered);
+        boolean otherEmpty = other == null || other.getType().isAir();
+        boolean restingEmpty = resting == null || resting.getType().isAir();
+
+        // Both full, or both empty. Neither is a one-way move.
+        if (otherEmpty == restingEmpty) return null;
+
+        if (restingEmpty) {
+            // IN: the SAME gate the click-place and the shift-click use, so every entry path agrees
+            // about what an input slot takes.
+            if (!placeAllowed(menu, hovered, other)) return null;
+            // Cloned before the source is cleared, and the source cleared before the place: a live
+            // view of a slot we are about to empty is how an item becomes air in transit, and
+            // clearing first cannot leave two.
+            ItemStack moving = other.clone();
+            write.accept(null);
+            menu.getInventory().setItem(hovered, moving);
+        } else {
+            // OUT. placeAllowed is deliberately NOT consulted: it asks what may come IN, and the
+            // only rule going the other way is that the destination is empty -- which the
+            // one-side-full test above has already established.
+            ItemStack moving = resting.clone();
+            menu.getInventory().setItem(hovered, null);
+            write.accept(moving);
+        }
+
+        player.updateInventory();
+        return new MenuClick(hovered, event.getClick(), event.getAction(), true);
+    }
+
+    /**
      * A number-key press over an input slot, carried out by us. Both directions.
      *
-     * <p>Mirrors {@link #shiftMove}: performed, never permitted. Vanilla's number key is a
-     * BIDIRECTIONAL swap -- it puts the hotbar item into the hovered slot AND the hovered slot's
-     * item into the hotbar, in one press -- so un-cancelling it would move two items in two
-     * inventories on rules that are not ours. Cancelled throughout; the ONE-WAY move below is the
-     * whole of what happens.
+     * <p>Performed, never permitted. Vanilla's number key is a BIDIRECTIONAL swap -- it puts the
+     * hotbar item into the hovered slot AND the hovered slot's item into the hotbar, in one press
+     * -- so un-cancelling it would move two items in two inventories on rules that are not ours.
+     * Cancelled throughout; the one-way move in {@link #swapWithInput} is the whole of what happens.
      *
-     * <p><b>The hovered-slot check is the load-bearing one.</b> It is what stops a filler pane
-     * leaking into the hotbar and a hotbar item vanishing into a menu slot, which is the entire
-     * reason number keys were blanket-refused before. A slot in the player's own inventory fails it
-     * for free: its raw slot is past the end of the menu, so it is not one of the input slots.
-     *
-     * <p><b>Exactly one side must hold something.</b> That single rule gives both directions and
-     * refuses vanilla's swap in the same breath: an empty input slot and a full hotbar slot moves
-     * IN, a full input slot and an empty hotbar slot moves OUT, and the two remaining cases are
-     * refused -- both full would be the two-way swap, and both empty is nothing to move.
+     * <p><b>The hovered-slot check is the load-bearing one</b>, here and in {@link #offhandMove}.
+     * It is what stops a filler pane leaking into the hotbar and a hotbar item vanishing into a
+     * menu slot, which is the entire reason number keys were blanket-refused before. A slot in the
+     * player's own inventory fails it for free: its raw slot is past the end of the menu, so it is
+     * not one of the input slots.
      */
     private static MenuClick hotbarMove(InventoryClickEvent event, Menu menu) {
         if (!(event.getWhoClicked() instanceof Player player)) return null;
@@ -183,35 +230,30 @@ final class MenuRouting {
         int button = event.getHotbarButton();
         if (button < 0 || button > 8) return null;
 
-        ItemStack hotbar = player.getInventory().getItem(button);
-        ItemStack resting = menu.getInventory().getItem(hovered);
-        boolean hotbarEmpty = hotbar == null || hotbar.getType().isAir();
-        boolean restingEmpty = resting == null || resting.getType().isAir();
+        return swapWithInput(event, menu, player, hovered,
+                () -> player.getInventory().getItem(button),
+                item -> player.getInventory().setItem(button, item));
+    }
 
-        // Both full, or both empty. Neither is a one-way move.
-        if (hotbarEmpty == restingEmpty) return null;
+    /**
+     * F over an input slot, carried out by us. Both directions.
+     *
+     * <p>Structurally {@link #hotbarMove} with the offhand as the other slot, and it shares that
+     * method's whole body through {@link #swapWithInput} rather than restating it. Vanilla's F is
+     * the same bidirectional swap the number key is, and is refused for the same reason.
+     *
+     * <p>{@code getItemInOffHand} returns AIR rather than null when the hand is empty, which the
+     * shared emptiness test already handles; {@code setItemInOffHand(null)} clears it.
+     */
+    private static MenuClick offhandMove(InventoryClickEvent event, Menu menu) {
+        if (!(event.getWhoClicked() instanceof Player player)) return null;
 
-        if (restingEmpty) {
-            // IN: the SAME gate the click-place and the shift-click use, so every entry path agrees
-            // about what an input slot takes.
-            if (!placeAllowed(menu, hovered, hotbar)) return null;
-            // Cloned before the source is cleared, and the source cleared before the place: a live
-            // view of a slot we are about to empty is how an item becomes air in transit, and
-            // clearing first cannot leave two.
-            ItemStack moving = hotbar.clone();
-            player.getInventory().setItem(button, null);
-            menu.getInventory().setItem(hovered, moving);
-        } else {
-            // OUT. placeAllowed is deliberately NOT consulted: it asks what may come IN, and the
-            // only rule going the other way is that the destination is empty -- which the
-            // one-side-full test above has already established.
-            ItemStack moving = resting.clone();
-            menu.getInventory().setItem(hovered, null);
-            player.getInventory().setItem(button, moving);
-        }
+        int hovered = event.getRawSlot();
+        if (!menu.inputSlots().contains(hovered)) return null;
 
-        player.updateInventory();
-        return new MenuClick(hovered, event.getClick(), event.getAction(), true);
+        return swapWithInput(event, menu, player, hovered,
+                () -> player.getInventory().getItemInOffHand(),
+                item -> player.getInventory().setItemInOffHand(item));
     }
 
     /**
