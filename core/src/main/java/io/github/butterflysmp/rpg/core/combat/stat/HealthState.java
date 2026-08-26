@@ -45,6 +45,24 @@ public final class HealthState {
      * fireball can take +Melee without inheriting the swing's 8.
      */
     private final Stat classDamage = new Stat(0.0);
+    /**
+     * Enchant damage: the sum of the PERCENTAGES granted by the damage enchants active on the weapon
+     * this combatant is HOLDING, whose class matches that weapon's own. Base 0.0, no constructor
+     * parameter -- the entire value is item-contributed, like attack speed and the class bonus.
+     *
+     * <p><b>It carries a PERCENT, not a multiplier, and that is the load-bearing decision.</b>
+     * {@link Stat#value()} is {@code base + Sum(modifiers)}. Percentages are genuinely additive, so
+     * summing is the correct composition and 0.0 is the correct neutral -- the same neutral as the
+     * class bonus, which is what lets an untracked combatant resolve to x1.0 for free. A
+     * multiplier-valued stat would have to base at 1.0, and Stat would then resolve TWO sources to
+     * 2.0 rather than 1.0; worse, any 0.0 default on it would silently zero all damage instead of
+     * leaving it alone. {@code DamageEnchants.multiplier} converts, once, at the damage arm.
+     *
+     * <p>Distinct from {@link #classDamage} because they compose differently, not merely because
+     * they come from different items: the percent multiplies the weapon's BASE and the class bonus
+     * adds on top of the product. Folding them into one stat would make that ordering unexpressible.
+     */
+    private final Stat enchantDamagePercent = new Stat(0.0);
 
     private final boolean player;
     private double current;
@@ -223,6 +241,44 @@ public final class HealthState {
         return classDamage.modifierCount();
     }
 
+    // --- Enchant damage: a fifth Stat, a PERCENT, base 0.0 ------------------------------------------
+
+    /**
+     * The resolved enchant damage percent: {@code 0.0 + Sum(modifiers)}. A weapon carrying Sharpness
+     * III (15%) resolves to {@code 15.0}, which {@code DamageEnchants.multiplier} turns into
+     * {@code 1.15} at the damage arm.
+     *
+     * A PERCENT, so 0 is the correct "scales nothing" value -- and note this is 0 for the SAME reason
+     * attack damage and the class bonus are, even though its effect is multiplicative: the conversion
+     * to a multiplier happens downstream, precisely so that this side can keep the summand rule and
+     * the codebase can keep ONE absent-value convention rather than two.
+     */
+    public double enchantDamagePercentValue() {
+        return enchantDamagePercent.value();
+    }
+
+    /** Set (or replace) the enchant-damage modifier from {@code source}; true if the value changed. */
+    public boolean setEnchantDamageModifier(String source, double amount) {
+        return enchantDamagePercent.putModifier(source, amount);
+    }
+
+    /** Remove {@code source}'s enchant-damage modifier; true if one was actually removed. */
+    public boolean clearEnchantDamageModifier(String source) {
+        return enchantDamagePercent.removeModifier(source);
+    }
+
+    public double enchantDamageModifierAmount(String source) {
+        return enchantDamagePercent.amountOf(source);
+    }
+
+    public Set<String> enchantDamageModifierSources() {
+        return enchantDamagePercent.sources();
+    }
+
+    public int enchantDamageModifierCount() {
+        return enchantDamagePercent.modifierCount();
+    }
+
     // --- Modifier targets: one per stat, so the reconcile diff is written once (see ModifierTarget) --
 
     /**
@@ -270,6 +326,19 @@ public final class HealthState {
                 return classDamage.putModifier(source, amount);
             }
             @Override public boolean clearModifier(String source) { return classDamage.removeModifier(source); }
+        };
+    }
+
+    /** The enchant-damage modifier surface. A plain {@link Stat}, like attack damage. */
+    ModifierTarget enchantDamageTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return enchantDamagePercent.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return enchantDamagePercent.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) {
+                return enchantDamagePercent.removeModifier(source);
+            }
         };
     }
 

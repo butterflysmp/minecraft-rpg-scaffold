@@ -267,6 +267,21 @@ public final class FakeWorld implements CombatWorld {
          */
         public double classDamageBonus = 0.0;
 
+        /**
+         * The enchant-damage PERCENT this dummy's snapshot carries -- the sum of the percentages
+         * granted by the damage enchants active on the weapon it holds, gated on that weapon's own
+         * class, frozen at cast time. Sharpness III is {@code 15.0}, not {@code 1.15}.
+         *
+         * Defaults to 0, which {@code DamageEnchants.multiplier} turns into exactly 1.0, so every
+         * test written before damage enchants existed sees the numbers it always saw. That is the
+         * neutral this stat was made a percent to get: a multiplier-valued field defaulting to 0.0
+         * would have zeroed the damage in every one of them.
+         *
+         * On the DUMMY rather than the world, for the same reason attackDamage is: a test can change
+         * it MID-FLIGHT and prove a projectile still lands the value frozen at launch.
+         */
+        public double enchantDamagePercent = 0.0;
+
         /** The last velocity a dash impulse set on this dummy, or null if never dashed. */
         public Vec3 lastImpulse;
 
@@ -290,7 +305,7 @@ public final class FakeWorld implements CombatWorld {
 
         public CombatantSnapshot snapshot() {
             return new CombatantSnapshot(id, pos, health > 0, player, attackSpeed, attackDamage,
-                    classDamageBonus);
+                    classDamageBonus, enchantDamagePercent);
         }
 
         /**

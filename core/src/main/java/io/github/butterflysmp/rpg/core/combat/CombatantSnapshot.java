@@ -53,7 +53,18 @@ import java.util.UUID;
  * arrow already in the air keeps the bonus its launch-time class earned. That is the same rule the
  * attack-damage freeze established, and it is the correct one -- the shot was paid for when it was
  * taken.
+ *
+ * {@code enchantDamagePercent} is the caster's resolved ENCHANT-DAMAGE stat: the sum of the
+ * percentages granted by the damage enchants active on the weapon they HOLD, whose class matches
+ * that weapon's own. Fourth stat, same reason, same freeze -- a Sharpness III arrow is a 15% arrow
+ * for its whole flight even if the bow is dropped before impact.
+ *
+ * It is a PERCENT rather than a multiplier, and 0.0 when untracked. That is not an oversight of the
+ * summand/divisor rule but the reason the percent was chosen: {@code DamageEnchants.multiplier(0.0)}
+ * is exactly 1.0, so the neutral absent value stays 0.0 and matches every other summand here. A
+ * multiplier-valued component would have needed 1.0 -- a second convention beside
+ * {@code attackSpeed}'s, on a field whose 0.0 default would silently zero all damage.
  */
 public record CombatantSnapshot(UUID id, Vec3 position, boolean alive, boolean player,
                                 double attackSpeed, double attackDamage,
-                                double classDamageBonus) {}
+                                double classDamageBonus, double enchantDamagePercent) {}

@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core.combat.stat;
 
+import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -295,6 +296,71 @@ class CombatantStatsTest {
 
         assertEquals(3.0, stats.classDamageValue(id), EPS,
                 "the melee grant alone -- the mage grant did not linger alongside it");
+    }
+
+    // --- Enchant damage (a PERCENT, base 0.0) -----------------------------------------------------
+
+    /**
+     * An UNTRACKED combatant's enchant percent is 0.0 -- and 0.0 is NEUTRAL here, because
+     * {@code DamageEnchants.multiplier(0.0)} is exactly 1.0.
+     *
+     * That is the whole reason this stat carries a percent rather than a multiplier. A
+     * multiplier-valued stat would have needed 1.0 as its absent value, adding a second convention
+     * beside attack speed's -- and a 0.0 slip on it would not have been a small buff like copying
+     * attack speed's 1.0 here would be, it would have ZEROED every untracked combatant's damage. The
+     * percent has no such failure mode: both mistakes are impossible because there is only one
+     * sensible absent value.
+     */
+    @Test
+    void anUntrackedCombatantsEnchantPercentIsZeroWhichIsTheNeutralMultiplier() {
+        var stats = new CombatantStats();
+        assertEquals(0.0, stats.enchantDamagePercentValue(UUID.randomUUID()), EPS,
+                "0 percent, which multiplier() turns into exactly x1.0");
+        assertEquals(1.0, DamageEnchants.multiplier(stats.enchantDamagePercentValue(UUID.randomUUID())),
+                EPS, "so an untracked caster deals exactly what it always did");
+        // Mutation: return AttackSpeed.BASE -> 1.0 percent -> x1.01 -> reddens.
+    }
+
+    /**
+     * The reconcile converges, keyed by ENCHANT ID. Two damage enchants on one weapon arrive as two
+     * sources and Stat SUMS their percentages -- 15 + 10 = 25, i.e. x1.25 -- which is the correct
+     * composition for percentages and the second reason the stat is not a multiplier: two
+     * multiplier-valued sources would have summed to 2.25 rather than composing.
+     */
+    @Test
+    void reconcilingEnchantDamageSumsPercentagesAndDropsDepartedEnchants() {
+        var stats = new CombatantStats();
+        UUID id = UUID.randomUUID();
+        stats.register(id, 100, true);
+
+        stats.reconcileEnchantDamageModifiers(id, Map.of("sharpness", 15.0, "keen", 10.0));
+        assertEquals(25.0, stats.enchantDamagePercentValue(id), EPS, "percentages add: x1.25");
+
+        // The weapon is swapped, or a slot is deactivated: that enchant stops being desired.
+        stats.reconcileEnchantDamageModifiers(id, Map.of("sharpness", 15.0));
+        assertEquals(15.0, stats.enchantDamagePercentValue(id), EPS, "the departed enchant is dropped");
+
+        stats.reconcileEnchantDamageModifiers(id, Map.of());
+        assertEquals(0.0, stats.enchantDamagePercentValue(id), EPS,
+                "an unenchanted weapon clears everything, back to x1.0");
+    }
+
+    /**
+     * Sheathing an enchanted weapon for an unenchanted one leaves NO residue -- the same leak-proof
+     * property the class-damage swap test pins, on the stat that would otherwise let a dropped sword
+     * keep boosting a bow.
+     */
+    @Test
+    void swappingToAnUnenchantedWeaponLeavesNoEnchantResidue() {
+        var stats = new CombatantStats();
+        UUID id = UUID.randomUUID();
+        stats.register(id, 100, true);
+
+        stats.reconcileEnchantDamageModifiers(id, Map.of("sharpness", 15.0));   // holding the sword
+        stats.reconcileEnchantDamageModifiers(id, Map.of());                    // swapped to a stick
+
+        assertEquals(0.0, stats.enchantDamagePercentValue(id), EPS,
+                "the sword's Sharpness did not follow the hand that dropped it");
     }
 
     /**

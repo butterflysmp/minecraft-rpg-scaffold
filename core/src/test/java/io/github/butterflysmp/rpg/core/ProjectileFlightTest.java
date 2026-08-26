@@ -327,4 +327,36 @@ class ProjectileFlightTest {
         assertDoesNotThrow(() -> world.advanceTicks(50));
         assertEquals(83, target.health, 1e-9, "the shot still lands its frozen 12 + 5");
     }
+
+    /**
+     * The damage-enchant multiplier is frozen at launch too -- a Power III arrow is a 15% arrow for
+     * its whole flight, even if the bow leaves the hand before impact.
+     *
+     * THIS IS THE ONLY POSSIBLE PROOF, since Paper is single-region: changing the percent mid-flight
+     * is what distinguishes "frozen onto the Caster at cast time" from "re-read at impact", and the
+     * latter is the documented Folia race -- a projectile's payload resolves on the TARGET'S region,
+     * cross-region from the caster. The multiplier inherits the freeze for free by riding the
+     * existing snapshot -> Caster projection, and this asserts that rather than assuming it.
+     */
+    @Test
+    void aProjectileDealsTheEnchantMultiplierFrozenAtLaunchNotAtImpact() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(6, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(target);
+        caster.enchantDamagePercent = 15.0;   // Power III on the bow that fired it
+
+        cast(world, caster, grenade(1.0, 0, 100, HIT), FORWARD);   // HIT is a literal Damage(12)
+        assertEquals(100, target.health, 1e-9, "no hit on the launch frame");
+
+        // Mid-flight the wielder swaps to an unenchanted weapon, or to one enchanted far higher.
+        // The shot in the air was paid for at launch either way.
+        caster.enchantDamagePercent = 900.0;
+
+        world.advanceTicks(10);
+        assertEquals(86.2, target.health, 1e-9,
+                "12 * 1.15 = 13.8, the percent frozen at launch, not the 900% held at impact");
+        // Mutation: read the percent live at impact -> 12 * 10 = 120 -> reddens.
+    }
 }
