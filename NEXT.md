@@ -1689,19 +1689,33 @@ Before milestone 2, two things worth measuring rather than assuming:
   fractional damage, and a ±1 disagreement is the documented skew rather than a new bug. Fixing it
   means rounding both off one basis; not folded into this pass.
 
-- **CONSEQUENCE: a melee weapon's ABILITY takes its melee enchant, and that is a decision worth
-  confirming rather than a leak.** The emberblade's Fireball is a literal `Damage(12)` and the
-  multiplier reaches both arms, so Sharpness III scales it to 13.8. Any ability cast while holding a
-  matching-class enchanted weapon is scaled the same way — `/rpg cast solar_grenade` with a Sharpness
-  sword in hand included.
+- **CONSEQUENCE: a melee weapon's ABILITY takes its melee enchant. ANSWERED 2026-08-25: KEEP IT, and
+  the reason is that it matches the class bonus.** The emberblade's Fireball is a literal
+  `Damage(12)` and the multiplier reaches both arms, so Sharpness III scales it to 13.8. Any ability
+  cast while holding a matching-class enchanted weapon is scaled the same way — `/rpg cast
+  solar_grenade` with a Sharpness sword in hand included.
 
   This is exactly consistent with the standing consequence recorded for the class bonus (*"standalone
   ability literals are now gear-scalable"*), and it follows from the same held-weapon-gated `Caster`.
-  It is flagged rather than fixed because the alternative — restricting an enchant to the weapon's own
-  triggers — would need `WeaponService` to mark the cast and a from-weapon flag threaded through
-  `AbilityService`/`CastExecutor`, the same cost that was declined for the class bonus. **If the
-  answer should differ for enchants, decide it before the roll ships**, because a roll makes it
-  everyone's problem rather than a dev command's.
+  The alternative — restricting an enchant to the weapon's own triggers — would need `WeaponService`
+  to mark the cast and a from-weapon flag threaded through `AbilityService`/`CastExecutor`, the same
+  cost that was declined for the class bonus.
+
+  **The decision was to keep the shipped behaviour, taken deliberately and before the roll rather
+  than discovered after it.** What it settles is not really the Fireball; it is that
+  **`+Class Damage` gear and a class-typed enchant are ONE rule, not two.** Both are build stats
+  gated on the held weapon's class, both reach every direct-damage effect the caster deals, and
+  neither is keyed on where the payload came from. A player who has learned what their sword does to
+  their gear does not then have to learn a second, narrower rule for what it does to their enchants.
+
+  So the pair of them now carries a single invariant worth stating once: **anything gated on the held
+  weapon's class scales the caster's whole class output, not just that weapon's autoattack.** If that
+  is ever revisited it should be revisited for BOTH — splitting them so gear scales abilities and
+  enchants do not would be the genuinely confusing outcome, and it is the one this answer forecloses.
+
+  Consequence for the roll, which is the pass that would otherwise have inherited the question: it
+  inherits nothing. A rolled Sharpness behaves like a hand-assigned one, and the roll's design does
+  not need to know that abilities exist.
 
 - **Still deferred after Pass 2:** the per-instance roll and the class pools (now with a real roster
   of three damage enchants to draw from), the enchant table UI, the XP economy and bookshelf power,
