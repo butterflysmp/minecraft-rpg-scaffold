@@ -33,7 +33,7 @@ public final class EnchantLore {
     private EnchantLore() {}
 
     /**
-     * One line per active enchant: {@code "Unbreaking III"}, grey and italic.
+     * One line per active enchant: {@code "Unbreaking III"}, grey and not italic.
      *
      * <p>Walks {@link EnchantState#effective()}, which is what makes the tooltip and the durability
      * seam agree by construction: the same enchant active in two slots renders ONCE, at the level
@@ -53,11 +53,13 @@ public final class EnchantLore {
             String name = def != null ? def.displayName() : titleCase(active.enchantId());
             int maxLevel = def != null ? def.maxLevel() : EnchantState.MAX_LEVEL;
 
-            // Grey and italic: vanilla's enchantment styling, and the ONE place in this codebase
-            // besides the weapon flavour block where italic is deliberately left ON. Every other
-            // lore line opts out, because lore renders italic by default.
+            // Grey, and explicitly NOT italic -- matching WeaponLore.plain and modern vanilla,
+            // where the flavour block is the only italic thing on the tooltip. The explicit false
+            // is load-bearing and must not be "simplified" to a deletion: lore renders italic by
+            // DEFAULT, so dropping the call leaves the line italic via NOT_SET rather than making
+            // it plain.
             lines.add(Component.text(EnchantLoreLines.label(name, active.level(), maxLevel),
-                    NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, true));
+                    NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         }
         return lines;
     }

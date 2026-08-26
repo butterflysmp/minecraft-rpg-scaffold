@@ -38,9 +38,15 @@ public final class Unbreaking {
      *
      * Worked: 0 -&gt; 1.0 (always); I -&gt; 0.5; II -&gt; 0.333...; III -&gt; 0.25.
      *
-     * <p>Also what the dev command prints back ("consumes durability on 25% of uses"), so the boot
-     * gate can read the expected rate off the screen BEFORE swinging rather than deciding
-     * afterwards what the number it got should have been.
+     * <p>Feeds the DURABILITY arm of the dev command's effect line ({@code EnchantEffectLine}) --
+     * "consumes durability on 25% of uses" -- so the boot gate can read the expected rate off the
+     * screen BEFORE swinging rather than deciding afterwards what the number it got should have
+     * been. A damage enchant's line comes from {@code DamageEnchants} instead.
+     *
+     * <p>That "and only that arm" is written narrowly on purpose. The broad version of this
+     * sentence -- "what the dev command prints back" -- was true of every effect, and it outlived a
+     * bug in which {@code /rpg enchant active} appended this rate to EVERY enchant, Sharpness
+     * included.
      */
     public static double consumeChance(int level) {
         if (level <= 0) return 1.0;

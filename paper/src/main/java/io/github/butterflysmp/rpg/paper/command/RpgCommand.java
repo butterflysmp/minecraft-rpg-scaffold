@@ -20,12 +20,8 @@ import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
-import io.github.butterflysmp.rpg.core.enchant.ActiveEnchant;
-import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
-import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantLoreLines;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
-import io.github.butterflysmp.rpg.core.enchant.Unbreaking;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -923,10 +919,14 @@ public final class RpgCommand {
                 case ACTIVE -> {
                     int effective = after.activeLevel(
                             after.slots().get(slot).candidates().get(candidate).enchantId());
+                    // The suffix dispatches by effect(), so this says what THIS enchant does -- and
+                    // says "inert" when it does nothing here, which is the moment that is
+                    // correctable. The full stop is the caller's: it keeps the reply a sentence
+                    // like its siblings while the shared string stays exactly what show prints.
                     player.sendMessage(Component.text("Slot " + slot + " active: " + name + " "
-                            + EnchantLoreLines.romanNumeral(effective) + " -- consumes durability on "
-                            + Math.round(Unbreaking.consumeChance(effective) * 100) + "% of uses.",
-                            NamedTextColor.GREEN));
+                            + EnchantLoreLines.romanNumeral(effective)
+                            + EnchantEffectLine.of(enchantDef, effective, definition.weaponClass())
+                            + ".", NamedTextColor.GREEN));
                     // Belt and braces on top of effective()'s max rule: say so, rather than letting
                     // a dev wonder why activating a second copy changed nothing.
                     long copies = after.slots().stream()
@@ -998,37 +998,10 @@ public final class RpgCommand {
         for (var active : state.effective()) {
             player.sendMessage(Component.text("  active: " + active.enchantId() + " "
                     + EnchantLoreLines.romanNumeral(active.level())
-                    + resolvedEffect(active, definition, adapters), NamedTextColor.GRAY));
+                    + EnchantEffectLine.of(adapters.enchants().find(active.enchantId()).orElse(null),
+                            active.level(), definition.weaponClass()), NamedTextColor.GRAY));
         }
         player.sendMessage(Component.text("  raw: " + raw, NamedTextColor.DARK_GRAY));
-    }
-
-    /**
-     * What this active enchant actually RESOLVES to on the weapon it is sitting on, as a suffix on
-     * the "active:" line -- and whether it is inert there.
-     *
-     * <p>This exists so the boot gate can read the EXPECTED number off the screen BEFORE swinging,
-     * rather than deciding afterwards what the number it got should have been. It is the same job
-     * {@code Unbreaking.consumeChance} does when the durability path prints "consumes durability on
-     * 25% of uses", and it matters more here: the damage popup ROUNDS, so at the shipped [5, 10, 15]
-     * curve a Sharpness I sword renders "8" exactly like an unenchanted one. Without this line the
-     * gate could not tell "the enchant is inert" from "the enchant applied and rounding hid it".
-     *
-     * <p>The class mismatch is called out explicitly for the same reason -- Sharpness on a bow is
-     * SUPPOSED to do nothing, and a silent absence of change looks identical to a broken gate.
-     */
-    private static String resolvedEffect(ActiveEnchant active, WeaponDefinition weapon,
-                                         AdapterContext adapters) {
-        EnchantDefinition definition = adapters.enchants().find(active.enchantId()).orElse(null);
-        if (definition == null) return " (unknown enchant -- grants nothing)";
-        if (definition.effect() != EnchantEffect.DAMAGE) return "";
-
-        if (!definition.isUniversal() && definition.weaponClass() != weapon.weaponClass()) {
-            return " (inert: a " + WeaponClassLabel.of(definition.weaponClass()) + " enchant on a "
-                    + WeaponClassLabel.of(weapon.weaponClass()) + " weapon)";
-        }
-        double percent = DamageEnchants.percentAt(definition.percentByLevel(), active.level());
-        return String.format(" (+%.0f%% damage, x%.2f)", percent, DamageEnchants.multiplier(percent));
     }
 
     private static int cast(Player player, String abilityId, AbilityService abilityService,

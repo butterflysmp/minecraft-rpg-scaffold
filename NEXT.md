@@ -1664,6 +1664,20 @@ Before milestone 2, two things worth measuring rather than assuming:
   | 7 | `ironblade` | Sharpness I *and* III, two slots | **9**, *not 10* | `effective()` takes MAX, not sum |
   | 8 | `ironblade` | Unbreaking + Sharpness | wear skips AND damage scales | dispatch by `effect` |
   | 9 | any | any | `show`'s raw blob identical across a re-mint | Pass 1's carry, still held |
+  | 10 | `ironblade` | Unbreaking III, then Sharpness III | the `/rpg enchant active` REPLY reads `(consumes durability on 25% of uses)`, then `(+15% damage, x1.15)` | the ACTIVATION reply dispatches by `effect` -- pre-fix it said "consumes durability" for BOTH |
+  | 10b | `hunters_bow` | Sharpness III | the `active` REPLY reads `(inert: a Melee enchant on a Ranged weapon)` | the inert case reaches the reply, not only `show` |
+
+  **Step 10 exists because step 2 checked `show` and nothing checked the ACTIVATION reply.** That
+  gap is the whole reason `/rpg enchant active` spent Pass 2 appending Unbreaking's consume rate to
+  every enchant -- activating Sharpness reported "consumes durability on 25% of uses" -- while step
+  2 sat one command away reading the correct percent out of `show`. A gate that reads one of two
+  surfaces looks exactly like a gate that reads both.
+
+  Its shape is the point: one held weapon, two activations, **two different asserted strings from
+  the same command**. A single hardcoded description cannot pass it whichever effect it happens to
+  describe, which is the property step 8 has for the swing path and the reply had for nothing.
+  `EnchantEffectLineTest` now pins both strings in the two-second loop, so step 10 witnesses the
+  wiring rather than the arithmetic.
 
   **Steps 4, 6 and 7 are the ones that carry information**, and each is a number that separates two
   designs rather than confirming a change:
