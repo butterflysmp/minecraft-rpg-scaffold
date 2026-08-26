@@ -1,10 +1,9 @@
-package io.github.butterflysmp.rpg.paper.command;
+package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
 import io.github.butterflysmp.rpg.core.enchant.Unbreaking;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
-import io.github.butterflysmp.rpg.paper.weapon.WeaponClassLabel;
 
 /**
  * What an active enchant actually RESOLVES to on the weapon it is sitting on, as a suffix on the
@@ -29,7 +28,7 @@ import io.github.butterflysmp.rpg.paper.weapon.WeaponClassLabel;
  * the alternative to the inert note is not silence, it is "(+15% damage, x1.15)" on a weapon where
  * that multiplier never applies.
  */
-final class EnchantEffectLine {
+public final class EnchantEffectLine {
 
     private EnchantEffectLine() {}
 
@@ -44,21 +43,39 @@ final class EnchantEffectLine {
      *                   {@code WeaponDefinition}'s constructor rejects a null class and
      *                   {@code WeaponLoader} refuses a file without one.
      */
-    static String of(EnchantDefinition definition, int level, WeaponClass heldClass) {
-        if (definition == null) return " (unknown enchant -- grants nothing)";
+    public static String of(EnchantDefinition definition, int level, WeaponClass heldClass) {
+        return " (" + bare(definition, level, heldClass) + ")";
+    }
+
+    /**
+     * The same sentence with no brackets and no leading space -- what a LORE LINE needs, where a
+     * parenthetical aside reads as an afterthought rather than as the description.
+     *
+     * <p>Extracted rather than stripped at the call site so there is still exactly ONE exhaustive
+     * switch on {@code EnchantEffect}. Two describers is what this class was created to end, and a
+     * caller trimming the brackets off itself is how the second one comes back.
+     *
+     * <p><b>Never called with level 0.</b> A LOCKED candidate is described at the level it would
+     * BECOME, because the arms below are total over levels rather than guarded: level 0 would read
+     * "+0% damage" for a damage enchant and, worse, "consumes durability on 100% of uses" for
+     * Unbreaking -- which is backwards, and reads as a curse. The enchant menu passes
+     * {@code Math.max(1, level)} and says "Click to unlock at I" beneath, so the two agree.
+     */
+    public static String bare(EnchantDefinition definition, int level, WeaponClass heldClass) {
+        if (definition == null) return "unknown enchant -- grants nothing";
 
         // No default arm, deliberately -- the same discipline as WeaponClassLabel.of. A third
         // EnchantEffect constant is a compile error here until someone gives it words.
         return switch (definition.effect()) {
-            case DURABILITY -> " (consumes durability on "
-                    + Math.round(Unbreaking.consumeChance(level) * 100) + "% of uses)";
+            case DURABILITY -> "consumes durability on "
+                    + Math.round(Unbreaking.consumeChance(level) * 100) + "% of uses";
             case DAMAGE -> {
                 if (!definition.isUniversal() && definition.weaponClass() != heldClass) {
-                    yield " (inert: a " + WeaponClassLabel.of(definition.weaponClass())
-                            + " enchant on a " + WeaponClassLabel.of(heldClass) + " weapon)";
+                    yield "inert: a " + WeaponClassLabel.of(definition.weaponClass())
+                            + " enchant on a " + WeaponClassLabel.of(heldClass) + " weapon";
                 }
                 double percent = DamageEnchants.percentAt(definition.percentByLevel(), level);
-                yield String.format(" (+%.0f%% damage, x%.2f)", percent,
+                yield String.format("+%.0f%% damage, x%.2f", percent,
                         DamageEnchants.multiplier(percent));
             }
         };
