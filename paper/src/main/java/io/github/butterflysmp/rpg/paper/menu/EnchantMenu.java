@@ -146,7 +146,7 @@ public final class EnchantMenu extends Menu {
                 .flatMap(weapons::find).orElse(null);
 
         if (weapon == null) {
-            getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.PAPER,
+            getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.ENCHANTING_TABLE,
                     MenuIcons.line("Enchanting", NamedTextColor.WHITE),
                     List.of(MenuIcons.line("Place a weapon above to see", NamedTextColor.GRAY),
                             MenuIcons.line("the enchants it can carry.", NamedTextColor.GRAY),
@@ -155,7 +155,7 @@ public final class EnchantMenu extends Menu {
             return;
         }
 
-        getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.PAPER,
+        getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.ENCHANTING_TABLE,
                 MenuIcons.line("Enchanting", NamedTextColor.WHITE),
                 List.of(MenuIcons.line("Click a candidate to unlock it,", NamedTextColor.GRAY),
                         MenuIcons.line("to make it active, or to level it.", NamedTextColor.GRAY),

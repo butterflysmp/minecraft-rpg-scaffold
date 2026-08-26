@@ -58,12 +58,12 @@ public final class MenuIcons {
     /**
      * The close button.
      *
-     * <p>Labelled "Close" with a door, NOT "Back" with an arrow: there is no parent menu yet and a
+     * <p>Labelled "Close" on a BARRIER, not "Back" with an arrow: there is no parent menu yet and a
      * back-arrow promises somewhere to go back to. It says what it does -- returning the weapon is
      * the part a player standing there holding something valuable actually wants to know.
      */
     public static ItemStack close() {
-        return icon(Material.OAK_DOOR,
+        return icon(Material.BARRIER,
                 line("Close", NamedTextColor.RED),
                 List.of(line("Returns your weapon.", NamedTextColor.GRAY)));
     }
