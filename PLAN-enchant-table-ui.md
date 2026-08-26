@@ -43,9 +43,19 @@ registry to keep in step and `RpgListeners`' constructor did not grow.
 unconditionally. `MenuClick` deliberately carries no `InventoryClickEvent`, so a consumer cannot
 un-cancel. "Forgot to cancel" is not a mistake this base permits.
 
-**The router is a whitelist, and shift-click is PERFORMED rather than permitted.** A blacklist is
-one Minecraft drop away from incomplete — a new
-`InventoryAction` constant would fall through it as permitted. Here it lands in the cancelled arm.
+**The router is a whitelist, and the cross-inventory gestures are PERFORMED rather than permitted.**
+A blacklist is one Minecraft drop away from incomplete — a new `InventoryAction` constant would fall
+through it as permitted. Here it lands in the cancelled arm, and that is what makes shift-click and
+the number keys safe to support at all. `MOVE_TO_OTHER_INVENTORY` is intercepted, and `NUMBER_KEY`
+is intercepted **by type, ahead of even the action set** — a number-key press over an empty slot does
+not resolve to `HOTBAR_SWAP`, so matching on the action alone would miss exactly the case that
+matters. Neither is ever un-cancelled: vanilla would pick the destination itself — across the whole
+other inventory for a shift-click, and as a two-way swap for a number key.
+
+All three entry paths — click-place, shift-click, number-key — share one `placeAllowed`, so the
+"empty slot ← exactly one item" model cannot hold on one and not another. And anything the router
+does not explicitly move simply does not move, which is why a filler pane cannot leak into an
+inventory or a hotbar even though both gestures now reach that code.
 
 **The input model is "an empty slot ← exactly one item", and the router owns it.**
 `InventoryClickEvent` fires *before* the place applies, so a handler reading the input slot sees it
@@ -95,7 +105,12 @@ Setup: `/rpg give ironblade`, then `/rpg enchant candidate 0 sharpness`, `candid
 | 6c | **shift-click the resting weapon out** | back in your inventory; the input slot is **empty** | the symmetric take-out, via `MenuSafety.give` |
 | 6d | **shift-click a dirt block** in from your inventory | refused; the block stays where it was | `acceptsInput`, reached through the same `placeAllowed` the click-place uses |
 | 7 | **double-click a glass pane in your OWN inventory** | **no filler panes leave the menu** | `COLLECT_TO_CURSOR` from the BOTTOM inventory — the actual exploit |
-| 8 | **1–9** and **F** over a filler pane | nothing swaps | `NUMBER_KEY` / `SWAP_OFFHAND` |
+| 8 | **F** (offhand swap) over a filler pane, and over the input slot | nothing swaps, either place | `SWAP_OFFHAND` is still blanket-refused — only the number keys were opened up |
+| 8a | **number-key** a weapon from hotbar slot N onto the **empty** input slot | it lands in the input slot; **hotbar slot N is empty**; exactly one weapon in total | the hotbar move is performed by us, one-way, not vanilla's two-way swap |
+| 8b | **number-key** while hovering a **filler pane**, then a **candidate icon**, then the close button | nothing moves; **no glass pane or icon appears in your hotbar**, and the hotbar item stays put | the hovered-slot check — the reason number keys were refused outright before |
+| 8c | **number-key** a weapon in while one is **already resting** in slot 49 | refused; **both intact** — the resting weapon stays, the hotbar one stays | occupancy, via the shared `placeAllowed`; vanilla would have swapped them |
+| 8d | **number-key** a **dirt block** from the hotbar onto the empty input slot | refused; the block stays in the hotbar | `acceptsInput`, through that same `placeAllowed` |
+| 8e | **number-key** while hovering a slot in **your own inventory** | nothing swaps | a raw slot past the end of the menu is not an input slot, so it fails the same check |
 | 9 | drag a stack across menu + player slots | nothing lands in the menu | `handleDrag` |
 | 10 | weapon in slot 49, **Esc**; again, **slot 0** | back in your inventory **both times**, identical item | one return path — Close and Esc are the same code |
 | 10b | inventory 36/36 full, weapon in, Esc | drops at your feet **with the yellow line** | the leftover branch, said out loud |
@@ -120,9 +135,10 @@ Setup: `/rpg give ironblade`, then `/rpg enchant candidate 0 sharpness`, `candid
 | 22 | menu open with the weapon in it, **disconnect**, rejoin | it is in your inventory | `onQuit` close, ahead of the save |
 | 23 | boot with `sharpness.yml`'s `icon:` misspelled | `Content: enchant 'sharpness' names icon '...'` at WARNING; server still runs | the typo is named at boot, not rendered as a silent book |
 
-**Count the item before and after every one of rows 6–10c and 18–22** — rows 6–6d especially, since
-the shift-move now writes two inventories itself. A dupe that creates a second
-weapon and a theft that removes one look identical in a screenshot of the *after* state.
+**Count the item before and after every one of rows 6–10c and 18–22** — rows 6–6d and 8a–8e
+especially, since the shift-move and the hotbar move each write two inventories themselves. A dupe
+that creates a second weapon and a theft that removes one look identical in a screenshot of the
+*after* state.
 
 Rows 11b, 14, 15, 15b, 18 and 19 carry information rather than confirming a change: 15/15b are the
 level-retention property the whole candidate model exists for; 18 and 19 are the two silent
