@@ -35,6 +35,7 @@ import io.github.butterflysmp.rpg.paper.health.PacketDamagePopupSender;
 import io.github.butterflysmp.rpg.paper.health.PacketNameplateSender;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.listener.RpgListeners;
+import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.packet.ExampleTelegraphListener;
 import io.github.butterflysmp.rpg.paper.packet.WeaponSwingListener;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
@@ -48,6 +49,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -319,6 +321,24 @@ public final class RpgPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // FIRST, ahead of the profile flush: a menu can be holding a player's weapon, and nothing
+        // else in the plugin gives it back. A weapon returned to an inventory has to be written
+        // before the shutdown save runs, or it is saved out of existence.
+        //
+        // returnEverything() is called DIRECTLY rather than relying on closeInventory() still being
+        // routed through our handlers while the plugin is disabling. It is idempotent, so the close
+        // that follows -- and any InventoryCloseEvent it fires -- is free.
+        //
+        // Bukkit.getOnlinePlayers() is the right question here despite invariant 3: that invariant
+        // is about PLAYER STATE, and "who on this node has a menu open right now" is not state a
+        // repository could answer.
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getOpenInventory().getTopInventory().getHolder() instanceof Menu menu) {
+                menu.returnEverything();
+                player.closeInventory();
+            }
+        }
+
         // PlayerQuitEvent is not guaranteed to fire for everyone on shutdown, so
         // flush whoever is left. Blocking is correct here: the server is stopping
         // and unwritten profiles are lost progress.
