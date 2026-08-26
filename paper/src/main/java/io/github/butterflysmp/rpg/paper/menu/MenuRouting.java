@@ -154,21 +154,23 @@ final class MenuRouting {
     }
 
     /**
-     * A number-key press over an input slot, carried out by us.
+     * A number-key press over an input slot, carried out by us. Both directions.
      *
      * <p>Mirrors {@link #shiftMove}: performed, never permitted. Vanilla's number key is a
-     * BIDIRECTIONAL swap -- it puts the hotbar item into the hovered slot and the hovered slot's
-     * item into the hotbar -- so un-cancelling it would move two items in two inventories on rules
-     * that are not ours. Cancelled throughout; the one-way move below is the whole of what happens.
+     * BIDIRECTIONAL swap -- it puts the hotbar item into the hovered slot AND the hovered slot's
+     * item into the hotbar, in one press -- so un-cancelling it would move two items in two
+     * inventories on rules that are not ours. Cancelled throughout; the ONE-WAY move below is the
+     * whole of what happens.
      *
      * <p><b>The hovered-slot check is the load-bearing one.</b> It is what stops a filler pane
      * leaking into the hotbar and a hotbar item vanishing into a menu slot, which is the entire
      * reason number keys were blanket-refused before. A slot in the player's own inventory fails it
      * for free: its raw slot is past the end of the menu, so it is not one of the input slots.
      *
-     * <p>Only the INWARD direction. Taking the weapon back out is a shift-click or a plain left
-     * click, both already supported; a number-key take-out would need its own empty-hotbar-slot
-     * rule and nothing asks for it, so it stays out rather than being half-built.
+     * <p><b>Exactly one side must hold something.</b> That single rule gives both directions and
+     * refuses vanilla's swap in the same breath: an empty input slot and a full hotbar slot moves
+     * IN, a full input slot and an empty hotbar slot moves OUT, and the two remaining cases are
+     * refused -- both full would be the two-way swap, and both empty is nothing to move.
      */
     private static MenuClick hotbarMove(InventoryClickEvent event, Menu menu) {
         if (!(event.getWhoClicked() instanceof Player player)) return null;
@@ -181,20 +183,33 @@ final class MenuRouting {
         int button = event.getHotbarButton();
         if (button < 0 || button > 8) return null;
 
-        ItemStack source = player.getInventory().getItem(button);
-        if (source == null || source.getType().isAir()) return null;
+        ItemStack hotbar = player.getInventory().getItem(button);
+        ItemStack resting = menu.getInventory().getItem(hovered);
+        boolean hotbarEmpty = hotbar == null || hotbar.getType().isAir();
+        boolean restingEmpty = resting == null || resting.getType().isAir();
 
-        // The SAME gate the click-place and the shift-click use: the slot must be empty, and the
-        // menu must accept the item. Three entry paths, one copy of the rules, so they cannot drift
-        // into disagreeing about what an input slot takes.
-        if (!placeAllowed(menu, hovered, source)) return null;
+        // Both full, or both empty. Neither is a one-way move.
+        if (hotbarEmpty == restingEmpty) return null;
 
-        // Cloned before the source is cleared, and the source cleared before the place -- the same
-        // ordering shiftMove uses, and for the same two reasons: a live view of a slot we are about
-        // to empty is how an item becomes air in transit, and clearing first cannot leave two.
-        ItemStack moving = source.clone();
-        player.getInventory().setItem(button, null);
-        menu.getInventory().setItem(hovered, moving);
+        if (restingEmpty) {
+            // IN: the SAME gate the click-place and the shift-click use, so every entry path agrees
+            // about what an input slot takes.
+            if (!placeAllowed(menu, hovered, hotbar)) return null;
+            // Cloned before the source is cleared, and the source cleared before the place: a live
+            // view of a slot we are about to empty is how an item becomes air in transit, and
+            // clearing first cannot leave two.
+            ItemStack moving = hotbar.clone();
+            player.getInventory().setItem(button, null);
+            menu.getInventory().setItem(hovered, moving);
+        } else {
+            // OUT. placeAllowed is deliberately NOT consulted: it asks what may come IN, and the
+            // only rule going the other way is that the destination is empty -- which the
+            // one-side-full test above has already established.
+            ItemStack moving = resting.clone();
+            menu.getInventory().setItem(hovered, null);
+            player.getInventory().setItem(button, moving);
+        }
+
         player.updateInventory();
         return new MenuClick(hovered, event.getClick(), event.getAction(), true);
     }

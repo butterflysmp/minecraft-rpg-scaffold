@@ -113,6 +113,8 @@ Setup: `/rpg give ironblade`, then `/rpg enchant candidate 0 sharpness`, `candid
 | 8c | **number-key** a weapon in while one is **already resting** in slot 49 | refused; **both intact** — the resting weapon stays, the hotbar one stays | occupancy, via the shared `placeAllowed`; vanilla would have swapped them |
 | 8d | **number-key** a **dirt block** from the hotbar onto the empty input slot | refused; the block stays in the hotbar | `acceptsInput`, through that same `placeAllowed` |
 | 8e | **number-key** while hovering a slot in **your own inventory** | nothing swaps | a raw slot past the end of the menu is not an input slot, so it fails the same check |
+| 8f | **number-key** the resting weapon OUT to an **empty** hotbar slot | it lands on the hotbar; the input slot is **empty**; exactly one weapon in total | the outward direction |
+| 8g | **number-key** out while that hotbar slot is **occupied** | refused; **both intact** — the weapon stays in the slot, the hotbar item stays put | both-full is vanilla's two-way swap, and it is refused |
 | 9 | drag a stack across menu + player slots | nothing lands in the menu | `handleDrag` |
 | 10 | weapon in slot 49, **Esc**; again, **slot 0** | back in your inventory **both times**, identical item | one return path — Close and Esc are the same code |
 | 10b | inventory 36/36 full, weapon in, Esc | drops at your feet **with the yellow line** | the leftover branch, said out loud |
