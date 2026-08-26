@@ -30,16 +30,35 @@ import java.util.UUID;
  * method that threads a caster already carries it, and the cast-time freeze that makes
  * {@code attackDamage} Folia-safe covers it for free.
  *
+ * {@code enchantDamagePercent} is the damage-modifier enchant type, landed one pass later still. It
+ * is the sum of the percentages granted by the damage enchants ACTIVE ON THE HELD WEAPON whose class
+ * matches that weapon's own -- Sharpness on a sword, Power on a bow, Attunement on a staff -- and
+ * {@code EffectApplier} multiplies BOTH damage arms' base by it before adding
+ * {@code classDamageBonus}.
+ *
+ * <p><b>Percent on the base, flat bonus on top.</b> The order is a real design choice and the two
+ * candidates give different numbers: an 8-damage sword with Sharpness III and +5 Melee deals
+ * {@code 8 * 1.15 + 5 = 14.2}, not {@code (8 + 5) * 1.15 = 14.95}. The enchant scales the WEAPON, so
+ * it multiplies what the weapon contributes; gear adds after. If those numbers ever swap, this
+ * ordering has been inverted.
+ *
+ * <p>It is a PERCENT and not a multiplier for the reason recorded on {@code CombatantSnapshot} and
+ * {@code HealthState}: it rides an additive {@code Stat}, percentages compose by addition, and 0.0
+ * stays the one absent-value convention. The multiplier is computed at the arm by
+ * {@code DamageEnchants.multiplier}, which is the only place the {@code 1 + pct/100} formula exists.
+ *
  * Two things it deliberately is NOT. It is not the weapon's inherent damage -- that stays in
  * ATTACK_DAMAGE (or in the literal), so the bonus adds on top rather than replacing, and the
  * emberblade's fireball can take +Melee without inheriting the swing's 8. And it is not gated on
  * whether the payload is a basic attack: the gate is the HELD WEAPON'S CLASS, which is what lets the
  * bonus reach a literal-damage weapon like {@code ember_staff} that reads no stat at all.
  */
-public record Caster(UUID id, double attackDamage, double classDamageBonus) {
+public record Caster(UUID id, double attackDamage, double classDamageBonus,
+                     double enchantDamagePercent) {
 
     /** Project a cast-time snapshot down to what an effect landing later is allowed to read. */
     public static Caster of(CombatantSnapshot snapshot) {
-        return new Caster(snapshot.id(), snapshot.attackDamage(), snapshot.classDamageBonus());
+        return new Caster(snapshot.id(), snapshot.attackDamage(), snapshot.classDamageBonus(),
+                snapshot.enchantDamagePercent());
     }
 }

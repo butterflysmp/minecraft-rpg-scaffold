@@ -156,7 +156,7 @@ public final class RpgPlugin extends JavaPlugin {
         // Custom health: the store is the source of truth; TWO displays ride its HealthChange seam,
         // fanned out by a composite listener -- the player heart bar and the per-viewer mob nameplate.
         // Two-step bind breaks the cycle (the store needs a listener, each display needs the store).
-        this.healthSystem = new PlayerHealthSystem(scheduler, keys, weapons);
+        this.healthSystem = new PlayerHealthSystem(scheduler, keys, weapons, enchants);
         this.nameplates = new MobNameplateManager(scheduler, new PacketNameplateSender(), keys, mobs);
         // Third display: the per-dealer damage-number popup. Pure seam consumer -- reads amount/dealer
         // off the event, so no bind(stats) and no mob-lifecycle hooks (unlike the nameplate).

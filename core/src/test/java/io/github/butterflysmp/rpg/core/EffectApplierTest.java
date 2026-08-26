@@ -534,4 +534,135 @@ class EffectApplierTest {
         assertEquals(100, target.health, 1e-9, "a negative total deals nothing");
         assertEquals(0, target.damageCalls, "and fires no seam");
     }
+
+    // --- Damage-modifier enchants (Sharpness / Power / Attunement) ----------------------------------
+
+    /**
+     * THE ORDERING TEST, and the one whose NUMBER distinguishes two designs rather than merely
+     * confirming a change happened.
+     *
+     * The rule is percent on the WEAPON'S BASE, flat gear bonus on top:
+     * {@code 8 * 1.15 + 5 = 14.2}. The rival design -- multiply the sum -- gives
+     * {@code (8 + 5) * 1.15 = 14.95}. Both are "the enchant and the bonus both applied", so a test
+     * asserting only "more than 8" would pass on either. This asserts the number that tells them
+     * apart, the same way the class-damage pass's boot record turned on 17 rather than 24.
+     *
+     * If this ever reads 14.95, the multiply has been moved outside the addition.
+     */
+    @Test
+    void theEnchantPercentMultipliesTheWeaponBaseAndTheClassBonusIsAddedAfter() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;              // the ironblade's inherent damage
+        caster.classDamageBonus = 5.0;          // +5 Melee gear
+        caster.enchantDamagePercent = 15.0;     // Sharpness III on that sword
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(85.8, target.health, 1e-9, "8*1.15 + 5 = 14.2, NOT (8+5)*1.15 = 14.95");
+        // Mutation: (attackDamage + classDamageBonus) * multiplier -> 85.05 -> reddens.
+    }
+
+    /**
+     * A LITERAL Damage is multiplied too -- the ember_staff's Ember Bolt, on a weapon that reads no
+     * stat at all. This is what Attunement exists to do, and it is the reason the multiplier is
+     * applied AT THE ARM rather than pre-baked into the caster's attackDamage at projection: the
+     * literal's amount is not known until the effect fires, so a pre-baked multiplier could never
+     * have reached it.
+     *
+     * attackDamage stays 0, so a green here cannot be explained by the WeaponDamage path.
+     */
+    @Test
+    void aLiteralDamageIsMultipliedByTheEnchantPercentToo() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.enchantDamagePercent = 15.0;     // Attunement III on the staff
+        // caster.attackDamage deliberately left 0 -- a staff declares attack_damage: 0
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(16, "fire")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(81.6, target.health, 1e-9, "16 * 1.15 = 18.4");
+        // Mutation: drop the multiplier from the literal arm -> 84 -> reddens.
+    }
+
+    /**
+     * A literal nested inside a Burst is multiplied, so every nesting shape is covered by changing
+     * the two leaves. Burst and Area reach damage only through applyTargeted carrying the same
+     * frozen Caster, and this proves that rather than asserting it in a comment -- the same argument
+     * {@code aLiteralNestedInABurstReceivesTheClassDamageBonus} makes for the class bonus.
+     */
+    @Test
+    void aLiteralNestedInABurstIsMultipliedByTheEnchantPercent() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(victim);
+        caster.enchantDamagePercent = 15.0;
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Burst(4.0, List.of(new EffectSpec.Damage(12, "fire")))),
+                caster.asCaster(), null, Vec3.ZERO);
+
+        assertEquals(86.2, victim.health, 1e-9, "12 * 1.15 = 13.8 through the burst's nested effect");
+        assertEquals(100, caster.health, 1e-9, "and a burst still never splashes its own caster");
+    }
+
+    /**
+     * THE REGRESSION PIN. With no enchant, both arms deal EXACTLY what they dealt before this pass.
+     *
+     * This is the assertion that makes 0.0 the safe default for the new stat, and it is why the stat
+     * carries a percent rather than a multiplier: a multiplier-valued field defaulting to 0.0 would
+     * have zeroed both of these instead of leaving them alone, and every one of the 311 tests that
+     * predate this pass relies on that neutral being right.
+     */
+    @Test
+    void withNoEnchantBothArmsDealExactlyWhatTheyDealtBefore() {
+        var world = new FakeWorld();
+        var weaponCaster = new FakeWorld.Dummy(Vec3.ZERO);
+        var weaponTarget = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        weaponCaster.attackDamage = 8.0;
+        // enchantDamagePercent deliberately left 0.0
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), weaponCaster.asCaster(),
+                pair(weaponTarget), Vec3.ZERO);
+        assertEquals(92, weaponTarget.health, 1e-9, "an unenchanted sword still deals exactly 8");
+
+        var literalCaster = new FakeWorld.Dummy(Vec3.ZERO);
+        var literalTarget = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(16, "fire")), literalCaster.asCaster(),
+                pair(literalTarget), Vec3.ZERO);
+        assertEquals(84, literalTarget.health, 1e-9, "an unenchanted staff still deals exactly 16");
+        // Mutation: multiplier() returns percent/100 (drop the 1 +) -> both deal 0 -> reddens.
+    }
+
+    /**
+     * The {@code amount > 0} rule survives the multiply. A -100% percent cancels the weapon's whole
+     * base, and the arm must deal nothing and fire NO seam rather than push a 0 into the HealthChange
+     * seam and the damage popup.
+     *
+     * Not reachable from shipped content -- the loader refuses a negative percent -- and pinned
+     * because the guard it protects is the one {@code aLiteralCancelledOutByANegativeBonusFiresNoSeam}
+     * already protects from the additive side, and a multiply is a new way to reach zero.
+     */
+    @Test
+    void aPercentThatCancelsTheBaseDealsNothingAndFiresNoSeam() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;
+        caster.enchantDamagePercent = -100.0;   // x0.0
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(100, target.health, 1e-9, "a cancelled base deals nothing");
+        assertEquals(0, target.damageCalls, "and fires no seam");
+    }
 }

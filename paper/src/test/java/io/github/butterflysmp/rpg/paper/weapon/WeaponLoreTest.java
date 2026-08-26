@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
@@ -369,7 +370,7 @@ class WeaponLoreTest {
         // "always last" promise is what a player reads a weapon's tier off, and an enchant block
         // appended to the end would quietly push it up one line on every enchanted weapon.
         EnchantRegistry enchants = new EnchantRegistry();
-        enchants.register(new EnchantDefinition("unbreaking", "Unbreaking", 3));
+        enchants.register(new EnchantDefinition("unbreaking", "Unbreaking", 3, EnchantEffect.DURABILITY, null, List.of()));
         EnchantState state = EnchantState.empty()
                 .addCandidate(0, "unbreaking").withLevel(0, 0, 3).withActive(0, 0);
 

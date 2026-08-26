@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
@@ -31,7 +32,7 @@ class EnchantLoreTest {
 
     private static EnchantRegistry registryWithUnbreaking() {
         EnchantRegistry registry = new EnchantRegistry();
-        registry.register(new EnchantDefinition(UNBREAKING, "Unbreaking", 3));
+        registry.register(new EnchantDefinition(UNBREAKING, "Unbreaking", 3, EnchantEffect.DURABILITY, null, List.of()));
         return registry;
     }
 
@@ -57,18 +58,19 @@ class EnchantLoreTest {
     }
 
     @Test
-    void anActiveEnchantRendersItsNameAndRomanNumeralInVanillaStyle() {
-        // What boot gate step 3 reads off the screen: grey, italic, roman. Arabic or a missing
+    void anActiveEnchantRendersItsNameAndRomanNumeralGreyAndNotItalic() {
+        // What boot gate step 3 reads off the screen: grey, upright, roman. Arabic or a missing
         // numeral is the difference between a tooltip that reads like Minecraft and one that reads
         // like a debug line.
         List<Component> lines = EnchantLore.lines(active(UNBREAKING, 3), registryWithUnbreaking());
 
         assertEquals(List.of("Unbreaking III"), textLines(lines));
         assertEquals(NamedTextColor.GRAY, colorOf(lines.get(0)));
-        assertEquals(TextDecoration.State.TRUE, lines.get(0).decoration(TextDecoration.ITALIC),
-                "vanilla renders enchantment lines italic; every other lore line here opts out");
+        assertEquals(TextDecoration.State.FALSE, lines.get(0).decoration(TextDecoration.ITALIC),
+                "enchant lines opt out of italic like every other lore line; only flavour keeps it");
         // Mutation: emit the arabic level -> "Unbreaking 3" -> reddens.
-        // Mutation: drop the .decoration(ITALIC, true) -> NOT_SET -> reddens.
+        // Mutation: DROP the .decoration(ITALIC, false) -> NOT_SET, which RENDERS italic because
+        // lore defaults to it -> reddens. That is why the explicit false is not redundant.
     }
 
     @Test
@@ -76,7 +78,7 @@ class EnchantLoreTest {
         // The whole reason identity is a yml rather than a Java constant. A literal "Unbreaking" in
         // the renderer is exactly the drift the element registry exists to prevent.
         EnchantRegistry renamed = new EnchantRegistry();
-        renamed.register(new EnchantDefinition(UNBREAKING, "Everlasting", 3));
+        renamed.register(new EnchantDefinition(UNBREAKING, "Everlasting", 3, EnchantEffect.DURABILITY, null, List.of()));
 
         assertEquals(List.of("Everlasting III"),
                 textLines(EnchantLore.lines(active(UNBREAKING, 3), renamed)));
@@ -129,7 +131,7 @@ class EnchantLoreTest {
     void aSingleLevelEnchantOmitsItsNumeralUsingItsOwnDeclaredMaximum() {
         // max_level is read from that enchant's definition, not assumed -- vanilla's Mending rule.
         EnchantRegistry mending = new EnchantRegistry();
-        mending.register(new EnchantDefinition("mending", "Mending", 1));
+        mending.register(new EnchantDefinition("mending", "Mending", 1, EnchantEffect.DURABILITY, null, List.of()));
 
         assertEquals(List.of("Mending"), textLines(EnchantLore.lines(active("mending", 1), mending)));
     }

@@ -1,0 +1,31 @@
+# The Melee damage enchant, and the first of the three that share one mechanism.
+#
+# `effect: damage` names core/enchant/DamageEnchants.java. What that mechanism does: multiply the
+# damage of the weapon this enchant sits on by (1 + percent/100), and ONLY while that weapon's class
+# matches the `class` below. So Sharpness on a bow does nothing at all -- not because some other
+# slot failed to match, but because the bow is a `ranger` weapon and this is a `melee` enchant.
+#
+# `class: melee` uses the same token every weapon yml uses and the same parser (WeaponClass), so an
+# enchant and the weapon it sits on can never disagree about what a class is. The token is `ranger`,
+# not `ranged` -- "Ranged" is only the tooltip's LABEL for that class.
+#
+# percent_by_level is the curve, one entry per level, and its length MUST equal max_level: a short
+# list would leave a legal level with no percent, and a long one would hide levels the enchant can
+# never reach. It is an explicit list rather than a linear scalar so a future non-linear enchant is
+# not blocked by this pass's schema.
+#
+# WHAT THESE NUMBERS DO, on the shipped weapons -- worth reading before tuning them, because the
+# damage popup ROUNDS to a whole number and that hides small changes:
+#
+#   ironblade  (8)  ->  I 8.4 -> "8"   II 8.8 -> "9"   III 9.2 -> "9"
+#
+# So at these values Sharpness I is INVISIBLE on a sword: it renders exactly what an unenchanted
+# swing renders. That is a property of 5% of 8 being less than half a point, not a bug, and it is
+# why the boot gate reads level discrimination off the ember_staff (base 16, where I is 17 and III
+# is 18) and reads only the III-versus-plain step off the sword. The curve is proven exactly, at
+# full precision and without rounding, in core's DamageEnchantsTest.
+display_name: "Sharpness"
+max_level: 3
+effect: damage
+class: melee
+percent_by_level: [5, 10, 15]

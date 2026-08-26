@@ -713,6 +713,25 @@ Before milestone 2, two things worth measuring rather than assuming:
     > modifies a durability roll, not a number on the tooltip. The damage-modifier enchant type
     > (Sharpness/Power), which is what would actually need a `+N` line in an ability block, is its
     > own deferred entry below.
+
+    > #### 2026-08-25 — the delta now EXISTS, and the entry still stays open
+    >
+    > Enchant Pass 2 shipped it: Sharpness/Power/Attunement grant a real percent that multiplies the
+    > weapon's damage. So the thing the note above was waiting for has arrived, and the answer to
+    > "when rarity/enchant grant real stat deltas, surface them" is now actionable rather than
+    > hypothetical.
+    >
+    > Nothing was surfaced. `EnchantLore` renders "Sharpness III" and no percent; the stat block still
+    > shows the weapon's authored base. That is the standing rule holding — lore describes the WEAPON,
+    > not whoever holds it — and an enchant is per-item, so it is genuinely the first case where a
+    > `+15%` line COULD be honest on a minted tooltip without lying to the next player who picks it up.
+    > Which is precisely why it wants deciding rather than drifting into: the enchant percent is
+    > item-borne and legitimately renderable, while the class bonus beside it is holder-borne and is
+    > not. Two sources into one ability block, one of which may be shown and one of which may not.
+    >
+    > Note again what did NOT happen: `WeaponLore.build` still takes only `(WeaponDefinition,
+    > ElementRegistry)`, and the enchant block is still a separate class over the item's own state.
+    > Whatever surfaces the percent should keep that split.
     >
     > Note what did NOT happen: `WeaponLore.build` still takes only `(WeaponDefinition,
     > ElementRegistry)`. Its "mint-time only and cannot drift" promise is enforced by that
@@ -1427,6 +1446,102 @@ Before milestone 2, two things worth measuring rather than assuming:
   `EnchantState.withLevel` is the seam an economy gates, and it is a pure function on an immutable
   value, so gating it costs nothing structural — the cost check goes in front of the call, not
   inside the model.
+- ~~**The damage-modifier enchant type (Sharpness / Power) is deferred.**~~ **DONE** (Enchant Pass 2).
+  The original entry is kept verbatim below; what follows is what it turned into.
+
+  > #### 2026-08-25 — SHIPPED, and the schema decision it predicted was the easy half
+  >
+  > The prediction held exactly: it hooks the Caster projection, shares none of Pass 1's machinery
+  > beyond the state model, and needed a typed schema decision rather than an ad-hoc key. Four
+  > enchants now ship — `unbreaking` (durability), `sharpness` (melee), `power` (ranger),
+  > `attunement` (mage) — and the roster the deferred roll will draw from is real.
+  >
+  > **THE FORMULA, and it is the whole pass:**
+  >
+  > ```
+  >     base * (1 + pct/100)  +  classDamageBonus
+  > ```
+  >
+  > Percent on the WEAPON'S BASE, flat gear bonus on top. This is a real fork with two candidates
+  > that give different numbers, and the number is the only thing that tells them apart: an
+  > 8-damage sword with Sharpness III and +5 Melee deals `8*1.15 + 5 = 14.2`, where multiplying the
+  > sum gives `(8+5)*1.15 = 14.95`. Both are "the enchant and the bonus applied". Pinned by
+  > `EffectApplierTest.theEnchantPercentMultipliesTheWeaponBaseAndTheClassBonusIsAddedAfter`, and a
+  > mutation that moved the multiply outside the addition reddened **that test and nothing else in
+  > 550** — which is what justifies writing an assertion whose value distinguishes two designs
+  > rather than merely confirming a change happened. Same shape as `Fireball 12 -> 17, NOT 24`.
+  >
+  > **The multiplier is applied AT THE ARM, not pre-baked at projection**, and that is what makes
+  > Attunement possible at all: `d.amount()` is not known until the effect fires, so a multiplier
+  > folded into the caster's `attackDamage` could never reach `ember_staff`'s authored literal. The
+  > same reasoning that sent the class bonus to both arms one pass earlier.
+  >
+  > **THE STAT CARRIES A PERCENT, NOT A MULTIPLIER, and this is the decision most likely to be
+  > "simplified" later.** `Stat.value()` is `base + Sum(modifiers)`. Percentages compose by
+  > addition, so summing is correct and the neutral is **0.0** — the same absent-value rule as
+  > `attackValue` and `classDamageValue`, rather than a third convention beside `attackSpeedValue`'s
+  > 1.0. A multiplier-valued stat would have to base at 1.0, which `Stat` resolves to **2.0** with
+  > two sources; and a 0.0 slip on one would not be a small buff like copying attack speed's 1.0
+  > would be — it would **zero every untracked combatant's damage**. There is exactly one sensible
+  > absent value for a percent, which is the point. `DamageEnchants.multiplier` owns the
+  > `1 + pct/100` conversion so the two arms cannot disagree.
+  >
+  > That the 311 pre-existing core tests stayed green through the arm change IS the regression
+  > result, not a formality: the 0.0 neutral is what left every number in the suite alone.
+  >
+  > **`class: ranger`, not `ranged`.** The design brief said `ranged`; the enum and every weapon yml
+  > say `ranger`, and "Ranged" is only `WeaponClassLabel`'s display string. The enchant reuses
+  > `WeaponClass.fromName`, so an enchant and the weapon it sits on are parsed by ONE function and
+  > cannot disagree. A parallel `EnchantClass` enum was rejected: SUMMONER would need adding in two
+  > places the day it lands, and the exhaustive-switch discipline only works with one enum.
+  > `EnchantLoaderTest` pins that `ranged` is REFUSED, so the brief's typo cannot come back quietly.
+  >
+  > **Why `percent_by_level` is data when Unbreaking's curve is Java** — the question the schema
+  > decision actually turned on, and it is not numbers-versus-code. Unbreaking is ONE enchant with
+  > ONE curve, so its curve IS its mechanism. Sharpness, Power and Attunement are THREE enchants
+  > sharing one mechanism, differing only in a class gate and three numbers; a Java class each would
+  > be three copies of the same arithmetic and the fourth would be a recompile, which invariant 2
+  > forbids. Numbers become data at the point where they stop being the mechanism. `EnchantEffect`
+  > names the mechanism; content parameterises it. `unbreaking.yml`'s comment block was **rewritten,
+  > not appended to** — it previously said there was deliberately no behaviour field, and leaving
+  > that above an `effect:` key would have left the file contradicting itself.
+  >
+  > **Five schema rules, each throwing so the loader names and skips the file.** `effect` required
+  > (never defaulted — a default would silently turn a misspelled damage enchant into an Unbreaking);
+  > `class` required, with `universal` spelled out rather than being what you get by forgetting the
+  > line; a damage enchant needs a curve; **the curve's length must EQUAL `max_level`**, which is
+  > what makes level -> percent total; and a durability enchant may claim neither a class nor a
+  > curve, because nothing reads either and a file must not claim a control it does not have.
+  >
+  > **`DamageEnchantItems` reads MAIN HAND ONLY**, the whole difference from
+  > `ClassDamageModifierItems` beside it: a class grant is worn elsewhere and pointed at your weapon,
+  > so that one scans every slot; a damage enchant IS on the weapon. It is also **not a `_TEMP`
+  > fixture** — the source is real content on a real item, so nothing here owes removal. What is
+  > still a stand-in is how an enchant GETS onto the item (`/rpg enchant`), not this read.
+  >
+  > **It DOES consult the registry, unlike the durability seam, and that asymmetry is a consequence
+  > rather than an inconsistency.** `EnchantItems.activeLevel` compares an id and never looks
+  > anything up, so deleting `unbreaking.yml` leaves Unbreaking WORKING. A damage enchant keeps its
+  > gate and its curve in the definition, so a dangling id has no percent to grant — it renders on
+  > the tooltip (EnchantLore's fail-soft) while granting 0. Visible, and the safe direction.
+  >
+  > `percentAt` **clamps to its own list**, and that guard is not defensive habit:
+  > `EnchantState.effective()` clamps to the model's global `MAX_LEVEL` (3), NOT to an individual
+  > enchant's authored `max_level`. The loader holds those equal for a file it accepted, but a
+  > hand-edited item or a blob written against different content can ask a two-entry curve for level
+  > 3 — an `IndexOutOfBounds` thrown from inside a reconcile tick, on a path that must be total.
+  >
+  > Folia-safety came free again: the percent rides the existing `CombatantSnapshot -> Caster`
+  > freeze, so a Power III arrow is a 15% arrow for its whole flight even if the bow leaves the hand
+  > before impact. Pinned by `ProjectileFlightTest.aProjectileDealsTheEnchantMultiplierFrozenAt
+  > LaunchNotAtImpact`, which is the only possible proof while Paper is single-region.
+  >
+  > **Verified:** `./mvnw clean package` -> core **320**, storage **17**, paper **213**.
+  > `check-jar.sh` -> `Jar OK`. All four ymls confirmed inside the shaded jar at real byte sizes
+  > (unbreaking 1908, sharpness 1886, attunement 1076, power 695). **No Java was needed to ship
+  > them** — RpgPlugin's jar scan replaced the hardcoded `String[]` in E0, and this is the first
+  > time that has been exercised by net-new content files.
+
 - **The damage-modifier enchant type (Sharpness / Power) is deferred.** It hooks the Caster
   projection, not the durability seam, so it shares none of this pass's machinery beyond the state
   model. This is why `content/enchants/*.yml` carries **no behaviour field**: an enchant's effect is
@@ -1470,6 +1585,161 @@ Before milestone 2, two things worth measuring rather than assuming:
   WORKING — and an enchant that silently skips durability while showing nothing is a far worse bug
   than one with an ugly name. `EnchantLore` is pure and cannot reach `warnOnce`;
   `RefreshVerdict.Dangling`'s warn-once route is where a warning would go if one is ever wanted.
+
+  > #### 2026-08-25 — Pass 2 makes this HALF true, and the half that changed is the important one
+  >
+  > It still holds for a DURABILITY enchant, for exactly the reason above. It does **not** hold for a
+  > damage enchant: `DamageEnchantItems` must consult the registry, because a damage enchant's class
+  > gate and curve live in its definition and there is nothing to apply without one. So deleting
+  > `sharpness.yml` leaves the tooltip rendering "Sharpness III" while the sword deals base damage.
+  >
+  > That is the *opposite* trade from Unbreaking's, and it is still the safe direction — a dangling
+  > damage enchant grants nothing, where a dangling Unbreaking keeps working. The asymmetry is a
+  > consequence of where each mechanism keeps its numbers, not an inconsistency to iron out. Worth
+  > knowing before someone "fixes" one to match the other.
+
+- **Enchant Pass 1's boot record, landed late.** `f7845b6` ended "Not yet boot-witnessed" and the
+  gate was then run on 2026-08-25 (12:12–12:41) without being written up; `run/boot_enchant1.log`
+  held the evidence on disk through the merge of PR #17. Recorded here from that log rather than
+  from memory, and **scoped to what a console log can actually prove** — the plugin's replies to
+  `/rpg enchant` go to the player, not the console, so the per-command responses were seen by a
+  human at the time and are not recoverable from this file.
+
+  What the log proves outright:
+
+  ```
+  :15   WARNING: Skipping malformed enchant 'overpowered.yml':
+                 enchant 'overpowered' max_level must be 1..3, was 9
+  :17   WARNING: 1 enchant file(s) were skipped. The server is still running, ...
+  :117  [Rpg] Loaded 6 abilities, 7 visuals, 5 statuses, 7 elements, 1 enchants, 2 kits, 5 weapons, 1 mobs
+  :130  Done (5.294s)!
+  ```
+
+  So the **fail-soft path was witnessed live**, not merely unit-tested: a deliberately malformed
+  `overpowered.yml` (`max_level: 9`) was dropped into the deployed content folder, named and skipped
+  at boot, and the server started anyway with the rest of the roster intact. Same throwaway-fixture
+  technique as the dangling-weapon gate's `testdangle.yml`, and it was cleaned up afterwards —
+  `run/plugins/Rpg/content/enchants/` held only `unbreaking.yml` afterwards.
+
+  The command sequence walked candidate -> level -> active, the wear path
+  (`/rpg durability damage 254` x3, `repair 250` x3), `clear`, two unknown ids (`owahjwa`,
+  `nosuchenchant`), an out-of-range candidate (`active 0 3`), an out-of-range level (`level 0 0 34`,
+  refused by Brigadier before the handler), and the same flow on `ember_staff`. At 12:40:51 the
+  player pasted the raw blob into chat — **`v1;unbreaking=3:0`** — which is the carry evidence the
+  `show` command exists to produce, in the literal wire form `EnchantCodecTest` pins.
+
+- **Enchant Pass 2's boot gate: step 1 is DONE, steps 2–10 are OWED BY A HUMAN.** Recording the
+  split explicitly, because "the boot gate ran" and "the boot gate ran as far as a console can go"
+  look identical in a summary.
+
+  **Step 1, run and passed** (`./scripts/dev-server.sh --refresh-content`, 2026-08-25 21:42):
+
+  ```
+  [Rpg] Loaded 6 abilities, 7 visuals, 5 statuses, 7 elements, 4 enchants, 2 kits, 5 weapons, 1 mobs
+  Done (8.095s)!
+  ```
+
+  `4 enchants`, up from 1, with **no** `Skipping malformed enchant` and no skip-count warning in the
+  server phase — so all four shipped files parse under the new required schema on a real boot, not
+  just in surefire. (The loader warnings that DO appear earlier in that log are surefire's, from
+  `EnchantLoaderTest`'s own malformed fixtures during the build. Worth noting so they are not misread
+  as boot failures.) The deployed jar was confirmed **byte-identical to the build output** with
+  `cmp`, and `--refresh-content` re-copied all four ymls at the same byte sizes they carry inside the
+  jar. The server was stopped afterwards — a live server holds the jar lock, which is the incident
+  CLAUDE.md's verification section opens with.
+
+  **Everything that reads a NUMBER is still owed**, because `/rpg give` and `/rpg enchant` both gate
+  on `instanceof Player` and the damage popup is a per-viewer packet. The same shape as the grenade
+  cast owed after the rename, and `/rpg class` after Commit F. The gate, with the numbers derived
+  from content in advance rather than read off and rationalised after:
+
+  | # | held | enchant | expect | proves |
+  |---|---|---|---|---|
+  | 2 | `ironblade` | Sharpness III | tooltip "Sharpness III"; `show` prints `+15% damage, x1.15` | the read, before any swing |
+  | 3 | `ironblade` | Sharpness III | swing **9** (plain is **8**) | the ARM applies the multiplier |
+  | 4 | `ember_staff` | Attunement I then III | bolt **17** then **18** (plain **16**) | the LEVEL reaches the curve |
+  | 5 | `hunters_bow` | Sharpness III | shot **6**, unchanged | the class gate; `show` says "inert" |
+  | 5b | `hunters_bow` | Power III | shot **7** | and the right enchant does land |
+  | 6 | `ironblade` + `+5 Melee` offhand | Sharpness III | **14**, *not 15* | percent on base, flat on top |
+  | 7 | `ironblade` | Sharpness I *and* III, two slots | **9**, *not 10* | `effective()` takes MAX, not sum |
+  | 8 | `ironblade` | Unbreaking + Sharpness | wear skips AND damage scales | dispatch by `effect` |
+  | 9 | any | any | `show`'s raw blob identical across a re-mint | Pass 1's carry, still held |
+  | 10 | `ironblade` | Unbreaking III, then Sharpness III | the `/rpg enchant active` REPLY reads `(consumes durability on 25% of uses)`, then `(+15% damage, x1.15)` | the ACTIVATION reply dispatches by `effect` -- pre-fix it said "consumes durability" for BOTH |
+  | 10b | `hunters_bow` | Sharpness III | the `active` REPLY reads `(inert: a Melee enchant on a Ranged weapon)` | the inert case reaches the reply, not only `show` |
+
+  **Step 10 exists because step 2 checked `show` and nothing checked the ACTIVATION reply.** That
+  gap is the whole reason `/rpg enchant active` spent Pass 2 appending Unbreaking's consume rate to
+  every enchant -- activating Sharpness reported "consumes durability on 25% of uses" -- while step
+  2 sat one command away reading the correct percent out of `show`. A gate that reads one of two
+  surfaces looks exactly like a gate that reads both.
+
+  Its shape is the point: one held weapon, two activations, **two different asserted strings from
+  the same command**. A single hardcoded description cannot pass it whichever effect it happens to
+  describe, which is the property step 8 has for the swing path and the reply had for nothing.
+  `EnchantEffectLineTest` now pins both strings in the two-second loop, so step 10 witnesses the
+  wiring rather than the arithmetic.
+
+  **Steps 4, 6 and 7 are the ones that carry information**, and each is a number that separates two
+  designs rather than confirming a change:
+  - **4 uses the staff and not the sword deliberately.** The popup rounds
+    (`DamageNumberText.of` -> `Math.round`), and at `[5, 10, 15]` the ironblade renders I/II/III as
+    **8 / 9 / 9** — Sharpness I is *indistinguishable from unenchanted*, and II from III. On the
+    staff's base 16 they are 17 / 18 / 18, so I and III separate from each other and from 16. The
+    curve was NOT steepened to make a popup readable; it is proven exactly, at full precision, in
+    `DamageEnchantsTest`, and the boot only witnesses the wiring.
+  - **6 is 14, not 15.** `8*1.15+5 = 14.2` versus `(8+5)*1.15 = 14.95`. If it ever reads 15 the
+    multiply has moved outside the addition.
+  - **7 is 9, not 10.** MAX gives 15% (9.2); summing would give 20% (9.6 -> 10). This is the case
+    NEXT.md's stacking entry asks for — one where max and sum actually disagree.
+
+- **The `DamageNumberText` double-rounding tolerance is now LIVE, and its own javadoc predicted
+  this pass.** It says the skew is *"latent; revisit (round both off one basis) only if element
+  multipliers make fractional damage visible."* A damage enchant is what makes damage fractional for
+  the first time: the popup rounds `amount`, while the mob nameplate rounds current and max
+  independently, so a visible plate drop can differ from the popup by ±1 on any enchanted hit.
+
+  **Consequence for the gate: trust the popup, not the plate delta.** They are two readings of one
+  `applyDamage` event and PLAN-1b asserts they agree — that assertion is now approximate for
+  fractional damage, and a ±1 disagreement is the documented skew rather than a new bug. Fixing it
+  means rounding both off one basis; not folded into this pass.
+
+- **CONSEQUENCE: a melee weapon's ABILITY takes its melee enchant. ANSWERED 2026-08-25: KEEP IT, and
+  the reason is that it matches the class bonus.** The emberblade's Fireball is a literal
+  `Damage(12)` and the multiplier reaches both arms, so Sharpness III scales it to 13.8. Any ability
+  cast while holding a matching-class enchanted weapon is scaled the same way — `/rpg cast
+  solar_grenade` with a Sharpness sword in hand included.
+
+  This is exactly consistent with the standing consequence recorded for the class bonus (*"standalone
+  ability literals are now gear-scalable"*), and it follows from the same held-weapon-gated `Caster`.
+  The alternative — restricting an enchant to the weapon's own triggers — would need `WeaponService`
+  to mark the cast and a from-weapon flag threaded through `AbilityService`/`CastExecutor`, the same
+  cost that was declined for the class bonus.
+
+  **The decision was to keep the shipped behaviour, taken deliberately and before the roll rather
+  than discovered after it.** What it settles is not really the Fireball; it is that
+  **`+Class Damage` gear and a class-typed enchant are ONE rule, not two.** Both are build stats
+  gated on the held weapon's class, both reach every direct-damage effect the caster deals, and
+  neither is keyed on where the payload came from. A player who has learned what their sword does to
+  their gear does not then have to learn a second, narrower rule for what it does to their enchants.
+
+  So the pair of them now carries a single invariant worth stating once: **anything gated on the held
+  weapon's class scales the caster's whole class output, not just that weapon's autoattack.** If that
+  is ever revisited it should be revisited for BOTH — splitting them so gear scales abilities and
+  enchants do not would be the genuinely confusing outcome, and it is the one this answer forecloses.
+
+  Consequence for the roll, which is the pass that would otherwise have inherited the question: it
+  inherits nothing. A rolled Sharpness behaves like a hand-assigned one, and the roll's design does
+  not need to know that abilities exist.
+
+- **Still deferred after Pass 2:** the per-instance roll and the class pools (now with a real roster
+  of three damage enchants to draw from), the enchant table UI, the XP economy and bookshelf power,
+  and a SUMMONER enchant — which still waits on the class, which still waits on mob-to-mob damage.
+
+- **The tooltip shows no percent, and the Phase-4 entry stays OPEN.** Pass 2 grants the first real
+  enchant STAT DELTA, which is what that entry was waiting for, but `EnchantLore` still renders only
+  "Sharpness III" — no `+15%` line, and the weapon's damage numbers are still its authored base.
+  Surfacing a RESOLVED number belongs with the stat screen, beside `+N Melee Damage` and the resolved
+  attack speed, per the standing rule that lore describes the weapon and not whoever holds it.
 
 ---
 

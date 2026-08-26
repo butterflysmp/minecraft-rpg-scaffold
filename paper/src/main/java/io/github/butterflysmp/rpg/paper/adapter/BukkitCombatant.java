@@ -71,7 +71,16 @@ public final class BukkitCombatant {
                 // And the class-damage bonus, frozen for the same reason again: EffectApplier adds it
                 // to BOTH damage arms, and a projectile's payload resolves on the target's region.
                 // 0.0 when untracked -- a summand, like attack damage.
-                stats.classDamageValue(entity.getUniqueId()));
+                stats.classDamageValue(entity.getUniqueId()),
+                // And the enchant-damage percent, frozen for the same reason a fourth time. A
+                // Sharpness III arrow is a 15% arrow for its whole flight, even if the bow leaves
+                // the hand before impact -- the shot was paid for when it was taken.
+                //
+                // 0.0 when untracked, and 0.0 is NEUTRAL here because the value is a PERCENT:
+                // DamageEnchants.multiplier(0.0) is exactly 1.0. That is why the stat carries a
+                // percent rather than a multiplier -- it keeps one absent-value convention across
+                // every summand on this record instead of adding a second beside attackSpeed's 1.0.
+                stats.enchantDamagePercentValue(entity.getUniqueId()));
     }
 
     /** Dispatches onto the entity's own thread. Never reads the world, never returns state. */

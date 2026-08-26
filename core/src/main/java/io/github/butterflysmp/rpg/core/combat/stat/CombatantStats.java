@@ -112,6 +112,27 @@ public final class CombatantStats {
     }
 
     /**
+     * Resolved ENCHANT-DAMAGE percent (0.0 + modifiers): the sum of the percentages granted by the
+     * damage enchants active on the weapon this combatant holds, whose class matches that weapon's.
+     * Multiplies the base of every direct damage effect they deal.
+     *
+     * An untracked combatant returns {@code 0.0} -- which is NEUTRAL here, because the value is a
+     * percent and {@code DamageEnchants.multiplier(0.0)} is exactly {@code 1.0}. That is the whole
+     * reason the stat carries a percent rather than a multiplier: it keeps the absent-value rule the
+     * same as {@link #attackValue} and {@link #classDamageValue}, instead of adding a second
+     * convention beside {@link #attackSpeedValue}'s 1.0. Returning 1.0 here would be a 1% damage buff
+     * to every untracked combatant; returning 0.0 from a multiplier-valued stat would zero all
+     * damage. The percent has no such failure mode.
+     *
+     * Mobs are never reconciled, so a mob's percent stays at base 0 -- enchants live on player-held
+     * items, and a mob has no held-weapon class to gate on.
+     */
+    public double enchantDamagePercentValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.enchantDamagePercentValue();
+    }
+
+    /**
      * Deal {@code amount} of custom damage to {@code id}, attributed to {@code dealer}. No-op on an
      * untracked combatant. Emits a DAMAGE change carrying the new custom current and max, and the
      * dealer's identity -- the seam the popup hooks next phase.
@@ -190,6 +211,25 @@ public final class CombatantStats {
         HealthState state = states.get(id);
         if (state == null) return;
         ModifierReconciler.reconcile(state.classDamageTarget(), desired);
+    }
+
+    /**
+     * Converge the enchant-damage percent modifiers to {@code desired}, the same leak-proof diff as
+     * the four above. SILENT, like attack damage, attack speed and the class bonus: there is no
+     * display seam for it, and the weapon tooltip deliberately shows the weapon's base numbers rather
+     * than the holder's resolved total. No-op on an untracked combatant.
+     *
+     * The class GATE is not here, exactly as it is not in the class-damage reconciler. {@code desired}
+     * arrives already filtered to the damage enchants matching the held weapon's own class (see
+     * {@code DamageEnchants.matching}), keyed by enchant id, so this reconciler never learns what a
+     * weapon class or an enchant is. Two damage enchants on one weapon arrive as two sources and
+     * {@link Stat} sums their percentages, which is the correct composition for percentages and the
+     * reason the value is not a multiplier.
+     */
+    public void reconcileEnchantDamageModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.enchantDamageTarget(), desired);
     }
 
     /** Drop {@code id}'s state. O(1), safe for an unknown id. Call on logout and on mob removal. */

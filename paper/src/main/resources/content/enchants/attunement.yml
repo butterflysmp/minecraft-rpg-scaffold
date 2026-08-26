@@ -1,0 +1,21 @@
+# The Mage damage enchant, and the one the boot gate leans on hardest.
+#
+# ember_staff carries a LITERAL damage payload (amount: 16) and declares no attack_damage at all, so
+# it reads no stat -- which is exactly the shape that made a payload-keyed "+Magic Damage" inert in
+# the class-modifier pass, and exactly why the multiplier is applied AT THE DAMAGE ARM rather than
+# pre-baked onto the caster's attack damage. An authored literal is not known until the effect fires.
+# Attunement working on the Ember Bolt is the proof that this pass kept that property.
+#
+# The staff's base 16 is also the largest in shipped content, which makes it the only weapon where
+# 5% steps survive the popup's rounding:
+#
+#   I 16.8 -> "17"   II 17.6 -> "18"   III 18.4 -> "18"
+#
+# I (17) and III (18) are distinguishable from each other AND from the plain 16, so this is where
+# the boot gate proves the LEVEL reaches the curve. On the sword it could only prove that SOME
+# multiplier applied.
+display_name: "Attunement"
+max_level: 3
+effect: damage
+class: mage
+percent_by_level: [5, 10, 15]
