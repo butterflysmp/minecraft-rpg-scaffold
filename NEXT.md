@@ -1798,10 +1798,21 @@ Before milestone 2, two things worth measuring rather than assuming:
   and that is the roster pass's decision, which is why the bound sits in `EnchantMenuLayout` at the
   reachable surface rather than in `EnchantState`.
 
-- **The table WINS a right-click on an enchanting table; sneaking bypasses to the weapon trigger.**
-  Vanilla's own convention — a block interaction beats an item's use unless you sneak — and the
-  escape hatch is what makes it safe: the other ordering means a Mage holding their staff can never
-  open the table they are standing at. Flagged for tuning; boot rows 3 and 4 are where it is judged.
+- **An enchanting table's right-click is cancelled UNCONDITIONALLY; sneaking only chooses what
+  happens instead.** The custom table replaces vanilla enchanting, so the vanilla screen must never
+  open — not with an empty hand, not while sneaking, not ever. Sneaking then falls through to the
+  weapon's `right_click` trigger, which is the escape hatch that keeps a Mage able to cast while
+  standing at a table.
+
+  **This was a real bug and not a hypothetical.** The cancel originally sat INSIDE the `!isSneaking`
+  guard, so a sneak-right-click skipped the block entirely, nothing cancelled the event, and vanilla
+  enchanting opened — the one screen the whole pass exists to replace. The guard was resting on a
+  rule that does not exist: sneaking suppresses a container GUI only when you are holding a
+  PLACEABLE item, and with an empty hand it does nothing at all.
+
+  **Accepted consequence:** a block can no longer be placed against an enchanting table. Both that
+  and vanilla enchanting are things the custom table takes over, and anyone who wants to build
+  against one can break and re-place it. Boot rows 3, 4, 4b and 4c judge all four paths.
 
 - **The single-button interaction model is a PROPOSAL.** Locked → unlock-and-activate, unlocked →
   activate, active → level up, one click each. It is a pure function precisely so tuning it means

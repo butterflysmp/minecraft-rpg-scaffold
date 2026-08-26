@@ -97,7 +97,9 @@ Setup: `/rpg give ironblade`, then `/rpg enchant candidate 0 sharpness`, `candid
 | 1 | boot | `Loaded ... 4 enchants`, no `Skipping malformed enchant`, no `names icon` | the `icon:` key parses on all four |
 | 2 | right-click a table, empty hand | the custom menu opens; **the vanilla enchant screen never appears** | the intercept and the cancel |
 | 3 | right-click a table holding `emberblade`, **not** sneaking | menu opens; no Fireball, no energy spent | the table wins, ahead of `WeaponFire.attempt` |
-| 4 | same, **sneaking** | Fireball casts; no menu | the escape hatch — without it a Mage can never open the table |
+| 4 | same, **sneaking** | Fireball casts; no menu **and no vanilla enchant screen** | the escape hatch — and that the cancel is unconditional, which it was not before |
+| 4b | **sneak**-right-click a table with an **empty hand** | **nothing opens at all** — no vanilla screen, no menu | the bug this fixes: the cancel used to sit inside the `!isSneaking` guard, so this path opened vanilla enchanting |
+| 4c | **sneak**-right-click a table holding a **block** | the block is **not placed**; nothing opens | the accepted consequence of the unconditional cancel |
 | 5 | click slots 0/8/4 and any filler | nothing moves, nothing reaches the cursor; slot 0 CLOSES | default-cancel, and the close button |
 | 6 | **shift-click** the `ironblade` in from your inventory | it lands in the input slot, **exactly one**, and **nothing is left behind** in the source slot | the shift-move is performed by us, not delegated to the server |
 | 6a | **shift-click a filler pane** in the menu | nothing leaves the menu; **no glass pane appears in your inventory** | only an input slot leaves — everything else falls through to the default cancel |

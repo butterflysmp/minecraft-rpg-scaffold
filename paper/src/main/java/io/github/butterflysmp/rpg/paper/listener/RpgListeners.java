@@ -148,9 +148,13 @@ public final class RpgListeners implements Listener {
      * can fire twice for one physical right-click (the main/off-hand pair), and an unfiltered
      * handler would spend energy twice for one press.
      *
-     * Vanilla is cancelled ONLY when the held weapon actually binds right_click (attempt
-     * returns present). ironblade has no right_click, so its right-click passes through and
-     * doors and chests still work with it in hand; only a weapon that uses the input consumes it.
+     * Vanilla is cancelled when the held weapon actually binds right_click (attempt returns
+     * present). ironblade has no right_click, so its right-click passes through and doors and
+     * chests still work with it in hand; only a weapon that uses the input consumes it.
+     *
+     * The ONE exception is an enchanting table, which is cancelled unconditionally whatever is
+     * held and whether or not you are sneaking -- the custom table replaces vanilla enchanting, so
+     * the vanilla screen must never open. See the block below.
      */
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
@@ -158,19 +162,32 @@ public final class RpgListeners implements Listener {
         Action action = event.getAction();
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
-        // The enchanting table wins the click, and the held weapon's right_click trigger does not
-        // fire. Vanilla's own convention: a block interaction beats an item's use unless you SNEAK
-        // -- and sneaking is what keeps this from being a trap, because the alternative ordering
-        // means a Mage holding their staff can never open the table they are standing at.
+        // VANILLA ENCHANTING NEVER OPENS ON THIS BLOCK, sneaking or not. The custom table replaces
+        // it outright, so suppressing it is unconditional and sneaking only decides what happens
+        // INSTEAD of it.
+        //
+        // The cancel used to live inside the !isSneaking guard, which meant a sneak-right-click
+        // skipped this block entirely, nothing cancelled the event, and the vanilla enchanting
+        // screen opened -- the one screen this whole pass exists to replace. Sneaking suppresses a
+        // container GUI only when you are holding a PLACEABLE item; with an empty hand it does
+        // nothing at all, so the guard was resting on a rule that does not exist.
+        //
+        // Accepted consequence: you also cannot place a block against an enchanting table any more.
+        // That and vanilla enchanting are both things the custom table is here to take over, and a
+        // player who wants to build against one can break and re-place it.
         //
         // Ahead of WeaponFire.attempt deliberately, so the weapon never spends energy on a click
         // that opened a menu.
-        if (action == Action.RIGHT_CLICK_BLOCK && !event.getPlayer().isSneaking()
-                && event.getClickedBlock() != null
+        if (action == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null
                 && event.getClickedBlock().getType() == Material.ENCHANTING_TABLE) {
-            event.setCancelled(true);            // the vanilla enchanting screen never opens
-            new EnchantMenu(event.getPlayer(), weapons, adapters).open();
-            return;
+            event.setCancelled(true);
+            if (!event.getPlayer().isSneaking()) {
+                new EnchantMenu(event.getPlayer(), weapons, adapters).open();
+                return;
+            }
+            // Sneaking: fall through to WeaponFire.attempt so the weapon's right_click still fires
+            // -- the escape hatch that keeps a Mage able to cast while standing at a table. Vanilla
+            // is already cancelled above, so the table opens for neither of us.
         }
 
         WeaponFire.attempt(event.getPlayer(), "right_click", weapons, weaponService, adapters,
