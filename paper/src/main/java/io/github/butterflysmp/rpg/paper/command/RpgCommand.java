@@ -37,6 +37,7 @@ import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.DashAim;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantEffectLine;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantItems;
+import io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponClassLabel;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
@@ -635,7 +636,11 @@ public final class RpgCommand {
             return 0;
         }
 
-        player.getInventory().addItem(WeaponItems.mint(weapon, adapters));
+        // The roll fires at ACQUISITION, never in mint -- remint calls mint, so a roll there
+        // would re-roll on every join, refresh and enchant click. See EnchantRollItems.
+        ItemStack item = WeaponItems.mint(weapon, adapters);
+        EnchantRollItems.rollOnAcquire(item, weapon, adapters);
+        player.getInventory().addItem(item);
         // Same rarity-coloured name the item itself carries -- the chat echo must not disagree
         // with the thing that just landed in the inventory.
         player.sendMessage(Component.text("Given ", NamedTextColor.AQUA)
@@ -1190,6 +1195,8 @@ public final class RpgCommand {
             WeaponDefinition weapon = weapons.find(grant.weaponId()).orElse(null);
             if (weapon == null) continue; // validated at boot; skip a dangling grant
             ItemStack item = WeaponItems.mint(weapon, adapters);
+            // Inside the loop: each kit weapon is its own instance and rolls its own candidates.
+            EnchantRollItems.rollOnAcquire(item, weapon, adapters);
 
             int hotbar = grant.equip() ? firstEmptyHotbarSlot(player) : -1;
             if (hotbar >= 0) {

@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
+import io.github.butterflysmp.rpg.core.enchant.EnchantRoll;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import org.junit.jupiter.api.Test;
 
@@ -170,6 +171,19 @@ class EnchantMenuLayoutTest {
         assertTrue(problem.get().contains("1"), "name the slot at fault: " + problem.get());
         assertTrue(problem.get().contains("4"), "name the count: " + problem.get());
         // Mutation: check only state.slots().size() -> a 4-candidate slot sails through -> reddens.
+    }
+
+    @Test
+    void whatTheRollProducesIsWhatTheTableCanShow() {
+        // Two independent bounds, deliberately: the layout's also has to refuse a HAND-EDITED item,
+        // so it is not merely a restatement of the roll's. But a roll the table cannot render would
+        // be refused at the door by overflow() -- every rolled weapon of that shape would become
+        // un-enchantable -- so the drift is pinned here rather than discovered in front of a player.
+        assertEquals(EnchantMenuLayout.SLOTS, EnchantRoll.SLOTS,
+                "the roll makes more slots than the table shows");
+        assertEquals(EnchantMenuLayout.CANDIDATES, EnchantRoll.MAX_CANDIDATES,
+                "the roll can fill a slot fuller than the table shows");
+        // Mutation: EnchantRoll.SLOTS -> 4 -> reddens (and overflow() would refuse every weapon).
     }
 
     /** Exactly what the table can show: three slots, three candidates each. */
