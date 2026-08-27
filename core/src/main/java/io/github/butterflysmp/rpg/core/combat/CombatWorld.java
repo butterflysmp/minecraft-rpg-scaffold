@@ -49,6 +49,26 @@ public interface CombatWorld {
     Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId);
 
     /**
+     * Whether the segment from {@code from} to {@code to} is clear of BLOCKS. Nothing else
+     * stops it: an entity standing in the way does not.
+     *
+     * That is the whole reason this is not {@link #castRay}. castRay reports the first
+     * block OR combatant it meets, so asking it for a sight line reads a mob standing
+     * behind another mob as blocked. Melee wants block line of sight, the way vanilla
+     * does -- you may hit a mob through a mob, but not through a wall.
+     *
+     * Like combatantsNear and castRay this reads the world, and is only legal on the
+     * thread that owns the region containing the segment. Unlike castRay it can honour
+     * that today: its callers trace at most a melee reach -- 3 to 3.5 blocks in shipped
+     * content -- so the segment straddles at most one chunk plane and stays inside the
+     * region the caster's eye already put us on. A Ray's 30 blocks do not, which is the
+     * Folia defect the adapter documents on combatantsNear.
+     *
+     * A zero-length segment is clear: there is nothing between a point and itself.
+     */
+    boolean lineOfSightClear(Vec3 from, Vec3 to);
+
+    /**
      * Defer {@code task} by at least {@code delayTicks}, on the thread owning
      * {@code near}'s region.
      *

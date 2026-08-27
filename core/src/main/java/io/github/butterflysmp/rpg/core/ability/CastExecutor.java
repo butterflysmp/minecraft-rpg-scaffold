@@ -238,6 +238,21 @@ public final class CastExecutor {
     /**
      * The nearest living thing inside the swing. arcDegrees is the full width of
      * the cone, so a 90-degree swing reaches 45 degrees either side of the aim.
+     *
+     * A candidate the caster cannot SEE is skipped: in range and in arc is not enough,
+     * or a swing at a wall damages whoever stands behind it. The check is block-only
+     * (see CombatWorld.lineOfSightClear), so a mob behind another mob is still fair game.
+     *
+     * Note the ordering. The line-of-sight skip MUST happen before nearestDistanceSquared
+     * is assigned, never between the assignment and the target being taken -- a blocked
+     * candidate that lowers the bound on its way out would push a CLEAR candidate behind
+     * it out of contention and the swing would whiff entirely. Gating the bound behind the
+     * verdict is also the cheaper of the two correct orders: the trace, the only expensive
+     * call here, then runs once per improvement rather than once per candidate in the arc.
+     *
+     * This gates the DIRECT target only. A Burst or area payload detonating at the impact
+     * still splashes through walls -- EffectApplier.applyToNearby is a plain radius query --
+     * as does a Dash sweep. Deliberately out of scope here; do not read this as covering them.
      */
     private Combatant meleeTarget(CombatantSnapshot caster, Aim aim, CastSpec.Melee melee) {
         double minimumDot = Math.cos(Math.toRadians(melee.arcDegrees() / 2.0));
@@ -255,12 +270,24 @@ public final class CastExecutor {
             if (toCandidate.normalize().dot(aim.direction()) < minimumDot) continue;
 
             double distanceSquared = toCandidate.lengthSquared();
-            if (distanceSquared < nearestDistanceSquared) {
-                nearestDistanceSquared = distanceSquared;
-                nearest = candidate;
-            }
+            if (distanceSquared >= nearestDistanceSquared) continue;
+            if (!world.lineOfSightClear(aim.origin(), sightPoint(candidate.state()))) continue;
+
+            nearestDistanceSquared = distanceSquared;
+            nearest = candidate;
         }
         return nearest;
+    }
+
+    /**
+     * The point on a combatant a sight line traces TO: its eye, not its feet.
+     *
+     * position() is the entity's feet, so a ray ending there hugs the floor for its whole
+     * final stretch and any lip, slab or step in between reads as a wall. Vanilla's own
+     * LivingEntity.hasLineOfSight traces eye to the TARGET'S eye; this is that point.
+     */
+    private static Vec3 sightPoint(CombatantSnapshot target) {
+        return target.position().add(new Vec3(0, target.eyeHeight(), 0));
     }
 
     private void detonate(AbilityDefinition ability, Caster caster, Combatant target, Vec3 impact) {

@@ -125,6 +125,40 @@ public final class PaperCombatWorld implements CombatWorld {
         return Optional.of(RayHit.ofBlock(point));
     }
 
+    /**
+     * MUST run on the thread owning the segment's region, like castRay -- World#rayTraceBlocks
+     * reads blocks along the whole length, and the javadoc warns it may load chunks to do it.
+     *
+     * This is the one world read on the melee path that is genuinely safe under that rule today.
+     * Its only caller traces at most a melee reach (3 to 3.5 in shipped content) from the caster's
+     * eye, so the segment cannot leave the region CastExecutor was already entered on. Contrast
+     * castRay's 30-block Ray, and the defect documented on combatantsNear above.
+     *
+     * Blocks ONLY -- deliberately rayTraceBlocks and not rayTrace. rayTrace traces blocks, then
+     * traces entities out to the block hit and returns whichever is nearer, so it would report a
+     * mob standing behind another mob as blocked. Melee wants what vanilla wants: you may hit a
+     * mob through a mob, but not through a wall.
+     *
+     * FluidCollisionMode.NEVER with ignorePassableBlocks = true is exactly the configuration
+     * vanilla's own LivingEntity#hasLineOfSight uses, so grass, water and other passable blocks
+     * do not stop a swing.
+     */
+    @Override
+    public boolean lineOfSightClear(Vec3 from, Vec3 to) {
+        Vec3 along = to.subtract(from);
+        double distance = along.length();
+        // Clear, NOT blocked. castRay's mirror of this guard returns "nothing hit" for a
+        // degenerate segment and that is the same verdict, spelled with the opposite boolean.
+        // It also has to run: Vector#normalize on a zero vector yields NaN, and rayTraceBlocks
+        // precondition-checks the direction, so an unguarded call throws rather than missing.
+        if (distance <= 0) return true;
+
+        Vector direction = new Vector(along.x(), along.y(), along.z()).normalize();
+        return world.rayTraceBlocks(
+                toLocation(from), direction, distance,
+                FluidCollisionMode.NEVER, /* ignorePassableBlocks */ true) == null;
+    }
+
     @Override
     public void schedule(Vec3 near, int delayTicks, Runnable task) {
         ctx.scheduler().onRegionLater(toLocation(near), task, delayTicks);

@@ -61,6 +61,11 @@ public final class BukkitCombatant {
         return new CombatantSnapshot(
                 entity.getUniqueId(),
                 new Vec3(location.getX(), location.getY(), location.getZ()),
+                // The eye, as an offset above those feet. A legal read on this thread like every
+                // other here, and the point CastExecutor traces a melee sight line TO -- vanilla's
+                // own hasLineOfSight goes eye to the target's eye, not eye to its feet. Per-entity,
+                // so it is right for a chicken and an enderman without core knowing either exists.
+                entity.getEyeHeight(),
                 !entity.isDead(),
                 entity instanceof Player,
                 stats.attackSpeedValue(entity.getUniqueId()),
