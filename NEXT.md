@@ -1871,15 +1871,54 @@ Before milestone 2, two things worth measuring rather than assuming:
   `applyCandidateClick` and changes nothing structural, and the bookshelf discount lands on the
   readout that is already sitting there saying it does not exist yet.
 
-- **The enchant ECONOMY's boot gate is OWED IN FULL BY A HUMAN.** All 28 rows need a `Player`, an XP
-  bar and a placed block; the gate is in `PLAN-enchant-economy.md`. **Screenshot the level number and
-  the bar before and after every row that clicks** — a charge of 0 and a charge of 352 look identical
-  in a picture of the after state, and `/xp query` reports the bar portion rather than the banked
-  total, which is why the purchase rows are built to land on exactly level 0 with an empty bar.
+- **The enchant ECONOMY boot gate: RUN AND PASSED, 26 rows witnessed and 2 structurally guaranteed**
+  (live server, 2026-08-27). The gate is in `PLAN-enchant-economy.md` (PR #21). Recorded here because
+  the pass ships two things **no unit test can reach** — the seam ordering, where moving the deduction
+  above the transition leaves all 643 tests green, and the world read in `BookshelfPower.at`, which is
+  referenced by no test at all. The build said nothing whatever about either, so these rows are the
+  only evidence that exists.
 
-  Two things in that pass no unit test can reach, so the gate is the only evidence that will ever
-  exist for them: the **seam ordering** — moving the deduction above the transition leaves all 643
-  tests green — and the **world read** in `BookshelfPower.at`.
+  This is the runner's witnessed result, **not a pasted transcript** — no console output was captured
+  into this file.
+
+  **Rows 1–20 and 23–28 were witnessed live and passed.** The four results worth keeping:
+
+  - **Row 13 is the row this pass was rewritten for, and it held.** A full ring charges **2044** for
+    III, which is exactly 70% of 2920. The discarded level model would have charged
+    `totalForLevel(28)` = **1186** — 59.4% off wearing a 30% label. Pricing in points is the only
+    reason the number on the bookshelf readout means what it says, and this row is where that stops
+    being an argument and becomes an observation.
+  - **The derivation is visible in game.** Rows 4–6: bank exactly level 16 / 25 / 40 and the unlock,
+    the II and the III each land the player on exactly **level 0 with an empty bar**. That is what
+    makes "352 points" and "a level-16 bank" the same sentence rather than two claims.
+  - **The seam ordering held from both sides.** Row 7 refused at 315 against a 352 price with the
+    weapon untouched, and row 24 confirmed the blob was unchanged after a refused click — so an
+    unaffordable click really is a click that did not happen. Row 10, one point short at 351, is what
+    proves the wallet is read as POINTS and not as a level count.
+  - **The discount floors, in front of a player.** Row 16: one shelf, and II reads **900**, not 901.
+    Rounding to nearest would have taken a point off the player on that exact click.
+
+  **Rows 21 and 22 were NOT witnessed, and are not currently witnessable single-player** — you cannot
+  place a block while a GUI is open, so no one player can build a ring without first closing the menu
+  that the row is about. They are discharged as **structurally guaranteed rather than observed**, and
+  the distinction is kept because a guarantee argued from code is not the same kind of evidence as a
+  row someone watched. Verified by reading the code rather than by asserting it:
+
+  - `bookshelfPower` is a `private final int` assigned **exactly once**, in the constructor, from the
+    only call to `BookshelfPower.at` in the codebase. Every other mention of it is a read. The
+    compiler enforces the single assignment, so row 21 (frozen at open) cannot fail without a
+    compile error.
+  - **No `Block` field exists** — `Block` appears in `EnchantMenu` only as a constructor parameter.
+    There is nothing for a re-scan to be written against, which is the specific hazard freezing was
+    chosen to foreclose.
+  - `RpgListeners:185` constructs a **new** `EnchantMenu` on every right-click, so row 22
+    (re-count on reopen) is the constructor running again.
+
+  What that argument does NOT cover is whether the scan reads the world correctly — but rows 13 and
+  18–20 witnessed exactly that and passed, so the only unobserved surface left is the freeze itself,
+  which is the part the `final` field settles. **Both rows stay witnessable with a second player**
+  (one places shelves while the other holds the menu open) and are worth running if one is ever to
+  hand; they are not being written off as unreachable for ever.
 
 - **Three wrong predictions about floating point, all made before running anything.** Recorded
   together because the pattern matters more than any one of them. (1) A one-off in `XpCurve`'s

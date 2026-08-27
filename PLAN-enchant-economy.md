@@ -254,6 +254,31 @@ Rows 9, 7 and 21 **carry information** rather than confirming a change: 9 is the
 candidate model exists for, 7 is the only evidence that the untestable check-before / deduct-after
 ordering is the right way round, and 21 is a design choice a player could otherwise report as a bug.
 
+## GATE RESULT — RUN AND PASSED, 2026-08-27
+
+**26 rows witnessed live and passed** (1–20, 23–28). The runner's witnessed result, not a pasted
+transcript. The headline is **row 13**: a full ring charged **2044** for III, exactly 70% of 2920,
+where the discarded level model would have charged `totalForLevel(28)` = **1186** — 59.4% off wearing
+a 30% label. That row is the whole reason this pass was rewritten, and it is now an observation
+rather than an argument.
+
+**Rows 21 and 22 were NOT witnessed and are struck from the witnessed count.** They are not
+reachable single-player: you cannot place a block while a GUI is open, so one player cannot build a
+ring without first closing the menu the row is about. They are discharged as **structurally
+guaranteed**, which is deliberately not the same claim as "passed":
+
+| | what makes it hold | checked by |
+|---|---|---|
+| 21, frozen at open | `bookshelfPower` is a `private final int` assigned **exactly once**, from the only call to `BookshelfPower.at` in the codebase; every other mention is a read | the compiler enforces it — row 21 cannot fail without a compile error |
+| 21, no re-scan possible | **no `Block` field exists**; `Block` appears in `EnchantMenu` only as a constructor parameter | `grep` for `Block ` in the class returns the parameter and nothing else |
+| 22, re-count on reopen | `RpgListeners:185` constructs a **new** `EnchantMenu` per right-click, so reopening runs the constructor again | one call site, grepped |
+
+That argument does **not** cover whether the scan reads the world correctly — but rows 13 and 18–20
+witnessed exactly that and passed, so the only unobserved surface left is the freeze itself, which is
+what the `final` field settles. **Both rows stay witnessable with a second player** (one places
+shelves while the other holds the menu open) and are worth running if one is ever to hand. They are
+not written off as unreachable for ever, and they are not counted as passed.
+
 Rows 16 and 10 are the two rows that would still pass if the wallet were counted in levels — they are
 what make "points" observable rather than merely asserted. Rows 18–20 are the only proof
 `BookshelfPower.at` reads the right 32 places.
