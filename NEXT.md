@@ -1460,6 +1460,29 @@ Before milestone 2, two things worth measuring rather than assuming:
   it with a dev instrument, and leave the thing that will really drive it for a pass that can decide
   its own questions. The table needs the XP economy and bookshelf power below, neither of which
   exists.
+- ~~**The XP economy and bookshelf power are deferred; unlocking is free in Pass 1.**~~ **DONE** (the
+  enchant economy pass; see `PLAN-enchant-economy.md` for the record and its boot gate). The forecast
+  held exactly — the cost check went in front of the call, `EnchantClickIntent` needed no change at
+  all, and the whole economy is a guard and two lines ahead of the transition plus a deduction behind
+  it. **What the entry did NOT forecast, and what the pass turned on, is the UNIT.** The original
+  entry is kept verbatim below.
+
+  > #### 2026-08-27 — the price is in XP POINTS, and pricing it in levels was wrong
+  >
+  > The first design charged `round(BASE_levels × (1 − power/100))` with `BASE = {16, 25, 40}` and
+  > discounted the **level count**. XP levels are not a linear currency: reaching III is 40 levels but
+  > **2920 points**, and 28 levels is **1186**. So a "30% discount" was really **59.4% off** at III,
+  > and a different number at every rung.
+  >
+  > The whole cost model moved into points. `BASE_LEVELS` survives as the tuning knob because it is
+  > the unit a designer thinks in, but it is *derived* through `XpCurve` into `{352, 910, 2920}`
+  > before anything is charged. **"16 levels" is an unambiguous amount of money at exactly one point
+  > on the curve — a player starting from zero — and nowhere else.** That is also what makes the gate
+  > readable: set your level to 16 and the unlock takes you to exactly 0.
+  >
+  > Nothing structural moved with it. The seam ordering, the ring geometry, the frozen-at-open
+  > decision and the pure/impure split were all unaffected.
+
 - **The XP economy and bookshelf power are deferred; unlocking is free in Pass 1.**
   `EnchantState.withLevel` is the seam an economy gates, and it is a pure function on an immutable
   value, so gating it costs nothing structural — the cost check goes in front of the call, not
@@ -1751,8 +1774,10 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 - **Still deferred after Pass 2:** ~~the per-instance roll and the class pools~~ (DONE — the
   enchant rolls pass, which drew from exactly that roster of three), ~~the enchant table UI~~
-  (DONE — the Enchant UI pass), the XP economy and bookshelf power, and a SUMMONER
-  enchant — which still waits on the class, which still waits on mob-to-mob damage.
+  (DONE — the Enchant UI pass), ~~the XP economy and bookshelf power~~ (DONE — the enchant economy
+  pass), and a SUMMONER enchant — which still waits on the class, which still waits on mob-to-mob
+  damage. **That is the last of the enchant deferrals except the SUMMONER one**, which is blocked on
+  something outside enchanting entirely.
 
 - **The tooltip shows no percent, and the Phase-4 entry stays OPEN.** Pass 2 grants the first real
   enchant STAT DELTA, which is what that entry was waiting for, but `EnchantLore` still renders only
@@ -1817,17 +1842,88 @@ Before milestone 2, two things worth measuring rather than assuming:
   dupe that creates a second weapon and a theft that removes one look identical in a screenshot of
   the after state.
 
+- ~~**The bookshelf readout is a labelled placeholder, not a `0%` count.**~~ **DONE** (the enchant
+  economy pass). Slot 8 counts, and **the deviation was resolved by adding a SCALE rather than by
+  giving in on the zero.** It reads "Bookshelf Power N/30", so a bare table showing `0/30` is legible
+  as a measurement against a known maximum, where the `0%` the layout brief asked for was not
+  distinguishable from an unimplemented readout. That is the general shape of the fix and worth
+  reusing: *a placeholder becomes a readout by gaining a maximum, not by gaining a number.*
+  `MenuIcons.placeholder` is kept, now with no consumer, because the anvil, class-select and stat
+  screens will each want it. The original entry is kept verbatim below.
+
 - **The bookshelf readout is a labelled placeholder, not a `0%` count.** Nothing counts bookshelves,
   and slot 8 says "Not implemented yet" in as many words rather than rendering a zero. A readout
   reporting `0%` when nothing is measured is indistinguishable from a working readout that measured
   zero — CLAUDE.md's own failure mode, in a place a player can see. This is a deliberate deviation
   from the layout brief, which asked for a greyed `0%`.
 
+- ~~**Unlocking is FREE, and the XP economy gates the same click.**~~ **DONE** (the enchant economy
+  pass). It landed exactly as forecast and `EnchantClickIntent` was not touched. What the pass added
+  beyond the forecast is a THIRD question beside it: `EnchantCharge` answers *what the click buys*,
+  after the intent has answered *what it means* and before the wallet answers *whether you can afford
+  it*. It is Bukkit-free for the same reason `EnchantClickIntent` is — `EnchantMenu` cannot be built
+  in a unit test — and its switch has no default arm, so a seventh intent is a compile error until
+  someone prices it. The original entry is kept verbatim below.
+
 - **Unlocking is FREE, and the XP economy gates the same click.** `EnchantClickIntent.of` is a pure
   function and the cost check goes in FRONT of it, never inside: what a click MEANS and whether you
   can afford it are different questions. So the economy pass adds a guard and a cost to
   `applyCandidateClick` and changes nothing structural, and the bookshelf discount lands on the
   readout that is already sitting there saying it does not exist yet.
+
+- **The enchant ECONOMY's boot gate is OWED IN FULL BY A HUMAN.** All 28 rows need a `Player`, an XP
+  bar and a placed block; the gate is in `PLAN-enchant-economy.md`. **Screenshot the level number and
+  the bar before and after every row that clicks** — a charge of 0 and a charge of 352 look identical
+  in a picture of the after state, and `/xp query` reports the bar portion rather than the banked
+  total, which is why the purchase rows are built to land on exactly level 0 with an empty bar.
+
+  Two things in that pass no unit test can reach, so the gate is the only evidence that will ever
+  exist for them: the **seam ordering** — moving the deduction above the transition leaves all 643
+  tests green — and the **world read** in `BookshelfPower.at`.
+
+- **Three wrong predictions about floating point, all made before running anything.** Recorded
+  together because the pattern matters more than any one of them. (1) A one-off in `XpCurve`'s
+  *cumulative* band boundaries reddens nothing — vanilla's parabolas intersect at consecutive integer
+  pairs, so a branch anywhere in {14,15,16} or {29,30,31} is the identical function; only a shift of
+  two is observable. The *bar* bands intersect at a single point each and a one-off there reddens
+  five tests. (2) Rewriting a curve band with `2.5`/`40.5` doubles reddens nothing either; both are
+  exact binary fractions at these magnitudes. (3) The double discount was predicted to break at II
+  and does not — `910 × 0.7` rounds back up to 637 while `2920 × 0.7` does not, so it is wrong in
+  **exactly one of nine** price cells. **The reviewer caught (3) before it was run.**
+
+  All three are kept next to what actually executed rather than quietly replaced, and (3) is why
+  `EnchantCostTest` asserts the whole 3×4 price grid instead of a sample: `(int)` truncation breaks
+  only at power 30, `Math.round` breaks only away from it, and asserting one power leaves a
+  reimplementation green.
+
+- **This table is now the plugin's only XP sink, and `setKeepLevel` means the wallet only grows.**
+  Fine now, and worth knowing later: a long-lived player eventually stops feeling the price.
+  `BASE_LEVELS = {16, 25, 40}` — 4182 points to take one enchant to III — is a proposal that has
+  never been played, and it is a Java constant so it moves in one place. Note that changing it now
+  changes the price NON-linearly, which is the thing this pass got wrong once already.
+
+- **`XpCurve` duplicates vanilla and will drift if Mojang ever changes the curve.** The anchors in
+  `XpCurveTest` (level 16 = 352, 25 = 910, 40 = 2920) are the tripwire; nothing checks them against
+  the running server. It lives in its own `core.xp` package rather than in `core.enchant` because it
+  is a fact about Minecraft, not a rule about enchanting — the table is only its first caller.
+
+- **No air-gap rule on bookshelves, deliberately.** Vanilla wants the block between table and shelf
+  transparent; this does not, so a shelf walled in behind stone counts. It halves the reads, drops a
+  rule players already find opaque, and makes a full ring something a boot gate can actually build.
+  The escape hatch is one occlusion check per `BookshelfRing.Offset`, which is itself the argument for
+  offsets being a first-class thing rather than a nested loop inside a block scan.
+
+- **Bookshelf power is FROZEN at open, and only the `int` is kept — never the `Block`.** "Place
+  shelves, then reopen" is the simpler interaction, and freezing buys the Folia-correct thing for
+  free: the scan runs inside `PlayerInteractEvent` for the very block clicked, on the thread that owns
+  it, where a re-read from `InventoryClickEvent` would not be. Keeping the `Block` would invite
+  exactly that re-read, which is why it is not kept.
+
+- **`/rpg enchant` stays FREE, and there is no creative exemption.** The economy gates the table, not
+  the dev instrument: a priced command would put a wallet in the setup line of every future boot gate.
+  Creative is charged because a creative player can `/xp` freely anyway, so an exemption buys nothing
+  and costs an untested branch — and the gate runner is almost certainly in creative, so it would
+  guarantee the gate never witnessed a charge.
 
 - **The input model is "an empty slot ← exactly one item", and the ROUTER owns it, not the menu.**
   Two things a future input-slot menu will otherwise rediscover the hard way.

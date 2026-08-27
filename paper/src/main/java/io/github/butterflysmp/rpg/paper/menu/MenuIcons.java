@@ -74,6 +74,14 @@ public final class MenuIcons {
      * <p>Says "not implemented yet" rather than rendering a zero. A readout showing {@code 0%} when
      * nothing is counted is indistinguishable from a working readout that measured zero -- which is
      * the exact failure CLAUDE.md's verification section is about, in a place a player can see.
+     *
+     * <p><b>Currently unused, and kept on purpose.</b> Its only consumer was the enchant table's
+     * bookshelf slot, which now prints a real count. It stays because {@code MenuIcons} is the
+     * reusable base -- {@code Menu}, {@code MenuRouting} and {@code MenuSafety} all landed with no
+     * consumer at all -- and because the rule it encodes is one the anvil, class-select and stat
+     * screens will each need before they are finished. The graduation is also the pattern worth
+     * copying: a placeholder becomes a readout by gaining a SCALE, so "0/30" reads as a measurement
+     * where a bare "0%" could not.
      */
     public static ItemStack placeholder(Material material, String name, String whatIsMissing) {
         return icon(material,
