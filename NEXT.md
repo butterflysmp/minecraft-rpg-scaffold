@@ -1438,8 +1438,10 @@ Before milestone 2, two things worth measuring rather than assuming:
   III — where sum is 4, which the clamp folds back to 3, the same answer max gives. A mutation run
   proved that version reddened nothing at all.
 - ~~**The enchant TABLE UI is not built; `/rpg enchant` stands in for it.**~~ **DONE** (the Enchant
-  UI pass; see `PLAN-enchant-table-ui.md`). The original entry is kept verbatim below; what follows
-  it is what it turned into. Pass 2. This pass's
+  UI pass, PR #19; see `PLAN-enchant-table-ui.md` for the pass's record and its boot gate). The
+  original entry is kept verbatim below; what follows is what it turned into.
+
+- **The enchant TABLE UI is not built; `/rpg enchant` stands in for it.** Pass 2. This pass's
   relationship to the table is exactly Durability Pass 2's to auto-wear: build the mechanism, drive
   it with a dev instrument, and leave the thing that will really drive it for a pass that can decide
   its own questions. The table needs the XP economy and bookshelf power below, neither of which
