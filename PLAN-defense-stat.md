@@ -121,22 +121,45 @@ Floating point was **executed, never predicted**: the `applyDefense == d*(1-DR)`
 bit-exact (it differs by ~3.6e-15 at defense 50), so it is asserted with a delta. A test written from
 the algebra would have demanded `==` and failed on correct code.
 
-## Boot gate — OWED, not yet run
+## Boot gate — RUN AND PASSED
 
-Every row needs a `Player`; a console log proves only that the plugin loaded.
+Run by a human against a booted server (`./scripts/dev-server.sh --refresh-content`), which is the
+only thing that can witness these: every row needs a `Player`, and a console log proves only that the
+plugin loaded.
 
-```bash
-./scripts/dev-server.sh --refresh-content
-```
-
-| # | check | expected |
+| # | check | result |
 |---|---|---|
-| 1 | Equip a diamond set piece by piece | `⛨` field **appears** on the first piece, number climbs 3 → 11 → 17 → 20, bar fills proportionally |
-| 2 | `/rpg damage 100` bare | 100 custom HP lost |
-| 3 | `/rpg damage 100` in full diamond | ~83 lost, matching `applyDefense(100, 20)` — not 100, not 50 |
-| 4 | Read the armor bar in full diamond | ~1/6 filled (~1.7 of 10 icons), **not** half. This is also the row that falsifies the assumption that a player's base `armor` attribute is 0 |
-| 5 | Strip all armor | `⛨` field **disappears**, bar empties, no stranded modifier |
-| 6 | Let a mob melee you, armored vs bare | armored hit visibly smaller — the path that skips `EffectApplier`, so this row is what proves the seam choice |
-| 7 | Break/drop one piece mid-combat, then rejoin | number and bar drop by that piece; one bar after rejoin, no stale modifier |
+| 1 | Equip a diamond set piece by piece | **pass** — `⛨` field appears on the first piece, number climbs 3 → 11 → 17 → 20, bar fills proportionally |
+| 2 | `/rpg damage 100` bare | **pass** — 100 custom HP lost |
+| 3 | `/rpg damage 100` in full diamond | **pass** — ~83 lost, matching `applyDefense(100, 20)`; not 100, not 50 |
+| 4 | Read the armor bar in full diamond | **pass** — ~1/6 filled, not half |
+| 5 | Strip all armor | **pass** — `⛨` field disappears, bar empties, no stranded modifier |
+| 6 | Let a mob melee you, armored vs bare | **pass** — armored hit visibly smaller |
+| 7 | Break/drop one piece mid-combat, then rejoin | **pass** — number and bar drop by that piece; one bar after rejoin, no stale modifier |
 
-Rows 3, 4 and 6 can only pass if the design is right. The rest can pass by accident.
+### The three that could only pass if the design is right
+
+The other four can pass by accident — a field that renders unconditionally, a bar driven by material,
+a mitigation applied in the wrong place would all still produce a plausible-looking row 1, 2, 5 or 7.
+These three cannot:
+
+- **Row 3 — ~83, not 100 and not 50.** The curve is doing the arithmetic the unit tests pin, on a real
+  player, through the real store. 100 would mean the mitigation never ran; 50 would mean diamond was
+  treated as the 100-defense half-life instead of 20 points. ~83 is `applyDefense(100, 20)` and
+  nothing else.
+
+- **Row 4 — ~1/6 of the bar, and it settles the one open assumption.** The bar reading one sixth
+  rather than full proves it is driven by damage reduction and not by material. It also **confirms a
+  player's base `armor` attribute is 0** — the single thing about this design that could not be
+  checked offline. `ArmorBarOverride` computes `nativeArmor` as the sum of the equipped pieces rather
+  than reading the live attribute; that is correct only if nothing else contributes to it. A non-zero
+  base would have left the cancellation short by exactly that amount and shown a visibly wrong fill.
+  It did not, so the assumption held.
+
+- **Row 6 — the mob-melee path.** This is the row the whole seam analysis was for. Mob melee reaches
+  custom HP through `RpgListeners.onMobMeleeAttack`, which never enters `EffectApplier`; had the
+  reduction gone there (the obvious-looking spot, and the one originally proposed), a mob hitting an
+  armored player would have been **completely unmitigated** while rows 1–5 all still passed. Armor
+  would have looked like it worked everywhere except the one place players actually get hit.
+
+No row disagreed with the unit suite, and none needed the design changed.
