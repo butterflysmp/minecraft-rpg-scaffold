@@ -182,7 +182,7 @@ public final class RpgListeners implements Listener {
                 && event.getClickedBlock().getType() == Material.ENCHANTING_TABLE) {
             event.setCancelled(true);
             if (!event.getPlayer().isSneaking()) {
-                new EnchantMenu(event.getPlayer(), weapons, adapters).open();
+                new EnchantMenu(event.getPlayer(), weapons, adapters, event.getClickedBlock()).open();
                 return;
             }
             // Sneaking: fall through to WeaponFire.attempt so the weapon's right_click still fires

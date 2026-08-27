@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
 import io.github.butterflysmp.rpg.core.enchant.EnchantCandidate;
+import io.github.butterflysmp.rpg.core.enchant.EnchantCost;
 import io.github.butterflysmp.rpg.core.enchant.EnchantLoreLines;
 import io.github.butterflysmp.rpg.core.enchant.EnchantSlot;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
@@ -15,6 +16,7 @@ import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.ItemStack;
@@ -47,11 +49,25 @@ public final class EnchantMenu extends Menu {
     private final WeaponRegistry weapons;
     private final AdapterContext adapters;
 
-    public EnchantMenu(Player viewer, WeaponRegistry weapons, AdapterContext adapters) {
+    /**
+     * This table's bookshelf power, counted ONCE when the menu opened and never again.
+     *
+     * <p>Frozen deliberately. "Place shelves, then reopen" is a fine interaction, and freezing buys
+     * the Folia-correct thing for free: the count runs inside the interact event for the very block
+     * that was clicked, on the thread that owns it, where a re-read from an inventory click would
+     * not be. The {@code Block} itself is NOT kept, so there is nothing here for a later re-read to
+     * be written against.
+     */
+    private final int bookshelfPower;
+
+    public EnchantMenu(Player viewer, WeaponRegistry weapons, AdapterContext adapters, Block table) {
         super(viewer, EnchantMenuLayout.SIZE,
                 MenuIcons.line("Enchantments", NamedTextColor.DARK_GRAY));
         this.weapons = weapons;
         this.adapters = adapters;
+        // BEFORE render(), which paints the readout from it. Assigned after, every table on the
+        // server reads 0/30 for ever, and only a boot gate with a ring built round it would notice.
+        this.bookshelfPower = BookshelfPower.at(table);
         render();
     }
 
@@ -138,8 +154,7 @@ public final class EnchantMenu extends Menu {
         }
 
         getInventory().setItem(CLOSE_SLOT, MenuIcons.close());
-        getInventory().setItem(BOOKSHELF_SLOT, MenuIcons.placeholder(Material.BOOKSHELF,
-                "Bookshelf Power", "Shelves will discount unlocks in a later pass."));
+        getInventory().setItem(BOOKSHELF_SLOT, bookshelfIcon());
 
         ItemStack placed = getInventory().getItem(INPUT_SLOT);
         WeaponDefinition weapon = WeaponItems.weaponId(placed, adapters.keys())
@@ -164,6 +179,22 @@ public final class EnchantMenu extends Menu {
                                 NamedTextColor.DARK_GRAY))));
 
         renderCandidates(EnchantItems.read(placed, adapters.keys()), weapon.weaponClass());
+    }
+
+    /**
+     * The bookshelf readout, which is a real measurement now rather than a labelled placeholder.
+     *
+     * <p><b>A counted zero is not the zero the placeholder was avoiding.</b> The previous pass
+     * deliberately said "Not implemented yet" rather than rendering {@code 0%}, because a readout
+     * showing a zero when nothing is measured is indistinguishable from a working one that measured
+     * zero. Printing the SCALE beside the count is what settles that: "0/30" is legible as a
+     * measurement against a known maximum, where a bare "0%" was not.
+     */
+    private ItemStack bookshelfIcon() {
+        return MenuIcons.icon(Material.BOOKSHELF,
+                MenuIcons.line("Bookshelf Power " + bookshelfPower + "/" + EnchantCost.MAX_POWER,
+                        NamedTextColor.DARK_GRAY),
+                List.of(MenuIcons.line("Shelves in a ring around the table.", NamedTextColor.DARK_GRAY)));
     }
 
     /** The three columns. A slot that rolled fewer than three candidates leaves filler behind. */
