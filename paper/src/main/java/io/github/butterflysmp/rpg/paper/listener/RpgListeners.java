@@ -13,6 +13,7 @@ import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
+import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import io.github.butterflysmp.rpg.paper.weapon.BrokenNotice;
@@ -79,10 +80,12 @@ public final class RpgListeners implements Listener {
     private final AdapterContext adapters;
     private final PlayerHealthSystem healthSystem;
     private final MobNameplateManager nameplates;
+    private final StatsBarSystem statsBar;
 
     public RpgListeners(CooldownTracker cooldowns, ResourcePool resources, ProfileService profiles,
                         WeaponRegistry weapons, WeaponService weaponService, AdapterContext adapters,
-                        PlayerHealthSystem healthSystem, MobNameplateManager nameplates) {
+                        PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
+                        StatsBarSystem statsBar) {
         this.cooldowns = cooldowns;
         this.resources = resources;
         this.profiles = profiles;
@@ -91,6 +94,7 @@ public final class RpgListeners implements Listener {
         this.adapters = adapters;
         this.healthSystem = healthSystem;
         this.nameplates = nameplates;
+        this.statsBar = statsBar;
     }
 
     @EventHandler
@@ -108,6 +112,8 @@ public final class RpgListeners implements Listener {
         healthSystem.onJoin(event.getPlayer());
         // Start this viewer's per-viewer mob-nameplate LOS loop.
         nameplates.onViewerJoin(event.getPlayer());
+        // Start this player's action-bar stats line.
+        statsBar.onJoin(event.getPlayer());
     }
 
     /**
@@ -321,6 +327,8 @@ public final class RpgListeners implements Listener {
         profiles.onQuit(playerId);
         // Drop custom-health state so no modifier or entry leaks across sessions.
         healthSystem.onQuit(playerId);
+        // Stop the action-bar loop and drop its handle.
+        statsBar.onQuit(playerId);
     }
 
     /**
@@ -353,6 +361,7 @@ public final class RpgListeners implements Listener {
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         healthSystem.onRespawn(event.getPlayer());     // reset to base 100, render, restart the reconcile loop
         nameplates.onViewerJoin(event.getPlayer());    // restart the per-viewer nameplate LOS loop
+        statsBar.onRespawn(event.getPlayer());         // restart the action-bar loop, dead since the death screen
     }
 
     // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is
