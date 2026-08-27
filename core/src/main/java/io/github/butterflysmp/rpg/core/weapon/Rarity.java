@@ -4,11 +4,14 @@ package io.github.butterflysmp.rpg.core.weapon;
  * The weapon rarity ladder. Deliberately a closed, ordered enum -- the opposite
  * of the element decision. Elements are open and logic-free, so they are content;
  * rarity is a fixed, ordered axis, so it is an enum. The ordering is load-bearing:
- * Phase 4 compares tiers to size an enchant roll, and enum ordinal gives that
+ * a later pass compares tiers to size an enchant roll, and enum ordinal gives that
  * ordering for free where a YAML list would hand-roll it.
  *
- * In Phase 1 this is inert reserved data -- it only colors the item name. Its
- * mechanical meaning (enchant slots and strength per tier) is Phase 4. The
+ * This is still inert reserved data -- it only colors the item name. Its reserved
+ * mechanical meaning is the CANDIDATE axis of an enchant roll: how many candidates a
+ * slot offers, and how rich a pool it draws from. NOT slot count -- every weapon gets
+ * three, fixed, because three is what the table renders and tiering that would need a
+ * layout change to go with it. See {@code EnchantRoll.SLOTS}. The
  * tier -> color mapping lives in paper (Adventure's NamedTextColor is not allowed
  * in core), as one exhaustive switch with no default arm, so adding a tier -- if
  * that ever happens -- is a compile error at every mapping site until handled.

@@ -16,10 +16,12 @@ import java.util.Map;
  * stateful precedents in core ({@code CooldownTracker}, {@code ResourcePool}) are long-lived
  * per-player services; this is a value.
  *
- * <p><b>Slot count is deliberately uncapped.</b> Whether an item gets a fixed 3 slots or a rolled
- * 1--3 is the roster pass's decision, and a cap written now would be a number invented before the
- * question was asked. Pass 1's only bound is the dev command's argument range, which is where a
- * provisional limit belongs -- at the reachable surface, not in the kernel.
+ * <p><b>Slot count is deliberately uncapped, and stays so now that the roll has decided it.</b>
+ * The roll produces exactly three ({@code EnchantRoll.SLOTS}), but this is the model for whatever
+ * an item actually CARRIES -- a hand-edited one, or a blob written by a build whose roll differed
+ * -- so a cap here would turn a weird item into an exception thrown from a decode. The bounds live
+ * at the reachable surfaces instead: the dev command's argument range, and {@code
+ * EnchantMenuLayout}, which refuses an oversized item loudly rather than truncating it.
  *
  * <p>Paper owns the item I/O; this owns the decisions, the same split as {@code Durability} and
  * {@code ClassDamageModifiers}. An {@code ItemStack} cannot be built without a running server, so
@@ -131,12 +133,15 @@ public record EnchantState(List<EnchantSlot> slots) {
      * The enchants taking effect right now: one entry per DISTINCT id, at the HIGHEST level any
      * active slot holds it at, in order of first appearance.
      *
-     * <p><b>PROVISIONAL -- the same-enchant-across-slots and stacking rules belong to the roster
-     * pass.</b> Maximum is the conservative placeholder, chosen for three reasons: it can never
-     * exceed {@link #MAX_LEVEL}, so it cannot hand a player a level no tooltip ever promised, which
-     * summing can; it is order-independent, where first-wins would make the outcome depend on slot
-     * order the player cannot see; and duplicating an enchant is therefore never a gain while the
-     * real rule is undecided, which is the right direction to be wrong in.
+     * <p><b>MAXIMUM, and that is the DECIDED rule rather than a placeholder</b> (the rolls pass).
+     * Never additive, and there is deliberately no mutual exclusion: the same enchant may be
+     * offered in more than one slot and active in more than one at once, and it resolves to the
+     * highest level any active slot holds it at. The three reasons it was provisionally chosen are
+     * the three reasons it was kept -- it can never exceed {@link #MAX_LEVEL}, so it cannot hand a
+     * player a level no tooltip ever promised, which summing can; it is order-independent, where
+     * first-wins would make the outcome depend on slot order the player cannot see; and duplicating
+     * an enchant is therefore never a gain, so a roll that offers Sharpness twice has not quietly
+     * made that weapon stronger than one that offers it once.
      *
      * <p>The aggregation lives HERE, once, rather than at the seam -- so the cap holds against a
      * duplicate arriving from any source (a hand-edited item, a future roll, an older build's
