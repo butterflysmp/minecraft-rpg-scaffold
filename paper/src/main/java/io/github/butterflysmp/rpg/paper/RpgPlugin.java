@@ -34,6 +34,7 @@ import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.health.PacketDamagePopupSender;
 import io.github.butterflysmp.rpg.paper.health.PacketNameplateSender;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
+import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
 import io.github.butterflysmp.rpg.paper.listener.RpgListeners;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.packet.ExampleTelegraphListener;
@@ -100,6 +101,7 @@ public final class RpgPlugin extends JavaPlugin {
     private CombatantStats stats;
     private PlayerHealthSystem healthSystem;
     private MobNameplateManager nameplates;
+    private StatsBarSystem statsBar;
     private DamagePopupManager popups;
     private MobDeathSystem mobDeath;
     private AbilityService abilityService;
@@ -182,6 +184,9 @@ public final class RpgPlugin extends JavaPlugin {
         // A weapon trigger fires through the same cooldown/mana machinery, gate-free.
         this.weaponService = new WeaponService(abilityService);
 
+        // The action-bar HUD reads both stores; it owns no state beyond its per-player loops.
+        this.statsBar = new StatsBarSystem(scheduler, stats, resources);
+
         // One thread: file writes for a single player must not race each other,
         // and a serialised queue is plenty for milestone-1 storage. Not a daemon
         // thread -- a pending write must finish even if the JVM is winding down.
@@ -197,7 +202,7 @@ public final class RpgPlugin extends JavaPlugin {
         // The one and only registerEvents call. Keep it that way.
         getServer().getPluginManager().registerEvents(
                 new RpgListeners(cooldowns, resources, profiles, weapons, weaponService, adapters,
-                        healthSystem, nameplates), this);
+                        healthSystem, nameplates, statsBar), this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
         // paper-plugin.yml. We do NOT call PacketEvents.setAPI() or .load()

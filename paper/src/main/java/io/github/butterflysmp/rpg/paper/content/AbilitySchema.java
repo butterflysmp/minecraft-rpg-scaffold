@@ -33,7 +33,7 @@ final class AbilitySchema {
 
     static ResourceCost parseCost(ConfigurationSection s) {
         if (s == null) return ResourceCost.FREE;
-        return new ResourceCost(s.getString("resource", "mana"), s.getDouble("amount", 0));
+        return new ResourceCost(s.getString("resource", ResourceCost.DEFAULT_RESOURCE), s.getDouble("amount", 0));
     }
 
     static CastSpec parseCast(ConfigurationSection s) {
