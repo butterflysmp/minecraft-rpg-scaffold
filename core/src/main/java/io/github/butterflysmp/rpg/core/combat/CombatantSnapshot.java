@@ -64,7 +64,30 @@ import java.util.UUID;
  * is exactly 1.0, so the neutral absent value stays 0.0 and matches every other summand here. A
  * multiplier-valued component would have needed 1.0 -- a second convention beside
  * {@code attackSpeed}'s, on a field whose 0.0 default would silently zero all damage.
+ *
+ * {@code eyeHeight} is the one component here that does NOT follow the 0.0-is-neutral rule the
+ * paragraphs above establish, and the compact constructor below rejects it rather than letting it
+ * slide. It exists so melee target selection can trace a line of sight to a point on the target
+ * instead of to the ground under it: {@code position} is the entity's FEET, so a sight ray ending
+ * there hugs the floor for its whole final stretch and any lip, slab or step between caster and
+ * target reads as a wall. Vanilla's own {@code LivingEntity.hasLineOfSight} traces eye to the
+ * TARGET'S eye, and carrying the height here lets core do the same without knowing Bukkit exists --
+ * self-correcting per mob size, so a chicken is not traced above its own head.
+ *
+ * A 0.0 here would not be neutral, it would silently restore exactly the eye-to-feet trace the
+ * field was added to avoid, and nothing downstream would throw. That is the same shape of trap
+ * {@code enchantDamagePercent} was made a percent to sidestep -- except that there the neutral
+ * value genuinely was 0.0, and here there is no neutral value at all. So it fails loud instead.
  */
-public record CombatantSnapshot(UUID id, Vec3 position, boolean alive, boolean player,
-                                double attackSpeed, double attackDamage,
-                                double classDamageBonus, double enchantDamagePercent) {}
+public record CombatantSnapshot(UUID id, Vec3 position, double eyeHeight, boolean alive,
+                                boolean player, double attackSpeed, double attackDamage,
+                                double classDamageBonus, double enchantDamagePercent) {
+
+    public CombatantSnapshot {
+        if (eyeHeight <= 0) {
+            throw new IllegalArgumentException(
+                    "eyeHeight must be > 0, was " + eyeHeight
+                            + " -- 0.0 is not a neutral default here, it traces sight to the feet");
+        }
+    }
+}

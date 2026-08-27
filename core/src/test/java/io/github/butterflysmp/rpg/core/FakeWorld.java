@@ -29,6 +29,21 @@ public final class FakeWorld implements CombatWorld {
     /** The start point of every castRay -- a projectile's launch origin is its first one. */
     public final List<Vec3> castRayFrom = new ArrayList<>();
 
+    /** Both ends of every lineOfSightClear call, in order. Parallel lists, one entry per trace.
+     *  sightCheckFrom proves melee traces from the AIM ORIGIN -- the eye -- and not the caster's
+     *  feet. sightCheckTo proves it traces to a point ON the target and not to the ground under
+     *  it, which is the entire ambiguity of the eye-height offset and the thing most likely to be
+     *  quietly dropped later. Never assert on their SIZE: the number of traces depends on which
+     *  candidates improve on the running nearest, and so on iteration order. */
+    public final List<Vec3> sightCheckFrom = new ArrayList<>();
+    public final List<Vec3> sightCheckTo = new ArrayList<>();
+
+    /** Per-target occlusion on top of the wall model: sight to a (from, to) this accepts is
+     *  blocked. A BiPredicate is a two-argument function returning a boolean. Matching on the
+     *  endpoint rather than storing exact Vec3s keeps a test from having to reconstruct whatever
+     *  eye offset core computes. */
+    public java.util.function.BiPredicate<Vec3, Vec3> sightBlocked = (from, to) -> false;
+
     /** Live display markers, id -> marker material id. A marker leak shows up as a stale entry. */
     public final Map<UUID, String> markers = new HashMap<>();
 
@@ -145,18 +160,53 @@ public final class FakeWorld implements CombatWorld {
             }
         }
 
-        // Distance along this segment at which we meet a wall, if any.
-        double wallAt = blockDistance;
-        if (Double.isFinite(wallX) && direction.x() != 0) {
-            double toPlane = (wallX - from.x()) / direction.x();
-            if (toPlane >= 0) wallAt = Math.min(wallAt, toPlane);
-        }
+        double wallAt = wallDistanceAlong(from, direction);
 
         if (wallAt <= Math.min(nearestDistance, length)) {
             return Optional.of(RayHit.ofBlock(from.add(direction.scale(wallAt))));
         }
         if (nearest == null) return Optional.empty();
         return Optional.of(RayHit.ofCombatant(nearest.position(), pair(nearest)));
+    }
+
+    /**
+     * How far along {@code direction} from {@code from} this segment meets a wall, or
+     * infinity for open sky. The shared block model behind both castRay and
+     * lineOfSightClear, so the two can never disagree about where the walls are.
+     */
+    private double wallDistanceAlong(Vec3 from, Vec3 direction) {
+        double wallAt = blockDistance;
+        if (Double.isFinite(wallX) && direction.x() != 0) {
+            double toPlane = (wallX - from.x()) / direction.x();
+            if (toPlane >= 0) wallAt = Math.min(wallAt, toPlane);
+        }
+        return wallAt;
+    }
+
+    /**
+     * Blocks only, per the port: entities never occlude, so a dummy standing between two
+     * others is not a wall.
+     *
+     * The default is NOT "always clear". It is the same wall model castRay uses, minus the
+     * entities -- so setting blockDistance or wallX blocks sight exactly where it already
+     * stops a ray. An always-clear default would let a test set wallX, watch castRay honour
+     * it, and watch melee walk straight through the same wall: a fake more permissive than
+     * the server, which is the one direction this file must never be wrong in.
+     *
+     * {@link #sightBlocked} is the per-TARGET knob on top of that, and it is needed because
+     * neither existing knob can express one. blockDistance is uniform along every segment,
+     * and wallX is an infinite plane -- it can only occlude the FARTHER of two candidates,
+     * which is the direction that proves nothing.
+     */
+    @Override public boolean lineOfSightClear(Vec3 from, Vec3 to) {
+        sightCheckFrom.add(from);
+        sightCheckTo.add(to);
+        if (sightBlocked.test(from, to)) return false;
+
+        Vec3 along = to.subtract(from);
+        double length = along.length();
+        if (length == 0) return true;
+        return wallDistanceAlong(from, along.scale(1 / length)) > length;
     }
 
     /**
@@ -297,6 +347,11 @@ public final class FakeWorld implements CombatWorld {
         public double lastKnockbackStrength = Double.NaN;
         public int knockbackCalls;
 
+        /** Eye height above {@link #pos} -- the point a sight line traces TO. 1.62 is a player's,
+         *  the value CastExecutorTest already uses for an eye. Non-zero on purpose: the snapshot's
+         *  compact constructor rejects 0, since a 0 here would silently trace sight to the feet. */
+        public double eyeHeight = 1.62;
+
         public Dummy(Vec3 pos) { this.pos = pos; }
 
         public void moveTo(Vec3 to) { this.pos = to; }
@@ -304,7 +359,7 @@ public final class FakeWorld implements CombatWorld {
         public Vec3 position() { return pos; }
 
         public CombatantSnapshot snapshot() {
-            return new CombatantSnapshot(id, pos, health > 0, player, attackSpeed, attackDamage,
+            return new CombatantSnapshot(id, pos, eyeHeight, health > 0, player, attackSpeed, attackDamage,
                     classDamageBonus, enchantDamagePercent);
         }
 

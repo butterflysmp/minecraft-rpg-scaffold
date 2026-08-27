@@ -608,4 +608,102 @@ class CastExecutorTest {
 
         assertEquals(0, uses[0], "a melee ability that connects still spends no durability");
     }
+
+    // ---- Melee line of sight. In range and in arc is not enough; the caster must be able to
+    // see the body. Block-only, so a mob behind a mob is still fair game -- that half is
+    // boot-witnessed, since with a fake world it would be tautological.
+
+    /**
+     * The bound must not be lowered by a candidate that then fails the sight check.
+     *
+     * REGISTRATION ORDER IS LOAD-BEARING. combatantsNear walks entities in insertion order, and
+     * with the clear-far dummy seen first a bound-poisoning bug still leaves it as the target and
+     * this test passes green. Walled-near first is the only order that reddens it: the walled body
+     * lowers the bound to 1, the clear body at 4 no longer improves on it, and nothing is hit.
+     */
+    @Test
+    void meleeSkipsAWalledNearerTargetForAClearFartherOne() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var walledNear = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        var clearFar = new FakeWorld.Dummy(new Vec3(2, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(walledNear);   // FIRST, deliberately
+        world.entities.add(clearFar);
+
+        world.sightBlocked = (from, to) -> to.x() < 1.5;
+
+        cast(world, caster, ability(new CastSpec.Melee(3, 120), abilityPayload()));
+
+        assertEquals(100, walledNear.health, 1e-9,
+                "a wall between us means the nearer body is not a target at all");
+        assertEquals(88, clearFar.health, 1e-9,
+                "and the swing still finds the nearest body it CAN see, rather than whiffing");
+    }
+
+    @Test
+    void meleeFindsNoTargetWhenEveryCandidateIsWalled() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var near = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        var far = new FakeWorld.Dummy(new Vec3(2, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(near);
+        world.entities.add(far);
+
+        world.sightBlocked = (from, to) -> true;
+
+        var uses = new int[1];
+        cast(world, caster, ability(new CastSpec.Melee(3, 120), basicAttack()), () -> uses[0]++);
+
+        assertEquals(0, near.damageCalls, "nothing behind a wall is struck");
+        assertEquals(0, far.damageCalls, "nothing behind a wall is struck");
+        assertEquals(0, uses[0], "a swing that can see nothing is a miss, and a miss is free");
+    }
+
+    /**
+     * Traced from the AIM ORIGIN, which production sets to the player's eye -- not from the
+     * caster's feet, which would see under a wall the player is looking over the top of. Same
+     * class of bug as a self cast detonating at the feet rather than the eye, one method along.
+     */
+    @Test
+    void meleeSightIsTracedFromTheAimOriginNotTheCastersFeet() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+        world.entities.add(new FakeWorld.Dummy(new Vec3(1, 0, 0)));
+
+        var eye = new Vec3(0, 1.62, 0);
+        cast(world, caster, ability(new CastSpec.Melee(3, 360), abilityPayload()),
+                new Aim(eye, new Vec3(1, 0, 0)));
+
+        assertTrue(world.sightCheckFrom.contains(eye),
+                "sight starts at the aim origin -- the eye WeaponFire hands in");
+        assertFalse(world.sightCheckFrom.contains(Vec3.ZERO),
+                "and never at the caster's feet");
+    }
+
+    /**
+     * And traced TO the target's own eye. The eye height comes off the snapshot, per entity, so
+     * this reddens both if the offset is dropped (back to a floor-hugging feet trace) and if it is
+     * replaced by a constant baked into CastExecutor -- which is why the fixture picks 1.4 rather
+     * than the 1.62 default or a round 1.0.
+     */
+    @Test
+    void meleeSightIsTracedToTheTargetsEyeNotItsFeet() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0.5, 0));
+        target.eyeHeight = 1.4;
+        world.entities.add(caster);
+        world.entities.add(target);
+
+        cast(world, caster, ability(new CastSpec.Melee(3, 360), abilityPayload()));
+
+        var traced = world.sightCheckTo.get(0);
+        assertEquals(1.0, traced.x(), 1e-9);
+        assertEquals(0.0, traced.z(), 1e-9);
+        assertEquals(target.position().y() + 1.4, traced.y(), 1e-9,
+                "the endpoint is this target's own eye height above its feet");
+    }
 }
