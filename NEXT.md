@@ -1761,21 +1761,47 @@ Before milestone 2, two things worth measuring rather than assuming:
   attack speed, per the standing rule that lore describes the weapon and not whoever holds it.
 
 
-- **The enchant ROLLS boot gate is OWED IN FULL BY A HUMAN, and rows 9, 10 and 10b are the pass.**
-  All 17 rows are in `PLAN-enchant-rolls.md` (PR #20). The pass ships one invariant -- a weapon rolls ONCE,
-  ever -- and **no unit test can reach it**, because what would break it is a hook in the wrong
-  place rather than wrong arithmetic. A green 606-test build says nothing at all about it.
+- **The enchant ROLLS boot gate: RUN AND PASSED, all 17 rows** (live server, 2026-08-26). The gate
+  is in `PLAN-enchant-rolls.md` (PR #20). Recorded here because the pass ships one invariant -- a
+  weapon rolls ONCE, ever -- that **no unit test can reach**: what would break it is a hook in the
+  wrong place rather than wrong arithmetic, so the 606-test build said nothing at all about it and
+  these rows are the only evidence that exists.
 
-  The trap is worth carrying here rather than only in the plan, because it is the thing a future
-  pass would re-discover: `remint` calls `mint`, so a roll in `mint` fires on every join, refresh
-  and table click -- **and guarding it on `EnchantItems.isRolled` does not help**, because `mint`
-  builds a fresh meta and the carry restores `enchant_rolled` only afterwards, so the flag reads
-  false in there for every item. The guard would look present and do nothing. The rule is about the
-  CALL SITE: the roll is never called from inside `WeaponItems`.
+  This is the runner's witnessed result, **not a pasted transcript** -- no console output was
+  captured into this file. Said plainly rather than dressed up as a log, because Pass 2's record
+  above quotes real boot lines and the difference between the two should be visible at a glance.
 
-  Row 16 is the one most easily skipped and it guards a bug that hides in shipped content: the kit
+  The four results worth keeping:
+
+  - **Rows 9, 10 and 10b -- the whole point -- held.** No re-roll across `/rpg refresh`, across a
+    disconnect and rejoin, or across a full `stop` and reboot. The candidates and the unlocked
+    level were identical each time. Those are three different paths to the same item: a re-mint,
+    the join scan, and a real save/load, and only the last one proves the flag survives
+    serialisation rather than merely surviving `carryEnchants`.
+  - **The class gate held on all three classes.** Melee offered only Sharpness/Unbreaking, ranger
+    only Power/Unbreaking, mage only Attunement/Unbreaking. Never a cross-class candidate.
+  - **Candidate counts varied within the pool-of-2 cap** -- across slots and across items, never 0
+    and never 3. That is the row that needed writing down as it went: a roll that always returned 1
+    looks entirely reasonable in any single screenshot, and the *after* state cannot be asked
+    afterwards whether it varied.
+  - **A malformed enchant fail-softs out of the roll pool.** Worth noting that this was **beyond
+    the 17 rows** -- the gate only asked (row 1) that all four shipped files parse. It holds one
+    level above the roll and by construction: `EnchantLoader.loadAll` catches per file and skips
+    before `registry.register`, so a malformed enchant never enters `EnchantRegistry`, and
+    `EnchantRollItems.roster()` reads `enchants().all()`. The pool cannot see what the registry
+    never got. Nothing in `EnchantRoll` needs an arm for it.
+
+  **The trap stays recorded even though the gate is discharged**, because it is what a future pass
+  would otherwise re-discover the expensive way: `remint` calls `mint`, so a roll in `mint` fires on
+  every join, refresh and table click -- **and guarding it on `EnchantItems.isRolled` does not
+  help**, because `mint` builds a fresh meta and the carry restores `enchant_rolled` only
+  afterwards, so the flag reads false in there for every item. The guard would look present and do
+  nothing. The rule is about the CALL SITE: the roll is never called from inside `WeaponItems`.
+
+  Row 16 was the one most easily skipped, and it guards a bug that hides in shipped content: the kit
   grant rolls INSIDE its loop, so a line placed after the loop would leave every kit weapon but the
-  last un-rolled -- invisible today, because both shipped kits grant one weapon.
+  last un-rolled -- invisible today, because both shipped kits grant one weapon. It passed, so that
+  bug is not present; it is not proof against the same bug being reintroduced by a future kit.
 
 - **`Rarity`'s reserved meaning is now the CANDIDATE axis, not slot count.** The rolls pass fixed
   every weapon at 3 slots, which contradicted the half of `Rarity`'s javadoc promising "enchant
