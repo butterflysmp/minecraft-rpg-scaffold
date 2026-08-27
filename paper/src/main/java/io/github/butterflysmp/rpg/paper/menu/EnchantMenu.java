@@ -8,6 +8,7 @@ import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
+import io.github.butterflysmp.rpg.core.xp.XpCurve;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantEffectLine;
@@ -40,9 +41,17 @@ import static io.github.butterflysmp.rpg.paper.menu.EnchantMenuLayout.INPUT_SLOT
  * decide what to spend on, and a locked candidate rendered as "???" removes the informed choice the
  * whole screen is for.
  *
- * <p>Unlocks are FREE this pass. The XP economy gates the same click, and gates it in FRONT of
+ * <p><b>Unlocking and levelling up cost XP; swapping does not.</b> The cost check sits in FRONT of
  * {@code EnchantClickIntent}, never inside it -- what a click MEANS and whether you can afford it
- * are different questions.
+ * are different questions, and {@code EnchantCharge} answers the second only after the first.
+ *
+ * <p>The price is in XP POINTS, not levels, because levels are not a linear currency: 40 of them is
+ * 2920 points and 20 is 550. Discounting the level COUNT would be a different discount at every rung
+ * and a far bigger one than it claimed -- 30% off III would really have been 59%. See
+ * {@code EnchantCost}, and {@code XpCurve} for the conversion.
+ *
+ * <p>The deduction is the LAST mutation in {@code applyCandidateClick}, which is why there is no
+ * rollback anywhere in this class: every path that can refuse sits above it.
  */
 public final class EnchantMenu extends Menu {
 
@@ -166,7 +175,7 @@ public final class EnchantMenu extends Menu {
                     List.of(MenuIcons.line("Place a weapon above to see", NamedTextColor.GRAY),
                             MenuIcons.line("the enchants it can carry.", NamedTextColor.GRAY),
                             MenuIcons.blank(),
-                            MenuIcons.line("Unlocks are free for now.", NamedTextColor.DARK_GRAY))));
+                            MenuIcons.line("Unlocks are paid for in XP.", NamedTextColor.DARK_GRAY))));
             return;
         }
 
@@ -191,10 +200,14 @@ public final class EnchantMenu extends Menu {
      * measurement against a known maximum, where a bare "0%" was not.
      */
     private ItemStack bookshelfIcon() {
+        // clampPower, not bookshelfPower directly: the percentage shown and the percentage charged
+        // come out of ONE expression, so the number here cannot drift from the number on the cells.
         return MenuIcons.icon(Material.BOOKSHELF,
                 MenuIcons.line("Bookshelf Power " + bookshelfPower + "/" + EnchantCost.MAX_POWER,
                         NamedTextColor.DARK_GRAY),
-                List.of(MenuIcons.line("Shelves in a ring around the table.", NamedTextColor.DARK_GRAY)));
+                List.of(MenuIcons.line(EnchantCost.clampPower(bookshelfPower)
+                                + "% off unlocks and level-ups.", NamedTextColor.DARK_GRAY),
+                        MenuIcons.line("Shelves in a ring around the table.", NamedTextColor.DARK_GRAY)));
     }
 
     /** The three columns. A slot that rolled fewer than three candidates leaves filler behind. */
@@ -204,8 +217,7 @@ public final class EnchantMenu extends Menu {
             for (int index = 0; index < EnchantMenuLayout.CANDIDATES
                     && index < enchantSlot.candidates().size(); index++) {
                 getInventory().setItem(EnchantMenuLayout.rawSlotFor(slot, index),
-                        candidateIcon(enchantSlot.candidates().get(index),
-                                enchantSlot.activeIndex() == index, heldClass));
+                        candidateIcon(enchantSlot, index, heldClass));
             }
         }
     }
@@ -216,13 +228,25 @@ public final class EnchantMenu extends Menu {
      * <p>The four states differ ONLY cosmetically -- the icon, the name colour, and the last lore
      * line. The enchant's identity and its effect are on every one of them.
      */
-    private ItemStack candidateIcon(EnchantCandidate candidate, boolean active, WeaponClass heldClass) {
+    private ItemStack candidateIcon(EnchantSlot enchantSlot, int index, WeaponClass heldClass) {
+        EnchantCandidate candidate = enchantSlot.candidates().get(index);
+        boolean active = enchantSlot.activeIndex() == index;
         EnchantDefinition definition =
                 adapters.enchants().find(candidate.enchantId()).orElse(null);
 
         String name = definition != null ? definition.displayName() : candidate.enchantId();
         int maxLevel = definition != null ? definition.maxLevel() : EnchantState.MAX_LEVEL;
         boolean locked = candidate.isLocked();
+
+        // THE PRICE ON THIS CELL COMES FROM THE SAME TWO CALLS THE CLICK MAKES. Not a re-derivation
+        // from `locked` and `active`: if the printed number and the charged number came from two
+        // expressions, they would drift and the boot gate would be checking one against itself --
+        // the reason Unbreaking.consumeChance is shared with its tooltip rather than duplicated.
+        EnchantClickIntent intent = EnchantClickIntent.of(enchantSlot, index, definition);
+        int target = EnchantCharge.targetLevel(intent, candidate.level());
+        String price = target == EnchantCharge.FREE
+                ? ""
+                : " -- " + EnchantCost.xpPoints(target, bookshelfPower) + " XP";
 
         // A LOCKED candidate is described at the level it would BECOME. Describing it at its own
         // level 0 would read "+0% damage" for a damage enchant and, worse, "consumes durability on
@@ -236,11 +260,14 @@ public final class EnchantMenu extends Menu {
         lore.add(MenuIcons.blank());
         if (locked) {
             lore.add(MenuIcons.line("Locked. Click to unlock at "
-                    + EnchantLoreLines.romanNumeral(1) + ".", NamedTextColor.DARK_GRAY));
+                    + EnchantLoreLines.romanNumeral(1) + price + ".", NamedTextColor.DARK_GRAY));
         } else if (active) {
             lore.add(MenuIcons.line("Active on this weapon.", NamedTextColor.GREEN));
-            if (candidate.level() < Math.min(maxLevel, EnchantState.MAX_LEVEL)) {
-                lore.add(MenuIcons.line("Click to raise its level.", NamedTextColor.GRAY));
+            // Driven off the INTENT rather than off the cap arithmetic it used to repeat. Same
+            // answer for every shipped case, and it also stops advertising a price on a candidate
+            // whose content file is missing -- that click is refused at any price.
+            if (intent == EnchantClickIntent.LEVEL_UP) {
+                lore.add(MenuIcons.line("Click to raise its level" + price + ".", NamedTextColor.GRAY));
             }
         } else {
             lore.add(MenuIcons.line("Unlocked. Click to make it active.", NamedTextColor.GRAY));
@@ -288,10 +315,21 @@ public final class EnchantMenu extends Menu {
     /**
      * A candidate click, applied.
      *
-     * <p>THE SAME SEVEN STEPS {@code /rpg enchant} takes, in the same order, for the same reasons:
-     * resolve the weapon, read the state, validate in English, transform, reject the no-op, write,
-     * RE-MINT. The only difference is where the item lives -- an input slot rather than the main
-     * hand. No scheduler hop: {@code InventoryClickEvent} already fires on this player's thread.
+     * <p>The same steps {@code /rpg enchant} takes, in the same order, for the same reasons: resolve
+     * the weapon, read the state, validate in English, transform, reject the no-op, write, RE-MINT.
+     * No scheduler hop: {@code InventoryClickEvent} already fires on this player's thread.
+     *
+     * <p><b>Two things differ from the command, and the second is deliberate.</b> The item lives in
+     * an input slot rather than the main hand. And this path CHARGES where the command does not:
+     * the economy gates the table, not the dev instrument, because a dev workflow has to be able to
+     * build a state without grinding XP and a priced command would put a wallet in the setup line of
+     * every future boot gate.
+     *
+     * <p><b>Where the cost sits, and why there is no rollback.</b> The check goes in front of the
+     * transition and the deduction goes behind it, so everything that can refuse -- unaffordable,
+     * the model throwing, the no-op, the two arms that only say something -- happens while the
+     * wallet is still untouched. The deduction is then the last mutation in the method, which is
+     * what makes a compensating write unnecessary rather than merely omitted.
      *
      * <p><b>Never patches lore.</b> Every edit routes through {@code WeaponItems.remint}, which
      * rebuilds the tooltip from the state that just landed and carries the enchant blob across
@@ -340,6 +378,18 @@ public final class EnchantMenu extends Menu {
         String name = enchant != null ? enchant.displayName() : candidate.enchantId();
         EnchantClickIntent intent = EnchantClickIntent.of(slot, candidateIndex, enchant);
 
+        // THE COST CHECK, IN FRONT OF THE TRANSITION. Nothing has been written and nothing charged,
+        // so an unaffordable click is a click that did not happen -- the same shape as acceptsInput
+        // refusing a place. The wallet is the player's WHOLE bank including the part-full bar, not a
+        // level count: levels are not a linear currency and 40 of them is not twice 20.
+        int target = EnchantCharge.targetLevel(intent, candidate.level());
+        int cost = target == EnchantCharge.FREE ? 0 : EnchantCost.xpPoints(target, bookshelfPower);
+        int wallet = XpCurve.totalPoints(viewer.getLevel(), viewer.getExp());
+        if (wallet < cost) {
+            say(name + " costs " + cost + " XP; you have " + wallet + ".", NamedTextColor.RED);
+            return;
+        }
+
         EnchantState after;
         try {
             after = switch (intent) {
@@ -373,10 +423,35 @@ public final class EnchantMenu extends Menu {
         input.editMeta(meta -> EnchantItems.write(meta, after, adapters.keys()));
         // remint returns a NEW stack, so `input` is stale from here and render() must re-read.
         getInventory().setItem(INPUT_SLOT, WeaponItems.remint(input, definition, adapters));
+
+        // THE DEDUCTION, AND IT IS THE LAST MUTATION IN THIS METHOD. Every path that can refuse sits
+        // ABOVE it -- the affordability check, the model's own IllegalArgumentException, the
+        // equals(before) no-op, and the two arms that say something and yield `before` -- so a
+        // refused click, a no-op click and an unaffordable click are indistinguishable from the
+        // wallet's point of view. THERE IS NO ROLLBACK because the ordering removes the need for
+        // one: if the write or the re-mint above threw, no XP has moved. A compensating write in a
+        // catch would be a second write on an error path no test can reach, and it double-refunds if
+        // the throw lands after the wallet was already restored. The residual case -- an exception
+        // between the re-mint and here, which no shipped path produces -- grants an enchant free,
+        // which fails TOWARDS the player and is visible on the item. Charging first would fail
+        // towards a player charged for nothing, which is not visible anywhere.
+        //
+        // This is NOT setLevel(getLevel() - costInLevels). The deduction is `wallet - cost` in
+        // POINTS; setLevel and setExp are only how that computed total is written back, through
+        // XpCurve's exact inverse of the read. giveExp(-n) would walk the levels down through float
+        // accumulation inside NMS and bump the scoreboard XP score as a side effect.
+        if (cost > 0) {
+            // max(0, ..) cannot fire -- the check above passed and nothing between here and it
+            // yields this thread -- and is kept rather than argued away.
+            int remaining = Math.max(0, wallet - cost);
+            viewer.setLevel(XpCurve.levelFor(remaining));
+            viewer.setExp(XpCurve.progressFor(remaining));
+        }
+
         render();
         viewer.updateInventory();
 
-        say(feedbackFor(intent, name, after, candidate.enchantId(), definition.weaponClass()),
+        say(feedbackFor(intent, name, after, candidate.enchantId(), definition.weaponClass(), cost),
                 NamedTextColor.GRAY);
 
         // No stat reconcile: PlayerHealthSystem re-reads the held weapon every scan tick, and the
@@ -392,16 +467,19 @@ public final class EnchantMenu extends Menu {
      * {@code /rpg enchant active}.
      */
     private String feedbackFor(EnchantClickIntent intent, String name, EnchantState after,
-                               String enchantId, WeaponClass heldClass) {
+                               String enchantId, WeaponClass heldClass, int cost) {
         EnchantDefinition enchant = adapters.enchants().find(enchantId).orElse(null);
         int level = after.activeLevel(enchantId);
         String effect = EnchantEffectLine.of(enchant, Math.max(1, level), heldClass);
 
         return switch (intent) {
-            case UNLOCK -> "Unlocked " + name + " I and made it active." + effect;
+            // The spend is named on the two arms that spend, and NOT on ACTIVATE -- whose silence
+            // about cost is the message. Saying "for 0 XP" there would make a free action read as a
+            // transaction.
+            case UNLOCK -> "Unlocked " + name + " I and made it active for " + cost + " XP." + effect;
             case ACTIVATE -> name + " is now active." + effect;
-            case LEVEL_UP -> name + " is now "
-                    + EnchantLoreLines.romanNumeral(level) + "." + effect;
+            case LEVEL_UP -> name + " is now " + EnchantLoreLines.romanNumeral(level)
+                    + " for " + cost + " XP." + effect;
             // Unreachable: these three arms return `before`, so equals() short-circuits above them.
             // Kept because the switch is exhaustive and a silent default arm is how a new intent
             // ships with no words.

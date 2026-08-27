@@ -20,8 +20,15 @@ import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
  * has {@code max_level: 1}, and no shipped weapon carries an id whose content file is missing, so
  * the two arms most likely to be got wrong are precisely the two a boot gate cannot reach.
  *
- * <p><b>The economy pass gates the same click.</b> The cost check goes in FRONT of this call, never
- * inside it: this answers "what would this click do", and affording it is a different question.
+ * <p><b>The economy gates the same click, and the seam this reserved held exactly.</b> The cost
+ * check goes in FRONT of this call, never inside it: this answers "what would this click do", and
+ * affording it is a different question. {@code EnchantCharge} answers a third -- what the click
+ * BUYS -- and it reads this enum rather than re-deriving the state, so a candidate cell prints the
+ * price of the very intent its click will compute.
+ *
+ * <p>Nothing here changed when the economy landed, which was the forecast. Adding a seventh constant
+ * now means pricing it too: {@code EnchantCharge}'s switch has no default arm, so a new intent is a
+ * compile error until someone says what it costs.
  */
 public enum EnchantClickIntent {
 
