@@ -1410,8 +1410,8 @@ Before milestone 2, two things worth measuring rather than assuming:
   `core` has an illegal dependency — that is the real bug), then boot and smoke-test one ability.
   Per D4 there is no bot, by decision, so this line IS the notification.
 - ~~**The per-instance enchant ROLL and the class POOLS are deferred; Pass 1 assigns candidates by
-  hand.**~~ **DONE** (the enchant rolls pass; see `PLAN-enchant-rolls.md` for the record and its
-  boot gate). Both shapes it left open are now DECIDED: **slot count is fixed at 3**, and the
+  hand.**~~ **DONE** (the enchant rolls pass, PR #20; see `PLAN-enchant-rolls.md` for the record
+  and its boot gate). Both shapes it left open are now DECIDED: **slot count is fixed at 3**, and the
   **1--3 rolling lives at the CANDIDATE level inside each slot**. `Keys.enchantRolled` is read at
   last, by `EnchantRollItems.rollOnAcquire`, and the forecast below held exactly -- the carry
   needed no change at all. The original entry is kept verbatim below.
@@ -1762,7 +1762,7 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 
 - **The enchant ROLLS boot gate is OWED IN FULL BY A HUMAN, and rows 9, 10 and 10b are the pass.**
-  All 17 rows are in `PLAN-enchant-rolls.md`. The pass ships one invariant -- a weapon rolls ONCE,
+  All 17 rows are in `PLAN-enchant-rolls.md` (PR #20). The pass ships one invariant -- a weapon rolls ONCE,
   ever -- and **no unit test can reach it**, because what would break it is a hook in the wrong
   place rather than wrong arithmetic. A green 606-test build says nothing at all about it.
 
