@@ -50,8 +50,12 @@ public final class EnchantItems {
      *
      * The rolled flag is set even when the state is EMPTY, which is the point of it being a
      * separate key: "this item's slots have been decided, and they came to nothing" has to be
-     * distinguishable from "this item has never been through the process". Pass 1 only ever writes
-     * it; the roster pass is what reads it, to refuse a second roll.
+     * distinguishable from "this item has never been through the process". The rolls pass is what
+     * made that matter: {@code EnchantRollItems} reads the flag to refuse a second roll, so a weapon
+     * whose pool came up empty must not look un-rolled to the next acquisition path.
+     *
+     * <p>It is also why a hand-built state from {@code /rpg enchant} is never re-rolled: writing the
+     * state marks the item rolled, so the dev command lands on top of the roll rather than under it.
      */
     public static void write(ItemMeta meta, EnchantState state, Keys keys) {
         meta.getPersistentDataContainer()
@@ -65,7 +69,14 @@ public final class EnchantItems {
         meta.getPersistentDataContainer().remove(keys.enchantRolled);
     }
 
-    /** Has this item been through a roll, whatever the roll produced? Reserved; nothing reads it yet. */
+    /**
+     * Has this item been through a roll, whatever the roll produced?
+     *
+     * <p>Read by {@code EnchantRollItems.rollOnAcquire}, which is the ONLY thing that may act on it.
+     * Note it cannot be used as a guard inside {@code WeaponItems.mint}: mint builds a fresh meta
+     * with an empty container and the carry restores this key only afterwards, so it reads false
+     * there for every item, new or not.
+     */
     public static boolean isRolled(ItemStack item, Keys keys) {
         if (item == null || !item.hasItemMeta()) return false;
         Byte flag = item.getItemMeta().getPersistentDataContainer()

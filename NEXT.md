@@ -1409,6 +1409,13 @@ Before milestone 2, two things worth measuring rather than assuming:
   it builds, then `paper.version`, then `./mvnw -pl core test` (a `core` break on a Paper bump means
   `core` has an illegal dependency — that is the real bug), then boot and smoke-test one ability.
   Per D4 there is no bot, by decision, so this line IS the notification.
+- ~~**The per-instance enchant ROLL and the class POOLS are deferred; Pass 1 assigns candidates by
+  hand.**~~ **DONE** (the enchant rolls pass; see `PLAN-enchant-rolls.md` for the record and its
+  boot gate). Both shapes it left open are now DECIDED: **slot count is fixed at 3**, and the
+  **1--3 rolling lives at the CANDIDATE level inside each slot**. `Keys.enchantRolled` is read at
+  last, by `EnchantRollItems.rollOnAcquire`, and the forecast below held exactly -- the carry
+  needed no change at all. The original entry is kept verbatim below.
+
 - **The per-instance enchant ROLL and the class POOLS are deferred; Pass 1 assigns candidates by
   hand.** `/rpg enchant candidate <slot> <enchant>` is the stand-in, exactly as `/rpg durability`
   stood in for auto-wear. `Keys.enchantRolled` (BYTE) is already written and already carried across
@@ -1420,6 +1427,13 @@ Before milestone 2, two things worth measuring rather than assuming:
   **Fixed-3 versus rolled-1–3 slots**: `EnchantState` deliberately does NOT cap slot count, and the
   only bound in the tree is `RpgCommand.MAX_DEV_SLOT = 2` — a command-side guard at the reachable
   surface, not a rule in the kernel. **Same-enchant-across-slots and stacking**: see the next entry.
+- ~~**The same-enchant-across-slots rule is provisionally MAX, and that is a placeholder, not the
+  answer.**~~ **DECIDED: it is MAX, permanently** (the enchant rolls pass). The placeholder was
+  kept as the answer, and the three reasons it was chosen are the three reasons it survived. **No
+  mutual exclusion was added**: a roll may offer the same enchant in more than one slot, both may
+  be active at once, and it resolves to the highest level either holds it at. The `PROVISIONAL`
+  javadoc on `EnchantState.effective()` is gone. The original entry is kept verbatim below.
+
 - **The same-enchant-across-slots rule is provisionally MAX, and that is a placeholder, not the
   answer.** `EnchantState.effective()` returns one entry per distinct active id at the HIGHEST level
   any active slot holds it at. Chosen because it cannot exceed `MAX_LEVEL` (so it can never hand a
@@ -1735,10 +1749,10 @@ Before milestone 2, two things worth measuring rather than assuming:
   inherits nothing. A rolled Sharpness behaves like a hand-assigned one, and the roll's design does
   not need to know that abilities exist.
 
-- **Still deferred after Pass 2:** the per-instance roll and the class pools (now with a real roster
-  of three damage enchants to draw from), ~~the enchant table UI~~ (DONE — the Enchant UI pass), the
-  XP economy and bookshelf power, and a SUMMONER enchant — which still waits on the class, which
-  still waits on mob-to-mob damage.
+- **Still deferred after Pass 2:** ~~the per-instance roll and the class pools~~ (DONE — the
+  enchant rolls pass, which drew from exactly that roster of three), ~~the enchant table UI~~
+  (DONE — the Enchant UI pass), the XP economy and bookshelf power, and a SUMMONER
+  enchant — which still waits on the class, which still waits on mob-to-mob damage.
 
 - **The tooltip shows no percent, and the Phase-4 entry stays OPEN.** Pass 2 grants the first real
   enchant STAT DELTA, which is what that entry was waiting for, but `EnchantLore` still renders only
@@ -1746,6 +1760,29 @@ Before milestone 2, two things worth measuring rather than assuming:
   Surfacing a RESOLVED number belongs with the stat screen, beside `+N Melee Damage` and the resolved
   attack speed, per the standing rule that lore describes the weapon and not whoever holds it.
 
+
+- **The enchant ROLLS boot gate is OWED IN FULL BY A HUMAN, and rows 9, 10 and 10b are the pass.**
+  All 17 rows are in `PLAN-enchant-rolls.md`. The pass ships one invariant -- a weapon rolls ONCE,
+  ever -- and **no unit test can reach it**, because what would break it is a hook in the wrong
+  place rather than wrong arithmetic. A green 606-test build says nothing at all about it.
+
+  The trap is worth carrying here rather than only in the plan, because it is the thing a future
+  pass would re-discover: `remint` calls `mint`, so a roll in `mint` fires on every join, refresh
+  and table click -- **and guarding it on `EnchantItems.isRolled` does not help**, because `mint`
+  builds a fresh meta and the carry restores `enchant_rolled` only afterwards, so the flag reads
+  false in there for every item. The guard would look present and do nothing. The rule is about the
+  CALL SITE: the roll is never called from inside `WeaponItems`.
+
+  Row 16 is the one most easily skipped and it guards a bug that hides in shipped content: the kit
+  grant rolls INSIDE its loop, so a line placed after the loop would leave every kit weapon but the
+  last un-rolled -- invisible today, because both shipped kits grant one weapon.
+
+- **`Rarity`'s reserved meaning is now the CANDIDATE axis, not slot count.** The rolls pass fixed
+  every weapon at 3 slots, which contradicted the half of `Rarity`'s javadoc promising "enchant
+  slots ... per tier", so that half was dropped rather than left promising what shipped code
+  contradicts. What is KEPT and still reserved: how many candidates a slot offers, and how rich a
+  pool it draws from. The ordinal-ordering rationale survives intact on that axis. Tiering the SLOT
+  count again would be a new decision and would need a layout change to go with it.
 
 - **The enchant table's boot gate is OWED IN FULL BY A HUMAN.** Every one of its 23 rows needs a
   `Player` — the menu, the clicks, the item-safety cases and the shutdown return — and a console log

@@ -74,9 +74,14 @@ public final class Keys {
      * Set (BYTE 1) once an item's enchant slots have been ROLLED, even when the roll produced
      * nothing -- so an item can never re-roll on re-insertion and a bad roll cannot be laundered.
      *
-     * <p>RESERVED this pass: {@code /rpg enchant} writes it and NOTHING reads it. It is carried
-     * across a re-mint now so the roster pass, which is what makes it load-bearing, needs no change
-     * to the carry at all.
+     * <p>LOAD-BEARING since the rolls pass: {@code EnchantRollItems.rollOnAcquire} reads it to
+     * refuse a second roll, and {@code /rpg enchant} still writes it. The forecast held -- it was
+     * already carried across a re-mint, so the roll needed no change to the carry at all.
+     *
+     * <p>Which is what the whole invariant now rests on: {@code carryEnchants} moves this and
+     * {@link #enchantData} as RAW BYTES on every re-mint, so a rolled item stays rolled through a
+     * refresh, a rejoin and every enchant-table click, and a player never loses an unlock they paid
+     * for.
      */
     public final NamespacedKey enchantRolled;
 
