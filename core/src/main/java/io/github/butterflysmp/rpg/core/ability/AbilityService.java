@@ -77,8 +77,8 @@ public final class AbilityService {
         /**
          * The ability exists, but this caster is not permitted to cast it -- it is not
          * in their granted set. core is handed that set; it never learns what an
-         * archetype is. Returned BEFORE the cooldown and energy checks, so a caster
-         * who cannot cast never trips a cooldown or spends energy.
+         * archetype is. Returned BEFORE the cooldown and mana checks, so a caster
+         * who cannot cast never trips a cooldown or spends mana.
          */
         record Locked(String id) implements CastResult {}
 
@@ -110,7 +110,7 @@ public final class AbilityService {
         if (def == null) return new CastResult.UnknownAbility(abilityId);
 
         // Access before cost. A locked cast must leave the cooldown ready and the
-        // energy untouched, so this precedes both checks below -- and a reorder that
+        // mana untouched, so this precedes both checks below -- and a reorder that
         // moved it after them is what AbilityServiceTest's order-pinning test guards.
         if (!castable.contains(abilityId)) return new CastResult.Locked(abilityId);
 
@@ -121,7 +121,7 @@ public final class AbilityService {
      * Fire a pre-resolved cast that is NOT a registered, granted ability -- a weapon
      * trigger. Skips the registry lookup and the castable gate cast() applies, because
      * a weapon is obtained and swung, not unlocked by a class. Everything past the gate
-     * is identical: it checks and commits the cooldown and energy atomically here, so
+     * is identical: it checks and commits the cooldown and mana atomically here, so
      * there is no check-then-commit window a fast second swing could slip through.
      *
      * The trigger's own id (weaponId/input) is what keys its cooldown, so a weapon's
@@ -132,7 +132,7 @@ public final class AbilityService {
     }
 
     /**
-     * The shared tail of cast() and fireTrigger(): cooldown check -> energy spend ->
+     * The shared tail of cast() and fireTrigger(): cooldown check -> mana spend ->
      * cooldown trigger -> Success, all before returning. One code path, so the
      * order-pinning mutation test guards both callers.
      */
@@ -142,7 +142,7 @@ public final class AbilityService {
             return new CastResult.OnCooldown(cooldowns.ticksRemaining(caster.id(), id));
         }
 
-        // Energy before cooldown, and both before returning Success. tryConsume is
+        // Mana before cooldown, and both before returning Success. tryConsume is
         // all-or-nothing, so a refusal here leaves the cooldown untouched and the
         // player can immediately try again -- rather than eating the cooldown for
         // an ability that never fired.

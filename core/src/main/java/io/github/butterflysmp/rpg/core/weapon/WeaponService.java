@@ -14,7 +14,7 @@ import java.util.Optional;
  * no server.
  *
  * Like AbilityService.cast, fire() DECIDES; it does not EXECUTE. It selects the
- * trigger for an input, checks and consumes the cooldown and energy atomically, and
+ * trigger for an input, checks and consumes the cooldown and mana atomically, and
  * returns a description. The caller passes the Success to a CastExecutor on the
  * region thread.
  *

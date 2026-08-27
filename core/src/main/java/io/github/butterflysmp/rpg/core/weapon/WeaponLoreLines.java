@@ -52,8 +52,8 @@ public final class WeaponLoreLines {
 
     /**
      * The trigger's cadence folded onto one line: "Cooldown: 0.5s", or with a cost
-     * "Cooldown: 3.0s | Energy Cost: 40". The resource name comes from the cost's resourceId
-     * ("energy" -> "Energy Cost"). A free, instant trigger yields "" -- the caller drops the line.
+     * "Cooldown: 3.0s | Mana Cost: 40". The resource name comes from the cost's resourceId
+     * ("mana" -> "Mana Cost"). A free, instant trigger yields "" -- the caller drops the line.
      */
     public static String cadenceLine(int cooldownTicks, ResourceCost cost) {
         List<String> parts = new ArrayList<>();

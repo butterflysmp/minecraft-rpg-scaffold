@@ -146,7 +146,7 @@ public final class RpgListeners implements Listener {
      *
      * event.getHand() == HAND is the FIRST branch, and it is load-bearing: PlayerInteractEvent
      * can fire twice for one physical right-click (the main/off-hand pair), and an unfiltered
-     * handler would spend energy twice for one press.
+     * handler would spend mana twice for one press.
      *
      * Vanilla is cancelled when the held weapon actually binds right_click (attempt returns
      * present). ironblade has no right_click, so its right-click passes through and doors and
@@ -176,7 +176,7 @@ public final class RpgListeners implements Listener {
         // That and vanilla enchanting are both things the custom table is here to take over, and a
         // player who wants to build against one can break and re-place it.
         //
-        // Ahead of WeaponFire.attempt deliberately, so the weapon never spends energy on a click
+        // Ahead of WeaponFire.attempt deliberately, so the weapon never spends mana on a click
         // that opened a menu.
         if (action == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null
                 && event.getClickedBlock().getType() == Material.ENCHANTING_TABLE) {
@@ -303,7 +303,7 @@ public final class RpgListeners implements Listener {
      * cooldown and resource bucket until the server restarts. Both structures
      * are concurrent, so no scheduler hop is needed to drop them.
      *
-     * Dropping the energy pool is also correct game behaviour, not just hygiene:
+     * Dropping the mana pool is also correct game behaviour, not just hygiene:
      * an absent pool reads as full, so a returning player starts charged.
      */
     @EventHandler

@@ -1,5 +1,5 @@
 # The Mage's primary: a fire staff. Where the bow's shot is FREE and sustained, the staff's
-# is COSTED and burst -- high-per-hit, slower, and it spends the same energy pool the Mage's
+# is COSTED and burst -- high-per-hit, slower, and it spends the same mana pool the Mage's
 # spells do. That shared budget is the whole of the Mage identity: the verb is commit. You
 # cannot spam the staff and grenade and lance; you pick your moments.
 #
@@ -20,10 +20,10 @@ triggers:
     name: "Ember Bolt"
     description:
       - "A costed burst of fire —"
-      - "commit your energy to cast."
+      - "commit your mana to cast."
     cooldown_ticks: 20
     cost:
-      resource: energy
+      resource: mana
       amount: 30
     cast:
       type: projectile

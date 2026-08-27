@@ -81,7 +81,7 @@ public final class WeaponSwingListener extends PacketListenerBase {
      * Runs on the thread that owns the player. Bukkit is legal here. This is where the
      * weapon_id reject happens -- reading the held item is a Bukkit call -- and it is
      * delegated to WeaponFire, shared with the right-click handler. Silent: a swing that
-     * lands nothing because you are mid-cooldown or out of energy does not deserve chat spam.
+     * lands nothing because you are mid-cooldown or out of mana does not deserve chat spam.
      *
      * BROKEN is the one outcome that speaks, and it is the reason this method now reads the result
      * at all rather than discarding it. The compiler does NOT catch this: adding an arm to the

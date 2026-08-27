@@ -8,7 +8,7 @@ archetype: hunter
 cooldown_ticks: 200
 
 cost:
-  resource: energy
+  resource: mana
   amount: 40
 
 cast:

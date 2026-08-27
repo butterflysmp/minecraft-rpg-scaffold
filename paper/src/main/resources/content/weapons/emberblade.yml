@@ -1,5 +1,5 @@
 # The second weapon: a free + costed sword. Left-click is a free swing like ironblade;
-# right-click is a costed special that spends the SAME energy pool an ability does, and is
+# right-click is a costed special that spends the SAME mana pool an ability does, and is
 # blocked when that pool runs dry. That shared-resource tension is the whole point of it.
 #
 # The special reuses the already-shipped solar_detonation visual and scorch status, so it
@@ -23,7 +23,7 @@ flavor:
   - "Swing to cut; loose to burn."
 
 triggers:
-  # Free swing. No cost section -> free; energy regenerates while you swing.
+  # Free swing. No cost section -> free; mana regenerates while you swing.
   left_click:
     # No name/description -- this is the basic attack, rendered as a stat block. See ironblade.
     cooldown_ticks: 10
@@ -37,7 +37,7 @@ triggers:
       - type: weapon_damage
         element: fire
 
-  # The costed special: a fireball that bursts on impact. Spends 40 energy (about two casts
+  # The costed special: a fireball that bursts on impact. Spends 40 mana (about two casts
   # on a full 100 bar) and waits 3 seconds. A drained pool blocks it -- that is the proof.
   right_click:
     name: "Fireball"
@@ -46,7 +46,7 @@ triggers:
       - "that scorches all it catches."
     cooldown_ticks: 60
     cost:
-      resource: energy
+      resource: mana
       amount: 40
     cast:
       type: projectile

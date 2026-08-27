@@ -574,7 +574,7 @@ class CastExecutorTest {
     /**
      * THE GATE, on the shape that needs it most. emberblade's Fireball and hunters_bow's shot are
      * BOTH `type: projectile` -- the cast shape cannot tell them apart, only the payload can. An
-     * ability already spends energy; charging it durability as well bills one press twice.
+     * ability already spends mana; charging it durability as well bills one press twice.
      *
      * Delete the isBasicAttack gate and this reddens, together with the melee case below.
      */
@@ -588,7 +588,7 @@ class CastExecutorTest {
         cast(world, caster, ability(new CastSpec.Projectile(1.6, 0.03, 100), abilityPayload()),
                 () -> uses[0]++);
 
-        assertEquals(0, uses[0], "an ability spends energy, not durability");
+        assertEquals(0, uses[0], "an ability spends mana, not durability");
     }
 
     /**

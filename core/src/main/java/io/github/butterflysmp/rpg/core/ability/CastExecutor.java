@@ -79,7 +79,7 @@ public final class CastExecutor {
         Caster source = Caster.of(caster);
 
         // WHAT COSTS A USE, AND WHEN -- the whole rule, here, rather than left to each caller to
-        // remember. Only a BASIC ATTACK charges: an ability already spends energy, and charging it
+        // remember. Only a BASIC ATTACK charges: an ability already spends mana, and charging it
         // as well would bill one press twice. The gate is structural for the same reason
         // Durability's maxDurability <= 0 guard is -- it is the ONLY thing separating the two
         // shipped projectiles from each other. hunters_bow's shot and emberblade's Fireball are

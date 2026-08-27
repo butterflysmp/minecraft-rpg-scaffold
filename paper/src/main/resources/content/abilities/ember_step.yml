@@ -9,7 +9,7 @@ archetype: mage
 cooldown_ticks: 160          # tune on the --refresh-content loop, not in Java
 
 cost:
-  resource: energy
+  resource: mana
   amount: 30
 
 cast:

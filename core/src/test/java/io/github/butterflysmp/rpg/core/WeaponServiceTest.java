@@ -40,7 +40,7 @@ class WeaponServiceTest {
 
     private static final Aim FORWARD = new Aim(Vec3.ZERO, new Vec3(1, 0, 0));
 
-    /** 100 energy, 1/tick, so a 40-cost trigger is affordable twice. */
+    /** 100 mana, 1/tick, so a 40-cost trigger is affordable twice. */
     private static ResourcePool pool(LongSupplier tick) {
         return new ResourcePool(tick, 100, 1.0);
     }
@@ -73,7 +73,7 @@ class WeaponServiceTest {
     private static WeaponDefinition costedSword() {
         return new WeaponDefinition("staff", "Staff", "kinetic", Rarity.RARE,
                 List.of(new TriggerBinding("left_click",
-                        ability("staff/left_click", new ResourceCost("energy", 40), 10))));
+                        ability("staff/left_click", new ResourceCost("mana", 40), 10))));
     }
 
     /** Two triggers, both cooldowned, for the independence proof. */
@@ -120,7 +120,7 @@ class WeaponServiceTest {
      * the second swing succeed and drains 40 more -- this assertion is what catches it.
      */
     @Test
-    void twoRapidSwingsSpendEnergyExactlyOnce() {
+    void twoRapidSwingsSpendManaExactlyOnce() {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var resources = pool(() -> 0L); // tick frozen: the second swing is on cooldown
         var service = serviceWith(() -> 0L, resources);
@@ -131,20 +131,20 @@ class WeaponServiceTest {
         assertInstanceOf(CastResult.OnCooldown.class,
                 service.fire(caster.snapshot(), weapon, "left_click", FORWARD).orElseThrow());
 
-        assertEquals(60, resources.current(caster.id(), "energy"), 1e-9); // spent exactly once
+        assertEquals(60, resources.current(caster.id(), "mana"), 1e-9); // spent exactly once
     }
 
     @Test
-    void aSwingRefusedForEnergySpendsNothing() {
+    void aSwingRefusedForManaSpendsNothing() {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var resources = pool(() -> 0L);
-        resources.tryConsume(caster.id(), "energy", 70); // 30 left, trigger costs 40
+        resources.tryConsume(caster.id(), "mana", 70); // 30 left, trigger costs 40
         var service = serviceWith(() -> 0L, resources);
 
         var result = service.fire(caster.snapshot(), costedSword(), "left_click", FORWARD);
 
         assertInstanceOf(CastResult.InsufficientResource.class, result.orElseThrow());
-        assertEquals(30, resources.current(caster.id(), "energy"), 1e-9); // untouched
+        assertEquals(30, resources.current(caster.id(), "mana"), 1e-9); // untouched
     }
 
     /**
@@ -170,9 +170,9 @@ class WeaponServiceTest {
 
     /**
      * emberblade's exact model, proven server-free: one weapon, a FREE left-click and a
-     * COSTED right-click, sharing the one energy pool. The free trigger spends nothing; the
+     * COSTED right-click, sharing the one mana pool. The free trigger spends nothing; the
      * costed one draws from the shared pool; a drained pool blocks the costed trigger while
-     * the free one keeps firing. Cooldowns are 0 here so nothing but energy can gate a
+     * the free one keeps firing. Cooldowns are 0 here so nothing but mana can gate a
      * trigger -- this isolates the shared-pool interaction, which 1a's tests (a single costed
      * trigger, or two free ones) do not cover on one weapon.
      */
@@ -185,30 +185,30 @@ class WeaponServiceTest {
                 List.of(
                         new TriggerBinding("left_click", ability("emberblade/left_click", ResourceCost.FREE, 0)),
                         new TriggerBinding("right_click",
-                                ability("emberblade/right_click", new ResourceCost("energy", 40), 0))));
+                                ability("emberblade/right_click", new ResourceCost("mana", 40), 0))));
 
         // Free left-click fires and spends nothing from the shared pool.
         assertInstanceOf(CastResult.Success.class,
                 service.fire(caster.snapshot(), weapon, "left_click", FORWARD).orElseThrow());
-        assertEquals(100, resources.current(caster.id(), "energy"), 1e-9);
+        assertEquals(100, resources.current(caster.id(), "mana"), 1e-9);
 
         // Each costed right-click draws 40 from the SAME pool.
         assertInstanceOf(CastResult.Success.class,
                 service.fire(caster.snapshot(), weapon, "right_click", FORWARD).orElseThrow());
-        assertEquals(60, resources.current(caster.id(), "energy"), 1e-9);
+        assertEquals(60, resources.current(caster.id(), "mana"), 1e-9);
         assertInstanceOf(CastResult.Success.class,
                 service.fire(caster.snapshot(), weapon, "right_click", FORWARD).orElseThrow());
-        assertEquals(20, resources.current(caster.id(), "energy"), 1e-9);
+        assertEquals(20, resources.current(caster.id(), "mana"), 1e-9);
 
         // Drained below the 40 cost: the right-click is blocked, and the refusal spends nothing.
         assertInstanceOf(CastResult.InsufficientResource.class,
                 service.fire(caster.snapshot(), weapon, "right_click", FORWARD).orElseThrow());
-        assertEquals(20, resources.current(caster.id(), "energy"), 1e-9);
+        assertEquals(20, resources.current(caster.id(), "mana"), 1e-9);
 
         // ...but the FREE left-click still fires -- a drained pool does not block it.
         assertInstanceOf(CastResult.Success.class,
                 service.fire(caster.snapshot(), weapon, "left_click", FORWARD).orElseThrow());
-        assertEquals(20, resources.current(caster.id(), "energy"), 1e-9);
+        assertEquals(20, resources.current(caster.id(), "mana"), 1e-9);
     }
 
     /**
@@ -246,7 +246,7 @@ class WeaponServiceTest {
 
         // The shot fires -- a projectile through the weapon path -- and is free.
         dispatch(world, service.fire(caster.snapshot(), bow, "right_click", FORWARD));
-        assertEquals(100, resources.current(caster.id(), "energy"), 1e-9); // the bow carries the damage
+        assertEquals(100, resources.current(caster.id(), "mana"), 1e-9); // the bow carries the damage
 
         // Fire rate is the cooldown, not a charge: the immediate next shot is OnCooldown.
         assertInstanceOf(CastResult.OnCooldown.class,

@@ -28,7 +28,7 @@ flavor:
   - "The first blade any recruit is handed."
 
 triggers:
-  # Left-click swing. No `cost:` section means free -- energy regenerates while you
+  # Left-click swing. No `cost:` section means free -- mana regenerates while you
   # swing, rather than competing with your abilities.
   left_click:
     # No name/description: a weapon_damage trigger IS the basic attack, and the tooltip renders it

@@ -16,7 +16,7 @@ import org.bukkit.entity.Player;
  *
  * <ul>
  *   <li>{@code WeaponSwingListener.onSwing} discards its result -- "a swing that lands nothing
- *       because you are mid-cooldown or out of energy does not deserve chat spam". Holding
+ *       because you are mid-cooldown or out of mana does not deserve chat spam". Holding
  *       left-click is one swing per tick.</li>
  *   <li>{@code RpgListeners.onRightClick} silences refusals when the press IS a basic attack, which
  *       the hunters_bow's shot is. Holding fire is attacking, not repeatedly deciding to cast.</li>

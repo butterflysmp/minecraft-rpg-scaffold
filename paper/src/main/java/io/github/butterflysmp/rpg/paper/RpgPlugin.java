@@ -80,9 +80,9 @@ public final class RpgPlugin extends JavaPlugin {
      */
     private static final String CONTENT_PREFIX = "content/";
 
-    /** Ability energy. A full bar in 60 seconds. Belongs in archetype content later. */
-    private static final double MAX_ENERGY = 100.0;
-    private static final double ENERGY_PER_TICK = MAX_ENERGY / (60 * 20);
+    /** Ability mana. A full bar in 60 seconds. Belongs in archetype content later. */
+    private static final double MAX_MANA = 100.0;
+    private static final double MANA_PER_TICK = MAX_MANA / (60 * 20);
 
     private Scheduler scheduler;
     private Keys keys;
@@ -177,9 +177,9 @@ public final class RpgPlugin extends JavaPlugin {
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
-        this.resources = new ResourcePool(Bukkit::getCurrentTick, MAX_ENERGY, ENERGY_PER_TICK);
+        this.resources = new ResourcePool(Bukkit::getCurrentTick, MAX_MANA, MANA_PER_TICK);
         this.abilityService = new AbilityService(abilities, cooldowns, resources);
-        // A weapon trigger fires through the same cooldown/energy machinery, gate-free.
+        // A weapon trigger fires through the same cooldown/mana machinery, gate-free.
         this.weaponService = new WeaponService(abilityService);
 
         // One thread: file writes for a single player must not race each other,
@@ -390,6 +390,6 @@ public final class RpgPlugin extends JavaPlugin {
      */
     public AbilityService abilityService() { return abilityService; }
 
-    /** Fires a weapon trigger through the shared cooldown/energy path, gate-free. */
+    /** Fires a weapon trigger through the shared cooldown/mana path, gate-free. */
     public WeaponService weaponService() { return weaponService; }
 }

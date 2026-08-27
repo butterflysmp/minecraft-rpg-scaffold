@@ -31,7 +31,7 @@ public final class EnchantCost {
      * The tuning knob, in the units a designer thinks in: reaching I costs what a player banks
      * getting to level 16 from nothing, II what they bank reaching 25, III reaching 40.
      *
-     * <p>A uniform system knob rather than per-enchant content -- the same call {@code MAX_ENERGY}
+     * <p>A uniform system knob rather than per-enchant content -- the same call {@code MAX_MANA}
      * is. Every enchant costs the same to reach a given level; what differs is what the level buys.
      *
      * <p><b>Levels are the INPUT to the price, never the price itself.</b> They describe the bank of
