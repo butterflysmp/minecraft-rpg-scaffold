@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongSupplier;
 
 /**
- * Ability resources -- energy, and whatever else content asks for -- keyed by
+ * Ability resources -- mana, and whatever else content asks for -- keyed by
  * (owner, resourceId). Shaped like CooldownTracker on purpose: a tick supplier
  * rather than Bukkit, so it can be tested with a fake clock.
  *
@@ -18,7 +18,7 @@ import java.util.function.LongSupplier;
  * Thread-safe, for the same reason CooldownTracker is: under Folia two players
  * in different regions cast on different threads at the same instant. Consumption
  * is a single atomic compute, so two concurrent casts cannot both spend the last
- * 40 energy.
+ * 40 mana.
  *
  * Bounded: clear(owner) drops the owner's pools. Call it when a player leaves.
  */
@@ -58,7 +58,7 @@ public final class ResourcePool {
 
     /**
      * Spend {@code amount} if it is available. All-or-nothing: on failure not a
-     * drop is taken, so a caller that reports "not enough energy" has not
+     * drop is taken, so a caller that reports "not enough mana" has not
      * quietly drained the player.
      *
      * @return true if the full amount was consumed
@@ -71,7 +71,7 @@ public final class ResourcePool {
 
         // compute() applies the function atomically for this key, so the
         // read-modify-write below cannot interleave with another caster. A plain
-        // get/put here lets 4-6 of 16 concurrent 40-energy casts through a pool
+        // get/put here lets 4-6 of 16 concurrent 40-mana casts through a pool
         // that fits 2 -- verified, not theoretical.
         boolean[] consumed = {false};
         owned.compute(resourceId, (id, entry) -> {

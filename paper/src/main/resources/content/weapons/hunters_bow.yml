@@ -32,7 +32,7 @@ flavor:
   - "A swift arrow wreathed in flame."
 
 triggers:
-  # Free shot -- the Ranger economy: the bow carries the damage, energy stays free for
+  # Free shot -- the Ranger economy: the bow carries the damage, mana stays free for
   # utility. cooldown_ticks is the fire rate: ~0.75s between shots.
   right_click:
     # No name/description: a weapon_damage trigger IS the basic attack, and the tooltip renders it

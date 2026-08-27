@@ -24,7 +24,7 @@ class AbilityServiceTest {
     private static AbilityDefinition solarGrenade() {
         return new AbilityDefinition(
                 "solar_grenade", "Solar Grenade", "fire", "hunter",
-                200, new ResourceCost("energy", 40),
+                200, new ResourceCost("mana", 40),
                 new CastSpec.Projectile(1.2, 0.03, 100),
                 List.of(
                         new EffectSpec.Damage(12, "fire"),
@@ -33,7 +33,7 @@ class AbilityServiceTest {
                 ));
     }
 
-    /** 100 energy, 1 per tick, so the grenade's cost of 40 is affordable twice. */
+    /** 100 mana, 1 per tick, so the grenade's cost of 40 is affordable twice. */
     private static ResourcePool pool(java.util.function.LongSupplier tick) {
         return new ResourcePool(tick, 100, 1.0);
     }
@@ -109,7 +109,7 @@ class AbilityServiceTest {
 
         var grenade = new AbilityDefinition(
                 "solar_grenade", "Solar Grenade", "fire", "hunter",
-                200, new ResourceCost("energy", 40),
+                200, new ResourceCost("mana", 40),
                 new CastSpec.Projectile(1.2, 0.03, 100),
                 List.of(
                         new EffectSpec.Damage(8, "fire"),
@@ -231,15 +231,15 @@ class AbilityServiceTest {
     }
 
     /**
-     * Order, not just outcome. "Locked is returned" and "cooldown/energy work" are
+     * Order, not just outcome. "Locked is returned" and "cooldown/mana work" are
      * tested separately above; neither proves Locked comes FIRST. A reorder that
-     * landed the access check after the energy spend would keep every other test
+     * landed the access check after the mana spend would keep every other test
      * green and the sealed switch still exhaustive -- and silently drain a locked
-     * caster's energy and start their cooldown. This is the only test that fails
+     * caster's mana and start their cooldown. This is the only test that fails
      * on that reorder: a locked cast must touch neither.
      */
     @Test
-    void aLockedCastConsumesNoCooldownOrEnergy() {
+    void aLockedCastConsumesNoCooldownOrMana() {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var tick = new AtomicLong(0);
         var resources = pool(tick::get);
@@ -248,8 +248,8 @@ class AbilityServiceTest {
         assertInstanceOf(AbilityService.CastResult.Locked.class,
                 service.cast(caster.snapshot(), "solar_grenade", FORWARD, Set.of()));
 
-        // Energy untouched...
-        assertEquals(100, resources.current(caster.id(), "energy"), 1e-9);
+        // Mana untouched...
+        assertEquals(100, resources.current(caster.id(), "mana"), 1e-9);
         // ...and the cooldown never started: the instant the grant appears, the very
         // same tick, the ability casts. A consumed cooldown would make this OnCooldown.
         assertInstanceOf(AbilityService.CastResult.Success.class,
@@ -266,56 +266,56 @@ class AbilityServiceTest {
     }
 
     @Test
-    void castingSpendsTheAbilitysEnergyCost() {
+    void castingSpendsTheAbilitysManaCost() {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var resources = pool(() -> 0L);
         var service = serviceWith(solarGrenade(), () -> 0L, resources);
 
         service.cast(caster.snapshot(), "solar_grenade", FORWARD, GRANTED);
 
-        assertEquals(60, resources.current(caster.id(), "energy"), 1e-9); // 100 - 40
+        assertEquals(60, resources.current(caster.id(), "mana"), 1e-9); // 100 - 40
     }
 
     @Test
-    void castingWithoutEnoughEnergyIsRefused() {
+    void castingWithoutEnoughManaIsRefused() {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var resources = pool(() -> 0L);
-        resources.tryConsume(caster.id(), "energy", 70); // 30 left, grenade costs 40
+        resources.tryConsume(caster.id(), "mana", 70); // 30 left, grenade costs 40
         var service = serviceWith(solarGrenade(), () -> 0L, resources);
 
         var result = service.cast(caster.snapshot(), "solar_grenade", FORWARD, GRANTED);
 
         var refused = assertInstanceOf(AbilityService.CastResult.InsufficientResource.class, result);
-        assertEquals("energy", refused.resourceId());
+        assertEquals("mana", refused.resourceId());
         assertEquals(40, refused.required(), 1e-9);
         assertEquals(30, refused.available(), 1e-9);
     }
 
     /**
-     * A refused cast must not eat the cooldown. Otherwise running out of energy
+     * A refused cast must not eat the cooldown. Otherwise running out of mana
      * would also lock the ability out for its full cooldown, having fired nothing.
      */
     @Test
-    void aCastRefusedForEnergyDoesNotConsumeTheCooldown() {
+    void aCastRefusedForManaDoesNotConsumeTheCooldown() {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var tick = new AtomicLong(0);
         var resources = pool(tick::get);
-        resources.tryConsume(caster.id(), "energy", 70); // 30 left, grenade costs 40
+        resources.tryConsume(caster.id(), "mana", 70); // 30 left, grenade costs 40
         var service = serviceWith(solarGrenade(), tick::get, resources);
 
         assertInstanceOf(AbilityService.CastResult.InsufficientResource.class,
                 service.cast(caster.snapshot(), "solar_grenade", FORWARD, GRANTED));
 
-        // Let energy regenerate. The grenade's 200-tick cooldown has NOT started,
+        // Let mana regenerate. The grenade's 200-tick cooldown has NOT started,
         // so the same service must cast successfully well before it would elapse.
         tick.set(40);
         assertInstanceOf(AbilityService.CastResult.Success.class,
                 service.cast(caster.snapshot(), "solar_grenade", FORWARD, GRANTED));
     }
 
-    /** Being on cooldown must not spend energy either. */
+    /** Being on cooldown must not spend mana either. */
     @Test
-    void aCastRefusedForCooldownDoesNotSpendEnergy() {
+    void aCastRefusedForCooldownDoesNotSpendMana() {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var resources = pool(() -> 0L);
         var service = serviceWith(solarGrenade(), () -> 0L, resources);
@@ -324,7 +324,7 @@ class AbilityServiceTest {
         assertInstanceOf(AbilityService.CastResult.OnCooldown.class,
                 service.cast(caster.snapshot(), "solar_grenade", FORWARD, GRANTED));
 
-        assertEquals(60, resources.current(caster.id(), "energy"), 1e-9);
+        assertEquals(60, resources.current(caster.id(), "mana"), 1e-9);
     }
 
     // --- Attack speed scales a BASIC ATTACK's cooldown, and only a basic attack's ------------------

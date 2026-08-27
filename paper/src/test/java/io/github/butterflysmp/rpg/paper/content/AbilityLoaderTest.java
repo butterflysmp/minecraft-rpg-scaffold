@@ -377,7 +377,7 @@ class AbilityLoaderTest {
         // for a WEAPON TRIGGER. If a cost-gated 0-cooldown ability is ever wanted, delete this line
         // then -- as a deliberate call, not as a tidy-up of an apparent inconsistency.
         assertTrue(def.cooldownTicks() > 0, "a shipped ability declares a cooldown");
-        assertEquals("energy", def.cost().resourceId());
+        assertEquals("mana", def.cost().resourceId());
 
         // The blast: splash damage plus the ignition, on the detonation frame.
         var burst = def.onHit().stream()

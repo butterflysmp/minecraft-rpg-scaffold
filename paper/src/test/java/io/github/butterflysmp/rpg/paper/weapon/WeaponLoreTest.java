@@ -75,7 +75,7 @@ class WeaponLoreTest {
                 List.of(new EffectSpec.WeaponDamage("fire")), List.of("A cut that smoulders."));
         AbilityDefinition fireball = new AbilityDefinition(
                 "emberblade/right_click", "Fireball", "fire", "none",
-                60, new ResourceCost("energy", 40), new CastSpec.Projectile(1.6, 0.03, 100),
+                60, new ResourceCost("mana", 40), new CastSpec.Projectile(1.6, 0.03, 100),
                 List.of(new EffectSpec.Burst(3.0, List.of(new EffectSpec.Damage(12, "fire")))),
                 List.of("Hurl a bursting ember."));
         return new WeaponDefinition("emberblade", "Emberblade", "fire", Rarity.RARE,
@@ -191,7 +191,7 @@ class WeaponLoreTest {
         // The ability block itself is otherwise untouched.
         assertTrue(lines.contains("Fireball  Right-Click"), () -> lines.toString());
         assertTrue(lines.contains("Hurl a bursting ember."), () -> lines.toString());
-        assertTrue(lines.contains("Cooldown: 3.0s | Energy Cost: 40"), () -> lines.toString());
+        assertTrue(lines.contains("Cooldown: 3.0s | Mana Cost: 40"), () -> lines.toString());
         // ...and the basic attack still owns the class label, exactly once.
         assertEquals(1, lines.stream().filter(l -> l.startsWith("Melee Damage: ")).count(),
                 () -> "exactly one class-labelled damage line: " + lines);

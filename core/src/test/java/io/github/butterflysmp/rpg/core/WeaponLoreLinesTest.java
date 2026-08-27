@@ -52,14 +52,14 @@ class WeaponLoreLinesTest {
 
     @Test
     void cadenceFoldsCostAfterCooldown() {
-        assertEquals("Cooldown: 3.0s | Energy Cost: 40",
-                WeaponLoreLines.cadenceLine(60, new ResourceCost("energy", 40)));
+        assertEquals("Cooldown: 3.0s | Mana Cost: 40",
+                WeaponLoreLines.cadenceLine(60, new ResourceCost("mana", 40)));
     }
 
     @Test
     void cadenceResourceNameComesFromResourceId() {
-        assertEquals("Cooldown: 1.0s | Mana Cost: 30",
-                WeaponLoreLines.cadenceLine(20, new ResourceCost("mana", 30)));
+        assertEquals("Cooldown: 1.0s | Focus Cost: 30",
+                WeaponLoreLines.cadenceLine(20, new ResourceCost("focus", 30)));
     }
 
     @Test

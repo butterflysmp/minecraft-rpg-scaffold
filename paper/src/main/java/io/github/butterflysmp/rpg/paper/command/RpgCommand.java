@@ -1034,7 +1034,7 @@ public final class RpgCommand {
         CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters.stats());
 
         // Decide INLINE. cast() reads no world state, and consuming the cooldown
-        // and energy here -- rather than inside the region hop below -- is what
+        // and mana here -- rather than inside the region hop below -- is what
         // stops a player spamming the command faster than the hop resolves.
         AbilityService.CastResult result = abilityService.cast(caster, abilityId, aim, castable);
 

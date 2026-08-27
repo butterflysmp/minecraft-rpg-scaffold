@@ -34,7 +34,7 @@ class ContentValidatorTest {
     private static AbilityRegistry abilitiesWith(List<EffectSpec> onHit) {
         var registry = new AbilityRegistry();
         registry.register(new AbilityDefinition("solar_grenade", "Solar Grenade", "fire",
-                "hunter", 200, new ResourceCost("energy", 40),
+                "hunter", 200, new ResourceCost("mana", 40),
                 new CastSpec.Projectile(1.2, 0.03, 100), onHit));
         return registry;
     }

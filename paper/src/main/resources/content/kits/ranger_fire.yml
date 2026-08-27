@@ -1,8 +1,8 @@
 # The first cell of the (class, element) grid: the Fire Ranger.
 #
-# The Ranger economy: the bow carries the damage FREE, so energy is freed for utility.
-# The verb is kite -- shoot sustained, spend energy to survive and reposition, not to deal
-# damage. Its energy sink is arc_surge (a costed heal + Speed), the one existing utility
+# The Ranger economy: the bow carries the damage FREE, so mana is freed for utility.
+# The verb is kite -- shoot sustained, spend mana to survive and reposition, not to deal
+# damage. Its mana sink is arc_surge (a costed heal + Speed), the one existing utility
 # template. Thin but real; if kiting turns out to need true mobility in play, that becomes a
 # general dash primitive (Mage blink, Melee lunge) built THEN, not guessed now.
 #

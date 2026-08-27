@@ -572,7 +572,7 @@ Before milestone 2, two things worth measuring rather than assuming:
 - **The tuning loop.** Edit
   `run/plugins/Rpg/content/abilities/solar_lance.yml`, restart, cast. Time it.
   Under a minute means milestone 4 will be easy. Five minutes is a finding.
-- **The energy economy.** `MAX_ENERGY` and `ENERGY_PER_TICK` are Java constants
+- **The mana economy.** `MAX_MANA` and `MANA_PER_TICK` are Java constants
   in `RpgPlugin`. Three abilities with different costs is the first time that
   will feel wrong. When it does, they become per-archetype content — the same
   cheap-now/migrate-later argument that moved `VisualSpec` to a `steps:` list.

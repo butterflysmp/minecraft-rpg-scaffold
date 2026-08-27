@@ -535,12 +535,12 @@ class WeaponLoaderTest {
         assertInstanceOf(EffectSpec.WeaponDamage.class, left.onHit().get(0),
                 "the swing deals weapon_damage; the costed special below keeps a literal");
 
-        // Costed right-click special -- the shared-energy proof, at the content level.
+        // Costed right-click special -- the shared-mana proof, at the content level.
         var right = weapon.trigger("right_click").orElseThrow().ability();
-        assertEquals("energy", right.cost().resourceId());
+        assertEquals("mana", right.cost().resourceId());
         // The amount is bounded, not pinned: 40 is balance. But it must be > 0, because
         // ResourceCost.FREE is new ResourceCost("none", 0) -- a plain record, not a sentinel -- so a
-        // degenerate `energy: 0` is NOT equal to FREE and would slip past the resourceId check above.
+        // degenerate `mana: 0` is NOT equal to FREE and would slip past the resourceId check above.
         assertTrue(right.cost().amount() > 0, "the special is costed, not free");
         assertInstanceOf(CastSpec.Projectile.class, right.cast());
     }
@@ -604,9 +604,9 @@ class WeaponLoaderTest {
         assertEquals("blaze_rod", weapon.material(), "a staff, not a sword or a bow");
         assertEquals(WeaponClass.MAGE, weapon.weaponClass(), "the staff is a mage weapon");
 
-        // COSTED, unlike the bow's free shot -- the Mage spends energy to deal damage.
+        // COSTED, unlike the bow's free shot -- the Mage spends mana to deal damage.
         var shot = weapon.trigger("right_click").orElseThrow().ability();
-        assertEquals("energy", shot.cost().resourceId());
+        assertEquals("mana", shot.cost().resourceId());
         assertTrue(shot.cost().amount() > 0, "the bolt is costed, not free");   // magnitude is balance
         assertInstanceOf(CastSpec.Projectile.class, shot.cast());
     }

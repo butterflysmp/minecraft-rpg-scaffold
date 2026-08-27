@@ -65,7 +65,7 @@ An "ultimate" is an active with a large cost and a long cooldown (or a separate
 charge resource, if you later want one). Pick 1 of 2-3. Mechanically this is an
 active in a dedicated slot with a choice attached. **No new effect type** — it's
 numbers and a slot. The only genuinely new sub-question: do ultimates charge on a
-separate meter (kills/damage/time) rather than the shared energy pool? That's a
+separate meter (kills/damage/time) rather than the shared mana pool? That's a
 resource-model decision, deferrable until ultimates are actually built.
 
 ### 3. Passives — the first genuinely new engine concept
@@ -204,7 +204,7 @@ new engine concept instead of five. It is the vertical slice, one level up.
 
 - **Stat-modifier vs behavior** for passives *and* fragments — same fork as weapon
   enchants (Phase 4). Recommendation: stat-modifier first, both places.
-- **Ultimate charge source** — shared energy vs a separate meter.
+- **Ultimate charge source** — shared mana vs a separate meter.
 - **Build UI** — in-game chest-GUI (cheap, clunky, ships) vs external (great,
   project-sized). Name it now; decide when the loadout system needs a face.
 - **The axis verdict itself** — still deferred, now correctly, until a cell is deep.
