@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core.combat.stat;
 
 import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
+import io.github.butterflysmp.rpg.core.combat.Defense;
 
 import java.util.Map;
 import java.util.UUID;
@@ -133,6 +134,22 @@ public final class CombatantStats {
     }
 
     /**
+     * Resolved DEFENSE (0.0 + modifiers), in vanilla armor points: the sum of the armor values of the
+     * pieces this combatant is wearing. Feeds both the mitigation in {@link #damage} and the DR armor
+     * bar.
+     *
+     * An untracked combatant returns {@code 0.0}, matching {@link #attackValue} and
+     * {@link #classDamageValue} and NOT {@link #attackSpeedValue}. This is a SUMMAND in points, so 0
+     * correctly means "turns nothing away" -- and it is load-bearing far beyond the usual reason:
+     * MOBS ARE NEVER RECONCILED, so every mob in the game resolves to 0 here. If this returned
+     * anything else, every hit dealt to every mob would be silently reduced.
+     */
+    public double defenseValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.defenseValue();
+    }
+
+    /**
      * Deal {@code amount} of custom damage to {@code id}, attributed to {@code dealer}. No-op on an
      * untracked combatant. Emits a DAMAGE change carrying the new custom current and max, and the
      * dealer's identity -- the seam the popup hooks next phase.
@@ -140,8 +157,9 @@ public final class CombatantStats {
     public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer) {
         HealthState state = states.get(id);
         if (state == null) return;
-        boolean reachedZero = state.damage(amount);
-        listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.DAMAGE, amount,
+        double dealt = Defense.applyDefense(amount, state.defenseValue());
+        boolean reachedZero = state.damage(dealt);
+        listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.DAMAGE, dealt,
                 dealer, dealerIsPlayer, state.current(), state.max(), reachedZero));
     }
 
@@ -230,6 +248,23 @@ public final class CombatantStats {
         HealthState state = states.get(id);
         if (state == null) return;
         ModifierReconciler.reconcile(state.enchantDamageTarget(), desired);
+    }
+
+    /**
+     * Converge {@code id}'s DEFENSE modifiers to exactly {@code desired} (slot -> armor points, from
+     * the pieces the combatant is wearing). Same leak-proof diff as the five above. SILENT: defense
+     * has no {@link HealthChange} of its own -- its two display seams, the action-bar number and the
+     * DR armor bar, are both polled by the 5-tick reconcile loop that calls this, so an event would
+     * be a second, redundant route to the same redraw.
+     *
+     * Removal is by ABSENCE, like the other five: a slot whose piece left by any route -- swap, drop,
+     * break, death, {@code /clear} -- simply has no entry on the next scan and the reconciler drops
+     * its source. There is no departure event to miss.
+     */
+    public void reconcileDefenseModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.defenseTarget(), desired);
     }
 
     /** Drop {@code id}'s state. O(1), safe for an unknown id. Call on logout and on mob removal. */

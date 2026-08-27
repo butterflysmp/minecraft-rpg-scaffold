@@ -130,7 +130,7 @@ public final class PlayerHealthSystem implements HealthListener {
         EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
         UUID id = player.getUniqueId();
         RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, () -> {
-            // Five stats converge on the same scan: max HP from +HP items, attack damage from the
+            // Six stats converge on the same scan: max HP from +HP items, attack damage from the
             // held weapon's declared attack_damage (a MAIN_HAND modifier), attack speed from equipped
             // speed sources, the class-damage bonus from equipped "+N <Class> Damage" gear
             // MATCHING the held weapon's class, and the enchant-damage percent from the damage
@@ -156,6 +156,17 @@ public final class PlayerHealthSystem implements HealthListener {
             Map<String, Double> desiredEnchant =
                     DamageEnchantItems.desiredModifiers(player, keys, weapons, enchants);
             stats.reconcileEnchantDamageModifiers(id, desiredEnchant);
+
+            // The sixth is the only one whose source is SHIPPED VANILLA CONTENT rather than a dev
+            // fixture or an authored weapon: it reads the armor value out of whatever armor the
+            // player happens to be wearing. Its desired map doubles as the native armor total the
+            // bar override has to cancel, so the two are computed once and used twice -- and the
+            // override runs AFTER the reconcile, so it draws the value that just converged rather
+            // than the one from the previous scan.
+            Map<String, Double> desiredDefense = DefenseModifierItems.desiredModifiers(player);
+            stats.reconcileDefenseModifiers(id, desiredDefense);
+            ArmorBarOverride.apply(player, keys, stats.defenseValue(id),
+                    DefenseModifierItems.total(desiredDefense));
             return true;
         }, () -> { });
     }

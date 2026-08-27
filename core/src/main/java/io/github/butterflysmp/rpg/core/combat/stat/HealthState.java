@@ -63,6 +63,22 @@ public final class HealthState {
      * adds on top of the product. Folding them into one stat would make that ordering unexpressible.
      */
     private final Stat enchantDamagePercent = new Stat(0.0);
+    /**
+     * Defense: the sum of the vanilla armor values of the pieces this combatant is WEARING. Base
+     * 0.0, no constructor parameter -- the entire value is gear-contributed, like attack speed, the
+     * class bonus and the enchant percent.
+     *
+     * <p>A SUMMAND holding raw armor POINTS, not a reduction fraction, and that is the load-bearing
+     * decision. Armor points add correctly (a helmet and boots are 3 + 3); damage-reduction
+     * fractions do NOT (two 50% sources are not 100%). Keeping the stat linear and converting once,
+     * at the point of use via {@link io.github.butterflysmp.rpg.core.combat.Defense}, is what makes
+     * the diminishing-returns curve composable -- and it keeps the absent-value convention the same
+     * 0.0 as the three summands above rather than adding a fourth rule.
+     *
+     * <p>The bar the player reads is a FRACTION and the stat is POINTS on purpose: the number shows
+     * the input, the bar shows the effect.
+     */
+    private final Stat defense = new Stat(0.0);
 
     private final boolean player;
     private double current;
@@ -279,6 +295,42 @@ public final class HealthState {
         return enchantDamagePercent.modifierCount();
     }
 
+    // --- Defense: a sixth Stat, a SUMMAND in armor points, base 0.0 --------------------------------
+
+    /**
+     * The resolved defense: {@code 0.0 + Sum(modifiers)}, in vanilla armor points. A full diamond set
+     * resolves to {@code 20.0}, which {@code Defense.applyDefense} turns into about a sixth off an
+     * incoming hit.
+     *
+     * POINTS, so 0 is the correct "turns nothing away" value -- and 0 is neutral here for the same
+     * reason it is for the class bonus: {@code Defense.applyDefense(x, 0)} returns x untouched.
+     */
+    public double defenseValue() {
+        return defense.value();
+    }
+
+    /** Set (or replace) the defense modifier from {@code source}; true if the value changed. */
+    public boolean setDefenseModifier(String source, double amount) {
+        return defense.putModifier(source, amount);
+    }
+
+    /** Remove {@code source}'s defense modifier; true if one was actually removed. */
+    public boolean clearDefenseModifier(String source) {
+        return defense.removeModifier(source);
+    }
+
+    public double defenseModifierAmount(String source) {
+        return defense.amountOf(source);
+    }
+
+    public Set<String> defenseModifierSources() {
+        return defense.sources();
+    }
+
+    public int defenseModifierCount() {
+        return defense.modifierCount();
+    }
+
     // --- Modifier targets: one per stat, so the reconcile diff is written once (see ModifierTarget) --
 
     /**
@@ -339,6 +391,17 @@ public final class HealthState {
             @Override public boolean clearModifier(String source) {
                 return enchantDamagePercent.removeModifier(source);
             }
+        };
+    }
+
+    /** The defense modifier surface. A plain {@link Stat}, like attack damage. */
+    ModifierTarget defenseTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return defense.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return defense.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) { return defense.removeModifier(source); }
         };
     }
 

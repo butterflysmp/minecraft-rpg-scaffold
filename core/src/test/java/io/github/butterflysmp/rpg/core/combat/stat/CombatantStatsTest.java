@@ -405,4 +405,129 @@ class CombatantStatsTest {
         assertEquals(3.0, stats.attackValue(id), EPS, "its vanilla attack damage bootstrapped");
         assertEquals(0.0, stats.classDamageValue(id), EPS, "but class-typed gear is a player concern");
     }
+
+    // --- Defense: mitigation at the one seam where damage becomes custom HP -----------------------
+
+    /** Full vanilla diamond, keyed by slot exactly as the armor scan keys it. Sums to 20 points. */
+    private static Map<String, Double> fullDiamond() {
+        return Map.of("HEAD", 3.0, "CHEST", 8.0, "LEGS", 6.0, "FEET", 3.0);
+    }
+
+    @Test
+    void defenceReducesTheDamageThatReachesCustomHealth() {
+        // The whole point of the pass. The values were executed, not reasoned: applyDefense(30, 20)
+        // is exactly 25.0, so 100 - 25 = 75.
+        var stats = new CombatantStats();
+        UUID victim = UUID.randomUUID();
+        stats.register(victim, CombatantStats.DEFAULT_PLAYER_BASE, true);   // 100/100
+        stats.reconcileDefenseModifiers(victim, fullDiamond());
+
+        assertEquals(20.0, stats.defenseValue(victim), EPS, "the four pieces sum to 20 armor points");
+
+        stats.damage(victim, 30, null, false);
+
+        assertEquals(75.0, stats.current(victim), EPS,
+                "a 30 hit against 20 defense lands for 25, not 30 -- the curve took its cut");
+        // Mutation: drop the Defense.applyDefense call in damage() -> current is 70 -> reddens.
+    }
+
+    @Test
+    void anUndefendedCombatantStillTakesTheWholeHit() {
+        // The mirror, and it is NOT redundant. Without it, a mitigation that over-applied -- or one
+        // that reduced every hit by a constant -- would still pass the test above. It also pins the
+        // property the rest of the suite silently depends on: every pre-existing test stayed green
+        // through this change ONLY because an unreconciled combatant resolves to 0 defense.
+        var stats = new CombatantStats();
+        UUID victim = UUID.randomUUID();
+        stats.register(victim, CombatantStats.DEFAULT_PLAYER_BASE, true);
+
+        stats.damage(victim, 30, null, false);
+
+        assertEquals(0.0, stats.defenseValue(victim), EPS, "nothing worn, nothing resolved");
+        assertEquals(70.0, stats.current(victim), EPS, "so the hit lands whole");
+        // Mutation: make applyDefense reduce at defense 0 -> current rises above 70 -> reddens.
+    }
+
+    @Test
+    void aMobIsNeverReconciledSoEveryHitDealtToItLandsWhole() {
+        // Mobs are bootstrapped, never reconciled. If defenseValue returned anything but 0 for them,
+        // this pass would silently nerf every hit the player deals -- a global damage change wearing
+        // the costume of an armor feature.
+        var stats = new CombatantStats();
+        UUID mob = UUID.randomUUID();
+        stats.bootstrapIfAbsent(mob, 200, 3.0, false);
+
+        stats.damage(mob, 30, null, false);
+
+        assertEquals(0.0, stats.defenseValue(mob), EPS, "a bootstrapped mob has no defense");
+        assertEquals(170.0, stats.current(mob), EPS, "so it takes the full 30");
+        assertEquals(0.0, stats.defenseValue(UUID.randomUUID()), EPS,
+                "and an entirely untracked id resolves to 0 rather than throwing");
+        // Mutation: base the defense Stat at anything but 0.0 -> mobs start resisting -> reddens.
+    }
+
+    @Test
+    void theEventCarriesTheDamageActuallyDealtNotTheDamageAttempted() {
+        // The HealthChange seam is the source of truth for how much HP moved. Every consumer -- the
+        // floating popup, the nameplate, kill credit -- reads it. If it carried the pre-mitigation
+        // number the popup would say 30 while the bar dropped 25, and nothing on screen would
+        // explain the gap.
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID victim = UUID.randomUUID();
+        stats.register(victim, CombatantStats.DEFAULT_PLAYER_BASE, true);
+        stats.reconcileDefenseModifiers(victim, fullDiamond());
+
+        stats.damage(victim, 30, null, false);
+
+        HealthChange change = recorder.last();
+        assertEquals(25.0, change.amount(), EPS, "the event reports the 25 that landed, not the 30 thrown");
+        assertEquals(75.0, change.newCurrent(), EPS, "and the current it reports agrees with the store");
+        assertEquals(stats.current(victim), change.newCurrent(), EPS,
+                "the popup and the health bar can never disagree, because they read the same number");
+        // Mutation: pass the raw amount into HealthChange -> amount is 30 while newCurrent is 75 and
+        // the two stop agreeing -> reddens.
+    }
+
+    @Test
+    void reconcileDefenceModifiersConvergesTheArmorSlotsAndIsSilent() {
+        // The leak-proof diff, on the defense stat. Removal is by ABSENCE: a piece that left by any
+        // route is simply not in the next desired map. And SILENT, like the other four stat
+        // reconcilers -- both defense displays are polled by the same 5-tick loop that calls this.
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID id = UUID.randomUUID();
+        stats.register(id, CombatantStats.DEFAULT_PLAYER_BASE, true);
+
+        stats.reconcileDefenseModifiers(id, fullDiamond());
+        assertEquals(20.0, stats.defenseValue(id), EPS, "the full set");
+
+        stats.reconcileDefenseModifiers(id, Map.of("HEAD", 3.0, "CHEST", 8.0, "LEGS", 6.0));
+        assertEquals(17.0, stats.defenseValue(id), EPS, "boots come off and their 3 goes with them");
+
+        stats.reconcileDefenseModifiers(id, Map.of("CHEST", 8.0));
+        assertEquals(8.0, stats.defenseValue(id), EPS, "three pieces gone, no residue left behind");
+
+        stats.reconcileDefenseModifiers(id, Map.of());
+        assertEquals(0.0, stats.defenseValue(id), EPS, "stripped bare returns to exactly 0, not near it");
+
+        assertTrue(recorder.seen.isEmpty(), "defense emits no HealthChange of its own");
+        // Mutation A: only add and never clear -> stripping leaves 20 -> reddens (the leak).
+        // Mutation B: emit a HealthChange here -> the recorder is non-empty -> reddens.
+    }
+
+    @Test
+    void swappingOnePieceMovesOnlyThatSlotsContribution() {
+        // A slot key is replaced, never appended: upgrading one piece must not stack the old value
+        // with the new. Stat.putModifier replaces by key, and this is what proves it for defense.
+        var stats = new CombatantStats();
+        UUID id = UUID.randomUUID();
+        stats.register(id, CombatantStats.DEFAULT_PLAYER_BASE, true);
+
+        stats.reconcileDefenseModifiers(id, Map.of("CHEST", 8.0));   // diamond chestplate
+        stats.reconcileDefenseModifiers(id, Map.of("CHEST", 5.0));   // swapped to iron
+
+        assertEquals(5.0, stats.defenseValue(id), EPS, "the slot now reads iron alone, not 8 + 5");
+        // Mutation: append instead of replace by source key -> 13.0 -> reddens.
+    }
 }

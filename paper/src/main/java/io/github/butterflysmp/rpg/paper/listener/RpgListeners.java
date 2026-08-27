@@ -9,6 +9,7 @@ import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
+import io.github.butterflysmp.rpg.paper.health.ArmorBarOverride;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
@@ -327,6 +328,10 @@ public final class RpgListeners implements Listener {
         profiles.onQuit(playerId);
         // Drop custom-health state so no modifier or entry leaks across sessions.
         healthSystem.onQuit(playerId);
+        // And drop the armor-bar override with it. API-added attribute modifiers persist in player
+        // data, so a player who logs out in armor would otherwise carry a large negative armor
+        // modifier written by a plugin that might not be installed next time they log in.
+        ArmorBarOverride.clear(event.getPlayer(), adapters.keys());
         // Stop the action-bar loop and drop its handle.
         statsBar.onQuit(playerId);
     }

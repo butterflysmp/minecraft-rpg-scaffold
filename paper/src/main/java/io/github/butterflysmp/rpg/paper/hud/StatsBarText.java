@@ -4,8 +4,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
 /**
- * Builds the action-bar stats line: {@code ❤ 100/100    ✦ 40/100}, each field an icon followed by
- * its custom cur/max, coloured as a whole so the two read as separate units on a bar with no
+ * Builds the action-bar stats line: {@code ❤ 100/100    ⛨ 20    ✦ 40/100}, each field an icon
+ * followed by its value, coloured as a whole so the fields read as separate units on a bar with no
  * background.
  *
  * Pure Adventure -- no Bukkit, no server state, no side effects -- so the format is unit-testable in
@@ -19,12 +19,26 @@ import net.kyori.adventure.text.format.NamedTextColor;
  * different widget; here the icon LEADS, because a leading icon labels its field and keeps each stat
  * an unambiguous icon-then-value unit.
  *
- * <h2>Defense is absent on purpose</h2>
- * Pass 3 inserts a {@code ⛨} defense field BETWEEN health and mana. There is deliberately no
- * placeholder field reading 0 today: no defense stat exists to read, and a readout reporting zero
- * when nothing is measured is indistinguishable from a working readout that measured zero. The field
- * does not exist until the stat does. Inserting it will shift the child indices
- * {@code StatsBarTextTest} pins -- that reddening is the point, not a nuisance.
+ * <h2>The defense field appears only when there is defense</h2>
+ * The {@code ⛨} field reserved by pass 2 now exists, and it renders ONLY when the player has defense
+ * to show -- gated on the ROUNDED value, so the bar can never display {@code ⛨ 0} for a defense of
+ * 0.4. An unarmored player sees the original two-field bar.
+ *
+ * <p>So {@link #children()} on the returned component is 3 parts unarmored and 5 armored, and the
+ * mana field sits at index 2 or 4 accordingly. That is a real cost -- the mana field slides sideways
+ * the moment a helmet goes on -- accepted so a fresh spawn is not told about a stat they do not have.
+ *
+ * <p>A note for whoever reads the git history: pass 2 predicted that inserting this field would
+ * redden the child-index assertions in {@code StatsBarTextTest}. That prediction assumed an
+ * UNCONDITIONAL field. Because the field is conditional, the pre-existing assertions -- which all
+ * pass defense 0 -- kept their indices and stayed green; the only forced signal was the compile break
+ * from the new parameter. The 5-child layout is therefore covered by tests written specifically for
+ * it, not by the old ones surviving. Do not read their greenness as evidence the armored layout was
+ * checked.
+ *
+ * <p>The number shows raw defense POINTS while the armor bar shows the reduction those points buy
+ * (see {@code ArmorBarOverride}). That split is deliberate: the number is the input you can raise,
+ * the bar is the effect you get.
  */
 public final class StatsBarText {
 
@@ -32,15 +46,23 @@ public final class StatsBarText {
 
     /** U+2764, the same glyph and colour the mob nameplate uses. */
     static final String HEART = "❤";
+    /** U+26E8, the defense shield. */
+    static final String SHIELD = "⛨";
     /** U+2726, the mana spark. */
     static final String SPARK = "✦";
 
     static final NamedTextColor HEALTH_COLOR = NamedTextColor.RED;
+    /**
+     * Lime. Adventure's {@code GREEN} IS Minecraft's lime ({@code §a}, {@code #55FF55}); Minecraft's
+     * darker green is Adventure's {@code DARK_GREEN}. Named here because picking the wrong one of the
+     * two ships the wrong colour and nothing would fail.
+     */
+    static final NamedTextColor DEFENSE_COLOR = NamedTextColor.GREEN;
     static final NamedTextColor MANA_COLOR = NamedTextColor.BLUE;
 
     /**
-     * The gap between fields. Wide enough that two fields read as two on a background-less bar --
-     * the only thing separating them, since neither carries a bracket or a divider.
+     * The gap between fields. Wide enough that the fields read as separate on a background-less bar --
+     * the only thing separating them, since none carries a bracket or a divider.
      */
     static final String FIELD_GAP = "    ";
 
@@ -48,15 +70,37 @@ public final class StatsBarText {
      * The bar's text. Numbers are whatever the custom stores hold, rendered as integers: a
      * gear-raised {@code 100/400} is representable, and the raw doubles never reach a player's
      * screen.
+     *
+     * The defense field is omitted entirely when {@code defense} rounds to less than 1.
      */
-    public static Component of(double currentHp, double maxHp, double currentMana, double maxMana) {
+    public static Component of(double currentHp, double maxHp, double defense,
+                               double currentMana, double maxMana) {
+        Component health = Component.text(field(HEART, currentHp, maxHp), HEALTH_COLOR);
+        Component mana = Component.text(field(SPARK, currentMana, maxMana), MANA_COLOR);
+        Component gap = Component.text(FIELD_GAP);
+        if (!showsDefense(defense)) {
+            return Component.textOfChildren(health, gap, mana);
+        }
         return Component.textOfChildren(
-                Component.text(field(HEART, currentHp, maxHp), HEALTH_COLOR),
-                Component.text(FIELD_GAP),
-                Component.text(field(SPARK, currentMana, maxMana), MANA_COLOR));
+                health, gap, Component.text(field(SHIELD, defense), DEFENSE_COLOR), gap, mana);
+    }
+
+    /**
+     * Whether the defense field renders at all. Gated on the ROUNDED value, not the raw one: the
+     * field displays {@code Math.round(defense)}, so anything that would print as 0 must not print.
+     * A field reading zero is exactly the placeholder this bar refused to carry before the stat
+     * existed.
+     */
+    static boolean showsDefense(double defense) {
+        return Math.round(defense) >= 1;
     }
 
     private static String field(String icon, double current, double max) {
         return icon + " " + Math.round(current) + "/" + Math.round(max);
+    }
+
+    /** A single-value field: defense has no maximum to show, only what you are carrying. */
+    private static String field(String icon, double value) {
+        return icon + " " + Math.round(value);
     }
 }

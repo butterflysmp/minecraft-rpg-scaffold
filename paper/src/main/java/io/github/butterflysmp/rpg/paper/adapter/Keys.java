@@ -84,6 +84,13 @@ public final class Keys {
      * for.
      */
     public final NamespacedKey enchantRolled;
+    /**
+     * The armor-bar override: an entity-side {@code armor} modifier that cancels worn armor's
+     * native contribution and refills the bar from damage reduction instead. A modifier IDENTITY,
+     * like {@link #meleeSuppressor} and unlike the PDC keys around it -- and the first such key that
+     * is recomputed on a loop rather than minted once onto an item.
+     */
+    public final NamespacedKey armorBarOverride;
 
     public Keys(Plugin plugin) {
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
@@ -100,5 +107,6 @@ public final class Keys {
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");
+        this.armorBarOverride = new NamespacedKey(plugin, "armor_bar_override");
     }
 }

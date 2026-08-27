@@ -95,7 +95,7 @@ public final class StatsBarSystem {
             if (!stats.tracks(id)) return true;
 
             player.sendActionBar(StatsBarText.of(
-                    stats.current(id), stats.max(id),
+                    stats.current(id), stats.max(id), stats.defenseValue(id),
                     resources.current(id, ResourceCost.DEFAULT_RESOURCE), resources.max()));
             return true; // never done: runs until the player quits or dies
         }, () -> tasks.remove(id));
