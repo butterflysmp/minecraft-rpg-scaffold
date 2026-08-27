@@ -110,25 +110,34 @@ Every expected string was produced by **executing** `Math.round`, not by reasoni
 (`9.4→9`, `0.6→1`, `99.5→100` half-up, `73.5→74`), and each test asserts the whole rendered field
 rather than a bare number, because a rounding error lands in one field.
 
-## Not verified, and not counted as passed
+## The in-game gate — RUN AND PASSED
 
-The **in-game half did not run** — it needs a Minecraft client this pass had no access to. The
-server boots, enables cleanly, and constructs the HUD, but nothing has yet watched a bar render.
-Outstanding:
+Run on a real server against the merged build, on `./scripts/dev-server.sh --refresh-content`. This
+closes the one gap the pass shipped with: every check below was previously listed as outstanding
+because no Minecraft client was available to the build, and all five now pass.
 
-- the bar reads `❤ 100/100    ✦ 100/100` on join, red then blue, and **does not fade**;
-- a costed cast (`/rpg cast solar_grenade`, 40 mana) drops the mana field within half a second and it
-  climbs back as it regenerates;
-- taking damage moves the health field;
-- **die and respawn → the bar comes back.** This is the respawn trap above; if it stays blank,
-  `onRespawn` is not wired. This is the single most valuable of these checks.
-- quit and rejoin → exactly one bar, not two overlapping refreshes.
+| # | check | result |
+|---|---|---|
+| 1 | join → the bar renders `❤ 100/100    ✦ 100/100`, red then blue, and **does not fade** | pass |
+| 2 | costed cast (`/rpg cast solar_grenade`, 40 mana) → the mana field drops and climbs back as it regenerates | pass |
+| 3 | take damage → the health field moves | pass |
+| 4 | **die → respawn → the bar comes back** | pass |
+| 5 | quit → rejoin → exactly one bar, not two overlapping refreshes | pass |
 
-To close it:
+Row 4 is the one that mattered most, and it is the only evidence that will ever exist for it.
+`EntityTaskTarget.isActive()` is `entity.isValid() && !entity.isDead()`, so the loop self-cancels the
+instant the player dies; a missing `onRespawn` wiring is invisible to every unit test and to the boot
+check, and shows up only as a bar that never returns for the rest of the session. It returned.
 
-```
-./scripts/dev-server.sh --refresh-content
-```
+Row 5 is the other check no test reaches: it witnesses the `isRunning()` guard in
+`StatsBarSystem.start` doing its job. Two live loops would be two sends racing on one action bar,
+with the older handle unreachable — a single bar on rejoin is what says the handle was kept and
+honoured.
+
+Rows 1 and 2 together are what make the readout real rather than decorative: row 1 proves the
+10-tick period beats the fade, and row 2 proves the mana field reads the same pool abilities spend
+from — the phantom-pool failure that `ResourceCost.DEFAULT_RESOURCE` exists to prevent would have
+shown here as a bar frozen at full while the cast still succeeded.
 
 ## Scope guard
 
