@@ -10,6 +10,8 @@ import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
+import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
+import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
@@ -20,6 +22,7 @@ import io.github.butterflysmp.rpg.paper.weapon.WeaponRefresher;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -37,6 +40,9 @@ import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -142,15 +148,47 @@ public final class RpgListeners implements Listener {
      * can fire twice for one physical right-click (the main/off-hand pair), and an unfiltered
      * handler would spend energy twice for one press.
      *
-     * Vanilla is cancelled ONLY when the held weapon actually binds right_click (attempt
-     * returns present). ironblade has no right_click, so its right-click passes through and
-     * doors and chests still work with it in hand; only a weapon that uses the input consumes it.
+     * Vanilla is cancelled when the held weapon actually binds right_click (attempt returns
+     * present). ironblade has no right_click, so its right-click passes through and doors and
+     * chests still work with it in hand; only a weapon that uses the input consumes it.
+     *
+     * The ONE exception is an enchanting table, which is cancelled unconditionally whatever is
+     * held and whether or not you are sneaking -- the custom table replaces vanilla enchanting, so
+     * the vanilla screen must never open. See the block below.
      */
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) return; // FIRST: main hand only, or one click double-spends
         Action action = event.getAction();
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+
+        // VANILLA ENCHANTING NEVER OPENS ON THIS BLOCK, sneaking or not. The custom table replaces
+        // it outright, so suppressing it is unconditional and sneaking only decides what happens
+        // INSTEAD of it.
+        //
+        // The cancel used to live inside the !isSneaking guard, which meant a sneak-right-click
+        // skipped this block entirely, nothing cancelled the event, and the vanilla enchanting
+        // screen opened -- the one screen this whole pass exists to replace. Sneaking suppresses a
+        // container GUI only when you are holding a PLACEABLE item; with an empty hand it does
+        // nothing at all, so the guard was resting on a rule that does not exist.
+        //
+        // Accepted consequence: you also cannot place a block against an enchanting table any more.
+        // That and vanilla enchanting are both things the custom table is here to take over, and a
+        // player who wants to build against one can break and re-place it.
+        //
+        // Ahead of WeaponFire.attempt deliberately, so the weapon never spends energy on a click
+        // that opened a menu.
+        if (action == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null
+                && event.getClickedBlock().getType() == Material.ENCHANTING_TABLE) {
+            event.setCancelled(true);
+            if (!event.getPlayer().isSneaking()) {
+                new EnchantMenu(event.getPlayer(), weapons, adapters).open();
+                return;
+            }
+            // Sneaking: fall through to WeaponFire.attempt so the weapon's right_click still fires
+            // -- the escape hatch that keeps a Mage able to cast while standing at a table. Vanilla
+            // is already cancelled above, so the table opens for neither of us.
+        }
 
         WeaponFire.attempt(event.getPlayer(), "right_click", weapons, weaponService, adapters,
                         cooldowns)
@@ -224,6 +262,43 @@ public final class RpgListeners implements Listener {
     }
 
     /**
+     * Route a click to the menu that owns the top inventory.
+     *
+     * DISPATCH-ONLY, and the routing lives in Menu because the rule it enforces has to be the same
+     * for every menu that will ever exist. Menu.handleClick cancels FIRST, unconditionally, before
+     * it looks at anything; a consumer never sees the event and so cannot un-cancel it.
+     *
+     * getHolder() IS the registry -- no map to keep in step, and identity that a renamed item or a
+     * duplicated title cannot spoof. getView().getTopInventory() rather than getInventory(): the
+     * same object today, but the explicit form stays right when read beside getClickedInventory().
+     */
+    @EventHandler
+    public void onMenuClick(InventoryClickEvent event) {
+        if (event.getView().getTopInventory().getHolder() instanceof Menu menu) {
+            menu.handleClick(event);
+        }
+    }
+
+    /** A drag can place items into slots the click handler never sees. Same holder, same rule. */
+    @EventHandler
+    public void onMenuDrag(InventoryDragEvent event) {
+        if (event.getView().getTopInventory().getHolder() instanceof Menu menu) {
+            menu.handleDrag(event);
+        }
+    }
+
+    /**
+     * Esc, the close button, death, a disconnect and shutdown ALL arrive here. One return path, so
+     * the close button and the escape key cannot drift apart -- they are the same code.
+     */
+    @EventHandler
+    public void onMenuClose(InventoryCloseEvent event) {
+        if (event.getView().getTopInventory().getHolder() instanceof Menu menu) {
+            menu.handleClose(event);
+        }
+    }
+
+    /**
      * Without these clears, every player who has ever cast anything keeps a
      * cooldown and resource bucket until the server restarts. Both structures
      * are concurrent, so no scheduler hop is needed to drop them.
@@ -233,6 +308,13 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
+        // FIRST, ahead of the clears: a menu holding this player's weapon must give it back while
+        // their inventory can still be written. Writes during PlayerQuitEvent persist -- the save
+        // runs after this event. Bukkit does fire InventoryCloseEvent on disconnect, but its
+        // ordering relative to this event is version-dependent, and returnEverything is idempotent,
+        // so CAUSING the close costs nothing and depends on nothing.
+        event.getPlayer().closeInventory();
+
         UUID playerId = event.getPlayer().getUniqueId();
         cooldowns.clear(playerId);
         resources.clear(playerId);
@@ -248,6 +330,13 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
+        // FIRST: return anything a menu is holding while the inventory still exists. The drops list
+        // is already populated by the time this event fires, so a returned weapon cannot leak into
+        // it -- and setKeepInventory below means it survives the death either way. Caused here
+        // rather than relied upon, because "the client closes the container on death" is a
+        // behaviour, not a contract.
+        event.getPlayer().closeInventory();
+
         event.setKeepInventory(true);
         event.getDrops().clear();
         event.setKeepLevel(true);

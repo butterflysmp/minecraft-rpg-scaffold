@@ -35,6 +35,7 @@ import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.DashAim;
+import io.github.butterflysmp.rpg.paper.weapon.EnchantEffectLine;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponClassLabel;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;

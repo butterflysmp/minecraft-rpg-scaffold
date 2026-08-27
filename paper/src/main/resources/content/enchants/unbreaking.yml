@@ -23,6 +23,9 @@
 # This is OUR Unbreaking, not vanilla's: per the no-vanilla-enchants policy a player-held item can
 # never carry a vanilla enchant, so nothing here maps onto Enchantment.UNBREAKING.
 display_name: "Unbreaking"
+# The item this enchant renders as in the enchant table. Cosmetic: it DEFAULTS to enchanted_book
+# when absent, so it is never a reason a working enchant fails to load. Do not make it required.
+icon: anvil
 max_level: 3
 effect: durability
 class: universal

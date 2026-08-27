@@ -81,6 +81,16 @@ public final class WeaponItems {
         item.editMeta(meta -> {
             meta.displayName(displayName(weapon.displayName(), weapon.rarity()));
             meta.getPersistentDataContainer().set(keys.weaponId, PersistentDataType.STRING, weapon.id());
+            // A weapon is a SINGLE item, always. Two freshly minted staffs are byte-identical --
+            // ember_staff mints on a blaze_rod and ability_stone on an amethyst_shard, both
+            // stackable -- so without this, `/rpg give ember_staff` twice produces a stack of two
+            // and every per-item thing we do becomes ambiguous: one enchant write would edit both,
+            // and a re-mint (which returns a fresh stack of one) would silently collapse it.
+            //
+            // Fixed at the SOURCE rather than only guarded at the enchant table, because durability,
+            // enchants and instance data are all per-item and the table is not the only thing that
+            // will ever read them. remint() calls mint(), so it inherits this.
+            meta.setMaxStackSize(1);
             // Setting an explicit attack_damage modifier suppresses the item's vanilla
             // default (+6 for iron), so the swing's melee is base 1.0 + (-1.0) = 0.
             meta.addAttributeModifier(attackDamage, suppressor);

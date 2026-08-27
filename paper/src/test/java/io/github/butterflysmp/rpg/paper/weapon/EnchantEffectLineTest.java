@@ -1,4 +1,4 @@
-package io.github.butterflysmp.rpg.paper.command;
+package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
@@ -90,5 +90,29 @@ class EnchantEffectLineTest {
         // single description reused across both effects fails here, whichever one it describes.
         assertNotEquals(EnchantEffectLine.of(UNBREAKING, 3, WeaponClass.MELEE),
                 EnchantEffectLine.of(SHARPNESS, 3, WeaponClass.MELEE));
+    }
+
+    @Test
+    void bareCarriesNoBracketsAndNoLeadingSpace() {
+        // What a LORE LINE renders. A parenthetical aside reads as an afterthought on a tooltip,
+        // where this text IS the description of the enchant.
+        assertEquals("+15% damage, x1.15", EnchantEffectLine.bare(SHARPNESS, 3, WeaponClass.MELEE));
+        assertEquals("consumes durability on 25% of uses",
+                EnchantEffectLine.bare(UNBREAKING, 3, WeaponClass.MELEE));
+        // Mutation: return of(..) from bare(..) -> the leading space and brackets come back -> reddens.
+    }
+
+    @Test
+    void theBracketedFormIsExactlyTheBareOneWrapped() {
+        // The two forms cannot drift, which is the whole reason bare() was extracted rather than
+        // the menu trimming the brackets off of()'s output itself. Asserted over every arm --
+        // damage, durability, inert and unknown -- so no single arm can be changed in one form only.
+        for (EnchantDefinition def : new EnchantDefinition[] {SHARPNESS, UNBREAKING, KEEN, null}) {
+            for (WeaponClass held : WeaponClass.values()) {
+                assertEquals(" (" + EnchantEffectLine.bare(def, 3, held) + ")",
+                        EnchantEffectLine.of(def, 3, held));
+            }
+        }
+        // Mutation: change either form independently -> reddens.
     }
 }

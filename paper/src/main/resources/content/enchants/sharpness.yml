@@ -25,6 +25,9 @@
 # is 18) and reads only the III-versus-plain step off the sword. The curve is proven exactly, at
 # full precision and without rounding, in core's DamageEnchantsTest.
 display_name: "Sharpness"
+# The item this enchant renders as in the enchant table. Cosmetic: it DEFAULTS to enchanted_book
+# when absent, so it is never a reason a working enchant fails to load. Do not make it required.
+icon: iron_sword
 max_level: 3
 effect: damage
 class: melee

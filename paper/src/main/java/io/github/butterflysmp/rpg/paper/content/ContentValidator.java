@@ -145,6 +145,36 @@ public final class ContentValidator {
         }
         return problems;
     }
+    /**
+     * An enchant's {@code icon} must name a real Material.
+     *
+     * <p>The loader cannot check this and deliberately does not try: resolving a name to a
+     * {@code Material} needs the Bukkit registry, and {@link EnchantDefinition} is kept free of
+     * Bukkit so it stays unit-testable. So the check arrives as a predicate seam, exactly as the
+     * potion, sound and entity checks do.
+     *
+     * <p><b>Why this is worth a boot warning at all.</b> A misspelled icon is the most INVISIBLE
+     * content typo in the repo: it does not throw, it does not skip the file, and the enchant keeps
+     * working perfectly -- it just renders as the fallback book, which is a picture nobody can tell
+     * apart from a deliberate choice. The same instinct that makes a dangling visual_id a named
+     * warning rather than a silent no-visual.
+     *
+     * @param materialExists does this name resolve to a Material
+     * @return every problem found, each naming the enchant at fault. Empty is good.
+     */
+    public List<String> validateEnchants(Collection<EnchantDefinition> enchants,
+                                         Predicate<String> materialExists) {
+        List<String> problems = new ArrayList<>();
+        for (EnchantDefinition enchant : enchants) {
+            if (!materialExists.test(enchant.icon())) {
+                problems.add("enchant '" + enchant.id() + "' names icon '" + enchant.icon()
+                        + "', which is not a material; it will render as "
+                        + EnchantDefinition.DEFAULT_ICON);
+            }
+        }
+        return problems;
+    }
+
 
     /**
      * A custom mob's {@code base_entity} must name a real, LIVING entity type.

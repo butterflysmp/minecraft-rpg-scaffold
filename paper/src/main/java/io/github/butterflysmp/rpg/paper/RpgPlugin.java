@@ -35,6 +35,7 @@ import io.github.butterflysmp.rpg.paper.health.PacketDamagePopupSender;
 import io.github.butterflysmp.rpg.paper.health.PacketNameplateSender;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.listener.RpgListeners;
+import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.packet.ExampleTelegraphListener;
 import io.github.butterflysmp.rpg.paper.packet.WeaponSwingListener;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
@@ -44,9 +45,11 @@ import io.github.butterflysmp.rpg.storage.FilePlayerRepository;
 import io.github.butterflysmp.rpg.storage.PlayerRepository;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -291,6 +294,12 @@ public final class RpgPlugin extends JavaPlugin {
         // ability's can, and is checked the same walk. Naming the file at boot beats a
         // silent no-visual the first time someone swings it.
         problems.addAll(validator.validateWeapons(weapons.all()));
+        // An enchant's icon is the one content field that fails INVISIBLY: a typo neither throws
+        // nor skips the file, and the enchant works perfectly while rendering as the fallback book.
+        // Material.matchMaterial is the same resolver WeaponItems uses, so the check and the render
+        // cannot disagree about what counts as a material.
+        problems.addAll(validator.validateEnchants(enchants.all(),
+                name -> Material.matchMaterial(name) != null));
         // A mob's base_entity must name a real LIVING entity. Resolving that needs the Bukkit registry,
         // which is only reachable here -- so it arrives as predicates, like the potion/sound checks.
         // "arrow" is a real EntityType and would pass a mere existence check, then ClassCastException
@@ -312,6 +321,24 @@ public final class RpgPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // FIRST, ahead of the profile flush: a menu can be holding a player's weapon, and nothing
+        // else in the plugin gives it back. A weapon returned to an inventory has to be written
+        // before the shutdown save runs, or it is saved out of existence.
+        //
+        // returnEverything() is called DIRECTLY rather than relying on closeInventory() still being
+        // routed through our handlers while the plugin is disabling. It is idempotent, so the close
+        // that follows -- and any InventoryCloseEvent it fires -- is free.
+        //
+        // Bukkit.getOnlinePlayers() is the right question here despite invariant 3: that invariant
+        // is about PLAYER STATE, and "who on this node has a menu open right now" is not state a
+        // repository could answer.
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getOpenInventory().getTopInventory().getHolder() instanceof Menu menu) {
+                menu.returnEverything();
+                player.closeInventory();
+            }
+        }
+
         // PlayerQuitEvent is not guaranteed to fire for everyone on shutdown, so
         // flush whoever is left. Blocking is correct here: the server is stopping
         // and unwritten profiles are lost progress.
