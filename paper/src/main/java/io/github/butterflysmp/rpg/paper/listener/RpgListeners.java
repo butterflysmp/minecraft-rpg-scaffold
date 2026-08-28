@@ -400,9 +400,15 @@ public final class RpgListeners implements Listener {
      * Capture the swing's CHARGE, before vanilla throws it away.
      *
      * <p>MEASURED, not assumed (2026-08-28 Step 0): vanilla calls {@code resetAttackStrengthTicker()}
-     * before {@code hurt()}, so the same swing reads {@code getAttackCooldown() == 1.0000} here and
-     * {@code 0.0400} inside the damage event -- both being {@code 0.5 / period}. Reading the charge in
-     * the rider would therefore scale every hit to its floor, however well timed.
+     * before {@code hurt()}, so the same swing reads {@code getAttackCooldown() == 1.0000} here and a
+     * near-zero value inside the damage event. Reading the charge there would scale every hit to its
+     * floor, however well timed.
+     *
+     * <p>The post-reset value is always {@code 0.5 / period}, so it varies with the weapon and none
+     * of these numbers is the constant: the boot measured {@code 0.0400} on a plain iron sword
+     * (attack speed 1.6) and {@code 0.1000} bare-handed (4.0), while a weapon minted by this build
+     * pins 2.0 and so reads {@code 0.0500}. Cited because the shape is what matters -- an order of
+     * magnitude below the real charge, whatever the weapon.
      *
      * <p>Damage is NOT dealt here. This event fires for attacks vanilla will go on to refuse -- an
      * i-framed re-hit among them -- so it says a swing was ATTEMPTED, not that one landed. Landing is
