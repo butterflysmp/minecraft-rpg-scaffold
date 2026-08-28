@@ -168,7 +168,7 @@ public final class RpgPlugin extends JavaPlugin {
         this.popups = new DamagePopupManager(scheduler, new PacketDamagePopupSender());
         // Fourth consumer: mob death. Also a pure seam consumer (no bind). Wired LAST so the displays
         // above render the final state before it kills the mob on the reachedZero transition.
-        this.mobDeath = new MobDeathSystem();
+        this.mobDeath = new MobDeathSystem(scheduler);
         this.stats = new CombatantStats(new CompositeHealthListener(healthSystem, nameplates, popups, mobDeath));
         this.healthSystem.bind(stats);
         this.nameplates.bind(stats);
