@@ -203,6 +203,20 @@ public final class WeaponItems {
         List<Component> base = WeaponLore.build(weapon, adapters.elements());
         EnchantState state = EnchantItems.read(meta, adapters.keys());
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
+
+        // THE GLINT. Our enchants live in the PDC, not in the item's vanilla enchantment list, so
+        // vanilla has nothing to shimmer over and an enchanted weapon looked exactly like a plain
+        // one. Driven by state.effective() -- the SAME list the lore block above renders -- so the
+        // shimmer and the enchant lines can never disagree about whether this item is enchanted.
+        //
+        // Set explicitly in BOTH directions, unlike EnchantMenu's icons, which set true and leave
+        // the false case unset on purpose. Not because a stale glint is known to survive a re-mint
+        // -- carryInstanceData moves weapon_id, wear and the enchant blob, and pointedly not this --
+        // but because an explicit false makes the glint a pure function of the enchant state rather
+        // than of how the meta happened to arrive. applyLore already runs twice per remint (once
+        // against an empty container, once against the carried state), and it is the kind of call
+        // order that gets rearranged later by someone who does not know it is load-bearing.
+        meta.setEnchantmentGlintOverride(!state.effective().isEmpty());
     }
 
     /**
