@@ -63,7 +63,7 @@ class WeaponLoreTest {
                 10, ResourceCost.FREE, new CastSpec.Melee(3.5, 120),
                 List.of(new EffectSpec.WeaponDamage("fire")), List.of("A cut that smoulders."));
         return new WeaponDefinition("emberblade", "Emberblade", "fire", Rarity.RARE,
-                WeaponClass.MELEE, "iron_sword", 7.0,
+                WeaponClass.MELEE, "iron_sword", 7.0, 1.6,
                 List.of(new TriggerBinding("left_click", slash)), List.of("Flavour."));
     }
 
@@ -79,7 +79,7 @@ class WeaponLoreTest {
                 List.of(new EffectSpec.Burst(3.0, List.of(new EffectSpec.Damage(12, "fire")))),
                 List.of("Hurl a bursting ember."));
         return new WeaponDefinition("emberblade", "Emberblade", "fire", Rarity.RARE,
-                WeaponClass.MELEE, "iron_sword", 7.0,
+                WeaponClass.MELEE, "iron_sword", 7.0, 1.6,
                 List.of(new TriggerBinding("left_click", slash),
                         new TriggerBinding("right_click", fireball)),
                 List.of("Flavour."));
@@ -92,7 +92,7 @@ class WeaponLoreTest {
                 15, ResourceCost.FREE, new CastSpec.Projectile(2.5, 0.05, 60),
                 List.of(new EffectSpec.Damage(6, "fire")), List.of("A swift arrow."));
         return new WeaponDefinition("hunters_bow", "Hunter's Bow", "fire", Rarity.UNCOMMON,
-                WeaponClass.RANGER, "bow", 0.0,
+                WeaponClass.RANGER, "bow", 0.0, 0.0,
                 List.of(new TriggerBinding("right_click", shot)), List.of());
     }
 
@@ -127,8 +127,8 @@ class WeaponLoreTest {
         List<String> lines = textLines(WeaponLore.build(rareFireSword(), elementsWithFire()));
 
         assertTrue(lines.contains("Melee Damage: 7"), () -> "expected a class-typed stat line in " + lines);
-        assertTrue(lines.contains("Attack Speed: 2.0"),
-                () -> "10 ticks between swings is 2.0 attacks/sec; got " + lines);
+        assertTrue(lines.contains("Attack Speed: 1.6"),
+                () -> "the authored attack_speed, not a derived one; got " + lines);
         assertFalse(lines.contains("Ember Slash  Left-Click"),
                 () -> "a basic attack must not render a gold ability line; got " + lines);
         assertFalse(lines.contains("A cut that smoulders."),
@@ -145,7 +145,7 @@ class WeaponLoreTest {
                 List.of(new EffectSpec.Visual("solar_detonation"), new EffectSpec.WeaponDamage("fire")),
                 List.of());
         return new WeaponDefinition("hunters_bow", "Hunter's Bow", "fire", Rarity.UNCOMMON,
-                WeaponClass.RANGER, "bow", 6.0,
+                WeaponClass.RANGER, "bow", 6.0, 0.0,
                 List.of(new TriggerBinding("right_click", shot)),
                 List.of("A swift arrow wreathed in flame."));
     }
@@ -203,9 +203,10 @@ class WeaponLoreTest {
      *
      * This is the rule that makes lore mint-time safe and non-drifting -- "lore describes the weapon,
      * not whoever is holding it" -- and it is worth a test of its own precisely because wiring the
-     * resolved stat in would feel like an improvement. A 10-tick basic attack reads 2.0 for everyone,
-     * whether they are swinging at 1.0 or 5.0, so a tooltip minted for one player cannot mislead the
-     * next one who picks the item up.
+     * resolved stat in would feel like an improvement, and is now genuinely reachable: since Stage 2
+     * the holder HAS a resolved attack speed, and it is written onto their vanilla attribute a few
+     * lines away. A weapon authoring 1.6 reads 1.6 for everyone, whether they swing at 1.6 or 3.2,
+     * so a tooltip minted for one player cannot mislead the next one who picks the item up.
      *
      * Structurally guaranteed today: WeaponLore.build takes only the weapon and the element registry
      * -- there is no CombatantStats in reach to read. If that ever changes, this test is the reason
@@ -215,8 +216,8 @@ class WeaponLoreTest {
     void theTooltipShowsTheWeaponsBaseSpeedNotAnyHoldersResolvedStat() {
         List<String> lines = textLines(WeaponLore.build(rareFireSword(), elementsWithFire()));
 
-        assertTrue(lines.contains("Attack Speed: 2.0"),
-                () -> "10 cooldown_ticks is 2.0 attacks/sec, for every holder; got " + lines);
+        assertTrue(lines.contains("Attack Speed: 1.6"),
+                () -> "the weapon authors 1.6, and reads 1.6 for every holder; got " + lines);
         assertEquals(1, lines.stream().filter(l -> l.startsWith("Attack Speed: ")).count(),
                 () -> "exactly one attack-speed line: " + lines);
     }

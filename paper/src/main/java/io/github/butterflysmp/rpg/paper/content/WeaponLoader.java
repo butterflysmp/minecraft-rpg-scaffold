@@ -85,6 +85,11 @@ public final class WeaponLoader {
         // read back off the caster's ATTACK_DAMAGE stat. 0 for ranged/costed weapons with no melee.
         // A negative is rejected by WeaponDefinition -> the file is skipped, named, like any malformed one.
         double attackDamage = s.getDouble("attack_damage", 0.0);
+        // The weapon's melee cadence in attacks per second, driving vanilla's attack-strength period
+        // directly (every vanilla sword is 1.6). 0 for a ranged/costed weapon with no melee basic.
+        // WeaponDefinition rejects a negative, and rejects a MISSING one on a vanilla-driven melee
+        // weapon -- the file is skipped and named, like any malformed one.
+        double attackSpeed = s.getDouble("attack_speed", 0.0);
         // Authored tooltip prose. Optional; absent -> empty list. MUST be a YAML list: getStringList
         // returns [] for a scalar (flavor: "one line" would vanish silently -- the "finds nothing"
         // trap). So warn, loudly and named, when someone writes it as a scalar, and don't skip the
@@ -133,7 +138,8 @@ public final class WeaponLoader {
 
         // WeaponDefinition rejects an empty trigger list (and a negative attack_damage) -- caught above,
         // named, skipped.
-        return new WeaponDefinition(id, displayName, element, rarity, weaponClass, material, attackDamage, bindings, flavor);
+        return new WeaponDefinition(id, displayName, element, rarity, weaponClass, material,
+                attackDamage, attackSpeed, bindings, flavor);
     }
 
     private static Rarity rarity(String raw) {

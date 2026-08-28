@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.weapon;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
+import io.github.butterflysmp.rpg.core.ability.BasicMelee;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines;
 import io.github.butterflysmp.rpg.paper.content.ElementDefinition;
@@ -73,7 +74,14 @@ public final class WeaponLore {
                 lore.add(plain(WeaponClassLabel.of(weapon.weaponClass()) + " Damage: ", NamedTextColor.GRAY)
                         .append(plain(number(damage.get().amount()), NamedTextColor.RED)));
 
-                String speed = WeaponLoreLines.attackSpeedLabel(ability.cooldownTicks());
+                // Which number paces THIS basic attack? A vanilla-driven melee hit is paced by the
+                // authored attack_speed written onto the wielder's vanilla attribute; a ranged one
+                // is still paced by its trigger's cooldown through CooldownTracker. Branching on
+                // BasicMelee -- the same predicate that routes the hit itself -- is what keeps the
+                // displayed cadence and the real one from diverging for either kind.
+                String speed = BasicMelee.isVanillaDriven(ability)
+                        ? WeaponLoreLines.meleeAttackSpeedLabel(weapon.attackSpeed())
+                        : WeaponLoreLines.rangedAttackSpeedLabel(ability.cooldownTicks());
                 if (!speed.isBlank()) {
                     lore.add(plain("Attack Speed: ", NamedTextColor.GRAY)
                             .append(plain(speed, NamedTextColor.RED)));

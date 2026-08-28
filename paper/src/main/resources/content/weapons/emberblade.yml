@@ -17,6 +17,12 @@ class: melee
 # a little swing damage for its costed fireball special below.
 attack_damage: 7
 
+# The melee cadence, in ATTACKS PER SECOND, authored directly rather than derived from a tick
+# count -- every vanilla sword is 1.6 and 20/n cannot produce 1.6 for any integer n. It is
+# reconciled onto the wielder's vanilla attack-speed attribute (times their attack-speed stat),
+# so it paces the swing, fills the crosshair indicator, and sets the charge AttackCharge scales by.
+attack_speed: 1.6
+
 # Authored prose (YAML list required; a scalar is ignored with a warning).
 flavor:
   - "Its edge remembers the forge-fire."
@@ -26,15 +32,15 @@ triggers:
   # Free swing. No cost section -> free; mana regenerates while you swing.
   left_click:
     # No name/description -- this is the basic attack, rendered as a stat block. See ironblade.
-    cooldown_ticks: 10
-    # RETAINED, and NOT vestigial. Vanilla's crosshair attack owns reach (~3 blocks, slightly
-    # shorter than the 3.5 below) and there is no arc at all -- it hits what the crosshair is on.
+    # RETAINED, and NOT vestigial. Vanilla's crosshair attack owns reach -- about 3 blocks, which
+    # the number below now states honestly -- and there is no arc at all: it hits what the
+    # crosshair is on.
     # But `type: melee` is the discriminator BasicMelee.isVanillaDriven reads to decide that this
     # trigger belongs to the vanilla damage event rather than the arm-swing packet. Delete this
     # block and the trigger silently goes back to the 120-degree cone.
     cast:
       type: melee
-      reach: 3.5
+      reach: 3.0
       arc_degrees: 120
     on_hit:
       # The wielder's ATTACK_DAMAGE stat (= this weapon's attack_damage). The costed special below

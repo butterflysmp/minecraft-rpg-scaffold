@@ -147,6 +147,13 @@ public final class PlayerHealthSystem implements HealthListener {
             stats.reconcileAttackModifiers(id, desiredAttack);
             Map<String, Double> desiredSpeed = AttackSpeedModifierItems.desiredModifiers(player, keys);
             stats.reconcileAttackSpeedModifiers(id, desiredSpeed);
+            // And REFLECT that stat onto vanilla's own attack-speed attribute, which is what
+            // actually paces a basic melee swing now that vanilla's crosshair attack delivers it.
+            // Placed immediately after the reconcile above, for the reason the defense pair below
+            // states: it must draw the value that just converged, not the previous scan's. The
+            // weapon's cadence comes from the held DEFINITION, never from the attribute we write.
+            AttackSpeedAttributeOverride.apply(player, keys,
+                    WeaponAttackItems.heldMeleeSpeed(player, keys, weapons), stats.attackSpeedValue(id));
             Map<String, Double> desiredClass =
                     ClassDamageModifierItems.desiredModifiers(player, keys, weapons);
             stats.reconcileClassDamageModifiers(id, desiredClass);

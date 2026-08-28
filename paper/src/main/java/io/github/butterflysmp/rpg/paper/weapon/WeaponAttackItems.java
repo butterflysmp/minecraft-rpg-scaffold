@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import org.bukkit.entity.Player;
@@ -40,5 +41,33 @@ public final class WeaponAttackItems {
                 .filter(weapon -> weapon.attackDamage() > 0)
                 .ifPresent(weapon -> desired.put(MAIN_HAND_SOURCE, weapon.attackDamage()));
         return desired;
+    }
+
+    /**
+     * The authored melee cadence of the player's main-hand weapon, in attacks per second, or 0.0 if
+     * the hand holds no weapon of ours, one with no melee basic, or one declaring no speed.
+     *
+     * <p>0.0 is the ABSENT signal, not a value: {@code AttackSpeedAttributeOverride} reads it as
+     * "write no modifier and leave the player's vanilla base alone", which is what keeps a player
+     * who has never held one of our weapons free of any trace of this plugin on their attack-speed
+     * attribute. It must never be written to the attribute as a speed -- see the arithmetic's own
+     * test for why that would zero it outright.
+     *
+     * <p>Resolved from the WEAPON DEFINITION, deliberately, and never from the live attribute: the
+     * attribute is what the override writes, so reading it back as the input would make the value
+     * chase itself downward on every scan. Same trap {@code ArmorBarOverride} documents for armor.
+     *
+     * <p>Sits beside the attack-damage read above because it is the same question asked of the same
+     * item on the same scan -- one held-weapon resolution, two stats. A weapon swap therefore
+     * follows within one reconcile period for both, with no equip event to miss.
+     */
+    public static double heldMeleeSpeed(Player player, Keys keys, WeaponRegistry weapons) {
+        return WeaponItems.heldWeaponId(player, keys)
+                .flatMap(weapons::find)
+                // meleeCadence(), not attackSpeed(): the gate on "does this weapon actually have a
+                // melee hit" lives in core where it is reddened, because everything around it here
+                // needs a live Player and can only be boot-witnessed.
+                .map(WeaponDefinition::meleeCadence)
+                .orElse(0.0);
     }
 }

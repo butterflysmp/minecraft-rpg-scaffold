@@ -21,6 +21,12 @@ class: melee
 # not a literal buried in the effect. One source of truth the lore tooltip can later display.
 attack_damage: 8
 
+# The melee cadence, in ATTACKS PER SECOND, authored directly rather than derived from a tick
+# count -- every vanilla sword is 1.6 and 20/n cannot produce 1.6 for any integer n. It is
+# reconciled onto the wielder's vanilla attack-speed attribute (times their attack-speed stat),
+# so it paces the swing, fills the crosshair indicator, and sets the charge AttackCharge scales by.
+attack_speed: 1.6
+
 # Authored tooltip prose, rendered italic/gray beneath the derived stats. MUST be a YAML list
 # (one '- ' item per line); a scalar is ignored with a warning. Optional -- omit for stats only.
 flavor:
@@ -32,17 +38,20 @@ triggers:
   # swing, rather than competing with your abilities.
   left_click:
     # No name/description: a weapon_damage trigger IS the basic attack, and the tooltip renders it
-    # as a stat block ("Melee Damage: 8" / "Attack Speed: 2.0"), not an ability section. Prose here
-    # would never be read. A costed special (see emberblade's right_click) still authors both.
-    cooldown_ticks: 10   # swing speed: half a second between hits -> Attack Speed 2.0
-    # RETAINED, and NOT vestigial. Vanilla's crosshair attack owns reach (~3 blocks, slightly
-    # shorter than the 3.5 below) and there is no arc at all -- it hits what the crosshair is on.
+    # as a stat block ("Melee Damage: 8" / "Attack Speed: 1.6" -- the weapon-level attack_speed above),
+    # not an ability section. Prose here would never be read. A costed special (see emberblade's
+    # right_click) still authors both. NOTE there is no cooldown_ticks: a melee basic's cadence is
+    # the attack_speed above, and a second throttle here would make every allowed swing fully
+    # charged, which would render AttackCharge dead code.
+    # RETAINED, and NOT vestigial. Vanilla's crosshair attack owns reach -- about 3 blocks, which
+    # the number below now states honestly -- and there is no arc at all: it hits what the
+    # crosshair is on.
     # But `type: melee` is the discriminator BasicMelee.isVanillaDriven reads to decide that this
     # trigger belongs to the vanilla damage event rather than the arm-swing packet. Delete this
     # block and the trigger silently goes back to the 120-degree cone.
     cast:
       type: melee
-      reach: 3.5
+      reach: 3.0
       arc_degrees: 120
     on_hit:
       # Deals the wielder's ATTACK_DAMAGE stat (= this weapon's attack_damage), not a literal amount.

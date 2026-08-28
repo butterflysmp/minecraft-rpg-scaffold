@@ -391,6 +391,123 @@ class WeaponLoaderTest {
         // Mutation: drop the attackDamage < 0 guard in WeaponDefinition -> the cursed weapon loads -> reddens.
     }
 
+
+    /**
+     * attack_speed is optional in general -- a ranged or costed weapon has no melee cadence to
+     * state, and 0 is the "not declared" reading the reconciler treats as absent.
+     */
+    @Test
+    void attackSpeedDefaultsToZeroWhenOmittedOnAWeaponWithNoMeleeBasic() throws IOException {
+        write("plainbow.yml", """
+                id: plainbow
+                element: kinetic
+                class: ranger
+                attack_damage: 6
+                triggers:
+                  right_click:
+                    cooldown_ticks: 15
+                    cast:
+                      type: projectile
+                    on_hit:
+                      - type: weapon_damage
+                        element: kinetic
+                """);
+
+        assertEquals(0, load().find("plainbow").orElseThrow().attackSpeed(), 1e-9,
+                "no attack_speed field -> 0, and a ranged basic attack needs none");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /**
+     * But a weapon whose basic hit VANILLA delivers must declare one, and the file is skipped and
+     * named if it does not.
+     *
+     * This guard exists because the failure is otherwise SILENT and was measured: with no authored
+     * speed nothing writes the wielder's attack-speed attribute, so it sits at the player base 4.0
+     * -- a 5-tick charge period inside a 10-tick i-frame window, where every allowed swing is
+     * already fully charged and AttackCharge is dead code. The weapon would load, mint, swing, and
+     * deal damage; only the feel would be quietly wrong. A named skip is much the better failure.
+     */
+    @Test
+    void aVanillaDrivenMeleeWeaponWithNoAttackSpeedIsSkippedRatherThanSilentlyWrong() throws IOException {
+        write("aaa_speedless.yml", """
+                id: speedless
+                element: kinetic
+                class: melee
+                attack_damage: 8
+                triggers:
+                  left_click:
+                    cast:
+                      type: melee
+                    on_hit:
+                      - type: weapon_damage
+                        element: kinetic
+                """);
+        write("ironblade.yml", VALID);
+
+        WeaponRegistry registry = load();
+
+        assertEquals(1, registry.size(), "the valid weapon still loads");
+        assertTrue(warningText().contains("aaa_speedless.yml"), warningText());
+        assertTrue(warningText().contains("attack_speed"), warningText());
+        // Mutation: drop the vanilla-driven-melee guard in WeaponDefinition -> the speedless weapon
+        // loads and swings at the bare-fist 4.0 -> reddens.
+    }
+
+    /**
+     * The same weapon WITHOUT a vanilla-driven melee trigger loads fine at speed 0 -- proving the
+     * guard keys on the trigger shape and not merely on being class: melee. Same file, same class,
+     * same attack_damage; only the payload differs (a literal, so an ability rather than a basic
+     * attack), and that flips the verdict.
+     */
+    @Test
+    void aMeleeClassWeaponWithNoBasicAttackNeedsNoSpeed() throws IOException {
+        write("ritualblade.yml", """
+                id: ritualblade
+                element: kinetic
+                class: melee
+                attack_damage: 8
+                triggers:
+                  left_click:
+                    cooldown_ticks: 20
+                    cast:
+                      type: melee
+                    on_hit:
+                      - type: damage
+                        amount: 8
+                        element: kinetic
+                """);
+
+        assertEquals(0, load().find("ritualblade").orElseThrow().attackSpeed(), 1e-9);
+        assertTrue(warnings.isEmpty(), warningText());
+        // Mutation: widen the guard to any class: melee weapon -> this is skipped -> reddens.
+    }
+
+    /** A negative attack_speed is a content bug, rejected like a negative attack_damage. */
+    @Test
+    void aNegativeAttackSpeedIsSkippedNotCrashed() throws IOException {
+        write("aaa_backwards.yml", """
+                id: backwards
+                element: kinetic
+                class: melee
+                attack_damage: 8
+                attack_speed: -1.6
+                triggers:
+                  left_click:
+                    cast:
+                      type: melee
+                    on_hit:
+                      - type: weapon_damage
+                        element: kinetic
+                """);
+        write("ironblade.yml", VALID);
+
+        assertEquals(1, load().size(), "the valid weapon still loads");
+        assertTrue(warningText().contains("aaa_backwards.yml"), warningText());
+        assertTrue(warningText().contains("attack_speed"), warningText());
+        // Mutation: drop the attackSpeed < 0 guard -> it loads, and the reconciler writes a negative
+        // speed onto the player -> reddens.
+    }
     @Test
     void aWeaponWithNoTriggersSectionIsSkippedNotCrashed() throws IOException {
         write("aaa_bare.yml", """

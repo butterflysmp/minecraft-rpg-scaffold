@@ -25,7 +25,6 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalDouble;
 
 /**
  * Minting a weapon item, and recognising one. An item is one of ours IFF it carries the
@@ -57,27 +56,11 @@ public final class WeaponItems {
      */
     public static final String ATTACK_DAMAGE_ATTRIBUTE = "attack_damage";
 
-    /**
-     * The attack-SPEED attribute, pinned beside the damage one for a vanilla-driven melee weapon.
-     *
-     * MEASURED on the 2026-08-28 boot, not assumed: a plain iron sword read attackSpeed 1.6000,
-     * while a minted ironblade -- the same material -- read 4.0000. Setting ANY explicit modifier
-     * replaces the item's whole default block, so pinning attack damage alone silently discards the
-     * sword's native speed and drops the player to the base 4.0. That is a 5-tick charge period
-     * against a 10-tick i-frame window, which would leave every allowed swing already fully charged
-     * and the charge curve dead code. Hence: pin both, or neither.
-     */
-    public static final String ATTACK_SPEED_ATTRIBUTE = "attack_speed";
-
     /** A player's base attack_damage is 1.0, so -1.0 brings a held swing to a flat 0. */
     public static final double VANILLA_MELEE_SUPPRESSION = -1.0;
 
-    /** The player's base values, which every ADD_NUMBER modifier below is expressed relative to. */
+    /** The player's base attack damage, which the ADD_NUMBER modifier below is expressed relative to. */
     public static final double VANILLA_BASE_ATTACK_DAMAGE = 1.0;
-    public static final double VANILLA_BASE_ATTACK_SPEED = 4.0;
-
-    /** Ticks per second, converting a trigger's authored cooldown into an attack-speed value. */
-    public static final double TICKS_PER_SECOND = 20.0;
 
     /**
      * The attack-damage modifier a vanilla-driven melee weapon pins: enough to bring the total to
@@ -95,19 +78,6 @@ public final class WeaponItems {
     }
 
     /**
-     * The attack-speed modifier, derived from the trigger's authored cooldown_ticks so the vanilla
-     * charge period and the tooltip's "Attack Speed" line cannot disagree: 10 ticks is 2.0/s, which
-     * is exactly what WeaponLoreLines renders for the same trigger.
-     *
-     * A declared cooldown of 0 means "ungated" and has no cadence to express, so it pins nothing and
-     * leaves the player base -- the same reading AttackSpeed.effectiveCooldownTicks gives it.
-     */
-    public static OptionalDouble attackSpeedModifier(int cooldownTicks) {
-        if (cooldownTicks <= 0) return OptionalDouble.empty();
-        return OptionalDouble.of(TICKS_PER_SECOND / cooldownTicks - VANILLA_BASE_ATTACK_SPEED);
-    }
-
-    /**
      * The item a weapon is carried in. Its display name is coloured by RARITY, unconditionally
      * (see {@link #displayName}), it carries weapon_id in its PDC -- the whole of its identity --
      * and it carries the vanilla attribute block its melee behaviour needs.
@@ -120,8 +90,6 @@ public final class WeaponItems {
         ItemStack item = new ItemStack(materialOf(weapon.material()));
         Attribute attackDamage = Registry.ATTRIBUTE.getOrThrow(
                 NamespacedKey.minecraft(ATTACK_DAMAGE_ATTRIBUTE));
-        Attribute attackSpeed = Registry.ATTRIBUTE.getOrThrow(
-                NamespacedKey.minecraft(ATTACK_SPEED_ATTRIBUTE));
 
         // Does a VANILLA crosshair attack deliver this weapon's basic hit? Resolved through the one
         // predicate the swing path and the rider also read, so an item's attributes and its hit
@@ -146,19 +114,13 @@ public final class WeaponItems {
             meta.setMaxStackSize(1);
 
             if (vanillaDrivenMelee) {
-                // Let vanilla's attack RUN -- it is what picks the victim now -- and give its
-                // attack-strength meter a period matching the authored cadence.
+                // Let vanilla's attack RUN: it is what picks the victim now, and it only runs at all
+                // if attack damage is positive. The item pins NO attack speed -- that is reconciled
+                // onto the PLAYER from the weapon's authored cadence and their attack-speed stat, so
+                // a boost can move it. Pinning it here would freeze the swing rate at mint.
                 meta.addAttributeModifier(attackDamage, new AttributeModifier(
                         keys.meleeSuppressor, attackDamageModifier(weapon.attackDamage()),
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
-                OptionalDouble speed = weapon.vanillaMeleeTrigger()
-                        .map(trigger -> attackSpeedModifier(trigger.cooldownTicks()))
-                        .orElse(OptionalDouble.empty());
-                if (speed.isPresent()) {
-                    meta.addAttributeModifier(attackSpeed, new AttributeModifier(
-                            keys.meleeSpeedPin, speed.getAsDouble(),
-                            AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
-                }
             } else {
                 // No melee hit of ours to deliver (ember_staff, ability_stone, hunters_bow), so
                 // vanilla's swing stays suppressed to a flat 0 and a staff still cannot melee.
@@ -168,8 +130,10 @@ public final class WeaponItems {
             }
 
             // The custom lore block IS the stat display. Hide vanilla's, or the tooltip carries two
-            // sets of numbers saying different things -- the pinned attack damage is deliberately
-            // cosmetic, and the pinned speed duplicates the lore's own Attack Speed line.
+            // sets of numbers saying different things: the pinned attack damage is deliberately
+            // cosmetic, and the attack speed vanilla would show is the reconciled total, which
+            // includes whatever boost the holder happens to carry -- exactly the drift the lore rule
+            // exists to prevent.
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 
             // Derived stats + authored flavour, plus any enchant block the item's own state calls
