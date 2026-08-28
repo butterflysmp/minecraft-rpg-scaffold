@@ -13,6 +13,7 @@ import io.github.butterflysmp.rpg.core.ability.CastExecutor;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.Crit;
+import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.kit.KitDefinition;
 import io.github.butterflysmp.rpg.core.kit.KitRegistry;
@@ -91,7 +92,8 @@ public final class RpgCommand {
                                                                ProfileService profiles,
                                                                WeaponRegistry weapons,
                                                                MobRegistry mobs,
-                                                               MobNameplateManager nameplates) {
+                                                               MobNameplateManager nameplates,
+                                                               ResourcePool resources) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
                         // requires() gates the whole branch: an unpermitted sender
@@ -161,6 +163,12 @@ public final class RpgCommand {
                                     }
                                     return chooseElement(player, id, kits, elements, profiles, weapons, adapters);
                                 })))
+                // Dev tooling, not a game mechanic: refill the caller's mana so testing a costed
+                // trigger does not mean waiting out the 60-second regen between casts.
+                .then(Commands.literal("mana")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .then(Commands.literal("refill")
+                                .executes(ctx -> manaRefill(ctx, resources))))
                 .then(Commands.literal("give")
                         .requires(source -> source.getSender().hasPermission(Permissions.GIVE))
                         .then(Commands.argument("weapon", StringArgumentType.word())
@@ -588,6 +596,31 @@ public final class RpgCommand {
         player.sendMessage(Component.text(
                 "Gave attack_speed_boost_TEMP (+" + amount + " -> " + (AttackSpeed.BASE + amount)
                         + "x). Hold it and swing a basic attack.", NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /**
+     * Refill the caller's mana to full.
+     *
+     * <p>Implemented as {@code ResourcePool.clear}, which is not a workaround but the pool's own
+     * definition of full: an owner with no entry reads as {@code max}, because the pool stores a
+     * spent amount and a tick to regenerate from rather than a current value. So dropping the entry
+     * IS a refill, and it needs no new core method and no second notion of "full" to drift from the
+     * first.
+     *
+     * <p>It clears EVERY resource this owner holds, not only mana. Today that is the same thing --
+     * mana is the only resource -- and this is dev tooling, so the broader sweep is acceptable. If a
+     * second resource ever lands, this becomes "refill everything" and should either be renamed or
+     * given a per-resource clear.
+     */
+    private static int manaRefill(CommandContext<CommandSourceStack> ctx, ResourcePool resources) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        resources.clear(player.getUniqueId());
+        player.sendMessage(Component.text(
+                "Mana refilled to " + Math.round(resources.max()) + ".", NamedTextColor.GREEN));
         return 1;
     }
 

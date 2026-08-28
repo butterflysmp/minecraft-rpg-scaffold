@@ -225,7 +225,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, mobs, nameplates),
+                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, mobs, nameplates, resources),
                         "RPG commands"));
     }
 
