@@ -127,6 +127,35 @@ public final class CastExecutor {
     private static final double DASH_HIT_RADIUS = 1.5;
 
     /**
+     * Land a basic melee hit on a target VANILLA already chose.
+     *
+     * <p>The sibling of the {@link CastSpec.Melee} arm in {@link #execute}, minus {@code meleeTarget}:
+     * the player's own crosshair attack resolved the victim, so there is no cone to search, no arc to
+     * test and no line of sight to trace -- vanilla did all three, and did them the way the player
+     * expects. {@code meleeTarget} stays exactly as it is for ABILITIES like {@code void_slash},
+     * where the arc is the feature rather than the bug.
+     *
+     * <p>Deliberately NOT taking a {@code CastResult.Success}: this path never went through
+     * {@code AbilityService}'s check-spend-commit gate -- there is no cooldown to trip and no mana to
+     * spend for a free swing -- and manufacturing a Success would claim it had.
+     *
+     * <p>The use-charge stays HERE, and outside {@link #detonate}, for the reason the Melee arm
+     * documents: a payload that splashes is still ONE use. Keeping it in this class rather than in
+     * the paper wiring is what keeps "what costs a use, and when" in a single place; a check left to
+     * the caller is a check the next caller forgets.
+     *
+     * <p>{@code target} is never null here. Vanilla does not raise a damage event without a victim,
+     * which is exactly why this arm has no miss case while the cone arm does.
+     *
+     * <p>MUST be called on the thread owning the victim's region, like every other entry point.
+     */
+    public void landBasicMelee(AbilityDefinition ability, CombatantSnapshot caster,
+                               Combatant target, double chargeScale) {
+        detonate(ability, Caster.of(caster, chargeScale), target, target.state().position());
+        if (DamagePayload.isBasicAttack(ability.onHit())) onBasicAttackUse.run();
+    }
+
+    /**
      * Move the caster, then hit whoever the intended line ran through.
      *
      * The impulse is fetched through the caster's live handle -- the only other arm that

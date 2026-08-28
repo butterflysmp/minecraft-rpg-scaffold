@@ -19,6 +19,15 @@ public final class Keys {
     /** Identity of the attack-damage modifier that cancels a weapon's vanilla melee. */
     public final NamespacedKey meleeSuppressor;
 
+    /**
+     * Identity of the attack-SPEED modifier a melee weapon pins at mint. Load-bearing, not
+     * cosmetic: it sets vanilla's attack-strength period, which is what the charge curve reads.
+     * Measured on the 2026-08-28 boot -- an item carrying ANY explicit modifier loses its whole
+     * default block, so without this an iron sword falls back to the player base 4.0 rather than
+     * its native 1.6, and a full charge would be reached inside the i-frame window.
+     */
+    public final NamespacedKey meleeSpeedPin;
+
     /** Identity of Soaked's movement-speed modifier, so it can be removed by key on expiry. */
     public final NamespacedKey soaked;
 
@@ -96,6 +105,7 @@ public final class Keys {
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
         this.meleeSuppressor = new NamespacedKey(plugin, "vanilla_melee_suppressor");
+        this.meleeSpeedPin = new NamespacedKey(plugin, "melee_speed_pin");
         this.soaked = new NamespacedKey(plugin, "soaked_slow");
         this.rooted = new NamespacedKey(plugin, "rooted_immobilize");
         this.freeze = new NamespacedKey(plugin, "freeze_immobilize");

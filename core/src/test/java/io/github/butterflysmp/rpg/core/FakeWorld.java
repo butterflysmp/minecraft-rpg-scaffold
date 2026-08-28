@@ -372,6 +372,15 @@ public final class FakeWorld implements CombatWorld {
             return Caster.of(snapshot());
         }
 
+        /**
+         * The same projection, as a BASIC MELEE source that earned only part of its swing. Kept
+         * beside asCaster() rather than exposed as a mutable field, so a test states the charge at
+         * the point it builds the source and cannot leave a stale one lying on the dummy.
+         */
+        public Caster asCaster(double chargeScale) {
+            return Caster.of(snapshot(), chargeScale);
+        }
+
         @Override public UUID id() { return id; }
         @Override public void applyDamage(double amount, UUID sourceId) {
             health -= amount;

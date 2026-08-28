@@ -101,8 +101,8 @@ public final class EffectApplier {
                 // here rather than pre-baking it at projection: d.amount() is not known until the
                 // effect fires, so a multiplier folded into the Caster's attackDamage could never
                 // have touched the staff's authored bolt. This is what makes Attunement work.
-                double amount = d.amount() * DamageEnchants.multiplier(caster.enchantDamagePercent())
-                        + caster.classDamageBonus();
+                double amount = (d.amount() * DamageEnchants.multiplier(caster.enchantDamagePercent())
+                        + caster.classDamageBonus()) * caster.chargeScale();
                 if (amount > 0 && target.state().alive()) {
                     target.handle().applyDamage(amount, caster.id());
                 }
@@ -119,9 +119,9 @@ public final class EffectApplier {
                 // spurious 0-damage seam. Unarmed STAYS 0 structurally, not by convention: no held
                 // weapon means no weapon class means no matching grant means a bonus of 0, so
                 // weapon-only melee cannot be resurrected by gear. Element is identity here too.
-                double amount = caster.attackDamage()
+                double amount = (caster.attackDamage()
                         * DamageEnchants.multiplier(caster.enchantDamagePercent())
-                        + caster.classDamageBonus();
+                        + caster.classDamageBonus()) * caster.chargeScale();
                 if (amount > 0 && target.state().alive()) {
                     target.handle().applyDamage(amount, caster.id());
                 }

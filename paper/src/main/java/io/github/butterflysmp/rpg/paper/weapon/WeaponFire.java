@@ -2,6 +2,10 @@ package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
+import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
+import io.github.butterflysmp.rpg.core.ability.BasicMelee;
+import io.github.butterflysmp.rpg.core.combat.Combatant;
+import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.ability.CastExecutor;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
@@ -13,6 +17,7 @@ import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
 import org.bukkit.Location;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
 import java.util.Optional;
@@ -73,7 +78,8 @@ public final class WeaponFire {
         // interact handler would cancel vanilla -- doors and chests would stop working with it in
         // hand. weaponService.fire answers the same question a few lines down; asking it early is
         // what keeps the broken gate from widening the set of inputs this weapon consumes.
-        if (weapon.trigger(input).isEmpty()) return Optional.empty();
+        Optional<TriggerBinding> binding = weapon.trigger(input);
+        if (binding.isEmpty()) return Optional.empty();
 
         // THE BROKEN GATE, for both entry points at once -- the packet swing and the interact
         // handler both arrive here. Before the snapshot and before weaponService.fire, so a broken
@@ -82,6 +88,21 @@ public final class WeaponFire {
         if (WeaponDurability.isBroken(player.getInventory().getItemInMainHand())) {
             return Optional.of(new CastResult.Broken());
         }
+
+
+        // THE RETIREMENT. Vanilla's own crosshair attack now delivers the basic melee hit -- it
+        // picks the victim, and RpgListeners' EntityDamageByEntityEvent rider lands the payload. So
+        // this path must not ALSO fire it from the 120-degree cone, or one click is processed twice.
+        //
+        // Empty, not Broken: empty means "not ours on this input, leave vanilla alone", which is
+        // exactly right here -- vanilla is the thing that will fire it. Placed AFTER the broken gate
+        // deliberately, so a broken melee weapon still returns Broken and still explains itself on
+        // an air swing, where no damage event will ever fire to explain it instead.
+        //
+        // Read through BasicMelee, the same predicate landVanillaMelee below uses to SELECT the
+        // trigger. One predicate, two opposite senses: if they ever disagree, either the cone comes
+        // back or the hit lands twice.
+        if (BasicMelee.isVanillaDriven(binding.get().ability())) return Optional.empty();
 
         Location eye = player.getEyeLocation();
         Aim aim = new Aim(toVec3(eye), toVec3(eye.getDirection()));
@@ -113,6 +134,46 @@ public final class WeaponFire {
             }
         });
         return result;
+    }
+
+    /**
+     * Land the basic melee hit on the victim VANILLA chose, for the EntityDamageByEntityEvent rider.
+     *
+     * <p>The counterpart to the retirement in {@link #attempt}: that path refuses a vanilla-driven
+     * melee trigger, this one delivers it. Both ask {@link BasicMelee} through
+     * {@link WeaponDefinition#vanillaMeleeTrigger()}, so a weapon cannot be skipped by one and
+     * unresolved by the other -- which would be a weapon that simply never hits anything.
+     *
+     * <p>Weapon resolution stays in this class rather than moving into the listener, so there is
+     * still exactly one place that turns a held item into a fired trigger.
+     *
+     * <p>DURABILITY rides the executor's use listener, exactly as {@link #attempt} passes it: whether
+     * this cast charges a use at all remains CastExecutor's question, not the wiring's. Wear now
+     * lands on a CONNECTING vanilla hit, which is strictly more vanilla than the cone was -- vanilla
+     * charges a sword when it hits something, never on a swing through air.
+     *
+     * <p>No broken-weapon gate here: the rider cancels the vanilla event outright for a broken
+     * weapon and returns before reaching this, so a broken weapon deals nothing and wears nothing.
+     * The gate lives there because cancelling is what also suppresses the flash and the i-frames.
+     *
+     * <p>THREADING: runs on the thread owning the attacker, which is where the damage event fires.
+     * The victim is within vanilla's ~3-block reach, so it is in the same region -- the same standing
+     * onMobMeleeAttack already relies on when it snapshots across the pair.
+     */
+    public static void landVanillaMelee(Player attacker, LivingEntity victim, double chargeScale,
+                                        WeaponRegistry weapons, AdapterContext adapters,
+                                        CooldownTracker cooldowns) {
+        Optional<AbilityDefinition> trigger = WeaponItems.heldWeaponId(attacker, adapters.keys())
+                .flatMap(weapons::find)
+                .flatMap(WeaponDefinition::vanillaMeleeTrigger);
+        if (trigger.isEmpty()) return;
+
+        CombatantSnapshot caster = BukkitCombatant.snapshot(attacker, adapters.stats());
+        Combatant target = BukkitCombatant.of(victim, adapters);
+
+        new CastExecutor(new PaperCombatWorld(victim.getWorld(), adapters),
+                () -> WeaponDurability.applyWearOnUse(attacker, adapters.keys(), cooldowns))
+                .landBasicMelee(trigger.get(), caster, target, chargeScale);
     }
 
     private static Vec3 toVec3(Location location) {

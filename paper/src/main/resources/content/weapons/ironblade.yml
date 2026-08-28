@@ -35,6 +35,11 @@ triggers:
     # as a stat block ("Melee Damage: 8" / "Attack Speed: 2.0"), not an ability section. Prose here
     # would never be read. A costed special (see emberblade's right_click) still authors both.
     cooldown_ticks: 10   # swing speed: half a second between hits -> Attack Speed 2.0
+    # RETAINED, and NOT vestigial. Vanilla's crosshair attack owns reach (~3 blocks, slightly
+    # shorter than the 3.5 below) and there is no arc at all -- it hits what the crosshair is on.
+    # But `type: melee` is the discriminator BasicMelee.isVanillaDriven reads to decide that this
+    # trigger belongs to the vanilla damage event rather than the arm-swing packet. Delete this
+    # block and the trigger silently goes back to the 120-degree cone.
     cast:
       type: melee
       reach: 3.5

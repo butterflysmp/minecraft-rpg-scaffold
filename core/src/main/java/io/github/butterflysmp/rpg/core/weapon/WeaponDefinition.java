@@ -1,5 +1,8 @@
 package io.github.butterflysmp.rpg.core.weapon;
 
+import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
+import io.github.butterflysmp.rpg.core.ability.BasicMelee;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -67,6 +70,25 @@ public record WeaponDefinition(
     public Optional<TriggerBinding> trigger(String input) {
         for (TriggerBinding binding : triggers) {
             if (binding.input().equals(input)) return Optional.of(binding);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * The trigger a VANILLA crosshair attack now delivers, if this weapon has one.
+     *
+     * <p>One resolution shared by everything that needs to ask: {@code WeaponItems.mint} (which
+     * attributes to pin), and the melee rider (which payload to land). Both go through
+     * {@link BasicMelee#isVanillaDriven}, so a weapon cannot be minted as a vanilla-driven melee
+     * weapon and then fail to resolve one at hit time, or the reverse.
+     *
+     * <p>FIRST-WINS across the trigger list rather than keyed on {@code "left_click"}: the input a
+     * melee basic is bound to is content's business, and {@code hunters_bow} already proves a basic
+     * attack need not live on the obvious input. No shipped weapon declares two.
+     */
+    public Optional<AbilityDefinition> vanillaMeleeTrigger() {
+        for (TriggerBinding binding : triggers) {
+            if (BasicMelee.isVanillaDriven(binding.ability())) return Optional.of(binding.ability());
         }
         return Optional.empty();
     }

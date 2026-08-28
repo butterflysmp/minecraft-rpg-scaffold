@@ -3,6 +3,8 @@ package io.github.butterflysmp.rpg.core;
 import io.github.butterflysmp.rpg.core.ability.*;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.combat.Aim;
+import io.github.butterflysmp.rpg.core.combat.AttackCharge;
+import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import org.junit.jupiter.api.Test;
@@ -705,5 +707,115 @@ class CastExecutorTest {
         assertEquals(0.0, traced.z(), 1e-9);
         assertEquals(target.position().y() + 1.4, traced.y(), 1e-9,
                 "the endpoint is this target's own eye height above its feet");
+    }
+
+    // --- landBasicMelee: the hit vanilla already resolved. No cone, no arc, no sight line. ---
+
+    private static Combatant given(FakeWorld.Dummy dummy) {
+        return new Combatant(dummy.snapshot(), dummy);
+    }
+
+    private static CastExecutor executor(FakeWorld world, Runnable onBasicAttackUse) {
+        return new CastExecutor(world, onBasicAttackUse);
+    }
+
+    /**
+     * The whole point of the change: the target is GIVEN, so none of the cone's filtering runs.
+     *
+     * The victim is placed directly BEHIND the caster -- 180 degrees off the aim, which no arc in
+     * shipped content would ever accept -- and it must still take the hit, because the player's own
+     * crosshair attack is what selected it. Vanilla did the reach, the arc and the occlusion test,
+     * and did them the way the player expects.
+     *
+     * The sight-check assertion is the load-bearing half: FakeWorld records every lineOfSightClear
+     * call, so an empty list proves this path did not re-trace what vanilla already traced. If a
+     * future edit routes this arm back through meleeTarget, the arc alone would redden it -- but the
+     * sight list is what catches a partial reroute that still happens to resolve the same body.
+     */
+    @Test
+    void landBasicMeleeHitsTheGivenTargetWithoutSearchingAnArcOrTracingSight() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(-2, 0, 0));   // directly behind: no arc accepts this
+        caster.attackDamage = 8.0;
+
+        executor(world, () -> {}).landBasicMelee(
+                ability(new CastSpec.Melee(3, 120), basicAttack()),
+                caster.snapshot(), given(victim), AttackCharge.FULL_CHARGE);
+
+        assertEquals(92, victim.health, 1e-9, "the victim vanilla chose takes the hit, arc irrelevant");
+        assertEquals(caster.id(), victim.lastDamageSource, "attributed to the swinger");
+        assertTrue(world.sightCheckFrom.isEmpty(),
+                "vanilla already traced the sight line; re-tracing it here would be a second opinion");
+        // Mutation: route this through meleeTarget -> the behind-the-caster victim falls out of the
+        // arc, takes nothing, and the sight list is non-empty -> reddens twice over.
+    }
+
+    /**
+     * The dedup, carried over to the new arm. One connecting swing is ONE use however many bodies
+     * the payload reaches -- the same rule the cone arm holds, and the reason the charge stayed in
+     * CastExecutor rather than moving out to the paper rider.
+     */
+    @Test
+    void oneVanillaMeleeHitChargesOneUseHoweverManyItSplashes() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(victim);
+        world.entities.add(new FakeWorld.Dummy(new Vec3(1, 0, 0.5)));
+        caster.attackDamage = 8.0;
+
+        var uses = new int[1];
+        executor(world, () -> uses[0]++).landBasicMelee(
+                ability(new CastSpec.Melee(3, 120), basicAttack(),
+                        new EffectSpec.Burst(3.0, List.of(new EffectSpec.Damage(5, "fire")))),
+                caster.snapshot(), given(victim), AttackCharge.FULL_CHARGE);
+
+        assertEquals(1, uses[0], "one swing, one use -- not one per body it splashes");
+        // Mutation: move the charge inside detonate, or into EffectApplier's per-entity loop -> 2+.
+    }
+
+    /**
+     * Only a BASIC ATTACK charges a use. An ability payload has already been paid for in mana, and
+     * billing it durability as well would charge one press twice -- the rule execute() states and
+     * this arm must not quietly drop.
+     */
+    @Test
+    void aLiteralPayloadOnTheVanillaArmChargesNoUse() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+
+        var uses = new int[1];
+        executor(world, () -> uses[0]++).landBasicMelee(
+                ability(new CastSpec.Melee(3, 120), abilityPayload()),
+                caster.snapshot(), given(victim), AttackCharge.FULL_CHARGE);
+
+        assertEquals(12, 100 - victim.health, 1e-9, "the authored amount still lands");
+        assertEquals(0, uses[0], "an ability payload costs mana, not durability");
+        // Mutation: drop the isBasicAttack gate -> 1 -> reddens.
+    }
+
+    /**
+     * The charge reaches the damage through this arm -- the seam between the paper rider's
+     * getAttackCooldown read and the number the mob actually loses.
+     *
+     * 8 * scale(0.25) = 8 * 0.25 = 2.0, executed rather than derived. A quarter-charged swing on an
+     * 8-damage weapon is the boot row "immediate second swing deals ~20-40%".
+     */
+    @Test
+    void theChargeScaleReachesTheDamageDealt() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;
+
+        executor(world, () -> {}).landBasicMelee(
+                ability(new CastSpec.Melee(3, 120), basicAttack()),
+                caster.snapshot(), given(victim), AttackCharge.scale(0.25));
+
+        assertEquals(98, victim.health, 1e-9, "a quarter-charged swing deals 2 of its 8");
+        // Mutation: pass FULL_CHARGE regardless of the argument -> 92 -> reddens.
     }
 }
