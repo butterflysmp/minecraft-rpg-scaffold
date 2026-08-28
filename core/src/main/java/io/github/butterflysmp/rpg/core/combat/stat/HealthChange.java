@@ -30,10 +30,25 @@ import java.util.UUID;
  * @param newCurrent     the target's custom current health AFTER the change
  * @param max            the target's custom max health AFTER the change
  * @param reachedZero    true only on the DAMAGE hit that brings current to 0 (the death hook; unconsumed)
+ * @param wasCrit        whether this DAMAGE was a critical hit -- the bit the displays cannot derive,
+ *                       because the roll happened on the dealer's thread a tick earlier and the
+ *                       amount alone cannot say whether it was doubled
  */
 public record HealthChange(UUID target, boolean targetIsPlayer, Kind kind, double amount,
                            UUID dealer, boolean dealerIsPlayer, double newCurrent, double max,
-                           boolean reachedZero) {
+                           boolean reachedZero, boolean wasCrit) {
+
+    /**
+     * A DAMAGE change that was not a crit -- HEAL and MAX_CHANGE, and any damage path with no crit to
+     * report. Keeps the four non-damage construction sites from having to state a flag that means
+     * nothing to them.
+     */
+    public HealthChange(UUID target, boolean targetIsPlayer, Kind kind, double amount,
+                        UUID dealer, boolean dealerIsPlayer, double newCurrent, double max,
+                        boolean reachedZero) {
+        this(target, targetIsPlayer, kind, amount, dealer, dealerIsPlayer, newCurrent, max,
+                reachedZero, false);
+    }
 
     public enum Kind {
         /** Current health fell. */

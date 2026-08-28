@@ -12,6 +12,7 @@ import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.CastExecutor;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
+import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.kit.KitDefinition;
 import io.github.butterflysmp.rpg.core.kit.KitRegistry;
@@ -29,6 +30,7 @@ import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
+import io.github.butterflysmp.rpg.paper.health.CritModifierItems;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
@@ -332,6 +334,22 @@ public final class RpgCommand {
                         .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 20.0))
                                 .executes(ctx -> attackSpeedBoost(ctx, adapters,
                                         DoubleArgumentType.getDouble(ctx, "bonus")))))
+                // Mint the two crit fixtures. Crit chance bases at 0.15 and crit damage at 1.0, and no
+                // content grants either, so without these the boot can only witness the BASE rate and
+                // never "gear can modify it". Two commands, not one, because the two stats move
+                // independently -- that independence is the thing being demonstrated.
+                .then(Commands.literal("critchance")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> critBoost(ctx, adapters, null, true))
+                        .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 1.0))
+                                .executes(ctx -> critBoost(ctx, adapters,
+                                        DoubleArgumentType.getDouble(ctx, "bonus"), true))))
+                .then(Commands.literal("critdamage")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> critBoost(ctx, adapters, null, false))
+                        .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 20.0))
+                                .executes(ctx -> critBoost(ctx, adapters,
+                                        DoubleArgumentType.getDouble(ctx, "bonus"), false))))
                 // Mint a class_damage_boost_TEMP. The class-damage stat bases at 0 and no content
                 // grants it yet, so without this the feature is invisible at boot: hold a MATCHING
                 // weapon and every direct damage effect gains the bonus (the staff's literal bolt
@@ -570,6 +588,38 @@ public final class RpgCommand {
         player.sendMessage(Component.text(
                 "Gave attack_speed_boost_TEMP (+" + amount + " -> " + (AttackSpeed.BASE + amount)
                         + "x). Hold it and swing a basic attack.", NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /**
+     * Mint a crit_chance_boost_TEMP or crit_damage_boost_TEMP into the caller's inventory.
+     *
+     * <p>Both amounts are BONUSES on their stat's base (0.15 for chance, 1.0 for damage), not
+     * resolved values -- the message prints the RESOLVED figure so the boot can read what to expect
+     * before swinging rather than deciding afterwards what the number it got should have been, the
+     * same discipline the enchant effect line follows.
+     */
+    private static int critBoost(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                                 Double bonus, boolean chance) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        if (chance) {
+            double amount = bonus == null ? CritModifierItems.DEFAULT_CHANCE_BOOST : bonus;
+            player.getInventory().addItem(CritModifierItems.mintChance(adapters.keys(), amount));
+            player.sendMessage(Component.text(
+                    "Gave crit_chance_boost_TEMP (+" + amount + " -> "
+                            + Math.round(Crit.chance(Crit.BASE_CHANCE + amount) * 100)
+                            + "% crit rate). Hold it and swing.", NamedTextColor.GREEN));
+        } else {
+            double amount = bonus == null ? CritModifierItems.DEFAULT_DAMAGE_BOOST : bonus;
+            player.getInventory().addItem(CritModifierItems.mintDamage(adapters.keys(), amount));
+            player.sendMessage(Component.text(
+                    "Gave crit_damage_boost_TEMP (+" + amount + " -> "
+                            + (1.0 + Crit.BASE_DAMAGE + amount) + "x on a crit). Hold it and swing.",
+                    NamedTextColor.GREEN));
+        }
         return 1;
     }
 

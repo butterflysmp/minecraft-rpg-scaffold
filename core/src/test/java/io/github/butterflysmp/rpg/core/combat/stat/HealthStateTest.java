@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core.combat.stat;
 
+import io.github.butterflysmp.rpg.core.combat.Crit;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -191,5 +192,79 @@ class HealthStateTest {
         assertEquals(100, state.max(), EPS);
         assertEquals(1.0, state.attackSpeedValue(), EPS);
         // Mutation: route setClassDamageModifier at the attack stat -> attackValue 13 -> reddens.
+    }
+
+    // --- Crit: two stats whose BASE depends on faction ---
+
+    @Test
+    void aPlayerBasesAtTheStartingCritChanceAndBonus() {
+        var player = new HealthState(100, true);
+
+        assertEquals(Crit.BASE_CHANCE, player.critChanceValue(), EPS, "15% to start");
+        assertEquals(Crit.BASE_DAMAGE, player.critDamageValue(), EPS, "+100%, i.e. a 2.0x crit");
+        // Mutation: base both at 0 -> a player never crits and the whole feature is invisible at
+        // boot while every unit test about the multiplier still passes -> reddens.
+    }
+
+    /**
+     * A MOB bases at zero, and this is the whole of "a mob's hits never crit".
+     *
+     * There is no second check at the roll site: Crit.crits compares roll &lt; 0, false for every roll
+     * a half-open source can produce. Basing the stat on faction rather than gating the roll is what
+     * keeps a future stat screen from reading 0.15 on a zombie while something elsewhere silently
+     * contradicted it.
+     */
+    @Test
+    void aMobBasesAtZeroWhichIsWhyItNeverCrits() {
+        var mob = new HealthState(20, false);
+
+        assertEquals(0.0, mob.critChanceValue(), EPS);
+        assertEquals(0.0, mob.critDamageValue(), EPS);
+        assertFalse(Crit.crits(mob.critChanceValue(), 0.0), "not even on the lowest possible roll");
+        // Mutation: base the mob at Crit.BASE_CHANCE like the player -> every zombie crits 15% of the
+        // time on a stat nobody meant to give it -> reddens.
+    }
+
+    @Test
+    void gearStacksAdditivelyOnBothCritStatsLikeEveryOtherStat() {
+        var player = new HealthState(100, true);
+
+        player.setCritChanceModifier("MAIN_HAND", 0.35);
+        player.setCritDamageModifier("OFF_HAND", 0.5);
+
+        assertEquals(0.5, player.critChanceValue(), EPS, "0.15 + 0.35");
+        assertEquals(1.5, player.critDamageValue(), EPS, "1.0 + 0.5 -> a 2.5x crit");
+        assertEquals(2.5, Crit.multiplier(player.critChanceValue(), player.critDamageValue(), 0.0), EPS);
+        // Mutation: make either stat replace rather than sum -> a boost REPLACES the base instead of
+        // adding to it, so a +0.35 chance item would LOWER the rate from 0.15 to 0.35... or rather
+        // set it flat, breaking the "stacks like the others" promise -> reddens.
+    }
+
+    @Test
+    void droppingACritItemReturnsBothStatsToBase() {
+        var player = new HealthState(100, true);
+        player.setCritChanceModifier("MAIN_HAND", 0.35);
+        player.setCritDamageModifier("MAIN_HAND", 1.0);
+
+        player.clearCritChanceModifier("MAIN_HAND");
+        player.clearCritDamageModifier("MAIN_HAND");
+
+        assertEquals(Crit.BASE_CHANCE, player.critChanceValue(), EPS);
+        assertEquals(Crit.BASE_DAMAGE, player.critDamageValue(), EPS);
+        assertEquals(0, player.critChanceModifierCount());
+        // Mutation: leave the source behind on clear -> the boost outlives the item and the boot's
+        // "drop it and the rate returns" row silently passes forever -> reddens.
+    }
+
+    /** The stat is NOT clamped; Crit.chance clamps at the point of use. Stated so it stays that way. */
+    @Test
+    void theStatReportsWhatGearGrantsAndTheCapIsAppliedAtUse() {
+        var player = new HealthState(100, true);
+        player.setCritChanceModifier("MAIN_HAND", 2.0);
+
+        assertEquals(2.15, player.critChanceValue(), EPS, "the raw grant, uncapped");
+        assertEquals(1.0, Crit.chance(player.critChanceValue()), EPS, "capped where it is used");
+        // Mutation: clamp inside the Stat -> the cap is stated in two places and a future stat screen
+        // showing "215% crit" vs "100%" depends on which one it asked -> reddens on the first row.
     }
 }

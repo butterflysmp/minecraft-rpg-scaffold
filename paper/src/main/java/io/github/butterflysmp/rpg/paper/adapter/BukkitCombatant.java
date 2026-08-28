@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.adapter;
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
+import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.paper.content.StatusDefinition;
@@ -21,6 +22,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Wraps a Bukkit LivingEntity as the two halves of the core port.
@@ -58,6 +60,15 @@ public final class BukkitCombatant {
     public static CombatantSnapshot snapshot(LivingEntity entity, CombatantStats stats) {
         Regions.requireOwned(entity);
         var location = entity.getLocation();
+        // ONE draw, held in a local. It is read once, by the multiplier below. This was two draws
+        // during the witness boot -- one to decide and one to log -- until that was caught: the
+        // logged rate would have been statistically right and causally unrelated to the crits
+        // actually dealt, printing crit=false on the tick a yellow number appeared. The locals stay
+        // because the three values are read together and naming them beats three store lookups
+        // buried in an argument list.
+        double critRoll = ThreadLocalRandom.current().nextDouble();
+        double critChance = stats.critChanceValue(entity.getUniqueId());
+        double critDamage = stats.critDamageValue(entity.getUniqueId());
         return new CombatantSnapshot(
                 entity.getUniqueId(),
                 new Vec3(location.getX(), location.getY(), location.getZ()),
@@ -85,7 +96,25 @@ public final class BukkitCombatant {
                 // DamageEnchants.multiplier(0.0) is exactly 1.0. That is why the stat carries a
                 // percent rather than a multiplier -- it keeps one absent-value convention across
                 // every summand on this record instead of adding a second beside attackSpeed's 1.0.
-                stats.enchantDamagePercentValue(entity.getUniqueId()));
+                stats.enchantDamagePercentValue(entity.getUniqueId()),
+                // THE CRIT ROLL, drawn HERE and frozen -- once per cast, never per damage arm.
+                //
+                // This is the impure half of the Unbreaking/jitter split: the draw lives at the call
+                // site and the decision lives in core, so Crit.multiplier is testable at exact
+                // boundaries with no seeded random. ThreadLocalRandom, not Math.random(): a snapshot
+                // is taken on many region threads at once and Math.random() is a synchronized global
+                // -- the same reason DamagePopupManager gives for its jitter draws.
+                //
+                // Frozen for the same reason as the four values above it, with one extra consequence:
+                // one roll per cast means a payload with two damage effects crits as a unit, and a
+                // swept mob inherits the primary swing's crit rather than rolling its own. Rolling at
+                // the damage arm instead would quietly give a Burst catching five bodies five
+                // independent crits.
+                //
+                // A MOB resolves critChance 0 (HealthState bases it on faction), so this is exactly
+                // Crit.NO_CRIT for every mob without a check here -- and exactly NO_CRIT for an
+                // untracked entity too, since CombatantStats returns 0 chance for one.
+                Crit.multiplier(critChance, critDamage, critRoll));
     }
 
     /** Dispatches onto the entity's own thread. Never reads the world, never returns state. */
@@ -118,14 +147,14 @@ public final class BukkitCombatant {
          * <p>The amount arrives already multiplied by the elemental matrix; EffectApplier did that
          * against the snapshot's shield. All this port carries is a number and a culprit.
          */
-        @Override public void applyDamage(double amount, UUID sourceId) {
+        @Override public void applyDamage(double amount, UUID sourceId, boolean wasCrit) {
             ctx.scheduler().onEntity(entity, () -> {
                 // Drain custom HP + fire the seam. dealerIsPlayer reuses the source's faction bit;
                 // the nameplate ignores the dealer this phase, the popup (1b) will need it.
                 Entity source = Attribution.attributableSource(
                         sourceId, entity.getWorld()::getEntity, Bukkit::isOwnedByCurrentRegion);
                 boolean dealerIsPlayer = source instanceof Player;
-                ctx.stats().damage(entity.getUniqueId(), amount, sourceId, dealerIsPlayer);
+                ctx.stats().damage(entity.getUniqueId(), amount, sourceId, dealerIsPlayer, wasCrit);
 
                 // Aggro-on-hit: the target turns on its attacker -- vanilla's expected default.
                 // Ability damage flashes without a vanilla hit, so it would otherwise provoke

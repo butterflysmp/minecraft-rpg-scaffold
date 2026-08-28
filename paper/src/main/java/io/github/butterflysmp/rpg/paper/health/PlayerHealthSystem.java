@@ -130,7 +130,7 @@ public final class PlayerHealthSystem implements HealthListener {
         EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
         UUID id = player.getUniqueId();
         RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, () -> {
-            // Six stats converge on the same scan: max HP from +HP items, attack damage from the
+            // Eight stats converge on the same scan: max HP from +HP items, attack damage from the
             // held weapon's declared attack_damage (a MAIN_HAND modifier), attack speed from equipped
             // speed sources, the class-damage bonus from equipped "+N <Class> Damage" gear
             // MATCHING the held weapon's class, and the enchant-damage percent from the damage
@@ -170,6 +170,14 @@ public final class PlayerHealthSystem implements HealthListener {
             // bar override has to cancel, so the two are computed once and used twice -- and the
             // override runs AFTER the reconcile, so it draws the value that just converged rather
             // than the one from the previous scan.
+            // The seventh and eighth: crit chance and crit damage, from the two _TEMP fixtures. Same
+            // slot scan and same leak-proof diff as the rest, so an item swapped out of a hand is
+            // absent from the next scan and its source is dropped. They converge INDEPENDENTLY --
+            // one item can raise how often you crit without touching how hard, which is the whole
+            // reason crit is two stats rather than one.
+            stats.reconcileCritChanceModifiers(id, CritModifierItems.desiredChanceModifiers(player, keys));
+            stats.reconcileCritDamageModifiers(id, CritModifierItems.desiredDamageModifiers(player, keys));
+
             Map<String, Double> desiredDefense = DefenseModifierItems.desiredModifiers(player);
             stats.reconcileDefenseModifiers(id, desiredDefense);
             ArmorBarOverride.apply(player, keys, stats.defenseValue(id),

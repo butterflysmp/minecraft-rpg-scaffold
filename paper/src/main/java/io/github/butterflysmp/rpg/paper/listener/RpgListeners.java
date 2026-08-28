@@ -525,6 +525,13 @@ public final class RpgListeners implements Listener {
             swept.setHealth(Math.min(vanillaMax, VANILLA_LIVE_FLOOR)); // the token can never kill
         }
 
+        // The two-arg applyDamage, so the swept mob's popup is a NORMAL white number even when the
+        // primary critted. Its DAMAGE still inherits the crit in full -- the stashed figure is
+        // already multiplied -- so a crit swing sweeps for half of the doubled number. Only the
+        // presentation differs, and deliberately: the crit was rolled for the hit the player aimed
+        // at, and colouring every bystander yellow would claim each of them crit independently. The
+        // visible consequence is a yellow "28" on the primary beside white "14"s on its neighbours,
+        // and no crit particles on the bystanders either -- the burst is spawned on the crit bit.
         BukkitCombatant.of(swept, adapters).handle()
                 .applyDamage(SweepShare.of(primary.getAsDouble(), fraction), attacker.getUniqueId());
     }

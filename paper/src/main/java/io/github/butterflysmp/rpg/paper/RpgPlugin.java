@@ -38,6 +38,7 @@ import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
 import io.github.butterflysmp.rpg.paper.listener.RpgListeners;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.packet.ExampleTelegraphListener;
+import io.github.butterflysmp.rpg.paper.packet.VanillaCritParticleListener;
 import io.github.butterflysmp.rpg.paper.packet.WeaponSwingListener;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.scheduler.PaperScheduler;
@@ -216,6 +217,11 @@ public final class RpgPlugin extends JavaPlugin {
                 .registerListener(new ExampleTelegraphListener(scheduler));
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new WeaponSwingListener(adapters, weapons, weaponService, cooldowns));
+        // Suppress vanilla's own crit particles, so a burst means OUR roll. Pure cancel on the
+        // Netty thread -- no hop, no Bukkit. See the class for why a packet is justified here and
+        // why it cannot eat our own spawnParticle burst.
+        PacketEvents.getAPI().getEventManager()
+                .registerListener(new VanillaCritParticleListener());
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(

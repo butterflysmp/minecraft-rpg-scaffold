@@ -81,7 +81,8 @@ import java.util.UUID;
  */
 public record CombatantSnapshot(UUID id, Vec3 position, double eyeHeight, boolean alive,
                                 boolean player, double attackSpeed, double attackDamage,
-                                double classDamageBonus, double enchantDamagePercent) {
+                                double classDamageBonus, double enchantDamagePercent,
+                                double critMultiplier) {
 
     public CombatantSnapshot {
         if (eyeHeight <= 0) {
