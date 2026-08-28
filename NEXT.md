@@ -583,6 +583,34 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ### Stage 1 (vanilla drives basic melee) — what it created or exposed
 
+  > #### 2026-08-28 — the in-game gate is RUN and PASSED, in full
+  >
+  > All eleven boot rows, plus the two fixes the gate itself turned up. Reported by the player at
+  > the keyboard; recorded here at the granularity it was reported, not embroidered per-row.
+  >
+  > - **The eleven rows** — crosshair not cone, spam vs timed, early swing, kill, broken weapon,
+  >   Sharpness through the event path, staff still inert, sweep bystander, durability on connect,
+  >   tooltip and attack indicator, one flash not two.
+  > - **Kill statistics** (`601b816`) — the counter moves by one per kill. This also retires the
+  >   double-count worry: it moving by exactly one confirms `setHealth(0)` credits nothing on its
+  >   own, which had been measured only as "the counter sat at zero".
+  > - **Enchant glint** (`4fd2767`) — an enchanted weapon shimmers; deactivating clears it.
+  > - **Advancements** — witnessed FIRING (see `9dc2775`). This one contradicted a claim rather
+  >   than confirming one.
+  >
+  > **Row 3 was restated before it was run**, and the restatement is the useful part. The plan
+  > expected "immediate second swing → ~20-40% damage". With attack speed pinned to 2.0 that cannot
+  > happen: vanilla refuses a re-hit inside i-frames unless the new raw amount exceeds `lastHurt`,
+  > so an early follow-up after a full-charge hit loses that comparison and raises no damage event
+  > at all. `MeleeHits.claimWindow` is never even consulted. The observable form is two rows — an
+  > early swing on a FRESH mob for the reduced number, and a re-hit on the same mob for zero — and
+  > a full-damage re-hit would have been the real red.
+  >
+  > **Known cosmetic, accepted on sight:** a click that the window refuses still tokens the vanilla
+  > event, so it still flashes. Judged acceptable feedback rather than a phantom hit. If that ever
+  > reads wrong, the fix is to move the token below the window claim in `onPlayerMeleeAttack` --
+  > recorded now so it is a decision later rather than a discovery.
+
 - **`onCombatKnockback` now suppresses a REAL knockback.** It cancels vanilla `ENTITY_ATTACK`
   knockback for player→mob, and until Stage 1 there was no vanilla attack to cancel — the melee
   suppressor meant vanilla never entered its attack path at all. Melee still pushes nothing, so the
