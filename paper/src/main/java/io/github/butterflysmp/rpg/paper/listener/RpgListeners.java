@@ -556,11 +556,23 @@ public final class RpgListeners implements Listener {
      * the design's older "always cancel vanilla KB, then apply the declared one", which left melee
      * pushing nothing at all because no shipped weapon declares one.
      *
-     * <p>THE GATE, and why it is not just a deleted cancel. A click our window refuses still reaches
-     * {@link #onPlayerMeleeAttack}, still gets tokened, and still lets vanilla proceed to knockback
-     * -- so simply letting the push through would knock a mob around on clicks that deal ZERO. That
-     * is the knockback analog of the spam-flash. Instead the push is released on exactly the hit that
-     * claimed the {@link MeleeHits} window, which is the same once-per-10-tick cadence as the damage.
+     * <p>THE GATE releases the push on exactly the hit that claimed the {@link MeleeHits} window, so
+     * knockback keeps the same once-per-10-tick cadence as the damage.
+     *
+     * <p><b>It is a SAFETY NET, not the thing that stops spam knockback -- do not describe it as
+     * that.</b> The gate was written expecting a windowed-out click to reach vanilla's knockback and
+     * shove a mob for zero damage, the knockback analog of the spam-flash. The 2026-08-28 boot
+     * produced that exact shape and disproved it: at tick 12170 a windowed-out re-hit DID reach this
+     * rider -- an ATTACK line with no CLAIMED -- and raised no knockback event at all. Vanilla
+     * suppresses the re-hit's push itself, upstream, before this handler is ever consulted. So for a
+     * SINGLE attacker the cancel branch never fires, and crediting this gate with vanilla's work
+     * would be a lie in the comment.
+     *
+     * <p>It stays because one boot with one attacker did not disprove the cases it covers: co-op,
+     * where a second player's refused click is a separate attack vanilla has no reason to suppress;
+     * a desync where external damage moves the victim's state out from under our window; and a Paper
+     * version where re-hits do knock. Cheap, and correct in all of them. Not to be removed on the
+     * strength of a single-attacker boot.
      *
      * <p>{@code landedThisTick} is tick-EXACT, not "the window is open": a mob hit three ticks ago
      * still has an open window, and reading that would leak a push to the very spam-click this
@@ -572,9 +584,13 @@ public final class RpgListeners implements Listener {
      * LOUD rather than green -- were the order reversed, the signal would never be present and melee
      * would push nothing, which is the first thing a boot notices.
      *
-     * <p>The query does not consume, deliberately. Paper's {@code EntityPushedByEntityAttackEvent}
-     * warns one attack may raise this more than once ("multiple acceleration calculations"), and a
-     * one-shot signal could eat the second event along with the sprint bonus.
+     * <p>The query does not consume, and the boot proved that is load-bearing rather than cautious.
+     * A single hit can raise TWO ENTITY_ATTACK knockback events: measured 2026-08-28, eleven
+     * non-sprint hits raised one each and three of four SPRINT hits raised two. A consume-on-read
+     * signal would have cancelled the second and eaten the sprint bonus. Every event observed
+     * arrived as {@code EntityKnockbackByEntityEvent} with cause ENTITY_ATTACK -- a subclass, which
+     * reaches this handler because neither it nor {@code EntityPushedByEntityAttackEvent} declares
+     * its own HandlerList.
      *
      * <p>Left alone: knockback on PLAYERS (mob->player stays vanilla, the standing Pass 2 decision)
      * and every non-attack cause -- explosions, sweep -- which were never ours to own. Mob->mob

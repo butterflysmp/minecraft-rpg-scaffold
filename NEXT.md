@@ -629,6 +629,65 @@ content change, no `EffectSpec.Knockback` on any weapon, and therefore no need t
 - **Co-op leaks one push, by design — see the multi-attacker i-frame edge below.** Recorded there
   rather than here because it is the same defect wearing a second hat.
 
+  > #### 2026-08-28 — the witness boot, and the one thing it changed
+  >
+  > Instrumented both handlers, booted, swung. The log settled three things that had been reasoned
+  > about rather than seen, and one of them was nearly a shipped bug.
+  >
+  > - **Ordering holds.** `[KB] CLAIMED` precedes `[KB] KNOCK` for the same tick and victim on all
+  >   fifteen hits, so the rider's claim is always recorded before the knockback event asks. The gate
+  >   rests on this.
+  > - **A single hit can raise TWO knockback events, and it does so when sprinting.** Eleven
+  >   non-sprint hits raised one event each; three of the four sprint hits raised two:
+  >
+  >   ```
+  >   tick  sprinting  knockEvents
+  >   534   false      1
+  >   553   true       1
+  >   568   true       2
+  >   647   true       2
+  >   721   true       2
+  >   ```
+  >
+  >   **This is why the signal does not consume.** A consume-on-read gate would have cancelled the
+  >   second event on a sprint hit and eaten the sprint bonus — the single feature this pass exists
+  >   to deliver, destroyed by the guard meant to protect it. Paper's javadoc warned of it
+  >   ("multiple acceleration calculations"); the boot turned the warning into a number. Note the
+  >   553/568 pair: sprinting was true for both and only one raised two, so `isSprinting()` at damage
+  >   time is not by itself the predictor. The mechanism is not established here, only the count.
+  > - **The concrete event is `EntityKnockbackByEntityEvent`, cause `ENTITY_ATTACK`, on all 18
+  >   events.** It reaches a handler registered on `EntityKnockbackEvent` because neither it nor
+  >   `EntityPushedByEntityAttackEvent` declares its own `HandlerList`. It also exposes
+  >   `getHitBy()`/`getPushedBy()` — see the multi-attacker note below, which this partly answers.
+  > - **Feel rows confirmed at the keyboard:** a real hit pushes and a sprint hit sends the mob
+  >   further (the 18-event run above is the same swings); **mob→player knockback still knocks the
+  >   player back**, unchanged and still vanilla's; **a staff moves nothing** (flat-0 attack damage,
+  >   so no damage event and no knockback event — the suppression claim holds in game, not just in
+  >   `WeaponItems.mint`); **a broken weapon is inert** — no damage, no flash, no push, because the
+  >   rider cancels the event before the claim so no signal is ever set.
+  >
+  > **The cancel branch was NOT witnessed firing — and the boot explained why.** Read this as
+  > "unwitnessed, with a cause", never as a passed row.
+  >
+  > The escalating-charge shape WAS produced: at **tick 12170** a windowed-out re-hit reached the
+  > rider — an `ATTACK` line with no `CLAIMED` — so the damage event fired and the window refused it.
+  > It raised **no knockback event at all.** Vanilla suppresses the windowed-out re-hit's push on its
+  > own, upstream, before `onCombatKnockback` is ever consulted. Across the whole session every one
+  > of the 18 knockback events logged `landedThisTick=true`, and the cancel line never ran once.
+  >
+  > **So the spam-knockback leak this gate was written to stop does not manifest for a single
+  > attacker, and the gate is not what prevents it — vanilla is.** The earlier framing in this file
+  > and in the code comments claimed otherwise; both have been corrected. Do not describe the gate as
+  > "what stops spam knockback". It would be crediting our code with vanilla's work.
+  >
+  > **The gate stays anyway, and must not be removed on the strength of one boot.** What was
+  > disproved is one failure mode under one attacker; three cases this session could not speak to
+  > remain live: **co-op**, where a second player's refused click is a separate attack vanilla has no
+  > reason to suppress; **external-damage desync**, where something else moves the victim's state out
+  > from under our window; and **a future Paper version where re-hits do knock.** The gate is one
+  > comparison on an already-existing stamp, correct in all three, and cheap enough that keeping it
+  > needs no further justification than that.
+
 ### Stage 2 (attack speed is a managed stat) — CLOSED, and what it left
 
 Closes the Stage 1 deferral below: the attack-speed stat now drives the player's vanilla
@@ -764,8 +823,12 @@ a melee basic, where nothing read it any more.
   them together. Same root as the entry above, same eventual fix: a per-attacker window and a
   per-attacker gate, upgraded together in the multi-attacker pass. That pass must first verify
   `EntityKnockbackEvent` reliably exposes the attacking entity, which this handler does not use
-  today — `EntityPushedByEntityAttackEvent.getPushedBy()` is the candidate, and gating on it while
-  it is unproven would over-cancel and stop melee pushing at all.
+  today — `EntityPushedByEntityAttackEvent.getPushedBy()` is the candidate, and the witness boot found the
+  concrete class was `EntityKnockbackByEntityEvent` — which exposes it — on all 18 observed events.
+  That is encouraging but NOT a guarantee: 18 events from one player against two mob types does not
+  establish that every ENTITY_ATTACK knockback arrives as that subclass, and gating on it where it
+  does not would over-cancel and stop melee pushing at all. Confirm across more paths before relying
+  on it.
 
 - **The `attackSpeed` STAT no longer reaches basic melee.** CLOSED by Stage 2 above, which drives
   the vanilla attribute from the stat; kept here as the record of what Stage 1 deferred and why.
