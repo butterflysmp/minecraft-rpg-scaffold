@@ -161,6 +161,52 @@ Do **not** bump `paper.version` alone. Order of operations:
 
 Never use version ranges. Pin exact builds so the build is reproducible.
 
+## Branch cleanup — `--merged` LIES here, and so does the obvious replacement
+
+Every PR on this repo is **squash**-merged. The branch's commits never become ancestors of `master`,
+so:
+
+```
+git branch --merged master     # prints NOTHING, even for a fully merged branch
+```
+
+It reports every merged branch as unmerged. That is worse than useless: it either talks you out of a
+safe `-D`, or it trains you to ignore a check you will one day need. `-d` will refuse for the same
+reason, which is why deleting an absorbed branch here correctly needs `-D`.
+
+**The obvious replacement is also wrong**, and this is the part worth remembering:
+
+```
+git diff master <branch> --stat    # empty => absorbed?   ONLY if master has not moved since
+```
+
+It is right for a branch you just merged, and it silently inverts for any older one. Once `master`
+gains one more commit, an absorbed branch diffs non-empty — not because it holds unmerged work, but
+because it is *behind*. Measured 2026-08-28: `feat/sweep-rides-vanilla`, fully absorbed by `d586941`,
+diffed against `master` as `24 files changed, 29 insertions(+), 1122 deletions(-)`. Every one of those
+lines was the crit commit sitting on top of it. A rule built on that check refuses to clean up
+anything except the branch merged five minutes ago.
+
+**The check that actually answers the question** — "is this branch's content already somewhere in
+master's history?" — compares TREES, and needs no knowledge of which commit squashed it:
+
+```bash
+BT=$(git rev-parse "$BRANCH^{tree}")
+git rev-list master | while read c; do
+  [ "$(git rev-parse "$c^{tree}")" = "$BT" ] && echo "absorbed at $c" && break
+done
+```
+
+A match means some commit reachable from `master` has a byte-identical tree, so deleting the branch
+loses nothing. No match means STOP and report it — do not force-delete.
+
+(The cheap special case, when you happen to know the squash commit: `git diff <squash-sha> <branch>`
+empty proves the same thing. That is what was used before the general check existed.)
+
+Then `git branch -D <branch>`, `git push origin --delete <branch>` if it exists remotely, and
+`git fetch --prune` to drop the stale tracking ref. **List `git ls-remote --heads origin` before and
+after** — the wire, not a local ref, is what says the remote branch is gone.
+
 ## Working with me
 
 - I am rusty at Java. If you use a language feature I may not know — sealed
