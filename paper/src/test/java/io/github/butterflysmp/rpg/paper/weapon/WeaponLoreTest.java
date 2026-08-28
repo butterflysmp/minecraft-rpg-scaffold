@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
@@ -63,7 +64,7 @@ class WeaponLoreTest {
                 10, ResourceCost.FREE, new CastSpec.Melee(3.5, 120),
                 List.of(new EffectSpec.WeaponDamage("fire")), List.of("A cut that smoulders."));
         return new WeaponDefinition("emberblade", "Emberblade", "fire", Rarity.RARE,
-                WeaponClass.MELEE, "iron_sword", 7.0, 1.6,
+                WeaponClass.MELEE, "iron_sword", 7.0, 1.6, SweepShare.NONE,
                 List.of(new TriggerBinding("left_click", slash)), List.of("Flavour."));
     }
 
@@ -79,7 +80,7 @@ class WeaponLoreTest {
                 List.of(new EffectSpec.Burst(3.0, List.of(new EffectSpec.Damage(12, "fire")))),
                 List.of("Hurl a bursting ember."));
         return new WeaponDefinition("emberblade", "Emberblade", "fire", Rarity.RARE,
-                WeaponClass.MELEE, "iron_sword", 7.0, 1.6,
+                WeaponClass.MELEE, "iron_sword", 7.0, 1.6, SweepShare.NONE,
                 List.of(new TriggerBinding("left_click", slash),
                         new TriggerBinding("right_click", fireball)),
                 List.of("Flavour."));
@@ -92,7 +93,7 @@ class WeaponLoreTest {
                 15, ResourceCost.FREE, new CastSpec.Projectile(2.5, 0.05, 60),
                 List.of(new EffectSpec.Damage(6, "fire")), List.of("A swift arrow."));
         return new WeaponDefinition("hunters_bow", "Hunter's Bow", "fire", Rarity.UNCOMMON,
-                WeaponClass.RANGER, "bow", 0.0, 0.0,
+                WeaponClass.RANGER, "bow", 0.0, 0.0, SweepShare.NONE,
                 List.of(new TriggerBinding("right_click", shot)), List.of());
     }
 
@@ -145,7 +146,7 @@ class WeaponLoreTest {
                 List.of(new EffectSpec.Visual("solar_detonation"), new EffectSpec.WeaponDamage("fire")),
                 List.of());
         return new WeaponDefinition("hunters_bow", "Hunter's Bow", "fire", Rarity.UNCOMMON,
-                WeaponClass.RANGER, "bow", 6.0, 0.0,
+                WeaponClass.RANGER, "bow", 6.0, 0.0, SweepShare.NONE,
                 List.of(new TriggerBinding("right_click", shot)),
                 List.of("A swift arrow wreathed in flame."));
     }

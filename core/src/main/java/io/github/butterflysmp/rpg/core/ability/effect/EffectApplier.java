@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
 import java.util.List;
+import java.util.function.DoubleConsumer;
 import java.util.UUID;
 
 /**
@@ -25,8 +26,38 @@ import java.util.UUID;
 public final class EffectApplier {
     private final CombatWorld world;
 
+    /**
+     * Notified with the amount of every DIRECT damage effect this applier lands, at the moment it
+     * lands it. Default no-op, so every existing caller -- an ability cast, a projectile impact, an
+     * area pulse, every existing test -- needs no listener and no change.
+     *
+     * <p>It exists for ONE reader: the sweep rider needs the number the primary target was hit for,
+     * and that number is built here and nowhere else. Reporting it from the point it is dealt, rather
+     * than recomputing it from the caster at sweep time, is what makes the two impossible to
+     * disagree -- a second site would have to re-derive the enchant multiplier, the class bonus, the
+     * charge AND this arm's liveness gate, and would silently drift the day any of them moved.
+     *
+     * <p><b>Reported INSIDE the gate, never beside it.</b> Both arms fire this only where they
+     * actually call {@code applyDamage}, so a refused hit -- a non-positive amount, a target already
+     * dead -- reports nothing at all. The sweep rider fails closed on nothing reported, so that
+     * placement is what makes "a swing that dealt nothing sweeps nothing" true rather than hoped for.
+     *
+     * <p><b>THREADING -- do not move either call site.</b> This runs SYNCHRONOUSLY inside the damage
+     * arm, on whichever thread entered the applier. For the basic melee hit that is the attacker's
+     * own thread, where the vanilla damage event fires and where the listener's stash is written.
+     * Same standing as {@code CastExecutor}'s use listener: a scheduled continuation is NOT the
+     * caster's thread, and reporting from one would hand a foreign thread the stash.
+     */
+    private final DoubleConsumer onDirectDamage;
+
     public EffectApplier(CombatWorld world) {
+        this(world, amount -> {});
+    }
+
+    /** With a listener for direct damage dealt. See {@link #onDirectDamage}. */
+    public EffectApplier(CombatWorld world, DoubleConsumer onDirectDamage) {
         this.world = world;
+        this.onDirectDamage = onDirectDamage;
     }
 
     /**
@@ -105,6 +136,7 @@ public final class EffectApplier {
                         + caster.classDamageBonus()) * caster.chargeScale();
                 if (amount > 0 && target.state().alive()) {
                     target.handle().applyDamage(amount, caster.id());
+                    onDirectDamage.accept(amount);   // inside the gate: a refused hit reports nothing
                 }
             }
             case EffectSpec.WeaponDamage wd -> {
@@ -124,6 +156,7 @@ public final class EffectApplier {
                         + caster.classDamageBonus()) * caster.chargeScale();
                 if (amount > 0 && target.state().alive()) {
                     target.handle().applyDamage(amount, caster.id());
+                    onDirectDamage.accept(amount);   // inside the gate: a refused hit reports nothing
                 }
             }
             case EffectSpec.Heal h -> target.handle().applyHeal(h.amount());

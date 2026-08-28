@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core.weapon;
 
+import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,8 +37,14 @@ class WeaponDefinitionTest {
 
     private static WeaponDefinition weapon(double attackDamage, double attackSpeed,
                                            CastSpec cast, EffectSpec payload) {
+        return weapon(attackDamage, attackSpeed, SweepShare.NONE, cast, payload);
+    }
+
+    /** With a declared sweep fraction -- the axis the sweep guards below vary. */
+    private static WeaponDefinition weapon(double attackDamage, double attackSpeed, double sweep,
+                                           CastSpec cast, EffectSpec payload) {
         return new WeaponDefinition("w", "W", "kinetic", Rarity.COMMON, WeaponClass.MELEE,
-                WeaponDefinition.DEFAULT_MATERIAL, attackDamage, attackSpeed,
+                WeaponDefinition.DEFAULT_MATERIAL, attackDamage, attackSpeed, sweep,
                 List.of(new TriggerBinding("left_click", trigger(cast, payload))), List.of());
     }
 
@@ -99,5 +107,62 @@ class WeaponDefinitionTest {
                 "nor may one on a melee-cast ABILITY, which vanilla also does not deliver");
         // Mutation: return attackSpeed unconditionally -> both reddens. This is the exact mutation
         // that previously slipped through with no test catching it.
+    }
+
+    // --- The sweep fraction ---
+
+    @Test
+    void aWeaponDeclaresNoSweepUnlessItSaysSo() {
+        assertEquals(SweepShare.NONE, weapon(8.0, 1.6, MELEE, new EffectSpec.WeaponDamage("kinetic")).sweep(),
+                "absent means no sweep -- which is how the bow and staff have none");
+        // Mutation: default sweep to 0.5 in the convenience constructors -> every weapon in the game
+        // sweeps, including the ones with no melee basic to sweep from -> reddens.
+    }
+
+    @Test
+    void aNegativeSweepIsRejectedLikeANegativeDamage() {
+        var thrown = assertThrows(IllegalArgumentException.class,
+                () -> weapon(8.0, 1.6, -0.5, MELEE, new EffectSpec.WeaponDamage("kinetic")));
+        assertTrue(thrown.getMessage().contains("sweep"), thrown.getMessage());
+        // Mutation: drop the sweep < 0 guard -> SweepShare.of returns a NEGATIVE share, and a swept
+        // mob is HEALED by being hit -> reddens.
+    }
+
+    /**
+     * A declared sweep with nothing to sweep FROM is named, not silently ignored.
+     *
+     * The bow's case: it has a projectile trigger, so there is no vanilla-driven melee swing for a
+     * sweep to be a fraction of. Authoring one is a mistake the author wants told about, and the
+     * loader turns this throw into a per-file skip that names the weapon.
+     */
+    @Test
+    void aSweepOnAWeaponWithNoMeleeBasicIsRejectedRatherThanInert() {
+        var thrown = assertThrows(IllegalArgumentException.class,
+                () -> weapon(0.0, 0.0, 0.5, PROJECTILE, new EffectSpec.Damage(6, "kinetic")));
+        assertTrue(thrown.getMessage().contains("sweep"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("w"), thrown.getMessage());
+        // Mutation: drop the guard -> the bow loads with a sweep nothing will ever read, and the
+        // author is never told -> reddens.
+    }
+
+    /** The guard asks about the TRIGGER, not the class: a melee-class weapon with no basic is fine. */
+    @Test
+    void theSweepGuardKeysOnTheVanillaMeleeTriggerNotTheWeaponClass() {
+        assertThrows(IllegalArgumentException.class,
+                () -> weapon(8.0, 1.6, 0.5, PROJECTILE, new EffectSpec.WeaponDamage("kinetic")),
+                "a weapon_damage payload on a PROJECTILE cast is not a vanilla-driven melee swing");
+        assertDoesNotThrow(
+                () -> weapon(8.0, 1.6, 0.5, MELEE, new EffectSpec.WeaponDamage("kinetic")),
+                "melee cast + weapon_damage payload IS one, so it may sweep");
+        // Mutation: key the guard on weaponClass == MELEE instead of hasVanillaMeleeTrigger -> the
+        // first case passes validation and then never sweeps, the exact silent no-op the guard
+        // exists to prevent -> reddens.
+    }
+
+    @Test
+    void aDeclaredSweepIsCarriedThroughUntouched() {
+        assertEquals(0.5, weapon(8.0, 1.6, 0.5, MELEE, new EffectSpec.WeaponDamage("kinetic")).sweep(), 1e-9);
+        // Mutation: clamp or rescale sweep in the compact constructor -> the authored number is not
+        // the number that fires, and the yml stops being the source of truth -> reddens.
     }
 }

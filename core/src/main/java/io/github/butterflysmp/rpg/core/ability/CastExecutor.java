@@ -16,6 +16,7 @@ import io.github.butterflysmp.rpg.core.combat.SweptLine;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.DoubleConsumer;
 
 /**
  * Turns an aim into an impact, then applies the ability's effects there.
@@ -62,8 +63,21 @@ public final class CastExecutor {
      * to prevent.
      */
     public CastExecutor(CombatWorld world, Runnable onBasicAttackUse) {
+        this(world, onBasicAttackUse, amount -> {});
+    }
+
+    /**
+     * With a listener for DIRECT DAMAGE DEALT as well, which only the vanilla-driven basic melee
+     * hit passes. The sweep rider needs the number the primary target was hit for, and
+     * {@link EffectApplier} is the one place that number is built; this carries it out rather than
+     * letting a second site re-derive it from the caster and drift.
+     *
+     * <p>The same THREADING rule as {@code onBasicAttackUse} above applies, for the same reason and
+     * with the same force -- see {@link EffectApplier} for where it is reported from.
+     */
+    public CastExecutor(CombatWorld world, Runnable onBasicAttackUse, DoubleConsumer onDirectDamage) {
         this.world = world;
-        this.effects = new EffectApplier(world);
+        this.effects = new EffectApplier(world, onDirectDamage);
         this.onBasicAttackUse = onBasicAttackUse;
     }
 

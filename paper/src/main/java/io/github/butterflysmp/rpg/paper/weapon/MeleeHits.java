@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongSupplier;
@@ -79,14 +80,25 @@ public final class MeleeHits {
     private static final String WINDOW_KEY = "__melee_window";
 
     private final Map<UUID, Swing> pending = new ConcurrentHashMap<>();
+
+    /**
+     * The damage the PRIMARY target took, per attacker, stamped with the tick it was dealt on. What
+     * the sweep rider takes its fraction of.
+     */
+    private final Map<UUID, PrimaryHit> primaries = new ConcurrentHashMap<>();
     private final CooldownTracker windows;
+    private final LongSupplier currentTick;
 
     public MeleeHits(LongSupplier currentTick) {
         this.windows = new CooldownTracker(currentTick);
+        this.currentTick = currentTick;
     }
 
     /** What the pre-attack event knew and the damage event needs. */
     public record Swing(UUID victim, double charge) {}
+
+    /** What the primary hit dealt, and the tick it dealt it on. */
+    private record PrimaryHit(double damage, long tick) {}
 
     /** Remember this attacker's swing. Overwrites any previous one, which by then never landed. */
     public void record(UUID attacker, UUID victim, double charge) {
@@ -160,14 +172,58 @@ public final class MeleeHits {
         return windows.ticksRemaining(victim, WINDOW_KEY) == WINDOW_TICKS;
     }
 
+    /**
+     * Remember what the PRIMARY target was just hit for, so the sweep rider can take a fraction of it.
+     *
+     * <p>Stamped with the current tick rather than given a lifecycle, exactly as {@link #landedThisTick}
+     * derives its answer from the window's stamp: there is nothing to expire, nothing for
+     * {@link #forget} to miss, and no way for a stale number from an earlier swing to be read as this
+     * swing's. Overwrites, like {@link #record} -- one attacker has one primary hit per swing.
+     *
+     * <p>Only ever called with a number {@code EffectApplier} actually dealt. That is what makes the
+     * absence in {@link #primaryDamageThisTick} meaningful rather than merely unset.
+     */
+    public void recordPrimaryDamage(UUID attacker, double damage) {
+        primaries.put(attacker, new PrimaryHit(damage, currentTick.getAsLong()));
+    }
+
+    /**
+     * What this attacker's primary hit dealt THIS TICK, or empty.
+     *
+     * <p><b>A pure query, and it MUST NOT consume.</b> One sweeping swing raises one damage event per
+     * swept mob, and every one of them needs this same number: a consume-on-read would serve the
+     * first bystander and silently leave the rest untouched. This is the same lesson
+     * {@link #landedThisTick} learned from the 2026-08-28 knockback boot, where a consuming signal
+     * would have eaten the second of a sprint hit's two knockback events -- and it is why both
+     * readers are bounded by a tick stamp instead of by removal.
+     *
+     * <p>TICK-EXACT, not "the most recent hit". Vanilla raises every sweep event inside the same
+     * synchronous {@code Player#attack} as the primary, so a stamp from any earlier tick belongs to a
+     * different swing and must not be read as this one's. Empty is the FAIL-CLOSED answer the sweep
+     * rider deals nothing on: a windowed-out primary, an untagged or broken weapon, a swing that
+     * connected with nothing -- none of them stash, so none of them sweep.
+     */
+    public OptionalDouble primaryDamageThisTick(UUID attacker) {
+        PrimaryHit hit = primaries.get(attacker);
+        if (hit == null || hit.tick() != currentTick.getAsLong()) return OptionalDouble.empty();
+        return OptionalDouble.of(hit.damage());
+    }
+
     /** Drop a victim's window. Call on death, despawn and chunk-unload, or the map grows forever. */
     public void forget(UUID victim) {
         windows.clear(victim);
     }
 
-    /** Drop an attacker's un-landed swing. Call on quit. */
+    /**
+     * Drop an attacker's un-landed swing AND their stashed primary hit. Call on quit.
+     *
+     * <p>The primary stash would expire on its own at the next tick boundary, so this is a bound on
+     * the MAP rather than on the value: without it an entry per player who ever swung would sit there
+     * until restart, correct but unbounded.
+     */
     public void forgetAttacker(UUID attacker) {
         pending.remove(attacker);
+        primaries.remove(attacker);
     }
 
     /** Victims holding window state. The leak check. */
@@ -178,5 +234,10 @@ public final class MeleeHits {
     /** Attackers holding an un-landed swing. Bounded by the online player count. */
     public int pendingSwings() {
         return pending.size();
+    }
+
+    /** Attackers holding a stashed primary hit. Bounded by the online player count. The leak check. */
+    public int stashedPrimaries() {
+        return primaries.size();
     }
 }

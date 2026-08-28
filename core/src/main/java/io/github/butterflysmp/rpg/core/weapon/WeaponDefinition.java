@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.core.weapon;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.BasicMelee;
+import io.github.butterflysmp.rpg.core.combat.SweepShare;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +30,7 @@ public record WeaponDefinition(
         String material,
         double attackDamage,
         double attackSpeed,
+        double sweep,
         List<TriggerBinding> triggers,
         List<String> flavor
 ) {
@@ -65,6 +67,20 @@ public record WeaponDefinition(
             throw new IllegalArgumentException("weapon '" + id
                     + "' has a vanilla-driven melee trigger, so attack_speed must be > 0, got: " + attackSpeed);
         }
+        // The SWEEP fraction: what a bystander caught by vanilla's sweeping swing takes, as a share
+        // of the number the primary target took. Absent (0) means this weapon does not sweep, which
+        // is how a non-blade simply has none -- there is no hard-coded exclusion list anywhere.
+        // Negative is a content bug.
+        if (sweep < 0) throw new IllegalArgumentException("weapon '" + id + "' sweep must be >= 0, got: " + sweep);
+        // A declared sweep with nothing to sweep FROM can never fire, so it is named rather than
+        // silently ignored -- the same standing as the attack_speed guard above, and for the same
+        // reason: a silent no-op on an authored mechanical axis is the failure this project keeps
+        // writing guards against. Asks the SAME predicate mint, meleeCadence and that guard ask, so
+        // a weapon cannot validate as sweeping here and then find no trigger to sweep from there.
+        if (SweepShare.sweeps(sweep) && !hasVanillaMeleeTrigger(triggers)) {
+            throw new IllegalArgumentException("weapon '" + id
+                    + "' declares sweep but has no vanilla-driven melee trigger, so it can never sweep");
+        }
         triggers = List.copyOf(triggers);
         // Optional authored prose for the tooltip -- absent is empty, never null.
         flavor = flavor == null ? List.of() : List.copyOf(flavor);
@@ -73,13 +89,13 @@ public record WeaponDefinition(
     /** A sword-shaped MELEE weapon with no declared attack damage: the shape older tests use. */
     public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
                             List<TriggerBinding> triggers) {
-        this(id, displayName, element, rarity, WeaponClass.MELEE, DEFAULT_MATERIAL, 0.0, 0.0, triggers, List.of());
+        this(id, displayName, element, rarity, WeaponClass.MELEE, DEFAULT_MATERIAL, 0.0, 0.0, SweepShare.NONE, triggers, List.of());
     }
 
     /** A MELEE weapon with an explicit material but no declared attack damage (kept for existing callers). */
     public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
                             String material, List<TriggerBinding> triggers) {
-        this(id, displayName, element, rarity, WeaponClass.MELEE, material, 0.0, 0.0, triggers, List.of());
+        this(id, displayName, element, rarity, WeaponClass.MELEE, material, 0.0, 0.0, SweepShare.NONE, triggers, List.of());
     }
 
     /**

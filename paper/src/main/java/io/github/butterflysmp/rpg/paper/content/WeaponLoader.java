@@ -90,6 +90,14 @@ public final class WeaponLoader {
         // WeaponDefinition rejects a negative, and rejects a MISSING one on a vanilla-driven melee
         // weapon -- the file is skipped and named, like any malformed one.
         double attackSpeed = s.getDouble("attack_speed", 0.0);
+        // The sweep fraction: what each bystander caught by vanilla's sweeping swing takes, as a
+        // share of the number the primary target took. ABSENT MEANS NO SWEEP, which is deliberate and
+        // is what keeps this field from being a migration: an operator's already-edited weapon file
+        // simply does not sweep on the next restart, rather than being rejected the way a newly
+        // required field would reject it. WeaponDefinition rejects a negative, and rejects a declared
+        // sweep on a weapon with no vanilla-driven melee trigger -- the file is skipped and named,
+        // like any malformed one.
+        double sweep = s.getDouble("sweep", 0.0);
         // Authored tooltip prose. Optional; absent -> empty list. MUST be a YAML list: getStringList
         // returns [] for a scalar (flavor: "one line" would vanish silently -- the "finds nothing"
         // trap). So warn, loudly and named, when someone writes it as a scalar, and don't skip the
@@ -139,7 +147,7 @@ public final class WeaponLoader {
         // WeaponDefinition rejects an empty trigger list (and a negative attack_damage) -- caught above,
         // named, skipped.
         return new WeaponDefinition(id, displayName, element, rarity, weaponClass, material,
-                attackDamage, attackSpeed, bindings, flavor);
+                attackDamage, attackSpeed, sweep, bindings, flavor);
     }
 
     private static Rarity rarity(String raw) {

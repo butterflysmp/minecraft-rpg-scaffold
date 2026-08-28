@@ -21,6 +21,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
 import java.util.Optional;
+import java.util.OptionalDouble;
 
 /**
  * Firing a held weapon's trigger for a player, shared by the left-click swing listener and
@@ -159,21 +160,38 @@ public final class WeaponFire {
      * <p>THREADING: runs on the thread owning the attacker, which is where the damage event fires.
      * The victim is within vanilla's ~3-block reach, so it is in the same region -- the same standing
      * onMobMeleeAttack already relies on when it snapshots across the pair.
+     *
+     * <p>RETURNS what it actually DEALT, for the sweep rider to take a fraction of. Observed through
+     * {@code EffectApplier}'s damage seam rather than recomputed here, which is the whole reason the
+     * seam exists: a second site would have to re-derive the enchant multiplier, the class bonus, the
+     * charge and the arm's liveness gate, and would drift the day any of them moved. Empty means
+     * NOTHING WAS DEALT -- no weapon, no melee trigger, an unarmed caster, a target already dead --
+     * and the sweep rider fails closed on it, so a swing that dealt nothing sweeps nothing.
+     *
+     * <p>FIRST-WINS on a payload carrying more than one damage effect, the same rule
+     * {@code DamagePayload.of} already applies so that two systems cannot disagree about one weapon.
+     * No shipped melee payload has more than one; this is the rule written down for the one that does.
      */
-    public static void landVanillaMelee(Player attacker, LivingEntity victim, double chargeScale,
+    public static OptionalDouble landVanillaMelee(Player attacker, LivingEntity victim, double chargeScale,
                                         WeaponRegistry weapons, AdapterContext adapters,
                                         CooldownTracker cooldowns) {
         Optional<AbilityDefinition> trigger = WeaponItems.heldWeaponId(attacker, adapters.keys())
                 .flatMap(weapons::find)
                 .flatMap(WeaponDefinition::vanillaMeleeTrigger);
-        if (trigger.isEmpty()) return;
+        if (trigger.isEmpty()) return OptionalDouble.empty();
 
         CombatantSnapshot caster = BukkitCombatant.snapshot(attacker, adapters.stats());
         Combatant target = BukkitCombatant.of(victim, adapters);
 
+        // A one-slot sink rather than a running total: FIRST-WINS, per the javadoc above. The array
+        // is the plain Java idiom for writing to a local from a lambda; it is written and read on
+        // this one thread, synchronously, within the landBasicMelee call below.
+        double[] dealt = {Double.NaN};
         new CastExecutor(new PaperCombatWorld(victim.getWorld(), adapters),
-                () -> WeaponDurability.applyWearOnUse(attacker, adapters.keys(), cooldowns))
+                () -> WeaponDurability.applyWearOnUse(attacker, adapters.keys(), cooldowns),
+                amount -> { if (Double.isNaN(dealt[0])) dealt[0] = amount; })
                 .landBasicMelee(trigger.get(), caster, target, chargeScale);
+        return Double.isNaN(dealt[0]) ? OptionalDouble.empty() : OptionalDouble.of(dealt[0]);
     }
 
     private static Vec3 toVec3(Location location) {
