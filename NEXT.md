@@ -627,6 +627,31 @@ a melee basic, where nothing read it any more.
   alternatives: under a cooldown gate every allowed swing is already fully charged, and
   `AttackCharge` becomes dead code. That is why a melee basic authors no `cooldown_ticks`.
 
+
+  > #### 2026-08-28 — a REQUIRED content field is a breaking content change, and the boot proved it
+  >
+  > The first Stage 2 deploy booted clean, said `Done (6.134s)`, and loaded **3 weapons instead of
+  > 5**. Both swords were skipped:
+  >
+  > ```
+  > [Rpg] Skipping malformed weapon 'ironblade.yml': weapon 'ironblade' has a vanilla-driven
+  >       melee trigger, so attack_speed must be > 0, got: 0.0
+  > ```
+  >
+  > The jar was correct. The DATA FOLDER was not: `saveResource(path, false)` never overwrites, so
+  > `run/plugins/Rpg/content/` still held the pre-Stage-2 files with no `attack_speed`, and the new
+  > required-field guard duly rejected them. `--refresh-content` fixed the dev loop.
+  >
+  > **The part that is not a dev-loop annoyance:** this is exactly what happens on a REAL server
+  > upgrading to this build. An operator's content files are the source of truth and we must not
+  > overwrite them, so every weapon they have edited loses its melee basic on restart until they add
+  > `attack_speed:` by hand. Adding a required field to the content schema is therefore a migration,
+  > not a code change, and the next one needs a decision it did not get this time: default it,
+  > migrate it on load, or version the schema.
+  >
+  > It failed the right way -- loudly, named, per-file, with the rest of the server up -- which is
+  > the whole argument for the guard existing. But "loud" only helps someone who reads the boot log.
+  > `Done (` said nothing was wrong.
 - **Still open from Stage 1, untouched here:** sweep, the optional player-attributed-`DamageSource`
   kill, a crit multiplier, melee knockback, the multi-attacker i-frame edge, and PvP.
 
