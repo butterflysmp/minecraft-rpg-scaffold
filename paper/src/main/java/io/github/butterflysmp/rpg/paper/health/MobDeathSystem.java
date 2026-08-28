@@ -23,18 +23,29 @@ import org.bukkit.entity.Player;
  * Bukkit#getPlayer} returns the online Player or null (mirrors the popup's resolution -- no
  * package-private Attribution reach).
  *
- * KILL CREDIT is split, and the split is the whole of the 2026-08-28 fix. setKiller sets the mob's
- * lastHurtByPlayer, which is what vanilla reads for DROPS and XP ORBS -- those always worked. The kill
- * STATISTICS come from somewhere else entirely: vanilla awards them from the killer it resolves off the
- * DamageSource, and setHealth(0) carries no player-attributed source, so the stats page showed zero kills
- * for a player who had plainly killed things. They are awarded explicitly below.
+ * KILL CREDIT is split, and the split is narrower than it first looked. setKiller sets the mob's
+ * lastHurtByPlayer, and vanilla reads that for DROPS, XP ORBS and -- MEASURED, see below -- ADVANCEMENT
+ * CRITERIA. All three always worked. Only the kill STATISTICS come from elsewhere: vanilla awards those
+ * from the killer it resolves off the DamageSource, and setHealth(0) carries no player-attributed
+ * source, so the stats page showed zero kills for a player who had plainly killed things. They are
+ * awarded explicitly below, and they are the ONLY thing this class awards by hand.
  *
- * The fuller fix, deliberately NOT taken here: kill through a player-attributed DamageSource that is not
- * ENTITY_ATTACK, so vanilla credits statistics AND advancement criteria naturally and nothing needs
- * awarding by hand. That is a real behaviour change to the death path (it would pass through the damage
- * pipeline again, and the rider tokens player-dealt melee), so it is its own decision rather than a
- * rider on this one. Anything else keyed on the same resolved-killer path -- the Monster Hunter
- * advancement is the obvious one -- is still uncredited until it is taken.
+ * > 2026-08-28: the statistics fix originally recorded here that the Monster Hunter advancement was
+ * > "still uncredited" for the same reason. That was an INFERENCE from one measured fact -- the
+ * > statistics being zero -- reasoning that vanilla awards both from the same resolved killer. It is
+ * > WRONG, and the boot said so: revoke minecraft:adventure/kill_a_mob, kill a zombie, and the toast
+ * > appears. The advancement criterion fires off lastHurtByPlayer, which setKiller had been setting all
+ * > along. Two things vanilla awards near each other are not thereby awarded from the same place, and
+ * > the shape of the mistake is worth keeping: a single measurement was generalised into a second
+ * > claim that was never itself measured.
+ *
+ * A fuller change remains AVAILABLE, but it is no longer a fix for anything known to be broken: killing
+ * through a player-attributed non-ENTITY_ATTACK DamageSource would let vanilla credit the statistics
+ * naturally instead of by hand, and would cover anything future that keys on the DamageSource rather
+ * than on lastHurtByPlayer. Wanted for tidiness and for unknown-unknowns, not to repair a symptom. It
+ * is a real behaviour change to the death path -- it would re-enter the damage pipeline, which the melee
+ * rider tokens -- so it stays its own decision. If it is ever taken, the explicit increment below must
+ * be removed in the same change, or every kill counts twice.
  *
  * Scope: MOB death only. A player reaching 0 is skipped ({@code targetIsPlayer}) and still sits at the
  * half-heart floor, alive -- the respawn lifecycle is its own follow-up pass.
@@ -73,11 +84,13 @@ public final class MobDeathSystem implements HealthListener {
 
         // THE KILL STATISTIC, which setHealth(0) does not award.
         //
-        // setKiller sets the mob's lastHurtByPlayer, and that is what vanilla consults for drops and
-        // XP orbs -- which is why those already worked. The statistics do NOT come from there: vanilla
-        // awards them from the killer resolved off the DamageSource, and setHealth(0) carries no
-        // player-attributed source at all. So the stats page showed a zero kill count for a player who
-        // had visibly killed things, which is the boot observation this fixes.
+        // setKiller sets the mob's lastHurtByPlayer, and that is what vanilla consults for drops, XP
+        // orbs and advancement criteria -- which is why all three already worked (the advancement half
+        // measured, not assumed; see the class javadoc). The statistics are the ONE thing that does not
+        // come from there: vanilla awards them from the killer resolved off the DamageSource, and
+        // setHealth(0) carries no player-attributed source at all. So the stats page showed a zero kill
+        // count for a player who had visibly killed things, which is the boot observation this fixes --
+        // and it is the only gap, not one symptom of a broader one.
         //
         // Both, because they are separate counters and the stats page shows both: MOB_KILLS is the
         // total line, KILL_ENTITY the per-type breakdown. Awarding one leaves the other wrong.
