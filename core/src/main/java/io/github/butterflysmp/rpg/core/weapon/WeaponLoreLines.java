@@ -26,9 +26,17 @@ import java.util.Optional;
  * in {@link DamagePayload} rather than here, because the cooldown scaler asks the same question --
  * see its javadoc for why one shared answer matters.
  *
- * Note what this class does NOT do: the {@code Attack Speed} it formats is the weapon's BASE
- * ({@code 20 / cooldown_ticks}), never the holder's resolved attack-speed stat. Lore describes the
- * weapon, not whoever is holding it -- that is what makes it mint-time safe and non-drifting.
+ * Note what this class does NOT do: the {@code Attack Speed} it formats is the weapon's BASE, never
+ * the holder's resolved attack-speed stat. Lore describes the weapon, not whoever is holding it --
+ * that is what makes it mint-time safe and non-drifting. A boosted player and an unboosted one
+ * reading the same sword must see the same number.
+ *
+ * That base now comes from TWO sources, because the two kinds of basic attack no longer share a
+ * cadence. A vanilla-driven melee hit is paced by the vanilla attack-speed attribute, authored
+ * directly as {@code attack_speed:}; a ranged basic attack is still paced by its trigger's
+ * {@code cooldown_ticks} through {@code AttackSpeed.effectiveCooldownTicks}. Each formatter reads
+ * the number that actually governs its own weapon, so neither line can drift from what the weapon
+ * really does -- which is why this is two methods and not one with a converted argument.
  */
 public final class WeaponLoreLines {
 
@@ -73,21 +81,41 @@ public final class WeaponLoreLines {
     }
 
     /**
-     * A basic attack's rate as ATTACKS PER SECOND: 10 ticks between swings -> "2.0". Vanilla
+     * A RANGED basic attack's rate as ATTACKS PER SECOND: 15 ticks between shots -> "1.3". Vanilla
      * Minecraft states attack speed this way on its own item tooltips, so a player already knows
      * that higher is better -- which is why this is not just {@link #cooldownLabel} reused. An
      * ability's cadence still reads as a cooldown in seconds, where lower is better.
      *
-     * Derived from the trigger's cooldown, NOT read from an attack_speed stat -- there is no such
-     * stat yet. When one lands it becomes the source and this display follows it.
+     * Derived from the trigger's cooldown because for a ranged basic attack that IS the cadence:
+     * the shot is gated by {@code CooldownTracker}, scaled by {@code AttackSpeed
+     * .effectiveCooldownTicks}. Deriving it rather than authoring a second number is what stops the
+     * two disagreeing the first time someone edits one and forgets the other.
      *
-     * A non-positive cooldown yields "" and the caller drops the line: no shipped basic attack has
-     * one, and the guard is what stops a zero-cooldown weapon_damage trigger dividing by zero and
-     * printing "Infinity" on someone's tooltip.
+     * A non-positive cooldown yields "" and the caller drops the line: no shipped ranged basic
+     * attack has one, and the guard is what stops a zero-cooldown weapon_damage trigger dividing by
+     * zero and printing "Infinity" on someone's tooltip.
      */
-    public static String attackSpeedLabel(int cooldownTicks) {
+    public static String rangedAttackSpeedLabel(int cooldownTicks) {
         if (cooldownTicks <= 0) return "";
         return String.format(Locale.ROOT, "%.1f", 20.0 / cooldownTicks);
+    }
+
+    /**
+     * A MELEE basic attack's rate, read straight off the weapon's authored {@code attack_speed}.
+     *
+     * Not derived from anything: since vanilla's crosshair attack took over the melee hit, the
+     * weapon's cadence IS this number -- it is written onto the wielder's vanilla attack-speed
+     * attribute and paces the attack-strength meter the charge curve reads. Authoring it directly
+     * rather than deriving it from a tick count is also what makes true vanilla values expressible:
+     * every vanilla sword is 1.6, and {@code 20 / n} cannot produce 1.6 for any integer n.
+     *
+     * A non-positive speed yields "" and the caller drops the line. In practice unreachable for a
+     * vanilla-driven melee weapon -- {@code WeaponDefinition} rejects one outright -- so this guard
+     * covers the weapon that has no melee basic at all rather than a legal-but-odd number.
+     */
+    public static String meleeAttackSpeedLabel(double attackSpeed) {
+        if (attackSpeed <= 0) return "";
+        return String.format(Locale.ROOT, "%.1f", attackSpeed);
     }
 
     private static boolean isFree(ResourceCost cost) {

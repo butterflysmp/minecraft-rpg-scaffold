@@ -329,11 +329,19 @@ class AbilityServiceTest {
 
     // --- Attack speed scales a BASIC ATTACK's cooldown, and only a basic attack's ------------------
 
-    /** A weapon_damage trigger: the swing shape, 10 ticks, free -- ironblade's left-click. */
+    /**
+     * A weapon_damage trigger: the shot shape, 15 ticks, free -- hunters_bow's right-click.
+     *
+     * RANGED on purpose, and it used to be melee. Since basic melee moved to the vanilla attack
+     * event, WeaponFire refuses a vanilla-driven melee trigger before AbilityService ever sees it,
+     * so a Melee + WeaponDamage fixture here described a shape that can no longer reach this code
+     * at all -- the tests passed while documenting a dead path. The bow is the actual surviving
+     * consumer of attack-speed cooldown scaling, so it is the honest fixture.
+     */
     private static AbilityDefinition basicAttack() {
         return new AbilityDefinition(
-                "ironblade/left_click", "Ironblade", "kinetic", "none",
-                10, ResourceCost.FREE, new CastSpec.Melee(3.5, 120),
+                "hunters_bow/right_click", "Hunter's Bow", "kinetic", "none",
+                15, ResourceCost.FREE, new CastSpec.Projectile(2.5, 0.05, 60),
                 List.of(new EffectSpec.WeaponDamage("kinetic")));
     }
 
@@ -360,10 +368,11 @@ class AbilityServiceTest {
 
     @Test
     void attackSpeedShortensABasicAttacksCooldown() {
-        // The point of the whole pass: at 2.0 the 10-tick swing arms a 5-tick cooldown.
-        assertEquals(10, cooldownAfterFiring(basicAttack(), 1.0), "neutral speed is an identity");
-        assertEquals(5, cooldownAfterFiring(basicAttack(), 2.0));
-        assertEquals(20, cooldownAfterFiring(basicAttack(), 0.5), "a slow debuff lengthens it");
+        // The bow's 15-tick fire rate, scaled. Every value executed rather than derived: 15/2.0
+        // is 7.5, which ROUNDS to 8 rather than truncating to 7.
+        assertEquals(15, cooldownAfterFiring(basicAttack(), 1.0), "neutral speed is an identity");
+        assertEquals(8, cooldownAfterFiring(basicAttack(), 2.0));
+        assertEquals(30, cooldownAfterFiring(basicAttack(), 0.5), "a slow debuff lengthens it");
     }
 
     /**
@@ -392,10 +401,10 @@ class AbilityServiceTest {
         var service = new AbilityService(new AbilityRegistry(), cooldowns, pool(() -> 0L));
         var trigger = basicAttack();
 
-        service.fireTrigger(caster.snapshot(), trigger, FORWARD);   // arms 10 ticks at 1.0
+        service.fireTrigger(caster.snapshot(), trigger, FORWARD);   // arms 15 ticks at 1.0
         caster.attackSpeed = 10.0;                                   // buff arrives mid-cooldown
 
-        assertEquals(10, cooldowns.ticksRemaining(caster.id(), trigger.id()),
+        assertEquals(15, cooldowns.ticksRemaining(caster.id(), trigger.id()),
                 "the running timer keeps the cadence it was armed with");
         assertInstanceOf(AbilityService.CastResult.OnCooldown.class,
                 service.fireTrigger(caster.snapshot(), trigger, FORWARD),

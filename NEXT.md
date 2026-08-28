@@ -581,6 +581,55 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Stage 2 (attack speed is a managed stat) — CLOSED, and what it left
+
+Closes the Stage 1 deferral below: the attack-speed stat now drives the player's vanilla
+`ATTACK_SPEED` attribute, reconciled on the same 5-tick loop as HP, defense and the rest, so
+`attack_speed_boost_TEMP` finally moves a basic melee swing. The mint-time pin is gone — an item
+modifier cannot follow a stat that changes while the item sits in your hand, which is precisely why
+the boost was inert. Melee weapons author `attack_speed:` directly; `cooldown_ticks` is dropped from
+a melee basic, where nothing read it any more.
+
+- **The single-target sustained cap is REAL, INTENDED, and not a Stage 2 regression.** A boost past
+  an *effective speed of 2.0* — equivalently, a charge period at or below `MeleeHits.WINDOW_TICKS` —
+  stops adding single-target sustained damage. That is Finding 2's guarantee working: one custom hit
+  per victim per window, however fast swings arrive. Vanilla's own i-frame rule enforces the same
+  cap upstream, refusing the re-hit before any event reaches us, so it is vanilla-faithful rather
+  than ours: fast weapons clear crowds, they do not melt single targets. The boost still scales
+  **feel, multi-target throughput, and burst**.
+
+  State the threshold as *effective speed ≥ 2.0*, **never** as a ratio like "past 1.25×" — that
+  number is specific to a 1.6 base and is wrong for any other weapon.
+
+  Rejected, and recorded so they are not re-proposed as fixes: owning the i-frames (un-vanilla
+  single-target melt, and it unravels the window guard) and capping the stat (throws away the
+  multi-target and feel benefit, and needs a weapon-relative cap to mean anything).
+
+- **The tooltip's "Attack Speed" line now has two sources**, branched on `BasicMelee.isVanillaDriven`
+  — the same predicate that routes the hit. Melee reads the authored `attack_speed`; ranged still
+  derives `20 / cooldown_ticks`, because for a bow that genuinely IS the cadence. Giving the bow a
+  display-only `attack_speed:` was rejected: the two would drift the first time someone edited one
+  and forgot the other.
+
+- **Weapon swap lags by up to one reconcile period (5 ticks, 0.25s).** Inherent to reconciling from
+  the held weapon rather than pinning on the item, and identical to the lag the `ATTACK_DAMAGE` stat
+  has always had on the same scan. An item-side base plus a `MULTIPLY_SCALAR_1` player modifier would
+  make the swap instant, but it splits one number across two mechanisms and would also speed up
+  bare-hand and staff punching.
+
+- **`AttackSpeed.effectiveCooldownTicks` is now ranged-only, and its tests say so.** The exclusion is
+  structural rather than conditional: `WeaponFire.attempt` refuses a vanilla-driven melee trigger
+  before `AbilityService` ever sees it. `AbilityServiceTest`'s basic-attack fixture was a Melee +
+  WeaponDamage shape that since Stage 1 could not reach that code at all — the tests passed while
+  documenting a dead path, and now use the bow, the actual surviving consumer.
+
+  **The two must still never both throttle.** A content cooldown and a vanilla charge period are
+  alternatives: under a cooldown gate every allowed swing is already fully charged, and
+  `AttackCharge` becomes dead code. That is why a melee basic authors no `cooldown_ticks`.
+
+- **Still open from Stage 1, untouched here:** sweep, the optional player-attributed-`DamageSource`
+  kill, a crit multiplier, melee knockback, the multi-attacker i-frame edge, and PvP.
+
 ### Stage 1 (vanilla drives basic melee) — what it created or exposed
 
   > #### 2026-08-28 — the in-game gate is RUN and PASSED, in full
@@ -631,14 +680,18 @@ Before milestone 2, two things worth measuring rather than assuming:
   divergence, not an oversight. A per-attacker window, or mirroring vanilla's difference rule for
   the custom amount, is its own later fork.
 
-- **The `attackSpeed` STAT no longer reaches basic melee.** `AttackSpeed.effectiveCooldownTicks`
+- **The `attackSpeed` STAT no longer reaches basic melee.** CLOSED by Stage 2 above, which drives
+  the vanilla attribute from the stat; kept here as the record of what Stage 1 deferred and why.
+  As written at the time: `AttackSpeed.effectiveCooldownTicks`
   still governs the bow's fire rate through `CooldownTracker`, but a melee swing's cadence is now
   the vanilla `attack_speed` attribute pinned at mint. So `attack_speed_boost_TEMP` is inert on
   swings until Stage 2 drives that attribute from the stat. The two must not both throttle: a
   content cooldown *and* a vanilla charge period are alternatives, because under a cooldown gate
   every allowed swing is already fully charged and `AttackCharge` would be dead code.
 
-- **Authored 2.0 vs true-vanilla 1.6 per material.** `mint` derives the pinned attack speed from the
+- **Authored 2.0 vs true-vanilla 1.6 per material.** SETTLED by Stage 2: melee weapons author
+  `attack_speed` directly and both shipped swords declare the true-vanilla 1.6. The old derivation
+  read: `mint` derives the pinned attack speed from the
   trigger's `cooldown_ticks` (10 → 2.0/s), so the charge period matches the tooltip's "Attack Speed"
   line. Whether a sword-shaped weapon should instead inherit its material's native vanilla speed is
   a content decision, left open.

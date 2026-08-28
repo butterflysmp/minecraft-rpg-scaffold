@@ -67,25 +67,56 @@ class WeaponLoreLinesTest {
         assertEquals("", WeaponLoreLines.cadenceLine(0, ResourceCost.FREE));
     }
 
-    // --- attackSpeedLabel: ATTACKS PER SECOND (20/ticks), not seconds. Redden by changing the 20. ---
+    // --- attack speed: ATTACKS PER SECOND, from TWO sources. Melee reads the weapon's authored
+    // cadence (vanilla paces the swing); ranged still derives 20/ticks from its trigger cooldown
+    // (CooldownTracker paces the shot). Each reads the number that actually governs it. ---
 
     @Test
     void attackSpeedIsAttacksPerSecondNotSeconds() {
         // 10 ticks between swings is TWO attacks a second. The number must be 2.0, not 0.5 --
         // higher is better here, the opposite of the cooldown lines.
-        assertEquals("2.0", WeaponLoreLines.attackSpeedLabel(10));
+        assertEquals("2.0", WeaponLoreLines.rangedAttackSpeedLabel(10));
     }
 
     @Test
     void attackSpeedRoundsToOneDecimal() {
-        assertEquals("1.3", WeaponLoreLines.attackSpeedLabel(15));
+        assertEquals("1.3", WeaponLoreLines.rangedAttackSpeedLabel(15));
     }
 
     @Test
     void attackSpeedOfAZeroCooldownIsBlankRatherThanInfinity() {
         // The guard that keeps a divide-by-zero off a player's tooltip; the caller drops the line.
-        assertEquals("", WeaponLoreLines.attackSpeedLabel(0));
-        assertEquals("", WeaponLoreLines.attackSpeedLabel(-5));
+        assertEquals("", WeaponLoreLines.rangedAttackSpeedLabel(0));
+        assertEquals("", WeaponLoreLines.rangedAttackSpeedLabel(-5));
+    }
+
+
+    @Test
+    void meleeAttackSpeedIsTheWeaponsAuthoredCadenceNotADerivedOne() {
+        // Every vanilla sword is 1.6, and 20/n cannot produce 1.6 for any integer n -- which is the
+        // whole reason melee authors the number instead of deriving it from a tick count.
+        assertEquals("1.6", WeaponLoreLines.meleeAttackSpeedLabel(1.6));
+        assertEquals("2.0", WeaponLoreLines.meleeAttackSpeedLabel(2.0));
+        // Mutation: route melee through the ranged formatter -> 20/1.6 prints "12.5" -> reddens.
+    }
+
+    @Test
+    void meleeAndRangedReadDifferentSourcesAndMustNotBeSwapped() {
+        // The same tooltip label, two governing numbers. A weapon authoring 1.6 whose trigger also
+        // carried a 15-tick cooldown must show 1.6, not 1.3 -- and the fixture is chosen so the two
+        // formatters CANNOT agree by accident, which is what makes a swap visible.
+        assertEquals("1.6", WeaponLoreLines.meleeAttackSpeedLabel(1.6));
+        assertEquals("1.3", WeaponLoreLines.rangedAttackSpeedLabel(15));
+        // Mutation: swap the two arms in WeaponLore's stat block -> the sword reads 1.3 and the bow
+        // reads its authored 0.0 (blank, dropping the line entirely) -> reddens there.
+    }
+
+    @Test
+    void meleeAttackSpeedOfAnUndeclaredWeaponIsBlankRatherThanZero() {
+        // Unreachable for a shipped melee weapon -- WeaponDefinition rejects one with no speed --
+        // so this covers the weapon that has no melee basic at all, and the caller drops the line.
+        assertEquals("", WeaponLoreLines.meleeAttackSpeedLabel(0.0));
+        assertEquals("", WeaponLoreLines.meleeAttackSpeedLabel(-1.0));
     }
 
     // --- triggerDamage: the number, its element, and WHERE IT CAME FROM. ---

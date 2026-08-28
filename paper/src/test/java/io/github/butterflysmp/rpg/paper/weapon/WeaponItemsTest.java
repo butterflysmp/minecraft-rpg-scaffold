@@ -25,12 +25,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class WeaponItemsTest {
 
     @Test
-    void thePinnedAttributesAreTheVanillaMeleePathAndNotTheTriggerPath() {
-        // Both vanilla attributes, by their real names. The trigger's own damage flows
+    void thePinnedAttributeIsTheVanillaMeleePathAndNotTheTriggerPath() {
+        // The vanilla attribute, by its real name. The trigger's own damage flows
         // EffectSpec.WeaponDamage -> CombatantHandle.applyDamage and never touches an attribute,
         // so pinning the wrong one is the review-passing, world-failing bug.
         assertEquals("attack_damage", WeaponItems.ATTACK_DAMAGE_ATTRIBUTE);
-        assertEquals("attack_speed", WeaponItems.ATTACK_SPEED_ATTRIBUTE);
     }
 
     /**
@@ -57,37 +56,31 @@ class WeaponItemsTest {
     }
 
     /**
-     * The speed pin, derived from the SAME authored cooldown_ticks the tooltip renders, so the
-     * charge meter and the "Attack Speed" line cannot disagree.
+     * The item pins ATTACK DAMAGE ONLY -- attack speed is deliberately NOT minted onto it any more.
      *
-     * Measured on the 2026-08-28 boot: an item carrying any explicit modifier loses its whole
-     * default block, so without this pin a minted iron sword reads the player base 4.0 rather than
-     * its native 1.6 -- a 5-tick charge period inside a 10-tick i-frame window, which would leave
-     * every allowed swing fully charged and AttackCharge dead code.
+     * Stage 1 pinned both, deriving the speed from the trigger's cooldown_ticks. That froze a
+     * weapon's swing rate at mint, which is exactly why an attack-speed boost moved the stat and
+     * changed no swing: an item modifier cannot follow a stat that changes while the item sits in
+     * your hand. The speed is now reconciled onto the PLAYER
+     * ({@code AttackSpeedAttributeOverride}), from the weapon's authored cadence times the holder's
+     * multiplier, and the arithmetic lives in core where it is reddened ({@code AttackSpeedAttribute}).
+     *
+     * The Stage-1 measurement this replaces is still true and still load-bearing, just satisfied
+     * elsewhere: an item carrying any explicit modifier loses its whole default block, so a minted
+     * iron sword contributes no speed of its own and the player-side modifier owns the entire value
+     * from base 4.0.
      */
     @Test
-    void theSpeedPinTurnsTheAuthoredCadenceIntoAVanillaAttackSpeed() {
-        // ironblade / emberblade: cooldown_ticks 10 -> 2.0 attacks/sec -> a 10-tick charge period,
-        // exactly the vanilla i-frame window.
-        assertEquals(-2.0, WeaponItems.attackSpeedModifier(10).getAsDouble(), 1e-9);
-        assertEquals(2.0, WeaponItems.VANILLA_BASE_ATTACK_SPEED + WeaponItems.attackSpeedModifier(10).getAsDouble(), 1e-9);
-        // A slower weapon pins slower, and the sign stays negative against the fast player base.
-        assertEquals(1.0, WeaponItems.VANILLA_BASE_ATTACK_SPEED + WeaponItems.attackSpeedModifier(20).getAsDouble(), 1e-9);
-        // Mutation: drop the "- VANILLA_BASE_ATTACK_SPEED" -> a +2.0 modifier makes the total 6.0,
-        // FASTER than the unpinned base, and the charge window collapses -> reddens.
-    }
-
-    /**
-     * A declared cooldown of 0 means "ungated" and has no cadence to express, so nothing is pinned
-     * and the player base stands -- the same reading AttackSpeed.effectiveCooldownTicks gives it.
-     * Without the guard this divides by zero and pins an infinite speed.
-     */
-    @Test
-    void anUngatedTriggerPinsNoSpeedRatherThanDividingByZero() {
-        assertTrue(WeaponItems.attackSpeedModifier(0).isEmpty());
-        assertTrue(WeaponItems.attackSpeedModifier(-5).isEmpty());
-        // Mutation: drop the cooldownTicks <= 0 guard -> Infinity, and a modifier of Infinity makes
-        // the attribute NaN -> reddens.
+    void theItemPinsNoAttackSpeedBecauseAStatHasToBeAbleToMoveIt() {
+        // Structural, not a value assertion: there is no longer any speed-pinning entry point on
+        // this class to call. If one comes back, this test stops compiling -- which is the intent.
+        for (var method : WeaponItems.class.getDeclaredMethods()) {
+            assertFalse(method.getName().toLowerCase(java.util.Locale.ROOT).contains("attackspeed"),
+                    () -> "mint must not pin attack speed again; found " + method.getName());
+        }
+        // Mutation: reinstate attackSpeedModifier on WeaponItems -> reddens. The behaviour it would
+        // break is boot-visible rather than unit-visible (a boost stops affecting swings), which is
+        // why this guards the SHAPE.
     }
 
     /**

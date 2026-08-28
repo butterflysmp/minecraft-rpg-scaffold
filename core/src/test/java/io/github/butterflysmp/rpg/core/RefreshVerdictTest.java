@@ -42,7 +42,7 @@ class RefreshVerdictTest {
     /** An emberblade at a given attack damage -- the field the "current definition" tests vary. */
     private static WeaponDefinition emberblade(double attackDamage) {
         return new WeaponDefinition("emberblade", "Emberblade", "fire", Rarity.RARE,
-                WeaponClass.MELEE, "iron_sword", attackDamage,
+                WeaponClass.MELEE, "iron_sword", attackDamage, 0.0,
                 List.of(new TriggerBinding("left_click", trigger("emberblade", "left_click"))),
                 List.of());
     }

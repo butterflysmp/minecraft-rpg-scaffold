@@ -28,6 +28,7 @@ public record WeaponDefinition(
         WeaponClass weaponClass,
         String material,
         double attackDamage,
+        double attackSpeed,
         List<TriggerBinding> triggers,
         List<String> flavor
 ) {
@@ -46,8 +47,23 @@ public record WeaponDefinition(
         // Attack damage is a stat the basic melee hit reads (via WeaponDamage). 0 is legal -- a
         // ranged/costed weapon (bow, staff) has no melee and declares none; negative is a content bug.
         if (attackDamage < 0) throw new IllegalArgumentException("weapon '" + id + "' attack_damage must be >= 0, got: " + attackDamage);
+        // Attack speed is the weapon's cadence in ATTACKS PER SECOND, driving vanilla's
+        // attack-strength period directly (1.6 is every vanilla sword). 0 is legal and means "not
+        // declared" -- a ranged or costed weapon has no melee cadence to state; negative is a bug.
+        if (attackSpeed < 0) throw new IllegalArgumentException("weapon '" + id + "' attack_speed must be >= 0, got: " + attackSpeed);
         if (triggers == null || triggers.isEmpty()) {
             throw new IllegalArgumentException("weapon '" + id + "' has no triggers");
+        }
+        // But a weapon whose basic hit VANILLA delivers must declare one, because the failure is
+        // otherwise silent and was measured on the 2026-08-28 boot: no authored speed means no
+        // reconciled modifier, which leaves the player's base 4.0 -- a 5-tick charge period inside
+        // a 10-tick i-frame window, where every allowed swing is already fully charged and
+        // AttackCharge is dead code. Gated on the SAME condition WeaponItems.mint uses to decide a
+        // weapon is vanilla-driven, so the item's attributes and this validation cannot disagree --
+        // and so the convenience constructors below (attack damage 0.0) never trip it.
+        if (attackDamage > 0 && attackSpeed <= 0 && hasVanillaMeleeTrigger(triggers)) {
+            throw new IllegalArgumentException("weapon '" + id
+                    + "' has a vanilla-driven melee trigger, so attack_speed must be > 0, got: " + attackSpeed);
         }
         triggers = List.copyOf(triggers);
         // Optional authored prose for the tooltip -- absent is empty, never null.
@@ -57,13 +73,45 @@ public record WeaponDefinition(
     /** A sword-shaped MELEE weapon with no declared attack damage: the shape older tests use. */
     public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
                             List<TriggerBinding> triggers) {
-        this(id, displayName, element, rarity, WeaponClass.MELEE, DEFAULT_MATERIAL, 0.0, triggers, List.of());
+        this(id, displayName, element, rarity, WeaponClass.MELEE, DEFAULT_MATERIAL, 0.0, 0.0, triggers, List.of());
     }
 
     /** A MELEE weapon with an explicit material but no declared attack damage (kept for existing callers). */
     public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
                             String material, List<TriggerBinding> triggers) {
-        this(id, displayName, element, rarity, WeaponClass.MELEE, material, 0.0, triggers, List.of());
+        this(id, displayName, element, rarity, WeaponClass.MELEE, material, 0.0, 0.0, triggers, List.of());
+    }
+
+    /**
+     * The cadence this weapon should actually pace a wielder's swings at, or 0.0 if it has no melee
+     * hit for vanilla to deliver.
+     *
+     * <p>{@link #attackSpeed()} is what content DECLARED; this is what it MEANS. The two differ for
+     * a weapon that authors a speed but carries no vanilla-driven melee trigger, where the declared
+     * number governs nothing and must not reach the wielder's attribute -- writing it would pace a
+     * staff or a bow as though it were a sword.
+     *
+     * <p>0.0 is the ABSENT signal the attribute override reads as "write no modifier", never a
+     * speed to write. Gating here rather than at the paper call site is what makes the rule
+     * testable: the resolution around it needs a live Player and can only be boot-witnessed.
+     */
+    public double meleeCadence() {
+        return vanillaMeleeTrigger().isPresent() ? attackSpeed : 0.0;
+    }
+
+    /**
+     * Does this trigger list contain a hit vanilla's crosshair attack delivers?
+     *
+     * Static, and taking the list rather than reading the field, because the compact constructor
+     * needs it before the record's components are assigned -- {@link #vanillaMeleeTrigger()} cannot
+     * be called from there. Both go through {@link BasicMelee#isVanillaDriven}, so they answer the
+     * same question.
+     */
+    private static boolean hasVanillaMeleeTrigger(List<TriggerBinding> triggers) {
+        for (TriggerBinding binding : triggers) {
+            if (BasicMelee.isVanillaDriven(binding.ability())) return true;
+        }
+        return false;
     }
 
     /** The binding fired by this input, if the weapon has one. */

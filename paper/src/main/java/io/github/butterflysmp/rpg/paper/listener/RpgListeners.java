@@ -10,6 +10,7 @@ import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.health.ArmorBarOverride;
+import io.github.butterflysmp.rpg.paper.health.AttackSpeedAttributeOverride;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
@@ -348,6 +349,9 @@ public final class RpgListeners implements Listener {
         // data, so a player who logs out in armor would otherwise carry a large negative armor
         // modifier written by a plugin that might not be installed next time they log in.
         ArmorBarOverride.clear(event.getPlayer(), adapters.keys());
+        // Same reasoning for the attack-speed override: a player who logs out holding a boosted
+        // weapon would otherwise keep a plugin-written attack-speed modifier in their player data.
+        AttackSpeedAttributeOverride.clear(event.getPlayer(), adapters.keys());
         // Stop the action-bar loop and drop its handle.
         statsBar.onQuit(playerId);
     }
