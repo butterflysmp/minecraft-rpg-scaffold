@@ -581,6 +581,107 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Sweep (vanilla's sweep events drive it, at a fraction of the primary) — what it created or exposed
+
+Closes "sweep is cancelled, not owned" below. `onPlayerSweepAttack` no longer cancels
+`ENTITY_SWEEP_ATTACK` outright: it rides it, and each swept mob takes `sweep × what the primary was
+hit for` — `0.5` on both shipped swords, declared per weapon. Vanilla still decides everything hard
+(full charge, sword, which mobs are in the hitbox); we only supply the number. Because the number is
+a fraction of the primary's FINAL figure, sweep inherits the enchant percentage, the class bonus and
+the charge by construction, with no second multiplier chain to keep in step.
+
+- **The post-mitigation reading was IMPOSSIBLE, not merely worse.** The plan asked for "what the
+  primary got hit for" as its post-mitigation figure. That figure does not exist when a sweep event
+  fires: `applyDamage` defers onto the victim's entity scheduler (`entity.getScheduler().run`, which
+  lands NEXT tick) and mitigation happens inside `CombatantStats.damage` at the far end of that hop,
+  while vanilla raises every sweep event inside the SAME synchronous `Player#attack` as the primary.
+  So the seam reports the PRE-mitigation swing output and each swept mob mitigates once — which is
+  also the reading that avoids double-counting armor. Moot today either way: mobs are never
+  reconciled, so every mob resolves to 0 defense and the two numbers are identical. It becomes
+  observable the day mobs are given defense.
+
+- **Sweep does not inherit the crit, because there is no crit to inherit.** Vanilla's ×1.5 lands on
+  the tokened number and contributes nothing to the custom one. Sweep will pick it up for free, by
+  the same construction that gives it the enchant and the class bonus, on the day a crit multiplier
+  reaches the custom amount. Until then "a crit sweeps harder" is false and must not be written down
+  as a feature.
+
+- **The number is OBSERVED, not recomputed.** `EffectApplier` gained an `onDirectDamage` seam —
+  purely additive, no-op by default, modelled on the `onBasicAttackUse` Runnable `CastExecutor`
+  already takes — fired INSIDE the `amount > 0 && alive()` gate in both damage arms. The rejected
+  alternative was to re-derive the figure in `WeaponFire` from the caster, which would have needed a
+  second copy of the enchant multiplier, the class bonus, the charge AND that liveness gate, and
+  would have drifted the day any one of them moved. Reporting inside the gate is what makes "a swing
+  that dealt nothing sweeps nothing" true rather than hoped for; the test that reddens when the
+  `accept` is moved one line out is the one that says so.
+
+- **The stash does not consume, for the same reason the knockback signal does not.** One sweeping
+  swing raises one damage event per swept mob, and all of them need the same number. A
+  consume-on-read would have served the first bystander and silently skipped the rest — a bug
+  invisible in any test with two mobs standing together. Tick-stamped instead, so it expires on its
+  own and a stamp from an earlier tick is refused as belonging to a different swing.
+
+- **`sweep:` is optional, and that is a migration decision, not an oversight.** Adding a REQUIRED
+  field to the weapon schema is what broke Stage 2's first deploy (see below): an operator's edited
+  content file is rejected on restart. Absent `sweep` simply means no sweep, so an old file loads and
+  quietly does not sweep. A declared sweep on a weapon with no vanilla-driven melee trigger DOES
+  throw — it can never fire, so it is named per-file rather than silently ignored — reusing the same
+  `hasVanillaMeleeTrigger` predicate `mint`, `meleeCadence` and the `attack_speed` guard ask.
+
+- **The gates run BEFORE the token, unlike the primary rider.** That handler tokens unconditionally,
+  so a refused click still flashes the mob — accepted as cosmetic in Stage 1, with the fix recorded
+  as "a decision later rather than a discovery". This takes the decision: a bystander that will not
+  be swept is neither flashed nor given i-frames. That ordering is precisely what the old
+  cancel-outright existed to protect, now bought rather than argued away.
+
+- **A PvP leak was introduced and caught before commit.** The first draft of the rider `return`ed on
+  a player victim, where the old handler had cancelled EVERY player-damager sweep. That would have
+  let a vanilla sweep land on a player — PvP arriving by accident, through the one path nobody would
+  think to look at. Non-mob victims now keep the cancel.
+
+  > #### 2026-08-28 — the sweep boot, and the two orderings it settled
+  >
+  > Both orderings the design rests on were WITNESSED, not inferred. 23 primary hits, 9 swept mobs
+  > across 7 sweeping ticks, 180 knockback events.
+  >
+  > - **The primary's damage event precedes the sweep events.** `[SWEEP] PRIMARY` leads every
+  >   sweeping tick, so the stash is always written before a sweep event reads it. Had this been
+  >   reversed, sweep would have silently never fired.
+  > - **A swept mob's own window claim precedes its own knockback event.** All 9 `SWEEP_ATTACK`
+  >   knockback events read `landedThisTick=true`, and the pairing is exact per tick — 2/2 at tick
+  >   2086, 2/2 at 2238, 1/1 at each of 2141, 2223, 2254, 3049, 3077. Nine swept mobs damaged, nine
+  >   sweep-cause knockbacks, no mismatch.
+  > - **A DISTINCT `SWEEP_ATTACK` cause exists, and this is a CORRECTION.** The knockback boot saw
+  >   only `ENTITY_ATTACK`, and this pass expected the same. The log shows 9 events with cause
+  >   `SWEEP_ATTACK`, class `EntityKnockbackByEntityEvent` — the same subclass, a different cause.
+  >   They return at `onCombatKnockback`'s cause check and reach vanilla UNGATED, which is what gives
+  >   a swept mob its shove. So no second cause was needed, but NOT for the reason first assumed:
+  >   `landedThisTick` is never consulted for a sweep push. The `true` on those 9 lines is evidence of
+  >   ORDERING, not of the gate doing work — do not describe it as the gate, which is the same error
+  >   this file already had to correct once for spam knockback.
+  >
+  > **The instrumentation could not have answered the question it was built for.** The knockback
+  > witness logged `getType()`, not identity, and every mob in the session was a `ZOMBIE` — so "a
+  > knockback naming a DIFFERENT victim than the primary" is undecidable in this log. What rescued it
+  > was the CAUSE: only a swept mob raises `SWEEP_ATTACK`, so those 9 lines are entity-unambiguous
+  > without a UUID. Eyeballing a same-tick block and calling the second `ZOMBIE` the swept one would
+  > have been a story, not a reading. **The next witness log prints the UUID.**
+  >
+  > **Feel, at the keyboard:** half-of-the-primary reads as a reward for a big swing rather than an
+  > instant clear; a non-full-charge swing raises no sweep events at all; a weapon with no `sweep`
+  > sweeps nothing; a broken weapon is inert.
+  >
+  > **`--refresh-content` was required, and the trap was confirmed live BEFORE the boot rather than
+  > diagnosed after.** `grep -c sweep run/plugins/Rpg/content/weapons/ironblade.yml` returned `0`: the
+  > deployed file predates the field, `saveResource(path, false)` never overwrites, and a boot without
+  > the refresh would have shown sweep doing nothing with the code taking the blame. Same shape as the
+  > Stage 2 deploy below, avoided by reading that record first.
+
+- **Still open:** a Sweeping-Edge-style enchant on the fraction, sweep × the multi-attacker/co-op
+  edge, and mob→mob sweep. Also open: `landedThisTick=true` on a sweep knockback is currently
+  incidental — if sweep knockback ever needs gating, the cause check has to learn `SWEEP_ATTACK`, and
+  the ordering above says the claim will be there to read.
+
 ### Knockback (vanilla owns melee knockback, gated to the hit window) — what it created or exposed
 
 Closes the fork Stage 1 opened below. `onCombatKnockback` no longer cancels vanilla's player→mob
@@ -668,6 +769,16 @@ content change, no `EffectSpec.Knockback` on any weapon, and therefore no need t
   >
   > **The cancel branch was NOT witnessed firing — and the boot explained why.** Read this as
   > "unwitnessed, with a cause", never as a passed row.
+  >
+  > **SUPERSEDED 2026-08-28 by the sweep boot: the cancel branch IS witnessed, live, 146 times.**
+  > Not on a fresh mob — on a victim with enough HP to keep you swinging into a closed window. 93
+  > `IRON_GOLEM` and 53 `ZOMBIE` knockback events logged `landedThisTick=false`, and NOT ONE of them
+  > shared a tick with a hit that dealt custom damage. So they are exactly what the gate was written
+  > for: non-claiming re-hits, whose push is cancelled because no damage was dealt to earn it. What
+  > the knockback boot could not reach with one attacker on low-HP mobs, a longer fight reached
+  > without being designed to. The paragraph below stays true as written — vanilla suppresses the
+  > *first* windowed-out re-hit upstream — but "the cancel line never ran once" is now a statement
+  > about that session only.
   >
   > The escalating-charge shape WAS produced: at **tick 12170** a windowed-out re-hit reached the
   > rider — an `ATTACK` line with no `CLAIMED` — so the damage event fired and the window refused it.

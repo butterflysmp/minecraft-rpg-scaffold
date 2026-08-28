@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.content;
 
+import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
@@ -508,6 +509,100 @@ class WeaponLoaderTest {
         // Mutation: drop the attackSpeed < 0 guard -> it loads, and the reconciler writes a negative
         // speed onto the player -> reddens.
     }
+
+    /** The sweep fraction parses off the file, like the two stats beside it. */
+    @Test
+    void aDeclaredSweepIsReadFromTheFile() throws IOException {
+        write("blade.yml", """
+                id: blade
+                element: kinetic
+                class: melee
+                attack_damage: 8
+                attack_speed: 1.6
+                sweep: 0.5
+                triggers:
+                  left_click:
+                    cast:
+                      type: melee
+                    on_hit:
+                      - type: weapon_damage
+                        element: kinetic
+                """);
+
+        assertEquals(0.5, load().find("blade").orElseThrow().sweep(), 1e-9);
+        // Mutation: read the key under any other name -> the default 0 wins, the weapon silently
+        // stops sweeping, and nothing anywhere reports it -> reddens.
+    }
+
+    /** Absent means no sweep -- the reason this field is not a migration for an operator's files. */
+    @Test
+    void sweepDefaultsToNoneWhenOmitted() throws IOException {
+        write("ironblade.yml", VALID);
+
+        assertEquals(SweepShare.NONE, load().find("ironblade").orElseThrow().sweep(),
+                "a weapon file with no sweep key loads and simply does not sweep");
+        assertTrue(warnings.isEmpty(), warningText());
+        // Mutation: default the key to 0.5, or make it required -> an operator's already-edited
+        // weapon file either sweeps unasked or is REJECTED on the next restart, which is exactly the
+        // Stage 2 attack_speed migration this field was shaped to avoid -> reddens.
+    }
+
+    /** A negative sweep is a content bug, rejected and named like a negative attack_speed. */
+    @Test
+    void aNegativeSweepIsSkippedNotCrashed() throws IOException {
+        write("aaa_inverted.yml", """
+                id: inverted
+                element: kinetic
+                class: melee
+                attack_damage: 8
+                attack_speed: 1.6
+                sweep: -0.5
+                triggers:
+                  left_click:
+                    cast:
+                      type: melee
+                    on_hit:
+                      - type: weapon_damage
+                        element: kinetic
+                """);
+        write("ironblade.yml", VALID);
+
+        assertEquals(1, load().size(), "the valid weapon still loads");
+        assertTrue(warningText().contains("aaa_inverted.yml"), warningText());
+        assertTrue(warningText().contains("sweep"), warningText());
+        // Mutation: drop the sweep < 0 guard -> it loads and every swept mob is HEALED by the swing
+        // -> reddens.
+    }
+
+    /**
+     * A sweep on a weapon with no melee basic is named, not silently ignored -- and the rest of the
+     * content still loads, which is the whole argument for a per-file skip over a boot failure.
+     */
+    @Test
+    void aSweepOnAWeaponWithNoMeleeBasicIsSkippedAndNamed() throws IOException {
+        write("aaa_sweepy_bow.yml", """
+                id: sweepy_bow
+                element: kinetic
+                class: ranger
+                material: bow
+                sweep: 0.5
+                triggers:
+                  right_click:
+                    cast:
+                      type: projectile
+                    on_hit:
+                      - type: damage
+                        amount: 6
+                        element: kinetic
+                """);
+        write("ironblade.yml", VALID);
+
+        assertEquals(1, load().size(), "the valid weapon still loads");
+        assertTrue(warningText().contains("aaa_sweepy_bow.yml"), warningText());
+        assertTrue(warningText().contains("sweep"), warningText());
+        // Mutation: drop the cross-field guard -> the bow loads carrying a sweep that nothing will
+        // ever read, and the author is never told it does nothing -> reddens.
+    }
     @Test
     void aWeaponWithNoTriggersSectionIsSkippedNotCrashed() throws IOException {
         write("aaa_bare.yml", """
@@ -595,6 +690,11 @@ class WeaponLoaderTest {
         var weaponDamage = assertInstanceOf(EffectSpec.WeaponDamage.class, swing,
                 "the swing deals weapon_damage (the caster's stat), not a literal Damage");
         assertEquals("kinetic", weaponDamage.element());
+
+        // The SWEEP fraction is authored on the shipped blade. Half, so a bystander takes half of
+        // whatever the primary took -- the number the boot gate reads as "a real reward for a big
+        // swing, not an instant clear".
+        assertEquals(0.5, weapon.sweep(), 1e-9, "ironblade declares a sweep fraction");
         // Mutation: revert the swing to `type: damage` / drop attack_damage -> reddens.
     }
 
@@ -660,6 +760,11 @@ class WeaponLoaderTest {
         // degenerate `mana: 0` is NOT equal to FREE and would slip past the resourceId check above.
         assertTrue(right.cost().amount() > 0, "the special is costed, not free");
         assertInstanceOf(CastSpec.Projectile.class, right.cast());
+
+        // The sweep fraction, authored on this blade too -- both shipped swords sweep, and the
+        // emberblade's lower attack_damage means it sweeps for less, which is the trade it already
+        // makes on the primary hit.
+        assertEquals(0.5, weapon.sweep(), 1e-9, "emberblade declares a sweep fraction");
     }
 
     /** The shipped bow: a non-sword material, and a free right-click projectile shot. */
@@ -677,6 +782,11 @@ class WeaponLoaderTest {
         WeaponDefinition weapon = registry.find("hunters_bow").orElseThrow();
         assertEquals("bow", weapon.material(), "the bow is the first non-sword weapon");
         assertEquals(WeaponClass.RANGER, weapon.weaponClass(), "the bow is a ranger weapon");
+
+        // NO SWEEP, and this is how a non-blade has none: by omitting the key, not by appearing on
+        // some hard-coded exclusion list. WeaponDefinition would in fact REFUSE to load this file if
+        // it declared one, since a projectile trigger has no vanilla-driven melee swing to sweep from.
+        assertEquals(SweepShare.NONE, weapon.sweep(), "the bow declares no sweep");
 
         // The shot is on right_click (so the per-trigger cancellation suppresses the draw),
         // free (the Ranger economy), and a projectile (the ranged trigger).

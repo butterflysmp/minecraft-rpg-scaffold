@@ -2,9 +2,11 @@ package io.github.butterflysmp.rpg.core;
 
 import io.github.butterflysmp.rpg.core.ability.effect.EffectApplier;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
+import io.github.butterflysmp.rpg.core.combat.AttackCharge;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -723,5 +725,102 @@ class EffectApplierTest {
         assertEquals(85.80, target.health, 1e-9, "8 * 1.15 + 5 = 14.2, untouched by the charge factor");
         // Mutation: make the no-arg Caster.of pass anything but FULL_CHARGE -> reddens, and with it
         // every ability, projectile and lingering area in the game.
+    }
+
+    // --- The direct-damage seam, which the sweep rider reads ---
+
+    /**
+     * The seam reports the number that was DEALT, not a number recomputed from the caster.
+     *
+     * The whole point of reporting from the arm is that the sweep rider cannot drift from the
+     * primary hit: whatever the enchant, the class bonus and the charge produced here IS what a
+     * swept mob takes a fraction of. So the assertion ties the reported value to the target's lost
+     * health rather than to a literal -- if the two ever disagree, the seam has stopped observing
+     * and started predicting.
+     */
+    @Test
+    void theSeamReportsExactlyWhatTheDamageArmDealt() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;              // the ironblade
+        caster.classDamageBonus = 5.0;          // +5 Melee gear
+        caster.enchantDamagePercent = 15.0;     // Sharpness III
+        List<Double> reported = new ArrayList<>();
+
+        new EffectApplier(world, reported::add).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(1, reported.size(), "one damage effect, one report");
+        assertEquals(14.2, reported.get(0), 1e-9, "8*1.15 + 5 -- the ordering test's number");
+        assertEquals(100.0 - target.health, reported.get(0), 1e-9,
+                "the reported figure IS the health the target lost");
+        // Mutation: report caster.attackDamage instead of amount -> 8.0, and the swept mob silently
+        // loses the enchant and the class bonus while the primary keeps them -> reddens.
+    }
+
+    /** The charge reaches the seam too, so a weak swing reports a weak number for sweep to halve. */
+    @Test
+    void theSeamCarriesTheChargeSoAnEarlySwingSweepsWeakly() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;
+        List<Double> reported = new ArrayList<>();
+
+        new EffectApplier(world, reported::add).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")),
+                caster.asCaster(AttackCharge.scale(0.0)), pair(target), Vec3.ZERO);
+
+        assertEquals(1, reported.size());
+        assertEquals(1.6, reported.get(0), 1e-9, "8 at the uncharged floor of 0.2");
+        // Mutation: report the amount BEFORE the chargeScale multiply -> 8.0, and a spammed swing
+        // would sweep as hard as a timed one -> reddens.
+    }
+
+    /**
+     * A REFUSED hit reports nothing, and this is the test that makes "a swing that dealt nothing
+     * sweeps nothing" true rather than hoped for.
+     *
+     * The seam sits INSIDE the {@code amount > 0 && alive()} gate. Were it moved one line out --
+     * beside the gate rather than within it -- a swing at a corpse would still report a number, the
+     * sweep rider would stash it, and bystanders would take damage from a hit that never landed.
+     */
+    @Test
+    void aRefusedHitReportsNothingAtAll() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        List<Double> reported = new ArrayList<>();
+
+        var dead = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        dead.health = 0.0;                      // already gone: the alive() half of the gate
+        caster.attackDamage = 8.0;
+        new EffectApplier(world, reported::add).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(dead), Vec3.ZERO);
+        assertTrue(reported.isEmpty(), "a hit on a corpse reports nothing");
+
+        var live = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 0.0;              // unarmed: the amount > 0 half of the gate
+        new EffectApplier(world, reported::add).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(live), Vec3.ZERO);
+        assertTrue(reported.isEmpty(), "an unarmed swing reports nothing");
+        assertEquals(100.0, live.health, 1e-9, "and dealt nothing, which is why it must report nothing");
+        // Mutation: move onDirectDamage.accept OUTSIDE the if -> both report, the sweep rider stashes
+        // a phantom number, and a swing that dealt nothing sweeps bystanders -> reddens.
+    }
+
+    /** Every caller that does not ask for the seam is untouched: the default is a no-op, not a null. */
+    @Test
+    void theDefaultConstructorNeedsNoListenerAndStillDeals() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;
+
+        assertDoesNotThrow(() -> new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO));
+        assertEquals(92.0, target.health, 1e-9, "and still dealt its 8");
+        // Mutation: default the consumer to null instead of a no-op -> NullPointerException on every
+        // ability cast in the game -> reddens.
     }
 }

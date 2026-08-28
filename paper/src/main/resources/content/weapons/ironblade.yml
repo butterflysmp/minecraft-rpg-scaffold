@@ -27,6 +27,16 @@ attack_damage: 8
 # so it paces the swing, fills the crosshair indicator, and sets the charge AttackCharge scales by.
 attack_speed: 1.6
 
+# The SWEEP fraction. Vanilla already decides WHEN a sweep happens (a full-charge sword swing) and
+# WHICH mobs it catches; this is only how hard each of them is hit -- 0.5 means a bystander takes
+# half of whatever the primary target took on that same swing. Because it is a share of the
+# primary's FINAL number, the enchant percentage, the class damage bonus and the charge are all
+# inherited for free; there is no second multiplier chain here to keep in step.
+#
+# PRESENCE is the opt-in: omit this key and the weapon does not sweep at all, which is how the bow
+# and the staff have none without anything hard-coding a list of what may sweep.
+sweep: 0.5
+
 # Authored tooltip prose, rendered italic/gray beneath the derived stats. MUST be a YAML list
 # (one '- ' item per line); a scalar is ignored with a warning. Optional -- omit for stats only.
 flavor:

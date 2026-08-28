@@ -4,6 +4,8 @@ import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
+import io.github.butterflysmp.rpg.core.combat.SweepShare;
+import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -428,22 +430,103 @@ public final class RpgListeners implements Listener {
     }
 
     /**
-     * Vanilla's SWEEP, which must not become the cone we just retired.
+     * Vanilla's SWEEP, now OWNED rather than cancelled: each swept mob takes a fraction of what the
+     * primary target took on the same swing.
      *
-     * <p>A sweeping sword raises a separate EntityDamageByEntityEvent per neighbouring mob, with the
-     * player as damager and cause ENTITY_SWEEP_ATTACK. Left alone, the rider below would read each of
-     * those as a basic hit and deal the weapon's FULL custom damage to every mob within sweep range --
-     * a 120-degree cone by another name, and exactly the bug this change exists to remove.
+     * <p>Same shape as the basic melee rider above -- vanilla selects, we deal the damage. A sweeping
+     * sword raises a separate EntityDamageByEntityEvent per neighbouring mob, with the player as
+     * damager and cause ENTITY_SWEEP_ATTACK, and vanilla has already decided the hard parts: that the
+     * swing was at full charge, that the weapon is a sword, and which mobs are inside the sweep
+     * hitbox. None of that is re-derived here. Riding those events is what keeps this from becoming
+     * the 120-degree cone Stage 1 retired -- it is not our arc, our reach or our target selection.
      *
-     * <p>Cancelled outright rather than tokened, because sweep is deferred rather than owned: a
-     * tokened sweep would still set a bystander's i-frames and block the next real hit on it for ten
-     * ticks. When sweep becomes a declared effect it stops being cancelled here.
+     * <p>THE NUMBER is {@code SWEEP_FRACTION x what the primary was hit for}, and taking a fraction
+     * of the primary's FINAL figure is what makes sweep inherit the enchant percentage, the class
+     * damage bonus and the charge by construction. There is no second multiplier chain here, so there
+     * is nothing for the two to disagree about, and a buffed or well-timed swing sweeps harder for
+     * free. It does NOT inherit the vanilla crit, because the crit lands on the tokened number and
+     * contributes nothing to the custom one -- it will, unchanged, the day a crit multiplier reaches
+     * the custom amount.
+     *
+     * <p>PRE-mitigation, and forced rather than chosen: {@code applyDamage} is deferred onto the
+     * victim's entity scheduler and lands NEXT tick, while vanilla raises every sweep event inside the
+     * same synchronous {@code Player#attack} as the primary. The primary's post-mitigation figure
+     * therefore does not exist yet when we are asked. Each swept mob mitigates its own Defense once,
+     * which is also the reading that avoids double-counting armor.
+     *
+     * <p>FAILS CLOSED at every gate. No declared sweep on the held weapon, or no stashed primary
+     * damage, means the event is cancelled exactly as it was before this pass. That one absence
+     * covers a windowed-out primary, an untagged or weaponless hit, and a broken weapon -- a broken
+     * weapon's swing is cancelled before it can claim anything, so it stashes nothing and sweeps
+     * nothing, with no separate gate needed here.
+     *
+     * <p><b>THE GATES RUN BEFORE THE TOKEN, deliberately unlike the primary rider.</b> That handler
+     * tokens unconditionally, so a refused click still flashes the mob -- an accepted cosmetic, with
+     * the fix recorded in NEXT.md as a decision to take later. This takes it: a bystander that will
+     * not be swept is neither flashed nor given i-frames. That ordering is the whole reason the old
+     * cancel-outright existed (a tokened sweep would set a bystander's i-frames and block the next
+     * real hit on it for ten ticks), and it is now bought rather than argued away -- a mob is tokened
+     * only when it is actually being damaged.
+     *
+     * <p>TOKENED, not cancelled, once a sweep does land: the token is what keeps vanilla's flash,
+     * hurt sound, i-frames AND its little sweep shove. Cancelling would suppress the push the same
+     * way it does for a broken weapon. The can't-kill floor is replicated from the primary rider for
+     * the same reason it exists there -- death is the custom-HP path's business.
+     *
+     * <p>DAMAGE ONLY. A swept mob takes a number and nothing else the payload does: no statuses, no
+     * visuals, no durability wear. Going through applyDamage directly rather than re-running the
+     * weapon's on_hit is what makes that structural -- {@code CastExecutor}'s melee arm already warns
+     * that billing a use per body is the bug to avoid.
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlayerSweepAttack(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player)) return;
+        if (!(event.getDamager() instanceof Player attacker)) return;
         if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK) return;
-        event.setCancelled(true);
+        // NOT a bare return: this handler cancelled EVERY player-damager sweep before sweep was
+        // owned, and a victim we will not sweep must keep that cancel rather than have vanilla's
+        // sweep damage leak through. A player victim is the live case -- PvP is a deferred rules
+        // decision, exactly as the primary rider defers it -- and letting a sweep land on one would
+        // be PvP arriving by accident, through the one path nobody would think to look at.
+        if (!(event.getEntity() instanceof LivingEntity swept) || swept instanceof Player) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // What this weapon declares, and what the swing actually dealt. Either being absent means
+        // this stays exactly the cancel it was before sweep was owned.
+        double fraction = WeaponItems.heldWeaponId(attacker, adapters.keys())
+                .flatMap(weapons::find)
+                .map(WeaponDefinition::sweep)
+                .orElse(SweepShare.NONE);
+        var primary = meleeHits.primaryDamageThisTick(attacker.getUniqueId());
+        if (!SweepShare.sweeps(fraction) || primary.isEmpty()) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // The swept mob's OWN window, so a mob already hit this window is not swept on top of it --
+        // the same once-per-10-ticks cadence the primary gets.
+        //
+        // It is NOT what releases this mob's shove, and the boot is what settled that: the sweep
+        // knockback arrives with cause SWEEP_ATTACK, which onCombatKnockback returns on before it
+        // ever consults the window. The claim still lands first -- all 9 sweep knockback events read
+        // landedThisTick=true -- but that is evidence of ORDERING, not the gate doing work. Saying
+        // otherwise would credit our code with vanilla's, which this file has had to correct once.
+        if (!meleeHits.claimWindow(swept.getUniqueId())) {
+            event.setCancelled(true);
+            return;
+        }
+
+        event.setDamage(TOKEN_DAMAGE);                                   // flash + i-frames + shove
+        if (adapters.stats().tracks(swept.getUniqueId())
+                && swept.getHealth() - TOKEN_DAMAGE <= 0.0) {
+            var attr = swept.getAttribute(Attribute.MAX_HEALTH);
+            double vanillaMax = attr == null ? swept.getHealth() : attr.getValue();
+            swept.setHealth(Math.min(vanillaMax, VANILLA_LIVE_FLOOR)); // the token can never kill
+        }
+
+        BukkitCombatant.of(swept, adapters).handle()
+                .applyDamage(SweepShare.of(primary.getAsDouble(), fraction), attacker.getUniqueId());
     }
 
     /**
@@ -506,8 +589,12 @@ public final class RpgListeners implements Listener {
         if (swing.isEmpty()) return;
         if (!meleeHits.claimWindow(victim.getUniqueId())) return;
 
+        // STASH WHAT IT DEALT, for the sweep rider. The number is observed through EffectApplier's
+        // damage seam, not recomputed, so sweep cannot drift from the hit it is a fraction of; and it
+        // is absent whenever nothing was dealt, which is what makes sweep fail closed.
         WeaponFire.landVanillaMelee(attacker, victim, AttackCharge.scale(swing.get().charge()),
-                weapons, adapters, cooldowns);
+                weapons, adapters, cooldowns)
+                .ifPresent(dealt -> meleeHits.recordPrimaryDamage(attacker.getUniqueId(), dealt));
     }
 
     /**
@@ -593,7 +680,12 @@ public final class RpgListeners implements Listener {
      * its own HandlerList.
      *
      * <p>Left alone: knockback on PLAYERS (mob->player stays vanilla, the standing Pass 2 decision)
-     * and every non-attack cause -- explosions, sweep -- which were never ours to own. Mob->mob
+     * and every non-attack cause -- explosions, sweep -- which were never ours to own. SWEEP is now
+     * MEASURED rather than assumed: the 2026-08-28 sweep boot logged every knockback cause above this
+     * gate and saw 9 events with cause SWEEP_ATTACK (class EntityKnockbackByEntityEvent, the same
+     * subclass ENTITY_ATTACK arrives as). They return on the line below and reach vanilla ungated,
+     * which is what gives a swept mob its little shove. So owning sweep DAMAGE needed no second cause
+     * here -- verified, not inferred. Mob->mob
      * ENTITY_ATTACK knockback stays cancelled, because this handler keys on the knocked entity and
      * never sees an attacker; that is unchanged by this pass, and recorded in NEXT.md rather than
      * fixed here.

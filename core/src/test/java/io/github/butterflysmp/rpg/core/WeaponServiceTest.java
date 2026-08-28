@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core;
 
+import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
@@ -235,7 +236,7 @@ class WeaponServiceTest {
         var resources = pool(() -> 0L); // tick frozen: within the 15-tick fire-rate cooldown
         var service = serviceWith(() -> 0L, resources);
         var bow = new WeaponDefinition("hunters_bow", "Bow", "fire", Rarity.UNCOMMON,
-                WeaponClass.RANGER, "bow", 6.0, 0.0,
+                WeaponClass.RANGER, "bow", 6.0, 0.0, SweepShare.NONE,
                 List.of(new TriggerBinding("right_click",
                         new AbilityDefinition("hunters_bow/right_click", "Shot", "fire", "none",
                                 15, ResourceCost.FREE,

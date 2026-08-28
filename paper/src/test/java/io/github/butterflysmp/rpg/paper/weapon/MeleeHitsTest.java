@@ -269,4 +269,94 @@ class MeleeHitsTest {
         assertEquals(0, hits.trackedVictims());
         assertEquals(0, hits.pendingSwings());
     }
+
+    // --- The primary-damage stash, which the sweep rider reads ---
+
+    @Test
+    void thePrimaryDamageIsReadableOnTheTickItWasDealt() {
+        hits.recordPrimaryDamage(ATTACKER, 14.2);
+
+        assertEquals(14.2, hits.primaryDamageThisTick(ATTACKER).orElseThrow(), 1e-9);
+        // Mutation: stamp with tick+1 -> the sweep events, which fire on this very tick, read empty
+        // and no weapon in the game ever sweeps -> reddens.
+    }
+
+    /**
+     * THE ONE THAT MATTERS: reading does not consume.
+     *
+     * One sweeping swing raises one damage event per swept mob, and every one of them asks this same
+     * question. A consume-on-read would serve the first bystander and silently leave the rest
+     * untouched -- a sweep that hits exactly one mob, which is indistinguishable from a sweep that
+     * works if you only ever test with two mobs standing together.
+     *
+     * The direct analog of theKnockbackSignalIsNotConsumedByReadingIt above, and the same lesson the
+     * 2026-08-28 boot taught about a sprint hit's two knockback events.
+     */
+    @Test
+    void thePrimaryDamageIsNotConsumedByReadingItSoEverySweptMobSeesIt() {
+        hits.recordPrimaryDamage(ATTACKER, 14.2);
+
+        assertEquals(14.2, hits.primaryDamageThisTick(ATTACKER).orElseThrow(), 1e-9, "the first swept mob");
+        assertEquals(14.2, hits.primaryDamageThisTick(ATTACKER).orElseThrow(), 1e-9, "the second");
+        assertEquals(14.2, hits.primaryDamageThisTick(ATTACKER).orElseThrow(), 1e-9, "and the third");
+        // Mutation: remove() on read instead of get() -> only the first swept mob takes damage and
+        // the rest are silently skipped -> reddens on the second assertion.
+    }
+
+    @Test
+    void aStashFromAnEarlierTickBelongsToADifferentSwingAndIsRefused() {
+        hits.recordPrimaryDamage(ATTACKER, 14.2);
+
+        tick[0] += 1;
+        assertTrue(hits.primaryDamageThisTick(ATTACKER).isEmpty(),
+                "one tick later is already a different swing");
+        tick[0] += 100;
+        assertTrue(hits.primaryDamageThisTick(ATTACKER).isEmpty(), "and it never comes back");
+        // Mutation: drop the tick comparison -> a sweep event from a LATER swing reads the previous
+        // swing's number, so a sword that swung hard once sweeps for that figure forever -> reddens.
+    }
+
+    @Test
+    void anAttackerWhoDealtNothingHasNothingStashed() {
+        assertTrue(hits.primaryDamageThisTick(ATTACKER).isEmpty(),
+                "nothing recorded means nothing to sweep with");
+        // Mutation: return OptionalDouble.of(0.0) rather than empty -> the rider stops failing closed
+        // and starts tokening bystanders for a swing that never landed -> reddens.
+    }
+
+    @Test
+    void aFreshSwingOverwritesTheLastOnesNumber() {
+        hits.recordPrimaryDamage(ATTACKER, 14.2);
+        tick[0] += MeleeHits.WINDOW_TICKS;
+        hits.recordPrimaryDamage(ATTACKER, 3.2);          // a poorly timed follow-up
+
+        assertEquals(3.2, hits.primaryDamageThisTick(ATTACKER).orElseThrow(), 1e-9,
+                "this swing's number, not the last one's");
+        // Mutation: putIfAbsent instead of put -> a weak swing sweeps for the strong swing's figure
+        // -> reddens.
+    }
+
+    @Test
+    void oneAttackersStashIsNotAnothers() {
+        UUID other = UUID.randomUUID();
+        hits.recordPrimaryDamage(ATTACKER, 14.2);
+
+        assertTrue(hits.primaryDamageThisTick(other).isEmpty(),
+                "a second player's sweep must not ride the first player's hit");
+        // Mutation: key the map on anything but the attacker -> in co-op one player's swing arms the
+        // other's sweep -> reddens.
+    }
+
+    @Test
+    void forgettingAnAttackerDropsTheirStashedPrimaryHitToo() {
+        hits.recordPrimaryDamage(ATTACKER, 14.2);
+        assertEquals(1, hits.stashedPrimaries());
+
+        hits.forgetAttacker(ATTACKER);
+
+        assertEquals(0, hits.stashedPrimaries(), "nothing left behind on quit");
+        assertTrue(hits.primaryDamageThisTick(ATTACKER).isEmpty());
+        // Mutation: drop primaries.remove from forgetAttacker -> an entry per player who ever swung
+        // sits there until restart -> reddens on the leak check.
+    }
 }
