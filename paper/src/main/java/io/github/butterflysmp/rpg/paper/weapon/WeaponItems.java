@@ -17,6 +17,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlotGroup;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -24,6 +25,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 
 /**
  * Minting a weapon item, and recognising one. An item is one of ours IFF it carries the
@@ -55,35 +57,86 @@ public final class WeaponItems {
      */
     public static final String ATTACK_DAMAGE_ATTRIBUTE = "attack_damage";
 
+    /**
+     * The attack-SPEED attribute, pinned beside the damage one for a vanilla-driven melee weapon.
+     *
+     * MEASURED on the 2026-08-28 boot, not assumed: a plain iron sword read attackSpeed 1.6000,
+     * while a minted ironblade -- the same material -- read 4.0000. Setting ANY explicit modifier
+     * replaces the item's whole default block, so pinning attack damage alone silently discards the
+     * sword's native speed and drops the player to the base 4.0. That is a 5-tick charge period
+     * against a 10-tick i-frame window, which would leave every allowed swing already fully charged
+     * and the charge curve dead code. Hence: pin both, or neither.
+     */
+    public static final String ATTACK_SPEED_ATTRIBUTE = "attack_speed";
+
     /** A player's base attack_damage is 1.0, so -1.0 brings a held swing to a flat 0. */
     public static final double VANILLA_MELEE_SUPPRESSION = -1.0;
 
+    /** The player's base values, which every ADD_NUMBER modifier below is expressed relative to. */
+    public static final double VANILLA_BASE_ATTACK_DAMAGE = 1.0;
+    public static final double VANILLA_BASE_ATTACK_SPEED = 4.0;
+
+    /** Ticks per second, converting a trigger's authored cooldown into an attack-speed value. */
+    public static final double TICKS_PER_SECOND = 20.0;
+
+    /**
+     * The attack-damage modifier a vanilla-driven melee weapon pins: enough to bring the total to
+     * the weapon's declared attack damage.
+     *
+     * The VALUE is cosmetic -- the rider tokens the vanilla hit to 0.01, and the ATTACK_DAMAGE stat
+     * is what actually damages -- but it must be strictly POSITIVE, because vanilla skips its entire
+     * attack path when attack damage and enchantment bonus are both zero. That is the whole of
+     * Finding 1: the old suppressor brought the total to 0, so no EntityDamageByEntityEvent ever
+     * fired for a weapon-holder and the melee rider was dead code. Pinning the identity number keeps
+     * the hidden attribute honest should anyone ever reveal it.
+     */
+    public static double attackDamageModifier(double declaredAttackDamage) {
+        return declaredAttackDamage - VANILLA_BASE_ATTACK_DAMAGE;
+    }
+
+    /**
+     * The attack-speed modifier, derived from the trigger's authored cooldown_ticks so the vanilla
+     * charge period and the tooltip's "Attack Speed" line cannot disagree: 10 ticks is 2.0/s, which
+     * is exactly what WeaponLoreLines renders for the same trigger.
+     *
+     * A declared cooldown of 0 means "ungated" and has no cadence to express, so it pins nothing and
+     * leaves the player base -- the same reading AttackSpeed.effectiveCooldownTicks gives it.
+     */
+    public static OptionalDouble attackSpeedModifier(int cooldownTicks) {
+        if (cooldownTicks <= 0) return OptionalDouble.empty();
+        return OptionalDouble.of(TICKS_PER_SECOND / cooldownTicks - VANILLA_BASE_ATTACK_SPEED);
+    }
+
     /**
      * The item a weapon is carried in. Its display name is coloured by RARITY, unconditionally
-     * (see {@link #displayName}), it carries weapon_id in its PDC -- the whole of its identity
-     * -- and it carries the attack-damage suppressor above so the swing's vanilla melee is
-     * zeroed. Everything else about the weapon lives in its content file.
+     * (see {@link #displayName}), it carries weapon_id in its PDC -- the whole of its identity --
+     * and it carries the vanilla attribute block its melee behaviour needs.
      *
      * Takes the whole AdapterContext rather than just Keys because the lore needs the element
      * registry to colour a weapon's element from that element's own content.
-     *
-     * Phase 1 has no per-weapon material, so every weapon mints as a sword; that becomes a
-     * weapon field when a non-melee weapon (the bow) needs a different item.
      */
     public static ItemStack mint(WeaponDefinition weapon, AdapterContext adapters) {
         Keys keys = adapters.keys();
         ItemStack item = new ItemStack(materialOf(weapon.material()));
         Attribute attackDamage = Registry.ATTRIBUTE.getOrThrow(
                 NamespacedKey.minecraft(ATTACK_DAMAGE_ATTRIBUTE));
-        AttributeModifier suppressor = new AttributeModifier(
-                keys.meleeSuppressor, VANILLA_MELEE_SUPPRESSION,
-                AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND);
+        Attribute attackSpeed = Registry.ATTRIBUTE.getOrThrow(
+                NamespacedKey.minecraft(ATTACK_SPEED_ATTRIBUTE));
+
+        // Does a VANILLA crosshair attack deliver this weapon's basic hit? Resolved through the one
+        // predicate the swing path and the rider also read, so an item's attributes and its hit
+        // routing cannot drift apart. attackDamage > 0 is part of the question: a melee trigger on a
+        // weapon declaring 0 deals nothing anyway (EffectApplier's amount>0 guard), so there is
+        // nothing to let vanilla through for.
+        boolean vanillaDrivenMelee =
+                weapon.vanillaMeleeTrigger().isPresent() && weapon.attackDamage() > 0;
+
         item.editMeta(meta -> {
             meta.displayName(displayName(weapon.displayName(), weapon.rarity()));
             meta.getPersistentDataContainer().set(keys.weaponId, PersistentDataType.STRING, weapon.id());
             // A weapon is a SINGLE item, always. Two freshly minted staffs are byte-identical --
             // ember_staff mints on a blaze_rod and ability_stone on an amethyst_shard, both
-            // stackable -- so without this, `/rpg give ember_staff` twice produces a stack of two
+            // stackable -- so without this, /rpg give ember_staff twice produces a stack of two
             // and every per-item thing we do becomes ambiguous: one enchant write would edit both,
             // and a re-mint (which returns a fresh stack of one) would silently collapse it.
             //
@@ -91,9 +144,34 @@ public final class WeaponItems {
             // enchants and instance data are all per-item and the table is not the only thing that
             // will ever read them. remint() calls mint(), so it inherits this.
             meta.setMaxStackSize(1);
-            // Setting an explicit attack_damage modifier suppresses the item's vanilla
-            // default (+6 for iron), so the swing's melee is base 1.0 + (-1.0) = 0.
-            meta.addAttributeModifier(attackDamage, suppressor);
+
+            if (vanillaDrivenMelee) {
+                // Let vanilla's attack RUN -- it is what picks the victim now -- and give its
+                // attack-strength meter a period matching the authored cadence.
+                meta.addAttributeModifier(attackDamage, new AttributeModifier(
+                        keys.meleeSuppressor, attackDamageModifier(weapon.attackDamage()),
+                        AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+                OptionalDouble speed = weapon.vanillaMeleeTrigger()
+                        .map(trigger -> attackSpeedModifier(trigger.cooldownTicks()))
+                        .orElse(OptionalDouble.empty());
+                if (speed.isPresent()) {
+                    meta.addAttributeModifier(attackSpeed, new AttributeModifier(
+                            keys.meleeSpeedPin, speed.getAsDouble(),
+                            AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+                }
+            } else {
+                // No melee hit of ours to deliver (ember_staff, ability_stone, hunters_bow), so
+                // vanilla's swing stays suppressed to a flat 0 and a staff still cannot melee.
+                meta.addAttributeModifier(attackDamage, new AttributeModifier(
+                        keys.meleeSuppressor, VANILLA_MELEE_SUPPRESSION,
+                        AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+            }
+
+            // The custom lore block IS the stat display. Hide vanilla's, or the tooltip carries two
+            // sets of numbers saying different things -- the pinned attack damage is deliberately
+            // cosmetic, and the pinned speed duplicates the lore's own Attack Speed line.
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+
             // Derived stats + authored flavour, plus any enchant block the item's own state calls
             // for. Purely additive; the block above is untouched.
             applyLore(meta, weapon, adapters);

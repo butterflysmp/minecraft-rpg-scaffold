@@ -16,6 +16,8 @@ import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
+import io.github.butterflysmp.rpg.core.combat.AttackCharge;
+import io.github.butterflysmp.rpg.paper.weapon.MeleeHits;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import io.github.butterflysmp.rpg.paper.weapon.BrokenNotice;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
@@ -23,6 +25,7 @@ import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponRefresher;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -34,10 +37,12 @@ import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import io.papermc.paper.event.entity.EntityKnockbackEvent;
 import io.papermc.paper.event.entity.EntityMoveEvent;
+import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -82,6 +87,14 @@ public final class RpgListeners implements Listener {
     private final PlayerHealthSystem healthSystem;
     private final MobNameplateManager nameplates;
     private final StatsBarSystem statsBar;
+
+    /**
+     * Timing state for the vanilla-driven basic melee hit: the pending swing's charge, and the
+     * per-victim window that stops a rising charge from landing five full hits inside one set of
+     * i-frames. Owned here rather than injected because it is listener-scoped -- the two events it
+     * bridges are both on this class, and nothing else in the plugin has a use for it.
+     */
+    private final MeleeHits meleeHits = new MeleeHits(Bukkit::getCurrentTick);
 
     public RpgListeners(CooldownTracker cooldowns, ResourcePool resources, ProfileService profiles,
                         WeaponRegistry weapons, WeaponService weaponService, AdapterContext adapters,
@@ -137,6 +150,8 @@ public final class RpgListeners implements Listener {
     public void onEntityRemove(EntityRemoveFromWorldEvent event) {
         if (event.getEntity() instanceof LivingEntity mob && !(mob instanceof Player)) {
             nameplates.onMobRemove(mob.getUniqueId());
+            // And its melee window, or the map grows for the lifetime of the server.
+            meleeHits.forget(mob.getUniqueId());
         }
     }
 
@@ -324,6 +339,7 @@ public final class RpgListeners implements Listener {
 
         UUID playerId = event.getPlayer().getUniqueId();
         cooldowns.clear(playerId);
+        meleeHits.forgetAttacker(playerId);   // drop any swing that never landed
         resources.clear(playerId);
         profiles.onQuit(playerId);
         // Drop custom-health state so no modifier or entry leaks across sessions.
@@ -381,42 +397,107 @@ public final class RpgListeners implements Listener {
     }
 
     /**
-     * Ride a player's melee swing on a mob for its COSMETICS, own its mechanics. The vanilla event
-     * still fires (separate from the packet-driven custom damage), so we cannot ignore it: we TOKEN
-     * its damage -- kept just non-zero so the mob still flashes red + gets i-frames, but small enough
-     * that it cannot double the custom number the packet path deals via applyDamage -> custom HP.
-     * Its knockback is cancelled in {@link #onCombatKnockback}; custom KB is a declared effect.
+     * Capture the swing's CHARGE, before vanilla throws it away.
      *
-     * Player-initiated player->mob only. Mob->player is Pass 2 (it drains the player's custom HP and
-     * carries an i-frame feel decision) -- deliberately untouched here.
+     * <p>MEASURED, not assumed (2026-08-28 Step 0): vanilla calls {@code resetAttackStrengthTicker()}
+     * before {@code hurt()}, so the same swing reads {@code getAttackCooldown() == 1.0000} here and
+     * {@code 0.0400} inside the damage event -- both being {@code 0.5 / period}. Reading the charge in
+     * the rider would therefore scale every hit to its floor, however well timed.
      *
-     * Token-can't-kill: death is deferred this phase, so the token must never drop a tracked mob to
-     * <=0 while its custom HP is positive. If the token would be lethal, floor the mob's vanilla
-     * health first -- the mob analog of the player heart floor. Custom HP stays the source of truth.
+     * <p>Damage is NOT dealt here. This event fires for attacks vanilla will go on to refuse -- an
+     * i-framed re-hit among them -- so it says a swing was ATTEMPTED, not that one landed. Landing is
+     * the damage event's news, which is why the two are split and why this only stashes.
+     *
+     * <p>Scoped to mob victims: player victims are a PvP rules decision, deferred with the rider's.
      */
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
+    public void onPrePlayerAttack(PrePlayerAttackEntityEvent event) {
+        if (!(event.getAttacked() instanceof LivingEntity victim) || victim instanceof Player) return;
+        meleeHits.record(event.getPlayer().getUniqueId(), victim.getUniqueId(),
+                event.getPlayer().getAttackCooldown());
+    }
+
+    /**
+     * Vanilla's SWEEP, which must not become the cone we just retired.
+     *
+     * <p>A sweeping sword raises a separate EntityDamageByEntityEvent per neighbouring mob, with the
+     * player as damager and cause ENTITY_SWEEP_ATTACK. Left alone, the rider below would read each of
+     * those as a basic hit and deal the weapon's FULL custom damage to every mob within sweep range --
+     * a 120-degree cone by another name, and exactly the bug this change exists to remove.
+     *
+     * <p>Cancelled outright rather than tokened, because sweep is deferred rather than owned: a
+     * tokened sweep would still set a bystander's i-frames and block the next real hit on it for ten
+     * ticks. When sweep becomes a declared effect it stops being cancelled here.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlayerSweepAttack(EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Player)) return;
+        if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK) return;
+        event.setCancelled(true);
+    }
+
+    /**
+     * Ride a player's melee hit on a mob: vanilla picks the victim and keeps the cosmetics, we own
+     * the mechanics. This is the basic melee attack now -- the arm-swing packet no longer fires it.
+     *
+     * <p>Vanilla's crosshair attack decides WHO was hit, with its own reach, its own aim and its own
+     * occlusion test, so a mob 60 degrees off the crosshair can no longer take a swing meant for
+     * something else. We token the vanilla damage -- non-zero so the mob still flashes and takes
+     * i-frames, small enough that it cannot double the custom number -- then land the weapon's
+     * on_hit payload through the same EffectApplier every ability uses.
+     *
+     * <p>Runs at HIGH with ignoreCancelled: {@link #onFrozenMeleeAttack} cancels a frozen damager's
+     * hit at NORMAL, and same-priority order is undefined. It matters more than it used to -- this
+     * handler now DEALS DAMAGE, so a frozen player's suppressed swing must not still land one.
+     *
+     * <p>ENTITY_ATTACK only, and that gate -- not handler ordering -- is what keeps sweep out.
+     * {@link #onPlayerSweepAttack} sits at the SAME priority, so which of the two runs first is
+     * undefined; if the canceller lost the coin toss, ignoreCancelled would not save us. The cause
+     * check makes the order irrelevant, which is why the cancel there is for the bystander's
+     * i-frames rather than for this handler's benefit. Every other cause with a player damager (a
+     * thrown potion, a fired arrow's shooter) is not a melee swing and is not ours here either.
+     *
+     * <p>The charge arrives from the pre-attack stash and FAILS CLOSED: no matching swing means no
+     * custom damage, rather than a guessed full-power hit. The window claim is the anti-spam guard,
+     * and {@link MeleeHits} documents at length why it keys on our own hit history rather than on
+     * vanilla's noDamageTicks -- the short version is that a burning mob's fire ticks drive that
+     * counter too, and would have made melee stutter against exactly the mobs our fire content
+     * creates.
+     *
+     * <p>Token-can't-kill is unchanged: death is the custom-HP path's business (MobDeathSystem via
+     * setHealth(0)), so the 0.01 token must never drop a tracked mob to zero on its own.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlayerMeleeAttack(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player attacker)) return;    // player-initiated
         if (!(event.getEntity() instanceof LivingEntity victim)) return;
-        if (victim instanceof Player) return;                            // player->mob only (Pass 2 = mob->player)
+        if (victim instanceof Player) return;                            // player->mob only
+        if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return;
 
-        // A BROKEN weapon must be inert, and this handler is the one that would otherwise leak a
-        // cosmetic hit past the gate: it never reads a weapon, so the packet path being cancelled
-        // still leaves the mob flashing red and playing the hurt sound. Cancelling outright also
-        // drops knockback and i-frames, which is correct -- a weapon that deals nothing should not
-        // stagger anything. Scoped by weapon_id, so an untagged vanilla sword is untouched.
+        // A BROKEN weapon is inert, and cancelling is what makes it look inert: no damage, and no
+        // flash, sound, knockback or i-frames either. A weapon that deals nothing must not stagger
+        // anything. Scoped by weapon_id, so an untagged vanilla sword is untouched.
         if (WeaponDurability.isHeldWeaponBroken(attacker, adapters.keys())) {
             event.setCancelled(true);
             return;
         }
 
-        event.setDamage(TOKEN_DAMAGE);                                   // flash + i-frames, no double-damage
+        event.setDamage(TOKEN_DAMAGE);                                   // flash + i-frames, no double
         if (adapters.stats().tracks(victim.getUniqueId())
                 && victim.getHealth() - TOKEN_DAMAGE <= 0.0) {
             var attr = victim.getAttribute(Attribute.MAX_HEALTH);
             double vanillaMax = attr == null ? victim.getHealth() : attr.getValue();
-            victim.setHealth(Math.min(vanillaMax, VANILLA_LIVE_FLOOR)); // survive the token; death is next pass
+            victim.setHealth(Math.min(vanillaMax, VANILLA_LIVE_FLOOR)); // the token can never kill
         }
+
+        // Fail closed on a missing swing, and claim the window before dealing anything. Both are
+        // mutations, so neither may be asked twice for one hit.
+        var swing = meleeHits.consume(attacker.getUniqueId(), victim.getUniqueId());
+        if (swing.isEmpty()) return;
+        if (!meleeHits.claimWindow(victim.getUniqueId())) return;
+
+        WeaponFire.landVanillaMelee(attacker, victim, AttackCharge.scale(swing.get().charge()),
+                weapons, adapters, cooldowns);
     }
 
     /**

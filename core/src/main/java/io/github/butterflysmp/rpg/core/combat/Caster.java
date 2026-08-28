@@ -54,11 +54,37 @@ import java.util.UUID;
  * bonus reach a literal-damage weapon like {@code ember_staff} that reads no stat at all.
  */
 public record Caster(UUID id, double attackDamage, double classDamageBonus,
-                     double enchantDamagePercent) {
+                     double enchantDamagePercent, double chargeScale) {
 
-    /** Project a cast-time snapshot down to what an effect landing later is allowed to read. */
+    /**
+     * Project a cast-time snapshot down to what an effect landing later is allowed to read, at
+     * FULL charge -- every caller except the basic melee hit.
+     *
+     * <p>Exact, not approximate: execution confirms {@code AttackCharge.scale(1.0) == 1.0} in
+     * binary floating point, so an ability, projectile or area routed through here deals precisely
+     * what it dealt before the charge factor existed. Had that identity only been approximate, the
+     * whole game's damage would have drifted by a rounding error the day this field landed.
+     */
     public static Caster of(CombatantSnapshot snapshot) {
+        return of(snapshot, AttackCharge.FULL_CHARGE);
+    }
+
+    /**
+     * The basic melee entry point: the same projection, carrying how much of the swing was earned.
+     *
+     * <p>{@code chargeScale} is a MULTIPLIER whose neutral value is 1.0 -- the convention
+     * {@code CombatantSnapshot.attackSpeed} uses, and deliberately NOT the 0.0-is-absent convention
+     * the three summands above use. The asymmetry is the price of being multiplicative: 0.0 here
+     * would mean "this hit lands nothing", which is a real value rather than an absent one, so
+     * there is no safe absent encoding and every caller must state its charge.
+     *
+     * <p>It rides the record rather than travelling as a parameter for the same reason the other
+     * three do: {@code EffectApplier} needs it at the damage arms, and threading a fifth argument
+     * through every applier method would put it in reach of the untargeted effects that must never
+     * scale by it.
+     */
+    public static Caster of(CombatantSnapshot snapshot, double chargeScale) {
         return new Caster(snapshot.id(), snapshot.attackDamage(), snapshot.classDamageBonus(),
-                snapshot.enchantDamagePercent());
+                snapshot.enchantDamagePercent(), chargeScale);
     }
 }

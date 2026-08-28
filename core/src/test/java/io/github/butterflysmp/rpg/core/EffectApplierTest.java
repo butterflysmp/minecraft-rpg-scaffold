@@ -665,4 +665,63 @@ class EffectApplierTest {
         assertEquals(100, target.health, 1e-9, "a cancelled base deals nothing");
         assertEquals(0, target.damageCalls, "and fires no seam");
     }
+
+    /**
+     * WHERE the charge multiplies, which is a balance decision disguised as an arithmetic one.
+     *
+     * The fixture is the only shape that can tell the two candidates apart: a weapon base AND an
+     * enchant percent AND a flat class bonus, all non-zero. With any of them zero both placements
+     * produce the same number and the test proves nothing.
+     *
+     *   scale the WHOLE amount:  (8 * 1.15 + 5) * 0.25 = 3.55   -> health 96.45   <- ours
+     *   scale the BASE only:     (8 * 0.25) * 1.15 + 5 = 7.30   -> health 92.70
+     *
+     * Both values were produced by EXECUTING the expressions, not by doing the algebra here. They
+     * differ by 3.75 -- more than twice the damage -- because scaling only the base leaves the flat
+     * class bonus as a spam-proof floor. With enough +N Melee gear that floor makes fast weak
+     * swings out-damage timed ones, which inverts the entire charge model.
+     */
+    @Test
+    void chargeScalesTheWholeAmountAndNotJustTheWeaponBase() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;
+        caster.enchantDamagePercent = 15.0;   // Sharpness III
+        caster.classDamageBonus = 5.0;        // +5 Melee gear
+
+        new EffectApplier(world).applyAll(List.of(new EffectSpec.WeaponDamage("kinetic")),
+                caster.asCaster(0.25), pair(target), Vec3.ZERO);
+
+        assertEquals(96.45, target.health, 1e-9,
+                "a quarter-charged swing deals a quarter of the WHOLE amount");
+        // Mutation: move * chargeScale() inside the parens (scaling only the base) -> 92.70 -> reddens.
+        // Mutation: delete * chargeScale() entirely -> 85.80 -> reddens.
+    }
+
+    /**
+     * The regression that protects every OTHER caller. Abilities, projectiles and areas all build
+     * their Caster through the no-charge factory, which passes FULL_CHARGE -- so the day the charge
+     * factor landed, none of their numbers were allowed to move.
+     *
+     * This is safe to assert tightly because AttackCharge.scale(1.0) == 1.0 exactly in binary
+     * floating point, which AttackChargeTest pins by execution rather than by algebra. If that
+     * identity were merely approximate, every ability in the game would have drifted here.
+     */
+    @Test
+    void aFullChargeSourceDealsExactlyWhatItDidBeforeChargeExisted() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;
+        caster.enchantDamagePercent = 15.0;
+        caster.classDamageBonus = 5.0;
+
+        new EffectApplier(world).applyAll(List.of(new EffectSpec.WeaponDamage("kinetic")),
+                caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(85.80, target.health, 1e-9, "8 * 1.15 + 5 = 14.2, untouched by the charge factor");
+        // Mutation: make the no-arg Caster.of pass anything but FULL_CHARGE -> reddens, and with it
+        // every ability, projectile and lingering area in the game.
+    }
 }

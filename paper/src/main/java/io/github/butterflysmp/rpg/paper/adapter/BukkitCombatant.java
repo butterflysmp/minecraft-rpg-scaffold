@@ -100,12 +100,20 @@ public final class BukkitCombatant {
          * the popup and death. It does NOT deal vanilla damage: vanilla health is a puppet, not truth.
          *
          * <p>Flash is ABILITY-PATH ONLY here, and gated so it never overlaps melee. A weapon swing
-         * already fires a vanilla event that flashes the mob (see {@code RpgListeners}'
-         * player-melee handler, which tokens it and cancels its knockback); that event sets vanilla
-         * i-frames as a side effect, and it runs BEFORE this deferred packet-path call. So when
-         * {@code noDamageTicks > 0} a vanilla event just flashed this target -- skip the manual flash,
-         * no double. When it is 0 (an ability, which fires no vanilla event) play the hurt animation
-         * ourselves. Do NOT reset i-frames here: that reset is exactly what would defeat the gate.
+         * fires a vanilla event that flashes the mob (see {@code RpgListeners}' player-melee handler,
+         * which tokens it and cancels its knockback); that event sets vanilla i-frames as a side
+         * effect, and it runs BEFORE this deferred call. So when {@code noDamageTicks > 0} a vanilla
+         * event just flashed this target -- skip the manual flash, no double. When it is 0 (an
+         * ability, which fires no vanilla event) play the hurt animation ourselves. Do NOT reset
+         * i-frames here: that reset is exactly what would defeat the gate.
+         *
+         * <p><b>This paragraph was a STORY until 2026-08-28, and is now true.</b> While the melee
+         * suppressor brought a held weapon's vanilla attack damage to a flat 0, vanilla skipped its
+         * whole attack path, so a weapon swing fired NO vanilla event, set NO i-frames, and every
+         * melee hit reached the manual flash below with {@code noDamageTicks == 0} -- the gate never
+         * gated anything. Measured: nine ironblade swings across three Step 0 sessions produced zero
+         * EntityDamageByEntityEvents, against a bare fist that produced one per swing. Stage 1 made
+         * vanilla attack for real, which is the first time this gate has had a double to prevent.
          *
          * <p>The amount arrives already multiplied by the elemental matrix; EffectApplier did that
          * against the snapshot's shield. All this port carries is a number and a culprit.

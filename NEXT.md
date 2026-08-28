@@ -581,6 +581,74 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Stage 1 (vanilla drives basic melee) — what it created or exposed
+
+- **`onCombatKnockback` now suppresses a REAL knockback.** It cancels vanilla `ENTITY_ATTACK`
+  knockback for player→mob, and until Stage 1 there was no vanilla attack to cancel — the melee
+  suppressor meant vanilla never entered its attack path at all. Melee still pushes nothing, so the
+  *feel* is unchanged, but the suppression is live code for the first time. Owning melee knockback
+  (or letting vanilla's through, since no melee weapon declares a `knockback` effect) is a
+  deliberate fork, not a side effect of this pass.
+
+- **Vanilla crits are live and unpaid-for.** Measured on the Step 0 boot: a full-charge swing at
+  base 6.0 produced `rawDamage=9.0000` — vanilla's ×1.5. That lands on the *tokened* number, so a
+  crit currently plays its particles and sound while adding nothing to the custom damage. A `crit`
+  multiplier on the custom amount is its own pass; until then the tooltip-free visual is a small
+  lie.
+
+- **Multi-attacker i-frames: one custom hit per mob per ~10-tick window, whoever swings.**
+  `MeleeHits.claimWindow` keys on the victim, not the attacker, so in co-op a second player hitting
+  the same mob inside the window deals **nothing** — where vanilla would let a strictly stronger hit
+  add the difference. Correct for Stage 1 (it is what makes spam un-exploitable) and a deliberate
+  divergence, not an oversight. A per-attacker window, or mirroring vanilla's difference rule for
+  the custom amount, is its own later fork.
+
+- **The `attackSpeed` STAT no longer reaches basic melee.** `AttackSpeed.effectiveCooldownTicks`
+  still governs the bow's fire rate through `CooldownTracker`, but a melee swing's cadence is now
+  the vanilla `attack_speed` attribute pinned at mint. So `attack_speed_boost_TEMP` is inert on
+  swings until Stage 2 drives that attribute from the stat. The two must not both throttle: a
+  content cooldown *and* a vanilla charge period are alternatives, because under a cooldown gate
+  every allowed swing is already fully charged and `AttackCharge` would be dead code.
+
+- **Authored 2.0 vs true-vanilla 1.6 per material.** `mint` derives the pinned attack speed from the
+  trigger's `cooldown_ticks` (10 → 2.0/s), so the charge period matches the tooltip's "Attack Speed"
+  line. Whether a sword-shaped weapon should instead inherit its material's native vanilla speed is
+  a content decision, left open.
+
+- **Vanilla reach is ~3 blocks**, against the `reach: 3.5` the content still declares. Melee is
+  slightly shorter than it was. The `cast: type: melee` block is retained regardless — it is the
+  discriminator `BasicMelee.isVanillaDriven` reads, not decoration.
+
+- **Sweep is cancelled, not owned.** `onPlayerSweepAttack` cancels `ENTITY_SWEEP_ATTACK` from a
+  player outright. Tokening it instead would set a bystander's i-frames and block the next real hit
+  on it for ten ticks; leaving it alone would let the rider deal full custom damage to every mob in
+  sweep range, which is the retired cone under another name. When sweep becomes a declared effect it
+  stops being cancelled there.
+
+  > #### 2026-08-28 — the guard that the boot rewrote
+  >
+  > The reviewed plan's anti-spam guard read `victim.getNoDamageTicks() <= 10` — vanilla's own
+  > "is this a fresh hit" condition — captured in `PrePlayerAttackEntityEvent` before vanilla
+  > mutates it. **Step 0's instrumentation disproved it before a line of it was written.** Logging
+  > every non-player `EntityDamageEvent` produced 20 `FIRE_TICK` events plus `FALL` and `LAVA`,
+  > each driving the same counter:
+  >
+  > ```
+  > [STEP0] OTHER victim=ZOMBIE cause=FIRE_TICK rawDamage=1.0000 victimIFrames=0
+  > [STEP0] OTHER victim=BAT    cause=LAVA      rawDamage=4.0000 victimIFrames=10
+  > ```
+  >
+  > A burning mob takes a fire tick a second, so that guard would have read "not fresh" for ~10 of
+  > every 20 ticks and dealt **zero** custom melee damage for half of every second — strictly worse
+  > than the vanilla it imitates, and worst against precisely the mobs this project's fire element
+  > and Scorch DoT are built to create.
+  >
+  > `MeleeHits` therefore keys on OUR OWN hit history. The general lesson, which is the reason this
+  > is recorded rather than just fixed: **vanilla's `noDamageTicks` is a shared bus.** Anything that
+  > damages an entity writes it. Reading it as "did *we* just hit this" is a category error that
+  > looks correct in a one-mob test and fails the moment the world touches the same mob.
+
+
 - **`DamagePopupManager.onChange` reads Bukkit inline on the seam thread — a Folia cross-region
   hazard.** The popup listener resolves `Bukkit.getPlayer` / `Bukkit.getEntity` / `getLocation`
   directly in `onChange`. For the **combat** path that runs on the target's owning thread (safe). But
