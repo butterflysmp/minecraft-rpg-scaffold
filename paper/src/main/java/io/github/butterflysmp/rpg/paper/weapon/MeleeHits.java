@@ -49,6 +49,11 @@ import java.util.function.LongSupplier;
  * the player clicks. We inherit vanilla's i-frames for WHEN THE EVENT FIRES -- a re-hit vanilla
  * refuses outright never reaches us -- and own only WHEN WE APPLY DAMAGE.
  *
+ * <p>The window has a second reader now: {@link #landedThisTick} derives "a real hit landed on this
+ * victim this tick" from the stamp the claim already writes, and the knockback gate uses it to let
+ * vanilla's melee push through on exactly the hits that dealt damage. Derived rather than stored, so
+ * the two cannot drift and there is no second map to bound.
+ *
  * <h2>Threading and bounds</h2>
  * Backed by {@link CooldownTracker}, which is written to be entered concurrently: under Folia two
  * victims in different regions are hit on different threads at the same instant. Each victim's entry
@@ -112,6 +117,47 @@ public final class MeleeHits {
         if (!windows.isReady(victim, WINDOW_KEY)) return false;
         windows.trigger(victim, WINDOW_KEY, WINDOW_TICKS);
         return true;
+    }
+
+    /**
+     * Did a real melee hit land on {@code victim} on THIS tick?
+     *
+     * <p>The knockback gate reads this. It is deliberately NOT "is the window active": a mob hit
+     * three ticks ago still has an active window, so a windowed-out click now would read as active
+     * and release a push it did not earn. Tick-exact is the whole point of it.
+     *
+     * <p>For a SINGLE attacker that release turns out to be unreachable -- the 2026-08-28 boot showed
+     * vanilla suppressing a windowed-out re-hit's knockback upstream, before the gate is consulted
+     * (tick 12170: a re-hit reached the rider, claimed nothing, and raised no knockback event). The
+     * tick-exactness earns its keep in the cases that boot did not cover -- co-op, and any desync
+     * between our window and the victim's real state -- not in single-attacker spam.
+     *
+     * <p>DERIVED from the window rather than stored beside it. {@link #claimWindow} already stamps
+     * the victim with {@code readyAt = now + WINDOW_TICKS}, so a FULL window remaining means that
+     * claim happened on this very tick; nine means last tick; zero means never. That leaves no
+     * second map to leak, nothing for {@link #forget} to miss, and no way for the two to disagree
+     * about what counts as a hit -- the claim IS the hit.
+     *
+     * <p>A pure query, and unlike {@link #claimWindow} it may be asked any number of times for one
+     * hit -- which it MUST be. Paper's {@code EntityPushedByEntityAttackEvent} warns that "some
+     * entities might trigger this multiple times on the same entity as multiple acceleration
+     * calculations are done", and the 2026-08-28 knockback boot MEASURED exactly that:
+     *
+     * <pre>
+     * tick  sprinting  knockbackEvents
+     * 534   false      1
+     * 568   true       2      &lt;-- two ENTITY_ATTACK events for ONE hit
+     * 647   true       2
+     * 721   true       2
+     * </pre>
+     *
+     * Eleven non-sprint hits raised one event each; three of four SPRINT hits raised two. So a
+     * consume-on-read signal would have cancelled the second event on a sprint hit and eaten the
+     * sprint bonus -- the exact feel this pass exists to deliver, lost to a guard meant to protect
+     * it. The tick stamp is the bound instead, and it expires on its own.
+     */
+    public boolean landedThisTick(UUID victim) {
+        return windows.ticksRemaining(victim, WINDOW_KEY) == WINDOW_TICKS;
     }
 
     /** Drop a victim's window. Call on death, despawn and chunk-unload, or the map grows forever. */

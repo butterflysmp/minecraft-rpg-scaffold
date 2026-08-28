@@ -87,6 +87,106 @@ class MeleeHitsTest {
         // fails and one swing locks the whole server out for 10 ticks -> reddens.
     }
 
+    // --- The knockback signal: "a hit landed HERE, NOW" ---
+    //
+    // Vanilla's melee knockback is no longer cancelled outright; it is released on exactly the hit
+    // that claimed the window, so the push keeps the same once-per-window cadence as the damage.
+    // These pin the signal the gate reads. The distinction every one of them turns on is
+    // LANDED-THIS-TICK vs WINDOW-IS-OPEN: a mob hit three ticks ago still has an open window, and
+    // reading that would leak a push to the very spam-click the gate exists to refuse.
+
+    @Test
+    void aClaimedHitSignalsOnItsOwnTickAndNotOnTheNext() {
+        assertTrue(hits.claimWindow(VICTIM));
+        assertTrue(hits.landedThisTick(VICTIM), "the hit that just claimed the window earned its push");
+
+        tick[0] += 1;
+        assertFalse(hits.landedThisTick(VICTIM), "and one tick later it has not");
+        // Mutation: read ticksRemaining > 0 -- "the window is open" instead of "a hit landed this
+        // tick" -> the second assertion fails, and every knockback event for the next nine ticks
+        // would be let through -> reddens.
+    }
+
+    /**
+     * THE SPAM-CLICK. The case the gate exists for, and the case a window-open reading gets wrong.
+     *
+     * Three ticks after a real hit the window is still shut, so the click deals nothing -- and it
+     * must knock nothing either, or a spammer shoves a mob around on clicks worth zero damage.
+     */
+    @Test
+    void aWindowedOutRehitEarnsNeitherDamageNorAPush() {
+        assertTrue(hits.claimWindow(VICTIM), "the real hit");
+
+        tick[0] += 3;
+        assertFalse(hits.claimWindow(VICTIM), "the spam-click is refused its damage");
+        assertFalse(hits.landedThisTick(VICTIM), "and refused its knockback on the same cadence");
+        // Mutation: read ticksRemaining > 0 -> the last assertion fails. This is the one that proves
+        // the signal is tick-exact rather than window-shaped -> reddens.
+    }
+
+    @Test
+    void aVictimWeHaveNeverHitNeverSignals() {
+        assertFalse(hits.landedThisTick(VICTIM), "no hit, no push");
+
+        tick[0] += 500;
+        assertFalse(hits.landedThisTick(VICTIM), "and time passing cannot manufacture one");
+        // Mutation: test for ticksRemaining != 0, or drop the WINDOW_TICKS comparison -> an unhit
+        // mob reads as freshly hit and vanilla knockback leaks on any ENTITY_ATTACK -> reddens.
+    }
+
+    @Test
+    void theSignalIsPerVictimAndNotGlobal() {
+        assertTrue(hits.claimWindow(VICTIM));
+
+        assertTrue(hits.landedThisTick(VICTIM));
+        assertFalse(hits.landedThisTick(OTHER_VICTIM),
+                "hitting one mob must not release a push on every other mob being hit this tick");
+        // Mutation: key on a constant instead of the victim id -> the second assertion fails ->
+        // reddens.
+    }
+
+    /**
+     * Asking must not consume. One attack can raise more than one knockback event -- Paper's
+     * EntityPushedByEntityAttackEvent says so outright ("multiple acceleration calculations") -- and
+     * a one-shot signal would cancel the second one, silently eating the sprint bonus that is the
+     * whole reason vanilla owns this push.
+     */
+    @Test
+    void askingDoesNotConsumeTheSignalSoOneHitCanReleaseSeveralKnockbacks() {
+        assertTrue(hits.claimWindow(VICTIM));
+
+        assertTrue(hits.landedThisTick(VICTIM), "the base push");
+        assertTrue(hits.landedThisTick(VICTIM), "the sprint bonus, same tick, same hit");
+        assertTrue(hits.landedThisTick(VICTIM), "and any further acceleration vanilla computes");
+        // Mutation: clear the stamp on read -> the second assertion fails, and a sprint hit would
+        // land its base push with no bonus -> reddens.
+    }
+
+    @Test
+    void theWindowReopeningIsNotTheSameAsAHitLanding() {
+        assertTrue(hits.claimWindow(VICTIM));
+
+        tick[0] += MeleeHits.WINDOW_TICKS;
+        assertFalse(hits.landedThisTick(VICTIM),
+                "the window is claimable again, but nothing has been hit on this tick");
+        assertTrue(hits.claimWindow(VICTIM), "claiming it is what makes the hit real");
+        assertTrue(hits.landedThisTick(VICTIM), "and only then is a push earned");
+        // Mutation: signal on readiness rather than on the claim -> the first assertion fails, and a
+        // swing that never landed would still push -> reddens.
+    }
+
+    @Test
+    void forgettingAVictimDropsItsSignalAlongWithItsWindow() {
+        assertTrue(hits.claimWindow(VICTIM));
+        assertTrue(hits.landedThisTick(VICTIM));
+
+        hits.forget(VICTIM);
+        assertFalse(hits.landedThisTick(VICTIM), "a forgotten victim carries no stale push");
+        assertEquals(0, hits.trackedVictims(), "and the signal leaves nothing of its own behind");
+        // The signal is DERIVED from the window rather than stored beside it, so this is what says
+        // the derivation inherits the cleanup -- there is no second map for forget to miss.
+    }
+
     // --- The pending swing ---
 
     @Test

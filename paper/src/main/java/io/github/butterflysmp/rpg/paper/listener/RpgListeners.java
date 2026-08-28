@@ -547,15 +547,62 @@ public final class RpgListeners implements Listener {
     }
 
     /**
-     * We own knockback now. Cancel the vanilla ATTACK knockback on a mob so the declared custom KB
-     * (an EffectSpec.Knockback, or none for a Mage weapon) is the only push -- the design's
-     * "always cancel vanilla KB, then apply the declared one." Left alone: knockback on players
-     * (mob->player is Pass 2) and non-attack causes (explosions, sweep) which aren't ours to own.
+     * VANILLA owns melee knockback -- gated to the hit that earned it.
+     *
+     * <p>Basic melee wants vanilla's exact feel: the base push, the small upward pop, and the
+     * sprint-hit bonus. Vanilla derives all three itself, taking the sprint bonus from the attacker's
+     * state at hit time, so the cheapest and most faithful way to get them is to NOT CANCEL. Nothing
+     * custom is re-derived, and no melee weapon needs to declare a knockback effect. This replaces
+     * the design's older "always cancel vanilla KB, then apply the declared one", which left melee
+     * pushing nothing at all because no shipped weapon declares one.
+     *
+     * <p>THE GATE releases the push on exactly the hit that claimed the {@link MeleeHits} window, so
+     * knockback keeps the same once-per-10-tick cadence as the damage.
+     *
+     * <p><b>It is a SAFETY NET, not the thing that stops spam knockback -- do not describe it as
+     * that.</b> The gate was written expecting a windowed-out click to reach vanilla's knockback and
+     * shove a mob for zero damage, the knockback analog of the spam-flash. The 2026-08-28 boot
+     * produced that exact shape and disproved it: at tick 12170 a windowed-out re-hit DID reach this
+     * rider -- an ATTACK line with no CLAIMED -- and raised no knockback event at all. Vanilla
+     * suppresses the re-hit's push itself, upstream, before this handler is ever consulted. So for a
+     * SINGLE attacker the cancel branch never fires, and crediting this gate with vanilla's work
+     * would be a lie in the comment.
+     *
+     * <p>It stays because one boot with one attacker did not disprove the cases it covers: co-op,
+     * where a second player's refused click is a separate attack vanilla has no reason to suppress;
+     * a desync where external damage moves the victim's state out from under our window; and a Paper
+     * version where re-hits do knock. Cheap, and correct in all of them. Not to be removed on the
+     * strength of a single-attacker boot.
+     *
+     * <p>{@code landedThisTick} is tick-EXACT, not "the window is open": a mob hit three ticks ago
+     * still has an open window, and reading that would leak a push to the very spam-click this
+     * exists to refuse.
+     *
+     * <p>ORDERING is what makes the gate work, and it is vanilla's own: the damage event fires from
+     * inside {@code hurt()} and knockback is applied after it returns, within one synchronous
+     * {@code Player#attack}. So the rider's claim is already recorded when we are asked. It fails
+     * LOUD rather than green -- were the order reversed, the signal would never be present and melee
+     * would push nothing, which is the first thing a boot notices.
+     *
+     * <p>The query does not consume, and the boot proved that is load-bearing rather than cautious.
+     * A single hit can raise TWO ENTITY_ATTACK knockback events: measured 2026-08-28, eleven
+     * non-sprint hits raised one each and three of four SPRINT hits raised two. A consume-on-read
+     * signal would have cancelled the second and eaten the sprint bonus. Every event observed
+     * arrived as {@code EntityKnockbackByEntityEvent} with cause ENTITY_ATTACK -- a subclass, which
+     * reaches this handler because neither it nor {@code EntityPushedByEntityAttackEvent} declares
+     * its own HandlerList.
+     *
+     * <p>Left alone: knockback on PLAYERS (mob->player stays vanilla, the standing Pass 2 decision)
+     * and every non-attack cause -- explosions, sweep -- which were never ours to own. Mob->mob
+     * ENTITY_ATTACK knockback stays cancelled, because this handler keys on the knocked entity and
+     * never sees an attacker; that is unchanged by this pass, and recorded in NEXT.md rather than
+     * fixed here.
      */
     @EventHandler
     public void onCombatKnockback(EntityKnockbackEvent event) {
         if (event.getCause() != EntityKnockbackEvent.Cause.ENTITY_ATTACK) return;
         if (event.getEntity() instanceof Player) return;                 // player->mob only
+        if (meleeHits.landedThisTick(event.getEntity().getUniqueId())) return;  // the hit that earned it
         event.setCancelled(true);
     }
 
