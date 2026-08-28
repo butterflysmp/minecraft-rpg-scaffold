@@ -8,8 +8,11 @@ import net.kyori.adventure.text.format.NamedTextColor;
  * PacketEvents -- so the format is unit-testable, mirroring {@link NameplateText}. Lives in {@code paper}
  * (not {@code core}) because it depends on Adventure, which {@code core} does not carry.
  *
- * <p>ONE colour this pass (white): crit isn't in the engine and the seam carries no crit bit, so there
- * is no crit/normal branch yet -- that lands when attack-damage/crit become custom stats.
+ * <p>TWO styles, since crit: a normal hit is white, a CRIT is YELLOW. Colour is the whole signal in
+ * the number itself -- an earlier revision also appended a "!" so the crit survived greyscale, and it
+ * was dropped on the call that the number should stay a number. The redundancy that argument wanted
+ * has not vanished, it MOVED: the crit particle burst is the second channel, and it is the one a
+ * player who cannot separate yellow from white still reads.
  *
  * <p><b>Double-rounding tolerance (accepted):</b> this rounds {@code amount}, while the mob nameplate
  * ({@link NameplateText}) rounds current/max independently, so the visible plate drop is
@@ -21,7 +24,23 @@ public final class DamageNumberText {
 
     private DamageNumberText() {}
 
+    /** A normal hit: the rounded amount in white. Kept so non-crit callers read unchanged. */
     public static Component of(double amount) {
-        return Component.text(Long.toString(Math.round(amount)), NamedTextColor.WHITE);
+        return of(amount, false);
     }
+
+    /**
+     * The number, styled by whether it was a CRIT.
+     *
+     * <p>A crit reads {@code "28"} in yellow; a normal hit reads the same text in white. Pure, so the
+     * distinction is unit-testable without a server -- worth testing precisely BECAUSE the two now
+     * differ only by colour, which no other test would catch going wrong.
+     */
+    public static Component of(double amount, boolean wasCrit) {
+        String text = Long.toString(Math.round(amount));
+        return wasCrit
+                ? Component.text(text, NamedTextColor.YELLOW)
+                : Component.text(text, NamedTextColor.WHITE);
+    }
+
 }

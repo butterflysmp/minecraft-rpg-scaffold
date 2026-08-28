@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core.combat.stat;
 
+import io.github.butterflysmp.rpg.core.combat.Crit;
 import java.util.Set;
 
 /**
@@ -80,6 +81,30 @@ public final class HealthState {
      */
     private final Stat defense = new Stat(0.0);
 
+    /**
+     * Crit CHANCE: the probability a hit from this combatant crits. A player bases at
+     * {@link Crit#BASE_CHANCE} (0.15); a MOB bases at 0.
+     *
+     * <p>The faction-dependent base is why this is assigned in the constructor rather than at the
+     * declaration like the six above. It is also the whole of "a mob never crits" -- there is no
+     * second check at the roll site, because a chance of 0 fails {@code roll < 0} for every roll a
+     * half-open source can produce. Gating at the call site instead would leave this stat reading
+     * 0.15 for a mob while something elsewhere quietly contradicted it, which is the divergence the
+     * store exists to prevent.
+     */
+    private final Stat critChance;
+
+    /**
+     * Crit DAMAGE: the BONUS a crit adds, so the multiplier is {@code 1 + critDamage}. A player bases
+     * at {@link Crit#BASE_DAMAGE} (1.0, i.e. a base crit is 2.0x); a mob bases at 0, which is inert
+     * anyway since a mob never crits.
+     *
+     * <p>A SUMMAND, like the four above it, which is what lets gear stack additively on it. Storing
+     * the multiplier instead would have needed a different composition rule from every other stat
+     * here -- see {@link Crit} for why the bonus convention was chosen.
+     */
+    private final Stat critDamage;
+
     private final boolean player;
     private double current;
 
@@ -96,6 +121,9 @@ public final class HealthState {
         this.max = new Stat(baseMax);
         this.attack = new Stat(baseAttack);
         this.player = player;
+        // Faction-dependent bases: only a player crits. See the two fields above.
+        this.critChance = new Stat(player ? Crit.BASE_CHANCE : 0.0);
+        this.critDamage = new Stat(player ? Crit.BASE_DAMAGE : 0.0);
         this.current = baseMax;
     }
 
@@ -331,6 +359,69 @@ public final class HealthState {
         return defense.modifierCount();
     }
 
+    // --- Crit: a seventh and eighth Stat. Chance is a PROBABILITY, damage is a BONUS ------------
+
+    /**
+     * The resolved crit chance: {@code base + Sum(modifiers)}, where base is 0.15 for a player and 0
+     * for a mob. NOT clamped here -- {@link Crit#chance} clamps at the point of use, so the stat
+     * reports what the gear actually grants and the cap is stated once, where the decision is made.
+     */
+    public double critChanceValue() {
+        return critChance.value();
+    }
+
+    /** Set (or replace) the crit-chance modifier from {@code source}; true if the value changed. */
+    public boolean setCritChanceModifier(String source, double amount) {
+        return critChance.putModifier(source, amount);
+    }
+
+    /** Remove {@code source}'s crit-chance modifier; true if one was actually removed. */
+    public boolean clearCritChanceModifier(String source) {
+        return critChance.removeModifier(source);
+    }
+
+    public double critChanceModifierAmount(String source) {
+        return critChance.amountOf(source);
+    }
+
+    public Set<String> critChanceModifierSources() {
+        return critChance.sources();
+    }
+
+    public int critChanceModifierCount() {
+        return critChance.modifierCount();
+    }
+
+    /**
+     * The resolved crit BONUS: {@code base + Sum(modifiers)}, base 1.0 for a player. The multiplier a
+     * crit applies is {@code 1 + this}, so 1.0 means 2.0x.
+     */
+    public double critDamageValue() {
+        return critDamage.value();
+    }
+
+    /** Set (or replace) the crit-damage modifier from {@code source}; true if the value changed. */
+    public boolean setCritDamageModifier(String source, double amount) {
+        return critDamage.putModifier(source, amount);
+    }
+
+    /** Remove {@code source}'s crit-damage modifier; true if one was actually removed. */
+    public boolean clearCritDamageModifier(String source) {
+        return critDamage.removeModifier(source);
+    }
+
+    public double critDamageModifierAmount(String source) {
+        return critDamage.amountOf(source);
+    }
+
+    public Set<String> critDamageModifierSources() {
+        return critDamage.sources();
+    }
+
+    public int critDamageModifierCount() {
+        return critDamage.modifierCount();
+    }
+
     // --- Modifier targets: one per stat, so the reconcile diff is written once (see ModifierTarget) --
 
     /**
@@ -402,6 +493,28 @@ public final class HealthState {
                 return defense.putModifier(source, amount);
             }
             @Override public boolean clearModifier(String source) { return defense.removeModifier(source); }
+        };
+    }
+
+    /** The crit-chance modifier surface. A plain {@link Stat}, like attack damage. */
+    ModifierTarget critChanceTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return critChance.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return critChance.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) { return critChance.removeModifier(source); }
+        };
+    }
+
+    /** The crit-damage modifier surface. A plain {@link Stat}, like attack damage. */
+    ModifierTarget critDamageTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return critDamage.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return critDamage.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) { return critDamage.removeModifier(source); }
         };
     }
 

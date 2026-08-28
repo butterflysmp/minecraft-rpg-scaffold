@@ -18,17 +18,34 @@ public interface CombatantHandle {
     /**
      * Deal {@code amount} damage, attributed to {@code sourceId}.
      *
-     * This port carries a number and a culprit, nothing else -- element is identity, not
-     * math, and never reaches here. An element would only regain a bearing on the number if
-     * a real resistance system existed, and that would belong in core, not in a call to the
-     * server.
+     * This port carries a number, a culprit, and -- since crit -- one PRESENTATION fact. Element is
+     * still identity, not math, and still never reaches here: an element would only regain a bearing
+     * on the number if a real resistance system existed, and that would belong in core, not in a call
+     * to the server.
+     *
+     * <p>{@code wasCrit} is a deliberate widening of "a number and a culprit", and it earns its place
+     * by being underivable downstream rather than by being convenient. The crit multiplier is rolled
+     * once per cast and frozen on the caster, on the DEALER's thread; the damage is then hopped onto
+     * the TARGET's thread and lands a tick later, where the amount alone cannot say whether it was
+     * doubled. It changes no arithmetic -- the multiplier is already inside {@code amount} -- and
+     * exists so the damage number can be styled and the crit particle can fire.
      *
      * @param sourceId who to blame -- for aggro and kill credit. Never an entity
      *                 reference: a lingering area outlives its caster, and holding one
      *                 would pin it. May resolve to nothing, in which case the adapter
      *                 deals the damage unattributed rather than lying about it.
      */
-    void applyDamage(double amount, UUID sourceId);
+    default void applyDamage(double amount, UUID sourceId) {
+        applyDamage(amount, sourceId, false);
+    }
+
+    /**
+     * As above, stating whether the hit was a CRIT.
+     *
+     * @param wasCrit for display only -- the crit multiplier is already inside {@code amount}.
+     *                Applying it again here would square the crit.
+     */
+    void applyDamage(double amount, UUID sourceId, boolean wasCrit);
 
     void applyHeal(double amount);
 

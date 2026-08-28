@@ -3,6 +3,8 @@ package io.github.butterflysmp.rpg.core;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectApplier;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.combat.AttackCharge;
+import io.github.butterflysmp.rpg.core.combat.Crit;
+import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import org.junit.jupiter.api.Test;
 
@@ -822,5 +824,106 @@ class EffectApplierTest {
         assertEquals(92.0, target.health, 1e-9, "and still dealt its 8");
         // Mutation: default the consumer to null instead of a no-op -> NullPointerException on every
         // ability cast in the game -> reddens.
+    }
+
+    // --- Crit: one frozen multiplier, applied to every damage arm alike ---
+
+    @Test
+    void aCritDoublesTheWeaponArmAndTheSeamReportsTheDoubledNumber() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;
+        caster.critMultiplier = Crit.multiplier(Crit.BASE_CHANCE, Crit.BASE_DAMAGE, 0.0);  // rolled a crit
+        List<Double> reported = new ArrayList<>();
+
+        new EffectApplier(world, reported::add).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(16.0, reported.get(0), 1e-9, "8 x 2.0");
+        assertEquals(84.0, target.health, 1e-9);
+        assertTrue(target.lastDamageWasCrit, "the port carries the crit bit for the popup and particle");
+        // Mutation: drop * caster.critMultiplier() from the WeaponDamage arm -> 8.0 dealt, and crit
+        // silently does nothing to a basic swing while still flashing yellow -> reddens.
+    }
+
+    @Test
+    void aCritMultipliesAnAbilityLiteralToo() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.critMultiplier = 2.0;
+        // attackDamage stays 0, so a green here cannot be explained by the WeaponDamage path.
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(12, "fire")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(76.0, target.health, 1e-9, "12 x 2.0 = 24 off 100");
+        // Mutation: apply the multiplier in the WeaponDamage arm only -> the staff's bolt never crits
+        // while the sword does, with nothing saying so -> reddens.
+    }
+
+    @Test
+    void aNonCritIsAnExactIdentityOnTheEightyFivePercentOfSwingsThatDoNotCrit() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;
+        // Default critMultiplier is Crit.NO_CRIT. Exact equality, not EPS: an approximate identity
+        // here would drift every non-crit hit in the game by a rounding error.
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(92.0, target.health, "8 dealt, untouched by a multiplier of exactly 1.0");
+        assertFalse(target.lastDamageWasCrit, "and the seam says it was not a crit");
+        // Mutation: make NO_CRIT 1.0000001 -> the assertion is exact, so it reddens; with an EPS it
+        // would not, which is why this one row is written without a tolerance.
+    }
+
+    /**
+     * The crit rides the SAME number sweep takes a fraction of, which is how sweep inherits crit
+     * without a roll of its own.
+     *
+     * The sweep rider stashes what the seam reports and deals SweepShare.of(that, fraction). So
+     * asserting the seam reports the crit-multiplied figure IS the proof that a swept mob takes half
+     * of a CRIT primary rather than half of an unmultiplied one -- the paper half is one multiply
+     * away and has no second roll to get wrong.
+     */
+    @Test
+    void theSeamReportsTheCritMultipliedNumberSoSweepInheritsTheCrit() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;
+        caster.classDamageBonus = 5.0;
+        caster.enchantDamagePercent = 15.0;
+        caster.critMultiplier = 2.0;
+        List<Double> reported = new ArrayList<>();
+
+        new EffectApplier(world, reported::add).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(28.4, reported.get(0), 1e-9, "(8*1.15 + 5) * 2.0 -- the crit lands LAST");
+        assertEquals(14.2, SweepShare.of(reported.get(0), 0.5), 1e-9,
+                "and a swept mob takes half of THAT, not half of the uncritted 14.2");
+        // Mutation: apply the crit before the class bonus -- (8*1.15)*2 + 5 = 23.4 -> reddens, and
+        // pins the ordering the way the enchant/class-bonus test pins theirs.
+    }
+
+    @Test
+    void theChargeAndTheCritBothApplyAndNeitherEatsTheOther() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;
+        caster.critMultiplier = 2.0;
+        List<Double> reported = new ArrayList<>();
+
+        new EffectApplier(world, reported::add).applyAll(
+                List.of(new EffectSpec.WeaponDamage("kinetic")),
+                caster.asCaster(AttackCharge.scale(0.5)), pair(target), Vec3.ZERO);
+
+        assertEquals(6.4, reported.get(0), 1e-9, "8 at half charge is 3.2, critting is 6.4");
+        // Mutation: replace * chargeScale * critMultiplier with * critMultiplier -> 16.0, a badly
+        // timed crit hitting as hard as a perfect one -> reddens.
     }
 }

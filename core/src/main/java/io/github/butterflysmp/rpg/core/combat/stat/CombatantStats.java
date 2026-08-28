@@ -150,17 +150,66 @@ public final class CombatantStats {
     }
 
     /**
+     * Resolved CRIT CHANCE for {@code id}: the probability one of its hits crits.
+     *
+     * <p>An untracked combatant returns {@code 0.0} -- NEVER CRITS -- and that default is the
+     * fail-closed one on purpose. Returning the player base here would hand a crit chance to anything
+     * the store has not seen, mobs included, and the "a mob never crits" rule would depend on which
+     * entities happened to be tracked rather than on what they are.
+     */
+    public double critChanceValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.critChanceValue();
+    }
+
+    /**
+     * Resolved CRIT DAMAGE (the bonus) for {@code id}. Untracked returns {@code 0.0}, which is inert:
+     * an untracked dealer never crits, so there is no multiplier for this to size.
+     */
+    public double critDamageValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.critDamageValue();
+    }
+
+    /**
      * Deal {@code amount} of custom damage to {@code id}, attributed to {@code dealer}. No-op on an
      * untracked combatant. Emits a DAMAGE change carrying the new custom current and max, and the
      * dealer's identity -- the seam the popup hooks next phase.
      */
     public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer) {
+        damage(id, amount, dealer, dealerIsPlayer, false);
+    }
+
+    /**
+     * As above, carrying whether the hit was a CRIT. The flag is passed straight through to the seam
+     * and never touches the arithmetic: the crit multiplier was already applied to {@code amount} by
+     * {@code EffectApplier}, so multiplying here as well would double it. This carries a fact for the
+     * displays, not a factor for the maths.
+     */
+    public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, boolean wasCrit) {
         HealthState state = states.get(id);
         if (state == null) return;
         double dealt = Defense.applyDefense(amount, state.defenseValue());
         boolean reachedZero = state.damage(dealt);
         listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.DAMAGE, dealt,
-                dealer, dealerIsPlayer, state.current(), state.max(), reachedZero));
+                dealer, dealerIsPlayer, state.current(), state.max(), reachedZero, wasCrit));
+    }
+
+    /**
+     * Converge {@code id}'s CRIT-CHANCE modifiers to exactly {@code desired}. Same leak-proof diff as
+     * every other stat; no-op on an untracked combatant.
+     */
+    public void reconcileCritChanceModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.critChanceTarget(), desired);
+    }
+
+    /** Converge {@code id}'s CRIT-DAMAGE modifiers to exactly {@code desired}. See above. */
+    public void reconcileCritDamageModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.critDamageTarget(), desired);
     }
 
     /** Heal {@code id} by {@code amount}, capped at max. No-op on an untracked combatant. */

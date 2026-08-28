@@ -54,7 +54,21 @@ import java.util.UUID;
  * bonus reach a literal-damage weapon like {@code ember_staff} that reads no stat at all.
  */
 public record Caster(UUID id, double attackDamage, double classDamageBonus,
-                     double enchantDamagePercent, double chargeScale) {
+                     double enchantDamagePercent, double chargeScale, double critMultiplier) {
+
+    /**
+     * Did this cast crit? DERIVED from the frozen multiplier rather than carried beside it, so the
+     * two cannot disagree about one swing -- the same reason {@code MeleeHits.landedThisTick} derives
+     * its answer from the window stamp instead of storing a second flag.
+     *
+     * <p>Strictly GREATER than {@link Crit#NO_CRIT}, not merely different from it. A crit whose bonus
+     * resolved to 0 multiplies by exactly 1.0 and changed nothing, so it must not flash a particle or
+     * colour a number -- there is no hit to celebrate. A negative bonus is refused by the same
+     * comparison rather than by a second guard.
+     */
+    public boolean crit() {
+        return critMultiplier > Crit.NO_CRIT;
+    }
 
     /**
      * Project a cast-time snapshot down to what an effect landing later is allowed to read, at
@@ -85,6 +99,6 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      */
     public static Caster of(CombatantSnapshot snapshot, double chargeScale) {
         return new Caster(snapshot.id(), snapshot.attackDamage(), snapshot.classDamageBonus(),
-                snapshot.enchantDamagePercent(), chargeScale);
+                snapshot.enchantDamagePercent(), chargeScale, snapshot.critMultiplier());
     }
 }

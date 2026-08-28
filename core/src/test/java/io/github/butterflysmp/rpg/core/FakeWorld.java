@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.core;
 
 import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
 import io.github.butterflysmp.rpg.core.combat.Caster;
+import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.ChunkTraversal;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
@@ -332,6 +333,20 @@ public final class FakeWorld implements CombatWorld {
          */
         public double enchantDamagePercent = 0.0;
 
+        /**
+         * The CRIT MULTIPLIER this dummy's snapshot carries -- already rolled, already decided.
+         * Defaults to {@code Crit.NO_CRIT} (exactly 1.0), so every test written before crit existed
+         * sees the numbers it always saw: the multiply is an exact identity at this value.
+         *
+         * A test that wants a crit sets it to what {@code Crit.multiplier} would have returned, which
+         * is why there is no chance/roll pair here -- the roll happens in paper, and the frozen
+         * multiplier is the only thing core ever sees.
+         */
+        public double critMultiplier = Crit.NO_CRIT;
+
+        /** Whether the last applyDamage was flagged a crit. The seam bit, as the port delivered it. */
+        public boolean lastDamageWasCrit = false;
+
         /** The last velocity a dash impulse set on this dummy, or null if never dashed. */
         public Vec3 lastImpulse;
 
@@ -360,7 +375,7 @@ public final class FakeWorld implements CombatWorld {
 
         public CombatantSnapshot snapshot() {
             return new CombatantSnapshot(id, pos, eyeHeight, health > 0, player, attackSpeed, attackDamage,
-                    classDamageBonus, enchantDamagePercent);
+                    classDamageBonus, enchantDamagePercent, critMultiplier);
         }
 
         /**
@@ -382,9 +397,10 @@ public final class FakeWorld implements CombatWorld {
         }
 
         @Override public UUID id() { return id; }
-        @Override public void applyDamage(double amount, UUID sourceId) {
+        @Override public void applyDamage(double amount, UUID sourceId, boolean wasCrit) {
             health -= amount;
             lastDamageSource = sourceId;
+            lastDamageWasCrit = wasCrit;
             damageCalls++;
         }
         @Override public void applyHeal(double a) { health += a; }

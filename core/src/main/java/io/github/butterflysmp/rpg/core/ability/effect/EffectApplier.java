@@ -133,9 +133,9 @@ public final class EffectApplier {
                 // effect fires, so a multiplier folded into the Caster's attackDamage could never
                 // have touched the staff's authored bolt. This is what makes Attunement work.
                 double amount = (d.amount() * DamageEnchants.multiplier(caster.enchantDamagePercent())
-                        + caster.classDamageBonus()) * caster.chargeScale();
+                        + caster.classDamageBonus()) * caster.chargeScale() * caster.critMultiplier();
                 if (amount > 0 && target.state().alive()) {
-                    target.handle().applyDamage(amount, caster.id());
+                    target.handle().applyDamage(amount, caster.id(), caster.crit());
                     onDirectDamage.accept(amount);   // inside the gate: a refused hit reports nothing
                 }
             }
@@ -153,9 +153,9 @@ public final class EffectApplier {
                 // weapon-only melee cannot be resurrected by gear. Element is identity here too.
                 double amount = (caster.attackDamage()
                         * DamageEnchants.multiplier(caster.enchantDamagePercent())
-                        + caster.classDamageBonus()) * caster.chargeScale();
+                        + caster.classDamageBonus()) * caster.chargeScale() * caster.critMultiplier();
                 if (amount > 0 && target.state().alive()) {
-                    target.handle().applyDamage(amount, caster.id());
+                    target.handle().applyDamage(amount, caster.id(), caster.crit());
                     onDirectDamage.accept(amount);   // inside the gate: a refused hit reports nothing
                 }
             }

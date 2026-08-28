@@ -581,6 +581,103 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Crit (a chance/damage stat pair on all custom damage) — what it created or exposed
+
+Closes "vanilla crits are live and unpaid-for" below. Two stats — `critChance` (a probability, base
+0.15) and `critDamage` (a BONUS, base 1.0, so a base crit is exactly `2.0x`) — join the six already
+converged by the reconcile loop, which now carries eight. The roll is drawn once per cast in
+`BukkitCombatant.snapshot`, decided by a pure `Crit.multiplier` in core, and frozen on
+`CombatantSnapshot`/`Caster` beside `chargeScale`. `EffectApplier` multiplies by it in both damage
+arms, so it reaches every custom damage effect — swing, ability literal, projectile, area — with no
+per-arm branch.
+
+- **The bonus convention, not the multiplier convention.** `critDamage` is a summand with base 1.0
+  and gear adds to it, so the multiplier is `1 + critDamage`. Storing the multiplier directly (base
+  2.0) would have made gear either multiplicative — a different composition rule from every other
+  stat in the store — or additive on a base already containing the 1. Keeping it a bonus is what lets
+  it "stack additively exactly like the other stats" without a second rule.
+
+- **A mob never crits because its STAT is 0, not because a check says so.** `HealthState` bases both
+  stats on the combatant's frozen faction. There is no gate at the roll site: `Crit.crits` compares
+  `roll < 0`, false for every roll a half-open source can produce. Gating at the call site instead
+  would have left the stat reading 0.15 on a zombie while something elsewhere quietly contradicted
+  it — the divergence the store exists to prevent, and the reason a future stat screen can read this
+  stat and be right.
+
+- **`Crit.chance` clamps at the point of use, and the STAT does not.** A crit-chance stat of 2.15
+  reports 2.15 and resolves to a capped 1.0 where it is read. The cap is therefore stated once. At or
+  above 100% every hit crits rather than overflowing into a second tier — a decision, not hygiene.
+  **The clamp's tests are the ones worth keeping honest:** removing `Math.min`/`Math.max` changes no
+  crit OUTCOME (a chance of 2.0 still always crits; a chance of -1.0 still never does), so only the
+  assertions calling `chance()` directly catch it. A suite that checked crits alone would have passed
+  a broken clamp.
+
+- **Sweep inherits crit for free, and does not re-roll.** One roll per cast means a swept mob takes a
+  fraction of the primary's already-multiplied number. Rolling at the damage arm instead would have
+  given a Burst catching five bodies five independent crits. **Its POPUP stays white**, though:
+  the damage inherits the crit in full, the presentation does not, because the roll was for the hit
+  the player aimed at and colouring every bystander would claim each crit independently. Visible
+  consequence: a yellow `28` on the primary beside white `14`s. Recorded as a decision, not a gap.
+
+- **`wasCrit` widened the `applyDamage` port, whose javadoc said "a number and a culprit, nothing
+  else".** It earns the widening by being underivable downstream rather than by being convenient: the
+  multiplier is rolled on the DEALER's thread and frozen, then the damage hops onto the TARGET's
+  thread and lands a tick later, where the amount alone cannot say whether it was doubled. It changes
+  no arithmetic. `DamageNumberText` had already named this absence — *"the seam carries no crit bit,
+  so there is no crit/normal branch yet"* — so the design was pre-decided by the codebase rather than
+  by this pass.
+
+- **Every new overload is ADDITIVE.** `applyDamage(amount, sourceId)` is now a `default` delegating
+  with `false`; `CombatantStats.damage` and `HealthChange` gained back-compat forms; `EffectApplier`
+  and `CastExecutor` kept their existing constructors. No existing caller, implementor or test
+  changed, and the non-crit multiplier is exactly `1.0` so the multiply is an exact identity on the
+  ~85% of swings that do not crit.
+
+- **VANILLA's crit particles are now suppressed by packet, and that is the sanctioned exception.**
+  There is no Bukkit event for the crit visual — it is not a cancellable damage side effect, not an
+  interceptable particle spawn, and not exposed on any attack event; vanilla sends it straight from
+  `Player#attack`. This is the case the prefer-the-API rule reserves packets for. Before crit existed
+  the vanilla burst was a small lie about an unremarkable hit; with our own burst it became the same
+  symbol meaning two things, and a player counting bursts would have counted jump attacks.
+
+- **The two particle paths were confirmed DISTINCT before the cancel was written.** Vanilla's is
+  `ENTITY_ANIMATION` / `CRITICAL_HIT`; ours is `spawnParticle(Particle.CRIT, ...)`, i.e. `PARTICLE`.
+  Checked against the pinned PacketEvents 2.13.0 API — not 2.12.1, which was what happened to be
+  cached. Had they shared a type, the cancel would have eaten our own burst and the boot would have
+  reported "crit particles stopped working" with the cause three layers away.
+
+- **Feedback is colour-only now.** An earlier revision appended a `!` so the crit survived greyscale;
+  it was dropped on the call that the number should stay a number. The redundancy that argument
+  wanted did not vanish, it MOVED: the particle burst is the second channel, and suppressing
+  vanilla's is what makes that channel mean one thing.
+
+  > #### 2026-08-28 — the crit boot, and the instrumentation defect it never got to expose
+  >
+  > **Caught before it shipped, not by the boot:** the first `[CRIT]` witness drew a SECOND
+  > `ThreadLocalRandom` roll to print, separate from the one that decided the crit. The logged rate
+  > would have been statistically ~15% and causally unrelated to the crits actually dealt — `crit=false`
+  > printed on the very tick a yellow number appeared. It was rewritten to draw once into a local used
+  > by both. **This is the third instrumentation defect in three passes** (the sweep pass logged
+  > `getType()` where identity was needed; the knockback pass nearly logged below its own early
+  > return), and they share one shape: *the log was written to confirm the answer rather than to be
+  > capable of contradicting it.* The locals it introduced survive the strip.
+  >
+  > - **`[CRITPKT] type=CRITICAL_HIT suppressed=true`**, and a jump attack produced no particles.
+  > - **No `MAGIC_CRITICAL_HIT` in the whole session** — the expected absence, now measured. An
+  >   absence over one session is not a proof, which is why it was observed rather than cancelled on
+  >   the strength of the argument.
+  > - Crits still fire with particles; the yellow number reads without the marker; `/rpg mana refill`
+  >   works.
+  >
+  > The witness log printed EVERY animation type, not only the one being cancelled. A log restricted
+  > to `CRITICAL_HIT` could not have told us we had picked the wrong packet — it would have printed
+  > nothing and read as "no crits happened", which is the failure mode this file keeps recording.
+
+- **Not in scope, recorded:** crit on mob→player, a crit-immunity or crit-resist stat, crit against
+  the multi-attacker edge, and cancelling `MAGIC_CRITICAL_HIT` if it ever proves reachable.
+  `crit_chance_boost_TEMP` and `crit_damage_boost_TEMP` join the other `_TEMP` fixtures owing removal
+  when real content grants crit.
+
 ### Sweep (vanilla's sweep events drive it, at a fraction of the primary) — what it created or exposed
 
 Closes "sweep is cancelled, not owned" below. `onPlayerSweepAttack` no longer cancels
@@ -912,7 +1009,10 @@ a melee basic, where nothing read it any more.
   (or letting vanilla's through, since no melee weapon declares a `knockback` effect) is a
   deliberate fork, not a side effect of this pass.
 
-- **Vanilla crits are live and unpaid-for.** Measured on the Step 0 boot: a full-charge swing at
+- **Vanilla crits are live and unpaid-for.** CLOSED by the crit pass above, which gave the custom
+  amount its own rolled multiplier AND suppressed vanilla's particle by packet, so the visual stops
+  claiming a hit the engine did not pay for. Kept as the record of what was measured and when. As
+  written at the time: measured on the Step 0 boot, a full-charge swing at
   base 6.0 produced `rawDamage=9.0000` — vanilla's ×1.5. That lands on the *tokened* number, so a
   crit currently plays its particles and sound while adding nothing to the custom damage. A `crit`
   multiplier on the custom amount is its own pass; until then the tooltip-free visual is a small

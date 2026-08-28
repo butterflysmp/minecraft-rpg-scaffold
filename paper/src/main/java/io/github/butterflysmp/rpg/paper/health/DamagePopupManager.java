@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
@@ -32,6 +33,8 @@ public final class DamagePopupManager implements HealthListener {
     /** Half-block horizontal scatter so rapid multi-hits cluster instead of stacking. Widen at boot if a
      *  one-tick burst still overlaps. (Old project: {@code (Math.random() - 0.5) * 0.6}, i.e. +/-0.3.) */
     private static final double HORIZONTAL_JITTER = 0.3;
+    /** How many crit particles to burst on a crit. Enough to read at a glance, not a fog. */
+    private static final int CRIT_PARTICLE_COUNT = 12;
 
     private final Scheduler scheduler;
     private final DamagePopupSender sender;
@@ -60,7 +63,14 @@ public final class DamagePopupManager implements HealthListener {
         double z = base.getZ() + jitter(ThreadLocalRandom.current().nextDouble());
         double y = base.getY() + target.getHeight() * CENTER_MASS_FRACTION;
 
-        Component text = DamageNumberText.of(change.amount());
+        Component text = DamageNumberText.of(change.amount(), change.wasCrit());
+        // The crit's second channel: vanilla's own crit particle, spawned by us on OUR crit. Legal
+        // here -- this runs on the target's owning thread, the same standing that makes the Location
+        // read above legal. Shown to everyone, not just the dealer, because a crit landing is a fact
+        // about the fight rather than a private readout like the number.
+        if (change.wasCrit()) {
+            target.getWorld().spawnParticle(Particle.CRIT, x, y, z, CRIT_PARTICLE_COUNT, 0.2, 0.2, 0.2, 0.0);
+        }
         int id = ids.next();
         sender.spawn(dealer, id, x, y, z, text);
         // Destroy through the project Scheduler (never a BukkitRunnable), tied to the dealer: if they
