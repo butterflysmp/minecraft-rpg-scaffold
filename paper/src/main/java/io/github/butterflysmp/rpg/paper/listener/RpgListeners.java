@@ -547,15 +547,46 @@ public final class RpgListeners implements Listener {
     }
 
     /**
-     * We own knockback now. Cancel the vanilla ATTACK knockback on a mob so the declared custom KB
-     * (an EffectSpec.Knockback, or none for a Mage weapon) is the only push -- the design's
-     * "always cancel vanilla KB, then apply the declared one." Left alone: knockback on players
-     * (mob->player is Pass 2) and non-attack causes (explosions, sweep) which aren't ours to own.
+     * VANILLA owns melee knockback -- gated to the hit that earned it.
+     *
+     * <p>Basic melee wants vanilla's exact feel: the base push, the small upward pop, and the
+     * sprint-hit bonus. Vanilla derives all three itself, taking the sprint bonus from the attacker's
+     * state at hit time, so the cheapest and most faithful way to get them is to NOT CANCEL. Nothing
+     * custom is re-derived, and no melee weapon needs to declare a knockback effect. This replaces
+     * the design's older "always cancel vanilla KB, then apply the declared one", which left melee
+     * pushing nothing at all because no shipped weapon declares one.
+     *
+     * <p>THE GATE, and why it is not just a deleted cancel. A click our window refuses still reaches
+     * {@link #onPlayerMeleeAttack}, still gets tokened, and still lets vanilla proceed to knockback
+     * -- so simply letting the push through would knock a mob around on clicks that deal ZERO. That
+     * is the knockback analog of the spam-flash. Instead the push is released on exactly the hit that
+     * claimed the {@link MeleeHits} window, which is the same once-per-10-tick cadence as the damage.
+     *
+     * <p>{@code landedThisTick} is tick-EXACT, not "the window is open": a mob hit three ticks ago
+     * still has an open window, and reading that would leak a push to the very spam-click this
+     * exists to refuse.
+     *
+     * <p>ORDERING is what makes the gate work, and it is vanilla's own: the damage event fires from
+     * inside {@code hurt()} and knockback is applied after it returns, within one synchronous
+     * {@code Player#attack}. So the rider's claim is already recorded when we are asked. It fails
+     * LOUD rather than green -- were the order reversed, the signal would never be present and melee
+     * would push nothing, which is the first thing a boot notices.
+     *
+     * <p>The query does not consume, deliberately. Paper's {@code EntityPushedByEntityAttackEvent}
+     * warns one attack may raise this more than once ("multiple acceleration calculations"), and a
+     * one-shot signal could eat the second event along with the sprint bonus.
+     *
+     * <p>Left alone: knockback on PLAYERS (mob->player stays vanilla, the standing Pass 2 decision)
+     * and every non-attack cause -- explosions, sweep -- which were never ours to own. Mob->mob
+     * ENTITY_ATTACK knockback stays cancelled, because this handler keys on the knocked entity and
+     * never sees an attacker; that is unchanged by this pass, and recorded in NEXT.md rather than
+     * fixed here.
      */
     @EventHandler
     public void onCombatKnockback(EntityKnockbackEvent event) {
         if (event.getCause() != EntityKnockbackEvent.Cause.ENTITY_ATTACK) return;
         if (event.getEntity() instanceof Player) return;                 // player->mob only
+        if (meleeHits.landedThisTick(event.getEntity().getUniqueId())) return;  // the hit that earned it
         event.setCancelled(true);
     }
 

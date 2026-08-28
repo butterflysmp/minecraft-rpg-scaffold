@@ -581,6 +581,54 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Knockback (vanilla owns melee knockback, gated to the hit window) — what it created or exposed
+
+Closes the fork Stage 1 opened below. `onCombatKnockback` no longer cancels vanilla's player→mob
+`ENTITY_ATTACK` knockback unconditionally; it cancels *unless* `MeleeHits.landedThisTick(victim)`,
+which is true only on the tick a hit actually claimed the damage window. So the push keeps the exact
+cadence of the damage — once per window — and a windowed-out spam-click gets neither. Vanilla's base
+push, upward pop and sprint bonus all arrive unmodified, because none of them is re-derived: the
+sprint bonus in particular is free, taken by vanilla from the attacker's state at hit time. No
+content change, no `EffectSpec.Knockback` on any weapon, and therefore no need to fix
+`landBasicMelee`'s zero-direction origin — the `EffectApplier` knockback arm is not on this path.
+
+- **The signal is DERIVED, not stored.** `landedThisTick` reads
+  `CooldownTracker.ticksRemaining(victim, WINDOW_KEY) == WINDOW_TICKS` — a full window remaining can
+  only mean the claim happened on this very tick. No second map, so nothing extra to bound and no way
+  for the two to disagree about what a hit was. It is deliberately NOT "is the window open": a mob
+  hit three ticks ago still has an open window, and reading that would leak a push to precisely the
+  spam-click the gate exists to refuse. The unit test that reddens under a `> 0` mutation is the one
+  that says so.
+
+- **The gate does not consume.** Paper's `EntityPushedByEntityAttackEvent` javadoc warns one attack
+  may raise the event more than once ("multiple acceleration calculations are done"), so a one-shot
+  signal could cancel the second event and silently eat the sprint bonus. The tick stamp bounds it
+  instead, expiring on its own at the tick boundary.
+
+- **Mob→mob `ENTITY_ATTACK` knockback stays cancelled — pre-existing, not introduced here.**
+  `onCombatKnockback` keys on the *knocked* entity and never looks at the attacker, so a zombie
+  hitting a villager has had its knockback cancelled since Stage 1. No signal is ever set for it, so
+  this pass leaves it exactly as it was. Worth fixing when the handler learns to read the attacker —
+  the same prerequisite the per-attacker gate below needs.
+
+- **Untagged vanilla weapons are token-NEUTERED on the melee path, and now also take knockback.**
+  Not "untouched". An untagged sword has no `weapon_id`, so it mints no suppressor and its hit
+  reaches `onPlayerMeleeAttack`, where `event.setDamage(TOKEN_DAMAGE)` runs **unconditionally** —
+  before any weapon lookup. `landVanillaMelee` then finds no weapon and returns, so no custom damage
+  comes back. Net: ~0.01 damage, and as of this pass a full vanilla push. It shoves mobs while
+  dealing nothing. The comment at `RpgListeners.java:489` reading "an untagged vanilla sword is
+  untouched" is scoped to the *broken-weapon* gate directly above it and does not describe the token.
+
+- **OPEN DESIGN QUESTION: should untagged vanilla weapons be neutered at all?** The behaviour above
+  is an unexamined side effect of tokening unconditionally, not a decision anyone made. The
+  alternatives are real ones — let an untagged item behave as pure vanilla (return before the token
+  when no `weapon_id` is present), or neuter it on purpose so only RPG weapons fight. Either is
+  defensible; what is not defensible is arriving at one by accident. Correct for our weapons, which
+  is why it did not block the knockback pass.
+
+- **Co-op leaks one push, by design — see the multi-attacker i-frame edge below.** Recorded there
+  rather than here because it is the same defect wearing a second hat.
+
 ### Stage 2 (attack speed is a managed stat) — CLOSED, and what it left
 
 Closes the Stage 1 deferral below: the attack-speed stat now drives the player's vanilla
@@ -685,7 +733,9 @@ a melee basic, where nothing read it any more.
   > reads wrong, the fix is to move the token below the window claim in `onPlayerMeleeAttack` --
   > recorded now so it is a decision later rather than a discovery.
 
-- **`onCombatKnockback` now suppresses a REAL knockback.** It cancels vanilla `ENTITY_ATTACK`
+- **`onCombatKnockback` now suppresses a REAL knockback.** CLOSED by the knockback pass below, which
+  took the "let vanilla's through" branch. Kept as the record of the fork and when it opened. As
+  written at the time: it cancels vanilla `ENTITY_ATTACK`
   knockback for player→mob, and until Stage 1 there was no vanilla attack to cancel — the melee
   suppressor meant vanilla never entered its attack path at all. Melee still pushes nothing, so the
   *feel* is unchanged, but the suppression is live code for the first time. Owning melee knockback
@@ -704,6 +754,18 @@ a melee basic, where nothing read it any more.
   add the difference. Correct for Stage 1 (it is what makes spam un-exploitable) and a deliberate
   divergence, not an oversight. A per-attacker window, or mirroring vanilla's difference rule for
   the custom amount, is its own later fork.
+
+- **Co-op knockback leaks one push, from the same per-victim window.** The knockback gate reads
+  `MeleeHits.landedThisTick(victim)`, keyed on the victim exactly like the window above — so if
+  player A lands a real hit at tick T and player B clicks the same mob on tick T, B is refused the
+  damage but B's knockback event still sees A's signal and pushes. One extra shove on a click worth
+  zero. **Deliberate, and deliberately not fixed at the gate:** the knockback gate must not be
+  finer-grained than the damage window it mirrors — uniform granularity is the whole point of tying
+  them together. Same root as the entry above, same eventual fix: a per-attacker window and a
+  per-attacker gate, upgraded together in the multi-attacker pass. That pass must first verify
+  `EntityKnockbackEvent` reliably exposes the attacking entity, which this handler does not use
+  today — `EntityPushedByEntityAttackEvent.getPushedBy()` is the candidate, and gating on it while
+  it is unproven would over-cancel and stop melee pushing at all.
 
 - **The `attackSpeed` STAT no longer reaches basic melee.** CLOSED by Stage 2 above, which drives
   the vanilla attribute from the stat; kept here as the record of what Stage 1 deferred and why.

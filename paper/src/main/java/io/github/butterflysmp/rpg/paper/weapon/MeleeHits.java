@@ -49,6 +49,11 @@ import java.util.function.LongSupplier;
  * the player clicks. We inherit vanilla's i-frames for WHEN THE EVENT FIRES -- a re-hit vanilla
  * refuses outright never reaches us -- and own only WHEN WE APPLY DAMAGE.
  *
+ * <p>The window has a second reader now: {@link #landedThisTick} derives "a real hit landed on this
+ * victim this tick" from the stamp the claim already writes, and the knockback gate uses it to let
+ * vanilla's melee push through on exactly the hits that dealt damage. Derived rather than stored, so
+ * the two cannot drift and there is no second map to bound.
+ *
  * <h2>Threading and bounds</h2>
  * Backed by {@link CooldownTracker}, which is written to be entered concurrently: under Folia two
  * victims in different regions are hit on different threads at the same instant. Each victim's entry
@@ -112,6 +117,30 @@ public final class MeleeHits {
         if (!windows.isReady(victim, WINDOW_KEY)) return false;
         windows.trigger(victim, WINDOW_KEY, WINDOW_TICKS);
         return true;
+    }
+
+    /**
+     * Did a real melee hit land on {@code victim} on THIS tick?
+     *
+     * <p>The knockback gate reads this. It is deliberately NOT "is the window active": a mob hit
+     * three ticks ago still has an active window, so a windowed-out spam-click now would read as
+     * active and leak a push it did not earn -- the knockback analog of the spam-flash. This is the
+     * tick-exact form, which is the whole point of it.
+     *
+     * <p>DERIVED from the window rather than stored beside it. {@link #claimWindow} already stamps
+     * the victim with {@code readyAt = now + WINDOW_TICKS}, so a FULL window remaining means that
+     * claim happened on this very tick; nine means last tick; zero means never. That leaves no
+     * second map to leak, nothing for {@link #forget} to miss, and no way for the two to disagree
+     * about what counts as a hit -- the claim IS the hit.
+     *
+     * <p>A pure query, and unlike {@link #claimWindow} it may be asked any number of times for one
+     * hit -- which it must be. Paper's {@code EntityPushedByEntityAttackEvent} warns that "some
+     * entities might trigger this multiple times on the same entity as multiple acceleration
+     * calculations are done", so a consume-on-read signal could silently eat the second event and
+     * with it the sprint bonus. The tick stamp is the bound instead, and it expires on its own.
+     */
+    public boolean landedThisTick(UUID victim) {
+        return windows.ticksRemaining(victim, WINDOW_KEY) == WINDOW_TICKS;
     }
 
     /** Drop a victim's window. Call on death, despawn and chunk-unload, or the map grows forever. */
