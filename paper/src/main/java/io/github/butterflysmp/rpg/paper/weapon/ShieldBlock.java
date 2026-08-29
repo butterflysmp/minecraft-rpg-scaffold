@@ -21,15 +21,50 @@ import java.util.Optional;
  *
  * {@code HumanEntity.isBlocking()} is DIRECTION-BLIND: it is true for a player holding right-click
  * whatever they are facing, so a shield read that way would block a hit landing in the player's
- * back. Vanilla's own validity is raised AND frontal AND within the shield's horizontal arc, and
- * {@code DamageModifier.BLOCKING} is that verdict already computed -- present, per its javadoc,
- * "only for Players", and only when vanilla actually blocked. Inheriting it means the arc rule
- * stays Mojang's to change rather than ours to keep in step.
+ * back. Boot-witnessed: {@code isBlocking=true} on hits at 107 and 160 degrees off the victim's
+ * facing, both of which vanilla let straight through.
+ *
+ * <p>Vanilla's own validity is raised AND frontal AND within the shield's horizontal arc, and the
+ * SIGN of {@code DamageModifier.BLOCKING} is that verdict already computed. Inheriting it means the
+ * arc rule stays Mojang's to change rather than ours to keep in step -- measured on this build as
+ * blocking out to 89.2 degrees off-facing and passing at 107.4, which brackets vanilla's documented
+ * 90-degree {@code horizontalBlockingAngle} without pinning it (our probe was a 3D dot; vanilla's
+ * check is horizontal).
  *
  * <p>The test is a strict {@code < 0}. The modifier is a REDUCTION, so a block is a negative
  * number; a full block is {@code -raw}, which is still negative, so detection holds even when the
  * hit is reduced to nothing. {@code getDamage(DamageModifier)} is safe to call for an inapplicable
  * modifier -- it returns 0 -- and unlike {@code setDamage(DamageModifier, double)} it never throws.
+ *
+ * <h2>The strict {@code <} is load-bearing, and NOT for the reason it looks like</h2>
+ *
+ * Boot-witnessed 2026-08-29. The obvious worry is the full-block case, and that one is safe by a
+ * mile: a full block reports {@code -raw}, robustly negative. The real trap is the hit that is NOT
+ * blocked while the shield is RAISED -- a swing landing outside the frontal arc. Vanilla reports
+ * that as:
+ *
+ * <pre>
+ *   blockingApplicable=true   blocking=-0.0000   isBlocking=true   facingDot=-0.2987
+ * </pre>
+ *
+ * NEGATIVE ZERO, not plain zero. Executed against the real values rather than reasoned about:
+ *
+ * <pre>
+ *   -0.0 &lt;  0                  -&gt; false    &lt;- what this class ships. correct.
+ *   -0.0 &lt;= 0                  -&gt; true     &lt;- would report EVERY hit from behind as blocked
+ *   -0.0 != 0                  -&gt; false    -- would also have been correct
+ *   Double.compare(-0.0, 0.0)  -&gt; -1       &lt;- a compare()-based spelling MIS-FIRES
+ * </pre>
+ *
+ * So {@code <=}, or the idiomatic-looking {@code Double.compare(getDamage(BLOCKING), 0) < 0}, would
+ * silently invert the frontal-arc rule this class exists to inherit: a player holding block would
+ * take half damage from behind, with vanilla playing no block cue to contradict it. Do not
+ * "simplify" this comparison.
+ *
+ * <p>Also witnessed, and the reason {@link #vanillaBlocked} tests the VALUE rather than
+ * applicability: {@code isApplicable(BLOCKING)} is {@code true} on every player damage event,
+ * including one taken bare-handed with no shield in the inventory at all. The modifier's javadoc
+ * "only present for Players" means exactly that and nothing more -- it is not a block signal.
  *
  * <p><b>The enum is deprecated (since 1.12) but not marked for removal</b>, and on the pinned Paper
  * (26.1.2) it is still the only block signal on the event: {@code DamageSource} carries none, and
@@ -95,13 +130,15 @@ public final class ShieldBlock {
      *
      * Public rather than package-private so the temporary {@code [BLOCK]} witness, which lives in
      * the listener package, can print the same answer the rider decides on rather than drawing its
-     * own -- the "never draw a second
-     * value to print" rule the crit pass learned the hard way, when a witness rolled its own random
-     * and logged {@code crit=false} on the tick a yellow number appeared.
+     * own -- the "never draw a second value to print" rule the crit pass learned the hard way, when
+     * a witness rolled its own random and logged {@code crit=false} on the tick a yellow number
+     * appeared.
      */
     @SuppressWarnings("deprecation")   // DamageModifier: deprecated since 1.12, not for removal,
                                        // and still the only block signal on the event. See above.
     public static boolean vanillaBlocked(EntityDamageEvent event) {
+        // STRICT <, and never <= or Double.compare: an unblocked hit taken with the shield raised
+        // reports NEGATIVE ZERO here. See the class javadoc for the measured comparison table.
         return event.isApplicable(EntityDamageEvent.DamageModifier.BLOCKING)
                 && event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) < 0;
     }
