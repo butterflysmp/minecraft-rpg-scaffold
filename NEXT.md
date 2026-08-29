@@ -676,7 +676,7 @@ Deploy verified by mtime and size before booting, not assumed (target 09:44:15, 
 | 2 | Unbreaking onto a held shield | PASS — III active, so `HeldGear` dispatch + `ShieldItems.remint` both work |
 | 3 | Unblocked baseline | PASS — `reduced=15.0000`, the mob's ATTACK stat |
 | 4 | Blocked, frontal | PASS — `reduced=7.5000`, exactly half, on all 20 |
-| 5 | Armored **and** blocking | **NOT RUN** |
+| 5 | Armored **and** blocking | PASS (operator-observed; see caveat) |
 | 6 | Hit from behind | PASS — no reduction at 107.4° and 160.8° |
 | 7 | Shield down | PASS — `reduced=15.0000` |
 | 8 | Durability, N blocks | PASS — see below |
@@ -714,11 +714,16 @@ facing); passed at `-0.2987` (107.4°) and `-0.9444` (160.8°). Consistent with 
 
 **What this boot did NOT establish, and must not be read as having:**
 
-- **Row 5 was not run.** Block-then-armor composing is pinned in core
-  (`blockAndArmorBothApplyRatherThanOneShadowingTheOther`) but has never been seen in game. The
-  rider log cannot show it: defense is applied a thread hop later inside `CombatantStats.damage`,
-  so `[BLOCK] RIDER` prints `reduced=7.5000` either way. At 20 armor the heart bar should show
-  ~6.25.
+- **Row 5 passed on the operator's reading, and the log is STRUCTURALLY SILENT on it.** All 23
+  rider lines read `reduced=7.5000` or `reduced=15.0000` -- exactly what they would read with or
+  without armor, because defense is applied a thread hop later inside `CombatantStats.damage`,
+  past where the witness can see. Nothing in this log confirms or refutes the row; it rests on the
+  heart bar being read in game. The predicted ladder, computed against the real classes: per hit
+  `6.25` armored+blocking, against `7.5` blocked-only, `12.5` armored-only, `15.0` raw -- and over
+  four hits from full, HP `75` / `70` / `50` / `40` respectively, which is the read that separates
+  all four. THE EXACT HP FIGURE WAS NOT CAPTURED into this record, so the row is logged as
+  operator-observed rather than measured. If it is ever doubted, four hits from `/rpg heal 1000`
+  settles it in one pass.
 - **Row 9 was not visually confirmed.** Nothing was cancelled, so the raise, sound and
   knockback-dampen should be vanilla's — but "should be" is not "was seen".
 - **Rows 1 and 2 are mechanically confirmed, visually unverified.** Unbreaking III cannot be
