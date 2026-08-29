@@ -213,6 +213,45 @@ class EnchantLoaderTest {
         assertEquals("shield", bulwark.icon());
     }
 
+    /**
+     * The shipped REFLECT enchant, field for field — and this one is load-bearing in a way the
+     * directory-scan fixture cannot be.
+     *
+     * <p>{@code everyShippedEnchantFileLoads…} asserts the id SET, so it catches a file the loader
+     * REFUSES. It cannot catch a file that loads perfectly well while saying the wrong thing.
+     * Specifically: <b>{@code riposte.yml} authored with {@code effect: block_dr} gates fine on
+     * {@code class: shield}, loads cleanly, and reddens nothing at all</b> — Riposte would silently
+     * become a second Bulwark, granting +10/20/30% block and zero reflect. A {@code [5, 10, 15]}
+     * curve would be an equally silent 3x nerf.
+     *
+     * <p>So the effect and the curve are asserted here by value. The {@code class} token is the one
+     * field the loader itself guards (it refuses {@code universal} and the weapon classes outright),
+     * and it is asserted anyway because reading it is free and a reader should not have to know
+     * which fields are doubly covered.
+     */
+    @Test
+    void theShippedRiposteCarriesItsShieldGateAndCurve(@TempDir Path dir) throws IOException {
+        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+
+        EnchantDefinition riposte = enchants.find("riposte").orElseThrow(
+                () -> new AssertionError("riposte.yml did not load -- shields would roll no reflect"));
+
+        assertEquals("Riposte", riposte.displayName());
+        assertEquals(EnchantEffect.REFLECT, riposte.effect(),
+                "riposte binds the REFLECT mechanism -- block_dr here is a silent second Bulwark");
+        assertEquals(GearClass.SHIELD, riposte.gearClass(),
+                "a reflect gated anywhere else is read off a stack that cannot block");
+        assertFalse(riposte.isUniversal(), "universal would put it in every weapon's roll pool");
+        assertEquals(List.of(10, 20, 30), riposte.percentByLevel(),
+                "the shipped curve -- 1.5/3.0/4.5 off a 15.0 mob, which the popup rounds to 2/3/5");
+        assertEquals(3, riposte.maxLevel());
+
+        // And it is NOT the same mechanism as the shield's other enchant, stated explicitly because
+        // "both are shield enchants with a percent curve" is exactly how the two get conflated.
+        assertNotEquals(enchants.find("bulwark").orElseThrow().effect(), riposte.effect(),
+                "Bulwark and Riposte must bind DIFFERENT mechanisms");
+    }
+
     // --- The schema rules, one test each ---------------------------------------------------------
 
     @Test
@@ -522,6 +561,8 @@ class EnchantLoaderTest {
         // Deliberately NOT enchanted_book: if the shipped value equalled DEFAULT_ICON this
         // assertion could not tell "the key was read" from "the key was missing and defaulted".
         assertEquals("anvil", registry.find("unbreaking").orElseThrow().icon());
+        assertEquals("shield", registry.find("bulwark").orElseThrow().icon());
+        assertEquals("arrow", registry.find("riposte").orElseThrow().icon());
         assertNotEquals(EnchantDefinition.DEFAULT_ICON,
                 registry.find("unbreaking").orElseThrow().icon());
         // Mutation: change any yml's icon -> reddens.
