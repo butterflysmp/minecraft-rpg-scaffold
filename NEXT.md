@@ -659,6 +659,77 @@ away with the token.
   those verbatim on the item. The shipped 0.5 multiplies to a clean 50.0, so this would have passed
   every boot gate in this slice and waited for the first author who typed an odd fraction.
 
+#### Boot record — 2026-08-29, shields slice 1 (23 mob->player hits: 20 blocked, 3 not)
+
+`./scripts/dev-server.sh --no-build --refresh-content`, Paper 26.1.2.build.74-stable.
+Deploy verified by mtime and size before booting, not assumed (target 09:44:15, deployed
+09:44:52, both 452911 bytes) — CLAUDE.md records a run where `rm -f` failed on a locked jar,
+`set -e` aborted the deploy, and a stale build booted looking fine.
+
+**THE LOAD-BEARING UNKNOWN IS SETTLED: a full block DOES fire the event.**
+`raw=29.2500 final=0.0000 blocking=-29.2500 cancelled=false`, and the rider ran. The
+`blocks_attacks` contingency is dead; the stock `Material.SHIELD` stays.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | `/rpg give roundshield` mints | PASS (mechanically — see caveat below) |
+| 2 | Unbreaking onto a held shield | PASS — III active, so `HeldGear` dispatch + `ShieldItems.remint` both work |
+| 3 | Unblocked baseline | PASS — `reduced=15.0000`, the mob's ATTACK stat |
+| 4 | Blocked, frontal | PASS — `reduced=7.5000`, exactly half, on all 20 |
+| 5 | Armored **and** blocking | **NOT RUN** |
+| 6 | Hit from behind | PASS — no reduction at 107.4° and 160.8° |
+| 7 | Shield down | PASS — `reduced=15.0000` |
+| 8 | Durability, N blocks | PASS — see below |
+| 9 | Vanilla feedback (sound, dampen) | **NOT VISUALLY CONFIRMED** |
+| 10 | `[BLOCK]` witness | PASS — fires, signal present/absent correctly |
+
+**Row 8, and it is the strongest result here.** Bar 336 -> 331 = **5 consumed over 20 blocks**,
+with Unbreaking III active. `consumeChance(3) = 0.25`, so expected 5.00, sigma 1.94, z = +0.000,
+inside a 3-sigma band. The value is not what makes this conclusive — sigma 1.94 means 1..9 would
+also have passed, and one N=20 run cannot separate p=0.25 from p=0.2. What IS conclusive is the
+distance to every rival: our wear never ran -> 0; Unbreaking not consulted -> 20; our wear plus
+vanilla double-wear -> ~25. Observed 5.
+
+- **`onShieldItemDamage` is HARMLESS, not load-bearing — corrected.** Zero `[BLOCK] WEAR` lines
+  across 20 blocks: vanilla never fired `PlayerItemDamageEvent` for a blocked hit on this build,
+  so there was no double-wear to prevent. The commit that added it claimed it prevents doubling;
+  that claim is unproven here. It stays, because we own the item's durability outright and a
+  future vanilla path charging it would be an unaccounted second source — but it is a guard
+  against a thing not currently happening, and should be described that way.
+
+**`DamageModifier.BLOCKING` is not the signal its javadoc implies.** `blockingApplicable=true` on
+EVERY player damage event, including one taken bare-handed with nothing in the inventory. "Only
+present for Players" means exactly that. The SIGN is the verdict, not the presence.
+
+**And the sign has a negative-zero trap.** An unblocked hit taken with the shield RAISED reports
+`blocking=-0.0000`. Executed: `-0.0 < 0` is false (correct), `-0.0 <= 0` is TRUE, and
+`Double.compare(-0.0, 0.0)` is -1. So `<=`, or the idiomatic-looking `Double.compare(...) < 0`,
+would have inverted row 6 — half damage from behind, with vanilla playing no block cue to
+contradict it. The strict `<` was right for a reason nobody had stated.
+
+**The frontal arc, bracketed rather than pinned.** Blocked out to `facingDot=+0.0131` (89.2° off
+facing); passed at `-0.2987` (107.4°) and `-0.9444` (160.8°). Consistent with vanilla's 90°
+`horizontalBlockingAngle`. Not pinned: the probe is a 3D dot and vanilla's check is horizontal.
+`isBlocking=true` on both passed hits — the direction-blindness, measured.
+
+**What this boot did NOT establish, and must not be read as having:**
+
+- **Row 5 was not run.** Block-then-armor composing is pinned in core
+  (`blockAndArmorBothApplyRatherThanOneShadowingTheOther`) but has never been seen in game. The
+  rider log cannot show it: defense is applied a thread hop later inside `CombatantStats.damage`,
+  so `[BLOCK] RIDER` prints `reduced=7.5000` either way. At 20 armor the heart bar should show
+  ~6.25.
+- **Row 9 was not visually confirmed.** Nothing was cancelled, so the raise, sound and
+  knockback-dampen should be vanilla's — but "should be" is not "was seen".
+- **Rows 1 and 2 are mechanically confirmed, visually unverified.** Unbreaking III cannot be
+  active on a roundshield unless give, the enchant dispatch and the re-mint all worked. The
+  TOOLTIP — rarity colour, `Common Shield` footer last, enchant block above it — was not read back.
+- **`disagree=true` never appeared, and that is not evidence about the active-hand fix.** All 20
+  blocks held exactly one shield, where the active-hand and positional readings agree by
+  construction. The mixed loadout that separates them (a VANILLA shield in the raised hand, ours
+  in the other) cannot be hit by accident and was not attempted. That path stays reasoned, not
+  witnessed.
+
 **Deferred to Slice 2:** Thorns, Bulwark, the class axis for gear (enchant gating, the roll, and
 `show`), and a `ShieldRefresher` for the join / `/rpg refresh` path — a shield's lore does NOT
 currently rebuild from content on rejoin the way a weapon's does.

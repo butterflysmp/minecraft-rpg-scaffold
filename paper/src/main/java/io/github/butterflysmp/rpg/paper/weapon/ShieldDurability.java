@@ -20,12 +20,21 @@ import java.util.concurrent.ThreadLocalRandom;
  * it, so Unbreaking would sit on a shield's tooltip doing nothing. Wear has to run through our path
  * or the enchant is a lie.
  *
- * <p><b>Which is why vanilla's own shield wear is SUPPRESSED</b> -- {@code RpgListeners} cancels
- * {@code PlayerItemDamageEvent} for any item carrying our {@code shield_id}. Without that the
- * shield would be charged twice for one block: once by vanilla, once by this. The witness for that
- * is a positive count, not a comparison: with the cancel in place, N blocks move the bar by exactly
- * N. Measuring against an un-suppressed run would prove nothing, because vanilla's shield wear can
- * scale with the damage blocked rather than being a flat one per block.
+ * <p><b>Vanilla's own shield wear is suppressed alongside this</b> -- {@code RpgListeners} cancels
+ * {@code PlayerItemDamageEvent} for any item carrying our {@code shield_id}, so the shield cannot be
+ * charged twice for one block.
+ *
+ * <p><b>Measured 2026-08-29, and weaker than it was first written:</b> across 20 blocks vanilla
+ * fired {@code PlayerItemDamageEvent} ZERO times, so on this build there is no double-wear to
+ * prevent and that cancel is a guard against something not currently happening. It stays, because
+ * we own this item's durability outright and any future vanilla path charging it would be an
+ * unaccounted second source -- but do not describe it as fixing an observed doubling.
+ *
+ * <p>The witness is a POSITIVE count, never a comparison against an un-suppressed run: vanilla's
+ * shield wear can scale with the damage blocked rather than being a flat one per block, so "less
+ * than 2N" would prove nothing. Observed: 20 blocks with Unbreaking III took the bar 336 -> 331,
+ * against 5.00 expected at {@code consumeChance(3) = 0.25}. The rivals are far off -- never ran 0,
+ * Unbreaking ignored 20, doubled ~25.
  *
  * <p>The DECISION is core ({@link Unbreaking#consumes}, {@link Durability#wear}); this only moves
  * values in and out of item meta. Same split as {@link WeaponDurability}, and for the same reason:
