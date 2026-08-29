@@ -2,7 +2,7 @@ package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
 import io.github.butterflysmp.rpg.core.enchant.Unbreaking;
-import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 
 /**
@@ -39,11 +39,18 @@ public final class EnchantEffectLine {
      *                   longer knows -- reachable, because the loader fail-softs a malformed file
      *                   and the item's blob still names it.
      * @param level      the resolved (effective) level, not the candidate's own.
-     * @param heldClass  the class of the weapon the enchant is sitting on. Never null:
-     *                   {@code WeaponDefinition}'s constructor rejects a null class and
-     *                   {@code WeaponLoader} refuses a file without one.
+     * @param heldClass  the {@link GearClass} of the GEAR the enchant is sitting on. Still never
+     *                   null, and now honestly so for both kinds: a weapon maps through
+     *                   {@code GearClass.of} (its loader refuses a file without a class) and a
+     *                   shield presents {@code SHIELD}.
+     *                   <p>
+     *                   <b>This is the Slice-1 descope reversed.</b> {@code /rpg enchant show}
+     *                   refused shields, and {@code HeldGear.effectSuffix} returned "", because
+     *                   there was no honest value to pass here -- not because anything crashed. No
+     *                   caller ever passed null. Supplying a real value removes the reason those
+     *                   refusals existed rather than fixing a bug they were hiding.
      */
-    public static String of(EnchantDefinition definition, int level, WeaponClass heldClass) {
+    public static String of(EnchantDefinition definition, int level, GearClass heldClass) {
         return " (" + bare(definition, level, heldClass) + ")";
     }
 
@@ -61,7 +68,7 @@ public final class EnchantEffectLine {
      * Unbreaking -- which is backwards, and reads as a curse. The enchant menu passes
      * {@code Math.max(1, level)} and says "Click to unlock at I" beneath, so the two agree.
      */
-    public static String bare(EnchantDefinition definition, int level, WeaponClass heldClass) {
+    public static String bare(EnchantDefinition definition, int level, GearClass heldClass) {
         if (definition == null) return "unknown enchant -- grants nothing";
 
         // No default arm, deliberately -- the same discipline as WeaponClassLabel.of. A third
@@ -70,13 +77,33 @@ public final class EnchantEffectLine {
             case DURABILITY -> "consumes durability on "
                     + Math.round(Unbreaking.consumeChance(level) * 100) + "% of uses";
             case DAMAGE -> {
-                if (!definition.isUniversal() && definition.weaponClass() != heldClass) {
-                    yield "inert: a " + WeaponClassLabel.of(definition.weaponClass())
-                            + " enchant on a " + WeaponClassLabel.of(heldClass) + " weapon";
+                if (!definition.isUniversal() && definition.gearClass() != heldClass) {
+                    // The held side is a NOUN PHRASE, not a bare label with "weapon" glued on.
+                    // The old wording hardcoded "... on a X weapon", which reads correctly for the
+                    // three fighting classes and absurdly for the fourth -- "on a Shield weapon".
+                    // Byte-identical for every weapon case, so the existing assertions are unchanged.
+                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
+                            + " enchant on " + GearClassLabel.describe(heldClass);
                 }
                 double percent = DamageEnchants.percentAt(definition.percentByLevel(), level);
                 yield String.format("+%.0f%% damage, x%.2f", percent,
                         DamageEnchants.multiplier(percent));
+            }
+            case BLOCK_DR -> {
+                // The gate is enforced at the content boundary (a BLOCK_DR enchant must be
+                // class: shield), so the only way to be holding one on the wrong gear is the dev
+                // command or a hand-edited item -- reachable, so it is described rather than assumed
+                // away.
+                if (definition.gearClass() != heldClass) {
+                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
+                            + " enchant on " + GearClassLabel.describe(heldClass);
+                }
+                // POINTS, not a multiplier: Bulwark is additive on the fraction, so "+15% block"
+                // means the shield stops fifteen more points of the hit, not fifteen percent more
+                // of what it already stopped. Saying "x1.15" here would describe the rejected
+                // reading. The gate reads this line before blocking, so it must be the real number.
+                double percent = DamageEnchants.percentAt(definition.percentByLevel(), level);
+                yield String.format("+%.0f%% block", percent);
             }
         };
     }

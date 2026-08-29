@@ -5,7 +5,9 @@ import io.github.butterflysmp.rpg.core.enchant.EnchantCost;
 import io.github.butterflysmp.rpg.core.enchant.EnchantLoreLines;
 import io.github.butterflysmp.rpg.core.enchant.EnchantSlot;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
-import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
+import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.xp.XpCurve;
@@ -13,6 +15,7 @@ import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantEffectLine;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantItems;
+import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -56,6 +59,7 @@ import static io.github.butterflysmp.rpg.paper.menu.EnchantMenuLayout.INPUT_SLOT
 public final class EnchantMenu extends Menu {
 
     private final WeaponRegistry weapons;
+    private final ShieldRegistry shields;
     private final AdapterContext adapters;
 
     /**
@@ -69,10 +73,12 @@ public final class EnchantMenu extends Menu {
      */
     private final int bookshelfPower;
 
-    public EnchantMenu(Player viewer, WeaponRegistry weapons, AdapterContext adapters, Block table) {
+    public EnchantMenu(Player viewer, WeaponRegistry weapons, ShieldRegistry shields,
+                       AdapterContext adapters, Block table) {
         super(viewer, EnchantMenuLayout.SIZE,
                 MenuIcons.line("Enchantments", NamedTextColor.DARK_GRAY));
         this.weapons = weapons;
+        this.shields = shields;
         this.adapters = adapters;
         // BEFORE render(), which paints the readout from it. Assigned after, every table on the
         // server reads 0/30 for ever, and only a boot gate with a ring built round it would notice.
@@ -87,13 +93,85 @@ public final class EnchantMenu extends Menu {
     }
 
     /**
+     * The gear in the input slot: a weapon OR a shield, never both, never neither.
+     *
+     * <p><b>ONE record, ONE dispatch</b>, deliberately shape-aligned with {@code RpgCommand.HeldGear}
+     * -- same three members, same meanings. The alternative was forking every site that reads a
+     * class or re-mints into weapon/shield arms, which doubles them and guarantees they drift; Slice 1
+     * already caught and contained exactly that for the {@code /rpg enchant} command, and this is the
+     * same containment applied to the table.
+     *
+     * <p><b>Two gear records rather than one shared abstraction, and that is on purpose.</b>
+     * Designing a common {@code Gear} type from two examples is designing it from one and a half.
+     * ARMOR is the third shape, and it is the trigger to extract one -- recorded in NEXT.md so it is
+     * a decision taken later rather than a duplication discovered later.
+     */
+    private record PlacedGear(String id, WeaponDefinition weapon, ShieldDefinition shield) {
+
+        /** The enchant-gating class. Never null: a weapon maps through of(), a shield IS SHIELD. */
+        GearClass gearClass() {
+            return weapon != null ? GearClass.of(weapon.weaponClass()) : GearClass.SHIELD;
+        }
+
+        /** Returns a NEW stack, so the caller's reference is stale afterwards. */
+        ItemStack remint(ItemStack placed, AdapterContext adapters) {
+            return weapon != null
+                    ? WeaponItems.remint(placed, weapon, adapters)
+                    : ShieldItems.remint(placed, shield, adapters);
+        }
+    }
+
+    /**
+     * Resolve the placed item, or say why not and return null.
+     *
+     * <p>Returns null having ALREADY messaged the player when there is something to explain, so
+     * callers do a bare {@code if (gear == null) return;} -- the same contract
+     * {@code RpgCommand.resolveHeldGear} keeps.
+     *
+     * <p>An EMPTY slot is silent rather than refused: {@code render} calls this on every repaint,
+     * including the one for an empty table, and a chat line per repaint would be spam. The info
+     * icon is what speaks there.
+     *
+     * <p>Weapons are checked first, matching {@code /rpg give} and {@code resolveHeldGear}. An item
+     * cannot legitimately carry both tags -- nothing mints one that way.
+     */
+    private PlacedGear resolveGear(ItemStack placed) {
+        if (placed == null || placed.getType().isAir()) return null;
+
+        String weaponId = WeaponItems.weaponId(placed, adapters.keys()).orElse(null);
+        if (weaponId != null) {
+            WeaponDefinition definition = weapons.find(weaponId).orElse(null);
+            if (definition == null) {
+                say("'" + weaponId + "' has no content file loaded -- cannot re-mint it, so"
+                        + " refusing to edit its enchants.", NamedTextColor.RED);
+                return null;
+            }
+            return new PlacedGear(weaponId, definition, null);
+        }
+
+        String shieldId = ShieldItems.shieldId(placed, adapters.keys()).orElse(null);
+        if (shieldId != null) {
+            ShieldDefinition definition = shields.find(shieldId).orElse(null);
+            if (definition == null) {
+                say("'" + shieldId + "' has no content file loaded -- cannot re-mint it, so"
+                        + " refusing to edit its enchants.", NamedTextColor.RED);
+                return null;
+            }
+            return new PlacedGear(shieldId, null, definition);
+        }
+
+        return null;   // not ours; acceptsInput already refused it at the door
+    }
+
+    /**
      * Three checks, all against the cursor, all before the place is permitted -- so a refusal is a
      * click that did nothing and the item never leaves the player's hand.
      */
     @Override
     protected boolean acceptsInput(ItemStack cursor) {
-        if (WeaponItems.weaponId(cursor, adapters.keys()).isEmpty()) {
-            say("That is not one of your weapons.", NamedTextColor.GRAY);
+        if (WeaponItems.weaponId(cursor, adapters.keys()).isEmpty()
+                && ShieldItems.shieldId(cursor, adapters.keys()).isEmpty()) {
+            say("That is not one of your weapons or shields.", NamedTextColor.GRAY);
             return false;
         }
 
@@ -166,14 +244,13 @@ public final class EnchantMenu extends Menu {
         getInventory().setItem(BOOKSHELF_SLOT, bookshelfIcon());
 
         ItemStack placed = getInventory().getItem(INPUT_SLOT);
-        WeaponDefinition weapon = WeaponItems.weaponId(placed, adapters.keys())
-                .flatMap(weapons::find).orElse(null);
+        PlacedGear gear = resolveGear(placed);
 
-        if (weapon == null) {
+        if (gear == null) {
             getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.ENCHANTING_TABLE,
                     MenuIcons.line("Enchanting", NamedTextColor.WHITE),
-                    List.of(MenuIcons.line("Place a weapon above to see", NamedTextColor.GRAY),
-                            MenuIcons.line("the enchants it can carry.", NamedTextColor.GRAY),
+                    List.of(MenuIcons.line("Place a weapon or shield above", NamedTextColor.GRAY),
+                            MenuIcons.line("to see the enchants it can carry.", NamedTextColor.GRAY),
                             MenuIcons.blank(),
                             MenuIcons.line("Unlocks are paid for in XP.", NamedTextColor.DARK_GRAY))));
             return;
@@ -187,7 +264,7 @@ public final class EnchantMenu extends Menu {
                         MenuIcons.line("Swapping keeps the level you paid for.",
                                 NamedTextColor.DARK_GRAY))));
 
-        renderCandidates(EnchantItems.read(placed, adapters.keys()), weapon.weaponClass());
+        renderCandidates(EnchantItems.read(placed, adapters.keys()), gear.gearClass());
     }
 
     /**
@@ -211,7 +288,7 @@ public final class EnchantMenu extends Menu {
     }
 
     /** The three columns. A slot that rolled fewer than three candidates leaves filler behind. */
-    private void renderCandidates(EnchantState state, WeaponClass heldClass) {
+    private void renderCandidates(EnchantState state, GearClass heldClass) {
         for (int slot = 0; slot < EnchantMenuLayout.SLOTS && slot < state.slots().size(); slot++) {
             EnchantSlot enchantSlot = state.slots().get(slot);
             for (int index = 0; index < EnchantMenuLayout.CANDIDATES
@@ -228,7 +305,7 @@ public final class EnchantMenu extends Menu {
      * <p>The four states differ ONLY cosmetically -- the icon, the name colour, and the last lore
      * line. The enchant's identity and its effect are on every one of them.
      */
-    private ItemStack candidateIcon(EnchantSlot enchantSlot, int index, WeaponClass heldClass) {
+    private ItemStack candidateIcon(EnchantSlot enchantSlot, int index, GearClass heldClass) {
         EnchantCandidate candidate = enchantSlot.candidates().get(index);
         boolean active = enchantSlot.activeIndex() == index;
         EnchantDefinition definition =
@@ -338,7 +415,7 @@ public final class EnchantMenu extends Menu {
     private void applyCandidateClick(int slotIndex, int candidateIndex) {
         ItemStack input = getInventory().getItem(INPUT_SLOT);
         if (input == null || input.getType().isAir()) {
-            say("Put one of your weapons in the slot above.", NamedTextColor.GRAY);
+            say("Put one of your weapons or shields in the slot above.", NamedTextColor.GRAY);
             return;
         }
 
@@ -348,25 +425,17 @@ public final class EnchantMenu extends Menu {
         // item destruction rather than a cosmetic glitch, so the operation that can destroy guards
         // itself instead of trusting the insert seam to have held.
         if (input.getAmount() != 1) {
-            say("Only one weapon at a time -- take the stack out and re-insert a single one.",
+            say("Only one item at a time -- take the stack out and re-insert a single one.",
                     NamedTextColor.RED);
-            return;
-        }
-
-        String weaponId = WeaponItems.weaponId(input, adapters.keys()).orElse(null);
-        if (weaponId == null) {
-            say("Put one of your weapons in the slot above.", NamedTextColor.GRAY);
             return;
         }
 
         // A re-mint needs the definition. REFUSE rather than half-edit: writing state we cannot
         // re-mint leaves an item whose PDC and whose lore disagree, which is worse than nothing.
-        WeaponDefinition definition = weapons.find(weaponId).orElse(null);
-        if (definition == null) {
-            say("'" + weaponId + "' has no content file loaded -- cannot re-mint it, so refusing"
-                    + " to edit its enchants.", NamedTextColor.RED);
-            return;
-        }
+        // resolveGear says WHY it refused before returning null, exactly as RpgCommand's
+        // resolveHeldGear does -- one resolver, one set of refusals, for weapons and shields alike.
+        PlacedGear gear = resolveGear(input);
+        if (gear == null) return;
 
         EnchantState before = EnchantItems.read(input, adapters.keys());
         if (slotIndex >= before.slots().size()) return;                   // filler, not a refusal
@@ -422,7 +491,7 @@ public final class EnchantMenu extends Menu {
 
         input.editMeta(meta -> EnchantItems.write(meta, after, adapters.keys()));
         // remint returns a NEW stack, so `input` is stale from here and render() must re-read.
-        getInventory().setItem(INPUT_SLOT, WeaponItems.remint(input, definition, adapters));
+        getInventory().setItem(INPUT_SLOT, gear.remint(input, adapters));
 
         // THE DEDUCTION, AND IT IS THE LAST MUTATION IN THIS METHOD. Every path that can refuse sits
         // ABOVE it -- the affordability check, the model's own IllegalArgumentException, the
@@ -451,7 +520,7 @@ public final class EnchantMenu extends Menu {
         render();
         viewer.updateInventory();
 
-        say(feedbackFor(intent, name, after, candidate.enchantId(), definition.weaponClass(), cost),
+        say(feedbackFor(intent, name, after, candidate.enchantId(), gear.gearClass(), cost),
                 NamedTextColor.GRAY);
 
         // No stat reconcile: PlayerHealthSystem re-reads the held weapon every scan tick, and the
@@ -467,7 +536,7 @@ public final class EnchantMenu extends Menu {
      * {@code /rpg enchant active}.
      */
     private String feedbackFor(EnchantClickIntent intent, String name, EnchantState after,
-                               String enchantId, WeaponClass heldClass, int cost) {
+                               String enchantId, GearClass heldClass, int cost) {
         EnchantDefinition enchant = adapters.enchants().find(enchantId).orElse(null);
         int level = after.activeLevel(enchantId);
         String effect = EnchantEffectLine.of(enchant, Math.max(1, level), heldClass);

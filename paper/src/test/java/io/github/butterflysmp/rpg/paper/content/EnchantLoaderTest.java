@@ -3,15 +3,19 @@ package io.github.butterflysmp.rpg.paper.content;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.core.enchant.Unbreaking;
-import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,13 +35,61 @@ class EnchantLoaderTest {
         return Logger.getLogger("EnchantLoaderTest-" + System.nanoTime());
     }
 
-    /** The whole shipped roster, so a count assertion means "exactly these and nothing else". */
-    private static final List<String> SHIPPED =
-            List.of("unbreaking", "sharpness", "power", "attunement");
+    /**
+     * The whole shipped roster, DISCOVERED from the classpath rather than enumerated.
+     *
+     * <p>This was a hardcoded {@code List.of("unbreaking", "sharpness", "power", "attunement")},
+     * and the count assertions below claimed "the shipped enchant roster is exactly these four
+     * files" -- a claim the fixture could not make, because it copied only the four it already knew
+     * about. A fifth shipped file would have been loaded by NO test at all: no schema check, no
+     * class-token check, no curve check, and every count still green. That is CLAUDE.md's discovery
+     * trap one directory over from the {@code getResource("content/")} case -- a scan that finds
+     * only what it was told to look for is indistinguishable from a scan that works.
+     *
+     * <p>So it lists the directory, and <b>fails loudly on zero</b>: finding nothing is a defect,
+     * not an empty roster. Proven by positive control rather than by argument -- a deliberately
+     * malformed probe file dropped into {@code content/enchants/} reddens
+     * {@link #everyShippedEnchantFileLoadsRatherThanOnlyTheOnesWeRemembered}, where the old fixture
+     * stayed green.
+     *
+     * <p><b>It lists the CLASSPATH, which is {@code target/classes}, not {@code src}.</b> Maven's
+     * resource copy adds but never removes, so a content file DELETED from {@code src} lingers in
+     * {@code target/classes} and this reddens until {@code clean}. Measured, not predicted: after
+     * removing the probe from {@code src} the suite still failed 7, naming {@code _probe}, until
+     * {@code ./mvnw -pl paper -am clean test}. That is the right direction to fail in -- it is the
+     * same stale-build-output family as the locked-jar deploy CLAUDE.md records -- but it means an
+     * incremental run after deleting an enchant file is a red that {@code clean} explains.
+     *
+     * <p>Throws {@link IOException} rather than {@code URISyntaxException} so every caller's
+     * signature is unchanged; the URL comes from our own classpath and cannot realistically be
+     * malformed, but it fails loudly rather than silently if it ever is.
+     */
+    private static List<String> shippedIds() throws IOException {
+        URL dir = EnchantLoaderTest.class.getResource("/content/enchants");
+        assertNotNull(dir, "content/enchants is not on the test classpath at all");
+
+        Path root;
+        try {
+            root = Path.of(dir.toURI());
+        } catch (URISyntaxException e) {
+            throw new IOException("content/enchants is not a readable directory URL: " + dir, e);
+        }
+
+        try (var entries = Files.list(root)) {
+            List<String> ids = entries.map(path -> path.getFileName().toString())
+                    .filter(name -> name.endsWith(".yml"))
+                    .map(name -> name.substring(0, name.length() - ".yml".length()))
+                    .sorted()
+                    .toList();
+            assertFalse(ids.isEmpty(), "discovered NO shipped enchant files under content/enchants "
+                    + "-- a scan that finds nothing is a defect, not an empty roster");
+            return ids;
+        }
+    }
 
     private static Path bundledEnchants(Path dir) throws IOException {
         Path enchantsDir = Files.createDirectory(dir.resolve("enchants"));
-        for (String id : SHIPPED) {
+        for (String id : shippedIds()) {
             copyBundled("/content/enchants/" + id + ".yml", enchantsDir.resolve(id + ".yml"));
         }
         return enchantsDir;
@@ -60,9 +112,11 @@ class EnchantLoaderTest {
     void theShippedUnbreakingFileLoadsAndSaysWhatTheTooltipNeeds(@TempDir Path dir) throws IOException {
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
 
-        // EXACTLY four, not merely non-empty. A discovery that finds nothing -- or finds something
-        // unexpected -- is a defect, not a quiet no-op, and "non-empty" would pass on both.
-        assertEquals(4, enchants.size(), "the shipped enchant roster is exactly these four files");
+        // The WHOLE discovered roster, not merely non-empty. A discovery that finds nothing -- or
+        // finds something unexpected -- is a defect, not a quiet no-op, and "non-empty" would pass
+        // on both. shippedIds() itself refuses to return an empty list, so this cannot pass 0 == 0.
+        assertEquals(shippedIds().size(), enchants.size(),
+                "every shipped enchant file loads; none is skipped");
 
         EnchantDefinition unbreaking = enchants.find("unbreaking").orElseThrow(
                 () -> new AssertionError("unbreaking.yml did not load -- every tooltip renders a raw id"));
@@ -72,6 +126,33 @@ class EnchantLoaderTest {
                 "unbreaking binds the durability mechanism, not the damage one");
         assertTrue(unbreaking.isUniversal(), "and it is gated on no class");
         assertEquals(List.of(), unbreaking.percentByLevel(), "a durability enchant carries no curve");
+    }
+
+    /**
+     * THE ONE THAT CATCHES A NEW SHIPPED FILE. Every yml under {@code content/enchants/} loads, by
+     * ID, not merely by count.
+     *
+     * <p>The count assertions elsewhere compare the loader's output against {@code shippedIds()},
+     * which is derived from the same listing -- so a file that loads is counted and a file that is
+     * skipped is not, and the two move together only if nothing is skipped. This asserts the SET,
+     * which is what makes that non-circular: a shipped file the loader refuses is absent from the
+     * registry but present in the listing, and the sets diverge by name.
+     *
+     * <p>The old enumerated fixture could not fail this way. It copied four ids it already knew,
+     * so a fifth shipped file was never loaded by any test and every assertion stayed green --
+     * schema unchecked, class token unchecked, curve unchecked. This is the test that broke under
+     * the malformed-probe positive control; see {@link #shippedIds()}.
+     */
+    @Test
+    void everyShippedEnchantFileLoadsRatherThanOnlyTheOnesWeRemembered(@TempDir Path dir) throws IOException {
+        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+
+        Set<String> loaded = enchants.all().stream()
+                .map(EnchantDefinition::id).collect(Collectors.toSet());
+
+        assertEquals(Set.copyOf(shippedIds()), loaded,
+                "every file under content/enchants must LOAD -- a shipped file the loader skips is "
+                        + "an enchant that renders on a tooltip and grants nothing");
     }
 
     /**
@@ -87,9 +168,9 @@ class EnchantLoaderTest {
     void theThreeShippedDamageEnchantsCarryTheirClassAndCurve(@TempDir Path dir) throws IOException {
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
 
-        assertEquals(WeaponClass.MELEE, enchants.find("sharpness").orElseThrow().weaponClass());
-        assertEquals(WeaponClass.RANGER, enchants.find("power").orElseThrow().weaponClass());
-        assertEquals(WeaponClass.MAGE, enchants.find("attunement").orElseThrow().weaponClass());
+        assertEquals(GearClass.MELEE, enchants.find("sharpness").orElseThrow().gearClass());
+        assertEquals(GearClass.RANGER, enchants.find("power").orElseThrow().gearClass());
+        assertEquals(GearClass.MAGE, enchants.find("attunement").orElseThrow().gearClass());
 
         for (String id : List.of("sharpness", "power", "attunement")) {
             EnchantDefinition d = enchants.find(id).orElseThrow();
@@ -97,6 +178,39 @@ class EnchantLoaderTest {
             assertEquals(List.of(5, 10, 15), d.percentByLevel(), id + " carries the shipped curve");
             assertEquals(3, d.maxLevel());
         }
+    }
+
+    /**
+     * The shipped SHIELD enchant, field for field.
+     *
+     * <p>The sibling of {@code theThreeShippedDamageEnchantsCarryTheirClassAndCurve}, and here for
+     * the same reason: the class token is the thing most likely to rot. A Bulwark that loaded as
+     * {@code universal} would be offered on every sword in the game and do nothing on any of them;
+     * one that loaded as {@code melee} would be offered on swords alone and still do nothing. Both
+     * are working, wrong, and invisible without a booted server -- except that the loader now
+     * refuses them outright, which this asserts by asserting the value that survived.
+     *
+     * <p><b>This test could not have existed before the fixture stopped enumerating the roster.</b>
+     * Positive control, measured: flipping {@code class: shield} to {@code class: universal} in the
+     * shipped file makes the loader skip it and fails 7 tests, naming bulwark --
+     * {@code expected: <[unbreaking, sharpness, power, attunement, bulwark]> but was:
+     * <[attunement, unbreaking, power, sharpness]>}. Under the old fixture that edit was silent.
+     */
+    @Test
+    void theShippedBulwarkCarriesItsShieldGateAndCurve(@TempDir Path dir) throws IOException {
+        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+
+        EnchantDefinition bulwark = enchants.find("bulwark").orElseThrow(
+                () -> new AssertionError("bulwark.yml did not load -- shields would roll only Unbreaking"));
+
+        assertEquals("Bulwark", bulwark.displayName());
+        assertEquals(EnchantEffect.BLOCK_DR, bulwark.effect(), "bulwark binds the block mechanism");
+        assertEquals(GearClass.SHIELD, bulwark.gearClass(),
+                "a block enchant gated anywhere else would never fire");
+        assertFalse(bulwark.isUniversal(), "universal would put it in every weapon's roll pool");
+        assertEquals(List.of(5, 10, 15), bulwark.percentByLevel(), "the shipped curve");
+        assertEquals(3, bulwark.maxLevel());
+        assertEquals("shield", bulwark.icon());
     }
 
     // --- The schema rules, one test each ---------------------------------------------------------
@@ -120,11 +234,11 @@ class EnchantLoaderTest {
 
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
 
-        assertEquals(4, enchants.size(), "the malformed file is skipped");
+        assertEquals(shippedIds().size(), enchants.size(), "the malformed file is skipped");
         assertTrue(enchants.find("noeffect").isEmpty(),
                 "a file with no effect names no mechanism, so it cannot load as some default one");
         var ex = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
-                "noeffect", "No Effect", 3, null, WeaponClass.MELEE, List.of()));
+                "noeffect", "No Effect", 3, null, GearClass.MELEE, List.of()));
         assertTrue(ex.getMessage().contains("noeffect"), "the message must name the file at fault");
     }
 
@@ -139,7 +253,8 @@ class EnchantLoaderTest {
 
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
 
-        assertEquals(4, enchants.size(), "both malformed files are skipped, the shipped four remain");
+        assertEquals(shippedIds().size(), enchants.size(),
+                "both malformed files are skipped, the whole shipped roster remains");
         assertTrue(enchants.find("bogus").isEmpty());
         assertTrue(enchants.find("mistoken").isEmpty(), "'ranged' is not a class token -- 'ranger' is");
     }
@@ -154,7 +269,7 @@ class EnchantLoaderTest {
 
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
 
-        assertEquals(4, enchants.size());
+        assertEquals(shippedIds().size(), enchants.size());
         assertTrue(enchants.find("nocurve").isEmpty());
     }
 
@@ -164,17 +279,18 @@ class EnchantLoaderTest {
         // percent; a LONG one hides levels the enchant can never reach. Both directions, because a
         // ">= maxLevel" check would pass the second and a "<=" would pass the first.
         var tooShort = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
-                "short", "Short", 3, EnchantEffect.DAMAGE, WeaponClass.MELEE, List.of(5, 10)));
+                "short", "Short", 3, EnchantEffect.DAMAGE, GearClass.MELEE, List.of(5, 10)));
         assertTrue(tooShort.getMessage().contains("short"), "names the file");
         assertTrue(tooShort.getMessage().contains("2"), "and echoes the bad length");
 
         assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
-                "long", "Long", 2, EnchantEffect.DAMAGE, WeaponClass.MELEE, List.of(5, 10, 15)));
+                "long", "Long", 2, EnchantEffect.DAMAGE, GearClass.MELEE, List.of(5, 10, 15)));
 
         Path enchantsDir = bundledEnchants(dir);
         Files.writeString(enchantsDir.resolve("short.yml"), damageYml("3", "melee", "[5, 10]"));
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
-        assertEquals(4, enchants.size(), "and the loader skips it by name rather than crashing");
+        assertEquals(shippedIds().size(), enchants.size(),
+                "and the loader skips it by name rather than crashing");
     }
 
     @Test
@@ -184,12 +300,78 @@ class EnchantLoaderTest {
         // about itself -- the same defect the lore pass fixed by stripping authored colours from
         // display_name once rarity owned the colour.
         assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
-                "u", "U", 3, EnchantEffect.DURABILITY, WeaponClass.MELEE, List.of()),
+                "u", "U", 3, EnchantEffect.DURABILITY, GearClass.MELEE, List.of()),
                 "a class-gated durability enchant is a promise nothing keeps");
 
         assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
                 "u", "U", 3, EnchantEffect.DURABILITY, null, List.of(5, 10, 15)),
                 "and nothing would ever read that curve");
+    }
+
+    /**
+     * The same "a file may not claim a control it does not have" rule, on the two gates Slice 2
+     * adds. Each says: this effect's mechanism only ever runs against one kind of gear, so gating
+     * it elsewhere is a promise nothing keeps.
+     */
+    @Test
+    void aBlockEnchantMustBeGatedOnShieldBecauseNothingElseCanBlock() {
+        // The load-bearing one is UNIVERSAL, not the wrong-weapon case. A universal Bulwark enters
+        // EVERY weapon's roll pool (poolFor admits a null gate unconditionally), so every sword
+        // would offer a candidate that costs XP and does nothing -- exactly the mistake `class:` is
+        // required and spelled out to prevent.
+        var universal = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "b", "B", 3, EnchantEffect.BLOCK_DR, null, List.of(5, 10, 15)),
+                "a universal block enchant would be offered on every weapon in the game");
+        assertTrue(universal.getMessage().contains("every weapon's pool"),
+                "the refusal must say WHY universal is the dangerous one: " + universal.getMessage());
+
+        for (GearClass weapon : List.of(GearClass.MELEE, GearClass.RANGER, GearClass.MAGE)) {
+            assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                    "b", "B", 3, EnchantEffect.BLOCK_DR, weapon, List.of(5, 10, 15)),
+                    weapon + " cannot block, so a block enchant on it would never fire");
+        }
+
+        // And the one shape that IS legal, so this test cannot pass by refusing everything.
+        assertDoesNotThrow(() -> new EnchantDefinition(
+                "b", "B", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, 10, 15)));
+    }
+
+    @Test
+    void aDamageEnchantMayNotBeGatedOnShieldBecauseTheDamageGateReadsTheWeapon() {
+        // DamageEnchantItems reads the MAIN HAND's weapon and maps it through GearClass.of, which
+        // can never yield SHIELD. So this is structurally unreachable, not merely useless.
+        var ex = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "s", "S", 3, EnchantEffect.DAMAGE, GearClass.SHIELD, List.of(5, 10, 15)));
+        assertTrue(ex.getMessage().contains("main hand"),
+                "the refusal must name the reader that could never see it: " + ex.getMessage());
+
+        // Every other gate stays legal, universal included -- this rule removes ONE value, and a
+        // universal damage enchant (the KEEN shape) must keep working.
+        assertDoesNotThrow(() -> new EnchantDefinition(
+                "k", "K", 3, EnchantEffect.DAMAGE, null, List.of(5, 10, 15)));
+        for (GearClass weapon : List.of(GearClass.MELEE, GearClass.RANGER, GearClass.MAGE)) {
+            assertDoesNotThrow(() -> new EnchantDefinition(
+                    "d", "D", 3, EnchantEffect.DAMAGE, weapon, List.of(5, 10, 15)));
+        }
+    }
+
+    @Test
+    void aBlockEnchantIsHeldToTheSameCurveRulesAsADamageOne() {
+        // The requireCurve lift, from the other side: BLOCK_DR did not get a weaker validator by
+        // being newer. A negative block percent silently WEAKENS the shield the file claims to
+        // strengthen, which is the quiet direction of the same defect.
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "b", "B", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of()),
+                "a block enchant with no curve has no numbers to compose");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "b", "B", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, 10)),
+                "a short curve leaves a legal level with no percent");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "b", "B", 2, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, 10, 15)),
+                "a long curve hides levels the enchant can never reach");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "b", "B", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, -10, 15)),
+                "a negative block percent weakens the shield the file claims to strengthen");
     }
 
     @Test
@@ -198,7 +380,7 @@ class EnchantLoaderTest {
         // PERCENT is far more likely a sign slip, and one below -100 flips a hit into a negative.
         // A curse wants its own naming and its own decision.
         var ex = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
-                "cursed", "Cursed", 3, EnchantEffect.DAMAGE, WeaponClass.MELEE, List.of(5, -10, 15)));
+                "cursed", "Cursed", 3, EnchantEffect.DAMAGE, GearClass.MELEE, List.of(5, -10, 15)));
         assertTrue(ex.getMessage().contains("cursed"), "names the file");
         assertTrue(ex.getMessage().contains("-10"), "and echoes the bad value");
     }
@@ -246,7 +428,7 @@ class EnchantLoaderTest {
 
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
 
-        assertEquals(4, enchants.size(), "the malformed file is skipped");
+        assertEquals(shippedIds().size(), enchants.size(), "the malformed file is skipped");
         assertTrue(enchants.find("unbreaking").isPresent(), "and the good ones still loaded");
         assertTrue(enchants.find("overpowered").isEmpty());
     }

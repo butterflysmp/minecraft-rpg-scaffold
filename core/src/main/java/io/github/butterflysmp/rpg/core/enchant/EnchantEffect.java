@@ -31,7 +31,20 @@ public enum EnchantEffect {
      * A multiplier on the damage of the weapon it sits on, gated on that weapon's class. The
      * mechanism is {@link DamageEnchants}.
      */
-    DAMAGE;
+    DAMAGE,
+
+    /**
+     * A bonus ADDED to the block fraction of the shield it sits on. The mechanism is
+     * {@link Bulwark}, and it is read off the blocking stack in the mob-&gt;player rider, so
+     * {@code EnchantDefinition} refuses one that is not {@code class: shield}.
+     *
+     * <p>A SECOND mechanism rather than a parameter on {@link #DAMAGE}, by this enum's own rule:
+     * the question is how many enchants share one mechanism, and these two share none of their
+     * arithmetic. Damage multiplies an amount; this composes a fraction and clamps it. What they
+     * DO share is the shape of their content -- a {@code percent_by_level} curve -- and that is why
+     * a second block enchant will be a yml file rather than a recompile.
+     */
+    BLOCK_DR;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides

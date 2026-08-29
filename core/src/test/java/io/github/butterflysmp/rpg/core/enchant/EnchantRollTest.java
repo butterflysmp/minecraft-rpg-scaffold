@@ -1,7 +1,7 @@
 package io.github.butterflysmp.rpg.core.enchant;
 
 import io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Rollable;
-import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -37,11 +37,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class EnchantRollTest {
 
     // The shipped roster, id for id and class for class. `unbreaking` is universal == null class.
-    private static final Rollable SHARPNESS = new Rollable("sharpness", WeaponClass.MELEE);
-    private static final Rollable POWER = new Rollable("power", WeaponClass.RANGER);
-    private static final Rollable ATTUNEMENT = new Rollable("attunement", WeaponClass.MAGE);
+    private static final Rollable SHARPNESS = new Rollable("sharpness", GearClass.MELEE);
+    private static final Rollable POWER = new Rollable("power", GearClass.RANGER);
+    private static final Rollable ATTUNEMENT = new Rollable("attunement", GearClass.MAGE);
+    private static final Rollable BULWARK = new Rollable("bulwark", GearClass.SHIELD);
     private static final Rollable UNBREAKING = new Rollable("unbreaking", null);
-    private static final List<Rollable> ROSTER = List.of(SHARPNESS, POWER, ATTUNEMENT, UNBREAKING);
+    private static final List<Rollable> ROSTER =
+            List.of(SHARPNESS, POWER, ATTUNEMENT, BULWARK, UNBREAKING);
 
     /**
      * Literal draws, consumed in order. Running off the end throws
@@ -74,15 +76,15 @@ class EnchantRollTest {
     void everyRolledWeaponGetsExactlyThreeSlots() {
         // Fixed, not tier-varied, and equal to what the table renders. A weapon with four would be
         // refused by EnchantMenuLayout.overflow and could never be enchanted at all.
-        assertEquals(3, EnchantRoll.roll(WeaponClass.MELEE, ROSTER, always(0.0)).slots().size());
-        assertEquals(3, EnchantRoll.roll(WeaponClass.MAGE, ROSTER, always(0.99)).slots().size());
+        assertEquals(3, EnchantRoll.roll(GearClass.MELEE, ROSTER, always(0.0)).slots().size());
+        assertEquals(3, EnchantRoll.roll(GearClass.MAGE, ROSTER, always(0.99)).slots().size());
         assertEquals(3, EnchantRoll.SLOTS);
         // Mutation: SLOTS 3 -> 2, or the loop bound -> reddens.
     }
 
     @Test
     void everyRolledCandidateIsLockedAndNothingIsActive() {
-        EnchantState state = EnchantRoll.roll(WeaponClass.MELEE, ROSTER, always(0.99));
+        EnchantState state = EnchantRoll.roll(GearClass.MELEE, ROSTER, always(0.99));
         for (EnchantSlot slot : state.slots()) {
             assertEquals(EnchantSlot.NONE, slot.activeIndex(), "a fresh roll activates nothing");
             for (EnchantCandidate candidate : slot.candidates()) {
@@ -99,7 +101,7 @@ class EnchantRollTest {
     void withinASlotTheCandidatesAreDistinct() {
         // Draws chosen to ask for two candidates in every slot from a pool of exactly two, which is
         // the case a non-shrinking pool would fill with the same id twice.
-        EnchantState state = EnchantRoll.roll(WeaponClass.MELEE, ROSTER, always(0.99));
+        EnchantState state = EnchantRoll.roll(GearClass.MELEE, ROSTER, always(0.99));
         for (EnchantSlot slot : state.slots()) {
             List<String> ids = idsIn(slot);
             assertEquals(ids.size(), distinctCount(ids), "a slot offers an enchant twice: " + ids);
@@ -114,7 +116,7 @@ class EnchantRollTest {
     void theSameEnchantMayBeOfferedInMoreThanOneSlot() {
         // No mutual exclusion across slots: EnchantState.effective() resolves a duplicate to the
         // HIGHEST level either slot holds it at, never the sum, so offering it twice is legal.
-        EnchantState state = EnchantRoll.roll(WeaponClass.MELEE, ROSTER, always(0.0));
+        EnchantState state = EnchantRoll.roll(GearClass.MELEE, ROSTER, always(0.0));
         for (EnchantSlot slot : state.slots()) {
             assertEquals(List.of("sharpness"), idsIn(slot));
         }
@@ -126,7 +128,7 @@ class EnchantRollTest {
 
     @Test
     void aMeleeWeaponIsNeverOfferedPowerOrAttunement() {
-        EnchantState state = EnchantRoll.roll(WeaponClass.MELEE, ROSTER, always(0.99));
+        EnchantState state = EnchantRoll.roll(GearClass.MELEE, ROSTER, always(0.99));
         for (EnchantSlot slot : state.slots()) {
             for (String id : idsIn(slot)) {
                 assertTrue(id.equals("sharpness") || id.equals("unbreaking"),
@@ -137,10 +139,47 @@ class EnchantRollTest {
     }
 
     @Test
+    void aShieldIsNeverOfferedAWeaponEnchantAndNoWeaponIsEverOfferedBulwark() {
+        // The gate in BOTH directions, and the second half is the one nothing guarded before Slice 2.
+        // A shield offered Sharpness would sell a player a damage multiplier that DamageEnchantItems
+        // never reads (it looks at the main hand's weapon); a sword offered Bulwark would sell a
+        // block bonus read off a stack that cannot block.
+        for (String id : idsIn(EnchantRoll.roll(GearClass.SHIELD, ROSTER, always(0.99)).slots().get(0))) {
+            assertTrue(id.equals("bulwark") || id.equals("unbreaking"),
+                    "a shield was offered '" + id + "'");
+        }
+        for (GearClass weapon : List.of(GearClass.MELEE, GearClass.RANGER, GearClass.MAGE)) {
+            assertFalse(EnchantRoll.poolFor(weapon, ROSTER).contains(BULWARK),
+                    weapon + " was offered Bulwark -- a block enchant on a weapon");
+        }
+    }
+
+    @Test
+    void aShieldsPoolIsStillTwoInThisSliceSoTheThreeCandidateSlotStaysUnreachable() {
+        // Bulwark + Unbreaking. The SAME size as every weapon class, so nothing about the roll's
+        // observable shape changes when shields start rolling -- and the pool-of-two boundary tests
+        // below still describe every piece of shipped gear.
+        //
+        // Stated rather than assumed because it was got WRONG while writing this file: the plan said
+        // a shield's pool was three. It is three only once Riposte lands in Slice 2b, and that is
+        // when EnchantMenuLayout.CANDIDATES == 3 first gets exercised by a real roll.
+        assertEquals(2, EnchantRoll.poolFor(GearClass.SHIELD, ROSTER).size());
+        assertEquals(2, EnchantRoll.poolFor(GearClass.MELEE, ROSTER).size());
+
+        for (EnchantSlot slot : EnchantRoll.roll(GearClass.SHIELD, ROSTER, always(0.99)).slots()) {
+            assertTrue(slot.candidates().size() <= 2,
+                    "a shield offered " + slot.candidates().size() + " candidates from a pool of two");
+        }
+    }
+
+    @Test
     void thePoolIsTheClassEnchantPlusTheUniversalOne() {
-        assertEquals(List.of(SHARPNESS, UNBREAKING), EnchantRoll.poolFor(WeaponClass.MELEE, ROSTER));
-        assertEquals(List.of(POWER, UNBREAKING), EnchantRoll.poolFor(WeaponClass.RANGER, ROSTER));
-        assertEquals(List.of(ATTUNEMENT, UNBREAKING), EnchantRoll.poolFor(WeaponClass.MAGE, ROSTER));
+        assertEquals(List.of(SHARPNESS, UNBREAKING), EnchantRoll.poolFor(GearClass.MELEE, ROSTER));
+        assertEquals(List.of(POWER, UNBREAKING), EnchantRoll.poolFor(GearClass.RANGER, ROSTER));
+        assertEquals(List.of(ATTUNEMENT, UNBREAKING), EnchantRoll.poolFor(GearClass.MAGE, ROSTER));
+        // Roster ORDER is preserved here too: bulwark precedes unbreaking in the roster, so it
+        // precedes it in the pool. That is what makes a fixed set of draws reproduce a fixed roll.
+        assertEquals(List.of(BULWARK, UNBREAKING), EnchantRoll.poolFor(GearClass.SHIELD, ROSTER));
         // Roster order is preserved, so the pool is a deterministic function of the registry.
         // Mutation: drop the `weaponClass() != null` arm (universal stops matching) -> UNBREAKING
         // disappears from all three -> reddens.
@@ -177,7 +216,7 @@ class EnchantRollTest {
             assertTrue(count == 1 || count == 2, "count " + count + " from a pool of two");
         }
         // And the same, read off a whole roll rather than the decision in isolation.
-        for (EnchantSlot slot : EnchantRoll.roll(WeaponClass.MELEE, ROSTER, always(0.99)).slots()) {
+        for (EnchantSlot slot : EnchantRoll.roll(GearClass.MELEE, ROSTER, always(0.99)).slots()) {
             assertTrue(slot.candidates().size() <= 2);
         }
         // Mutation: cap `MAX_CANDIDATES` instead of `min(poolSize, MAX_CANDIDATES)` -> a count of 3
@@ -257,7 +296,7 @@ class EnchantRollTest {
         //   slot 0: count 0.0 -> 1;  pick 0.0 -> sharpness
         //   slot 1: count 0.9 -> 2;  pick 0.0 -> sharpness, then 0.0 of [unbreaking] -> unbreaking
         //   slot 2: count 0.9 -> 2;  pick 0.9 -> unbreaking, then 0.0 of [sharpness] -> sharpness
-        EnchantState state = EnchantRoll.roll(WeaponClass.MELEE, ROSTER,
+        EnchantState state = EnchantRoll.roll(GearClass.MELEE, ROSTER,
                 draws(0.0, 0.0,   0.9, 0.0, 0.0,   0.9, 0.9, 0.0));
 
         assertEquals(3, state.slots().size());
@@ -276,7 +315,7 @@ class EnchantRollTest {
         // Unreachable while Unbreaking is universal. It must not throw from inside a mint, and it
         // must still produce a rolled item -- "decided, and it came to nothing" is a real outcome
         // the enchant_rolled flag exists to record separately from the state.
-        EnchantState state = EnchantRoll.roll(WeaponClass.MELEE, List.of(), always(0.5));
+        EnchantState state = EnchantRoll.roll(GearClass.MELEE, List.of(), always(0.5));
         assertEquals(3, state.slots().size());
         for (EnchantSlot slot : state.slots()) {
             assertTrue(slot.candidates().isEmpty());
@@ -289,7 +328,7 @@ class EnchantRollTest {
     void aRolledStateSurvivesTheWireGrammar() {
         // The roll's output has to be storable: paper encodes it straight into the PDC, and a state
         // that did not round-trip would lose candidates the moment the item was re-minted.
-        EnchantState rolled = EnchantRoll.roll(WeaponClass.MAGE, ROSTER,
+        EnchantState rolled = EnchantRoll.roll(GearClass.MAGE, ROSTER,
                 draws(0.0, 0.0,   0.9, 0.0, 0.0,   0.0, 0.9));
         EnchantState decoded = EnchantCodec.decode(EnchantCodec.encode(rolled));
         assertEquals(rolled, decoded);
@@ -298,7 +337,7 @@ class EnchantRollTest {
 
     @Test
     void aRollableNeedsAnId() {
-        assertThrows(IllegalArgumentException.class, () -> new Rollable(null, WeaponClass.MELEE));
-        assertThrows(IllegalArgumentException.class, () -> new Rollable("  ", WeaponClass.MELEE));
+        assertThrows(IllegalArgumentException.class, () -> new Rollable(null, GearClass.MELEE));
+        assertThrows(IllegalArgumentException.class, () -> new Rollable("  ", GearClass.MELEE));
     }
 }

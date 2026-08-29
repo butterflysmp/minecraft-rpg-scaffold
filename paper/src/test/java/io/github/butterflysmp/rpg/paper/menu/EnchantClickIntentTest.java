@@ -3,7 +3,7 @@ package io.github.butterflysmp.rpg.paper.menu;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantSlot;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
-import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +27,7 @@ class EnchantClickIntentTest {
 
     // The shipped files, as records. sharpness.yml / unbreaking.yml.
     private static final EnchantDefinition SHARPNESS = new EnchantDefinition(
-            "sharpness", "Sharpness", 3, EnchantEffect.DAMAGE, WeaponClass.MELEE, List.of(5, 10, 15));
+            "sharpness", "Sharpness", 3, EnchantEffect.DAMAGE, GearClass.MELEE, List.of(5, 10, 15));
     /** Vanilla's Mending shape: a real, legal enchant that tops out at I. Nothing ships one yet. */
     private static final EnchantDefinition SINGLE_LEVEL = new EnchantDefinition(
             "mending", "Mending", 1, EnchantEffect.DURABILITY, null, List.of());

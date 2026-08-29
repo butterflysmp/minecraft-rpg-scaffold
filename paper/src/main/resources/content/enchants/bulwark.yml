@@ -1,0 +1,47 @@
+# The first SHIELD enchant, and the first content file gated on something that is not a fighting
+# class. `class: shield` is a GearClass token, parsed by the same function `universal`, `melee`,
+# `ranger` and `mage` go through -- so an enchant and the gear it sits on can never disagree about
+# what a class is. Adding it was ADDITIVE: `class` was already required and `universal` already
+# spelled out, so every existing enchant file parses unchanged and no operator has to migrate.
+#
+# `effect: block_dr` names core/enchant/Bulwark.java the way `damage` names DamageEnchants. The
+# mechanism is Java, the curve is here, and the loader REFUSES this effect on anything but a shield
+# -- see below for why the dangerous mistake is `universal`, not `melee`.
+#
+# WHAT THE NUMBERS DO. Bulwark is ADDITIVE on the block fraction: the shield's own block_dr plus
+# these percentage points, clamped to 1.0. On the shipped roundshield (block_dr 0.5), executed
+# against the real Shield.clamp rather than worked out by hand:
+#
+#   plain  dr 0.50  ->  a 15.0 mob hit passes 7.5
+#   I      dr 0.55  ->  6.749999999999999   (yes, really; not 6.75)
+#   II     dr 0.60  ->  6.0
+#   III    dr 0.65  ->  5.25
+#
+# So every rung is visible on a heart bar, which is the opposite of the damage enchants' problem
+# (Sharpness I on a sword renders identically to no Sharpness at all, because the popup rounds).
+# There is no rounding here to hide a step.
+#
+# WHY ADDITIVE, when "increase the DR by 5%" has three readings. Two of them are BIT-IDENTICAL on
+# the only shield we ship: multiplicative (dr x 1.05) and diminishing (cut the pass-through by 5%)
+# both give 0.525 / 0.55 / 0.575 at block_dr 0.5. Additive gives 0.55 / 0.60 / 0.65. Additive is
+# also the only one whose label is honest -- "+15%" adds fifteen points, where multiplicative would
+# add 7.5 and still say 15. The three separate at block_dr 0.8; core's BulwarkTest asserts there too,
+# because a test pinned only at 0.5 pins the composition at one point rather than pinning the rule.
+#
+# THE CEILING, before you tune this. Additive means a shield authored at block_dr >= 0.85 becomes
+# TOTALLY IMMUNE with Bulwark III -- 0.9 + 0.15 is 1.05, which Shield.clamp pins to 1.0, and a 15.0
+# hit then passes 0.0. Nothing shipped is close (the roundshield tops out at 0.65). If a high-DR
+# shield is ever authored, that is the moment to decide on a soft cap below 1.0, not now.
+#
+# `class: universal` WOULD BE THE DANGEROUS TYPO, and the loader refuses it. A universal enchant
+# enters every weapon's roll pool, so a universal Bulwark would offer every sword in the game a
+# candidate that costs XP and does precisely nothing -- the exact mistake `class:` is required and
+# spelled out to prevent. `class: melee` is refused too, for the milder version of the same reason.
+display_name: "Bulwark"
+# The item this enchant renders as in the enchant table. Cosmetic: it DEFAULTS to enchanted_book
+# when absent, so it is never a reason a working enchant fails to load. Do not make it required.
+icon: shield
+max_level: 3
+effect: block_dr
+class: shield
+percent_by_level: [5, 10, 15]

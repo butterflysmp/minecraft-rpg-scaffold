@@ -216,7 +216,7 @@ public final class RpgListeners implements Listener {
                 && event.getClickedBlock().getType() == Material.ENCHANTING_TABLE) {
             event.setCancelled(true);
             if (!event.getPlayer().isSneaking()) {
-                new EnchantMenu(event.getPlayer(), weapons, adapters, event.getClickedBlock()).open();
+                new EnchantMenu(event.getPlayer(), weapons, shields, adapters, event.getClickedBlock()).open();
                 return;
             }
             // Sneaking: fall through to WeaponFire.attempt so the weapon's right_click still fires
@@ -651,12 +651,19 @@ public final class RpgListeners implements Listener {
         // modifier after tokening reports the token's share of the block rather than the block.
         // Vanilla decides WHETHER this was a block -- raised, frontal, in-arc; the shield decides
         // what it is worth. See ShieldBlock for why isBlocking() is not the signal.
-        ShieldBlock.Outcome block = ShieldBlock.resolve(victim, event, adapters.keys(), shields);
+        ShieldBlock.Outcome block = ShieldBlock.resolve(
+                victim, event, adapters.keys(), shields, adapters.enchants());
         if (block.blocked()) {
-            incoming = Shield.applyBlock(incoming, block.blockDr());
+            // effectiveDr, not the shield's own block_dr: resolve has already composed Bulwark onto
+            // it and clamped the result. The enchant read lives in resolve so it inherits the
+            // read-BEFORE-token ordering above for free, and this branch keeps exactly one number
+            // to apply.
+            incoming = Shield.applyBlock(incoming, block.effectiveDr());
             // Wear is charged HERE and vanilla's own is cancelled in onShieldItemDamage, because
-            // our Unbreaking is custom and vanilla would never consult it.
-            ShieldDurability.applyWearOnBlock(victim, block.slot(), adapters.keys());
+            // our Unbreaking is custom and vanilla would never consult it. AFTER the resolve, so
+            // the block that breaks the shield still mitigates in full and only the next one does
+            // nothing.
+            ShieldDurability.applyWearOnBlock(victim, block.slot(), adapters.keys(), cooldowns);
         }
 
         event.setDamage(TOKEN_DAMAGE);                // ride: keep flash/sound/i-frames, no double, can't kill

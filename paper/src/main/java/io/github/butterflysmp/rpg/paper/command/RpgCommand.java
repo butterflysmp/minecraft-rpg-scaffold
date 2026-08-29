@@ -21,6 +21,7 @@ import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import io.github.butterflysmp.rpg.core.enchant.EnchantLoreLines;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
@@ -737,18 +738,19 @@ public final class RpgCommand {
 
         ItemStack item;
         Component name;
+        // The roll fires at ACQUISITION, never in mint -- remint calls mint, so a roll there would
+        // re-roll on every join, refresh and enchant click. See EnchantRollItems.
         if (weapon != null) {
-            // The roll fires at ACQUISITION, never in mint -- remint calls mint, so a roll there
-            // would re-roll on every join, refresh and enchant click. See EnchantRollItems.
             item = WeaponItems.mint(weapon, adapters);
-            EnchantRollItems.rollOnAcquire(item, weapon, adapters);
+            EnchantRollItems.rollOnAcquire(item, GearClass.of(weapon.weaponClass()), adapters);
             name = WeaponItems.displayName(weapon.displayName(), weapon.rarity());
         } else {
-            // NO ROLL FOR A SHIELD, deliberately. EnchantRoll.roll is keyed on WeaponClass and a
-            // shield has none, so there is no honest roster to draw from -- shield enchant gating
-            // is Slice 2. The shield still ships enchant-COMPATIBLE: it carries the same container,
-            // so /rpg enchant can put Unbreaking on it and the wear path reads it.
+            // A SHIELD ROLLS TOO, since Slice 2. It did not in Slice 1 because EnchantRoll was keyed
+            // on WeaponClass and a shield has none, so there was no honest roster to draw from.
+            // GearClass.SHIELD is that roster's key, and the pool is the shield-gated enchants plus
+            // the universal ones.
             item = ShieldItems.mint(shield, adapters);
+            EnchantRollItems.rollOnAcquire(item, GearClass.SHIELD, adapters);
             name = WeaponItems.displayName(shield.displayName(), shield.rarity());
         }
 
@@ -786,13 +788,29 @@ public final class RpgCommand {
         return 1;
     }
 
-    /** Which direction {@link #durability} moves the held weapon's wear. */
+    /** Which direction {@link #durability} moves the held gear's wear. */
     private enum DurabilityOp { DAMAGE, REPAIR, SET }
 
     /**
-     * Move the held weapon's durability, for testing. The wear source Pass 1 needs: nothing wears
+     * Move the held GEAR's durability, for testing. The wear source Pass 1 needs: nothing wears
      * items in play yet, so without this the break gate and #12's step-9 clamp cannot be produced
      * in-game at all.
+     *
+     * <p><b>Shields since Slice 2a, and that is completion rather than new scope.</b> 2a gave a
+     * broken shield a real consequence -- {@code ShieldBlock.resolve} returns {@code Outcome.NONE},
+     * so it stops blocking -- and shipped no way to reach that state: {@code WEAR_PER_BLOCK} is 1
+     * against a vanilla shield's ~336 uses, so witnessing the break gate meant roughly 250 blocks,
+     * and with Unbreaking III roughly a thousand. A consequence that cannot be produced in-game
+     * cannot be gate-witnessed, and an unwitnessable mechanic is exactly what this command exists to
+     * prevent. Same argument that put the shield arm on {@code /rpg enchant} in Slice 1.
+     *
+     * <p>NO new durability logic: {@link WeaponDurability#wear}, {@code repair} and {@code set} are
+     * already pure {@code ItemStack} questions and say so, so the kernel is shared rather than
+     * dispatched. The only thing that widened is which tags this command will touch.
+     *
+     * <p>MAIN HAND only, unchanged, matching {@code /rpg enchant}. A shield blocks from either hand,
+     * so the gate flow is: hold the shield in the main hand, {@code set} it near-broken, then block
+     * with it. One command, one hand, no ambiguity about which item was addressed.
      *
      * Every value goes through the core kernel, so {@code damage} past the floor CLAMPS rather than
      * destroying the item -- this command cannot break the promise it exists to test.
@@ -816,11 +834,20 @@ public final class RpgCommand {
         adapters.scheduler().onEntity(player, () -> {
             ItemStack held = player.getInventory().getItemInMainHand();
 
-            // Scope: only our weapons. An untagged vanilla item is not this command's business,
-            // the same boundary the gates draw.
-            if (WeaponItems.weaponId(held, adapters.keys()).isEmpty()) {
+            // Scope: our weapons AND our shields, the same boundary /rpg enchant and the gates draw.
+            // An untagged vanilla item is not this command's business.
+            //
+            // A TAG CHECK, not resolveHeldGear, and the difference is deliberate. That resolver also
+            // requires the content DEFINITION, because every one of its callers ends in a re-mint
+            // and writing state you cannot re-mint leaves an item whose PDC and lore disagree.
+            // Durability needs no definition at all -- wear/repair/set are pure ItemStack questions
+            // -- so routing through it would newly REFUSE a dangling-id weapon that works today.
+            // That would be a behaviour change on the weapon path, which this arm must not make.
+            // The dispatch that matters is the one below, and there is none: the kernel is shared.
+            if (WeaponItems.weaponId(held, adapters.keys()).isEmpty()
+                    && ShieldItems.shieldId(held, adapters.keys()).isEmpty()) {
                 player.sendMessage(Component.text(
-                        "Hold one of our weapons.", NamedTextColor.RED));
+                        "Hold one of our weapons or shields.", NamedTextColor.RED));
                 return;
             }
 
@@ -911,23 +938,11 @@ public final class RpgCommand {
             EnchantState before = EnchantItems.read(held, adapters.keys());
 
             if (op == EnchantOp.SHOW) {
-                // SHOW IS WEAPON-ONLY IN THIS SLICE, and it is the one arm that is not a re-mint,
-                // so the dispatch below cannot cover it. showEnchants reaches
-                // EnchantEffectLine.of(..., definition.weaponClass()), whose heldClass is
-                // contractually never-null: the DAMAGE arm dereferences it through
-                // WeaponClassLabel.of, an exhaustive switch with no default arm. A shield has no
-                // WeaponClass to hand it, and passing null would crash that arm.
-                //
-                // The class axis for shields is Slice 2's problem, alongside their enchant gating.
-                // Refusing here costs nothing: the dev flow is candidate -> level -> active.
-                if (gear.isShield()) {
-                    player.sendMessage(Component.text(
-                            "/rpg enchant show is weapon-only for now -- a shield has no class for "
-                                    + "the effect line to describe. Its enchants still apply.",
-                            NamedTextColor.YELLOW));
-                    return;
-                }
-                showEnchants(player, gear.weapon(), before, adapters);
+                // SHOW works on a shield since Slice 2. It refused one before because showEnchants
+                // reached EnchantEffectLine with definition.weaponClass(), and a shield had none to
+                // hand it -- not because anything crashed; no caller ever passed null. GearClass
+                // supplies the honest value, so the refusal has nothing left to protect.
+                showEnchants(player, gear, before, adapters);
                 return;
             }
 
@@ -1122,15 +1137,26 @@ public final class RpgCommand {
         /**
          * The " -- does X" tail on an ACTIVE reply, or empty for a shield.
          *
-         * A shield has no {@code WeaponClass}, so there is no honest answer to the question
-         * EnchantEffectLine asks ("is this enchant inert on what you are holding?"). Saying nothing
-         * is better than guessing a class, and the enchant still applies either way -- shield
-         * enchant GATING is Slice 2.
+         * <p>Slice 1 returned "" for a shield, because a shield had no {@code WeaponClass} and there
+         * was no honest answer to the question EnchantEffectLine asks ("is this enchant inert on
+         * what you are holding?"). {@link GearClass} is that answer, so the arm is gone.
          */
         String effectSuffix(EnchantDefinition enchantDef, int effectiveLevel) {
-            return weapon != null
-                    ? EnchantEffectLine.of(enchantDef, effectiveLevel, weapon.weaponClass())
-                    : "";
+            return EnchantEffectLine.of(enchantDef, effectiveLevel, gearClass());
+        }
+
+        /**
+         * The gear's own enchant-gating class -- {@code GearClass.of(...)} for a weapon,
+         * {@code SHIELD} for a shield. Never null: {@code WeaponDefinition} rejects a null class and
+         * {@code GearClass.of} is total over the ones that remain.
+         */
+        GearClass gearClass() {
+            return weapon != null ? GearClass.of(weapon.weaponClass()) : GearClass.SHIELD;
+        }
+
+        /** What to call it in a reply, so {@code show} can name a shield as readily as a weapon. */
+        String displayName() {
+            return weapon != null ? weapon.displayName() : shield.displayName();
         }
     }
 
@@ -1189,7 +1215,7 @@ public final class RpgCommand {
      * character for character across a restart. It also makes a decode failure visible -- a blob
      * that is present but reads as empty says so here, where "no enchant data" would not.
      */
-    private static void showEnchants(Player player, WeaponDefinition definition,
+    private static void showEnchants(Player player, HeldGear gear,
                                      EnchantState state, AdapterContext adapters) {
         String raw = player.getInventory().getItemInMainHand().getItemMeta()
                 .getPersistentDataContainer().get(adapters.keys().enchantData, PersistentDataType.STRING);
@@ -1199,7 +1225,7 @@ public final class RpgCommand {
             return;
         }
 
-        player.sendMessage(Component.text(definition.displayName() + " -- " + state.slots().size()
+        player.sendMessage(Component.text(gear.displayName() + " -- " + state.slots().size()
                 + " slot(s)", NamedTextColor.AQUA));
         for (int i = 0; i < state.slots().size(); i++) {
             var slot = state.slots().get(i);
@@ -1217,7 +1243,7 @@ public final class RpgCommand {
             player.sendMessage(Component.text("  active: " + active.enchantId() + " "
                     + EnchantLoreLines.romanNumeral(active.level())
                     + EnchantEffectLine.of(adapters.enchants().find(active.enchantId()).orElse(null),
-                            active.level(), definition.weaponClass()), NamedTextColor.GRAY));
+                            active.level(), gear.gearClass()), NamedTextColor.GRAY));
         }
         player.sendMessage(Component.text("  raw: " + raw, NamedTextColor.DARK_GRAY));
     }
@@ -1408,7 +1434,7 @@ public final class RpgCommand {
             if (weapon == null) continue; // validated at boot; skip a dangling grant
             ItemStack item = WeaponItems.mint(weapon, adapters);
             // Inside the loop: each kit weapon is its own instance and rolls its own candidates.
-            EnchantRollItems.rollOnAcquire(item, weapon, adapters);
+            EnchantRollItems.rollOnAcquire(item, GearClass.of(weapon.weaponClass()), adapters);
 
             int hotbar = grant.equip() ? firstEmptyHotbarSlot(player) : -1;
             if (hotbar >= 0) {

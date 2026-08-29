@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.enchant.Bulwark;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ShieldLoreLines;
 import net.kyori.adventure.text.Component;
@@ -51,13 +52,30 @@ public final class ShieldLore {
      * separated from. Starting the tooltip with an empty line would read as a rendering bug.
      */
     public static List<Component> build(ShieldDefinition shield) {
+        return build(shield, Bulwark.NONE);
+    }
+
+    /**
+     * The same tooltip, showing the EFFECTIVE block after {@code bulwarkPercent} is composed on.
+     *
+     * <p><b>The lore must not disagree with the block.</b> Once Bulwark composes onto block_dr in
+     * {@code ShieldBlock.resolve}, a tooltip rendering the shield's own 0.5 while the shield actually
+     * stops 0.65 is a display contradicting truth -- the defect this project keeps a whole invariant
+     * about. It also matters for the boot gate: {@code EnchantEffectLine} exists so the expected
+     * number can be read off the screen BEFORE the hit lands, and this is that number for shields.
+     *
+     * <p>Composed through {@link Bulwark#effectiveDr}, the same function the rider calls, so the two
+     * cannot drift. {@code Bulwark.NONE} makes the unenchanted case an exact identity.
+     */
+    public static List<Component> build(ShieldDefinition shield, double bulwarkPercent) {
         List<Component> lore = new ArrayList<>();
 
         // The stat block. One line, unconditionally -- including for a shield that declares no
         // block at all, which then honestly reads "Block: 0%". Hiding the line at zero would make
         // a mis-authored shield look like a shield with no stat rather than one with a zero stat,
         // and those want telling apart.
-        lore.add(plain(ShieldLoreLines.blockLabel(shield.blockDr()), NamedTextColor.GRAY));
+        lore.add(plain(ShieldLoreLines.blockLabel(
+                Bulwark.effectiveDr(shield.blockDr(), bulwarkPercent)), NamedTextColor.GRAY));
 
         if (!shield.flavor().isEmpty()) {
             lore.add(blank());

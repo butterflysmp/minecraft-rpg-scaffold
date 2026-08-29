@@ -1,6 +1,6 @@
 package io.github.butterflysmp.rpg.core.enchant;
 
-import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,11 +16,22 @@ import java.util.Map;
  * Power is {@code ranger}, so it does nothing on a staff. A {@code universal} enchant (null class)
  * matches whatever it is on.
  *
- * <p><b>The gate is the same AXIS as {@code ClassDamageModifiers}, not the same rule.</b> That one
- * asks whether an OTHER equipment slot's grant matches the weapon in your hand. This one asks
- * whether an enchant sitting on the held weapon matches THAT weapon. Both key on the held weapon's
- * class, both return an id-keyed map for the same leak-proof reconcile diff, and they are
- * deliberately separate functions because they answer different questions about different items.
+ * <p><b>It is NO LONGER the same axis as {@code ClassDamageModifiers}, and that changed in Slice 2.</b>
+ * It used to be: both keyed on {@code WeaponClass}. Now this one keys on {@link GearClass} -- because
+ * an enchant's gate is a GEAR gate and must be able to say "shield" -- while
+ * {@code ClassDamageModifiers} stays on {@code WeaponClass}, because a ring's {@code +N <Class>
+ * Damage} gates on the WEAPON you are fighting with and a shield in the other hand must not change it.
+ *
+ * <p>The two still answer neighbouring questions -- that one asks whether an OTHER slot's grant
+ * matches the weapon in your hand, this one whether an enchant sitting on the held weapon matches
+ * THAT weapon -- and both return an id-keyed map for the same leak-proof reconcile diff. They were
+ * always deliberately separate functions; they now also have deliberately separate types, which is
+ * what stops a shield-gated enchant from ever being mistaken for a ring's class grant.
+ *
+ * <p><b>A SHIELD-gated enchant can never appear here at all</b>, and that is enforced twice: this
+ * map is built from the held WEAPON, whose {@code GearClass} comes through {@code GearClass.of} and
+ * therefore can never be {@code SHIELD}; and {@code EnchantDefinition} refuses a {@code DAMAGE}
+ * enchant gated on {@code shield} at the content boundary, because it could never fire.
  *
  * <p><b>This returns PERCENT, not a multiplier, and that is load-bearing.</b> The value rides a
  * {@code Stat}, whose {@code value()} is {@code base + Sum(modifiers)}. Percentages are genuinely
@@ -41,11 +52,11 @@ public final class DamageEnchants {
      * One active damage enchant, as the gate needs to see it: the class it gates on, its authored
      * curve, and the level it resolved to.
      *
-     * <p>{@code weaponClass} is null for a {@code universal} enchant, which matches every held
+     * <p>{@code gearClass} is null for a {@code universal} enchant, which matches every held
      * class. That is the same null-means-no-gate convention {@code ClassDamageModifiers} uses for an
      * empty hand, read from the other side.
      */
-    public record Grant(WeaponClass weaponClass, List<Integer> percentByLevel, int level) {}
+    public record Grant(GearClass gearClass, List<Integer> percentByLevel, int level) {}
 
     /**
      * The percent this curve grants at {@code level}: {@code percentByLevel[level - 1]}.
@@ -87,14 +98,14 @@ public final class DamageEnchants {
      * <p>A non-matching enchant is simply ABSENT from the result, not present at 0.0, so the
      * reconciler removes its source rather than leaving a dead modifier behind.
      */
-    public static Map<String, Double> matching(WeaponClass heldClass, Map<String, Grant> active) {
+    public static Map<String, Double> matching(GearClass heldClass, Map<String, Grant> active) {
         Map<String, Double> desired = new HashMap<>();
         if (heldClass == null || active == null) return desired;
         for (Map.Entry<String, Grant> entry : active.entrySet()) {
             Grant grant = entry.getValue();
             if (grant == null) continue;
             // null class == universal: no gate, matches whatever it is on.
-            if (grant.weaponClass() != null && grant.weaponClass() != heldClass) continue;
+            if (grant.gearClass() != null && grant.gearClass() != heldClass) continue;
             double percent = percentAt(grant.percentByLevel(), grant.level());
             if (percent != 0.0) desired.put(entry.getKey(), percent);
         }
