@@ -738,18 +738,34 @@ public final class RpgListeners implements Listener {
                 .subtract(victim.getLocation().toVector());
         double facingDot = toAttacker.lengthSquared() == 0 ? 0.0 : look.dot(toAttacker.normalize());
 
+        // activeHand vs positional is printed as TWO separate readings on purpose. shieldHand now
+        // trusts the active hand outright, and the positional offhand-first answer is what it used
+        // to return -- so any hit where they disagree is a hit the old reading would have
+        // mis-slotted (wrong DR, and the wrong item's durability charged). Printing both makes that
+        // disagreement something the boot MEASURES rather than something we argue is rare.
+        String positional = ShieldItems.shieldId(
+                        victim.getInventory().getItemInOffHand(), adapters.keys()).isPresent()
+                ? "OFF_HAND"
+                : ShieldItems.shieldId(
+                        victim.getInventory().getItemInMainHand(), adapters.keys()).isPresent()
+                        ? "HAND" : "none";
+        String resolved = ShieldItems.shieldHand(victim, adapters.keys())
+                .map(Enum::name).orElse("none");
+
         adapters.log().info(String.format(java.util.Locale.ROOT,
                 "[BLOCK] LOWEST victim=%s attacker=%s cause=%s cancelled=%s raw=%.4f final=%.4f "
-                        + "blockingApplicable=%s blocking=%.4f isBlocking=%s active=%s "
-                        + "main=%s off=%s shieldHand=%s facingDot=%.4f",
+                        + "blockingApplicable=%s blocking=%.4f isBlocking=%s hasActive=%s "
+                        + "activeHand=%s active=%s main=%s off=%s shieldHand=%s positional=%s "
+                        + "disagree=%s facingDot=%.4f",
                 victim.getUniqueId(), attacker.getUniqueId(), event.getCause(), event.isCancelled(),
                 event.getDamage(), event.getFinalDamage(),
                 ShieldBlock.blockingApplicable(event), ShieldBlock.blockingModifier(event),
-                victim.isBlocking(), victim.getActiveItem().getType(),
+                victim.isBlocking(), victim.hasActiveItem(),
+                victim.hasActiveItem() ? victim.getActiveItemHand().name() : "none",
+                victim.getActiveItem().getType(),
                 victim.getInventory().getItemInMainHand().getType(),
                 victim.getInventory().getItemInOffHand().getType(),
-                ShieldItems.shieldHand(victim, adapters.keys())
-                        .map(Enum::name).orElse("none"),
+                resolved, positional, !resolved.equals(positional),
                 facingDot));
     }
 

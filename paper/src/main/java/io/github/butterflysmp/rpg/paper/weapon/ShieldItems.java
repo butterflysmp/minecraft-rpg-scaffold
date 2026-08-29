@@ -9,6 +9,7 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
@@ -111,23 +112,49 @@ public final class ShieldItems {
     }
 
     /**
-     * Which hand, if either, is holding one of our shields.
+     * Which hand, if either, is holding the one of our shields that vanilla is actually using.
      *
-     * <p><b>Both hands, and offhand FIRST.</b> A shield is legal in either hand and vanilla will
-     * block with whichever one is raised, so a main-hand-only read would silently refuse to block
-     * for a player holding it the unusual way. Offhand wins a tie because that is where a shield
-     * actually lives in play -- a player with a shield in each hand is holding a weapon slot they
-     * are not using, and the offhand is the one they raised.
+     * <p><b>The ACTIVE hand is authoritative, not a positional preference.</b>
+     * {@link LivingEntity#getActiveItemHand()} is the hand vanilla itself has raised, which is the
+     * only reading that stays correct for a mixed loadout: a player holding a vanilla shield in the
+     * hand they raised and one of ours in the other must get NO custom mitigation, because the hit
+     * vanilla blocked was blocked by the vanilla item. A positional offhand-first read would find
+     * our shield, apply its DR to a block it had no part in, and charge ITS durability for the
+     * other item's work -- wrong twice, and silently.
      *
-     * <p>This answers "is a shield HERE", not "is a shield RAISED". Whether the block was valid is
-     * vanilla's call, read off the damage event; see {@code ShieldBlock}.
+     * <p>So when there is an active item the answer is FINAL in both directions: the active hand
+     * holds one of our shields, or nothing here does. There is deliberately no fall-through to the
+     * other hand.
+     *
+     * <p>The slot comes back directly rather than via {@code getActiveItem()} and a stack
+     * comparison, which the plan originally called for. Matching stacks is ambiguous exactly where
+     * it matters -- two identical shields, one per hand, are {@code isSimilar} to each other -- and
+     * this API answers the question without guessing.
+     *
+     * <p>The positional fallback survives only for {@code !hasActiveItem()}, which a real block
+     * should never reach (vanilla cannot block without a raised item). It exists so a caller that
+     * asks outside a block -- a future refresher or gate -- still gets a sensible "where is the
+     * shield" answer instead of an empty one. Offhand first there, because that is where a shield
+     * lives in play.
+     *
+     * <p>This answers "which shield is RAISED", not "was the block valid". Validity is vanilla's
+     * call, read off the damage event; see {@link ShieldBlock}.
      */
     public static Optional<EquipmentSlot> shieldHand(LivingEntity entity, Keys keys) {
-        if (entity.getEquipment() == null) return Optional.empty();
-        if (shieldId(entity.getEquipment().getItemInOffHand(), keys).isPresent()) {
+        EntityEquipment equipment = entity.getEquipment();
+        if (equipment == null) return Optional.empty();
+
+        if (entity.hasActiveItem()) {
+            EquipmentSlot active = entity.getActiveItemHand();
+            return shieldId(equipment.getItem(active), keys).isPresent()
+                    ? Optional.of(active)
+                    : Optional.empty();   // vanilla is using something that is not ours -- final
+        }
+
+        if (shieldId(equipment.getItemInOffHand(), keys).isPresent()) {
             return Optional.of(EquipmentSlot.OFF_HAND);
         }
-        if (shieldId(entity.getEquipment().getItemInMainHand(), keys).isPresent()) {
+        if (shieldId(equipment.getItemInMainHand(), keys).isPresent()) {
             return Optional.of(EquipmentSlot.HAND);
         }
         return Optional.empty();
