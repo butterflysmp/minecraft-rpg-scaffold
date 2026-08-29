@@ -195,7 +195,7 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
      *
      * <p><b>The negative rule matters MORE for the newer effects than for damage.</b> A negative
      * block percent silently weakens the shield the file claims to strengthen; a negative reflect
-     * (Slice 2b) goes straight through {@code applyDamage} to {@code stats.damage} and HEALS the
+     * goes straight through {@code applyDamage} to {@code stats.damage} and HEALS the
      * attacking mob. Sharing one validator is what stops that being three separate decisions.
      */
     private static void requireCurve(String id, EnchantEffect effect, int maxLevel,

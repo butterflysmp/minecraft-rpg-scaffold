@@ -143,7 +143,8 @@ public final class ShieldBlock {
         if (definition == null) return Outcome.NONE;
 
         // A BROKEN SHIELD STOPS BLOCKING, and this is the single gate every shield mechanic falls
-        // off: base DR here, Bulwark below it, the reflect in Slice 2b. Slice 1 shipped without one
+        // off: base DR here, Bulwark below it, and the reflect Slice 2b hangs off reflectPercent.
+        // All three, one predicate. Slice 1 shipped without one
         // deliberately -- Durability.wear floors at one remaining use, so a spent shield simply
         // stopped wearing and kept blocking at full strength, which made all of that slice's
         // durability work cosmetic and broke the symmetry with weapons, which DO gate on broken.

@@ -581,6 +581,112 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Shields, Slice 2b (Riposte, the reflect) — what it created or exposed
+
+**The three original shield goals are complete**: block DR (Slice 1), Bulwark and the gear-gating
+axis (2a), and now the reflect. See `PLAN-shields-slice-2b.md`. **Boot gate OWED.**
+
+- **THE REFLECT SEAM IS THE ONLY NEW THING, and it turned out to be a one-liner on proven rails.**
+  Dealing custom damage to a second entity credited to a dealer is exactly what
+  `onPlayerSweepAttack` has done since the sweep pass; what is new is the DIRECTION — out of the
+  mob→player rider rather than the player→mob one. The value it deals, the popup it paints, the
+  aggro it re-asserts and the kill credit it earns all come from the existing pipeline unchanged.
+
+- **`ShieldExchange` EXISTS BECAUSE THE RULE WAS OTHERWISE UNTESTABLE, and that is a different
+  reason from tidiness.** Riposte's one load-bearing rule -- it reflects a fraction of the
+  PRE-MITIGATION blow -- lived in `RpgListeners.onMobMeleeAttack`, which cannot be unit-tested (a
+  live `Player`, a live `LivingEntity`, a real `BLOCKING` modifier; no listener test exists or can).
+  A pure `Riposte.reflected` test pins the arithmetic but cannot say WHICH value the rider passed.
+
+  Moving the CHOICE into a pure core record makes the mistake reddening in two seconds instead of
+  boot-only: `of()` takes the raw blow once and returns both numbers, so the reduction happens inside
+  and **there is no `incoming` variable in the rider any more** to mis-pass. Measured -- the mutation
+  reflects off the reduced figure and fails 4, including *"2.25 here means it reflected off the
+  pass-through"*.
+
+  **What it does NOT cover, so the coverage is not overclaimed:** the order the rider deals the two
+  numbers, and the inline `requireOwned` throw that makes "reflect last" the safe placement. Those
+  stay in the rider and stay boot-gated.
+
+- **"APPLY LAST" IS RIGHT FOR THE THROW, NOT FOR TICK ORDERING -- an earlier reasoning was theatre.**
+  Both `applyDamage` calls defer to their entity's next tick, so "the victim's damage lands first"
+  holds on Paper by FIFO accident and is meaningless on Folia, where the two may be in different
+  regions. Nothing observable depends on the order.
+
+  What IS ordering-sensitive: `BukkitCombatant.of` runs **inline** and its first act is
+  `Regions.requireOwned`, which throws off-region. Placed above the token, that throw skips
+  `setDamage` -- so **vanilla's FULL damage lands on the player** -- and skips the custom hit as well.
+  Placed last, a throw costs the riposte and nothing else.
+
+- **THE VALIDATION SWITCH WAS NEVER EXHAUSTIVENESS-CHECKED, AND 2a's COMMENT SAID IT WAS.** Adding
+  `EnchantEffect.REFLECT` was supposed to be a compile error at two sites. It was one.
+  `EnchantDefinition`'s validation was a switch **statement**, and Java only enforces exhaustiveness
+  on switch **expressions** -- so the new constant compiled clean and fell through to **no validation
+  at all**: no curve rule, no gate rule. For a reflect that is an unvalidated negative percent
+  reaching `stats.damage` and **healing the attacking mob**.
+
+  Fixed by choosing the rules as VALUES -- two switch expressions pick the `Gate` and whether a curve
+  is required -- and proven by dropping an arm: *"the switch expression does not cover all possible
+  input values"*, BUILD FAILURE. **The lesson generalises: a no-default switch STATEMENT guarantees
+  nothing.** Anywhere this codebase claims a switch is a compile-time gate, check which kind it is.
+
+- **Two more silent-pass tests, both closed by Riposte being the first enchant that could.**
+  `EnchantEffectLineTest` had ZERO coverage of the `BLOCK_DR` arm 2a added (`grep -c` returned 0)
+  while its javadoc claimed it asserted "every arm" -- it asserted every arm its hand-listed fixture
+  array knew about, the same discovery trap as the loader fixture. And `BlockEnchantItems`' effect
+  filter was unguarded: 2a's cross-effect fixture was Unbreaking, whose curve is empty, so deleting
+  the filter returned `0.0` either way and its own comment named that risk before agreeing with it.
+  Bulwark and Riposte are the first two enchants that BOTH carry curves and bind DIFFERENT
+  mechanisms; the mutation now fails with `expected: <15.0> but was: <45.0>`.
+
+- **A shipped-content typo that no fixture could catch.** 2a's directory-scan fixture picks
+  `riposte.yml` up for free and asserts the id SET -- so it catches a file the loader REFUSES, and
+  nothing else. `riposte.yml` authored with `effect: block_dr` gates fine on `class: shield`, loads
+  cleanly, and reddens nothing: Riposte silently becomes a second Bulwark. Closed by asserting the
+  effect and curve by VALUE, proven by flipping the shipped file.
+
+- **A shield's enchant pool is THREE, and the 3-candidate slot is finally real.** Bulwark + Riposte +
+  Unbreaking, against two for every weapon class. So `EnchantMenuLayout.CANDIDATES == 3` stops being
+  a constant pinned against another constant, and the distinctness rule (`remaining.remove(picked)`)
+  runs at pool size 3 for the first time -- the third pick comes from a pool already shrunk twice.
+  Rarity-weighting stays deferred, but it is now deferred BY CHOICE rather than by impossibility.
+
+- **THE POPUP ROUNDS, so the gate reads 2 / 3 / 5 rather than 1.5 / 3.0 / 4.5.** `DamageNumberText`
+  is `Math.round`. All three rungs still separate on screen, and so does the rejected
+  off-pass-through reading (1 / 2 / 2) -- but only at II and III. **Gate on III (5 versus 2)**; I is
+  one apart. And pin the ABSOLUTE value: with Bulwark III active the rejected reading still rounds to
+  2 at III, so "the number did not move" is not the discriminator.
+
+- **Riposte gives Slice 1's negative-zero trap its first VISIBLE instrument.** `vanillaBlocked`'s
+  strict `< 0` was previously checkable only by reading the heart bar for half-versus-full. With
+  Riposte III equipped, a hit from behind with the shield raised must paint NO number over the mob --
+  if that comparison were ever relaxed to `<=`, a white `5` appears over a mob that hit you in the
+  back. Same free instrument for the broken-shield gate.
+
+- **Three side effects of the reflect, traced rather than discovered.** The mob **flashes red with no
+  vanilla hurt sound** (`playHurtAnimation` fires because the MOB's i-frames are clear -- it was not
+  what vanilla damaged); `mob.setTarget` fires an `EntityTargetLivingEntityEvent` per reflect (inert
+  today, no listener, but the guard is `source instanceof LivingEntity` rather than "had no target",
+  so it CAN override a different one); and **a lethal reflect from a player who disconnects inside the
+  one-tick deferral window kills the mob with nothing credited** -- `Attribution` returns null,
+  `dealerIsPlayer` goes false, and `MobDeathSystem` gates credit on it, so no popup, drops, XP or
+  statistics, though the damage still lands. Asymmetric and silent; a known, not a bug fixed here.
+
+- **The reflect line on the tooltip is CONDITIONAL where the block line is not.** Every shield has a
+  `block_dr`, so "Block: 0%" is information; no shield has a base reflect, so a permanent
+  "Reflect: 0%" would advertise a stat the gear does not have. Two traps in putting the lines
+  adjacent, both tested: a block fraction is `0.5` rendering "50%" while a reflect percent is `30`
+  rendering "30%" (a fraction here would advertise "0.3%"), and `blockPercent` clamps while
+  `reflectLabel` deliberately does not -- a reflect has no natural ceiling, and clamping would
+  silently under-report a shield an author made vicious.
+
+- **`percentAt` moved to `EnchantCurve`, discharging a 2a deferral on schedule.** The trigger 2a
+  named ("a third caller") was over-met: four external callers, two of them block/reflect. The reason
+  is the misleading NAME, not deduplication -- a block enchant asking `DamageEnchants` for its
+  percentage implies a coupling that does not exist. `DamageEnchants.percentAt` delegates, so
+  `DamageEnchantsTest` passes with zero edits, and there is deliberately no `EnchantCurveTest`: a
+  mutation already reddens through the delegation.
+
 ### Shields, Slice 2a (the gear-gating axis and Bulwark) — what it created or exposed
 
 **Closes four Slice-1 deferrals at once**: the class axis for gear, the enchant ROLL for shields,
