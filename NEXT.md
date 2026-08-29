@@ -581,6 +581,113 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Shields, Slice 2a (the gear-gating axis and Bulwark) — what it created or exposed
+
+**Closes four Slice-1 deferrals at once**: the class axis for gear, the enchant ROLL for shields,
+`/rpg enchant show` for shields, and "does a broken shield stop blocking". See
+`PLAN-shields-slice-2a.md`. Riposte is 2b, its own PR. **Boot gate OWED — none of the in-game rows
+below the unit line have been run.**
+
+- **`GearClass` is a second enum, and `EnchantDefinition`'s javadoc argued against it.** That javadoc
+  said a parallel enum "would need SUMMONER adding in two places, and the exhaustive-switch
+  discipline only works with one enum". First half true and accepted; second half false, and the
+  compiler settled it — deleting an arm from `GearClass.of` gives *"the switch expression does not
+  cover all possible input values"*, BUILD FAILURE. Two places, one of which the compiler names. The
+  javadoc is rewritten rather than left contradicting the code.
+
+- **`ClassDamageModifiers` did NOT migrate, and that is the axis split working.** A ring's
+  `+N <Class> Damage` gates on the WEAPON you fight with; a shield in the other hand must not change
+  it. `WeaponClassLabel` stays for the same reason. `GearClassLabel` is a sibling, not a replacement.
+
+- **THE ENCHANT LOADER TEST COULD NOT SEE A NEW SHIPPED FILE, and would not have reddened.** Its
+  fixture *enumerated* the roster — `SHIPPED = List.of("unbreaking","sharpness","power","attunement")`
+  — and copied those four into a `@TempDir`, while asserting *"the shipped enchant roster is exactly
+  these four files"*, a claim it could not make. `bulwark.yml` would have shipped with no schema
+  check, no class-token check and no curve check, every count still green. This is the
+  `getResource("content/")` defect one directory over: **a scan that finds only what it was told to
+  look for is indistinguishable from a scan that works.** Fixed to list the classpath and refuse an
+  empty result, and proved by positive control rather than argument — with a malformed probe present,
+  the OLD fixture reported `Tests run: 17, Failures: 0, BUILD SUCCESS` and never mentioned the file;
+  the new one failed 7 and named it.
+
+- **`clean` is NOT inert for TEST sources, which is a different axis from the one refuted above.**
+  `./mvnw -pl paper -am test-compile` returned **exit 0 with 48 compile errors present**: the test
+  sources had not changed, so Maven skipped them and stale `test-classes` satisfied it. `clean
+  test-compile` reported all 48. Commit D2's correction — that `clean` catches nothing a plain build
+  does not — was measured for MAIN sources against a changed dependency module and still holds. TEST
+  sources against changed MAIN sources in the SAME module is a real incremental hole. **Run `clean`
+  before believing a green test-compile after a signature change.**
+
+- **A comment that overclaimed, caught by running a mutation rather than reasoning about it.**
+  `BulwarkTest` first said a 0.5-only test "could not tell a wrong implementation from the right
+  one". False: additive differs from BOTH rejected readings at 0.5, and both mutations duly reddened
+  the shipped-shield test. What 0.5 cannot do is say *which* wrong rule was followed —
+  multiplicative and diminishing are bit-identical there (`0.525/0.55/0.575`). The test asserts at
+  `0.8` as well, where all three separate: 0.5 pins the composition at a point, 0.8 pins the rule.
+
+- **A plan figure that was wrong, corrected by writing the test.** The plan said a shield's pool
+  would be three. It is **two** in 2a — Bulwark plus Unbreaking, the same as every weapon class.
+  Three arrives with Riposte, and that is when a 3-candidate slot and `EnchantMenuLayout.CANDIDATES
+  == 3` are first exercised by a real roll rather than only by `candidateCount` in isolation.
+  `EnchantRoll`'s rarity-weighting javadoc was about to be rewritten around the wrong number.
+
+- **`Outcome.NONE` now has THREE causes and one meaning** — untagged, dangling, broken. The broken
+  gate went to `ShieldBlock.resolve` rather than to `ShieldDurability`, where Slice 1 said it would
+  go, because that is where the other two already live: base DR, Bulwark and 2b's reflect fall off
+  one predicate. `Outcome.blockDr` is renamed `effectiveDr` — a component still called "the shield's
+  DR" while carrying an enchant's contribution is how a witness log starts lying.
+
+- **The broken gate makes an existing guard unreachable, and that is named rather than tested.**
+  With the gate in `resolve`, `block.blocked()` is false for a broken shield, so
+  `applyWearOnBlock`'s own already-broken early return is never entered through the rider. A test
+  claiming to guard the broken case VIA the rider would pass without exercising anything. It stays
+  as defence in depth, documented as untested.
+
+- **A "broken" shield is still functional to VANILLA, and the boot gate owes an answer.**
+  `Durability.wear` floors at one remaining use, so vanilla keeps playing the raise, the block sound
+  and the knockback dampen, and keeps reporting `BLOCKING < 0`, while `resolve` returns NONE and the
+  player takes the hit in full. `ShieldBrokenNotice` is the only thing distinguishing that from a
+  broken mechanic. Whether ONE crossing notice is enough against vanilla continuing to animate a
+  block that does nothing is a **feel** question this slice does not settle. Its throttle key is
+  distinct from `BrokenNotice`'s on purpose: a broken sword must not silence it.
+
+- **Binding is by EFFECT, not by id — the opposite of the Unbreaking seam, deliberately.**
+  `ShieldDurability` reads Unbreaking by hardcoded id and never consults the registry, which is right
+  there because its curve is Java. Bulwark's curve is content, so the definition must be resolved
+  anyway and filtering on `effect()` is free — which makes the second block enchant a yml file rather
+  than a recompile. **There is no `Bulwark.ID` on purpose.** The cost is the asymmetry
+  `DamageEnchantItems` already records: deleting `bulwark.yml` silently switches it off while the
+  tooltip still renders it.
+
+- **ADDITIVE BULWARK MAKES TOTAL IMMUNITY REACHABLE, and that is a constraint on future content.**
+  A shield authored at `block_dr >= 0.85` is untouchable at Bulwark III (`0.9 + 0.15 = 1.05`, clamped
+  to `1.0`, a 15.0 hit passes `0.0`). Nothing shipped is close — the roundshield tops out at 0.65 —
+  and the clamp makes the failure mode "invulnerable" rather than "negative damage". **The day a
+  high-DR shield is authored is the day to decide on a soft cap below 1.0**, not before.
+
+- **Two gear records, not one shared abstraction, and ARMOR is the trigger.**
+  `RpgCommand.HeldGear` and `EnchantMenu.PlacedGear` are shape-aligned — same three members, same
+  meanings — and deliberately not factored together. Designing a common `Gear` type from two examples
+  is designing it from one and a half; armor is the third shape and the point at which it can be
+  checked against something. Same reasoning `ShieldDefinition`/`ShieldItems` already carry.
+
+- **A vanilla shield still gives ZERO custom protection, and the fix is NOT in the block path.**
+  Re-confirmed rather than revisited. The deceptive part — vanilla animates a block that absorbs
+  nothing — is a symptom of the MISSING CRAFTING HOOK, not of `resolve`: the real fix is the gear-arc
+  step where crafting a shield produces an RPG shield, so a plain vanilla shield stops being
+  something a player holds. Inventing a default `block_dr` for an item no content file describes
+  would blur the tag boundary the whole system keys on.
+
+- **Gear already in an inventory is never rolled retroactively.** `rollOnAcquire` fires only at
+  acquisition, never from `mint`/`remint` (the once-per-item rule). A roundshield minted before 2a
+  carries no `enchant_rolled` flag and nothing will come back to give it one. Same property weapons
+  have had since the rolls pass. **It matters at a boot gate**: an old shield shows empty slots and
+  reads exactly like a broken roll. Give a fresh one.
+
+- **Still outstanding from Slice 1: no `ShieldRefresher`.** A shield's lore does not rebuild from
+  content on rejoin the way a weapon's does — and now that the lore carries an enchant-dependent
+  block percent, that gap is slightly more visible than it was.
+
 ### Shields, Slice 1 (a mintable shield and the block-DR mechanic) — what it created or exposed
 
 A `roundshield` is mintable, and blocking has a real effect for the first time: vanilla decides
@@ -735,7 +842,9 @@ facing); passed at `-0.2987` (107.4°) and `-0.9444` (160.8°). Consistent with 
   in the other) cannot be hit by accident and was not attempted. That path stays reasoned, not
   witnessed.
 
-**Deferred to Slice 2:** Thorns, Bulwark, the class axis for gear (enchant gating, the roll, and
+**Deferred to Slice 2 -- ALL CLOSED IN 2a EXCEPT THE FIRST, see the Slice 2a section above.** Thorns
+(shipped as RIPOSTE in 2b -- renamed, because DESIGN-status-effects.md already reserves "Thorns" for
+the Nature propagation status and its four anti-loop safety rules), Bulwark, the class axis for gear (enchant gating, the roll, and
 `show`), and a `ShieldRefresher` for the join / `/rpg refresh` path — a shield's lore does NOT
 currently rebuild from content on rejoin the way a weapon's does.
 
