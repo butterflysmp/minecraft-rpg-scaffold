@@ -6,6 +6,8 @@ import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
+import io.github.butterflysmp.rpg.core.combat.Shield;
+import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -24,6 +26,9 @@ import io.github.butterflysmp.rpg.paper.weapon.MeleeHits;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import io.github.butterflysmp.rpg.paper.weapon.BrokenNotice;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
+import io.github.butterflysmp.rpg.paper.weapon.ShieldBlock;
+import io.github.butterflysmp.rpg.paper.weapon.ShieldDurability;
+import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponRefresher;
 import net.kyori.adventure.text.Component;
@@ -53,6 +58,7 @@ import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -85,6 +91,7 @@ public final class RpgListeners implements Listener {
     private final ResourcePool resources;
     private final ProfileService profiles;
     private final WeaponRegistry weapons;
+    private final ShieldRegistry shields;
     private final WeaponService weaponService;
     private final AdapterContext adapters;
     private final PlayerHealthSystem healthSystem;
@@ -100,13 +107,15 @@ public final class RpgListeners implements Listener {
     private final MeleeHits meleeHits = new MeleeHits(Bukkit::getCurrentTick);
 
     public RpgListeners(CooldownTracker cooldowns, ResourcePool resources, ProfileService profiles,
-                        WeaponRegistry weapons, WeaponService weaponService, AdapterContext adapters,
+                        WeaponRegistry weapons, ShieldRegistry shields, WeaponService weaponService,
+                        AdapterContext adapters,
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
                         StatsBarSystem statsBar) {
         this.cooldowns = cooldowns;
         this.resources = resources;
         this.profiles = profiles;
         this.weapons = weapons;
+        this.shields = shields;
         this.weaponService = weaponService;
         this.adapters = adapters;
         this.healthSystem = healthSystem;
@@ -636,9 +645,53 @@ public final class RpgListeners implements Listener {
 
         nameplates.seedCombatStats(attacker);         // idempotent, opt-out-agnostic: seed HP + attack from vanilla
         double incoming = adapters.stats().attackValue(attacker.getUniqueId());  // the STAT, not event.getDamage()
+
+        // THE BLOCK, and it must be resolved BEFORE the token below. EntityDamageEvent.setDamage
+        // re-derives every modifier by scaling it against the new base, so reading the BLOCKING
+        // modifier after tokening reports the token's share of the block rather than the block.
+        // Vanilla decides WHETHER this was a block -- raised, frontal, in-arc; the shield decides
+        // what it is worth. See ShieldBlock for why isBlocking() is not the signal.
+        ShieldBlock.Outcome block = ShieldBlock.resolve(victim, event, adapters.keys(), shields);
+        if (block.blocked()) {
+            incoming = Shield.applyBlock(incoming, block.blockDr());
+            // Wear is charged HERE and vanilla's own is cancelled in onShieldItemDamage, because
+            // our Unbreaking is custom and vanilla would never consult it.
+            ShieldDurability.applyWearOnBlock(victim, block.slot(), adapters.keys());
+        }
+
         event.setDamage(TOKEN_DAMAGE);                // ride: keep flash/sound/i-frames, no double, can't kill
         BukkitCombatant.of(victim, adapters).handle().applyDamage(incoming, attacker.getUniqueId());
     }
+
+    /**
+     * Vanilla must NOT wear one of our shields -- {@link ShieldDurability} does it instead.
+     *
+     * <p>Our {@code Unbreaking} is a custom enchant whose curve lives in core, because the
+     * no-vanilla-enchants policy means a player-held item never carries a vanilla enchant to
+     * delegate to. Vanilla charging the shield on a block would never consult it, so Unbreaking
+     * would sit on the tooltip doing nothing.
+     *
+     * <p><b>Measured 2026-08-29: vanilla fired this event ZERO times across 20 blocks</b>, so on
+     * this build there is no double-wear to prevent and this cancel is a guard against something
+     * not currently happening. It stays -- we own this item's durability outright, and any future
+     * vanilla path charging it would be an unaccounted second source -- but it should not be
+     * described as fixing an observed doubling. The positive evidence for the wear path is the bar
+     * itself: 20 blocks with Unbreaking III took it 336 -> 331, against 5.00 expected.
+     *
+     * <p>Scoped by the {@code shield_id} tag, the same boundary {@code /rpg durability} and the
+     * weapon gates draw: an untagged vanilla shield keeps wearing exactly as it always did.
+     *
+     * <p>Cancels ALL vanilla wear on our shields, not only wear from blocking. That is deliberate
+     * and slightly wider than this slice needs: we own the item's durability outright, so any
+     * other vanilla source charging it would be a second, unaccounted wear path.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onShieldItemDamage(PlayerItemDamageEvent event) {
+        if (ShieldItems.shieldId(event.getItem(), adapters.keys()).isPresent()) {
+            event.setCancelled(true);
+        }
+    }
+
 
     /**
      * VANILLA owns melee knockback -- gated to the hit that earned it.

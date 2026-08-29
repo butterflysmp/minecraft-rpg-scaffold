@@ -25,6 +25,8 @@ import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import io.github.butterflysmp.rpg.core.enchant.EnchantLoreLines;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
@@ -43,6 +45,7 @@ import io.github.butterflysmp.rpg.paper.weapon.EnchantItems;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponClassLabel;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
+import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponRefresher;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
@@ -70,6 +73,7 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Brigadier commands, registered through the plugin lifecycle manager.
@@ -91,6 +95,7 @@ public final class RpgCommand {
                                                                ElementRegistry elements,
                                                                ProfileService profiles,
                                                                WeaponRegistry weapons,
+                                                               ShieldRegistry shields,
                                                                MobRegistry mobs,
                                                                MobNameplateManager nameplates,
                                                                ResourcePool resources) {
@@ -171,9 +176,15 @@ public final class RpgCommand {
                                 .executes(ctx -> manaRefill(ctx, resources))))
                 .then(Commands.literal("give")
                         .requires(source -> source.getSender().hasPermission(Permissions.GIVE))
+                        // ONE argument for both gear types rather than `give weapon|shield <id>`.
+                        // Ids are unique across the two registries -- the boot warns if they ever
+                        // are not -- so a second literal would only make the command longer to
+                        // type. The argument keeps its "weapon" name so existing muscle memory and
+                        // any scripted use keep working; it is the id of any gear we can mint.
                         .then(Commands.argument("weapon", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
                                     weapons.all().forEach(w -> builder.suggest(w.id()));
+                                    shields.all().forEach(s -> builder.suggest(s.id()));
                                     return builder.buildFuture();
                                 })
                                 .executes(ctx -> {
@@ -183,7 +194,7 @@ public final class RpgCommand {
                                                 Component.text("Players only.", NamedTextColor.RED));
                                         return 0;
                                     }
-                                    return give(player, id, weapons, adapters);
+                                    return give(player, id, weapons, shields, adapters);
                                 })))
                 // Force a lore/display refresh of everything you are carrying, without relogging.
                 // Join already does this; this is the same call for the case where reconnecting is
@@ -242,9 +253,9 @@ public final class RpgCommand {
                 .then(Commands.literal("enchant")
                         .requires(source -> source.getSender().hasPermission(Permissions.DEV))
                         .then(Commands.literal("show")
-                                .executes(ctx -> enchant(ctx, adapters, weapons, EnchantOp.SHOW, 0, 0, 0, null)))
+                                .executes(ctx -> enchant(ctx, adapters, weapons, shields, EnchantOp.SHOW, 0, 0, 0, null)))
                         .then(Commands.literal("clear")
-                                .executes(ctx -> enchant(ctx, adapters, weapons, EnchantOp.CLEAR, 0, 0, 0, null)))
+                                .executes(ctx -> enchant(ctx, adapters, weapons, shields, EnchantOp.CLEAR, 0, 0, 0, null)))
                         .then(Commands.literal("candidate")
                                 .then(Commands.argument("slot", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
                                         .then(Commands.argument("enchant", StringArgumentType.word())
@@ -252,28 +263,28 @@ public final class RpgCommand {
                                                     adapters.enchants().all().forEach(e -> builder.suggest(e.id()));
                                                     return builder.buildFuture();
                                                 })
-                                                .executes(ctx -> enchant(ctx, adapters, weapons, EnchantOp.CANDIDATE,
+                                                .executes(ctx -> enchant(ctx, adapters, weapons, shields, EnchantOp.CANDIDATE,
                                                         IntegerArgumentType.getInteger(ctx, "slot"), 0, 0,
                                                         StringArgumentType.getString(ctx, "enchant"))))))
                         .then(Commands.literal("level")
                                 .then(Commands.argument("slot", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
                                         .then(Commands.argument("candidate", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
                                                 .then(Commands.argument("level", IntegerArgumentType.integer(0, EnchantState.MAX_LEVEL))
-                                                        .executes(ctx -> enchant(ctx, adapters, weapons, EnchantOp.LEVEL,
+                                                        .executes(ctx -> enchant(ctx, adapters, weapons, shields, EnchantOp.LEVEL,
                                                                 IntegerArgumentType.getInteger(ctx, "slot"),
                                                                 IntegerArgumentType.getInteger(ctx, "candidate"),
                                                                 IntegerArgumentType.getInteger(ctx, "level"), null))))))
                         .then(Commands.literal("active")
                                 .then(Commands.argument("slot", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
                                         .then(Commands.argument("candidate", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
-                                                .executes(ctx -> enchant(ctx, adapters, weapons, EnchantOp.ACTIVE,
+                                                .executes(ctx -> enchant(ctx, adapters, weapons, shields, EnchantOp.ACTIVE,
                                                         IntegerArgumentType.getInteger(ctx, "slot"),
                                                         IntegerArgumentType.getInteger(ctx, "candidate"), 0, null)))))
                         // Its own literal rather than `active <slot> none`: closed arity, no string
                         // parsing, and no "none" that could collide with an enchant id.
                         .then(Commands.literal("deactivate")
                                 .then(Commands.argument("slot", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
-                                        .executes(ctx -> enchant(ctx, adapters, weapons, EnchantOp.DEACTIVATE,
+                                        .executes(ctx -> enchant(ctx, adapters, weapons, shields, EnchantOp.DEACTIVATE,
                                                 IntegerArgumentType.getInteger(ctx, "slot"), 0, 0, null)))))
                 // A dev instrument: apply any loaded status, at any stack count and duration,
                 // to the mob you are aiming at -- bypassing the class/element/kit gate, which is
@@ -701,12 +712,17 @@ public final class RpgCommand {
         return 1;
     }
 
-    private static int give(Player player, String weaponId, WeaponRegistry weapons,
-                            AdapterContext adapters) {
-        WeaponDefinition weapon = weapons.find(weaponId).orElse(null);
-        if (weapon == null) {
-            player.sendMessage(Component.text("Unknown weapon: " + weaponId, NamedTextColor.RED));
-            String available = String.join(", ", weapons.all().stream().map(WeaponDefinition::id).toList());
+    private static int give(Player player, String id, WeaponRegistry weapons,
+                            ShieldRegistry shields, AdapterContext adapters) {
+        WeaponDefinition weapon = weapons.find(id).orElse(null);
+        ShieldDefinition shield = weapon == null ? shields.find(id).orElse(null) : null;
+
+        if (weapon == null && shield == null) {
+            player.sendMessage(Component.text("Unknown weapon or shield: " + id, NamedTextColor.RED));
+            String available = Stream.concat(
+                            weapons.all().stream().map(WeaponDefinition::id),
+                            shields.all().stream().map(ShieldDefinition::id))
+                    .collect(Collectors.joining(", "));
             player.sendMessage(Component.text("Available: " + available, NamedTextColor.GRAY));
             return 0;
         }
@@ -719,15 +735,27 @@ public final class RpgCommand {
             return 0;
         }
 
-        // The roll fires at ACQUISITION, never in mint -- remint calls mint, so a roll there
-        // would re-roll on every join, refresh and enchant click. See EnchantRollItems.
-        ItemStack item = WeaponItems.mint(weapon, adapters);
-        EnchantRollItems.rollOnAcquire(item, weapon, adapters);
+        ItemStack item;
+        Component name;
+        if (weapon != null) {
+            // The roll fires at ACQUISITION, never in mint -- remint calls mint, so a roll there
+            // would re-roll on every join, refresh and enchant click. See EnchantRollItems.
+            item = WeaponItems.mint(weapon, adapters);
+            EnchantRollItems.rollOnAcquire(item, weapon, adapters);
+            name = WeaponItems.displayName(weapon.displayName(), weapon.rarity());
+        } else {
+            // NO ROLL FOR A SHIELD, deliberately. EnchantRoll.roll is keyed on WeaponClass and a
+            // shield has none, so there is no honest roster to draw from -- shield enchant gating
+            // is Slice 2. The shield still ships enchant-COMPATIBLE: it carries the same container,
+            // so /rpg enchant can put Unbreaking on it and the wear path reads it.
+            item = ShieldItems.mint(shield, adapters);
+            name = WeaponItems.displayName(shield.displayName(), shield.rarity());
+        }
+
         player.getInventory().addItem(item);
         // Same rarity-coloured name the item itself carries -- the chat echo must not disagree
         // with the thing that just landed in the inventory.
-        player.sendMessage(Component.text("Given ", NamedTextColor.AQUA)
-                .append(WeaponItems.displayName(weapon.displayName(), weapon.rarity())));
+        player.sendMessage(Component.text("Given ", NamedTextColor.AQUA).append(name));
         return 1;
     }
 
@@ -863,7 +891,7 @@ public final class RpgCommand {
      * only at login, which is where a regression in it would otherwise hide.
      */
     private static int enchant(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
-                               WeaponRegistry weapons, EnchantOp op,
+                               WeaponRegistry weapons, ShieldRegistry shields, EnchantOp op,
                                int slot, int candidate, int level, String enchantId) {
         if (!(ctx.getSource().getExecutor() instanceof Player player)) {
             ctx.getSource().getSender().sendMessage(
@@ -874,27 +902,32 @@ public final class RpgCommand {
         adapters.scheduler().onEntity(player, () -> {
             ItemStack held = player.getInventory().getItemInMainHand();
 
-            // Scope: only our weapons, the same boundary /rpg durability and the gates draw.
-            String weaponId = WeaponItems.weaponId(held, adapters.keys()).orElse(null);
-            if (weaponId == null) {
-                player.sendMessage(Component.text("Hold one of our weapons.", NamedTextColor.RED));
-                return;
-            }
-
-            // A re-mint needs the definition. Refuse rather than half-edit: writing the state and
-            // failing to re-mint would leave an item whose PDC and whose lore disagree, which is
-            // the one outcome worse than doing nothing. Same instinct as RefreshVerdict.Dangling.
-            WeaponDefinition definition = weapons.find(weaponId).orElse(null);
-            if (definition == null) {
-                player.sendMessage(Component.text("'" + weaponId + "' has no content file loaded -- "
-                        + "cannot re-mint it, so refusing to edit its enchants.", NamedTextColor.RED));
-                return;
-            }
+            // Scope: our weapons AND our shields, the same boundary /rpg durability and the gates
+            // draw -- widened by exactly one item type, and in ONE place. Every op arm below still
+            // has a single call site for the re-mint; see HeldGear.
+            HeldGear gear = resolveHeldGear(player, held, weapons, shields, adapters);
+            if (gear == null) return;   // resolveHeldGear has already said why
 
             EnchantState before = EnchantItems.read(held, adapters.keys());
 
             if (op == EnchantOp.SHOW) {
-                showEnchants(player, definition, before, adapters);
+                // SHOW IS WEAPON-ONLY IN THIS SLICE, and it is the one arm that is not a re-mint,
+                // so the dispatch below cannot cover it. showEnchants reaches
+                // EnchantEffectLine.of(..., definition.weaponClass()), whose heldClass is
+                // contractually never-null: the DAMAGE arm dereferences it through
+                // WeaponClassLabel.of, an exhaustive switch with no default arm. A shield has no
+                // WeaponClass to hand it, and passing null would crash that arm.
+                //
+                // The class axis for shields is Slice 2's problem, alongside their enchant gating.
+                // Refusing here costs nothing: the dev flow is candidate -> level -> active.
+                if (gear.isShield()) {
+                    player.sendMessage(Component.text(
+                            "/rpg enchant show is weapon-only for now -- a shield has no class for "
+                                    + "the effect line to describe. Its enchants still apply.",
+                            NamedTextColor.YELLOW));
+                    return;
+                }
+                showEnchants(player, gear.weapon(), before, adapters);
                 return;
             }
 
@@ -905,7 +938,7 @@ public final class RpgCommand {
                     return;
                 }
                 held.editMeta(meta -> EnchantItems.clear(meta, adapters.keys()));
-                finishEnchant(player, held, definition, adapters);
+                finishEnchant(player, held, gear, adapters);
                 player.sendMessage(Component.text("Enchant data cleared -- both keys removed.",
                         NamedTextColor.GREEN));
                 return;
@@ -993,7 +1026,7 @@ public final class RpgCommand {
             }
 
             held.editMeta(meta -> EnchantItems.write(meta, after, adapters.keys()));
-            finishEnchant(player, held, definition, adapters);
+            finishEnchant(player, held, gear, adapters);
 
             String name = enchantDef != null ? enchantDef.displayName()
                     : (enchantId != null ? enchantId : "that candidate");
@@ -1014,7 +1047,7 @@ public final class RpgCommand {
                     // like its siblings while the shared string stays exactly what show prints.
                     player.sendMessage(Component.text("Slot " + slot + " active: " + name + " "
                             + EnchantLoreLines.romanNumeral(effective)
-                            + EnchantEffectLine.of(enchantDef, effective, definition.weaponClass())
+                            + gear.effectSuffix(enchantDef, effective)
                             + ".", NamedTextColor.GREEN));
                     // Belt and braces on top of effective()'s max rule: say so, rather than letting
                     // a dev wonder why activating a second copy changed nothing.
@@ -1046,10 +1079,106 @@ public final class RpgCommand {
      * {@code /rpg durability} does it: the tooltip changes on this command rather than at the
      * client's next sync.
      */
-    private static void finishEnchant(Player player, ItemStack held, WeaponDefinition definition,
+    private static void finishEnchant(Player player, ItemStack held, HeldGear gear,
                                       AdapterContext adapters) {
-        player.getInventory().setItemInMainHand(WeaponItems.remint(held, definition, adapters));
+        player.getInventory().setItemInMainHand(gear.remint(held, adapters));
         player.updateInventory();
+    }
+
+    /**
+     * The gear {@code /rpg enchant} is editing: a weapon OR a shield, never both, never neither.
+     *
+     * <p>THE CONTAINMENT. {@code enchant} has six op arms and five of them are writes that end in a
+     * re-mint. Widening the command to shields by branching weapon-vs-shield inside each arm would
+     * double all five and guarantee they drift; instead every arm keeps its single call site and
+     * this record is the only thing that knows which of the two it is holding.
+     *
+     * <p>The two accessors below are the entire dispatch surface, and both exist to keep a
+     * weapon-shaped API from being handed a shield:
+     *
+     * <ul>
+     *   <li>{@link #remint} picks the right {@code *Items.remint}. That is the five write arms.
+     *   <li>{@link #effectSuffix} returns the empty string for a shield rather than calling
+     *       {@code EnchantEffectLine.of} with a null {@code WeaponClass}. The alternative --
+     *       widening EnchantEffectLine's switch to tolerate null -- would put a shield-shaped hole
+     *       in a class whose whole design is one exhaustive switch with no default arm.
+     * </ul>
+     *
+     * <p>{@code /rpg enchant show} is deliberately NOT dispatched here: it is not a re-mint, and it
+     * is weapon-only for this slice. See the SHOW arm.
+     */
+    private record HeldGear(String id, WeaponDefinition weapon, ShieldDefinition shield) {
+
+        boolean isShield() {
+            return shield != null;
+        }
+
+        ItemStack remint(ItemStack held, AdapterContext adapters) {
+            return weapon != null
+                    ? WeaponItems.remint(held, weapon, adapters)
+                    : ShieldItems.remint(held, shield, adapters);
+        }
+
+        /**
+         * The " -- does X" tail on an ACTIVE reply, or empty for a shield.
+         *
+         * A shield has no {@code WeaponClass}, so there is no honest answer to the question
+         * EnchantEffectLine asks ("is this enchant inert on what you are holding?"). Saying nothing
+         * is better than guessing a class, and the enchant still applies either way -- shield
+         * enchant GATING is Slice 2.
+         */
+        String effectSuffix(EnchantDefinition enchantDef, int effectiveLevel) {
+            return weapon != null
+                    ? EnchantEffectLine.of(enchantDef, effectiveLevel, weapon.weaponClass())
+                    : "";
+        }
+    }
+
+    /**
+     * Resolve the held item to one of our weapons or one of our shields, or explain why not.
+     *
+     * <p>Returns null having ALREADY messaged the player, so callers do a bare
+     * {@code if (gear == null) return;}. Two refusals, and the second is the load-bearing one:
+     *
+     * <ul>
+     *   <li>No tag at all -- not ours, nothing to edit.
+     *   <li>A tag whose content file is gone. REFUSE RATHER THAN HALF-EDIT: writing the enchant
+     *       state and then failing to re-mint would leave an item whose PDC and whose lore
+     *       disagree, which is the one outcome worse than doing nothing. Same instinct as
+     *       {@code RefreshVerdict.Dangling}, and it now covers a dangling {@code shield_id}
+     *       exactly as it always covered a dangling {@code weapon_id}.
+     * </ul>
+     *
+     * <p>Weapons are checked first, matching {@code /rpg give}'s resolve order. An item cannot
+     * legitimately carry both tags -- nothing mints one that way -- and if one somehow did, being
+     * consistent with give is better than being clever here.
+     */
+    private static HeldGear resolveHeldGear(Player player, ItemStack held, WeaponRegistry weapons,
+                                            ShieldRegistry shields, AdapterContext adapters) {
+        String weaponId = WeaponItems.weaponId(held, adapters.keys()).orElse(null);
+        if (weaponId != null) {
+            WeaponDefinition definition = weapons.find(weaponId).orElse(null);
+            if (definition == null) {
+                player.sendMessage(Component.text("'" + weaponId + "' has no content file loaded -- "
+                        + "cannot re-mint it, so refusing to edit its enchants.", NamedTextColor.RED));
+                return null;
+            }
+            return new HeldGear(weaponId, definition, null);
+        }
+
+        String shieldId = ShieldItems.shieldId(held, adapters.keys()).orElse(null);
+        if (shieldId != null) {
+            ShieldDefinition definition = shields.find(shieldId).orElse(null);
+            if (definition == null) {
+                player.sendMessage(Component.text("'" + shieldId + "' has no content file loaded -- "
+                        + "cannot re-mint it, so refusing to edit its enchants.", NamedTextColor.RED));
+                return null;
+            }
+            return new HeldGear(shieldId, null, definition);
+        }
+
+        player.sendMessage(Component.text("Hold one of our weapons or shields.", NamedTextColor.RED));
+        return null;
     }
 
     /**

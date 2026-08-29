@@ -8,6 +8,8 @@ import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.combat.stat.CompositeHealthListener;
+import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
@@ -27,6 +29,7 @@ import io.github.butterflysmp.rpg.paper.content.StatusLoader;
 import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
 import io.github.butterflysmp.rpg.paper.content.VisualLoader;
 import io.github.butterflysmp.rpg.paper.content.VisualRegistry;
+import io.github.butterflysmp.rpg.paper.content.ShieldLoader;
 import io.github.butterflysmp.rpg.paper.content.WeaponLoader;
 import io.github.butterflysmp.rpg.paper.health.DamagePopupManager;
 import io.github.butterflysmp.rpg.paper.health.MobDeathSystem;
@@ -96,6 +99,7 @@ public final class RpgPlugin extends JavaPlugin {
     private EnchantRegistry enchants;
     private KitRegistry kits;
     private WeaponRegistry weapons;
+    private ShieldRegistry shields;
     private MobRegistry mobs;
     private CooldownTracker cooldowns;
     private ResourcePool resources;
@@ -129,12 +133,13 @@ public final class RpgPlugin extends JavaPlugin {
         this.enchants = new EnchantLoader(getLogger()).loadAll(new File(contentDir, "enchants"));
         this.kits = new KitLoader(getLogger()).loadAll(new File(contentDir, "kits"));
         this.weapons = new WeaponLoader(getLogger()).loadAll(new File(contentDir, "weapons"));
+        this.shields = new ShieldLoader(getLogger()).loadAll(new File(contentDir, "shields"));
         this.mobs = new MobLoader(getLogger()).loadAll(new File(contentDir, "mobs"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
                 + kits.size() + " kits, " + weapons.size() + " weapons, "
-                + mobs.size() + " mobs");
+                + shields.size() + " shields, " + mobs.size() + " mobs");
 
         // ZERO IS A DEFECT, NOT A QUIET NO-OP. A loader that discovers nothing reads exactly like
         // one that worked, and this is the failure mode CLAUDE.md records twice: getResource on a
@@ -145,6 +150,28 @@ public final class RpgPlugin extends JavaPlugin {
             getLogger().warning("No enchants loaded from content/enchants -- every enchant will "
                     + "render as its raw id, /rpg enchant can grant nothing, and Unbreaking can "
                     + "never appear on a tooltip. Expected at least unbreaking.yml.");
+        }
+
+        // The same guard, for the same reason, on the directory this slice adds. content/shields is
+        // BRAND NEW, which makes it the most likely of all of them to arrive empty: an existing
+        // run/ data folder predates it entirely, and saveResource never overwrites, so the only
+        // thing that puts roundshield.yml on disk is the jar enumeration finding it.
+        if (shields.size() == 0) {
+            getLogger().warning("No shields loaded from content/shields -- /rpg give can mint none, "
+                    + "and blocking will reduce nothing however many shields are held. Expected at "
+                    + "least roundshield.yml.");
+        }
+
+        // ONE ID, TWO REGISTRIES. /rpg give resolves weapons before shields, so a shared id would
+        // silently make the shield unmintable -- and it would look exactly like the shield having
+        // failed to load, which the warning above would then NOT fire for. Neither registry can see
+        // the other, so this is the only place the collision is visible.
+        for (ShieldDefinition shield : shields.all()) {
+            if (weapons.find(shield.id()).isPresent()) {
+                getLogger().warning("Shield '" + shield.id() + "' shares its id with a weapon. "
+                        + "/rpg give resolves weapons first, so the shield cannot be minted by id. "
+                        + "Rename one of the two content files.");
+            }
         }
 
         // A visual_id that resolves to nothing should be found now, by name, not by
@@ -202,7 +229,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         // The one and only registerEvents call. Keep it that way.
         getServer().getPluginManager().registerEvents(
-                new RpgListeners(cooldowns, resources, profiles, weapons, weaponService, adapters,
+                new RpgListeners(cooldowns, resources, profiles, weapons, shields, weaponService, adapters,
                         healthSystem, nameplates, statsBar), this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
@@ -225,7 +252,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, mobs, nameplates, resources),
+                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, mobs, nameplates, resources),
                         "RPG commands"));
     }
 
@@ -388,6 +415,8 @@ public final class RpgPlugin extends JavaPlugin {
     public StatusRegistry statuses() { return statuses; }
     public KitRegistry kits() { return kits; }
     public WeaponRegistry weapons() { return weapons; }
+
+    public ShieldRegistry shields() { return shields; }
     public CooldownTracker cooldowns() { return cooldowns; }
     public ResourcePool resources() { return resources; }
     public CombatantStats stats() { return stats; }

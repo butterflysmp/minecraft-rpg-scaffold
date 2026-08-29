@@ -14,6 +14,17 @@ import org.bukkit.plugin.Plugin;
 public final class Keys {
 
     public final NamespacedKey weaponId;
+
+    /**
+     * A minted shield's id (a STRING), the gear mirror of {@link #weaponId}. An item is one of our
+     * shields IFF it carries this; a plain vanilla shield does not, and is left entirely alone --
+     * it blocks vanilla's way, wears vanilla's way, and gets no custom mitigation.
+     *
+     * A SEPARATE key rather than a reused {@code weaponId}, so the two never collide on one item
+     * and so {@code /rpg give}, the enchant dispatch and the durability suppressor can each ask
+     * "which of the two is this" and get an unambiguous answer.
+     */
+    public final NamespacedKey shieldId;
     public final NamespacedKey abilityId;
 
     /** Identity of the attack-damage modifier that cancels a weapon's vanilla melee. */
@@ -108,6 +119,7 @@ public final class Keys {
 
     public Keys(Plugin plugin) {
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
+        this.shieldId = new NamespacedKey(plugin, "shield_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
         this.meleeSuppressor = new NamespacedKey(plugin, "vanilla_melee_suppressor");
         this.soaked = new NamespacedKey(plugin, "soaked_slow");
