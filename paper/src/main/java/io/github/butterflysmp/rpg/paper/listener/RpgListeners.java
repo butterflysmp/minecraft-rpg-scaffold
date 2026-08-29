@@ -6,6 +6,8 @@ import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
+import io.github.butterflysmp.rpg.core.combat.Shield;
+import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -24,6 +26,9 @@ import io.github.butterflysmp.rpg.paper.weapon.MeleeHits;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import io.github.butterflysmp.rpg.paper.weapon.BrokenNotice;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
+import io.github.butterflysmp.rpg.paper.weapon.ShieldBlock;
+import io.github.butterflysmp.rpg.paper.weapon.ShieldDurability;
+import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponRefresher;
 import net.kyori.adventure.text.Component;
@@ -53,6 +58,7 @@ import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -85,6 +91,7 @@ public final class RpgListeners implements Listener {
     private final ResourcePool resources;
     private final ProfileService profiles;
     private final WeaponRegistry weapons;
+    private final ShieldRegistry shields;
     private final WeaponService weaponService;
     private final AdapterContext adapters;
     private final PlayerHealthSystem healthSystem;
@@ -100,13 +107,15 @@ public final class RpgListeners implements Listener {
     private final MeleeHits meleeHits = new MeleeHits(Bukkit::getCurrentTick);
 
     public RpgListeners(CooldownTracker cooldowns, ResourcePool resources, ProfileService profiles,
-                        WeaponRegistry weapons, WeaponService weaponService, AdapterContext adapters,
+                        WeaponRegistry weapons, ShieldRegistry shields, WeaponService weaponService,
+                        AdapterContext adapters,
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
                         StatsBarSystem statsBar) {
         this.cooldowns = cooldowns;
         this.resources = resources;
         this.profiles = profiles;
         this.weapons = weapons;
+        this.shields = shields;
         this.weaponService = weaponService;
         this.adapters = adapters;
         this.healthSystem = healthSystem;
@@ -636,8 +645,112 @@ public final class RpgListeners implements Listener {
 
         nameplates.seedCombatStats(attacker);         // idempotent, opt-out-agnostic: seed HP + attack from vanilla
         double incoming = adapters.stats().attackValue(attacker.getUniqueId());  // the STAT, not event.getDamage()
+
+        // THE BLOCK, and it must be resolved BEFORE the token below. EntityDamageEvent.setDamage
+        // re-derives every modifier by scaling it against the new base, so reading the BLOCKING
+        // modifier after tokening reports the token's share of the block rather than the block.
+        // Vanilla decides WHETHER this was a block -- raised, frontal, in-arc; the shield decides
+        // what it is worth. See ShieldBlock for why isBlocking() is not the signal.
+        ShieldBlock.Outcome block = ShieldBlock.resolve(victim, event, adapters.keys(), shields);
+        double unblocked = incoming;
+        if (block.blocked()) {
+            incoming = Shield.applyBlock(incoming, block.blockDr());
+            // Wear is charged HERE and vanilla's own is cancelled in onShieldItemDamage, because
+            // our Unbreaking is custom and vanilla would never consult it.
+            ShieldDurability.applyWearOnBlock(victim, block.slot(), adapters.keys());
+        }
+
+        // [BLOCK] RIDER -- TEMPORARY WITNESS, STRIP BEFORE MERGE.
+        // Printed AT the branch rather than beside it, and from the SAME locals the decision used
+        // -- never a second read, never a second draw. The crit pass learned that the hard way when
+        // its witness rolled its own random and logged crit=false on the tick a yellow number
+        // appeared. Printed for EVERY mob hit, blocked or not, so "no blocks happened" and "the
+        // rider never ran" cannot read the same.
+        adapters.log().info(String.format(java.util.Locale.ROOT,
+                "[BLOCK] RIDER  victim=%s attacker=%s blocked=%s shieldId=%s blockDr=%.4f "
+                        + "unblocked=%.4f reduced=%.4f",
+                victim.getUniqueId(), attacker.getUniqueId(), block.blocked(),
+                block.shieldId() == null ? "none" : block.shieldId(),
+                block.blockDr(), unblocked, incoming));
+
         event.setDamage(TOKEN_DAMAGE);                // ride: keep flash/sound/i-frames, no double, can't kill
         BukkitCombatant.of(victim, adapters).handle().applyDamage(incoming, attacker.getUniqueId());
+    }
+
+    /**
+     * Vanilla must NOT wear one of our shields -- {@link ShieldDurability} does it instead.
+     *
+     * <p>Our {@code Unbreaking} is a custom enchant whose curve lives in core, because the
+     * no-vanilla-enchants policy means a player-held item never carries a vanilla enchant to
+     * delegate to. Vanilla charging the shield on a block would never consult it, so Unbreaking
+     * would sit on the tooltip doing nothing -- AND the shield would be charged twice for one
+     * block, once by vanilla and once by us.
+     *
+     * <p>Scoped by the {@code shield_id} tag, the same boundary {@code /rpg durability} and the
+     * weapon gates draw: an untagged vanilla shield keeps wearing exactly as it always did.
+     *
+     * <p>Cancels ALL vanilla wear on our shields, not only wear from blocking. That is deliberate
+     * and slightly wider than this slice needs: we own the item's durability outright, so any
+     * other vanilla source charging it would be a second, unaccounted wear path.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onShieldItemDamage(PlayerItemDamageEvent event) {
+        boolean ours = ShieldItems.shieldId(event.getItem(), adapters.keys()).isPresent();
+
+        // [BLOCK] WEAR -- TEMPORARY WITNESS, STRIP BEFORE MERGE.
+        // Prints for every item damage, not only ours, so "vanilla never fires this for a block"
+        // is distinguishable from "it fired and we cancelled it". Which of those is true decides
+        // whether the cancel above is load-bearing or merely harmless, and it is not guessable.
+        adapters.log().info(String.format(java.util.Locale.ROOT,
+                "[BLOCK] WEAR   player=%s item=%s ours=%s vanillaDamage=%d cancelling=%s",
+                event.getPlayer().getUniqueId(), event.getItem().getType(), ours,
+                event.getDamage(), ours));
+
+        if (ours) event.setCancelled(true);
+    }
+
+    /**
+     * [BLOCK] LOWEST -- TEMPORARY WITNESS, STRIP BEFORE MERGE.
+     *
+     * <p>The load-bearing question this slice could not answer without a boot: does a shield-blocked
+     * mob hit still fire {@code EntityDamageByEntityEvent} at all on this Paper, and is the block
+     * readable on it?
+     *
+     * <p>This runs at {@code LOWEST} with {@code ignoreCancelled = false} precisely so that
+     * "the event never fired" and "it fired and something cancelled it before the rider's HIGH"
+     * cannot look the same. {@link #onMobMeleeAttack} is {@code HIGH + ignoreCancelled}, so on its
+     * own it is silent in both cases -- and silence would have been read as the first.
+     *
+     * <p>{@code facingDot} is the dot product of the victim's look direction with the direction to
+     * the attacker: about 1 when the attacker is dead ahead, 0 at ninety degrees, negative when the
+     * hit lands in the victim's back. It is computed for the log ONLY -- nothing branches on it --
+     * so that whether vanilla's BLOCKING modifier really tracks the frontal arc is something we
+     * MEASURE rather than assume.
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
+    public void onBlockWitness(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) return;
+        if (!(event.getDamager() instanceof LivingEntity attacker)) return;
+        if (attacker instanceof Player) return;
+
+        org.bukkit.util.Vector look = victim.getLocation().getDirection().normalize();
+        org.bukkit.util.Vector toAttacker = attacker.getLocation().toVector()
+                .subtract(victim.getLocation().toVector());
+        double facingDot = toAttacker.lengthSquared() == 0 ? 0.0 : look.dot(toAttacker.normalize());
+
+        adapters.log().info(String.format(java.util.Locale.ROOT,
+                "[BLOCK] LOWEST victim=%s attacker=%s cause=%s cancelled=%s raw=%.4f final=%.4f "
+                        + "blockingApplicable=%s blocking=%.4f isBlocking=%s active=%s "
+                        + "main=%s off=%s shieldHand=%s facingDot=%.4f",
+                victim.getUniqueId(), attacker.getUniqueId(), event.getCause(), event.isCancelled(),
+                event.getDamage(), event.getFinalDamage(),
+                ShieldBlock.blockingApplicable(event), ShieldBlock.blockingModifier(event),
+                victim.isBlocking(), victim.getActiveItem().getType(),
+                victim.getInventory().getItemInMainHand().getType(),
+                victim.getInventory().getItemInOffHand().getType(),
+                ShieldItems.shieldHand(victim, adapters.keys())
+                        .map(Enum::name).orElse("none"),
+                facingDot));
     }
 
     /**

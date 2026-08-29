@@ -1,0 +1,40 @@
+# The first shield, and the first piece of gear that is not a weapon.
+#
+# A shield is a much smaller thing than a weapon: no triggers, no element, no class.
+# Its whole mechanical content is one number -- how much of a hit it stops -- because
+# vanilla already owns everything else about blocking. The raise animation, the block
+# sound, the knockback dampen, the 90-degree frontal arc and the rule that a hit from
+# behind is not blocked at all are all vanilla's, inherited by riding its damage event
+# rather than re-derived. We do not cancel the block; we only decide what it is worth.
+
+display_name: "Roundshield"
+rarity: common
+
+# MUST be a material with vanilla block behaviour, which in practice means `shield`.
+# This is the default and is written out anyway, because it is the one key here whose
+# wrong value fails SILENTLY: a shield authored onto, say, `oak_planks` mints, renders
+# its tooltip correctly, sits in your offhand -- and never blocks, because vanilla
+# never raises it and never reports a block for the rider to read.
+material: shield
+
+# THE BLOCK FRACTION: how much of an incoming hit this shield turns away, as a
+# fraction between 0 and 1. 0.5 means half is stopped and half gets through.
+#
+# It is a FLAT fraction, deliberately unlike the defense stat's diminishing-returns
+# curve. Defense accumulates across four armor slots and an unbounded stat, so it
+# needs a shape that never reaches immunity; a shield's block is one authored number
+# on one item, and "this shield stops half" is meant to be a sentence you can hold.
+#
+# It STACKS with armor rather than replacing it: the block is applied first and
+# Defense second, so a player in full diamond (20 armor) blocking an 8-damage hit
+# takes 3.33 rather than 4.0 (blocked only) or 6.67 (armored only). Both apply.
+#
+# Out of range is REFUSED, not clamped, and the file is skipped with its name in the
+# boot log. That is not fussiness about tidy data -- a negative value would make this
+# shield DOUBLE the hit it stopped, and a value above 1 would make the damage negative,
+# which reaches the health system and HEALS the holder.
+block_dr: 0.5
+
+flavor:
+  - "Plain oak, banded in iron."
+  - "It has stopped worse than you are about to meet."
