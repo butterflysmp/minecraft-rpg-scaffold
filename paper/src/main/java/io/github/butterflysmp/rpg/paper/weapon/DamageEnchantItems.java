@@ -4,7 +4,7 @@ import io.github.butterflysmp.rpg.core.enchant.ActiveEnchant;
 import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
 import io.github.butterflysmp.rpg.core.enchant.DamageEnchants.Grant;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
-import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
@@ -70,9 +70,10 @@ public final class DamageEnchantItems {
         // Untagged reject first, before any enchant decode -- the same cheapest-possible-reject
         // discipline heldWeaponId keeps on the swing path. Nothing of ours in hand means no class to
         // gate on and no enchants to read.
-        WeaponClass heldClass = WeaponItems.weaponId(held, keys)
+        GearClass heldClass = WeaponItems.weaponId(held, keys)
                 .flatMap(weapons::find)
                 .map(WeaponDefinition::weaponClass)
+                .map(GearClass::of)
                 .orElse(null);
         if (heldClass == null) return new HashMap<>();
 
@@ -100,7 +101,7 @@ public final class DamageEnchantItems {
             // visible rather than silent, and it fails toward granting nothing.
             if (definition == null || definition.effect() != EnchantEffect.DAMAGE) continue;
             grants.put(active.enchantId(),
-                    new Grant(definition.weaponClass(), definition.percentByLevel(), active.level()));
+                    new Grant(definition.gearClass(), definition.percentByLevel(), active.level()));
         }
         return grants;
     }

@@ -5,7 +5,7 @@ import io.github.butterflysmp.rpg.core.enchant.EnchantCost;
 import io.github.butterflysmp.rpg.core.enchant.EnchantLoreLines;
 import io.github.butterflysmp.rpg.core.enchant.EnchantSlot;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
-import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.xp.XpCurve;
@@ -187,7 +187,7 @@ public final class EnchantMenu extends Menu {
                         MenuIcons.line("Swapping keeps the level you paid for.",
                                 NamedTextColor.DARK_GRAY))));
 
-        renderCandidates(EnchantItems.read(placed, adapters.keys()), weapon.weaponClass());
+        renderCandidates(EnchantItems.read(placed, adapters.keys()), GearClass.of(weapon.weaponClass()));
     }
 
     /**
@@ -211,7 +211,7 @@ public final class EnchantMenu extends Menu {
     }
 
     /** The three columns. A slot that rolled fewer than three candidates leaves filler behind. */
-    private void renderCandidates(EnchantState state, WeaponClass heldClass) {
+    private void renderCandidates(EnchantState state, GearClass heldClass) {
         for (int slot = 0; slot < EnchantMenuLayout.SLOTS && slot < state.slots().size(); slot++) {
             EnchantSlot enchantSlot = state.slots().get(slot);
             for (int index = 0; index < EnchantMenuLayout.CANDIDATES
@@ -228,7 +228,7 @@ public final class EnchantMenu extends Menu {
      * <p>The four states differ ONLY cosmetically -- the icon, the name colour, and the last lore
      * line. The enchant's identity and its effect are on every one of them.
      */
-    private ItemStack candidateIcon(EnchantSlot enchantSlot, int index, WeaponClass heldClass) {
+    private ItemStack candidateIcon(EnchantSlot enchantSlot, int index, GearClass heldClass) {
         EnchantCandidate candidate = enchantSlot.candidates().get(index);
         boolean active = enchantSlot.activeIndex() == index;
         EnchantDefinition definition =
@@ -451,7 +451,7 @@ public final class EnchantMenu extends Menu {
         render();
         viewer.updateInventory();
 
-        say(feedbackFor(intent, name, after, candidate.enchantId(), definition.weaponClass(), cost),
+        say(feedbackFor(intent, name, after, candidate.enchantId(), GearClass.of(definition.weaponClass()), cost),
                 NamedTextColor.GRAY);
 
         // No stat reconcile: PlayerHealthSystem re-reads the held weapon every scan tick, and the
@@ -467,7 +467,7 @@ public final class EnchantMenu extends Menu {
      * {@code /rpg enchant active}.
      */
     private String feedbackFor(EnchantClickIntent intent, String name, EnchantState after,
-                               String enchantId, WeaponClass heldClass, int cost) {
+                               String enchantId, GearClass heldClass, int cost) {
         EnchantDefinition enchant = adapters.enchants().find(enchantId).orElse(null);
         int level = after.activeLevel(enchantId);
         String effect = EnchantEffectLine.of(enchant, Math.max(1, level), heldClass);

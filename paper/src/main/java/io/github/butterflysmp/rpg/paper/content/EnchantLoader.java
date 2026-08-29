@@ -1,7 +1,7 @@
 package io.github.butterflysmp.rpg.paper.content;
 
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
-import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -66,7 +66,7 @@ public final class EnchantLoader {
     private EnchantDefinition parse(String id, ConfigurationSection s) {
         return new EnchantDefinition(id, s.getString("display_name", id), s.getInt("max_level", 1),
                 effect(s.getString("effect"), id),
-                weaponClass(s.getString("class"), id),
+                gearClass(s.getString("class"), id),
                 // getIntegerList returns an EMPTY list for an absent key, never null. A durability
                 // enchant therefore lands on the empty list the record requires of it, and a damage
                 // enchant with the key forgotten is refused by the record rather than here -- one
@@ -107,26 +107,26 @@ public final class EnchantLoader {
      * forgetting something.
      *
      * <p>Returns null for {@code universal}, which is the no-gate value {@code DamageEnchants}
-     * expects. Every other name goes through {@link WeaponClass#fromName}, so the enchant and the
+     * expects. Every other name goes through {@link GearClass#fromName}, so the enchant and the
      * weapon it sits on are parsed by ONE function and cannot disagree about what "ranger" means.
      * Note the token is {@code ranger}, matching the enum and every weapon yml; "Ranged" is only the
      * tooltip's label for it.
      */
-    private static WeaponClass weaponClass(String raw, String id) {
+    private static GearClass gearClass(String raw, String id) {
         if (raw == null) {
             throw new IllegalArgumentException("enchant '" + id + "' is missing required 'class'"
-                    + " (universal, or one of " + Arrays.toString(WeaponClass.values()) + ")");
+                    + " (universal, or one of " + Arrays.toString(GearClass.values()) + ")");
         }
         if (UNIVERSAL.equalsIgnoreCase(raw)) return null;
-        WeaponClass parsed = WeaponClass.fromName(raw);
+        GearClass parsed = GearClass.fromName(raw);
         if (parsed == null) {
             throw new IllegalArgumentException("Unknown class '" + raw + "' in enchant '" + id
                     + "'; expected " + UNIVERSAL + " or one of "
-                    + Arrays.toString(WeaponClass.values()));
+                    + Arrays.toString(GearClass.values()));
         }
         return parsed;
     }
 
-    /** The content token for "no class gate". Not a {@link WeaponClass} constant, by design. */
+    /** The content token for "no class gate". Not a {@link GearClass} constant, by design. */
     private static final String UNIVERSAL = "universal";
 }

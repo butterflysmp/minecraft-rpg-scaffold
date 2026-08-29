@@ -3,7 +3,7 @@ package io.github.butterflysmp.rpg.paper.weapon;
 import io.github.butterflysmp.rpg.core.enchant.EnchantRoll;
 import io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Rollable;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
-import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import org.bukkit.inventory.ItemStack;
@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Rolling a freshly acquired weapon's candidates onto the item. The Bukkit half only.
+ * Rolling a freshly acquired piece of GEAR's candidates onto the item. The Bukkit half only.
  *
  * <p>Same split as {@link EnchantItems} and {@link DamageEnchantItems}: every DECISION lives in
  * {@code core/enchant/EnchantRoll} where a unit test can reach it, and this holds the draw, the
@@ -38,8 +38,13 @@ import java.util.concurrent.ThreadLocalRandom;
  * {@code enchant_rolled} as raw bytes, so an item that has been rolled stays rolled through every
  * re-mint there will ever be.
  *
- * <p>Called at the two paths that create a weapon FOR a player: {@code /rpg give} and the kit grant.
- * Neither routes through {@code remint}.
+ * <p>Called at the paths that create GEAR for a player: {@code /rpg give} -- both its weapon and
+ * its shield arm since Slice 2 -- and the kit grant.
+ *
+ * <p><b>Gear already in an inventory is never rolled retroactively.</b> A roundshield minted before
+ * Slice 2 carries no {@code enchant_rolled} flag and nothing comes back to give it one; re-acquire
+ * it. This matters at a boot gate, where an old shield shows empty slots and reads exactly like a
+ * broken roll. None of these paths routes through {@code remint}.
  */
 public final class EnchantRollItems {
 
@@ -64,11 +69,11 @@ public final class EnchantRollItems {
      * "this item's slots have been decided, and they came to nothing" must not read as "this item
      * has never been through the process", or the next acquisition path would roll it again.
      */
-    public static void rollOnAcquire(ItemStack item, WeaponDefinition weapon, AdapterContext adapters) {
-        if (item == null || weapon == null) return;
+    public static void rollOnAcquire(ItemStack item, GearClass gearClass, AdapterContext adapters) {
+        if (item == null || gearClass == null) return;
         if (EnchantItems.isRolled(item, adapters.keys())) return;
 
-        EnchantState rolled = EnchantRoll.roll(weapon.weaponClass(), roster(adapters),
+        EnchantState rolled = EnchantRoll.roll(gearClass, roster(adapters),
                 () -> ThreadLocalRandom.current().nextDouble());
         item.editMeta(meta -> EnchantItems.write(meta, rolled, adapters.keys()));
     }
@@ -81,14 +86,14 @@ public final class EnchantRollItems {
      * restart. The registry is a {@code LinkedHashMap} filled from files the loader sorts, so the
      * order is deterministic and the pool is a pure function of the content.
      *
-     * <p>{@code weaponClass} is null for a universal enchant, which is the same null
+     * <p>{@code gearClass} is null for a universal enchant, which is the same null
      * {@code EnchantDefinition.isUniversal()} reports and the same one {@code DamageEnchants.Grant}
      * carries. One convention, read the same way on both sides.
      */
     private static List<Rollable> roster(AdapterContext adapters) {
         List<Rollable> roster = new ArrayList<>();
         for (EnchantDefinition definition : adapters.enchants().all()) {
-            roster.add(new Rollable(definition.id(), definition.weaponClass()));
+            roster.add(new Rollable(definition.id(), definition.gearClass()));
         }
         return roster;
     }

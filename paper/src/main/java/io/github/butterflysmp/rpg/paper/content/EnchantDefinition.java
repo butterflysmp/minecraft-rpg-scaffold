@@ -2,7 +2,7 @@ package io.github.butterflysmp.rpg.paper.content;
 
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
-import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 
 import java.util.List;
 
@@ -38,11 +38,24 @@ import java.util.List;
  * which enchants exist. The durability seam proves it -- it compares an id and never consults a
  * registry.
  *
- * @param weaponClass    the class this enchant is gated on, or {@code null} for {@code universal}
- *                       (no gate). Null rather than a fourth enum constant so the gate reuses
- *                       {@link WeaponClass} itself: a parallel enum would need SUMMONER adding in
+ * @param gearClass      the GEAR this enchant may sit on, or {@code null} for {@code universal} (no
+ *                       gate). Null rather than a fifth enum constant, because "valid everywhere" is
+ *                       the absence of a gate rather than a kind of gear.
+ *                       <p>
+ *                       <b>This was {@code WeaponClass} until Slice 2, and the javadoc here argued
+ *                       for keeping it that way:</b> "a parallel enum would need SUMMONER adding in
  *                       two places the day that class lands, and the exhaustive-switch discipline
- *                       that makes such an addition a compile error only works with one enum.
+ *                       that makes such an addition a compile error only works with one enum." The
+ *                       first half is true and was accepted. The second half was wrong, and the
+ *                       compiler settled it: {@code GearClass.of(WeaponClass)} is itself an
+ *                       exhaustive switch with no default arm, so deleting an arm gives <i>"the
+ *                       switch expression does not cover all possible input values"</i>. SUMMONER
+ *                       lands in two places, one of which the compiler names.
+ *                       <p>
+ *                       What forced the split is that a shield has no fighting class and never will.
+ *                       Adding SHIELD to {@code WeaponClass} would drive it through every exhaustive
+ *                       weapon switch -- starting with {@code WeaponClassLabel.of}, which has no
+ *                       default arm and no words for it -- to make one enchant gate expressible.
  * @param icon           the Material name this enchant renders as in the enchant table, e.g.
  *                       {@code iron_sword}. Presentational identity, so it is CONTENT rather than an
  *                       id->Material map in Java: the 500th enchant must not need a recompile to have
@@ -54,7 +67,7 @@ import java.util.List;
  *                       level -> percent total.
  */
 public record EnchantDefinition(String id, String displayName, int maxLevel,
-                                EnchantEffect effect, WeaponClass weaponClass,
+                                EnchantEffect effect, GearClass gearClass,
                                 List<Integer> percentByLevel, String icon) {
 
     /**
@@ -132,7 +145,7 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                             + " and must not declare percent_by_level -- nothing reads it, so the"
                             + " file would be claiming a control it does not have");
                 }
-                if (weaponClass != null) {
+                if (gearClass != null) {
                     throw new IllegalArgumentException("enchant '" + id + "' has effect: durability"
                             + " and must be class: universal -- durability is not class-gated, so"
                             + " naming a class would be a promise nothing keeps");
@@ -143,12 +156,12 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
 
     /** Without an icon: the shape every caller predating the enchant table uses. */
     public EnchantDefinition(String id, String displayName, int maxLevel, EnchantEffect effect,
-                             WeaponClass weaponClass, List<Integer> percentByLevel) {
-        this(id, displayName, maxLevel, effect, weaponClass, percentByLevel, DEFAULT_ICON);
+                             GearClass gearClass, List<Integer> percentByLevel) {
+        this(id, displayName, maxLevel, effect, gearClass, percentByLevel, DEFAULT_ICON);
     }
 
     /** True when this enchant is gated on no class at all and applies to whatever it sits on. */
     public boolean isUniversal() {
-        return weaponClass == null;
+        return gearClass == null;
     }
 }

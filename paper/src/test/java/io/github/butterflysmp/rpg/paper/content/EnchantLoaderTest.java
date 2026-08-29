@@ -3,7 +3,7 @@ package io.github.butterflysmp.rpg.paper.content;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.core.enchant.Unbreaking;
-import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -168,9 +168,9 @@ class EnchantLoaderTest {
     void theThreeShippedDamageEnchantsCarryTheirClassAndCurve(@TempDir Path dir) throws IOException {
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
 
-        assertEquals(WeaponClass.MELEE, enchants.find("sharpness").orElseThrow().weaponClass());
-        assertEquals(WeaponClass.RANGER, enchants.find("power").orElseThrow().weaponClass());
-        assertEquals(WeaponClass.MAGE, enchants.find("attunement").orElseThrow().weaponClass());
+        assertEquals(GearClass.MELEE, enchants.find("sharpness").orElseThrow().gearClass());
+        assertEquals(GearClass.RANGER, enchants.find("power").orElseThrow().gearClass());
+        assertEquals(GearClass.MAGE, enchants.find("attunement").orElseThrow().gearClass());
 
         for (String id : List.of("sharpness", "power", "attunement")) {
             EnchantDefinition d = enchants.find(id).orElseThrow();
@@ -205,7 +205,7 @@ class EnchantLoaderTest {
         assertTrue(enchants.find("noeffect").isEmpty(),
                 "a file with no effect names no mechanism, so it cannot load as some default one");
         var ex = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
-                "noeffect", "No Effect", 3, null, WeaponClass.MELEE, List.of()));
+                "noeffect", "No Effect", 3, null, GearClass.MELEE, List.of()));
         assertTrue(ex.getMessage().contains("noeffect"), "the message must name the file at fault");
     }
 
@@ -246,12 +246,12 @@ class EnchantLoaderTest {
         // percent; a LONG one hides levels the enchant can never reach. Both directions, because a
         // ">= maxLevel" check would pass the second and a "<=" would pass the first.
         var tooShort = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
-                "short", "Short", 3, EnchantEffect.DAMAGE, WeaponClass.MELEE, List.of(5, 10)));
+                "short", "Short", 3, EnchantEffect.DAMAGE, GearClass.MELEE, List.of(5, 10)));
         assertTrue(tooShort.getMessage().contains("short"), "names the file");
         assertTrue(tooShort.getMessage().contains("2"), "and echoes the bad length");
 
         assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
-                "long", "Long", 2, EnchantEffect.DAMAGE, WeaponClass.MELEE, List.of(5, 10, 15)));
+                "long", "Long", 2, EnchantEffect.DAMAGE, GearClass.MELEE, List.of(5, 10, 15)));
 
         Path enchantsDir = bundledEnchants(dir);
         Files.writeString(enchantsDir.resolve("short.yml"), damageYml("3", "melee", "[5, 10]"));
@@ -267,7 +267,7 @@ class EnchantLoaderTest {
         // about itself -- the same defect the lore pass fixed by stripping authored colours from
         // display_name once rarity owned the colour.
         assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
-                "u", "U", 3, EnchantEffect.DURABILITY, WeaponClass.MELEE, List.of()),
+                "u", "U", 3, EnchantEffect.DURABILITY, GearClass.MELEE, List.of()),
                 "a class-gated durability enchant is a promise nothing keeps");
 
         assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
@@ -281,7 +281,7 @@ class EnchantLoaderTest {
         // PERCENT is far more likely a sign slip, and one below -100 flips a hit into a negative.
         // A curse wants its own naming and its own decision.
         var ex = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
-                "cursed", "Cursed", 3, EnchantEffect.DAMAGE, WeaponClass.MELEE, List.of(5, -10, 15)));
+                "cursed", "Cursed", 3, EnchantEffect.DAMAGE, GearClass.MELEE, List.of(5, -10, 15)));
         assertTrue(ex.getMessage().contains("cursed"), "names the file");
         assertTrue(ex.getMessage().contains("-10"), "and echoes the bad value");
     }

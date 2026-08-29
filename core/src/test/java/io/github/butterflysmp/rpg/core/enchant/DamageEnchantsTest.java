@@ -1,6 +1,6 @@
 package io.github.butterflysmp.rpg.core.enchant;
 
-import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -124,10 +124,10 @@ class DamageEnchantsTest {
         // The headline rule. BOTH grants are present and only one survives, so the test cannot pass
         // by returning everything or by returning nothing -- it pins the filter itself.
         Map<String, DamageEnchants.Grant> active = Map.of(
-                "sharpness", new DamageEnchants.Grant(WeaponClass.MELEE, SHIPPED, 3),
-                "power", new DamageEnchants.Grant(WeaponClass.RANGER, SHIPPED, 3));
+                "sharpness", new DamageEnchants.Grant(GearClass.MELEE, SHIPPED, 3),
+                "power", new DamageEnchants.Grant(GearClass.RANGER, SHIPPED, 3));
 
-        Map<String, Double> onABow = DamageEnchants.matching(WeaponClass.RANGER, active);
+        Map<String, Double> onABow = DamageEnchants.matching(GearClass.RANGER, active);
 
         assertEquals(1, onABow.size(), "sharpness is inert on a bow");
         assertEquals(15.0, onABow.get("power"), EPS);
@@ -140,11 +140,11 @@ class DamageEnchantsTest {
         // The mirror, so the gate is pinned in both directions rather than by one example that a
         // constant-returning implementation could satisfy.
         Map<String, DamageEnchants.Grant> active = Map.of(
-                "sharpness", new DamageEnchants.Grant(WeaponClass.MELEE, SHIPPED, 3),
-                "attunement", new DamageEnchants.Grant(WeaponClass.MAGE, SHIPPED, 1));
+                "sharpness", new DamageEnchants.Grant(GearClass.MELEE, SHIPPED, 3),
+                "attunement", new DamageEnchants.Grant(GearClass.MAGE, SHIPPED, 1));
 
-        Map<String, Double> onASword = DamageEnchants.matching(WeaponClass.MELEE, active);
-        Map<String, Double> onAStaff = DamageEnchants.matching(WeaponClass.MAGE, active);
+        Map<String, Double> onASword = DamageEnchants.matching(GearClass.MELEE, active);
+        Map<String, Double> onAStaff = DamageEnchants.matching(GearClass.MAGE, active);
 
         assertEquals(Map.of("sharpness", 15.0), onASword);
         assertEquals(Map.of("attunement", 5.0), onAStaff);
@@ -158,9 +158,9 @@ class DamageEnchantsTest {
         Map<String, DamageEnchants.Grant> active = Map.of(
                 "keen", new DamageEnchants.Grant(null, SHIPPED, 2));
 
-        assertEquals(10.0, DamageEnchants.matching(WeaponClass.MELEE, active).get("keen"), EPS);
-        assertEquals(10.0, DamageEnchants.matching(WeaponClass.RANGER, active).get("keen"), EPS);
-        assertEquals(10.0, DamageEnchants.matching(WeaponClass.MAGE, active).get("keen"), EPS);
+        assertEquals(10.0, DamageEnchants.matching(GearClass.MELEE, active).get("keen"), EPS);
+        assertEquals(10.0, DamageEnchants.matching(GearClass.RANGER, active).get("keen"), EPS);
+        assertEquals(10.0, DamageEnchants.matching(GearClass.MAGE, active).get("keen"), EPS);
         // Mutation: treat a null class as "matches nothing" -> all three empty -> reddens.
     }
 
@@ -170,10 +170,10 @@ class DamageEnchantsTest {
         // the summing: two matching enchants compose to 25% without this method knowing they did.
         // A single lumped key would silently keep only the last one written.
         Map<String, DamageEnchants.Grant> active = Map.of(
-                "sharpness", new DamageEnchants.Grant(WeaponClass.MELEE, SHIPPED, 3),
+                "sharpness", new DamageEnchants.Grant(GearClass.MELEE, SHIPPED, 3),
                 "keen", new DamageEnchants.Grant(null, SHIPPED, 2));
 
-        Map<String, Double> desired = DamageEnchants.matching(WeaponClass.MELEE, active);
+        Map<String, Double> desired = DamageEnchants.matching(GearClass.MELEE, active);
 
         assertEquals(2, desired.size(), "both are active and both keep their own source key");
         assertEquals(15.0, desired.get("sharpness"), EPS);
@@ -185,9 +185,9 @@ class DamageEnchantsTest {
         // Absent, not zeroed: the reconciler REMOVES a source that stops being desired, where a
         // 0.0-valued entry would leave a dead modifier on the stat forever.
         Map<String, DamageEnchants.Grant> active = Map.of(
-                "sharpness", new DamageEnchants.Grant(WeaponClass.MELEE, SHIPPED, 3));
+                "sharpness", new DamageEnchants.Grant(GearClass.MELEE, SHIPPED, 3));
 
-        assertTrue(DamageEnchants.matching(WeaponClass.MAGE, active).isEmpty(),
+        assertTrue(DamageEnchants.matching(GearClass.MAGE, active).isEmpty(),
                 "not present at 0.0 -- absent, so the reconciler drops the source");
     }
 
@@ -197,9 +197,9 @@ class DamageEnchantsTest {
         // filters these out, so this is the second line of defence, and it is here because
         // `matching` is total over whatever it is handed.
         Map<String, DamageEnchants.Grant> active = Map.of(
-                "sharpness", new DamageEnchants.Grant(WeaponClass.MELEE, SHIPPED, 0));
+                "sharpness", new DamageEnchants.Grant(GearClass.MELEE, SHIPPED, 0));
 
-        assertTrue(DamageEnchants.matching(WeaponClass.MELEE, active).isEmpty());
+        assertTrue(DamageEnchants.matching(GearClass.MELEE, active).isEmpty());
     }
 
     @Test
@@ -211,7 +211,7 @@ class DamageEnchantsTest {
                 "keen", new DamageEnchants.Grant(null, SHIPPED, 3));
 
         assertTrue(DamageEnchants.matching(null, active).isEmpty());
-        assertTrue(DamageEnchants.matching(WeaponClass.MELEE, null).isEmpty());
+        assertTrue(DamageEnchants.matching(GearClass.MELEE, null).isEmpty());
         // Mutation: drop the `heldClass == null` guard -> a universal enchant grants 15% unarmed.
     }
 }
