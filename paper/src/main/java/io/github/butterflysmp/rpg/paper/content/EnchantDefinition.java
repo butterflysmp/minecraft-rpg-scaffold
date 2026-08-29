@@ -102,56 +102,135 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         // table would paint air where a candidate should be. Falling back beats rendering nothing.
         icon = (icon == null || icon.isBlank()) ? DEFAULT_ICON : icon;
 
+        // ONE arm per effect, no default, so a new EnchantEffect constant is a compile error here
+        // until someone states what a file carrying it may and may not claim. The two rules are
+        // lifted into requireCurve/requireGate rather than copied per arm: three effects now share
+        // the curve rules, and three copies of "size must equal max_level" is how they drift.
         switch (effect) {
             case DAMAGE -> {
-                if (percentByLevel.isEmpty()) {
-                    throw new IllegalArgumentException("enchant '" + id + "' has effect: damage and"
-                            + " so requires percent_by_level (one percent per level, e.g. [5, 10, 15])");
-                }
-                // Size EQUALS max_level, not "at least". This is what makes level -> percent total:
-                // a short list leaves a legal level with no percent, and a long one hides levels the
-                // enchant can never reach, which reads on the tooltip as a promise it cannot keep.
-                if (percentByLevel.size() != maxLevel) {
-                    throw new IllegalArgumentException("enchant '" + id + "' declares max_level "
-                            + maxLevel + " but percent_by_level has " + percentByLevel.size()
-                            + " entr" + (percentByLevel.size() == 1 ? "y" : "ies")
-                            + "; they must match, one percent per level");
-                }
-                for (int i = 0; i < percentByLevel.size(); i++) {
-                    Integer percent = percentByLevel.get(i);
-                    if (percent == null) {
-                        throw new IllegalArgumentException("enchant '" + id + "' has a non-numeric"
-                                + " percent_by_level entry at level " + (i + 1));
-                    }
-                    // Negative is refused rather than supported. Stat permits negative modifiers and
-                    // a "curse" enchant is a legitimate future idea, but a negative PERCENT is far
-                    // more likely a typo, and one below -100 would flip a hit into a heal-shaped
-                    // negative. A curse wants its own naming and its own decision, not a sign slip.
-                    if (percent < 0) {
-                        throw new IllegalArgumentException("enchant '" + id + "' has a negative"
-                                + " percent (" + percent + ") at level " + (i + 1)
-                                + "; a damage enchant scales damage up, and a curse is its own"
-                                + " content decision rather than a negative here");
-                    }
-                }
+                requireCurve(id, effect, maxLevel, percentByLevel);
+                requireGate(id, effect, gearClass, Gate.ANY_BUT_SHIELD);
+            }
+            // A block enchant reads off the BLOCKING STACK, which only a shield can be.
+            case BLOCK_DR -> {
+                requireCurve(id, effect, maxLevel, percentByLevel);
+                requireGate(id, effect, gearClass, Gate.SHIELD_ONLY);
             }
             case DURABILITY -> {
-                // A file may not claim a control it does not have. Nothing gates a durability
-                // enchant by class and nothing reads a percent off one, so declaring either would be
-                // a lie the file tells about itself -- the same defect the weapon-lore pass fixed by
-                // stripping authored colours from display_name once rarity owned the colour.
-                if (!percentByLevel.isEmpty()) {
-                    throw new IllegalArgumentException("enchant '" + id + "' has effect: durability"
-                            + " and must not declare percent_by_level -- nothing reads it, so the"
-                            + " file would be claiming a control it does not have");
-                }
+                requireNoCurve(id, effect, percentByLevel);
+                requireGate(id, effect, gearClass, Gate.UNIVERSAL_ONLY);
+            }
+        }
+    }
+
+    /** Which gates an effect's mechanism can actually be read through. See {@link #requireGate}. */
+    private enum Gate { UNIVERSAL_ONLY, SHIELD_ONLY, ANY_BUT_SHIELD }
+
+    /**
+     * A file may not claim a control it does not have -- the rule the durability arm has enforced
+     * since Pass 2, generalised now that there are three mechanisms with three different readers.
+     *
+     * <p>Each rule says the same thing: THIS effect's mechanism only ever runs against gear of a
+     * certain kind, so gating it anywhere else is a promise nothing keeps. They are not taxonomy
+     * claims about what gear could theoretically exist -- if an off-hand parry dagger ever blocks,
+     * {@code SHIELD_ONLY} becomes a two-value check and nothing else moves.
+     */
+    private static void requireGate(String id, EnchantEffect effect, GearClass gearClass, Gate gate) {
+        switch (gate) {
+            case UNIVERSAL_ONLY -> {
+                // Nothing gates wear by class: WeaponDurability and ShieldDurability both read the
+                // level off the stack in hand without consulting a class at all.
                 if (gearClass != null) {
-                    throw new IllegalArgumentException("enchant '" + id + "' has effect: durability"
-                            + " and must be class: universal -- durability is not class-gated, so"
-                            + " naming a class would be a promise nothing keeps");
+                    throw new IllegalArgumentException("enchant '" + id + "' has effect: "
+                            + token(effect) + " and must be class: universal -- durability is not"
+                            + " class-gated, so naming a class would be a promise nothing keeps");
+                }
+            }
+            case SHIELD_ONLY -> {
+                // Read off the blocking stack in the mob->player rider. A universal one would enter
+                // EVERY weapon's roll pool and sell a player an XP unlock that does nothing, which
+                // is exactly the mistake `class:` is required and spelled out to prevent.
+                if (gearClass != GearClass.SHIELD) {
+                    throw new IllegalArgumentException("enchant '" + id + "' has effect: "
+                            + token(effect) + " and must be class: shield -- it is read off the"
+                            + " blocking stack, so on anything else it would never fire"
+                            + (gearClass == null
+                                    ? " (universal would put it in every weapon's pool)"
+                                    : ", was class: " + gearClass.name().toLowerCase()));
+                }
+            }
+            case ANY_BUT_SHIELD -> {
+                // DamageEnchantItems reads the MAIN HAND's weapon and maps it through GearClass.of,
+                // which can never yield SHIELD. So a shield-gated damage enchant is structurally
+                // unreachable rather than merely useless.
+                if (gearClass == GearClass.SHIELD) {
+                    throw new IllegalArgumentException("enchant '" + id + "' has effect: "
+                            + token(effect) + " and must not be class: shield -- the damage gate"
+                            + " reads the weapon in your main hand, so it could never fire");
                 }
             }
         }
+    }
+
+    /**
+     * The curve rules, shared by every effect that HAS a curve.
+     *
+     * <p>A verbatim lift of what the DAMAGE arm did alone, so
+     * {@code aCurveWhoseLengthDisagreesWithMaxLevelIsRefusedBothWays} and
+     * {@code aNegativePercentIsRefusedRatherThanShippedAsACurse} stay green unedited -- which is the
+     * proof the lift was faithful rather than a rewrite wearing its name.
+     *
+     * <p><b>The negative rule matters MORE for the newer effects than for damage.</b> A negative
+     * block percent silently weakens the shield the file claims to strengthen; a negative reflect
+     * (Slice 2b) goes straight through {@code applyDamage} to {@code stats.damage} and HEALS the
+     * attacking mob. Sharing one validator is what stops that being three separate decisions.
+     */
+    private static void requireCurve(String id, EnchantEffect effect, int maxLevel,
+                                     List<Integer> percentByLevel) {
+        if (percentByLevel.isEmpty()) {
+            throw new IllegalArgumentException("enchant '" + id + "' has effect: " + token(effect)
+                    + " and so requires percent_by_level (one percent per level, e.g. [5, 10, 15])");
+        }
+        // Size EQUALS max_level, not "at least". This is what makes level -> percent total: a short
+        // list leaves a legal level with no percent, and a long one hides levels the enchant can
+        // never reach, which reads on the tooltip as a promise it cannot keep.
+        if (percentByLevel.size() != maxLevel) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares max_level "
+                    + maxLevel + " but percent_by_level has " + percentByLevel.size()
+                    + " entr" + (percentByLevel.size() == 1 ? "y" : "ies")
+                    + "; they must match, one percent per level");
+        }
+        for (int i = 0; i < percentByLevel.size(); i++) {
+            Integer percent = percentByLevel.get(i);
+            if (percent == null) {
+                throw new IllegalArgumentException("enchant '" + id + "' has a non-numeric"
+                        + " percent_by_level entry at level " + (i + 1));
+            }
+            // Negative is refused rather than supported. Stat permits negative modifiers and a
+            // "curse" enchant is a legitimate future idea, but a negative PERCENT is far more likely
+            // a typo, and one below -100 would flip a hit into a heal-shaped negative. A curse wants
+            // its own naming and its own decision, not a sign slip.
+            if (percent < 0) {
+                throw new IllegalArgumentException("enchant '" + id + "' has a negative"
+                        + " percent (" + percent + ") at level " + (i + 1)
+                        + "; these enchants scale their effect UP, and a curse is its own"
+                        + " content decision rather than a negative here");
+            }
+        }
+    }
+
+    /** The other half of the same rule: an effect with no curve may not author one. */
+    private static void requireNoCurve(String id, EnchantEffect effect, List<Integer> percentByLevel) {
+        if (!percentByLevel.isEmpty()) {
+            throw new IllegalArgumentException("enchant '" + id + "' has effect: " + token(effect)
+                    + " and must not declare percent_by_level -- nothing reads it, so the"
+                    + " file would be claiming a control it does not have");
+        }
+    }
+
+    /** The effect as an author spells it in a file, so a refusal quotes their own token back. */
+    private static String token(EnchantEffect effect) {
+        return effect.name().toLowerCase();
     }
 
     /** Without an icon: the shape every caller predating the enchant table uses. */

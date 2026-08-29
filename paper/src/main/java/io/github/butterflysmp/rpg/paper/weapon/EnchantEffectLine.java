@@ -89,6 +89,22 @@ public final class EnchantEffectLine {
                 yield String.format("+%.0f%% damage, x%.2f", percent,
                         DamageEnchants.multiplier(percent));
             }
+            case BLOCK_DR -> {
+                // The gate is enforced at the content boundary (a BLOCK_DR enchant must be
+                // class: shield), so the only way to be holding one on the wrong gear is the dev
+                // command or a hand-edited item -- reachable, so it is described rather than assumed
+                // away.
+                if (definition.gearClass() != heldClass) {
+                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
+                            + " enchant on " + GearClassLabel.describe(heldClass);
+                }
+                // POINTS, not a multiplier: Bulwark is additive on the fraction, so "+15% block"
+                // means the shield stops fifteen more points of the hit, not fifteen percent more
+                // of what it already stopped. Saying "x1.15" here would describe the rejected
+                // reading. The gate reads this line before blocking, so it must be the real number.
+                double percent = DamageEnchants.percentAt(definition.percentByLevel(), level);
+                yield String.format("+%.0f%% block", percent);
+            }
         };
     }
 }

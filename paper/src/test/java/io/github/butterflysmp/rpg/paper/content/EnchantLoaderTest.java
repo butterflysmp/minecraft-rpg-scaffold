@@ -275,6 +275,72 @@ class EnchantLoaderTest {
                 "and nothing would ever read that curve");
     }
 
+    /**
+     * The same "a file may not claim a control it does not have" rule, on the two gates Slice 2
+     * adds. Each says: this effect's mechanism only ever runs against one kind of gear, so gating
+     * it elsewhere is a promise nothing keeps.
+     */
+    @Test
+    void aBlockEnchantMustBeGatedOnShieldBecauseNothingElseCanBlock() {
+        // The load-bearing one is UNIVERSAL, not the wrong-weapon case. A universal Bulwark enters
+        // EVERY weapon's roll pool (poolFor admits a null gate unconditionally), so every sword
+        // would offer a candidate that costs XP and does nothing -- exactly the mistake `class:` is
+        // required and spelled out to prevent.
+        var universal = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "b", "B", 3, EnchantEffect.BLOCK_DR, null, List.of(5, 10, 15)),
+                "a universal block enchant would be offered on every weapon in the game");
+        assertTrue(universal.getMessage().contains("every weapon's pool"),
+                "the refusal must say WHY universal is the dangerous one: " + universal.getMessage());
+
+        for (GearClass weapon : List.of(GearClass.MELEE, GearClass.RANGER, GearClass.MAGE)) {
+            assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                    "b", "B", 3, EnchantEffect.BLOCK_DR, weapon, List.of(5, 10, 15)),
+                    weapon + " cannot block, so a block enchant on it would never fire");
+        }
+
+        // And the one shape that IS legal, so this test cannot pass by refusing everything.
+        assertDoesNotThrow(() -> new EnchantDefinition(
+                "b", "B", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, 10, 15)));
+    }
+
+    @Test
+    void aDamageEnchantMayNotBeGatedOnShieldBecauseTheDamageGateReadsTheWeapon() {
+        // DamageEnchantItems reads the MAIN HAND's weapon and maps it through GearClass.of, which
+        // can never yield SHIELD. So this is structurally unreachable, not merely useless.
+        var ex = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "s", "S", 3, EnchantEffect.DAMAGE, GearClass.SHIELD, List.of(5, 10, 15)));
+        assertTrue(ex.getMessage().contains("main hand"),
+                "the refusal must name the reader that could never see it: " + ex.getMessage());
+
+        // Every other gate stays legal, universal included -- this rule removes ONE value, and a
+        // universal damage enchant (the KEEN shape) must keep working.
+        assertDoesNotThrow(() -> new EnchantDefinition(
+                "k", "K", 3, EnchantEffect.DAMAGE, null, List.of(5, 10, 15)));
+        for (GearClass weapon : List.of(GearClass.MELEE, GearClass.RANGER, GearClass.MAGE)) {
+            assertDoesNotThrow(() -> new EnchantDefinition(
+                    "d", "D", 3, EnchantEffect.DAMAGE, weapon, List.of(5, 10, 15)));
+        }
+    }
+
+    @Test
+    void aBlockEnchantIsHeldToTheSameCurveRulesAsADamageOne() {
+        // The requireCurve lift, from the other side: BLOCK_DR did not get a weaker validator by
+        // being newer. A negative block percent silently WEAKENS the shield the file claims to
+        // strengthen, which is the quiet direction of the same defect.
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "b", "B", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of()),
+                "a block enchant with no curve has no numbers to compose");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "b", "B", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, 10)),
+                "a short curve leaves a legal level with no percent");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "b", "B", 2, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, 10, 15)),
+                "a long curve hides levels the enchant can never reach");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "b", "B", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, -10, 15)),
+                "a negative block percent weakens the shield the file claims to strengthen");
+    }
+
     @Test
     void aNegativePercentIsRefusedRatherThanShippedAsACurse() {
         // Stat permits negative modifiers and a curse is a legitimate future idea, but a negative
