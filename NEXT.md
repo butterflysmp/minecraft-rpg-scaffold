@@ -581,6 +581,88 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Shields, Slice 1 (a mintable shield and the block-DR mechanic) — what it created or exposed
+
+A `roundshield` is mintable, and blocking has a real effect for the first time: vanilla decides
+WHETHER a hit was blocked, `Shield.applyBlock` decides what that is worth, and armor `Defense`
+reduces the remainder inside `applyDamage`. Block-then-armor, both apply. Before this, a raised
+shield was mechanically identical to empty hands — `onMobMeleeAttack` deals the mob's ATTACK stat
+and tokens `event.getDamage()` to `0.01`, so whatever vanilla's shield did to the event was thrown
+away with the token.
+
+- **`isBlocking()` is direction-blind and is NOT the signal.** It is true for anyone holding
+  right-click, so a shield read that way blocks a hit landing in your back. The signal is the
+  event's `DamageModifier.BLOCKING` — vanilla's own raised-AND-frontal-AND-in-arc verdict, already
+  computed — read with a strict `< 0` because it is a REDUCTION, so a full block is `-raw` and
+  still negative. The enum is deprecated since 1.12 but not for removal, and on the pinned Paper it
+  is the only block signal on the event: `DamageSource` carries none, and the `blocks_attacks` data
+  component describes the ITEM, not the hit. The deprecation is confined to `ShieldBlock`.
+
+- **The block must be read BEFORE the token.** `EntityDamageEvent.setDamage(double)` re-derives
+  every modifier by scaling it against the new base, so reading `BLOCKING` after
+  `setDamage(TOKEN_DAMAGE)` reports the token's share of the block rather than the block. This is
+  the one ordering constraint in the rider.
+
+- **Our Unbreaking forced shield wear to be ours too.** `Unbreaking` is a custom enchant whose curve
+  is written out in core, because the no-vanilla-enchants policy means a held item never carries a
+  vanilla enchant to delegate to. Vanilla charging the shield on a block would never consult it, so
+  Unbreaking would sit on the tooltip doing nothing — AND the shield would be charged twice for one
+  block. So `ShieldDurability.applyWearOnBlock` mirrors the weapon path, and `onShieldItemDamage`
+  cancels `PlayerItemDamageEvent` for anything carrying `shield_id`. The witness for that is a
+  POSITIVE count — N blocks move the bar by exactly N — never a comparison against an un-suppressed
+  run, because vanilla's shield wear can scale with the damage blocked rather than being flat.
+
+- **A vanilla, untagged shield gives ZERO custom protection.** `ShieldBlock` resolves it to
+  `Outcome.NONE`, so the mob's full stat reaches custom HP; and vanilla's own reduction is tokened
+  away. A player holding a plain shield is, mechanically, not blocking at all. **A known, not a
+  bug** — the alternative is inventing a default block fraction for an item no content file
+  describes. It becomes a real decision when shields drop as loot or players craft them.
+
+- **A broken shield still blocks.** `Durability.wear` floors at one remaining use, so a spent shield
+  can never be destroyed — it simply stops wearing and keeps blocking at full strength. Weapons have
+  a break gate; shields deliberately do not get one in this slice. `ShieldDurability` is where it
+  would be enforced. Deferred because "your shield is broken" needs a shield-shaped notice
+  (`BrokenNotice` says "your weapon is broken — repair it before using it", two lies at once) and
+  because a shield that stops blocking mid-fight is a feel decision, not a mechanical one.
+
+- **`/rpg enchant show` is weapon-only, and that is a TYPE hole rather than laziness.**
+  `showEnchants` reaches `EnchantEffectLine.of(enchantDef, level, definition.weaponClass())`, whose
+  `heldClass` is contractually never-null: the `DAMAGE` arm dereferences it through
+  `WeaponClassLabel.of`, an exhaustive switch with no default arm. A shield has no `WeaponClass`.
+  Widening that switch to tolerate null would put a shield-shaped hole in a class whose whole design
+  is one exhaustive switch, so instead SHOW refuses and the ACTIVE arm's effect suffix is empty for
+  a shield. The five WRITE arms are contained in one `HeldGear` dispatch. **This is the same axis
+  that blocks the enchant ROLL** — `EnchantRoll.roll` is keyed on `WeaponClass` too — so a shield
+  ships enchant-COMPATIBLE (it carries the container, `/rpg enchant` can write it, the wear path
+  reads it) but not enchant-ROLLED. Slice 2 owns the class axis for gear, and it closes all three at
+  once.
+
+- **`ShieldDefinition`/`ShieldItems`/`ShieldLore` duplicate their weapon counterparts on purpose.**
+  Reusing `WeaponDefinition` was not an option: its constructor REJECTS an empty trigger list and
+  REQUIRES a `WeaponClass`. Factoring a shared `GearDefinition`/`GearItems` now would mean designing
+  the abstraction from a single example; when armor lands there are three shapes to check it
+  against. What is NOT duplicated is anything with logic in it — `WeaponItems.displayName`,
+  `RarityColors`, `EnchantItems`, `EnchantLore` and `WeaponDurability`'s pure-item helpers are all
+  called directly.
+
+- **The order of block and armor is NOT observable in the arithmetic**, and a test that claimed to
+  guard it did not. At raw 8 / DR 0.5 / defense 20 the two orderings are bit-identical; across 22400
+  combinations they differ in 4780, by at most `2.842170943040401e-14`. Swapping the two steps is
+  REASSOCIATION, not commutation. The mutation was RUN and left all 11 tests green, so the test was
+  renamed from `...AndTheOrderIsBlockThenArmor` to
+  `blockAndArmorBothApplyRatherThanOneShadowingTheOther`. The order is fixed by the pipeline instead
+  — block in the rider, defense a thread hop later in `CombatantStats.damage` — and there is no call
+  site at which they could be swapped.
+
+- **The percent formatter had the same trap and it was caught by probing first.**
+  `0.29 * 100 == 28.999999999999996` and `0.55 * 100 == 55.00000000000001`. A naive trim prints
+  those verbatim on the item. The shipped 0.5 multiplies to a clean 50.0, so this would have passed
+  every boot gate in this slice and waited for the first author who typed an odd fraction.
+
+**Deferred to Slice 2:** Thorns, Bulwark, the class axis for gear (enchant gating, the roll, and
+`show`), and a `ShieldRefresher` for the join / `/rpg refresh` path — a shield's lore does NOT
+currently rebuild from content on rejoin the way a weapon's does.
+
 ### Crit (a chance/damage stat pair on all custom damage) — what it created or exposed
 
 Closes "vanilla crits are live and unpaid-for" below. Two stats — `critChance` (a probability, base
