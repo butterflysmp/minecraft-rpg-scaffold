@@ -8,10 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,13 +35,61 @@ class EnchantLoaderTest {
         return Logger.getLogger("EnchantLoaderTest-" + System.nanoTime());
     }
 
-    /** The whole shipped roster, so a count assertion means "exactly these and nothing else". */
-    private static final List<String> SHIPPED =
-            List.of("unbreaking", "sharpness", "power", "attunement");
+    /**
+     * The whole shipped roster, DISCOVERED from the classpath rather than enumerated.
+     *
+     * <p>This was a hardcoded {@code List.of("unbreaking", "sharpness", "power", "attunement")},
+     * and the count assertions below claimed "the shipped enchant roster is exactly these four
+     * files" -- a claim the fixture could not make, because it copied only the four it already knew
+     * about. A fifth shipped file would have been loaded by NO test at all: no schema check, no
+     * class-token check, no curve check, and every count still green. That is CLAUDE.md's discovery
+     * trap one directory over from the {@code getResource("content/")} case -- a scan that finds
+     * only what it was told to look for is indistinguishable from a scan that works.
+     *
+     * <p>So it lists the directory, and <b>fails loudly on zero</b>: finding nothing is a defect,
+     * not an empty roster. Proven by positive control rather than by argument -- a deliberately
+     * malformed probe file dropped into {@code content/enchants/} reddens
+     * {@link #everyShippedEnchantFileLoadsRatherThanOnlyTheOnesWeRemembered}, where the old fixture
+     * stayed green.
+     *
+     * <p><b>It lists the CLASSPATH, which is {@code target/classes}, not {@code src}.</b> Maven's
+     * resource copy adds but never removes, so a content file DELETED from {@code src} lingers in
+     * {@code target/classes} and this reddens until {@code clean}. Measured, not predicted: after
+     * removing the probe from {@code src} the suite still failed 7, naming {@code _probe}, until
+     * {@code ./mvnw -pl paper -am clean test}. That is the right direction to fail in -- it is the
+     * same stale-build-output family as the locked-jar deploy CLAUDE.md records -- but it means an
+     * incremental run after deleting an enchant file is a red that {@code clean} explains.
+     *
+     * <p>Throws {@link IOException} rather than {@code URISyntaxException} so every caller's
+     * signature is unchanged; the URL comes from our own classpath and cannot realistically be
+     * malformed, but it fails loudly rather than silently if it ever is.
+     */
+    private static List<String> shippedIds() throws IOException {
+        URL dir = EnchantLoaderTest.class.getResource("/content/enchants");
+        assertNotNull(dir, "content/enchants is not on the test classpath at all");
+
+        Path root;
+        try {
+            root = Path.of(dir.toURI());
+        } catch (URISyntaxException e) {
+            throw new IOException("content/enchants is not a readable directory URL: " + dir, e);
+        }
+
+        try (var entries = Files.list(root)) {
+            List<String> ids = entries.map(path -> path.getFileName().toString())
+                    .filter(name -> name.endsWith(".yml"))
+                    .map(name -> name.substring(0, name.length() - ".yml".length()))
+                    .sorted()
+                    .toList();
+            assertFalse(ids.isEmpty(), "discovered NO shipped enchant files under content/enchants "
+                    + "-- a scan that finds nothing is a defect, not an empty roster");
+            return ids;
+        }
+    }
 
     private static Path bundledEnchants(Path dir) throws IOException {
         Path enchantsDir = Files.createDirectory(dir.resolve("enchants"));
-        for (String id : SHIPPED) {
+        for (String id : shippedIds()) {
             copyBundled("/content/enchants/" + id + ".yml", enchantsDir.resolve(id + ".yml"));
         }
         return enchantsDir;
@@ -60,9 +112,11 @@ class EnchantLoaderTest {
     void theShippedUnbreakingFileLoadsAndSaysWhatTheTooltipNeeds(@TempDir Path dir) throws IOException {
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
 
-        // EXACTLY four, not merely non-empty. A discovery that finds nothing -- or finds something
-        // unexpected -- is a defect, not a quiet no-op, and "non-empty" would pass on both.
-        assertEquals(4, enchants.size(), "the shipped enchant roster is exactly these four files");
+        // The WHOLE discovered roster, not merely non-empty. A discovery that finds nothing -- or
+        // finds something unexpected -- is a defect, not a quiet no-op, and "non-empty" would pass
+        // on both. shippedIds() itself refuses to return an empty list, so this cannot pass 0 == 0.
+        assertEquals(shippedIds().size(), enchants.size(),
+                "every shipped enchant file loads; none is skipped");
 
         EnchantDefinition unbreaking = enchants.find("unbreaking").orElseThrow(
                 () -> new AssertionError("unbreaking.yml did not load -- every tooltip renders a raw id"));
@@ -72,6 +126,33 @@ class EnchantLoaderTest {
                 "unbreaking binds the durability mechanism, not the damage one");
         assertTrue(unbreaking.isUniversal(), "and it is gated on no class");
         assertEquals(List.of(), unbreaking.percentByLevel(), "a durability enchant carries no curve");
+    }
+
+    /**
+     * THE ONE THAT CATCHES A NEW SHIPPED FILE. Every yml under {@code content/enchants/} loads, by
+     * ID, not merely by count.
+     *
+     * <p>The count assertions elsewhere compare the loader's output against {@code shippedIds()},
+     * which is derived from the same listing -- so a file that loads is counted and a file that is
+     * skipped is not, and the two move together only if nothing is skipped. This asserts the SET,
+     * which is what makes that non-circular: a shipped file the loader refuses is absent from the
+     * registry but present in the listing, and the sets diverge by name.
+     *
+     * <p>The old enumerated fixture could not fail this way. It copied four ids it already knew,
+     * so a fifth shipped file was never loaded by any test and every assertion stayed green --
+     * schema unchecked, class token unchecked, curve unchecked. This is the test that broke under
+     * the malformed-probe positive control; see {@link #shippedIds()}.
+     */
+    @Test
+    void everyShippedEnchantFileLoadsRatherThanOnlyTheOnesWeRemembered(@TempDir Path dir) throws IOException {
+        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+
+        Set<String> loaded = enchants.all().stream()
+                .map(EnchantDefinition::id).collect(Collectors.toSet());
+
+        assertEquals(Set.copyOf(shippedIds()), loaded,
+                "every file under content/enchants must LOAD -- a shipped file the loader skips is "
+                        + "an enchant that renders on a tooltip and grants nothing");
     }
 
     /**
@@ -120,7 +201,7 @@ class EnchantLoaderTest {
 
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
 
-        assertEquals(4, enchants.size(), "the malformed file is skipped");
+        assertEquals(shippedIds().size(), enchants.size(), "the malformed file is skipped");
         assertTrue(enchants.find("noeffect").isEmpty(),
                 "a file with no effect names no mechanism, so it cannot load as some default one");
         var ex = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
@@ -139,7 +220,8 @@ class EnchantLoaderTest {
 
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
 
-        assertEquals(4, enchants.size(), "both malformed files are skipped, the shipped four remain");
+        assertEquals(shippedIds().size(), enchants.size(),
+                "both malformed files are skipped, the whole shipped roster remains");
         assertTrue(enchants.find("bogus").isEmpty());
         assertTrue(enchants.find("mistoken").isEmpty(), "'ranged' is not a class token -- 'ranger' is");
     }
@@ -154,7 +236,7 @@ class EnchantLoaderTest {
 
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
 
-        assertEquals(4, enchants.size());
+        assertEquals(shippedIds().size(), enchants.size());
         assertTrue(enchants.find("nocurve").isEmpty());
     }
 
@@ -174,7 +256,8 @@ class EnchantLoaderTest {
         Path enchantsDir = bundledEnchants(dir);
         Files.writeString(enchantsDir.resolve("short.yml"), damageYml("3", "melee", "[5, 10]"));
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
-        assertEquals(4, enchants.size(), "and the loader skips it by name rather than crashing");
+        assertEquals(shippedIds().size(), enchants.size(),
+                "and the loader skips it by name rather than crashing");
     }
 
     @Test
@@ -246,7 +329,7 @@ class EnchantLoaderTest {
 
         EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
 
-        assertEquals(4, enchants.size(), "the malformed file is skipped");
+        assertEquals(shippedIds().size(), enchants.size(), "the malformed file is skipped");
         assertTrue(enchants.find("unbreaking").isPresent(), "and the good ones still loaded");
         assertTrue(enchants.find("overpowered").isEmpty());
     }
