@@ -6,7 +6,8 @@ import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
-import io.github.butterflysmp.rpg.core.combat.Shield;
+import io.github.butterflysmp.rpg.core.combat.ShieldExchange;
+import io.github.butterflysmp.rpg.core.enchant.Riposte;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
@@ -643,8 +644,18 @@ public final class RpgListeners implements Listener {
         if (!(event.getDamager() instanceof LivingEntity attacker)) return; // a living melee attacker
         if (attacker instanceof Player) return;                             // player->player is a later rules decision
 
+        // MUST stay first, and not only for the nameplate. bootstrapIfAbsent is what makes the mob
+        // TRACKED, and CombatantStats.damage is a silent no-op on an untracked combatant -- so this
+        // line is the precondition for the riposte at the bottom as much as for the stat read below.
+        // Move or gate it and the reflect vanishes with no error anywhere.
         nameplates.seedCombatStats(attacker);         // idempotent, opt-out-agnostic: seed HP + attack from vanilla
-        double incoming = adapters.stats().attackValue(attacker.getUniqueId());  // the STAT, not event.getDamage()
+
+        // THE PRE-MITIGATION BLOW: the attacker's raw stat, before the block AND before the victim's
+        // armor (which lands a thread-hop later inside CombatantStats.damage). Riposte reflects a
+        // fraction of THIS, so a heavily armored player reflects more than the hit did to them.
+        // final, and never reassigned -- ShieldExchange derives both numbers from it below, so no
+        // reduced local exists here that could be passed to the reflect by mistake.
+        final double preMitigation = adapters.stats().attackValue(attacker.getUniqueId());
 
         // THE BLOCK, and it must be resolved BEFORE the token below. EntityDamageEvent.setDamage
         // re-derives every modifier by scaling it against the new base, so reading the BLOCKING
@@ -653,12 +664,13 @@ public final class RpgListeners implements Listener {
         // what it is worth. See ShieldBlock for why isBlocking() is not the signal.
         ShieldBlock.Outcome block = ShieldBlock.resolve(
                 victim, event, adapters.keys(), shields, adapters.enchants());
+        // BOTH numbers, from the ONE raw blow. The choice of which value each is derived from is the
+        // slice's load-bearing decision and lives in core where a unit test can reach it -- see
+        // ShieldExchange, which exists precisely because this method cannot be unit-tested.
+        ShieldExchange exchange = ShieldExchange.of(
+                preMitigation, block.blocked(), block.effectiveDr(), block.reflectPercent());
+
         if (block.blocked()) {
-            // effectiveDr, not the shield's own block_dr: resolve has already composed Bulwark onto
-            // it and clamped the result. The enchant read lives in resolve so it inherits the
-            // read-BEFORE-token ordering above for free, and this branch keeps exactly one number
-            // to apply.
-            incoming = Shield.applyBlock(incoming, block.effectiveDr());
             // Wear is charged HERE and vanilla's own is cancelled in onShieldItemDamage, because
             // our Unbreaking is custom and vanilla would never consult it. AFTER the resolve, so
             // the block that breaks the shield still mitigates in full and only the next one does
@@ -667,7 +679,33 @@ public final class RpgListeners implements Listener {
         }
 
         event.setDamage(TOKEN_DAMAGE);                // ride: keep flash/sound/i-frames, no double, can't kill
-        BukkitCombatant.of(victim, adapters).handle().applyDamage(incoming, attacker.getUniqueId());
+        BukkitCombatant.of(victim, adapters).handle()
+                .applyDamage(exchange.applied(), attacker.getUniqueId());
+
+        // THE RIPOSTE, and it is LAST for a reason that is NOT tick ordering.
+        //
+        // Both applyDamage calls defer to their entity's next tick, so "the victim's damage lands
+        // first" holds on Paper by FIFO accident and is meaningless on Folia, where the two may be
+        // in different regions. Nothing observable depends on the order: the amount was computed
+        // synchronously above and there is no shared mutable state.
+        //
+        // What IS ordering-sensitive is the throw. BukkitCombatant.of runs INLINE and its first act
+        // is Regions.requireOwned, which throws for an entity this thread does not own. Placed above
+        // the two lines before it, that throw would skip setDamage -- so VANILLA'S FULL DAMAGE would
+        // land on the player -- and skip the custom hit as well. Placed here, a throw costs the
+        // riposte and nothing else. Fail toward doing less, the same instinct as a dangling
+        // shield_id resolving to Outcome.NONE.
+        //
+        // The two-arg applyDamage, matching the sweep rider: a reflect is computed directly and never
+        // passes through the crit multiplier, so it CANNOT crit, and the white number says so
+        // honestly. Colour means crit in this game and nothing else.
+        //
+        // reflects() also skips of()'s wasted snapshot -- a ThreadLocalRandom draw and five stat
+        // lookups the reflect discards -- on every ordinary blocked hit.
+        if (Riposte.reflects(exchange.reflected())) {
+            BukkitCombatant.of(attacker, adapters).handle()
+                    .applyDamage(exchange.reflected(), victim.getUniqueId());
+        }
     }
 
     /**
