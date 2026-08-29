@@ -38,8 +38,9 @@ class ShieldTest {
 
     @Test
     void aBlockedHitLandsTheDeclaredFractionAndNothingMore() {
-        // The common shield's 0.5: half stopped, half through. This is the one number a player is
-        // meant to be able to hold, and the whole of the shipped shield's mechanical identity.
+        // A HALF is asserted here as a VALUE, not as "the shipped shield" -- that ships at 0.35 since
+        // the finalisation pass, and 0.5 is now what it reaches with Bulwark III. Halving stays the
+        // clearest statement of what the fraction MEANS, which is what this test is for.
         // Exact, not EPS: execution confirms 8.0 * 0.5 == 4.0 in binary floating point.
         assertEquals(4.0, Shield.applyBlock(8.0, 0.5));
         assertEquals(3.5, Shield.applyBlock(7.0, 0.5), EPS, "an odd hit halves cleanly too");

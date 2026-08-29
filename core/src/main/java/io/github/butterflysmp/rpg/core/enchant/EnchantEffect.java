@@ -47,7 +47,7 @@ public enum EnchantEffect {
     BLOCK_DR,
 
     /**
-     * A fraction of an incoming blow sent back at whoever threw it. The mechanism is {@link Riposte},
+     * A fraction of an incoming blow sent back at whoever threw it. The mechanism is {@link Thorns},
      * composed with the block in {@code core/combat/ShieldExchange}. Like {@link #BLOCK_DR} it is read
      * off the blocking stack, so {@code EnchantDefinition} refuses one that is not
      * {@code class: shield}.

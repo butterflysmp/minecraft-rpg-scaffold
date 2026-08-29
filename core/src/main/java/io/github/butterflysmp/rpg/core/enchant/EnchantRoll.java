@@ -103,7 +103,7 @@ public final class EnchantRoll {
      * unwitnessable. That is the roster pass's decision, on this axis.
      *
      * <p><b>That argument NO LONGER covers SHIELD, as of Slice 2b.</b> A shield's pool is Bulwark
-     * plus Riposte plus Unbreaking -- THREE -- while every weapon class is still two. So a 1..3 count
+     * plus Thorns plus Unbreaking -- THREE -- while every weapon class is still two. So a 1..3 count
      * is now genuinely observable on one kind of gear, and {@code EnchantMenuLayout.CANDIDATES == 3}
      * is exercised by a real roll rather than only by {@link #candidateCount} in isolation.
      *

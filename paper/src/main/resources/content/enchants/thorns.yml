@@ -1,16 +1,16 @@
 # The second SHIELD enchant, and the one that sends damage BACK. `effect: reflect` names
-# core/enchant/Riposte.java; the block half is core/enchant/Bulwark.java. Both are read off the
+# core/enchant/Thorns.java; the block half is core/enchant/Bulwark.java. Both are read off the
 # blocking stack in one PDC decode (ShieldBlock.resolve), and both fall off the same predicate -- a
 # hit from behind, an untagged shield, a dangling id and a BROKEN shield all reflect nothing.
 #
-# NAMED RIPOSTE, NOT THORNS, and that is not a style preference. DESIGN-status-effects.md reserves
+# NAMED THORNS, NOT THORNS, and that is not a style preference. DESIGN-status-effects.md reserves
 # "Thorns" for a Nature PROPAGATION status -- damaging a Thorns target damages NEARBY targets --
 # and hangs four load-bearing anti-loop safety rules off that name. This mechanic has none of that:
 # one attacker, no propagation, no chain. The rule applied was to rename the mechanic with no
 # load-bearing associations rather than the one that has them, so those safety rules stay
 # unambiguously attached to the name that needs them.
 #
-# WHAT THE NUMBERS DO. Riposte reflects a percentage of the PRE-MITIGATION blow -- the attacker's raw
+# WHAT THE NUMBERS DO. Thorns reflects a percentage of the PRE-MITIGATION blow -- the attacker's raw
 # attack stat, before the shield's block fraction AND before your armor. Off the 15.0 mob the boot
 # gate uses, executed rather than worked out by hand:
 #
@@ -25,12 +25,12 @@
 # is computed, which is the identical constraint core/combat/SweepShare records for a swept mob.
 #
 # IT IS INDEPENDENT OF THE SHIELD, deliberately. Reflecting off the amount BLOCKED would make Bulwark
-# secretly boost Riposte; reflecting off the pass-through would make Bulwark REDUCE it. Either way the
+# secretly boost Thorns; reflecting off the pass-through would make Bulwark REDUCE it. Either way the
 # two enchants would have to be tuned together for ever. Off the raw blow they stay independent, and
-# a common shield and a legendary one with equal Riposte reflect equally -- Riposte is the enchant's
+# a common shield and a legendary one with equal Thorns reflect equally -- Thorns is the enchant's
 # contribution, not the shield's.
 #
-#   If you tune these, the boot gate row that catches a wrong implementation is Riposte III ALONE on
+#   If you tune these, the boot gate row that catches a wrong implementation is Thorns III ALONE on
 #   a shield with no Bulwark: it must read "5". The rejected reading (off the pass-through) reads
 #   "2". Do not gate on level I -- 2 versus 1 is only one apart.
 #
@@ -38,7 +38,7 @@
 # on any other effect: a negative reflect does not reflect weakly, it reaches stats.damage and HEALS
 # the mob attacking you. `class: universal` and `class: melee` are refused too -- a reflect is read
 # off the blocking stack, and universal would additionally offer it on every weapon in the game.
-display_name: "Riposte"
+display_name: "Thorns"
 # The item this enchant renders as in the enchant table. Cosmetic: it DEFAULTS to enchanted_book
 # when absent, so it is never a reason a working enchant fails to load. Do not make it required.
 icon: arrow

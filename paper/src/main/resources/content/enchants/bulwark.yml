@@ -9,7 +9,7 @@
 # -- see below for why the dangerous mistake is `universal`, not `melee`.
 #
 # WHAT THE NUMBERS DO. Bulwark is ADDITIVE on the block fraction: the shield's own block_dr plus
-# these percentage points, clamped to 1.0. On the shipped roundshield (block_dr 0.5), executed
+# these percentage points, clamped to 1.0. On the shipped shield (block_dr 0.5), executed
 # against the real Shield.clamp rather than worked out by hand:
 #
 #   plain  dr 0.50  ->  a 15.0 mob hit passes 7.5
@@ -30,7 +30,7 @@
 #
 # THE CEILING, before you tune this. Additive means a shield authored at block_dr >= 0.85 becomes
 # TOTALLY IMMUNE with Bulwark III -- 0.9 + 0.15 is 1.05, which Shield.clamp pins to 1.0, and a 15.0
-# hit then passes 0.0. Nothing shipped is close (the roundshield tops out at 0.65). If a high-DR
+# hit then passes 0.0. Nothing shipped is close (the shield tops out at 0.65). If a high-DR
 # shield is ever authored, that is the moment to decide on a soft cap below 1.0, not now.
 #
 # `class: universal` WOULD BE THE DANGEROUS TYPO, and the loader refuses it. A universal enchant

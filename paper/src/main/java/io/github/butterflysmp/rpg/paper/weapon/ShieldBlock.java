@@ -4,7 +4,7 @@ import io.github.butterflysmp.rpg.core.combat.Shield;
 import io.github.butterflysmp.rpg.core.enchant.Bulwark;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
-import io.github.butterflysmp.rpg.core.enchant.Riposte;
+import io.github.butterflysmp.rpg.core.enchant.Thorns;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
@@ -106,13 +106,13 @@ public final class ShieldBlock {
          * block, what blocked was not one of ours (a plain vanilla shield, or a dangling id), or the
          * shield is BROKEN. One outcome, one meaning -- "no custom mitigation from this stack".
          *
-         * <p><b>{@code reflectPercent} is {@link Riposte#NONE} here, and that is what makes the
+         * <p><b>{@code reflectPercent} is {@link Thorns#NONE} here, and that is what makes the
          * reflect inherit every one of those reasons for free.</b> A hit from behind, an untagged
          * shield, a dangling id and a broken shield all send nothing back without the rider needing
          * a single extra branch -- one predicate, all three shield effects.
          */
         public static final Outcome NONE =
-                new Outcome(false, Shield.NONE, Riposte.NONE, null, null);
+                new Outcome(false, Shield.NONE, Thorns.NONE, null, null);
     }
 
     /**
@@ -167,7 +167,7 @@ public final class ShieldBlock {
         // exactly what BlockEnchantItems' state overload was extracted for in Slice 2a.
         EnchantState state = EnchantItems.read(stack, keys);
         double bulwark = BlockEnchantItems.percentFor(state, enchants, EnchantEffect.BLOCK_DR);
-        double riposte = BlockEnchantItems.percentFor(state, enchants, EnchantEffect.REFLECT);
+        double thorns = BlockEnchantItems.percentFor(state, enchants, EnchantEffect.REFLECT);
 
         // The DR is the EFFECTIVE fraction -- Bulwark composed and clamped -- which is why that
         // component is not called blockDr: a name still saying "the shield's own DR" while carrying
@@ -179,7 +179,7 @@ public final class ShieldBlock {
         // total block -- and reflect a fraction, so it presents in play as an unkillable player
         // dealing rounding-error damage back. The locals are named for the enchants rather than for
         // their types so the construction below reads as a sentence.
-        return new Outcome(true, Bulwark.effectiveDr(definition.blockDr(), bulwark), riposte,
+        return new Outcome(true, Bulwark.effectiveDr(definition.blockDr(), bulwark), thorns,
                 slot, id);
     }
 

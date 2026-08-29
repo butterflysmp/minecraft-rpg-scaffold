@@ -40,8 +40,8 @@ differently from a Fire Mage that burns-and-zones, *before* any passive or aspec
 - **Freeze** (Water) — target cannot move or attack.
 
 **Propagation tier — one engine, deferred milestone:**
-- **Thorns** (Nature) — damaging a Thorns target damages nearby targets. Depth-1,
-  explicitly **not** a chain.
+- **The Nature propagation status — NAME VACATED, see below** — damaging the target damages nearby
+  targets. Depth-1, explicitly **not** a chain.
 - **Ignite** (Fire) — a Scorched target killed by a Scorched attack explodes after
   a delay, damaging nearby targets. Explicitly **chains**.
 
@@ -132,7 +132,25 @@ multi-status targets are predictable.
 
 ## THE PROPAGATION ENGINE — deferred milestone
 
-Thorns and Ignite are **two configurations of one engine**, and that engine has
+> #### THE NAME "THORNS" IS VACATED — it belongs to the shield enchant now
+>
+> This status was called **Thorns**, and the shield enchant that ships in Slice 2b took that name.
+> The reservation is resolved, not duplicated: there is exactly one Thorns in this project and it is
+> `content/enchants/thorns.yml`, a shield enchant that reflects a fraction of an incoming blow back
+> at the one attacker who threw it. No propagation, no chain, no safety rules.
+>
+> **Why this side yielded.** This was a design-doc reservation with no code, no content file and no
+> slice; that was a mechanic about to ship. A name held by a paragraph loses to a name held by a
+> mechanic. Renaming the enchant instead would have put "Thorns" on the thing with no safety rules
+> and left the thing WITH four anti-loop rules under a second name nobody greps for.
+>
+> **THE FOUR SAFETY RULES TRAVEL WITH THIS MECHANIC, NOT WITH THE WORD.** They are about propagation
+> — death-gating, delay-and-serialise, fire-exactly-once, attribute-through-the-chain — and the
+> shield enchant does none of those things, so none of them apply to it. When this status is built it
+> takes a NEW name (Barbs, Bramble, Spines, Retaliate — unclaimed as of Slice 2b), and these rules go
+> with it under that name. **Do not read "Thorns" anywhere in this repo as referring to this status.**
+
+The Nature propagation status and Ignite are **two configurations of one engine**, and that engine has
 hazards that a one-line spec hides. Do not build this as content; build it as a
 system, once, correctly, then configure the two statuses on top.
 
@@ -140,7 +158,7 @@ system, once, correctly, then configure the two statuses on top.
 source-attributed effect against nearby targets, where that effect may or may not
 re-trigger the same status depending on one boolean.*
 
-- **Thorns:** trigger = the target takes damage; effect = damage nearby; re-trigger =
+- **The Nature one (name vacated):** trigger = the target takes damage; effect = damage nearby; re-trigger =
   **no** (depth-1, terminal).
 - **Ignite:** trigger = a Scorched target **dies to a Scorched attack**; effect = a
   delayed explosion damaging nearby; re-trigger = **yes** (chains).
@@ -188,12 +206,12 @@ when ignited"). These four rules are the difference:
 With Unstable and Blighted cut, this shrinks to a tractable 2×2, but it must be
 answered as a single global policy, not per-status:
 
-- Can **Thorns** damage kill a Scorched mob and thereby **Ignite** it?
-- Can an **Ignite** explosion trigger a nearby mob's **Thorns**?
+- Can the **Nature propagation** damage kill a Scorched mob and thereby **Ignite** it?
+- Can an **Ignite** explosion trigger a nearby mob's **Nature propagation**?
 
 Pick one rule and apply it everywhere: e.g. *propagated damage carries the attacker's
 source and CAN trigger death-gated statuses (Ignite), but does NOT re-trigger the
-propagating status itself (Thorns stays depth-1).* Whatever the choice, decide it
+propagating status itself (the Nature one stays depth-1).* Whatever the choice, decide it
 once, globally — answering it per-status is how a Fire/Nature mob pack detonates in a
 way no one can follow.
 
@@ -214,7 +232,7 @@ way no one can follow.
 2. **Replay Ranger vs Mage** with status-bearing ability pools. The axis test.
 3. **Propagation engine** — only if the simple tier proves element-statuses make
    classes feel distinct. Build the one parameterized engine with all four safety
-   rules and the global interaction policy, then configure Thorns + Ignite.
+   rules and the global interaction policy, then configure the Nature status + Ignite.
 4. **Deferred statuses** — Unstable, Blighted — revisit with the propagation engine
    in hand and their terminators designed (tether definition; Blight spread cap).
 

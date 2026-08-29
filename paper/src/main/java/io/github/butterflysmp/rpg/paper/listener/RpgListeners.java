@@ -7,7 +7,7 @@ import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.combat.ShieldExchange;
-import io.github.butterflysmp.rpg.core.enchant.Riposte;
+import io.github.butterflysmp.rpg.core.enchant.Thorns;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
@@ -646,12 +646,12 @@ public final class RpgListeners implements Listener {
 
         // MUST stay first, and not only for the nameplate. bootstrapIfAbsent is what makes the mob
         // TRACKED, and CombatantStats.damage is a silent no-op on an untracked combatant -- so this
-        // line is the precondition for the riposte at the bottom as much as for the stat read below.
+        // line is the precondition for the thorns at the bottom as much as for the stat read below.
         // Move or gate it and the reflect vanishes with no error anywhere.
         nameplates.seedCombatStats(attacker);         // idempotent, opt-out-agnostic: seed HP + attack from vanilla
 
         // THE PRE-MITIGATION BLOW: the attacker's raw stat, before the block AND before the victim's
-        // armor (which lands a thread-hop later inside CombatantStats.damage). Riposte reflects a
+        // armor (which lands a thread-hop later inside CombatantStats.damage). Thorns reflects a
         // fraction of THIS, so a heavily armored player reflects more than the hit did to them.
         // final, and never reassigned -- ShieldExchange derives both numbers from it below, so no
         // reduced local exists here that could be passed to the reflect by mistake.
@@ -682,7 +682,7 @@ public final class RpgListeners implements Listener {
         BukkitCombatant.of(victim, adapters).handle()
                 .applyDamage(exchange.applied(), attacker.getUniqueId());
 
-        // THE RIPOSTE, and it is LAST for a reason that is NOT tick ordering.
+        // THE THORNS, and it is LAST for a reason that is NOT tick ordering.
         //
         // Both applyDamage calls defer to their entity's next tick, so "the victim's damage lands
         // first" holds on Paper by FIFO accident and is meaningless on Folia, where the two may be
@@ -693,7 +693,7 @@ public final class RpgListeners implements Listener {
         // is Regions.requireOwned, which throws for an entity this thread does not own. Placed above
         // the two lines before it, that throw would skip setDamage -- so VANILLA'S FULL DAMAGE would
         // land on the player -- and skip the custom hit as well. Placed here, a throw costs the
-        // riposte and nothing else. Fail toward doing less, the same instinct as a dangling
+        // thorns and nothing else. Fail toward doing less, the same instinct as a dangling
         // shield_id resolving to Outcome.NONE.
         //
         // The two-arg applyDamage, matching the sweep rider: a reflect is computed directly and never
@@ -702,7 +702,7 @@ public final class RpgListeners implements Listener {
         //
         // reflects() also skips of()'s wasted snapshot -- a ThreadLocalRandom draw and five stat
         // lookups the reflect discards -- on every ordinary blocked hit.
-        if (Riposte.reflects(exchange.reflected())) {
+        if (Thorns.reflects(exchange.reflected())) {
             BukkitCombatant.of(attacker, adapters).handle()
                     .applyDamage(exchange.reflected(), victim.getUniqueId());
         }

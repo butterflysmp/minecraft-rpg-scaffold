@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.weapon.GearClass;
+import io.github.butterflysmp.rpg.core.weapon.ShieldLoreLines;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import org.junit.jupiter.api.Test;
 
@@ -28,11 +29,11 @@ class EnchantEffectLineTest {
     /** A universal DAMAGE enchant. No shipped file yet, but the schema permits one, so it is guarded. */
     private static final EnchantDefinition KEEN = new EnchantDefinition(
             "keen", "Keen", 3, EnchantEffect.DAMAGE, null, List.of(5, 10, 15));
-    // The two shield files. bulwark.yml / riposte.yml.
+    // The two shield files. bulwark.yml / thorns.yml.
     private static final EnchantDefinition BULWARK = new EnchantDefinition(
             "bulwark", "Bulwark", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, 10, 15));
-    private static final EnchantDefinition RIPOSTE = new EnchantDefinition(
-            "riposte", "Riposte", 3, EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, 20, 30));
+    private static final EnchantDefinition THORNS = new EnchantDefinition(
+            "thorns", "Thorns", 3, EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, 20, 30));
 
     @Test
     void damageEnchantReportsItsPercentAndMultiplier() {
@@ -140,7 +141,7 @@ class EnchantEffectLineTest {
         //
         // Both tests earn their place; this one is the weaker net and says so rather than implying
         // a coverage it does not have.
-        EnchantDefinition[] all = {SHARPNESS, UNBREAKING, BULWARK, RIPOSTE};
+        EnchantDefinition[] all = {SHARPNESS, UNBREAKING, BULWARK, THORNS};
         for (int i = 0; i < all.length; i++) {
             for (int j = i + 1; j < all.length; j++) {
                 // Each on the gear it is actually valid for, so none is describing itself as inert.
@@ -155,15 +156,24 @@ class EnchantEffectLineTest {
     }
 
     @Test
-    void theBlockArmSaysPOINTSAndNotAMultiplier() {
+    void theBlockArmSaysPOINTSAndNotAMultiplierAndUsesTheITEMSWords() {
         // 2a shipped this arm with NO test at all -- `grep -c BLOCK_DR` on this file returned 0 --
         // and it is the line the boot gate reads off the screen BEFORE blocking.
         //
-        // "+15% block" means the shield stops fifteen more POINTS of the hit (0.50 -> 0.65), because
-        // Bulwark is additive on the fraction. An "x1.15" here would describe the multiplicative
-        // reading that was explicitly rejected, and would be a promise the mechanic does not keep.
-        assertEquals(" (+15% block)", EnchantEffectLine.of(BULWARK, 3, GearClass.SHIELD));
-        assertEquals(" (+5% block)", EnchantEffectLine.of(BULWARK, 1, GearClass.SHIELD));
+        // "+15% Damage Reduction" means the shield stops fifteen more POINTS of the hit
+        // (0.35 -> 0.50), because Bulwark is additive on the fraction. An "x1.15" would describe the
+        // multiplicative reading that was explicitly rejected.
+        //
+        // THE WORDS ARE THE ITEM'S. ShieldLoreLines.DAMAGE_REDUCTION_LABEL puts "Damage Reduction"
+        // on the shield itself, so the enchant that modifies that stat must not call it something
+        // else -- "+15% block" above "Damage Reduction: 50%" makes a player work out that those are
+        // one number. Asserted against the constant, not a copy of the string, so a reword of the
+        // item moves both or fails here.
+        assertEquals(" (+15% Damage Reduction)", EnchantEffectLine.of(BULWARK, 3, GearClass.SHIELD));
+        assertEquals(" (+5% Damage Reduction)", EnchantEffectLine.of(BULWARK, 1, GearClass.SHIELD));
+        assertTrue(EnchantEffectLine.bare(BULWARK, 3, GearClass.SHIELD)
+                        .contains(ShieldLoreLines.DAMAGE_REDUCTION_LABEL.replace(": ", "")),
+                "the enchant and the item must name the stat identically");
         assertFalse(EnchantEffectLine.bare(BULWARK, 3, GearClass.SHIELD).contains("x1."),
                 "a multiplier here would describe the rejected composition");
     }
@@ -174,11 +184,11 @@ class EnchantEffectLineTest {
         // nothing about blocking, because the percent is of the INCOMING blow, not of what got
         // through -- the pre-mitigation rule, restated where a player can see it.
         assertEquals(" (+30% reflected to the attacker)",
-                EnchantEffectLine.of(RIPOSTE, 3, GearClass.SHIELD));
+                EnchantEffectLine.of(THORNS, 3, GearClass.SHIELD));
         assertEquals(" (+10% reflected to the attacker)",
-                EnchantEffectLine.of(RIPOSTE, 1, GearClass.SHIELD));
+                EnchantEffectLine.of(THORNS, 1, GearClass.SHIELD));
 
-        String reflect = EnchantEffectLine.bare(RIPOSTE, 3, GearClass.SHIELD);
+        String reflect = EnchantEffectLine.bare(THORNS, 3, GearClass.SHIELD);
         assertTrue(reflect.contains("attacker"), "the target of the reflect must be named");
         assertFalse(reflect.contains("block"),
                 "the reflect is off the incoming blow, not off what the shield stopped");
@@ -194,7 +204,7 @@ class EnchantEffectLineTest {
         assertEquals(" (inert: a Shield enchant on a Ranged weapon)",
                 EnchantEffectLine.of(BULWARK, 3, GearClass.RANGER));
         assertEquals(" (inert: a Shield enchant on a Magic weapon)",
-                EnchantEffectLine.of(RIPOSTE, 3, GearClass.MAGE));
+                EnchantEffectLine.of(THORNS, 3, GearClass.MAGE));
     }
 
     @Test
@@ -213,7 +223,7 @@ class EnchantEffectLineTest {
         // the menu trimming the brackets off of()'s output itself. Asserted over every arm --
         // damage, durability, inert and unknown -- so no single arm can be changed in one form only.
         for (EnchantDefinition def : new EnchantDefinition[] {SHARPNESS, UNBREAKING, KEEN,
-                BULWARK, RIPOSTE, null}) {
+                BULWARK, THORNS, null}) {
             for (GearClass held : GearClass.values()) {
                 assertEquals(" (" + EnchantEffectLine.bare(def, 3, held) + ")",
                         EnchantEffectLine.of(def, 3, held));

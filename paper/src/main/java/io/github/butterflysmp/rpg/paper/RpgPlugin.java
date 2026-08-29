@@ -155,11 +155,11 @@ public final class RpgPlugin extends JavaPlugin {
         // The same guard, for the same reason, on the directory this slice adds. content/shields is
         // BRAND NEW, which makes it the most likely of all of them to arrive empty: an existing
         // run/ data folder predates it entirely, and saveResource never overwrites, so the only
-        // thing that puts roundshield.yml on disk is the jar enumeration finding it.
+        // thing that puts shield.yml on disk is the jar enumeration finding it.
         if (shields.size() == 0) {
             getLogger().warning("No shields loaded from content/shields -- /rpg give can mint none, "
                     + "and blocking will reduce nothing however many shields are held. Expected at "
-                    + "least roundshield.yml.");
+                    + "least shield.yml.");
         }
 
         // ONE ID, TWO REGISTRIES. /rpg give resolves weapons before shields, so a shared id would

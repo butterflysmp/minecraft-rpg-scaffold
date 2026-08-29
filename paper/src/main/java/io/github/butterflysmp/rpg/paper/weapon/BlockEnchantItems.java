@@ -48,7 +48,7 @@ import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
  *
  * <p><b>The DECODE lives in the caller, and that is what makes one blocked hit cost one read.</b>
  * {@code ShieldBlock.resolve} decodes the blocking stack once and scans the resulting state twice --
- * BLOCK_DR for Bulwark, REFLECT for Riposte. The effect is a parameter rather than this class
+ * BLOCK_DR for Bulwark, REFLECT for Thorns. The effect is a parameter rather than this class
  * answering for every mechanism at once, so a caller that wants only one pays for only one pass.
  */
 public final class BlockEnchantItems {
@@ -60,7 +60,7 @@ public final class BlockEnchantItems {
      * {@code 0.0} when it carries none.
      *
      * <p>Zero is the neutral value every consumer wants -- {@code Bulwark.effectiveDr(dr, 0)} is
-     * {@code dr} exactly, and {@code Riposte.reflects(0)} is false -- so the overwhelmingly common
+     * {@code dr} exactly, and {@code Thorns.reflects(0)} is false -- so the overwhelmingly common
      * unenchanted shield needs no branch at any call site.
      *
      * <p>Reads {@code effective()}, so the level here is literally the level the TOOLTIP rendered.

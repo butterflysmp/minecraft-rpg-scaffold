@@ -29,7 +29,7 @@ class ShieldDefinitionTest {
     private static final double EPS = 1e-9;
 
     private static ShieldDefinition shield(double blockDr) {
-        return new ShieldDefinition("roundshield", "Roundshield", Rarity.COMMON,
+        return new ShieldDefinition("shield", "Shield", Rarity.COMMON,
                 ShieldDefinition.DEFAULT_MATERIAL, blockDr, List.of());
     }
 
@@ -88,7 +88,7 @@ class ShieldDefinitionTest {
                 () -> shield(2.0));
         assertTrue(high.getMessage().contains("2.0"),
                 "the refusal must quote the offending value, got: " + high.getMessage());
-        assertTrue(high.getMessage().contains("roundshield"),
+        assertTrue(high.getMessage().contains("shield"),
                 "and name the shield, got: " + high.getMessage());
 
         assertThrows(IllegalArgumentException.class, () -> shield(-0.5),
@@ -112,13 +112,13 @@ class ShieldDefinitionTest {
     @Test
     void theIdentityFieldsAreAllRequired() {
         assertThrows(IllegalArgumentException.class, () -> new ShieldDefinition(
-                " ", "Roundshield", Rarity.COMMON, "shield", 0.5, List.of()), "blank id");
+                " ", "Shield", Rarity.COMMON, "shield", 0.5, List.of()), "blank id");
         assertThrows(IllegalArgumentException.class, () -> new ShieldDefinition(
-                "roundshield", " ", Rarity.COMMON, "shield", 0.5, List.of()), "blank display_name");
+                "shield", " ", Rarity.COMMON, "shield", 0.5, List.of()), "blank display_name");
         assertThrows(IllegalArgumentException.class, () -> new ShieldDefinition(
-                "roundshield", "Roundshield", null, "shield", 0.5, List.of()), "no rarity");
+                "shield", "Shield", null, "shield", 0.5, List.of()), "no rarity");
         assertThrows(IllegalArgumentException.class, () -> new ShieldDefinition(
-                "roundshield", "Roundshield", Rarity.COMMON, " ", 0.5, List.of()), "blank material");
+                "shield", "Shield", Rarity.COMMON, " ", 0.5, List.of()), "blank material");
         // Mutation: drop any one guard -> that constructor call returns a definition whose item
         // would mint with a blank name or no material -> reddens.
     }
@@ -130,7 +130,7 @@ class ShieldDefinitionTest {
         // The loader hands over a list it still holds. Without the copy, a shield already in the
         // registry would change under the tooltip that already rendered it.
         List<String> authored = new ArrayList<>(List.of("Plain oak, banded in iron."));
-        ShieldDefinition s = new ShieldDefinition("roundshield", "Roundshield", Rarity.COMMON,
+        ShieldDefinition s = new ShieldDefinition("shield", "Shield", Rarity.COMMON,
                 "shield", 0.5, authored);
         authored.add("smuggled in after load");
         assertEquals(1, s.flavor().size(), "the loaded shield must not see the later addition");
@@ -142,7 +142,7 @@ class ShieldDefinitionTest {
     void anAbsentFlavorIsAnEmptyListRatherThanNull() {
         // Every consumer iterates it. Null here would be a NullPointerException at mint time, in
         // paper, where there is no test to catch it.
-        ShieldDefinition s = new ShieldDefinition("roundshield", "Roundshield", Rarity.COMMON,
+        ShieldDefinition s = new ShieldDefinition("shield", "Shield", Rarity.COMMON,
                 "shield", 0.5, null);
         assertTrue(s.flavor().isEmpty());
         // Mutation: drop the null branch -> a shield with no flavor: key NPEs when its lore is

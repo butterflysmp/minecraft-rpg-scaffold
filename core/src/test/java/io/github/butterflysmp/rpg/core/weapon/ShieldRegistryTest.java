@@ -24,11 +24,11 @@ class ShieldRegistryTest {
     @Test
     void aRegisteredShieldIsFoundByItsId() {
         ShieldRegistry registry = new ShieldRegistry();
-        registry.register(shield("roundshield"));
-        assertTrue(registry.find("roundshield").isPresent());
-        assertEquals("Name of roundshield", registry.find("roundshield").orElseThrow().displayName());
+        registry.register(shield("shield"));
+        assertTrue(registry.find("shield").isPresent());
+        assertEquals("Name of shield", registry.find("shield").orElseThrow().displayName());
         assertEquals(1, registry.size());
-        // Mutation: key the map on displayName instead of id -> find("roundshield") is empty and
+        // Mutation: key the map on displayName instead of id -> find("shield") is empty and
         // /rpg give can never mint it -> reddens.
     }
 
@@ -45,10 +45,10 @@ class ShieldRegistryTest {
         // Two files claiming one id means one of them is invisible, and which one would depend on
         // readdir order. Throwing turns it into a named, skipped file in the boot log.
         ShieldRegistry registry = new ShieldRegistry();
-        registry.register(shield("roundshield"));
+        registry.register(shield("shield"));
         IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> registry.register(shield("roundshield")));
-        assertTrue(ex.getMessage().contains("roundshield"),
+                () -> registry.register(shield("shield")));
+        assertTrue(ex.getMessage().contains("shield"),
                 "the refusal must name the id, got: " + ex.getMessage());
         assertEquals(1, registry.size(), "and the first registration must survive intact");
         // Mutation: use put instead of putIfAbsent -> the second file silently wins and the first
@@ -70,7 +70,7 @@ class ShieldRegistryTest {
     @Test
     void theViewIsUnmodifiableSoNothingCanEditTheRegistryThroughIt() {
         ShieldRegistry registry = new ShieldRegistry();
-        registry.register(shield("roundshield"));
+        registry.register(shield("shield"));
         assertThrows(UnsupportedOperationException.class, () -> registry.all().clear());
         // Mutation: return byId.values() directly -> a caller can clear the registry at runtime
         // -> reddens.

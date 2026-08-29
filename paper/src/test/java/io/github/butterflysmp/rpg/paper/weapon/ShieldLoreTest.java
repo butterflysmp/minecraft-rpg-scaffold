@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ShieldLoreTest {
 
     private static ShieldDefinition shield(Rarity rarity, double blockDr, List<String> flavor) {
-        return new ShieldDefinition("roundshield", "Roundshield", rarity, "shield", blockDr, flavor);
+        return new ShieldDefinition("shield", "Shield", rarity, "shield", blockDr, flavor);
     }
 
     private static String plain(Component c) {
@@ -45,9 +45,15 @@ class ShieldLoreTest {
         // A weapon's stat block opens with a blank because it sits UNDER an element line. A shield
         // has nothing above it, so a leading blank would render as a gap at the top of the tooltip
         // and read as a bug rather than as spacing.
-        List<Component> lore = ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()));
-        assertEquals("Block: 50%", plain(lore.get(0)));
-        assertEquals(NamedTextColor.GRAY, lore.get(0).color());
+        List<Component> lore = ShieldLore.build(shield(Rarity.COMMON, 0.35, List.of()));
+        assertEquals("Damage Reduction: 35%", plain(lore.get(0)));
+
+        // GRAY label, GREEN value -- and GREEN is not a taste: it is exactly what
+        // StatsBarText.DEFENSE_COLOR is, so the shield's reduction and armor's Defense read as the
+        // same kind of number. Asserted on the CHILD, because the parent carries the label colour.
+        assertEquals(NamedTextColor.GRAY, lore.get(0).color(), "the label is gray");
+        assertEquals(NamedTextColor.GREEN, lore.get(0).children().get(0).color(),
+                "the number must match the Defense stat colour");
         // Mutation: add a blank() before the stat line -> the tooltip opens on an empty row
         // -> reddens.
     }
@@ -60,11 +66,14 @@ class ShieldLoreTest {
         //
         // It also matters for the boot gate: EnchantEffectLine exists so the expected number can be
         // read off the screen BEFORE the hit lands, and for a shield this is that number.
-        ShieldDefinition roundshield = shield(Rarity.COMMON, 0.5, List.of());
+        ShieldDefinition shield = shield(Rarity.COMMON, 0.35, List.of());
 
-        assertEquals("Block: 55%", plain(ShieldLore.build(roundshield, 5).get(0)));
-        assertEquals("Block: 60%", plain(ShieldLore.build(roundshield, 10).get(0)));
-        assertEquals("Block: 65%", plain(ShieldLore.build(roundshield, 15).get(0)));
+        // EXECUTED against the real Bulwark.effectiveDr, not worked out: the raw fractions are
+        // 0.39999999999999997, 0.44999999999999996 and 0.5, which the one-decimal rounding renders
+        // as the clean percentages below. That rounding is the ONLY reason these read tidily.
+        assertEquals("Damage Reduction: 40%", plain(ShieldLore.build(shield, 5).get(0)));
+        assertEquals("Damage Reduction: 45%", plain(ShieldLore.build(shield, 10).get(0)));
+        assertEquals("Damage Reduction: 50%", plain(ShieldLore.build(shield, 15).get(0)));
     }
 
     @Test
@@ -72,63 +81,11 @@ class ShieldLoreTest {
         // The identity every unenchanted shield in the game depends on. Bulwark.NONE must leave the
         // line untouched, and the no-arg build must agree with passing zero -- two spellings of the
         // same tooltip cannot be allowed to drift.
-        ShieldDefinition roundshield = shield(Rarity.COMMON, 0.5, List.of());
+        ShieldDefinition shield = shield(Rarity.COMMON, 0.35, List.of());
 
-        assertEquals("Block: 50%", plain(ShieldLore.build(roundshield, 0).get(0)));
-        assertEquals(plain(ShieldLore.build(roundshield).get(0)),
-                plain(ShieldLore.build(roundshield, 0).get(0)));
-    }
-
-    @Test
-    void aRiposteShieldAdvertisesItsReflectAndNamesTheTarget() {
-        // Without this line Riposte would be the ONLY shield mechanic with no number anywhere on the
-        // item -- and the boot gate would have nothing to read before the hit, which is the whole
-        // reason the block line renders composed.
-        List<Component> lore = ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()), 0, 30);
-
-        assertEquals("Block: 50%", plain(lore.get(0)));
-        assertEquals("Reflect: 30% to attacker", plain(lore.get(1)));
-    }
-
-    @Test
-    void theTwoStatLinesDoNotConfuseAFRACTIONWithPERCENTAGEPOINTS() {
-        // THE trap in putting these two lines adjacent. A block fraction is 0.5 and renders "50%";
-        // a reflect percent is 30 and renders "30%". Handing reflectLabel a fraction would advertise
-        // "0.3%" on a shield reflecting nearly a third of every blow, and the two lines sit one row
-        // apart where that looks plausible.
-        List<Component> lore = ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()), 0, 30);
-
-        assertEquals("Reflect: 30% to attacker", plain(lore.get(1)));
-        assertNotEquals("Reflect: 0.3% to attacker", plain(lore.get(1)));
-
-        // And the block line is unmoved by the reflect -- the orthogonality, on the tooltip.
-        assertEquals(plain(ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()), 0).get(0)),
-                plain(lore.get(0)));
-    }
-
-    @Test
-    void aShieldWithNoRiposteRendersNoReflectLineAtAll() {
-        // CONDITIONAL, unlike the block line. No shield has a base reflect, so a permanent
-        // "Reflect: 0%" would advertise a stat the gear does not have -- the opposite of the
-        // block line, where "Block: 0%" on a mis-authored shield is real information.
-        List<Component> lore = ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()), 0, 0);
-
-        assertEquals("Block: 50%", plain(lore.get(0)));
-        for (Component line : lore) {
-            assertFalse(plain(line).contains("Reflect"),
-                    "a shield without Riposte advertised a reflect: " + plain(line));
-        }
-        // And the three-arg build with no reflect is byte-identical to the two-arg one.
-        assertEquals(ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()), 0).size(), lore.size());
-    }
-
-    @Test
-    void theReflectLineIsNotClampedBecauseItHasNoNaturalCeiling() {
-        // The OPPOSITE of the block line, deliberately. A block fraction is bounded by construction,
-        // so clamping is truth. A reflect percent is not -- 100% is a legal, if brutal, content
-        // choice -- and clamping would silently under-report a shield an author made vicious.
-        List<Component> lore = ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()), 0, 250);
-        assertEquals("Reflect: 250% to attacker", plain(lore.get(1)));
+        assertEquals("Damage Reduction: 35%", plain(ShieldLore.build(shield, 0).get(0)));
+        assertEquals(plain(ShieldLore.build(shield).get(0)),
+                plain(ShieldLore.build(shield, 0).get(0)));
     }
 
     @Test
@@ -136,7 +93,7 @@ class ShieldLoreTest {
         // A high-DR shield plus Bulwark III exceeds 1.0 -- executed, 0.9 + 0.15 is 1.05 -- and the
         // tooltip must say 100%, not 105%. It clamps through the same Bulwark.effectiveDr the rider
         // uses, so the promise and the mechanic agree at the ceiling too.
-        assertEquals("Block: 100%", plain(ShieldLore.build(shield(Rarity.COMMON, 0.9, List.of()), 15).get(0)));
+        assertEquals("Damage Reduction: 100%", plain(ShieldLore.build(shield(Rarity.COMMON, 0.9, List.of()), 15).get(0)));
     }
 
     @Test
@@ -145,7 +102,7 @@ class ShieldLoreTest {
         // rather than one with a zero stat, and those want telling apart -- especially since a
         // zero-block shield is exactly what a typo'd block_dr key produces.
         List<Component> lore = ShieldLore.build(shield(Rarity.COMMON, 0.0, List.of()));
-        assertEquals("Block: 0%", plain(lore.get(0)));
+        assertEquals("Damage Reduction: 0%", plain(lore.get(0)));
         // Mutation: guard the stat line behind shield.blocks() -> a zero shield renders no stat and
         // looks identical to one whose loader dropped the key -> reddens.
     }

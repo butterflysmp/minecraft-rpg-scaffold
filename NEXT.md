@@ -581,7 +581,40 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
-### Shields, Slice 2b (Riposte, the reflect) — what it created or exposed
+### Shields, Slice 2b (Thorns, the reflect) — what it created or exposed
+
+- **A FINALISATION PASS moved the names and the numbers, and every constant was RE-EXECUTED.** The
+  enchant is `Thorns` (the design doc VACATED the name -- see below); the shield is `shield`, not
+  `roundshield`; `block_dr` is **0.35**, so a 15.0 hit passes **9.75**; the stat is called **Damage
+  Reduction** on the item and in Bulwark's effect line; its number renders in
+  `StatsBarText.DEFENSE_COLOR` (GREEN), read off the HUD rather than picked, because a shield's
+  reduction and armor's Defense are the same kind of number; and the reflect line is gone from the
+  shield lore.
+
+- **THE "THORNS" RESERVATION IS RESOLVED, NOT DUPLICATED.** `DESIGN-status-effects.md` held the name
+  for a Nature propagation status that has no code, no content file and no slice. It yields: there is
+  exactly one Thorns in this project and it is the shield enchant. **The four anti-loop safety rules
+  travel with the MECHANIC, not with the word** -- they are about propagation, and the enchant does
+  none of it -- so when that status is built it takes a new name and the rules go with it under that
+  name. A grep for "thorns" now finds the enchant everywhere and the vacation note once.
+
+- **LOWERING THE BASE TO 0.35 CHANGED THE ARGUMENT FOR ADDITIVE BULWARK, not just the numbers.** At
+  0.5 the two REJECTED readings were bit-identical to each other (`0.525 / 0.55 / 0.575`), so the
+  shipped shield could catch a wrong implementation but never say WHICH wrong rule it followed. At
+  0.35 all three separate -- executed: additive `0.39999999999999997`, multiplicative `0.3675`,
+  diminishing `0.38250000000000006`. The shipped base now discriminates the rule by itself.
+  `BulwarkTest` keeps 0.5 as `LEGACY_HALF`, because a base where two rivals coincide is exactly the
+  case a blind test would survive, and adds an assertion that the shipped base separates.
+
+- **THE BULWARK FRACTIONS ARE NOT THE CLEAN NUMBERS THEY LOOK LIKE.** `0.35 + 0.05` in binary
+  floating point is `0.39999999999999997`, and `+ 0.10` is `0.44999999999999996`. A 15.0 hit passes
+  `9.000000000000002` at Bulwark I, not 9.0. The tooltip's one-decimal rounding is the only reason
+  the item reads "40%" and "45%"; the tests carry the exact doubles and must not be tidied. This is
+  the fourth time hand-predicted floats would have been wrong in this project.
+
+- **The gate discriminators moved with the base.** The rejected off-pass-through reading now reads
+  **1 / 2 / 3** rather than 1 / 2 / 2, because the pass-through is 9.75 instead of 7.5. All three
+  rungs still separate from the correct 2 / 3 / 5, and III (5 versus 3) is still the clearest.
 
 **The three original shield goals are complete**: block DR (Slice 1), Bulwark and the gear-gating
 axis (2a), and now the reflect. See `PLAN-shields-slice-2b.md`. **Boot gate OWED.**
@@ -593,10 +626,10 @@ axis (2a), and now the reflect. See `PLAN-shields-slice-2b.md`. **Boot gate OWED
   aggro it re-asserts and the kill credit it earns all come from the existing pipeline unchanged.
 
 - **`ShieldExchange` EXISTS BECAUSE THE RULE WAS OTHERWISE UNTESTABLE, and that is a different
-  reason from tidiness.** Riposte's one load-bearing rule -- it reflects a fraction of the
+  reason from tidiness.** Thorns's one load-bearing rule -- it reflects a fraction of the
   PRE-MITIGATION blow -- lived in `RpgListeners.onMobMeleeAttack`, which cannot be unit-tested (a
   live `Player`, a live `LivingEntity`, a real `BLOCKING` modifier; no listener test exists or can).
-  A pure `Riposte.reflected` test pins the arithmetic but cannot say WHICH value the rider passed.
+  A pure `Thorns.reflected` test pins the arithmetic but cannot say WHICH value the rider passed.
 
   Moving the CHOICE into a pure core record makes the mistake reddening in two seconds instead of
   boot-only: `of()` takes the raw blow once and returns both numbers, so the reduction happens inside
@@ -616,7 +649,7 @@ axis (2a), and now the reflect. See `PLAN-shields-slice-2b.md`. **Boot gate OWED
   What IS ordering-sensitive: `BukkitCombatant.of` runs **inline** and its first act is
   `Regions.requireOwned`, which throws off-region. Placed above the token, that throw skips
   `setDamage` -- so **vanilla's FULL damage lands on the player** -- and skips the custom hit as well.
-  Placed last, a throw costs the riposte and nothing else.
+  Placed last, a throw costs the thorns and nothing else.
 
 - **THE VALIDATION SWITCH WAS NEVER EXHAUSTIVENESS-CHECKED, AND 2a's COMMENT SAID IT WAS.** Adding
   `EnchantEffect.REFLECT` was supposed to be a compile error at two sites. It was one.
@@ -630,22 +663,22 @@ axis (2a), and now the reflect. See `PLAN-shields-slice-2b.md`. **Boot gate OWED
   input values"*, BUILD FAILURE. **The lesson generalises: a no-default switch STATEMENT guarantees
   nothing.** Anywhere this codebase claims a switch is a compile-time gate, check which kind it is.
 
-- **Two more silent-pass tests, both closed by Riposte being the first enchant that could.**
+- **Two more silent-pass tests, both closed by Thorns being the first enchant that could.**
   `EnchantEffectLineTest` had ZERO coverage of the `BLOCK_DR` arm 2a added (`grep -c` returned 0)
   while its javadoc claimed it asserted "every arm" -- it asserted every arm its hand-listed fixture
   array knew about, the same discovery trap as the loader fixture. And `BlockEnchantItems`' effect
   filter was unguarded: 2a's cross-effect fixture was Unbreaking, whose curve is empty, so deleting
   the filter returned `0.0` either way and its own comment named that risk before agreeing with it.
-  Bulwark and Riposte are the first two enchants that BOTH carry curves and bind DIFFERENT
+  Bulwark and Thorns are the first two enchants that BOTH carry curves and bind DIFFERENT
   mechanisms; the mutation now fails with `expected: <15.0> but was: <45.0>`.
 
 - **A shipped-content typo that no fixture could catch.** 2a's directory-scan fixture picks
-  `riposte.yml` up for free and asserts the id SET -- so it catches a file the loader REFUSES, and
-  nothing else. `riposte.yml` authored with `effect: block_dr` gates fine on `class: shield`, loads
-  cleanly, and reddens nothing: Riposte silently becomes a second Bulwark. Closed by asserting the
+  `thorns.yml` up for free and asserts the id SET -- so it catches a file the loader REFUSES, and
+  nothing else. `thorns.yml` authored with `effect: block_dr` gates fine on `class: shield`, loads
+  cleanly, and reddens nothing: Thorns silently becomes a second Bulwark. Closed by asserting the
   effect and curve by VALUE, proven by flipping the shipped file.
 
-- **A shield's enchant pool is THREE, and the 3-candidate slot is finally real.** Bulwark + Riposte +
+- **A shield's enchant pool is THREE, and the 3-candidate slot is finally real.** Bulwark + Thorns +
   Unbreaking, against two for every weapon class. So `EnchantMenuLayout.CANDIDATES == 3` stops being
   a constant pinned against another constant, and the distinctness rule (`remaining.remove(picked)`)
   runs at pool size 3 for the first time -- the third pick comes from a pool already shrunk twice.
@@ -657,9 +690,9 @@ axis (2a), and now the reflect. See `PLAN-shields-slice-2b.md`. **Boot gate OWED
   one apart. And pin the ABSOLUTE value: with Bulwark III active the rejected reading still rounds to
   2 at III, so "the number did not move" is not the discriminator.
 
-- **Riposte gives Slice 1's negative-zero trap its first VISIBLE instrument.** `vanillaBlocked`'s
+- **Thorns gives Slice 1's negative-zero trap its first VISIBLE instrument.** `vanillaBlocked`'s
   strict `< 0` was previously checkable only by reading the heart bar for half-versus-full. With
-  Riposte III equipped, a hit from behind with the shield raised must paint NO number over the mob --
+  Thorns III equipped, a hit from behind with the shield raised must paint NO number over the mob --
   if that comparison were ever relaxed to `<=`, a white `5` appears over a mob that hit you in the
   back. Same free instrument for the broken-shield gate.
 
@@ -691,7 +724,7 @@ axis (2a), and now the reflect. See `PLAN-shields-slice-2b.md`. **Boot gate OWED
 
 **Closes four Slice-1 deferrals at once**: the class axis for gear, the enchant ROLL for shields,
 `/rpg enchant show` for shields, and "does a broken shield stop blocking". See
-`PLAN-shields-slice-2a.md`. Riposte is 2b, its own PR.
+`PLAN-shields-slice-2a.md`. Thorns is 2b, its own PR.
 
 **Boot gate — RUN AND PASSED IN FULL, 2026-08-29. All 14 rows.** Paper 26.1.2.build.74. Row 1 from
 the boot log, rows 2-14 by the operator at the keyboard.
@@ -752,7 +785,7 @@ result no plan predicted in full is the first entry below.
 
 - **A plan figure that was wrong, corrected by writing the test.** The plan said a shield's pool
   would be three. It is **two** in 2a — Bulwark plus Unbreaking, the same as every weapon class.
-  Three arrives with Riposte, and that is when a 3-candidate slot and `EnchantMenuLayout.CANDIDATES
+  Three arrives with Thorns, and that is when a 3-candidate slot and `EnchantMenuLayout.CANDIDATES
   == 3` are first exercised by a real roll rather than only by `candidateCount` in isolation.
   `EnchantRoll`'s rarity-weighting javadoc was about to be rewritten around the wrong number.
 
@@ -817,7 +850,7 @@ result no plan predicted in full is the first entry below.
 
 - **ADDITIVE BULWARK MAKES TOTAL IMMUNITY REACHABLE, and that is a constraint on future content.**
   A shield authored at `block_dr >= 0.85` is untouchable at Bulwark III (`0.9 + 0.15 = 1.05`, clamped
-  to `1.0`, a 15.0 hit passes `0.0`). Nothing shipped is close — the roundshield tops out at 0.65 —
+  to `1.0`, a 15.0 hit passes `0.0`). Nothing shipped is close — the shield tops out at 0.65 —
   and the clamp makes the failure mode "invulnerable" rather than "negative damage". **The day a
   high-DR shield is authored is the day to decide on a soft cap below 1.0**, not before.
 
@@ -835,7 +868,7 @@ result no plan predicted in full is the first entry below.
   would blur the tag boundary the whole system keys on.
 
 - **Gear already in an inventory is never rolled retroactively.** `rollOnAcquire` fires only at
-  acquisition, never from `mint`/`remint` (the once-per-item rule). A roundshield minted before 2a
+  acquisition, never from `mint`/`remint` (the once-per-item rule). A shield minted before 2a
   carries no `enchant_rolled` flag and nothing will come back to give it one. Same property weapons
   have had since the rolls pass. **It matters at a boot gate**: an old shield shows empty slots and
   reads exactly like a broken roll. Give a fresh one.
@@ -846,7 +879,7 @@ result no plan predicted in full is the first entry below.
 
 ### Shields, Slice 1 (a mintable shield and the block-DR mechanic) — what it created or exposed
 
-A `roundshield` is mintable, and blocking has a real effect for the first time: vanilla decides
+A `shield` is mintable, and blocking has a real effect for the first time: vanilla decides
 WHETHER a hit was blocked, `Shield.applyBlock` decides what that is worth, and armor `Defense`
 reduces the remainder inside `applyDamage`. Block-then-armor, both apply. Before this, a raised
 shield was mechanically identical to empty hands — `onMobMeleeAttack` deals the mob's ATTACK stat
@@ -935,7 +968,7 @@ Deploy verified by mtime and size before booting, not assumed (target 09:44:15, 
 
 | # | Check | Result |
 |---|---|---|
-| 1 | `/rpg give roundshield` mints | PASS (mechanically — see caveat below) |
+| 1 | `/rpg give shield` mints | PASS (mechanically — see caveat below) |
 | 2 | Unbreaking onto a held shield | PASS — III active, so `HeldGear` dispatch + `ShieldItems.remint` both work |
 | 3 | Unblocked baseline | PASS — `reduced=15.0000`, the mob's ATTACK stat |
 | 4 | Blocked, frontal | PASS — `reduced=7.5000`, exactly half, on all 20 |
@@ -990,7 +1023,7 @@ facing); passed at `-0.2987` (107.4°) and `-0.9444` (160.8°). Consistent with 
 - **Row 9 was not visually confirmed.** Nothing was cancelled, so the raise, sound and
   knockback-dampen should be vanilla's — but "should be" is not "was seen".
 - **Rows 1 and 2 are mechanically confirmed, visually unverified.** Unbreaking III cannot be
-  active on a roundshield unless give, the enchant dispatch and the re-mint all worked. The
+  active on a shield unless give, the enchant dispatch and the re-mint all worked. The
   TOOLTIP — rarity colour, `Common Shield` footer last, enchant block above it — was not read back.
 - **`disagree=true` never appeared, and that is not evidence about the active-hand fix.** All 20
   blocks held exactly one shield, where the active-hand and positional readings agree by
@@ -999,7 +1032,7 @@ facing); passed at `-0.2987` (107.4°) and `-0.9444` (160.8°). Consistent with 
   witnessed.
 
 **Deferred to Slice 2 -- ALL CLOSED IN 2a EXCEPT THE FIRST, see the Slice 2a section above.** Thorns
-(shipped as RIPOSTE in 2b -- renamed, because DESIGN-status-effects.md already reserves "Thorns" for
+(shipped as THORNS in 2b -- renamed, because DESIGN-status-effects.md already reserves "Thorns" for
 the Nature propagation status and its four anti-loop safety rules), Bulwark, the class axis for gear (enchant gating, the roll, and
 `show`), and a `ShieldRefresher` for the join / `/rpg refresh` path — a shield's lore does NOT
 currently rebuild from content on rejoin the way a weapon's does.

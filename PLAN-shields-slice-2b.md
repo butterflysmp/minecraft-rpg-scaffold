@@ -1,13 +1,54 @@
-# Shields, Slice 2b — Riposte, the reflect-to-attacker enchant
+# Shields, Slice 2b — Thorns, the reflect-to-attacker enchant
 
 Branched off **`09c42eb`**, verified from the wire. With this the three original shield goals are
 complete: block DR (Slice 1), Bulwark and the gear-gating axis (2a), and the reflect.
+
+## Finalisation pass -- six changes after the first review
+
+Folded into this branch before merge, and every number below RE-EXECUTED rather than carried over:
+
+1. **The enchant is `Thorns`, not `Riposte`.** `DESIGN-status-effects.md` yields the name -- see the
+   vacation note there. The propagation status takes a new name when it is built, and its four
+   anti-loop safety rules travel with the MECHANIC, not with the word. `EnchantEffect.REFLECT` is the
+   mechanism and is unchanged.
+2. **The shield is `shield`, not `roundshield`** (id, display name, filename). No collision: the id
+   comes from the filename and `material:` is a separate key, and no weapon is called `shield`.
+3. **`block_dr` 0.5 -> 0.35.** Every pinned constant re-executed; see below.
+4. **The reflect line is gone from the shield lore.** Thorns' number lives on the enchant line only.
+5. **The Damage Reduction NUMBER is GREEN**, read off `StatsBarText.DEFENSE_COLOR` rather than
+   picked -- a shield's reduction and armor's Defense are the same kind of number and compose, so
+   they read the same colour. (Adventure has no `LIME`; `GREEN` is the bright one.)
+6. **The stat is "Damage Reduction", not "Block"**, on the item AND in Bulwark's effect line, so the
+   gear and the enchant that modifies it cannot name one stat two ways.
+
+### What re-executing 0.35 changed, beyond the obvious
+
+```
+  plain        dr 0.35                 ->  a 15.0 hit passes 9.75
+  Bulwark I    dr 0.39999999999999997  ->  9.000000000000002    tooltip 40%
+  Bulwark II   dr 0.44999999999999996  ->  8.25                 tooltip 45%
+  Bulwark III  dr 0.5                  ->  7.5                  tooltip 50%
+```
+
+**The drs are NOT the clean 0.40 / 0.45 they look like** -- `0.35 + 0.05` is `0.39999999999999997`.
+The tooltip's one-decimal rounding is what renders them tidily; the tests carry the exact doubles.
+
+**And the rationale for ADDITIVE changed.** At 0.5 the two rejected readings were bit-identical to
+each other, so the shipped shield could tell "wrong" from "right" but never which wrong. At 0.35 all
+three separate (`0.3999... / 0.3675 / 0.3825`), so the shipped base now discriminates the rule by
+itself. `BulwarkTest` keeps 0.5 as `LEGACY_HALF` -- the coincidence there is precisely the case a
+blind test would survive -- and adds an assertion that the shipped base separates.
+
+**The gate discriminators moved too.** The rejected off-pass-through reading now reads **1 / 2 / 3**
+rather than 1 / 2 / 2, because the pass-through is 9.75 instead of 7.5.
+
+---
 
 ## Context
 
 2a built the rails — the `GearClass` axis, the shield roll, the table, `BlockEnchantItems`' effect
 scan, and the broken-shield gate whose own comment reserved a place *"for the reflect in Slice 2b"*.
-Riposte rides all of it.
+Thorns rides all of it.
 
 **The one genuinely new thing is the reflect seam: damage dealt back OUT of the mob→player rider, to
 a second entity, credited to the blocking player.** That had never been done here.
@@ -16,16 +57,16 @@ a second entity, credited to the blocking player.** That had never been done her
 
 ## What shipped
 
-**Riposte** reflects `10/20/30%` of the **pre-mitigation** blow — the attacker's raw attack stat,
+**Thorns** reflects `10/20/30%` of the **pre-mitigation** blow — the attacker's raw attack stat,
 before the block fraction *and* before the victim's armor. Off the 15.0 gate mob that is
 `1.5 / 3.0 / 4.5`, which the damage popup **rounds to 2 / 3 / 5**.
 
 Pre-mitigation is forced, not chosen: the post-mitigation figure does not exist yet on the thread
 where the reflect is computed — the identical constraint `SweepShare` records. It is also what keeps
-Riposte and Bulwark independently tunable. **A heavily armored player reflects more than the hit did
+Thorns and Bulwark independently tunable. **A heavily armored player reflects more than the hit did
 to them.** Call it *pre-mitigation*, never *pre-block*.
 
-**Named Riposte, not Thorns.** `DESIGN-status-effects.md` reserves Thorns for a Nature propagation
+**Named Thorns, not Thorns.** `DESIGN-status-effects.md` reserves Thorns for a Nature propagation
 status with four anti-loop safety rules attached. Rename the mechanic with no load-bearing
 associations, not the one that has them.
 
@@ -36,9 +77,9 @@ someone can flip, matching the sweep rider.
 
 ### `ShieldExchange` — a testability decision, not tidiness
 
-Riposte's single load-bearing rule lived in `RpgListeners.onMobMeleeAttack`, which **cannot be
+Thorns's single load-bearing rule lived in `RpgListeners.onMobMeleeAttack`, which **cannot be
 unit-tested** (a live `Player`, a live `LivingEntity`, a real `BLOCKING` modifier). A pure
-`Riposte.reflected` test pins the arithmetic but cannot say *which* value the rider passed.
+`Thorns.reflected` test pins the arithmetic but cannot say *which* value the rider passed.
 
 So the choice moved into a pure core record: `ShieldExchange.of(preMitigation, blocked, effectiveDr,
 reflectPercent)` returns both numbers from one input. The reduction happens **inside**, so the rider
@@ -63,7 +104,7 @@ ShieldExchange exchange = ShieldExchange.of(
 …
 event.setDamage(TOKEN_DAMAGE);
 BukkitCombatant.of(victim, adapters).handle().applyDamage(exchange.applied(), attacker.getUniqueId());
-if (Riposte.reflects(exchange.reflected())) {
+if (Thorns.reflects(exchange.reflected())) {
     BukkitCombatant.of(attacker, adapters).handle().applyDamage(exchange.reflected(), victim.getUniqueId());
 }
 ```
@@ -71,18 +112,18 @@ if (Riposte.reflects(exchange.reflected())) {
 Byte-for-byte the construction `onPlayerSweepAttack` already uses — dealing custom damage to a second
 entity credited to a dealer is proven. What is new is the *direction*.
 
-**Why the riposte is LAST, and it is not tick ordering.** Both `applyDamage` calls defer to their
+**Why the thorns is LAST, and it is not tick ordering.** Both `applyDamage` calls defer to their
 entity's next tick, so "the victim's damage lands first" holds on Paper by FIFO accident and is
 meaningless on Folia. What *is* ordering-sensitive is the **throw**: `BukkitCombatant.of` runs INLINE
 and its first act is `Regions.requireOwned`. Placed above, that throw skips `setDamage` — so
 **vanilla's full damage lands on the player** — and skips the custom hit too. Placed last, a throw
-costs the riposte and nothing else.
+costs the thorns and nothing else.
 
 **`seedCombatStats` is the reflect's precondition**, not just the nameplate's: it is what makes the
 mob tracked, and `CombatantStats.damage` is a silent no-op on an untracked combatant.
 
 **One decode.** `ShieldBlock.resolve` hoists `EnchantItems.read` and scans the state twice, so a
-blocked hit costs one PDC parse for both enchants. `reflectPercent` is `Riposte.NONE` on
+blocked hit costs one PDC parse for both enchants. `reflectPercent` is `Thorns.NONE` on
 `Outcome.NONE`, so a back-hit, an untagged shield, a dangling id and a broken shield all send nothing
 back with no extra branch — one predicate, all three shield effects.
 
@@ -107,7 +148,7 @@ about. Same discovery trap as the loader fixture 2a fixed one file over.
 
 Also closed: **`BlockEnchantItems`' effect filter was unguarded.** 2a's cross-effect test used
 Unbreaking, whose curve is empty, so deleting the filter returned `0.0` either way. Bulwark and
-Riposte are the first two enchants that both carry curves and bind different mechanisms; the mutation
+Thorns are the first two enchants that both carry curves and bind different mechanisms; the mutation
 now reddens with `expected: <15.0> but was: <45.0>`.
 
 ---
@@ -126,7 +167,7 @@ Final: **core 519 / storage 17 / paper 353. BUILD SUCCESS.**
 | `EnchantDefinition`: drop `REFLECT` from the Gate expression | **compile error** — the restored guarantee |
 | `BlockEnchantItems`: delete the effect filter | 2 red, `expected: <15.0> but was: <45.0>` |
 | `EnchantEffectLine`: copy-paste "block" into the reflect arm | 1 red, naming both strings |
-| `riposte.yml`: `effect: block_dr` | 1 red — a typo that was previously invisible |
+| `thorns.yml`: `effect: block_dr` | 1 red — a typo that was previously invisible |
 
 **A comment that overclaimed, caught by running the mutation** (the same failure 2a's `BulwarkTest`
 made). The cross-product wording test's first comment said only it could catch the copy-paste. It
@@ -143,43 +184,44 @@ check. There is deliberately no `EnchantCurveTest`: a mutation already reddens t
 `./scripts/dev-server.sh --refresh-content`.
 
 **Row 1, run 2026-08-29 15:19.** Paper 26.1.2.build.74, deploy verified by mtime AND size before
-booting (target and deployed both `469324` bytes) and `riposte.yml` confirmed inside the shaded jar:
+booting (target and deployed both `469324` bytes) and `thorns.yml` confirmed inside the shaded jar:
 `Loaded 6 abilities, 7 visuals, 5 statuses, 7 elements, 6 enchants, 2 kits, 5 weapons, 1 shields,
 1 mobs` / `Done (6.477s)`, with ZERO `Skipping malformed enchant`. Six enchants, up from five, so
 `effect: reflect` binds through the real `EnchantEffect` and `class: shield` through the real
-`GearClass` on a live server. **It is a load check and establishes nothing mechanical.** **Give a FRESH roundshield** — `rollOnAcquire` fires only
-at acquisition, so a 2a shield carries no `enchant_rolled` flag and will never roll Riposte.
+`GearClass` on a live server. **It is a load check and establishes nothing mechanical.** **Give a FRESH shield** — `rollOnAcquire` fires only
+at acquisition, so a 2a shield carries no `enchant_rolled` flag and will never roll Thorns.
 
 **The popup ROUNDS.** Executed: the gate reads whole numbers.
 
-| Riposte | raw | **popup** | the REJECTED off-pass-through reading |
+| Thorns | raw | **popup** | the REJECTED off-pass-through reading |
 |---|---|---|---|
 | I | 1.5 | **2** | 1 |
 | II | 3.0 | **3** | 2 |
-| III | 4.5 | **5** | 2 |
+| III | 4.5 | **5** | 3 |
 
-Gate on **III (5 vs 2)**; I is only one apart. Pin the **absolute** value — with Bulwark III the
-rejected reading still rounds to 2 at III, so "the number did not move" is *not* the discriminator.
+Gate on **III (5 vs 3)**; I is only one apart. Pin the **absolute** value: adding Bulwark
+moves the hit the player takes but must NOT move the reflect, so the row is "III still reads 5", not
+"the number changed".
 
 | # | Check | Expected |
 |---|---|---|
 | 1 | boot log | `Loaded … 6 enchants`; no `Skipping malformed enchant` |
-| 2 | `/rpg give roundshield` ×3, open the table | a slot offers **3** candidates — first time in shipped content |
-| 3 | the shield tooltip at Riposte III | `Reflect: 30% to attacker` beneath the block line |
-| 4 | Riposte I / II / III **alone**, block a 15.0 mob | popup over the mob reads **2 / 3 / 5** |
-| 5 | **Bulwark III also active**, Riposte III | still **5**, and `Block: 65%` on the tooltip |
-| 6 | hit from behind with Riposte active | **no reflect and no reduction** — one predicate |
+| 2 | `/rpg give shield` ×3, open the table | a slot offers **3** candidates — first time in shipped content |
+| 3 | the shield tooltip, plain | `Damage Reduction: 35%` -- label gray, number GREEN, matching the Defense stat |
+| 4 | Thorns I / II / III **alone**, block a 15.0 mob | popup over the mob reads **2 / 3 / 5**; the hit itself passes 9.75 |
+| 5 | **Bulwark III also active**, Thorns III | reflect still **5**, and `Damage Reduction: 50%` on the tooltip |
+| 6 | hit from behind with Thorns active | **no reflect and no reduction** — one predicate |
 | 7 | a reflect that kills | blocker gets the kill, drops, XP and both statistics |
-| 8 | `/rpg durability set 334`, block twice | after the break: **no reflect** |
+| 8 | `/rpg durability set 334`, block twice | after the break: **no reflect**, and the full 15.0 lands |
 | 9 | watch the mob on each reflect | it **flashes red**, with no vanilla hurt sound |
 
-**Two confounds the gate must control.** Run row 4 with **Riposte ALONE, no Bulwark** — swapping the
+**Two confounds the gate must control.** Run row 4 with **Thorns ALONE, no Bulwark** — swapping the
 two `percentFor` effect arguments inside `resolve` is invisible to every unit test and presents as a
 wrong-but-plausible ladder. And **do not swing while blocking**: a mob→player hit paints no popup, so
 during a pure block the reflect is the only number over the mob.
 
-**A bonus row Riposte earns.** It gives Slice 1's negative-zero trap its first *visible* instrument:
-with Riposte III equipped, a hit from behind with the shield raised must paint **no number**. If the
+**A bonus row Thorns earns.** It gives Slice 1's negative-zero trap its first *visible* instrument:
+with Thorns III equipped, a hit from behind with the shield raised must paint **no number**. If the
 strict `<` were ever relaxed to `<=`, a white `5` appears over a mob that hit you in the back.
 
 **Three side effects to record, not discover.** The mob flashes red with no hurt sound

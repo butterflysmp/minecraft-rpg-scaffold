@@ -99,12 +99,17 @@ public final class EnchantEffectLine {
                     yield "inert: a " + GearClassLabel.of(definition.gearClass())
                             + " enchant on " + GearClassLabel.describe(heldClass);
                 }
-                // POINTS, not a multiplier: Bulwark is additive on the fraction, so "+15% block"
-                // means the shield stops fifteen more points of the hit, not fifteen percent more
-                // of what it already stopped. Saying "x1.15" here would describe the rejected
+                // THE SAME WORDS THE ITEM USES. ShieldLoreLines.DAMAGE_REDUCTION_LABEL says "Damage
+                // Reduction" on the shield itself, so the enchant that modifies that stat must not
+                // call it something else -- a player reading "+15% block" above "Damage Reduction:
+                // 50%" has to work out that those are one number.
+                //
+                // POINTS, not a multiplier: Bulwark is additive on the fraction, so "+15%" means the
+                // shield stops fifteen more POINTS of the hit (0.35 -> 0.50), not fifteen percent
+                // more of what it already stopped. Saying "x1.15" would describe the rejected
                 // reading. The gate reads this line before blocking, so it must be the real number.
                 double percent = EnchantCurve.percentAt(definition.percentByLevel(), level);
-                yield String.format("+%.0f%% block", percent);
+                yield String.format("+%.0f%% Damage Reduction", percent);
             }
             case REFLECT -> {
                 // Same gate story as BLOCK_DR: refused at the content boundary, so the only way to

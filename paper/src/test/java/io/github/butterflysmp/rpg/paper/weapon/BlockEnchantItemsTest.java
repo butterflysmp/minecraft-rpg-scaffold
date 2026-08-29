@@ -34,8 +34,8 @@ class BlockEnchantItemsTest {
                 EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, 10, 15));
     }
 
-    private static EnchantDefinition riposte() {
-        return new EnchantDefinition("riposte", "Riposte", 3,
+    private static EnchantDefinition thorns() {
+        return new EnchantDefinition("thorns", "Thorns", 3,
                 EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, 20, 30));
     }
 
@@ -141,7 +141,7 @@ class BlockEnchantItemsTest {
     }
 
     /**
-     * THE test that finally guards the effect filter, and it could not be written until Riposte
+     * THE test that finally guards the effect filter, and it could not be written until Thorns
      * existed.
      *
      * <p>2a's {@code anEnchantBindingAnotherMechanismIsSkippedRatherThanCountedAsZero} was written to
@@ -151,17 +151,17 @@ class BlockEnchantItemsTest {
      * risk -- "not 'it has no curve', which would be a different rule that happens to agree today" --
      * and then agreed with it.
      *
-     * <p>Bulwark and Riposte are the first two enchants that BOTH carry curves and bind DIFFERENT
+     * <p>Bulwark and Thorns are the first two enchants that BOTH carry curves and bind DIFFERENT
      * mechanisms, so a lost filter finally produces a wrong number instead of the same zero. This is
      * also precisely the leak the single-decode restructure in {@code ShieldBlock.resolve} could
      * introduce: one state, scanned twice, and nothing but this filter keeps the two answers apart.
      */
     @Test
     void oneStateCarryingBOTHShieldEnchantsKeepsTheirPercentagesApart() {
-        EnchantRegistry enchants = registry(bulwark(), riposte());
+        EnchantRegistry enchants = registry(bulwark(), thorns());
         EnchantState both = EnchantState.empty()
                 .addCandidate(0, "bulwark").withLevel(0, 0, 3).withActive(0, 0)
-                .addCandidate(1, "riposte").withLevel(1, 0, 3).withActive(1, 0);
+                .addCandidate(1, "thorns").withLevel(1, 0, 3).withActive(1, 0);
 
         assertEquals(15.0, BlockEnchantItems.percentFor(both, enchants, EnchantEffect.BLOCK_DR), EPS,
                 "the block read picked up the reflect's 30 -- 45.0 means the effect filter is gone");
@@ -175,18 +175,18 @@ class BlockEnchantItemsTest {
 
     @Test
     void theReflectLadderIsReadOffTheSameScan() {
-        EnchantRegistry enchants = registry(riposte());
+        EnchantRegistry enchants = registry(thorns());
         assertEquals(10.0, BlockEnchantItems.percentFor(
-                activeAt("riposte", 1), enchants, EnchantEffect.REFLECT), EPS);
+                activeAt("thorns", 1), enchants, EnchantEffect.REFLECT), EPS);
         assertEquals(20.0, BlockEnchantItems.percentFor(
-                activeAt("riposte", 2), enchants, EnchantEffect.REFLECT), EPS);
+                activeAt("thorns", 2), enchants, EnchantEffect.REFLECT), EPS);
         assertEquals(30.0, BlockEnchantItems.percentFor(
-                activeAt("riposte", 3), enchants, EnchantEffect.REFLECT), EPS);
+                activeAt("thorns", 3), enchants, EnchantEffect.REFLECT), EPS);
 
-        // And a shield carrying ONLY Riposte contributes nothing to the block, which is what keeps
+        // And a shield carrying ONLY Thorns contributes nothing to the block, which is what keeps
         // the two enchants independently tunable all the way down to the read.
         assertEquals(0.0, BlockEnchantItems.percentFor(
-                activeAt("riposte", 3), enchants, EnchantEffect.BLOCK_DR));
+                activeAt("thorns", 3), enchants, EnchantEffect.BLOCK_DR));
     }
 
     @Test

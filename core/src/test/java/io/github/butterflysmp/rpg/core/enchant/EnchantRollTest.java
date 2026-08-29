@@ -41,10 +41,10 @@ class EnchantRollTest {
     private static final Rollable POWER = new Rollable("power", GearClass.RANGER);
     private static final Rollable ATTUNEMENT = new Rollable("attunement", GearClass.MAGE);
     private static final Rollable BULWARK = new Rollable("bulwark", GearClass.SHIELD);
-    private static final Rollable RIPOSTE = new Rollable("riposte", GearClass.SHIELD);
+    private static final Rollable THORNS = new Rollable("thorns", GearClass.SHIELD);
     private static final Rollable UNBREAKING = new Rollable("unbreaking", null);
     private static final List<Rollable> ROSTER =
-            List.of(SHARPNESS, POWER, ATTUNEMENT, BULWARK, RIPOSTE, UNBREAKING);
+            List.of(SHARPNESS, POWER, ATTUNEMENT, BULWARK, THORNS, UNBREAKING);
 
     /**
      * Literal draws, consumed in order. Running off the end throws
@@ -146,7 +146,7 @@ class EnchantRollTest {
         // never reads (it looks at the main hand's weapon); a sword offered Bulwark would sell a
         // block bonus read off a stack that cannot block.
         for (String id : idsIn(EnchantRoll.roll(GearClass.SHIELD, ROSTER, always(0.99)).slots().get(0))) {
-            assertTrue(id.equals("bulwark") || id.equals("riposte") || id.equals("unbreaking"),
+            assertTrue(id.equals("bulwark") || id.equals("thorns") || id.equals("unbreaking"),
                     "a shield was offered '" + id + "'");
         }
         // BOTH shield enchants must stay off every weapon. Asserted per enchant rather than by
@@ -156,14 +156,14 @@ class EnchantRollTest {
         for (GearClass weapon : List.of(GearClass.MELEE, GearClass.RANGER, GearClass.MAGE)) {
             assertFalse(EnchantRoll.poolFor(weapon, ROSTER).contains(BULWARK),
                     weapon + " was offered Bulwark -- a block enchant on a weapon");
-            assertFalse(EnchantRoll.poolFor(weapon, ROSTER).contains(RIPOSTE),
-                    weapon + " was offered Riposte -- a reflect read off a stack that cannot block");
+            assertFalse(EnchantRoll.poolFor(weapon, ROSTER).contains(THORNS),
+                    weapon + " was offered Thorns -- a reflect read off a stack that cannot block");
         }
     }
 
     @Test
     void aShieldsPoolIsTHREEAndIsTheFirstShippedGearThatCanFillASlot() {
-        // Bulwark + Riposte + Unbreaking. Every WEAPON class is still two (its own damage enchant
+        // Bulwark + Thorns + Unbreaking. Every WEAPON class is still two (its own damage enchant
         // plus Unbreaking), so the shield is the only gear whose slot can hold three candidates.
         //
         // This is the moment EnchantMenuLayout.CANDIDATES == 3 stops being a constant pinned against
@@ -194,7 +194,7 @@ class EnchantRollTest {
         assertEquals(List.of(ATTUNEMENT, UNBREAKING), EnchantRoll.poolFor(GearClass.MAGE, ROSTER));
         // Roster ORDER is preserved here too: bulwark precedes unbreaking in the roster, so it
         // precedes it in the pool. That is what makes a fixed set of draws reproduce a fixed roll.
-        assertEquals(List.of(BULWARK, RIPOSTE, UNBREAKING), EnchantRoll.poolFor(GearClass.SHIELD, ROSTER));
+        assertEquals(List.of(BULWARK, THORNS, UNBREAKING), EnchantRoll.poolFor(GearClass.SHIELD, ROSTER));
         // Roster order is preserved, so the pool is a deterministic function of the registry.
         // Mutation: drop the `weaponClass() != null` arm (universal stops matching) -> UNBREAKING
         // disappears from all three -> reddens.
@@ -243,7 +243,7 @@ class EnchantRollTest {
     void aThreeCandidateSlotIsReachableOnceThePoolIsBigEnough() {
         // Proves the 1..3 range is real in isolation, from literal pool sizes rather than from any
         // roster. It was written when NO shipped gear could reach a pool of three; the shield does
-        // now (Bulwark + Riposte + Unbreaking), and aShieldsPoolIsTHREE... is where that is asserted
+        // now (Bulwark + Thorns + Unbreaking), and aShieldsPoolIsTHREE... is where that is asserted
         // end to end. This one stays because it pins the decision independently of what ships --
         // the day a fourth melee enchant lands, nothing here has to change either.
         assertEquals(3, EnchantRoll.candidateCount(3, 0.9999999));

@@ -8,7 +8,7 @@ package io.github.butterflysmp.rpg.core.enchant;
  * {@link Bulwark}, by {@link EnchantEffect}'s rule that mechanisms share a package so there is one
  * place to look for what an enchant can DO.
  *
- * <h2>Named Riposte, and NOT Thorns</h2>
+ * <h2>Named Thorns, and NOT Thorns</h2>
  *
  * {@code DESIGN-status-effects.md} reserves "Thorns" for a Nature PROPAGATION status -- damaging a
  * Thorns target damages NEARBY targets, depth-1, with four load-bearing anti-loop safety rules
@@ -24,10 +24,10 @@ package io.github.butterflysmp.rpg.core.enchant;
  *
  * <p><b>That is forced, not chosen.</b> The post-mitigation figure does not exist yet on the thread
  * where the reflect is computed -- the identical constraint {@code SweepShare} records for the swept
- * mob's share. It is also the reading that keeps Riposte and Bulwark independently tunable: off the
- * blocked amount, Bulwark would secretly boost Riposte; off the pass-through, Bulwark would reduce
+ * mob's share. It is also the reading that keeps Thorns and Bulwark independently tunable: off the
+ * blocked amount, Bulwark would secretly boost Thorns; off the pass-through, Bulwark would reduce
  * it. Semantically it reflects the attacker's blow, not the player's absorption, so a common and a
- * legendary shield with equal Riposte reflect equally.
+ * legendary shield with equal Thorns reflect equally.
  *
  * <p><b>Call it pre-MITIGATION, never pre-block</b>, in every comment and content file. "Pre-block"
  * understates it by a whole armor pass and the number reads as a bug the first time it is measured.
@@ -36,12 +36,12 @@ package io.github.butterflysmp.rpg.core.enchant;
  * {@code reflected(15.0, 10) -> 1.5}; {@code (15.0, 20) -> 3.0}; {@code (15.0, 30) -> 4.5}.
  * The damage popup ROUNDS ({@code Math.round}), so those render as <b>2 / 3 / 5</b>.
  */
-public final class Riposte {
+public final class Thorns {
 
-    private Riposte() {}
+    private Thorns() {}
 
     /**
-     * No reflect. The neutral value, and what a shield without Riposte -- or any unblocked hit --
+     * No reflect. The neutral value, and what a shield without Thorns -- or any unblocked hit --
      * contributes. Same 0.0-is-absent convention {@link Bulwark#NONE} and {@code SweepShare.NONE} use.
      */
     public static final double NONE = 0.0;
@@ -69,7 +69,7 @@ public final class Riposte {
      * The damage to send back: {@code preMitigation * percent / 100}.
      *
      * <p>THE one place the reflect formula lives, so the effect line, the content comment and the
-     * rider cannot disagree about what Riposte does.
+     * rider cannot disagree about what Thorns does.
      *
      * <p>No input guards, deliberately. {@code EnchantDefinition} refuses a negative percent at the
      * content boundary -- the only surface an author can reach -- and {@link #reflects} bounds the

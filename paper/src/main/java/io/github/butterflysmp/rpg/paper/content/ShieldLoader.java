@@ -55,7 +55,7 @@ public final class ShieldLoader {
         return registry;
     }
 
-    /** The id is the filename: roundshield.yml -> roundshield. */
+    /** The id is the filename: shield.yml -> shield. */
     private static String idOf(File f) {
         String name = f.getName();
         return name.substring(0, name.length() - ".yml".length());

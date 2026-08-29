@@ -3,12 +3,12 @@
 Branched off `25d110b`, verified from the wire (`git ls-remote --heads origin` →
 `25d110bb4e980059d2c8d1c3e30275d0da1d8944`, equal to local `master`).
 
-**2b (Riposte) is a separate PR off the new `master`.** 2a is independently shippable, and landing it
+**2b (Thorns) is a separate PR off the new `master`.** 2a is independently shippable, and landing it
 first verifies the axis migration before the reflect seam stacks on it.
 
 ## Context
 
-Slice 1 (`027da30`) shipped a mintable `roundshield` and made blocking real, but shipped it
+Slice 1 (`027da30`) shipped a mintable `shield` and made blocking real, but shipped it
 **enchant-COMPATIBLE and not enchant-ROLLED**: `EnchantRoll.roll`, `EnchantEffectLine.bare` and
 `showEnchants` were all keyed on `WeaponClass`, and a shield has none. `NEXT.md:628-640` names those
 three. Exploration found a **fourth** the record does not mention — `EnchantMenu` was
@@ -42,7 +42,7 @@ WEAPON you fight with; a shield in the other hand must not change it) and `Weapo
 ### Bulwark
 
 `Shield.clamp(base_dr + 0.05/0.10/0.15)`, composed in `ShieldBlock.resolve`, applied by the rider.
-Executed: roundshield `0.5 → 0.55 / 0.60 / 0.65`; a 15.0 hit passes `7.5 → 6.749999999999999 / 6.0 /
+Executed: shield `0.5 → 0.55 / 0.60 / 0.65`; a 15.0 hit passes `7.5 → 6.749999999999999 / 6.0 /
 5.25`.
 
 Additive because it is the reading whose label is honest, and because the two rejected readings are
@@ -204,14 +204,14 @@ it spawns) had to be stopped before the jar could be replaced. **Confirm the pre
 before the next deploy**, or `set -e` aborts the deploy and a stale build boots looking fine.
 
 
-**Give a FRESH `roundshield` first.** `rollOnAcquire` fires only at acquisition, never from
+**Give a FRESH `shield` first.** `rollOnAcquire` fires only at acquisition, never from
 `mint`/`remint`, so a Slice-1 shield still in the tester's inventory carries no `enchant_rolled` flag
 and nothing will ever roll it. It would show empty slots and read exactly like a broken roll.
 
 | # | Check | Expected |
 |---|---|---|
 | 1 | boot log | `Loaded … 5 enchants`; no `Skipping malformed enchant` |
-| 2 | `/rpg give roundshield`, read the tooltip | candidates rolled; `Block: 50%`; `Common Shield` still last |
+| 2 | `/rpg give shield`, read the tooltip | candidates rolled; `Block: 50%`; `Common Shield` still last |
 | 3 | place it in the enchant table | candidates render; **no** "That is not one of your weapons" |
 | 4 | `/rpg give ironblade` ×3, open each | only Sharpness / Unbreaking — **never** Bulwark. The gate, weapon side |
 | 5 | `/rpg enchant show` on a shield | replies rather than refusing |
@@ -258,7 +258,7 @@ slice does not settle — it is the row most likely to send a decision back into
 
 ## What 2a does NOT do
 
-- **Riposte.** Slice 2b, its own plan and PR.
+- **Thorns.** Slice 2b, its own plan and PR.
 - **A `ShieldRefresher`** for the join / `/rpg refresh` path. Still outstanding from Slice 1: a
   shield's lore does not rebuild from content on rejoin the way a weapon's does — and now that the
   lore carries an enchant-dependent block percent, that gap is slightly more visible.

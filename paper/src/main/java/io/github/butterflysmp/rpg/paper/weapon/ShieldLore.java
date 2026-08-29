@@ -1,7 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.enchant.Bulwark;
-import io.github.butterflysmp.rpg.core.enchant.Riposte;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ShieldLoreLines;
 import net.kyori.adventure.text.Component;
@@ -53,12 +52,7 @@ public final class ShieldLore {
      * separated from. Starting the tooltip with an empty line would read as a rendering bug.
      */
     public static List<Component> build(ShieldDefinition shield) {
-        return build(shield, Bulwark.NONE, Riposte.NONE);
-    }
-
-    /** Without a reflect. Kept so callers predating Riposte read unchanged. */
-    public static List<Component> build(ShieldDefinition shield, double bulwarkPercent) {
-        return build(shield, bulwarkPercent, Riposte.NONE);
+        return build(shield, Bulwark.NONE);
     }
 
     /**
@@ -73,29 +67,23 @@ public final class ShieldLore {
      * <p>Composed through {@link Bulwark#effectiveDr}, the same function the rider calls, so the two
      * cannot drift. {@code Bulwark.NONE} makes the unenchanted case an exact identity.
      *
-     * <p><b>The reflect line is CONDITIONAL where the block line is not, and that asymmetry is the
-     * honest one.</b> Every shield has a block fraction -- {@code block_dr} is a required content
-     * field -- so "Block: 0%" on a mis-authored shield is information. No shield has a base reflect:
-     * it exists only when Riposte is on the item, so a permanent "Reflect: 0%" would advertise a stat
-     * the gear does not have. Without this line Riposte would be the only shield mechanic with no
-     * number anywhere on the item, readable only in the enchant menu -- and the boot gate would have
-     * nothing to read BEFORE the hit, which is the whole reason the block line renders composed.
      */
-    public static List<Component> build(ShieldDefinition shield, double bulwarkPercent,
-                                        double reflectPercent) {
+    public static List<Component> build(ShieldDefinition shield, double bulwarkPercent) {
         List<Component> lore = new ArrayList<>();
 
         // The stat block. One line, unconditionally -- including for a shield that declares no
-        // block at all, which then honestly reads "Block: 0%". Hiding the line at zero would make
-        // a mis-authored shield look like a shield with no stat rather than one with a zero stat,
-        // and those want telling apart.
-        lore.add(plain(ShieldLoreLines.blockLabel(
-                Bulwark.effectiveDr(shield.blockDr(), bulwarkPercent)), NamedTextColor.GRAY));
-
-        // Only when there is one. See the javadoc: a base-less stat rendered at zero is a claim.
-        if (Riposte.reflects(reflectPercent)) {
-            lore.add(plain(ShieldLoreLines.reflectLabel(reflectPercent), NamedTextColor.GRAY));
-        }
+        // reduction at all, which then honestly reads "Damage Reduction: 0%". Hiding the line at
+        // zero would make a mis-authored shield look like a shield with no stat rather than one
+        // with a zero stat, and those want telling apart.
+        //
+        // GRAY label, GREEN number -- the split WeaponLore's damage line already uses. The colour is
+        // NamedTextColor.GREEN because that is exactly what StatsBarText.DEFENSE_COLOR is, read off
+        // the HUD rather than picked: a shield's Damage Reduction and armor's Defense are the same
+        // kind of number and compose with each other, so they read in the same colour. (Adventure
+        // has no LIME; GREEN is the bright one Minecraft renders as lime.)
+        lore.add(plain(ShieldLoreLines.DAMAGE_REDUCTION_LABEL, NamedTextColor.GRAY)
+                .append(plain(ShieldLoreLines.damageReductionValue(
+                        Bulwark.effectiveDr(shield.blockDr(), bulwarkPercent)), NamedTextColor.GREEN)));
 
         if (!shield.flavor().isEmpty()) {
             lore.add(blank());
