@@ -128,39 +128,19 @@ public final class ShieldBlock {
     /**
      * Did VANILLA block this hit? The raised/frontal/in-arc verdict, read off the event.
      *
-     * Public rather than package-private so the temporary {@code [BLOCK]} witness, which lives in
-     * the listener package, can print the same answer the rider decides on rather than drawing its
-     * own -- the "never draw a second value to print" rule the crit pass learned the hard way, when
-     * a witness rolled its own random and logged {@code crit=false} on the tick a yellow number
-     * appeared.
+     * Private: {@link #resolve} is the only caller, and the only way this verdict should ever be
+     * reached. It was briefly public to feed the [BLOCK] witness, which is now stripped -- the
+     * witness printed THIS method's answer rather than recomputing one, the "never draw a second
+     * value to print" rule the crit pass learned when its witness rolled its own random and logged
+     * {@code crit=false} on the tick a yellow number appeared.
      */
     @SuppressWarnings("deprecation")   // DamageModifier: deprecated since 1.12, not for removal,
                                        // and still the only block signal on the event. See above.
-    public static boolean vanillaBlocked(EntityDamageEvent event) {
+    private static boolean vanillaBlocked(EntityDamageEvent event) {
         // STRICT <, and never <= or Double.compare: an unblocked hit taken with the shield raised
         // reports NEGATIVE ZERO here. See the class javadoc for the measured comparison table.
         return event.isApplicable(EntityDamageEvent.DamageModifier.BLOCKING)
                 && event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING) < 0;
     }
 
-    /**
-     * PUBLIC ONLY FOR THE WITNESS -- narrow this back to private when the [BLOCK] log is stripped.
-     *
-     * The raw BLOCKING modifier, for the witness log only. Negative when vanilla blocked, 0 when
-     * the modifier is absent.
-     */
-    @SuppressWarnings("deprecation")
-    public static double blockingModifier(EntityDamageEvent event) {
-        return event.getDamage(EntityDamageEvent.DamageModifier.BLOCKING);
-    }
-
-    /**
-     * PUBLIC ONLY FOR THE WITNESS -- narrow back to private when the [BLOCK] log is stripped.
-     *
-     * Whether the event carries a BLOCKING modifier at all.
-     */
-    @SuppressWarnings("deprecation")
-    public static boolean blockingApplicable(EntityDamageEvent event) {
-        return event.isApplicable(EntityDamageEvent.DamageModifier.BLOCKING);
-    }
 }

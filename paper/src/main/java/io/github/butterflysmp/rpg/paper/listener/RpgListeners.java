@@ -652,26 +652,12 @@ public final class RpgListeners implements Listener {
         // Vanilla decides WHETHER this was a block -- raised, frontal, in-arc; the shield decides
         // what it is worth. See ShieldBlock for why isBlocking() is not the signal.
         ShieldBlock.Outcome block = ShieldBlock.resolve(victim, event, adapters.keys(), shields);
-        double unblocked = incoming;
         if (block.blocked()) {
             incoming = Shield.applyBlock(incoming, block.blockDr());
             // Wear is charged HERE and vanilla's own is cancelled in onShieldItemDamage, because
             // our Unbreaking is custom and vanilla would never consult it.
             ShieldDurability.applyWearOnBlock(victim, block.slot(), adapters.keys());
         }
-
-        // [BLOCK] RIDER -- TEMPORARY WITNESS, STRIP BEFORE MERGE.
-        // Printed AT the branch rather than beside it, and from the SAME locals the decision used
-        // -- never a second read, never a second draw. The crit pass learned that the hard way when
-        // its witness rolled its own random and logged crit=false on the tick a yellow number
-        // appeared. Printed for EVERY mob hit, blocked or not, so "no blocks happened" and "the
-        // rider never ran" cannot read the same.
-        adapters.log().info(String.format(java.util.Locale.ROOT,
-                "[BLOCK] RIDER  victim=%s attacker=%s blocked=%s shieldId=%s blockDr=%.4f "
-                        + "unblocked=%.4f reduced=%.4f",
-                victim.getUniqueId(), attacker.getUniqueId(), block.blocked(),
-                block.shieldId() == null ? "none" : block.shieldId(),
-                block.blockDr(), unblocked, incoming));
 
         event.setDamage(TOKEN_DAMAGE);                // ride: keep flash/sound/i-frames, no double, can't kill
         BukkitCombatant.of(victim, adapters).handle().applyDamage(incoming, attacker.getUniqueId());
@@ -683,8 +669,14 @@ public final class RpgListeners implements Listener {
      * <p>Our {@code Unbreaking} is a custom enchant whose curve lives in core, because the
      * no-vanilla-enchants policy means a player-held item never carries a vanilla enchant to
      * delegate to. Vanilla charging the shield on a block would never consult it, so Unbreaking
-     * would sit on the tooltip doing nothing -- AND the shield would be charged twice for one
-     * block, once by vanilla and once by us.
+     * would sit on the tooltip doing nothing.
+     *
+     * <p><b>Measured 2026-08-29: vanilla fired this event ZERO times across 20 blocks</b>, so on
+     * this build there is no double-wear to prevent and this cancel is a guard against something
+     * not currently happening. It stays -- we own this item's durability outright, and any future
+     * vanilla path charging it would be an unaccounted second source -- but it should not be
+     * described as fixing an observed doubling. The positive evidence for the wear path is the bar
+     * itself: 20 blocks with Unbreaking III took it 336 -> 331, against 5.00 expected.
      *
      * <p>Scoped by the {@code shield_id} tag, the same boundary {@code /rpg durability} and the
      * weapon gates draw: an untagged vanilla shield keeps wearing exactly as it always did.
@@ -695,79 +687,11 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler(ignoreCancelled = true)
     public void onShieldItemDamage(PlayerItemDamageEvent event) {
-        boolean ours = ShieldItems.shieldId(event.getItem(), adapters.keys()).isPresent();
-
-        // [BLOCK] WEAR -- TEMPORARY WITNESS, STRIP BEFORE MERGE.
-        // Prints for every item damage, not only ours, so "vanilla never fires this for a block"
-        // is distinguishable from "it fired and we cancelled it". Which of those is true decides
-        // whether the cancel above is load-bearing or merely harmless, and it is not guessable.
-        adapters.log().info(String.format(java.util.Locale.ROOT,
-                "[BLOCK] WEAR   player=%s item=%s ours=%s vanillaDamage=%d cancelling=%s",
-                event.getPlayer().getUniqueId(), event.getItem().getType(), ours,
-                event.getDamage(), ours));
-
-        if (ours) event.setCancelled(true);
+        if (ShieldItems.shieldId(event.getItem(), adapters.keys()).isPresent()) {
+            event.setCancelled(true);
+        }
     }
 
-    /**
-     * [BLOCK] LOWEST -- TEMPORARY WITNESS, STRIP BEFORE MERGE.
-     *
-     * <p>The load-bearing question this slice could not answer without a boot: does a shield-blocked
-     * mob hit still fire {@code EntityDamageByEntityEvent} at all on this Paper, and is the block
-     * readable on it?
-     *
-     * <p>This runs at {@code LOWEST} with {@code ignoreCancelled = false} precisely so that
-     * "the event never fired" and "it fired and something cancelled it before the rider's HIGH"
-     * cannot look the same. {@link #onMobMeleeAttack} is {@code HIGH + ignoreCancelled}, so on its
-     * own it is silent in both cases -- and silence would have been read as the first.
-     *
-     * <p>{@code facingDot} is the dot product of the victim's look direction with the direction to
-     * the attacker: about 1 when the attacker is dead ahead, 0 at ninety degrees, negative when the
-     * hit lands in the victim's back. It is computed for the log ONLY -- nothing branches on it --
-     * so that whether vanilla's BLOCKING modifier really tracks the frontal arc is something we
-     * MEASURE rather than assume.
-     */
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
-    public void onBlockWitness(EntityDamageByEntityEvent event) {
-        if (!(event.getEntity() instanceof Player victim)) return;
-        if (!(event.getDamager() instanceof LivingEntity attacker)) return;
-        if (attacker instanceof Player) return;
-
-        org.bukkit.util.Vector look = victim.getLocation().getDirection().normalize();
-        org.bukkit.util.Vector toAttacker = attacker.getLocation().toVector()
-                .subtract(victim.getLocation().toVector());
-        double facingDot = toAttacker.lengthSquared() == 0 ? 0.0 : look.dot(toAttacker.normalize());
-
-        // activeHand vs positional is printed as TWO separate readings on purpose. shieldHand now
-        // trusts the active hand outright, and the positional offhand-first answer is what it used
-        // to return -- so any hit where they disagree is a hit the old reading would have
-        // mis-slotted (wrong DR, and the wrong item's durability charged). Printing both makes that
-        // disagreement something the boot MEASURES rather than something we argue is rare.
-        String positional = ShieldItems.shieldId(
-                        victim.getInventory().getItemInOffHand(), adapters.keys()).isPresent()
-                ? "OFF_HAND"
-                : ShieldItems.shieldId(
-                        victim.getInventory().getItemInMainHand(), adapters.keys()).isPresent()
-                        ? "HAND" : "none";
-        String resolved = ShieldItems.shieldHand(victim, adapters.keys())
-                .map(Enum::name).orElse("none");
-
-        adapters.log().info(String.format(java.util.Locale.ROOT,
-                "[BLOCK] LOWEST victim=%s attacker=%s cause=%s cancelled=%s raw=%.4f final=%.4f "
-                        + "blockingApplicable=%s blocking=%.4f isBlocking=%s hasActive=%s "
-                        + "activeHand=%s active=%s main=%s off=%s shieldHand=%s positional=%s "
-                        + "disagree=%s facingDot=%.4f",
-                victim.getUniqueId(), attacker.getUniqueId(), event.getCause(), event.isCancelled(),
-                event.getDamage(), event.getFinalDamage(),
-                ShieldBlock.blockingApplicable(event), ShieldBlock.blockingModifier(event),
-                victim.isBlocking(), victim.hasActiveItem(),
-                victim.hasActiveItem() ? victim.getActiveItemHand().name() : "none",
-                victim.getActiveItem().getType(),
-                victim.getInventory().getItemInMainHand().getType(),
-                victim.getInventory().getItemInOffHand().getType(),
-                resolved, positional, !resolved.equals(positional),
-                facingDot));
-    }
 
     /**
      * VANILLA owns melee knockback -- gated to the hit that earned it.
