@@ -585,8 +585,21 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 **Closes four Slice-1 deferrals at once**: the class axis for gear, the enchant ROLL for shields,
 `/rpg enchant show` for shields, and "does a broken shield stop blocking". See
-`PLAN-shields-slice-2a.md`. Riposte is 2b, its own PR. **Boot gate OWED — none of the in-game rows
-below the unit line have been run.**
+`PLAN-shields-slice-2a.md`. Riposte is 2b, its own PR.
+
+**Boot gate, row 1 only — RUN AND PASSED 2026-08-29.** Paper 26.1.2.build.74, deploy verified by
+mtime AND size before booting and `bulwark.yml` confirmed inside the shaded jar:
+`Loaded 6 abilities, 7 visuals, 5 statuses, 7 elements, 5 enchants, 2 kits, 5 weapons, 1 shields,
+1 mobs` / `Done (5.164s)`, with ZERO `Skipping malformed enchant` lines. So `class: shield` and
+`effect: block_dr` parse through the real loader on a live server, not only in a `@TempDir`. **It is
+a load check and establishes nothing mechanical** — no item minted, no hit blocked, no tooltip read.
+**Rows 2-14 are owed by a human.**
+
+> The file lock bit on the way out, exactly as CLAUDE.md records: `rm` on the deployed jar failed with
+> `Device or resource busy` because the server JVM outlived the script that started it (an Oracle
+> `javapath` shim plus the JDK process it spawns — two `java.exe`, both to be stopped). Confirm the
+> previous server is dead before the next deploy, or `set -e` aborts it and a stale build boots
+> looking fine.
 
 - **`GearClass` is a second enum, and `EnchantDefinition`'s javadoc argued against it.** That javadoc
   said a parallel enum "would need SUMMONER adding in two places, and the exhaustive-switch

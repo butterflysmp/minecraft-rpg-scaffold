@@ -144,9 +144,38 @@ green test-compile after a signature change.
 
 ---
 
-## Boot gate — OWED, not yet run
+## Boot gate — ROW 1 RUN AND PASSED; ROWS 2-14 OWED BY A HUMAN
 
 `./scripts/dev-server.sh --refresh-content`.
+
+### Row 1, run 2026-08-29 13:04 — the content loads on a real server
+
+Paper 26.1.2.build.74. Deploy verified BEFORE booting, by mtime and size, not assumed — target
+`13:02:43` / `464427` bytes, deployed `13:03:42` / `464427` bytes — and `bulwark.yml` confirmed
+present inside the shaded jar (`unzip -l`, 3115 bytes) rather than only in `src`.
+
+```
+[Rpg] Loaded 6 abilities, 7 visuals, 5 statuses, 7 elements, 5 enchants,
+      2 kits, 5 weapons, 1 shields, 1 mobs
+Done (5.164s)!
+```
+
+**5 enchants, up from 4.** Zero `Skipping malformed enchant` lines anywhere in the log; every
+`WARNING` in it is JVM or Maven noise, none from Rpg. So `class: shield` parses through the real
+`GearClass` token list, `effect: block_dr` binds through the real `EnchantEffect`, and the widened
+compact-constructor validation accepts the shipped file on a live server rather than only in a
+`@TempDir`.
+
+**What row 1 does NOT establish:** anything mechanical. It is a load check. No item was minted, no
+hit was blocked, no tooltip was read.
+
+**The file lock is real, and it bit on the way out.** After the boot, `rm` on the deployed jar failed
+with `Device or resource busy` -- the exact error CLAUDE.md records -- because the server JVM
+outlived the script that started it. Two `java.exe` (an Oracle `javapath` shim plus the JDK process
+it spawns) had to be stopped before the jar could be replaced. **Confirm the previous server is dead
+before the next deploy**, or `set -e` aborts the deploy and a stale build boots looking fine.
+
+### Rows 2-14 — owed by a human
 
 **Give a FRESH `roundshield` first.** `rollOnAcquire` fires only at acquisition, never from
 `mint`/`remint`, so a Slice-1 shield still in the tester's inventory carries no `enchant_rolled` flag
