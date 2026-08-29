@@ -12,6 +12,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -76,6 +77,58 @@ class ShieldLoreTest {
         assertEquals("Block: 50%", plain(ShieldLore.build(roundshield, 0).get(0)));
         assertEquals(plain(ShieldLore.build(roundshield).get(0)),
                 plain(ShieldLore.build(roundshield, 0).get(0)));
+    }
+
+    @Test
+    void aRiposteShieldAdvertisesItsReflectAndNamesTheTarget() {
+        // Without this line Riposte would be the ONLY shield mechanic with no number anywhere on the
+        // item -- and the boot gate would have nothing to read before the hit, which is the whole
+        // reason the block line renders composed.
+        List<Component> lore = ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()), 0, 30);
+
+        assertEquals("Block: 50%", plain(lore.get(0)));
+        assertEquals("Reflect: 30% to attacker", plain(lore.get(1)));
+    }
+
+    @Test
+    void theTwoStatLinesDoNotConfuseAFRACTIONWithPERCENTAGEPOINTS() {
+        // THE trap in putting these two lines adjacent. A block fraction is 0.5 and renders "50%";
+        // a reflect percent is 30 and renders "30%". Handing reflectLabel a fraction would advertise
+        // "0.3%" on a shield reflecting nearly a third of every blow, and the two lines sit one row
+        // apart where that looks plausible.
+        List<Component> lore = ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()), 0, 30);
+
+        assertEquals("Reflect: 30% to attacker", plain(lore.get(1)));
+        assertNotEquals("Reflect: 0.3% to attacker", plain(lore.get(1)));
+
+        // And the block line is unmoved by the reflect -- the orthogonality, on the tooltip.
+        assertEquals(plain(ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()), 0).get(0)),
+                plain(lore.get(0)));
+    }
+
+    @Test
+    void aShieldWithNoRiposteRendersNoReflectLineAtAll() {
+        // CONDITIONAL, unlike the block line. No shield has a base reflect, so a permanent
+        // "Reflect: 0%" would advertise a stat the gear does not have -- the opposite of the
+        // block line, where "Block: 0%" on a mis-authored shield is real information.
+        List<Component> lore = ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()), 0, 0);
+
+        assertEquals("Block: 50%", plain(lore.get(0)));
+        for (Component line : lore) {
+            assertFalse(plain(line).contains("Reflect"),
+                    "a shield without Riposte advertised a reflect: " + plain(line));
+        }
+        // And the three-arg build with no reflect is byte-identical to the two-arg one.
+        assertEquals(ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()), 0).size(), lore.size());
+    }
+
+    @Test
+    void theReflectLineIsNotClampedBecauseItHasNoNaturalCeiling() {
+        // The OPPOSITE of the block line, deliberately. A block fraction is bounded by construction,
+        // so clamping is truth. A reflect percent is not -- 100% is a legal, if brutal, content
+        // choice -- and clamping would silently under-report a shield an author made vicious.
+        List<Component> lore = ShieldLore.build(shield(Rarity.COMMON, 0.5, List.of()), 0, 250);
+        assertEquals("Reflect: 250% to attacker", plain(lore.get(1)));
     }
 
     @Test

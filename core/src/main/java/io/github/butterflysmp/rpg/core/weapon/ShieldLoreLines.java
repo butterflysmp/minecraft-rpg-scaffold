@@ -57,6 +57,31 @@ public final class ShieldLoreLines {
         return trimNumber(rounded);
     }
 
+    /**
+     * The Riposte line: {@code 30 -> "Reflect: 30% to attacker"}.
+     *
+     * <p><b>Takes PERCENTAGE POINTS, not a fraction</b>, unlike {@link #blockLabel} directly above
+     * it -- and the two sitting adjacent is exactly why that is spelled out. A block fraction is
+     * {@code 0.5} and renders "50%"; a reflect percent is {@code 30} and renders "30%". Handing this
+     * a fraction would advertise "0.3%" on a shield reflecting nearly a third of every blow.
+     *
+     * <p>It says <b>"to attacker"</b> because a bare "Reflect: 30%" on a shield reads as damage
+     * reduction -- the neighbouring stat on the very same tooltip is a reduction. The three words
+     * are what stop the two lines being read as the same kind of number.
+     *
+     * <p>No clamp, deliberately, and that is the OPPOSITE of {@link #blockPercent}. A block fraction
+     * is bounded by construction (0..1 is what a fraction of a hit means), so clamping is truth. A
+     * reflect percent has no natural ceiling -- 100% is a legal, if brutal, content choice -- so a
+     * clamp here would silently under-report a shield an author deliberately made vicious. The
+     * content boundary refuses the one value that would be wrong, a negative.
+     *
+     * <p>Worked: {@code 10 -> "Reflect: 10% to attacker"}; {@code 30 -> "Reflect: 30% to attacker"};
+     * {@code 12.5 -> "Reflect: 12.5% to attacker"}.
+     */
+    public static String reflectLabel(double reflectPercent) {
+        return "Reflect: " + trimNumber(Math.round(reflectPercent * 10.0) / 10.0) + "% to attacker";
+    }
+
     /** {@code 50.0 -> "50"}, {@code 12.5 -> "12.5"}. The idiom WeaponLoreLines uses for its costs. */
     private static String trimNumber(double n) {
         if (n == Math.floor(n) && !Double.isInfinite(n)) return String.valueOf((long) n);
