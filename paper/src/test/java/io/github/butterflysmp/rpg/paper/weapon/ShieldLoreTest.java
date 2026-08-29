@@ -52,6 +52,41 @@ class ShieldLoreTest {
     }
 
     @Test
+    void theStatLineShowsTheEFFECTIVEBlockOnceBulwarkIsActive() {
+        // THE display-must-not-disagree-with-truth rule, on the shield. ShieldBlock.resolve composes
+        // Bulwark onto block_dr through Bulwark.effectiveDr, so a tooltip rendering the shield's own
+        // 50% while it actually stops 65% would be a display contradicting the mechanic.
+        //
+        // It also matters for the boot gate: EnchantEffectLine exists so the expected number can be
+        // read off the screen BEFORE the hit lands, and for a shield this is that number.
+        ShieldDefinition roundshield = shield(Rarity.COMMON, 0.5, List.of());
+
+        assertEquals("Block: 55%", plain(ShieldLore.build(roundshield, 5).get(0)));
+        assertEquals("Block: 60%", plain(ShieldLore.build(roundshield, 10).get(0)));
+        assertEquals("Block: 65%", plain(ShieldLore.build(roundshield, 15).get(0)));
+    }
+
+    @Test
+    void aShieldWithNoBulwarkRendersExactlyWhatItDidBeforeTheEnchantExisted() {
+        // The identity every unenchanted shield in the game depends on. Bulwark.NONE must leave the
+        // line untouched, and the no-arg build must agree with passing zero -- two spellings of the
+        // same tooltip cannot be allowed to drift.
+        ShieldDefinition roundshield = shield(Rarity.COMMON, 0.5, List.of());
+
+        assertEquals("Block: 50%", plain(ShieldLore.build(roundshield, 0).get(0)));
+        assertEquals(plain(ShieldLore.build(roundshield).get(0)),
+                plain(ShieldLore.build(roundshield, 0).get(0)));
+    }
+
+    @Test
+    void theStatLineClampsRatherThanAdvertisingMoreThanATotalBlock() {
+        // A high-DR shield plus Bulwark III exceeds 1.0 -- executed, 0.9 + 0.15 is 1.05 -- and the
+        // tooltip must say 100%, not 105%. It clamps through the same Bulwark.effectiveDr the rider
+        // uses, so the promise and the mechanic agree at the ceiling too.
+        assertEquals("Block: 100%", plain(ShieldLore.build(shield(Rarity.COMMON, 0.9, List.of()), 15).get(0)));
+    }
+
+    @Test
     void aZeroBlockShieldStillShowsItsStatLine() {
         // Hiding the line at zero would make a mis-authored shield look like a shield with NO stat
         // rather than one with a zero stat, and those want telling apart -- especially since a

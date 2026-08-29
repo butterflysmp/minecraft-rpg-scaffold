@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
@@ -74,8 +75,13 @@ public final class ShieldItems {
      * enchanted shield shimmers and an unenchanted one does not, and the two can never disagree.
      */
     private static void applyLore(ItemMeta meta, ShieldDefinition shield, AdapterContext adapters) {
-        List<Component> base = ShieldLore.build(shield);
         EnchantState state = EnchantItems.read(meta, adapters.keys());
+        // The tooltip shows the EFFECTIVE block, composed from the same state the enchant block
+        // below is rendered from -- so the "Block: 65%" line and the "Bulwark III" line beneath it
+        // can never disagree, and neither can disagree with the rider, which composes through the
+        // same Bulwark.effectiveDr.
+        List<Component> base = ShieldLore.build(shield,
+                BlockEnchantItems.percentFor(state, adapters.enchants(), EnchantEffect.BLOCK_DR));
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
         meta.setEnchantmentGlintOverride(!state.effective().isEmpty());
     }

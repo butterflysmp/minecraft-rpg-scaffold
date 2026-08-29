@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.weapon;
 import io.github.butterflysmp.rpg.core.enchant.ActiveEnchant;
 import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
+import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
@@ -14,8 +15,13 @@ import org.bukkit.inventory.ItemStack;
  * <p>The shield analogue of {@link DamageEnchantItems}, and deliberately the same shape: walk
  * {@code EnchantState.effective()}, resolve each id in the registry, keep the ones binding the
  * mechanism asked for, and sum their curve values. The arithmetic that matters is in
- * {@code core/enchant/Bulwark}; this needs a live {@link ItemStack} and so is boot-witnessed rather
- * than unit-tested, exactly as {@code DamageEnchantItems} is.
+ * {@code core/enchant/Bulwark}.
+ *
+ * <p><b>Unlike {@code DamageEnchantItems}, the interesting half of this IS unit-tested.</b> That one
+ * is boot-witnessed only because every entry point it has needs a live {@code Player}. Splitting the
+ * PDC decode from the summing gives a state-shaped overload over plain values -- {@code EnchantState},
+ * {@code EnchantDefinition}, {@code EnchantRegistry} are none of them Bukkit -- so the rule worth
+ * guarding runs with no server. Only the {@link ItemStack} decode in front of it is boot-owed.
  *
  * <h2>Bound by EFFECT, never by id -- and that is the opposite of the Unbreaking seam</h2>
  *
@@ -63,10 +69,30 @@ public final class BlockEnchantItems {
      */
     public static double percentFor(ItemStack stack, Keys keys, EnchantRegistry enchants,
                                     EnchantEffect effect) {
-        if (stack == null || enchants == null) return 0.0;
+        if (stack == null) return 0.0;
+        return percentFor(EnchantItems.read(stack, keys), enchants, effect);
+    }
+
+    /**
+     * The same sum, from an already-decoded state.
+     *
+     * <p><b>This is the real primitive, and the {@link ItemStack} overload above is the decode in
+     * front of it.</b> Two callers want it that way: the block rider has a stack, and
+     * {@code ShieldItems.applyLore} has already read the state to render the enchant block and must
+     * not decode it twice to render the block PERCENT from the same information.
+     *
+     * <p>It is also the reason this class has any unit coverage at all. {@code EnchantState} and
+     * {@code EnchantDefinition} are plain values, so this overload runs with no server -- unlike its
+     * sibling {@code DamageEnchantItems}, which is boot-witnessed only because every entry point it
+     * has needs a live {@code Player}. The summing rule is the part worth testing, and this is what
+     * makes it reachable.
+     */
+    public static double percentFor(EnchantState state, EnchantRegistry enchants,
+                                    EnchantEffect effect) {
+        if (state == null || enchants == null || effect == null) return 0.0;
 
         double total = 0.0;
-        for (ActiveEnchant active : EnchantItems.read(stack, keys).effective()) {
+        for (ActiveEnchant active : state.effective()) {
             EnchantDefinition definition = enchants.find(active.enchantId()).orElse(null);
             // A dangling id has no curve, so it cannot grant a percent. It still RENDERS on the
             // tooltip -- EnchantLore's deliberate fail-soft -- so the mismatch is visible rather
