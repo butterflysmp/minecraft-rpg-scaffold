@@ -188,17 +188,40 @@ lines was the crit commit sitting on top of it. A rule built on that check refus
 anything except the branch merged five minutes ago.
 
 **The check that actually answers the question** — "is this branch's content already somewhere in
-master's history?" — compares TREES, and needs no knowledge of which commit squashed it:
+master's history?" — compares TREES, and needs no knowledge of which commit squashed it. **Run the
+tool, not a hand-pasted loop:**
 
 ```bash
-BT=$(git rev-parse "$BRANCH^{tree}")
-git rev-list master | while read c; do
-  [ "$(git rev-parse "$c^{tree}")" = "$BT" ] && echo "absorbed at $c" && break
-done
+./scripts/check-absorbed.sh <branch>
 ```
 
 A match means some commit reachable from `master` has a byte-identical tree, so deleting the branch
-loses nothing. No match means STOP and report it — do not force-delete.
+loses nothing.
+
+**It has THREE outcomes, not two, and the third is the one that will bite you:**
+
+| exit | verdict | means |
+|---|---|---|
+| 0 | `ABSORBED at <sha>` | safe to delete |
+| 1 | `NOT ABSORBED` | tree absent AND master has not moved — a real STOP, unmerged work |
+| 2 | `INCONCLUSIVE` | tree absent BUT master advanced past the merge-base — **this check cannot authorize either way** |
+| 3 | `BLIND` | the positive control failed; no verdict was reached |
+
+Exit 2 exists because the tree compared is the branch TIP's. If master gains any commit between the
+branch point and the squash, the squash is built on that newer base — tree `newbase + changes`
+against the branch's `oldbase + changes`. Genuinely absorbed, no match. Collapsing that into "NOT
+ABSORBED" is a **false refusal**, and it happens the first time a PR lands behind another one.
+There, confirm from the PR's merged state (`gh pr view <n> --json state,mergedAt,mergeCommit`) and
+**say which source the conclusion came from** rather than letting a stale STOP stand.
+
+So the check is sound in one direction only, which is the right direction for a delete guard: it
+can never falsely say ABSORBED, but it can say "absent" for a reason that is not unmerged work.
+
+Exit 3 is why the tool exists rather than the loop. A search that finds nothing reads exactly like
+a search that ran correctly and found nothing — the defect this file records twice for content
+scans. The script asserts a known-present tree (the base tip's own) is found on **every** run, and
+refuses to render any verdict if it is not. Verified by mutation: break the search and it reports
+BLIND instead of a confident, false `NOT ABSORBED`.
 
 (The cheap special case, when you happen to know the squash commit: `git diff <squash-sha> <branch>`
 empty proves the same thing. That is what was used before the general check existed.)
