@@ -164,14 +164,37 @@ and nothing will ever roll it. It would show empty slots and read exactly like a
 | 8 | blocked, no Bulwark | `7.5` |
 | 9 | buy Bulwark I/II/III at the table, blocked each time | `6.75` / `6.00` / `5.25` |
 | 10 | the shield tooltip at Bulwark III | `Block: 65%`, agreeing with row 9 |
-| 11 | block until it breaks | notice fires **once**; next block gives **no** reduction |
+| 11 | hold the shield in the MAIN hand, `/rpg durability set 334` | `2/336 uses left (damage 334)` — not yet broken |
+| 12 | block once | `ShieldBrokenNotice` fires **once**; reduction on THIS hit is still `7.5` (or the Bulwark figure) |
+| 13 | block again | **no reduction** — `15.0`; notice does **not** repeat inside 40 ticks; **record what vanilla still animates** |
+| 14 | `/rpg repair`, block again | back to `7.5` — the gate is the durability state, not a one-way latch |
 
-**Row 11 carries a named seam trap.** `Durability.wear` floors at one remaining use, so a "broken"
+**Rows 11-14 exist because 2a could not otherwise witness its own break gate.** `WEAR_PER_BLOCK` is 1
+against a vanilla shield's 336 uses, so reaching broken by blocking meant ~250 hits, and with
+Unbreaking III roughly a thousand. `/rpg durability` gained the shield arm for exactly this — the
+same argument that put the shield arm on `/rpg enchant` in Slice 1.
+
+**Every number above is executed against the real `Durability` kernel, not worked out by hand:**
+
+```
+MIN_USES = 1;  broken threshold is damage >= 335
+  set 334 -> damage 334  usesLeft 2  broken=false
+  + one block of wear -> damage 335  usesLeft 1  broken=TRUE   <- the notice fires here
+  + another block      -> damage 335  (floored; a spent shield stops wearing)
+  set 999 -> damage 335  usesLeft 1  broken=true (clamps straight to broken, skipping the crossing)
+```
+
+Use `set 334`, not `set 999`: the latter arrives already broken, so `resolve` returns NONE, no wear
+happens, and **the notice never fires** — a row that would read as a broken notice rather than as a
+skipped crossing. Run row 11 on a shield with **no Unbreaking active**, or the wear is probabilistic
+and the crossing may take several blocks.
+
+**Row 13 carries the named seam trap.** `Durability.wear` floors at one remaining use, so a "broken"
 shield is still a functional item to vanilla: it will keep playing the raise, the block sound and the
 knockback dampen, and keep reporting `BLOCKING < 0`, while `resolve` returns NONE and the player
 takes the hit in full. **Record what the player sees and takes**, and whether one crossing notice is
 enough against vanilla continuing to animate a block that does nothing. That is a feel question this
-slice does not settle.
+slice does not settle — it is the row most likely to send a decision back into 2b.
 
 **A guard that fires is not a hypothesis to argue with.**
 

@@ -643,6 +643,21 @@ below the unit line have been run.**
   claiming to guard the broken case VIA the rider would pass without exercising anything. It stays
   as defence in depth, documented as untested.
 
+- **2a SHIPPED A CONSEQUENCE WITHOUT THE INSTRUMENT TO REACH IT, and that is a tooling gap the
+  slice created.** A broken shield stops blocking, and `/rpg durability` was weapon-only -- so the
+  only way to produce a broken shield in-game was ~250 blocks (`WEAR_PER_BLOCK` 1 against 336 uses),
+  or roughly a thousand with Unbreaking III. **A consequence that cannot be produced cannot be
+  gate-witnessed**, and an unwitnessable mechanic is the thing the dev commands exist to prevent.
+  Fixed inside 2a by widening `/rpg durability` (and `/rpg repair`, which shares its body) to our
+  shields. Same argument that put the shield arm on `/rpg enchant` in Slice 1: the mechanic and the
+  instrument that exercises it ship together, or the mechanic ships unproven.
+
+  It is a TAG check rather than `resolveHeldGear`, deliberately: that resolver also requires the
+  content DEFINITION because all its callers end in a re-mint, and durability needs none --
+  `wear`/`repair`/`set` are pure `ItemStack` questions. Routing through it would newly refuse a
+  dangling-id WEAPON that works today, which is a behaviour change on the weapon path. No dispatch
+  was needed anyway: the kernel is already shared.
+
 - **A "broken" shield is still functional to VANILLA, and the boot gate owes an answer.**
   `Durability.wear` floors at one remaining use, so vanilla keeps playing the raise, the block sound
   and the knockback dampen, and keeps reporting `BLOCKING < 0`, while `resolve` returns NONE and the

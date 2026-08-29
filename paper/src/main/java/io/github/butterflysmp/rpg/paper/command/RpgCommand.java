@@ -788,13 +788,29 @@ public final class RpgCommand {
         return 1;
     }
 
-    /** Which direction {@link #durability} moves the held weapon's wear. */
+    /** Which direction {@link #durability} moves the held gear's wear. */
     private enum DurabilityOp { DAMAGE, REPAIR, SET }
 
     /**
-     * Move the held weapon's durability, for testing. The wear source Pass 1 needs: nothing wears
+     * Move the held GEAR's durability, for testing. The wear source Pass 1 needs: nothing wears
      * items in play yet, so without this the break gate and #12's step-9 clamp cannot be produced
      * in-game at all.
+     *
+     * <p><b>Shields since Slice 2a, and that is completion rather than new scope.</b> 2a gave a
+     * broken shield a real consequence -- {@code ShieldBlock.resolve} returns {@code Outcome.NONE},
+     * so it stops blocking -- and shipped no way to reach that state: {@code WEAR_PER_BLOCK} is 1
+     * against a vanilla shield's ~336 uses, so witnessing the break gate meant roughly 250 blocks,
+     * and with Unbreaking III roughly a thousand. A consequence that cannot be produced in-game
+     * cannot be gate-witnessed, and an unwitnessable mechanic is exactly what this command exists to
+     * prevent. Same argument that put the shield arm on {@code /rpg enchant} in Slice 1.
+     *
+     * <p>NO new durability logic: {@link WeaponDurability#wear}, {@code repair} and {@code set} are
+     * already pure {@code ItemStack} questions and say so, so the kernel is shared rather than
+     * dispatched. The only thing that widened is which tags this command will touch.
+     *
+     * <p>MAIN HAND only, unchanged, matching {@code /rpg enchant}. A shield blocks from either hand,
+     * so the gate flow is: hold the shield in the main hand, {@code set} it near-broken, then block
+     * with it. One command, one hand, no ambiguity about which item was addressed.
      *
      * Every value goes through the core kernel, so {@code damage} past the floor CLAMPS rather than
      * destroying the item -- this command cannot break the promise it exists to test.
@@ -818,11 +834,20 @@ public final class RpgCommand {
         adapters.scheduler().onEntity(player, () -> {
             ItemStack held = player.getInventory().getItemInMainHand();
 
-            // Scope: only our weapons. An untagged vanilla item is not this command's business,
-            // the same boundary the gates draw.
-            if (WeaponItems.weaponId(held, adapters.keys()).isEmpty()) {
+            // Scope: our weapons AND our shields, the same boundary /rpg enchant and the gates draw.
+            // An untagged vanilla item is not this command's business.
+            //
+            // A TAG CHECK, not resolveHeldGear, and the difference is deliberate. That resolver also
+            // requires the content DEFINITION, because every one of its callers ends in a re-mint
+            // and writing state you cannot re-mint leaves an item whose PDC and lore disagree.
+            // Durability needs no definition at all -- wear/repair/set are pure ItemStack questions
+            // -- so routing through it would newly REFUSE a dangling-id weapon that works today.
+            // That would be a behaviour change on the weapon path, which this arm must not make.
+            // The dispatch that matters is the one below, and there is none: the kernel is shared.
+            if (WeaponItems.weaponId(held, adapters.keys()).isEmpty()
+                    && ShieldItems.shieldId(held, adapters.keys()).isEmpty()) {
                 player.sendMessage(Component.text(
-                        "Hold one of our weapons.", NamedTextColor.RED));
+                        "Hold one of our weapons or shields.", NamedTextColor.RED));
                 return;
             }
 
