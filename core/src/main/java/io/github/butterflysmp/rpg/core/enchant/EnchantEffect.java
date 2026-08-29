@@ -44,7 +44,25 @@ public enum EnchantEffect {
      * DO share is the shape of their content -- a {@code percent_by_level} curve -- and that is why
      * a second block enchant will be a yml file rather than a recompile.
      */
-    BLOCK_DR;
+    BLOCK_DR,
+
+    /**
+     * A fraction of an incoming blow sent back at whoever threw it. The mechanism is {@link Riposte},
+     * composed with the block in {@code core/combat/ShieldExchange}. Like {@link #BLOCK_DR} it is read
+     * off the blocking stack, so {@code EnchantDefinition} refuses one that is not
+     * {@code class: shield}.
+     *
+     * <p>A THIRD mechanism rather than a flavour of {@link #BLOCK_DR}, on the same rule: they share no
+     * arithmetic at all. Block composes a fraction and clamps it; this multiplies a blow and hands the
+     * product to a SECOND combatant. What they share is the shape of their content -- a
+     * {@code percent_by_level} curve -- which is what lets both be tuned without a recompile.
+     *
+     * <p><b>The no-negative rule on its curve matters more here than anywhere else.</b> A negative
+     * reflect goes straight through {@code applyDamage} to {@code stats.damage} and HEALS the
+     * attacking mob. {@code EnchantDefinition}'s shared {@code requireCurve} covers it by
+     * construction, which is precisely what that lift was for.
+     */
+    REFLECT;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides

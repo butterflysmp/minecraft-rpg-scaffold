@@ -106,6 +106,20 @@ public final class EnchantEffectLine {
                 double percent = EnchantCurve.percentAt(definition.percentByLevel(), level);
                 yield String.format("+%.0f%% block", percent);
             }
+            case REFLECT -> {
+                // Same gate story as BLOCK_DR: refused at the content boundary, so the only way to
+                // hold one on the wrong gear is the dev command or a hand-edited item. Reachable,
+                // so it is described rather than assumed away.
+                if (definition.gearClass() != heldClass) {
+                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
+                            + " enchant on " + GearClassLabel.describe(heldClass);
+                }
+                // "to the attacker" is not decoration -- it is the one word that stops this reading
+                // as a damage bonus to your own hits. And the percent is of the INCOMING blow, not
+                // of what got through, which is why the wording says nothing about blocking.
+                double percent = EnchantCurve.percentAt(definition.percentByLevel(), level);
+                yield String.format("+%.0f%% reflected to the attacker", percent);
+            }
         };
     }
 }

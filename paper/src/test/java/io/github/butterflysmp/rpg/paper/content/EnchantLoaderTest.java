@@ -336,6 +336,55 @@ class EnchantLoaderTest {
                 "b", "B", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, 10, 15)));
     }
 
+    /**
+     * The same gate rule on REFLECT, and it is here because getting it wrong is the ONE mistake in
+     * this arm that a shipped-content test would still catch. Its sibling below (the curve rules) is
+     * the one nothing else would catch at all.
+     */
+    @Test
+    void aReflectEnchantMustBeGatedOnShieldBecauseNothingElseCanBlock() {
+        var universal = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "r", "R", 3, EnchantEffect.REFLECT, null, List.of(10, 20, 30)),
+                "a universal reflect enchant would be offered on every weapon in the game");
+        assertTrue(universal.getMessage().contains("every weapon's pool"),
+                "the refusal must say WHY universal is the dangerous one: " + universal.getMessage());
+
+        for (GearClass weapon : List.of(GearClass.MELEE, GearClass.RANGER, GearClass.MAGE)) {
+            assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                    "r", "R", 3, EnchantEffect.REFLECT, weapon, List.of(10, 20, 30)),
+                    weapon + " cannot block, so a reflect read off the blocking stack never fires");
+        }
+
+        assertDoesNotThrow(() -> new EnchantDefinition(
+                "r", "R", 3, EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, 20, 30)));
+    }
+
+    /**
+     * THE ONE NOTHING ELSE CATCHES. Omitting {@code requireCurve} from the REFLECT arm leaves
+     * {@code riposte.yml} loading perfectly well -- it has a curve -- so no shipped-content test and
+     * no loader test reddens. Only this does.
+     *
+     * <p>And the negative rule is worth more here than on any other effect: a negative reflect is not
+     * a weak reflect. It goes through {@code applyDamage} to {@code stats.damage} and <b>HEALS the
+     * mob that is attacking you</b>. That is the rule the shared validator exists to make
+     * unforgettable, and this is what proves the REFLECT arm actually calls it.
+     */
+    @Test
+    void aReflectEnchantIsHeldToTheSameCurveRulesAsABlockOne() {
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "r", "R", 3, EnchantEffect.REFLECT, GearClass.SHIELD, List.of()),
+                "a reflect enchant with no curve has no numbers to reflect by");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "r", "R", 3, EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, 20)),
+                "a short curve leaves a legal level with no percent");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "r", "R", 2, EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, 20, 30)),
+                "a long curve hides levels the enchant can never reach");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "r", "R", 3, EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, -20, 30)),
+                "a NEGATIVE reflect would heal the attacking mob rather than hurt it");
+    }
+
     @Test
     void aDamageEnchantMayNotBeGatedOnShieldBecauseTheDamageGateReadsTheWeapon() {
         // DamageEnchantItems reads the MAIN HAND's weapon and maps it through GearClass.of, which

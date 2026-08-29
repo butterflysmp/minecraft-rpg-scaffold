@@ -102,25 +102,38 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         // table would paint air where a candidate should be. Falling back beats rendering nothing.
         icon = (icon == null || icon.isBlank()) ? DEFAULT_ICON : icon;
 
-        // ONE arm per effect, no default, so a new EnchantEffect constant is a compile error here
-        // until someone states what a file carrying it may and may not claim. The two rules are
-        // lifted into requireCurve/requireGate rather than copied per arm: three effects now share
-        // the curve rules, and three copies of "size must equal max_level" is how they drift.
-        switch (effect) {
-            case DAMAGE -> {
-                requireCurve(id, effect, maxLevel, percentByLevel);
-                requireGate(id, effect, gearClass, Gate.ANY_BUT_SHIELD);
-            }
-            // A block enchant reads off the BLOCKING STACK, which only a shield can be.
-            case BLOCK_DR -> {
-                requireCurve(id, effect, maxLevel, percentByLevel);
-                requireGate(id, effect, gearClass, Gate.SHIELD_ONLY);
-            }
-            case DURABILITY -> {
-                requireNoCurve(id, effect, percentByLevel);
-                requireGate(id, effect, gearClass, Gate.UNIVERSAL_ONLY);
-            }
+        // SWITCH EXPRESSIONS, NOT A SWITCH STATEMENT, and that distinction is the whole guarantee.
+        //
+        // This was a switch STATEMENT until Slice 2b, carrying a comment claiming "no default, so a
+        // new EnchantEffect constant is a compile error here". THAT CLAIM WAS FALSE. Java requires
+        // exhaustiveness of switch EXPRESSIONS; a switch statement over an enum may silently cover
+        // nothing. Adding REFLECT compiled clean and fell through to NO VALIDATION AT ALL -- no curve
+        // rule, no gate rule -- which for a reflect enchant means a negative percent reaching
+        // stats.damage and HEALING the attacking mob. The compiler proved it: only EnchantEffectLine,
+        // whose switch really is an expression, failed to compile.
+        //
+        // Choosing the rules as VALUES restores the guarantee for real. A new constant now fails here
+        // twice, by name, until someone states what a file carrying it may claim.
+        Gate gate = switch (effect) {
+            case DAMAGE     -> Gate.ANY_BUT_SHIELD;
+            // Both read off the BLOCKING STACK, which only a shield can be.
+            case BLOCK_DR,
+                 REFLECT    -> Gate.SHIELD_ONLY;
+            case DURABILITY -> Gate.UNIVERSAL_ONLY;
+        };
+        boolean curved = switch (effect) {
+            case DAMAGE, BLOCK_DR, REFLECT -> true;
+            case DURABILITY                -> false;
+        };
+
+        // The two rules are shared rather than copied per arm: three effects now hold the same curve
+        // rules, and three copies of "size must equal max_level" is how they drift.
+        if (curved) {
+            requireCurve(id, effect, maxLevel, percentByLevel);
+        } else {
+            requireNoCurve(id, effect, percentByLevel);
         }
+        requireGate(id, effect, gearClass, gate);
     }
 
     /** Which gates an effect's mechanism can actually be read through. See {@link #requireGate}. */
