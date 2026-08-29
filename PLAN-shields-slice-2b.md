@@ -138,9 +138,16 @@ check. There is deliberately no `EnchantCurveTest`: a mutation already reddens t
 
 ---
 
-## Boot gate
+## Boot gate -- ROW 1 RUN AND PASSED; ROWS 2-9 OWED BY A HUMAN
 
-`./scripts/dev-server.sh --refresh-content`. **Give a FRESH roundshield** — `rollOnAcquire` fires only
+`./scripts/dev-server.sh --refresh-content`.
+
+**Row 1, run 2026-08-29 15:19.** Paper 26.1.2.build.74, deploy verified by mtime AND size before
+booting (target and deployed both `469324` bytes) and `riposte.yml` confirmed inside the shaded jar:
+`Loaded 6 abilities, 7 visuals, 5 statuses, 7 elements, 6 enchants, 2 kits, 5 weapons, 1 shields,
+1 mobs` / `Done (6.477s)`, with ZERO `Skipping malformed enchant`. Six enchants, up from five, so
+`effect: reflect` binds through the real `EnchantEffect` and `class: shield` through the real
+`GearClass` on a live server. **It is a load check and establishes nothing mechanical.** **Give a FRESH roundshield** — `rollOnAcquire` fires only
 at acquisition, so a 2a shield carries no `enchant_rolled` flag and will never roll Riposte.
 
 **The popup ROUNDS.** Executed: the gate reads whole numbers.
