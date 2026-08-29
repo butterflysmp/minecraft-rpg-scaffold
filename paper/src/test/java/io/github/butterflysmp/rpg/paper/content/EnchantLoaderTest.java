@@ -180,6 +180,39 @@ class EnchantLoaderTest {
         }
     }
 
+    /**
+     * The shipped SHIELD enchant, field for field.
+     *
+     * <p>The sibling of {@code theThreeShippedDamageEnchantsCarryTheirClassAndCurve}, and here for
+     * the same reason: the class token is the thing most likely to rot. A Bulwark that loaded as
+     * {@code universal} would be offered on every sword in the game and do nothing on any of them;
+     * one that loaded as {@code melee} would be offered on swords alone and still do nothing. Both
+     * are working, wrong, and invisible without a booted server -- except that the loader now
+     * refuses them outright, which this asserts by asserting the value that survived.
+     *
+     * <p><b>This test could not have existed before the fixture stopped enumerating the roster.</b>
+     * Positive control, measured: flipping {@code class: shield} to {@code class: universal} in the
+     * shipped file makes the loader skip it and fails 7 tests, naming bulwark --
+     * {@code expected: <[unbreaking, sharpness, power, attunement, bulwark]> but was:
+     * <[attunement, unbreaking, power, sharpness]>}. Under the old fixture that edit was silent.
+     */
+    @Test
+    void theShippedBulwarkCarriesItsShieldGateAndCurve(@TempDir Path dir) throws IOException {
+        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+
+        EnchantDefinition bulwark = enchants.find("bulwark").orElseThrow(
+                () -> new AssertionError("bulwark.yml did not load -- shields would roll only Unbreaking"));
+
+        assertEquals("Bulwark", bulwark.displayName());
+        assertEquals(EnchantEffect.BLOCK_DR, bulwark.effect(), "bulwark binds the block mechanism");
+        assertEquals(GearClass.SHIELD, bulwark.gearClass(),
+                "a block enchant gated anywhere else would never fire");
+        assertFalse(bulwark.isUniversal(), "universal would put it in every weapon's roll pool");
+        assertEquals(List.of(5, 10, 15), bulwark.percentByLevel(), "the shipped curve");
+        assertEquals(3, bulwark.maxLevel());
+        assertEquals("shield", bulwark.icon());
+    }
+
     // --- The schema rules, one test each ---------------------------------------------------------
 
     @Test
