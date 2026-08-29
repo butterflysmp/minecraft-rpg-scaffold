@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
+import io.github.butterflysmp.rpg.core.enchant.EnchantCurve;
 import io.github.butterflysmp.rpg.core.enchant.Unbreaking;
 import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
@@ -102,7 +103,7 @@ public final class EnchantEffectLine {
                 // means the shield stops fifteen more points of the hit, not fifteen percent more
                 // of what it already stopped. Saying "x1.15" here would describe the rejected
                 // reading. The gate reads this line before blocking, so it must be the real number.
-                double percent = DamageEnchants.percentAt(definition.percentByLevel(), level);
+                double percent = EnchantCurve.percentAt(definition.percentByLevel(), level);
                 yield String.format("+%.0f%% block", percent);
             }
         };

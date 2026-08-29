@@ -1,7 +1,7 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.enchant.ActiveEnchant;
-import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
+import io.github.butterflysmp.rpg.core.enchant.EnchantCurve;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
@@ -98,7 +98,7 @@ public final class BlockEnchantItems {
             // tooltip -- EnchantLore's deliberate fail-soft -- so the mismatch is visible rather
             // than silent, and it fails toward granting nothing.
             if (definition == null || definition.effect() != effect) continue;
-            total += DamageEnchants.percentAt(definition.percentByLevel(), active.level());
+            total += EnchantCurve.percentAt(definition.percentByLevel(), active.level());
         }
         return total;
     }
