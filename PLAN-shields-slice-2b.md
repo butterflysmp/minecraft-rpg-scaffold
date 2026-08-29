@@ -183,12 +183,29 @@ check. There is deliberately no `EnchantCurveTest`: a mutation already reddens t
 
 `./scripts/dev-server.sh --refresh-content`.
 
-**Row 1, run 2026-08-29 15:19.** Paper 26.1.2.build.74, deploy verified by mtime AND size before
-booting (target and deployed both `469324` bytes) and `thorns.yml` confirmed inside the shaded jar:
-`Loaded 6 abilities, 7 visuals, 5 statuses, 7 elements, 6 enchants, 2 kits, 5 weapons, 1 shields,
-1 mobs` / `Done (6.477s)`, with ZERO `Skipping malformed enchant`. Six enchants, up from five, so
-`effect: reflect` binds through the real `EnchantEffect` and `class: shield` through the real
-`GearClass` on a live server. **It is a load check and establishes nothing mechanical.** **Give a FRESH shield** — `rollOnAcquire` fires only
+**Row 1, RE-RUN 2026-08-29 16:05 after the finalisation pass** (the first run at 15:19 predates the
+rename and the 0.35 base, so it is superseded). Paper 26.1.2.build.74, deploy verified by mtime AND
+size (both `469547` bytes) and the RENAMED content confirmed inside the shaded jar --
+`content/enchants/thorns.yml`, `content/shields/shield.yml`:
+
+```
+[Rpg] Loaded 6 abilities, 7 visuals, 5 statuses, 7 elements, 6 enchants,
+      2 kits, 5 weapons, 1 shields, 1 mobs
+Done (5.096s)!
+```
+
+ZERO `Skipping malformed`, ZERO id-collision warnings (the shield id `shield` against the `shield`
+material token and against every weapon id), no Rpg-sourced WARN or exception. So `class: shield`,
+`effect: reflect` and `block_dr: 0.35` all parse through the real loaders on a live server.
+**It is a load check and establishes nothing mechanical.**
+
+> **The file lock fired for real this time, and it cost a run.** `dev-server.sh`'s own `rm -f` hit
+> `Device or resource busy`, `set -e` aborted before it deployed, and the server never booted -- the
+> exact sequence CLAUDE.md records. Two orphaned `java.exe` from an earlier boot held the jar.
+>
+> **And the check that missed them was `tasklist /FI ... | grep -c java.exe`, which reported 0 while
+> two were running.** `Get-CimInstance Win32_Process -Filter "Name='java.exe'"` found both. Use that;
+> and prove the lock is gone by actually opening the jar exclusively, not by trusting a process list. **Give a FRESH shield** — `rollOnAcquire` fires only
 at acquisition, so a 2a shield carries no `enchant_rolled` flag and will never roll Thorns.
 
 **The popup ROUNDS.** Executed: the gate reads whole numbers.

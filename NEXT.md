@@ -740,6 +740,16 @@ wording, the Bulwark ladder, and the break gate — **full damage on the post-br
 `ShieldBrokenNotice` firing exactly once at the `334 -> 335` crossing and not repeating. The one
 result no plan predicted in full is the first entry below.
 
+> **Re-run 2026-08-29 16:05 after the finalisation pass** -- `Loaded ... 6 enchants ... 1 shields`,
+> `Done (5.096s)`, zero skipped, zero id-collision warnings. The 15:19 run predates the rename and
+> the 0.35 base and is superseded.
+>
+> **The lock cost a run this time.** `dev-server.sh`'s own `rm -f` hit `Device or resource busy`,
+> `set -e` aborted before deploying, and nothing booted. Two orphaned `java.exe` held the jar -- and
+> `tasklist /FI ... | grep -c java.exe` reported **0** while both were running. Use
+> `Get-CimInstance Win32_Process`, and prove the lock is gone by opening the jar exclusively rather
+> than by trusting a process list.
+>
 > The file lock bit on the way out, exactly as CLAUDE.md records: `rm` on the deployed jar failed with
 > `Device or resource busy` because the server JVM outlived the script that started it (an Oracle
 > `javapath` shim plus the JDK process it spawns — two `java.exe`, both to be stopped). Confirm the
