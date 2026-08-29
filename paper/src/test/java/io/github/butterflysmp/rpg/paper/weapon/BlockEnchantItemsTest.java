@@ -34,6 +34,11 @@ class BlockEnchantItemsTest {
                 EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, 10, 15));
     }
 
+    private static EnchantDefinition riposte() {
+        return new EnchantDefinition("riposte", "Riposte", 3,
+                EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, 20, 30));
+    }
+
     private static EnchantDefinition unbreaking() {
         return new EnchantDefinition("unbreaking", "Unbreaking", 3,
                 EnchantEffect.DURABILITY, null, List.of());
@@ -135,11 +140,60 @@ class BlockEnchantItemsTest {
                 "15 from Bulwark III plus 4 from Aegis II");
     }
 
+    /**
+     * THE test that finally guards the effect filter, and it could not be written until Riposte
+     * existed.
+     *
+     * <p>2a's {@code anEnchantBindingAnotherMechanismIsSkippedRatherThanCountedAsZero} was written to
+     * pin exactly this and <b>cannot fail</b>: its cross-effect fixture is Unbreaking, whose curve is
+     * empty, so deleting {@code definition.effect() != effect} leaves
+     * {@code EnchantCurve.percentAt(List.of(), 3)} returning 0.0 anyway. Its own comment named the
+     * risk -- "not 'it has no curve', which would be a different rule that happens to agree today" --
+     * and then agreed with it.
+     *
+     * <p>Bulwark and Riposte are the first two enchants that BOTH carry curves and bind DIFFERENT
+     * mechanisms, so a lost filter finally produces a wrong number instead of the same zero. This is
+     * also precisely the leak the single-decode restructure in {@code ShieldBlock.resolve} could
+     * introduce: one state, scanned twice, and nothing but this filter keeps the two answers apart.
+     */
+    @Test
+    void oneStateCarryingBOTHShieldEnchantsKeepsTheirPercentagesApart() {
+        EnchantRegistry enchants = registry(bulwark(), riposte());
+        EnchantState both = EnchantState.empty()
+                .addCandidate(0, "bulwark").withLevel(0, 0, 3).withActive(0, 0)
+                .addCandidate(1, "riposte").withLevel(1, 0, 3).withActive(1, 0);
+
+        assertEquals(15.0, BlockEnchantItems.percentFor(both, enchants, EnchantEffect.BLOCK_DR), EPS,
+                "the block read picked up the reflect's 30 -- 45.0 means the effect filter is gone");
+        assertEquals(30.0, BlockEnchantItems.percentFor(both, enchants, EnchantEffect.REFLECT), EPS,
+                "the reflect read picked up the block's 15 -- 45.0 means the effect filter is gone");
+
+        // Neither is the sum, stated separately so the failure message is unambiguous if it ever is.
+        assertNotEquals(45.0, BlockEnchantItems.percentFor(both, enchants, EnchantEffect.BLOCK_DR), EPS);
+        assertNotEquals(45.0, BlockEnchantItems.percentFor(both, enchants, EnchantEffect.REFLECT), EPS);
+    }
+
+    @Test
+    void theReflectLadderIsReadOffTheSameScan() {
+        EnchantRegistry enchants = registry(riposte());
+        assertEquals(10.0, BlockEnchantItems.percentFor(
+                activeAt("riposte", 1), enchants, EnchantEffect.REFLECT), EPS);
+        assertEquals(20.0, BlockEnchantItems.percentFor(
+                activeAt("riposte", 2), enchants, EnchantEffect.REFLECT), EPS);
+        assertEquals(30.0, BlockEnchantItems.percentFor(
+                activeAt("riposte", 3), enchants, EnchantEffect.REFLECT), EPS);
+
+        // And a shield carrying ONLY Riposte contributes nothing to the block, which is what keeps
+        // the two enchants independently tunable all the way down to the read.
+        assertEquals(0.0, BlockEnchantItems.percentFor(
+                activeAt("riposte", 3), enchants, EnchantEffect.BLOCK_DR));
+    }
+
     @Test
     void nullsAreTotalRatherThanThrowingFromInsideABlock() {
         // This runs inside the mob->player damage rider. An exception there loses the whole hit.
         assertEquals(0.0, BlockEnchantItems.percentFor(
-                (EnchantState) null, registry(bulwark()), EnchantEffect.BLOCK_DR));
+                null, registry(bulwark()), EnchantEffect.BLOCK_DR));
         assertEquals(0.0, BlockEnchantItems.percentFor(
                 activeAt("bulwark", 3), null, EnchantEffect.BLOCK_DR));
         assertEquals(0.0, BlockEnchantItems.percentFor(

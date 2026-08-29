@@ -4,10 +4,8 @@ import io.github.butterflysmp.rpg.core.enchant.ActiveEnchant;
 import io.github.butterflysmp.rpg.core.enchant.EnchantCurve;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
-import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
-import org.bukkit.inventory.ItemStack;
 
 /**
  * Reading a shield's enchant percentages off the BLOCKING STACK. The Bukkit half only.
@@ -17,11 +15,11 @@ import org.bukkit.inventory.ItemStack;
  * mechanism asked for, and sum their curve values. The arithmetic that matters is in
  * {@code core/enchant/Bulwark}.
  *
- * <p><b>Unlike {@code DamageEnchantItems}, the interesting half of this IS unit-tested.</b> That one
- * is boot-witnessed only because every entry point it has needs a live {@code Player}. Splitting the
- * PDC decode from the summing gives a state-shaped overload over plain values -- {@code EnchantState},
- * {@code EnchantDefinition}, {@code EnchantRegistry} are none of them Bukkit -- so the rule worth
- * guarding runs with no server. Only the {@link ItemStack} decode in front of it is boot-owed.
+ * <p><b>Unlike {@code DamageEnchantItems}, this one IS unit-tested.</b> That sibling is
+ * boot-witnessed entirely because every entry point it has needs a live {@code Player}. Keeping the
+ * PDC decode OUT of this class leaves it over plain values -- {@code EnchantState},
+ * {@code EnchantDefinition} and {@code EnchantRegistry} are none of them Bukkit -- so the rule worth
+ * guarding runs with no server at all.
  *
  * <h2>Bound by EFFECT, never by id -- and that is the opposite of the Unbreaking seam</h2>
  *
@@ -48,44 +46,37 @@ import org.bukkit.inventory.ItemStack;
  * {@code DamageEnchants} documents for percentages. Summing over a state that had itself summed
  * duplicates would let two columns of one enchant walk a shield to {@code dr = 1.0}.
  *
- * <p><b>One decode per call.</b> This runs on every blocked hit, and {@code EnchantItems.read}
- * parses the PDC string, so the effect is passed in rather than the caller asking twice for two
- * different mechanisms. Slice 2b's reflect reads its percentage through this same call.
+ * <p><b>The DECODE lives in the caller, and that is what makes one blocked hit cost one read.</b>
+ * {@code ShieldBlock.resolve} decodes the blocking stack once and scans the resulting state twice --
+ * BLOCK_DR for Bulwark, REFLECT for Riposte. The effect is a parameter rather than this class
+ * answering for every mechanism at once, so a caller that wants only one pays for only one pass.
  */
 public final class BlockEnchantItems {
 
     private BlockEnchantItems() {}
 
     /**
-     * The summed percentage this stack's ACTIVE enchants contribute for {@code effect}, or
+     * The summed percentage a piece of gear's ACTIVE enchants contribute for {@code effect}, or
      * {@code 0.0} when it carries none.
      *
      * <p>Zero is the neutral value every consumer wants -- {@code Bulwark.effectiveDr(dr, 0)} is
-     * {@code dr} exactly -- so the overwhelmingly common unenchanted shield needs no branch at the
-     * call site.
+     * {@code dr} exactly, and {@code Riposte.reflects(0)} is false -- so the overwhelmingly common
+     * unenchanted shield needs no branch at any call site.
      *
      * <p>Reads {@code effective()}, so the level here is literally the level the TOOLTIP rendered.
      * A shield promising Bulwark III cannot be blocking at II.
-     */
-    public static double percentFor(ItemStack stack, Keys keys, EnchantRegistry enchants,
-                                    EnchantEffect effect) {
-        if (stack == null) return 0.0;
-        return percentFor(EnchantItems.read(stack, keys), enchants, effect);
-    }
-
-    /**
-     * The same sum, from an already-decoded state.
      *
-     * <p><b>This is the real primitive, and the {@link ItemStack} overload above is the decode in
-     * front of it.</b> Two callers want it that way: the block rider has a stack, and
-     * {@code ShieldItems.applyLore} has already read the state to render the enchant block and must
-     * not decode it twice to render the block PERCENT from the same information.
+     * <p><b>Takes an already-decoded state, and there is deliberately no {@code ItemStack} overload
+     * any more.</b> One existed through Slice 2a, when the block rider still decoded per call. Slice
+     * 2b hoisted that read into {@code ShieldBlock.resolve} so BOTH shield enchants come off ONE
+     * decode, which left the stack-shaped overload with zero production callers -- and its mere
+     * presence forced a {@code (EnchantState) null} cast in the test just to disambiguate. Deleting
+     * it removed dead public API and that cast together.
      *
-     * <p>It is also the reason this class has any unit coverage at all. {@code EnchantState} and
-     * {@code EnchantDefinition} are plain values, so this overload runs with no server -- unlike its
-     * sibling {@code DamageEnchantItems}, which is boot-witnessed only because every entry point it
-     * has needs a live {@code Player}. The summing rule is the part worth testing, and this is what
-     * makes it reachable.
+     * <p>It is also why this class has any unit coverage at all. {@code EnchantState},
+     * {@code EnchantDefinition} and {@code EnchantRegistry} are plain values, so this runs with no
+     * server -- unlike its sibling {@code DamageEnchantItems}, whose every entry point needs a live
+     * {@code Player} and which is therefore boot-witnessed entirely.
      */
     public static double percentFor(EnchantState state, EnchantRegistry enchants,
                                     EnchantEffect effect) {
