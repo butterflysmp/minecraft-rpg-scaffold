@@ -1,14 +1,20 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.combat.Shield;
+import io.github.butterflysmp.rpg.core.enchant.Bulwark;
+import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
+import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * Did vanilla consider this hit blocked, and if so by which of our shields?
@@ -90,9 +96,13 @@ public final class ShieldBlock {
      * {@link #NONE} they are null, and the rider never reads them because it branches on
      * {@code blocked} first.
      */
-    public record Outcome(boolean blocked, double blockDr, EquipmentSlot slot, String shieldId) {
+    public record Outcome(boolean blocked, double effectiveDr, EquipmentSlot slot, String shieldId) {
 
-        /** No block: either vanilla did not block, or what blocked was not one of ours. */
+        /**
+         * No block, for any of THREE reasons that mean the same thing to the rider: vanilla did not
+         * block, what blocked was not one of ours (a plain vanilla shield, or a dangling id), or the
+         * shield is BROKEN. One outcome, one meaning -- "no custom mitigation from this stack".
+         */
         public static final Outcome NONE = new Outcome(false, Shield.NONE, null, null);
     }
 
@@ -105,14 +115,15 @@ public final class ShieldBlock {
      * The rider's ordering is what makes this correct, and it is commented there too.
      */
     public static Outcome resolve(LivingEntity victim, EntityDamageEvent event, Keys keys,
-                                  ShieldRegistry shields) {
+                                  ShieldRegistry shields, EnchantRegistry enchants) {
         if (!vanillaBlocked(event)) return Outcome.NONE;
 
         Optional<EquipmentSlot> hand = ShieldItems.shieldHand(victim, keys);
         if (hand.isEmpty()) return Outcome.NONE;   // vanilla shield, or none: no custom mitigation
 
         EquipmentSlot slot = hand.get();
-        String id = ShieldItems.shieldId(victim.getEquipment().getItem(slot), keys).orElse(null);
+        ItemStack stack = victim.getEquipment().getItem(slot);
+        String id = ShieldItems.shieldId(stack, keys).orElse(null);
         if (id == null) return Outcome.NONE;
 
         // A dangling shield_id -- an item whose content file is gone -- blocks NOTHING rather than
@@ -122,7 +133,28 @@ public final class ShieldBlock {
         ShieldDefinition definition = shields.find(id).orElse(null);
         if (definition == null) return Outcome.NONE;
 
-        return new Outcome(true, definition.blockDr(), slot, id);
+        // A BROKEN SHIELD STOPS BLOCKING, and this is the single gate every shield mechanic falls
+        // off: base DR here, Bulwark below it, the reflect in Slice 2b. Slice 1 shipped without one
+        // deliberately -- Durability.wear floors at one remaining use, so a spent shield simply
+        // stopped wearing and kept blocking at full strength, which made all of that slice's
+        // durability work cosmetic and broke the symmetry with weapons, which DO gate on broken.
+        //
+        // An item with no durability at all is NOT broken. maxOf is empty for a non-Damageable
+        // stack, and that must return normally rather than throw -- the same early-out shape
+        // ShieldDurability.applyWearOnBlock uses.
+        OptionalInt max = WeaponDurability.maxOf(stack);
+        if (max.isPresent()
+                && Durability.isBroken(WeaponDurability.damageOf(stack), max.getAsInt())) {
+            return Outcome.NONE;
+        }
+
+        // Bulwark is composed HERE rather than in the rider, so the ordering constraint above
+        // (resolve before setDamage) covers the enchant read for free, and the rider keeps exactly
+        // one number to apply. The value returned is the EFFECTIVE fraction, which is why the
+        // component is not called blockDr any more: a name that still said "the shield's own DR"
+        // while carrying an enchant's contribution is how a witness log starts lying.
+        double bulwark = BlockEnchantItems.percentFor(stack, keys, enchants, EnchantEffect.BLOCK_DR);
+        return new Outcome(true, Bulwark.effectiveDr(definition.blockDr(), bulwark), slot, id);
     }
 
     /**

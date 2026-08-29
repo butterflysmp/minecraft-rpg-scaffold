@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.enchant.Unbreaking;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
@@ -59,16 +60,31 @@ public final class ShieldDurability {
      * Charge the shield in {@code slot} one block. THE ONE PLACE SHIELD WEAR IS APPLIED IN PLAY.
      *
      * <p><b>The exemptions, in order, and the order is the same one the weapon path uses.</b> A
-     * non-Damageable material leaves with nothing done. An already-worn-out shield leaves too --
-     * and note what that does NOT do: there is no break gate for shields in this slice, so a
-     * spent shield keeps blocking at full strength and simply stops wearing. Whether a broken
-     * shield should stop blocking is a deferred decision, recorded in NEXT.md; this method is
-     * where it would be enforced, and deliberately is not yet. {@link Durability#wear} floors at
-     * one remaining use, so the item can never be destroyed by blocking.
+     * non-Damageable material leaves with nothing done; an already-worn-out shield leaves too.
+     * {@link Durability#wear} floors at one remaining use, so the item can never be destroyed by
+     * blocking -- it stops wearing and stays in the hand.
      *
-     * <p>No broken-notice is sent, unlike the weapon path. {@code BrokenNotice} says "your weapon
-     * is broken -- repair it before using it", which would be two lies at once for a shield: it is
-     * not a weapon, and nothing stops it being used.
+     * <p><b>A broken shield now stops BLOCKING, and that gate is not here.</b> Slice 1 left the
+     * question open and named this method as where it would be enforced. It went to
+     * {@code ShieldBlock.resolve} instead, because that is where every other reason to grant no
+     * mitigation already lives -- untagged, dangling, and now broken all return the one
+     * {@code Outcome.NONE}, so base DR, Bulwark and the reflect fall off a single predicate rather
+     * than three.
+     *
+     * <p>A consequence of that placement, and the right one: {@code resolve} runs BEFORE the wear
+     * below, so the block that BREAKS the shield still mitigates in full, and only the next one
+     * does nothing.
+     *
+     * <p><b>The already-broken early return below is therefore unreachable through the rider</b> --
+     * {@code block.blocked()} is false for a broken shield, so this method is never entered. It
+     * stays as defence in depth for any future caller, and no test asserts the broken case THROUGH
+     * the rider, because such a test would pass without exercising anything.
+     *
+     * <p>A broken-notice IS sent now, and Slice 1's reason for omitting it is what changed rather
+     * than the reasoning. Then, a spent shield still blocked at full strength, so there was nothing
+     * to announce and {@code BrokenNotice}'s weapon wording would have been two lies at once. Now
+     * the break has a real consequence, so {@link ShieldBrokenNotice} states it -- in shield words,
+     * and on its own throttle key, so a broken sword cannot silence it.
      *
      * <p>THE UNBREAKING SEAM. The level is read off THE BLOCKING STACK's own enchant state, never
      * off a definition, and the DRAW happens here at the impure call site while the DECISION stays
@@ -80,7 +96,8 @@ public final class ShieldDurability {
      * {@code Math.random()} for the reason {@link WeaponDurability} records -- many players wear
      * shields at once, and {@code Math.random()} is a synchronized global.
      */
-    public static void applyWearOnBlock(Player player, EquipmentSlot slot, Keys keys) {
+    public static void applyWearOnBlock(Player player, EquipmentSlot slot, Keys keys,
+                                        CooldownTracker cooldowns) {
         ItemStack shield = player.getInventory().getItem(slot);
 
         OptionalInt max = WeaponDurability.maxOf(shield);
@@ -92,12 +109,19 @@ public final class ShieldDurability {
         int unbreaking = EnchantItems.activeLevel(shield, keys, Unbreaking.ID);
         if (!Unbreaking.consumes(unbreaking, ThreadLocalRandom.current().nextDouble())) return;
 
-        WeaponDurability.wear(shield, WEAR_PER_BLOCK);
+        int damage = WeaponDurability.wear(shield, WEAR_PER_BLOCK);
 
         // Write the stack back explicitly rather than trusting the slot read to be a live mirror,
         // and updateInventory so the bar moves on this block rather than at the client's next sync
         // -- the same pair, for the same reasons, as WeaponDurability and /rpg durability.
         player.getInventory().setItem(slot, shield);
         player.updateInventory();
+
+        // THE CROSSING, not the state: this is reached only on a block that actually wore the
+        // shield, and the already-broken return above means the wear that crosses the threshold
+        // happens exactly once. Mirrors WeaponDurability.applyWearOnUse's last line.
+        if (Durability.isBroken(damage, maximum)) {
+            ShieldBrokenNotice.notify(player, cooldowns);
+        }
     }
 }
