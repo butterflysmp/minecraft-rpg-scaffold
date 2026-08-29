@@ -144,7 +144,35 @@ green test-compile after a signature change.
 
 ---
 
-## Boot gate — ROW 1 RUN AND PASSED; ROWS 2-14 OWED BY A HUMAN
+## Boot gate — RUN AND PASSED IN FULL, 2026-08-29
+
+**All 14 rows witnessed on a live server.** Row 1 from the boot log (below); rows 2-14 by the
+operator at the keyboard. Paper 26.1.2.build.74.
+
+The mechanical results, as reported:
+
+- **The gate works at runtime.** A shield driven to broken takes **full damage** on the next block —
+  `resolve` returns `Outcome.NONE` and the custom DR is gone.
+- **`ShieldBrokenNotice` fires exactly once**, at the `334 -> 335` crossing, and does not repeat.
+- Rows 2-10 pass: the roll, the table accepting a shield, the weapon-side gate, `show`, the inert
+  wording, and the Bulwark ladder.
+
+### The one thing the boot found that no plan predicted in full
+
+**A BROKEN SHIELD IS NOT FULLY INERT.** It grants no custom DR — that half works — but vanilla
+**still plays the raise and still dampens mob knockback**.
+
+The plan predicted the shape of this ("record what vanilla still animates") and named the cause
+correctly: `Durability.wear` floors at one remaining use, so vanilla never sees the item as
+destroyed, and we never cancel its block. What the boot added is the specific that matters —
+**knockback dampening is a real mechanical benefit, not just a cosmetic**. "Broken" therefore means
+*no custom mitigation*, not *dead*.
+
+Making broken mean fully-dead would require intercepting vanilla's own block rather than only
+declining to add ours, and that is **out of scope for 2a** — recorded as a known rather than fixed,
+because it is a different kind of change from anything else in this slice.
+
+### Row 1, from the boot log — the content loads on a real server
 
 `./scripts/dev-server.sh --refresh-content`.
 
@@ -175,7 +203,6 @@ outlived the script that started it. Two `java.exe` (an Oracle `javapath` shim p
 it spawns) had to be stopped before the jar could be replaced. **Confirm the previous server is dead
 before the next deploy**, or `set -e` aborts the deploy and a stale build boots looking fine.
 
-### Rows 2-14 — owed by a human
 
 **Give a FRESH `roundshield` first.** `rollOnAcquire` fires only at acquisition, never from
 `mint`/`remint`, so a Slice-1 shield still in the tester's inventory carries no `enchant_rolled` flag

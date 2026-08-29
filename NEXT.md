@@ -587,13 +587,19 @@ Before milestone 2, two things worth measuring rather than assuming:
 `/rpg enchant show` for shields, and "does a broken shield stop blocking". See
 `PLAN-shields-slice-2a.md`. Riposte is 2b, its own PR.
 
-**Boot gate, row 1 only — RUN AND PASSED 2026-08-29.** Paper 26.1.2.build.74, deploy verified by
-mtime AND size before booting and `bulwark.yml` confirmed inside the shaded jar:
-`Loaded 6 abilities, 7 visuals, 5 statuses, 7 elements, 5 enchants, 2 kits, 5 weapons, 1 shields,
-1 mobs` / `Done (5.164s)`, with ZERO `Skipping malformed enchant` lines. So `class: shield` and
-`effect: block_dr` parse through the real loader on a live server, not only in a `@TempDir`. **It is
-a load check and establishes nothing mechanical** — no item minted, no hit blocked, no tooltip read.
-**Rows 2-14 are owed by a human.**
+**Boot gate — RUN AND PASSED IN FULL, 2026-08-29. All 14 rows.** Paper 26.1.2.build.74. Row 1 from
+the boot log, rows 2-14 by the operator at the keyboard.
+
+Row 1, with the deploy verified by mtime AND size before booting and `bulwark.yml` confirmed inside
+the shaded jar: `Loaded 6 abilities, 7 visuals, 5 statuses, 7 elements, 5 enchants, 2 kits,
+5 weapons, 1 shields, 1 mobs` / `Done (5.164s)`, ZERO `Skipping malformed enchant`. So
+`class: shield` and `effect: block_dr` parse through the real loader on a live server, not only in a
+`@TempDir`.
+
+Rows 2-14: the roll, the table accepting a shield, the weapon-side gate holding, `show`, the inert
+wording, the Bulwark ladder, and the break gate — **full damage on the post-break block**, with
+`ShieldBrokenNotice` firing exactly once at the `334 -> 335` crossing and not repeating. The one
+result no plan predicted in full is the first entry below.
 
 > The file lock bit on the way out, exactly as CLAUDE.md records: `rm` on the deployed jar failed with
 > `Device or resource busy` because the server JVM outlived the script that started it (an Oracle
@@ -671,7 +677,23 @@ a load check and establishes nothing mechanical** — no item minted, no hit blo
   dangling-id WEAPON that works today, which is a behaviour change on the weapon path. No dispatch
   was needed anyway: the kernel is already shared.
 
-- **A "broken" shield is still functional to VANILLA, and the boot gate owes an answer.**
+- **A BROKEN SHIELD IS NOT FULLY INERT — measured on the live boot, and it is a MECHANICAL residue,
+  not only a cosmetic one.** The custom half works: no DR, full damage through, `resolve` returning
+  `Outcome.NONE`. But vanilla **still plays the raise AND still dampens mob knockback**, because
+  `Durability.wear` floors at one remaining use so vanilla never sees the item as destroyed, and we
+  decline to add our mitigation rather than cancelling vanilla's block.
+
+  The plan predicted the shape of this and named the cause correctly. What the boot added is the part
+  that matters: **knockback dampening is a real benefit a player keeps**, so "broken" means *no custom
+  mitigation*, not *dead*. A player with a spent shield is still measurably better off than one with
+  no shield at all.
+
+  **Making broken mean fully-dead requires intercepting vanilla's own block**, not merely declining to
+  add ours — a different kind of change from anything in 2a, and deliberately out of scope. Recorded
+  as a decision rather than left to be rediscovered as a bug. Note it interacts with the vanilla-shield
+  known below: an untagged shield and a broken one now behave identically in play, which is coherent.
+
+- **A "broken" shield is still functional to VANILLA — predicted here, now confirmed above.**
   `Durability.wear` floors at one remaining use, so vanilla keeps playing the raise, the block sound
   and the knockback dampen, and keeps reporting `BLOCKING < 0`, while `resolve` returns NONE and the
   player takes the hit in full. `ShieldBrokenNotice` is the only thing distinguishing that from a
