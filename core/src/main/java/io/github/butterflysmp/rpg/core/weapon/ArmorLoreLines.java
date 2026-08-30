@@ -75,7 +75,6 @@ public final class ArmorLoreLines {
 
     /** {@code 8.0 -> "8"}, {@code 2.5 -> "2.5"}. The idiom the other two lore-line classes use. */
     private static String trimNumber(double n) {
-        if (n == Math.floor(n) && !Double.isInfinite(n)) return String.valueOf((long) n);
-        return String.valueOf(n);
+        return GearLoreLines.trimNumber(n);
     }
 }
