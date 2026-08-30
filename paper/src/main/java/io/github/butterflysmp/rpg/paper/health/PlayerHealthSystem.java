@@ -16,6 +16,7 @@ import io.github.butterflysmp.rpg.paper.weapon.WeaponAttackItems;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -141,7 +142,17 @@ public final class PlayerHealthSystem implements HealthListener {
             // The class one is why a weapon swap needs no event of its own: the held weapon's class
             // is re-read every scan, so the same worn gear simply selects a different grant, and a
             // grant that stops matching is absent from the desired set rather than zeroed.
-            Map<String, Double> desiredMax = HealthModifierItems.desiredModifiers(player, keys);
+            // TWO SOURCES, ONE RECONCILE CALL, and that is not a tidiness preference.
+            // ModifierReconciler.reconcile removes every applied source absent from the map it is
+            // handed, so reconciling the fixture scan and the Growth scan separately would have
+            // each wipe the other's sources -- the stat would hold whichever ran last, silently and
+            // forever. Merged first, reconciled once.
+            //
+            // The Growth keys are namespaced ("growth:CHEST") because HealthModifierItems walks ALL
+            // slots on bare slot names, so a fixture item and a Growth piece in the same slot would
+            // otherwise collide on one key and Stat.putModifier would keep only one of them.
+            Map<String, Double> desiredMax = new HashMap<>(HealthModifierItems.desiredModifiers(player, keys));
+            desiredMax.putAll(GrowthModifierItems.desiredModifiers(player, keys, enchants));
             stats.reconcileMaxModifiers(id, desiredMax);
             Map<String, Double> desiredAttack = WeaponAttackItems.desiredAttackModifiers(player, keys, weapons);
             stats.reconcileAttackModifiers(id, desiredAttack);

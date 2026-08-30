@@ -1,0 +1,38 @@
+# The second ARMOR enchant, and the only enchant in the game that can TAKE HEALTH AWAY.
+#
+# `effect: max_health` names core/enchant/Growth.java. The mechanism is Java, the curve is here, and
+# the loader REFUSES this effect on anything but armor.
+#
+# WHAT THE NUMBERS DO. Flat points of MAX health, per piece, summed across the four slots by the
+# reconcile loop. A player's base is 100, so:
+#
+#   one piece at III        100 -> 130
+#   all four pieces at III  100 -> 220
+#
+# READ THIS BEFORE RETUNING IT. Growth and Protection look like siblings on a tooltip and are NOT
+# equally scaled underneath. +36 Defense is bent by an asymptotic curve into roughly twice the
+# mitigation; +120 max health is a straight doubling of the pool, because nothing curves it. If the
+# full-set number ever feels too strong, this file is the lever -- the mechanism is not the problem.
+#
+# THE TRANSITION RULES, which HealthState fixed long before this enchant existed and which Growth
+# simply inherits:
+#
+#   equipping is HEADROOM, never a heal   100/100  + a +30 piece  ->  100/130
+#   unequipping CLAMPS current down       130/130  - that piece   ->  100/100
+#
+# The first is what stops equip/unequip cycling being a free heal. The second is why this is the only
+# enchant that can leave a player with less health than they had a moment ago -- expected, and worth
+# knowing before someone reports it as a bug. A player at full health who takes off a Growth piece
+# WILL see their hearts drop, and that is correct.
+#
+# `class: universal` WOULD BE THE DANGEROUS TYPO, and the loader refuses it -- exactly as it does for
+# Protection and Bulwark. A universal Growth would enter every WEAPON's roll pool and sell an XP
+# unlock that does nothing, because the max-health scan only ever looks at the four armor slots.
+display_name: "Growth"
+# Cosmetic, and it DEFAULTS to enchanted_book when absent, so it is never a reason a working enchant
+# fails to load. Do not make it required.
+icon: golden_apple
+max_level: 3
+effect: max_health
+class: armor
+value_by_level: [10, 20, 30]
