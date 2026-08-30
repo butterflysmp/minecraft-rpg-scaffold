@@ -583,6 +583,20 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ### Shields, Slice 2b (Thorns, the reflect) — what it created or exposed
 
+- **BOOT GATE RUN AND PASSED IN FULL, 2026-08-30.** Row 1 from the boot log; rows 2-9 by the
+  operator. The reflect fires out of the mob->player rider credited to the blocker, is independent of
+  Bulwark, falls off the same predicate as the reduction, pays out a lethal kill, and the shield's
+  Damage Reduction line reads as intended in the Defense colour.
+
+  **Logged at the granularity reported, which is coarser than the rows are written** -- the same call
+  Slice 1 made for its armored-block row. The per-row FIGURES were not captured into the record, so
+  what stands is "the operator ran these and they passed", not the numbers.
+
+  That matters most for row 4, whose entire purpose is that the popup reads 2 / 3 / 5 rather than the
+  rejected off-pass-through 1 / 2 / 3. At level III those are 5 versus 3 and a glance settles it; at
+  level I they are 2 versus 1, one apart. A pass without the figure cannot separate the two by
+  itself. Not a doubt about the result -- a note about what this record can be used to prove later.
+
 - **A FINALISATION PASS moved the names and the numbers, and every constant was RE-EXECUTED.** The
   enchant is `Thorns` (the design doc VACATED the name -- see below); the shield is `shield`, not
   `roundshield`; `block_dr` is **0.35**, so a 15.0 hit passes **9.75**; the stat is called **Damage
@@ -617,7 +631,8 @@ Before milestone 2, two things worth measuring rather than assuming:
   rungs still separate from the correct 2 / 3 / 5, and III (5 versus 3) is still the clearest.
 
 **The three original shield goals are complete**: block DR (Slice 1), Bulwark and the gear-gating
-axis (2a), and now the reflect. See `PLAN-shields-slice-2b.md`. **Boot gate OWED.**
+axis (2a), and now the reflect. See `PLAN-shields-slice-2b.md`. **Boot gate RUN AND PASSED IN FULL,
+2026-08-30 -- all nine rows.**
 
 - **THE REFLECT SEAM IS THE ONLY NEW THING, and it turned out to be a one-liner on proven rails.**
   Dealing custom damage to a second entity credited to a dealer is exactly what
