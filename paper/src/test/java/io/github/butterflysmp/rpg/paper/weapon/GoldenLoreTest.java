@@ -59,6 +59,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code -Dgolden.regenerate=true} to rewrite it, which deliberately requires typing something you
  * would not type by accident.
  *
+ * <h2>IF YOU LANDED HERE BECAUSE THIS REDDENED AFTER A CONTENT EDIT, READ THIS FIRST</h2>
+ *
+ * You probably edited the wrong tree. There are two copies of every content file and they do
+ * different jobs:
+ *
+ * <ul>
+ *   <li><b>{@code paper/src/main/resources/content/}</b> -- the SOURCE tree. This test renders from
+ *       it, so editing it reddens the golden and breaks the build.
+ *   <li><b>{@code run/plugins/Rpg/content/}</b> -- the DEPLOYED tree. The server loads from it at
+ *       boot, and {@code saveResource(path, false)} never overwrites what is already there.
+ * </ul>
+ *
+ * <p>So a tuning or {@code /rpg refresh} check must edit the <b>deployed</b> tree and re-boot with
+ * {@code ./scripts/dev-server.sh --no-build}. Editing the source tree trips this test; editing the
+ * deployed tree without re-booting changes nothing the server can see, because
+ * {@code GearRefresher.refresh} re-mints from the registry loaded at BOOT and there is no reload
+ * path -- {@code /rpg refresh} rebuilds items from the definitions already in memory, not from the
+ * files on disk. Both mistakes look like "my edit did nothing", from opposite directions.
+ *
+ * <p>Regenerating the golden to make a source edit green is only correct when the tooltip change is
+ * the INTENT and ships. It is never the way to run a tuning experiment.
+ *
  * <p>Discovers rather than enumerates, and refuses an empty walk: a golden file that pinned zero
  * items would pass forever, which is the failure this repo records twice.
  */

@@ -581,6 +581,84 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### The gear extraction (GearDefinition/GearItems) — what it created or exposed
+
+- **BOOT WITNESSED, 2026-08-30: the `GearRefresher` rebuild works for all three gear kinds.** A
+  minted item carrying OLD content rebuilt to the new definition on join, confirmed live for a
+  weapon, a shield AND a piece of armor, after a `--no-build` re-boot against an edited deployed
+  tree. Operator-witnessed. That is the row the extraction's fourth commit owed: shields and armor
+  had never rebuilt from content before it, so only the weapon leg of this was previously true.
+
+  The other three commits needed no boot row -- `GoldenLoreTest` covers them, and it is a stronger
+  check than a boot could be for that half.
+
+- **THE TWO CONTENT TREES, AND HOW A TUNING CHECK GOES WRONG IN BOTH DIRECTIONS.** Recorded because
+  it cost real confusion once and the two failures look identical from in-game ("my edit did
+  nothing"):
+
+  | tree | who reads it | editing it |
+  |---|---|---|
+  | `paper/src/main/resources/content/` | `GoldenLoreTest` renders from it | **reddens the golden and breaks the build** |
+  | `run/plugins/Rpg/content/` | the server, at BOOT | what a tuning check must edit |
+
+  So the procedure is: edit the **deployed** tree, then `./scripts/dev-server.sh --no-build`.
+
+  **And the re-boot is not optional, because there is no reload path.** `GearRefresher.refresh`
+  re-mints from the registry loaded at boot, not from the files on disk -- `/rpg refresh` rebuilds
+  items from definitions already in memory. So editing the deployed tree WITHOUT re-booting changes
+  nothing the server can see, and `/rpg refresh` will cheerfully report a non-zero count while
+  rebuilding every item to exactly what it already was.
+
+  Written into `GoldenLoreTest`'s javadoc as well, since that is where someone lands when the golden
+  reddens on an edit they thought was harmless. **Regenerating the golden to make a source edit green
+  is only correct when the tooltip change is the INTENT and ships. It is never how to run a tuning
+  experiment.**
+
+  The obvious follow-up -- a real `/rpg reload` that re-reads the deployed tree into the registries --
+  is NOT scoped here. It is a genuine feature with its own hazards (what happens to an in-flight
+  ability whose definition vanished mid-cast) and deserves its own pass rather than being smuggled in
+  as a convenience.
+
+- **THE GOLDEN CAUGHT WHAT 376 HAND-WRITTEN TESTS DID NOT, AND THAT IS MEASURED.** Mutation: drop the
+  explicit `ITALIC=false` from `GearLore.blank()`, so every spacer line in every tooltip silently
+  changes decoration state. **Every one of the 376 existing tests stayed GREEN; the golden was the
+  only thing that reddened.** The hand-written lore tests assert the tooltip's SHAPE and remain the
+  primary guard -- they say what is true and why. What they cannot do is notice an incidental change
+  nobody thought to assert, which is exactly what a behaviour-preserving refactor most needs a guard
+  against.
+
+- **The abstraction was designed from THREE examples and the third earned its keep immediately.**
+  `GearDefinition`'s five members are exactly the intersection of the three records, and every
+  candidate sixth member failed against one of them: not a stat (attack damage, block DR and defense
+  are three different quantities, and the shield's is a FRACTION where the other two are absolute);
+  not a class (`WeaponClass` is required on a weapon and absent on the other two, `GearClass` has no
+  armor constant); not durability (armor's is vanilla's); not a lore builder (different inputs each,
+  returning Components, which cannot exist in `core`). Designing this from two would have produced a
+  wider interface that the third shape then contradicted.
+
+- **Sealing `GearDefinition` is what makes a fourth gear kind a compile error rather than a silent
+  no-op.** `GearItems.remint` is an exhaustive switch with no default arm: a new kind stops the build
+  until someone says how it re-mints. The alternative -- a catch-all returning the item unchanged --
+  is the quiet failure, because the item then keeps stale lore forever and nothing ever says so.
+
+- **What deliberately did NOT move, and it is most of the interesting code.** `mint` itself (a weapon
+  pins an attack modifier and hides it, a shield pins and hides nothing, armor hides vanilla's armor
+  lines -- and `ShieldItems`' javadoc argues explicitly AGAINST the flag armor requires);
+  `materialOf` (three fallbacks, each load-bearing for its own reason); `applyLore`; and the stat
+  line. A "generic stat line" would have to take the label, the value, the colour and a composition
+  rule, which is every part of it. The rarity footer's NOUN stays the caller's for the same reason:
+  class-derived, literal, and slot-derived are three right answers.
+
+- **`ArmorConsistency`'s duplicated vanilla-armor read is paid off**, as the armor slice said it would
+  be. It now calls `DefenseModifierItems.vanillaArmorPoints`. One copy matters more here than in most
+  places: a check reading that number a DIFFERENT way would verify content against a value the stat
+  does not use, and would then report a clean run while every armor tooltip lied.
+
+- **Still owed, and unchanged by this pass:** no `ContentValidator` for shields or armor; the missing
+  crafting hook (a vanilla shield still gives zero custom protection); and the one-map coupling in
+  `PlayerHealthSystem` that Slice 2 must split first.
+
+
 ### Armor, Slice 1 (mintable pieces that source Defense) — what it created or exposed
 
 - **BOOT GATE RUN AND PASSED IN FULL, 2026-08-30 -- all eleven rows.** Row 1 the machine's, rows
