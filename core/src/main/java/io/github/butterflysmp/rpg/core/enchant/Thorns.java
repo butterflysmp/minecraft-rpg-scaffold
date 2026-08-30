@@ -8,13 +8,22 @@ package io.github.butterflysmp.rpg.core.enchant;
  * {@link Bulwark}, by {@link EnchantEffect}'s rule that mechanisms share a package so there is one
  * place to look for what an enchant can DO.
  *
- * <h2>Named Thorns, and NOT Thorns</h2>
+ * <h2>THIS is Thorns, and it claimed the name from a reservation that yielded</h2>
  *
- * {@code DESIGN-status-effects.md} reserves "Thorns" for a Nature PROPAGATION status -- damaging a
- * Thorns target damages NEARBY targets, depth-1, with four load-bearing anti-loop safety rules
- * attached to that name. This is a different mechanic: one attacker, no propagation, no safety
- * rules. The rule applied was to rename the mechanic with no load-bearing associations rather than
- * the one that has them, so the safety rules stay unambiguously attached to the name that needs them.
+ * {@code DESIGN-status-effects.md} held "Thorns" for a Nature PROPAGATION status -- damaging a
+ * Thorns target damages NEARBY targets, depth-1 -- with four load-bearing anti-loop safety rules
+ * hung off that name. It had no code, no content file and no slice. This shipped, so the doc VACATED
+ * the name; see its "THE NAME THORNS IS VACATED" note. A name held by a paragraph loses to a name
+ * held by a mechanic.
+ *
+ * <p><b>There is exactly one Thorns in this project and it is this one:</b> reflect a fraction of an
+ * incoming blow back at the single attacker who threw it. No propagation, no chain, no depth.
+ *
+ * <p><b>The four safety rules did NOT come with the word.</b> They are about propagation --
+ * death-gating, delay-and-serialise, fire-exactly-once, attribute-through-the-chain -- and this
+ * mechanic does none of those things, so none of them apply here. The propagation status takes a NEW
+ * name when it is built, and the rules stay attached to it under that name. If you are looking for
+ * them because you read "Thorns", you are in the wrong file.
  *
  * <h2>A fraction of the PRE-MITIGATION blow</h2>
  *

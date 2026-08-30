@@ -1042,8 +1042,9 @@ facing); passed at `-0.2987` (107.4°) and `-0.9444` (160.8°). Consistent with 
   witnessed.
 
 **Deferred to Slice 2 -- ALL CLOSED IN 2a EXCEPT THE FIRST, see the Slice 2a section above.** Thorns
-(shipped as THORNS in 2b -- renamed, because DESIGN-status-effects.md already reserves "Thorns" for
-the Nature propagation status and its four anti-loop safety rules), Bulwark, the class axis for gear (enchant gating, the roll, and
+(shipped in 2b under that name -- it briefly went out as "Riposte" to avoid the design-doc
+reservation, and the finalisation pass took the name back when that reservation VACATED), Bulwark,
+the class axis for gear (enchant gating, the roll, and
 `show`), and a `ShieldRefresher` for the join / `/rpg refresh` path — a shield's lore does NOT
 currently rebuild from content on rejoin the way a weapon's does.
 

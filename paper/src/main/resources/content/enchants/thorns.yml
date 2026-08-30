@@ -3,12 +3,15 @@
 # blocking stack in one PDC decode (ShieldBlock.resolve), and both fall off the same predicate -- a
 # hit from behind, an untagged shield, a dangling id and a BROKEN shield all reflect nothing.
 #
-# NAMED THORNS, NOT THORNS, and that is not a style preference. DESIGN-status-effects.md reserves
-# "Thorns" for a Nature PROPAGATION status -- damaging a Thorns target damages NEARBY targets --
-# and hangs four load-bearing anti-loop safety rules off that name. This mechanic has none of that:
-# one attacker, no propagation, no chain. The rule applied was to rename the mechanic with no
-# load-bearing associations rather than the one that has them, so those safety rules stay
-# unambiguously attached to the name that needs them.
+# THIS IS THORNS, and it took the name from a design-doc reservation that yielded.
+# DESIGN-status-effects.md held "Thorns" for a Nature PROPAGATION status -- damaging a Thorns target
+# damages NEARBY targets -- with four load-bearing anti-loop safety rules hung off the name. That had
+# no code, no content file and no slice; this shipped. So the doc vacated the name: see its
+# "THE NAME THORNS IS VACATED" note. There is exactly one Thorns in this project and it is this file.
+#
+# THE SAFETY RULES DID NOT COME WITH THE WORD. They are about propagation, and this mechanic has none
+# of it: one attacker, no chain, no depth. The propagation status takes a NEW name when it is built
+# and the rules stay attached to it there. Do not go looking for them here.
 #
 # WHAT THE NUMBERS DO. Thorns reflects a percentage of the PRE-MITIGATION blow -- the attacker's raw
 # attack stat, before the shield's block fraction AND before your armor. Off the 15.0 mob the boot

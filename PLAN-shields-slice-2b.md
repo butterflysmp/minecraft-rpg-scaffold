@@ -66,9 +66,14 @@ where the reflect is computed — the identical constraint `SweepShare` records.
 Thorns and Bulwark independently tunable. **A heavily armored player reflects more than the hit did
 to them.** Call it *pre-mitigation*, never *pre-block*.
 
-**Named Thorns, not Thorns.** `DESIGN-status-effects.md` reserves Thorns for a Nature propagation
-status with four anti-loop safety rules attached. Rename the mechanic with no load-bearing
-associations, not the one that has them.
+**It is called Thorns, and it took the name.** `DESIGN-status-effects.md` held "Thorns" for a Nature
+propagation status with four anti-loop safety rules attached — a reservation with no code, no content
+file and no slice. This shipped, so the doc **vacated** the name; see its "THE NAME THORNS IS
+VACATED" note. There is exactly one Thorns in this project and it is this enchant.
+
+The safety rules did **not** come with the word: they are about propagation, which this mechanic has
+none of. The propagation status takes a new name when it is built and the rules stay attached to it
+there.
 
 **The popup stays white.** `DamageNumberText` has two styles and colour means one thing: *this hit
 crit*. A reflect is computed directly and never passes through the crit multiplier, so it *cannot*
