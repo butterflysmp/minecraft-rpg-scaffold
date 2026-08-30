@@ -83,8 +83,8 @@ public final class EnchantEffectLine {
                     // The old wording hardcoded "... on a X weapon", which reads correctly for the
                     // three fighting classes and absurdly for the fourth -- "on a Shield weapon".
                     // Byte-identical for every weapon case, so the existing assertions are unchanged.
-                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
-                            + " enchant on " + GearClassLabel.describe(heldClass);
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
                 }
                 double percent = DamageEnchants.percentAt(definition.valueByLevel(), level);
                 yield String.format("+%.0f%% damage, x%.2f", percent,
@@ -96,8 +96,8 @@ public final class EnchantEffectLine {
                 // command or a hand-edited item -- reachable, so it is described rather than assumed
                 // away.
                 if (definition.gearClass() != heldClass) {
-                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
-                            + " enchant on " + GearClassLabel.describe(heldClass);
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
                 }
                 // THE SAME WORDS THE ITEM USES. ShieldLoreLines.DAMAGE_REDUCTION_LABEL says "Damage
                 // Reduction" on the shield itself, so the enchant that modifies that stat must not
@@ -116,8 +116,8 @@ public final class EnchantEffectLine {
                 // hold one on the wrong gear is the dev command or a hand-edited item. Reachable,
                 // so it is described rather than assumed away.
                 if (definition.gearClass() != heldClass) {
-                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
-                            + " enchant on " + GearClassLabel.describe(heldClass);
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
                 }
                 // "to the attacker" is not decoration -- it is the one word that stops this reading
                 // as a damage bonus to your own hits. And the percent is of the INCOMING blow, not
@@ -127,8 +127,8 @@ public final class EnchantEffectLine {
             }
             case DEFENSE -> {
                 if (definition.gearClass() != heldClass) {
-                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
-                            + " enchant on " + GearClassLabel.describe(heldClass);
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
                 }
                 // NO PERCENT SIGN, and that is the whole difference from the three arms above.
                 // Defense is a SUMMAND in armor points -- the piece's own Defense line says
@@ -144,8 +144,8 @@ public final class EnchantEffectLine {
             }
             case MAX_HEALTH -> {
                 if (definition.gearClass() != heldClass) {
-                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
-                            + " enchant on " + GearClassLabel.describe(heldClass);
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
                 }
                 // Points again, for the same reason. "Max Health" rather than "Health": the enchant
                 // raises the CEILING and grants no current health at all -- equipping is headroom,

@@ -47,6 +47,26 @@ public final class GearClassLabel {
      * arm lists its constants explicitly rather than defaulting, so a new constant still fails to
      * compile here.
      */
+    /**
+     * The enchant's own gate as a noun phrase: "a Melee enchant", "an Armor enchant".
+     *
+     * <p><b>This exists because the article is not always "a".</b> The three inert sentences in
+     * {@code EnchantEffectLine} each built their own {@code "a " + of(gearClass) + " enchant"}, which
+     * read correctly for Melee, Ranged, Magic and Shield and produced <i>"a Armor enchant"</i> the
+     * moment a vowel-initial label existed. Three copies of a hardcoded article is three places for
+     * that to be wrong, so the phrase is built once, here, beside {@link #describe} which already
+     * does the same job for the gear being held.
+     *
+     * <p>Exhaustive with no default arm, like its siblings: a new constant must be given an article
+     * as well as a label, and the compiler asks for both.
+     */
+    public static String describeEnchant(GearClass gearClass) {
+        return switch (gearClass) {
+            case MELEE, RANGER, MAGE, SHIELD -> "a " + of(gearClass) + " enchant";
+            case ARMOR                       -> "an " + of(gearClass) + " enchant";
+        };
+    }
+
     public static String describe(GearClass gearClass) {
         return switch (gearClass) {
             case MELEE, RANGER, MAGE -> "a " + of(gearClass) + " weapon";

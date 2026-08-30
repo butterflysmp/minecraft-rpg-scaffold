@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
+import io.github.butterflysmp.rpg.core.weapon.ArmorLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import io.github.butterflysmp.rpg.core.weapon.ShieldLoreLines;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
@@ -34,6 +35,11 @@ class EnchantEffectLineTest {
             "bulwark", "Bulwark", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, 10, 15));
     private static final EnchantDefinition THORNS = new EnchantDefinition(
             "thorns", "Thorns", 3, EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, 20, 30));
+    // The two armor files. protection.yml / growth.yml. Their curves are POINTS, not percentages.
+    private static final EnchantDefinition PROTECTION = new EnchantDefinition(
+            "protection", "Protection", 3, EnchantEffect.DEFENSE, GearClass.ARMOR, List.of(3, 6, 9));
+    private static final EnchantDefinition GROWTH = new EnchantDefinition(
+            "growth", "Growth", 3, EnchantEffect.MAX_HEALTH, GearClass.ARMOR, List.of(10, 20, 30));
 
     @Test
     void damageEnchantReportsItsPercentAndMultiplier() {
@@ -141,7 +147,7 @@ class EnchantEffectLineTest {
         //
         // Both tests earn their place; this one is the weaker net and says so rather than implying
         // a coverage it does not have.
-        EnchantDefinition[] all = {SHARPNESS, UNBREAKING, BULWARK, THORNS};
+        EnchantDefinition[] all = {SHARPNESS, UNBREAKING, BULWARK, THORNS, PROTECTION, GROWTH};
         for (int i = 0; i < all.length; i++) {
             for (int j = i + 1; j < all.length; j++) {
                 // Each on the gear it is actually valid for, so none is describing itself as inert.
@@ -194,6 +200,72 @@ class EnchantEffectLineTest {
                 "the reflect is off the incoming blow, not off what the shield stopped");
         assertFalse(reflect.contains("damage"),
                 "'damage' here would read as a bonus to the wearer's own hits");
+    }
+
+    @Test
+    void theArmorArmsSayPOINTSWithNoPercentSignAtAll() {
+        // THE SAME GAP THE BLOCK ARM SHIPPED WITH IN 2b, and this file already says so three tests
+        // up: "2a shipped this arm with NO test at all -- grep -c BLOCK_DR on this file returned 0".
+        // Slice 2a then shipped DEFENSE and MAX_HEALTH the same way. Neither ProtectionTest nor
+        // GrowthTest can reach here (they are core; this is paper), and the golden dump cannot
+        // either, because no SHIPPED item carries an active Protection or Growth -- the golden
+        // renders definitions, and enchant state lives on instances. So this is the only net.
+        //
+        // NO PERCENT SIGN. Protection and Growth grant flat POINTS: the piece's own Defense line
+        // reads "Defense: 8" and Protection III takes it to 17, an addition, not a fraction of it.
+        // "+9%" would describe an enchant that does not exist and would disagree with the item two
+        // lines above it. This is the one assertion that separates the new arms from the three
+        // percent-valued ones they were copied from.
+        assertEquals(" (+3 Defense)", EnchantEffectLine.of(PROTECTION, 1, GearClass.ARMOR));
+        assertEquals(" (+6 Defense)", EnchantEffectLine.of(PROTECTION, 2, GearClass.ARMOR));
+        assertEquals(" (+9 Defense)", EnchantEffectLine.of(PROTECTION, 3, GearClass.ARMOR));
+        assertEquals(" (+10 Max Health)", EnchantEffectLine.of(GROWTH, 1, GearClass.ARMOR));
+        assertEquals(" (+30 Max Health)", EnchantEffectLine.of(GROWTH, 3, GearClass.ARMOR));
+
+        assertFalse(EnchantEffectLine.bare(PROTECTION, 3, GearClass.ARMOR).contains("%"),
+                "a percent sign here would describe a fraction of the piece's Defense, not points");
+        assertFalse(EnchantEffectLine.bare(GROWTH, 3, GearClass.ARMOR).contains("%"),
+                "and max health is points too -- nothing in either arm divides");
+        // Mutation: restore the %% the arms were copied from -> "+9% Defense" -> reddens.
+    }
+
+    @Test
+    void theArmorArmsUseTheITEMSOwnWordsAndGrowthSaysMAXHealth() {
+        // The words are the item's, the rule the block arm set. ArmorLoreLines.DEFENSE_LABEL puts
+        // "Defense" on the piece itself, so the enchant that modifies that stat must not call it
+        // "Armor" -- which is vanilla's word for the raw points and carries vanilla's ~80% reading.
+        // Asserted against the constant, not a copy of the string, so a reword of the item moves
+        // both or fails here.
+        assertTrue(EnchantEffectLine.bare(PROTECTION, 3, GearClass.ARMOR)
+                        .contains(ArmorLoreLines.DEFENSE_LABEL.replace(": ", "")),
+                "the enchant and the item must name the stat identically");
+        assertFalse(EnchantEffectLine.bare(PROTECTION, 3, GearClass.ARMOR).contains("Armor"),
+                "'Armor' is vanilla's word for raw points and would invite vanilla's mitigation");
+
+        // "Max Health", never "Health". Growth raises the CEILING and grants no current health at
+        // all -- equipping is headroom, never a heal -- so a line reading "+30 Health" would promise
+        // exactly the heal HealthState refuses to give.
+        String growth = EnchantEffectLine.bare(GROWTH, 3, GearClass.ARMOR);
+        assertTrue(growth.contains("Max Health"), "the ceiling is what moves");
+        assertFalse(growth.matches(".*[^x] Health.*"),
+                "a bare 'Health' would promise current health the enchant never grants: " + growth);
+        // Mutation: shorten either arm to "Health" -> reddens.
+    }
+
+    @Test
+    void bothArmorEnchantsAreInertOffArmorAndSayWhichGearTheyWanted() {
+        // Reachable exactly as the shield pair is: /rpg enchant candidate puts any enchant on any
+        // gear, and a hand-edited item can carry anything. The content boundary refuses these gates
+        // in a FILE; it does not refuse them on an ITEM.
+        assertEquals(" (inert: an Armor enchant on a Melee weapon)",
+                EnchantEffectLine.of(PROTECTION, 3, GearClass.MELEE));
+        assertEquals(" (inert: an Armor enchant on a shield)",
+                EnchantEffectLine.of(GROWTH, 3, GearClass.SHIELD));
+        // And the converse, which is the one that would have shipped wrong if GearClassLabel had
+        // been given a lazy ARMOR arm: a shield enchant on armor must name armor properly.
+        assertEquals(" (inert: a Shield enchant on a piece of armor)",
+                EnchantEffectLine.of(BULWARK, 3, GearClass.ARMOR));
+        // Mutation: make GearClassLabel.describe return "an Armor armor" for ARMOR -> reddens.
     }
 
     @Test
