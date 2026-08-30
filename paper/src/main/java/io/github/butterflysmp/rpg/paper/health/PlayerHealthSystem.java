@@ -164,12 +164,6 @@ public final class PlayerHealthSystem implements HealthListener {
                     DamageEnchantItems.desiredModifiers(player, keys, weapons, enchants);
             stats.reconcileEnchantDamageModifiers(id, desiredEnchant);
 
-            // The sixth is the only one whose source is SHIPPED VANILLA CONTENT rather than a dev
-            // fixture or an authored weapon: it reads the armor value out of whatever armor the
-            // player happens to be wearing. Its desired map doubles as the native armor total the
-            // bar override has to cancel, so the two are computed once and used twice -- and the
-            // override runs AFTER the reconcile, so it draws the value that just converged rather
-            // than the one from the previous scan.
             // The seventh and eighth: crit chance and crit damage, from the two _TEMP fixtures. Same
             // slot scan and same leak-proof diff as the rest, so an item swapped out of a hand is
             // absent from the next scan and its source is dropped. They converge INDEPENDENTLY --
@@ -178,10 +172,18 @@ public final class PlayerHealthSystem implements HealthListener {
             stats.reconcileCritChanceModifiers(id, CritModifierItems.desiredChanceModifiers(player, keys));
             stats.reconcileCritDamageModifiers(id, CritModifierItems.desiredDamageModifiers(player, keys));
 
-            Map<String, Double> desiredDefense = DefenseModifierItems.desiredModifiers(player);
-            stats.reconcileDefenseModifiers(id, desiredDefense);
-            ArmorBarOverride.apply(player, keys, stats.defenseValue(id),
-                    DefenseModifierItems.total(desiredDefense));
+            // The sixth is the only one whose source is SHIPPED VANILLA CONTENT rather than a dev
+            // fixture or an authored weapon: it reads the armor value off whatever armor the player
+            // happens to be wearing. The override runs AFTER the reconcile, so it draws the value
+            // that just converged rather than the one from the previous scan.
+            //
+            // TWO NUMBERS FROM ONE WALK. The stat converges to what each slot CONTRIBUTES; the bar
+            // cancels what the vanilla attribute actually HOLDS. They are equal today and will not
+            // be once an enchant can add Defense, which is why they are read and passed separately
+            // rather than one sum serving both -- see DefenseModifierItems.
+            DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player);
+            stats.reconcileDefenseModifiers(id, worn.defense());
+            ArmorBarOverride.apply(player, keys, stats.defenseValue(id), worn.nativeArmor());
             return true;
         }, () -> { });
     }
