@@ -46,7 +46,7 @@ public record ArmorDefinition(
         ArmorSlot slot,
         double defense,
         List<String> flavor
-) {
+) implements GearDefinition {
 
     public ArmorDefinition {
         if (id == null || id.isBlank()) {

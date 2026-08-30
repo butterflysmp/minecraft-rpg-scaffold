@@ -1,13 +1,11 @@
 package io.github.butterflysmp.rpg.paper.content;
 
-import com.google.common.collect.Multimap;
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
+import io.github.butterflysmp.rpg.core.weapon.ArmorSlot;
+import io.github.butterflysmp.rpg.paper.health.DefenseModifierItems;
 import org.bukkit.Material;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemType;
 
 import java.util.logging.Logger;
 
@@ -49,13 +47,16 @@ import java.util.logging.Logger;
  * it is handed an empty registry, the same discipline the loaders' zero-checks follow and the
  * failure mode CLAUDE.md records twice.
  *
- * <h2>The duplicated read</h2>
+ * <h2>It reads the SAME method the stat does</h2>
  *
- * {@link #vanillaArmorPoints} repeats the {@code ADD_NUMBER}-over-{@code Attribute.ARMOR} sum that
- * {@code DefenseModifierItems.armorOf} performs, rather than calling it. That is deliberate for this
- * slice: {@code DefenseModifierItems} is one of the files this slice promises to leave byte-identical,
- * so the additive claim can be verified by diff rather than by argument. The two reads must stay in
- * step, and unifying them belongs to the same follow-up PR that factors the gear abstraction.
+ * {@link DefenseModifierItems#vanillaArmorPoints} is called directly rather than repeated here. It
+ * WAS repeated, for exactly one slice: the armor slice promised to leave {@code DefenseModifierItems}
+ * byte-identical so its additive claim could be verified by diff instead of argument, and recorded
+ * the duplication as a debt the gear extraction would pay. This is that payment.
+ *
+ * One copy matters more here than in most places. A check that read the number a DIFFERENT way
+ * would be verifying content against a value the stat does not use -- and would then report a clean
+ * run while every armor tooltip lied, which is the precise failure it exists to catch.
  */
 public final class ArmorConsistency {
 
@@ -116,17 +117,8 @@ public final class ArmorConsistency {
      * <p>{@code EquipmentSlot.valueOf(slot.name())} is what makes {@code ArmorSlot}'s constant names
      * a wire format rather than a naming preference -- see {@code ArmorSlotTest}.
      */
-    private static double vanillaArmorPoints(Material material, io.github.butterflysmp.rpg.core.weapon.ArmorSlot slot) {
-        ItemType type = material.asItemType();
-        if (type == null) return 0.0;
-        EquipmentSlot equipmentSlot = EquipmentSlot.valueOf(slot.name());
-        Multimap<Attribute, AttributeModifier> defaults = type.getDefaultAttributeModifiers(equipmentSlot);
-        double armor = 0.0;
-        for (AttributeModifier modifier : defaults.get(Attribute.ARMOR)) {
-            if (modifier.getOperation() == AttributeModifier.Operation.ADD_NUMBER) {
-                armor += modifier.getAmount();
-            }
-        }
-        return armor;
+    private static double vanillaArmorPoints(Material material, ArmorSlot slot) {
+        return DefenseModifierItems.vanillaArmorPoints(
+                material.asItemType(), EquipmentSlot.valueOf(slot.name()));
     }
 }

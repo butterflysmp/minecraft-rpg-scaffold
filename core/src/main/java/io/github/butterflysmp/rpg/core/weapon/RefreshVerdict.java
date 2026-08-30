@@ -41,10 +41,10 @@ public sealed interface RefreshVerdict {
      * Carries the id so the warning can name it; a warning that cannot say WHICH id is missing
      * sends you looking through every weapon file.
      */
-    record Dangling(String weaponId) implements RefreshVerdict {}
+    record Dangling(String id) implements RefreshVerdict {}
 
     /** Ours, and the content is loaded: rebuild the display from this definition. */
-    record Remint(WeaponDefinition definition) implements RefreshVerdict {}
+    record Remint(GearDefinition definition) implements RefreshVerdict {}
 
     /** Allocation-free {@link Untagged}: the overwhelmingly common verdict, once per empty slot. */
     RefreshVerdict UNTAGGED = new Untagged();
@@ -57,10 +57,10 @@ public sealed interface RefreshVerdict {
      * point of the pass -- the definition a refresh mints from must be the one loaded now, not
      * one captured when the item was first minted.
      */
-    static RefreshVerdict decide(String weaponId, WeaponRegistry weapons) {
-        if (weaponId == null) return UNTAGGED;
-        return weapons.find(weaponId)
+    static RefreshVerdict decide(String id, GearRegistry<? extends GearDefinition> registry) {
+        if (id == null) return UNTAGGED;
+        return registry.find(id)
                 .<RefreshVerdict>map(Remint::new)
-                .orElseGet(() -> new Dangling(weaponId));
+                .orElseGet(() -> new Dangling(id));
     }
 }

@@ -124,8 +124,7 @@ public final class WeaponLoreLines {
 
     /** A double with the trailing ".0" dropped: 12.0 -> "12", 12.5 -> "12.5". */
     private static String trimNumber(double n) {
-        if (n == Math.floor(n) && !Double.isInfinite(n)) return String.valueOf((long) n);
-        return String.valueOf(n);
+        return GearLoreLines.trimNumber(n);
     }
 
     private static String capitalize(String s) {

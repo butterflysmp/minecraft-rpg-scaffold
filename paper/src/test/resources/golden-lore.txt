@@ -1,0 +1,437 @@
+=== WEAPONS ===
+-- ability_stone
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Test Cast" color=#FFAA00 O=. B=. S=. U=. I=F ["  Left-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Casts the ability under test" color=#AAAAAA O=. B=. S=. U=. I=F
+   "while you move." color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Exotic Magic Weapon" color=#55FFFF O=. B=. S=. U=. I=F
+-- ember_staff
+   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ember Bolt" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "A costed burst of fire —" color=#AAAAAA O=. B=. S=. U=. I=F
+   "commit your mana to cast." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["16" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.0s | Mana Cost: 30" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Magic Weapon" color=#5555FF O=. B=. S=. U=. I=F
+-- emberblade
+   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Fireball" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Hurl a bursting ember" color=#AAAAAA O=. B=. S=. U=. I=F
+   "that scorches all it catches." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["12" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 3.0s | Mana Cost: 40" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Its edge remembers the forge-fire." color=#AAAAAA O=. B=. S=. U=. I=T
+   "Swing to cut; loose to burn." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Melee Weapon" color=#5555FF O=. B=. S=. U=. I=F
+-- hunters_bow
+   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.3" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "A swift arrow wreathed in flame." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Ranged Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- ironblade
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["8" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Forged plain and true." color=#AAAAAA O=. B=. S=. U=. I=T
+   "The first blade any recruit is handed." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+
+=== SHIELDS ===
+-- shield @bulwark=0.0
+   "Damage Reduction: " color=#AAAAAA O=. B=. S=. U=. I=F ["35%" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Plain oak, banded in iron." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It has stopped worse than you are about to meet." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Shield" color=#FFFFFF O=. B=. S=. U=. I=F
+-- shield @bulwark=0.15
+   "Damage Reduction: " color=#AAAAAA O=. B=. S=. U=. I=F ["35.2%" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Plain oak, banded in iron." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It has stopped worse than you are about to meet." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Shield" color=#FFFFFF O=. B=. S=. U=. I=F
+-- shield @bulwark=0.3
+   "Damage Reduction: " color=#AAAAAA O=. B=. S=. U=. I=F ["35.3%" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Plain oak, banded in iron." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It has stopped worse than you are about to meet." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Shield" color=#FFFFFF O=. B=. S=. U=. I=F
+-- shield @bulwark=0.45
+   "Damage Reduction: " color=#AAAAAA O=. B=. S=. U=. I=F ["35.4%" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Plain oak, banded in iron." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It has stopped worse than you are about to meet." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Shield" color=#FFFFFF O=. B=. S=. U=. I=F
+
+=== ARMOR ===
+-- chainmail_boots
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["1" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Ten thousand rings, and every one of them someone's afternoon." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Boots" color=#FFFFFF O=. B=. S=. U=. I=F
+-- chainmail_chestplate
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["5" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Ten thousand rings, and every one of them someone's afternoon." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Chestplate" color=#FFFFFF O=. B=. S=. U=. I=F
+-- chainmail_helmet
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["2" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Ten thousand rings, and every one of them someone's afternoon." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Helmet" color=#FFFFFF O=. B=. S=. U=. I=F
+-- chainmail_leggings
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["4" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Ten thousand rings, and every one of them someone's afternoon." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Leggings" color=#FFFFFF O=. B=. S=. U=. I=F
+-- diamond_boots
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["3" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Cut from a single lattice, and cold to the touch." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Boots" color=#55FF55 O=. B=. S=. U=. I=F
+-- diamond_chestplate
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["8" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Cut from a single lattice, and cold to the touch." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Chestplate" color=#55FF55 O=. B=. S=. U=. I=F
+-- diamond_helmet
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["3" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Cut from a single lattice, and cold to the touch." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Helmet" color=#55FF55 O=. B=. S=. U=. I=F
+-- diamond_leggings
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["6" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Cut from a single lattice, and cold to the touch." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Leggings" color=#55FF55 O=. B=. S=. U=. I=F
+-- golden_boots
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["1" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "It buys goodwill from things that cannot spend it." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Boots" color=#FFFFFF O=. B=. S=. U=. I=F
+-- golden_chestplate
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["5" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "It buys goodwill from things that cannot spend it." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Chestplate" color=#FFFFFF O=. B=. S=. U=. I=F
+-- golden_helmet
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["2" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "It buys goodwill from things that cannot spend it." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Helmet" color=#FFFFFF O=. B=. S=. U=. I=F
+-- golden_leggings
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["3" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "It buys goodwill from things that cannot spend it." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Leggings" color=#FFFFFF O=. B=. S=. U=. I=F
+-- iron_boots
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["2" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Honest plate. It has no opinion about who wears it." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Boots" color=#FFFFFF O=. B=. S=. U=. I=F
+-- iron_chestplate
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["6" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Honest plate. It has no opinion about who wears it." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Chestplate" color=#FFFFFF O=. B=. S=. U=. I=F
+-- iron_helmet
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["2" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Honest plate. It has no opinion about who wears it." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Helmet" color=#FFFFFF O=. B=. S=. U=. I=F
+-- iron_leggings
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["5" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Honest plate. It has no opinion about who wears it." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Leggings" color=#FFFFFF O=. B=. S=. U=. I=F
+-- leather_boots
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["1" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Better than nothing, and it knows it." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Boots" color=#FFFFFF O=. B=. S=. U=. I=F
+-- leather_chestplate
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["3" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Better than nothing, and it knows it." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Chestplate" color=#FFFFFF O=. B=. S=. U=. I=F
+-- leather_helmet
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["1" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Better than nothing, and it knows it." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Helmet" color=#FFFFFF O=. B=. S=. U=. I=F
+-- leather_leggings
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["2" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Better than nothing, and it knows it." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Leggings" color=#FFFFFF O=. B=. S=. U=. I=F
+-- netherite_boots
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["3" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Salvaged from something that did not survive the fall." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Boots" color=#55FF55 O=. B=. S=. U=. I=F
+-- netherite_chestplate
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["8" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Salvaged from something that did not survive the fall." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Chestplate" color=#55FF55 O=. B=. S=. U=. I=F
+-- netherite_helmet
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["3" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Salvaged from something that did not survive the fall." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Helmet" color=#55FF55 O=. B=. S=. U=. I=F
+-- netherite_leggings
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["6" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Salvaged from something that did not survive the fall." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Leggings" color=#55FF55 O=. B=. S=. U=. I=F
+
+=== RARITY x SLOT FOOTERS ===
+-- COMMON/HEAD
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Helmet" color=#FFFFFF O=. B=. S=. U=. I=F
+-- COMMON/CHEST
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Chestplate" color=#FFFFFF O=. B=. S=. U=. I=F
+-- COMMON/LEGS
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Leggings" color=#FFFFFF O=. B=. S=. U=. I=F
+-- COMMON/FEET
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Boots" color=#FFFFFF O=. B=. S=. U=. I=F
+-- COMMON/SHIELD
+   "Damage Reduction: " color=#AAAAAA O=. B=. S=. U=. I=F ["35%" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Shield" color=#FFFFFF O=. B=. S=. U=. I=F
+-- UNCOMMON/HEAD
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Helmet" color=#55FF55 O=. B=. S=. U=. I=F
+-- UNCOMMON/CHEST
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Chestplate" color=#55FF55 O=. B=. S=. U=. I=F
+-- UNCOMMON/LEGS
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Leggings" color=#55FF55 O=. B=. S=. U=. I=F
+-- UNCOMMON/FEET
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Boots" color=#55FF55 O=. B=. S=. U=. I=F
+-- UNCOMMON/SHIELD
+   "Damage Reduction: " color=#AAAAAA O=. B=. S=. U=. I=F ["35%" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Shield" color=#55FF55 O=. B=. S=. U=. I=F
+-- RARE/HEAD
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Helmet" color=#5555FF O=. B=. S=. U=. I=F
+-- RARE/CHEST
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Chestplate" color=#5555FF O=. B=. S=. U=. I=F
+-- RARE/LEGS
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Leggings" color=#5555FF O=. B=. S=. U=. I=F
+-- RARE/FEET
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Boots" color=#5555FF O=. B=. S=. U=. I=F
+-- RARE/SHIELD
+   "Damage Reduction: " color=#AAAAAA O=. B=. S=. U=. I=F ["35%" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Shield" color=#5555FF O=. B=. S=. U=. I=F
+-- EPIC/HEAD
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Epic Helmet" color=#AA00AA O=. B=. S=. U=. I=F
+-- EPIC/CHEST
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Epic Chestplate" color=#AA00AA O=. B=. S=. U=. I=F
+-- EPIC/LEGS
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Epic Leggings" color=#AA00AA O=. B=. S=. U=. I=F
+-- EPIC/FEET
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Epic Boots" color=#AA00AA O=. B=. S=. U=. I=F
+-- EPIC/SHIELD
+   "Damage Reduction: " color=#AAAAAA O=. B=. S=. U=. I=F ["35%" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Epic Shield" color=#AA00AA O=. B=. S=. U=. I=F
+-- LEGENDARY/HEAD
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Legendary Helmet" color=#FFAA00 O=. B=. S=. U=. I=F
+-- LEGENDARY/CHEST
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Legendary Chestplate" color=#FFAA00 O=. B=. S=. U=. I=F
+-- LEGENDARY/LEGS
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Legendary Leggings" color=#FFAA00 O=. B=. S=. U=. I=F
+-- LEGENDARY/FEET
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Legendary Boots" color=#FFAA00 O=. B=. S=. U=. I=F
+-- LEGENDARY/SHIELD
+   "Damage Reduction: " color=#AAAAAA O=. B=. S=. U=. I=F ["35%" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Legendary Shield" color=#FFAA00 O=. B=. S=. U=. I=F
+-- EXOTIC/HEAD
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Exotic Helmet" color=#55FFFF O=. B=. S=. U=. I=F
+-- EXOTIC/CHEST
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Exotic Chestplate" color=#55FFFF O=. B=. S=. U=. I=F
+-- EXOTIC/LEGS
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Exotic Leggings" color=#55FFFF O=. B=. S=. U=. I=F
+-- EXOTIC/FEET
+   "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Exotic Boots" color=#55FFFF O=. B=. S=. U=. I=F
+-- EXOTIC/SHIELD
+   "Damage Reduction: " color=#AAAAAA O=. B=. S=. U=. I=F ["35%" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "flavour probe" color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Exotic Shield" color=#55FFFF O=. B=. S=. U=. I=F
+
+=== LORE LINES ===
+armor.defenseLabel(0.0) = Defense: 0
+armor.defenseLabel(1.0) = Defense: 1
+armor.defenseLabel(2.5) = Defense: 2.5
+armor.defenseLabel(3.0) = Defense: 3
+armor.defenseLabel(6.0) = Defense: 6
+armor.defenseLabel(8.0) = Defense: 8
+armor.defenseLabel(20.0) = Defense: 20
+armor.defenseLabel(0.5) = Defense: 0.5
+armor.defenseLabel(100.0) = Defense: 100
+shield.damageReductionLabel(0.0) = Damage Reduction: 0%
+shield.damageReductionLabel(0.29) = Damage Reduction: 29%
+shield.damageReductionLabel(0.35) = Damage Reduction: 35%
+shield.damageReductionLabel(0.5) = Damage Reduction: 50%
+shield.damageReductionLabel(0.55) = Damage Reduction: 55%
+shield.damageReductionLabel(0.125) = Damage Reduction: 12.5%
+shield.damageReductionLabel(0.65) = Damage Reduction: 65%
+shield.damageReductionLabel(1.0) = Damage Reduction: 100%
+armor.slotNoun(HEAD) = Helmet
+armor.slotNoun(CHEST) = Chestplate
+armor.slotNoun(LEGS) = Leggings
+armor.slotNoun(FEET) = Boots
+
+=== 84 renderings ===

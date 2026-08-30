@@ -39,7 +39,7 @@ public record ShieldDefinition(
         String material,
         double blockDr,
         List<String> flavor
-) {
+) implements GearDefinition {
 
     /**
      * The material a shield gets when its content file does not name one.

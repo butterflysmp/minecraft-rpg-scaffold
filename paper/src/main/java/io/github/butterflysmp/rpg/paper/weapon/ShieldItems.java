@@ -107,9 +107,7 @@ public final class ShieldItems {
      * mostly nulls and this is called against arbitrary slots.
      */
     public static Optional<String> shieldId(ItemStack item, Keys keys) {
-        if (item == null || !item.hasItemMeta()) return Optional.empty();
-        return Optional.ofNullable(item.getItemMeta().getPersistentDataContainer()
-                .get(keys.shieldId, PersistentDataType.STRING));
+        return GearItems.idOf(item, keys.shieldId);
     }
 
     /** The shield id of the player's main-hand item, if it is one of ours. */
@@ -183,7 +181,8 @@ public final class ShieldItems {
         ItemMeta oldMeta = old.getItemMeta();
         if (oldMeta == null) return fresh;   // no meta means no tag; the caller would not have got here
         fresh.editMeta(meta -> {
-            carryInstanceData(oldMeta, meta, adapters.keys(), fresh.getType());
+            GearItems.carryInstanceData(oldMeta, meta, adapters.keys().shieldId,
+                    adapters.keys(), fresh.getType());
             applyLore(meta, current, adapters);
         });
         return fresh;
@@ -197,14 +196,6 @@ public final class ShieldItems {
      * accumulated wear, whose loss would be a relog-to-repair exploit; and the enchant blob, whose
      * loss would cost a player an unlock they earned.
      */
-    private static void carryInstanceData(ItemMeta from, ItemMeta to, Keys keys, Material material) {
-        String id = from.getPersistentDataContainer().get(keys.shieldId, PersistentDataType.STRING);
-        if (id != null) {
-            to.getPersistentDataContainer().set(keys.shieldId, PersistentDataType.STRING, id);
-        }
-        carryWear(from, to, material);
-        carryEnchants(from, to, keys);
-    }
 
     /**
      * Carry the item's enchant state across the re-mint.
@@ -215,26 +206,10 @@ public final class ShieldItems {
      * flag without state is a roll that came up empty, and both are legal. Verbatim the contract
      * {@code WeaponItems.carryEnchants} documents, because it is the same container.
      */
-    private static void carryEnchants(ItemMeta from, ItemMeta to, Keys keys) {
-        String data = from.getPersistentDataContainer().get(keys.enchantData, PersistentDataType.STRING);
-        if (data != null) {
-            to.getPersistentDataContainer().set(keys.enchantData, PersistentDataType.STRING, data);
-        }
-        Byte rolled = from.getPersistentDataContainer().get(keys.enchantRolled, PersistentDataType.BYTE);
-        if (rolled != null) {
-            to.getPersistentDataContainer().set(keys.enchantRolled, PersistentDataType.BYTE, rolled);
-        }
-    }
 
     /**
      * Carry accumulated durability damage across the re-mint, clamped so a material change can
      * never turn a display refresh into a destroyed item. {@link Durability#clamp} is the same
      * floor the dev commands and the break gate apply.
      */
-    private static void carryWear(ItemMeta from, ItemMeta to, Material material) {
-        if (!(from instanceof Damageable worn) || !(to instanceof Damageable fresh)) return;
-        short maxDurability = material.getMaxDurability();
-        if (maxDurability <= 0) return;   // not a damageable material -- nothing to carry
-        fresh.setDamage(Durability.clamp(worn.getDamage(), maxDurability));
-    }
 }

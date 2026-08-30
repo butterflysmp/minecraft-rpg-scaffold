@@ -92,7 +92,26 @@ public final class DefenseModifierItems {
      */
     private static double armorOf(ItemStack item, EquipmentSlot slot) {
         if (item == null || item.getType().isAir()) return 0.0;
-        ItemType type = item.getType().asItemType();
+        return vanillaArmorPoints(item.getType().asItemType(), slot);
+    }
+
+    /**
+     * The armor points an ITEM TYPE inherently grants in {@code slot}, straight out of vanilla.
+     *
+     * Public because it is the number two subsystems have to agree on, and they are in different
+     * packages: this scan feeds the Defense STAT, and {@code ArmorConsistency} checks it at boot
+     * against the number a content file DISPLAYS. That check used to repeat this body verbatim so
+     * the armor slice could leave this file byte-identical -- a deliberate, recorded, temporary
+     * duplication, and the gear extraction is where it was always going to be paid off.
+     *
+     * One copy matters more here than in most places. If the two reads ever disagreed, the boot
+     * check would be verifying content against a number the stat does not actually use, and it
+     * would report a clean run while every armor tooltip lied.
+     *
+     * Sums ONLY {@link AttributeModifier.Operation#ADD_NUMBER} modifiers. Every vanilla armor
+     * modifier is flat, but a scaling one summed as though it were flat would be silently wrong.
+     */
+    public static double vanillaArmorPoints(ItemType type, EquipmentSlot slot) {
         if (type == null) return 0.0;
         Multimap<Attribute, AttributeModifier> defaults = type.getDefaultAttributeModifiers(slot);
         double armor = 0.0;

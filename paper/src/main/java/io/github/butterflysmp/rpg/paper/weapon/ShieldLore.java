@@ -81,37 +81,16 @@ public final class ShieldLore {
         // the HUD rather than picked: a shield's Damage Reduction and armor's Defense are the same
         // kind of number and compose with each other, so they read in the same colour. (Adventure
         // has no LIME; GREEN is the bright one Minecraft renders as lime.)
-        lore.add(plain(ShieldLoreLines.DAMAGE_REDUCTION_LABEL, NamedTextColor.GRAY)
-                .append(plain(ShieldLoreLines.damageReductionValue(
+        lore.add(GearLore.plain(ShieldLoreLines.DAMAGE_REDUCTION_LABEL, NamedTextColor.GRAY)
+                .append(GearLore.plain(ShieldLoreLines.damageReductionValue(
                         Bulwark.effectiveDr(shield.blockDr(), bulwarkPercent)), NamedTextColor.GREEN)));
 
-        if (!shield.flavor().isEmpty()) {
-            lore.add(blank());
-            for (String line : shield.flavor()) {
-                lore.add(Component.text(line, NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, true));
-            }
-        }
+        GearLore.appendFlavor(lore, shield);
 
         // Rarity footer at the very bottom, coloured by tier: "Common Shield".
-        lore.add(blank());
-        lore.add(plain(titleCase(shield.rarity().name()) + " Shield",
-                RarityColors.of(shield.rarity())));
+        GearLore.appendRarityFooter(lore, shield.rarity(), "Shield");
 
         return lore;
     }
 
-    private static Component plain(String text, NamedTextColor color) {
-        return Component.text(text, color).decoration(TextDecoration.ITALIC, false);
-    }
-
-    private static Component blank() {
-        return Component.empty().decoration(TextDecoration.ITALIC, false);
-    }
-
-    /** "COMMON" -> "Common". */
-    private static String titleCase(String raw) {
-        if (raw.isEmpty()) return raw;
-        return Character.toUpperCase(raw.charAt(0)) + raw.substring(1).toLowerCase(Locale.ROOT);
-    }
 }

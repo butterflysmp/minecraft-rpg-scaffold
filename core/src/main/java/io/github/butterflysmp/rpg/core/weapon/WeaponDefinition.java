@@ -33,7 +33,7 @@ public record WeaponDefinition(
         double sweep,
         List<TriggerBinding> triggers,
         List<String> flavor
-) {
+) implements GearDefinition {
     /** The item a weapon renders as when its content does not say otherwise: a sword. */
     public static final String DEFAULT_MATERIAL = "iron_sword";
 

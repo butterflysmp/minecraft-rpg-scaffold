@@ -79,7 +79,6 @@ public final class ShieldLoreLines {
 
     /** {@code 50.0 -> "50"}, {@code 12.5 -> "12.5"}. The idiom WeaponLoreLines uses for its costs. */
     private static String trimNumber(double n) {
-        if (n == Math.floor(n) && !Double.isInfinite(n)) return String.valueOf((long) n);
-        return String.valueOf(n);
+        return GearLoreLines.trimNumber(n);
     }
 }
