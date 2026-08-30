@@ -20,8 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The shield schema, and whether the shipped content file actually satisfies it.
  *
- * The headline is {@link #theShippedRoundshieldParses} -- it loads the REAL
- * {@code content/shields/roundshield.yml} out of the resources tree rather than a fixture, so a
+ * The headline is {@link #theShippedShieldParses} -- it loads the REAL
+ * {@code content/shields/shield.yml} out of the resources tree rather than a fixture, so a
  * typo in the shipped file reddens here instead of arriving as "0 shields" in a boot log. Content
  * and schema drifting apart is not hypothetical on this repo: commit 117168e records a boot that
  * loaded 3 weapons instead of 5, both swords silently skipped for a missing key.
@@ -46,7 +46,7 @@ class ShieldLoaderTest {
     // --- The shipped content --------------------------------------------------------------------
 
     @Test
-    void theShippedRoundshieldParses() {
+    void theShippedShieldParses() {
         // THE headline. The schema is only correct relative to the files it has to read, and this
         // is the one that ships. Pointed at the resources tree, NOT at the deployed run/ folder --
         // saveResource never overwrites, so the deployed copy can be arbitrarily stale and testing
@@ -58,22 +58,23 @@ class ShieldLoaderTest {
         ShieldRegistry registry = new ShieldLoader(LOG).loadAll(shipped);
 
         // ZERO IS A DEFECT, NOT A QUIET NO-OP. A loader that discovers nothing reads exactly like
-        // one that worked, and an assertion on roundshield's fields alone would pass vacuously if
+        // one that worked, and an assertion on shield's fields alone would pass vacuously if
         // the directory scan came back empty.
         assertFalse(registry.all().isEmpty(),
                 "the shipped shields directory must not load empty -- finding zero files is the "
                         + "defect CLAUDE.md records twice, not a no-op");
 
-        ShieldDefinition roundshield = registry.find("roundshield").orElseThrow(
-                () -> new AssertionError("roundshield.yml did not load; registry holds "
+        ShieldDefinition shield = registry.find("shield").orElseThrow(
+                () -> new AssertionError("shield.yml did not load; registry holds "
                         + registry.all().stream().map(ShieldDefinition::id).toList()));
 
-        assertEquals("Roundshield", roundshield.displayName());
-        assertEquals(Rarity.COMMON, roundshield.rarity());
-        assertEquals("shield", roundshield.material(), "must be a material vanilla actually blocks with");
-        assertEquals(0.5, roundshield.blockDr(), 1e-9, "the common shield stops half");
-        assertEquals(2, roundshield.flavor().size(), "and its flavour is a LIST, not a scalar");
-        // Mutation: rename any key in roundshield.yml (block_dr -> blockDr, say) -> the shield
+        assertEquals("Shield", shield.displayName());
+        assertEquals(Rarity.COMMON, shield.rarity());
+        assertEquals("shield", shield.material(), "must be a material vanilla actually blocks with");
+        assertEquals(0.35, shield.blockDr(), 1e-9,
+                "the common shield stops just over a third -- a 15.0 hit passes 9.75");
+        assertEquals(2, shield.flavor().size(), "and its flavour is a LIST, not a scalar");
+        // Mutation: rename any key in shield.yml (block_dr -> blockDr, say) -> the shield
         // loads with a defaulted value and this reddens, where a boot would just print "Block: 0%"
         // -> reddens.
     }

@@ -41,9 +41,10 @@ class EnchantRollTest {
     private static final Rollable POWER = new Rollable("power", GearClass.RANGER);
     private static final Rollable ATTUNEMENT = new Rollable("attunement", GearClass.MAGE);
     private static final Rollable BULWARK = new Rollable("bulwark", GearClass.SHIELD);
+    private static final Rollable THORNS = new Rollable("thorns", GearClass.SHIELD);
     private static final Rollable UNBREAKING = new Rollable("unbreaking", null);
     private static final List<Rollable> ROSTER =
-            List.of(SHARPNESS, POWER, ATTUNEMENT, BULWARK, UNBREAKING);
+            List.of(SHARPNESS, POWER, ATTUNEMENT, BULWARK, THORNS, UNBREAKING);
 
     /**
      * Literal draws, consumed in order. Running off the end throws
@@ -145,30 +146,44 @@ class EnchantRollTest {
         // never reads (it looks at the main hand's weapon); a sword offered Bulwark would sell a
         // block bonus read off a stack that cannot block.
         for (String id : idsIn(EnchantRoll.roll(GearClass.SHIELD, ROSTER, always(0.99)).slots().get(0))) {
-            assertTrue(id.equals("bulwark") || id.equals("unbreaking"),
+            assertTrue(id.equals("bulwark") || id.equals("thorns") || id.equals("unbreaking"),
                     "a shield was offered '" + id + "'");
         }
+        // BOTH shield enchants must stay off every weapon. Asserted per enchant rather than by
+        // counting, because this roster is hand-written and can drift from the yml files
+        // independently -- a Rollable declared with the wrong GearClass here would otherwise only
+        // show up on a server.
         for (GearClass weapon : List.of(GearClass.MELEE, GearClass.RANGER, GearClass.MAGE)) {
             assertFalse(EnchantRoll.poolFor(weapon, ROSTER).contains(BULWARK),
                     weapon + " was offered Bulwark -- a block enchant on a weapon");
+            assertFalse(EnchantRoll.poolFor(weapon, ROSTER).contains(THORNS),
+                    weapon + " was offered Thorns -- a reflect read off a stack that cannot block");
         }
     }
 
     @Test
-    void aShieldsPoolIsStillTwoInThisSliceSoTheThreeCandidateSlotStaysUnreachable() {
-        // Bulwark + Unbreaking. The SAME size as every weapon class, so nothing about the roll's
-        // observable shape changes when shields start rolling -- and the pool-of-two boundary tests
-        // below still describe every piece of shipped gear.
+    void aShieldsPoolIsTHREEAndIsTheFirstShippedGearThatCanFillASlot() {
+        // Bulwark + Thorns + Unbreaking. Every WEAPON class is still two (its own damage enchant
+        // plus Unbreaking), so the shield is the only gear whose slot can hold three candidates.
         //
-        // Stated rather than assumed because it was got WRONG while writing this file: the plan said
-        // a shield's pool was three. It is three only once Riposte lands in Slice 2b, and that is
-        // when EnchantMenuLayout.CANDIDATES == 3 first gets exercised by a real roll.
-        assertEquals(2, EnchantRoll.poolFor(GearClass.SHIELD, ROSTER).size());
+        // This is the moment EnchantMenuLayout.CANDIDATES == 3 stops being a constant pinned against
+        // another constant and starts being exercised by a real roll of real content. Slice 2a
+        // predicted it here by name, in the test this one replaces.
+        assertEquals(3, EnchantRoll.poolFor(GearClass.SHIELD, ROSTER).size());
         assertEquals(2, EnchantRoll.poolFor(GearClass.MELEE, ROSTER).size());
 
+        // == 3, not <= 3. At always(0.99) candidateCount(3, 0.99) IS 3, so a <= assertion would be
+        // vacuous -- it would pass just as happily on a pool that had silently stayed at two.
         for (EnchantSlot slot : EnchantRoll.roll(GearClass.SHIELD, ROSTER, always(0.99)).slots()) {
-            assertTrue(slot.candidates().size() <= 2,
-                    "a shield offered " + slot.candidates().size() + " candidates from a pool of two");
+            assertEquals(3, slot.candidates().size(),
+                    "a full draw on a pool of three must fill all three cells of the slot");
+        }
+
+        // And the distinctness rule finally runs at pool size 3: the third pick comes from a pool
+        // that has already been shrunk TWICE, which no shipped roster could reach before.
+        for (EnchantSlot slot : EnchantRoll.roll(GearClass.SHIELD, ROSTER, always(0.99)).slots()) {
+            assertEquals(3, distinctCount(idsIn(slot)),
+                    "a slot offered the same enchant twice: " + idsIn(slot));
         }
     }
 
@@ -179,7 +194,7 @@ class EnchantRollTest {
         assertEquals(List.of(ATTUNEMENT, UNBREAKING), EnchantRoll.poolFor(GearClass.MAGE, ROSTER));
         // Roster ORDER is preserved here too: bulwark precedes unbreaking in the roster, so it
         // precedes it in the pool. That is what makes a fixed set of draws reproduce a fixed roll.
-        assertEquals(List.of(BULWARK, UNBREAKING), EnchantRoll.poolFor(GearClass.SHIELD, ROSTER));
+        assertEquals(List.of(BULWARK, THORNS, UNBREAKING), EnchantRoll.poolFor(GearClass.SHIELD, ROSTER));
         // Roster order is preserved, so the pool is a deterministic function of the registry.
         // Mutation: drop the `weaponClass() != null` arm (universal stops matching) -> UNBREAKING
         // disappears from all three -> reddens.
@@ -226,8 +241,11 @@ class EnchantRollTest {
 
     @Test
     void aThreeCandidateSlotIsReachableOnceThePoolIsBigEnough() {
-        // Proves the 1..3 range is real and only the ROSTER is currently short -- so the day a
-        // fourth melee enchant ships, nothing here has to change.
+        // Proves the 1..3 range is real in isolation, from literal pool sizes rather than from any
+        // roster. It was written when NO shipped gear could reach a pool of three; the shield does
+        // now (Bulwark + Thorns + Unbreaking), and aShieldsPoolIsTHREE... is where that is asserted
+        // end to end. This one stays because it pins the decision independently of what ships --
+        // the day a fourth melee enchant lands, nothing here has to change either.
         assertEquals(3, EnchantRoll.candidateCount(3, 0.9999999));
         assertEquals(3, EnchantRoll.candidateCount(9, 0.9999999), "capped by the layout, not the pool");
         assertEquals(1, EnchantRoll.candidateCount(3, 0.0));

@@ -102,12 +102,14 @@ public final class EnchantRoll {
      * a 1-versus-2 count without a sample far larger than a boot gate -- and it would ship
      * unwitnessable. That is the roster pass's decision, on this axis.
      *
-     * <p><b>That argument still covers every class as of this slice, SHIELD included</b>: a shield's
-     * pool is Bulwark plus Unbreaking, which is two, exactly like every weapon. It stops covering
-     * SHIELD the moment a second shield enchant ships (Riposte, Slice 2b) -- three is where a 1..3
-     * count becomes genuinely observable, and where {@code EnchantMenuLayout.CANDIDATES == 3} is
-     * first exercised by a real roll rather than only by {@link #candidateCount} in isolation.
-     * Revisit the rarity question then, not before.
+     * <p><b>That argument NO LONGER covers SHIELD, as of Slice 2b.</b> A shield's pool is Bulwark
+     * plus Thorns plus Unbreaking -- THREE -- while every weapon class is still two. So a 1..3 count
+     * is now genuinely observable on one kind of gear, and {@code EnchantMenuLayout.CANDIDATES == 3}
+     * is exercised by a real roll rather than only by {@link #candidateCount} in isolation.
+     *
+     * <p>Rarity-weighting stays deferred anyway: one class with a big enough pool is not a reason to
+     * design a tier curve for all of them. But it is now deferred BY CHOICE rather than by
+     * impossibility, and that distinction is the thing worth re-reading before the next roster pass.
      *
      * <p><b>An empty pool offers nothing, and that is a real arm.</b> It returns 0 rather than 1, so
      * the slot is offered empty instead of the caller being asked for a candidate that cannot exist.

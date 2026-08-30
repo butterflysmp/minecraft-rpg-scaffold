@@ -41,7 +41,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * <p>Called at the paths that create GEAR for a player: {@code /rpg give} -- both its weapon and
  * its shield arm since Slice 2 -- and the kit grant.
  *
- * <p><b>Gear already in an inventory is never rolled retroactively.</b> A roundshield minted before
+ * <p><b>Gear already in an inventory is never rolled retroactively.</b> A shield minted before
  * Slice 2 carries no {@code enchant_rolled} flag and nothing comes back to give it one; re-acquire
  * it. This matters at a boot gate, where an old shield shows empty slots and reads exactly like a
  * broken roll. None of these paths routes through {@code remint}.

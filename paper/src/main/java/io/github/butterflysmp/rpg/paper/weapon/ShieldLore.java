@@ -66,16 +66,24 @@ public final class ShieldLore {
      *
      * <p>Composed through {@link Bulwark#effectiveDr}, the same function the rider calls, so the two
      * cannot drift. {@code Bulwark.NONE} makes the unenchanted case an exact identity.
+     *
      */
     public static List<Component> build(ShieldDefinition shield, double bulwarkPercent) {
         List<Component> lore = new ArrayList<>();
 
         // The stat block. One line, unconditionally -- including for a shield that declares no
-        // block at all, which then honestly reads "Block: 0%". Hiding the line at zero would make
-        // a mis-authored shield look like a shield with no stat rather than one with a zero stat,
-        // and those want telling apart.
-        lore.add(plain(ShieldLoreLines.blockLabel(
-                Bulwark.effectiveDr(shield.blockDr(), bulwarkPercent)), NamedTextColor.GRAY));
+        // reduction at all, which then honestly reads "Damage Reduction: 0%". Hiding the line at
+        // zero would make a mis-authored shield look like a shield with no stat rather than one
+        // with a zero stat, and those want telling apart.
+        //
+        // GRAY label, GREEN number -- the split WeaponLore's damage line already uses. The colour is
+        // NamedTextColor.GREEN because that is exactly what StatsBarText.DEFENSE_COLOR is, read off
+        // the HUD rather than picked: a shield's Damage Reduction and armor's Defense are the same
+        // kind of number and compose with each other, so they read in the same colour. (Adventure
+        // has no LIME; GREEN is the bright one Minecraft renders as lime.)
+        lore.add(plain(ShieldLoreLines.DAMAGE_REDUCTION_LABEL, NamedTextColor.GRAY)
+                .append(plain(ShieldLoreLines.damageReductionValue(
+                        Bulwark.effectiveDr(shield.blockDr(), bulwarkPercent)), NamedTextColor.GREEN)));
 
         if (!shield.flavor().isEmpty()) {
             lore.add(blank());

@@ -72,12 +72,17 @@ public final class DamageEnchants {
      * {@code IndexOutOfBoundsException} thrown from inside a reconcile tick, on a path that must be
      * total. It fails toward the enchant's own top percent, never past it -- the same direction
      * {@code Unbreaking.consumeChance}'s clamp fails in.
+     *
+     * <p><b>MOVED to {@link EnchantCurve} in Slice 2b; this delegates.</b> The curve lookup is not
+     * damage-specific and had grown block and reflect callers, for whom asking {@code DamageEnchants}
+     * for a percentage implied a coupling that does not exist. The signature is kept exactly so this
+     * class's own tests -- and any caller that legitimately IS about damage -- are untouched.
+     *
+     * <p>New callers that are not about damage should import {@link EnchantCurve} directly. This
+     * method stays because deleting it would move a test suite for no behavioural gain.
      */
     public static double percentAt(List<Integer> percentByLevel, int level) {
-        if (percentByLevel == null || percentByLevel.isEmpty() || level <= 0) return 0.0;
-        int index = Math.min(level, percentByLevel.size()) - 1;
-        Integer percent = percentByLevel.get(index);
-        return percent == null ? 0.0 : percent;
+        return EnchantCurve.percentAt(percentByLevel, level);
     }
 
     /**

@@ -213,6 +213,45 @@ class EnchantLoaderTest {
         assertEquals("shield", bulwark.icon());
     }
 
+    /**
+     * The shipped REFLECT enchant, field for field — and this one is load-bearing in a way the
+     * directory-scan fixture cannot be.
+     *
+     * <p>{@code everyShippedEnchantFileLoads…} asserts the id SET, so it catches a file the loader
+     * REFUSES. It cannot catch a file that loads perfectly well while saying the wrong thing.
+     * Specifically: <b>{@code thorns.yml} authored with {@code effect: block_dr} gates fine on
+     * {@code class: shield}, loads cleanly, and reddens nothing at all</b> — Thorns would silently
+     * become a second Bulwark, granting +10/20/30% block and zero reflect. A {@code [5, 10, 15]}
+     * curve would be an equally silent 3x nerf.
+     *
+     * <p>So the effect and the curve are asserted here by value. The {@code class} token is the one
+     * field the loader itself guards (it refuses {@code universal} and the weapon classes outright),
+     * and it is asserted anyway because reading it is free and a reader should not have to know
+     * which fields are doubly covered.
+     */
+    @Test
+    void theShippedThornsCarriesItsShieldGateAndCurve(@TempDir Path dir) throws IOException {
+        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+
+        EnchantDefinition thorns = enchants.find("thorns").orElseThrow(
+                () -> new AssertionError("thorns.yml did not load -- shields would roll no reflect"));
+
+        assertEquals("Thorns", thorns.displayName());
+        assertEquals(EnchantEffect.REFLECT, thorns.effect(),
+                "thorns binds the REFLECT mechanism -- block_dr here is a silent second Bulwark");
+        assertEquals(GearClass.SHIELD, thorns.gearClass(),
+                "a reflect gated anywhere else is read off a stack that cannot block");
+        assertFalse(thorns.isUniversal(), "universal would put it in every weapon's roll pool");
+        assertEquals(List.of(10, 20, 30), thorns.percentByLevel(),
+                "the shipped curve -- 1.5/3.0/4.5 off a 15.0 mob, which the popup rounds to 2/3/5");
+        assertEquals(3, thorns.maxLevel());
+
+        // And it is NOT the same mechanism as the shield's other enchant, stated explicitly because
+        // "both are shield enchants with a percent curve" is exactly how the two get conflated.
+        assertNotEquals(enchants.find("bulwark").orElseThrow().effect(), thorns.effect(),
+                "Bulwark and Thorns must bind DIFFERENT mechanisms");
+    }
+
     // --- The schema rules, one test each ---------------------------------------------------------
 
     @Test
@@ -334,6 +373,55 @@ class EnchantLoaderTest {
         // And the one shape that IS legal, so this test cannot pass by refusing everything.
         assertDoesNotThrow(() -> new EnchantDefinition(
                 "b", "B", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, 10, 15)));
+    }
+
+    /**
+     * The same gate rule on REFLECT, and it is here because getting it wrong is the ONE mistake in
+     * this arm that a shipped-content test would still catch. Its sibling below (the curve rules) is
+     * the one nothing else would catch at all.
+     */
+    @Test
+    void aReflectEnchantMustBeGatedOnShieldBecauseNothingElseCanBlock() {
+        var universal = assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "r", "R", 3, EnchantEffect.REFLECT, null, List.of(10, 20, 30)),
+                "a universal reflect enchant would be offered on every weapon in the game");
+        assertTrue(universal.getMessage().contains("every weapon's pool"),
+                "the refusal must say WHY universal is the dangerous one: " + universal.getMessage());
+
+        for (GearClass weapon : List.of(GearClass.MELEE, GearClass.RANGER, GearClass.MAGE)) {
+            assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                    "r", "R", 3, EnchantEffect.REFLECT, weapon, List.of(10, 20, 30)),
+                    weapon + " cannot block, so a reflect read off the blocking stack never fires");
+        }
+
+        assertDoesNotThrow(() -> new EnchantDefinition(
+                "r", "R", 3, EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, 20, 30)));
+    }
+
+    /**
+     * THE ONE NOTHING ELSE CATCHES. Omitting {@code requireCurve} from the REFLECT arm leaves
+     * {@code thorns.yml} loading perfectly well -- it has a curve -- so no shipped-content test and
+     * no loader test reddens. Only this does.
+     *
+     * <p>And the negative rule is worth more here than on any other effect: a negative reflect is not
+     * a weak reflect. It goes through {@code applyDamage} to {@code stats.damage} and <b>HEALS the
+     * mob that is attacking you</b>. That is the rule the shared validator exists to make
+     * unforgettable, and this is what proves the REFLECT arm actually calls it.
+     */
+    @Test
+    void aReflectEnchantIsHeldToTheSameCurveRulesAsABlockOne() {
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "r", "R", 3, EnchantEffect.REFLECT, GearClass.SHIELD, List.of()),
+                "a reflect enchant with no curve has no numbers to reflect by");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "r", "R", 3, EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, 20)),
+                "a short curve leaves a legal level with no percent");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "r", "R", 2, EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, 20, 30)),
+                "a long curve hides levels the enchant can never reach");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "r", "R", 3, EnchantEffect.REFLECT, GearClass.SHIELD, List.of(10, -20, 30)),
+                "a NEGATIVE reflect would heal the attacking mob rather than hurt it");
     }
 
     @Test
@@ -473,6 +561,8 @@ class EnchantLoaderTest {
         // Deliberately NOT enchanted_book: if the shipped value equalled DEFAULT_ICON this
         // assertion could not tell "the key was read" from "the key was missing and defaulted".
         assertEquals("anvil", registry.find("unbreaking").orElseThrow().icon());
+        assertEquals("shield", registry.find("bulwark").orElseThrow().icon());
+        assertEquals("arrow", registry.find("thorns").orElseThrow().icon());
         assertNotEquals(EnchantDefinition.DEFAULT_ICON,
                 registry.find("unbreaking").orElseThrow().icon());
         // Mutation: change any yml's icon -> reddens.

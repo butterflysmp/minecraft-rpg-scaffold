@@ -7,7 +7,7 @@
 # behind is not blocked at all are all vanilla's, inherited by riding its damage event
 # rather than re-derived. We do not cancel the block; we only decide what it is worth.
 
-display_name: "Roundshield"
+display_name: "Shield"
 rarity: common
 
 # MUST be a material with vanilla block behaviour, which in practice means `shield`.
@@ -17,23 +17,36 @@ rarity: common
 # never raises it and never reports a block for the rider to read.
 material: shield
 
-# THE BLOCK FRACTION: how much of an incoming hit this shield turns away, as a
-# fraction between 0 and 1. 0.5 means half is stopped and half gets through.
+# THE DAMAGE REDUCTION: how much of an incoming hit this shield turns away, as a
+# fraction between 0 and 1. 0.35 means just over a third is stopped.
 #
 # It is a FLAT fraction, deliberately unlike the defense stat's diminishing-returns
 # curve. Defense accumulates across four armor slots and an unbounded stat, so it
-# needs a shape that never reaches immunity; a shield's block is one authored number
-# on one item, and "this shield stops half" is meant to be a sentence you can hold.
+# needs a shape that never reaches immunity; a shield's reduction is one authored
+# number on one item, and it is meant to be a sentence you can hold.
 #
-# It STACKS with armor rather than replacing it: the block is applied first and
-# Defense second, so a player in full diamond (20 armor) blocking an 8-damage hit
-# takes 3.33 rather than 4.0 (blocked only) or 6.67 (armored only). Both apply.
+# WHAT THE SHIPPED NUMBER DOES, executed rather than worked out by hand -- against the
+# 15.0 attack stat the boot gate's mob carries:
+#
+#   plain      dr 0.35  ->  a 15.0 hit passes 9.75
+#   Bulwark I  dr 0.39999999999999997  ->  9.000000000000002   tooltip 40%
+#   Bulwark II dr 0.44999999999999996  ->  8.25                tooltip 45%
+#   Bulwark III dr 0.5                 ->  7.5                 tooltip 50%
+#
+# Note the drs are NOT the clean 0.40 and 0.45 they look like -- 0.35 + 0.05 in binary
+# floating point is 0.39999999999999997. The tooltip rounds to one decimal so it reads
+# "40%", and the tests carry the exact doubles. Do not "tidy" those constants.
+#
+# It STACKS with armor rather than replacing it: the reduction is applied first and
+# Defense second, so a player in full diamond (20 armor) blocking an 8-damage hit takes
+# 4.333333333333333 rather than 5.2 (blocked only) or 6.666666666666667 (armored only).
+# Both apply.
 #
 # Out of range is REFUSED, not clamped, and the file is skipped with its name in the
 # boot log. That is not fussiness about tidy data -- a negative value would make this
 # shield DOUBLE the hit it stopped, and a value above 1 would make the damage negative,
 # which reaches the health system and HEALS the holder.
-block_dr: 0.5
+block_dr: 0.35
 
 flavor:
   - "Plain oak, banded in iron."

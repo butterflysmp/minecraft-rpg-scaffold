@@ -92,9 +92,9 @@ Line shape (`[TAG] SUBTAG key=value`, doubles at 4dp, the house format):
 ```
 [BLOCK] LOWEST victim=<uuid> attacker=<uuid> cause=ENTITY_ATTACK cancelled=false
         raw=6.0000 final=0.0000 blockingApplicable=true blocking=-6.0000
-        isBlocking=true active=SHIELD offhand=SHIELD shieldId=roundshield facingDot=0.9130
+        isBlocking=true active=SHIELD offhand=SHIELD shieldId=shield facingDot=0.9130
 [BLOCK] RIDER  victim=<uuid> blocked=true blockDr=0.5000 incoming=8.0000 reduced=4.0000
-[BLOCK] WEAR   victim=<uuid> shieldId=roundshield vanillaItemDamageEvent=true cancelled=true
+[BLOCK] WEAR   victim=<uuid> shieldId=shield vanillaItemDamageEvent=true cancelled=true
 ```
 
 Honouring the three rules this repo learned the hard way:
@@ -287,7 +287,7 @@ filename, per-file `RuntimeException` → `log.warning("Skipping malformed shiel
 aggregate warning. Keys: `display_name`, `rarity` (default `common`), `material` (default
 `shield`), `block_dr`, `flavor`.
 
-### `paper/src/main/resources/content/shields/roundshield.yml`
+### `paper/src/main/resources/content/shields/shield.yml`
 
 One common shield, `block_dr: 0.5`, in the house content voice — every non-obvious key carries a
 paragraph saying *why*, including the rejected alternative. `RpgPlugin.saveDefaultContent()` needs
@@ -411,7 +411,7 @@ decision someone took rather than a bug someone finds.
 
 **New — paper:** `weapon/ShieldItems.java`, `weapon/ShieldLore.java`, `weapon/ShieldDurability.java`,
 `weapon/ShieldBlock.java`, `content/ShieldLoader.java`,
-`resources/content/shields/roundshield.yml`, `paper/src/test/…/weapon/ShieldLoreTest.java`.
+`resources/content/shields/shield.yml`, `paper/src/test/…/weapon/ShieldLoreTest.java`.
 
 **Modified:** `paper/.../adapter/Keys.java` (one field), `paper/.../RpgPlugin.java` (load, count,
 zero-check, collision warning, two call sites), `paper/.../command/RpgCommand.java` (`give`
@@ -460,7 +460,7 @@ on this repo before (commit `117168e`).
 
 | # | Check | Expected |
 |---|---|---|
-| 1 | `/rpg give roundshield` | mints; name in the common rarity colour; lore shows the block line, flavor, and `Common Shield` last |
+| 1 | `/rpg give shield` | mints; name in the common rarity colour; lore shows the block line, flavor, and `Common Shield` last |
 | 2 | Main hand: `/rpg enchant candidate 0 unbreaking` → `level 0 0 3` → `active 0 0` | enchant lines sit **above** everything, footer still last. `/rpg enchant show` on a shield replies *"weapon-only for now."* rather than throwing |
 | 3 | Take an unblocked mob hit; record the heart-bar drop | baseline |
 | 4 | Block the same mob frontally | **~half** of #3 |

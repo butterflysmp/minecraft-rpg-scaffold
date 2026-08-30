@@ -3,6 +3,8 @@ package io.github.butterflysmp.rpg.paper.weapon;
 import io.github.butterflysmp.rpg.core.combat.Shield;
 import io.github.butterflysmp.rpg.core.enchant.Bulwark;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
+import io.github.butterflysmp.rpg.core.enchant.EnchantState;
+import io.github.butterflysmp.rpg.core.enchant.Thorns;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
@@ -96,14 +98,21 @@ public final class ShieldBlock {
      * {@link #NONE} they are null, and the rider never reads them because it branches on
      * {@code blocked} first.
      */
-    public record Outcome(boolean blocked, double effectiveDr, EquipmentSlot slot, String shieldId) {
+    public record Outcome(boolean blocked, double effectiveDr, double reflectPercent,
+                          EquipmentSlot slot, String shieldId) {
 
         /**
          * No block, for any of THREE reasons that mean the same thing to the rider: vanilla did not
          * block, what blocked was not one of ours (a plain vanilla shield, or a dangling id), or the
          * shield is BROKEN. One outcome, one meaning -- "no custom mitigation from this stack".
+         *
+         * <p><b>{@code reflectPercent} is {@link Thorns#NONE} here, and that is what makes the
+         * reflect inherit every one of those reasons for free.</b> A hit from behind, an untagged
+         * shield, a dangling id and a broken shield all send nothing back without the rider needing
+         * a single extra branch -- one predicate, all three shield effects.
          */
-        public static final Outcome NONE = new Outcome(false, Shield.NONE, null, null);
+        public static final Outcome NONE =
+                new Outcome(false, Shield.NONE, Thorns.NONE, null, null);
     }
 
     /**
@@ -134,7 +143,8 @@ public final class ShieldBlock {
         if (definition == null) return Outcome.NONE;
 
         // A BROKEN SHIELD STOPS BLOCKING, and this is the single gate every shield mechanic falls
-        // off: base DR here, Bulwark below it, the reflect in Slice 2b. Slice 1 shipped without one
+        // off: base DR here, Bulwark below it, and the reflect Slice 2b hangs off reflectPercent.
+        // All three, one predicate. Slice 1 shipped without one
         // deliberately -- Durability.wear floors at one remaining use, so a spent shield simply
         // stopped wearing and kept blocking at full strength, which made all of that slice's
         // durability work cosmetic and broke the symmetry with weapons, which DO gate on broken.
@@ -148,13 +158,29 @@ public final class ShieldBlock {
             return Outcome.NONE;
         }
 
-        // Bulwark is composed HERE rather than in the rider, so the ordering constraint above
-        // (resolve before setDamage) covers the enchant read for free, and the rider keeps exactly
-        // one number to apply. The value returned is the EFFECTIVE fraction, which is why the
-        // component is not called blockDr any more: a name that still said "the shield's own DR"
-        // while carrying an enchant's contribution is how a witness log starts lying.
-        double bulwark = BlockEnchantItems.percentFor(stack, keys, enchants, EnchantEffect.BLOCK_DR);
-        return new Outcome(true, Bulwark.effectiveDr(definition.blockDr(), bulwark), slot, id);
+        // BOTH shield enchants are read HERE, and from ONE decode. Composing them in resolve rather
+        // than in the rider means the ordering constraint above (resolve before setDamage) covers
+        // the enchant read for free, and the rider gets finished numbers rather than ingredients.
+        //
+        // ONE EnchantItems.read, not two. This runs on every blocked hit and the read parses the
+        // PDC string, so the state is hoisted and the effect-scan runs over it twice -- which is
+        // exactly what BlockEnchantItems' state overload was extracted for in Slice 2a.
+        EnchantState state = EnchantItems.read(stack, keys);
+        double bulwark = BlockEnchantItems.percentFor(state, enchants, EnchantEffect.BLOCK_DR);
+        double thorns = BlockEnchantItems.percentFor(state, enchants, EnchantEffect.REFLECT);
+
+        // The DR is the EFFECTIVE fraction -- Bulwark composed and clamped -- which is why that
+        // component is not called blockDr: a name still saying "the shield's own DR" while carrying
+        // an enchant's contribution is how a witness log starts lying. reflectPercent is raw points,
+        // because the reflect has nothing to compose with until it meets the incoming blow.
+        //
+        // The two are adjacent doubles in DIFFERENT units, and no compiler can catch transposing
+        // them. A swap would feed a percent to Shield.applyBlock -- 15.0 as a fraction clamps to a
+        // total block -- and reflect a fraction, so it presents in play as an unkillable player
+        // dealing rounding-error damage back. The locals are named for the enchants rather than for
+        // their types so the construction below reads as a sentence.
+        return new Outcome(true, Bulwark.effectiveDr(definition.blockDr(), bulwark), thorns,
+                slot, id);
     }
 
     /**
