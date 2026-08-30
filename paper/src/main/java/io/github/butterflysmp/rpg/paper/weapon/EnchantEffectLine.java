@@ -125,6 +125,34 @@ public final class EnchantEffectLine {
                 double percent = EnchantCurve.valueAt(definition.valueByLevel(), level);
                 yield String.format("+%.0f%% reflected to the attacker", percent);
             }
+            case DEFENSE -> {
+                if (definition.gearClass() != heldClass) {
+                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
+                            + " enchant on " + GearClassLabel.describe(heldClass);
+                }
+                // NO PERCENT SIGN, and that is the whole difference from the three arms above.
+                // Defense is a SUMMAND in armor points -- the piece's own Defense line says
+                // "Defense: 8", and this adds to that number, not to a fraction of it. Writing
+                // "+9%" here would describe an enchant that does not exist and would disagree with
+                // the item two lines up.
+                //
+                // THE SAME WORD THE ITEM USES: ArmorLoreLines.DEFENSE_LABEL prints "Defense" on the
+                // piece itself, so the enchant that modifies that stat must not call it something
+                // else. Same rule the BLOCK_DR arm follows for "Damage Reduction".
+                double points = EnchantCurve.valueAt(definition.valueByLevel(), level);
+                yield String.format("+%.0f Defense", points);
+            }
+            case MAX_HEALTH -> {
+                if (definition.gearClass() != heldClass) {
+                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
+                            + " enchant on " + GearClassLabel.describe(heldClass);
+                }
+                // Points again, for the same reason. "Max Health" rather than "Health": the enchant
+                // raises the CEILING and grants no current health at all -- equipping is headroom,
+                // never a heal -- and a line reading "+30 Health" would promise the heal.
+                double points = EnchantCurve.valueAt(definition.valueByLevel(), level);
+                yield String.format("+%.0f Max Health", points);
+            }
         };
     }
 }

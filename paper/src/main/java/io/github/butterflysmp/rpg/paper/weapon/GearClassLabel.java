@@ -29,6 +29,7 @@ public final class GearClassLabel {
             case RANGER -> "Ranged";
             case MAGE   -> "Magic";
             case SHIELD -> "Shield";
+            case ARMOR  -> "Armor";
         };
     }
 
@@ -50,6 +51,9 @@ public final class GearClassLabel {
         return switch (gearClass) {
             case MELEE, RANGER, MAGE -> "a " + of(gearClass) + " weapon";
             case SHIELD              -> "a shield";
+            // "a piece of armor", not "an Armor armor": the inert sentence reads "... on a piece of
+            // armor", and armor is the one gear kind whose label is not also its noun.
+            case ARMOR               -> "a piece of armor";
         };
     }
 }

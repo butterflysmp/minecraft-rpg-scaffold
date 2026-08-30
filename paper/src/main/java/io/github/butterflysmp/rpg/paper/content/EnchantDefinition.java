@@ -65,8 +65,8 @@ import java.util.List;
  * @param valueByLevel the VALUE this enchant grants at levels 1..n, or an EMPTY list for a durability
  *                       enchant. Its size is held equal to {@code maxLevel}, which is what makes
  *                       level -> value total. What the value MEANS is the mechanism's business: a
-     *                       percent for damage, block and reflect; flat POINTS for defense and max
-     *                       health. The curve itself never divides, which is why it is not "percent".
+ *                       percent for damage, block and reflect; flat POINTS for defense and max
+ *                       health. The curve itself never divides, which is why it is not "percent".
  */
 public record EnchantDefinition(String id, String displayName, int maxLevel,
                                 EnchantEffect effect, GearClass gearClass,
@@ -117,15 +117,20 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         // Choosing the rules as VALUES restores the guarantee for real. A new constant now fails here
         // twice, by name, until someone states what a file carrying it may claim.
         Gate gate = switch (effect) {
-            case DAMAGE     -> Gate.ANY_BUT_SHIELD;
+            case DAMAGE     -> Gate.MAIN_HAND_ONLY;
             // Both read off the BLOCKING STACK, which only a shield can be.
             case BLOCK_DR,
                  REFLECT    -> Gate.SHIELD_ONLY;
+            // Both are read off the WORN PIECES by the armor scan, which only looks at the four
+            // armor slots. Neither is universal: a universal armor-stat enchant would enter every
+            // weapon's roll pool and sell an XP unlock that does nothing.
+            case DEFENSE,
+                 MAX_HEALTH -> Gate.ARMOR_ONLY;
             case DURABILITY -> Gate.UNIVERSAL_ONLY;
         };
         boolean curved = switch (effect) {
-            case DAMAGE, BLOCK_DR, REFLECT -> true;
-            case DURABILITY                -> false;
+            case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH -> true;
+            case DURABILITY                                     -> false;
         };
 
         // The two rules are shared rather than copied per arm: three effects now hold the same curve
@@ -139,7 +144,7 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
     }
 
     /** Which gates an effect's mechanism can actually be read through. See {@link #requireGate}. */
-    private enum Gate { UNIVERSAL_ONLY, SHIELD_ONLY, ANY_BUT_SHIELD }
+    private enum Gate { UNIVERSAL_ONLY, SHIELD_ONLY, ARMOR_ONLY, MAIN_HAND_ONLY }
 
     /**
      * A file may not claim a control it does not have -- the rule the durability arm has enforced
@@ -151,39 +156,66 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
      * {@code SHIELD_ONLY} becomes a two-value check and nothing else moves.
      */
     private static void requireGate(String id, EnchantEffect effect, GearClass gearClass, Gate gate) {
-        switch (gate) {
+        // A SWITCH EXPRESSION, not a statement, for the reason the block above already paid for
+        // once: a switch STATEMENT over an enum may silently cover nothing, so adding ARMOR_ONLY
+        // would have fallen straight through to no validation at all -- the exact shape of the
+        // REFLECT bug. Yielding the message (or null for "no complaint") makes a new Gate constant
+        // a compile error here, which is what this method was always supposed to guarantee.
+        String complaint = switch (gate) {
             case UNIVERSAL_ONLY -> {
                 // Nothing gates wear by class: WeaponDurability and ShieldDurability both read the
                 // level off the stack in hand without consulting a class at all.
-                if (gearClass != null) {
-                    throw new IllegalArgumentException("enchant '" + id + "' has effect: "
-                            + token(effect) + " and must be class: universal -- durability is not"
-                            + " class-gated, so naming a class would be a promise nothing keeps");
-                }
+                yield gearClass == null ? null
+                        : "must be class: universal -- durability is not class-gated, so naming a"
+                                + " class would be a promise nothing keeps";
             }
             case SHIELD_ONLY -> {
                 // Read off the blocking stack in the mob->player rider. A universal one would enter
                 // EVERY weapon's roll pool and sell a player an XP unlock that does nothing, which
                 // is exactly the mistake `class:` is required and spelled out to prevent.
-                if (gearClass != GearClass.SHIELD) {
-                    throw new IllegalArgumentException("enchant '" + id + "' has effect: "
-                            + token(effect) + " and must be class: shield -- it is read off the"
-                            + " blocking stack, so on anything else it would never fire"
-                            + (gearClass == null
-                                    ? " (universal would put it in every weapon's pool)"
-                                    : ", was class: " + gearClass.name().toLowerCase()));
-                }
+                yield gearClass == GearClass.SHIELD ? null
+                        : "must be class: shield -- it is read off the blocking stack, so on"
+                                + " anything else it would never fire"
+                                + (gearClass == null
+                                        ? " (universal would put it in every weapon's pool)"
+                                        : ", was class: " + gearClass.name().toLowerCase());
             }
-            case ANY_BUT_SHIELD -> {
+            case ARMOR_ONLY -> {
+                // Read off the WORN PIECES by the armor scan, which only looks at the four armor
+                // slots. Universal is the dangerous typo here exactly as it is for a shield enchant:
+                // it would put a Defense or Max Health enchant in every weapon's pool, inert.
+                yield gearClass == GearClass.ARMOR ? null
+                        : "must be class: armor -- it is read off the pieces you are WEARING, so on"
+                                + " anything else it would never fire"
+                                + (gearClass == null
+                                        ? " (universal would put it in every weapon's pool)"
+                                        : ", was class: " + gearClass.name().toLowerCase());
+            }
+            case MAIN_HAND_ONLY -> {
                 // DamageEnchantItems reads the MAIN HAND's weapon and maps it through GearClass.of,
-                // which can never yield SHIELD. So a shield-gated damage enchant is structurally
-                // unreachable rather than merely useless.
-                if (gearClass == GearClass.SHIELD) {
-                    throw new IllegalArgumentException("enchant '" + id + "' has effect: "
-                            + token(effect) + " and must not be class: shield -- the damage gate"
-                            + " reads the weapon in your main hand, so it could never fire");
-                }
+                // which can yield only MELEE, RANGER or MAGE. So a damage enchant gated on ANY other
+                // constant is structurally unreachable rather than merely useless.
+                //
+                // WAS `ANY_BUT_SHIELD`, WHICH BECAME A LATENT BUG THE MOMENT ARMOR EXISTED: it named
+                // SHIELD alone, so `effect: damage` + `class: armor` loaded clean and could never
+                // fire -- precisely the defect the shield arm was written to prevent, arriving
+                // through the door the check did not name. Stated as what the gate CAN be rather
+                // than what it cannot, so the next gear kind is refused by default instead of
+                // silently admitted.
+                yield gearClass == null
+                        || gearClass == GearClass.MELEE
+                        || gearClass == GearClass.RANGER
+                        || gearClass == GearClass.MAGE
+                        ? null
+                        : "must name a fighting class or universal -- the damage gate reads the"
+                                + " weapon in your main hand, so class: "
+                                + gearClass.name().toLowerCase() + " could never fire";
             }
+        };
+
+        if (complaint != null) {
+            throw new IllegalArgumentException("enchant '" + id + "' has effect: "
+                    + token(effect) + " and " + complaint);
         }
     }
 

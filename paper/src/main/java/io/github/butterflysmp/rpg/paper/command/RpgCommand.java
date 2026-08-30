@@ -761,18 +761,13 @@ public final class RpgCommand {
             EnchantRollItems.rollOnAcquire(item, GearClass.SHIELD, adapters);
             name = WeaponItems.displayName(shield.displayName(), shield.rarity());
         } else {
-            // ARMOR DOES NOT ROLL, and the omission is the same one a shield carried through its
-            // own Slice 1. EnchantRoll.roll is keyed on GearClass, which has no ARMOR constant:
-            // adding one is a compile error in GearClassLabel's two exhaustive switches and in
-            // GearClassTest's explicit axis enumeration, by design, because it forces the decision
-            // about whether armor is one class or four. That decision belongs with the enchants
-            // that need it -- Protection, Growth and Mana Bank -- and they are Slice 2.
-            //
-            // So armor ships enchant-COMPATIBLE, not enchant-ROLLED: it carries the container,
-            // /rpg enchant can write it, and remint moves it, but no slots are decided at
-            // acquisition. Passing GearClass.SHIELD here to "make it work" would draw a shield's
-            // Bulwark and Thorns onto a helmet.
+            // ARMOR ROLLS TOO, since Slice 2a. It did not through Slice 1 because EnchantRoll.roll
+            // is keyed on GearClass and armor had no constant -- so there was no honest roster to
+            // draw from, and passing SHIELD to "make it work" would have drawn Bulwark and Thorns
+            // onto a helmet. GearClass.ARMOR is that roster's key, and the pool is the armor-gated
+            // enchants plus the universal ones.
             item = ArmorItems.mint(piece, adapters);
+            EnchantRollItems.rollOnAcquire(item, GearClass.ARMOR, adapters);
             name = WeaponItems.displayName(piece.displayName(), piece.rarity());
         }
 
@@ -962,24 +957,12 @@ public final class RpgCommand {
             EnchantState before = EnchantItems.read(held, adapters.keys());
 
             if (op == EnchantOp.SHOW) {
-                // SHOW works on a shield since Slice 2. It refused one before because showEnchants
-                // reached EnchantEffectLine with definition.weaponClass(), and a shield had none to
-                // hand it -- not because anything crashed; no caller ever passed null. GearClass
-                // supplies the honest value, so the refusal has nothing left to protect.
-                //
-                // ARMOR IS WHERE THAT REFUSAL NOW LIVES, for the reason it once applied to shields:
-                // showEnchants passes gear.gearClass() straight into EnchantEffectLine.bare, whose
-                // DAMAGE arm dereferences it through GearClassLabel.of -- an exhaustive switch with
-                // no default arm. Armor's gearClass() is null until Slice 2 gives it a constant, so
-                // this arm refuses rather than passing null into that switch. Do NOT "fix" this by
-                // handing it SHIELD.
-                if (gear.isArmor()) {
-                    player.sendMessage(Component.text(
-                            "Enchant display is weapon- and shield-only for now -- armor carries "
-                                    + "enchants but has no class to judge them against yet.",
-                            NamedTextColor.YELLOW));
-                    return;
-                }
+                // SHOW works on ALL THREE gear kinds now. It refused a shield through Slice 1 and
+                // armor through Slice 2, both times for the same reason: showEnchants passes
+                // gear.gearClass() into EnchantEffectLine.bare, whose arms dereference it through
+                // GearClassLabel.of -- an exhaustive switch with no default arm -- and neither kind
+                // had a constant to hand it. GearClass.ARMOR is the honest answer for the last of
+                // them, so the refusal has nothing left to protect and is gone.
                 showEnchants(player, gear, before, adapters);
                 return;
             }
@@ -1139,26 +1122,20 @@ public final class RpgCommand {
     }
 
     /**
-     * The gear {@code /rpg enchant} is editing: a weapon OR a shield, never both, never neither.
+     * The gear {@code /rpg enchant} is editing: exactly one of a weapon, a shield or a piece of
+     * armor -- never two, never none.
      *
      * <p>THE CONTAINMENT. {@code enchant} has six op arms and five of them are writes that end in a
-     * re-mint. Widening the command to shields by branching weapon-vs-shield inside each arm would
-     * double all five and guarantee they drift; instead every arm keeps its single call site and
-     * this record is the only thing that knows which of the two it is holding.
+     * re-mint. Widening the command by branching per kind inside each arm would triple all five and
+     * guarantee they drift; instead every arm keeps its single call site and this record is the only
+     * thing that knows which kind it is holding.
      *
-     * <p>The two accessors below are the entire dispatch surface, and both exist to keep a
-     * weapon-shaped API from being handed a shield:
-     *
-     * <ul>
-     *   <li>{@link #remint} picks the right {@code *Items.remint}. That is the five write arms.
-     *   <li>{@link #effectSuffix} returns the empty string for a shield rather than calling
-     *       {@code EnchantEffectLine.of} with a null {@code WeaponClass}. The alternative --
-     *       widening EnchantEffectLine's switch to tolerate null -- would put a shield-shaped hole
-     *       in a class whose whole design is one exhaustive switch with no default arm.
-     * </ul>
-     *
-     * <p>{@code /rpg enchant show} is deliberately NOT dispatched here: it is not a re-mint, and it
-     * is weapon-only for this slice. See the SHOW arm.
+     * <p>{@link #remint} picks the right {@code *Items.remint} -- that is the five write arms -- and
+     * {@link #gearClass} answers the question EnchantEffectLine asks ("is this enchant inert on what
+     * you are holding?"). Both were once weapon-shaped APIs with a hole in them: a shield had no
+     * class through Slice 1 and armor had none through Slice 2, and each was handled by returning an
+     * empty tail rather than passing null into a switch with no default arm. {@link GearClass} now
+     * has a constant for all three, so both holes are closed and {@code show} dispatches here too.
      */
     private record HeldGear(String id, WeaponDefinition weapon, ShieldDefinition shield,
                             ArmorDefinition armor) {
@@ -1167,53 +1144,24 @@ public final class RpgCommand {
             return shield != null;
         }
 
-        /**
-         * Armor, whose enchant story is deliberately half-built in this slice: it carries the
-         * container and can be written, but it has no {@link GearClass}, so anything that asks
-         * "is this enchant inert on what you are holding?" has no honest answer yet.
-         */
-        boolean isArmor() {
-            return armor != null;
-        }
-
         ItemStack remint(ItemStack held, AdapterContext adapters) {
             if (weapon != null) return WeaponItems.remint(held, weapon, adapters);
             if (shield != null) return ShieldItems.remint(held, shield, adapters);
             return ArmorItems.remint(held, armor, adapters);
         }
 
-        /**
-         * The " -- does X" tail on an ACTIVE reply, or empty for a shield.
-         *
-         * <p>Slice 1 returned "" for a shield, because a shield had no {@code WeaponClass} and there
-         * was no honest answer to the question EnchantEffectLine asks ("is this enchant inert on
-         * what you are holding?"). {@link GearClass} is that answer, so the arm is gone.
-         */
+        /** The " -- does X" tail on an ACTIVE reply. Honest for all three kinds since Slice 2a. */
         String effectSuffix(EnchantDefinition enchantDef, int effectiveLevel) {
-            // ARMOR TAKES THE EMPTY TAIL, exactly as a shield did in its own Slice 1, and for the
-            // identical reason: EnchantEffectLine's DAMAGE arm dereferences the held class through
-            // GearClassLabel.of, an exhaustive switch with no default arm, so a null would crash
-            // that arm rather than read as "unknown". Returning "" says nothing instead of saying
-            // something false, and the arm disappears in Slice 2 when armor gets a GearClass.
-            if (isArmor()) return "";
             return EnchantEffectLine.of(enchantDef, effectiveLevel, gearClass());
         }
 
         /**
-         * The gear's own enchant-gating class -- {@code GearClass.of(...)} for a weapon,
-         * {@code SHIELD} for a shield, and {@code null} for armor.
-         *
-         * <p><b>Null for armor, and every caller must gate on {@link #isArmor()} before using it.</b>
-         * There is no ARMOR constant to return: adding one is a compile error in
-         * {@code GearClassLabel}'s two exhaustive switches and in {@code GearClassTest}'s explicit
-         * axis enumeration, which is exactly the forcing function that makes it Slice 2's decision
-         * rather than a constant somebody adds in passing. Inventing a placeholder -- reusing
-         * SHIELD, or adding ARMOR with no gating behind it -- would make a helmet eligible for
-         * Bulwark and Thorns.
+         * The gear's own enchant-gating class. NEVER NULL: a weapon maps through
+         * {@code GearClass.of}, a shield IS SHIELD, a piece of armor IS ARMOR.
          */
         GearClass gearClass() {
             if (weapon != null) return GearClass.of(weapon.weaponClass());
-            return shield != null ? GearClass.SHIELD : null;
+            return shield != null ? GearClass.SHIELD : GearClass.ARMOR;
         }
 
         /** What to call it in a reply, so {@code show} can name a shield as readily as a weapon. */
