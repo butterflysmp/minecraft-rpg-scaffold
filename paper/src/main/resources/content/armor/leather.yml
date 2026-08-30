@@ -1,0 +1,37 @@
+# Leather armor -- the bottom of the ladder, and the tier that proves display_name has to be
+# authored per piece rather than derived.
+#
+# See diamond.yml for the file shape and for why 'defense:' is DISPLAY-ONLY.
+#
+# VANILLA'S LEATHER NAMES ARE IRREGULAR. Every other tier is "<Material> <SlotNoun>" -- Iron Helmet,
+# Diamond Boots -- and could have been derived from the material token. Leather is Cap, Tunic, Pants
+# and Boots, against materials named leather_helmet, leather_chestplate and leather_leggings. Any
+# scheme that derived the display name from the material would have produced "Leather Helmet" here
+# and quietly renamed three vanilla items, which the brief for this slice explicitly forbids.
+#
+# The FOOTER still reads "Common Helmet" for the Cap, and that is correct rather than a mismatch:
+# the footer says what KIND of gear the item is -- the same job "Rare Melee Weapon" does on a weapon
+# -- rather than repeating the item's own name two lines above it. ArmorLoreLines.slotNoun owns that
+# word and deliberately does not know about leather.
+rarity: common
+
+flavor:
+  - "Better than nothing, and it knows it."
+
+pieces:
+  head:
+    material: leather_helmet
+    display_name: "Leather Cap"
+    defense: 1
+  chest:
+    material: leather_chestplate
+    display_name: "Leather Tunic"
+    defense: 3
+  legs:
+    material: leather_leggings
+    display_name: "Leather Pants"
+    defense: 2
+  feet:
+    material: leather_boots
+    display_name: "Leather Boots"
+    defense: 1

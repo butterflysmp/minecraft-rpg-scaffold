@@ -1,0 +1,57 @@
+# Diamond armor -- the tier the Defense pass was designed around.
+#
+# ONE FILE, FOUR PIECES. Armor is authored per MATERIAL TIER, not per piece, because rarity and
+# flavour are properties of the tier: writing them into four files each would put one fact in four
+# places and invite three of them to drift. The loader (ArmorLoader) expands this into four
+# ArmorDefinitions, walking the slot axis rather than this file's own keys -- so a missing slot is a
+# named refusal and a typo'd key like 'foot:' is simply never read.
+#
+# IDS COME FROM EACH PIECE'S material TOKEN, not from this filename. This file is called
+# diamond.yml and defines nothing called "diamond": it defines diamond_helmet, diamond_chestplate,
+# diamond_leggings and diamond_boots. That is the divergence from every other content type here,
+# and it is deliberate -- the material token is unique, is what a player would guess at
+# /rpg give, and stays correct for tiers whose display names are irregular (see leather.yml).
+
+# Uncommon: the second rarity tier, and the first gear to use it at any scale. Diamond and netherite
+# are the two tiers above the starter band. RarityColors maps UNCOMMON to GREEN.
+rarity: uncommon
+
+flavor:
+  - "Cut from a single lattice, and cold to the touch."
+
+pieces:
+  # ---------------------------------------------------------------------------------------------
+  # defense: IS DISPLAY-ONLY. READ THIS BEFORE EDITING IT.
+  #
+  # This number does NOT give the piece its Defense. It is printed on the tooltip and nothing else.
+  # The Defense a worn piece actually contributes comes from VANILLA -- DefenseModifierItems reads
+  # ItemType.getDefaultAttributeModifiers(slot) and sums the ARMOR modifiers -- and that read cannot
+  # see this file, or the minted item, or anything we write.
+  #
+  # So editing this number does not buff the piece. It changes the LABEL, the item starts advertising
+  # a number it does not deliver, and ArmorConsistency shouts about it in the boot log. It is a
+  # MIRROR of vanilla's value, never a lever on it. The lever does not exist yet; Protection, in
+  # Slice 2, is the first thing that will move a piece's real Defense.
+  #
+  # It is authored here anyway, rather than read from vanilla at mint time, so the numbers a player
+  # reads live in content where this project keeps its numbers.
+  #
+  # These four are independently pinned by DefenseTest, which asserts the equip ladder
+  # 3 -> 11 -> 17 -> 20 for a diamond set: 3 + 8 + 6 + 3 == 20, a full vanilla armor bar.
+  # ---------------------------------------------------------------------------------------------
+  head:
+    material: diamond_helmet
+    display_name: "Diamond Helmet"
+    defense: 3
+  chest:
+    material: diamond_chestplate
+    display_name: "Diamond Chestplate"
+    defense: 8
+  legs:
+    material: diamond_leggings
+    display_name: "Diamond Leggings"
+    defense: 6
+  feet:
+    material: diamond_boots
+    display_name: "Diamond Boots"
+    defense: 3

@@ -9,6 +9,8 @@ import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.combat.stat.CompositeHealthListener;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
@@ -29,6 +31,8 @@ import io.github.butterflysmp.rpg.paper.content.StatusLoader;
 import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
 import io.github.butterflysmp.rpg.paper.content.VisualLoader;
 import io.github.butterflysmp.rpg.paper.content.VisualRegistry;
+import io.github.butterflysmp.rpg.paper.content.ArmorConsistency;
+import io.github.butterflysmp.rpg.paper.content.ArmorLoader;
 import io.github.butterflysmp.rpg.paper.content.ShieldLoader;
 import io.github.butterflysmp.rpg.paper.content.WeaponLoader;
 import io.github.butterflysmp.rpg.paper.health.DamagePopupManager;
@@ -100,6 +104,7 @@ public final class RpgPlugin extends JavaPlugin {
     private KitRegistry kits;
     private WeaponRegistry weapons;
     private ShieldRegistry shields;
+    private ArmorRegistry armor;
     private MobRegistry mobs;
     private CooldownTracker cooldowns;
     private ResourcePool resources;
@@ -134,12 +139,13 @@ public final class RpgPlugin extends JavaPlugin {
         this.kits = new KitLoader(getLogger()).loadAll(new File(contentDir, "kits"));
         this.weapons = new WeaponLoader(getLogger()).loadAll(new File(contentDir, "weapons"));
         this.shields = new ShieldLoader(getLogger()).loadAll(new File(contentDir, "shields"));
+        this.armor = new ArmorLoader(getLogger()).loadAll(new File(contentDir, "armor"));
         this.mobs = new MobLoader(getLogger()).loadAll(new File(contentDir, "mobs"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
                 + kits.size() + " kits, " + weapons.size() + " weapons, "
-                + shields.size() + " shields, " + mobs.size() + " mobs");
+                + shields.size() + " shields, " + armor.size() + " armor, " + mobs.size() + " mobs");
 
         // ZERO IS A DEFECT, NOT A QUIET NO-OP. A loader that discovers nothing reads exactly like
         // one that worked, and this is the failure mode CLAUDE.md records twice: getResource on a
@@ -173,6 +179,43 @@ public final class RpgPlugin extends JavaPlugin {
                         + "Rename one of the two content files.");
             }
         }
+
+
+        // And again on content/armor, which this slice adds. Newest directory, same reasoning as
+        // shields: an existing run/ data folder predates it entirely, and saveResource never
+        // overwrites, so the only thing that puts the six tier files on disk is the jar
+        // enumeration finding them. Twenty-four is the expected count -- six tiers, four slots --
+        // and a number below that means a tier file was skipped, which its own warning will have
+        // said out loud.
+        if (armor.size() == 0) {
+            getLogger().warning("No armor loaded from content/armor -- /rpg give can mint no armor. "
+                    + "Note this does NOT disable the Defense stat: a plain vanilla chestplate still "
+                    + "sources its full Defense, because that is read from vanilla and not from a "
+                    + "tag. Expected 24 pieces from six tier files.");
+        }
+
+        // ONE ID, THREE REGISTRIES. /rpg give resolves weapons, then shields, then armor, so a
+        // shared id silently shadows whichever comes later -- and that looks exactly like the
+        // shadowed piece having failed to load, which the zero-checks above would NOT fire for.
+        // No registry can see the others, so this is the only place a collision is visible.
+        for (ArmorDefinition piece : armor.all()) {
+            if (weapons.find(piece.id()).isPresent()) {
+                getLogger().warning("Armor '" + piece.id() + "' shares its id with a weapon. "
+                        + "/rpg give resolves weapons first, so the armor piece cannot be minted by "
+                        + "id. Rename one of the two content files.");
+            }
+            if (shields.find(piece.id()).isPresent()) {
+                getLogger().warning("Armor '" + piece.id() + "' shares its id with a shield. "
+                        + "/rpg give resolves shields first, so the armor piece cannot be minted by "
+                        + "id. Rename one of the two content files.");
+            }
+        }
+
+        // The tooltip number against vanilla's. This is the ONLY moment the two live in the same
+        // JVM: content/armor authors the defense a piece DISPLAYS, vanilla owns the defense it
+        // DELIVERS, and nothing makes them agree. A mismatch is invisible from every vantage point
+        // in-game -- see ArmorConsistency's own javadoc -- so it has to be shouted about here.
+        ArmorConsistency.check(armor, getLogger());
 
         // A visual_id that resolves to nothing should be found now, by name, not by
         // a player casting the ability in six weeks' time. Registry is only reachable
@@ -252,7 +295,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, mobs, nameplates, resources),
+                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, mobs, nameplates, resources),
                         "RPG commands"));
     }
 
@@ -417,6 +460,7 @@ public final class RpgPlugin extends JavaPlugin {
     public WeaponRegistry weapons() { return weapons; }
 
     public ShieldRegistry shields() { return shields; }
+    public ArmorRegistry armor() { return armor; }
     public CooldownTracker cooldowns() { return cooldowns; }
     public ResourcePool resources() { return resources; }
     public CombatantStats stats() { return stats; }

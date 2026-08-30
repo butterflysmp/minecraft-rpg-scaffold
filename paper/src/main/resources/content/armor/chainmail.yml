@@ -1,0 +1,26 @@
+# Chainmail armor.
+#
+# See diamond.yml for the file shape and for why 'defense:' is DISPLAY-ONLY.
+
+rarity: common
+
+flavor:
+  - "Ten thousand rings, and every one of them someone's afternoon."
+
+pieces:
+  head:
+    material: chainmail_helmet
+    display_name: "Chainmail Helmet"
+    defense: 2
+  chest:
+    material: chainmail_chestplate
+    display_name: "Chainmail Chestplate"
+    defense: 5
+  legs:
+    material: chainmail_leggings
+    display_name: "Chainmail Leggings"
+    defense: 4
+  feet:
+    material: chainmail_boots
+    display_name: "Chainmail Boots"
+    defense: 1

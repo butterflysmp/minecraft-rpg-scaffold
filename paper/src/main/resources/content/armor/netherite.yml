@@ -1,0 +1,32 @@
+# Netherite armor -- the top of the vanilla ladder.
+#
+# See diamond.yml for the full explanation of the per-tier file shape, the material-derived ids,
+# and (most importantly) why 'defense:' is DISPLAY-ONLY and editing it does not buff anything.
+
+# Uncommon, the same tier as diamond. Netherite grants the SAME armor points as diamond in vanilla;
+# what it actually adds is armor toughness and knockback resistance, neither of which this project
+# models. So it is deliberately not a higher rarity than diamond: the tiers say what the gear is
+# worth HERE, and by that measure the two are equal. Giving netherite a higher tier would be the
+# tooltip promising a difference the mechanics do not deliver.
+rarity: uncommon
+
+flavor:
+  - "Salvaged from something that did not survive the fall."
+
+pieces:
+  head:
+    material: netherite_helmet
+    display_name: "Netherite Helmet"
+    defense: 3
+  chest:
+    material: netherite_chestplate
+    display_name: "Netherite Chestplate"
+    defense: 8
+  legs:
+    material: netherite_leggings
+    display_name: "Netherite Leggings"
+    defense: 6
+  feet:
+    material: netherite_boots
+    display_name: "Netherite Boots"
+    defense: 3

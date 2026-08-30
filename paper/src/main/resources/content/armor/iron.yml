@@ -1,0 +1,29 @@
+# Iron armor -- the middle of the starter band.
+#
+# See diamond.yml for the file shape and for why 'defense:' is DISPLAY-ONLY.
+
+# Common. The four starter tiers (leather, chainmail, iron, golden) all sit here: they are what a
+# player has before they have anything, and a rarity tier that everything starts with is not a
+# distinction worth colouring differently. RarityColors maps COMMON to WHITE.
+rarity: common
+
+flavor:
+  - "Honest plate. It has no opinion about who wears it."
+
+pieces:
+  head:
+    material: iron_helmet
+    display_name: "Iron Helmet"
+    defense: 2
+  chest:
+    material: iron_chestplate
+    display_name: "Iron Chestplate"
+    defense: 6
+  legs:
+    material: iron_leggings
+    display_name: "Iron Leggings"
+    defense: 5
+  feet:
+    material: iron_boots
+    display_name: "Iron Boots"
+    defense: 2

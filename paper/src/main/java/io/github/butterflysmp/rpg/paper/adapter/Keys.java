@@ -25,6 +25,18 @@ public final class Keys {
      * "which of the two is this" and get an unambiguous answer.
      */
     public final NamespacedKey shieldId;
+
+    /**
+     * A minted armor piece's id (a STRING), the third gear tag beside {@link #weaponId} and
+     * {@link #shieldId}. An item is one of our armor pieces IFF it carries this.
+     *
+     * <p>Unlike the other two, this tag governs DISPLAY AND IDENTITY ONLY. A plain vanilla diamond
+     * chestplate already contributes its full Defense -- {@code DefenseModifierItems} sources the
+     * stat from the material's own vanilla armor points and never looks for a tag. So an untagged
+     * piece is not "left alone" the way an untagged shield is; it works completely, and this key
+     * adds rarity, lore and an enchant container on top rather than switching mitigation on.
+     */
+    public final NamespacedKey armorId;
     public final NamespacedKey abilityId;
 
     /** Identity of the attack-damage modifier that cancels a weapon's vanilla melee. */
@@ -120,6 +132,7 @@ public final class Keys {
     public Keys(Plugin plugin) {
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
         this.shieldId = new NamespacedKey(plugin, "shield_id");
+        this.armorId = new NamespacedKey(plugin, "armor_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
         this.meleeSuppressor = new NamespacedKey(plugin, "vanilla_melee_suppressor");
         this.soaked = new NamespacedKey(plugin, "soaked_slow");

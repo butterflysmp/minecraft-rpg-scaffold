@@ -1,0 +1,30 @@
+# Golden armor.
+#
+# See diamond.yml for the file shape and for why 'defense:' is DISPLAY-ONLY.
+#
+# The MATERIAL TOKEN IS 'golden_', not 'gold_'. Minecraft's item ids say golden_helmet while the
+# block and ingot say gold. Getting this wrong does not crash: ArmorItems.materialOf falls back to
+# the leather item for the slot, so the tier would quietly mint as leather with a golden name.
+# ArmorConsistency is what catches it, by reporting a material that does not resolve.
+rarity: common
+
+flavor:
+  - "It buys goodwill from things that cannot spend it."
+
+pieces:
+  head:
+    material: golden_helmet
+    display_name: "Golden Helmet"
+    defense: 2
+  chest:
+    material: golden_chestplate
+    display_name: "Golden Chestplate"
+    defense: 5
+  legs:
+    material: golden_leggings
+    display_name: "Golden Leggings"
+    defense: 3
+  feet:
+    material: golden_boots
+    display_name: "Golden Boots"
+    defense: 1
