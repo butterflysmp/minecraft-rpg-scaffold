@@ -184,7 +184,7 @@ check. There is deliberately no `EnchantCurveTest`: a mutation already reddens t
 
 ---
 
-## Boot gate -- ROW 1 RUN AND PASSED; ROWS 2-9 OWED BY A HUMAN
+## Boot gate -- RUN AND PASSED IN FULL, all nine rows
 
 `./scripts/dev-server.sh --refresh-content`.
 
@@ -236,6 +236,38 @@ moves the hit the player takes but must NOT move the reflect, so the row is "III
 | 7 | a reflect that kills | blocker gets the kill, drops, XP and both statistics |
 | 8 | `/rpg durability set 334`, block twice | after the break: **no reflect**, and the full 15.0 lands |
 | 9 | watch the mob on each reflect | it **flashes red**, with no vanilla hurt sound |
+
+### GATE RESULT — RUN AND PASSED IN FULL
+
+**Rows 2-9 reported passing by the operator at the keyboard, 2026-08-30.** Row 1 was the machine's
+(`Loaded … 6 enchants … 1 shields`, `Done (5.096s)`, zero skipped, zero id-collision warnings).
+
+So the whole of Slice 2b is witnessed: the reflect fires out of the mob→player rider and is credited
+to the blocker, it is independent of Bulwark, it falls off the same predicate as the reduction, a
+lethal reflect pays out, and the shield's new stat line reads as intended in the new colour.
+
+**Recorded at the granularity it was reported, which is coarser than the rows are written.** Slice 1
+set this precedent and it is worth keeping: *"THE EXACT HP FIGURE WAS NOT CAPTURED into this record,
+so the row is logged as operator-observed rather than measured."* The same applies here — the
+per-row figures were not captured into this file, so what stands recorded is **"the operator ran
+these rows and they passed"**, not the numbers themselves.
+
+**The one row where that distinction has teeth is row 4.** Its whole purpose is that the popup reads
+**2 / 3 / 5** rather than the rejected off-pass-through **1 / 2 / 3**, and those differ by one at
+level I. A pass reported without the figures cannot, by itself, separate:
+
+- the shipped reading, from
+- the rejected one at level III (5 versus 3 — far apart, so a glance settles it), from
+- the rejected one at level I (2 versus 1 — one apart, and easy to misread).
+
+The row also carries two confounds the table names: it must be run with **Thorns alone, no Bulwark**
+(a swapped effect argument in `resolve` is invisible to every unit test and presents as a plausible
+ladder), and **without swinging while blocking** (a mob→player hit paints no popup, so during a pure
+block the reflect is the only number over the mob — any other is your own melee).
+
+If the III reading was the one observed, this is settled and the distinction is academic. It is
+written down so that a future reader knows what this record does and does not carry, rather than
+discovering later that a green row rested on a glance.
 
 **Two confounds the gate must control.** Run row 4 with **Thorns ALONE, no Bulwark** — swapping the
 two `percentFor` effect arguments inside `resolve` is invisible to every unit test and presents as a
