@@ -581,6 +581,139 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Armor, Slice 1 (mintable pieces that source Defense) — what it created or exposed
+
+- **BOOT GATE OWED.** Eleven rows, in `PLAN-armor-slice-1.md`. Rows 5-7 are the ones that matter:
+  they re-take the Defense pass's own numbers (`⛨` 3 -> 11 -> 17 -> 20, ~83 off `/rpg damage 100`,
+  a bar ~1/6 full) on MINTED diamond rather than vanilla diamond. That is the slice's whole claim
+  witnessed instead of asserted.
+
+- **THE DEFENSE SOURCE DID NOT CHANGE, AND COULD NOT HAVE.** `DefenseModifierItems.armorOf` reads
+  `ItemType.getDefaultAttributeModifiers(slot)` -- the MATERIAL's vanilla points, blind to anything
+  on the ItemStack. Since a minted piece's Defense mirrors exactly those points, a minted diamond
+  helmet and a plain one contribute the identical 3 through the identical code path. That file's own
+  javadoc predicted this slice ("when it lands, this is the one method that has to learn about it");
+  the answer is that it does not have to yet. It learns in Slice 2, when Protection diverges the two.
+
+  Verified by diff, not by argument: twelve files are byte-identical to `59400c0` -- `WeaponItems`,
+  `ShieldItems`, `WeaponLore`, `ShieldLore`, `WeaponDefinition`, `ShieldDefinition`, `Defense`,
+  `DefenseModifierItems`, `ArmorBarOverride`, `PlayerHealthSystem`, `CombatantStats`, `EnchantMenu`.
+
+- **ONE MAP STILL SERVES TWO JOBS, AND SLICE 2 MUST SPLIT IT.** `PlayerHealthSystem:181-184` feeds
+  `DefenseModifierItems.desiredModifiers(player)` to BOTH `reconcileDefenseModifiers` (the stat) and
+  `total(...)` (the `nativeArmor` the bar cancels). Sound only while a piece's Defense equals its
+  material's vanilla points. `Defense.barModifier`'s javadoc guards the OTHER half of this -- never
+  read the live attribute, which the code already does correctly -- and says nothing about this one.
+  **Protection (+3/6/9) breaks it by design, so splitting these two reads is Slice 2's first task.**
+
+- **`defense:` in content is DISPLAY-ONLY, and `ArmorConsistency` is what keeps that honest.** The
+  authored number feeds the tooltip; vanilla feeds the stat, the mitigation and the bar. Nothing
+  makes them agree, and a mismatch is invisible from every vantage point: the tooltip reads
+  "Defense: 9" and looks right, the action bar reads 8 and looks right, the bar fills to the DR of 8
+  and looks right, the damage matches 8 and looks right. `core` cannot reach an `ItemType` registry
+  and `paper` has no live server in the unit loop, so boot is the ONLY moment the two numbers share a
+  JVM. Hence a boot check rather than a test.
+
+  It also warns on ZERO pieces, and that branch is the load-bearing one: if `content/armor` loads
+  empty, Defense keeps working (it is sourced from vanilla, not from a tag), so every other signal
+  reads healthy and a silent "0 mismatches" would be the strongest-looking evidence that nothing is
+  wrong. Mutation-tested: made to return 0 silently, two tests redden.
+
+- **`ArmorSlot`'s constant names are a WIRE FORMAT, not a naming choice.** `DefenseModifierItems`
+  keys its desired map by `EquipmentSlot.name()` and `ModifierReconciler` matches sources by that
+  string; `ArmorConsistency` does `EquipmentSlot.valueOf(slot.name())`. Renaming `HEAD` to `HELMET`
+  reads better and compiles everywhere. `ArmorSlotTest` restates the four Bukkit tokens as literals
+  -- core cannot import `EquipmentSlot`, which is why the enum exists at all -- and the mutation
+  reddened three tests. It also exposed a second consequence nobody had listed: `fromName("helmet")`
+  starts resolving, so the rename would silently change content parsing too.
+
+- **`HIDE_ATTRIBUTES` is display-only, and STRIPPING the modifiers instead is the quiet way to break
+  the bar.** The piece must keep granting its vanilla armor, because that sum is `barModifier`'s
+  input. `armorOf` reads the MATERIAL's defaults, not the stack's, so `setAttributeModifiers(empty)`
+  would leave it reporting 20 for a full diamond set while the live attribute is 0: bar off by the
+  whole set, Defense stat still right, nothing failing. Recorded in `ArmorItems`' javadoc.
+  `ShieldItems` argues AGAINST the flag ("nothing to hide"); armor is the opposite case, and the
+  second line it hides -- Armor Toughness -- advertises a stat this project does not implement.
+  **Boot rows 4 and 7 must be read together**: neither alone tells "flag missing" from "modifiers
+  stripped".
+
+- **One file, four definitions -- armor's deliberate divergence from every other loader.** Rarity and
+  flavour are per-tier properties; 24 files repeating them would put one fact in four places. Ids come
+  from each piece's `material` token, NOT the filename, and that is what keeps leather correct:
+  vanilla's leather pieces are **Cap, Tunic, Pants, Boots** against materials named `leather_helmet`
+  and friends, so a name-derived id would have produced `leather_cap` for a `leather_helmet`.
+  `display_name` is authored per piece for the same reason. Their footers still read "Common Helmet"
+  -- the footer says what KIND of gear an item is, the job "Rare Melee Weapon" does on a weapon.
+
+  `parseTier` walks the SLOT AXIS, not the file's keys, so a missing slot is a named refusal and a
+  typo'd `foot:` is never read. A bad tier is refused WHOLE, and the warning says it took four pieces
+  with it -- a roster four short does not look broken in-game, it looks like a tier nobody authored.
+
+- **Armor is enchant-COMPATIBLE, not enchant-ROLLED -- the same line shields drew in their Slice 1.**
+  `EnchantRoll` is keyed on `GearClass`, which has no `ARMOR` constant. Adding one is a compile error
+  in `GearClassLabel`'s two exhaustive switches and in `GearClassTest`'s axis enumeration, BY DESIGN,
+  because it forces the decision about whether armor is one class or four. `HeldGear.gearClass()`
+  returns null for armor and every caller gates on `isArmor()`; `/rpg enchant show` refuses armor
+  rather than passing null into `EnchantEffectLine`'s no-default-arm switch. **Do not "fix" that by
+  handing it SHIELD** -- a helmet would become eligible for Bulwark and Thorns.
+
+- **`EnchantMenu` was left untouched on purpose**, against a plan that proposed a third `PlacedGear`
+  arm. `acceptsInput` already refuses armor at the door with an accurate message and both
+  `resolveGear` callers null-guard. The table is the roll/unlock UI and armor is not rolled here, so
+  an armor arm would be an arm that immediately refuses -- and would make `gearClass()` nullable in a
+  second place.
+
+- **NETHERITE IS NOT A HIGHER TIER THAN DIAMOND**, and that is a decision rather than an oversight.
+  Vanilla gives them identical armor points; what netherite adds is armor toughness and knockback
+  resistance, neither of which this project models. Rarity says what gear is worth HERE, so ranking
+  netherite above diamond would be the tooltip promising a difference the mechanics do not deliver.
+
+- **A mutation reported nothing and it was NOT a pass.** `./mvnw -pl paper test-compile` exited 1
+  with *"Could not collect dependencies ... rpg-parent:pom ... was not found"* -- a reactor
+  resolution failure, not a compile error, and the `grep 'error:'` used to read it matched none of
+  it. The test never ran and the empty output read exactly like green. **Paper-only runs need `-am`,
+  and the surefire property is `-Dsurefire.failIfNoSpecifiedTests=false`, not the bare
+  `-DfailIfNoSpecifiedTests`** (which surefire 3.5.2 ignores, then aborts in rpg-core with "No tests
+  matching pattern"). Every mutation verdict in the plan doc was re-taken from the REPORT FILE.
+
+- **THE GEAR EXTRACTION IS NOW OWED, AND IT IS THE NEXT PR, NOT A SOMEDAY.** Armor is the third shape
+  -- `WeaponDefinition`/`ShieldDefinition`/`ArmorDefinition`, `WeaponItems`/`ShieldItems`/`ArmorItems`,
+  `WeaponLore`/`ShieldLore`/`ArmorLore` -- which is the trigger this file, all three shield plans and
+  the Slice-1 squash commit all name. The third copy is transient BY DESIGN; leaving it is drift.
+  Single gate for that PR: **minted weapon, shield and armor byte-identical before and after.** It
+  should also fold the whole-number trimmer (now FOUR copies: `WeaponLore.number`,
+  `WeaponLoreLines.trimNumber`, `ShieldLoreLines.trimNumber`, `ArmorLoreLines.trimNumber`) and
+  `ArmorConsistency`'s duplicated vanilla-armor read, which repeats `armorOf`'s `ADD_NUMBER` sum
+  solely so this slice could leave `DefenseModifierItems` byte-identical.
+
+- **Deferred with armor, each a decision rather than an omission:**
+  - **Turtle helmet.** A HEAD-only seventh tier that breaks the 6x4 grid the per-tier loader is built
+    on, and it grants Water Breathing -- a vanilla status effect this project does not model, so
+    minting it forces an out-of-scope call about whether the effect survives. Waiting on
+    status-effects-on-gear (`DESIGN-status-effects.md`), a named dependency.
+  - **Armor durability is vanilla's, untouched.** Weapons and shields own their wear; armor does not.
+    And because mob melee is tokened to `0.01`, minted armor will barely wear at all.
+  - **No `ArmorRefresher`.** Armor lore will not rebuild from content on rejoin. `ShieldRefresher` is
+    still missing for the same reason; the extraction PR is the place to fix both at once.
+  - **No `ContentValidator.validateArmor`.** Shields have none either.
+  - **UNTAGGED VANILLA ARMOR STILL SOURCES DEFENSE, and always did.** Unlike a vanilla shield, which
+    gives zero custom protection, a plain diamond chestplate works fully. Minting adds rarity, lore
+    and an enchant container -- NOT mitigation. Said plainly so nobody later reads it as a bug.
+  - **Non-tokened damage** (fall, fire, explosions, projectiles) never reaches custom HP -- no
+    handler exists -- and `ArmorBarOverride` has already driven the vanilla `armor` attribute down to
+    the DR value, so vanilla's own mitigation of those is computed against ~3.33 rather than 20.
+    **Pre-existing from the Defense pass, not introduced here**, and it lands on vanilla health that
+    `HeartBarRenderer` overwrites from custom HP.
+
+- **Max Mana is NOT a reconciled stat, and Slice 2's Mana Bank is a real slice because of it.**
+  `ResourcePool.max` is a single `final double` shared by every player, with no `ModifierTarget`, no
+  `reconcileManaModifiers`, no scanner and no per-player state -- unlike `HealthState.max`, which has
+  all four. Making it one needs a max-decrease clamp decision that `ResourcePool` currently gets for
+  free from `Math.min` only because max never moves, and `ResourcePool.current` returns `max()` for
+  an unseen owner, which reads a GLOBAL max today. **Verify this before planning Slice 2** rather
+  than assuming Growth and Mana Bank are symmetric.
+
+
 ### Shields, Slice 2b (Thorns, the reflect) — what it created or exposed
 
 - **BOOT GATE RUN AND PASSED IN FULL, 2026-08-30.** Row 1 from the boot log; rows 2-9 by the
