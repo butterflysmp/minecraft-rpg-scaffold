@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code DamageEnchantItems} has no such overload and is boot-witnessed entirely, so this is the
  * first coverage the effect-scan pattern has ever had.
  */
-class BlockEnchantItemsTest {
+class EnchantValuesTest {
 
     private static final double EPS = 1e-9;
 
@@ -56,18 +56,18 @@ class BlockEnchantItemsTest {
     void anUnenchantedShieldContributesExactlyZero() {
         // THE branch every shield in the game takes, and zero has to be an exact identity because
         // Bulwark.effectiveDr(dr, 0) is what an unenchanted block composes through.
-        assertEquals(0.0, BlockEnchantItems.percentFor(
+        assertEquals(0.0, EnchantValues.totalFor(
                 EnchantState.empty(), registry(bulwark()), EnchantEffect.BLOCK_DR));
     }
 
     @Test
     void theLevelReachesTheCurveRatherThanTheTopOfIt() {
         EnchantRegistry enchants = registry(bulwark());
-        assertEquals(5.0, BlockEnchantItems.percentFor(
+        assertEquals(5.0, EnchantValues.totalFor(
                 activeAt("bulwark", 1), enchants, EnchantEffect.BLOCK_DR), EPS);
-        assertEquals(10.0, BlockEnchantItems.percentFor(
+        assertEquals(10.0, EnchantValues.totalFor(
                 activeAt("bulwark", 2), enchants, EnchantEffect.BLOCK_DR), EPS);
-        assertEquals(15.0, BlockEnchantItems.percentFor(
+        assertEquals(15.0, EnchantValues.totalFor(
                 activeAt("bulwark", 3), enchants, EnchantEffect.BLOCK_DR), EPS);
     }
 
@@ -76,7 +76,7 @@ class BlockEnchantItemsTest {
         // Rolled but unpaid-for. The candidate is on the item and renders in the table; it must not
         // block anything until the player buys it.
         EnchantState rolled = EnchantState.empty().addCandidate(0, "bulwark");
-        assertEquals(0.0, BlockEnchantItems.percentFor(
+        assertEquals(0.0, EnchantValues.totalFor(
                 rolled, registry(bulwark()), EnchantEffect.BLOCK_DR));
     }
 
@@ -85,12 +85,12 @@ class BlockEnchantItemsTest {
         // Unbreaking on a shield is the combination Slice 1 shipped working. It must contribute
         // NOTHING to the block, and the filter is effect() -- not "it has no curve", which would be
         // a different rule that happens to agree today.
-        assertEquals(0.0, BlockEnchantItems.percentFor(
+        assertEquals(0.0, EnchantValues.totalFor(
                 activeAt("unbreaking", 3), registry(unbreaking()), EnchantEffect.BLOCK_DR));
 
         // And the effect asked for is genuinely the discriminator: ask for DURABILITY and the same
         // state still yields 0, because Unbreaking's curve is Java and its percent list is empty.
-        assertEquals(0.0, BlockEnchantItems.percentFor(
+        assertEquals(0.0, EnchantValues.totalFor(
                 activeAt("unbreaking", 3), registry(unbreaking()), EnchantEffect.DURABILITY));
     }
 
@@ -99,9 +99,9 @@ class BlockEnchantItemsTest {
         // Reachable: the loader fail-softs a malformed file and the item's blob still names it, and
         // EnchantLore deliberately still RENDERS it. So the tooltip can promise Bulwark while the
         // registry has never heard of it -- and the block must fail toward granting nothing.
-        assertEquals(0.0, BlockEnchantItems.percentFor(
+        assertEquals(0.0, EnchantValues.totalFor(
                 activeAt("bulwark", 3), registry(unbreaking()), EnchantEffect.BLOCK_DR));
-        assertEquals(0.0, BlockEnchantItems.percentFor(
+        assertEquals(0.0, EnchantValues.totalFor(
                 activeAt("bulwark", 3), new EnchantRegistry(), EnchantEffect.BLOCK_DR));
     }
 
@@ -117,7 +117,7 @@ class BlockEnchantItemsTest {
                 .addCandidate(0, "bulwark").withLevel(0, 0, 1).withActive(0, 0)
                 .addCandidate(1, "bulwark").withLevel(1, 0, 3).withActive(1, 0);
 
-        assertEquals(15.0, BlockEnchantItems.percentFor(
+        assertEquals(15.0, EnchantValues.totalFor(
                 both, registry(bulwark()), EnchantEffect.BLOCK_DR), EPS,
                 "a duplicate id must resolve to the higher level, never 5 + 15");
     }
@@ -135,7 +135,7 @@ class BlockEnchantItemsTest {
                 .addCandidate(0, "bulwark").withLevel(0, 0, 3).withActive(0, 0)
                 .addCandidate(1, "aegis").withLevel(1, 0, 2).withActive(1, 0);
 
-        assertEquals(19.0, BlockEnchantItems.percentFor(
+        assertEquals(19.0, EnchantValues.totalFor(
                 both, registry(bulwark(), aegis), EnchantEffect.BLOCK_DR), EPS,
                 "15 from Bulwark III plus 4 from Aegis II");
     }
@@ -163,40 +163,40 @@ class BlockEnchantItemsTest {
                 .addCandidate(0, "bulwark").withLevel(0, 0, 3).withActive(0, 0)
                 .addCandidate(1, "thorns").withLevel(1, 0, 3).withActive(1, 0);
 
-        assertEquals(15.0, BlockEnchantItems.percentFor(both, enchants, EnchantEffect.BLOCK_DR), EPS,
+        assertEquals(15.0, EnchantValues.totalFor(both, enchants, EnchantEffect.BLOCK_DR), EPS,
                 "the block read picked up the reflect's 30 -- 45.0 means the effect filter is gone");
-        assertEquals(30.0, BlockEnchantItems.percentFor(both, enchants, EnchantEffect.REFLECT), EPS,
+        assertEquals(30.0, EnchantValues.totalFor(both, enchants, EnchantEffect.REFLECT), EPS,
                 "the reflect read picked up the block's 15 -- 45.0 means the effect filter is gone");
 
         // Neither is the sum, stated separately so the failure message is unambiguous if it ever is.
-        assertNotEquals(45.0, BlockEnchantItems.percentFor(both, enchants, EnchantEffect.BLOCK_DR), EPS);
-        assertNotEquals(45.0, BlockEnchantItems.percentFor(both, enchants, EnchantEffect.REFLECT), EPS);
+        assertNotEquals(45.0, EnchantValues.totalFor(both, enchants, EnchantEffect.BLOCK_DR), EPS);
+        assertNotEquals(45.0, EnchantValues.totalFor(both, enchants, EnchantEffect.REFLECT), EPS);
     }
 
     @Test
     void theReflectLadderIsReadOffTheSameScan() {
         EnchantRegistry enchants = registry(thorns());
-        assertEquals(10.0, BlockEnchantItems.percentFor(
+        assertEquals(10.0, EnchantValues.totalFor(
                 activeAt("thorns", 1), enchants, EnchantEffect.REFLECT), EPS);
-        assertEquals(20.0, BlockEnchantItems.percentFor(
+        assertEquals(20.0, EnchantValues.totalFor(
                 activeAt("thorns", 2), enchants, EnchantEffect.REFLECT), EPS);
-        assertEquals(30.0, BlockEnchantItems.percentFor(
+        assertEquals(30.0, EnchantValues.totalFor(
                 activeAt("thorns", 3), enchants, EnchantEffect.REFLECT), EPS);
 
         // And a shield carrying ONLY Thorns contributes nothing to the block, which is what keeps
         // the two enchants independently tunable all the way down to the read.
-        assertEquals(0.0, BlockEnchantItems.percentFor(
+        assertEquals(0.0, EnchantValues.totalFor(
                 activeAt("thorns", 3), enchants, EnchantEffect.BLOCK_DR));
     }
 
     @Test
     void nullsAreTotalRatherThanThrowingFromInsideABlock() {
         // This runs inside the mob->player damage rider. An exception there loses the whole hit.
-        assertEquals(0.0, BlockEnchantItems.percentFor(
+        assertEquals(0.0, EnchantValues.totalFor(
                 null, registry(bulwark()), EnchantEffect.BLOCK_DR));
-        assertEquals(0.0, BlockEnchantItems.percentFor(
+        assertEquals(0.0, EnchantValues.totalFor(
                 activeAt("bulwark", 3), null, EnchantEffect.BLOCK_DR));
-        assertEquals(0.0, BlockEnchantItems.percentFor(
+        assertEquals(0.0, EnchantValues.totalFor(
                 activeAt("bulwark", 3), registry(bulwark()), null));
     }
 }

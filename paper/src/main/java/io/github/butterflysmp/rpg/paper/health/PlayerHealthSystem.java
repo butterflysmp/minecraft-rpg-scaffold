@@ -181,7 +181,7 @@ public final class PlayerHealthSystem implements HealthListener {
             // cancels what the vanilla attribute actually HOLDS. They are equal today and will not
             // be once an enchant can add Defense, which is why they are read and passed separately
             // rather than one sum serving both -- see DefenseModifierItems.
-            DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player);
+            DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player, keys, enchants);
             stats.reconcileDefenseModifiers(id, worn.defense());
             ArmorBarOverride.apply(player, keys, stats.defenseValue(id), worn.nativeArmor());
             return true;

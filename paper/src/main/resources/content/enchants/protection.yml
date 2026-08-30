@@ -1,0 +1,38 @@
+# The first ARMOR enchant, and the first enchant of any kind whose curve is not a percentage.
+#
+# `effect: defense` names core/enchant/Protection.java the way `block_dr` names Bulwark. The
+# mechanism is Java, the curve is here, and the loader REFUSES this effect on anything but armor.
+#
+# WHAT THE NUMBERS DO. Protection is ADDITIVE in armor POINTS, per piece, and the four pieces are
+# summed by the reconcile loop into one Defense stat. Executed against the real Defense curve rather
+# than worked out by hand:
+#
+#   full diamond, plain      20 points  ->  16.666666666666666% reduction
+#   Protection III, all four 56 points  ->  35.8974358974359%   reduction
+#
+# So a fully-enchanted set roughly doubles your mitigation and still does not halve a hit. That is
+# the intended ceiling: the per-piece value is the balance lever, not the stacking.
+#
+# WHY POINTS AND NOT A PERCENT. Defense is a SUMMAND -- HealthState records that armor points add
+# correctly across four slots (a helmet and boots are 3 + 3) where damage-reduction fractions do not
+# (two 50% sources are not 100%). Authoring a percent would mean four fractions that cannot be
+# composed, and the stat would have to stop being linear to accept them. It is also why this file's
+# key is `value_by_level` rather than `percent_by_level`: nothing here divides by 100.
+#
+# WHY THERE IS NO CLAMP, unlike Bulwark. A shield authored at block_dr 0.9 plus Bulwark III is 1.05,
+# which clamps to 1.0 and passes a 15.0 hit as 0.0 -- total immunity, reachable. Defense cannot do
+# that at any value: Defense.applyDefense is asymptotic, so even +1e9 leaves a hit landing.
+# ProtectionTest pins that rather than trusting it.
+#
+# `class: universal` WOULD BE THE DANGEROUS TYPO, and the loader refuses it -- exactly as it does for
+# Bulwark. A universal Protection would enter every WEAPON's roll pool and sell a player an XP
+# unlock that does nothing at all, because the defense scan only ever looks at the four armor slots.
+# `class: melee` is refused too, for the milder version of the same reason.
+display_name: "Protection"
+# Cosmetic, and it DEFAULTS to enchanted_book when absent, so it is never a reason a working enchant
+# fails to load. Do not make it required.
+icon: diamond_chestplate
+max_level: 3
+effect: defense
+class: armor
+value_by_level: [3, 6, 9]

@@ -1,6 +1,12 @@
 package io.github.butterflysmp.rpg.paper.health;
 
 import com.google.common.collect.Multimap;
+import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
+import io.github.butterflysmp.rpg.core.enchant.Protection;
+import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
+import io.github.butterflysmp.rpg.paper.weapon.EnchantItems;
+import io.github.butterflysmp.rpg.paper.weapon.EnchantValues;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
@@ -95,11 +101,11 @@ public final class DefenseModifierItems {
     /**
      * Read both numbers off the player's worn armor in one pass.
      *
-     * <p>The two are equal today -- nothing yet adds Defense to a piece beyond its material's own
-     * points -- and they are computed and returned separately anyway, because the caller must not be
-     * able to reach for the wrong one once they diverge.
+     * <p>They DIVERGE as of Armor Slice 2a: Protection adds to the first and not the second, because
+     * an enchant of ours writes nothing onto the vanilla armor attribute. A Protection III diamond
+     * chestplate contributes 17 to the stat and 8 to the native sum.
      */
-    public static Worn scan(Player player) {
+    public static Worn scan(Player player, Keys keys, EnchantRegistry enchants) {
         Map<String, Double> defense = new HashMap<>();
         double nativeArmor = 0.0;
 
@@ -107,10 +113,20 @@ public final class DefenseModifierItems {
         if (equipment == null) return new Worn(defense, nativeArmor);
 
         for (EquipmentSlot slot : ARMOR_SLOTS) {
-            double vanilla = armorOf(equipment.getItem(slot), slot);
+            ItemStack piece = equipment.getItem(slot);
+
+            // The material's own points. This -- and ONLY this -- is what the vanilla attribute
+            // holds, so it is what the bar has to cancel.
+            double vanilla = armorOf(piece, slot);
             nativeArmor += vanilla;
 
-            double contributed = vanilla;
+            // Plus whatever this piece's own Protection grants. ONE decode per slot, the hoist
+            // ShieldBlock.resolve already models, and the reason the enchant registry is a
+            // parameter rather than something read per-enchant.
+            double bonus = EnchantValues.totalFor(
+                    EnchantItems.read(piece, keys), enchants, EnchantEffect.DEFENSE);
+
+            double contributed = Protection.effectiveDefense(vanilla, bonus);
             if (contributed > 0) defense.put(slot.name(), contributed);
         }
         return new Worn(defense, nativeArmor);

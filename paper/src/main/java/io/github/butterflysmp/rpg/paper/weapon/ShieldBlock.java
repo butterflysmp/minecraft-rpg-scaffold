@@ -164,10 +164,10 @@ public final class ShieldBlock {
         //
         // ONE EnchantItems.read, not two. This runs on every blocked hit and the read parses the
         // PDC string, so the state is hoisted and the effect-scan runs over it twice -- which is
-        // exactly what BlockEnchantItems' state overload was extracted for in Slice 2a.
+        // exactly what EnchantValues' state overload was extracted for in Slice 2a.
         EnchantState state = EnchantItems.read(stack, keys);
-        double bulwark = BlockEnchantItems.percentFor(state, enchants, EnchantEffect.BLOCK_DR);
-        double thorns = BlockEnchantItems.percentFor(state, enchants, EnchantEffect.REFLECT);
+        double bulwark = EnchantValues.totalFor(state, enchants, EnchantEffect.BLOCK_DR);
+        double thorns = EnchantValues.totalFor(state, enchants, EnchantEffect.REFLECT);
 
         // The DR is the EFFECTIVE fraction -- Bulwark composed and clamped -- which is why that
         // component is not called blockDr: a name still saying "the shield's own DR" while carrying

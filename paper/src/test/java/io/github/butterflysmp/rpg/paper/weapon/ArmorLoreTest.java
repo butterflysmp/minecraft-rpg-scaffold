@@ -93,6 +93,33 @@ class ArmorLoreTest {
         // -> reddens.
     }
 
+    @Test
+    void theDefenseLineShowsTheEffectiveValueOnceProtectionIsOnThePiece() {
+        // The lore must not disagree with the stat. A Protection III diamond chestplate contributes
+        // 17 to Defense, so its own tooltip must say 17 -- not the material's bare 8.
+        ArmorDefinition chest = armor(Rarity.UNCOMMON, ArmorSlot.CHEST, 8, List.of());
+        assertEquals("Defense: 8", plain(ArmorLore.build(chest).get(0)), "unenchanted is unchanged");
+        assertEquals("Defense: 11", plain(ArmorLore.build(chest, 3).get(0)), "Protection I");
+        assertEquals("Defense: 14", plain(ArmorLore.build(chest, 6).get(0)), "Protection II");
+        assertEquals("Defense: 17", plain(ArmorLore.build(chest, 9).get(0)), "Protection III");
+        // Mutation: have the overload ignore protectionPoints -> every level reads 8 -> reddens.
+    }
+
+    @Test
+    void theUnenchantedOverloadIsAnExactIdentitySoTheGoldenCannotMove() {
+        // build(armor) delegates to build(armor, Protection.NONE). If that were not an exact
+        // identity, adding the overload would have moved every shipped armor tooltip -- and the
+        // golden dump is what would have caught it. Asserted here too, so the reason is stated
+        // rather than only observed.
+        for (ArmorSlot slot : ArmorSlot.values()) {
+            ArmorDefinition piece = armor(Rarity.COMMON, slot, 5, List.of("f"));
+            assertEquals(plain(ArmorLore.build(piece).get(0)),
+                    plain(ArmorLore.build(piece, 0).get(0)),
+                    "the one-arg overload must equal a zero bonus, at " + slot);
+        }
+        // Mutation: make build(armor) pass anything but NONE -> reddens here AND in the golden.
+    }
+
     // --- The footer -----------------------------------------------------------------------------
 
     @Test

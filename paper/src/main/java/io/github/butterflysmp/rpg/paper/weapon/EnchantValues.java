@@ -8,12 +8,21 @@ import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
 
 /**
- * Reading a shield's enchant percentages off the BLOCKING STACK. The Bukkit half only.
+ * Summing what an item's active enchants grant for ONE effect, off an already-decoded state.
  *
- * <p>The shield analogue of {@link DamageEnchantItems}, and deliberately the same shape: walk
- * {@code EnchantState.effective()}, resolve each id in the registry, keep the ones binding the
- * mechanism asked for, and sum their curve values. The arithmetic that matters is in
- * {@code core/enchant/Bulwark}.
+ * <p>Walk {@code EnchantState.effective()}, resolve each id in the registry, keep the ones binding
+ * the mechanism asked for, and sum their curve values. The arithmetic that matters lives in the
+ * mechanism class -- {@code Bulwark}, {@code Thorns}, {@code Protection}, {@code Growth}.
+ *
+ * <p><b>WAS {@code BlockEnchantItems}, and the name was wrong before it was misleading.</b> It has
+ * been parameterized by {@code EnchantEffect} since Slice 2b -- it never knew anything about
+ * blocking -- and Armor Slice 2a made it read DEFENSE off worn pieces, at which point "Block" named
+ * one caller rather than the class. The alternative was a second copy of this loop for armor, which
+ * is the one thing this project will not duplicate: structure yes, logic never.
+ *
+ * <p>{@code totalFor} rather than {@code percentFor} for the same reason {@code value_by_level}
+ * replaced {@code percent_by_level}: Protection and Growth grant flat POINTS, and nothing here
+ * divides. What the number means stays the mechanism's business.
  *
  * <p><b>Unlike {@code DamageEnchantItems}, this one IS unit-tested.</b> That sibling is
  * boot-witnessed entirely because every entry point it has needs a live {@code Player}. Keeping the
@@ -51,9 +60,9 @@ import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
  * BLOCK_DR for Bulwark, REFLECT for Thorns. The effect is a parameter rather than this class
  * answering for every mechanism at once, so a caller that wants only one pays for only one pass.
  */
-public final class BlockEnchantItems {
+public final class EnchantValues {
 
-    private BlockEnchantItems() {}
+    private EnchantValues() {}
 
     /**
      * The summed percentage a piece of gear's ACTIVE enchants contribute for {@code effect}, or
@@ -78,7 +87,7 @@ public final class BlockEnchantItems {
      * server -- unlike its sibling {@code DamageEnchantItems}, whose every entry point needs a live
      * {@code Player} and which is therefore boot-witnessed entirely.
      */
-    public static double percentFor(EnchantState state, EnchantRegistry enchants,
+    public static double totalFor(EnchantState state, EnchantRegistry enchants,
                                     EnchantEffect effect) {
         if (state == null || enchants == null || effect == null) return 0.0;
 

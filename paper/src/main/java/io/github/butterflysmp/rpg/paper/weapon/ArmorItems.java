@@ -1,11 +1,13 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorSlot;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
@@ -14,6 +16,7 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -121,8 +124,13 @@ public final class ArmorItems {
      */
     private static void applyLore(ItemMeta meta, ArmorDefinition armor, AdapterContext adapters) {
         EnchantState state = EnchantItems.read(meta, adapters.keys());
-        meta.lore(EnchantLore.applied(ArmorLore.build(armor),
-                EnchantLore.lines(state, adapters.enchants())));
+        // The tooltip shows the EFFECTIVE Defense, composed from the same state the enchant block
+        // below is rendered from -- so the "Defense: 17" line and the "Protection III" line beneath
+        // it can never disagree, and neither can disagree with the reconcile scan, which composes
+        // through the same Protection.effectiveDefense.
+        List<Component> base = ArmorLore.build(armor,
+                EnchantValues.totalFor(state, adapters.enchants(), EnchantEffect.DEFENSE));
+        meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
         meta.setEnchantmentGlintOverride(!state.effective().isEmpty());
     }
 

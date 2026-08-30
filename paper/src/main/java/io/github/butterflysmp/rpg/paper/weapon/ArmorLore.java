@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.enchant.Protection;
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorLoreLines;
 import net.kyori.adventure.text.Component;
@@ -49,6 +50,25 @@ public final class ArmorLore {
      * nothing above it to be separated from.
      */
     public static List<Component> build(ArmorDefinition armor) {
+        return build(armor, Protection.NONE);
+    }
+
+    /**
+     * The same tooltip, showing the EFFECTIVE Defense after this piece's own {@code protectionPoints}
+     * are added.
+     *
+     * <p><b>The lore must not disagree with the stat.</b> Once Protection composes onto a piece's
+     * Defense in the reconcile scan, a tooltip rendering the material's bare 8 while the piece
+     * actually contributes 17 is a display contradicting truth -- the defect this project keeps a
+     * whole invariant about. It is also what lets the boot gate read the expected number off the
+     * screen BEFORE taking a hit.
+     *
+     * <p>Composed through {@link Protection#effectiveDefense}, the same function
+     * {@code DefenseModifierItems.scan} calls, so the two cannot drift.
+     * {@code Protection.NONE} makes the unenchanted case an exact identity -- which is why the
+     * one-argument overload above changes nothing and the golden stays green.
+     */
+    public static List<Component> build(ArmorDefinition armor, double protectionPoints) {
         List<Component> lore = new ArrayList<>();
 
         // The stat block. One line, unconditionally -- including for a piece that declares no
@@ -61,7 +81,8 @@ public final class ArmorLore {
         // player glancing between them must not see two colours. (Adventure has no LIME; GREEN is
         // the bright one Minecraft renders as lime, and DARK_GREEN is the darker one.)
         lore.add(GearLore.plain(ArmorLoreLines.DEFENSE_LABEL, NamedTextColor.GRAY)
-                .append(GearLore.plain(ArmorLoreLines.defenseValue(armor.defense()), NamedTextColor.GREEN)));
+                .append(GearLore.plain(ArmorLoreLines.defenseValue(
+                        Protection.effectiveDefense(armor.defense(), protectionPoints)), NamedTextColor.GREEN)));
 
         GearLore.appendFlavor(lore, armor);
 
