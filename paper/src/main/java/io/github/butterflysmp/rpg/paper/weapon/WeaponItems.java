@@ -248,9 +248,7 @@ public final class WeaponItems {
      * {@code AttackSpeedModifierItems.boostAmount}).
      */
     public static Optional<String> weaponId(ItemStack item, Keys keys) {
-        if (item == null || !item.hasItemMeta()) return Optional.empty();
-        return Optional.ofNullable(item.getItemMeta().getPersistentDataContainer()
-                .get(keys.weaponId, PersistentDataType.STRING));
+        return GearItems.idOf(item, keys.weaponId);
     }
 
     /**
@@ -268,7 +266,8 @@ public final class WeaponItems {
         ItemMeta oldMeta = old.getItemMeta();
         if (oldMeta == null) return fresh;   // no meta means no tag; the caller would not have got here
         fresh.editMeta(meta -> {
-            carryInstanceData(oldMeta, meta, adapters.keys(), fresh.getType());
+            GearItems.carryInstanceData(oldMeta, meta, adapters.keys().weaponId,
+                    adapters.keys(), fresh.getType());
             // ...and only NOW render the enchant block, from the state that just arrived. mint()
             // above already ran applyLore against an empty container, which was a no-op; this is
             // the call that can actually see this item's enchants. Order is load-bearing.
@@ -300,14 +299,6 @@ public final class WeaponItems {
      * method's javadoc predicted ("a future rarity or enchant roll is one more line in this
      * method"), and it turned out to be exactly that.
      */
-    private static void carryInstanceData(ItemMeta from, ItemMeta to, Keys keys, Material material) {
-        String id = from.getPersistentDataContainer().get(keys.weaponId, PersistentDataType.STRING);
-        if (id != null) {
-            to.getPersistentDataContainer().set(keys.weaponId, PersistentDataType.STRING, id);
-        }
-        carryWear(from, to, material);
-        carryEnchants(from, to, keys);
-    }
 
     /**
      * Carry the item's enchant state across the re-mint. THE INVARIANT ENCHANT PASS 1 PROTECTS
@@ -329,16 +320,6 @@ public final class WeaponItems {
      * is a roll that came up empty. Both are legal, and discarding either would be precisely the
      * data loss this method exists to prevent.
      */
-    private static void carryEnchants(ItemMeta from, ItemMeta to, Keys keys) {
-        String data = from.getPersistentDataContainer().get(keys.enchantData, PersistentDataType.STRING);
-        if (data != null) {
-            to.getPersistentDataContainer().set(keys.enchantData, PersistentDataType.STRING, data);
-        }
-        Byte rolled = from.getPersistentDataContainer().get(keys.enchantRolled, PersistentDataType.BYTE);
-        if (rolled != null) {
-            to.getPersistentDataContainer().set(keys.enchantRolled, PersistentDataType.BYTE, rolled);
-        }
-    }
 
     /**
      * Carry accumulated durability damage across the re-mint.
@@ -360,10 +341,4 @@ public final class WeaponItems {
      * in a method no unit test can reach (an ItemStack needs a running server). This method keeps
      * only the item I/O. Worst case is a weapon one use from broken rather than one already gone.
      */
-    private static void carryWear(ItemMeta from, ItemMeta to, Material material) {
-        if (!(from instanceof Damageable worn) || !(to instanceof Damageable fresh)) return;
-        short maxDurability = material.getMaxDurability();
-        if (maxDurability <= 0) return;   // not a damageable material -- nothing to carry
-        fresh.setDamage(Durability.clamp(worn.getDamage(), maxDurability));
-    }
 }

@@ -60,40 +60,19 @@ public final class ArmorLore {
         // rather than picked: this line and the action bar's field report the SAME STAT, so a
         // player glancing between them must not see two colours. (Adventure has no LIME; GREEN is
         // the bright one Minecraft renders as lime, and DARK_GREEN is the darker one.)
-        lore.add(plain(ArmorLoreLines.DEFENSE_LABEL, NamedTextColor.GRAY)
-                .append(plain(ArmorLoreLines.defenseValue(armor.defense()), NamedTextColor.GREEN)));
+        lore.add(GearLore.plain(ArmorLoreLines.DEFENSE_LABEL, NamedTextColor.GRAY)
+                .append(GearLore.plain(ArmorLoreLines.defenseValue(armor.defense()), NamedTextColor.GREEN)));
 
-        if (!armor.flavor().isEmpty()) {
-            lore.add(blank());
-            for (String line : armor.flavor()) {
-                lore.add(Component.text(line, NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, true));
-            }
-        }
+        GearLore.appendFlavor(lore, armor);
 
         // Rarity footer at the very bottom, coloured by tier: "Uncommon Helmet".
         //
         // The NOUN is the slot's, not the material's, so a Leather Cap reads "Common Helmet". The
         // footer says what KIND of gear this is -- the same job "Rare Melee Weapon" does -- rather
         // than repeating the item's own name two lines above it.
-        lore.add(blank());
-        lore.add(plain(titleCase(armor.rarity().name()) + " " + ArmorLoreLines.slotNoun(armor.slot()),
-                RarityColors.of(armor.rarity())));
+        GearLore.appendRarityFooter(lore, armor.rarity(), ArmorLoreLines.slotNoun(armor.slot()));
 
         return lore;
     }
 
-    private static Component plain(String text, NamedTextColor color) {
-        return Component.text(text, color).decoration(TextDecoration.ITALIC, false);
-    }
-
-    private static Component blank() {
-        return Component.empty().decoration(TextDecoration.ITALIC, false);
-    }
-
-    /** "UNCOMMON" -> "Uncommon". */
-    private static String titleCase(String raw) {
-        if (raw.isEmpty()) return raw;
-        return Character.toUpperCase(raw.charAt(0)) + raw.substring(1).toLowerCase(Locale.ROOT);
-    }
 }

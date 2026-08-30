@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
+import io.github.butterflysmp.rpg.core.weapon.GearLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.ability.BasicMelee;
@@ -70,9 +71,9 @@ public final class WeaponLore {
             // cosmetic tooltip must never be what crashes a /rpg give if that ever stops holding.
             if (isBasicAttack && !statBlockPlaced && damage.isPresent()) {
                 statBlockPlaced = true;
-                lore.add(blank());
-                lore.add(plain(WeaponClassLabel.of(weapon.weaponClass()) + " Damage: ", NamedTextColor.GRAY)
-                        .append(plain(number(damage.get().amount()), NamedTextColor.RED)));
+                lore.add(GearLore.blank());
+                lore.add(GearLore.plain(WeaponClassLabel.of(weapon.weaponClass()) + " Damage: ", NamedTextColor.GRAY)
+                        .append(GearLore.plain(number(damage.get().amount()), NamedTextColor.RED)));
 
                 // Which number paces THIS basic attack? A vanilla-driven melee hit is paced by the
                 // authored attack_speed written onto the wielder's vanilla attribute; a ranged one
@@ -83,8 +84,8 @@ public final class WeaponLore {
                         ? WeaponLoreLines.meleeAttackSpeedLabel(weapon.attackSpeed())
                         : WeaponLoreLines.rangedAttackSpeedLabel(ability.cooldownTicks());
                 if (!speed.isBlank()) {
-                    lore.add(plain("Attack Speed: ", NamedTextColor.GRAY)
-                            .append(plain(speed, NamedTextColor.RED)));
+                    lore.add(GearLore.plain("Attack Speed: ", NamedTextColor.GRAY)
+                            .append(GearLore.plain(speed, NamedTextColor.RED)));
                 }
                 continue;
             }
@@ -92,44 +93,36 @@ public final class WeaponLore {
 
             // An ability block: gold name + input, authored prose, the ELEMENT-typed damage number,
             // and the cadence. Each is preceded by a blank so they read as distinct abilities.
-            lore.add(blank());
+            lore.add(GearLore.blank());
 
             // Ability name (gold) with the click that fires it (yellow), e.g. "Fireball  Right-Click".
-            lore.add(plain(ability.displayName(), NamedTextColor.GOLD)
-                    .append(plain("  " + WeaponLoreLines.inputLabel(binding.input()), NamedTextColor.YELLOW)));
+            lore.add(GearLore.plain(ability.displayName(), NamedTextColor.GOLD)
+                    .append(GearLore.plain("  " + WeaponLoreLines.inputLabel(binding.input()), NamedTextColor.YELLOW)));
 
             for (String line : ability.description()) {
-                lore.add(plain(line, NamedTextColor.GRAY));
+                lore.add(GearLore.plain(line, NamedTextColor.GRAY));
             }
 
             // Element-typed, NOT class-typed: this payload reads no stat, so no "+N Melee Damage"
             // modifier can reach it and claiming otherwise would be a lie the tooltip tells.
             if (damage.isPresent()) {
                 DamagePayload.TriggerDamage d = damage.get();
-                lore.add(plain(elementName(d.element(), elements) + " Damage: ", NamedTextColor.GRAY)
-                        .append(plain(number(d.amount()), NamedTextColor.RED)));
+                lore.add(GearLore.plain(elementName(d.element(), elements) + " Damage: ", NamedTextColor.GRAY)
+                        .append(GearLore.plain(number(d.amount()), NamedTextColor.RED)));
             }
 
             String cadence = WeaponLoreLines.cadenceLine(ability.cooldownTicks(), ability.cost());
             if (!cadence.isBlank()) {
-                lore.add(plain(cadence, NamedTextColor.DARK_GRAY));
+                lore.add(GearLore.plain(cadence, NamedTextColor.DARK_GRAY));
             }
         }
 
         // Authored weapon-level flavour, italic + gray. Coexists with the per-ability descriptions.
-        if (!weapon.flavor().isEmpty()) {
-            lore.add(blank());
-            for (String line : weapon.flavor()) {
-                lore.add(Component.text(line, NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, true));
-            }
-        }
+        GearLore.appendFlavor(lore, weapon);
 
         // Rarity + class footer at the very bottom, coloured by tier: "Rare Magic Weapon".
-        lore.add(blank());
-        lore.add(plain(titleCase(weapon.rarity().name()) + " "
-                        + WeaponClassLabel.of(weapon.weaponClass()) + " Weapon",
-                RarityColors.of(weapon.rarity())));
+        GearLore.appendRarityFooter(lore, weapon.rarity(),
+                WeaponClassLabel.of(weapon.weaponClass()) + " Weapon");
 
         return lore;
     }
@@ -149,7 +142,7 @@ public final class WeaponLore {
     private static Component elementLine(String elementId, ElementRegistry elements) {
         ElementDefinition element = elements.find(elementId).orElse(null);
         if (element == null) {
-            return plain(titleCase(elementId), NamedTextColor.GRAY);
+            return GearLore.plain(GearLore.titleCase(elementId), NamedTextColor.GRAY);
         }
         return MiniMessage.miniMessage().deserialize(element.displayName())
                 // Lore renders italic by default; every other line here opts out, so this must too.
@@ -167,27 +160,11 @@ public final class WeaponLore {
         return elements.find(elementId)
                 .map(e -> PlainTextComponentSerializer.plainText()
                         .serialize(MiniMessage.miniMessage().deserialize(e.displayName())))
-                .orElseGet(() -> titleCase(elementId));
-    }
-
-    /** A non-italic lore line in one colour. */
-    private static Component plain(String text, NamedTextColor color) {
-        return Component.text(text, color).decoration(TextDecoration.ITALIC, false);
-    }
-
-    private static Component blank() {
-        return Component.empty().decoration(TextDecoration.ITALIC, false);
-    }
-
-    /** "SOMETHING" -> "Something"; a plain lowercase word -> Titlecase. */
-    private static String titleCase(String raw) {
-        if (raw.isEmpty()) return raw;
-        return Character.toUpperCase(raw.charAt(0)) + raw.substring(1).toLowerCase(Locale.ROOT);
+                .orElseGet(() -> GearLore.titleCase(elementId));
     }
 
     /** A stat number with the trailing ".0" dropped: 8.0 -> "8", 7.5 -> "7.5". */
     private static String number(double n) {
-        if (n == Math.floor(n) && !Double.isInfinite(n)) return String.valueOf((long) n);
-        return String.valueOf(n);
+        return GearLoreLines.trimNumber(n);
     }
 }
