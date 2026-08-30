@@ -246,28 +246,43 @@ So the whole of Slice 2b is witnessed: the reflect fires out of the mob→player
 to the blocker, it is independent of Bulwark, it falls off the same predicate as the reduction, a
 lethal reflect pays out, and the shield's new stat line reads as intended in the new colour.
 
-**Recorded at the granularity it was reported, which is coarser than the rows are written.** Slice 1
-set this precedent and it is worth keeping: *"THE EXACT HP FIGURE WAS NOT CAPTURED into this record,
-so the row is logged as operator-observed rather than measured."* The same applies here — the
-per-row figures were not captured into this file, so what stands recorded is **"the operator ran
-these rows and they passed"**, not the numbers themselves.
+### Row 4 is MEASURED, not merely observed — the popup read **5** at Thorns III
 
-**The one row where that distinction has teeth is row 4.** Its whole purpose is that the popup reads
-**2 / 3 / 5** rather than the rejected off-pass-through **1 / 2 / 3**, and those differ by one at
-level I. A pass reported without the figures cannot, by itself, separate:
+Confirmed by the operator, 2026-08-30. That single figure is the most load-bearing datum in the whole
+gate, because **it is the one thing no unit test can reach**: whether the RIDER passed the
+pre-mitigation blow. `Thorns.reflected` and `EnchantCurve.percentAt` are both unit-tested, so the
+arithmetic and the level→percent lookup were never in question; only the value selection at the call
+site was, and `ShieldExchange` moved as much of that into core as could be moved.
 
-- the shipped reading, from
-- the rejected one at level III (5 versus 3 — far apart, so a glance settles it), from
-- the rejected one at level I (2 versus 1 — one apart, and easy to misread).
+**A reading of 5 is produced by the shipped path and by nothing else.** Executed against the real
+classes rather than reasoned about — every rival lands somewhere a glance can tell apart:
 
-The row also carries two confounds the table names: it must be run with **Thorns alone, no Bulwark**
-(a swapped effect argument in `resolve` is invisible to every unit test and presents as a plausible
-ladder), and **without swinging while blocking** (a mob→player hit paints no popup, so during a pure
-block the reflect is the only number over the mob — any other is your own melee).
+```
+  SHIPPED   off the pre-mitigation 15.0            -> 5
+  REJECTED  off the pass-through 9.75              -> 3
+  REJECTED  off the pass-through, Bulwark III on   -> 2
+  SWAPPED   effect args (reflect reads Bulwark 15%)-> 2
+  SWAPPED   and off the pass-through               -> 1
+```
 
-If the III reading was the one observed, this is settled and the distinction is academic. It is
-written down so that a future reader knows what this record does and does not carry, rather than
-discovering later that a green row rested on a glance.
+So the one figure settles **two** things at once:
+
+1. **The reflect is off the pre-mitigation blow.** The `final` capture in the rider reached the seam
+   as designed; the rejected off-pass-through reading is ruled out.
+2. **The two `percentFor` effect arguments in `resolve` are not transposed** — that swap reads 2, not
+   5, and it is invisible to every unit test in the suite.
+
+**And it settles the second one whether or not Bulwark was equipped**, since every swapped or
+pass-through variant lands at 1, 2 or 3. The table's "Thorns alone, no Bulwark" confound was still
+right to state — it is what makes the row easy to read — but this particular conclusion does not rest
+on it. The other confound stands unchanged: do not swing while blocking, or the extra number over the
+mob is your own melee.
+
+**Rows 2, 3 and 5-9 remain operator-observed rather than measured**, at the granularity they were
+reported, and that is the Slice 1 precedent kept deliberately: *"THE EXACT HP FIGURE WAS NOT CAPTURED
+into this record, so the row is logged as operator-observed rather than measured."* None of them
+carries a rival reading that a wrong implementation could plausibly produce, which is why row 4 was
+the one worth chasing a number for and they are not.
 
 **Two confounds the gate must control.** Run row 4 with **Thorns ALONE, no Bulwark** — swapping the
 two `percentFor` effect arguments inside `resolve` is invisible to every unit test and presents as a

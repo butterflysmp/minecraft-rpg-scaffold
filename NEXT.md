@@ -588,14 +588,25 @@ Before milestone 2, two things worth measuring rather than assuming:
   Bulwark, falls off the same predicate as the reduction, pays out a lethal kill, and the shield's
   Damage Reduction line reads as intended in the Defense colour.
 
-  **Logged at the granularity reported, which is coarser than the rows are written** -- the same call
-  Slice 1 made for its armored-block row. The per-row FIGURES were not captured into the record, so
-  what stands is "the operator ran these and they passed", not the numbers.
+  **ROW 4 IS MEASURED: the popup read 5 at Thorns III**, confirmed 2026-08-30. That is the most
+  load-bearing figure in the gate, because it is the one thing NO unit test can reach -- whether the
+  RIDER passed the pre-mitigation blow. `Thorns.reflected` and `EnchantCurve.percentAt` are both
+  unit-tested, so the arithmetic was never in question; only the value selection at the call site was.
 
-  That matters most for row 4, whose entire purpose is that the popup reads 2 / 3 / 5 rather than the
-  rejected off-pass-through 1 / 2 / 3. At level III those are 5 versus 3 and a glance settles it; at
-  level I they are 2 versus 1, one apart. A pass without the figure cannot separate the two by
-  itself. Not a doubt about the result -- a note about what this record can be used to prove later.
+  A reading of 5 is produced by the shipped path and by nothing else. Executed against the real
+  classes: off the pass-through it reads 3 (2 with Bulwark III on), and with the two `percentFor`
+  effect arguments transposed in `resolve` it reads 2 (1 if both faults are present). **So the one
+  figure settles two things** -- the reflect is off the pre-mitigation blow, AND the effect arguments
+  are not swapped, a fault that is invisible to every unit test in the suite.
+
+  It settles the second **regardless of whether Bulwark was equipped**, since every swapped or
+  pass-through variant lands at 1, 2 or 3. The "Thorns alone" confound was still right to state -- it
+  is what makes the row easy to read -- but this conclusion does not rest on it.
+
+  **Rows 2, 3 and 5-9 stay operator-observed rather than measured**, at the granularity reported --
+  the same call Slice 1 made for its armored-block row. None of them carries a rival reading a wrong
+  implementation could plausibly produce, which is why row 4 was the one worth chasing a number for
+  and they were not.
 
 - **A FINALISATION PASS moved the names and the numbers, and every constant was RE-EXECUTED.** The
   enchant is `Thorns` (the design doc VACATED the name -- see below); the shield is `shield`, not
