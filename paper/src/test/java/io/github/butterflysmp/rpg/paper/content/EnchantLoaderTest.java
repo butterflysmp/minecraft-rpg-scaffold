@@ -98,7 +98,7 @@ class EnchantLoaderTest {
     /** A minimal damage enchant, so a test can vary ONE field and see what the loader does with it. */
     private static String damageYml(String maxLevel, String weaponClass, String percents) {
         return "display_name: \"Test\"\nmax_level: " + maxLevel + "\neffect: damage\nclass: "
-                + weaponClass + "\npercent_by_level: " + percents + "\n";
+                + weaponClass + "\nvalue_by_level: " + percents + "\n";
     }
 
     private static void copyBundled(String resource, Path target) throws IOException {
@@ -125,7 +125,7 @@ class EnchantLoaderTest {
         assertEquals(EnchantEffect.DURABILITY, unbreaking.effect(),
                 "unbreaking binds the durability mechanism, not the damage one");
         assertTrue(unbreaking.isUniversal(), "and it is gated on no class");
-        assertEquals(List.of(), unbreaking.percentByLevel(), "a durability enchant carries no curve");
+        assertEquals(List.of(), unbreaking.valueByLevel(), "a durability enchant carries no curve");
     }
 
     /**
@@ -175,7 +175,7 @@ class EnchantLoaderTest {
         for (String id : List.of("sharpness", "power", "attunement")) {
             EnchantDefinition d = enchants.find(id).orElseThrow();
             assertEquals(EnchantEffect.DAMAGE, d.effect(), id + " binds the damage mechanism");
-            assertEquals(List.of(5, 10, 15), d.percentByLevel(), id + " carries the shipped curve");
+            assertEquals(List.of(5, 10, 15), d.valueByLevel(), id + " carries the shipped curve");
             assertEquals(3, d.maxLevel());
         }
     }
@@ -208,7 +208,7 @@ class EnchantLoaderTest {
         assertEquals(GearClass.SHIELD, bulwark.gearClass(),
                 "a block enchant gated anywhere else would never fire");
         assertFalse(bulwark.isUniversal(), "universal would put it in every weapon's roll pool");
-        assertEquals(List.of(5, 10, 15), bulwark.percentByLevel(), "the shipped curve");
+        assertEquals(List.of(5, 10, 15), bulwark.valueByLevel(), "the shipped curve");
         assertEquals(3, bulwark.maxLevel());
         assertEquals("shield", bulwark.icon());
     }
@@ -242,7 +242,7 @@ class EnchantLoaderTest {
         assertEquals(GearClass.SHIELD, thorns.gearClass(),
                 "a reflect gated anywhere else is read off a stack that cannot block");
         assertFalse(thorns.isUniversal(), "universal would put it in every weapon's roll pool");
-        assertEquals(List.of(10, 20, 30), thorns.percentByLevel(),
+        assertEquals(List.of(10, 20, 30), thorns.valueByLevel(),
                 "the shipped curve -- 1.5/3.0/4.5 off a 15.0 mob, which the popup rounds to 2/3/5");
         assertEquals(3, thorns.maxLevel());
 

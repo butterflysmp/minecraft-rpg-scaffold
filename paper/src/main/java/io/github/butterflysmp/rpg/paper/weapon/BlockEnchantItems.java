@@ -28,7 +28,7 @@ import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
  * Unbreaking is one enchant whose curve is Java, so the id IS the binding and an enchant whose
  * content file was deleted keeps working.
  *
- * <p>It would be wrong here. Bulwark's curve lives in {@code percent_by_level}, so the definition
+ * <p>It would be wrong here. Bulwark's curve lives in {@code value_by_level}, so the definition
  * must be resolved anyway -- and once it is, filtering on {@code effect()} rather than on an id is
  * free and means the SECOND block enchant is a yml file rather than a recompile, which invariant 2
  * requires. There is no {@code Bulwark.ID} constant on purpose.
@@ -89,7 +89,7 @@ public final class BlockEnchantItems {
             // tooltip -- EnchantLore's deliberate fail-soft -- so the mismatch is visible rather
             // than silent, and it fails toward granting nothing.
             if (definition == null || definition.effect() != effect) continue;
-            total += EnchantCurve.percentAt(definition.percentByLevel(), active.level());
+            total += EnchantCurve.valueAt(definition.valueByLevel(), active.level());
         }
         return total;
     }

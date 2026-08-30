@@ -44,4 +44,4 @@ icon: shield
 max_level: 3
 effect: block_dr
 class: shield
-percent_by_level: [5, 10, 15]
+value_by_level: [5, 10, 15]

@@ -56,10 +56,10 @@ public final class DamageEnchants {
      * class. That is the same null-means-no-gate convention {@code ClassDamageModifiers} uses for an
      * empty hand, read from the other side.
      */
-    public record Grant(GearClass gearClass, List<Integer> percentByLevel, int level) {}
+    public record Grant(GearClass gearClass, List<Integer> valueByLevel, int level) {}
 
     /**
-     * The percent this curve grants at {@code level}: {@code percentByLevel[level - 1]}.
+     * The percent this curve grants at {@code level}: {@code valueByLevel[level - 1]}.
      *
      * <p>Levels at or below 0 grant nothing -- a locked or absent enchant must not scale damage, and
      * this is the branch every unenchanted weapon in the game takes.
@@ -81,8 +81,8 @@ public final class DamageEnchants {
      * <p>New callers that are not about damage should import {@link EnchantCurve} directly. This
      * method stays because deleting it would move a test suite for no behavioural gain.
      */
-    public static double percentAt(List<Integer> percentByLevel, int level) {
-        return EnchantCurve.percentAt(percentByLevel, level);
+    public static double percentAt(List<Integer> valueByLevel, int level) {
+        return EnchantCurve.valueAt(valueByLevel, level);
     }
 
     /**
@@ -111,7 +111,7 @@ public final class DamageEnchants {
             if (grant == null) continue;
             // null class == universal: no gate, matches whatever it is on.
             if (grant.gearClass() != null && grant.gearClass() != heldClass) continue;
-            double percent = percentAt(grant.percentByLevel(), grant.level());
+            double percent = percentAt(grant.valueByLevel(), grant.level());
             if (percent != 0.0) desired.put(entry.getKey(), percent);
         }
         return desired;

@@ -16,7 +16,7 @@ import java.util.List;
  * {@code durability_skip: 0.25} key the old javadoc warned about is still refused -- an enchant
  * cannot describe HOW it works, only which of the known ways it does.
  *
- * <p><b>Why {@code percent_by_level} is data when Unbreaking's curve is Java.</b> The question is
+ * <p><b>Why {@code value_by_level} is data when Unbreaking's curve is Java.</b> The question is
  * not numbers-versus-code, it is how many enchants share one mechanism. Unbreaking is one enchant
  * with one curve, so its curve IS its mechanism. Sharpness, Power and Attunement are three enchants
  * sharing ONE mechanism, differing only in a class gate and three percentages -- a Java class each
@@ -62,13 +62,15 @@ import java.util.List;
  *                       a picture. Kept as a String, not a Material, so this record stays free of
  *                       Bukkit and therefore unit-testable; it is resolved at render time exactly as
  *                       {@code WeaponItems.materialOf} resolves a weapon material.
- * @param percentByLevel the damage percent at levels 1..n, or an EMPTY list for a durability
+ * @param valueByLevel the VALUE this enchant grants at levels 1..n, or an EMPTY list for a durability
  *                       enchant. Its size is held equal to {@code maxLevel}, which is what makes
- *                       level -> percent total.
+ *                       level -> value total. What the value MEANS is the mechanism's business: a
+     *                       percent for damage, block and reflect; flat POINTS for defense and max
+     *                       health. The curve itself never divides, which is why it is not "percent".
  */
 public record EnchantDefinition(String id, String displayName, int maxLevel,
                                 EnchantEffect effect, GearClass gearClass,
-                                List<Integer> percentByLevel, String icon) {
+                                List<Integer> valueByLevel, String icon) {
 
     /**
      * The item an enchant renders as in the enchant table when its file names none.
@@ -97,7 +99,7 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         if (effect == null) {
             throw new IllegalArgumentException("enchant '" + id + "' requires an effect");
         }
-        percentByLevel = percentByLevel == null ? List.of() : List.copyOf(percentByLevel);
+        valueByLevel = valueByLevel == null ? List.of() : List.copyOf(valueByLevel);
         // Blank as well as null: an empty material string resolves to no Material at all, and the
         // table would paint air where a candidate should be. Falling back beats rendering nothing.
         icon = (icon == null || icon.isBlank()) ? DEFAULT_ICON : icon;
@@ -129,9 +131,9 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         // The two rules are shared rather than copied per arm: three effects now hold the same curve
         // rules, and three copies of "size must equal max_level" is how they drift.
         if (curved) {
-            requireCurve(id, effect, maxLevel, percentByLevel);
+            requireCurve(id, effect, maxLevel, valueByLevel);
         } else {
-            requireNoCurve(id, effect, percentByLevel);
+            requireNoCurve(id, effect, valueByLevel);
         }
         requireGate(id, effect, gearClass, gate);
     }
@@ -199,33 +201,33 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
      * attacking mob. Sharing one validator is what stops that being three separate decisions.
      */
     private static void requireCurve(String id, EnchantEffect effect, int maxLevel,
-                                     List<Integer> percentByLevel) {
-        if (percentByLevel.isEmpty()) {
+                                     List<Integer> valueByLevel) {
+        if (valueByLevel.isEmpty()) {
             throw new IllegalArgumentException("enchant '" + id + "' has effect: " + token(effect)
-                    + " and so requires percent_by_level (one percent per level, e.g. [5, 10, 15])");
+                    + " and so requires value_by_level (one value per level, e.g. [5, 10, 15])");
         }
-        // Size EQUALS max_level, not "at least". This is what makes level -> percent total: a short
-        // list leaves a legal level with no percent, and a long one hides levels the enchant can
+        // Size EQUALS max_level, not "at least". This is what makes level -> value total: a short
+        // list leaves a legal level with no value, and a long one hides levels the enchant can
         // never reach, which reads on the tooltip as a promise it cannot keep.
-        if (percentByLevel.size() != maxLevel) {
+        if (valueByLevel.size() != maxLevel) {
             throw new IllegalArgumentException("enchant '" + id + "' declares max_level "
-                    + maxLevel + " but percent_by_level has " + percentByLevel.size()
-                    + " entr" + (percentByLevel.size() == 1 ? "y" : "ies")
-                    + "; they must match, one percent per level");
+                    + maxLevel + " but value_by_level has " + valueByLevel.size()
+                    + " entr" + (valueByLevel.size() == 1 ? "y" : "ies")
+                    + "; they must match, one value per level");
         }
-        for (int i = 0; i < percentByLevel.size(); i++) {
-            Integer percent = percentByLevel.get(i);
-            if (percent == null) {
+        for (int i = 0; i < valueByLevel.size(); i++) {
+            Integer value = valueByLevel.get(i);
+            if (value == null) {
                 throw new IllegalArgumentException("enchant '" + id + "' has a non-numeric"
-                        + " percent_by_level entry at level " + (i + 1));
+                        + " value_by_level entry at level " + (i + 1));
             }
             // Negative is refused rather than supported. Stat permits negative modifiers and a
             // "curse" enchant is a legitimate future idea, but a negative PERCENT is far more likely
             // a typo, and one below -100 would flip a hit into a heal-shaped negative. A curse wants
             // its own naming and its own decision, not a sign slip.
-            if (percent < 0) {
+            if (value < 0) {
                 throw new IllegalArgumentException("enchant '" + id + "' has a negative"
-                        + " percent (" + percent + ") at level " + (i + 1)
+                        + " value (" + value + ") at level " + (i + 1)
                         + "; these enchants scale their effect UP, and a curse is its own"
                         + " content decision rather than a negative here");
             }
@@ -233,10 +235,10 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
     }
 
     /** The other half of the same rule: an effect with no curve may not author one. */
-    private static void requireNoCurve(String id, EnchantEffect effect, List<Integer> percentByLevel) {
-        if (!percentByLevel.isEmpty()) {
+    private static void requireNoCurve(String id, EnchantEffect effect, List<Integer> valueByLevel) {
+        if (!valueByLevel.isEmpty()) {
             throw new IllegalArgumentException("enchant '" + id + "' has effect: " + token(effect)
-                    + " and must not declare percent_by_level -- nothing reads it, so the"
+                    + " and must not declare value_by_level -- nothing reads it, so the"
                     + " file would be claiming a control it does not have");
         }
     }
@@ -248,8 +250,8 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
 
     /** Without an icon: the shape every caller predating the enchant table uses. */
     public EnchantDefinition(String id, String displayName, int maxLevel, EnchantEffect effect,
-                             GearClass gearClass, List<Integer> percentByLevel) {
-        this(id, displayName, maxLevel, effect, gearClass, percentByLevel, DEFAULT_ICON);
+                             GearClass gearClass, List<Integer> valueByLevel) {
+        this(id, displayName, maxLevel, effect, gearClass, valueByLevel, DEFAULT_ICON);
     }
 
     /** True when this enchant is gated on no class at all and applies to whatever it sits on. */

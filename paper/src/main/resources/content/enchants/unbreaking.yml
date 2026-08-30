@@ -7,7 +7,7 @@
 # warned about is still refused, because an enchant may not describe HOW it works, only which of the
 # known ways it does.
 #
-# Note what a DAMAGE enchant carries that this does not: a `percent_by_level` curve (see
+# Note what a DAMAGE enchant carries that this does not: a `value_by_level` curve (see
 # sharpness.yml). That is not a relaxation of the rule. Unbreaking is ONE enchant with ONE curve, so
 # its curve IS its mechanism and belongs in Java. Sharpness, Power and Attunement are THREE enchants
 # sharing one mechanism, differing only in a class gate and three numbers -- a Java class each would

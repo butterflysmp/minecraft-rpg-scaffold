@@ -147,7 +147,7 @@ class BlockEnchantItemsTest {
      * <p>2a's {@code anEnchantBindingAnotherMechanismIsSkippedRatherThanCountedAsZero} was written to
      * pin exactly this and <b>cannot fail</b>: its cross-effect fixture is Unbreaking, whose curve is
      * empty, so deleting {@code definition.effect() != effect} leaves
-     * {@code EnchantCurve.percentAt(List.of(), 3)} returning 0.0 anyway. Its own comment named the
+     * {@code EnchantCurve.valueAt(List.of(), 3)} returning 0.0 anyway. Its own comment named the
      * risk -- "not 'it has no curve', which would be a different rule that happens to agree today" --
      * and then agreed with it.
      *

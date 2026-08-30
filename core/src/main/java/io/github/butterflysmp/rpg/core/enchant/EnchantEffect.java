@@ -41,7 +41,7 @@ public enum EnchantEffect {
      * <p>A SECOND mechanism rather than a parameter on {@link #DAMAGE}, by this enum's own rule:
      * the question is how many enchants share one mechanism, and these two share none of their
      * arithmetic. Damage multiplies an amount; this composes a fraction and clamps it. What they
-     * DO share is the shape of their content -- a {@code percent_by_level} curve -- and that is why
+     * DO share is the shape of their content -- a {@code value_by_level} curve -- and that is why
      * a second block enchant will be a yml file rather than a recompile.
      */
     BLOCK_DR,
@@ -55,7 +55,7 @@ public enum EnchantEffect {
      * <p>A THIRD mechanism rather than a flavour of {@link #BLOCK_DR}, on the same rule: they share no
      * arithmetic at all. Block composes a fraction and clamps it; this multiplies a blow and hands the
      * product to a SECOND combatant. What they share is the shape of their content -- a
-     * {@code percent_by_level} curve -- which is what lets both be tuned without a recompile.
+     * {@code value_by_level} curve -- which is what lets both be tuned without a recompile.
      *
      * <p><b>The no-negative rule on its curve matters more here than anywhere else.</b> A negative
      * reflect goes straight through {@code applyDamage} to {@code stats.damage} and HEALS the

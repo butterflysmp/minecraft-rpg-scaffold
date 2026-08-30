@@ -86,7 +86,7 @@ public final class EnchantEffectLine {
                     yield "inert: a " + GearClassLabel.of(definition.gearClass())
                             + " enchant on " + GearClassLabel.describe(heldClass);
                 }
-                double percent = DamageEnchants.percentAt(definition.percentByLevel(), level);
+                double percent = DamageEnchants.percentAt(definition.valueByLevel(), level);
                 yield String.format("+%.0f%% damage, x%.2f", percent,
                         DamageEnchants.multiplier(percent));
             }
@@ -108,7 +108,7 @@ public final class EnchantEffectLine {
                 // shield stops fifteen more POINTS of the hit (0.35 -> 0.50), not fifteen percent
                 // more of what it already stopped. Saying "x1.15" would describe the rejected
                 // reading. The gate reads this line before blocking, so it must be the real number.
-                double percent = EnchantCurve.percentAt(definition.percentByLevel(), level);
+                double percent = EnchantCurve.valueAt(definition.valueByLevel(), level);
                 yield String.format("+%.0f%% Damage Reduction", percent);
             }
             case REFLECT -> {
@@ -122,7 +122,7 @@ public final class EnchantEffectLine {
                 // "to the attacker" is not decoration -- it is the one word that stops this reading
                 // as a damage bonus to your own hits. And the percent is of the INCOMING blow, not
                 // of what got through, which is why the wording says nothing about blocking.
-                double percent = EnchantCurve.percentAt(definition.percentByLevel(), level);
+                double percent = EnchantCurve.valueAt(definition.valueByLevel(), level);
                 yield String.format("+%.0f%% reflected to the attacker", percent);
             }
         };
