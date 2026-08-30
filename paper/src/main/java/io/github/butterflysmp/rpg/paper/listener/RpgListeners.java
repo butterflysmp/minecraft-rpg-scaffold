@@ -8,6 +8,7 @@ import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.combat.ShieldExchange;
 import io.github.butterflysmp.rpg.core.enchant.Thorns;
+import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
@@ -31,7 +32,7 @@ import io.github.butterflysmp.rpg.paper.weapon.ShieldBlock;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldDurability;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
-import io.github.butterflysmp.rpg.paper.weapon.WeaponRefresher;
+import io.github.butterflysmp.rpg.paper.weapon.GearRefresher;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -93,6 +94,7 @@ public final class RpgListeners implements Listener {
     private final ProfileService profiles;
     private final WeaponRegistry weapons;
     private final ShieldRegistry shields;
+    private final ArmorRegistry armor;
     private final WeaponService weaponService;
     private final AdapterContext adapters;
     private final PlayerHealthSystem healthSystem;
@@ -108,7 +110,8 @@ public final class RpgListeners implements Listener {
     private final MeleeHits meleeHits = new MeleeHits(Bukkit::getCurrentTick);
 
     public RpgListeners(CooldownTracker cooldowns, ResourcePool resources, ProfileService profiles,
-                        WeaponRegistry weapons, ShieldRegistry shields, WeaponService weaponService,
+                        WeaponRegistry weapons, ShieldRegistry shields, ArmorRegistry armor,
+                        WeaponService weaponService,
                         AdapterContext adapters,
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
                         StatsBarSystem statsBar) {
@@ -117,6 +120,7 @@ public final class RpgListeners implements Listener {
         this.profiles = profiles;
         this.weapons = weapons;
         this.shields = shields;
+        this.armor = armor;
         this.weaponService = weaponService;
         this.adapters = adapters;
         this.healthSystem = healthSystem;
@@ -132,7 +136,7 @@ public final class RpgListeners implements Listener {
         // Content reloads only on restart and a dev restart reconnects you, so this one handler
         // covers both the stale emberblade you come back to and the live player logging in after
         // a content update. Already on the joining player's own thread; no scheduler hop needed.
-        WeaponRefresher.refresh(event.getPlayer(), weapons, adapters);
+        GearRefresher.refresh(event.getPlayer(), weapons, shields, armor, adapters);
         // Returns immediately; the read happens on the storage I/O thread.
         profiles.onJoin(event.getPlayer().getUniqueId());
         // Register custom health at base 100, render the heart bar, and start the equip reconcile loop.

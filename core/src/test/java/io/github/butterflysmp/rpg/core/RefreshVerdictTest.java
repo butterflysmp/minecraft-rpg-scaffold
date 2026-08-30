@@ -101,7 +101,7 @@ class RefreshVerdictTest {
     void theDanglingVerdictCarriesTheMissingIdSoTheWarningCanNameIt() {
         var verdict = RefreshVerdict.decide("deleted_sword", registryOf(emberblade(7)));
 
-        assertEquals("deleted_sword", ((RefreshVerdict.Dangling) verdict).weaponId());
+        assertEquals("deleted_sword", ((RefreshVerdict.Dangling) verdict).id());
         // Mutation: report a constant ("unknown") instead of the id -> reddens.
     }
 
@@ -132,8 +132,11 @@ class RefreshVerdictTest {
         var stale = (RefreshVerdict.Remint) RefreshVerdict.decide("emberblade", beforeTheContentEdit);
         var current = (RefreshVerdict.Remint) RefreshVerdict.decide("emberblade", afterTheContentEdit);
 
-        assertEquals(8.0, stale.definition().attackDamage(), EPS);
-        assertEquals(12.0, current.definition().attackDamage(), EPS,
+        // Remint carries a GearDefinition since the gear extraction, so the weapon-specific stat
+        // needs the cast. The verdict deliberately does NOT know what kind it holds -- that is what
+        // lets one refresher walk weapons, shields and armor.
+        assertEquals(8.0, ((WeaponDefinition) stale.definition()).attackDamage(), EPS);
+        assertEquals(12.0, ((WeaponDefinition) current.definition()).attackDamage(), EPS,
                 "the refresh must mint from the content loaded now, or it refreshes nothing");
         // Mutation: resolve against anything other than the passed registry -- a cached or static
         // registry, or the definition the caller already held -> both reads return the same

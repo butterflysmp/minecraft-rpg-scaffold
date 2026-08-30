@@ -51,7 +51,7 @@ import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import io.github.butterflysmp.rpg.paper.weapon.ArmorItems;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
-import io.github.butterflysmp.rpg.paper.weapon.WeaponRefresher;
+import io.github.butterflysmp.rpg.paper.weapon.GearRefresher;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -214,7 +214,7 @@ public final class RpgCommand {
                                         Component.text("Players only.", NamedTextColor.RED));
                                 return 0;
                             }
-                            return refresh(player, weapons, adapters);
+                            return refresh(player, weapons, shields, armor, adapters);
                         }))
                 // Durability dev instruments. /rpg repair stands in for a real repair economy
                 // (anvil UI, materials); /rpg durability is the WEAR SOURCE this pass needs, since
@@ -796,13 +796,14 @@ public final class RpgCommand {
      * not a quiet no-op" is exactly the trap CLAUDE.md's verification section names. The number is
      * how the boot gate can tell the difference.
      */
-    private static int refresh(Player player, WeaponRegistry weapons, AdapterContext adapters) {
+    private static int refresh(Player player, WeaponRegistry weapons, ShieldRegistry shields,
+                               ArmorRegistry armor, AdapterContext adapters) {
         adapters.scheduler().onEntity(player, () -> {
-            int refreshed = WeaponRefresher.refresh(player, weapons, adapters);
+            int refreshed = GearRefresher.refresh(player, weapons, shields, armor, adapters);
             // Make a mid-session swap visible immediately rather than at the client's next sync.
             player.updateInventory();
             player.sendMessage(refreshed > 0
-                    ? Component.text("Refreshed " + refreshed + " weapon(s) from current content.",
+                    ? Component.text("Refreshed " + refreshed + " item(s) from current content.",
                             NamedTextColor.GREEN)
                     : Component.text("Refreshed 0 weapons -- you are carrying none of ours.",
                             NamedTextColor.YELLOW));
