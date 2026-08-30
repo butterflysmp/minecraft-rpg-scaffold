@@ -581,6 +581,121 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Armor, Slice 2a (the gating axis, Protection and Growth) — what it created or exposed
+
+- **BOOT GATE OWED.** Eleven rows, in `PLAN-armor-slice-2a.md`. Row 6 is the discriminating one: with
+  Protection active the armor bar must be a PARTIAL FILL, not empty. Rows 4, 5 and 7 -- tooltip,
+  `⛨` field, damage taken -- all pass whether or not the Defense/nativeArmor split landed, because
+  the stat and the mitigation are correct without it. Only the bar breaks, and it breaks to EMPTY.
+
+- **THE COMPILER CATCHES THREE OF EIGHT SITES, AND FOUR PLACES IN THIS REPO SAID OTHERWISE.**
+  `RpgCommand`, `ArmorDefinition`, this file and `PLAN-armor-slice-1.md` all claimed adding a
+  `GearClass` constant "is a compile error in `GearClassLabel`'s two exhaustive switches and in
+  `GearClassTest`'s axis enumeration". Accurate as far as it goes and badly incomplete.
+  `GearClass.of` switches `WeaponClass`, not `GearClass`, so it does NOT break; `fromName` is a
+  `values()` loop that silently begins accepting `class: armor` the instant the constant exists.
+
+  Two compile errors, one runtime failure, and **five silent sites** found by hand:
+  `HeldGear.gearClass()` kept returning null; `HeldGear.effectSuffix()` kept returning "";
+  the `/rpg enchant show` arm kept refusing; `EnchantMenu.PlacedGear` was a TWO-WAY TERNARY that
+  would have minted a helmet as a shield; and the damage gate below. `GearClassTest` now records the
+  count, because it is very nearly the only thing that notices.
+
+  **Do not repeat the claim that the compiler covers this.** It covers the two label switches. The
+  rest is a checklist.
+
+- **`ANY_BUT_SHIELD` WAS A LATENT BUG, NAMED FROM THE WRONG SIDE.** It refused the one gear kind that
+  existed when it was written, so the moment `ARMOR` appeared, a file with `effect: damage` +
+  `class: armor` LOADED CLEAN -- and `DamageEnchantItems` reads the MAIN HAND through `GearClass.of`,
+  which yields only MELEE/RANGER/MAGE. Structurally unreachable: precisely the defect the shield
+  refusal was written to prevent, arriving through the door the check did not name.
+
+  Now `MAIN_HAND_ONLY`, stated as what the gate CAN be rather than what it cannot, so the next gear
+  kind is refused by default instead of silently admitted. **That is the general lesson: a gate
+  written as a denylist admits every kind nobody has thought of yet.**
+
+- **`requireGate`'s switch is an EXPRESSION now.** It was a statement, so adding `ARMOR_ONLY` would
+  have fallen through to no validation at all -- the exact shape of the REFLECT bug the file's own
+  comment already documents. That comment described the failure and left a second instance of it
+  three methods further down.
+
+- **ONE MAP TO TWO JOBS IS GONE, and the arithmetic is pinned.** `DefenseModifierItems.scan` returns
+  a `Worn` record with the stat map and the native sum from ONE walk. Two methods would be two walks,
+  and a player swapping a piece between them would get a stat and a bar computed from different
+  equipment.
+
+  `DefenseTest` gained the case it never had: every prior `barModifier` assertion passed the SAME
+  VALUE TWICE, because until an enchant could add Defense the two arguments were always equal. Feed
+  defense where nativeArmor belongs and the attribute lands at **-28.82**, clamped to 0 -- an EMPTY
+  bar on the most-armored player in the game, with stat, mitigation and tooltip all still correct.
+
+  Executed, not derived, and the identity is **NOT bit-exact**:
+  `nativeArmor + barModifier(56, 20)` is `7.179487179487179` against `armorBarPoints(56)`'s
+  `7.17948717948718`.
+
+- **TWO WAYS TO GET A SECOND STAT SOURCE WRONG, BOTH SILENT.** Both were designed around rather than
+  discovered, and both are worth knowing before adding a third source to any stat:
+
+  1. `ModifierReconciler.reconcile` removes every applied source ABSENT from the map it is handed. It
+     is exhaustive per call, so two calls against one target -- one per source -- have each wipe the
+     other's, leaving whichever ran last. There must stay exactly ONE reconcile call per stat per
+     tick; merge first.
+  2. `Stat.putModifier` is put-or-REPLACE. Two sources on one key means the second silently wins.
+
+  Defense sidesteps both by keeping ONE ENTRY PER SLOT whose value is that piece's total. Max health
+  could not: `HealthModifierItems` walks ALL slots on bare slot names, so Growth needed the **first
+  namespaced source key in the codebase** -- `"growth:CHEST"`.
+
+- **`percent_by_level` IS NOW `value_by_level`, and `BlockEnchantItems` IS NOW `EnchantValues`.** Two
+  names that were imprecise before they were wrong. The curve field never divided -- every `/100`
+  lives in the mechanism -- and `BlockEnchantItems` had been parameterized by `EnchantEffect` since
+  2b and never knew anything about blocking. Protection and Growth turned both into lies, and the
+  alternative to renaming `EnchantValues` was a second copy of its sum loop for armor. **Structure
+  may be duplicated here; logic never is.**
+
+  `DamageEnchants.percentAt` deliberately KEPT its name: a damage curve genuinely is a percent, and
+  leaving it alone preserves the zero-edit `DamageEnchantsTest` pass that `EnchantCurve`'s javadoc
+  names as the faithfulness check for the original lift.
+
+  Breaking content-schema change, no alias. An old-key file parses as having no curve, which
+  `requireCurve` refuses -- a named, skipped file rather than an enchant that silently grants nothing.
+
+- **PROTECTION NEEDS NO CLAMP, AND THAT IS PROVEN RATHER THAN ASSERTED.** Bulwark needs
+  `Shield.clamp` because `block_dr 0.9 + 0.15` clamps to 1.0 and a 15.0 hit passes 0.0 -- total
+  immunity, reachable. `Defense.applyDefense` is asymptotic, so no quantity of points can get there:
+  `ProtectionTest` walks +100, +1000, +10000 and +1e9 and a hit still lands every time.
+
+  The real ceiling, executed: full diamond with Protection III in all four slots is 56 points ->
+  **35.8974358974359%** reduction, against bare diamond's **16.666666666666666%**. Roughly double,
+  and still not halving a hit. **The per-piece value is the balance lever, not the stacking.**
+
+- **GROWTH IS THE ONLY ENCHANT THAT CAN TAKE HEALTH AWAY**, and that is correct rather than a bug. A
+  player at full health who removes a Growth piece WILL see their hearts drop, because
+  `HealthState` clamps current on a max decrease -- which is what stops equip/unequip cycling being
+  a free heal. `growth.yml` says so out loud so it is not reported as a defect.
+
+  Three rules, all pinned: equipping is headroom (100/100 -> 100/130), removing clamps down
+  (130/130 -> 100/100), removing while hurt does NOT (40/130 -> 40/100). The third exists because
+  without it the second would pass on an implementation that set `current = max` on every removal --
+  making taking armor OFF a heal.
+
+  **Growth and Protection are NOT equally scaled**, though they read as siblings on a tooltip: +36
+  Defense is bent by an asymptotic curve into roughly twice the mitigation, while +120 Max Health is
+  a straight doubling of the pool because nothing curves it. If Growth is ever retuned that is the
+  reason, and `growth.yml` is the lever.
+
+- **A theoretical hazard, recorded rather than guarded.** A max-health source that transiently
+  vanished and returned would clamp current on the way down and NOT restore it on the way up --
+  permanent HP loss per flicker. Not reachable today: the registry is fixed at boot and the scan
+  reads the slot the piece is actually in, so a Growth source only disappears when the piece does.
+  Building a guard for it would be building one for a case that cannot occur.
+
+- **The armor roll pool is 3 in 2a** -- Protection, Growth, Unbreaking -- the same size as a shield's,
+  so `EnchantRoll.MAX_CANDIDATES` is not yet exceeded. **Mana Bank takes it to 4 in 2b: the first
+  shipped pool ever past the cap.** `candidateCount` caps correctly, but that regime has never
+  shipped, and `EnchantRoll`'s javadoc still says a shield's 3 is the largest.
+
+
 ### The gear extraction (GearDefinition/GearItems) — what it created or exposed
 
 - **BOOT WITNESSED, 2026-08-30: the `GearRefresher` rebuild works for all three gear kinds.** A
