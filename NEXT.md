@@ -583,10 +583,25 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ### Armor, Slice 1 (mintable pieces that source Defense) — what it created or exposed
 
-- **BOOT GATE OWED.** Eleven rows, in `PLAN-armor-slice-1.md`. Rows 5-7 are the ones that matter:
-  they re-take the Defense pass's own numbers (`⛨` 3 -> 11 -> 17 -> 20, ~83 off `/rpg damage 100`,
-  a bar ~1/6 full) on MINTED diamond rather than vanilla diamond. That is the slice's whole claim
-  witnessed instead of asserted.
+- **BOOT GATE RUN AND PASSED IN FULL, 2026-08-30 -- all eleven rows.** Row 1 the machine's, rows
+  2-11 the operator's. Rows 5-7 are the ones that mattered: they re-take the Defense pass's own
+  numbers (`⛨` 3 -> 11 -> 17 -> 20, ~83 off `/rpg damage 100`, a bar ~1/6 full) on MINTED diamond
+  rather than vanilla diamond, which is the slice's whole claim witnessed instead of asserted.
+  Recorded at the granularity reported -- the per-row figures were not captured into this record, so
+  what stands is "the operator ran these and they passed", the precedent shields Slice 1 set and 2b
+  restated.
+
+- **AND WRITING THE GATE UP SHARPENED A ROW THE PLAN HAD HALF-RIGHT.** The plan said to read rows 4
+  and 7 TOGETHER because neither alone separates "`HIDE_ATTRIBUTES` missing" from "modifiers
+  stripped". Working the stripped case through the actual code, the pairing is lopsided and **row 7
+  is doing all of the work**: because `armorOf` reads the MATERIAL's defaults and never the stack,
+  stripping the modifiers leaves row 4 passing (no lines to show), row 5 passing (`⛨` still 20) and
+  row 6 passing (mitigation runs off the stat). Only the bar breaks -- `barModifier(20, 20)` is
+  `-16.67` onto a stripped base of 0, which Minecraft clamps to 0, so the bar reads **EMPTY**, not a
+  sixth. Row 7's three reachable states are ~1/6 correct, empty if stripped, full if the override
+  never ran; all three are eyeballable, which is why that row being observed rather than measured
+  costs nothing. **Row 4 is very nearly vacuous alone -- it passes under the exact failure it was
+  written to catch.**
 
 - **THE DEFENSE SOURCE DID NOT CHANGE, AND COULD NOT HAVE.** `DefenseModifierItems.armorOf` reads
   `ItemType.getDefaultAttributeModifiers(slot)` -- the MATERIAL's vanilla points, blind to anything
@@ -685,6 +700,14 @@ Before milestone 2, two things worth measuring rather than assuming:
   `WeaponLoreLines.trimNumber`, `ShieldLoreLines.trimNumber`, `ArmorLoreLines.trimNumber`) and
   `ArmorConsistency`'s duplicated vanilla-armor read, which repeats `armorOf`'s `ADD_NUMBER` sum
   solely so this slice could leave `DefenseModifierItems` byte-identical.
+
+  **And it carries the two owed refreshers with it** -- `ShieldRefresher`, outstanding since shields
+  Slice 1, and `ArmorRefresher`, owed from this one. Neither is a coincidence of scheduling: a
+  refresher is `WeaponRefresher`'s shape over a definition and a re-mint, which is exactly the pair
+  the extraction is factoring. Writing two more copies BEFORE the abstraction exists would make five
+  shapes to reconcile instead of three, so they wait for it rather than the other way round.
+  `RefreshVerdict` is `WeaponDefinition`-typed today (`RefreshVerdict.Remint` carries one) and is the
+  piece of that job with actual design in it.
 
 - **Deferred with armor, each a decision rather than an omission:**
   - **Turtle helmet.** A HEAD-only seventh tier that breaks the 6x4 grid the per-tier loader is built

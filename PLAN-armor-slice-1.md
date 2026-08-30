@@ -195,7 +195,7 @@ copy**, never `git checkout --`. Residue re-grepped as zero afterwards.
 
 ---
 
-## Boot gate — OWED BY A HUMAN
+## Boot gate — RUN AND PASSED IN FULL, all eleven rows
 
 `./scripts/dev-server.sh --refresh-content` (`saveResource(path, false)` never overwrites, and a
 stale deployed tree has silently swallowed a content change here before — `117168e`).
@@ -235,6 +235,52 @@ Rows 1, 2, 3, 8, 10, 11 can pass on a plausible-looking wrong implementation. Th
 
 **A guard that fires is not a hypothesis to argue with.** If row 7 reads full rather than ~1/6, that
 is the result. Test the explanation before believing it.
+
+---
+
+
+### GATE RESULT — RUN AND PASSED IN FULL, 2026-08-30
+
+All eleven rows confirmed by the operator against a booted server. Row 1 is the machine's (the boot
+log line); rows 2-11 are the operator's, each of which needs a `Player` — a console log proves only
+that the plugin loaded.
+
+Every row passed at the values this plan pinned: the `⛨` ladder 3 → 11 → 17 → 20, ~83 lost to
+`/rpg damage 100` in full minted diamond, the bar ~1/6 full, no vanilla attribute lines on any minted
+tooltip, Unbreaking taking on a held helmet with the footer still last, Leather Cap keeping its
+irregular vanilla name, and a clean rejoin with no stranded modifier.
+
+**RECORDED AT THE GRANULARITY REPORTED**, which is coarser than the rows are written, and that is
+stated rather than smoothed over. Slice 1 of the shields arc set the precedent and 2b restated it:
+the per-row figures were not captured into this record, so what stands is "the operator ran these and
+they passed", not the numbers themselves.
+
+#### Writing this up sharpened one thing the plan had half-right
+
+The plan said to read rows 4 and 7 **together** because neither alone separates "`HIDE_ATTRIBUTES`
+missing" from "modifiers stripped". Working the second case through the actual code, the pairing is
+more lopsided than that — and it is **row 7 doing all of the work**:
+
+`DefenseModifierItems.armorOf` reads the MATERIAL's defaults, not the stack's. So if minting had
+stripped the attribute modifiers instead of hiding them:
+
+| row | stripped | hidden (correct) | separates? |
+|---|---|---|---|
+| 4 — no `+N Armor` lines | **passes** (there are none to show) | passes (they are hidden) | **no** |
+| 5 — `⛨` 3 → 11 → 17 → 20 | **passes** (`armorOf` never reads the stack) | passes | **no** |
+| 6 — ~83 lost | **passes** (mitigation runs off the stat) | passes | **no** |
+| 7 — bar ~1/6 | **FAILS: bar EMPTY** | ~1/6 | **yes, alone** |
+
+Row 7 fails there because `barModifier(20, 20)` is `-16.67` applied to a *stripped* base of 0, and
+Minecraft clamps the armor attribute at 0 — an empty bar, not a sixth of one. Its three reachable
+states are visually distinct and all eyeballable: **~1/6** correct, **empty** if the modifiers were
+stripped, **full** if the override never ran.
+
+So row 4 is very nearly vacuous on its own — it passes under the failure it was written to catch —
+and the `HIDE_ATTRIBUTES` claim rests on row 7. That is not a doubt about the result; it is a note
+about what this record can be used to prove later, written now so nobody re-derives it in six months.
+It is also why row 7 being eyeballed rather than measured costs nothing here: the rival readings are
+"empty" and "full", not a number a glance could miss.
 
 ---
 
