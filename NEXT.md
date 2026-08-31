@@ -583,9 +583,21 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ### Stats, Slice 3 (`/rpg stats`) — what it created or exposed
 
-- **BOOT GATE OWED.** Eight rows, in `PLAN-stats-slice-3.md`. **Rows 3 and 5 are the discriminating
-  ones**: a non-op player running the command (the permission node), and swinging the weapon then
-  comparing the number to the sheet (the input seam below).
+- **BOOT GATE RUN AND PASSED, 2026-08-31: all eight rows, operator-confirmed**, including both
+  discriminating ones — and rows 2 and 6 **re-run** after the `/5s` display change and the mana
+  rebalance.
+
+  **Rows 3 and 5 carry the slice.** Row 3 ran the command as a non-op player, which is the only check
+  that the `rpg.command.stats` yml entry landed rather than silently defaulting to op-only. Row 5
+  swung the weapon and compared the number to the sheet — the only check in existence for the input
+  seam below, which no unit test can see.
+
+  Rows 3, 4, 5 and 7 were deliberately **not** re-run after the tuning: it changed two numbers and no
+  behaviour, and the byte-identical `EffectApplierTest` and `golden-lore.txt` say so mechanically.
+  That is what scoping a re-gate is for.
+
+- **THE STATS ARC IS CLOSED.** Slice 1 built health regen, Slice 2 lifted the mana rate to a
+  per-player stat, Slice 3 displays all eight and de-duplicated the damage composition on the way.
 
 - **THE DAMAGE COMPOSITION HAD TWO COPIES AND ITS EXPLANATION HAD THREE.** `EffectApplier` wrote
   `(base × multiplier(pct) + classBonus) × chargeScale × critMultiplier` out twice, and the 14.95
@@ -3870,6 +3882,48 @@ mutations planned, **two came back green**, and each was a different one of the 
 Both javadocs asserting the old stories are corrected in place, at the source, rather than left to be
 re-derived. That is the other half of the rule: **when a predicted mutation comes back green, the
 prose that predicted it is now known-false and is part of the fix.**
+
+### A TUNING CHANGE CAN DELETE A RULE'S ONLY WITNESS WITHOUT TOUCHING THE RULE
+
+**A rule survives because someone can see why it exists.** Retunes do not read rules — they change
+numbers — and a number change can quietly remove the example that made a rule obvious, leaving the
+rule standing with nothing behind it. **The rule is then correct and looks unmotivated, which is the
+state in which it gets deleted as cleanup.**
+
+This is not the same failure as the two above. Those are about checks that did not run, or ran and
+were argued with. This one is about a check that runs, passes, and **stops demonstrating anything** —
+so the next reader removes it in good faith, and the defect it prevented becomes reachable again with
+no red anywhere on the way.
+
+> Stats Slice 3 rebalanced mana from a 60-second refill to 100 seconds. That one constant silently
+> retired **two** witnesses:
+>
+> 1. **The ULP hazard.** Slice 2's entire derive-from-ticks rule rested on
+>    `100/(60*20) != (100/60.0)/20.0` — one ULP apart, so composing in seconds would have re-rated
+>    every player. At the 100-second base the two orderings **agree exactly**. The forbidden rewrite
+>    became harmless, and the rule forbidding it became a puzzle.
+> 2. **The two-decimal rate formatter.** Its justification was that `trimNumber` printed the mana base
+>    as `1.6666666666666665`. After the retune both bases land on whole numbers over five seconds, so
+>    the trimmer looks perfectly adequate.
+>
+> Neither rule was wrong. Both had simply become unfalsifiable-looking.
+
+**So: when a retune removes a rule's example, re-anchor the rule to a witness that survives.** Two
+kinds work:
+
+- **A fact about the domain rather than about your code.** `ManaRegenTest` keeps the retired
+  60-second base as a standing case, asserting that the two division orderings differ *there*. It has
+  no mutation and says so out loud — it is not testing our code, it is holding open the reason our
+  code is shaped as it is.
+- **A reachable edge case rather than the shipped default.** The formatter's witness moved from the
+  base rate to `0.2 + 0.1` per second, which is `0.30000000000000004` and prints
+  `1.5000000000000002` over five seconds. Any off-round bonus reaches it, so no future retune of the
+  *defaults* can take it away.
+
+**Say which measurement the retune retired, and where the replacement lives.** The prose that cited
+the old example is now false and is part of the change — the same closing clause as the rule above.
+A superseded plan gets a note at the top naming what stopped being true; it does not get edited into
+looking as though it always said the new thing.
 
 
 - After every commit: `./mvnw -pl core test`. After every batch:

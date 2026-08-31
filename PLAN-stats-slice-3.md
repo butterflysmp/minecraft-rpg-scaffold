@@ -125,7 +125,10 @@ so. **Gate row 5 is the standing check.**
 
 ---
 
-## Boot gate — `./scripts/dev-server.sh` — **OWED, not run**
+## Boot gate — `./scripts/dev-server.sh` — **RUN AND PASSED, 2026-08-31**
+
+**All eight rows, operator-confirmed, including both discriminating ones — and rows 2 and 6 re-run
+after the `/5s` display change and the mana rebalance.**
 
 Kill orphaned `java.exe` first.
 
@@ -144,16 +147,19 @@ Kill orphaned `java.exe` first.
 above — it fails if the sheet and the swing ever stop sharing inputs, which no unit test can see. Row
 3 is the only row that fails if the permission node is used but undeclared.
 
-### Re-gate after the tuning pass
+### Re-gate after the tuning pass — **RUN AND PASSED**
 
 Two tuning changes landed after the gate table was written: regen is displayed **per five seconds**,
 and the mana base was **rebalanced** to a 100-second refill (1 mana/s).
 
 | row | status |
 |---|---|
-| 2, 6 | **must be re-run** — both regen numbers changed, and row 6 is the fixture moving them |
-| 8 | **glance** — the value column may shift with the wider numbers |
-| 3, 4, 5, 7 | **unaffected** — the extraction, the permission node and the colours did not change |
+| 2, 6 | **RE-RUN AND PASSED** — bare-handed reads `1.00/5s` and `5.00/5s`; the fixture moves the line |
+| 8 | **glanced** — the column holds with the wider numbers |
+| 3, 4, 5, 7 | **not re-run, and correctly so** — the extraction, the permission node and the colours were untouched by the tuning, which the byte-identical `EffectApplierTest` and `golden-lore.txt` confirm mechanically |
+
+The last row is the point of scoping a re-gate rather than re-running everything: the tuning changed
+two numbers and no behaviour, and there is a mechanical check saying so.
 
 ---
 
