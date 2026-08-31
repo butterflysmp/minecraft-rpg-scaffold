@@ -581,6 +581,59 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Stats, Slice 3 (`/rpg stats`) — what it created or exposed
+
+- **BOOT GATE OWED.** Eight rows, in `PLAN-stats-slice-3.md`. **Rows 3 and 5 are the discriminating
+  ones**: a non-op player running the command (the permission node), and swinging the weapon then
+  comparing the number to the sheet (the input seam below).
+
+- **THE DAMAGE COMPOSITION HAD TWO COPIES AND ITS EXPLANATION HAD THREE.** `EffectApplier` wrote
+  `(base × multiplier(pct) + classBonus) × chargeScale × critMultiplier` out twice, and the 14.95
+  ordering witness appeared in `EffectApplier`, `Caster` **and** `AttackCharge`. Now one home,
+  `HitDamage`, split into `hitBase` (where the ordering hazard is) and `dealt` (the product tail).
+  `EffectApplierTest` stayed byte-identical, and all four composition mutations reddened **it** as
+  well as the new test — the extraction is load-bearing for the shipped combat path.
+
+- **`AttackCharge` said the charge scale "is the LAST transform". It was false** — crit applies after
+  it. Written before crit existed and never revisited; harmless only because both are bare multiplies
+  outside the parenthesis. Corrected.
+
+- **SHARING A FORMULA IS NOT SHARING ITS INPUTS, and this is the slice's one residual risk.**
+  `HitDamage` guarantees the sheet and the combat path compute the same way. It cannot guarantee they
+  are fed the same numbers: combat reads its three summands off a snapshot frozen at cast time, the
+  sheet reads them live. They agree **today** because `BukkitCombatant.snapshot` is a straight read of
+  `attackValue` / `classDamageValue` / `enchantDamagePercentValue` and `Caster.of` copies all three
+  through unchanged — verified at the source during this slice, and `snapshot` now carries a javadoc
+  saying so.
+
+  **If a transform is ever added there, the sheet drifts from the swing and NOTHING REDDENS** — the
+  formula would still be shared and both callers would still be correct in isolation. Transform at the
+  STAT if you must, so both sides move together. Gate row 5 is the only standing check.
+
+- **`GearLoreLines.trimNumber` cannot format a rate**: the base mana rate prints as
+  `1.6666666666666665`. Executed, and asserted in `StatsSheetLinesTest` so nobody re-adopts it.
+  `StatsSheetLines` uses `trimNumber` for capacities and two decimals for rates and damage — which
+  means **the sheet and the action bar can differ in the last digit** (a 137.5 max reads `137.5` here
+  and `138` there, because the bar `Math.round`s). Deliberate: one is exact, one is glanceable.
+
+- **A `<player>` ARGUMENT IS DEFERRED FOR A THREADING REASON, not an oversight.** `Stat.modifiers` is
+  a plain `LinkedHashMap` and `Stat.value()` iterates it; only the outer `states` map is concurrent.
+  Reading your OWN stats runs on your own region thread — the same thread your reconcile loop runs on
+  — so nothing mutates underneath. Reading **another** player's would iterate maps their loop mutates
+  on their region thread four times a second: a `ConcurrentModificationException` out of a command, or
+  a torn sum, across eight lines plus the resolver reads inside `ResourcePool`. It needs a region hop
+  or a snapshot type first. **Do not add the argument without doing that work.**
+
+- **One mutation came back GREEN and stays in the table.** Hardcoding `NamedTextColor.RED` where
+  `StatsBarText.HEALTH_COLOR` belongs cannot be reddened by any unit test — they are the same
+  singleton. Asserting against the constant catches DIVERGENCE the day a HUD colour changes; it cannot
+  catch the hardcoding. The compile-time import is the guard. `ArmorLoreTest` has the identical limit,
+  which is worth knowing before someone tries to "fix" either test.
+
+- **`rpg.command.stats` is the first `default: true` node added since `cast` and `class`**, and the
+  first player-facing `/rpg` subcommand in this arc. Declared in `paper-plugin.yml`; an undeclared
+  node silently defaults to op-only.
+
 ### Stats, Slice 2 (Mana Regen as a per-player stat) — what it created or exposed
 
 - **BOOT GATE RUN AND PASSED, 2026-08-31: all seven rows, operator-confirmed**, including both
