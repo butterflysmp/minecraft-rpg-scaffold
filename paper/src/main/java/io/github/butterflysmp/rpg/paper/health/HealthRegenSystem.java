@@ -34,14 +34,16 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <h2>What is here and what is in core</h2>
  *
- * Everything except two Bukkit reads. Whether to heal, how much, and what it costs are
- * {@link HealthRegen}, where they are pinned exactly by unit test. This class samples
- * {@code getSaturation()}, calls {@code setExhaustion}, and hands the store the number core computed.
+ * Everything except one Bukkit read. Whether to heal and how much are {@link HealthRegen}, where they
+ * are pinned exactly by unit test. This class samples {@code getSaturation()} and hands the store the
+ * number core computed.
  *
- * <p>Saturation is sampled ONCE per fire and the same boolean feeds both calls, so the heal and the
- * charge cannot disagree about whether the window was saturated. That is the arity lesson
- * {@code ResourcePool.tryConsume} records one level down: two reads of live state straddling a change
- * make "charged for a window it did not get" reachable.
+ * <p><b>It charges nothing, and food still gates the rate.</b> This loop was designed to add
+ * exhaustion inside the saturation window, on the premise that cancelling vanilla's {@code SATIATED}
+ * regen would also stop vanilla charging for it. Boot gate row 4 measured that premise on Paper
+ * 26.1.2 and it is false -- saturation drained in roughly four to five seconds with our heal
+ * cancelled and no charge of our own. Vanilla drains saturation regardless, so the fed/hungry two-tier
+ * comes for free and a charge here would have doubled the drain. See {@code NEXT.md}.
  *
  * <h2>Lifecycle</h2>
  *
@@ -110,7 +112,8 @@ public final class HealthRegenSystem {
             // Health registers synchronously in PlayerHealthSystem.onJoin, so this is the edge.
             if (!stats.tracks(id)) return true;
 
-            // ONE sample, feeding both the heal and the charge. See the class javadoc.
+            // The tier gate, and the loop's only read of live player state. Vanilla owns the drain
+            // that eventually flips this false; nothing here writes it.
             boolean saturated = player.getSaturation() > 0;
 
             double healed = HealthRegen.healAmount(stats.healthRegenValue(id), saturated,
@@ -121,11 +124,6 @@ public final class HealthRegenSystem {
             // HealthChange consumer see regeneration exactly as they see any other heal. Self-dealt:
             // the player is both target and dealer, which is what a passive heal is.
             stats.heal(id, healed, id, true);
-
-            double exhaustion = HealthRegen.exhaustionFor(healed, saturated, HealthRegen.EXHAUSTION_PER_HP);
-            if (exhaustion > 0) {
-                player.setExhaustion(player.getExhaustion() + (float) exhaustion);
-            }
             return true; // never done: runs until the player quits or dies
         }, () -> tasks.remove(id));
 

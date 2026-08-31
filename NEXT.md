@@ -581,6 +581,59 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Stats, Slice 1 (Health Regen) — what it created or exposed
+
+- **BOOT GATE RUN AND PASSED, 2026-08-31**, operator-confirmed: rows 1, 2, 3, 6, 7, 8, 11 pass.
+  **Row 4 returned its STOP signal, and that is the slice's main finding rather than a failure.**
+
+- **CANCELLING THE `SATIATED` REGAIN DOES NOT STOP VANILLA CHARGING EXHAUSTION FOR IT.** Measured on
+  Paper 26.1.2: with our heal cancelled and no charge of our own, a fed idle player's saturation
+  still drained in **~4–5 seconds**. Vanilla drains saturation regardless of whether its regen tick
+  was allowed to heal.
+
+  The slice was designed around the opposite premise. The saturated window was to charge exhaustion
+  per HP healed, justified as **restorative** — restoring the drain that suppression removed. That
+  premise is **unfounded on this build**: nothing was removed, so the charge would have been a second
+  one and the drain would have doubled.
+
+  **The design got what it wanted for free.** Food still gates the rate — fed you regenerate at the
+  saturated tier, and once vanilla has drained the saturation you drop to the floor. The two-tier
+  fed/hungry economy is vanilla's drain plus our multiplier, with no custom cost anywhere.
+
+  `EXHAUSTION_PER_HP`, `HealthRegen.exhaustionFor`, the `setExhaustion` call and both their tests were
+  **removed, not shipped dormant** — a constant sitting at 0 with a live method behind it is a
+  mechanism nobody can see is dead.
+
+  **This is the row that justifies the whole "witness the premise before you build on it" ordering.**
+  The measurement was sequenced deliberately before the commit it would have authorized: commits 1–6
+  shipped with the constant at 0, so the gate could observe *suppression in, charge off*. Commit 7 was
+  never written. Had the constant shipped at its derived 1.2, the doubled drain would have looked like
+  a tuning problem rather than a false premise, and the number would have been tuned down toward zero
+  one gate at a time without anyone learning why.
+
+- **`SATURATED_MULTIPLIER` is 5.0, not the planned 4.0** — a fed player at the base rate regenerates a
+  round **1.0 HP/s**, dropping to the 0.2 HP/s floor when saturation runs out. Retuned after the gate,
+  so the *mechanism* is boot-witnessed but this *number* is not: rows 2 and 3 were run at ×4.
+
+- **THE POTION REROUTE OVERHEALS AT HIGH MAX HP — REVISIT.** `RpgListeners.onRegainHealth` translates
+  a cancelled `MAGIC`/`MAGIC_REGEN` amount through `HeartScale.customFromHealthPoints`, which scales
+  the heal to a PROPORTION of custom max. That is right near 100 HP — a 4-point potion is two hearts,
+  so 20 HP — and badly wrong above it: at a Growth-raised ceiling the same potion heals **300+**.
+  Proportional was chosen over 1:1 because 1:1 makes every potion worthless as ceilings rise; the
+  answer is neither, and it needs **a cap or a fixed custom heal amount** in a later slice.
+
+- **Row 5 was dropped** (it witnessed the exhaustion charge, which no longer exists). **Row 12**
+  (peaceful `REGEN`) stays in the exhaustive switch but is low-priority and was not run — the target
+  server is never on peaceful, and at `difficulty=easy` that arm is unreachable.
+
+- **`applyHeal` was vanilla-only and healed ZERO custom HP** — a shipped silent no-op, closed here.
+  See the entry further down, now marked closed. What remains is that the port carries no `sourceId`,
+  so a rerouted or ability heal cannot credit anyone.
+
+- **The `_TEMP` fixture table in this file had gone stale by two** before this slice touched it. See
+  that entry: it now lists eight, and carries the grep that would catch the next drift along with the
+  trap in that grep (it returns nine; the ninth is the already-retired `swing_TEMP`).
+
 ### Armor, Slice 2a (the gating axis, Protection and Growth) — what it created or exposed
 
 - **BOOT GATE OWED.** Eleven rows, in `PLAN-armor-slice-2a.md`. Row 6 is the discriminating one: with

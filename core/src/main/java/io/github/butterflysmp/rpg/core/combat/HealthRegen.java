@@ -17,7 +17,22 @@ package io.github.butterflysmp.rpg.core.combat;
  * comes back, just slowly.
  *
  * <p>The rate is what a stat sheet shows; the multiplier is not. {@code /rpg stats} displays the flat
- * HP/s, because the x4 is a live mechanic that depends on a bar the player is already looking at.
+ * HP/s, because the multiplier is a live mechanic that depends on a bar the player is already
+ * looking at.
+ *
+ * <h2>FOOD GATES THE RATE, and vanilla does the gating for us</h2>
+ *
+ * The design called for the saturated window to charge exhaustion, on the premise that cancelling
+ * vanilla's {@code SATIATED} regen would also stop vanilla charging the exhaustion that goes with it
+ * -- making a replacement charge RESTORATIVE rather than additive. <b>Boot gate row 4 measured that
+ * premise on Paper 26.1.2 and it is FALSE:</b> with our heal cancelled and no charge of our own,
+ * saturation still drained in roughly four to five seconds. Vanilla drains saturation on its own,
+ * independently of whether its regen tick was allowed to heal.
+ *
+ * <p>Which means the two-tier design falls out FOR FREE. Fed, you regenerate at the saturated rate;
+ * once vanilla has drained the saturation, you drop to the floor. Food gates the rate exactly as
+ * intended, through vanilla's own drain -- and a custom charge on top would simply have doubled it.
+ * So there is no exhaustion machinery here, and none shipped dormant. See {@code NEXT.md}.
  *
  * <h2>The saturation read is NOT here</h2>
  *
@@ -29,8 +44,9 @@ package io.github.butterflysmp.rpg.core.combat;
  * <h2>Worked</h2>
  *
  * At base and a 20-tick window: {@code healAmount(0.2, false, 20, 50, 100)} is the flat rate for one
- * second; saturated, four times it. At 99.9/100 the saturated amount is capped to the remaining 0.1.
- * At 100/100 it is 0.0, and that zero is load-bearing -- see {@link #healAmount}.
+ * second; saturated, five times it -- a round 1.0 HP/s while fed. At 99.9/100 the saturated amount is
+ * capped to the remaining 0.1. At 100/100 it is 0.0, and that zero is load-bearing -- see
+ * {@link #healAmount}.
  */
 public final class HealthRegen {
 
@@ -39,8 +55,14 @@ public final class HealthRegen {
     /** A player's starting regeneration: 1 HP every 5 seconds. Mobs base at 0 -- see {@code HealthState}. */
     public static final double BASE_PER_SECOND = 0.2;
 
-    /** What saturation multiplies the flat rate by while the player has any. */
-    public static final double SATURATED_MULTIPLIER = 4.0;
+    /**
+     * What saturation multiplies the flat rate by while the player has any.
+     *
+     * <p>Five, so a player at the base rate regenerates a round <b>1.0 HP/s</b> while fed, dropping to
+     * the 0.2 HP/s floor once vanilla has drained their saturation. Those two tiers are the whole food
+     * economy of this system, and neither needs a custom cost -- see the class javadoc.
+     */
+    public static final double SATURATED_MULTIPLIER = 5.0;
 
     /** The multiplier outside the saturation window. Exactly 1.0, so the flat rate is untouched. */
     public static final double UNSATURATED_MULTIPLIER = 1.0;
@@ -50,25 +72,6 @@ public final class HealthRegen {
 
     /** Ticks per second, the divisor that turns an HP/s rate into an HP-per-window amount. */
     private static final double TICKS_PER_SECOND = 20.0;
-
-    /**
-     * Exhaustion charged per HP healed inside the saturation window.
-     *
-     * <p><b>0.0 until the boot gate has witnessed the premise, and that ordering is the point.</b>
-     * The charge is justified as RESTORATIVE, not additive: cancelling vanilla's {@code SATIATED}
-     * regen also cancels the exhaustion vanilla charged for it, so without a replacement charge a fed
-     * idle player holds the x4 nearly forever and food stops mattering out of combat. That is a claim
-     * about vanilla's behaviour on THIS Paper build, and it has not been measured. The gate row
-     * measures it -- suppression in, charge off -- and this constant is set from what it prints, in
-     * its own commit, afterwards. If the suppressed drain turns out NOT to be slower than vanilla's,
-     * the charge is additive and this constant stays at zero.
-     *
-     * <p>The derivation to check it against, from recall and therefore not to be trusted until the
-     * gate confirms it: vanilla is believed to charge 6.0 exhaustion per vanilla health point and to
-     * spend 4.0 exhaustion per saturation point; 100 custom HP renders as 20 vanilla points, so
-     * 1 custom HP is about 0.2 vanilla points, about 1.2 exhaustion.
-     */
-    public static final double EXHAUSTION_PER_HP = 0.0;
 
     /** Does this bonus grant anything at all? Strictly {@code >}, so 0 declares nothing. */
     public static boolean boosts(double bonusPerSecond) {
@@ -107,11 +110,12 @@ public final class HealthRegen {
      *       through a method named heal.
      * </ul>
      *
-     * <p>The result is capped at the remaining headroom, {@code max - current}, and that cap is not
-     * duplicating {@code HealthState.heal}'s own clamp. It is what makes the exhaustion charge honest:
-     * {@code CombatantStats.heal} reports the REQUESTED amount in its event, unlike {@code damage}
-     * which reports what it actually dealt, so a caller charging for what it asked for would
-     * overcharge on the window that tops a player off. Capping here makes requested == applied.
+     * <p>The result is capped at the remaining headroom, {@code max - current}. That cap is not
+     * duplicating {@code HealthState.heal}'s own clamp: it keeps the amount REQUESTED equal to the
+     * amount applied, and {@code CombatantStats.heal} reports the requested amount in its event
+     * (unlike {@code damage}, which reports what it actually dealt). Any future consumer of a HEAL
+     * change -- a heal popup, a healing statistic -- reads that number, so the cap is what stops it
+     * reporting a heal larger than the one that landed.
      */
     public static double healAmount(double ratePerSecond, boolean saturated, int periodTicks,
                                     double current, double max) {
@@ -121,29 +125,5 @@ public final class HealthRegen {
         double multiplier = saturated ? SATURATED_MULTIPLIER : UNSATURATED_MULTIPLIER;
         double window = periodTicks / TICKS_PER_SECOND;
         return Math.min(ratePerSecond * multiplier * window, max - current);
-    }
-
-    /**
-     * The exhaustion to charge for {@code healed} HP, or {@code 0.0} outside the saturation window.
-     *
-     * <p><b>Per HP healed, never per tick</b>, so the drain is CADENCE-INVARIANT: changing the regen
-     * period changes how often this is called and how much each call heals, and those cancel. A
-     * per-tick charge would silently retune the food economy the first time the period moved.
-     *
-     * <p><b>An unsaturated window is free; a saturated window charges the WHOLE heal</b> -- the flat
-     * floor included, not merely the extra the multiplier added. Food-powered regeneration costs food,
-     * all of it. The floor is free because it has no food gate at all, so charging for it would
-     * slowly starve an idle player in exchange for nothing.
-     *
-     * <p><b>The ratio is a parameter, not a read of {@link #EXHAUSTION_PER_HP}.</b> That constant
-     * ships at 0 until the gate authorizes it, and a version of this method that read it internally
-     * would return 0 on BOTH branches until then -- making the "charges when unsaturated" mutation
-     * impossible to redden, which is a test that cannot fail. Passing the ratio in keeps every test
-     * discriminating whatever the shipped constant happens to be.
-     */
-    public static double exhaustionFor(double healed, boolean saturated, double exhaustionPerHp) {
-        if (!saturated) return 0.0;
-        if (healed <= 0 || exhaustionPerHp <= 0) return 0.0;
-        return healed * exhaustionPerHp;
     }
 }

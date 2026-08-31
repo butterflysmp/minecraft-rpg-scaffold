@@ -42,7 +42,8 @@ became a cost/smoothness call rather than a correctness one.
 
 ## Decisions taken
 
-1. **Two systems, ONE knob.** Base 1 HP / 5 s = 0.2 HP/s; ×4 while `getSaturation() > 0`. A
+1. **Two systems, ONE knob.** Base 1 HP / 5 s = 0.2 HP/s; ×5 while `getSaturation() > 0`, so a fed
+   player at base regenerates a round 1.0 HP/s. A
    multiplier on the same stat rather than a second stat, so gear that boosts regeneration boosts the
    saturated rate with it. Below saturation the flat rate is the floor, never zero.
 
@@ -53,11 +54,19 @@ became a cost/smoothness call rather than a correctness one.
    > one would silently retune the other. At 20 ticks the stat's value, the HP/s a sheet prints, and
    > the amount paid per fire are the same number — no conversion factor for Slice 3 to drift against.
 
-3. **The ×4 charges exhaustion, per HP HEALED, not per tick** — so the drain is cadence-invariant.
-   Restorative, not additive: cancelling `SATIATED` also cancels the exhaustion vanilla charged for
-   it. An unsaturated window is free; a saturated one charges the **whole** heal, floor included.
-   > Rejected: a direct `setSaturation` decrement — it bypasses vanilla's exhaustion accumulator, so
-   > it composes with neither sprinting nor food level.
+3. ~~**The saturated window charges exhaustion, per HP HEALED**~~ — **ABANDONED, and gate row 4 is
+   why.** The charge was justified as *restorative*: cancelling `SATIATED` was assumed to also cancel
+   the exhaustion vanilla charges for it. **Measured on Paper 26.1.2, that is false** — with our heal
+   cancelled and no charge of our own, saturation still drained in ~4–5 s. Vanilla drains saturation
+   regardless of whether its regen tick healed. A charge of ours would have been a second one.
+
+   **The design gets what it wanted for free.** Food still gates the rate: fed → the saturated tier,
+   drained → the floor. That two-tier economy is vanilla's own drain plus our multiplier, with no
+   custom cost. `EXHAUSTION_PER_HP`, `exhaustionFor`, the `setExhaustion` call and both their tests
+   were **removed rather than shipped dormant** — a constant at 0 with a live method behind it is a
+   mechanism nobody can see is dead.
+   > Also rejected, before the measurement: a direct `setSaturation` decrement — it bypasses vanilla's
+   > exhaustion accumulator, so it composes with neither sprinting nor food level. Moot now.
 
 4. **Cancel `SATIATED`, `REGEN`; cancel AND REROUTE `MAGIC`, `MAGIC_REGEN`, `EATING`; pass `CUSTOM`.**
    Rule: *never cancel a heal you are not ready to replace* — a cancelled potion is a silent no-op,
@@ -91,26 +100,29 @@ became a cost/smoothness call rather than a correctness one.
 | 4 | `0f9c39c` | the `health_regen_boost_TEMP` fixture and `/rpg healthregen` |
 | 5 | `9c49a3e` | `applyHeal` routes to custom HP — closes a shipped silent no-op |
 | 6 | `cd533bd` | `EntityRegainHealthEvent`: `VanillaHealPolicy` + the handler |
-| 7 | **OWED** | set `EXHAUSTION_PER_HP` — **blocked on gate row 4** |
+| 7 | ~~set `EXHAUSTION_PER_HP`~~ | **NEVER WRITTEN — gate row 4 returned STOP** |
+| 7' | *(this commit)* | strip the exhaustion machinery; `SATURATED_MULTIPLIER` → 5.0; gate results |
 
-**Deviation from the plan, deliberate.** The plan left commit ordering as an "or". It is now fixed:
-commits 1–6 ship with `EXHAUSTION_PER_HP` at **0.0**, so the deployed state at commit 6 is
-*suppression in, charge off* — exactly what row 4 measures. The measurement is sequenced **before the
-thing it authorizes**. If row 4 shows the suppressed drain is not slower than vanilla's, the charge is
-additive rather than restorative and commit 7 is never written.
+**The ordering was the point, and it paid.** The plan left commit sequencing as an "or"; it was fixed
+so that commits 1–6 shipped with `EXHAUSTION_PER_HP` at **0.0** — making the deployed state at commit
+6 exactly *suppression in, charge off*, which is what row 4 measures. **The measurement was sequenced
+before the commit it would have authorized, and it refused to authorize it.**
 
-That is also why `exhaustionFor` takes the ratio as a **parameter** rather than reading the constant:
-a version that read it would return 0 on both branches until commit 7, making the
-"charges-when-unsaturated" mutation impossible to redden — a test that cannot fail.
+Had the constant shipped at its derived 1.2 instead, the doubled drain would have presented as a
+tuning problem rather than a false premise, and it would have been tuned toward zero one gate at a
+time without anyone learning why.
+
+The parameterised `exhaustionFor(healed, saturated, ratio)` existed so its tests could stay
+discriminating while the constant sat at 0. It went with the rest — there is no dormant machinery
+left, and the constant-at-zero device is recorded here rather than in the code.
 
 ---
 
 ## Verification — what was executed
 
-**Unit.** `./mvnw clean package` → **core 594 / storage 17 / paper 401**, 0 failing.
+**Unit.** `./mvnw clean package` → **core 592 / storage 17 / paper 401**, 0 failing.
 Baseline at `6a686f5`: core 578 / storage 17 / paper 395.
-`./scripts/check-jar.sh` → OK. `./scripts/check-tests.sh` → core 59 reports/594, storage 2/17,
-paper 46/401.
+(It was 594 before the gate; the two exhaustion tests went with the machinery they covered.)
 
 `HealthStateTest` and `ResourcePoolTest` are left **byte-identical** — the faithfulness check on an
 additive change, the device the 2b lift used.
@@ -119,21 +131,22 @@ additive change, the device the 2b lift used.
 arithmetic reads like it gives: a one-tick window yields `0.010000000000000002`, and the 99.9/100
 headroom cap yields `0.09999999999999432`.
 
-**Mutation — 26 planned, 26 RED.** Each was watched red *before* its row was written; sources were
+**Mutation — 24 planned, 24 RED.** Each was watched red *before* its row was written; sources were
 copied to the scratchpad and restored from there, never `git checkout --`; each marker was grepped and
 test-compiled before the result was believed; a run with no `Tests run:` line was treated as blind.
 
+The nine `HealthRegen` rows were **re-run after the gate**, because the ×5 change and the exhaustion
+strip moved their numbers. The rest live in files untouched since their first run.
+
 | mutation | result |
 |---|---|
-| `SATURATED_MULTIPLIER` → 1.0 | RED `expected: <0.8> but was: <0.2>` |
+| `SATURATED_MULTIPLIER` → 1.0 | RED `expected: <1.0> but was: <0.2>` |
 | window fixed at 1.0 (drop the divisor) | RED `expected: <0.05> but was: <0.2>` |
 | drop the `current >= max` guard | RED `expected: <0.0> but was: <-20.0>` |
-| drop the `current <= 0` guard | RED `expected: <0.0> but was: <0.8>` |
-| drop the `ratePerSecond <= 0` guard | RED `expected: <0.0> but was: <-4.0>` |
-| drop the `periodTicks <= 0` guard | RED `expected: <0.0> but was: <-0.2>` |
-| drop the headroom `Math.min` | RED `expected: <0.1> but was: <0.8>` |
-| `exhaustionFor` drops the `!saturated` arm | RED `expected: <0.0> but was: <0.96>` |
-| `exhaustionFor` ignores `healed` | RED `expected: <0.96> but was: <1.2>` |
+| drop the `current <= 0` guard | RED `expected: <0.0> but was: <1.0>` |
+| drop the `ratePerSecond <= 0` guard | RED `expected: <0.0> but was: <-5.0>` |
+| drop the `periodTicks <= 0` guard | RED `expected: <0.0> but was: <-0.25>` |
+| drop the headroom `Math.min` | RED `expected: <0.1> but was: <1.0>` |
 | `boosts` uses `>=` | RED `expected: <false> but was: <true>` |
 | `contribution` halves its input | RED `expected: <0.8> but was: <0.4>` |
 | `customFromHealthPoints` drops the `× 2` | RED `expected: <20.0> but was: <40.0>` |
@@ -151,6 +164,15 @@ test-compiled before the result was believed; a run with no `Tests run:` line wa
 | `EATING` → the boss/crystal PASS arm | RED `expected: <REROUTE> but was: <PASS>` |
 | `CUSTOM` → CANCEL | RED `expected: <PASS> but was: <CANCEL>` |
 | `SATIATED` → PASS | RED `expected: <CANCEL> but was: <PASS>` |
+
+Two rows from the pre-gate run are **gone with the code they covered**: `exhaustionFor` dropping its
+`!saturated` arm, and `exhaustionFor` ignoring `healed`. 26 → 24.
+
+**One test's fixture had to move, and it would otherwise have stopped being able to fail.** The
+headroom cap's "does not bite" row used 99.0/100. At ×4 a fed second paid 0.8, so headroom 1.0 did not
+bite. At ×5 it pays exactly 1.0 — `Math.min(1.0, 1.0)` — so the row would have asserted the right
+number for the wrong reason and survived deletion of the cap. Moved to 98.0/100, and the mutation
+re-run against it.
 
 **And the exhaustiveness guard was watched, not asserted.** Deleting `VanillaHealPolicy`'s `CUSTOM`
 arm gives `VanillaHealPolicy.java:[71,16] the switch expression does not cover all possible input
@@ -171,32 +193,37 @@ the equipment scan body, the fixture mint, and the event handler all need a live
 
 ---
 
-## Boot gate — `./scripts/dev-server.sh` — **OWED, not run**
+## Boot gate — `./scripts/dev-server.sh` — **RUN AND PASSED, 2026-08-31**
 
-Kill orphaned `java.exe` first: the script dies, two JVMs do not, and they hold the deployed jar.
-No content YAML changed, so `--refresh-content` is not required.
+Operator-confirmed. **Rows 1, 2, 3, 6, 7, 8 and 11 pass. Row 4 returned its STOP signal, which is the
+slice's most valuable result rather than a failure.** Rows 9 and 10 were exercised as part of the
+single-clean-regen check: the handler fires and potions translate into custom HP.
 
-| # | Check | Expected |
+| # | Check | Result |
 |---|---|---|
-| 1 | boot log | clean load; zero skipped content; no new WARNING |
-| 2 | `/rpg damage 50`, food full but **saturation 0** (sprint it off), idle 30 s | ≈ **+6 HP** — the flat floor, and it is never zero |
-| 3 | eat to restore saturation, idle 30 s while injured | ≈ **+24 HP** — the ×4 |
-| 4 | **PREMISE WITNESS.** At commit 6 (`cd533bd`: suppression in, `EXHAUSTION_PER_HP` = 0): saturated, injured, idle — time saturation to zero. Compare against the same measurement with the plugin's regen listener disabled. | The suppressed drain must be **SLOWER** than vanilla's. **If it is not, the charge is additive rather than restorative — STOP, do not write commit 7.** This row also prints the numbers `EXHAUSTION_PER_HP` is tuned from. |
-| 5 | after commit 7, saturated + injured, idle | saturation visibly falls and rolls into food level |
-| 6 | full HP, saturated, idle 60 s | **no** heart-bar movement, no action-bar churn — the `current >= max` short-circuit |
-| 7 | `/rpg healthregen` (+0.8), hold it, idle 30 s unsaturated | ≈ **+30 HP** (1.0 HP/s); drop it and the rate returns to base within a tick |
-| 8 | die, respawn, idle | regeneration resumes — the loop self-cancels on the death screen and `onRespawn` restarts it |
-| 9 | food 20, saturation > 0, injured, watch for vanilla's own regen | none — `SATIATED` is cancelled |
-| 10 | drink a **healing potion** at 50/100 | custom HP jumps by the translated amount, and is **not** a silent no-op |
-| 11 | cast `rekindle` (its `heal:` effect) | custom HP rises |
-| 12 | set `difficulty=peaceful` temporarily, injure, idle | no vanilla `REGEN` heal. The only way to reach that arm — at `difficulty=easy` (this server's setting) it never fires |
+| 1 | boot log | **PASS** — clean load, zero skipped content |
+| 2 | `/rpg damage 50`, food full but saturation 0, idle 30 s | **PASS** — the flat floor, never zero |
+| 3 | eat to restore saturation, idle 30 s while injured | **PASS** — the saturated tier (run at ×4; see below) |
+| 4 | **PREMISE WITNESS**, at `cd533bd`: suppression in, charge off — time saturation to zero | **STOP.** Saturation still drained in **~4–5 s**. Cancelling `SATIATED` does **not** stop vanilla charging exhaustion; vanilla drains saturation on its own. The restorative premise is false and a charge of ours would have doubled the drain. **Commit 7 was never written.** |
+| 5 | ~~witness the exhaustion charge~~ | **DROPPED** — there is no charge to witness |
+| 6 | full HP, saturated, idle 60 s | **PASS** — no heart-bar movement, no churn: the `current >= max` short-circuit |
+| 7 | `/rpg healthregen` (+0.8), hold, idle 30 s unsaturated | **PASS** — the rate rises and returns on drop. The reconcile surface is wired |
+| 8 | die, respawn, idle | **PASS** — regeneration resumes; the respawn restart is load-bearing and works |
+| 9 | food 20, saturation > 0, injured — watch for vanilla's own regen | **PASS** — single clean regen, no double-heal |
+| 10 | drink a healing potion | **PASS** — the handler fires and the potion translates into custom HP, not a silent no-op |
+| 11 | cast an ability with a `heal:` effect (`arc_surge`) | **PASS** — custom HP rises. Heals **zero** on the parent commit |
+| 12 | peaceful `REGEN` | **NOT RUN, low priority.** The arm stays in the exhaustive switch, but the target server is never peaceful and at `difficulty=easy` it is unreachable |
 
-**Rows 4, 7, 10 and 11 are the discriminating ones.** Rows 2, 3 and 5 pass on any working regeneration
-at all. Row 4 is the only row that can **stop the slice**. Row 7 is the only row that fails if the
-reconcile surface is unwired. Rows 10 and 11 each heal **zero** on the parent commit, so each fails
-without its own commit.
+**Row 4 is the row that justifies the whole ordering.** It was deliberately scheduled at commit 6,
+before the commit it would have authorized, and it refused to authorize it. Rows 7, 10 and 11 are the
+other discriminating ones — each heals nothing, or fails outright, on the parent commit of the change
+it checks. Rows 2, 3 and 6 pass on any working regeneration.
 
----
+**One number is NOT boot-witnessed, and saying so is the point.** Rows 2 and 3 ran at
+`SATURATED_MULTIPLIER = 4.0`. The constant was retuned to **5.0** afterwards — a fed player at base
+now regenerates a round 1.0 HP/s, dropping to the 0.2 floor once vanilla drains the saturation. The
+*mechanism* those rows witnessed is unchanged; the *absolute HP figure* in row 3 is not what a re-run
+would print.
 
 ## Out of scope
 
@@ -206,3 +233,11 @@ Slice 3 (`/rpg stats`). A Health Regen **enchant** — this slice ships a `_TEMP
 adds it to the removal debt. Mob passive regeneration. Regeneration persistence across sessions.
 Showing the rate on the action bar. Crediting a heal to its caster (`CombatantHandle.applyHeal` takes
 no `sourceId`; widening that port is where a heal-credit feature starts).
+
+**Deferred with a known defect, recorded rather than left to be discovered: the potion reroute
+overheals at high max HP.** `HeartScale.customFromHealthPoints` scales a cancelled `MAGIC` /
+`MAGIC_REGEN` amount to a **proportion of custom max**. That is right near 100 HP — a 4-point potion is
+two hearts, so 20 HP — and badly wrong above it: at a Growth-raised ceiling the same potion heals
+**300+**. Proportional was chosen over 1:1 because 1:1 makes every potion worthless as ceilings rise.
+The answer is neither; it needs **a cap or a fixed custom heal amount**, in a later slice. Also in
+`NEXT.md`.
