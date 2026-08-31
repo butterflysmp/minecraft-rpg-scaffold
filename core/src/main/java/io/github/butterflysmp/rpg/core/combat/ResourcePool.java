@@ -33,9 +33,17 @@ import java.util.function.LongSupplier;
  * <p>There were FOUR reads of the old constant, not three: {@link #current}'s absent-owner branch,
  * {@link #regenerated}'s ceiling, {@link #tryConsume}'s never-satisfiable guard, and a duplicate of
  * the first INSIDE {@code tryConsume}'s {@code compute} lambda. That last one is why
- * {@code tryConsume} resolves the ceiling ONCE at the top and passes the local down: a resolver call
- * inside a {@code ConcurrentHashMap} mapping function would re-enter a map while holding a bin lock,
- * on the exact path {@code concurrentSpendsCannotOverdrawThePool} guards.
+ * {@code tryConsume} resolves the ceiling ONCE at the top and passes the local down.
+ *
+ * <p><b>Though not for the reason first written here.</b> That claimed a resolve inside the
+ * {@code compute} lambda would break {@code concurrentSpendsCannotOverdrawThePool}. It does not --
+ * measured, with the resolve moved in: all 23 pool tests stayed green. The reasons it stays OUT are
+ * that a resolver is a LIVE read of a player's stats, so two reads straddling a gear change make
+ * "the guard passed, then the spend refused" reachable -- which reports on screen as "needs 110, you
+ * have 130" -- and that {@code ConcurrentHashMap} forbids a mapping function from touching the map
+ * it is computing on, which arbitrary caller code cannot promise. What actually holds it is
+ * {@code tryConsumeAsksTheResolverEXACTLYONCESoTheGuardAndTheSpendCannotDISAGREE}, which counts the
+ * calls, because the arity is the observable part and the deadlock story was not.
  */
 public final class ResourcePool {
 

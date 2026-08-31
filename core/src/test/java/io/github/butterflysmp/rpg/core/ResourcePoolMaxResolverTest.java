@@ -145,8 +145,11 @@ class ResourcePoolMaxResolverTest {
         pool.setCurrent(ENCHANTED, MANA, before);
 
         assertEquals(100, pool.current(ENCHANTED, MANA), EPS, "clamped down to the new ceiling");
-        // Mutation: drop the Math.min from setCurrent -> the stored 130 is written, and only the
-        // regen path's own min hides it -> this reddens where a read-only test would not.
+        // This test CANNOT see the clamp, which is worth knowing rather than assuming: deleting
+        // setCurrent's Math.min leaves it green, because current() -> regenerated() ends in its own
+        // min against the same ceiling. It pins the VALUE a player reads after unequipping, which is
+        // the thing that matters on screen. What it does not pin is WHERE that value came from --
+        // see setCurrentClampsAtTheMomentOfWRITINGAndNotMerelyAtTheNextREAD, which does.
     }
 
     @Test
@@ -168,6 +171,39 @@ class ResourcePoolMaxResolverTest {
         assertEquals(40, pool.current(ENCHANTED, MANA), EPS, "already below the new ceiling");
         // Mutation: have setCurrent write the ceiling rather than the amount -> 100, a free refill
         // for unequipping -> reddens.
+    }
+
+    @Test
+    void setCurrentClampsAtTheMomentOfWRITINGAndNotMerelyAtTheNextREAD() {
+        // THE test that makes the explicit clamp a decision rather than decoration, and it exists
+        // because the one above it CANNOT fail. Measured, not assumed: with the Math.min deleted
+        // from setCurrent, all ten other tests in this file stayed green.
+        // loweringTheCeilingCLAMPS... reads through current(), current() calls
+        // regenerated(entry, ceiling), and regenerated ends in its own Math.min -- so it reports
+        // the clamped number whether or not the clamp was ever WRITTEN.
+        //
+        // The stored amount only becomes observable when the ceiling rises again with NO pin behind
+        // it, because that is the one moment the regen path's min stops covering for it. The
+        // production loop never produces that moment -- it pins on every real max change, and the
+        // pin writes a value it just read back, which is already clamped. So this asserts
+        // setCurrent's own contract in ISOLATION, which is precisely what the decision asked for:
+        // the unequip clamp stated somewhere a refactor of regenerated cannot quietly take with it.
+        AtomicLong tick = new AtomicLong(0);
+        Map<UUID, Double> ceiling = new HashMap<>();
+        ceiling.put(ENCHANTED, 100.0);
+        ResourcePool pool = pool(tick, (owner, resourceId) -> ceiling.getOrDefault(owner, 100.0));
+
+        pool.setCurrent(ENCHANTED, MANA, 130);                // above THIS owner's ceiling
+        assertEquals(100, pool.current(ENCHANTED, MANA), EPS, "clamped, but the regen min agrees");
+
+        ceiling.put(ENCHANTED, 130.0);                        // and now nothing is covering for it
+
+        assertEquals(100, pool.current(ENCHANTED, MANA), EPS,
+                "100 was STORED, so a later ceiling rise is headroom -- had the raw 130 been kept, "
+                        + "it would reappear here in full");
+        // Mutation: drop the Math.min from setCurrent -> the raw 130 is stored, invisible while the
+        // ceiling is 100, and reappears the moment it rises -> reddens HERE and only here.
+        // No tick passes in this test, so regeneration cannot be what produces the difference.
     }
 
     @Test
@@ -228,5 +264,37 @@ class ResourcePoolMaxResolverTest {
         assertEquals(10, pool.current(ENCHANTED, MANA), EPS);
         // Mutation: resolve the ceiling INSIDE the compute lambda -> a map read under a bin lock on
         // the one path that must be atomic.
+    }
+
+    @Test
+    void tryConsumeAsksTheResolverEXACTLYONCESoTheGuardAndTheSpendCannotDISAGREE() {
+        // The plan asserted that resolving the ceiling inside compute() would redden the
+        // concurrency test. Measured: it does not. Moving the resolve into the mapping function
+        // left all 22 ResourcePool tests green, because a resolver over a plain map neither
+        // deadlocks nor returns anything different. Recorded because a mutation row that never
+        // reddens is a check that did not run.
+        //
+        // What IS observable is the arity, and that is the property actually worth holding.
+        // tryConsume reads the ceiling twice in the mutated shape -- once for the
+        // never-satisfiable guard, once for the absent-entry fallback -- and a resolver is a live
+        // read of a player's stats, not a constant. Two reads straddling a gear change make
+        // "the guard passed, then the spend refused" reachable, which reports to the player as
+        // "needs 110, you have 130". One read cannot disagree with itself.
+        //
+        // It is also ConcurrentHashMap's own rule: a mapping function must not attempt to update
+        // any mapping of the map it is computing on, and a resolver is arbitrary caller code.
+        AtomicInteger asked = new AtomicInteger();
+        ResourcePool pool = pool(new AtomicLong(0), (owner, resourceId) -> {
+            asked.incrementAndGet();
+            return 130;
+        });
+
+        assertTrue(pool.tryConsume(ENCHANTED, MANA, 40), "spent from an absent entry");
+        assertEquals(1, asked.get(), "one resolve for the guard AND the fallback, not two");
+
+        asked.set(0);
+        assertTrue(pool.tryConsume(ENCHANTED, MANA, 40), "and again with an entry present");
+        assertEquals(1, asked.get(), "still one -- regenerated() is handed the ceiling, not asked");
+        // Mutation: resolve the ceiling inside the compute lambda -> 2 -> reddens.
     }
 }
