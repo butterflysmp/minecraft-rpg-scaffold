@@ -3,10 +3,12 @@ package io.github.butterflysmp.rpg.paper.weapon;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ArmorLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.ArmorSlot;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import io.github.butterflysmp.rpg.paper.hud.StatsBarText;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -16,6 +18,7 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -128,10 +131,31 @@ public final class ArmorItems {
         // below is rendered from -- so the "Defense: 17" line and the "Protection III" line beneath
         // it can never disagree, and neither can disagree with the reconcile scan, which composes
         // through the same Protection.effectiveDefense.
+        // Protection composes INTO the Defense line; Growth adds a line of its own. One entry per
+        // flat-stat enchant, so Slice 2b's Mana Bank is a second element here and nothing else.
+        List<ArmorLore.StatBonus> bonuses = new ArrayList<>();
+        addBonus(bonuses, state, adapters, EnchantEffect.MAX_HEALTH,
+                ArmorLoreLines.MAX_HEALTH_LABEL, StatsBarText.HEALTH_COLOR);
+
         List<Component> base = ArmorLore.build(armor,
-                EnchantValues.totalFor(state, adapters.enchants(), EnchantEffect.DEFENSE));
+                EnchantValues.totalFor(state, adapters.enchants(), EnchantEffect.DEFENSE),
+                bonuses);
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
         meta.setEnchantmentGlintOverride(!state.effective().isEmpty());
+    }
+
+    /**
+     * Add a bonus line for one flat-stat effect, if this piece grants any of it.
+     *
+     * Keyed on the EFFECT, never on an enchant id, so a second max-health enchant would appear here
+     * without a code change -- the rule { EnchantValues} already follows and the reason there
+     * is no { Growth.ID}.
+     */
+    private static void addBonus(List<ArmorLore.StatBonus> into, EnchantState state,
+                                 AdapterContext adapters, EnchantEffect effect,
+                                 String label, net.kyori.adventure.text.format.NamedTextColor color) {
+        double points = EnchantValues.totalFor(state, adapters.enchants(), effect);
+        if (points > 0) into.add(new ArmorLore.StatBonus(points, label, color));
     }
 
     /**

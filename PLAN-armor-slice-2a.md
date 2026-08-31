@@ -188,7 +188,7 @@ the source tree trips the golden.
 | 5 | equip it | `⛨` rises by 6 |
 | 6 | **the armor bar, with Protection active** | **a partial fill, NOT empty** |
 | 7 | `/rpg damage 100` in full diamond + Protection III ×4 | visibly less than the ~83 Slice 1 pinned |
-| 8 | Growth III on a chestplate, at full HP | max +30, **current unchanged** (headroom) |
+| 8 | Growth III on a chestplate, at full HP | tooltip shows **`+30 Max Health`** as its own line; max +30, **current unchanged** (headroom) |
 | 9 | remove that piece at full HP | current **clamps down** |
 | 10 | `/rpg enchant show` on armor | works; no crash; inert lines correct |
 | 11 | four Protection III pieces | `⛨` rises by **36**, not 9 |

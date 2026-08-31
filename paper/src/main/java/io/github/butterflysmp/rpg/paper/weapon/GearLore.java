@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.weapon.ArmorLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import net.kyori.adventure.text.Component;
@@ -49,6 +50,35 @@ public final class GearLore {
     public static String titleCase(String raw) {
         if (raw.isEmpty()) return raw;
         return Character.toUpperCase(raw.charAt(0)) + raw.substring(1).toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * One FLAT-STAT BONUS line: a coloured {@code "+N"} followed by the stat's name in gray.
+     *
+     * <p>The counterpart to a stat line, and the distinction is what the gear actually has. A stat
+     * line reports a total the item carries and an enchant may edit -- {@code "Defense: 17"} once
+     * Protection is on it. A bonus line reports something the item had NONE of until an enchant put
+     * it there: a piece of armor has no max health of its own, so Growth cannot modify a total, it
+     * adds a line.
+     *
+     * <p><b>Deliberately generic, because the next one is already known.</b> Slice 2b's Mana Bank
+     * grants +N Max Mana off exactly this shape. Passing the label and the colour in is what makes
+     * that a call rather than a copy -- the alternative was a {@code growthLine} that would have
+     * needed a {@code manaBankLine} beside it one slice later, and then a third.
+     *
+     * <p>Emits NOTHING when the value is not positive, so an unenchanted piece grows no line and no
+     * blank. That check lives here rather than in each caller for the same reason
+     * {@link #appendFlavor}'s does.
+     *
+     * <p>Colour is the CALLER'S, and it should come from {@code StatsBarText} rather than being
+     * picked: these lines report the same stats the action bar does, so a player glancing between an
+     * item and their HUD must not see two colours for one number.
+     */
+    public static void appendFlatBonus(List<Component> lore, double points, String label,
+                                       NamedTextColor color) {
+        if (points <= 0) return;
+        lore.add(plain(ArmorLoreLines.bonusValue(points), color)
+                .append(plain(" " + label, NamedTextColor.GRAY)));
     }
 
     /**

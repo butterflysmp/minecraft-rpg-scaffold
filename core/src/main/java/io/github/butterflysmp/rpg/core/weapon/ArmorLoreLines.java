@@ -25,6 +25,39 @@ public final class ArmorLoreLines {
      */
     public static final String DEFENSE_LABEL = "Defense: ";
 
+    /**
+     * The stat a Growth enchant raises, as it appears on a BONUS line: {@code "+30 Max Health"}.
+     *
+     * <p>NO COLON and no trailing space, unlike {@link #DEFENSE_LABEL}, because it is a SUFFIX
+     * rather than a prefix -- the value leads. That shape difference is not cosmetic; it follows
+     * from what the two enchants actually do:
+     *
+     * <ul>
+     *   <li>Defense is a stat the piece ALREADY HAS, so Protection edits the number in place and
+     *       the line stays {@code "Defense: 17"}.
+     *   <li>Max health is a stat a piece of armor has NONE of, so Growth has no total to modify. It
+     *       adds a line that was not there at all.
+     * </ul>
+     *
+     * <p><b>The same words {@code EnchantEffectLine} uses</b>, so the enchant's own description and
+     * the line it produces cannot disagree. "Max Health" rather than "Health" because Growth raises
+     * the CEILING and grants no current health -- equipping is headroom, never a heal.
+     */
+    public static final String MAX_HEALTH_LABEL = "Max Health";
+
+    /**
+     * The value half of a flat BONUS line: {@code 30 -> "+30"}.
+     *
+     * <p>The sign belongs to the VALUE, not the label, and that is what makes this reusable: a bonus
+     * line is {@code "+N "} followed by any stat's noun, and Slice 2b's Mana Bank needs the
+     * identical shape with a different one. Nothing here knows which stat it is, which is the whole
+     * point -- the alternative was a {@code growthLine()} that would have needed a
+     * {@code manaBankLine()} beside it a slice later.
+     */
+    public static String bonusValue(double points) {
+        return "+" + trimNumber(points);
+    }
+
     /** The value half: {@code 8 -> "8"}. Coloured, where {@link #DEFENSE_LABEL} is not. */
     public static String defenseValue(double defense) {
         return trimNumber(defense);

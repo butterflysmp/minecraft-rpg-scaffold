@@ -68,6 +68,33 @@ class ArmorLoreLinesTest {
         // Mutation: rename the label to "Armor: " -> reddens.
     }
 
+    @Test
+    void aFlatBonusValueLeadsWithItsSignAndDropsTheTrailingZero() {
+        assertEquals("+30", ArmorLoreLines.bonusValue(30));
+        assertEquals("+30", ArmorLoreLines.bonusValue(30.0));
+        assertEquals("+10", ArmorLoreLines.bonusValue(10));
+        assertEquals("+2.5", ArmorLoreLines.bonusValue(2.5), "a fractional bonus keeps its fraction");
+        // Mutation: drop the "+" -> "30 Max Health" reads as a total rather than a bonus -> reddens.
+    }
+
+    @Test
+    void theMaxHealthLabelIsASuffixWithNoColonUnlikeTheDefenseLabel() {
+        // The two stat lines have OPPOSITE shapes, and it follows from the gear rather than taste:
+        // Defense is a total the piece already has, so its label leads and the value follows a colon.
+        // Max health is a stat armor has NONE of, so the VALUE leads -- "+30 Max Health" -- because
+        // there is no total to introduce.
+        assertEquals("Max Health", ArmorLoreLines.MAX_HEALTH_LABEL);
+        assertFalse(ArmorLoreLines.MAX_HEALTH_LABEL.contains(":"), "a bonus line has nothing to introduce");
+        assertFalse(ArmorLoreLines.MAX_HEALTH_LABEL.endsWith(" "), "the value leads, so no trailing space");
+        assertTrue(ArmorLoreLines.DEFENSE_LABEL.endsWith(": "), "and the total line still leads with its label");
+
+        // "Max Health", never bare "Health": Growth raises the CEILING and grants no current health,
+        // so "+30 Health" would promise exactly the heal HealthState refuses to give.
+        assertTrue(ArmorLoreLines.MAX_HEALTH_LABEL.startsWith("Max "));
+        // Mutation: shorten it to "Health" -> reddens here, and the item would disagree with
+        // EnchantEffectLine, which says "Max Health" for the same enchant.
+    }
+
     // --- The footer noun ------------------------------------------------------------------------
 
     @Test
