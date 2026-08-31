@@ -14,7 +14,7 @@ and `/rpg enchant show` declined.
 that are flat stat boosts feeding the reconcile loop; every existing one acts at a damage or block
 seam. Mana Bank is 2b.
 
-Five commits, in dependency order, because the first one had to land alone.
+Seven commits, in dependency order, because the first one had to land alone.
 
 ---
 
@@ -140,6 +140,26 @@ implementation that set `current = max` on removal — which would make taking a
 Growth and Protection read as siblings and are **not** equally scaled: +36 Defense is bent by a curve,
 +120 Max Health is a straight doubling. Recorded in `growth.yml`, which is the lever.
 
+## 6. The Growth tooltip (`83ec512`)
+
+Protection's boost was visible and Growth's was not: a Growth III chestplate granted 30 max health
+and said so nowhere. **Two kinds of enchant line, because there are two kinds of enchant** --
+Protection edits a total the piece already has, Growth adds a stat armor has none of, so it becomes
+a line rather than a modified number. Rendering it as a total would have meant inventing a base of 0
+and printing `Max Health: 30` on a piece that grants no health unenchanted.
+
+Built for the SECOND one: bonuses arrive as a `List<StatBonus>` carrying (points, label, colour),
+rendered by `GearLore.appendFlatBonus`. Mana Bank in 2b is one more list entry and a content file --
+no new overload, no new render path, and nothing keyed on an enchant id.
+
+`StatsBarText`'s stat colours are **public** now, and `ArmorLore` imports `HEALTH_COLOR` and
+`DEFENSE_COLOR` rather than restating RED and GREEN with a comment claiming they match. A tooltip and
+the action bar report the same stats on one screen; a compile-time reference is the difference
+between read-off-the-HUD and happens-to-agree-today. `MANA_COLOR` went public with them, for 2b.
+
+An empty bonus list adds nothing -- not even a blank -- so both older overloads stay exact
+identities and the golden never moved.
+
 ---
 
 ## Verification actually run
@@ -147,14 +167,14 @@ Growth and Protection read as siblings and are **not** equally scaled: +36 Defen
 ```
 ./mvnw clean package     -> BUILD SUCCESS
 ./scripts/check-jar.sh   -> Jar OK, core and storage bundled
-./scripts/check-tests.sh -> 955 tests across all modules
+./scripts/check-tests.sh -> 966 tests across all modules
 ```
 
 | module | `2bb0da8` | now | new |
 |---|---|---|---|
-| core | 544 | **557** | 13 |
+| core | 544 | **559** | 15 |
 | storage | 17 | 17 | 0 |
-| paper | 377 | **382** | 5 |
+| paper | 377 | **390** | 13 |
 
 **`GoldenLoreTest` green at every commit.** Tasks 1–3 were required to move no shipped tooltip, and
 Task 4's overload is an exact identity at `Protection.NONE`, so it did not either.
