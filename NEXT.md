@@ -698,12 +698,18 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ### Armor, Slice 2b (Mana Bank, and per-player Max Mana) — what it created or exposed
 
-- **BOOT GATE OWED.** Eleven rows, in `PLAN-armor-slice-2b.md`. Rows 5 and 9 are the discriminating
-  ones. Row 4 -- equip at full mana, expect headroom -- **passes on the pre-2b behaviour by
-  accident**, because a player who has already cast has a stored entry and gets headroom either way.
-  Row 5 is the same action by a player who has never cast this session, and it is the ONLY row that
-  fails if the pin is missing. Row 9 (an ability edited to cost more than 100) is the only row that
-  exercises `tryConsume`'s guard rather than reading through `current()`.
+- **BOOT GATE RUN AND PASSED, 2026-08-31: all eleven rows, operator-confirmed.** Reported at that
+  granularity -- eleven of eleven, including both discriminating rows by name.
+
+  **Row 5 is the one that carries the slice.** Row 4 -- equip at full mana, expect headroom --
+  **passes on the pre-2b behaviour by accident**, because a player who has already cast has a stored
+  entry and gets headroom either way. Row 5 is the same action by a player who has NEVER cast this
+  session, the absent-means-full case, and it is the only row that fails if the pin is missing. It
+  passed, so the pin fires.
+
+  **Row 9 is the only row that reaches `tryConsume`'s guard**; every other row reads through
+  `current()`. An ability edited past 100 in the deployed tree was uncastable bare and castable with
+  Mana Bank on, which is the per-player ceiling proven on the spend path rather than the display one.
 
 - **TWO PLANNED MUTATIONS DID NOT REDDEN, AND FINDING THAT OUT IS THE MAIN THING THIS SLICE
   PRODUCED.** Both were written into the plan's mutation table as though the checks existed. Both
@@ -3596,6 +3602,46 @@ statement is a pattern switch over a sealed type -- compiler-checked -- **except
 `ContentValidator.checkEffect` is the counter-example worth knowing: a switch STATEMENT that IS
 exhaustiveness-checked, because its labels are type patterns over a sealed interface. Its javadoc
 already records the build failure that proves it. Do not "fix" it.
+
+### A MUTATION IS A HYPOTHESIS UNTIL YOU HAVE WATCHED IT REDDEN
+
+**A mutation-table row that predicts "this reddens test X" is a claim, not a guard.**
+
+And it can be wrong two ways at once:
+
+1. **The assertion path masks the mutation.** The test asserts through code that repairs the damage
+   before it is visible.
+2. **The predicted test is insensitive to it.** The test exercises the mutated line and observes
+   something else about it entirely.
+
+**Run each mutation red before writing the row down.** A row that never reddens is a check that did
+not run -- the same failure as a blind grep, one level up. `CLAUDE.md` already says a check that did
+not run looks exactly like a check that passed; this is that rule applied to the tool used to *test*
+the checks, which is the level at which it is easiest to forget.
+
+**The worked example is in history: `48b8db9` (Armor Slice 2b), and specifically the commit inside it
+titled "the two pool guards that could not fail, and the javadoc that said they could".** Six
+mutations planned, **two came back green**, and each was a different one of the two failure modes:
+
+- **Deleting `ResourcePool.setCurrent`'s `Math.min` left all ten tests green** -- mode 1. The
+  assertion read back through `current()` -> `regenerated()`, which ends in its *own* `Math.min`
+  against the same ceiling, so it reported the clamped number whether or not the clamp had ever been
+  written. The test's own comment claimed it "reddens where a read-only test would not."
+
+  The obvious repair does not work either, **and that had to be measured rather than assumed**:
+  unequip-then-re-equip **self-heals**, because the re-equip pins a value it just read back, already
+  clamped. The mutation erases its own evidence. What holds it now is an assertion on `setCurrent`'s
+  contract in ISOLATION, at the one moment nothing downstream is covering for it.
+
+- **Resolving the ceiling inside `compute()` was green across all 22 pool tests** -- mode 2. The
+  predicted test was the concurrency one, and the prediction rested on a deadlock story that was
+  never the observable part. The real property is **arity**: the resolver must be asked exactly once,
+  or two reads straddling a gear change make "the guard passed, then the spend refused" reachable.
+  A guard that counts the calls holds it; the concurrency test never could.
+
+Both javadocs asserting the old stories are corrected in place, at the source, rather than left to be
+re-derived. That is the other half of the rule: **when a predicted mutation comes back green, the
+prose that predicted it is now known-false and is part of the fix.**
 
 
 - After every commit: `./mvnw -pl core test`. After every batch:

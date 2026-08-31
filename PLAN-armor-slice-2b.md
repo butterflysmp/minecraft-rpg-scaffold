@@ -129,7 +129,9 @@ restored, and both `ResourcePool` javadocs asserting the old stories are correct
 
 ---
 
-## Boot gate — `./scripts/dev-server.sh --refresh-content` — **OWED, not run**
+## Boot gate — `./scripts/dev-server.sh --refresh-content` — **RUN AND PASSED, 2026-08-31**
+
+All eleven rows, operator-confirmed, including both discriminating ones.
 
 Orphaned-`java.exe` check first. Tuning edits go in the **deployed** tree with `--no-build`.
 
