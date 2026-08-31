@@ -12,44 +12,64 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Every expected string was produced by EXECUTING the expression, not by reasoning about
  * {@code String.format} or {@code Math.round}.</b> One of them is the reason this class exists at
- * all: {@code GearLoreLines.trimNumber} on the base mana rate returns
- * {@code "1.6666666666666665"}, which is asserted below so nobody re-adopts it for rates.
+ * all: {@code GearLoreLines.trimNumber} on a gear-modified rate returns
+ * {@code "1.5000000000000002"}, which is asserted below so nobody re-adopts it for rates.
+ *
+ * <p>That witness used to be the mana base itself ({@code 1.6666666666666665}). The Slice 3 rebalance
+ * made both bases round over five seconds and took the example with it -- which is precisely when the
+ * formatter looks over-engineered. The replacement is reachable with any off-round bonus.
  *
  * <p>Each test names the mutation it forces red.
  */
 class StatsSheetLinesTest {
 
     /** The shipped base mana rate, per tick, written exactly as RpgPlugin writes it. */
-    private static final double MANA_PER_TICK = 100.0 / (60 * 20);
+    private static final double MANA_PER_TICK = 100.0 / (100 * 20);
 
     // --- Rates ------------------------------------------------------------------------------------
 
     @Test
-    void aRateGetsTwoDecimalsAndItsUNITBecauseTrimNumberWouldPrintSixteenDigits() {
-        assertEquals("0.20/s", StatsSheetLines.perSecond(HealthRegen.BASE_PER_SECOND),
-                "the base health regen, 1 HP every 5 seconds");
-        assertEquals("1.67/s", StatsSheetLines.perSecond(ManaRegen.perSecond(MANA_PER_TICK)),
-                "the base mana regen -- a full bar in 60 seconds");
-        assertEquals("2.67/s",
-                StatsSheetLines.perSecond(ManaRegen.perSecond(MANA_PER_TICK + ManaRegen.perTick(1.0))),
-                "and with the +1.0/s fixture held");
-
-        // THE reason rates do not use the lore trimmer. Executed, and it is not close.
-        assertEquals("1.6666666666666665",
-                io.github.butterflysmp.rpg.core.weapon.GearLoreLines.trimNumber(
-                        ManaRegen.perSecond(MANA_PER_TICK)),
-                "trimNumber falls back to String.valueOf, so a rate would ship sixteen digits");
-        // Mutation: have perSecond delegate to trimNumber -> the first three rows redden.
-        // Mutation: drop the "/s" suffix -> all three redden.
+    void aRateIsShownOverFIVESecondsBecauseAtOneItIsAllFractions() {
+        // Both shipped bases are designed around five seconds: health regen IS "1 HP every 5
+        // seconds", and mana was rebalanced so a bar fills in 100s, i.e. 5 per five. Showing /1s
+        // would print 0.20 and 1.00 -- the first reads as noise, and neither is how a player counts.
+        assertEquals("1.00/5s", StatsSheetLines.perFiveSeconds(HealthRegen.BASE_PER_SECOND),
+                "0.2 per second is a whole 1 every five");
+        assertEquals("5.00/5s", StatsSheetLines.perFiveSeconds(ManaRegen.perSecond(MANA_PER_TICK)),
+                "and the rebalanced mana base is 5 -- a full 100 bar in 100 seconds");
+        assertEquals("10.00/5s",
+                StatsSheetLines.perFiveSeconds(
+                        ManaRegen.perSecond(MANA_PER_TICK + ManaRegen.perTick(1.0))),
+                "the +1.0/s fixture doubles it");
+        // Mutation: drop the x5 -> "0.20/5s" -> reddens. Change the window to 10 -> "2.00/10s".
     }
 
     @Test
-    void perSecondFORMATSAndNeverCONVERTSSoTheTickToSecondHomeStaysSingular() {
-        // Handed a per-second value it prints it unchanged. If this method also divided or multiplied
-        // by 20, there would be two places that know the tick rate and they would eventually disagree.
-        assertEquals("1.00/s", StatsSheetLines.perSecond(1.0));
-        assertEquals("20.00/s", StatsSheetLines.perSecond(20.0));
-        // Mutation: multiply by 20 inside perSecond -> "20.00/s" and "400.00/s" -> reddens.
+    void twoDecimalsSTILLEarnTheirKeepEvenThoughBothBasesLandOnWholeNumbers() {
+        // The trap this guards. Both shipped bases are whole over five seconds, which makes the lore
+        // trimmer look adequate -- until gear moves a rate off a round value. Executed:
+        // 0.2 + 0.1 is 0.30000000000000004, and five of those is 1.5000000000000002.
+        double gearModified = HealthRegen.BASE_PER_SECOND + 0.1;
+        assertEquals("1.50/5s", StatsSheetLines.perFiveSeconds(gearModified),
+                "a +0.1/s bonus, formatted");
+
+        assertEquals("1.5000000000000002",
+                io.github.butterflysmp.rpg.core.weapon.GearLoreLines.trimNumber(
+                        gearModified * StatsSheetLines.RATE_WINDOW_SECONDS),
+                "which is what trimNumber would have shipped -- it falls back to String.valueOf");
+        // The Slice 2 witness for this was the mana base itself, which printed
+        // 1.6666666666666665. The rebalance made that base round and took the example with it; this
+        // one is reachable with any off-round bonus, so the reason survives the retune.
+        // Mutation: have perFiveSeconds delegate to trimNumber -> the first row reddens.
+    }
+
+    @Test
+    void perFiveSecondsMULTIPLIESForDisplayOnlyAndNeverConvertsUNITS() {
+        // The x5 is presentation and stops here. The tick-to-second conversion stays in
+        // ManaRegen.perSecond, its one home; a second one here would eventually disagree.
+        assertEquals("5.00/5s", StatsSheetLines.perFiveSeconds(1.0));
+        assertEquals("100.00/5s", StatsSheetLines.perFiveSeconds(20.0));
+        // Mutation: divide by 20 inside perFiveSeconds -> "0.25/5s" -> reddens.
     }
 
     // --- Fractions: the two that are NOT what they look like ---------------------------------------

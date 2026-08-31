@@ -132,17 +132,28 @@ Kill orphaned `java.exe` first.
 | # | Check | Expected |
 |---|---|---|
 | 1 | boot log | clean load, zero skipped content |
-| 2 | `/rpg stats` bare-handed | nine lines; Damage `0.00`, Crit `15%` / `2.00x`, regens `0.20/s` and `1.67/s` |
+| 2 | `/rpg stats` bare-handed | nine lines; Damage `0.00`, Crit `15%` / `2.00x`, regens **`1.00/5s`** and **`5.00/5s`** |
 | 3 | **as a NON-OP player** | it runs — proves the yml node landed and did not silently become op-only |
 | 4 | hold an authored weapon, `/rpg stats` | Damage is the composed hit, not the raw attack value |
 | 5 | **swing that weapon at full charge, no crit; compare to row 4** | the numbers **match** |
 | 6 | equip Growth / Mana Bank / a regen fixture | the matching lines move; remove → they return |
 | 7 | glance between the sheet and the action bar | health/mana/defense the same colour in both |
-| 8 | read the value column | chat is a **proportional** font — confirm the ragged edge is acceptable, or say so |
+| 8 | read the value column | chat is a **proportional** font — confirm the ragged edge is acceptable, or say so. **Re-check after the rebalance**: the regen values gained a digit (`5.00/5s`, `10.00/5s` with the fixture), so the column may sit differently |
 
 **Rows 3 and 5 are the discriminating ones.** Row 5 is the only check in existence for the input seam
 above — it fails if the sheet and the swing ever stop sharing inputs, which no unit test can see. Row
 3 is the only row that fails if the permission node is used but undeclared.
+
+### Re-gate after the tuning pass
+
+Two tuning changes landed after the gate table was written: regen is displayed **per five seconds**,
+and the mana base was **rebalanced** to a 100-second refill (1 mana/s).
+
+| row | status |
+|---|---|
+| 2, 6 | **must be re-run** — both regen numbers changed, and row 6 is the fixture moving them |
+| 8 | **glance** — the value column may shift with the wider numbers |
+| 3, 4, 5, 7 | **unaffected** — the extraction, the permission node and the colours did not change |
 
 ---
 

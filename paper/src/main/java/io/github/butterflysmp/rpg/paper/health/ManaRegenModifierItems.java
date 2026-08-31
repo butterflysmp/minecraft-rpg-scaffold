@@ -26,9 +26,9 @@ import java.util.Map;
  * {@code _TEMP} fixtures owing removal.
  *
  * <p>The amount is a BONUS in mana per SECOND, not a resolved rate: the pool's resolver adds
- * {@code ManaRegen.perTick(bonus)} to the per-tick base. {@link #DEFAULT_BOOST} of 1.0/s is roughly
- * a 60% lift on the base 1.67/s, which fills a bare 100-mana bar in about 37 seconds instead of 60 --
- * a difference you can watch without a stopwatch.
+ * {@code ManaRegen.perTick(bonus)} to the per-tick base. {@link #DEFAULT_BOOST} of 1.0/s DOUBLES the
+ * base 1.0/s, so a bare 100-mana bar fills in about 50 seconds instead of 100 -- a difference you can
+ * watch without a stopwatch.
  *
  * <p>Keyed by EQUIPMENT SLOT and scanning ALL slots, like the crit and health-regen fixtures: a dev
  * fixture you can simply hold is faster to drive than one you must wear. Whatever route the item
@@ -54,7 +54,7 @@ public final class ManaRegenModifierItems {
     /** The prefix that keeps these sources disjoint from every other all-slot scanner's. */
     static final String SOURCE_PREFIX = "manaregen:";
 
-    /** +1.0 mana/s on a base of about 1.67/s -- a bare bar fills in ~37s instead of 60. */
+    /** +1.0 mana/s on a base of 1.0/s -- doubles it, so a bare bar fills in ~50s instead of 100. */
     public static final double DEFAULT_BOOST = 1.0;
 
     /** Mint a mana_regen_boost_TEMP granting {@code amount} mana/s while held or worn. */

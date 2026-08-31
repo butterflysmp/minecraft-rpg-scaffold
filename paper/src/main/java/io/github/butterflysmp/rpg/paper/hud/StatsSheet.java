@@ -54,12 +54,12 @@ public final class StatsSheet {
         lines.add(line(StatsBarText.HEART, StatsSheetLines.MAX_HEALTH_LABEL,
                 StatsSheetLines.capacity(maxHealth), StatsBarText.HEALTH_COLOR));
         lines.add(line(null, StatsSheetLines.HEALTH_REGEN_LABEL,
-                StatsSheetLines.perSecond(healthRegenPerSecond), StatsBarText.HEALTH_COLOR));
+                StatsSheetLines.perFiveSeconds(healthRegenPerSecond), StatsBarText.HEALTH_COLOR));
 
         lines.add(line(StatsBarText.SPARK, StatsSheetLines.MAX_MANA_LABEL,
                 StatsSheetLines.capacity(maxMana), StatsBarText.MANA_COLOR));
         lines.add(line(null, StatsSheetLines.MANA_REGEN_LABEL,
-                StatsSheetLines.perSecond(manaRegenPerSecond), StatsBarText.MANA_COLOR));
+                StatsSheetLines.perFiveSeconds(manaRegenPerSecond), StatsBarText.MANA_COLOR));
 
         lines.add(line(StatsBarText.SHIELD, StatsSheetLines.DEFENSE_LABEL,
                 StatsSheetLines.capacity(defense), StatsBarText.DEFENSE_COLOR));

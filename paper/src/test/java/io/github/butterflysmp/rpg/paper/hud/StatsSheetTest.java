@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class StatsSheetTest {
 
-    private static final double MANA_PER_TICK = 100.0 / (60 * 20);
+    private static final double MANA_PER_TICK = 100.0 / (100 * 20);
 
     private static String plain(Component c) {
         return PlainTextComponentSerializer.plainText().serialize(c);
@@ -53,15 +53,15 @@ class StatsSheetTest {
 
         assertEquals("Your Stats", plain(sheet.get(0)));
         assertEquals("❤ Max Health   100", plain(sheet.get(1)));
-        assertEquals("  Health Regen 0.20/s", plain(sheet.get(2)));
+        assertEquals("  Health Regen 1.00/5s", plain(sheet.get(2)));
         assertEquals("✦ Max Mana     100", plain(sheet.get(3)));
-        assertEquals("  Mana Regen   1.67/s", plain(sheet.get(4)));
+        assertEquals("  Mana Regen   5.00/5s", plain(sheet.get(4)));
         assertEquals("⛨ Defense      0", plain(sheet.get(5)));
         assertEquals("⚔ Damage       0.00", plain(sheet.get(6)));
         assertEquals("  Crit Chance  15%", plain(sheet.get(7)));
         assertEquals("  Crit Damage  2.00x", plain(sheet.get(8)));
         // Mutation: reorder any two lines, or drop one -> reddens by index.
-        // Mutation: pass the mana rate per TICK instead of per second -> "0.08/s" -> reddens.
+        // Mutation: pass the mana rate per TICK instead of per second -> "0.25/5s" -> reddens.
     }
 
     @Test

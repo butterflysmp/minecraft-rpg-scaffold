@@ -28,9 +28,15 @@ import java.util.Locale;
  *
  * {@code StatsBarText} rounds with {@code Math.round} because it is a glanceable HUD with no room for
  * decimals. This sheet is the PRECISE view, so it does not. But {@code GearLoreLines.trimNumber} is
- * wrong for rates in the other direction: it falls back to {@code String.valueOf}, and the base mana
- * rate would print as <b>{@code 1.6666666666666665}</b>. Executed, not guessed. So capacities take
- * {@code trimNumber} (a whole 100 stays {@code "100"}) and rates and damage take two decimals.
+ * wrong for rates in the other direction: it falls back to {@code String.valueOf}, so a gear-modified
+ * rate of {@code 0.2 + 0.1} per second prints over five seconds as <b>{@code 1.5000000000000002}</b>.
+ * Executed, not guessed. So capacities take {@code trimNumber} (a whole 100 stays {@code "100"}) and
+ * rates and damage take two decimals.
+ *
+ * <p><b>Both shipped bases happen to land on whole numbers over five seconds</b> -- health regen
+ * reads {@code 1.00/5s} and mana {@code 5.00/5s} -- which makes it tempting to conclude the trimmer
+ * would do. It would not: the moment gear moves either rate off a round value the sixteen digits are
+ * back. The example above is reachable with a {@code +0.1/s} bonus.
  *
  * <p>That means the sheet and the action bar CAN disagree in the last digit -- a 137.5 max prints
  * {@code "137.5"} here and {@code "138"} there. Deliberate: they are answering different questions,
@@ -76,15 +82,28 @@ public final class StatsSheetLines {
         return GearLoreLines.trimNumber(value);
     }
 
+    /** The display window for a regen rate. Rates are STORED per second and SHOWN per five. */
+    public static final int RATE_WINDOW_SECONDS = 5;
+
     /**
-     * A rate, in units per second, to two decimals with the unit attached: {@code "0.20/s"}.
+     * A rate, shown over {@link #RATE_WINDOW_SECONDS}: {@code 0.2/s} reads {@code "1.00/5s"}.
      *
-     * <p>Takes a value ALREADY in per-second. Health regen is stored that way; mana regen is stored
-     * per tick and the caller converts with {@code ManaRegen.perSecond}, which is the one home for
-     * that conversion. This method must never convert, or there would be two.
+     * <p>Five seconds, not one, because at one second the interesting rates are all fractions -- base
+     * health regen is 0.2 and reads as noise. Over five it is a whole 1, which is also how the stat
+     * was designed ("1 HP every 5 seconds") and how a player counts it.
+     *
+     * <p><b>Takes a value ALREADY in per-second, and multiplies only for display.</b> Health regen is
+     * stored that way; mana regen is stored per tick and the caller converts with
+     * {@code ManaRegen.perSecond}, which is the one home for THAT conversion. The x5 here is a
+     * presentation choice and never leaves this method -- nothing downstream sees a per-5s number.
+     *
+     * <p>Still two decimals, even though both shipped bases land on whole numbers over five seconds.
+     * A gear-modified rate does not: {@code 0.2 + 0.1} is {@code 0.30000000000000004}, which over five
+     * seconds is {@code 1.5000000000000002}. Executed. That is exactly what {@code trimNumber} would
+     * print and what two decimals renders as {@code "1.50"}.
      */
-    public static String perSecond(double perSecond) {
-        return two(perSecond) + "/s";
+    public static String perFiveSeconds(double perSecond) {
+        return two(perSecond * RATE_WINDOW_SECONDS) + "/" + RATE_WINDOW_SECONDS + "s";
     }
 
     /** A composed hit, to two decimals: {@code "14.20"}. */

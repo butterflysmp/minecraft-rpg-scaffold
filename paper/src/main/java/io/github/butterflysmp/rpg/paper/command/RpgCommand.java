@@ -411,7 +411,7 @@ public final class RpgCommand {
                         .executes(ctx -> stats(ctx, adapters, resources)))
                 // Mint a mana_regen_boost_TEMP. Same reason as the health-regen fixture: no content
                 // grants mana regen yet, so without this the reconcile surface is provable only by
-                // unit test. Hold it and a bare bar fills in ~37s instead of 60; drop it and the rate
+                // unit test. Hold it and a bare bar fills in ~50s instead of 100; drop it and the rate
                 // returns within a tick.
                 //
                 // It is also how the boot gate witnesses the PIN, which is the discriminating check

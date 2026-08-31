@@ -18,8 +18,19 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ManaRegenTest {
 
-    /** The shipped base rate, written exactly as {@code RpgPlugin} writes it. */
-    private static final double BASE_PER_TICK = 100.0 / (60 * 20);
+    /** The shipped base rate, written exactly as {@code RpgPlugin} writes it: a full bar in 100s. */
+    private static final double BASE_PER_TICK = 100.0 / (100 * 20);
+
+    /**
+     * The PREVIOUS base, kept deliberately.
+     *
+     * <p>Stats Slice 3 rebalanced mana to a full bar in 100 seconds, and at that base the two
+     * division orderings agree exactly -- so the ULP hazard Slice 2 was built around has no live
+     * example any more. It is still real; this base is just kind. Keeping the 60-second case as a
+     * standing witness is what stops the rule being deleted as unmotivated the next time someone
+     * reads the file.
+     */
+    private static final double RETIRED_60S_BASE_PER_TICK = 100.0 / (60 * 20);
 
     // --- The conversion --------------------------------------------------------------------------
 
@@ -58,21 +69,37 @@ class ManaRegenTest {
     // --- The floating-point trap this slice was nearly caught by ---------------------------------
 
     @Test
-    void theSHIPPEDBaseRateSurvivesGoingToSecondsAndBackButNotTheOtherWayAROUND() {
-        // Why the resolver composes in TICKS. The shipped base is 0x1.5555555555555p-4. Reaching the
-        // same quantity as (100.0/60.0)/20.0 gives 0x1.5555555555556p-4 -- one ULP away, == false.
-        // Deriving per-second FROM per-tick and converting back is lossless; starting from a
-        // per-second literal is not.
+    void theSHIPPEDBaseRateSurvivesGoingToSecondsAndBackAgain() {
         assertEquals(BASE_PER_TICK, ManaRegen.perTick(ManaRegen.perSecond(BASE_PER_TICK)), 0.0,
                 "tick -> second -> tick is bit-for-bit lossless for the shipped base");
+        assertEquals(1.0, ManaRegen.perSecond(BASE_PER_TICK), 0.0,
+                "a full bar in 100 seconds is a round 1 mana per second");
+        // Mutation: have perTick or perSecond scale by anything but 20 -> reddens.
+    }
 
-        assertNotEquals(BASE_PER_TICK, (100.0 / 60.0) / 20.0,
-                "but (MAX/60)/20 is a DIFFERENT double -- one ULP off, and a naive rename of "
-                        + "MANA_PER_TICK to MANA_PER_SECOND would have shipped it to every player");
+    @Test
+    void theULPHazardHasNoLiveExampleAtTHISBaseAndTheWitnessIsKeptANYWAY() {
+        // THE test most likely to be deleted as pointless, so it says why it is not.
+        //
+        // Slice 2 built the derive-from-ticks rule on a measurement: at the 60-second base,
+        // 100/(60*20) and (100/60.0)/20.0 are ONE ULP apart, so reaching the value the other way
+        // would have silently re-rated every player on the server. Slice 3 rebalanced to 100
+        // seconds -- and at that base the two orderings agree EXACTLY. The hazard did not go away;
+        // this base is simply kind.
+        assertEquals(BASE_PER_TICK, (100.0 / 100.0) / 20.0, 0.0,
+                "at the CURRENT base both orderings give the same double -- which is luck, "
+                        + "not a property of the code, and must not be relied on");
 
-        assertEquals(1.6666666666666665, ManaRegen.perSecond(BASE_PER_TICK), 0.0,
-                "the derived per-second base is ...665, not the ...667 a hand-written 100.0/60 gives");
-        // Mutation: define the base as (100.0/60.0)/20.0 -> the first row reddens.
+        assertNotEquals(RETIRED_60S_BASE_PER_TICK, (100.0 / 60.0) / 20.0,
+                "but at the PREVIOUS base they differ by one ULP. The hazard is a property of "
+                        + "division ordering, not of any particular divisor -- the next retune "
+                        + "picks one at random as far as this is concerned.");
+
+        assertEquals(1.6666666666666665, ManaRegen.perSecond(RETIRED_60S_BASE_PER_TICK), 0.0,
+                "the retired base derived ...665, not the ...667 a hand-written 100.0/60 gives");
+        // Mutation: none available -- this test asserts a fact about doubles, not about our code.
+        // It exists so the single-division form in RpgPlugin keeps a visible reason after the
+        // rebalance removed its live example.
     }
 
     @Test
@@ -86,10 +113,10 @@ class ManaRegenTest {
 
     @Test
     void aBonusComposesOntoTheBaseInTICKS() {
-        assertEquals(0.13333333333333333, BASE_PER_TICK + ManaRegen.perTick(1.0), 0.0,
+        assertEquals(0.1, BASE_PER_TICK + ManaRegen.perTick(1.0), 0.0,
                 "the shipped base plus a +1/s piece, executed");
-        assertEquals(2.6666666666666665, ManaRegen.perSecond(BASE_PER_TICK + ManaRegen.perTick(1.0)), 0.0,
-                "which a stat sheet reads back as 2.67 mana per second");
+        assertEquals(2.0, ManaRegen.perSecond(BASE_PER_TICK + ManaRegen.perTick(1.0)), 0.0,
+                "which the fixture doubles to 2 mana per second -- 10.00/5s on the sheet");
         // Mutation: compose in seconds instead -- perTick(perSecond(base) + 1.0) -> a different
         // double -> reddens.
     }
