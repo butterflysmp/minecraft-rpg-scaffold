@@ -177,7 +177,9 @@ public final class RpgCommand {
                                     return chooseElement(player, id, kits, elements, profiles, weapons, adapters);
                                 })))
                 // Dev tooling, not a game mechanic: refill the caller's mana so testing a costed
-                // trigger does not mean waiting out the 60-second regen between casts.
+                // trigger does not mean waiting out the regen between casts. NOT a fixed 60 seconds
+                // since Stats Slice 2 -- both the ceiling and the rate are per player now, so the
+                // wait depends on what the caller is wearing.
                 .then(Commands.literal("mana")
                         .requires(source -> source.getSender().hasPermission(Permissions.DEV))
                         .then(Commands.literal("refill")

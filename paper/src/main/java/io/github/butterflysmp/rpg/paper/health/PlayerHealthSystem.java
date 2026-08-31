@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.health;
 
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
+import io.github.butterflysmp.rpg.core.combat.ManaTransition;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthChange;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthListener;
@@ -146,13 +147,17 @@ public final class PlayerHealthSystem implements HealthListener {
         EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
         UUID id = player.getUniqueId();
         RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, () -> {
-            // Ten stats converge on the same scan: max HP from +HP items, attack damage from the
+            // Eleven stats converge on the same scan: max HP from +HP items, attack damage from the
             // held weapon's declared attack_damage (a MAIN_HAND modifier), attack speed from equipped
             // speed sources, the class-damage bonus from equipped "+N <Class> Damage" gear
             // MATCHING the held weapon's class, and the enchant-damage percent from the damage
-            // enchants ON the held weapon matching THAT weapon's class. Same leak-proof diff for all
-            // five, so a weapon swap/drop follows within a tick and respawn re-derives every one of
-            // them for free.
+            // enchants ON the held weapon matching THAT weapon's class -- and six more below. Same
+            // leak-proof diff for every one of them, so a weapon swap/drop follows within a tick and
+            // respawn re-derives all eleven for free.
+            //
+            // (The headline count and this sentence disagreed for two slices: the number was bumped
+            // as stats were added while the prose kept saying "all five", which is the five it
+            // happens to enumerate. Phrased now so it cannot go stale again.)
             //
             // The class one is why a weapon swap needs no event of its own: the held weapon's class
             // is re-read every scan, so the same worn gear simply selects a different grant, and a
@@ -207,30 +212,31 @@ public final class PlayerHealthSystem implements HealthListener {
             // cancels what the vanilla attribute actually HOLDS. They are equal today and will not
             // be once an enchant can add Defense, which is why they are read and passed separately
             // rather than one sum serving both -- see DefenseModifierItems.
-            // The NINTH stat, and the only one whose current value lives in another store. Max
-            // health's transition happens inside HealthState (headroom up, clamp down); mana's
-            // cannot, because ResourcePool holds a spent amount and a tick rather than a value.
+            // The NINTH and ELEVENTH stats, converged TOGETHER because they share one current.
+            // Max mana is the ceiling that current approaches; mana regen is the slope it approaches
+            // at. Both live on HealthState, the current lives in ResourcePool, and a change to
+            // either has to stamp it -- once.
             //
-            // So the transition is here, in three lines, and it is ONE mechanism for both
-            // directions: read what the player has NOW, converge the ceiling, and if it actually
-            // moved, pin the reading back. Rising, that is headroom -- crucially including for a
-            // player with no pool entry, who would otherwise read the new ceiling instantly and get
-            // the difference free. Falling, setCurrent's own clamp is the unequip clamp, stated
-            // rather than left to emerge from the regen path's Math.min.
-            //
-            // Only on a real change, so a player not touching their gear still writes nothing and
-            // "a pool nobody reads costs nothing" survives.
-            double manaBefore = resources.current(id, ResourceCost.DEFAULT_RESOURCE);
-            if (stats.reconcileMaxManaModifiers(id,
-                    ManaBankModifierItems.desiredModifiers(player, keys, enchants))) {
-                resources.setCurrent(id, ResourceCost.DEFAULT_RESOURCE, manaBefore);
-            }
+            // ManaTransition owns that, in core, rather than here. Not tidiness: written inline as
+            // `if (reconcileMax(...) || reconcileManaRegen(...))` the || short-circuits, so on any
+            // tick where the ceiling changed the RATE reconcile never runs and regen modifiers
+            // silently stop converging. In this loop nothing can observe that. In core it is a unit
+            // test. Same for the freeze guard -- pinning on a pass where nothing moved re-stamps
+            // asOfTick four times a second, so elapsed never grows and mana stops regenerating
+            // entirely, with a stat block that still reads correctly.
+            ManaTransition.reconcile(stats, resources, id, ResourceCost.DEFAULT_RESOURCE,
+                    ManaBankModifierItems.desiredModifiers(player, keys, enchants),
+                    ManaRegenModifierItems.desiredModifiers(player, keys));
 
             // The TENTH, and the quietest: the passive regeneration RATE, in HP per second. No
-            // event, no override, no pin -- unlike the ninth above it, this stat has no current
-            // anywhere. HealthRegenSystem reads the resolved value fresh on every fire, so a piece
-            // equipped here simply changes what the next second pays, and one removed changes it
-            // back. That is the whole transition.
+            // event, no override, no pin.
+            //
+            // NOT because "a rate has no current" -- that was this comment's old reason and the
+            // eleventh stat above disproves it, being a rate that needs a pin. The reason is that
+            // health regen is EAGER: HealthRegenSystem pays rate x dt every second, so nothing is
+            // ever accrued-but-unpaid for a rate change to re-price. Mana is LAZY-INTEGRATED
+            // (amount + elapsed * rate, evaluated on read), so changing its rate re-prices ticks
+            // that already passed. Eager versus lazy is the axis; having a current is not.
             stats.reconcileHealthRegenModifiers(id, HealthRegenModifierItems.desiredModifiers(player, keys));
 
             DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player, keys, enchants);
