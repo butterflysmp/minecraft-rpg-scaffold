@@ -2561,8 +2561,8 @@ a melee basic, where nothing read it any more.
   clean. The asymmetry is the trap: removing `soaked_TEMP` first will pass and teach you
   that removing `rooted_TEMP` is the same job. It is not.
 
-  **There are now FIVE `_TEMP` fixtures, not two, and three of them are a different shape.**
-  This entry was written when the debt was status-content only; the stat passes added three
+  **There are now EIGHT `_TEMP` fixtures, not two, and six of them are a different shape.**
+  This entry was written when the debt was status-content only; the stat passes added six
   ITEM fixtures, which live in Java rather than yml and so will not turn up in a content-pass
   grep of `content/`:
 
@@ -2573,8 +2573,27 @@ a melee basic, where nothing read it any more.
   | `health_boost_TEMP` | `/rpg healthboost` | `paper/health/HealthModifierItems.java` | the equip/unequip max-HP modifier lifecycle |
   | `attack_speed_boost_TEMP` | `/rpg attackspeed` | `paper/weapon/AttackSpeedModifierItems.java` | the same lifecycle for attack speed |
   | `class_damage_boost_TEMP` | `/rpg classdamage <class> [amt]` | `paper/weapon/ClassDamageModifierItems.java` | the same lifecycle again, plus the class GATE: it goes inert when you swap to another class's weapon |
+  | `crit_chance_boost_TEMP` | `/rpg critchance [bonus]` | `paper/health/CritModifierItems.java` | the same lifecycle for how OFTEN you crit |
+  | `crit_damage_boost_TEMP` | `/rpg critdamage [bonus]` | `paper/health/CritModifierItems.java` | and for how HARD -- two stats in one class, moving independently |
+  | `health_regen_boost_TEMP` | `/rpg healthregen [bonus]` | `paper/health/HealthRegenModifierItems.java` | the same lifecycle for the regeneration RATE: +0.8 on a 0.2 base is a resolved 1.0 HP/s, countable at a glance |
 
-  The three item fixtures come out when real content grants those stats (an enchant, a passive,
+  **THIS TABLE HAD GONE STALE BY TWO BEFORE Stats Slice 1 TOUCHED IT.** It said FIVE and listed
+  five; the crit pair landed in the crit slice, whose own retrospective says in as many words
+  that they "join the other `_TEMP` fixtures owing removal", and they were never added here.
+  Nothing pins this list against the code — it is hand-written and can drift again, exactly as
+  `EnchantRollTest.ROSTER` did for two slices. There is no test. The check is
+
+  ```bash
+  grep -rhoiE "[a-z_]+_temp" paper/src/main --include=*.java --include=*.yml | sort -u
+  ```
+
+  **and it returns NINE, not eight.** The ninth is `swing_TEMP`, which was REMOVED when the swing
+  listener shipped and survives only in prose describing its own removal (`WeaponSwingListener`,
+  `solar_grenade.yml`, `void_slash.yml`). A retired fixture and a live one look identical to that
+  grep, so read each hit before counting it — a count taken straight off the grep is wrong today
+  and will be wrong differently later.
+
+  The six item fixtures come out when real content grants those stats (an enchant, a passive,
   a build aspect) — `WeaponAttackItems` is already the shape that replaces them, sourcing a
   stat from actual weapon content instead of a fixture. Each also owns a `/rpg` dev subcommand
   and a `Keys` PDC entry, so removing one is three sites, not one.
