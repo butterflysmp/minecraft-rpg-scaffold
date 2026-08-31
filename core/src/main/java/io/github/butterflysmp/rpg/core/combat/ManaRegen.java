@@ -21,16 +21,17 @@ package io.github.butterflysmp.rpg.core.combat;
  *
  * <h2>COMPOSE IN TICKS, and that is a floating-point decision</h2>
  *
- * The shipped base rate is {@code MAX_MANA / (60 * 20)}. Measured: that is
- * {@code 0x1.5555555555555p-4}, while the same quantity reached as {@code (MAX_MANA / 60.0) / 20.0}
- * is {@code 0x1.5555555555556p-4}. <b>They differ by one ULP and {@code ==} is false.</b> So a
- * resolver that added a per-second bonus to a per-second base and converted the sum would shift the
- * rate for every player on the server, including players wearing nothing at all -- silently, and by
- * an amount no boot gate could see.
+ * The rule: the resolver adds {@code perTick(bonus)} to the per-tick base, never the per-second sum
+ * converted. With no bonus, {@link #perTick} returns exactly {@code 0.0} and {@code x + 0.0 == x}, so
+ * a player wearing nothing gets exactly the shipped base.
  *
- * <p>The resolver therefore adds {@code perTick(bonus)} to the per-tick base. With no bonus,
- * {@link #perTick} returns exactly {@code 0.0} and {@code x + 0.0 == x}, so an unenchanted player's
- * rate is bit-for-bit what shipped before this slice.
+ * <p><b>The rule was earned on a base that no longer ships, and that is worth knowing before deleting
+ * it.</b> At the old 60-second base, {@code 100/(60*20)} is {@code 0x1.5555555555555p-4} while
+ * {@code (100/60.0)/20.0} is {@code 0x1.5555555555556p-4} -- one ULP apart, {@code ==} false, so
+ * composing in seconds would have re-rated every player on the server silently. Stats Slice 3
+ * rebalanced to a 100-second base, where the two orderings agree exactly. The hazard did not go away;
+ * this divisor is simply kind, and the next retune picks one at random as far as this is concerned.
+ * {@code ManaRegenTest} keeps the 60-second case as a standing witness.
  *
  * <p><b>{@link #perTick} and {@link #perSecond} are NOT exact inverses</b>, and no test should assert
  * that they are. Measured: {@code (x * 20) / 20} round-trips for every value tried, but

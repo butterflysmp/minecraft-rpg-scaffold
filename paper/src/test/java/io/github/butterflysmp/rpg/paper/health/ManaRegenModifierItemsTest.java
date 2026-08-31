@@ -25,7 +25,7 @@ class ManaRegenModifierItemsTest {
     private static final double EPS = 1e-9;
 
     /** The shipped base rate, per second, derived the safe direction: from the per-tick constant. */
-    private static final double BASE_PER_SECOND = ManaRegen.perSecond(100.0 / (60 * 20));
+    private static final double BASE_PER_SECOND = ManaRegen.perSecond(100.0 / (100 * 20));
 
     @Test
     void everyManaRegenSourceKeyIsDisjointFromABareSlotNameAndFromEveryOtherScannersPrefix() {
@@ -56,12 +56,11 @@ class ManaRegenModifierItemsTest {
     void theFixtureBoostIsBigEnoughToWATCHWithoutAStopwatch() {
         assertTrue(ManaRegen.boosts(ManaRegenModifierItems.DEFAULT_BOOST),
                 "a fixture that declared nothing would leave the reconcile surface unwitnessed");
-        assertEquals(1.6666666666666665, BASE_PER_SECOND, 0.0,
-                "the base rate per second, DERIVED from the per-tick constant -- not the "
-                        + "1.6666666666666667 that writing 100.0/60 by hand would give");
-        assertEquals(2.6666666666666665, BASE_PER_SECOND + ManaRegenModifierItems.DEFAULT_BOOST, 0.0,
-                "+1.0/s resolves to about 2.67/s -- a bare bar fills in ~37s instead of 60, which "
-                        + "is a difference you can see rather than time");
+        assertEquals(1.0, BASE_PER_SECOND, 0.0,
+                "the rebalanced base: a round 1 mana per second, a full bar in 100 seconds");
+        assertEquals(2.0, BASE_PER_SECOND + ManaRegenModifierItems.DEFAULT_BOOST, 0.0,
+                "+1.0/s DOUBLES it -- a bare bar fills in ~50s instead of 100, which is a "
+                        + "difference you can see rather than time");
         // Mutation: DEFAULT_BOOST -> 0.05 -> the resolved rate is indistinguishable from base by eye
         // and the gate row stops discriminating -> reddens.
     }

@@ -2,6 +2,17 @@
 
 Branch `feat/mana-regen` off **`8362262`**, verified from the wire.
 
+> **SUPERSEDED IN PART BY STATS SLICE 3.** Everything below was true when it shipped and is kept as
+> the record of what was measured. Two things have since changed on purpose:
+>
+> - The mana base was **rebalanced** from a 60-second refill to 100 seconds, so the bit-identity this
+>   slice preserved is **deliberately retired** — the shipped rate changed because someone chose to
+>   change it.
+> - At the new base the two division orderings **agree exactly**, so the one-ULP measurement below no
+>   longer has a live example. The hazard is a property of division ordering, not of the divisor;
+>   `ManaRegenTest` keeps the 60-second case as a standing witness so the rule it justifies does not
+>   read as unmotivated.
+
 Slice 2b lifted `ResourcePool`'s **ceiling** behind a `MaxResolver`. The **rate** never moved:
 `regenPerTick` was still a bare `double` with exactly one read in the tree and no accessor at all, so
 this lift had zero read-side callers to migrate. This slice is the second half of that pair, plus the

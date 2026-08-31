@@ -14,6 +14,9 @@ public final class Permissions {
     /** Pick a class. Granted to everyone by default -- choosing one is the game too. */
     public static final String CLASS = "rpg.command.class";
 
+    /** Read your own stat sheet. Granted to everyone by default -- knowing your build is the game too. */
+    public static final String STATS = "rpg.command.stats";
+
     /** Inspect loaded content. Operators only; it exposes the content pipeline. */
     public static final String ADMIN = "rpg.command.admin";
 

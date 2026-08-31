@@ -27,6 +27,9 @@ permissions:
   rpg.command.class:
     description: Pick a class. Everyone -- choosing one is the game too.
     default: true
+  rpg.command.stats:
+    description: Read your own stat sheet. Everyone -- knowing your build is the game too.
+    default: true
   rpg.command.admin:
     description: Inspect loaded ability content.
     default: op

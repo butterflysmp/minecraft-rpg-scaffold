@@ -92,24 +92,41 @@ public final class RpgPlugin extends JavaPlugin {
      */
     private static final String CONTENT_PREFIX = "content/";
 
-    /** Ability mana. A full bar in 60 seconds. Belongs in archetype content later. */
+    /** Ability mana. A full bar in {@link #MANA_REFILL_SECONDS}. Belongs in archetype content later. */
     private static final double MAX_MANA = 100.0;
+
+    /**
+     * How long a full bare bar takes to refill: 100 seconds, so the base rate is a round 1 mana/s
+     * and reads {@code 5.00/5s} on the stat sheet.
+     *
+     * <p><b>Rebalanced from 60 in Stats Slice 3.</b> Named rather than inlined so the intent is in
+     * one place and the constant below cannot be retuned without the reason moving with it.
+     */
+    private static final int MANA_REFILL_SECONDS = 100;
 
     /**
      * The BASE refill rate, per tick.
      *
-     * <p><b>This expression is load-bearing and must not be "tidied" into a per-second constant.</b>
-     * Stats Slice 2 made the stat per-second and very nearly renamed this to match. Measured:
-     * {@code MAX_MANA / (60 * 20)} is {@code 0x1.5555555555555p-4}, while {@code (MAX_MANA / 60.0) /
-     * 20.0} is {@code 0x1.5555555555556p-4} -- one ULP apart, {@code ==} false. Renaming it would
-     * have shifted the regeneration rate for every player on the server, including players wearing no
-     * mana gear, silently and by an amount no boot gate could see.
+     * <p><b>Per-tick is canonical; per-second is DERIVED from it</b>
+     * ({@code ManaRegen.perSecond(MANA_PER_TICK)}), never the reverse, and the resolver below
+     * composes IN TICKS. That is not a style rule -- it is why this is written as one division rather
+     * than two.
      *
-     * <p>So per-tick is canonical and per-second is derived from it
-     * ({@code ManaRegen.perSecond(MANA_PER_TICK)}), never the reverse -- and the resolver below
-     * composes IN TICKS for the same reason.
+     * <p><b>The hazard that rule exists for does not show at THIS base, and that is exactly when
+     * someone deletes the rule.</b> Slice 2 measured it on the old 60-second base:
+     * {@code 100/(60*20)} is {@code 0x1.5555555555555p-4} while {@code (100/60.0)/20.0} is
+     * {@code 0x1.5555555555556p-4} -- one ULP apart, {@code ==} false, so reaching the value the
+     * other way would have re-rated every player on the server silently. At the 100-second base the
+     * two orderings agree exactly ({@code 0x1.999999999999ap-5} either way), because the numbers
+     * happen to be kind.
+     *
+     * <p>They will not always be. The next retune picks a divisor at random as far as this is
+     * concerned, so the single-division form and the derive-from-ticks direction stay -- they cost
+     * nothing and they are the difference between a rebalance that ships what it says and one that
+     * ships a rate nobody chose. {@code ManaRegenTest} keeps the 60-second case as a standing
+     * witness for the same reason.
      */
-    private static final double MANA_PER_TICK = MAX_MANA / (60 * 20);
+    private static final double MANA_PER_TICK = MAX_MANA / (MANA_REFILL_SECONDS * 20);
 
     private Scheduler scheduler;
     private Keys keys;

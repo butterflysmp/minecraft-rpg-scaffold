@@ -581,6 +581,71 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Stats, Slice 3 (`/rpg stats`) — what it created or exposed
+
+- **BOOT GATE OWED.** Eight rows, in `PLAN-stats-slice-3.md`. **Rows 3 and 5 are the discriminating
+  ones**: a non-op player running the command (the permission node), and swinging the weapon then
+  comparing the number to the sheet (the input seam below).
+
+- **THE DAMAGE COMPOSITION HAD TWO COPIES AND ITS EXPLANATION HAD THREE.** `EffectApplier` wrote
+  `(base × multiplier(pct) + classBonus) × chargeScale × critMultiplier` out twice, and the 14.95
+  ordering witness appeared in `EffectApplier`, `Caster` **and** `AttackCharge`. Now one home,
+  `HitDamage`, split into `hitBase` (where the ordering hazard is) and `dealt` (the product tail).
+  `EffectApplierTest` stayed byte-identical, and all four composition mutations reddened **it** as
+  well as the new test — the extraction is load-bearing for the shipped combat path.
+
+- **`AttackCharge` said the charge scale "is the LAST transform". It was false** — crit applies after
+  it. Written before crit existed and never revisited; harmless only because both are bare multiplies
+  outside the parenthesis. Corrected.
+
+- **SHARING A FORMULA IS NOT SHARING ITS INPUTS, and this is the slice's one residual risk.**
+  `HitDamage` guarantees the sheet and the combat path compute the same way. It cannot guarantee they
+  are fed the same numbers: combat reads its three summands off a snapshot frozen at cast time, the
+  sheet reads them live. They agree **today** because `BukkitCombatant.snapshot` is a straight read of
+  `attackValue` / `classDamageValue` / `enchantDamagePercentValue` and `Caster.of` copies all three
+  through unchanged — verified at the source during this slice, and `snapshot` now carries a javadoc
+  saying so.
+
+  **If a transform is ever added there, the sheet drifts from the swing and NOTHING REDDENS** — the
+  formula would still be shared and both callers would still be correct in isolation. Transform at the
+  STAT if you must, so both sides move together. Gate row 5 is the only standing check.
+
+- **`GearLoreLines.trimNumber` cannot format a rate**: a gear-modified rate of `0.2 + 0.1` per second
+  prints over five seconds as `1.5000000000000002`. Executed, and asserted in `StatsSheetLinesTest`
+  so nobody re-adopts it. `StatsSheetLines` uses `trimNumber` for capacities and two decimals for
+  rates and damage — which means **the sheet and the action bar can differ in the last digit** (a
+  137.5 max reads `137.5` here and `138` there, because the bar `Math.round`s). Deliberate: one is
+  exact, one is glanceable.
+
+  > **The original witness was the mana base itself** (`1.6666666666666665`), and the Slice 3
+  > rebalance made both bases land on whole numbers over five seconds — which is exactly the state in
+  > which two decimals look like over-engineering. The replacement above is reachable with any
+  > off-round bonus, so the reason survives the retune rather than evaporating with it.
+
+- **REGEN IS DISPLAYED PER FIVE SECONDS, not per second.** Health regen reads `1.00/5s` and mana
+  `5.00/5s`. At one second the interesting rates are all fractions — base health regen is 0.2, which
+  reads as noise — and five is how both stats were designed ("1 HP every 5 seconds") and how a player
+  counts. The ×5 is presentation and never leaves `StatsSheetLines.perFiveSeconds`; nothing
+  downstream sees a per-5s number, and the tick→second conversion stays in `ManaRegen.perSecond`.
+
+- **A `<player>` ARGUMENT IS DEFERRED FOR A THREADING REASON, not an oversight.** `Stat.modifiers` is
+  a plain `LinkedHashMap` and `Stat.value()` iterates it; only the outer `states` map is concurrent.
+  Reading your OWN stats runs on your own region thread — the same thread your reconcile loop runs on
+  — so nothing mutates underneath. Reading **another** player's would iterate maps their loop mutates
+  on their region thread four times a second: a `ConcurrentModificationException` out of a command, or
+  a torn sum, across eight lines plus the resolver reads inside `ResourcePool`. It needs a region hop
+  or a snapshot type first. **Do not add the argument without doing that work.**
+
+- **One mutation came back GREEN and stays in the table.** Hardcoding `NamedTextColor.RED` where
+  `StatsBarText.HEALTH_COLOR` belongs cannot be reddened by any unit test — they are the same
+  singleton. Asserting against the constant catches DIVERGENCE the day a HUD colour changes; it cannot
+  catch the hardcoding. The compile-time import is the guard. `ArmorLoreTest` has the identical limit,
+  which is worth knowing before someone tries to "fix" either test.
+
+- **`rpg.command.stats` is the first `default: true` node added since `cast` and `class`**, and the
+  first player-facing `/rpg` subcommand in this arc. Declared in `paper-plugin.yml`; an undeclared
+  node silently defaults to op-only.
+
 ### Stats, Slice 2 (Mana Regen as a per-player stat) — what it created or exposed
 
 - **BOOT GATE RUN AND PASSED, 2026-08-31: all seven rows, operator-confirmed**, including both
@@ -604,6 +669,14 @@ Before milestone 2, two things worth measuring rather than assuming:
   So the expression is textually unchanged, per-second is derived FROM it, and the resolver composes
   **in ticks**: `MANA_PER_TICK + ManaRegen.perTick(bonus)`. With no bonus that is `x + 0.0`, which is
   exactly `x`. The constant now carries a javadoc saying it must not be tidied.
+
+  > **Stats Slice 3 retired this bit-identity deliberately** — the mana base was rebalanced from a
+  > 60-second to a 100-second refill, so the shipped rate changed on purpose. **What it also did,
+  > invisibly, was remove this entry's live example**: at the 100-second base the two orderings agree
+  > exactly (`0x1.999999999999ap-5` either way, `==` true). The hazard is a property of division
+  > ordering, not of any particular divisor, so the rule and the single-division form stay — and
+  > `ManaRegenTest` now keeps the 60-second case as a standing witness precisely so the rule does not
+  > read as unmotivated to whoever finds it next.
 
   **The obvious round-trip test would also have been a false law.** `perTick` and `perSecond` are not
   exact inverses: `(x*20)/20` round-trips for every value tried, `(x/20)*20` does not — it fails for
@@ -637,12 +710,17 @@ Before milestone 2, two things worth measuring rather than assuming:
   player full), per-archetype base `MAX_MANA`/`MANA_PER_TICK`, and showing the rate on the action bar.
 
 - **THE BASE RATE DOES NOT SCALE WITH A RAISED CEILING, and this slice did not fix it.**
-  `MANA_PER_TICK` is derived from `MAX_MANA` to mean "a full bar in 60 seconds". With Mana Bank at
-  +120 the ceiling is 220 while the rate stays base, so an enchanted player takes **132 seconds** to
-  fill — the enchant makes their bar bigger and their refill proportionally slower. Shipped behaviour,
-  predating this slice and untouched by it. Whether the rate should scale with the ceiling is an
-  archetype-content decision, not a regen-lift one, and it wants deciding alongside per-archetype
-  `MAX_MANA` rather than before it.
+  `MANA_PER_TICK` is derived from `MAX_MANA` to mean "a full bar in `MANA_REFILL_SECONDS`". With Mana
+  Bank at +120 the ceiling is 220 while the rate stays base, so an enchanted player takes
+  **220 seconds** to fill — the enchant makes their bar bigger and their refill proportionally slower.
+  Shipped behaviour, predating this slice and untouched by it. Whether the rate should scale with the
+  ceiling is an archetype-content decision, not a regen-lift one, and it wants deciding alongside
+  per-archetype `MAX_MANA` rather than before it.
+
+  > **Updated by Stats Slice 3's rebalance.** The base moved from a 60-second to a 100-second refill,
+  > so the Mana-Bank fill time moved with it: it was 132 s, it is now 220 s. The coupling is
+  > unchanged — the number simply tracks the base, which is the point of recording it as a ratio
+  > rather than a constant.
 
 ### Stats, Slice 1 (Health Regen) — what it created or exposed
 

@@ -44,12 +44,25 @@ public final class StatsBarText {
 
     private StatsBarText() {}
 
-    /** U+2764, the same glyph and colour the mob nameplate uses. */
-    static final String HEART = "❤";
+    /**
+     * THE STAT ICONS ARE PUBLIC for the same reason the colours below are.
+     *
+     * <p>They were package-private until Stats Slice 3, when {@code /rpg stats} became a second
+     * surface reporting the same stats this bar does -- and a sheet that spelled its own {@code ❤}
+     * would be a copy of a glyph, which is exactly the drift the colour javadoc argues against one
+     * paragraph down. Importing them makes it a compile-time link instead of two strings that happen
+     * to match today.
+     */
+    public static final String HEART = "❤";
     /** U+26E8, the defense shield. */
-    static final String SHIELD = "⛨";
+    public static final String SHIELD = "⛨";
     /** U+2726, the mana spark. */
-    static final String SPARK = "✦";
+    public static final String SPARK = "✦";
+    /**
+     * U+2694, the crossed swords. Introduced by the stat sheet, which is the first surface with a
+     * damage field; the bar has never shown one.
+     */
+    public static final String SWORDS = "⚔";
 
     /**
      * THE STAT COLOURS ARE PUBLIC because item tooltips read them.
@@ -70,6 +83,15 @@ public final class StatsBarText {
     public static final NamedTextColor DEFENSE_COLOR = NamedTextColor.GREEN;
     /** Public with its siblings, ready for Mana Bank's "+N Max Mana" bonus line in Slice 2b. */
     public static final NamedTextColor MANA_COLOR = NamedTextColor.BLUE;
+    /**
+     * The composed hit. Added by the stat sheet in Stats Slice 3 -- the bar has no damage field, so
+     * this colour has no HUD sibling to match yet. Named HERE anyway rather than at the sheet's call
+     * site, because the moment a second surface reports damage (a popup, a tooltip) the two must be
+     * the same colour, and this is the file that makes that a compile-time fact.
+     */
+    public static final NamedTextColor DAMAGE_COLOR = NamedTextColor.GOLD;
+    /** Crit chance and crit damage, which read as one pair and so share one colour. */
+    public static final NamedTextColor CRIT_COLOR = NamedTextColor.YELLOW;
 
     /**
      * The gap between fields. Wide enough that the fields read as separate on a background-less bar --

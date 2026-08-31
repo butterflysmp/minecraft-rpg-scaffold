@@ -9,7 +9,7 @@
 # Stat for the gear-contributed part, and the max-change transition, before this file granted a point.
 #
 # WHAT THE NUMBERS DO. Flat points of MAX mana, per piece, summed across the four slots by the
-# reconcile loop. The base pool is 100 and refills in 60 seconds, so:
+# reconcile loop. The base pool is 100 and refills in 100 seconds, so:
 #
 #   one piece at III        100 -> 130
 #   all four pieces at III  100 -> 220
