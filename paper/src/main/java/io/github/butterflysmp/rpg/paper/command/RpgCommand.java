@@ -14,6 +14,7 @@ import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.HealthRegen;
+import io.github.butterflysmp.rpg.core.combat.HitDamage;
 import io.github.butterflysmp.rpg.core.combat.ManaRegen;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
@@ -42,6 +43,7 @@ import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.health.CritModifierItems;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenModifierItems;
 import io.github.butterflysmp.rpg.paper.health.ManaRegenModifierItems;
+import io.github.butterflysmp.rpg.paper.hud.StatsSheet;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
@@ -393,6 +395,20 @@ public final class RpgCommand {
                         .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 100.0))
                                 .executes(ctx -> healthRegenBoost(ctx, adapters,
                                         DoubleArgumentType.getDouble(ctx, "bonus")))))
+                // The stat sheet: the eight build stats, read-only, self-only. The ONE player-facing
+                // command in this arc -- everything else here is a dev instrument -- so it is gated
+                // on its own node, granted to everyone, beside cast and class.
+                //
+                // SELF-ONLY, and that is a threading decision rather than a scope one. Stat.modifiers
+                // is a plain LinkedHashMap and Stat.value() iterates it; only the outer states map is
+                // concurrent. Reading YOUR OWN stats runs on your own region thread, which is the
+                // same thread your reconcile loop runs on, so nothing can mutate underneath. Reading
+                // ANOTHER player's would iterate maps their loop mutates on their region thread four
+                // times a second -- a ConcurrentModificationException out of a command, or a torn
+                // sum, across eight lines. A <player> argument needs a region hop first.
+                .then(Commands.literal("stats")
+                        .requires(source -> source.getSender().hasPermission(Permissions.STATS))
+                        .executes(ctx -> stats(ctx, adapters, resources)))
                 // Mint a mana_regen_boost_TEMP. Same reason as the health-regen fixture: no content
                 // grants mana regen yet, so without this the reconcile surface is provable only by
                 // unit test. Hold it and a bare bar fills in ~37s instead of 60; drop it and the rate
@@ -730,6 +746,65 @@ public final class RpgCommand {
                         + (HealthRegen.BASE_PER_SECOND + amount) + " HP/s, x"
                         + HealthRegen.SATURATED_MULTIPLIER + " while saturated). Hold it and wait.",
                 NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /**
+     * The caller's stat sheet: eight build stats, read-only.
+     *
+     * <p><b>The Damage line is the whole reason this command needed a refactor to exist.</b> It is
+     * {@code HitDamage.hitBase(...)} -- the SAME function both {@code EffectApplier} damage arms call
+     * -- fed the same three accessors {@code BukkitCombatant.snapshot} feeds them. Not a
+     * re-derivation that resembles a swing: {@code HitDamage.dealt(hitBase, 1.0, 1.0) == hitBase}
+     * exactly, so this IS a full-charge non-crit hit.
+     *
+     * <p><b>Sharing the formula is not the same as sharing the INPUTS</b>, and only the first is
+     * guaranteed by construction. The combat path reads its three summands off a snapshot frozen at
+     * cast time; this reads them live. They agree because the projection is a straight read of
+     * {@code attackValue} / {@code classDamageValue} / {@code enchantDamagePercentValue} with no
+     * transform at either hop -- verified at {@code BukkitCombatant.snapshot}, which carries a note
+     * pointing back here. If a transform is ever added there, this line drifts and NO unit test would
+     * catch it, because the formula would still be shared. The boot gate's swing-and-compare row is
+     * the check for that.
+     *
+     * <p>Charge and crit are deliberately absent rather than sampled: a sheet showing a rolled crit
+     * would print a different number every time it was run, and {@code snapshot} draws from
+     * {@code ThreadLocalRandom}, which is not something a read-only command should do.
+     *
+     * <p>Guarded with {@code tracks} and NOT with the register-if-absent path {@code damageSelf} and
+     * {@code healSelf} take -- that is a WRITE, and this command must not have one. {@code current}
+     * and {@code max} throw for an untracked id rather than returning 0.
+     */
+    private static int stats(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                             ResourcePool resources) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        UUID id = player.getUniqueId();
+        CombatantStats stats = adapters.stats();
+        if (!stats.tracks(id)) {
+            player.sendMessage(Component.text("No stats tracked yet -- try rejoining.",
+                    NamedTextColor.RED));
+            return 0;
+        }
+
+        // The same three the snapshot projection reads, in the same units, so the Damage line below
+        // composes exactly what a swing composes.
+        double damage = HitDamage.hitBase(stats.attackValue(id),
+                stats.enchantDamagePercentValue(id), stats.classDamageValue(id));
+
+        StatsSheet.build(
+                stats.max(id),
+                stats.healthRegenValue(id),                       // already per second
+                resources.max(id, ResourceCost.DEFAULT_RESOURCE),
+                ManaRegen.perSecond(                              // per TICK out of the pool
+                        resources.regen(id, ResourceCost.DEFAULT_RESOURCE)),
+                stats.defenseValue(id),
+                damage,
+                stats.critChanceValue(id),
+                stats.critDamageValue(id))
+                .forEach(player::sendMessage);
         return 1;
     }
 

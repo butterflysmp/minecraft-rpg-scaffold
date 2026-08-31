@@ -57,6 +57,22 @@ public final class BukkitCombatant {
      * {@code CombatWorld.attackDamage} has been retired. There is no longer a hit-time route to a
      * caster's attack damage, only this cast-time freeze.
      */
+    /**
+     * <b>THE THREE DAMAGE SUMMANDS BELOW ARE READ BY {@code /rpg stats} TOO, and they must stay
+     * STRAIGHT READS.</b>
+     *
+     * <p>{@code attackValue}, {@code classDamageValue} and {@code enchantDamagePercentValue} are
+     * projected here with no transform, and {@code Caster.of} copies all three through unchanged.
+     * The stat sheet reads the same three accessors live and feeds them to the same
+     * {@code HitDamage.hitBase} the damage arms use, which is what makes its Damage line a real swing
+     * rather than a lookalike.
+     *
+     * <p>Sharing the FORMULA is guaranteed by {@code HitDamage}. Sharing the INPUTS is guaranteed only
+     * by this method staying a straight read. If a transform is ever added to one of the three,
+     * the sheet drifts from the swing and <b>no unit test can catch it</b> -- the formula would still
+     * be shared, and both callers would still be correct in isolation. Transform them at the STAT if
+     * they must be transformed, so both sides move together.
+     */
     public static CombatantSnapshot snapshot(LivingEntity entity, CombatantStats stats) {
         Regions.requireOwned(entity);
         var location = entity.getLocation();
