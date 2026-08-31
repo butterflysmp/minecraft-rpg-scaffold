@@ -153,6 +153,19 @@ public final class EnchantEffectLine {
                 double points = EnchantCurve.valueAt(definition.valueByLevel(), level);
                 yield String.format("+%.0f Max Health", points);
             }
+            case MAX_MANA -> {
+                if (definition.gearClass() != heldClass) {
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
+                }
+                // Points, and "Max Mana" rather than "Mana", for the identical reasons the arm
+                // above gives: the enchant raises the CEILING of a pool and grants no current mana,
+                // so "+30 Mana" would promise a top-up the pin deliberately withholds. Equipping is
+                // headroom here too -- ResourcePool.setCurrent is what makes that true even for a
+                // player who has never cast.
+                double points = EnchantCurve.valueAt(definition.valueByLevel(), level);
+                yield String.format("+%.0f Max Mana", points);
+            }
         };
     }
 }
