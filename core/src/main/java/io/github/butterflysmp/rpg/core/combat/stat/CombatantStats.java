@@ -349,6 +349,38 @@ public final class CombatantStats {
         return ModifierReconciler.reconcile(state.maxManaTarget(), desired);
     }
 
+    /**
+     * The resolved passive regeneration rate in HP PER SECOND, or {@code 0.0} if untracked.
+     *
+     * <p>Total, never throwing, like every accessor here except {@link #current} and {@link #max}.
+     * And 0.0 is the RIGHT neutral rather than merely a safe one: it is what a mob reads, and
+     * {@code HealthRegen.healAmount} returns nothing for a rate of 0, so an untracked or non-player
+     * combatant reaching the regeneration tick heals nothing by the same arithmetic that makes a mob
+     * heal nothing. There is no second "is this a player" check anywhere to disagree with it.
+     */
+    public double healthRegenValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.healthRegenValue();
+    }
+
+    /**
+     * Converge {@code id}'s HEALTH-REGEN modifiers to exactly {@code desired}. Same leak-proof diff
+     * as the others. SILENT, by the defense precedent -- and doubly so here, since nothing displays
+     * the rate yet and the regeneration loop reads it fresh on every fire rather than being told.
+     *
+     * <p><b>void, unlike {@link #reconcileMaxManaModifiers}</b>, and that asymmetry is the point of
+     * both. Mana's boolean exists because its current lives in {@code ResourcePool} and a ceiling
+     * change has to be pinned there -- {@code NEXT.md} records that a reconcile which always reported
+     * "changed" would re-stamp the pool's tick four times a second and stop mana regenerating
+     * entirely. This stat is a rate with no current anywhere: there is no transition to pin, so there
+     * is nothing for a caller to do with the answer and no way for a wrong one to do damage.
+     */
+    public void reconcileHealthRegenModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.healthRegenTarget(), desired);
+    }
+
     /** Drop {@code id}'s state. O(1), safe for an unknown id. Call on logout and on mob removal. */
     public void clear(UUID id) {
         states.remove(id);
