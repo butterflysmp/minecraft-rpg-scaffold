@@ -121,23 +121,30 @@ mint all need a live server (`new ItemStack(...)` throws without a `RegistryAcce
 
 ---
 
-## Boot gate — `./scripts/dev-server.sh` — **OWED, not run**
+## Boot gate — `./scripts/dev-server.sh` — **RUN AND PASSED, 2026-08-31**
+
+**All seven rows, operator-confirmed, including both discriminating ones.**
 
 Kill orphaned `java.exe` first — the script dies, the JVMs do not, and they hold the deployed jar.
 
-| # | Check | Expected |
+| # | Check | Result |
 |---|---|---|
-| 1 | boot log | clean load, zero skipped content |
-| 2 | `/rpg mana refill`, cast, watch the bar | mana regenerates at all — the freeze guard in the wild |
-| 3 | `/rpg manaregen`, hold it, cast, watch | visibly faster (~37 s a bar, not 60); drop it → back to base within a tick |
-| 4 | **THE PIN.** Cast to empty, idle ~12 s **without touching gear**, note the bar, THEN equip the fixture | mana **does not jump**; it continues faster *from where it was* |
-| 5 | same, then **unequip** | no sudden drop |
-| 6 | equip Mana Bank at partial mana | still headroom, not a top-up — 2b regression |
-| 7 | `/rpg mana refill` | message still names the right max |
+| 1 | boot log | **PASS** — clean load, zero skipped content |
+| 2 | `/rpg mana refill`, cast, watch the bar | **PASS** — mana regenerates at all: the freeze guard in the wild |
+| 3 | `/rpg manaregen`, hold it, cast, watch | **PASS** — visibly faster (~37 s a bar, not 60); drop it → back to base within a tick |
+| 4 | **THE PIN.** Cast to empty, idle ~12 s **without touching gear**, note the bar, THEN equip the fixture | **PASS** — **no jump.** It continues faster *from where it was* |
+| 5 | same, then **unequip** | **PASS** — **no drop** |
+| 6 | equip Mana Bank at partial mana | **PASS** — still headroom, not a top-up: 2b holds |
+| 7 | `/rpg mana refill` | **PASS** — message still names the right max |
 
-**Rows 4 and 5 are the discriminating ones** — the only rows that fail without the pin, and row 4
-fails visibly (a ~20-mana jump) on the parent commit. Row 3 is the only row that fails if the reconcile
-surface is unwired. Row 2 is the only row that fails if the pin fires unconditionally.
+**Rows 4 and 5 are the discriminating ones, and they carry the slice.** They are the only rows that
+fail without the pin, and row 4 fails visibly — a ~20-mana jump — on the parent commit. Both passed,
+so the pin fires in the wild and the lazy-integration re-pricing is closed in both directions:
+equipping grants nothing and unequipping takes nothing.
+
+Row 3 is the only row that fails if the reconcile surface is unwired. Row 2 is the only row that fails
+if the pin fires unconditionally — an always-changed reconcile re-stamps `asOfTick` four times a
+second and mana stops regenerating entirely, which row 2 would have caught as a bar that never moves.
 
 ---
 

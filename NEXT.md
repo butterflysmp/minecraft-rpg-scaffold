@@ -583,9 +583,16 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ### Stats, Slice 2 (Mana Regen as a per-player stat) — what it created or exposed
 
-- **BOOT GATE OWED.** Seven rows, in `PLAN-stats-slice-2.md`. **Rows 4 and 5 are the discriminating
-  ones** — cast to empty, idle ~12 s, THEN equip the fixture, and mana must not jump. They are the
-  only rows that fail without the pin, and row 4 fails visibly on the parent commit.
+- **BOOT GATE RUN AND PASSED, 2026-08-31: all seven rows, operator-confirmed**, including both
+  discriminating ones. Reported at that granularity — seven of seven, rows 4 and 5 by name.
+
+  **Rows 4 and 5 carry the slice.** Cast to empty, idle ~12 s without touching gear, THEN equip the
+  fixture: mana did not jump, and unequipping did not drop it. They are the only rows that fail
+  without the pin, and row 4 fails visibly — a ~20-mana jump — on the parent commit. So the
+  lazy-integration re-pricing is closed in both directions in the wild, not merely in a unit test.
+
+  Row 2 is the row that would have caught the opposite failure: a reconcile that always reported
+  "changed" pins four times a second, `asOfTick` never advances, and the bar simply stops moving.
 
 - **A ONE-ULP RENAME WOULD HAVE RE-RATED EVERY PLAYER ON THE SERVER.** The plan called for making
   per-second canonical and renaming `MANA_PER_TICK` → `MANA_PER_SECOND`. Measured before writing
