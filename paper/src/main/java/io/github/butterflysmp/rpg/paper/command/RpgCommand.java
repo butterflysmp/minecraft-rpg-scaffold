@@ -14,6 +14,7 @@ import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.HealthRegen;
+import io.github.butterflysmp.rpg.core.combat.ManaRegen;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
@@ -40,6 +41,7 @@ import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.health.CritModifierItems;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenModifierItems;
+import io.github.butterflysmp.rpg.paper.health.ManaRegenModifierItems;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
@@ -177,7 +179,9 @@ public final class RpgCommand {
                                     return chooseElement(player, id, kits, elements, profiles, weapons, adapters);
                                 })))
                 // Dev tooling, not a game mechanic: refill the caller's mana so testing a costed
-                // trigger does not mean waiting out the 60-second regen between casts.
+                // trigger does not mean waiting out the regen between casts. NOT a fixed 60 seconds
+                // since Stats Slice 2 -- both the ceiling and the rate are per player now, so the
+                // wait depends on what the caller is wearing.
                 .then(Commands.literal("mana")
                         .requires(source -> source.getSender().hasPermission(Permissions.DEV))
                         .then(Commands.literal("refill")
@@ -388,6 +392,19 @@ public final class RpgCommand {
                         .executes(ctx -> healthRegenBoost(ctx, adapters, null))
                         .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 100.0))
                                 .executes(ctx -> healthRegenBoost(ctx, adapters,
+                                        DoubleArgumentType.getDouble(ctx, "bonus")))))
+                // Mint a mana_regen_boost_TEMP. Same reason as the health-regen fixture: no content
+                // grants mana regen yet, so without this the reconcile surface is provable only by
+                // unit test. Hold it and a bare bar fills in ~37s instead of 60; drop it and the rate
+                // returns within a tick.
+                //
+                // It is also how the boot gate witnesses the PIN, which is the discriminating check
+                // for this slice: cast to empty, wait, THEN equip -- mana must not jump.
+                .then(Commands.literal("manaregen")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> manaRegenBoost(ctx, adapters, resources, null))
+                        .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 100.0))
+                                .executes(ctx -> manaRegenBoost(ctx, adapters, resources,
                                         DoubleArgumentType.getDouble(ctx, "bonus")))))
                 // Mint a class_damage_boost_TEMP. The class-damage stat bases at 0 and no content
                 // grants it yet, so without this the feature is invisible at boot: hold a MATCHING
@@ -712,6 +729,32 @@ public final class RpgCommand {
                 "Gave health_regen_boost_TEMP (+" + amount + " -> "
                         + (HealthRegen.BASE_PER_SECOND + amount) + " HP/s, x"
                         + HealthRegen.SATURATED_MULTIPLIER + " while saturated). Hold it and wait.",
+                NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /**
+     * Mint a mana_regen_boost_TEMP into the caller's inventory.
+     *
+     * <p>Prints the RESOLVED per-second rate, the discipline {@link #critBoost} and
+     * {@code healthRegenBoost} follow -- a gate should read what to expect before it starts watching.
+     * The base comes from the pool, via {@code ManaRegen.perSecond(resources.regen(...))}, so the
+     * message composes base and bonus exactly ONCE and cannot drift from what the pool actually does.
+     * That accessor is why {@code ResourcePool.regen} exists.
+     */
+    private static int manaRegenBoost(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                                      ResourcePool resources, Double bonus) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        double amount = bonus == null ? ManaRegenModifierItems.DEFAULT_BOOST : bonus;
+        double currentPerSecond = ManaRegen.perSecond(
+                resources.regen(player.getUniqueId(), ResourceCost.DEFAULT_RESOURCE));
+        player.getInventory().addItem(ManaRegenModifierItems.mint(adapters.keys(), amount));
+        player.sendMessage(Component.text(
+                String.format("Gave mana_regen_boost_TEMP (+%.2f/s -> %.2f mana/s once held, from %.2f). "
+                                + "Hold it and cast.", amount, currentPerSecond + amount, currentPerSecond),
                 NamedTextColor.GREEN));
         return 1;
     }

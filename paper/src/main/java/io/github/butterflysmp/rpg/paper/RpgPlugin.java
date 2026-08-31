@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.kit.KitRegistry;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
+import io.github.butterflysmp.rpg.core.combat.ManaRegen;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.combat.stat.CompositeHealthListener;
@@ -93,6 +94,21 @@ public final class RpgPlugin extends JavaPlugin {
 
     /** Ability mana. A full bar in 60 seconds. Belongs in archetype content later. */
     private static final double MAX_MANA = 100.0;
+
+    /**
+     * The BASE refill rate, per tick.
+     *
+     * <p><b>This expression is load-bearing and must not be "tidied" into a per-second constant.</b>
+     * Stats Slice 2 made the stat per-second and very nearly renamed this to match. Measured:
+     * {@code MAX_MANA / (60 * 20)} is {@code 0x1.5555555555555p-4}, while {@code (MAX_MANA / 60.0) /
+     * 20.0} is {@code 0x1.5555555555556p-4} -- one ULP apart, {@code ==} false. Renaming it would
+     * have shifted the regeneration rate for every player on the server, including players wearing no
+     * mana gear, silently and by an amount no boot gate could see.
+     *
+     * <p>So per-tick is canonical and per-second is derived from it
+     * ({@code ManaRegen.perSecond(MANA_PER_TICK)}), never the reverse -- and the resolver below
+     * composes IN TICKS for the same reason.
+     */
     private static final double MANA_PER_TICK = MAX_MANA / (60 * 20);
 
     private Scheduler scheduler;
@@ -265,11 +281,20 @@ public final class RpgPlugin extends JavaPlugin {
         //
         // MAX_MANA stays the BASE and stays here, because NEXT.md records it becoming archetype
         // content later; the stat holds only the part gear contributes.
+        //
+        // THE PER-PLAYER RATE joins it in Stats Slice 2, same shape and same scoping. The stat is in
+        // mana per SECOND (matching Health Regen, and matching what a player reads), so the bonus is
+        // converted and ADDED TO THE PER-TICK BASE rather than the sum being converted -- see
+        // MANA_PER_TICK above for the ULP that makes those two different numbers. With no bonus,
+        // ManaRegen.perTick(0.0) is exactly 0.0 and x + 0.0 == x, so an unenchanted player's rate is
+        // bit-for-bit what shipped before this slice.
         this.resources = new ResourcePool(Bukkit::getCurrentTick,
                 (owner, resourceId) -> ResourceCost.DEFAULT_RESOURCE.equals(resourceId)
                         ? MAX_MANA + stats.maxManaBonusValue(owner)
                         : MAX_MANA,
-                MANA_PER_TICK);
+                (owner, resourceId) -> ResourceCost.DEFAULT_RESOURCE.equals(resourceId)
+                        ? MANA_PER_TICK + ManaRegen.perTick(stats.manaRegenBonusValue(owner))
+                        : MANA_PER_TICK);
         this.abilityService = new AbilityService(abilities, cooldowns, resources);
         // The reconcile loop pins the pool's current value when a max-mana modifier changes, so it
         // needs the pool. A second bind rather than a constructor param because the pool is built

@@ -142,6 +142,26 @@ public final class HealthState {
      */
     private final Stat healthRegen;
 
+    /**
+     * The mana-regeneration BONUS this combatant's gear grants, in MANA PER SECOND. Base 0.0 -- the
+     * entire value is gear-contributed, like {@link #maxManaBonus} and defense.
+     *
+     * <p><b>A BONUS, not the total</b>, for the reason {@link #maxManaBonus} gives: the base rate
+     * lives in {@code RpgPlugin} beside the {@code MAX_MANA} it is derived from, which {@code NEXT.md}
+     * records as becoming archetype CONTENT later. Base 0.0 also keeps the accessor TOTAL for an
+     * untracked combatant, which is what lets {@code ResourcePool}'s rate resolver be called from
+     * inside a cast without a {@code tracks()} guard.
+     *
+     * <p><b>Per SECOND, matching {@link #healthRegen}</b>, so the two regeneration stats share one
+     * unit and a stat sheet prints both without a conversion of its own. {@code ManaRegen} owns the
+     * single conversion to the per-tick rate the pool counts in -- and composes it in ticks, because
+     * the two orderings differ by an ULP.
+     *
+     * <p><b>This is the first stat that is a RATE and still needs a transition</b>, which is why it
+     * sits between the other two rather than beside either. See {@link #manaRegenTarget}.
+     */
+    private final Stat manaRegenBonus = new Stat(0.0);
+
     private final boolean player;
     private double current;
 
@@ -470,6 +490,42 @@ public final class HealthState {
         return healthRegen.modifierCount();
     }
 
+    // --- Mana regen: an ELEVENTH Stat, the BONUS gear adds to the base rate, MANA PER SECOND -----
+
+    /**
+     * The resolved mana-regen bonus in mana per second: {@code 0.0 + Sum(modifiers)}.
+     *
+     * <p>0 for a combatant with no such gear, and 0 is the correct neutral: the pool's rate resolver
+     * adds it to the base, so a player with nothing equipped regenerates at exactly the base rate --
+     * and, because the composition happens in ticks and {@code ManaRegen.perTick(0.0)} is exactly
+     * {@code 0.0}, at bit-for-bit the rate that shipped before this stat existed.
+     */
+    public double manaRegenBonusValue() {
+        return manaRegenBonus.value();
+    }
+
+    /** Set (or replace) the mana-regen modifier from {@code source}; true if the value changed. */
+    public boolean setManaRegenModifier(String source, double amount) {
+        return manaRegenBonus.putModifier(source, amount);
+    }
+
+    /** Remove {@code source}'s mana-regen modifier; true if one was actually removed. */
+    public boolean clearManaRegenModifier(String source) {
+        return manaRegenBonus.removeModifier(source);
+    }
+
+    public double manaRegenModifierAmount(String source) {
+        return manaRegenBonus.amountOf(source);
+    }
+
+    public Set<String> manaRegenModifierSources() {
+        return manaRegenBonus.sources();
+    }
+
+    public int manaRegenModifierCount() {
+        return manaRegenBonus.modifierCount();
+    }
+
     // --- Crit: a seventh and eighth Stat. Chance is a PROBABILITY, damage is a BONUS ------------
 
     /**
@@ -654,10 +710,21 @@ public final class HealthState {
      * <p><b>No clamp, and no transition either</b> -- the two things {@link #maxTarget} and
      * {@code maxManaTarget} respectively needed. Max health owns a current that must be pulled down
      * when its ceiling falls; max mana's current lives in another store and has to be pinned when the
-     * ceiling moves. This stat is a RATE with no current anywhere, read fresh by the regeneration
-     * loop on every fire, so a modifier landing or leaving simply changes what the next window pays.
-     * That is why {@code CombatantStats.reconcileHealthRegenModifiers} can return void where
-     * {@code reconcileMaxManaModifiers} had to return boolean.
+     * ceiling moves. A modifier landing or leaving here simply changes what the next window pays.
+     *
+     * <p><b>CORRECTED BY STATS SLICE 2.</b> This javadoc used to say the reason was that the stat is
+     * "a RATE with no current anywhere", and that this is "why
+     * {@code reconcileHealthRegenModifiers} can return void where {@code reconcileMaxManaModifiers}
+     * had to return boolean". That was a PROXY, not the cause, and {@code manaRegenBonus} is the
+     * counter-example: it is also a rate with no current of its own, and it DOES need a boolean and a
+     * pin.
+     *
+     * <p>The real axis is <b>eager versus lazy-integrated</b>. Health regeneration is eager --
+     * {@code HealthRegenSystem} pays {@code rate x dt} every second, so there is never anything
+     * accrued-but-unpaid for a rate change to re-price. Mana regeneration is lazy --
+     * {@code ResourcePool.regenerated} computes {@code amount + elapsed * rate} on read, so changing
+     * the rate re-prices ticks that already passed. Nothing is integrated here, so nothing can be
+     * re-priced, so no transition is needed. See {@link #manaRegenTarget}.
      */
     ModifierTarget healthRegenTarget() {
         return new ModifierTarget() {
@@ -666,6 +733,31 @@ public final class HealthState {
                 return healthRegen.putModifier(source, amount);
             }
             @Override public boolean clearModifier(String source) { return healthRegen.removeModifier(source); }
+        };
+    }
+
+    /**
+     * The mana-regen modifier surface. A plain {@link Stat}, like defense.
+     *
+     * <p><b>No clamp -- but a TRANSITION, and it is the only rate in this class that needs one.</b>
+     * There is no current here to clamp: like health regen, this is a slope. But unlike health regen,
+     * the thing it is the slope OF is computed lazily. {@code ResourcePool.regenerated} evaluates
+     * {@code amount + elapsed * rate} at read time, so raising the rate pays the NEW rate for ticks
+     * that already elapsed at the old one -- a player empty for twelve seconds has accrued 20 mana,
+     * and equipping a rate-doubler makes the very next read say 40.
+     *
+     * <p>That is the same free-on-equip defect {@code maxManaTarget} exists to prevent for the
+     * ceiling, so it gets the same answer: {@code CombatantStats.reconcileManaRegenModifiers} returns
+     * BOOLEAN, and the caller pins the pre-change reading. {@code ManaTransition} does both halves at
+     * once, because mana has one current and either stat moving should stamp it exactly once.
+     */
+    ModifierTarget manaRegenTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return manaRegenBonus.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return manaRegenBonus.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) { return manaRegenBonus.removeModifier(source); }
         };
     }
 

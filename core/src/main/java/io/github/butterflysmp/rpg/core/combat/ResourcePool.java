@@ -37,13 +37,28 @@ import java.util.function.LongSupplier;
  *
  * <p><b>Though not for the reason first written here.</b> That claimed a resolve inside the
  * {@code compute} lambda would break {@code concurrentSpendsCannotOverdrawThePool}. It does not --
- * measured, with the resolve moved in: all 23 pool tests stayed green. The reasons it stays OUT are
+ * measured, with the resolve moved in: every pool test stayed green. The reasons it stays OUT are
  * that a resolver is a LIVE read of a player's stats, so two reads straddling a gear change make
  * "the guard passed, then the spend refused" reachable -- which reports on screen as "needs 110, you
  * have 130" -- and that {@code ConcurrentHashMap} forbids a mapping function from touching the map
  * it is computing on, which arbitrary caller code cannot promise. What actually holds it is
- * {@code tryConsumeAsksTheResolverEXACTLYONCESoTheGuardAndTheSpendCannotDISAGREE}, which counts the
+ * {@code tryConsumeAsksEACHResolverEXACTLYONCESoTheGuardAndTheSpendCannotDISAGREE}, which counts the
  * calls, because the arity is the observable part and the deadlock story was not.
+ *
+ * <h2>The SLOPE is per owner as of Stats Slice 2</h2>
+ *
+ * The same lift, one field over: {@code regenPerTick} became a {@link RegenResolver}. It had exactly
+ * ONE read -- {@link #regenerated} -- against the ceiling's four, and no accessor at all, so nothing
+ * downstream had to migrate.
+ *
+ * <p><b>The rate is where this class stops resembling {@code HealthRegen}, and the difference is the
+ * whole reason Slice 2 needed a decision rather than a copy.</b> Health regeneration is EAGER: a loop
+ * pays {@code rate x dt} every second, so changing the rate only affects future payments. This pool is
+ * LAZY-INTEGRATED: {@link #regenerated} computes {@code amount + elapsed * rate}, so changing the rate
+ * RE-PRICES ticks that have already elapsed. At the shipped base rate a player empty for twelve
+ * seconds has accrued 20 mana; equipping a rate-doubler would make the very next read say 40. That is
+ * the same free-on-equip defect {@link #setCurrent} exists to prevent for the ceiling, so the caller
+ * pins on a rate change exactly as it pins on a ceiling change -- see {@code ManaTransition}.
  */
 public final class ResourcePool {
 
@@ -52,23 +67,38 @@ public final class ResourcePool {
 
     private final LongSupplier currentTick;
     private final MaxResolver max;
-    private final double regenPerTick;
+    private final RegenResolver regen;
     private final Map<UUID, Map<String, Entry>> pools = new ConcurrentHashMap<>();
 
-    public ResourcePool(LongSupplier currentTick, MaxResolver max, double regenPerTick) {
+    /**
+     * Both the ceiling and the SLOPE are per owner -- the shape as of Stats Slice 2.
+     */
+    public ResourcePool(LongSupplier currentTick, MaxResolver max, RegenResolver regen) {
         if (max == null) throw new IllegalArgumentException("a max resolver is required");
-        if (regenPerTick < 0) throw new IllegalArgumentException("regenPerTick must not be negative");
+        if (regen == null) throw new IllegalArgumentException("a regen resolver is required");
         this.currentTick = currentTick;
         this.max = max;
-        this.regenPerTick = regenPerTick;
+        this.regen = regen;
     }
 
     /**
-     * One ceiling for every owner -- the pre-2b shape, kept because it is still the right one for a
-     * pool with no per-player stat behind it.
+     * A per-owner ceiling with one rate for everyone -- the Slice 2b shape.
      *
-     * <p>Every test in the tree constructs through this, which is deliberate: leaving those
-     * constructions byte-identical is what makes the resolver change provably behaviour-preserving.
+     * <p>Kept so the two resolver-form construction sites that predate Stats Slice 2
+     * ({@code ResourcePoolMaxResolverTest}, {@code ManaBankTest}) stay byte-identical across this
+     * lift, for the same reason the constant-ceiling constructor below was kept across 2b's.
+     */
+    public ResourcePool(LongSupplier currentTick, MaxResolver max, double regenPerTick) {
+        this(currentTick, max, RegenResolver.fixed(requireNonNegative(regenPerTick)));
+    }
+
+    /**
+     * One ceiling and one rate for every owner -- the pre-2b shape, kept because it is still the
+     * right one for a pool with no per-player stat behind it.
+     *
+     * <p>Every test in the tree constructs through this or the overload above, which is deliberate:
+     * leaving those constructions byte-identical is what makes each resolver change provably
+     * behaviour-preserving.
      */
     public ResourcePool(LongSupplier currentTick, double max, double regenPerTick) {
         this(currentTick, MaxResolver.fixed(requirePositive(max)), regenPerTick);
@@ -77,6 +107,19 @@ public final class ResourcePool {
     private static double requirePositive(double max) {
         if (max <= 0) throw new IllegalArgumentException("max must be positive");
         return max;
+    }
+
+    /**
+     * The rate guard, moved here from the resolver constructor by Stats Slice 2.
+     *
+     * <p>It used to sit on the shared path, where every construction passed a {@code double}. With a
+     * {@link RegenResolver} there is no number there to check -- a resolver can return anything at any
+     * time -- so the check lives on the only path that still takes a constant. A negative rate would
+     * make {@code regenerated} DRAIN the pool as ticks passed, which is why it is guarded at all.
+     */
+    private static double requireNonNegative(double regenPerTick) {
+        if (regenPerTick < 0) throw new IllegalArgumentException("regenPerTick must not be negative");
+        return regenPerTick;
     }
 
     /**
@@ -90,12 +133,31 @@ public final class ResourcePool {
         return max.maxFor(owner, resourceId);
     }
 
-    /** An owner nobody has charged anything to is full. */
+    /**
+     * The per-tick regeneration rate for this owner's resource.
+     *
+     * <p>Added by Stats Slice 2 as the sibling of {@link #max}, so a display composes {@code base +
+     * bonus} in one place rather than re-deriving it. There was no such accessor before, because
+     * before the rate was a constant nothing needed to ask about.
+     */
+    public double regen(UUID owner, String resourceId) {
+        return regen.regenFor(owner, resourceId);
+    }
+
+    /**
+     * An owner nobody has charged anything to is full.
+     *
+     * <p>The ceiling is resolved unconditionally because the absent branch RETURNS it. The rate is
+     * resolved only on the other branch, because that branch is the only one that uses it -- and this
+     * is the hot read: {@code StatsBarSystem} calls this twice a second for every online player, most
+     * often on the absent path. Asking a resolver for a number nobody will use is the sort of cost
+     * that is invisible at one player and measurable at forty.
+     */
     public double current(UUID owner, String resourceId) {
         Map<String, Entry> owned = pools.get(owner);
         Entry entry = owned == null ? null : owned.get(resourceId);
         double ceiling = max.maxFor(owner, resourceId);
-        return entry == null ? ceiling : regenerated(entry, ceiling);
+        return entry == null ? ceiling : regenerated(entry, ceiling, regen.regenFor(owner, resourceId));
     }
 
     /**
@@ -129,13 +191,18 @@ public final class ResourcePool {
     }
 
     /**
-     * The regenerated value of one entry against a ceiling already resolved by the caller.
+     * The regenerated value of one entry against a ceiling and a rate already resolved by the caller.
      *
-     * <p>Takes the ceiling rather than reading it, because both callers had to resolve it anyway for
-     * their own absent-entry branch -- and because {@code tryConsume} calls this from inside a
-     * {@code compute} lambda, where a fresh resolver call would re-enter a map under a bin lock.
+     * <p>Takes BOTH rather than reading either, and for the same reason: {@code tryConsume} calls this
+     * from inside a {@code compute} lambda, where a fresh resolver call would re-enter a map under a
+     * bin lock and would be arbitrary caller code running inside a mapping function.
+     *
+     * <p>The rate joined the ceiling here in Stats Slice 2. Note this method is where mana differs
+     * from health regeneration in the one way that mattered: it INTEGRATES over {@code elapsed}, so a
+     * rate that changed mid-window re-prices ticks that have already passed. That is why a mana-regen
+     * modifier change has to pin the current value, while a health-regen one does not.
      */
-    private double regenerated(Entry entry, double ceiling) {
+    private double regenerated(Entry entry, double ceiling, double regenPerTick) {
         long elapsed = Math.max(0, currentTick.getAsLong() - entry.asOfTick());
         return Math.min(ceiling, entry.amount() + elapsed * regenPerTick);
     }
@@ -158,6 +225,12 @@ public final class ResourcePool {
         double ceiling = max.maxFor(owner, resourceId);
         if (amount > ceiling) return false;      // never satisfiable FOR THIS OWNER; do not wait forever
 
+        // The rate, ONCE, and unconditionally -- unlike current(), which resolves it only on the
+        // branch that uses it. This method cannot know whether the entry is absent until it is inside
+        // compute(), and peeking with a get() first would break the atomicity the compute is here for.
+        // So it pays one possibly-unused resolve to keep the spend a single atomic step.
+        double ratePerTick = regen.regenFor(owner, resourceId);
+
         Map<String, Entry> owned = pools.computeIfAbsent(owner, id -> new ConcurrentHashMap<>());
 
         // compute() applies the function atomically for this key, so the
@@ -166,7 +239,7 @@ public final class ResourcePool {
         // that fits 2 -- verified, not theoretical.
         boolean[] consumed = {false};
         owned.compute(resourceId, (id, entry) -> {
-            double available = entry == null ? ceiling : regenerated(entry, ceiling);
+            double available = entry == null ? ceiling : regenerated(entry, ceiling, ratePerTick);
             if (available < amount) {
                 return entry; // untouched; null stays absent, which reads as full
             }

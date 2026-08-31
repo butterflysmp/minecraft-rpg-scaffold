@@ -586,4 +586,59 @@ class CombatantStatsTest {
         assertDoesNotThrow(() ->
                 stats.reconcileHealthRegenModifiers(UUID.randomUUID(), Map.of("regen:CHEST", 0.8)));
     }
+
+    // --- Mana regen: the eleventh stat ------------------------------------------------------------
+
+    @Test
+    void theManaRegenBonusIsZeroForEveryoneWhoOwnsNoSuchGearIncludingMobsAndTheUNTRACKED() {
+        var stats = new CombatantStats();
+        UUID player = UUID.randomUUID();
+        UUID mob = UUID.randomUUID();
+        stats.register(player, 100, true);
+        stats.bootstrapIfAbsent(mob, 200, 3.0, false);
+
+        assertEquals(0.0, stats.manaRegenBonusValue(player), EPS,
+                "a BONUS, not a rate -- base 0.0, because the base rate lives in RpgPlugin");
+        assertEquals(0.0, stats.manaRegenBonusValue(mob), EPS, "and a mob has no gear");
+        assertEquals(0.0, stats.manaRegenBonusValue(UUID.randomUUID()), EPS,
+                "untracked resolves to 0 rather than throwing -- this is read from inside a cast");
+        // Mutation A: base the Stat at anything but 0.0 -> the player row reddens.
+        // Mutation B: require() instead of the 0.0 default -> the untracked row throws -> reddens.
+    }
+
+    @Test
+    void reconcileManaRegenConvergesTheBonusAndREPORTSWhetherItMovedSoTheCallerCanPIN() {
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID id = UUID.randomUUID();
+        stats.register(id, 100, true);
+        int afterRegister = recorder.seen.size();
+
+        assertTrue(stats.reconcileManaRegenModifiers(id, Map.of("manaregen:CHEST", 1.0)),
+                "equipping is a real transition");
+        assertEquals(1.0, stats.manaRegenBonusValue(id), EPS, "+1.0 mana/s");
+
+        assertFalse(stats.reconcileManaRegenModifiers(id, Map.of("manaregen:CHEST", 1.0)),
+                "A STEADY STATE MUST REPORT FALSE. The reconcile loop runs four times a second, and "
+                        + "a pin every tick re-stamps the pool entry's asOfTick so elapsed never "
+                        + "grows -- mana would stop regenerating entirely, silently, with the stat "
+                        + "block still reading correctly.");
+
+        assertTrue(stats.reconcileManaRegenModifiers(id, Map.of()), "and taking it off is one too");
+        assertEquals(0.0, stats.manaRegenBonusValue(id), EPS, "back to base -- no leak");
+
+        assertEquals(afterRegister, recorder.seen.size(), "SILENT: no HealthChange for a mana stat");
+        // Mutation A: return true unconditionally -> the steady-state row reddens, and in production
+        //   mana would stop regenerating forever.
+        // Mutation B: return false unconditionally -> the equip row reddens and the pin never fires.
+        // Mutation C: drop ModifierReconciler's remove-loop -> the take-it-off row leaves 1.0.
+    }
+
+    /** No-op on an untracked combatant, and false rather than a throw. */
+    @Test
+    void reconcilingManaRegenOnAnUntrackedCombatantIsANoOpReportingNoChange() {
+        var stats = new CombatantStats();
+        assertFalse(stats.reconcileManaRegenModifiers(UUID.randomUUID(), Map.of("manaregen:CHEST", 1.0)),
+                "nothing was tracked, so nothing moved, so the caller must not pin");
+    }
 }
