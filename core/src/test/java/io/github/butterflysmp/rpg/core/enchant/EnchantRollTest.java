@@ -36,15 +36,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class EnchantRollTest {
 
-    // The shipped roster, id for id and class for class. `unbreaking` is universal == null class.
+    // The shipped roster, id for id and class for class, IN THE ORDER THE LOADER PRODUCES --
+    // Arrays.sort over the filenames, so alphabetical. `unbreaking` is universal == null class.
+    //
+    // IT WAS STALE FOR TWO SLICES. It carried six entries against eight shipped files: protection
+    // and growth landed with armor and were never added, so the file guarding the roll had never
+    // once exercised ARMOR -- the class that goes past the candidate cap in this slice. Nothing
+    // pins this list against content/enchants/*.yml; it is hand-written and can drift again.
     private static final Rollable SHARPNESS = new Rollable("sharpness", GearClass.MELEE);
     private static final Rollable POWER = new Rollable("power", GearClass.RANGER);
     private static final Rollable ATTUNEMENT = new Rollable("attunement", GearClass.MAGE);
     private static final Rollable BULWARK = new Rollable("bulwark", GearClass.SHIELD);
     private static final Rollable THORNS = new Rollable("thorns", GearClass.SHIELD);
+    private static final Rollable PROTECTION = new Rollable("protection", GearClass.ARMOR);
+    private static final Rollable GROWTH = new Rollable("growth", GearClass.ARMOR);
+    private static final Rollable MANA_BANK = new Rollable("mana_bank", GearClass.ARMOR);
     private static final Rollable UNBREAKING = new Rollable("unbreaking", null);
     private static final List<Rollable> ROSTER =
-            List.of(SHARPNESS, POWER, ATTUNEMENT, BULWARK, THORNS, UNBREAKING);
+            List.of(ATTUNEMENT, BULWARK, GROWTH, MANA_BANK, POWER, PROTECTION, SHARPNESS, THORNS,
+                    UNBREAKING);
 
     /**
      * Literal draws, consumed in order. Running off the end throws
@@ -162,7 +172,7 @@ class EnchantRollTest {
     }
 
     @Test
-    void aShieldsPoolIsTHREEAndIsTheFirstShippedGearThatCanFillASlot() {
+    void aShieldsPoolIsTHREEAndArmorsIsFOURSoBothCanFillASlot() {
         // Bulwark + Thorns + Unbreaking. Every WEAPON class is still two (its own damage enchant
         // plus Unbreaking), so the shield is the only gear whose slot can hold three candidates.
         //
@@ -188,6 +198,32 @@ class EnchantRollTest {
     }
 
     @Test
+    void theArmorPoolIsTheFirstToEXCEEDTheCandidateCapAndTheClampIsTheAnswer() {
+        // Protection + Growth + Mana Bank + Unbreaking. The first shipped pool ever larger than
+        // MAX_CANDIDATES, and the cap doing the job it was written for rather than a defect: a slot
+        // offers a random THREE of the four, and which three varies per slot.
+        assertEquals(4, EnchantRoll.poolFor(GearClass.ARMOR, ROSTER).size());
+        assertEquals(3, EnchantRoll.candidateCount(4, 0.9999999),
+                "clamped by the layout, not by the pool");
+
+        // Raising the cap to 4 was considered and rejected. It would not let a player run all four
+        // anyway -- three slots with one active each means three, forced by SLOTS, not by the
+        // candidate cap -- and EnchantMenuLayout.rawSlotFor(1, 3) is 49, which is INPUT_SLOT.
+        assertEquals(3, EnchantRoll.MAX_CANDIDATES);
+
+        // A full draw fills three of the four cells, distinctly, on every slot.
+        for (EnchantSlot slot : EnchantRoll.roll(GearClass.ARMOR, ROSTER, always(0.99)).slots()) {
+            assertEquals(3, slot.candidates().size(),
+                    "a pool of four still fills exactly the three cells the table shows");
+            assertEquals(3, distinctCount(idsIn(slot)),
+                    "and a slot offered the same enchant twice: " + idsIn(slot));
+        }
+        // Mutation: change the clamp to `MAX_CANDIDATES` alone rather than min(poolSize, cap) -> a
+        // pool of four still reads 3 here, but a pool of TWO asks for three, pick runs it dry and
+        // the roll silently shorts -- which aPoolOfTwoNeverProducesAThreeCandidateSlot catches.
+    }
+
+    @Test
     void thePoolIsTheClassEnchantPlusTheUniversalOne() {
         assertEquals(List.of(SHARPNESS, UNBREAKING), EnchantRoll.poolFor(GearClass.MELEE, ROSTER));
         assertEquals(List.of(POWER, UNBREAKING), EnchantRoll.poolFor(GearClass.RANGER, ROSTER));
@@ -195,6 +231,8 @@ class EnchantRollTest {
         // Roster ORDER is preserved here too: bulwark precedes unbreaking in the roster, so it
         // precedes it in the pool. That is what makes a fixed set of draws reproduce a fixed roll.
         assertEquals(List.of(BULWARK, THORNS, UNBREAKING), EnchantRoll.poolFor(GearClass.SHIELD, ROSTER));
+        assertEquals(List.of(GROWTH, MANA_BANK, PROTECTION, UNBREAKING),
+                EnchantRoll.poolFor(GearClass.ARMOR, ROSTER));
         // Roster order is preserved, so the pool is a deterministic function of the registry.
         // Mutation: drop the `weaponClass() != null` arm (universal stops matching) -> UNBREAKING
         // disappears from all three -> reddens.
