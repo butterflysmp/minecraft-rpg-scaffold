@@ -581,6 +581,62 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Stats, Slice 2 (Mana Regen as a per-player stat) — what it created or exposed
+
+- **BOOT GATE OWED.** Seven rows, in `PLAN-stats-slice-2.md`. **Rows 4 and 5 are the discriminating
+  ones** — cast to empty, idle ~12 s, THEN equip the fixture, and mana must not jump. They are the
+  only rows that fail without the pin, and row 4 fails visibly on the parent commit.
+
+- **A ONE-ULP RENAME WOULD HAVE RE-RATED EVERY PLAYER ON THE SERVER.** The plan called for making
+  per-second canonical and renaming `MANA_PER_TICK` → `MANA_PER_SECOND`. Measured before writing
+  anything: `MAX_MANA / (60 * 20)` is `0x1.5555555555555p-4`, `(MAX_MANA / 60.0) / 20.0` is
+  `0x1.5555555555556p-4`, and `==` is **false**. The rename would have shifted the regeneration rate
+  for everyone — including players wearing no mana gear — silently, and by an amount no gate row
+  could see.
+
+  So the expression is textually unchanged, per-second is derived FROM it, and the resolver composes
+  **in ticks**: `MANA_PER_TICK + ManaRegen.perTick(bonus)`. With no bonus that is `x + 0.0`, which is
+  exactly `x`. The constant now carries a javadoc saying it must not be tidied.
+
+  **The obvious round-trip test would also have been a false law.** `perTick` and `perSecond` are not
+  exact inverses: `(x*20)/20` round-trips for every value tried, `(x/20)*20` does not — it fails for
+  `1.6666666666666667`, precisely the per-second figure a person writes by hand for this pool. The
+  derived base is `…665`, not `…667`. `ManaRegenTest` asserts the round trip only on values measured
+  to survive it and carries a standing `assertNotEquals` against the one that does not.
+
+- **THE `void` vs `boolean` RULE WAS PINNED ON THE WRONG AXIS, and Slice 1 wrote it that way.**
+  `healthRegenTarget`'s javadoc said health regen can return `void` because it is "a RATE with no
+  current anywhere". That is a **proxy, not the cause**. `manaRegenBonus` is the counter-example: also
+  a rate, also no current of its own, and it needs both a boolean and a pin.
+
+  The real axis is **eager vs lazy-integrated**. `HealthRegenSystem` pays `rate × dt` every second, so
+  nothing is ever accrued-but-unpaid to re-price. `ResourcePool.regenerated` computes
+  `amount + elapsed × rate` on READ, so raising the rate pays the new rate for ticks that already
+  elapsed — a player empty for twelve seconds has accrued 20 mana, and equipping a rate-doubler makes
+  the next read say 40. Both javadocs are corrected at the source.
+
+- **`ManaTransition` exists because of a trap no inline version could be tested for.** Written
+  `if (reconcileMax(...) || reconcileManaRegen(...))`, `||` short-circuits: on any tick where the
+  ceiling changed, the RATE reconcile never runs and regen modifiers silently stop converging. Inside
+  the paper loop nothing can observe that. Extracted to core — every argument was already a core type
+  — it is a unit test that reddens with `expected: <2.0> but was: <0.0>`.
+
+- **Three of that class's five mutations are silent in production**: the short circuit stops a stat
+  converging, an unconditional pin freezes regeneration entirely (the 2b `asOfTick` lesson, now
+  applying to the rate too), and a missing rate pin grants free mana on equip. **None would fail a
+  boot gate that only checks "does mana go up".**
+
+- **Still not done here:** mana persistence (`storage/` still never mentions mana; a rejoin starts a
+  player full), per-archetype base `MAX_MANA`/`MANA_PER_TICK`, and showing the rate on the action bar.
+
+- **THE BASE RATE DOES NOT SCALE WITH A RAISED CEILING, and this slice did not fix it.**
+  `MANA_PER_TICK` is derived from `MAX_MANA` to mean "a full bar in 60 seconds". With Mana Bank at
+  +120 the ceiling is 220 while the rate stays base, so an enchanted player takes **132 seconds** to
+  fill — the enchant makes their bar bigger and their refill proportionally slower. Shipped behaviour,
+  predating this slice and untouched by it. Whether the rate should scale with the ceiling is an
+  archetype-content decision, not a regen-lift one, and it wants deciding alongside per-archetype
+  `MAX_MANA` rather than before it.
+
 ### Stats, Slice 1 (Health Regen) — what it created or exposed
 
 - **BOOT GATE RUN AND PASSED, 2026-08-31**, operator-confirmed: rows 1, 2, 3, 6, 7, 8, 11 pass.
@@ -2614,8 +2670,8 @@ a melee basic, where nothing read it any more.
   clean. The asymmetry is the trap: removing `soaked_TEMP` first will pass and teach you
   that removing `rooted_TEMP` is the same job. It is not.
 
-  **There are now EIGHT `_TEMP` fixtures, not two, and six of them are a different shape.**
-  This entry was written when the debt was status-content only; the stat passes added six
+  **There are now NINE `_TEMP` fixtures, not two, and seven of them are a different shape.**
+  This entry was written when the debt was status-content only; the stat passes added seven
   ITEM fixtures, which live in Java rather than yml and so will not turn up in a content-pass
   grep of `content/`:
 
@@ -2629,6 +2685,7 @@ a melee basic, where nothing read it any more.
   | `crit_chance_boost_TEMP` | `/rpg critchance [bonus]` | `paper/health/CritModifierItems.java` | the same lifecycle for how OFTEN you crit |
   | `crit_damage_boost_TEMP` | `/rpg critdamage [bonus]` | `paper/health/CritModifierItems.java` | and for how HARD -- two stats in one class, moving independently |
   | `health_regen_boost_TEMP` | `/rpg healthregen [bonus]` | `paper/health/HealthRegenModifierItems.java` | the same lifecycle for the regeneration RATE: +0.8 on a 0.2 base is a resolved 1.0 HP/s, countable at a glance |
+  | `mana_regen_boost_TEMP` | `/rpg manaregen [bonus]` | `paper/health/ManaRegenModifierItems.java` | the same lifecycle for the MANA rate, plus the PIN: equip it after idling and mana must not jump |
 
   **THIS TABLE HAD GONE STALE BY TWO BEFORE Stats Slice 1 TOUCHED IT.** It said FIVE and listed
   five; the crit pair landed in the crit slice, whose own retrospective says in as many words
@@ -2637,16 +2694,23 @@ a melee basic, where nothing read it any more.
   `EnchantRollTest.ROSTER` did for two slices. There is no test. The check is
 
   ```bash
-  grep -rhoiE "[a-z_]+_temp" paper/src/main --include=*.java --include=*.yml | sort -u
+  grep -rhoiE "[a-z_]+_temp" paper/src/main --include=*.java --include=*.yml \
+    | tr 'A-Z' 'a-z' | sort -u
   ```
 
-  **and it returns NINE, not eight.** The ninth is `swing_TEMP`, which was REMOVED when the swing
-  listener shipped and survives only in prose describing its own removal (`WeaponSwingListener`,
+  **The `tr` is not optional.** Without it the `-i` search returns each fixture twice — once as
+  `health_boost_TEMP` from the prose and once as `health_boost_temp` from the `NamespacedKey` — so
+  the "count" is roughly double and means nothing. That was wrong in this entry for one slice, which
+  is a small instance of the thing this file keeps recording: a documented check that does not do
+  what the prose beside it claims.
+
+  **And it returns TEN, not nine.** The extra one is `swing_TEMP`, REMOVED when the swing listener
+  shipped, surviving only in prose describing its own removal (`WeaponSwingListener`,
   `solar_grenade.yml`, `void_slash.yml`). A retired fixture and a live one look identical to that
   grep, so read each hit before counting it — a count taken straight off the grep is wrong today
   and will be wrong differently later.
 
-  The six item fixtures come out when real content grants those stats (an enchant, a passive,
+  The seven item fixtures come out when real content grants those stats (an enchant, a passive,
   a build aspect) — `WeaponAttackItems` is already the shape that replaces them, sourcing a
   stat from actual weapon content instead of a fixture. Each also owns a `/rpg` dev subcommand
   and a `Keys` PDC entry, so removing one is three sites, not one.
