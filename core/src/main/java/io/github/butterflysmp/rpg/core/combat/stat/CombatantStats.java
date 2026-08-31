@@ -316,6 +316,39 @@ public final class CombatantStats {
         ModifierReconciler.reconcile(state.defenseTarget(), desired);
     }
 
+    /**
+     * The resolved MAX-MANA BONUS this combatant's gear grants, or {@code 0.0} if untracked.
+     *
+     * <p>A bonus, not a ceiling: {@code ResourcePool}'s resolver adds it to the base pool. Returning
+     * 0.0 rather than throwing is load-bearing, and the difference from {@link #max} is deliberate --
+     * this is read from inside {@code tryConsume}, on whatever thread is casting, for any owner
+     * including a mob firing a costed trigger. A throw there would come out of a cast.
+     */
+    public double maxManaBonusValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.maxManaBonusValue();
+    }
+
+    /**
+     * Converge {@code id}'s MAX-MANA modifiers to exactly {@code desired}. Same leak-proof diff as
+     * the others. SILENT, by the defense precedent: the mana field is POLLED by the action bar, so
+     * an event would be a second route to the same redraw.
+     *
+     * <p><b>Returns whether anything changed, unlike its void siblings</b>, and that is not
+     * symmetry for its own sake. Mana's current lives in {@code ResourcePool}, so the max-change
+     * transition -- headroom up, clamp down -- cannot happen inside {@code HealthState} the way max
+     * health's does. The caller needs to know a transition occurred so it can pin the pre-change
+     * reading in the pool. {@code reconcileMaxModifiers} reads the same boolean; it just spends it
+     * on an event instead.
+     *
+     *  true if a source was added, removed, or its amount altered
+     */
+    public boolean reconcileMaxManaModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return false;
+        return ModifierReconciler.reconcile(state.maxManaTarget(), desired);
+    }
+
     /** Drop {@code id}'s state. O(1), safe for an unknown id. Call on logout and on mob removal. */
     public void clear(UUID id) {
         states.remove(id);

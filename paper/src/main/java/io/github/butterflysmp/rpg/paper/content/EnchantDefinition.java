@@ -125,12 +125,13 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             // armor slots. Neither is universal: a universal armor-stat enchant would enter every
             // weapon's roll pool and sell an XP unlock that does nothing.
             case DEFENSE,
-                 MAX_HEALTH -> Gate.ARMOR_ONLY;
+                 MAX_HEALTH,
+                 MAX_MANA   -> Gate.ARMOR_ONLY;
             case DURABILITY -> Gate.UNIVERSAL_ONLY;
         };
         boolean curved = switch (effect) {
-            case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH -> true;
-            case DURABILITY                                     -> false;
+            case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA -> true;
+            case DURABILITY                                               -> false;
         };
 
         // The two rules are shared rather than copied per arm: three effects now hold the same curve

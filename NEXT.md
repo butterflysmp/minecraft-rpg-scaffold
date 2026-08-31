@@ -696,6 +696,102 @@ Before milestone 2, two things worth measuring rather than assuming:
   shipped, and `EnchantRoll`'s javadoc still says a shield's 3 is the largest.
 
 
+### Armor, Slice 2b (Mana Bank, and per-player Max Mana) — what it created or exposed
+
+- **BOOT GATE OWED.** Eleven rows, in `PLAN-armor-slice-2b.md`. Rows 5 and 9 are the discriminating
+  ones. Row 4 -- equip at full mana, expect headroom -- **passes on the pre-2b behaviour by
+  accident**, because a player who has already cast has a stored entry and gets headroom either way.
+  Row 5 is the same action by a player who has never cast this session, and it is the ONLY row that
+  fails if the pin is missing. Row 9 (an ability edited to cost more than 100) is the only row that
+  exercises `tryConsume`'s guard rather than reading through `current()`.
+
+- **TWO PLANNED MUTATIONS DID NOT REDDEN, AND FINDING THAT OUT IS THE MAIN THING THIS SLICE
+  PRODUCED.** Both were written into the plan's mutation table as though the checks existed. Both
+  compiled, applied, and left every test green. This is the file's own recurring defect -- a check
+  that cannot fail is indistinguishable from one that passes -- caught this time only because the
+  mutations were RUN rather than reasoned about.
+
+  1. **Deleting `setCurrent`'s `Math.min` left all ten tests green.** The test written to guard the
+     unequip clamp reads through `current()`; `current()` calls `regenerated()`; `regenerated()`
+     ends in its own `Math.min` against the same ceiling. So it reports the clamped number whether
+     or not the clamp was ever WRITTEN. Its own comment claimed it "reddens where a read-only test
+     would not."
+
+     The stored amount is observable in exactly one window: when the ceiling rises again with **no
+     pin behind it**. The obvious fix -- unequip, then re-equip -- does not work either, and that
+     was measured too: the re-equip pins a value it just read back, which is already clamped, so
+     the mutation heals itself. `setCurrentClampsAtTheMomentOfWRITING...` asserts the method's
+     contract in isolation instead.
+
+  2. **Resolving the ceiling inside `compute()` broke nothing.** The plan claimed it would redden
+     `concurrentSpendsCannotOverdrawThePool`; all 22 pool tests stayed green. A resolver over a
+     plain map neither deadlocks nor returns anything different, so the deadlock story was never
+     the observable part -- the ARITY is. Two reads straddling a gear change make "the guard
+     passed, then the spend refused" reachable, which reaches the player as **"needs 110, you have
+     130"**. `tryConsumeAsksTheResolverEXACTLYONCE...` counts the calls.
+
+  Both `ResourcePool` javadocs asserting the old stories are corrected in place. **A mutation row
+  that never reddens is a check that did not run**, and two of six here were exactly that.
+
+- **THERE WERE FOUR READS OF THE GLOBAL MAX, NOT THREE.** The fourth was a verbatim duplicate of
+  `current()`'s absent-owner branch, nested inside `tryConsume`'s `compute` mapping function, which
+  is why a grep for `max` found three and reading found four. `tryConsume` now resolves once at the
+  top and passes the local to `regenerated`.
+
+- **THE INCREASE SIDE WAS THE BROKEN ONE, AND THE DECREASE WAS NEARLY FREE.** The opposite of what
+  the brief assumed. `ResourcePool` stores *(amount, tick)* rather than a current value, so
+  `Math.min` in the regen path already pulled current down on the next read -- the explicit clamp is
+  about STATING it, not about the arithmetic.
+
+  The increase had a live inconsistency: an owner **with** an entry got headroom, and an owner with
+  **no** entry read the new ceiling instantly, because absent means full. **The same enchant behaved
+  two ways depending on whether the player had ever cast.** One pin-on-change mechanism serves both
+  directions.
+
+- **A RECONCILE THAT ALWAYS REPORTS "CHANGED" STOPS MANA REGENERATING ENTIRELY.** Found while
+  writing the test, not in review. `reconcileMaxManaModifiers` returns `boolean` where its siblings
+  are `void` precisely because the pin must fire on a real transition and nothing else: the loop
+  runs four times a second, and a pin every tick re-stamps the entry's `asOfTick`, so the elapsed
+  count never grows. Lazy regeneration makes an unconditional write a **silent, total** loss of
+  regen, with no error and a stat block that still reads correctly.
+
+- **THE PLAN'S `stats.tracks(owner)` GUARD WAS DESIGNED OUT RATHER THAN WRITTEN.** `CombatantStats.max(id)`
+  throws for an untracked id, so the plan guarded the resolver. Modelling the stat as a **bonus with
+  base 0.0** rather than a total with base 100.0 makes `maxManaBonusValue` total by construction --
+  the same shape `defenseValue` already had -- so the resolver cannot throw and there is no guard to
+  forget. A resolver called from inside a cast must be TOTAL; the base stays in paper, which is
+  where the archetype pass wants it anyway.
+
+- **THE ROLL ROSTER FIXTURE HAD NEVER SEEN ARMOR.** `EnchantRollTest.ROSTER` claimed to be "the
+  shipped roster, id for id and class for class" with six entries against content's eight, missing
+  `protection` and `growth` -- so the file guarding the roll had never exercised the one class about
+  to pass the candidate cap. Stale since `82b0959`, independent of this slice, and the same
+  discovery-that-finds-nothing shape recorded twice elsewhere in this file: a fixture that claims to
+  mirror content and silently does not.
+
+- **ARMOR IS THE FIRST SHIPPED POOL TO EXCEED `MAX_CANDIDATES`.** Four rollables, cap of three, and
+  the clamp does the job it was written for. Pinned by name so it reads as intended rather than as
+  an oversight. Raising the cap would not let a player run all four anyway (`SLOTS` x one active
+  each is three), and it is **not the one-constant change it looks like**: `rawSlotFor` puts a
+  fourth candidate on row 5 at 47/**49**/51, `INPUT_SLOT` is 49, and `renderCandidates` writes
+  unconditionally -- so it would paint a candidate icon over the player's own armor and `onClose`
+  would hand the icon back.
+
+- **THE "ENUMERATE THE AXIS" CHECKLIST CONFIRMED RATHER THAN ASSUMED.** Adding `MAX_MANA` produced
+  exactly three compile errors -- `EnchantDefinition`'s `gate` and `curved`, `EnchantEffectLine`'s
+  `bare` -- all of them switch EXPRESSIONS, all of them converted in 2a. The one statement the 2a
+  audit flagged (`RpgCommand`'s `switch (op)` over `EnchantOp`) was untouched because no `EnchantOp`
+  was added. That is the lesson working: the conversions made this a compile error instead of a bug
+  report.
+
+- **`EnchantCost`'s javadoc is now half-wrong, deliberately.** It cites `MAX_MANA` as the archetype
+  of "a uniform system knob rather than per-enchant content". The BASE stays uniform; the resolved
+  value does not. Whoever does the per-archetype pass should read that paragraph before quoting it.
+
+- **Still not done here:** mana persistence (`storage/` never mentions mana, and a rejoin still
+  starts a player full), per-archetype base `MAX_MANA`, and raising `MAX_CANDIDATES`.
+
+
 ### The gear extraction (GearDefinition/GearItems) — what it created or exposed
 
 - **BOOT WITNESSED, 2026-08-30: the `GearRefresher` rebuild works for all three gear kinds.** A

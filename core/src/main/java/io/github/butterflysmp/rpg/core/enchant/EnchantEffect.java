@@ -89,7 +89,22 @@ public enum EnchantEffect {
      * feeds {@code HealthState.max}, the only reconciled stat that can TAKE health away, since
      * lowering max clamps current down while raising it only grants headroom.
      */
-    MAX_HEALTH;
+    MAX_HEALTH,
+
+    /**
+     * Flat points added to the MAX MANA of whoever wears the piece it sits on. The mechanism is
+     * {@link ManaBank}.
+     *
+     * <p>Distinct from {@link #MAX_HEALTH} for the reason this enum keeps applying: they share a
+     * curve shape and none of their arithmetic or their destination. Max health is a {@code Stat} on
+     * {@code HealthState} with a current beside it; max mana is a ceiling over a pool that stores a
+     * SPENT AMOUNT and a tick, and regenerates lazily on read.
+     *
+     * <p>That difference is why this one needed a slice rather than wiring. Growth rode machinery
+     * that already existed; this effect's first version had to build the per-player ceiling,
+     * {@code ResourcePool.MaxResolver}, and the max-change transition that goes with it.
+     */
+    MAX_MANA;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides

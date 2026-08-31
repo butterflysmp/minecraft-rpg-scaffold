@@ -1,0 +1,48 @@
+# The third ARMOR enchant, and the one that needed a slice rather than a content file.
+#
+# `effect: max_mana` names core/enchant/ManaBank.java. The mechanism is Java, the curve is here, and
+# the loader REFUSES this effect on anything but armor.
+#
+# WHY THIS ONE WAS NOT WIRING. Growth rode machinery that already existed -- HealthState.max had a
+# Stat, a reconcile target and a clamp. Max mana had a single shared constant: every player on the
+# server had the same 100. Slice 2b built the per-player ceiling (ResourcePool.MaxResolver), a ninth
+# Stat for the gear-contributed part, and the max-change transition, before this file granted a point.
+#
+# WHAT THE NUMBERS DO. Flat points of MAX mana, per piece, summed across the four slots by the
+# reconcile loop. The base pool is 100 and refills in 60 seconds, so:
+#
+#   one piece at III        100 -> 130
+#   all four pieces at III  100 -> 220
+#
+# READ THIS BEFORE RETUNING IT. Mana Bank and Growth look like siblings and are not the same gift.
+# +120 max health is a permanent doubling of a pool nothing refills on its own; +120 max mana is a
+# doubling of a pool that refills completely in a minute. This buys BURST -- more casts before the
+# wait -- not survival. If the full-set number ever feels wrong, that is the axis it is wrong on.
+#
+# THE TRANSITION RULES, which mirror Growth's and which cost real work here:
+#
+#   equipping is HEADROOM, never a top-up   100/100  + a +30 piece  ->  100/130
+#   unequipping CLAMPS current down         130/130  - that piece   ->  100/100
+#
+# The first was the hard one. ResourcePool stores a SPENT AMOUNT and a tick rather than a current
+# value, and an owner with no entry reads as FULL -- so raising the ceiling of a player who had never
+# cast would have handed them 30 mana instantly, while a player who had cast once got headroom. Same
+# enchant, two behaviours, decided by state nobody can see. The reconcile loop pins the pre-change
+# reading to make both headroom.
+#
+# `class: universal` WOULD BE THE DANGEROUS TYPO, and the loader refuses it -- as it does for
+# Protection and Growth. A universal Mana Bank would enter every WEAPON's roll pool and sell an XP
+# unlock that does nothing, because the max-mana scan only ever looks at the four armor slots.
+#
+# NOTE ON THE ROLL. This is the fourth armor enchant, so armor's pool becomes FOUR against
+# EnchantRoll.MAX_CANDIDATES = 3 -- the first shipped pool ever to exceed the cap. That is the cap
+# doing its designed job, not a defect: each slot offers a random 3 of the 4, and three slots with
+# one active each means a player runs 3 regardless. See EnchantRollTest.
+display_name: "Mana Bank"
+# Cosmetic, and it DEFAULTS to enchanted_book when absent, so it is never a reason a working enchant
+# fails to load. Do not make it required.
+icon: lapis_lazuli
+max_level: 3
+effect: max_mana
+class: armor
+value_by_level: [10, 20, 30]

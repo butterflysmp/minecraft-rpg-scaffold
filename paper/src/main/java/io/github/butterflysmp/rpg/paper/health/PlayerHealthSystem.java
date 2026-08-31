@@ -1,5 +1,7 @@
 package io.github.butterflysmp.rpg.paper.health;
 
+import io.github.butterflysmp.rpg.core.ability.ResourceCost;
+import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthChange;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthListener;
@@ -44,6 +46,7 @@ public final class PlayerHealthSystem implements HealthListener {
     private final EnchantRegistry enchants;
     private final HeartBarRenderer renderer = new HeartBarRenderer();
     private CombatantStats stats;
+    private ResourcePool resources;
 
     public PlayerHealthSystem(Scheduler scheduler, Keys keys, WeaponRegistry weapons,
                               EnchantRegistry enchants) {
@@ -56,6 +59,18 @@ public final class PlayerHealthSystem implements HealthListener {
     /** Wire the store this renders. Called once in onEnable, right after the store is built. */
     public void bind(CombatantStats stats) {
         this.stats = stats;
+    }
+
+    /**
+     * Wire the mana pool the reconcile loop pins on a max-mana change.
+     *
+     * <p>A second bind rather than a constructor parameter, because the pool is built AFTER this
+     * system and cannot be built before it: the pool's own max resolver reads the stat store, and
+     * the stat store's listener is this system. That is the same cycle {@link #bind} already breaks,
+     * one step further along.
+     */
+    public void bindResources(ResourcePool resources) {
+        this.resources = resources;
     }
 
     /** The store this owns, for the dev commands that damage/heal through the observable path. */
@@ -131,7 +146,7 @@ public final class PlayerHealthSystem implements HealthListener {
         EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
         UUID id = player.getUniqueId();
         RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, () -> {
-            // Eight stats converge on the same scan: max HP from +HP items, attack damage from the
+            // Nine stats converge on the same scan: max HP from +HP items, attack damage from the
             // held weapon's declared attack_damage (a MAIN_HAND modifier), attack speed from equipped
             // speed sources, the class-damage bonus from equipped "+N <Class> Damage" gear
             // MATCHING the held weapon's class, and the enchant-damage percent from the damage
@@ -192,6 +207,25 @@ public final class PlayerHealthSystem implements HealthListener {
             // cancels what the vanilla attribute actually HOLDS. They are equal today and will not
             // be once an enchant can add Defense, which is why they are read and passed separately
             // rather than one sum serving both -- see DefenseModifierItems.
+            // The NINTH stat, and the only one whose current value lives in another store. Max
+            // health's transition happens inside HealthState (headroom up, clamp down); mana's
+            // cannot, because ResourcePool holds a spent amount and a tick rather than a value.
+            //
+            // So the transition is here, in three lines, and it is ONE mechanism for both
+            // directions: read what the player has NOW, converge the ceiling, and if it actually
+            // moved, pin the reading back. Rising, that is headroom -- crucially including for a
+            // player with no pool entry, who would otherwise read the new ceiling instantly and get
+            // the difference free. Falling, setCurrent's own clamp is the unequip clamp, stated
+            // rather than left to emerge from the regen path's Math.min.
+            //
+            // Only on a real change, so a player not touching their gear still writes nothing and
+            // "a pool nobody reads costs nothing" survives.
+            double manaBefore = resources.current(id, ResourceCost.DEFAULT_RESOURCE);
+            if (stats.reconcileMaxManaModifiers(id,
+                    ManaBankModifierItems.desiredModifiers(player, keys, enchants))) {
+                resources.setCurrent(id, ResourceCost.DEFAULT_RESOURCE, manaBefore);
+            }
+
             DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player, keys, enchants);
             stats.reconcileDefenseModifiers(id, worn.defense());
             ArmorBarOverride.apply(player, keys, stats.defenseValue(id), worn.nativeArmor());

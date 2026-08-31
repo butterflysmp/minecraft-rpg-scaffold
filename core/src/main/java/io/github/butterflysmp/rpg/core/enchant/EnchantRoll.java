@@ -102,10 +102,18 @@ public final class EnchantRoll {
      * a 1-versus-2 count without a sample far larger than a boot gate -- and it would ship
      * unwitnessable. That is the roster pass's decision, on this axis.
      *
-     * <p><b>That argument NO LONGER covers SHIELD, as of Slice 2b.</b> A shield's pool is Bulwark
-     * plus Thorns plus Unbreaking -- THREE -- while every weapon class is still two. So a 1..3 count
-     * is now genuinely observable on one kind of gear, and {@code EnchantMenuLayout.CANDIDATES == 3}
-     * is exercised by a real roll rather than only by {@link #candidateCount} in isolation.
+     * <p><b>That argument stopped covering the non-weapon classes, and this paragraph was wrong for
+     * two slices before anyone noticed.</b> A shield's pool is Bulwark plus Thorns plus Unbreaking --
+     * THREE -- and ARMOR reached three the moment Protection and Growth shipped, which this text
+     * kept denying. Every weapon class is still two. So a 1..3 count is genuinely observable on
+     * TWO kinds of gear, and {@code EnchantMenuLayout.CANDIDATES == 3} is exercised by real rolls
+     * rather than only by {@link #candidateCount} in isolation.
+     *
+     * <p><b>And armor is the first shipped pool ever to EXCEED the cap.</b> Mana Bank takes it to
+     * four. Nothing breaks: the {@code min(poolSize, MAX_CANDIDATES)} below clamps it, so a slot
+     * offers a random three of the four and which three varies per slot. That is the clamp doing the
+     * job it was written for, not a defect -- and raising the cap would not let a player run four
+     * anyway, because {@link #SLOTS} times one active candidate each is three regardless.
      *
      * <p>Rarity-weighting stays deferred anyway: one class with a big enough pool is not a reason to
      * design a tier curve for all of them. But it is now deferred BY CHOICE rather than by

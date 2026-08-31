@@ -82,6 +82,22 @@ public final class HealthState {
     private final Stat defense = new Stat(0.0);
 
     /**
+     * The max-mana BONUS this combatant's gear grants. Base 0.0 -- the entire value is
+     * gear-contributed, like defense and the class bonus.
+     *
+     * <p><b>A BONUS, not the total, and that is deliberate.</b> The base pool lives in
+     * {@code RpgPlugin.MAX_MANA}, which {@code NEXT.md} records as becoming archetype CONTENT later;
+     * duplicating it here would put the number in two places and make the content move a two-file
+     * change. So this stat is the part gear owns, and {@code ResourcePool}'s resolver composes
+     * {@code base + bonus}.
+     *
+     * <p>Base 0.0 also makes the accessor TOTAL for an untracked combatant -- a mob firing a costed
+     * trigger reads 0 rather than throwing, which is what lets the resolver be called from inside a
+     * cast without a tracks() guard. {@code max()} throws; this must not.
+     */
+    private final Stat maxManaBonus = new Stat(0.0);
+
+    /**
      * Crit CHANCE: the probability a hit from this combatant crits. A player bases at
      * {@link Crit#BASE_CHANCE} (0.15); a MOB bases at 0.
      *
@@ -359,6 +375,41 @@ public final class HealthState {
         return defense.modifierCount();
     }
 
+    // --- Max mana: a ninth Stat, the BONUS gear adds to the base pool, base 0.0 -------------------
+
+    /**
+     * The resolved max-mana bonus: {@code 0.0 + Sum(modifiers)}. Four Mana Bank III pieces resolve
+     * to {@code 120.0}, which the pool's resolver adds to the base to reach a ceiling of 220.
+     *
+     * <p>0 for a combatant with no such gear, and 0 is the correct neutral: the resolver adds it to
+     * the base, so a player with nothing equipped gets exactly the base pool.
+     */
+    public double maxManaBonusValue() {
+        return maxManaBonus.value();
+    }
+
+    /** Set (or replace) the max-mana modifier from {@code source}; true if the value changed. */
+    public boolean setMaxManaModifier(String source, double amount) {
+        return maxManaBonus.putModifier(source, amount);
+    }
+
+    /** Remove {@code source}'s max-mana modifier; true if one was actually removed. */
+    public boolean clearMaxManaModifier(String source) {
+        return maxManaBonus.removeModifier(source);
+    }
+
+    public double maxManaModifierAmount(String source) {
+        return maxManaBonus.amountOf(source);
+    }
+
+    public Set<String> maxManaModifierSources() {
+        return maxManaBonus.sources();
+    }
+
+    public int maxManaModifierCount() {
+        return maxManaBonus.modifierCount();
+    }
+
     // --- Crit: a seventh and eighth Stat. Chance is a PROBABILITY, damage is a BONUS ------------
 
     /**
@@ -482,6 +533,25 @@ public final class HealthState {
             @Override public boolean clearModifier(String source) {
                 return enchantDamagePercent.removeModifier(source);
             }
+        };
+    }
+
+    /**
+     * The max-mana modifier surface. A plain {@link Stat}, like defense.
+     *
+     * <p><b>No clamp here, unlike {@link #maxTarget}.</b> Max health stores a CURRENT that has to be
+     * pulled down when the ceiling falls. Mana's current lives in {@code ResourcePool}, which stores
+     * a spent amount and a tick rather than a value -- so its transition is the pool's
+     * {@code setCurrent}, called by the reconcile loop when this stat actually changes. Putting a
+     * clamp here would be clamping a current this class does not have.
+     */
+    ModifierTarget maxManaTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return maxManaBonus.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return maxManaBonus.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) { return maxManaBonus.removeModifier(source); }
         };
     }
 

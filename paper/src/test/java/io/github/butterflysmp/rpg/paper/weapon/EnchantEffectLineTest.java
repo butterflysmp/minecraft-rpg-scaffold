@@ -40,6 +40,8 @@ class EnchantEffectLineTest {
             "protection", "Protection", 3, EnchantEffect.DEFENSE, GearClass.ARMOR, List.of(3, 6, 9));
     private static final EnchantDefinition GROWTH = new EnchantDefinition(
             "growth", "Growth", 3, EnchantEffect.MAX_HEALTH, GearClass.ARMOR, List.of(10, 20, 30));
+    private static final EnchantDefinition MANA_BANK = new EnchantDefinition(
+            "mana_bank", "Mana Bank", 3, EnchantEffect.MAX_MANA, GearClass.ARMOR, List.of(10, 20, 30));
 
     @Test
     void damageEnchantReportsItsPercentAndMultiplier() {
@@ -147,7 +149,7 @@ class EnchantEffectLineTest {
         //
         // Both tests earn their place; this one is the weaker net and says so rather than implying
         // a coverage it does not have.
-        EnchantDefinition[] all = {SHARPNESS, UNBREAKING, BULWARK, THORNS, PROTECTION, GROWTH};
+        EnchantDefinition[] all = {SHARPNESS, UNBREAKING, BULWARK, THORNS, PROTECTION, GROWTH, MANA_BANK};
         for (int i = 0; i < all.length; i++) {
             for (int j = i + 1; j < all.length; j++) {
                 // Each on the gear it is actually valid for, so none is describing itself as inert.
@@ -250,6 +252,45 @@ class EnchantEffectLineTest {
         assertFalse(growth.matches(".*[^x] Health.*"),
                 "a bare 'Health' would promise current health the enchant never grants: " + growth);
         // Mutation: shorten either arm to "Health" -> reddens.
+    }
+
+    @Test
+    void theMANAArmSaysPOINTSAndNamesTheCEILINGNotThePool() {
+        // THE GAP THAT HAS NOW BITTEN TWICE, shipped with its arm this time. BLOCK_DR shipped with
+        // no test in 2b; DEFENSE and MAX_HEALTH shipped the same way in 2a, with the lesson already
+        // written three tests above them. Nothing else can reach here: ManaBankTest is core and this
+        // is paper, and the golden renders DEFINITIONS while enchant state lives on instances, so no
+        // shipped item carries an active Mana Bank for it to see.
+        assertEquals(" (+10 Max Mana)", EnchantEffectLine.of(MANA_BANK, 1, GearClass.ARMOR));
+        assertEquals(" (+20 Max Mana)", EnchantEffectLine.of(MANA_BANK, 2, GearClass.ARMOR));
+        assertEquals(" (+30 Max Mana)", EnchantEffectLine.of(MANA_BANK, 3, GearClass.ARMOR));
+
+        assertFalse(EnchantEffectLine.bare(MANA_BANK, 3, GearClass.ARMOR).contains("%"),
+                "mana is points too -- nothing in this arm divides");
+
+        // "Max Mana", never bare "Mana". The enchant raises the CEILING and grants no current mana:
+        // ResourcePool pins the pre-change reading precisely so equipping is headroom, so a line
+        // reading "+30 Mana" would promise the top-up that pin exists to withhold.
+        String mana = EnchantEffectLine.bare(MANA_BANK, 3, GearClass.ARMOR);
+        assertTrue(mana.contains("Max Mana"), "the ceiling is what moves");
+        assertFalse(mana.matches(".*[^x] Mana.*"),
+                "a bare 'Mana' would promise current mana the enchant never grants: " + mana);
+        // Mutation: shorten it to "Mana", or restore a %% -> reddens.
+    }
+
+    @Test
+    void theThreeArmorEnchantsDoNotDescribeThemselvesIdentically() {
+        // Growth and Mana Bank share a curve ([10, 20, 30]) AND a sentence shape, so they are the
+        // likeliest pair in the game to collide on a copy-paste -- the same risk BLOCK_DR and
+        // REFLECT carry, and this is their equivalent guard. The pairwise loop below catches an
+        // exact match; this says which pair to look at first.
+        assertNotEquals(EnchantEffectLine.bare(GROWTH, 3, GearClass.ARMOR),
+                EnchantEffectLine.bare(MANA_BANK, 3, GearClass.ARMOR),
+                "two enchants with the same curve must still name different stats");
+        assertTrue(EnchantEffectLine.bare(GROWTH, 3, GearClass.ARMOR).contains("Health"));
+        assertTrue(EnchantEffectLine.bare(MANA_BANK, 3, GearClass.ARMOR).contains("Mana"));
+        // Mutation: copy the MAX_HEALTH arm's body into MAX_MANA -> both read "+30 Max Health"
+        // -> reddens here and in the pairwise loop.
     }
 
     @Test

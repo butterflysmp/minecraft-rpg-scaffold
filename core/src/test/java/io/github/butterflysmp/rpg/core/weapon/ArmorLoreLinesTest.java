@@ -7,6 +7,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -91,6 +92,13 @@ class ArmorLoreLinesTest {
         // Defense carries its own ": " ONLY because its caller concatenates it directly rather than
         // going through the shared bonus helper. One place owns the punctuation for the rest.
         assertTrue(ArmorLoreLines.DEFENSE_LABEL.endsWith(": "));
+
+        // The third stat, and the payoff of the uniform shape: it needed a constant and nothing
+        // else. Three labels, one "Label: value" line, one shared renderer.
+        assertEquals("Mana", ArmorLoreLines.MAX_MANA_LABEL);
+        assertFalse(ArmorLoreLines.MAX_MANA_LABEL.contains(":"), "the helper supplies the separator");
+        assertNotEquals(ArmorLoreLines.MAX_MANA_LABEL, ArmorLoreLines.MAX_HEALTH_LABEL,
+                "two stats must not share a label");
         // Mutation: give MAX_HEALTH_LABEL a colon -> "Health:: +30" -> reddens.
     }
 
