@@ -36,16 +36,16 @@ import java.util.UUID;
  * {@code EffectApplier} multiplies BOTH damage arms' base by it before adding
  * {@code classDamageBonus}.
  *
- * <p><b>Percent on the base, flat bonus on top.</b> The order is a real design choice and the two
- * candidates give different numbers: an 8-damage sword with Sharpness III and +5 Melee deals
- * {@code 8 * 1.15 + 5 = 14.2}, not {@code (8 + 5) * 1.15 = 14.95}. The enchant scales the WEAPON, so
- * it multiplies what the weapon contributes; gear adds after. If those numbers ever swap, this
- * ordering has been inverted.
+ * <p><b>Percent on the base, flat bonus on top</b> -- but the rule and its 14.2-vs-14.95 worked
+ * example now live in ONE place, {@link HitDamage}, rather than being restated here. This javadoc
+ * carried a second copy of them until Stats Slice 3, alongside a third in {@code EffectApplier} and a
+ * fourth phrasing in {@link AttackCharge}: four descriptions of a formula that was itself written
+ * twice. Read {@link HitDamage#hitBase} for the ordering; these fields are its inputs.
  *
  * <p>It is a PERCENT and not a multiplier for the reason recorded on {@code CombatantSnapshot} and
  * {@code HealthState}: it rides an additive {@code Stat}, percentages compose by addition, and 0.0
- * stays the one absent-value convention. The multiplier is computed at the arm by
- * {@code DamageEnchants.multiplier}, which is the only place the {@code 1 + pct/100} formula exists.
+ * stays the one absent-value convention. {@code DamageEnchants.multiplier} owns the
+ * {@code 1 + pct/100} conversion, and {@link HitDamage} is its only caller.
  *
  * Two things it deliberately is NOT. It is not the weapon's inherent damage -- that stays in
  * ATTACK_DAMAGE (or in the literal), so the bonus adds on top rather than replacing, and the

@@ -18,9 +18,14 @@ package io.github.butterflysmp.rpg.core.combat;
  * same sword at charge 1.0 dealt 6.0. {@code 6.0 * (0.2 + 0.76^2 * 0.8) = 3.97248}. The constants
  * below are that observation, not a half-remembered decompile.
  *
- * <p><b>Where it applies.</b> The scale multiplies the WHOLE combined amount in
- * {@code EffectApplier} -- {@code (attackDamage * enchantMultiplier + classDamageBonus) * scale} --
- * and it is the LAST transform. Scaling only the weapon base would leave the flat class bonus as a
+ * <p><b>Where it applies.</b> The scale multiplies the WHOLE combined amount -- see
+ * {@link HitDamage#dealt}, which is where that happens and where the composition now lives.
+ *
+ * <p><b>It is NOT the last transform, and this javadoc said it was until Stats Slice 3.</b> The crit
+ * multiplier is applied after it. The claim was written before crit existed and was never revisited;
+ * it was harmless only because both are bare multiplies outside the parenthesis, so their order
+ * cannot change the answer. The accurate statement is that both scale the whole combined amount,
+ * flat class bonus included -- scaling only the weapon base would leave that bonus as a
  * spam-proof damage floor, and with enough {@code +N Melee} gear more swings would beat timed
  * swings: the model inverted. Deliberate divergence from vanilla, which scales its base by this
  * curve and its enchantment bonus linearly by the raw charge -- our enchant is a percentage

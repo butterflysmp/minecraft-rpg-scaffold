@@ -4,7 +4,7 @@ import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.Caster;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
-import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
+import io.github.butterflysmp.rpg.core.combat.HitDamage;
 import java.util.List;
 import java.util.function.DoubleConsumer;
 import java.util.UUID;
@@ -110,20 +110,16 @@ public final class EffectApplier {
             //
             // Both arms also MULTIPLY their base by the caster's enchant-damage percent -- the damage
             // enchants (Sharpness/Power/Attunement) active on the weapon they hold, gated on that
-            // weapon's own class, likewise frozen at cast time. The shape is:
+            // weapon's own class, likewise frozen at cast time.
             //
-            //     base * (1 + pct/100)  +  classDamageBonus
+            // THE COMPOSITION ITSELF IS NOT WRITTEN HERE ANY MORE. Both arms call HitDamage, which is
+            // its one home -- including the ordering rule (percent on the weapon's base, flat gear
+            // bonus on top) and the 8*1.15+5 = 14.2 vs (8+5)*1.15 = 14.95 worked example that tells
+            // the two designs apart. That example used to appear in THIS comment, in Caster's javadoc
+            // and in AttackCharge's, which was three chances to drift from the code.
             //
-            // PERCENT ON THE WEAPON'S BASE, FLAT GEAR BONUS ON TOP, and the ordering is a real choice
-            // rather than an accident of where the multiply was typed. An 8-damage sword with
-            // Sharpness III and +5 Melee deals 8*1.15 + 5 = 14.2, NOT (8+5)*1.15 = 14.95. The enchant
-            // scales the WEAPON, so it scales what the weapon contributes; the gear bonus is a
-            // separate grant added after. Those two numbers distinguish the designs -- if a boot ever
-            // reads 14.95 here, the ordering has been inverted.
-            //
-            // The caster carries a PERCENT, not a multiplier, so that 0 stays the one absent-value
-            // convention across every summand on the snapshot; DamageEnchants.multiplier owns the
-            // 1 + pct/100 conversion so the two arms cannot disagree about it.
+            // It was extracted because a stat sheet showing "what a swing hits for" would have been
+            // the third COPY of the formula, not merely the third description of it.
             case EffectSpec.Damage d -> {
                 // Element is identity, not math -- it flavors the hit and gates kits, but
                 // never multiplies the number. The port downstream carries the amount and a culprit.
@@ -132,8 +128,10 @@ public final class EffectApplier {
                 // here rather than pre-baking it at projection: d.amount() is not known until the
                 // effect fires, so a multiplier folded into the Caster's attackDamage could never
                 // have touched the staff's authored bolt. This is what makes Attunement work.
-                double amount = (d.amount() * DamageEnchants.multiplier(caster.enchantDamagePercent())
-                        + caster.classDamageBonus()) * caster.chargeScale() * caster.critMultiplier();
+                double amount = HitDamage.dealt(
+                        HitDamage.hitBase(d.amount(), caster.enchantDamagePercent(),
+                                caster.classDamageBonus()),
+                        caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
                     target.handle().applyDamage(amount, caster.id(), caster.crit());
                     onDirectDamage.accept(amount);   // inside the gate: a refused hit reports nothing
@@ -151,9 +149,10 @@ public final class EffectApplier {
                 // spurious 0-damage seam. Unarmed STAYS 0 structurally, not by convention: no held
                 // weapon means no weapon class means no matching grant means a bonus of 0, so
                 // weapon-only melee cannot be resurrected by gear. Element is identity here too.
-                double amount = (caster.attackDamage()
-                        * DamageEnchants.multiplier(caster.enchantDamagePercent())
-                        + caster.classDamageBonus()) * caster.chargeScale() * caster.critMultiplier();
+                double amount = HitDamage.dealt(
+                        HitDamage.hitBase(caster.attackDamage(), caster.enchantDamagePercent(),
+                                caster.classDamageBonus()),
+                        caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
                     target.handle().applyDamage(amount, caster.id(), caster.crit());
                     onDirectDamage.accept(amount);   // inside the gate: a refused hit reports nothing
