@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
+import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.kit.KitRegistry;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
@@ -250,8 +251,28 @@ public final class RpgPlugin extends JavaPlugin {
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
-        this.resources = new ResourcePool(Bukkit::getCurrentTick, MAX_MANA, MANA_PER_TICK);
+        // THE PER-PLAYER CEILING: the base pool plus whatever Mana Bank the player is wearing.
+        //
+        // Scoped to DEFAULT_RESOURCE deliberately. The pool is keyed by (owner, resourceId) and
+        // promises "mana, and whatever else content asks for", so a resolver that ignored the id
+        // would raise the ceiling on every future resource at once.
+        //
+        // TOTAL by construction: maxManaBonusValue returns 0.0 for an untracked combatant rather
+        // than throwing the way max(id) does, so this can be called from inside a cast -- on
+        // whatever thread is casting, for a mob firing a costed trigger -- without a tracks() guard.
+        //
+        // MAX_MANA stays the BASE and stays here, because NEXT.md records it becoming archetype
+        // content later; the stat holds only the part gear contributes.
+        this.resources = new ResourcePool(Bukkit::getCurrentTick,
+                (owner, resourceId) -> ResourceCost.DEFAULT_RESOURCE.equals(resourceId)
+                        ? MAX_MANA + stats.maxManaBonusValue(owner)
+                        : MAX_MANA,
+                MANA_PER_TICK);
         this.abilityService = new AbilityService(abilities, cooldowns, resources);
+        // The reconcile loop pins the pool's current value when a max-mana modifier changes, so it
+        // needs the pool. A second bind rather than a constructor param because the pool is built
+        // AFTER the health system -- the same cycle-breaking two-step bind(stats) already uses.
+        this.healthSystem.bindResources(resources);
         // A weapon trigger fires through the same cooldown/mana machinery, gate-free.
         this.weaponService = new WeaponService(abilityService);
 
