@@ -53,18 +53,29 @@ public final class GearLore {
     }
 
     /**
-     * One FLAT-STAT BONUS line: a coloured {@code "+N"} followed by the stat's name in gray.
+     * One FLAT-STAT BONUS line: {@code "Health: +30"} -- gray label, coloured value.
      *
-     * <p>The counterpart to a stat line, and the distinction is what the gear actually has. A stat
-     * line reports a total the item carries and an enchant may edit -- {@code "Defense: 17"} once
-     * Protection is on it. A bonus line reports something the item had NONE of until an enchant put
-     * it there: a piece of armor has no max health of its own, so Growth cannot modify a total, it
-     * adds a line.
+     * <p><b>The same {@code "Label: value"} shape every stat line uses</b>, so an armor tooltip
+     * reads as one column rather than as two competing formats. A bonus is told apart from a total
+     * by the {@code +} on its value, not by being written backwards:
+     *
+     * <pre>
+     *   Defense: 17     what the piece contributes -- a total Protection edited
+     *   Health:  +30    what it ADDS to a pool it has none of
+     * </pre>
+     *
+     * That is the whole distinction, and it lives in {@link ArmorLoreLines#bonusValue}. Dropping the
+     * sign would make the second read as a total the piece carries, which is the wrong claim.
+     *
+     * <p><b>The separator is supplied HERE, not by the label constant</b>, so every stat rendered
+     * through this method punctuates identically and Defense, Health and Mana cannot drift apart on
+     * it. {@code DEFENSE_LABEL} carries its own {@code ": "} only because its caller concatenates it
+     * directly.
      *
      * <p><b>Deliberately generic, because the next one is already known.</b> Slice 2b's Mana Bank
-     * grants +N Max Mana off exactly this shape. Passing the label and the colour in is what makes
-     * that a call rather than a copy -- the alternative was a {@code growthLine} that would have
-     * needed a {@code manaBankLine} beside it one slice later, and then a third.
+     * gets {@code "Mana: +30"} from this same call. Passing the label and the colour in is what
+     * makes that a call rather than a copy -- the alternative was a {@code growthLine} that would
+     * have needed a {@code manaBankLine} beside it one slice later, and then a third.
      *
      * <p>Emits NOTHING when the value is not positive, so an unenchanted piece grows no line and no
      * blank. That check lives here rather than in each caller for the same reason
@@ -77,8 +88,8 @@ public final class GearLore {
     public static void appendFlatBonus(List<Component> lore, double points, String label,
                                        NamedTextColor color) {
         if (points <= 0) return;
-        lore.add(plain(ArmorLoreLines.bonusValue(points), color)
-                .append(plain(" " + label, NamedTextColor.GRAY)));
+        lore.add(plain(label + ": ", NamedTextColor.GRAY)
+                .append(plain(ArmorLoreLines.bonusValue(points), color)));
     }
 
     /**

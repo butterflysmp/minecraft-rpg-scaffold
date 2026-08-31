@@ -26,33 +26,35 @@ public final class ArmorLoreLines {
     public static final String DEFENSE_LABEL = "Defense: ";
 
     /**
-     * The stat a Growth enchant raises, as it appears on a BONUS line: {@code "+30 Max Health"}.
+     * The stat a Growth enchant raises, as the LEADING label of a bonus line: {@code "Health: +30"}.
      *
-     * <p>NO COLON and no trailing space, unlike {@link #DEFENSE_LABEL}, because it is a SUFFIX
-     * rather than a prefix -- the value leads. That shape difference is not cosmetic; it follows
-     * from what the two enchants actually do:
+     * <p>No colon here, unlike {@link #DEFENSE_LABEL}, and that is a division of labour rather than
+     * a shape difference: a Defense line is concatenated directly by its caller, so its constant
+     * carries its own {@code ": "}, while a bonus line goes through
+     * {@code GearLore.appendFlatBonus}, which supplies the separator for every stat it renders. One
+     * place owns the punctuation, so Defense, Health and Mana cannot drift apart on it.
      *
-     * <ul>
-     *   <li>Defense is a stat the piece ALREADY HAS, so Protection edits the number in place and
-     *       the line stays {@code "Defense: 17"}.
-     *   <li>Max health is a stat a piece of armor has NONE of, so Growth has no total to modify. It
-     *       adds a line that was not there at all.
-     * </ul>
+     * <p><b>Every stat line reads {@code "Label: value"}.</b> A bonus is told apart by the
+     * {@code +} on its VALUE, not by being written backwards -- see {@link #bonusValue}.
      *
-     * <p><b>The same words {@code EnchantEffectLine} uses</b>, so the enchant's own description and
-     * the line it produces cannot disagree. "Max Health" rather than "Health" because Growth raises
-     * the CEILING and grants no current health -- equipping is headroom, never a heal.
+     * <p>"Health" rather than "Max Health" because the label column stays short and uniform beside
+     * "Defense" and "Mana". The distinction Growth actually needs -- that it raises the CEILING and
+     * grants no current health -- is carried by the {@code +} and stated at length in
+     * {@code EnchantEffectLine}, which has room for a sentence.
      */
-    public static final String MAX_HEALTH_LABEL = "Max Health";
+    public static final String MAX_HEALTH_LABEL = "Health";
 
     /**
      * The value half of a flat BONUS line: {@code 30 -> "+30"}.
      *
-     * <p>The sign belongs to the VALUE, not the label, and that is what makes this reusable: a bonus
-     * line is {@code "+N "} followed by any stat's noun, and Slice 2b's Mana Bank needs the
-     * identical shape with a different one. Nothing here knows which stat it is, which is the whole
-     * point -- the alternative was a {@code growthLine()} that would have needed a
-     * {@code manaBankLine()} beside it a slice later.
+     * <p><b>The {@code +} is what distinguishes a bonus from a total</b>, now that both are written
+     * {@code "Label: value"}. {@code "Defense: 17"} is what the piece contributes; {@code "Health:
+     * +30"} is what it ADDS to a pool it has none of. Dropping the sign would make the second read
+     * as a total the piece carries, which is exactly the wrong claim for a piece of armor.
+     *
+     * <p>Nothing here knows which stat it is formatting, which is the point: Slice 2b's Mana Bank
+     * gets {@code "Mana: +30"} from this same call. The alternative was a {@code growthLine()} that
+     * would have needed a {@code manaBankLine()} beside it a slice later.
      */
     public static String bonusValue(double points) {
         return "+" + trimNumber(points);

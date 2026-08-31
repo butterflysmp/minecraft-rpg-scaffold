@@ -133,22 +133,28 @@ class ArmorLoreTest {
         List<Component> lore = ArmorLore.build(chest, 0, List.of(growth(30)));
 
         assertEquals("Defense: 8", plain(lore.get(0)), "the Defense total is untouched by Growth");
-        assertEquals("+30 Max Health", plain(lore.get(1)), "and the bonus is its own line");
+        assertEquals("Health: +30", plain(lore.get(1)), "and the bonus is its own line");
         // Mutation: render Growth into the Defense line -> "Defense: 38" -> reddens twice.
     }
 
     @Test
-    void theBonusLineColoursTheNumberOffTheHUDAndLeavesTheLabelGray() {
-        // Same split as the Defense line: value coloured, label gray. RED because that is
-        // StatsBarText.HEALTH_COLOR itself -- the armor tooltip and the action bar report the same
-        // stat, so a player glancing between them must not see two colours.
+    void theBonusLineLeadsWithAGrayLabelAndColoursTheValueOffTheHUD() {
+        // The SAME split and the same ORDER as the Defense line: gray label leads, coloured
+        // value follows. Before the reformat this pair was inverted, which is the tell that
+        // the two stat lines had two different shapes.
+        //
+        // RED because that is StatsBarText.HEALTH_COLOR itself -- the armor tooltip and the
+        // action bar report the same stat, so a player glancing between them must not see
+        // two colours for one number.
         Component line = ArmorLore.build(
                 armor(Rarity.COMMON, ArmorSlot.HEAD, 3, List.of()), 0, List.of(growth(10))).get(1);
-        assertEquals(StatsBarText.HEALTH_COLOR, line.color(), "the number wears the HUD health colour");
-        assertEquals(1, line.children().size());
-        assertEquals(NamedTextColor.GRAY, line.children().get(0).color(), "the label stays gray");
-        assertEquals(" Max Health", plain(line.children().get(0)));
-        // Mutation: pick a different red, or colour the whole line -> reddens.
+        assertEquals(NamedTextColor.GRAY, line.color(), "the label leads and is gray");
+        assertEquals(1, line.children().size(), "the value is a single appended child");
+        assertEquals(StatsBarText.HEALTH_COLOR, line.children().get(0).color(),
+                "the value wears the HUD health colour");
+        assertEquals("+10", plain(line.children().get(0)),
+                "and keeps its + so a bonus still reads distinctly from a total");
+        // Mutation: pick a different red, colour the whole line, or drop the + -> reddens.
     }
 
     @Test
@@ -157,7 +163,7 @@ class ArmorLoreTest {
         List<Component> lore = ArmorLore.build(
                 armor(Rarity.UNCOMMON, ArmorSlot.CHEST, 8, List.of()), 9, List.of(growth(30)));
         assertEquals("Defense: 17", plain(lore.get(0)));
-        assertEquals("+30 Max Health", plain(lore.get(1)));
+        assertEquals("Health: +30", plain(lore.get(1)));
         // Mutation: have the bonus loop overwrite the stat line rather than append -> reddens.
     }
 

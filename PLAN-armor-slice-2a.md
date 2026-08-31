@@ -145,12 +145,16 @@ Growth and Protection read as siblings and are **not** equally scaled: +36 Defen
 Protection's boost was visible and Growth's was not: a Growth III chestplate granted 30 max health
 and said so nowhere. **Two kinds of enchant line, because there are two kinds of enchant** --
 Protection edits a total the piece already has, Growth adds a stat armor has none of, so it becomes
-a line rather than a modified number. Rendering it as a total would have meant inventing a base of 0
-and printing `Max Health: 30` on a piece that grants no health unenchanted.
+a line rather than a modified number.
+
+Both read `Label: value` -- `Defense: 17`, `Health: +30` -- so the block is one column; the `+` is
+what marks a bonus against a total. An earlier draft wrote the bonus backwards (`+30 Max Health`) to
+carry that in the SHAPE, which reads as two competing formats rather than as a distinction.
 
 Built for the SECOND one: bonuses arrive as a `List<StatBonus>` carrying (points, label, colour),
 rendered by `GearLore.appendFlatBonus`. Mana Bank in 2b is one more list entry and a content file --
-no new overload, no new render path, and nothing keyed on an enchant id.
+no new overload, no new render path, nothing keyed on an enchant id, and it inherits `Mana: +30`
+from the shared helper for free.
 
 `StatsBarText`'s stat colours are **public** now, and `ArmorLore` imports `HEALTH_COLOR` and
 `DEFENSE_COLOR` rather than restating RED and GREEN with a comment claiming they match. A tooltip and
@@ -208,7 +212,7 @@ the source tree trips the golden.
 | 5 | equip it | `⛨` rises by 6 |
 | 6 | **the armor bar, with Protection active** | **a partial fill, NOT empty** |
 | 7 | `/rpg damage 100` in full diamond + Protection III ×4 | visibly less than the ~83 Slice 1 pinned |
-| 8 | Growth III on a chestplate, at full HP | tooltip shows **`+30 Max Health`** as its own line; max +30, **current unchanged** (headroom) |
+| 8 | Growth III on a chestplate, at full HP | tooltip stat block reads **`Health: +30`** under `Defense: N`; max +30, **current unchanged** (headroom) |
 | 9 | remove that piece at full HP | current **clamps down** |
 | 10 | `/rpg enchant show` on armor | works; no crash; inert lines correct |
 | 11 | four Protection III pieces | `⛨` rises by **36**, not 9 |

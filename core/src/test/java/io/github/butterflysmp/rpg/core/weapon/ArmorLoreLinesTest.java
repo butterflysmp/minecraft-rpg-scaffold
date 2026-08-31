@@ -78,21 +78,20 @@ class ArmorLoreLinesTest {
     }
 
     @Test
-    void theMaxHealthLabelIsASuffixWithNoColonUnlikeTheDefenseLabel() {
-        // The two stat lines have OPPOSITE shapes, and it follows from the gear rather than taste:
-        // Defense is a total the piece already has, so its label leads and the value follows a colon.
-        // Max health is a stat armor has NONE of, so the VALUE leads -- "+30 Max Health" -- because
-        // there is no total to introduce.
-        assertEquals("Max Health", ArmorLoreLines.MAX_HEALTH_LABEL);
-        assertFalse(ArmorLoreLines.MAX_HEALTH_LABEL.contains(":"), "a bonus line has nothing to introduce");
-        assertFalse(ArmorLoreLines.MAX_HEALTH_LABEL.endsWith(" "), "the value leads, so no trailing space");
-        assertTrue(ArmorLoreLines.DEFENSE_LABEL.endsWith(": "), "and the total line still leads with its label");
+    void everyStatLabelLeadsAndOnlyDefenseCarriesItsOwnSeparator() {
+        // ALL stat lines read "Label: value" -- Defense, Health, and Mana when 2b adds it -- so the
+        // block reads as one column. A bonus is told apart by the + on its VALUE, not by being
+        // written backwards, which an earlier draft did ("+30 Max Health") and which reads as two
+        // competing formats rather than as a distinction.
+        assertEquals("Health", ArmorLoreLines.MAX_HEALTH_LABEL);
+        assertFalse(ArmorLoreLines.MAX_HEALTH_LABEL.contains(":"),
+                "the shared bonus helper supplies the separator, so the constants must not"
+                        + " -- or Health and Mana could punctuate differently");
 
-        // "Max Health", never bare "Health": Growth raises the CEILING and grants no current health,
-        // so "+30 Health" would promise exactly the heal HealthState refuses to give.
-        assertTrue(ArmorLoreLines.MAX_HEALTH_LABEL.startsWith("Max "));
-        // Mutation: shorten it to "Health" -> reddens here, and the item would disagree with
-        // EnchantEffectLine, which says "Max Health" for the same enchant.
+        // Defense carries its own ": " ONLY because its caller concatenates it directly rather than
+        // going through the shared bonus helper. One place owns the punctuation for the rest.
+        assertTrue(ArmorLoreLines.DEFENSE_LABEL.endsWith(": "));
+        // Mutation: give MAX_HEALTH_LABEL a colon -> "Health:: +30" -> reddens.
     }
 
     // --- The footer noun ------------------------------------------------------------------------

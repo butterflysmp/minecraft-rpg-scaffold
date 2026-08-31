@@ -23,19 +23,31 @@ import java.util.Locale;
  * built here; {@code ArmorItems.applyLore} prepends it through {@code EnchantLore.applied}, which is
  * what keeps the rarity footer literally last.
  *
- * <h2>TWO KINDS OF ENCHANT LINE, because there are two kinds of enchant</h2>
+ * <h2>TWO KINDS OF ENCHANT LINE, one uniform shape</h2>
+ *
+ * Every stat line reads {@code "Label: value"} -- Defense, Health, and Mana when Slice 2b adds it --
+ * so the block reads as one column. What differs is what the value MEANS, and the {@code +} is what
+ * says so:
+ *
+ * <pre>
+ *   Defense: 17     Protection EDITED a total the piece already has
+ *   Health:  +30    Growth ADDED a stat the piece has none of
+ * </pre>
  *
  * <ul>
- *   <li><b>Protection edits a total the piece already has.</b> Defense is armor's own stat, so the
- *       bonus composes into the number and the line stays {@code "Defense: 17"} -- the same reason
- *       {@link ShieldLore} composes Bulwark into its damage-reduction line rather than listing it
- *       separately. A tooltip showing the material's bare 8 while the piece contributes 17 is a
- *       display contradicting truth.
- *   <li><b>Growth adds a stat armor has none of.</b> A helmet carries no max health, so there is no
- *       total to edit; it gets a BONUS LINE that was not there at all, {@code "+30 Max Health"}.
- *       Rendering it as a modified total would have meant inventing a base of 0 and printing
- *       {@code "Max Health: 30"} on an item that grants no health when unenchanted.
+ *   <li><b>Protection composes into the number.</b> Defense is armor's own stat, so the bonus goes
+ *       inside the total -- the same reason {@link ShieldLore} composes Bulwark into its
+ *       damage-reduction line rather than listing it separately. A tooltip showing the material's
+ *       bare 8 while the piece contributes 17 is a display contradicting truth.
+ *   <li><b>Growth cannot.</b> A helmet carries no max health, so there is no total to edit. Its
+ *       line is a bonus, and the {@code +} is what stops {@code "Health: 30"} being read as a pool
+ *       the piece carries -- which would be the wrong claim for a piece of armor.
  * </ul>
+ *
+ * <p><b>An earlier draft wrote the bonus backwards</b> -- {@code "+30 Max Health"} -- to mark that
+ * difference in the SHAPE. It marks it in the value instead, because two line formats in one stat
+ * block reads as an inconsistency rather than as a distinction, and because the shared helper has
+ * to serve Mana next.
  *
  * Bonus lines arrive as a LIST of {@link StatBonus}, not as an argument per enchant, so Slice 2b's
  * Mana Bank is one more list entry rather than a fourth overload.
@@ -62,7 +74,7 @@ public final class ArmorLore {
     /**
      * A flat stat an enchant ADDS to a piece that has none of its own.
      *
-     * <p>Growth's {@code +30 Max Health} is the first; Slice 2b's Mana Bank is the second and needs
+     * <p>Growth's {@code "Health: +30"} is the first; Slice 2b's Mana Bank is the second and needs
      * no change here beyond a second entry in the list its caller builds. Carrying label and colour
      * as data rather than branching per enchant is what makes that true -- and is why this record
      * exists at all rather than {@link #build} taking a {@code growthPoints} argument beside
@@ -97,16 +109,14 @@ public final class ArmorLore {
      * The full tooltip: the Defense stat with Protection composed in, then a BONUS LINE for every
      * flat stat an enchant has added to a piece that has none of its own.
      *
-     * <p><b>The two enchant kinds render differently because they ARE different.</b> Protection
-     * edits a number the piece already has, so it stays inside the Defense line. Growth adds a stat
-     * armor does not otherwise carry -- a helmet has no max health -- so there is no total to edit
-     * and it becomes a line that was not there. Rendering Growth as a modified total would have
-     * meant inventing a base of 0 and printing "Max Health: 30" on an item that grants no health at
-     * all when unenchanted.
+     * <p><b>Both kinds read "Label: value"; the + is what tells them apart.</b> Protection edits a
+     * number the piece already has, so it stays inside the Defense line. Growth adds a stat armor
+     * does not otherwise carry -- a helmet has no max health -- so its line is a bonus, and the sign
+     * is what stops "Health: 30" being read as a pool the piece carries.
      *
      * <p>The bonuses arrive as a LIST rather than as one argument per enchant, which is what keeps
-     * Slice 2b to a content file and one call-site entry: Mana Bank's {@code +N Max Mana} is the
-     * same shape with a different noun and colour. See {@link StatBonus}.
+     * Slice 2b to a content file and one call-site entry: Mana Bank's {@code "Mana: +30"} falls out
+     * of the same helper with a different noun and colour. See {@link StatBonus}.
      *
      * <p>Bonus lines sit under the stat block and above the flavour, so the mechanical numbers stay
      * together. An empty list adds nothing at all -- not even a blank -- which is what makes
