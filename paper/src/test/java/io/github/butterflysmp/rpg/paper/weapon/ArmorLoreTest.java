@@ -15,6 +15,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -191,6 +192,36 @@ class ArmorLoreTest {
                 "a zero bonus is not a line reading +0");
         // Mutation: drop the points <= 0 guard -> "+0 Max Health" on every unenchanted piece
         // -> reddens.
+    }
+
+    @Test
+    void aPieceWithBothBonusesShowsBothLinesInOneColumn() {
+        // The payoff of the shared helper: Mana Bank needed a label constant and a list entry, and
+        // no new rendering at all. Three stats, one "Label: value" shape, read straight down.
+        List<Component> lore = ArmorLore.build(
+                armor(Rarity.UNCOMMON, ArmorSlot.CHEST, 8, List.of()), 9,
+                List.of(growth(30), manaBank(30)));
+        assertEquals("Defense: 17", plain(lore.get(0)));
+        assertEquals("Health: +30", plain(lore.get(1)));
+        assertEquals("Mana: +30", plain(lore.get(2)));
+        // Mutation: reuse MAX_HEALTH_LABEL for the mana entry -> two identical lines -> reddens.
+    }
+
+    @Test
+    void theManaLineWearsTheHUDManaColourAndNotHealthsRed() {
+        Component line = ArmorLore.build(
+                armor(Rarity.COMMON, ArmorSlot.FEET, 3, List.of()), 0, List.of(manaBank(10))).get(1);
+        assertEquals(NamedTextColor.GRAY, line.color(), "the label leads and is gray");
+        assertEquals(StatsBarText.MANA_COLOR, line.children().get(0).color(),
+                "the value wears the HUD mana colour -- the field the action bar paints blue");
+        assertNotEquals(StatsBarText.HEALTH_COLOR, line.children().get(0).color());
+        assertEquals("+10", plain(line.children().get(0)));
+        // Mutation: pass HEALTH_COLOR at the ArmorItems call site -> reddens.
+    }
+
+    private static ArmorLore.StatBonus manaBank(double points) {
+        return new ArmorLore.StatBonus(points, ArmorLoreLines.MAX_MANA_LABEL,
+                StatsBarText.MANA_COLOR);
     }
 
     private static ArmorLore.StatBonus growth(double points) {

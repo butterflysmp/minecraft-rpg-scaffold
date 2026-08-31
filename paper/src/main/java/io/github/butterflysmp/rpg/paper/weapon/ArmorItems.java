@@ -136,6 +136,8 @@ public final class ArmorItems {
         List<ArmorLore.StatBonus> bonuses = new ArrayList<>();
         addBonus(bonuses, state, adapters, EnchantEffect.MAX_HEALTH,
                 ArmorLoreLines.MAX_HEALTH_LABEL, StatsBarText.HEALTH_COLOR);
+        addBonus(bonuses, state, adapters, EnchantEffect.MAX_MANA,
+                ArmorLoreLines.MAX_MANA_LABEL, StatsBarText.MANA_COLOR);
 
         List<Component> base = ArmorLore.build(armor,
                 EnchantValues.totalFor(state, adapters.enchants(), EnchantEffect.DEFENSE),

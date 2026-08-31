@@ -45,6 +45,20 @@ public final class ArmorLoreLines {
     public static final String MAX_HEALTH_LABEL = "Health";
 
     /**
+     * The stat a Mana Bank enchant raises, as the LEADING label of a bonus line: {@code "Mana: +30"}.
+     *
+     * <p>Same shape as {@link #MAX_HEALTH_LABEL} and for the same reasons -- no colon, because
+     * {@code GearLore.appendFlatBonus} supplies the separator for every bonus stat, and short so the
+     * label column reads straight down beside "Defense" and "Health".
+     *
+     * <p>That column is the whole payoff of the reformat one slice ago: three stats, three labels,
+     * one {@code "Label: value"} shape, and the {@code +} marking which of them are bonuses. This
+     * constant is the third, and adding it required no new rendering at all -- which is what the
+     * shared helper was built for.
+     */
+    public static final String MAX_MANA_LABEL = "Mana";
+
+    /**
      * The value half of a flat BONUS line: {@code 30 -> "+30"}.
      *
      * <p><b>The {@code +} is what distinguishes a bonus from a total</b>, now that both are written
