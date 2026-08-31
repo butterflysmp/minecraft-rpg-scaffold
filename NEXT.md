@@ -2079,11 +2079,15 @@ a melee basic, where nothing read it any more.
   is disconnected from the custom-HP source of truth. Confirmed at the damage-pass-1a boot (2026-07-17).
   A later **status-damage pass** should route DoT ticks through `applyDamage` (a per-tick task dealing
   custom damage), the way basic attacks and abilities now do. Deliberately out of scope for pass 1a.
-- **`BukkitCombatant.applyHeal` is vanilla-only — ability heals bypass custom HP.** It calls
-  `entity.setHealth(...)`, not `CombatantStats.heal`, so an ability `Heal` effect (e.g. `arc_surge`)
-  raises *vanilla* health and never fires the seam — the heart bar / nameplate don't follow. Same class
-  as the damage gap 1a fixed, on the heal side. `/rpg mobheal` sidesteps it by calling `stats.heal`
-  directly. Wire `applyHeal` to the custom store in the status/heal pass.
+- ~~**`BukkitCombatant.applyHeal` is vanilla-only — ability heals bypass custom HP.**~~ **CLOSED in
+  Stats Slice 1.** It called `entity.setHealth(...)`, not `CombatantStats.heal`, so an ability `Heal`
+  effect raised *vanilla* health and never fired the seam. For a player that attribute is a DISPLAY,
+  rewritten from the custom numbers on the next `HealthChange` or reconcile tick — so the effect
+  healed exactly zero of the health combat uses, moved the bar for a fraction of a second, and errored
+  about nothing. It now routes to the store. **What it still cannot do is CREDIT anyone**:
+  `CombatantHandle.applyHeal` takes only an amount, no `sourceId`, so it self-attributes, which is why
+  `/rpg mobheal` still calls `stats.heal` directly. Widening that port is where a heal-credit feature
+  (a support archetype's contribution, a heal popup) has to start.
 - **Mob projectile→player bypasses custom HP.** Pass 2 (`onMobMeleeAttack`) owns *melee* mob→player
   only — it gates on a `LivingEntity` damager. A skeleton's arrow fires `EntityDamageByEntityEvent`
   with the *arrow* (`Projectile`) as damager, not the mob, so the gate skips it and the shot ticks
@@ -2112,10 +2116,13 @@ a melee basic, where nothing read it any more.
     cannot meaningfully be hurt. This is why `WeaponClass.SUMMONER` is still deliberately absent from
     the enum — the class needs this before it needs a weapon.
   - **Vanilla/environmental → custom HP is the existing recorded gap**, in its several forms: `scorch`
-    burning vanilla health, `applyHeal` raising vanilla health, and mob projectile→player skipping the
-    melee gate (all above). They are one problem wearing four hats — *every* route into an entity's
-    health that is not `applyDamage` is invisible to the custom store — and are best solved as one
-    decision about where the boundary sits, rather than four independent patches.
+    burning vanilla health, ~~`applyHeal` raising vanilla health~~ (closed, Stats Slice 1), and mob
+    projectile→player skipping the melee gate (all above). They are one problem wearing four hats —
+    *every* route into an entity's health that is not `applyDamage` is invisible to the custom store —
+    and are best solved as one decision about where the boundary sits, rather than four independent
+    patches. **Stats Slice 1 took a bite of that decision rather than a patch**: it also owns
+    `EntityRegainHealthEvent`, so the four cancelled player heal reasons are either replaced or
+    translated into the store. What remains uncovered is the DAMAGE side.
 - **Players are immortal to environmental damage.** Fall/fire/lava/drowning hit *vanilla* health, which
   the heart bar floors at half a heart, so they never kill and never touch custom HP. A known
   consequence of the environmental→custom-HP gap (same class as the Scorch DoT bypass above): player

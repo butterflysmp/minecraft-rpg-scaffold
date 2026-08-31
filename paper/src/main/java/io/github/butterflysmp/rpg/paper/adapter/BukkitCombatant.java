@@ -174,12 +174,37 @@ public final class BukkitCombatant {
             });
         }
 
+        /**
+         * Raise the target's CUSTOM health, through the same store seam {@link #applyDamage} drains.
+         *
+         * <p><b>This wrote vanilla health until Stats Slice 1, and that made every content
+         * {@code heal:} effect a silent no-op.</b> It called {@code entity.setHealth} against the
+         * vanilla MAX_HEALTH attribute -- but for a player that attribute is a DISPLAY, written by
+         * {@code HeartBarRenderer} from the custom numbers on the next HealthChange or the next
+         * reconcile tick. So {@code rekindle.yml}'s heal moved the bar for a fraction of a second
+         * and was then overwritten back, healing exactly zero of the health that combat actually
+         * uses. Nothing errored; the effect simply did nothing, which is why it survived.
+         *
+         * <p>The gap was known and recorded -- {@code /rpg mobheal} calls {@code CombatantStats.heal}
+         * directly with a comment saying this port is vanilla-only -- and it is closed here rather
+         * than in a slice of its own because this is the slice that makes healing a real mechanism.
+         *
+         * <p>No clamp and no max read: {@code CombatantStats.heal} caps at the combatant's own custom
+         * max, so there is nothing left here to get wrong. A no-op on an untracked combatant, like
+         * every other call into that store.
+         *
+         * <p><b>Attributed to the TARGET, because the port carries no source.</b>
+         * {@code CombatantHandle.applyHeal} takes only an amount, unlike {@code applyDamage} which
+         * takes a {@code sourceId}, so there is no caster to credit without widening the port -- and
+         * nothing reads a HEAL's dealer today ({@code DamagePopupManager} filters to DAMAGE). Self-
+         * attribution is the honest placeholder rather than a null that would read as "unknown", and
+         * it matches what {@code /rpg heal} and the regeneration loop already pass. The faction bit
+         * is derived rather than hardcoded, so the seam never claims a player heal came from a mob.
+         */
         @Override public void applyHeal(double amount) {
-            ctx.scheduler().onEntity(entity, () -> {
-                var attr = entity.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
-                double max = attr == null ? 20.0 : attr.getValue();
-                entity.setHealth(Math.min(max, entity.getHealth() + amount));
-            });
+            ctx.scheduler().onEntity(entity, () ->
+                    ctx.stats().heal(entity.getUniqueId(), amount,
+                            entity.getUniqueId(), entity instanceof Player));
         }
 
         @Override public void applyKnockback(Vec3 direction, double strength) {

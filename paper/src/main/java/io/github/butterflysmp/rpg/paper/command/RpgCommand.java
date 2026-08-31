@@ -427,8 +427,11 @@ public final class RpgCommand {
      * aim-ray. DAMAGE routes through the REAL combat path -- {@code BukkitCombatant.applyDamage},
      * the same entry point abilities use -- so the command exercises it (flash, aggro, and the
      * {@code HealthChange} seam) exactly the way /rpg apply exercises {@code applyStatus}. HEAL stays
-     * on {@code CombatantStats.heal} directly, because {@code applyHeal} is vanilla-only and would not
-     * touch custom HP (a separate gap; see NEXT.md).
+     * on {@code CombatantStats.heal} directly, but <b>the reason changed in Stats Slice 1 and the old
+     * one is now false</b>: {@code applyHeal} was vanilla-only and would not have touched custom HP at
+     * all. It now routes to the same store. What it cannot do is CREDIT anyone -- the port takes only
+     * an amount, no {@code sourceId}, so it self-attributes -- and this command exists to prove a
+     * player-driven heal reaches the plate. So the direct call is now about attribution, not reach.
      *
      * Ensures the target is nameplated first via {@code onMobAppear} -- which is register-if-absent, so
      * re-calling it each cast leaves an existing plate (and its version) untouched. The seam always
@@ -464,7 +467,7 @@ public final class RpgCommand {
             nameplates.onMobAppear(target);
             double displayCurrent;
             if (heal) {
-                stats.heal(id, amount, player.getUniqueId(), true);   // seam directly; applyHeal is vanilla-only
+                stats.heal(id, amount, player.getUniqueId(), true);   // seam directly, to CREDIT the player
                 displayCurrent = stats.current(id);
             } else {
                 // applyDamage defers to the next tick, so compute the expected result now for the
