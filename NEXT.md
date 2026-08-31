@@ -601,23 +601,23 @@ Before milestone 2, two things worth measuring rather than assuming:
   would have minted a helmet as a shield; and the damage gate below. `GearClassTest` now records the
   count, because it is very nearly the only thing that notices.
 
-  **Do not repeat the claim that the compiler covers this.** It covers the two label switches. The
-  rest is a checklist.
+  **Do not repeat the claim that the compiler covers this.** It covers the exhaustive switch
+  EXPRESSIONS and nothing else; the rest is a checklist. Generalised under "ENUMERATE THE AXIS" in
+  Rules for this work, which now carries the audit that says which switches are actually safe.
 
-- **`ANY_BUT_SHIELD` WAS A LATENT BUG, NAMED FROM THE WRONG SIDE.** It refused the one gear kind that
-  existed when it was written, so the moment `ARMOR` appeared, a file with `effect: damage` +
-  `class: armor` LOADED CLEAN -- and `DamageEnchantItems` reads the MAIN HAND through `GearClass.of`,
-  which yields only MELEE/RANGER/MAGE. Structurally unreachable: precisely the defect the shield
-  refusal was written to prevent, arriving through the door the check did not name.
+- **THREE INSTANCES OF ONE DEFECT, and they are consolidated under "ENUMERATE THE AXIS, NOT THE
+  CASES YOU CURRENTLY HAVE" in Rules for this work rather than kept as three incident notes.**
+  `ANY_BUT_SHIELD` was a denylist gate that admitted every kind nobody had thought of, so
+  `effect: damage` + `class: armor` loaded clean and could never fire. `requireGate`'s switch was a
+  STATEMENT, so a new `Gate` constant would have fallen through to no validation at all -- a second
+  instance of the REFLECT bug sitting three methods below the comment describing it. And
+  `"inert: a " + GearClassLabel.of(...)` hardcoded the article, shipping **"a Armor enchant"** to
+  players once a vowel-initial label existed.
 
-  Now `MAIN_HAND_ONLY`, stated as what the gate CAN be rather than what it cannot, so the next gear
-  kind is refused by default instead of silently admitted. **That is the general lesson: a gate
-  written as a denylist admits every kind nobody has thought of yet.**
-
-- **`requireGate`'s switch is an EXPRESSION now.** It was a statement, so adding `ARMOR_ONLY` would
-  have fallen through to no validation at all -- the exact shape of the REFLECT bug the file's own
-  comment already documents. That comment described the failure and left a second instance of it
-  three methods further down.
+  All three were rules written against the values that existed when they were written. None was
+  caught by a compiler or by a test. The article one is the teaching example because it shipped and
+  slipped everything, including the golden -- see the consolidated lesson for the rule and for the
+  standing audit it now carries.
 
 - **ONE MAP TO TWO JOBS IS GONE, and the arithmetic is pinned.** `DefenseModifierItems.scan` returns
   a `Worn` record with the stat map and the native sum from ONE walk. Two methods would be two walks,
@@ -3424,6 +3424,83 @@ a melee basic, where nothing read it any more.
 ---
 
 ## Rules for this work
+
+### ENUMERATE THE AXIS, NOT THE CASES YOU CURRENTLY HAVE
+
+**Armor Slice 2a hit this three times in one slice, in three different disguises. It is one defect.**
+
+Every instance had the same shape: a rule written against *the values that existed when it was
+written*, correct on the day, and silently wrong the first time the axis grew. None of the three was
+caught by a compiler and none by a test. They were found by reading, by a test written afterwards,
+and by a test written afterwards.
+
+**The teaching example, because it shipped and slipped everything:**
+
+```java
+"inert: a " + GearClassLabel.of(gearClass) + " enchant"
+```
+
+Correct for Melee, Ranged, Magic and Shield -- every label that existed. `GearClass.ARMOR` arrives
+and a player reads **"a Armor enchant"** on their own tooltip. The article was hardcoded because at
+the time there was only one article to hardcode. Nothing failed: it compiled, the whole suite stayed
+green, the golden dump could not see it (no shipped item carries an active armor enchant), and the
+three inert arms each held their own copy of the mistake.
+
+The other two, same defect, different clothes:
+
+| disguise | what was enumerated | what broke |
+|---|---|---|
+| **denylist gate** (`ANY_BUT_SHIELD`) | the one kind to refuse | `effect: damage` + `class: armor` LOADED CLEAN and could never fire |
+| **switch STATEMENT** (`requireGate`) | the constants that existed | a new `Gate` value would fall through to NO validation at all |
+| **hardcoded article** (`"a " + label`) | the labels that existed | "a Armor enchant", player-visible |
+
+#### The rule
+
+State what the axis IS, not which of its values you happen to be handling.
+
+- **A gate says what it CAN be, never what it cannot.** `MAIN_HAND_ONLY` refuses everything it does
+  not name; `ANY_BUT_SHIELD` admitted everything nobody had thought of. The next gear kind must be
+  refused by default, then deliberately admitted -- not admitted by default and deliberately refused.
+- **A switch over an enum must be an EXPRESSION**, so the compiler enforces exhaustiveness. A switch
+  STATEMENT over enum constants may cover nothing and compile. (Pattern switches over sealed types
+  are already required to be exhaustive even as statements -- the trap is specifically
+  enum-constant labels.)
+- **Derive per-value text from the value**, never from a template that assumed today's values.
+  `GearClassLabel.describeEnchant` builds the whole noun phrase in one exhaustive switch, so a new
+  constant has to be given an article as well as a label before it compiles.
+
+#### And the corollary this slice measured
+
+**The compiler covers far less of an enum widening than this repo claimed.** Adding `GearClass.ARMOR`
+produced TWO compile errors and one runtime failure. **Five further sites changed silently**, one of
+which would have minted a helmet as a shield. Four separate documents -- including this file --
+asserted the compiler caught it. **It catches the exhaustive switch EXPRESSIONS and nothing else.
+Widening an enum is a checklist, not a build.**
+
+#### STANDING CHECKLIST: audit the enum-constant switch statements before the next enum grows
+
+Run before adding any enum constant, and specifically before Slice 2b, which adds
+`EnchantEffect.MAX_MANA` and a `Gate` arm and would otherwise walk straight into this:
+
+```bash
+grep -rn 'switch (' --include=*.java core/src/main paper/src/main storage/src/main
+```
+
+Classify each: a switch is safe if it is an EXPRESSION (assigned, returned or yielded) or a PATTERN
+switch over a sealed type. It is a trap only if it is a STATEMENT over enum CONSTANTS.
+
+**Audited 2026-08-31 at `82b0959`, all 36 switches in main sources.** Every remaining switch
+statement is a pattern switch over a sealed type -- compiler-checked -- **except one**:
+
+- `RpgCommand.java:1069`, `switch (op)` over `EnchantOp`: three of six constants, no default arm.
+  Deliberately partial (the other ops return before reaching it), so it is not a live bug -- but it
+  is the one place a new `EnchantOp` would fall through with nothing said. Give it a default that
+  throws, or a comment stating the partiality, the next time that enum is touched.
+
+`ContentValidator.checkEffect` is the counter-example worth knowing: a switch STATEMENT that IS
+exhaustiveness-checked, because its labels are type patterns over a sealed interface. Its javadoc
+already records the build failure that proves it. Do not "fix" it.
+
 
 - After every commit: `./mvnw -pl core test`. After every batch:
   `./mvnw clean package` and a manual boot.
