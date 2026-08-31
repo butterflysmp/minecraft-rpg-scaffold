@@ -2,6 +2,9 @@ package io.github.butterflysmp.rpg.paper.health;
 
 import io.github.butterflysmp.rpg.core.combat.HealthRegen;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EntityEquipment;
@@ -58,6 +61,19 @@ public final class HealthRegenModifierItems {
 
     /** +0.8 HP/s on a base of 0.2 -> a resolved 1.0 HP/s: five times base, countable in a short boot. */
     public static final double DEFAULT_BOOST = 0.8;
+
+    /** Mint a health_regen_boost_TEMP granting {@code amount} HP/s while held or worn. */
+    public static ItemStack mint(Keys keys, double amount) {
+        ItemStack item = new ItemStack(Material.GOLDEN_APPLE);
+        item.editMeta(meta -> {
+            meta.displayName(MiniMessage.miniMessage()
+                    .deserialize("<red>Health Regen <gray>(+" + amount + "/s) <dark_gray>[TEMP]")
+                    .decoration(TextDecoration.ITALIC, false));
+            meta.getPersistentDataContainer()
+                    .set(keys.healthRegenBoost, PersistentDataType.DOUBLE, amount);
+        });
+        return item;
+    }
 
     /**
      * The health-regen modifiers the player's equipped items justify right now, keyed by slot. The

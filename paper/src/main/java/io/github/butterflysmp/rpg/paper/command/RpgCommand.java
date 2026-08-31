@@ -13,6 +13,7 @@ import io.github.butterflysmp.rpg.core.ability.CastExecutor;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.Crit;
+import io.github.butterflysmp.rpg.core.combat.HealthRegen;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
@@ -38,6 +39,7 @@ import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.health.CritModifierItems;
+import io.github.butterflysmp.rpg.paper.health.HealthRegenModifierItems;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
@@ -376,6 +378,17 @@ public final class RpgCommand {
                         .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 20.0))
                                 .executes(ctx -> critBoost(ctx, adapters,
                                         DoubleArgumentType.getDouble(ctx, "bonus"), false))))
+                // Mint a health_regen_boost_TEMP. The regen stat bases at 0.2 HP/s and no content
+                // grants a bonus yet, so without this a boot can witness the BASE rate and the
+                // saturation window but never "gear can modify it" -- the reconcile surface would go
+                // unwitnessed, provable only by unit test. Hold it and the rate goes 0.2 -> 1.0 HP/s;
+                // drop it and it returns within a tick of the reconcile loop.
+                .then(Commands.literal("healthregen")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> healthRegenBoost(ctx, adapters, null))
+                        .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 100.0))
+                                .executes(ctx -> healthRegenBoost(ctx, adapters,
+                                        DoubleArgumentType.getDouble(ctx, "bonus")))))
                 // Mint a class_damage_boost_TEMP. The class-damage stat bases at 0 and no content
                 // grants it yet, so without this the feature is invisible at boot: hold a MATCHING
                 // weapon and every direct damage effect gains the bonus (the staff's literal bolt
@@ -673,6 +686,30 @@ public final class RpgCommand {
                             + (1.0 + Crit.BASE_DAMAGE + amount) + "x on a crit). Hold it and swing.",
                     NamedTextColor.GREEN));
         }
+        return 1;
+    }
+
+    /**
+     * Mint a health_regen_boost_TEMP into the caller's inventory.
+     *
+     * <p>The amount is a BONUS on the 0.2 HP/s base, not a resolved rate, so the message prints the
+     * RESOLVED figure -- the same discipline {@link #critBoost} follows, and for the same reason: a
+     * boot gate should read what to expect before it starts timing, not decide afterwards what the
+     * number it got should have been.
+     */
+    private static int healthRegenBoost(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                                        Double bonus) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        double amount = bonus == null ? HealthRegenModifierItems.DEFAULT_BOOST : bonus;
+        player.getInventory().addItem(HealthRegenModifierItems.mint(adapters.keys(), amount));
+        player.sendMessage(Component.text(
+                "Gave health_regen_boost_TEMP (+" + amount + " -> "
+                        + (HealthRegen.BASE_PER_SECOND + amount) + " HP/s, x"
+                        + HealthRegen.SATURATED_MULTIPLIER + " while saturated). Hold it and wait.",
+                NamedTextColor.GREEN));
         return 1;
     }
 
