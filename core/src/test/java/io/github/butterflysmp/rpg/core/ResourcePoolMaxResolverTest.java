@@ -177,9 +177,9 @@ class ResourcePoolMaxResolverTest {
     void setCurrentClampsAtTheMomentOfWRITINGAndNotMerelyAtTheNextREAD() {
         // THE test that makes the explicit clamp a decision rather than decoration, and it exists
         // because the one above it CANNOT fail. Measured, not assumed: with the Math.min deleted
-        // from setCurrent, all ten other tests in this file stayed green.
+        // from setCurrent, every other test in this file stayed green.
         // loweringTheCeilingCLAMPS... reads through current(), current() calls
-        // regenerated(entry, ceiling), and regenerated ends in its own Math.min -- so it reports
+        // regenerated(entry, ceiling, rate), and regenerated ends in its own Math.min -- so it reports
         // the clamped number whether or not the clamp was ever WRITTEN.
         //
         // The stored amount only becomes observable when the ceiling rises again with NO pin behind
@@ -267,10 +267,10 @@ class ResourcePoolMaxResolverTest {
     }
 
     @Test
-    void tryConsumeAsksTheResolverEXACTLYONCESoTheGuardAndTheSpendCannotDISAGREE() {
+    void tryConsumeAsksEACHResolverEXACTLYONCESoTheGuardAndTheSpendCannotDISAGREE() {
         // The plan asserted that resolving the ceiling inside compute() would redden the
         // concurrency test. Measured: it does not. Moving the resolve into the mapping function
-        // left all 22 ResourcePool tests green, because a resolver over a plain map neither
+        // left every ResourcePool test green, because a resolver over a plain map neither
         // deadlocks nor returns anything different. Recorded because a mutation row that never
         // reddens is a check that did not run.
         //
@@ -283,18 +283,27 @@ class ResourcePoolMaxResolverTest {
         //
         // It is also ConcurrentHashMap's own rule: a mapping function must not attempt to update
         // any mapping of the map it is computing on, and a resolver is arbitrary caller code.
-        AtomicInteger asked = new AtomicInteger();
-        ResourcePool pool = pool(new AtomicLong(0), (owner, resourceId) -> {
-            asked.incrementAndGet();
-            return 130;
-        });
+        //
+        // EXTENDED BY STATS SLICE 2 to count the RATE resolver too. It is the same property and the
+        // same trap one field over: regenerated() is handed the rate exactly as it is handed the
+        // ceiling, so a resolve moved inside compute() is both a map read under a bin lock and a
+        // second live read of a player's stats.
+        AtomicInteger maxAsked = new AtomicInteger();
+        AtomicInteger regenAsked = new AtomicInteger();
+        ResourcePool pool = new ResourcePool(new AtomicLong(0)::get,
+                (owner, resourceId) -> { maxAsked.incrementAndGet(); return 130; },
+                (owner, resourceId) -> { regenAsked.incrementAndGet(); return 1.0; });
 
         assertTrue(pool.tryConsume(ENCHANTED, MANA, 40), "spent from an absent entry");
-        assertEquals(1, asked.get(), "one resolve for the guard AND the fallback, not two");
+        assertEquals(1, maxAsked.get(), "one ceiling resolve for the guard AND the fallback, not two");
+        assertEquals(1, regenAsked.get(), "and one rate resolve, hoisted above compute()");
 
-        asked.set(0);
+        maxAsked.set(0);
+        regenAsked.set(0);
         assertTrue(pool.tryConsume(ENCHANTED, MANA, 40), "and again with an entry present");
-        assertEquals(1, asked.get(), "still one -- regenerated() is handed the ceiling, not asked");
-        // Mutation: resolve the ceiling inside the compute lambda -> 2 -> reddens.
+        assertEquals(1, maxAsked.get(), "still one -- regenerated() is handed the ceiling, not asked");
+        assertEquals(1, regenAsked.get(), "and still one rate -- it is handed that too");
+        // Mutation A: resolve the ceiling inside the compute lambda -> maxAsked 2 -> reddens.
+        // Mutation B: resolve the rate inside the compute lambda -> regenAsked 2 -> reddens.
     }
 }
