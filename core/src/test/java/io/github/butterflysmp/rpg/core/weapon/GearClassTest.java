@@ -77,9 +77,37 @@ class GearClassTest {
     }
 
     @Test
-    void theAxisIsExactlyTheThreeFightingClassesPlusShield() {
+    void theAxisIsExactlyTheThreeFightingClassesPlusShieldAndArmor() {
         // A count, so adding a constant is a visible decision here rather than a silent widening of
         // every enchant gate in the game.
-        assertEquals(4, GearClass.values().length);
+        //
+        // IT IS ALSO NEARLY THE ONLY THING THAT NOTICES. Adding ARMOR produced exactly TWO compile
+        // errors -- GearClassLabel.of and describe -- and this one runtime failure. Five further
+        // sites changed SILENTLY and had to be found by hand: HeldGear.gearClass, HeldGear's effect
+        // tail, the /rpg enchant SHOW refusal, EnchantMenu.PlacedGear.gearClass (a two-way ternary
+        // that would have minted a helmet as a shield), and EnchantDefinition's ANY_BUT_SHIELD gate.
+        // The repo's own comments claimed the compiler covered this. It does not; it covers three.
+        assertEquals(5, GearClass.values().length);
+    }
+
+    @Test
+    void noWeaponEverMapsToArmorEither() {
+        // The twin of noWeaponEverMapsToShield, and it guards the same direction: a weapon that
+        // presented ARMOR would be offered Protection and Growth in its roll, and would read a
+        // defense enchant off a stack nobody is wearing.
+        for (WeaponClass weaponClass : WeaponClass.values()) {
+            assertNotEquals(GearClass.ARMOR, GearClass.of(weaponClass),
+                    weaponClass + " mapped to ARMOR -- only a piece of armor may present that");
+        }
+    }
+
+    @Test
+    void fromNameKnowsTheArmorTokenSoContentCanGateOnIt() {
+        assertEquals(GearClass.ARMOR, GearClass.fromName("armor"));
+        assertEquals(GearClass.ARMOR, GearClass.fromName("ARMOR"));
+        // fromName is a values() loop, so it began accepting this token the instant the constant
+        // existed -- no code change and no compiler prompt. Pinned so that is a decision, not a
+        // side effect somebody discovers from a content file that unexpectedly loaded.
+        assertNull(GearClass.fromName("armour"), "the token is US-spelled, matching the enum");
     }
 }

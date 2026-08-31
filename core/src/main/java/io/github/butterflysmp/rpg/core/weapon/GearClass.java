@@ -35,7 +35,26 @@ public enum GearClass {
      * A shield. Has no {@link WeaponClass} and never will -- it does not fight, it blocks -- which
      * is why {@link #of} can never produce this value and only a shield presents it directly.
      */
-    SHIELD;
+    SHIELD,
+
+    /**
+     * A piece of armor -- any of the four slots.
+     *
+     * <p><b>ONE constant, not four.</b> Every armor enchant is armor-wide: Protection, Growth and
+     * Mana Bank all sum across the whole set, so nothing gates on WHICH piece. Four constants would
+     * multiply every exhaustive switch, split the roll pool per slot for no gain, and stand up a
+     * second four-value body-slot axis beside {@link ArmorSlot} -- which that enum's javadoc
+     * already refuses, because two of the four names would disagree (HEAD/HELMET, FEET/BOOTS).
+     *
+     * <p>The two axes stay separate on purpose. This one answers "what may this enchant sit on";
+     * {@link ArmorSlot} answers "which limb does this cover", and it has to distinguish four because
+     * the Defense scan keys its reconciler map by slot. If a slot-specific enchant ever lands, gating
+     * it is a job for {@code ArmorSlot}, not for a widening of this enum.
+     *
+     * <p>Like {@link #SHIELD}, {@link #of} can never produce this value -- armor has no
+     * {@link WeaponClass} -- and only a piece of armor presents it directly.
+     */
+    ARMOR;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides

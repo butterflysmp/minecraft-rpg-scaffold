@@ -101,7 +101,7 @@ public final class DamageEnchantItems {
             // visible rather than silent, and it fails toward granting nothing.
             if (definition == null || definition.effect() != EnchantEffect.DAMAGE) continue;
             grants.put(active.enchantId(),
-                    new Grant(definition.gearClass(), definition.percentByLevel(), active.level()));
+                    new Grant(definition.gearClass(), definition.valueByLevel(), active.level()));
         }
         return grants;
     }

@@ -68,6 +68,32 @@ class ArmorLoreLinesTest {
         // Mutation: rename the label to "Armor: " -> reddens.
     }
 
+    @Test
+    void aFlatBonusValueLeadsWithItsSignAndDropsTheTrailingZero() {
+        assertEquals("+30", ArmorLoreLines.bonusValue(30));
+        assertEquals("+30", ArmorLoreLines.bonusValue(30.0));
+        assertEquals("+10", ArmorLoreLines.bonusValue(10));
+        assertEquals("+2.5", ArmorLoreLines.bonusValue(2.5), "a fractional bonus keeps its fraction");
+        // Mutation: drop the "+" -> "30 Max Health" reads as a total rather than a bonus -> reddens.
+    }
+
+    @Test
+    void everyStatLabelLeadsAndOnlyDefenseCarriesItsOwnSeparator() {
+        // ALL stat lines read "Label: value" -- Defense, Health, and Mana when 2b adds it -- so the
+        // block reads as one column. A bonus is told apart by the + on its VALUE, not by being
+        // written backwards, which an earlier draft did ("+30 Max Health") and which reads as two
+        // competing formats rather than as a distinction.
+        assertEquals("Health", ArmorLoreLines.MAX_HEALTH_LABEL);
+        assertFalse(ArmorLoreLines.MAX_HEALTH_LABEL.contains(":"),
+                "the shared bonus helper supplies the separator, so the constants must not"
+                        + " -- or Health and Mana could punctuate differently");
+
+        // Defense carries its own ": " ONLY because its caller concatenates it directly rather than
+        // going through the shared bonus helper. One place owns the punctuation for the rest.
+        assertTrue(ArmorLoreLines.DEFENSE_LABEL.endsWith(": "));
+        // Mutation: give MAX_HEALTH_LABEL a colon -> "Health:: +30" -> reddens.
+    }
+
     // --- The footer noun ------------------------------------------------------------------------
 
     @Test

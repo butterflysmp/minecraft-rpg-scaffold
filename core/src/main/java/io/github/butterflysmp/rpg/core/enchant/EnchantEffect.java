@@ -41,7 +41,7 @@ public enum EnchantEffect {
      * <p>A SECOND mechanism rather than a parameter on {@link #DAMAGE}, by this enum's own rule:
      * the question is how many enchants share one mechanism, and these two share none of their
      * arithmetic. Damage multiplies an amount; this composes a fraction and clamps it. What they
-     * DO share is the shape of their content -- a {@code percent_by_level} curve -- and that is why
+     * DO share is the shape of their content -- a {@code value_by_level} curve -- and that is why
      * a second block enchant will be a yml file rather than a recompile.
      */
     BLOCK_DR,
@@ -55,14 +55,41 @@ public enum EnchantEffect {
      * <p>A THIRD mechanism rather than a flavour of {@link #BLOCK_DR}, on the same rule: they share no
      * arithmetic at all. Block composes a fraction and clamps it; this multiplies a blow and hands the
      * product to a SECOND combatant. What they share is the shape of their content -- a
-     * {@code percent_by_level} curve -- which is what lets both be tuned without a recompile.
+     * {@code value_by_level} curve -- which is what lets both be tuned without a recompile.
      *
      * <p><b>The no-negative rule on its curve matters more here than anywhere else.</b> A negative
      * reflect goes straight through {@code applyDamage} to {@code stats.damage} and HEALS the
      * attacking mob. {@code EnchantDefinition}'s shared {@code requireCurve} covers it by
      * construction, which is precisely what that lift was for.
      */
-    REFLECT;
+    REFLECT,
+
+    /**
+     * Flat armor POINTS added to the Defense of the piece it sits on. The mechanism is
+     * {@link Protection}.
+     *
+     * <p><b>THE FIRST EFFECT WHOSE CURVE IS NOT A PERCENT</b>, which is why
+     * {@code value_by_level} is called that rather than {@code percent_by_level}. Defense is a
+     * SUMMAND in points -- {@code HealthState.defense} records that points add correctly across four
+     * slots where damage-reduction fractions do not -- so this adds and never divides.
+     *
+     * <p>A third mechanism rather than a parameter on {@link #BLOCK_DR}, by this enum's own rule:
+     * they share the shape of their content and none of their arithmetic. Bulwark composes a
+     * fraction through {@code Shield.clamp}; this one sums integers that the {@code Defense} curve
+     * converts exactly once, later, at the point of use.
+     */
+    DEFENSE,
+
+    /**
+     * Flat points added to the MAX HEALTH of whoever wears the piece it sits on. The mechanism is
+     * {@link Growth}.
+     *
+     * <p>Distinct from {@link #DEFENSE} for the same reason DEFENSE is distinct from BLOCK_DR: the
+     * two share a curve shape and no arithmetic at all. This one does not feed mitigation -- it
+     * feeds {@code HealthState.max}, the only reconciled stat that can TAKE health away, since
+     * lowering max clamps current down while raising it only grants headroom.
+     */
+    MAX_HEALTH;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides

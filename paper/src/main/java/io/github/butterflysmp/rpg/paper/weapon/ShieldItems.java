@@ -81,7 +81,7 @@ public final class ShieldItems {
         // can never disagree, and neither can disagree with the rider, which composes through the
         // same Bulwark.effectiveDr.
         List<Component> base = ShieldLore.build(shield,
-                BlockEnchantItems.percentFor(state, adapters.enchants(), EnchantEffect.BLOCK_DR));
+                EnchantValues.totalFor(state, adapters.enchants(), EnchantEffect.BLOCK_DR));
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
         meta.setEnchantmentGlintOverride(!state.effective().isEmpty());
     }

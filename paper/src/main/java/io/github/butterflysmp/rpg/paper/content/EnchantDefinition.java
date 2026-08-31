@@ -16,7 +16,7 @@ import java.util.List;
  * {@code durability_skip: 0.25} key the old javadoc warned about is still refused -- an enchant
  * cannot describe HOW it works, only which of the known ways it does.
  *
- * <p><b>Why {@code percent_by_level} is data when Unbreaking's curve is Java.</b> The question is
+ * <p><b>Why {@code value_by_level} is data when Unbreaking's curve is Java.</b> The question is
  * not numbers-versus-code, it is how many enchants share one mechanism. Unbreaking is one enchant
  * with one curve, so its curve IS its mechanism. Sharpness, Power and Attunement are three enchants
  * sharing ONE mechanism, differing only in a class gate and three percentages -- a Java class each
@@ -62,13 +62,15 @@ import java.util.List;
  *                       a picture. Kept as a String, not a Material, so this record stays free of
  *                       Bukkit and therefore unit-testable; it is resolved at render time exactly as
  *                       {@code WeaponItems.materialOf} resolves a weapon material.
- * @param percentByLevel the damage percent at levels 1..n, or an EMPTY list for a durability
+ * @param valueByLevel the VALUE this enchant grants at levels 1..n, or an EMPTY list for a durability
  *                       enchant. Its size is held equal to {@code maxLevel}, which is what makes
- *                       level -> percent total.
+ *                       level -> value total. What the value MEANS is the mechanism's business: a
+ *                       percent for damage, block and reflect; flat POINTS for defense and max
+ *                       health. The curve itself never divides, which is why it is not "percent".
  */
 public record EnchantDefinition(String id, String displayName, int maxLevel,
                                 EnchantEffect effect, GearClass gearClass,
-                                List<Integer> percentByLevel, String icon) {
+                                List<Integer> valueByLevel, String icon) {
 
     /**
      * The item an enchant renders as in the enchant table when its file names none.
@@ -97,7 +99,7 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         if (effect == null) {
             throw new IllegalArgumentException("enchant '" + id + "' requires an effect");
         }
-        percentByLevel = percentByLevel == null ? List.of() : List.copyOf(percentByLevel);
+        valueByLevel = valueByLevel == null ? List.of() : List.copyOf(valueByLevel);
         // Blank as well as null: an empty material string resolves to no Material at all, and the
         // table would paint air where a candidate should be. Falling back beats rendering nothing.
         icon = (icon == null || icon.isBlank()) ? DEFAULT_ICON : icon;
@@ -115,29 +117,34 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         // Choosing the rules as VALUES restores the guarantee for real. A new constant now fails here
         // twice, by name, until someone states what a file carrying it may claim.
         Gate gate = switch (effect) {
-            case DAMAGE     -> Gate.ANY_BUT_SHIELD;
+            case DAMAGE     -> Gate.MAIN_HAND_ONLY;
             // Both read off the BLOCKING STACK, which only a shield can be.
             case BLOCK_DR,
                  REFLECT    -> Gate.SHIELD_ONLY;
+            // Both are read off the WORN PIECES by the armor scan, which only looks at the four
+            // armor slots. Neither is universal: a universal armor-stat enchant would enter every
+            // weapon's roll pool and sell an XP unlock that does nothing.
+            case DEFENSE,
+                 MAX_HEALTH -> Gate.ARMOR_ONLY;
             case DURABILITY -> Gate.UNIVERSAL_ONLY;
         };
         boolean curved = switch (effect) {
-            case DAMAGE, BLOCK_DR, REFLECT -> true;
-            case DURABILITY                -> false;
+            case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH -> true;
+            case DURABILITY                                     -> false;
         };
 
         // The two rules are shared rather than copied per arm: three effects now hold the same curve
         // rules, and three copies of "size must equal max_level" is how they drift.
         if (curved) {
-            requireCurve(id, effect, maxLevel, percentByLevel);
+            requireCurve(id, effect, maxLevel, valueByLevel);
         } else {
-            requireNoCurve(id, effect, percentByLevel);
+            requireNoCurve(id, effect, valueByLevel);
         }
         requireGate(id, effect, gearClass, gate);
     }
 
     /** Which gates an effect's mechanism can actually be read through. See {@link #requireGate}. */
-    private enum Gate { UNIVERSAL_ONLY, SHIELD_ONLY, ANY_BUT_SHIELD }
+    private enum Gate { UNIVERSAL_ONLY, SHIELD_ONLY, ARMOR_ONLY, MAIN_HAND_ONLY }
 
     /**
      * A file may not claim a control it does not have -- the rule the durability arm has enforced
@@ -149,39 +156,66 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
      * {@code SHIELD_ONLY} becomes a two-value check and nothing else moves.
      */
     private static void requireGate(String id, EnchantEffect effect, GearClass gearClass, Gate gate) {
-        switch (gate) {
+        // A SWITCH EXPRESSION, not a statement, for the reason the block above already paid for
+        // once: a switch STATEMENT over an enum may silently cover nothing, so adding ARMOR_ONLY
+        // would have fallen straight through to no validation at all -- the exact shape of the
+        // REFLECT bug. Yielding the message (or null for "no complaint") makes a new Gate constant
+        // a compile error here, which is what this method was always supposed to guarantee.
+        String complaint = switch (gate) {
             case UNIVERSAL_ONLY -> {
                 // Nothing gates wear by class: WeaponDurability and ShieldDurability both read the
                 // level off the stack in hand without consulting a class at all.
-                if (gearClass != null) {
-                    throw new IllegalArgumentException("enchant '" + id + "' has effect: "
-                            + token(effect) + " and must be class: universal -- durability is not"
-                            + " class-gated, so naming a class would be a promise nothing keeps");
-                }
+                yield gearClass == null ? null
+                        : "must be class: universal -- durability is not class-gated, so naming a"
+                                + " class would be a promise nothing keeps";
             }
             case SHIELD_ONLY -> {
                 // Read off the blocking stack in the mob->player rider. A universal one would enter
                 // EVERY weapon's roll pool and sell a player an XP unlock that does nothing, which
                 // is exactly the mistake `class:` is required and spelled out to prevent.
-                if (gearClass != GearClass.SHIELD) {
-                    throw new IllegalArgumentException("enchant '" + id + "' has effect: "
-                            + token(effect) + " and must be class: shield -- it is read off the"
-                            + " blocking stack, so on anything else it would never fire"
-                            + (gearClass == null
-                                    ? " (universal would put it in every weapon's pool)"
-                                    : ", was class: " + gearClass.name().toLowerCase()));
-                }
+                yield gearClass == GearClass.SHIELD ? null
+                        : "must be class: shield -- it is read off the blocking stack, so on"
+                                + " anything else it would never fire"
+                                + (gearClass == null
+                                        ? " (universal would put it in every weapon's pool)"
+                                        : ", was class: " + gearClass.name().toLowerCase());
             }
-            case ANY_BUT_SHIELD -> {
+            case ARMOR_ONLY -> {
+                // Read off the WORN PIECES by the armor scan, which only looks at the four armor
+                // slots. Universal is the dangerous typo here exactly as it is for a shield enchant:
+                // it would put a Defense or Max Health enchant in every weapon's pool, inert.
+                yield gearClass == GearClass.ARMOR ? null
+                        : "must be class: armor -- it is read off the pieces you are WEARING, so on"
+                                + " anything else it would never fire"
+                                + (gearClass == null
+                                        ? " (universal would put it in every weapon's pool)"
+                                        : ", was class: " + gearClass.name().toLowerCase());
+            }
+            case MAIN_HAND_ONLY -> {
                 // DamageEnchantItems reads the MAIN HAND's weapon and maps it through GearClass.of,
-                // which can never yield SHIELD. So a shield-gated damage enchant is structurally
-                // unreachable rather than merely useless.
-                if (gearClass == GearClass.SHIELD) {
-                    throw new IllegalArgumentException("enchant '" + id + "' has effect: "
-                            + token(effect) + " and must not be class: shield -- the damage gate"
-                            + " reads the weapon in your main hand, so it could never fire");
-                }
+                // which can yield only MELEE, RANGER or MAGE. So a damage enchant gated on ANY other
+                // constant is structurally unreachable rather than merely useless.
+                //
+                // WAS `ANY_BUT_SHIELD`, WHICH BECAME A LATENT BUG THE MOMENT ARMOR EXISTED: it named
+                // SHIELD alone, so `effect: damage` + `class: armor` loaded clean and could never
+                // fire -- precisely the defect the shield arm was written to prevent, arriving
+                // through the door the check did not name. Stated as what the gate CAN be rather
+                // than what it cannot, so the next gear kind is refused by default instead of
+                // silently admitted.
+                yield gearClass == null
+                        || gearClass == GearClass.MELEE
+                        || gearClass == GearClass.RANGER
+                        || gearClass == GearClass.MAGE
+                        ? null
+                        : "must name a fighting class or universal -- the damage gate reads the"
+                                + " weapon in your main hand, so class: "
+                                + gearClass.name().toLowerCase() + " could never fire";
             }
+        };
+
+        if (complaint != null) {
+            throw new IllegalArgumentException("enchant '" + id + "' has effect: "
+                    + token(effect) + " and " + complaint);
         }
     }
 
@@ -199,33 +233,33 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
      * attacking mob. Sharing one validator is what stops that being three separate decisions.
      */
     private static void requireCurve(String id, EnchantEffect effect, int maxLevel,
-                                     List<Integer> percentByLevel) {
-        if (percentByLevel.isEmpty()) {
+                                     List<Integer> valueByLevel) {
+        if (valueByLevel.isEmpty()) {
             throw new IllegalArgumentException("enchant '" + id + "' has effect: " + token(effect)
-                    + " and so requires percent_by_level (one percent per level, e.g. [5, 10, 15])");
+                    + " and so requires value_by_level (one value per level, e.g. [5, 10, 15])");
         }
-        // Size EQUALS max_level, not "at least". This is what makes level -> percent total: a short
-        // list leaves a legal level with no percent, and a long one hides levels the enchant can
+        // Size EQUALS max_level, not "at least". This is what makes level -> value total: a short
+        // list leaves a legal level with no value, and a long one hides levels the enchant can
         // never reach, which reads on the tooltip as a promise it cannot keep.
-        if (percentByLevel.size() != maxLevel) {
+        if (valueByLevel.size() != maxLevel) {
             throw new IllegalArgumentException("enchant '" + id + "' declares max_level "
-                    + maxLevel + " but percent_by_level has " + percentByLevel.size()
-                    + " entr" + (percentByLevel.size() == 1 ? "y" : "ies")
-                    + "; they must match, one percent per level");
+                    + maxLevel + " but value_by_level has " + valueByLevel.size()
+                    + " entr" + (valueByLevel.size() == 1 ? "y" : "ies")
+                    + "; they must match, one value per level");
         }
-        for (int i = 0; i < percentByLevel.size(); i++) {
-            Integer percent = percentByLevel.get(i);
-            if (percent == null) {
+        for (int i = 0; i < valueByLevel.size(); i++) {
+            Integer value = valueByLevel.get(i);
+            if (value == null) {
                 throw new IllegalArgumentException("enchant '" + id + "' has a non-numeric"
-                        + " percent_by_level entry at level " + (i + 1));
+                        + " value_by_level entry at level " + (i + 1));
             }
             // Negative is refused rather than supported. Stat permits negative modifiers and a
             // "curse" enchant is a legitimate future idea, but a negative PERCENT is far more likely
             // a typo, and one below -100 would flip a hit into a heal-shaped negative. A curse wants
             // its own naming and its own decision, not a sign slip.
-            if (percent < 0) {
+            if (value < 0) {
                 throw new IllegalArgumentException("enchant '" + id + "' has a negative"
-                        + " percent (" + percent + ") at level " + (i + 1)
+                        + " value (" + value + ") at level " + (i + 1)
                         + "; these enchants scale their effect UP, and a curse is its own"
                         + " content decision rather than a negative here");
             }
@@ -233,10 +267,10 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
     }
 
     /** The other half of the same rule: an effect with no curve may not author one. */
-    private static void requireNoCurve(String id, EnchantEffect effect, List<Integer> percentByLevel) {
-        if (!percentByLevel.isEmpty()) {
+    private static void requireNoCurve(String id, EnchantEffect effect, List<Integer> valueByLevel) {
+        if (!valueByLevel.isEmpty()) {
             throw new IllegalArgumentException("enchant '" + id + "' has effect: " + token(effect)
-                    + " and must not declare percent_by_level -- nothing reads it, so the"
+                    + " and must not declare value_by_level -- nothing reads it, so the"
                     + " file would be claiming a control it does not have");
         }
     }
@@ -248,8 +282,8 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
 
     /** Without an icon: the shape every caller predating the enchant table uses. */
     public EnchantDefinition(String id, String displayName, int maxLevel, EnchantEffect effect,
-                             GearClass gearClass, List<Integer> percentByLevel) {
-        this(id, displayName, maxLevel, effect, gearClass, percentByLevel, DEFAULT_ICON);
+                             GearClass gearClass, List<Integer> valueByLevel) {
+        this(id, displayName, maxLevel, effect, gearClass, valueByLevel, DEFAULT_ICON);
     }
 
     /** True when this enchant is gated on no class at all and applies to whatever it sits on. */

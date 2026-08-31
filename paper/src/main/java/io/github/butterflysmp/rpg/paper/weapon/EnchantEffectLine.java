@@ -83,10 +83,10 @@ public final class EnchantEffectLine {
                     // The old wording hardcoded "... on a X weapon", which reads correctly for the
                     // three fighting classes and absurdly for the fourth -- "on a Shield weapon".
                     // Byte-identical for every weapon case, so the existing assertions are unchanged.
-                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
-                            + " enchant on " + GearClassLabel.describe(heldClass);
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
                 }
-                double percent = DamageEnchants.percentAt(definition.percentByLevel(), level);
+                double percent = DamageEnchants.percentAt(definition.valueByLevel(), level);
                 yield String.format("+%.0f%% damage, x%.2f", percent,
                         DamageEnchants.multiplier(percent));
             }
@@ -96,8 +96,8 @@ public final class EnchantEffectLine {
                 // command or a hand-edited item -- reachable, so it is described rather than assumed
                 // away.
                 if (definition.gearClass() != heldClass) {
-                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
-                            + " enchant on " + GearClassLabel.describe(heldClass);
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
                 }
                 // THE SAME WORDS THE ITEM USES. ShieldLoreLines.DAMAGE_REDUCTION_LABEL says "Damage
                 // Reduction" on the shield itself, so the enchant that modifies that stat must not
@@ -108,7 +108,7 @@ public final class EnchantEffectLine {
                 // shield stops fifteen more POINTS of the hit (0.35 -> 0.50), not fifteen percent
                 // more of what it already stopped. Saying "x1.15" would describe the rejected
                 // reading. The gate reads this line before blocking, so it must be the real number.
-                double percent = EnchantCurve.percentAt(definition.percentByLevel(), level);
+                double percent = EnchantCurve.valueAt(definition.valueByLevel(), level);
                 yield String.format("+%.0f%% Damage Reduction", percent);
             }
             case REFLECT -> {
@@ -116,14 +116,42 @@ public final class EnchantEffectLine {
                 // hold one on the wrong gear is the dev command or a hand-edited item. Reachable,
                 // so it is described rather than assumed away.
                 if (definition.gearClass() != heldClass) {
-                    yield "inert: a " + GearClassLabel.of(definition.gearClass())
-                            + " enchant on " + GearClassLabel.describe(heldClass);
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
                 }
                 // "to the attacker" is not decoration -- it is the one word that stops this reading
                 // as a damage bonus to your own hits. And the percent is of the INCOMING blow, not
                 // of what got through, which is why the wording says nothing about blocking.
-                double percent = EnchantCurve.percentAt(definition.percentByLevel(), level);
+                double percent = EnchantCurve.valueAt(definition.valueByLevel(), level);
                 yield String.format("+%.0f%% reflected to the attacker", percent);
+            }
+            case DEFENSE -> {
+                if (definition.gearClass() != heldClass) {
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
+                }
+                // NO PERCENT SIGN, and that is the whole difference from the three arms above.
+                // Defense is a SUMMAND in armor points -- the piece's own Defense line says
+                // "Defense: 8", and this adds to that number, not to a fraction of it. Writing
+                // "+9%" here would describe an enchant that does not exist and would disagree with
+                // the item two lines up.
+                //
+                // THE SAME WORD THE ITEM USES: ArmorLoreLines.DEFENSE_LABEL prints "Defense" on the
+                // piece itself, so the enchant that modifies that stat must not call it something
+                // else. Same rule the BLOCK_DR arm follows for "Damage Reduction".
+                double points = EnchantCurve.valueAt(definition.valueByLevel(), level);
+                yield String.format("+%.0f Defense", points);
+            }
+            case MAX_HEALTH -> {
+                if (definition.gearClass() != heldClass) {
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
+                }
+                // Points again, for the same reason. "Max Health" rather than "Health": the enchant
+                // raises the CEILING and grants no current health at all -- equipping is headroom,
+                // never a heal -- and a line reading "+30 Health" would promise the heal.
+                double points = EnchantCurve.valueAt(definition.valueByLevel(), level);
+                yield String.format("+%.0f Max Health", points);
             }
         };
     }

@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.weapon.ArmorLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import net.kyori.adventure.text.Component;
@@ -49,6 +50,46 @@ public final class GearLore {
     public static String titleCase(String raw) {
         if (raw.isEmpty()) return raw;
         return Character.toUpperCase(raw.charAt(0)) + raw.substring(1).toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * One FLAT-STAT BONUS line: {@code "Health: +30"} -- gray label, coloured value.
+     *
+     * <p><b>The same {@code "Label: value"} shape every stat line uses</b>, so an armor tooltip
+     * reads as one column rather than as two competing formats. A bonus is told apart from a total
+     * by the {@code +} on its value, not by being written backwards:
+     *
+     * <pre>
+     *   Defense: 17     what the piece contributes -- a total Protection edited
+     *   Health:  +30    what it ADDS to a pool it has none of
+     * </pre>
+     *
+     * That is the whole distinction, and it lives in {@link ArmorLoreLines#bonusValue}. Dropping the
+     * sign would make the second read as a total the piece carries, which is the wrong claim.
+     *
+     * <p><b>The separator is supplied HERE, not by the label constant</b>, so every stat rendered
+     * through this method punctuates identically and Defense, Health and Mana cannot drift apart on
+     * it. {@code DEFENSE_LABEL} carries its own {@code ": "} only because its caller concatenates it
+     * directly.
+     *
+     * <p><b>Deliberately generic, because the next one is already known.</b> Slice 2b's Mana Bank
+     * gets {@code "Mana: +30"} from this same call. Passing the label and the colour in is what
+     * makes that a call rather than a copy -- the alternative was a {@code growthLine} that would
+     * have needed a {@code manaBankLine} beside it one slice later, and then a third.
+     *
+     * <p>Emits NOTHING when the value is not positive, so an unenchanted piece grows no line and no
+     * blank. That check lives here rather than in each caller for the same reason
+     * {@link #appendFlavor}'s does.
+     *
+     * <p>Colour is the CALLER'S, and it should come from {@code StatsBarText} rather than being
+     * picked: these lines report the same stats the action bar does, so a player glancing between an
+     * item and their HUD must not see two colours for one number.
+     */
+    public static void appendFlatBonus(List<Component> lore, double points, String label,
+                                       NamedTextColor color) {
+        if (points <= 0) return;
+        lore.add(plain(label + ": ", NamedTextColor.GRAY)
+                .append(plain(ArmorLoreLines.bonusValue(points), color)));
     }
 
     /**

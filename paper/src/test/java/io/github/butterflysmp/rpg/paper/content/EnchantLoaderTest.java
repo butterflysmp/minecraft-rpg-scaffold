@@ -98,7 +98,7 @@ class EnchantLoaderTest {
     /** A minimal damage enchant, so a test can vary ONE field and see what the loader does with it. */
     private static String damageYml(String maxLevel, String weaponClass, String percents) {
         return "display_name: \"Test\"\nmax_level: " + maxLevel + "\neffect: damage\nclass: "
-                + weaponClass + "\npercent_by_level: " + percents + "\n";
+                + weaponClass + "\nvalue_by_level: " + percents + "\n";
     }
 
     private static void copyBundled(String resource, Path target) throws IOException {
@@ -125,7 +125,7 @@ class EnchantLoaderTest {
         assertEquals(EnchantEffect.DURABILITY, unbreaking.effect(),
                 "unbreaking binds the durability mechanism, not the damage one");
         assertTrue(unbreaking.isUniversal(), "and it is gated on no class");
-        assertEquals(List.of(), unbreaking.percentByLevel(), "a durability enchant carries no curve");
+        assertEquals(List.of(), unbreaking.valueByLevel(), "a durability enchant carries no curve");
     }
 
     /**
@@ -175,7 +175,7 @@ class EnchantLoaderTest {
         for (String id : List.of("sharpness", "power", "attunement")) {
             EnchantDefinition d = enchants.find(id).orElseThrow();
             assertEquals(EnchantEffect.DAMAGE, d.effect(), id + " binds the damage mechanism");
-            assertEquals(List.of(5, 10, 15), d.percentByLevel(), id + " carries the shipped curve");
+            assertEquals(List.of(5, 10, 15), d.valueByLevel(), id + " carries the shipped curve");
             assertEquals(3, d.maxLevel());
         }
     }
@@ -208,7 +208,7 @@ class EnchantLoaderTest {
         assertEquals(GearClass.SHIELD, bulwark.gearClass(),
                 "a block enchant gated anywhere else would never fire");
         assertFalse(bulwark.isUniversal(), "universal would put it in every weapon's roll pool");
-        assertEquals(List.of(5, 10, 15), bulwark.percentByLevel(), "the shipped curve");
+        assertEquals(List.of(5, 10, 15), bulwark.valueByLevel(), "the shipped curve");
         assertEquals(3, bulwark.maxLevel());
         assertEquals("shield", bulwark.icon());
     }
@@ -242,7 +242,7 @@ class EnchantLoaderTest {
         assertEquals(GearClass.SHIELD, thorns.gearClass(),
                 "a reflect gated anywhere else is read off a stack that cannot block");
         assertFalse(thorns.isUniversal(), "universal would put it in every weapon's roll pool");
-        assertEquals(List.of(10, 20, 30), thorns.percentByLevel(),
+        assertEquals(List.of(10, 20, 30), thorns.valueByLevel(),
                 "the shipped curve -- 1.5/3.0/4.5 off a 15.0 mob, which the popup rounds to 2/3/5");
         assertEquals(3, thorns.maxLevel());
 
@@ -460,6 +460,60 @@ class EnchantLoaderTest {
         assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
                 "b", "B", 3, EnchantEffect.BLOCK_DR, GearClass.SHIELD, List.of(5, -10, 15)),
                 "a negative block percent weakens the shield the file claims to strengthen");
+    }
+
+    @Test
+    void aDamageEnchantMayNotBeGatedOnGearTheDamageScanCanNeverSEE() {
+        // THE GATE THAT WAS NAMED FROM THE WRONG SIDE. It read `gearClass == SHIELD` -- refusing the
+        // one kind that existed when it was written -- so the instant GearClass gained ARMOR, a file
+        // with `effect: damage` + `class: armor` LOADED CLEAN. DamageEnchantItems reads the MAIN
+        // HAND and maps it through GearClass.of, which yields only MELEE, RANGER or MAGE, so that
+        // enchant could never fire: structurally unreachable, exactly the defect the shield refusal
+        // was written to prevent, arriving through the door the check did not name.
+        //
+        // Now stated as what the gate CAN be, so the NEXT gear kind is refused by default instead of
+        // silently admitted.
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "d", "D", 3, EnchantEffect.DAMAGE, GearClass.ARMOR, List.of(5, 10, 15)),
+                "a damage enchant on armor could never fire -- the scan reads the main hand");
+        assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                "d", "D", 3, EnchantEffect.DAMAGE, GearClass.SHIELD, List.of(5, 10, 15)),
+                "and the original shield refusal still holds");
+
+        // The three that CAN be reached, plus universal, all still load.
+        for (GearClass reachable : List.of(GearClass.MELEE, GearClass.RANGER, GearClass.MAGE)) {
+            assertDoesNotThrow(() -> new EnchantDefinition(
+                    "d", "D", 3, EnchantEffect.DAMAGE, reachable, List.of(5, 10, 15)),
+                    reachable + " is a class the main-hand scan can actually produce");
+        }
+        assertDoesNotThrow(() -> new EnchantDefinition(
+                "d", "D", 3, EnchantEffect.DAMAGE, null, List.of(5, 10, 15)),
+                "universal is still legal for a damage enchant");
+        // Mutation: revert the gate to `gearClass == SHIELD` -> the ARMOR case loads -> reddens.
+    }
+
+    @Test
+    void anArmorStatEnchantIsRefusedAnywhereButArmorIncludingUniversal() {
+        // Universal is the dangerous typo here, exactly as it is for a shield enchant: it would put
+        // a Defense or Max Health enchant into EVERY weapon's roll pool and sell a player an XP
+        // unlock that does nothing at all.
+        for (EnchantEffect armorEffect : List.of(EnchantEffect.DEFENSE, EnchantEffect.MAX_HEALTH)) {
+            assertDoesNotThrow(() -> new EnchantDefinition(
+                    "a", "A", 3, armorEffect, GearClass.ARMOR, List.of(3, 6, 9)),
+                    armorEffect + " on armor is the one legal gate");
+            assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                    "a", "A", 3, armorEffect, null, List.of(3, 6, 9)),
+                    armorEffect + " must not be universal -- it would enter every weapon's pool");
+            assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                    "a", "A", 3, armorEffect, GearClass.SHIELD, List.of(3, 6, 9)),
+                    armorEffect + " is read off worn pieces, so a shield could never fire it");
+            assertThrows(IllegalArgumentException.class, () -> new EnchantDefinition(
+                    "a", "A", 3, armorEffect, GearClass.MELEE, List.of(3, 6, 9)),
+                    armorEffect + " on a weapon could never fire either");
+        }
+        // Mutation: drop the ARMOR_ONLY arm from the gate switch -> it no longer compiles, which is
+        // the point of making requireGate a switch EXPRESSION in this slice. Weaken it to accept
+        // null -> the universal assertions redden.
     }
 
     @Test

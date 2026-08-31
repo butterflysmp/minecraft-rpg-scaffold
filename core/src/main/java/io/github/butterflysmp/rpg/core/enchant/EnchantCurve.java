@@ -3,8 +3,13 @@ package io.github.butterflysmp.rpg.core.enchant;
 import java.util.List;
 
 /**
- * Reading an authored {@code percent_by_level} curve at a level. The one lookup every curve-carrying
+ * Reading an authored {@code value_by_level} curve at a level. The one lookup every curve-carrying
  * enchant shares, whatever its mechanism.
+ *
+ * <p><b>A VALUE, not a percent, and the name says so as of Armor Slice 2a.</b> This never divides --
+ * every {@code /100} lives in the mechanism that asked. That made "percent" merely imprecise while
+ * damage, block and reflect were the only callers, and a plain lie once Protection and Growth arrived
+ * granting flat POINTS. What the number means stays the mechanism's business; this only reads it.
  *
  * <h2>Why this class exists, and it is a NAME problem rather than a duplication one</h2>
  *
@@ -28,7 +33,7 @@ public final class EnchantCurve {
     private EnchantCurve() {}
 
     /**
-     * The percent this curve grants at {@code level}: {@code percentByLevel[level - 1]}.
+     * The value this curve grants at {@code level}: {@code valueByLevel[level - 1]}.
      *
      * <p>Levels at or below 0 grant nothing -- a locked or absent enchant must not scale anything, and
      * this is the branch every unenchanted piece of gear in the game takes.
@@ -40,12 +45,12 @@ public final class EnchantCurve {
      * differed can carry level 3 for a two-entry curve. Without the clamp that is an
      * {@code IndexOutOfBoundsException} thrown from inside a reconcile tick -- or, since 2b, from
      * inside a blocked hit -- on a path that must be total. It fails toward the enchant's own top
-     * percent, never past it, the same direction {@code Unbreaking.consumeChance}'s clamp fails in.
+     * value, never past it, the same direction {@code Unbreaking.consumeChance}'s clamp fails in.
      */
-    public static double percentAt(List<Integer> percentByLevel, int level) {
-        if (percentByLevel == null || percentByLevel.isEmpty() || level <= 0) return 0.0;
-        int index = Math.min(level, percentByLevel.size()) - 1;
-        Integer percent = percentByLevel.get(index);
-        return percent == null ? 0.0 : percent;
+    public static double valueAt(List<Integer> valueByLevel, int level) {
+        if (valueByLevel == null || valueByLevel.isEmpty() || level <= 0) return 0.0;
+        int index = Math.min(level, valueByLevel.size()) - 1;
+        Integer value = valueByLevel.get(index);
+        return value == null ? 0.0 : value;
     }
 }

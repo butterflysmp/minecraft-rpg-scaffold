@@ -51,14 +51,25 @@ public final class StatsBarText {
     /** U+2726, the mana spark. */
     static final String SPARK = "✦";
 
-    static final NamedTextColor HEALTH_COLOR = NamedTextColor.RED;
+    /**
+     * THE STAT COLOURS ARE PUBLIC because item tooltips read them.
+     *
+     * <p>An armor piece's "Defense: 8" and its "+30 Max Health" bonus line report the SAME stats
+     * this bar does, two seconds apart on the same screen, so a player glancing between them must
+     * not see two colours. { ArmorLore} used to restate the values with a comment saying they
+     * matched; naming them here and importing them makes that a compile-time link instead of a
+     * promise, which is the difference between a colour that is READ off the HUD and one that is
+     * merely the same today.
+     */
+    public static final NamedTextColor HEALTH_COLOR = NamedTextColor.RED;
     /**
      * Lime. Adventure's {@code GREEN} IS Minecraft's lime ({@code §a}, {@code #55FF55}); Minecraft's
      * darker green is Adventure's {@code DARK_GREEN}. Named here because picking the wrong one of the
      * two ships the wrong colour and nothing would fail.
      */
-    static final NamedTextColor DEFENSE_COLOR = NamedTextColor.GREEN;
-    static final NamedTextColor MANA_COLOR = NamedTextColor.BLUE;
+    public static final NamedTextColor DEFENSE_COLOR = NamedTextColor.GREEN;
+    /** Public with its siblings, ready for Mana Bank's "+N Max Mana" bonus line in Slice 2b. */
+    public static final NamedTextColor MANA_COLOR = NamedTextColor.BLUE;
 
     /**
      * The gap between fields. Wide enough that the fields read as separate on a background-less bar --

@@ -1,8 +1,10 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ArmorLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.ArmorSlot;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
+import io.github.butterflysmp.rpg.paper.hud.StatsBarText;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -91,6 +93,109 @@ class ArmorLoreTest {
                 "the footer is not italic");
         // Mutation: drop the explicit ITALIC=false -> Minecraft italicises custom lore by default
         // -> reddens.
+    }
+
+    @Test
+    void theDefenseLineShowsTheEffectiveValueOnceProtectionIsOnThePiece() {
+        // The lore must not disagree with the stat. A Protection III diamond chestplate contributes
+        // 17 to Defense, so its own tooltip must say 17 -- not the material's bare 8.
+        ArmorDefinition chest = armor(Rarity.UNCOMMON, ArmorSlot.CHEST, 8, List.of());
+        assertEquals("Defense: 8", plain(ArmorLore.build(chest).get(0)), "unenchanted is unchanged");
+        assertEquals("Defense: 11", plain(ArmorLore.build(chest, 3).get(0)), "Protection I");
+        assertEquals("Defense: 14", plain(ArmorLore.build(chest, 6).get(0)), "Protection II");
+        assertEquals("Defense: 17", plain(ArmorLore.build(chest, 9).get(0)), "Protection III");
+        // Mutation: have the overload ignore protectionPoints -> every level reads 8 -> reddens.
+    }
+
+    @Test
+    void theUnenchantedOverloadIsAnExactIdentitySoTheGoldenCannotMove() {
+        // build(armor) delegates to build(armor, Protection.NONE). If that were not an exact
+        // identity, adding the overload would have moved every shipped armor tooltip -- and the
+        // golden dump is what would have caught it. Asserted here too, so the reason is stated
+        // rather than only observed.
+        for (ArmorSlot slot : ArmorSlot.values()) {
+            ArmorDefinition piece = armor(Rarity.COMMON, slot, 5, List.of("f"));
+            assertEquals(plain(ArmorLore.build(piece).get(0)),
+                    plain(ArmorLore.build(piece, 0).get(0)),
+                    "the one-arg overload must equal a zero bonus, at " + slot);
+        }
+        // Mutation: make build(armor) pass anything but NONE -> reddens here AND in the golden.
+    }
+
+    // --- Flat-stat bonus lines ---------------------------------------------------------------
+
+    @Test
+    void aGrowthPieceShowsItsMaxHealthAsANEWLineRatherThanAModifiedTotal() {
+        // THE RE-WITNESS: a Growth III piece shows "+30 Max Health" in its stat block. Before this,
+        // Protection's boost was visible (the Defense line moved) and Growth's was INVISIBLE -- the
+        // piece granted 30 max health and said nothing about it anywhere on the tooltip.
+        ArmorDefinition chest = armor(Rarity.UNCOMMON, ArmorSlot.CHEST, 8, List.of());
+        List<Component> lore = ArmorLore.build(chest, 0, List.of(growth(30)));
+
+        assertEquals("Defense: 8", plain(lore.get(0)), "the Defense total is untouched by Growth");
+        assertEquals("Health: +30", plain(lore.get(1)), "and the bonus is its own line");
+        // Mutation: render Growth into the Defense line -> "Defense: 38" -> reddens twice.
+    }
+
+    @Test
+    void theBonusLineLeadsWithAGrayLabelAndColoursTheValueOffTheHUD() {
+        // The SAME split and the same ORDER as the Defense line: gray label leads, coloured
+        // value follows. Before the reformat this pair was inverted, which is the tell that
+        // the two stat lines had two different shapes.
+        //
+        // RED because that is StatsBarText.HEALTH_COLOR itself -- the armor tooltip and the
+        // action bar report the same stat, so a player glancing between them must not see
+        // two colours for one number.
+        Component line = ArmorLore.build(
+                armor(Rarity.COMMON, ArmorSlot.HEAD, 3, List.of()), 0, List.of(growth(10))).get(1);
+        assertEquals(NamedTextColor.GRAY, line.color(), "the label leads and is gray");
+        assertEquals(1, line.children().size(), "the value is a single appended child");
+        assertEquals(StatsBarText.HEALTH_COLOR, line.children().get(0).color(),
+                "the value wears the HUD health colour");
+        assertEquals("+10", plain(line.children().get(0)),
+                "and keeps its + so a bonus still reads distinctly from a total");
+        // Mutation: pick a different red, colour the whole line, or drop the + -> reddens.
+    }
+
+    @Test
+    void bothEnchantsShowAtOnceAndDoNotInterfere() {
+        // Protection edits the total, Growth adds a line, and a piece carrying both must show both.
+        List<Component> lore = ArmorLore.build(
+                armor(Rarity.UNCOMMON, ArmorSlot.CHEST, 8, List.of()), 9, List.of(growth(30)));
+        assertEquals("Defense: 17", plain(lore.get(0)));
+        assertEquals("Health: +30", plain(lore.get(1)));
+        // Mutation: have the bonus loop overwrite the stat line rather than append -> reddens.
+    }
+
+    @Test
+    void anEmptyBonusListAddsNothingAtAllNotEvenABlank() {
+        // What keeps build(armor) an exact identity and the golden green. A stray blank here would
+        // move every shipped armor tooltip.
+        ArmorDefinition piece = armor(Rarity.COMMON, ArmorSlot.FEET, 3, List.of("f"));
+        assertEquals(ArmorLore.build(piece, 0).size(), ArmorLore.build(piece, 0, List.of()).size());
+        for (int i = 0; i < ArmorLore.build(piece, 0).size(); i++) {
+            assertEquals(plain(ArmorLore.build(piece, 0).get(i)),
+                    plain(ArmorLore.build(piece, 0, List.of()).get(i)), "line " + i);
+        }
+        // Mutation: emit a separator before the bonus block unconditionally -> reddens, and the
+        // golden reddens with it.
+    }
+
+    @Test
+    void aZeroBonusRendersNoLineSoAnUnenchantedPieceStaysClean() {
+        // The scan only ever passes a positive value, but the guard is in GearLore rather than in
+        // each caller, so it is pinned where it lives.
+        ArmorDefinition piece = armor(Rarity.COMMON, ArmorSlot.HEAD, 3, List.of());
+        assertEquals(ArmorLore.build(piece, 0).size(),
+                ArmorLore.build(piece, 0, List.of(growth(0))).size(),
+                "a zero bonus is not a line reading +0");
+        // Mutation: drop the points <= 0 guard -> "+0 Max Health" on every unenchanted piece
+        // -> reddens.
+    }
+
+    private static ArmorLore.StatBonus growth(double points) {
+        return new ArmorLore.StatBonus(points, ArmorLoreLines.MAX_HEALTH_LABEL,
+                StatsBarText.HEALTH_COLOR);
     }
 
     // --- The footer -----------------------------------------------------------------------------

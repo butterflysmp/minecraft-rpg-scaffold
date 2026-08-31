@@ -15,4 +15,4 @@ icon: bow
 max_level: 3
 effect: damage
 class: ranger
-percent_by_level: [5, 10, 15]
+value_by_level: [5, 10, 15]

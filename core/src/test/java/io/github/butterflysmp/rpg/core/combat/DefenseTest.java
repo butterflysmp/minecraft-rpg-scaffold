@@ -141,6 +141,38 @@ class DefenseTest {
     }
 
     @Test
+    void theTwoArgumentsAreDifferentNumbersAndPassingDefenseAsNativeArmorEMPTIESTheBar() {
+        // EVERY OTHER TEST HERE PASSES THE SAME VALUE TWICE. barModifier(20, 20) is the only shape
+        // this file exercised, because until an enchant could add Defense the two arguments were
+        // always equal and the distinction was invisible. It is not invisible any more: a Protection
+        // III piece in every slot contributes 36 Defense that puts NOTHING on the vanilla armor
+        // attribute, so defense is 56 while nativeArmor stays 20.
+        //
+        // Every number below was EXECUTED and pasted, never derived -- including the identity, which
+        // turns out not to be bit-exact (7.179487179487179 against 7.17948717948718).
+        double defense = 56.0;        // full diamond (20) + Protection III on all four pieces (36)
+        double nativeArmor = 20.0;    // what the vanilla attribute actually holds: the material only
+
+        assertEquals(7.17948717948718, Defense.armorBarPoints(defense), EPS,
+                "56 defense is ~35.9% DR, which wants about 7.18 of the 20 bar points");
+        assertEquals(-12.820512820512821, Defense.barModifier(defense, nativeArmor), EPS,
+                "cancel the 20 the attribute holds, re-add the 7.18 the DR deserves");
+        assertEquals(Defense.armorBarPoints(defense),
+                nativeArmor + Defense.barModifier(defense, nativeArmor), EPS,
+                "native + modifier still lands on the DR bar when the two arguments differ");
+
+        // THE FAILURE THIS GUARDS, stated as arithmetic. Feeding defense where nativeArmor belongs
+        // over-subtracts by exactly the enchant's contribution:
+        double wrong = nativeArmor + Defense.barModifier(defense, defense);
+        assertEquals(-28.820512820512818, wrong, EPS, "the attribute would land far below zero");
+        assertTrue(wrong < 0.0,
+                "Minecraft clamps a negative armor attribute to 0, so the most-armored player in the"
+                        + " game would read an EMPTY bar while stat, mitigation and tooltip stay right");
+        // Mutation: have the caller pass the defense sum as nativeArmor -> this is the arithmetic
+        // that goes wrong; the WIRING is boot-gate row 6, since ArmorBarOverride needs a live Player.
+    }
+
+    @Test
     void theBarNeverApproachesTheVanillaThirtyPointClamp() {
         // armorBarPoints is bounded by [0,20) because damageReduction is bounded by [0,1). If it could
         // exceed 30 the attribute would clamp and the bar would silently stop tracking DR at the top.

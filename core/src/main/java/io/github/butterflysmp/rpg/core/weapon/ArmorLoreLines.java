@@ -25,6 +25,41 @@ public final class ArmorLoreLines {
      */
     public static final String DEFENSE_LABEL = "Defense: ";
 
+    /**
+     * The stat a Growth enchant raises, as the LEADING label of a bonus line: {@code "Health: +30"}.
+     *
+     * <p>No colon here, unlike {@link #DEFENSE_LABEL}, and that is a division of labour rather than
+     * a shape difference: a Defense line is concatenated directly by its caller, so its constant
+     * carries its own {@code ": "}, while a bonus line goes through
+     * {@code GearLore.appendFlatBonus}, which supplies the separator for every stat it renders. One
+     * place owns the punctuation, so Defense, Health and Mana cannot drift apart on it.
+     *
+     * <p><b>Every stat line reads {@code "Label: value"}.</b> A bonus is told apart by the
+     * {@code +} on its VALUE, not by being written backwards -- see {@link #bonusValue}.
+     *
+     * <p>"Health" rather than "Max Health" because the label column stays short and uniform beside
+     * "Defense" and "Mana". The distinction Growth actually needs -- that it raises the CEILING and
+     * grants no current health -- is carried by the {@code +} and stated at length in
+     * {@code EnchantEffectLine}, which has room for a sentence.
+     */
+    public static final String MAX_HEALTH_LABEL = "Health";
+
+    /**
+     * The value half of a flat BONUS line: {@code 30 -> "+30"}.
+     *
+     * <p><b>The {@code +} is what distinguishes a bonus from a total</b>, now that both are written
+     * {@code "Label: value"}. {@code "Defense: 17"} is what the piece contributes; {@code "Health:
+     * +30"} is what it ADDS to a pool it has none of. Dropping the sign would make the second read
+     * as a total the piece carries, which is exactly the wrong claim for a piece of armor.
+     *
+     * <p>Nothing here knows which stat it is formatting, which is the point: Slice 2b's Mana Bank
+     * gets {@code "Mana: +30"} from this same call. The alternative was a {@code growthLine()} that
+     * would have needed a {@code manaBankLine()} beside it a slice later.
+     */
+    public static String bonusValue(double points) {
+        return "+" + trimNumber(points);
+    }
+
     /** The value half: {@code 8 -> "8"}. Coloured, where {@link #DEFENSE_LABEL} is not. */
     public static String defenseValue(double defense) {
         return trimNumber(defense);

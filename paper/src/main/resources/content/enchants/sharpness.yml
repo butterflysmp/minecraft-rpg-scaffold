@@ -9,7 +9,7 @@
 # enchant and the weapon it sits on can never disagree about what a class is. The token is `ranger`,
 # not `ranged` -- "Ranged" is only the tooltip's LABEL for that class.
 #
-# percent_by_level is the curve, one entry per level, and its length MUST equal max_level: a short
+# value_by_level is the curve, one entry per level, and its length MUST equal max_level: a short
 # list would leave a legal level with no percent, and a long one would hide levels the enchant can
 # never reach. It is an explicit list rather than a linear scalar so a future non-linear enchant is
 # not blocked by this pass's schema.
@@ -31,4 +31,4 @@ icon: iron_sword
 max_level: 3
 effect: damage
 class: melee
-percent_by_level: [5, 10, 15]
+value_by_level: [5, 10, 15]
