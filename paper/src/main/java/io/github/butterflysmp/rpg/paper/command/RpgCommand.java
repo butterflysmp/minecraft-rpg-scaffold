@@ -13,6 +13,7 @@ import io.github.butterflysmp.rpg.core.ability.CastExecutor;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.Crit;
+import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.kit.KitDefinition;
@@ -637,7 +638,9 @@ public final class RpgCommand {
         }
         resources.clear(player.getUniqueId());
         player.sendMessage(Component.text(
-                "Mana refilled to " + Math.round(resources.max()) + ".", NamedTextColor.GREEN));
+                "Mana refilled to "
+                        + Math.round(resources.max(player.getUniqueId(), ResourceCost.DEFAULT_RESOURCE))
+                        + ".", NamedTextColor.GREEN));
         return 1;
     }
 

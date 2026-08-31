@@ -21,6 +21,21 @@ import java.util.function.LongSupplier;
  * 40 mana.
  *
  * Bounded: clear(owner) drops the owner's pools. Call it when a player leaves.
+ *
+ * <h2>The ceiling is PER OWNER as of Armor Slice 2b</h2>
+ *
+ * It was a single {@code final double} shared by every player, which was right for exactly as long
+ * as nothing could raise a maximum. Mana Bank can, so the ceiling arrives as a {@link MaxResolver}
+ * and every read asks it for the owner in hand. See that interface for why it is a function rather
+ * than a second map this class owns -- the short version is that {@link #clear} means REFILL, so a
+ * map here would have had {@code /rpg mana refill} strip a player's enchant.
+ *
+ * <p>There were FOUR reads of the old constant, not three: {@link #current}'s absent-owner branch,
+ * {@link #regenerated}'s ceiling, {@link #tryConsume}'s never-satisfiable guard, and a duplicate of
+ * the first INSIDE {@code tryConsume}'s {@code compute} lambda. That last one is why
+ * {@code tryConsume} resolves the ceiling ONCE at the top and passes the local down: a resolver call
+ * inside a {@code ConcurrentHashMap} mapping function would re-enter a map while holding a bin lock,
+ * on the exact path {@code concurrentSpendsCannotOverdrawThePool} guards.
  */
 public final class ResourcePool {
 
@@ -28,32 +43,93 @@ public final class ResourcePool {
     private record Entry(double amount, long asOfTick) {}
 
     private final LongSupplier currentTick;
-    private final double max;
+    private final MaxResolver max;
     private final double regenPerTick;
     private final Map<UUID, Map<String, Entry>> pools = new ConcurrentHashMap<>();
 
-    public ResourcePool(LongSupplier currentTick, double max, double regenPerTick) {
-        if (max <= 0) throw new IllegalArgumentException("max must be positive");
+    public ResourcePool(LongSupplier currentTick, MaxResolver max, double regenPerTick) {
+        if (max == null) throw new IllegalArgumentException("a max resolver is required");
         if (regenPerTick < 0) throw new IllegalArgumentException("regenPerTick must not be negative");
         this.currentTick = currentTick;
         this.max = max;
         this.regenPerTick = regenPerTick;
     }
 
-    public double max() {
+    /**
+     * One ceiling for every owner -- the pre-2b shape, kept because it is still the right one for a
+     * pool with no per-player stat behind it.
+     *
+     * <p>Every test in the tree constructs through this, which is deliberate: leaving those
+     * constructions byte-identical is what makes the resolver change provably behaviour-preserving.
+     */
+    public ResourcePool(LongSupplier currentTick, double max, double regenPerTick) {
+        this(currentTick, MaxResolver.fixed(requirePositive(max)), regenPerTick);
+    }
+
+    private static double requirePositive(double max) {
+        if (max <= 0) throw new IllegalArgumentException("max must be positive");
         return max;
+    }
+
+    /**
+     * The ceiling for this owner's resource.
+     *
+     * <p>Takes an owner and a resource where it used to take nothing. Both callers of the old
+     * no-arg version were displays -- the action bar and the refill message -- and both were showing
+     * every player the same number.
+     */
+    public double max(UUID owner, String resourceId) {
+        return max.maxFor(owner, resourceId);
     }
 
     /** An owner nobody has charged anything to is full. */
     public double current(UUID owner, String resourceId) {
         Map<String, Entry> owned = pools.get(owner);
         Entry entry = owned == null ? null : owned.get(resourceId);
-        return entry == null ? max : regenerated(entry);
+        double ceiling = max.maxFor(owner, resourceId);
+        return entry == null ? ceiling : regenerated(entry, ceiling);
     }
 
-    private double regenerated(Entry entry) {
+    /**
+     * Write {@code amount} as this owner's current value, clamped to their ceiling.
+     *
+     * <h2>This is the max-change transition, and it exists to make both directions STATED</h2>
+     *
+     * Called by the reconcile loop when a max-mana modifier actually changes, with the value read
+     * BEFORE the change. It is one mechanism serving two rules:
+     *
+     * <ul>
+     *   <li><b>Max ROSE</b> -- the pre-change amount is pinned, so the ceiling moves and the amount
+     *       does not. HEADROOM, never a free top-up. Without this an owner with NO entry would read
+     *       the new ceiling instantly (absent means full), so equipping a Mana Bank piece would be
+     *       free mana for a player who had never cast and headroom for one who had -- the same
+     *       enchant behaving two ways depending on state nobody can see.
+     *   <li><b>Max FELL</b> -- the clamp is the {@code Math.min} below, at the point of writing.
+     *       {@link #regenerated} would have produced the same number on the next read, and that is
+     *       the point: emergent from a {@code Math.min} in the regen path, a refactor there drops
+     *       the unequip clamp with no test naming it. Here it is a decision.
+     * </ul>
+     *
+     * <p>Writes nothing when {@code amount} is not finite or negative -- a caller with no reading to
+     * pin should not be able to zero someone's pool through this door.
+     */
+    public void setCurrent(UUID owner, String resourceId, double amount) {
+        if (!Double.isFinite(amount) || amount < 0) return;
+        double clamped = Math.min(max.maxFor(owner, resourceId), amount);
+        pools.computeIfAbsent(owner, id -> new ConcurrentHashMap<>())
+                .put(resourceId, new Entry(clamped, currentTick.getAsLong()));
+    }
+
+    /**
+     * The regenerated value of one entry against a ceiling already resolved by the caller.
+     *
+     * <p>Takes the ceiling rather than reading it, because both callers had to resolve it anyway for
+     * their own absent-entry branch -- and because {@code tryConsume} calls this from inside a
+     * {@code compute} lambda, where a fresh resolver call would re-enter a map under a bin lock.
+     */
+    private double regenerated(Entry entry, double ceiling) {
         long elapsed = Math.max(0, currentTick.getAsLong() - entry.asOfTick());
-        return Math.min(max, entry.amount() + elapsed * regenPerTick);
+        return Math.min(ceiling, entry.amount() + elapsed * regenPerTick);
     }
 
     /**
@@ -65,7 +141,14 @@ public final class ResourcePool {
      */
     public boolean tryConsume(UUID owner, String resourceId, double amount) {
         if (amount <= 0) return true;            // a free ability always casts
-        if (amount > max) return false;          // never satisfiable; do not wait forever
+
+        // ONCE, and before the compute below. Two of the four old reads of the ceiling were in this
+        // method -- the guard here and the absent-entry fallback inside the lambda -- and resolving
+        // it separately in each would both duplicate the work and put a map read inside a mapping
+        // function. It is also a correctness point: the guard and the spend must agree about the
+        // ceiling, or "the guard passed but the spend refused" becomes reachable.
+        double ceiling = max.maxFor(owner, resourceId);
+        if (amount > ceiling) return false;      // never satisfiable FOR THIS OWNER; do not wait forever
 
         Map<String, Entry> owned = pools.computeIfAbsent(owner, id -> new ConcurrentHashMap<>());
 
@@ -75,7 +158,7 @@ public final class ResourcePool {
         // that fits 2 -- verified, not theoretical.
         boolean[] consumed = {false};
         owned.compute(resourceId, (id, entry) -> {
-            double available = entry == null ? max : regenerated(entry);
+            double available = entry == null ? ceiling : regenerated(entry, ceiling);
             if (available < amount) {
                 return entry; // untouched; null stays absent, which reads as full
             }
@@ -85,7 +168,14 @@ public final class ResourcePool {
         return consumed[0];
     }
 
-    /** Drop every pool for this owner. O(1). Safe for an unknown owner. */
+    /**
+     * Drop every pool for this owner. O(1). Safe for an unknown owner.
+     *
+     * <p>This IS a refill, not merely cleanup: an owner with no entry reads as full, because the
+     * pool stores a spent amount and a tick to regenerate from rather than a current value. It drops
+     * pools and nothing else -- the ceiling lives behind a {@link MaxResolver} the pool does not
+     * own, so a refill cannot strip a player's Mana Bank.
+     */
     public void clear(UUID owner) {
         pools.remove(owner);
     }
