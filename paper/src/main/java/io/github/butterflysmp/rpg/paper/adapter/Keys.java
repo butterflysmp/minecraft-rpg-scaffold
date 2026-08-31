@@ -64,6 +64,9 @@ public final class Keys {
     /** Marks the crit_damage_boost_TEMP dev item and stores its +crit-bonus amount (a DOUBLE) in the PDC. */
     public final NamespacedKey critDamageBoost;
 
+    /** Marks the health_regen_boost_TEMP dev item and stores its +HP-per-second bonus (a DOUBLE) in the PDC. */
+    public final NamespacedKey healthRegenBoost;
+
     /**
      * Marks the class_damage_boost_TEMP dev item and stores its bonus (a DOUBLE) in the item's PDC.
      * Paired with {@link #classDamageBoostClass} -- this is the first fixture needing TWO values,
@@ -142,6 +145,7 @@ public final class Keys {
         this.attackSpeedBoost = new NamespacedKey(plugin, "attack_speed_boost_temp");
         this.critChanceBoost = new NamespacedKey(plugin, "crit_chance_boost_temp");
         this.critDamageBoost = new NamespacedKey(plugin, "crit_damage_boost_temp");
+        this.healthRegenBoost = new NamespacedKey(plugin, "health_regen_boost_temp");
         this.classDamageBoost = new NamespacedKey(plugin, "class_damage_boost_temp");
         this.classDamageBoostClass = new NamespacedKey(plugin, "class_damage_boost_temp_class");
         this.mobId = new NamespacedKey(plugin, "mob_id");

@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.SweepShare;
+import io.github.butterflysmp.rpg.core.combat.stat.HeartScale;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.combat.ShieldExchange;
 import io.github.butterflysmp.rpg.core.enchant.Thorns;
@@ -22,6 +23,8 @@ import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
+import io.github.butterflysmp.rpg.paper.health.HealthRegenSystem;
+import io.github.butterflysmp.rpg.paper.health.VanillaHealPolicy;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.core.combat.AttackCharge;
 import io.github.butterflysmp.rpg.paper.weapon.MeleeHits;
@@ -53,6 +56,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -100,6 +104,7 @@ public final class RpgListeners implements Listener {
     private final PlayerHealthSystem healthSystem;
     private final MobNameplateManager nameplates;
     private final StatsBarSystem statsBar;
+    private final HealthRegenSystem healthRegen;
 
     /**
      * Timing state for the vanilla-driven basic melee hit: the pending swing's charge, and the
@@ -114,7 +119,7 @@ public final class RpgListeners implements Listener {
                         WeaponService weaponService,
                         AdapterContext adapters,
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
-                        StatsBarSystem statsBar) {
+                        StatsBarSystem statsBar, HealthRegenSystem healthRegen) {
         this.cooldowns = cooldowns;
         this.resources = resources;
         this.profiles = profiles;
@@ -126,6 +131,7 @@ public final class RpgListeners implements Listener {
         this.healthSystem = healthSystem;
         this.nameplates = nameplates;
         this.statsBar = statsBar;
+        this.healthRegen = healthRegen;
     }
 
     @EventHandler
@@ -145,6 +151,7 @@ public final class RpgListeners implements Listener {
         nameplates.onViewerJoin(event.getPlayer());
         // Start this player's action-bar stats line.
         statsBar.onJoin(event.getPlayer());
+        healthRegen.onJoin(event.getPlayer());        // start the passive regeneration loop
     }
 
     /**
@@ -370,6 +377,7 @@ public final class RpgListeners implements Listener {
         AttackSpeedAttributeOverride.clear(event.getPlayer(), adapters.keys());
         // Stop the action-bar loop and drop its handle.
         statsBar.onQuit(playerId);
+        healthRegen.onQuit(playerId);
     }
 
     /**
@@ -403,6 +411,7 @@ public final class RpgListeners implements Listener {
         healthSystem.onRespawn(event.getPlayer());     // reset to base 100, render, restart the reconcile loop
         nameplates.onViewerJoin(event.getPlayer());    // restart the per-viewer nameplate LOS loop
         statsBar.onRespawn(event.getPlayer());         // restart the action-bar loop, dead since the death screen
+        healthRegen.onRespawn(event.getPlayer());      // and the regeneration loop, dead for the same reason
     }
 
     // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is
@@ -738,6 +747,55 @@ public final class RpgListeners implements Listener {
     public void onShieldItemDamage(PlayerItemDamageEvent event) {
         if (ShieldItems.shieldId(event.getItem(), adapters.keys()).isPresent()) {
             event.setCancelled(true);
+        }
+    }
+
+    /**
+     * VANILLA HEALS DO NOT MOVE A TRACKED PLAYER'S BAR WITHOUT MOVING THE TRUTH.
+     *
+     * <p>We own passive regeneration now ({@link HealthRegenSystem}), so vanilla's own must go. But
+     * the wider reason applies to every vanilla heal, not only the two being replaced: the vanilla
+     * health attribute is a DISPLAY that {@code HeartBarRenderer} rewrites from the custom numbers on
+     * the next {@code HealthChange} or reconcile tick. A vanilla heal that lands is therefore visible
+     * for a fraction of a second and then silently reverted -- which reads to a player as a bug,
+     * because it is one.
+     *
+     * <p><b>Cancelling is only half the job, and the half that would have made things worse alone.</b>
+     * A cancelled healing potion is a SILENT NO-OP: a clean-looking bug that heals zero, worse by this
+     * codebase's standards than the visible flicker it replaced. So the potion reasons are cancelled
+     * AND translated, in this same handler. Never cancel a heal you are not ready to replace.
+     *
+     * <p>The classification lives in {@link VanillaHealPolicy} rather than here, because it is the
+     * only part of this handler a unit test can reach -- and it is exhaustive over all nine
+     * {@code RegainReason} constants with no default arm, so a tenth is a compile error rather than a
+     * silent fall-through. See that class for why {@code EATING} is rerouted rather than passed.
+     *
+     * <p><b>Scope: tracked players only.</b> A mob's health is its own store's business and no vanilla
+     * heal is currently rewriting it; an untracked player is one between join and register, whose
+     * store read would throw. So both fall through untouched rather than being handled wrongly.
+     *
+     * <p>This cannot eat our own heals. Nothing here calls {@code Player#setHealth} through a path
+     * that fires this event -- the renderer writes the attribute and the health directly, which the
+     * API does not report as a regain -- so the cancel can only ever be catching vanilla.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onRegainHealth(EntityRegainHealthEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        UUID id = player.getUniqueId();
+        if (!adapters.stats().tracks(id)) return;
+
+        VanillaHealPolicy.Action action = VanillaHealPolicy.forReason(event.getRegainReason());
+        if (action == VanillaHealPolicy.Action.PASS) return;
+
+        event.setCancelled(true);
+        if (action == VanillaHealPolicy.Action.REROUTE) {
+            // The event's amount is in vanilla HEALTH POINTS, on a bar whose scale is a function of
+            // this player's custom max. HeartScale.customFromHealthPoints is the inverse of the
+            // renderer's own mapping, so a 4-point potion is worth two hearts of whatever bar they
+            // have -- 20% of max -- rather than a flat 4 HP that a Growth-raised ceiling would make
+            // worthless. Self-attributed: the event names no healer.
+            double custom = HeartScale.customFromHealthPoints(event.getAmount(), adapters.stats().max(id));
+            if (custom > 0) adapters.stats().heal(id, custom, id, true);
         }
     }
 

@@ -146,7 +146,7 @@ public final class PlayerHealthSystem implements HealthListener {
         EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
         UUID id = player.getUniqueId();
         RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, () -> {
-            // Nine stats converge on the same scan: max HP from +HP items, attack damage from the
+            // Ten stats converge on the same scan: max HP from +HP items, attack damage from the
             // held weapon's declared attack_damage (a MAIN_HAND modifier), attack speed from equipped
             // speed sources, the class-damage bonus from equipped "+N <Class> Damage" gear
             // MATCHING the held weapon's class, and the enchant-damage percent from the damage
@@ -225,6 +225,13 @@ public final class PlayerHealthSystem implements HealthListener {
                     ManaBankModifierItems.desiredModifiers(player, keys, enchants))) {
                 resources.setCurrent(id, ResourceCost.DEFAULT_RESOURCE, manaBefore);
             }
+
+            // The TENTH, and the quietest: the passive regeneration RATE, in HP per second. No
+            // event, no override, no pin -- unlike the ninth above it, this stat has no current
+            // anywhere. HealthRegenSystem reads the resolved value fresh on every fire, so a piece
+            // equipped here simply changes what the next second pays, and one removed changes it
+            // back. That is the whole transition.
+            stats.reconcileHealthRegenModifiers(id, HealthRegenModifierItems.desiredModifiers(player, keys));
 
             DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player, keys, enchants);
             stats.reconcileDefenseModifiers(id, worn.defense());

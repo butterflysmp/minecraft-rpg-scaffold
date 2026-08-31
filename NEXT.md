@@ -581,6 +581,59 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Stats, Slice 1 (Health Regen) — what it created or exposed
+
+- **BOOT GATE RUN AND PASSED, 2026-08-31**, operator-confirmed: rows 1, 2, 3, 6, 7, 8, 11 pass.
+  **Row 4 returned its STOP signal, and that is the slice's main finding rather than a failure.**
+
+- **CANCELLING THE `SATIATED` REGAIN DOES NOT STOP VANILLA CHARGING EXHAUSTION FOR IT.** Measured on
+  Paper 26.1.2: with our heal cancelled and no charge of our own, a fed idle player's saturation
+  still drained in **~4–5 seconds**. Vanilla drains saturation regardless of whether its regen tick
+  was allowed to heal.
+
+  The slice was designed around the opposite premise. The saturated window was to charge exhaustion
+  per HP healed, justified as **restorative** — restoring the drain that suppression removed. That
+  premise is **unfounded on this build**: nothing was removed, so the charge would have been a second
+  one and the drain would have doubled.
+
+  **The design got what it wanted for free.** Food still gates the rate — fed you regenerate at the
+  saturated tier, and once vanilla has drained the saturation you drop to the floor. The two-tier
+  fed/hungry economy is vanilla's drain plus our multiplier, with no custom cost anywhere.
+
+  `EXHAUSTION_PER_HP`, `HealthRegen.exhaustionFor`, the `setExhaustion` call and both their tests were
+  **removed, not shipped dormant** — a constant sitting at 0 with a live method behind it is a
+  mechanism nobody can see is dead.
+
+  **This is the row that justifies the whole "witness the premise before you build on it" ordering.**
+  The measurement was sequenced deliberately before the commit it would have authorized: commits 1–6
+  shipped with the constant at 0, so the gate could observe *suppression in, charge off*. Commit 7 was
+  never written. Had the constant shipped at its derived 1.2, the doubled drain would have looked like
+  a tuning problem rather than a false premise, and the number would have been tuned down toward zero
+  one gate at a time without anyone learning why.
+
+- **`SATURATED_MULTIPLIER` is 5.0, not the planned 4.0** — a fed player at the base rate regenerates a
+  round **1.0 HP/s**, dropping to the 0.2 HP/s floor when saturation runs out. Retuned after the gate,
+  so the *mechanism* is boot-witnessed but this *number* is not: rows 2 and 3 were run at ×4.
+
+- **THE POTION REROUTE OVERHEALS AT HIGH MAX HP — REVISIT.** `RpgListeners.onRegainHealth` translates
+  a cancelled `MAGIC`/`MAGIC_REGEN` amount through `HeartScale.customFromHealthPoints`, which scales
+  the heal to a PROPORTION of custom max. That is right near 100 HP — a 4-point potion is two hearts,
+  so 20 HP — and badly wrong above it: at a Growth-raised ceiling the same potion heals **300+**.
+  Proportional was chosen over 1:1 because 1:1 makes every potion worthless as ceilings rise; the
+  answer is neither, and it needs **a cap or a fixed custom heal amount** in a later slice.
+
+- **Row 5 was dropped** (it witnessed the exhaustion charge, which no longer exists). **Row 12**
+  (peaceful `REGEN`) stays in the exhaustive switch but is low-priority and was not run — the target
+  server is never on peaceful, and at `difficulty=easy` that arm is unreachable.
+
+- **`applyHeal` was vanilla-only and healed ZERO custom HP** — a shipped silent no-op, closed here.
+  See the entry further down, now marked closed. What remains is that the port carries no `sourceId`,
+  so a rerouted or ability heal cannot credit anyone.
+
+- **The `_TEMP` fixture table in this file had gone stale by two** before this slice touched it. See
+  that entry: it now lists eight, and carries the grep that would catch the next drift along with the
+  trap in that grep (it returns nine; the ninth is the already-retired `swing_TEMP`).
+
 ### Armor, Slice 2a (the gating axis, Protection and Growth) — what it created or exposed
 
 - **BOOT GATE OWED.** Eleven rows, in `PLAN-armor-slice-2a.md`. Row 6 is the discriminating one: with
@@ -2079,11 +2132,15 @@ a melee basic, where nothing read it any more.
   is disconnected from the custom-HP source of truth. Confirmed at the damage-pass-1a boot (2026-07-17).
   A later **status-damage pass** should route DoT ticks through `applyDamage` (a per-tick task dealing
   custom damage), the way basic attacks and abilities now do. Deliberately out of scope for pass 1a.
-- **`BukkitCombatant.applyHeal` is vanilla-only — ability heals bypass custom HP.** It calls
-  `entity.setHealth(...)`, not `CombatantStats.heal`, so an ability `Heal` effect (e.g. `arc_surge`)
-  raises *vanilla* health and never fires the seam — the heart bar / nameplate don't follow. Same class
-  as the damage gap 1a fixed, on the heal side. `/rpg mobheal` sidesteps it by calling `stats.heal`
-  directly. Wire `applyHeal` to the custom store in the status/heal pass.
+- ~~**`BukkitCombatant.applyHeal` is vanilla-only — ability heals bypass custom HP.**~~ **CLOSED in
+  Stats Slice 1.** It called `entity.setHealth(...)`, not `CombatantStats.heal`, so an ability `Heal`
+  effect raised *vanilla* health and never fired the seam. For a player that attribute is a DISPLAY,
+  rewritten from the custom numbers on the next `HealthChange` or reconcile tick — so the effect
+  healed exactly zero of the health combat uses, moved the bar for a fraction of a second, and errored
+  about nothing. It now routes to the store. **What it still cannot do is CREDIT anyone**:
+  `CombatantHandle.applyHeal` takes only an amount, no `sourceId`, so it self-attributes, which is why
+  `/rpg mobheal` still calls `stats.heal` directly. Widening that port is where a heal-credit feature
+  (a support archetype's contribution, a heal popup) has to start.
 - **Mob projectile→player bypasses custom HP.** Pass 2 (`onMobMeleeAttack`) owns *melee* mob→player
   only — it gates on a `LivingEntity` damager. A skeleton's arrow fires `EntityDamageByEntityEvent`
   with the *arrow* (`Projectile`) as damager, not the mob, so the gate skips it and the shot ticks
@@ -2112,10 +2169,13 @@ a melee basic, where nothing read it any more.
     cannot meaningfully be hurt. This is why `WeaponClass.SUMMONER` is still deliberately absent from
     the enum — the class needs this before it needs a weapon.
   - **Vanilla/environmental → custom HP is the existing recorded gap**, in its several forms: `scorch`
-    burning vanilla health, `applyHeal` raising vanilla health, and mob projectile→player skipping the
-    melee gate (all above). They are one problem wearing four hats — *every* route into an entity's
-    health that is not `applyDamage` is invisible to the custom store — and are best solved as one
-    decision about where the boundary sits, rather than four independent patches.
+    burning vanilla health, ~~`applyHeal` raising vanilla health~~ (closed, Stats Slice 1), and mob
+    projectile→player skipping the melee gate (all above). They are one problem wearing four hats —
+    *every* route into an entity's health that is not `applyDamage` is invisible to the custom store —
+    and are best solved as one decision about where the boundary sits, rather than four independent
+    patches. **Stats Slice 1 took a bite of that decision rather than a patch**: it also owns
+    `EntityRegainHealthEvent`, so the four cancelled player heal reasons are either replaced or
+    translated into the store. What remains uncovered is the DAMAGE side.
 - **Players are immortal to environmental damage.** Fall/fire/lava/drowning hit *vanilla* health, which
   the heart bar floors at half a heart, so they never kill and never touch custom HP. A known
   consequence of the environmental→custom-HP gap (same class as the Scorch DoT bypass above): player
@@ -2554,8 +2614,8 @@ a melee basic, where nothing read it any more.
   clean. The asymmetry is the trap: removing `soaked_TEMP` first will pass and teach you
   that removing `rooted_TEMP` is the same job. It is not.
 
-  **There are now FIVE `_TEMP` fixtures, not two, and three of them are a different shape.**
-  This entry was written when the debt was status-content only; the stat passes added three
+  **There are now EIGHT `_TEMP` fixtures, not two, and six of them are a different shape.**
+  This entry was written when the debt was status-content only; the stat passes added six
   ITEM fixtures, which live in Java rather than yml and so will not turn up in a content-pass
   grep of `content/`:
 
@@ -2566,8 +2626,27 @@ a melee basic, where nothing read it any more.
   | `health_boost_TEMP` | `/rpg healthboost` | `paper/health/HealthModifierItems.java` | the equip/unequip max-HP modifier lifecycle |
   | `attack_speed_boost_TEMP` | `/rpg attackspeed` | `paper/weapon/AttackSpeedModifierItems.java` | the same lifecycle for attack speed |
   | `class_damage_boost_TEMP` | `/rpg classdamage <class> [amt]` | `paper/weapon/ClassDamageModifierItems.java` | the same lifecycle again, plus the class GATE: it goes inert when you swap to another class's weapon |
+  | `crit_chance_boost_TEMP` | `/rpg critchance [bonus]` | `paper/health/CritModifierItems.java` | the same lifecycle for how OFTEN you crit |
+  | `crit_damage_boost_TEMP` | `/rpg critdamage [bonus]` | `paper/health/CritModifierItems.java` | and for how HARD -- two stats in one class, moving independently |
+  | `health_regen_boost_TEMP` | `/rpg healthregen [bonus]` | `paper/health/HealthRegenModifierItems.java` | the same lifecycle for the regeneration RATE: +0.8 on a 0.2 base is a resolved 1.0 HP/s, countable at a glance |
 
-  The three item fixtures come out when real content grants those stats (an enchant, a passive,
+  **THIS TABLE HAD GONE STALE BY TWO BEFORE Stats Slice 1 TOUCHED IT.** It said FIVE and listed
+  five; the crit pair landed in the crit slice, whose own retrospective says in as many words
+  that they "join the other `_TEMP` fixtures owing removal", and they were never added here.
+  Nothing pins this list against the code — it is hand-written and can drift again, exactly as
+  `EnchantRollTest.ROSTER` did for two slices. There is no test. The check is
+
+  ```bash
+  grep -rhoiE "[a-z_]+_temp" paper/src/main --include=*.java --include=*.yml | sort -u
+  ```
+
+  **and it returns NINE, not eight.** The ninth is `swing_TEMP`, which was REMOVED when the swing
+  listener shipped and survives only in prose describing its own removal (`WeaponSwingListener`,
+  `solar_grenade.yml`, `void_slash.yml`). A retired fixture and a live one look identical to that
+  grep, so read each hit before counting it — a count taken straight off the grep is wrong today
+  and will be wrong differently later.
+
+  The six item fixtures come out when real content grants those stats (an enchant, a passive,
   a build aspect) — `WeaponAttackItems` is already the shape that replaces them, sourcing a
   stat from actual weapon content instead of a fixture. Each also owns a `/rpg` dev subcommand
   and a `Keys` PDC entry, so removing one is three sites, not one.

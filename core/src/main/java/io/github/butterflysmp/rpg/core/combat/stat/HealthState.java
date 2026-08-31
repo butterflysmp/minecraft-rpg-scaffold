@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core.combat.stat;
 
 import io.github.butterflysmp.rpg.core.combat.Crit;
+import io.github.butterflysmp.rpg.core.combat.HealthRegen;
 import java.util.Set;
 
 /**
@@ -121,6 +122,26 @@ public final class HealthState {
      */
     private final Stat critDamage;
 
+    /**
+     * Passive health regeneration, in HP PER SECOND. A player bases at
+     * {@link HealthRegen#BASE_PER_SECOND} (0.2, i.e. 1 HP every 5 seconds); a MOB bases at 0.
+     *
+     * <p>A SUMMAND, like class damage and the crit pair: gear adds to the rate and the rate is what
+     * everything downstream multiplies. There is deliberately no second stat for the saturation
+     * window -- saturation multiplies THIS one, so a piece of gear that boosts regeneration boosts
+     * the saturated rate with it and there is a single number to tune, show and reason about.
+     *
+     * <p>The faction-dependent base is why this is assigned in the constructor rather than at the
+     * declaration, and it is the whole of "mobs do not passively regenerate": a rate of 0 makes
+     * {@link HealthRegen#healAmount} return 0 for every window, so there is no second check at the
+     * tick site quietly contradicting what the stat reads. Same reasoning as {@link #critChance}.
+     *
+     * <p>Unlike max health, this stat has NO current beside it -- it is a rate, read on demand by
+     * the regeneration loop and never depleted. So it needs no clamp and its reconciler needs no
+     * transition; see {@link #healthRegenTarget}.
+     */
+    private final Stat healthRegen;
+
     private final boolean player;
     private double current;
 
@@ -137,9 +158,11 @@ public final class HealthState {
         this.max = new Stat(baseMax);
         this.attack = new Stat(baseAttack);
         this.player = player;
-        // Faction-dependent bases: only a player crits. See the two fields above.
+        // Faction-dependent bases: only a player crits, and only a player passively regenerates.
+        // See the three fields above.
         this.critChance = new Stat(player ? Crit.BASE_CHANCE : 0.0);
         this.critDamage = new Stat(player ? Crit.BASE_DAMAGE : 0.0);
+        this.healthRegen = new Stat(player ? HealthRegen.BASE_PER_SECOND : 0.0);
         this.current = baseMax;
     }
 
@@ -410,6 +433,43 @@ public final class HealthState {
         return maxManaBonus.modifierCount();
     }
 
+    // --- Health regen: a TENTH Stat, HP PER SECOND, base 0.2 for a player and 0 for a mob --------
+
+    /**
+     * The resolved regeneration rate in HP per second: {@code base + Sum(modifiers)}, where base is
+     * {@link HealthRegen#BASE_PER_SECOND} for a player and 0 for a mob.
+     *
+     * <p>The FLAT rate, and only the flat rate. The saturation multiplier is applied downstream by
+     * {@link HealthRegen#healAmount} from a boolean sampled at the tick, because whether a player has
+     * saturation is not a property of their gear -- it changes second to second and belongs nowhere
+     * near a reconciled stat. This is also the number a stat sheet shows.
+     */
+    public double healthRegenValue() {
+        return healthRegen.value();
+    }
+
+    /** Set (or replace) the health-regen modifier from {@code source}; true if the value changed. */
+    public boolean setHealthRegenModifier(String source, double amount) {
+        return healthRegen.putModifier(source, amount);
+    }
+
+    /** Remove {@code source}'s health-regen modifier; true if one was actually removed. */
+    public boolean clearHealthRegenModifier(String source) {
+        return healthRegen.removeModifier(source);
+    }
+
+    public double healthRegenModifierAmount(String source) {
+        return healthRegen.amountOf(source);
+    }
+
+    public Set<String> healthRegenModifierSources() {
+        return healthRegen.sources();
+    }
+
+    public int healthRegenModifierCount() {
+        return healthRegen.modifierCount();
+    }
+
     // --- Crit: a seventh and eighth Stat. Chance is a PROBABILITY, damage is a BONUS ------------
 
     /**
@@ -585,6 +645,27 @@ public final class HealthState {
                 return critDamage.putModifier(source, amount);
             }
             @Override public boolean clearModifier(String source) { return critDamage.removeModifier(source); }
+        };
+    }
+
+    /**
+     * The health-regen modifier surface. A plain {@link Stat}, like attack damage.
+     *
+     * <p><b>No clamp, and no transition either</b> -- the two things {@link #maxTarget} and
+     * {@code maxManaTarget} respectively needed. Max health owns a current that must be pulled down
+     * when its ceiling falls; max mana's current lives in another store and has to be pinned when the
+     * ceiling moves. This stat is a RATE with no current anywhere, read fresh by the regeneration
+     * loop on every fire, so a modifier landing or leaving simply changes what the next window pays.
+     * That is why {@code CombatantStats.reconcileHealthRegenModifiers} can return void where
+     * {@code reconcileMaxManaModifiers} had to return boolean.
+     */
+    ModifierTarget healthRegenTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return healthRegen.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return healthRegen.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) { return healthRegen.removeModifier(source); }
         };
     }
 

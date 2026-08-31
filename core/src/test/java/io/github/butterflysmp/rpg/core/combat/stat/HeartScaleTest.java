@@ -53,4 +53,50 @@ class HeartScaleTest {
         assertEquals(0.0, HeartScale.filledHearts(0, 0), EPS, "zero max fills nothing rather than dividing by zero");
         // Mutation: drop the max<=0 guard in filledHearts -> 0/0 = NaN -> reddens.
     }
+
+    // --- The inverse: vanilla health POINTS back into custom HP -----------------------------------
+
+    @Test
+    void aVanillaHealTranslatesPROPORTIONALLYAndNotOneForOne() {
+        assertEquals(20.0, HeartScale.customFromHealthPoints(4, 100), EPS,
+                "a 4-point potion is two hearts of a 10-heart bar -> 20% of a 100 max");
+        assertEquals(5.0, HeartScale.customFromHealthPoints(1, 100), EPS, "half a heart of ten -> 5%");
+        assertEquals(100.0, HeartScale.customFromHealthPoints(20, 100), EPS, "a full 10-heart bar -> the whole max");
+        assertEquals(400.0, HeartScale.customFromHealthPoints(26, 400), EPS,
+                "and a full 13-heart bar at max 400 -> 400, so the scale holds in the high tier");
+        // The 4-point potion is worth 20 HP at max 100 and 61.53846153846154 at max 400 -- executed,
+        // not derived. One-for-one would make every potion in the game worthless the moment Growth
+        // raised someone's ceiling, which is the failure this arc exists to fix.
+        // Mutation: return healthPoints unchanged (a 1:1 translation) -> the first row gives 4 -> reddens.
+    }
+
+    @Test
+    void theInverseUsesPOINTSNotHEARTSSoItUndoesWhatTheRendererDID() {
+        // HeartBarRenderer doubles filledHearts on the way out; this halves on the way in. The
+        // round trip is the only thing that pins the factor of two, because a hearts-based inverse
+        // is off by exactly 2x and otherwise looks entirely reasonable.
+        assertRoundTrip(50, 100);
+        assertRoundTrip(200, 400);
+        assertRoundTrip(33, 100);
+        assertRoundTrip(777, 1000);
+        // Mutation: drop the * 2 from the divisor -> every round trip doubles -> reddens.
+    }
+
+    private static void assertRoundTrip(double current, double max) {
+        double points = HeartScale.filledHearts(current, max) * 2.0;
+        assertEquals(current, HeartScale.customFromHealthPoints(points, max), EPS,
+                current + "/" + max + " out to " + points + " vanilla points and back");
+    }
+
+    @Test
+    void theInverseRefusesANonPositiveMaxOrAmountRatherThanDividingOrHealingBACKWARDS() {
+        assertEquals(0.0, HeartScale.customFromHealthPoints(4, 0), EPS,
+                "no bar to translate onto, and heartCount(0) is 0 -- do not divide by it");
+        assertEquals(0.0, HeartScale.customFromHealthPoints(4, -100), EPS, "nor a negative one");
+        assertEquals(0.0, HeartScale.customFromHealthPoints(-4, 100), EPS,
+                "a negative amount must not become a heal -- EntityRegainHealthEvent's amount is settable");
+        assertEquals(0.0, HeartScale.customFromHealthPoints(0, 100), EPS, "and zero is zero");
+        // Mutation: drop the healthPoints <= 0 guard -> the negative row returns -20 and a
+        // rerouted heal starts damaging -> reddens.
+    }
 }

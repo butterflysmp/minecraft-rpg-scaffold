@@ -46,4 +46,34 @@ public final class HeartScale {
         if (max <= 0) return 0.0;
         return (current / max) * heartCount(max);
     }
+
+    /**
+     * The INVERSE of {@link #filledHearts}, in vanilla HEALTH POINTS rather than hearts: how much
+     * custom HP a vanilla heal of {@code healthPoints} is worth to a combatant whose ceiling is
+     * {@code max}.
+     *
+     * <p>Every other method here maps custom health OUT to the vanilla bar, because that is the only
+     * direction display needs. This one exists for the one place the traffic runs the other way: a
+     * cancelled {@code EntityRegainHealthEvent} arrives holding a vanilla amount, and rerouting it
+     * into {@code CombatantStats.heal} needs it in custom HP.
+     *
+     * <p>Points, not hearts, because that is the unit the event and {@code HeartBarRenderer} both
+     * speak -- the renderer doubles {@link #filledHearts} on the way out, so this halves on the way
+     * in. Hence the {@code * 2}: {@code custom = points * max / (heartCount(max) * 2)}.
+     *
+     * <p><b>Proportional, not one-to-one, and that is the decision.</b> A potion healing 4 points is
+     * "two hearts" to a player, so it restores two hearts' worth of whatever their bar is scaled to --
+     * 20% of max. A flat 1:1 would make every potion in the game worthless the moment Growth raised
+     * someone's ceiling, which is exactly the failure this arc exists to fix.
+     *
+     * <p>Zero for a non-positive max or a non-positive amount: there is no bar to translate onto, and
+     * a negative must not become a heal. {@link #heartCount} returns 0 there, so this also avoids
+     * dividing by it.
+     */
+    public static double customFromHealthPoints(double healthPoints, double max) {
+        if (max <= 0 || healthPoints <= 0) return 0.0;
+        int hearts = heartCount(max);
+        if (hearts <= 0) return 0.0;
+        return healthPoints * max / (hearts * 2.0);
+    }
 }

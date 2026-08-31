@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core.combat.stat;
 
+import io.github.butterflysmp.rpg.core.combat.HealthRegen;
 import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
 import org.junit.jupiter.api.Test;
 
@@ -529,5 +530,60 @@ class CombatantStatsTest {
 
         assertEquals(5.0, stats.defenseValue(id), EPS, "the slot now reads iron alone, not 8 + 5");
         // Mutation: append instead of replace by source key -> 13.0 -> reddens.
+    }
+
+    // --- Health regen: the tenth stat -------------------------------------------------------------
+
+    @Test
+    void aPlayerRegeneratesAtTheBASEAndAMobAndAnUntrackedIdAtZERO() {
+        var stats = new CombatantStats();
+        UUID player = UUID.randomUUID();
+        UUID mob = UUID.randomUUID();
+        stats.register(player, 100, true);
+        stats.bootstrapIfAbsent(mob, 200, 3.0, false);
+
+        assertEquals(HealthRegen.BASE_PER_SECOND, stats.healthRegenValue(player), EPS,
+                "a player starts at 1 HP every 5 seconds");
+        assertEquals(0.0, stats.healthRegenValue(mob), EPS,
+                "a mob does not passively regenerate, and that lives in the STAT rather than in a "
+                        + "gate at the tick that could disagree with what the stat reads");
+        assertEquals(0.0, stats.healthRegenValue(UUID.randomUUID()), EPS,
+                "and an untracked id resolves to 0 rather than throwing -- total, like every "
+                        + "accessor here except current and max");
+        // Mutation A: base the Stat unconditionally at BASE_PER_SECOND -> the mob row reads 0.2 -> reddens.
+        // Mutation B: require() instead of the 0.0 default -> the untracked row throws -> reddens.
+    }
+
+    @Test
+    void reconcileHealthRegenConvergesTheRateAndIsSILENT() {
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID id = UUID.randomUUID();
+        stats.register(id, 100, true);
+        int afterRegister = recorder.seen.size();
+
+        stats.reconcileHealthRegenModifiers(id, Map.of("regen:CHEST", 0.8));
+        assertEquals(1.0, stats.healthRegenValue(id), EPS, "base 0.2 plus a +0.8 piece resolves to 1.0 HP/s");
+
+        stats.reconcileHealthRegenModifiers(id, Map.of("regen:CHEST", 0.3));
+        assertEquals(0.5, stats.healthRegenValue(id), EPS, "a swap REPLACES on the same source key");
+
+        stats.reconcileHealthRegenModifiers(id, Map.of());
+        assertEquals(HealthRegen.BASE_PER_SECOND, stats.healthRegenValue(id), EPS,
+                "and taking the piece off drops the source back to base -- no leak");
+
+        assertEquals(afterRegister, recorder.seen.size(),
+                "SILENT: the rate has no display seam, and the regeneration loop reads it fresh "
+                        + "every fire rather than being told");
+        // Mutation A: drop ModifierReconciler's remove-loop -> the empty reconcile leaves 0.5 -> reddens.
+        // Mutation B: emit a HealthChange from this reconcile -> the recorder grows -> reddens.
+    }
+
+    /** No-op on an untracked combatant, like every other reconcile. Must not throw. */
+    @Test
+    void reconcilingHealthRegenOnAnUntrackedCombatantIsANoOp() {
+        var stats = new CombatantStats();
+        assertDoesNotThrow(() ->
+                stats.reconcileHealthRegenModifiers(UUID.randomUUID(), Map.of("regen:CHEST", 0.8)));
     }
 }

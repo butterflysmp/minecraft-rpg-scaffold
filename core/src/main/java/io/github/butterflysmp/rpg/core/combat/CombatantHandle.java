@@ -47,6 +47,14 @@ public interface CombatantHandle {
      */
     void applyDamage(double amount, UUID sourceId, boolean wasCrit);
 
+    /**
+     * Raise the target's health by {@code amount}, capped at its max by the implementation.
+     *
+     * <p><b>No {@code sourceId}, unlike {@link #applyDamage}</b>, so an implementation has nobody to
+     * credit and attributes the heal to the target. Nothing reads a heal's dealer today. Widening
+     * this is what a heal-credit feature -- a support archetype's contribution, a heal popup -- would
+     * have to start with.
+     */
     void applyHeal(double amount);
 
     void applyKnockback(Vec3 direction, double strength);

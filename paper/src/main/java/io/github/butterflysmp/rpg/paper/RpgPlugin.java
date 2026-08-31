@@ -43,6 +43,7 @@ import io.github.butterflysmp.rpg.paper.health.PacketDamagePopupSender;
 import io.github.butterflysmp.rpg.paper.health.PacketNameplateSender;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
+import io.github.butterflysmp.rpg.paper.health.HealthRegenSystem;
 import io.github.butterflysmp.rpg.paper.listener.RpgListeners;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.packet.ExampleTelegraphListener;
@@ -113,6 +114,7 @@ public final class RpgPlugin extends JavaPlugin {
     private PlayerHealthSystem healthSystem;
     private MobNameplateManager nameplates;
     private StatsBarSystem statsBar;
+    private HealthRegenSystem healthRegen;
     private DamagePopupManager popups;
     private MobDeathSystem mobDeath;
     private AbilityService abilityService;
@@ -279,6 +281,10 @@ public final class RpgPlugin extends JavaPlugin {
         // The action-bar HUD reads both stores; it owns no state beyond its per-player loops.
         this.statsBar = new StatsBarSystem(scheduler, stats, resources);
 
+        // Passive health regeneration: its own per-player loop, on its own clock. See the class
+        // javadoc for why it is not folded into the reconcile loop that already visits everyone.
+        this.healthRegen = new HealthRegenSystem(scheduler, stats);
+
         // One thread: file writes for a single player must not race each other,
         // and a serialised queue is plenty for milestone-1 storage. Not a daemon
         // thread -- a pending write must finish even if the JVM is winding down.
@@ -294,7 +300,7 @@ public final class RpgPlugin extends JavaPlugin {
         // The one and only registerEvents call. Keep it that way.
         getServer().getPluginManager().registerEvents(
                 new RpgListeners(cooldowns, resources, profiles, weapons, shields, armor, weaponService, adapters,
-                        healthSystem, nameplates, statsBar), this);
+                        healthSystem, nameplates, statsBar, healthRegen), this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
         // paper-plugin.yml. We do NOT call PacketEvents.setAPI() or .load()
