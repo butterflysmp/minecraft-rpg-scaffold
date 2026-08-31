@@ -22,6 +22,7 @@ import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
+import io.github.butterflysmp.rpg.paper.health.HealthRegenSystem;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.core.combat.AttackCharge;
 import io.github.butterflysmp.rpg.paper.weapon.MeleeHits;
@@ -100,6 +101,7 @@ public final class RpgListeners implements Listener {
     private final PlayerHealthSystem healthSystem;
     private final MobNameplateManager nameplates;
     private final StatsBarSystem statsBar;
+    private final HealthRegenSystem healthRegen;
 
     /**
      * Timing state for the vanilla-driven basic melee hit: the pending swing's charge, and the
@@ -114,7 +116,7 @@ public final class RpgListeners implements Listener {
                         WeaponService weaponService,
                         AdapterContext adapters,
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
-                        StatsBarSystem statsBar) {
+                        StatsBarSystem statsBar, HealthRegenSystem healthRegen) {
         this.cooldowns = cooldowns;
         this.resources = resources;
         this.profiles = profiles;
@@ -126,6 +128,7 @@ public final class RpgListeners implements Listener {
         this.healthSystem = healthSystem;
         this.nameplates = nameplates;
         this.statsBar = statsBar;
+        this.healthRegen = healthRegen;
     }
 
     @EventHandler
@@ -145,6 +148,7 @@ public final class RpgListeners implements Listener {
         nameplates.onViewerJoin(event.getPlayer());
         // Start this player's action-bar stats line.
         statsBar.onJoin(event.getPlayer());
+        healthRegen.onJoin(event.getPlayer());        // start the passive regeneration loop
     }
 
     /**
@@ -370,6 +374,7 @@ public final class RpgListeners implements Listener {
         AttackSpeedAttributeOverride.clear(event.getPlayer(), adapters.keys());
         // Stop the action-bar loop and drop its handle.
         statsBar.onQuit(playerId);
+        healthRegen.onQuit(playerId);
     }
 
     /**
@@ -403,6 +408,7 @@ public final class RpgListeners implements Listener {
         healthSystem.onRespawn(event.getPlayer());     // reset to base 100, render, restart the reconcile loop
         nameplates.onViewerJoin(event.getPlayer());    // restart the per-viewer nameplate LOS loop
         statsBar.onRespawn(event.getPlayer());         // restart the action-bar loop, dead since the death screen
+        healthRegen.onRespawn(event.getPlayer());      // and the regeneration loop, dead for the same reason
     }
 
     // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is
