@@ -381,6 +381,45 @@ public final class CombatantStats {
         ModifierReconciler.reconcile(state.healthRegenTarget(), desired);
     }
 
+    /**
+     * The resolved MANA-REGEN BONUS this combatant's gear grants, in mana per second, or {@code 0.0}
+     * if untracked.
+     *
+     * <p>A bonus, not the whole rate: {@code ResourcePool}'s rate resolver adds it to the base.
+     * Returning 0.0 rather than throwing is load-bearing for the same reason
+     * {@link #maxManaBonusValue} gives -- this is read from inside {@code tryConsume}, on whatever
+     * thread is casting, for any owner including a mob firing a costed trigger.
+     */
+    public double manaRegenBonusValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.manaRegenBonusValue();
+    }
+
+    /**
+     * Converge {@code id}'s MANA-REGEN modifiers to exactly {@code desired}. Same leak-proof diff as
+     * the others, and SILENT like every reconcile but max health's.
+     *
+     * <p><b>Returns whether anything changed, like {@link #reconcileMaxManaModifiers} and unlike
+     * {@link #reconcileHealthRegenModifiers}</b> -- and the reason is NOT that this stat has a current
+     * (it does not). It is that mana regenerates LAZILY: {@code ResourcePool} evaluates
+     * {@code amount + elapsed * rate} at read time, so a rate change re-prices ticks that already
+     * elapsed. The caller needs to know a transition occurred so it can pin the pre-change reading,
+     * exactly as it does for the ceiling.
+     *
+     * <p><b>An implementation that always reported true would be worse than useless here.</b>
+     * {@code NEXT.md} records the failure for max mana and it applies unchanged: the reconcile loop
+     * runs four times a second, and a pin every tick re-stamps the entry's {@code asOfTick}, so the
+     * elapsed count never grows and mana stops regenerating ENTIRELY -- silently, with a stat block
+     * that still reads correctly.
+     *
+     * @return true if a source was added, removed, or its amount altered
+     */
+    public boolean reconcileManaRegenModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return false;
+        return ModifierReconciler.reconcile(state.manaRegenTarget(), desired);
+    }
+
     /** Drop {@code id}'s state. O(1), safe for an unknown id. Call on logout and on mob removal. */
     public void clear(UUID id) {
         states.remove(id);
