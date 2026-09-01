@@ -283,16 +283,37 @@ public final class CraftingMenu extends Menu {
     // ------------------------------------------------------------------ matrix
 
     /**
-     * The grid as the server wants it: nine entries, row-major.
+     * The grid as the server wants it: nine entries, row-major, every one a CLONE.
      *
-     * <p>Live references rather than clones, because {@code getCraftingRecipe} and the preview
-     * overload are documented not to modify the array they are given, and the commit overload's
-     * output is written back wholesale rather than in place.
+     * <p><b>Cloned because the API says the craft overloads may modify the array they are given.</b>
+     * {@code getCraftingRecipe}'s javadoc is the only one that disclaims it, and it does so by
+     * pointing AT the craft call as the thing that does:
+     *
+     * <blockquote>"This method will not modify the provided ItemStack array, for that, use
+     * {@code craftItem(ItemStack[], World, Player)}."</blockquote>
+     *
+     * <p>No {@code craftItemResult} overload disclaims it. {@code Inventory.getItem} hands back a
+     * stack that mirrors the underlying slot, so passing live references would let the server write
+     * THROUGH this array into the player's grid. Two paths were exposed, and both lose items
+     * silently:
+     *
+     * <ul>
+     *   <li>the PREVIEW, which runs on every grid change -- an in-place debit there would eat the
+     *       grid while the player was still deciding what to build;
+     *   <li>the COMMIT's empty-result abort, which deliberately writes nothing back, so a mutation
+     *       would stand un-corrected: ingredients gone, no output.
+     * </ul>
+     *
+     * <p>The commit's success path was already safe -- {@link #writeMatrix} overwrites all nine
+     * slots from {@code getResultingMatrix()} -- but "safe on the path that happens to write
+     * everything back" is not a property to rest an item on. Nine clones per grid change is a price
+     * worth paying to make the server physically unable to touch the grid.
      */
     private ItemStack[] readMatrix() {
         ItemStack[] matrix = new ItemStack[MATRIX_LENGTH];
         for (int index = 0; index < MATRIX_LENGTH; index++) {
-            matrix[index] = getInventory().getItem(CraftingMenuLayout.rawSlotForMatrix(index));
+            ItemStack resting = getInventory().getItem(CraftingMenuLayout.rawSlotForMatrix(index));
+            matrix[index] = isEmpty(resting) ? null : resting.clone();
         }
         return matrix;
     }

@@ -581,6 +581,79 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Crafting, Slice 1 (the grid surface) — what it created or exposed
+
+- **THE BOOT GATE IS THE SOLE WITNESS FOR EVERY PATH THAT CAN LOSE OR DUPLICATE AN ITEM.** Read this
+  before trusting the test count. The slice ends with **1078 tests green (core 627, storage 17,
+  paper 434)** and that number is genuinely misleading about what is covered here.
+
+  Five mutations were witnessed red. **All five are on the PURE classes** — `GridClickIntent`,
+  `CraftingMenuLayout`, and the matrix screen's walk. Everything below has **NO automated witness of
+  any kind**:
+
+  | unwitnessed | lives in | what goes wrong unseen |
+  |---|---|---|
+  | merge overflow arithmetic | `MenuRouting.merge` | a 64-onto-40 place loses the remainder |
+  | the cursor swap | `MenuRouting.swapCursor` | two writes, one of them wrong |
+  | the drag widening | `Menu.handleDrag` | a drag spanning both inventories is permitted |
+  | shift-click top-up ORDERING | `MenuRouting.shiftMove` | 64 cobblestone lands beside the stack instead of on it |
+  | `shiftClickDispatches` performing no move | `MenuRouting.shiftMove` | the preview is given away AND the craft output on top |
+  | the `getResultingMatrix` write-back | `CraftingMenu.commitCraft` | a cake's three empty buckets are destroyed |
+  | the `getOverflowItems` give | `CraftingMenu.commitCraft` | remainders that would not fit vanish |
+  | `returnEverything`'s clear-before-give | `Menu.returnEverything` | duplication on a re-entrant close |
+  | own-inventory-only drags still passing | `Menu.handleDrag` | every menu silently blocks backpack drags |
+
+  **The cause is structural, not laziness.** `MenuRouting`, `Menu` and `CraftingMenu` cannot be
+  constructed without a running server and this project has no MockBukkit — a fact already stated in
+  four places in this repo. **Proven rather than assumed:** `placeAllowed`'s EXCLUSIVE occupancy rule
+  was mutated to always-allow and **all 428 paper tests stayed green**. That mutation was run
+  specifically to establish the absence of a witness.
+
+  So: **a future reader who sees "1078 tests, all green" and refactors `MenuRouting` has nothing
+  stopping them.** That is the real cost of having no MockBukkit, recorded here rather than argued
+  away. Anyone touching this surface re-runs the operator gate; the suite will not save them.
+
+  What was done about it instead of shrugging: the decidable part was extracted until it WAS
+  witnessable (`GridClickIntent` is a pure function precisely because the router is not testable),
+  `accepted` was threaded through it as a parameter so the acceptance gate has a witness at all, and
+  the matrix screen's walk was split behind a `Predicate` seam following `ContentValidator`'s
+  precedent — which is what catches a screen that only ever looks at slot 0, the bug that passes
+  every casual in-game trial where the tester used the first cell.
+
+- **The plan's own mutation table was wrong and is corrected at the source.** It listed twelve rows
+  as though each had a witness. Five did. The prose predicting the other seven is known-false and the
+  table now says which rows are boot-gate-owned. This is NEXT.md rule 2 applied to a plan rather than
+  to a test.
+
+- **`craftItemResult` MAY MODIFY THE MATRIX ARRAY IT IS GIVEN, and the first implementation passed
+  live references.** Only `getCraftingRecipe` disclaims mutation, and it does so by pointing at the
+  craft call as the thing that does: *"This method will not modify the provided ItemStack array, for
+  that, use `craftItem(ItemStack[], World, Player)`."* No `craftItemResult` overload disclaims it.
+  Since `Inventory.getItem` hands back a stack mirroring the slot, the server could write THROUGH
+  into the player's grid — on the PREVIEW path, which runs several times a second, and on the
+  commit's empty-result abort, which deliberately writes nothing back. `readMatrix` now clones.
+  Caught by reading the javadoc while answering a review question, not by any test, which is the
+  point of the entry above.
+
+- **`RpgListeners` is the single Listener, and both crafting guards went into it.** The plan
+  specified a separate `CraftGuardListener` class; `RpgListeners:77-80` says *"The single Bukkit
+  Listener. Registered once, in RpgPlugin. Resist adding a second one."* The instruction wins.
+  Consequence: `RpgPlugin` needed no change at all, and `onDisable`'s `getHolder() instanceof Menu`
+  walk already covers `CraftingMenu`.
+
+- **`PrepareItemCraftEvent` cannot reach the Crafter block, structurally.** `CrafterInventory`'s
+  superinterfaces are `{Inventory, Iterable<ItemStack>}`; it does not extend `CraftingInventory`, and
+  `PrepareItemCraftEvent`'s only constructor takes one. `CrafterCraftEvent` covers that surface and,
+  unlike the other event, IS `Cancellable`. A single-handler implementation would have left a
+  redstone-driven Crafter eating minted gear with nothing firing.
+
+- **Still owed:** the whole operator gate except row 1. Rows 7, 8 and 12 carry the slice — 8 is the
+  only in-game proof `CrafterCraftEvent` is wired, 12 (craft a cake, count buckets) the only one that
+  catches container-remainder destruction, and the own-inventory drag rows the only ones that catch a
+  regression in every OTHER menu. **Gate row 1b (the region/thread witness) is operator-owned, not
+  machine-runnable** — it needs a player clicking in a menu, and the plan was wrong to list it as
+  something the build could run.
+
 ### Stats, Slice 3 (`/rpg stats`) — what it created or exposed
 
 - **BOOT GATE RUN AND PASSED, 2026-08-31: all eight rows, operator-confirmed**, including both
