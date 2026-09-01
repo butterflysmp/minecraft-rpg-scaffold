@@ -635,11 +635,42 @@ Before milestone 2, two things worth measuring rather than assuming:
   Caught by reading the javadoc while answering a review question, not by any test, which is the
   point of the entry above.
 
+- **TWO CALLERS THAT AGREE TODAY ARE NOT TWO CALLERS SHARING AN INPUT — third instance.** The Stats
+  Slice 3 section already names this shape (*"SHARING A FORMULA IS NOT SHARING ITS INPUTS ... they
+  agree TODAY"*), and crafting met it again: the preview uses the event-free `craftItemResult`
+  overload and the commit uses the event-firing one, so a third-party `PrepareItemCraftEvent`
+  listener that CHANGES a result (rather than nulling it) makes them disagree. The empty-result abort
+  cannot see that, because a substituted result is not empty; on the merge-onto-cursor path the
+  player would have received more of what was already on their cursor instead of what they crafted.
+  `craftOnceToCursor` now re-checks the CRAFTED item rather than trusting the preview it was
+  authorised against.
+
+  **No gate row can catch it** — nothing on the dev server mutates a craft result, so the
+  preview-matches-what-you-receive row passes on a build that has the bug. The code guard is the only
+  protection, not a belt-and-braces on top of one. **Slice 2 meets this shape again** the moment
+  recipes come from content and the two callers stop being the same server matcher.
+
+- **A guard that fails OPEN is worse than no guard, and one shipped for a day.**
+  `onCrafterCraft` began `if (!(getState() instanceof Crafter crafter)) return;` -- a bare return
+  with no cancel. Near-unreachable, but it was the single line in the slice that said "unsure means
+  CRAFT" while every other line said the opposite, and it sat in the guard for the surface with the
+  weakest witness. It now cancels. The cost of being wrong that way is a Crafter that will not
+  craft; the cost of the other way is a player's weapon.
+
 - **`RpgListeners` is the single Listener, and both crafting guards went into it.** The plan
   specified a separate `CraftGuardListener` class; `RpgListeners:77-80` says *"The single Bukkit
   Listener. Registered once, in RpgPlugin. Resist adding a second one."* The instruction wins.
   Consequence: `RpgPlugin` needed no change at all, and `onDisable`'s `getHolder() instanceof Menu`
   walk already covers `CraftingMenu`.
+
+  **What caught it was INCIDENTAL, and that is the lesson rather than the outcome.** The brief, the
+  plan, and the plan review all specified a second Listener class against an explicit written
+  instruction none of them had read. It surfaced only because someone went looking for where to put
+  a handler and read the surrounding javadoc on the way past. Nothing in the process was aiming at
+  it. **A plan-versus-instructions pass belongs BEFORE building** -- read CLAUDE.md and the javadoc
+  of every file the plan says it will modify, and check the plan against them deliberately. Cheap,
+  and it turns a lucky catch into a check. The same pass would have flagged the `MenuIcons`/`Menu`
+  javadoc conventions this slice had to infer.
 
 - **`PrepareItemCraftEvent` cannot reach the Crafter block, structurally.** `CrafterInventory`'s
   superinterfaces are `{Inventory, Iterable<ItemStack>}`; it does not extend `CraftingInventory`, and

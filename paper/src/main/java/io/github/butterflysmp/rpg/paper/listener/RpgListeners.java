@@ -466,7 +466,18 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onCrafterCraft(CrafterCraftEvent event) {
-        if (!(event.getBlock().getState() instanceof Crafter crafter)) return;
+        // FAILS CLOSED. A CrafterCraftEvent whose block is not a Crafter should be impossible, and
+        // if it ever happens we cannot read the ingredients -- which means we cannot tell whether
+        // one of them is a player's minted gear. "Unsure means NO CRAFT" is the rule the whole arc
+        // rests on, and a bare return here would have been the single line in this slice that said
+        // the opposite, in the guard for the surface with the weakest witness.
+        //
+        // The cost of being wrong in this direction is a Crafter that refuses to craft. The cost of
+        // being wrong in the other is a player's weapon, silently and unrecoverably.
+        if (!(event.getBlock().getState() instanceof Crafter crafter)) {
+            event.setCancelled(true);
+            return;
+        }
 
         boolean refuse = switch (CraftMatrixScreen.verdict(
                 crafter.getInventory().getContents(), adapters.keys())) {

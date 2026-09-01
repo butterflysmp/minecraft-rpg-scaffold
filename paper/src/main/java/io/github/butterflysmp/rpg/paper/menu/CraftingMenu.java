@@ -187,11 +187,32 @@ public final class CraftingMenu extends Menu {
         ItemStack crafted = result.getResult();
         if (cursorEmpty) {
             viewer.setItemOnCursor(crafted);
-        } else {
-            ItemStack merged = cursor.clone();
-            merged.setAmount(cursor.getAmount() + crafted.getAmount());
-            viewer.setItemOnCursor(merged);
+            return;
         }
+
+        // RE-CHECK THE CRAFTED ITEM, not the preview it was authorised against.
+        //
+        // The checks above ran against the PREVIEW, computed by the event-free overload. The commit
+        // overload fires PrepareItemCraftEvent, and a listener may CHANGE a result rather than null
+        // it -- the empty-result abort in commitCraft does not see that, because a substituted
+        // result is not empty. Merging on the strength of the earlier check would then build the
+        // stack from a CLONE OF THE CURSOR carrying the crafted amount, and hand the player more of
+        // what they were already holding instead of what they actually made. Silent substitution.
+        //
+        // No gate row can catch this: nothing on the dev server mutates a craft result, so row 1e
+        // passes on a build that has the bug. This branch is the only protection there is.
+        //
+        // Two callers agreeing TODAY is not two callers sharing an input. Same shape NEXT.md's
+        // Stats Slice 3 section names, and slice 2 meets it again when recipes come from content.
+        if (!cursor.isSimilar(crafted)
+                || cursor.getAmount() + crafted.getAmount() > cursor.getMaxStackSize()) {
+            MenuSafety.give(viewer, crafted);
+            return;
+        }
+
+        ItemStack merged = cursor.clone();
+        merged.setAmount(cursor.getAmount() + crafted.getAmount());
+        viewer.setItemOnCursor(merged);
     }
 
     /**
