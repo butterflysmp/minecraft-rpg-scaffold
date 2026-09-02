@@ -160,8 +160,11 @@ spear variants among them. Automated shear production for a wool farm stops work
 
 # Slice 3 — the grid's vanilla feel
 
-Not yet run. Three defects found by RUNNING the slice 2 gate; every row there passed, so these
-are findings rather than failures.
+Run and passed 2026-09-02, operator-confirmed: every row below, the re-opened rows listed next,
+and M6 against a mutated build. Rows S1, S6, S11 and S12 carry the slice.
+
+Three defects found by RUNNING the slice 2 gate; every row there passed, so these are findings
+rather than failures.
 
 **Re-opened by this slice**, because it changes `MenuRouting`, `Menu` and `CraftingMenu`:
 **6, 9, 10, 11, 13, 1c, 1d, 16-19** and **12, 12c** (the last two because `commitCraft` changed

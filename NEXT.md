@@ -686,9 +686,26 @@ Before milestone 2, two things worth measuring rather than assuming:
   shields), so it is both a runaway guard AND a per-gesture batch size. The runaway framing alone
   invites treating arrival there as a defect, or "fixing" it by removing the bound.
 
-- **Still owed:** the whole slice 3 gate. Rows **S1, S6, S11 and S12** carry it, and **M6** is the
-  mutation that must be run against a mutated build because nothing else can witness the pin's
-  capture-once property.
+- **BOOT GATE RUN AND PASSED, 2026-09-02 — operator-confirmed.** Every slice 3 row, plus the
+  re-opened rows this slice's surface changes require: **6, 9, 10, 11, 13, 1c, 1d, 16-19**, and
+  **12, 12c** because `commitCraft` changed shape again, and **N5b, N8** from slice 2.
+
+  **Four rows carry it, and each is the only check its behaviour has.** **S1** is the reported
+  defect measured by counting — six shields and forty-four ingots still in the grid, because the
+  defect's signature is a number rather than an appearance. **S6** is the dead-second-tier row:
+  without it a collect that never reaches the grid passes S5 perfectly, and "inventory first" is
+  indistinguishable from "inventory only". **S11** is the base-class regression against
+  `EnchantMenu`, whose weapon slot the enchant tests are structurally blind to — the same blindness
+  that made 1c and 1d necessary. **S12** is the one worth failing the slice over: holding glass panes
+  matching the filler and double-clicking must move nothing, which is what proves the
+  collect-to-cursor exploit is still closed now that the gesture is performed rather than refused.
+
+  **M6 was run against a MUTATED build**, because the pin's capture-once property has no unit witness
+  — the field moves during the loop, which needs a live menu and a live grid. Listing that mutation
+  without executing it would have been a prediction nothing tests: rule 2's failure applied to the
+  mutation table, with rule 4's miscredit on top.
+
+- **Still owed:** nothing in this slice.
 
 ### Crafting, Slice 2 (mint on craft) — what it created or exposed
 
