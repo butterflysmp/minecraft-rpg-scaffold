@@ -598,8 +598,8 @@ Before milestone 2, two things worth measuring rather than assuming:
   | the drag widening | `Menu.handleDrag` | a drag spanning both inventories is permitted |
   | shift-click top-up ORDERING | `MenuRouting.shiftMove` | 64 cobblestone lands beside the stack instead of on it |
   | `shiftClickDispatches` performing no move | `MenuRouting.shiftMove` | the preview is given away AND the craft output on top |
-  | the `getResultingMatrix` write-back | `CraftingMenu.commitCraft` | a cake's three empty buckets are destroyed |
-  | the `getOverflowItems` give | `CraftingMenu.commitCraft` | remainders that would not fit vanish |
+  | the `getResultingMatrix` write-back | `CraftingMenu.commitCraft` | a cake's three empty buckets are destroyed — **now gate-covered, row 12** |
+  | the `getOverflowItems` give | `CraftingMenu.commitCraft` | remainders that would not fit vanish — **the gate did NOT cover this even when it was claimed to; gate row 12c is the only row that reaches it and is still OWED** |
   | `returnEverything`'s clear-before-give | `Menu.returnEverything` | duplication on a re-entrant close |
   | own-inventory-only drags still passing | `Menu.handleDrag` | every menu silently blocks backpack drags |
 
@@ -634,6 +634,59 @@ Before milestone 2, two things worth measuring rather than assuming:
   commit's empty-result abort, which deliberately writes nothing back. `readMatrix` now clones.
   Caught by reading the javadoc while answering a review question, not by any test, which is the
   point of the entry above.
+
+- **BOOT GATE RUN AND PASSED, 27 of 27 runnable rows. One row was never a test.** Rows 7, 8 and 12
+  passed by name; nothing failed. Row **12b did not run because it was impossible as written**: it
+  called for two milk buckets in one slot, and `MILK_BUCKET.getMaxStackSize()` is **1**. It was
+  written from reasoning and the number was never checked. Treat the gate as 27/27, not 27/28 — a
+  row that cannot exist is not a partial pass.
+
+- **`getOverflowItems()` HAD NO WITNESS ANYWHERE, INCLUDING IN THE GATE THAT CLAIMED TO COVER IT.**
+  This is the sharper half of the 12b mistake and it survived the first correction. Row 12's cake
+  DOES leave three empty buckets, but they **fit back into the matrix**, so it exercises
+  `getResultingMatrix()` and never reaches the overflow give. The unwitnessed table above credited a
+  check to a row that could never have exercised it — the same shape as a mutation row predicting a
+  red it never gets, one level up.
+
+  **Reaching it needs a remainder-producing ingredient that STACKS**, so consuming one leaves the
+  slot occupied and the remainder homeless. Buckets are exactly the wrong choice. Read from the live
+  registry rather than recalled — `Material.getMaxStackSize()` throws
+  `ExceptionInInitializerError` headless, so this needed a booted server:
+
+  | material | max stack | crafting remainder |
+  |---|---|---|
+  | `DRAGON_BREATH` | 64 | `GLASS_BOTTLE` |
+  | `HONEY_BOTTLE` | **16** | `GLASS_BOTTLE` |
+  | `LAVA_BUCKET` / `MILK_BUCKET` / `WATER_BUCKET` | **1** | `BUCKET` |
+
+  **That sweep is exhaustive over the whole `Material` enum: exactly TWO stacking materials with a
+  crafting remainder exist.** So the row is reachable, and honey is the only practical family.
+
+  Then verified by making the server perform the craft rather than by reasoning about it — 2 honey
+  bottles in each of four cells of a 2x2, through the same `craftItemResult` call
+  `CraftingMenu.commitCraft` uses:
+
+  ```
+  PROBE recipe=ItemStack{HONEY_BLOCK x 1}
+  PROBE result=ItemStack{HONEY_BLOCK x 1}
+  PROBE resultingMatrix=HONEY_BOTTLE x1 | HONEY_BOTTLE x1 | AIR | HONEY_BOTTLE x1 | HONEY_BOTTLE x1 | AIR | ...
+  PROBE overflow=[GLASS_BOTTLE x1, GLASS_BOTTLE x1, GLASS_BOTTLE x1, GLASS_BOTTLE x1]
+  ```
+
+  **Gate row 12c** is therefore: two honey bottles in each of four cells, craft one honey block,
+  expect **four glass bottles delivered to you** with each cell still holding a honey bottle. Count
+  bottles before and after. It is the only row in existence that reaches `getOverflowItems()`, and
+  it is still OWED — the probe proves the API path, not our handling of it.
+
+- **THE STALE-JAR TRAP FIRED, AND WAS NOT ARGUED WITH.** While chasing the above, `dev-server.sh`
+  printed `rm: cannot remove 'run/plugins/rpg-...jar': Device or resource busy` and `set -e` aborted
+  before deploying — the exact incident CLAUDE.md's VERIFICATION section records. The mtimes settled
+  it rather than a story: deployed `21:54:24` / 551386 bytes against target `22:00:48` / 552257
+  bytes, and `grep -c "Done ("` on the log returned **0**, so no server had booted at all. Two
+  orphaned `paper.jar --nogui` JVMs from an earlier boot held the lock; killing them and confirming
+  `rm` then succeeded was what fixed it. **Had the sweep been read at that moment it would have shown
+  nothing, and "no results" is indistinguishable from "no such material exists"** — which is the
+  precise wrong answer this whole entry exists to avoid.
 
 - **TWO CALLERS THAT AGREE TODAY ARE NOT TWO CALLERS SHARING AN INPUT — third instance.** The Stats
   Slice 3 section already names this shape (*"SHARING A FORMULA IS NOT SHARING ITS INPUTS ... they
