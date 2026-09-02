@@ -671,9 +671,20 @@ Before milestone 2, two things worth measuring rather than assuming:
   noticed"*; a one-enchant pool falsifies its observability claim in the opposite direction from
   armor's four, and it is corrected there rather than left for a fourth time.
 
-- **STILL OWED:** M6, the slice-3 pin mutation, is carried into this slice's gate because this slice
-  boots a server anyway. A tool-gated enchant, whenever the roster pass happens — until then T8
-  records the degenerate table honestly rather than the code pretending otherwise.
+- **BOOT GATE RUN AND PASSED, 2026-09-02 — 17 of 18, operator-confirmed.** The eighteen are T1–T12,
+  the five re-opened rows (N1, N4, 21, 22, S1), and M6. Every row passed. **The one that is not a
+  pass is M6, which was not run for the second consecutive slice and is now closed as WILL NOT BE
+  RUN** — see the slice 3 entry below for the exposure that leaves.
+
+  **The rows that carried the slice:** T5 (shears, the untiered tool — the row a `tiers x kinds`
+  loader could not pass without a special case) · T7 (mining with it: the property no tooltip can
+  show, and the only thing separating a working mint from an item that renders correctly and digs
+  like a fist) · T9 (the silent accessor, which the three NPE-throwing ones did not need a row for)
+  · T10 (the `CONTAINS_GEAR` hole in `isGear`, whose only witness this is) · T12 (a bad entry
+  costing the entry rather than the file).
+
+- **STILL OWED:** a tool-gated enchant, whenever the roster pass happens — until then T8 records the
+  degenerate one-book table honestly rather than the code pretending otherwise.
 
 ---
 
@@ -723,8 +734,11 @@ Before milestone 2, two things worth measuring rather than assuming:
 - **THE PIN IS CAPTURED ONCE, BEFORE THE LOOP — the fix-shaped bug is re-reading it.** Each pass
   recomputes the preview, so the field MOVES during the loop; re-reading it per pass re-pins to
   whatever the shrinking grid now makes, which is the original defect restored **with a pin visibly
-  in place**. It has no unit witness — the field's movement needs a live menu — so it is run as a
-  mutation against gate row S1 rather than carried as a green table row.
+  in place**. It has no unit witness — the field's movement needs a live menu — so it was to be run
+  as a mutation against gate row S1 rather than carried as a green table row. **That mutation, M6,
+  was never run and is now closed as WILL NOT BE RUN; see the entry below.** Slice 4 made
+  `craftRepeatedly` take the pin as a parameter, which makes the violation conspicuous rather than
+  witnessed.
 
 - **A DRAG NEVER REFRESHED THE PREVIEW.** `Menu.handleDrag` un-cancelled and dispatched nothing, so
   the one-tick hop `onClick` schedules was never scheduled and the grid changed behind a stale
@@ -815,15 +829,28 @@ Before milestone 2, two things worth measuring rather than assuming:
   this file only when someone says it was observed — never because it would be consistent with what
   they did say.
 
-- **STILL OWED: M6, and it is the only check the pin's capture-once property can ever have.** Build
-  with the pin re-read inside `craftRepeatedly`'s loop rather than captured before it, run gate row
-  S1, and the ingot count should go to **zero** — the mutant converts them. Then restore and re-run
-  S1 clean.
+- **M6 WILL NOT BE RUN, and the pin's capture-once property therefore has NO WITNESS AND IS NOT
+  GETTING ONE.** Closed 2026-09-02 after a second consecutive skip. It was the only check the
+  property could ever have: build with the pin re-read inside `craftRepeatedly`'s loop rather than
+  captured before it, run gate row S1, watch the ingot count go to zero.
 
-  It matters more than an ordinary mutation row because the defect it guards is *fix-shaped*: a
-  re-read pin and a captured pin are indistinguishable by reading the code, and the field moves
-  during the loop precisely because each pass recomputes the preview. Nothing automated can see it —
-  the movement needs a live menu and a live grid.
+  It was declined twice, both times argued as cheap because a server was booting anyway. **Twice is
+  the answer.** It is a separate BUILD rather than a row, so no gate run reaches it, and nobody is
+  going to hand-make a mutant build to check a property they already believe. Recorded as WILL NOT
+  BE RUN rather than left owed, because "owed" reads as coverage that is arriving.
+
+  **The exposure, stated rather than implied:** if someone changes the pin to be re-read inside the
+  loop, every test stays green, every gate row still passes, and a player crafting into a depleting
+  grid gets their remaining ingots converted to a recipe they never saw. The defect is *fix-shaped*
+  — a re-read pin and a captured pin are indistinguishable by reading the code — and the field moves
+  during the loop precisely because each pass recomputes the preview.
+
+  **What was done instead is a SMALLER thing than a witness, and is written as the smaller claim:**
+  `craftRepeatedly` now takes the pin as a **parameter** rather than reading the field itself. The
+  field is still a field; the bug is still reachable; nothing tests it. What changed is that
+  re-reading `previewedRecipe` inside the loop now has to be *written in*, against a parameter
+  that is already correct, instead of being the natural thing to reach for. **Conspicuous, not
+  witnessed.**
 
 ### Crafting, Slice 2 (mint on craft) — what it created or exposed
 

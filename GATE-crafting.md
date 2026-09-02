@@ -163,10 +163,11 @@ spear variants among them. Automated shear production for a wool farm stops work
 Run and passed 2026-09-02, operator-confirmed: every row below, and the re-opened rows listed next.
 Rows S1, S6, S11 and S12 carry the slice.
 
-**M6 IS NOT RUN AND IS STILL OWED.** It was briefly recorded as run — inferred from "the gate was
-run" rather than reported — and corrected the same day. It is a separate BUILD, not a row, which is
-how it fell through: a report covering the rows does not cover it. A pass is written here only when
-someone says it was observed.
+**M6 WAS NOT RUN HERE, AND ON 2026-09-02 IT WAS CLOSED AS WILL NOT BE RUN** — see the slice 4
+section. It was briefly recorded as run — inferred from "the gate was run" rather than reported —
+and corrected the same day. It is a separate BUILD, not a row, which is how it fell through twice:
+a report covering the rows does not cover it. A pass is written here only when someone says it was
+observed, and no one ever will for this one.
 
 Three defects found by RUNNING the slice 2 gate; every row there passed, so these are findings
 rather than failures.
@@ -208,15 +209,23 @@ shape again), plus **N5b** and **N8** from slice 2. **Row 20 is REWRITTEN below,
 | S10 | **In creative mode**, middle-click a filler pane. | Nothing is cloned. | **sole witness** for the `CREATIVE` refusal, which was split into its own statement when `DOUBLE_CLICK` left it. Without this row that guard has no check at all |
 | S11 | **REGRESSION — the ENCHANT menu.** Open it with a weapon in its slot. Double-click a matching stack held in your inventory. | **The weapon slot is untouched.** The gesture collects from your inventory only. | **sole witness** that collect sources are STACKING slots, not `inputSlots()`. This is a BASE-CLASS change exactly as `handleDrag` was, and the enchant tests are structurally blind to it — the same blindness that made 1c and 1d necessary |
 
-## Mutation 6 — OWED. Run against a MUTATED build
+## Mutation 6 — proposed here, NOT RUN here, closed in slice 4
 
 | # | action | expected | notes |
 |---|---|---|---|
-| M6 | Build with the pin **re-read inside** `craftRepeatedly`'s loop rather than captured before it. Run **S1**. | The ingot count goes to **zero** — the mutant converts them. | The pin's capture-once property has NO unit witness: the field moves during the loop, which needs a live menu and a live grid. Listing the mutation without executing it would be a prediction nothing tests. Run once, then restore and re-run S1 clean |
+| ~~M6~~ | ~~Build with the pin **re-read inside** `craftRepeatedly`'s loop rather than captured before it. Run **S1**.~~ | ~~The ingot count goes to **zero** — the mutant converts them.~~ | **WILL NOT BE RUN** — reclassified 2026-09-02 after a second consecutive skip. The reasoning that put it here still stands: the pin's capture-once property has NO unit witness, because the field moves during the loop and that needs a live menu and a live grid. What changed is the honest expectation of anyone running it. See the slice 4 section for the consequence and for what was done instead |
 
 ---
 
 # Slice 4 — tools, the fourth gear kind
+
+**Run 2026-09-02, operator-confirmed: 17 of 18.** The eighteen are T1–T12 (twelve), the five
+re-opened rows N1, N4, 21, 22 and S1, and M6. **Every row passed. The one that is not a pass is
+M6, and it was not run — see below; it is now classified WILL NOT BE RUN rather than owed.**
+
+Rows **T5**, **T7**, **T9**, **T10** and **T12** carry the slice: the untiered tool, the property
+no tooltip can show, the silent accessor, the `CONTAINS_GEAR` hole, and the flat list's
+entry-not-file refusal.
 
 `ToolDefinition` joins the sealed `GearDefinition`. Five iron tools ship in one file:
 pickaxe, axe, shovel, hoe and **shears** — the untiered one, which is the point.
@@ -272,11 +281,35 @@ exposes it.
 | 21, 22 | `RpgCommand.HeldGear` and `EnchantMenu.PlacedGear` were both rewritten. The enchant swaps and the end-to-end enchant are what say the collapse changed no behaviour for the three existing kinds |
 | S1 | carries M6 below |
 
-## Mutation 6 — STILL OWED from slice 3, cleared here
+## Mutation 6 — WILL NOT BE RUN, closed 2026-09-02
 
 | # | action | expected | notes |
 |---|---|---|---|
-| M6 | Build with the pin **re-read inside** `craftRepeatedly`'s loop rather than captured before it. Run **S1**. | The ingot count goes to **zero**. | Owed since slice 3 and recorded then as NOT run. This slice boots a server anyway, so it is the cheapest it will ever be to clear. Restore and re-run S1 clean afterwards |
+| ~~M6~~ | ~~Build with the pin **re-read inside** `craftRepeatedly`'s loop rather than captured before it. Run **S1**.~~ | ~~The ingot count goes to **zero**.~~ | **WILL NOT BE RUN.** Skipped in slice 3 and again in slice 4, having been argued each time as cheap because a server was booting anyway. Twice is the answer: it is a separate BUILD rather than a row, so no gate run reaches it, and nobody is going to make a mutant build by hand to check a property they already believe. Not green, not deleted |
+
+**THE CONSEQUENCE, PLAINLY: `craftRepeatedly`'s capture-once property has NO witness and is not
+getting one.** If someone changes the pin to be re-read inside the loop, every test stays green,
+every row in this file still passes, and a player crafting into a depleted grid gets their
+remaining ingots converted to a recipe they never saw. That is the slice-3 defect, restored, with
+a pin apparently in place.
+
+**Three rows in this file do not pass, for three different reasons, and they are three different
+words on purpose:**
+
+| row | word | why it is not a pass |
+|---|---|---|
+| 12b | **IMPOSSIBLE — never a test** | the state it described cannot exist; written from reasoning and never checked |
+| 20 | **SUPERSEDED** | the gesture changed, so its expected observable stopped being correct |
+| M6 | **WILL NOT BE RUN** | runnable, correct, and declined twice — no witness exists and none is coming |
+
+A permanently-owed row is worse than any of the three, because "owed" reads as coverage that is
+arriving. This one is not arriving.
+
+**What was done instead, and it is a smaller thing than a witness:** `craftRepeatedly` now takes
+the pin as a PARAMETER rather than reading the field itself. The field is still a field and the
+bug is still reachable — this makes re-reading it inside the loop *look wrong to a reader* instead
+of *look natural*. Conspicuous, not witnessed. See `NEXT.md`'s unwitnessed table, which says the
+same thing in the same words.
 
 ---
 
