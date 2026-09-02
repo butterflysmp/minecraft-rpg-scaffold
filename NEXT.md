@@ -700,12 +700,34 @@ Before milestone 2, two things worth measuring rather than assuming:
   matching the filler and double-clicking must move nothing, which is what proves the
   collect-to-cursor exploit is still closed now that the gesture is performed rather than refused.
 
-  **M6 was run against a MUTATED build**, because the pin's capture-once property has no unit witness
-  — the field moves during the loop, which needs a live menu and a live grid. Listing that mutation
-  without executing it would have been a prediction nothing tests: rule 2's failure applied to the
-  mutation table, with rule 4's miscredit on top.
+- **M6 IS NOT RUN, AND THIS ENTRY BRIEFLY CLAIMED IT WAS.** Corrected on 2026-09-02, one commit
+  after the claim reached master.
 
-- **Still owed:** nothing in this slice.
+  The gate result was reported as run and passed without naming M6, and M6 was written into this
+  record as run anyway — **inferred from "the gate was run" because M6 sits in the gate file's slice
+  3 section.** It is not a row; it is a separate build. Nobody said it had been done.
+
+  That is a check credited from inference rather than from a report, which is rule 4's defect
+  committed by the person writing the record instead of the person specifying the rows: *an
+  unwitnessed defect wearing a passing line*, and the suite cannot notice because there is nothing
+  here for a suite to run. **Recorded rather than quietly fixed**, because the next reader's question
+  is "was this checked", and "it was written down without being run" is a different answer from
+  "it passed".
+
+  **The rule it belongs under:** the corollary already says a witness outside the repository is not a
+  witness. This adds that a witness recorded from inference is not a witness either. A pass goes into
+  this file only when someone says it was observed — never because it would be consistent with what
+  they did say.
+
+- **STILL OWED: M6, and it is the only check the pin's capture-once property can ever have.** Build
+  with the pin re-read inside `craftRepeatedly`'s loop rather than captured before it, run gate row
+  S1, and the ingot count should go to **zero** — the mutant converts them. Then restore and re-run
+  S1 clean.
+
+  It matters more than an ordinary mutation row because the defect it guards is *fix-shaped*: a
+  re-read pin and a captured pin are indistinguishable by reading the code, and the field moves
+  during the loop precisely because each pass recomputes the preview. Nothing automated can see it —
+  the movement needs a live menu and a live grid.
 
 ### Crafting, Slice 2 (mint on craft) — what it created or exposed
 
@@ -4444,6 +4466,17 @@ verified.
 **It also must not be reconstructed.** Rebuilding lost rows from a sole-witness column produces a
 plausible row that has never been run — rule 4's own failure mode, applied to the record of rule 4.
 A lost row is replaced and said so, or recovered from outside; it is never inferred.
+
+**And a RESULT is never inferred either — this is the same rule about the other column.** Crafting
+Slice 3 recorded mutation M6 as run because the operator confirmed "the gate was run" and M6 sits in
+the gate file's slice 3 section. It had not been run. M6 is a separate BUILD rather than a row, so a
+report covering the rows never covered it, and the gap was filled by inference rather than noticed
+as a gap.
+
+**A pass goes into this file only when someone says it was OBSERVED** — never because it would be
+consistent with what they did say. The failure is invisible in exactly the way the rest of this
+section describes: there is no red to miss, because there is nothing for a suite to run. When a
+report is silent about a check, the honest record is silent too, and the check stays owed.
 
 - After every commit: `./mvnw -pl core test`. After every batch:
   `./mvnw clean package` and a manual boot.
