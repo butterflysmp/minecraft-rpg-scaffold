@@ -281,8 +281,17 @@ public final class RpgPlugin extends JavaPlugin {
         // exactly the same log as an index with no collisions: silence. Every craft would then stay
         // vanilla and nothing anywhere would say why. So the count that DID register is printed, and
         // a gate row reads this line before anyone starts crafting.
-        getLogger().info("Mint-on-craft: " + craftResults.size() + " result(s) indexed from "
-                + craftResults.claimed() + " gear definition(s) that claim one"
+        //
+        // THREE NUMBERS, AND THE THIRD IS THE ONLY REAL CONTROL. `size` and `claimed` both derive
+        // from the SAME parse: a bug that dropped every armor claim would zero both together and
+        // print "1 indexed, 1 claiming" -- internally consistent, and indistinguishable from a
+        // server where only the shield opted in. `allGear.size()` comes from the registries instead,
+        // so the same bug reads "1 indexed, 1 claiming, of 30" and is wrong at a glance.
+        //
+        // Same shape as a grep with no positive control: a self-consistent pair proves nothing, and
+        // only a number from outside the thing being checked tells a working parse from a dead one.
+        getLogger().info("Mint-on-craft: " + craftResults.size() + " indexed, "
+                + craftResults.claimed() + " claiming, of " + allGear.size() + " gear definitions"
                 + (craftResults.contested() > 0
                         ? ", " + craftResults.contested() + " dropped as contested" : ""));
 

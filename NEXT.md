@@ -602,6 +602,33 @@ Before milestone 2, two things worth measuring rather than assuming:
   gate rows and finding a plain shield — would have sent the hunt into the mint path rather than into
   the deployed content folder. Print what a scan FOUND, not only what it rejected.
 
+  **AND THE COUNT NEEDS A DENOMINATOR FROM OUTSIDE THE THING IT MEASURES.** The line first read
+  `N result(s) indexed from M gear definition(s) that claim one` — honest, and a weaker control than
+  it looks, because BOTH numbers come from the same parse. A bug that dropped every armor claim zeroes
+  them together and prints `1 indexed from 1`, which is internally consistent and reads as a server
+  where only the shield opted in. It now prints `25 indexed, 25 claiming, of 30 gear definitions`,
+  where the last number comes from the registries: the same bug then reads `1, 1, of 30` and is wrong
+  at a glance. Same defect shape as a grep with no positive control — a self-consistent pair proves
+  nothing.
+
+- **NO WEAPON OPTED IN, SO NO SWORD MINTS ON CRAFT. The roadmap's largest category is still
+  uncovered, and that is stated here rather than left to be inferred from a count.** The 25 indexed
+  results are 24 armor pieces plus one shield; `weapons.all()` contributed nothing.
+
+  That is the expected consequence of the `iron_sword` contest, not an oversight. `ironblade` and
+  `emberblade` both render as `iron_sword`, so whichever claimed it would be handed to a player who
+  crafted a plain sword — and an Emberblade from six sticks and two ingots is an economy decision no
+  index should make on its own.
+
+  **What would unblock it**, in order of preference:
+  1. Give the swords distinct materials, so a claim is unambiguous — `ironblade` keeps `iron_sword`
+     and `emberblade` moves to something of its own. One file each, no code.
+  2. Or accept that plain vanilla swords stay plain and mint only distinctive ones. Also no code.
+
+  **The gate has no weapon-mint row for the same reason, and that absence is deliberate.** Adding one
+  now would be a row that cannot pass, which is worse than no row — see rule 4. It arrives with the
+  first weapon that claims a result.
+
 - **`craft_result` is a NEW opt-in content key, and it is deliberately not `material`.** A material is
   PRESENTATION: `WeaponDefinition.DEFAULT_MATERIAL` is `iron_sword` and every sword-shaped weapon
   leaves it there, so `ironblade` and `emberblade` already share one today and always will. An index
