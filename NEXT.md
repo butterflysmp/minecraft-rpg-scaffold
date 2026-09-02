@@ -702,9 +702,25 @@ Before milestone 2, two things worth measuring rather than assuming:
   gear into the economy. A cancelled `CrafterCraftEvent` keeps its ingredients and has no feedback
   channel, so **a refused Crafter looks like a jam, not an error**.
 
-- **Still owed:** the whole operator gate except N1. Rows N2, N3, N5b, N9 and N10 carry the slice, and
-  **N5b is the one most likely to be skipped** — it is not at the end of the sequence and it must be
-  run by OPENING every bulk-crafted item, never by counting them.
+- **BOOT GATE RUN AND PASSED IN FULL, 2026-09-02 — operator-confirmed.** Row N1 was the machine's;
+  every other row is the operator's. Nothing failed.
+
+  **The four re-runs were not optional and are the reason this slice could be believed.**
+  `commitCraft` changed shape, and rows **12** and **12c** are the ONLY witnesses that
+  `getResultingMatrix` and `getOverflowItems` have anywhere in this project — the suite passes with
+  either of them deleted. Rows **7** and **8** cover the gear screen this slice builds on top of, and
+  8 exercises the Crafter path that decision 2 changed outright.
+
+  **The rows that carried the new work:** N2 and N3 are the mint itself (a crafted shield reading
+  `Damage Reduction: 35%`, a crafted chestplate reading `Defense: 6` — the NAME distinguishes
+  neither, only the lore does). **N5b** is the bulk path, the third caller of the craft output, and it
+  had to be run by OPENING every bulk-crafted item rather than counting them, because a count passes
+  on the very defect it exists to catch. N9 and N10 are the Crafter's two directions: a durable result
+  refused, a non-durable one still crafting — and without N10 a guard that refuses everything looks
+  identical to a guard that works.
+
+- **Still owed:** nothing in this slice. The weapon-mint row arrives with the first weapon that claims
+  a `craft_result`, per the entry above.
 
 ### Crafting, Slice 1 (the grid surface) — what it created or exposed
 
