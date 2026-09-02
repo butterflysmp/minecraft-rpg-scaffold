@@ -591,17 +591,27 @@ Before milestone 2, two things worth measuring rather than assuming:
   `CraftingMenuLayout`, and the matrix screen's walk. Everything below has **NO automated witness of
   any kind**:
 
-  | unwitnessed | lives in | what goes wrong unseen |
-  |---|---|---|
-  | merge overflow arithmetic | `MenuRouting.merge` | a 64-onto-40 place loses the remainder |
-  | the cursor swap | `MenuRouting.swapCursor` | two writes, one of them wrong |
-  | the drag widening | `Menu.handleDrag` | a drag spanning both inventories is permitted |
-  | shift-click top-up ORDERING | `MenuRouting.shiftMove` | 64 cobblestone lands beside the stack instead of on it |
-  | `shiftClickDispatches` performing no move | `MenuRouting.shiftMove` | the preview is given away AND the craft output on top |
-  | the `getResultingMatrix` write-back | `CraftingMenu.commitCraft` | a cake's three empty buckets are destroyed — **now gate-covered, row 12** |
-  | the `getOverflowItems` give | `CraftingMenu.commitCraft` | remainders that would not fit vanish — **the gate did NOT cover this even when it was claimed to; gate row 12c is the only row that reaches it and is still OWED** |
-  | `returnEverything`'s clear-before-give | `Menu.returnEverything` | duplication on a re-entrant close |
-  | own-inventory-only drags still passing | `Menu.handleDrag` | every menu silently blocks backpack drags |
+  **Every row below is witnessed by a GATE ROW AND NOTHING ELSE.** The gate has now been run once,
+  by hand, and passed. Re-run it after any change to these methods, because the suite will not
+  notice.
+
+  | no automated witness | lives in | what goes wrong unseen | sole witness |
+  |---|---|---|---|
+  | merge overflow arithmetic | `MenuRouting.merge` | a 64-onto-40 place loses the remainder | row 10 |
+  | the cursor swap | `MenuRouting.swapCursor` | two writes, one of them wrong | row 9 |
+  | the drag widening | `Menu.handleDrag` | a drag spanning both inventories is permitted | row 6 |
+  | shift-click top-up ORDERING | `MenuRouting.shiftMove` | 64 cobblestone lands beside the stack instead of on it | row 11 |
+  | `shiftClickDispatches` performing no move | `MenuRouting.shiftMove` | the preview is given away AND the craft output on top | row 13 |
+  | the `getResultingMatrix` write-back | `CraftingMenu.commitCraft` | a cake's three empty buckets are destroyed | row 12 |
+  | the `getOverflowItems` give | `CraftingMenu.commitCraft` | remainders that would not fit vanish | **row 12c ONLY** |
+  | `returnEverything`'s clear-before-give | `Menu.returnEverything` | duplication on a re-entrant close | rows 16-19 |
+  | own-inventory-only drags still passing | `Menu.handleDrag` | every menu silently blocks backpack drags | rows 1c/1d |
+  | preview and commit agreeing | `CraftingMenu.craftOnceToCursor` | a substituted result is merged onto the cursor | **NOTHING — see below** |
+
+  **The last row has no witness at all, and cannot get one here.** A third-party
+  `PrepareItemCraftEvent` listener may CHANGE a result rather than null it, and nothing on the dev
+  server does that — so gate row 1e passes on a build that has the bug. The re-check inside
+  `craftOnceToCursor` is the only protection that exists; it is not belt-and-braces over a gate row.
 
   **The cause is structural, not laziness.** `MenuRouting`, `Menu` and `CraftingMenu` cannot be
   constructed without a running server and this project has no MockBukkit — a fact already stated in
@@ -635,11 +645,20 @@ Before milestone 2, two things worth measuring rather than assuming:
   Caught by reading the javadoc while answering a review question, not by any test, which is the
   point of the entry above.
 
-- **BOOT GATE RUN AND PASSED, 27 of 27 runnable rows. One row was never a test.** Rows 7, 8 and 12
-  passed by name; nothing failed. Row **12b did not run because it was impossible as written**: it
-  called for two milk buckets in one slot, and `MILK_BUCKET.getMaxStackSize()` is **1**. It was
-  written from reasoning and the number was never checked. Treat the gate as 27/27, not 27/28 — a
-  row that cannot exist is not a partial pass.
+- **BOOT GATE RUN AND PASSED IN FULL, 2026-09-01 — all 28 rows, operator-confirmed.** Rows 7, 8, 12
+  and 12c passed by name; nothing failed at any point.
+
+  **Rows 7, 8, 12 and 12c are the ones that carry the slice**, and each is the sole witness for
+  something no test in this repo can see. Row 7 puts a minted weapon in the grid beside otherwise
+  valid ingredients and the result stays empty — the only check that the gear-tag screen fires. Row 8
+  repeats it in the player's own 2x2 grid AND in a Crafter block, which row 7 cannot reach and which
+  is the only in-game proof `CrafterCraftEvent` is wired at all. Row 12 crafts a cake and counts
+  buckets, the only witness for `getResultingMatrix()`. Row 12c is described below.
+
+  Row **12b did not run because it was impossible as written**: it called for two milk buckets in one
+  slot, and `MILK_BUCKET.getMaxStackSize()` is **1**. It was written from reasoning and the number
+  was never checked. It did not fail and did not pass — **it was never a test**, and it is replaced
+  by 12c rather than counted.
 
 - **`getOverflowItems()` HAD NO WITNESS ANYWHERE, INCLUDING IN THE GATE THAT CLAIMED TO COVER IT.**
   This is the sharper half of the 12b mistake and it survived the first correction. Row 12's cake
@@ -675,8 +694,9 @@ Before milestone 2, two things worth measuring rather than assuming:
 
   **Gate row 12c** is therefore: two honey bottles in each of four cells, craft one honey block,
   expect **four glass bottles delivered to you** with each cell still holding a honey bottle. Count
-  bottles before and after. It is the only row in existence that reaches `getOverflowItems()`, and
-  it is still OWED — the probe proves the API path, not our handling of it.
+  bottles before and after. **RUN AND PASSED.** It is the only row in existence that reaches
+  `getOverflowItems()` — the probe above proved the API path, and 12c is what proves our handling of
+  it.
 
 - **THE STALE-JAR TRAP FIRED, AND WAS NOT ARGUED WITH.** While chasing the above, `dev-server.sh`
   printed `rm: cannot remove 'run/plugins/rpg-...jar': Device or resource busy` and `set -e` aborted
@@ -4082,6 +4102,45 @@ the old example is now false and is part of the change — the same closing clau
 A superseded plan gets a note at the top naming what stopped being true; it does not get edited into
 looking as though it always said the new thing.
 
+
+### A GATE ROW CAN BE IMPOSSIBLE, OR REAL BUT NON-DISCRIMINATING, AND BOTH CREDIT COVERAGE THAT DOES NOT EXIST
+
+This is the rule above one level up. A mutation row predicts a red it never gets; a **gate** row
+claims a witness it never was. The suite cannot catch either, because neither is a test — both are
+prose asserting that something was checked.
+
+Crafting Slice 1 produced one of each, in the same afternoon, over the same property.
+
+**IMPOSSIBLE.** Row 12b called for *"two milk buckets in one slot"*. `MILK_BUCKET.getMaxStackSize()`
+is **1**, so the state it described cannot exist. It was written from reasoning and the number was
+never checked — the first rule in `CLAUDE.md`, in a gate table rather than in code. It did not fail
+and it did not pass. **A row that cannot run is not a partial pass and must not be counted**: the
+gate was 27/27, never 27/28.
+
+**REAL BUT NON-DISCRIMINATING, and this is the dangerous one.** Row 12 — craft a cake, count the
+three empty buckets — is a genuine row that genuinely passed. It was also credited in this file's own
+unwitnessed table as the witness for `getOverflowItems()`, **and it can never reach that call**: the
+cake's buckets FIT BACK into the matrix, so the row exercises `getResultingMatrix()` and stops. A
+passing row was standing in for a check that had never once executed. Nothing looked wrong, because
+nothing was red.
+
+Reaching the overflow give needed a remainder-producing ingredient that **stacks**, so consuming one
+leaves the slot occupied and the remainder homeless. Buckets are precisely the wrong family. A sweep
+of the whole `Material` enum found **exactly two** candidates — `HONEY_BOTTLE` (16) and
+`DRAGON_BREATH` (64), both remaindering to `GLASS_BOTTLE` — and row 12c was built from one of them.
+
+So, when a row is named as the witness for a specific code path:
+
+- **State which line it reaches.** "Row 12 covers the remainder handling" is not a claim until you
+  can say *which call* it enters. Two adjacent calls in the same method are not the same witness.
+- **Check the row is physically possible before writing it.** Stack sizes, recipe shapes and
+  registry contents are all queryable. `Material.getMaxStackSize()` throws headless, so it needs a
+  booted server — that is a reason to boot, not a reason to guess.
+- **Prefer a row whose PASS is impossible without the path.** Row 12c fails visibly if the overflow
+  give is deleted, because four glass bottles simply never arrive. Row 12 passes either way.
+- **A row that turns out to be impossible gets REPLACED and SAID SO**, never quietly swapped. The
+  original stays in the table marked as never-a-test, because the next reader's question is "was this
+  checked", and "it was replaced because it could not exist" is a different answer from "it passed".
 
 - After every commit: `./mvnw -pl core test`. After every batch:
   `./mvnw clean package` and a manual boot.
