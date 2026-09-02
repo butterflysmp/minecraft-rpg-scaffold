@@ -7,6 +7,9 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import io.github.butterflysmp.rpg.core.weapon.CollectPlan;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -97,13 +100,34 @@ final class MenuRouting {
         if (click == ClickType.NUMBER_KEY) return hotbarMove(event, menu);
         if (click == ClickType.SWAP_OFFHAND) return offhandMove(event, menu);
 
+        // 1b. The double-click, by TYPE, for the SAME reason and ahead of the action set. Performed
+        //     in collectToCursor, never permitted.
+        //
+        //     THE OBJECTION THAT HAD THIS REFUSED IS NOT OVERRULED -- it is answered the way
+        //     shift-click, the number key and F were. Un-cancelling would let vanilla sweep every
+        //     matching stack out of the TOP inventory, and this menu paints some forty identical
+        //     filler panes (see ALWAYS_REFUSED's javadoc, which still stands word for word).
+        //     Performing it does not, because WE choose the sources: the player's own inventory and
+        //     the menu's STACKING slots, never chrome and never a result slot.
+        //
+        //     COLLECT_TO_CURSOR deliberately STAYS in ALWAYS_REFUSED. This interception runs first,
+        //     so the set is never consulted for the gesture we perform -- and it remains the guard
+        //     for any path that reaches the action without coming through here.
+        if (click == ClickType.DOUBLE_CLICK) return collectToCursor(event, menu);
+
         // 2. Cross-inventory actions. The ones that matter most are clicked in the player's own
         //    inventory and would sail past every later gate.
         if (ALWAYS_REFUSED.contains(event.getAction())) return null;
 
-        // 2b. And by TYPE as well, so neither depends on which InventoryAction the server happened
-        //     to resolve it to.
-        if (click == ClickType.DOUBLE_CLICK || click == ClickType.CREATIVE) {
+        // 2b. CREATIVE, by TYPE as well, so it does not depend on which InventoryAction the server
+        //     happened to resolve it to.
+        //
+        //     ITS OWN STATEMENT, WITH ITS OWN REASON. This line used to cover DOUBLE_CLICK too, and
+        //     that one has moved up to step 1b to be performed. Creative middle-click MAKES ITEMS
+        //     OUT OF NOTHING -- it is the constant here whose loss would be a real duplication
+        //     rather than a missing convenience -- so it is stated separately and the two can never
+        //     again share a fate through one condition somebody relaxes for the other's sake.
+        if (click == ClickType.CREATIVE) {
             return null;
         }
 
@@ -305,6 +329,115 @@ final class MenuRouting {
 
         player.updateInventory();
         return new MenuClick(hovered, event.getClick(), event.getAction(), true);
+    }
+
+    /**
+     * A double-click, carried out by us: gather matching stacks onto the cursor.
+     *
+     * <p><b>Performed, never permitted, and the original objection is answered rather than
+     * dropped.</b> Vanilla's collect sweeps every matching stack out of the TOP inventory even when
+     * the double-click landed in the BOTTOM one -- which, against a menu painting forty identical
+     * filler panes, hands the player the chrome. That is why {@code COLLECT_TO_CURSOR} is in
+     * {@link #ALWAYS_REFUSED} and stays there. What makes the gesture safe here is not a relaxation
+     * of that argument but the thing that answered it for shift-click, the number key and F: WE
+     * choose the sources.
+     *
+     * <p><b>SOURCES ARE STACKING INPUT SLOTS, NEVER {@code inputSlots()} WHOLESALE.</b> This class
+     * is shared with {@code EnchantMenu}, whose single EXCLUSIVE slot holds a weapon. Iterating the
+     * input slots would make that weapon a collect source. It happens to be harmless today only
+     * because a weapon's max stack is 1, so a cursor holding one is already full -- arithmetic
+     * accident, not design, and it stops being true the first time an EXCLUSIVE slot holds something
+     * stackable. The policy switch below excludes it BY CONSTRUCTION.
+     *
+     * <p>Chrome and a result slot are excluded for two different reasons, both worth keeping: chrome
+     * is the original exploit, and a result slot holds an item THAT DOES NOT EXIST YET -- a preview
+     * nobody has paid for, kept out of {@code inputSlots()} precisely so a close cannot leak it. A
+     * collect reaching it would hand out a free item through a gesture instead of through a close.
+     *
+     * <p>Ordering, the arithmetic and the two-tier boundary all live in {@link CollectPlan}, in
+     * {@code core}, where they are unit-tested. This method only executes a plan.
+     *
+     * <p>Minted gear is safe without a special case: {@code isSimilar} compares item meta, so a
+     * tagged item never matches a plain stack of the same Material. Double-clicking planks cannot
+     * vacuum a minted weapon out of a grid.
+     */
+    private static MenuClick collectToCursor(InventoryClickEvent event, Menu menu) {
+        if (!(event.getWhoClicked() instanceof Player player)) return null;
+
+        ItemStack cursor = event.getCursor();
+        if (isEmpty(cursor)) return null;
+
+        // A double-click on a NON-INPUT menu slot collects nothing. The result slot is the case that
+        // matters and it gets its own named refusal in the menu, not a silent fall-through here.
+        int clickedRaw = event.getRawSlot();
+        boolean inMenu = event.getClickedInventory() != null
+                && event.getClickedInventory().equals(event.getView().getTopInventory());
+        if (inMenu && !menu.inputSlots().contains(clickedRaw)) return null;
+
+        List<CollectPlan.Source> sources = new ArrayList<>();
+        Inventory backpack = player.getInventory();
+
+        // TIER 1 -- the player's own inventory. Storage contents only: armour and the offhand are
+        // not loose stacks a consolidation gesture should reach into.
+        ItemStack[] storage = backpack.getStorageContents();
+        for (int slot = 0; slot < storage.length; slot++) {
+            ItemStack candidate = storage[slot];
+            if (isEmpty(candidate) || !candidate.isSimilar(cursor)) continue;
+            sources.add(new CollectPlan.Source(CollectPlan.TIER_INVENTORY, slot, candidate.getAmount()));
+        }
+
+        // TIER 2 -- the menu's STACKING slots, in a SORTED walk. GRID_SLOTS is a Set.copyOf, whose
+        // iteration order the JDK leaves unspecified, so iteration order must not decide which of a
+        // player's slots gets drained. Same reason shiftMove sorts its targets.
+        for (int slot : new TreeSet<>(menu.inputSlots())) {
+            boolean stacking = switch (menu.slotPolicy(slot)) {
+                case STACKING -> true;
+                case EXCLUSIVE -> false;
+            };
+            if (!stacking) continue;
+
+            ItemStack candidate = menu.getInventory().getItem(slot);
+            if (isEmpty(candidate) || !candidate.isSimilar(cursor)) continue;
+            sources.add(new CollectPlan.Source(CollectPlan.TIER_MENU, slot, candidate.getAmount()));
+        }
+
+        List<CollectPlan.Draw> draws =
+                CollectPlan.plan(sources, cursor.getAmount(), cursor.getMaxStackSize());
+        if (draws.isEmpty()) return null;
+
+        // Apply. Each source is REDUCED by exactly what the plan drew from it, and the cursor gains
+        // exactly the total -- so the two sides cannot disagree even if a draw is capped.
+        for (CollectPlan.Draw draw : draws) {
+            int slot = draw.source().slot();
+            if (draw.source().tier() == CollectPlan.TIER_INVENTORY) {
+                reduce(backpack.getItem(slot), draw.amount(), item -> backpack.setItem(slot, item));
+            } else {
+                reduce(menu.getInventory().getItem(slot), draw.amount(),
+                        item -> menu.getInventory().setItem(slot, item));
+            }
+        }
+
+        ItemStack gathered = cursor.clone();
+        gathered.setAmount(cursor.getAmount() + CollectPlan.total(draws));
+        player.setItemOnCursor(gathered);
+        player.updateInventory();
+
+        // itemMoved is TRUE and the move has ALREADY landed -- unlike a permitted place, which lands
+        // after this returns. A menu recomputing from its own slots may do so synchronously.
+        return new MenuClick(clickedRaw, event.getClick(), event.getAction(), true);
+    }
+
+    /** Take {@code amount} off a stack, clearing the slot when nothing is left. */
+    private static void reduce(ItemStack stack, int amount, Consumer<ItemStack> write) {
+        if (isEmpty(stack)) return;
+        int left = stack.getAmount() - amount;
+        if (left <= 0) {
+            write.accept(null);
+            return;
+        }
+        ItemStack remaining = stack.clone();
+        remaining.setAmount(left);
+        write.accept(remaining);
     }
 
     /**

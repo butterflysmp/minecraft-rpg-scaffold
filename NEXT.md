@@ -581,6 +581,132 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Crafting, Slice 3 (the grid's vanilla feel) — what it created or exposed
+
+- **THE GATE WAS NOT IN THE REPOSITORY, AND THAT IS THE FINDING.** `GATE-crafting.md` is now
+  committed. Until it was, the row text lived in a chat transcript and two published PR bodies —
+  outside git, invisible to anyone reading the repo, and unrecoverable once the conversation
+  scrolled. **Row 20's text could not be recovered from inside the repository at all.**
+
+  This file has recorded across two slices that nine behaviours are boot-gate-only and that the gate
+  must be re-run when they change. A refactor of `MenuRouting` would have found a table naming
+  exactly what was unwitnessed **and no way to run the thing that witnessed it.**
+
+  **A WITNESS THAT IS NOT IN THE REPOSITORY IS NOT A WITNESS.** Rule 4 says a gate row can claim
+  coverage it does not have; this says a row can claim coverage while not existing anywhere durable.
+  Recorded as a corollary in the rules section rather than a fifth rule.
+
+  **The reviewer's defect, not the builder's** — the gate was authored as chat messages and web pages
+  because that suited the operator, and nobody asked where it lived. Same attribution rule 4 carries.
+  It was NOT reconstructed: rebuilding rows from the sole-witness column would have produced a
+  plausible row that had never been run, which is rule 4's failure mode applied to the record of
+  rule 4.
+
+  **The two documents are joined now**, not parallel: the unwitnessed tables below name the row id
+  in `GATE-crafting.md` that witnesses each entry, so a reader who was not here can get from "this
+  is unwitnessed" to "here is the check".
+
+- **BULK CRAFT WAS UNPINNED — it kept going with a DIFFERENT recipe.** Found by running the slice 2
+  gate. A grid loaded as the shield recipe with 6 planks per plank slot and 50 iron crafted its six
+  shields, ran out of planks, re-matched to the IRON NUGGET recipe, and **converted the player's
+  remaining 44 ingots into nuggets.** `craftRepeatedly` re-derived the recipe every pass.
+
+  The commit is now pinned to the recipe the PREVIEW matched — **you receive what you were shown** —
+  and that closes by construction the divergence this arc has met three times: Stats Slice 3's
+  *"SHARING A FORMULA IS NOT SHARING ITS INPUTS"*, the substitution re-check in `craftOnceToCursor`,
+  and row N8's caveat. First time it is made unreachable rather than guarded.
+
+  **`Recipe` DECLARES NO KEY** — verified by javap against the pinned jar, where the interface has
+  exactly one method, `getResult()`. The identity narrows through `instanceof Keyed`, which covers
+  `CraftingRecipe` (shaped, shapeless) **and `ComplexRecipe`** (firework rockets, dye tables). That
+  completeness matters: slice 1 delegated to the server's matcher SPECIFICALLY because it handles
+  complex recipes, so a pin that could not represent one would have re-introduced the hand-rolled
+  matcher this arc deleted. `MerchantRecipe` is the only unkeyed recipe in the API and no crafting
+  grid produces one.
+
+- **THE PIN IS CAPTURED ONCE, BEFORE THE LOOP — the fix-shaped bug is re-reading it.** Each pass
+  recomputes the preview, so the field MOVES during the loop; re-reading it per pass re-pins to
+  whatever the shrinking grid now makes, which is the original defect restored **with a pin visibly
+  in place**. It has no unit witness — the field's movement needs a live menu — so it is run as a
+  mutation against gate row S1 rather than carried as a green table row.
+
+- **A DRAG NEVER REFRESHED THE PREVIEW.** `Menu.handleDrag` un-cancelled and dispatched nothing, so
+  the one-tick hop `onClick` schedules was never scheduled and the grid changed behind a stale
+  preview. A new `onDragPermitted` hook fires on the un-cancel path.
+
+  **`getNewItems()` was rejected and the javadoc says why**: it would allow a synchronous projection
+  with no scheduler hop, which is cleverer and wrong — a SECOND way of answering "the contents
+  changed, recompute" beside one that already exists with a documented reason. Two copies of that
+  rule drift, and the drifting one would be the drag path, because nobody exercises it.
+
+  **The two fixes ship together on purpose:** once the commit is pinned, a stale preview makes the
+  craft REFUSE rather than produce the wrong item — safer, and it reads as a broken table rather than
+  as theft.
+
+- **DOUBLE-CLICK IS SUPPORTED BY BEING PERFORMED, and the original objection is answered rather than
+  dropped.** `COLLECT_TO_CURSOR` STAYS in `ALWAYS_REFUSED`; the gesture is intercepted by TYPE ahead
+  of it, exactly as the number key and F are. Un-cancelling would let vanilla sweep every matching
+  stack out of the top inventory, and this menu paints forty identical filler panes. Performing it
+  does not, because WE choose the sources.
+
+  **SOURCES ARE STACKING SLOTS, NOT `inputSlots()`.** `MenuRouting` is shared with `EnchantMenu`,
+  whose single EXCLUSIVE slot holds a weapon — iterating input slots would have made that weapon a
+  collect source. Harmless today ONLY because a weapon's max stack is 1, so a cursor holding one is
+  already full: **arithmetic accident, not design**, and it stops being true the first time an
+  EXCLUSIVE slot holds something stackable. Excluded by the policy switch instead. Gate row S11 is
+  its only witness.
+
+  **Ordering deviates from vanilla at exactly one point, deliberately.** Inventory drains first,
+  then the grid; smallest-first WITHIN each tier. Smallest-first across both would prefer the grid
+  precisely when a recipe is loaded — a staged recipe is partial stacks by definition — so the most
+  faithful ordering is the one that most reliably eats the player's layout. This grid is not
+  vanilla's transient one: the reported workflow stages stacks and returns to them.
+
+- **`CREATIVE` GOT ITS OWN REFUSAL STATEMENT.** One line used to cover it and `DOUBLE_CLICK`
+  together. Creative middle-click makes items out of nothing — the one constant there whose loss is a
+  real duplication — so the two can no longer share a fate through a condition someone relaxes for
+  the other's sake. Gate row S10 is its only witness, and it exists because a mutation removing that
+  guard must redden something.
+
+- **THE RESULT SLOT'S DOUBLE-CLICK IS A NAMED REFUSAL, not a fall-through.** A double-click fires
+  LEFT then DOUBLE_CLICK. Slice 1 declined to port the old project's `MenuThrottle` — which guarded
+  exactly that pair — because `DOUBLE_CLICK` was refused by TYPE before dispatch. **This slice
+  withdrew that guarantee**, so treating it as a take would give one gesture two crafts, and with the
+  pin in place the second one succeeds. Both crafts pay, so it is not a duplication — just a craft
+  nobody asked for and nobody notices. Gate row S8's expectation is therefore **one craft, not
+  nothing**.
+
+- **A FALSE JAVADOC, corrected at the source.** `CraftingMenuLayout.GRID_SLOTS` promised *"Iteration
+  order is 0..8, not a hash order"*, but the value is `Set.copyOf(...)`, whose order the JDK leaves
+  unspecified — the `LinkedHashSet` order is discarded. It sat on the exact constant an ordered grid
+  walk would reach for. `MenuRouting` already worked around it with `TreeSet` twice, and the collect
+  makes a third.
+
+- **`MAX_BULK_CRAFTS`' javadoc corrected**: 64 is reachable in normal play (64 planks per slot is 64
+  shields), so it is both a runaway guard AND a per-gesture batch size. The runaway framing alone
+  invites treating arrival there as a defect, or "fixing" it by removing the bound.
+
+- **BOOT GATE RUN AND PASSED, 2026-09-02 — operator-confirmed.** Every slice 3 row, plus the
+  re-opened rows this slice's surface changes require: **6, 9, 10, 11, 13, 1c, 1d, 16-19**, and
+  **12, 12c** because `commitCraft` changed shape again, and **N5b, N8** from slice 2.
+
+  **Four rows carry it, and each is the only check its behaviour has.** **S1** is the reported
+  defect measured by counting — six shields and forty-four ingots still in the grid, because the
+  defect's signature is a number rather than an appearance. **S6** is the dead-second-tier row:
+  without it a collect that never reaches the grid passes S5 perfectly, and "inventory first" is
+  indistinguishable from "inventory only". **S11** is the base-class regression against
+  `EnchantMenu`, whose weapon slot the enchant tests are structurally blind to — the same blindness
+  that made 1c and 1d necessary. **S12** is the one worth failing the slice over: holding glass panes
+  matching the filler and double-clicking must move nothing, which is what proves the
+  collect-to-cursor exploit is still closed now that the gesture is performed rather than refused.
+
+  **M6 was run against a MUTATED build**, because the pin's capture-once property has no unit witness
+  — the field moves during the loop, which needs a live menu and a live grid. Listing that mutation
+  without executing it would have been a prediction nothing tests: rule 2's failure applied to the
+  mutation table, with rule 4's miscredit on top.
+
+- **Still owed:** nothing in this slice.
+
 ### Crafting, Slice 2 (mint on craft) — what it created or exposed
 
 - **THE ZERO-GUARD CAUGHT A REAL DEFECT ON ITS FIRST BOOT, and it was the two-content-trees trap.**
@@ -674,7 +800,7 @@ Before milestone 2, two things worth measuring rather than assuming:
 - **STILL NO AUTOMATED WITNESS — three new entries, all gate-only.** Same cause as Slice 1:
   `CraftingMenu` and `RpgListeners` cannot be constructed without a server.
 
-  | no automated witness | lives in | what goes wrong unseen | sole witness |
+  | no automated witness | lives in | what goes wrong unseen | sole witness (row in GATE-crafting.md) |
   |---|---|---|---|
   | the Crafter's DURABLE-RESULT guard | `RpgListeners.onCrafterCraft` | plain vanilla gear leaks in through a Crafter, or every Crafter jams | **rows N9 + N10** |
   | mint-on-result itself | `CraftingMenu.commitCraft` | a crafted shield arrives plain, giving zero protection | rows N2, N3 |
@@ -736,7 +862,7 @@ Before milestone 2, two things worth measuring rather than assuming:
   by hand, and passed. Re-run it after any change to these methods, because the suite will not
   notice.
 
-  | no automated witness | lives in | what goes wrong unseen | sole witness |
+  | no automated witness | lives in | what goes wrong unseen | sole witness (row in GATE-crafting.md) |
   |---|---|---|---|
   | merge overflow arithmetic | `MenuRouting.merge` | a 64-onto-40 place loses the remainder | row 10 |
   | the cursor swap | `MenuRouting.swapCursor` | two writes, one of them wrong | row 9 |
@@ -4295,6 +4421,29 @@ So, when a row is named as the witness for a specific code path:
 - **A row that turns out to be impossible gets REPLACED and SAID SO**, never quietly swapped. The
   original stays in the table marked as never-a-test, because the next reader's question is "was this
   checked", and "it was replaced because it could not exist" is a different answer from "it passed".
+
+#### Corollary — A WITNESS THAT IS NOT IN THE REPOSITORY IS NOT A WITNESS
+
+Rule 4 says a gate row can claim coverage it does not have. This says a row can claim coverage
+**while not existing anywhere durable**, and it is the same defect one level further out.
+
+For two slices this file recorded that nine behaviours on the crafting surface were boot-gate-only —
+the suite passes with any of their checks deleted — and obliged a re-run whenever they changed. The
+gate itself lived in a chat transcript and two published PR bodies. **Row 20's text was
+unrecoverable from inside the repository.** A refactor of `MenuRouting` would have found a table
+naming precisely what was unwitnessed and no way to run the thing that witnessed it.
+
+`GATE-crafting.md` is committed for that reason, and it is the source of truth: a rendered
+tick-through page may exist for convenience, and if the two disagree the file wins.
+
+**This is the REVIEWER's defect, not the builder's** — the gate was authored as chat messages and
+web pages because that suited the operator, and nobody asked where it lived. Recorded with the same
+attribution rule 4 already carries, for the same reason: this catches the person deciding what gets
+verified.
+
+**It also must not be reconstructed.** Rebuilding lost rows from a sole-witness column produces a
+plausible row that has never been run — rule 4's own failure mode, applied to the record of rule 4.
+A lost row is replaced and said so, or recovered from outside; it is never inferred.
 
 - After every commit: `./mvnw -pl core test`. After every batch:
   `./mvnw clean package` and a manual boot.

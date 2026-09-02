@@ -8,9 +8,13 @@ import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Keyed;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.ItemCraftResult;
+import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Optional;
@@ -58,8 +62,26 @@ public final class CraftingMenu extends Menu {
      * matrix shrinking each pass, and a recipe that somehow did not consume anything would spin
      * forever inside a click handler, taking the server's main thread with it. This is the guard
      * that does not depend on the recipe behaving.
+     *
+     * <p><b>It is ALSO an ordinary per-gesture batch size, and reaching it is not a defect signal.</b>
+     * 64 planks in each plank slot is 64 shields, so a stack-loaded grid hits this bound in normal
+     * play and stops with material still loaded -- a second shift-click simply continues. That is
+     * indistinguishable, to a player and to a reader, from stopping because nothing more could be
+     * made. Said out loud because the runaway-guard framing alone invites someone to treat arrival
+     * here as a bug, or to "fix" it by removing the bound.
      */
     private static final int MAX_BULK_CRAFTS = 64;
+
+    /**
+     * The recipe the RESULT SLOT is currently showing, or empty when it shows nothing.
+     *
+     * <p>Written by {@link #refreshPreview} and read by the two commit paths, so that what a player
+     * receives is what they were looking at. {@code Recipe} itself carries no key -- verified
+     * against the pinned API, where the interface declares only {@code getResult()} -- so the
+     * identity is narrowed through {@code instanceof Keyed}, which covers shaped, shapeless AND
+     * complex recipes. {@code NamespacedKey} implements {@code equals}, so comparing them is sound.
+     */
+    private Optional<NamespacedKey> previewedRecipe = Optional.empty();
 
     private final AdapterContext adapters;
 
@@ -124,6 +146,24 @@ public final class CraftingMenu extends Menu {
         }
 
         if (click.slot() == RESULT_SLOT) {
+            // A DOUBLE-CLICK ON THE RESULT IS REFUSED BY NAME, and this arm must not become a
+            // fall-through from "it is not a STACKING slot" -- a fall-through is silent about why,
+            // and the next person to touch the collect reads it as an oversight and helpfully
+            // "fixes" it.
+            //
+            // A double-click fires TWO events: LEFT, then DOUBLE_CLICK. Slice 1 declined to port the
+            // old project's MenuThrottle -- which guarded exactly that pair on its output slot --
+            // because MenuRouting refused DOUBLE_CLICK by TYPE before dispatch. Slice 3 WITHDREW
+            // that guarantee by performing the gesture instead. So treating this as a take would
+            // give one gesture two crafts: the LEFT takes one, the DOUBLE_CLICK takes another,
+            // ingredients paid twice -- and with the pin in place the second one SUCCEEDS. Not a
+            // duplication, both crafts pay, but a craft the player did not ask for and will not
+            // notice.
+            //
+            // The LEFT half has already crafted by the time this fires, so the observable is ONE
+            // craft, never "nothing happened".
+            if (click.click() == ClickType.DOUBLE_CLICK) return;
+
             takeResult(click);
             return;
         }
@@ -134,6 +174,22 @@ public final class CraftingMenu extends Menu {
             // holds. onEntityLater is the sanctioned route and clamps a zero delay to one tick.
             adapters.scheduler().onEntityLater(viewer, this::refreshPreview, 1);
         }
+    }
+
+    /**
+     * A drag just changed the grid, so the preview must catch up.
+     *
+     * <p>The SAME one-tick hop {@link #onClick} uses, for the SAME reason: a permitted drag has not
+     * landed when the event returns, exactly as a permitted place has not. Without this the grid
+     * changes behind a stale preview and the result slot advertises the previous recipe.
+     *
+     * <p>With the commit pinned to the preview, a stale preview no longer produces the wrong item --
+     * it makes the craft REFUSE. Safer, and it reads as a broken table rather than as theft, which
+     * is why the pin and this hook shipped together.
+     */
+    @Override
+    protected void onDragPermitted() {
+        adapters.scheduler().onEntityLater(viewer, this::refreshPreview, 1);
     }
 
     @Override
@@ -186,7 +242,7 @@ public final class CraftingMenu extends Menu {
             }
         }
 
-        ItemStack crafted = commitCraft();
+        ItemStack crafted = commitCraft(previewedRecipe);
         if (crafted == null) return;
 
         if (cursorEmpty) {
@@ -230,13 +286,25 @@ public final class CraftingMenu extends Menu {
      * items handed over, whatever pass it stopped on.
      */
     private void craftRepeatedly() {
+        // CAPTURED ONCE, BEFORE THE LOOP, AND NEVER RE-READ INSIDE IT. This is the whole difference
+        // between the fix and a fix-shaped bug.
+        //
+        // Each pass commits and then recomputes the preview, so `previewedRecipe` MOVES during the
+        // loop -- it tracks whatever the shrinking grid now makes. Re-reading the field per pass
+        // would therefore re-pin to that, which is the defect this pin exists to close: a grid
+        // loaded with planks and 50 iron crafts its shields, runs out of planks, re-matches to the
+        // iron nugget recipe and converts the remaining ingots. With a pin apparently in place.
+        //
+        // "The pin is a field, read it" is the version someone writes next year.
+        Optional<NamespacedKey> pinned = previewedRecipe;
+
         for (int pass = 0; pass < MAX_BULK_CRAFTS; pass++) {
             // The SAME call the single-click path makes, returning the SAME finished item. This is
             // the third caller of the craft output, and the reason commitCraft returns an ItemStack
             // rather than an ItemCraftResult: with the mint applied by the callers, a bulk craft
             // would have shipped every item plain and unrolled while a single click minted -- and a
             // gate row that counts output rather than opening it would have passed.
-            ItemStack crafted = commitCraft();
+            ItemStack crafted = commitCraft(pinned);
             if (crafted == null) return;
             MenuSafety.give(viewer, crafted);
         }
@@ -271,7 +339,7 @@ public final class CraftingMenu extends Menu {
      *
      * @return the item to hand over, or {@code null} when nothing was crafted and nothing changed.
      */
-    private ItemStack commitCraft() {
+    private ItemStack commitCraft(Optional<NamespacedKey> pinned) {
         ItemStack[] matrix = readMatrix();
 
         // The screen, BEFORE the server is ever asked. Exhaustive switch expression, no default.
@@ -280,6 +348,22 @@ public final class CraftingMenu extends Menu {
             case CONTAINS_GEAR -> false;
         };
         if (!eligible) return null;
+
+        // YOU RECEIVE WHAT YOU WERE SHOWN. Match first, compare to the pin, and refuse WITHOUT
+        // COMMITTING if the grid now makes something else.
+        //
+        // This closes by construction the divergence this arc has met three times -- NEXT.md's
+        // Stats Slice 3 "SHARING A FORMULA IS NOT SHARING ITS INPUTS", the substitution re-check in
+        // craftOnceToCursor, and row N8's caveat are all the same defect. It is the first time it is
+        // made UNREACHABLE rather than guarded: two callers cannot disagree about which recipe this
+        // is, because only one of them decides and the other is handed the answer.
+        //
+        // An UNKEYED match cannot be pinned. Recipe declares no key -- only CraftingRecipe and
+        // ComplexRecipe do -- so a hypothetical unkeyed crafting recipe would be unpinnable, and
+        // BULK refuses rather than proceeding blind. A single click still commits: it matches once
+        // and commits once, so re-matching cannot diverge, and craftOnceToCursor's own re-check
+        // still covers a substituted result. Weaker, and said so.
+        if (!matches(Bukkit.getCraftingRecipe(matrix, viewer.getWorld()), pinned)) return null;
 
         // The PLAYER overload: this is a real craft, and its javadoc says it calls
         // PrepareItemCraftEvent so other plugins observe it. Re-entering our own guard is harmless
@@ -320,6 +404,35 @@ public final class CraftingMenu extends Menu {
      * <p>Note this is a DIFFERENT test from the Crafter block's durability guard, which is the whole
      * policy there and applies to items no definition has ever claimed. They must not be merged.
      */
+    /**
+     * The stable identity of a matched recipe, or empty when it has none.
+     *
+     * <p>{@code Recipe} declares only {@code getResult()} -- it does NOT extend {@code Keyed}, which
+     * was verified against the pinned jar rather than assumed. The narrowing below is therefore
+     * mandatory, and it covers everything a crafting grid can return: {@code CraftingRecipe} (shaped
+     * and shapeless) and {@code ComplexRecipe} (firework rockets, dye tables, book cloning) both
+     * implement {@code Keyed}. The only unkeyed recipe in the API is {@code MerchantRecipe}, which
+     * no crafting grid produces.
+     *
+     * <p>That completeness matters: slice 1 delegated matching to the server SPECIFICALLY because it
+     * handles {@code ComplexRecipe}, so an identity that could not represent one would have
+     * re-introduced the hand-rolled matcher this arc deleted.
+     */
+    static Optional<NamespacedKey> identityOf(Recipe recipe) {
+        return recipe instanceof Keyed keyed ? Optional.of(keyed.getKey()) : Optional.empty();
+    }
+
+    /**
+     * Is this freshly matched recipe the one the player was shown?
+     *
+     * <p>Empty pin means the preview showed nothing, so nothing may be committed. An unkeyed match
+     * can never equal a pin, which is what makes the bulk loop stop rather than proceed blind.
+     */
+    static boolean matches(Recipe matched, Optional<NamespacedKey> pinned) {
+        if (pinned.isEmpty()) return false;
+        return identityOf(matched).map(pinned.get()::equals).orElse(false);
+    }
+
     private Optional<GearDefinition> claimFor(ItemStack vanillaResult) {
         if (isEmpty(vanillaResult)) return Optional.empty();
         if (WeaponDurability.maxOf(vanillaResult).isEmpty()) return Optional.empty();
@@ -340,6 +453,15 @@ public final class CraftingMenu extends Menu {
      */
     private void refreshPreview() {
         ItemStack[] matrix = readMatrix();
+
+        // THE PIN IS SET HERE AND NOWHERE ELSE, because this is the only place that decides what the
+        // player is looking at. Recorded before the item, so the two cannot disagree about which
+        // recipe the slot is showing.
+        previewedRecipe = switch (CraftMatrixScreen.verdict(matrix, adapters.keys())) {
+            case CONTAINS_GEAR -> Optional.empty();
+            case VANILLA_ELIGIBLE ->
+                    identityOf(Bukkit.getCraftingRecipe(matrix, viewer.getWorld()));
+        };
 
         ItemStack preview = switch (CraftMatrixScreen.verdict(matrix, adapters.keys())) {
             // A matrix holding any of our gear is invisible to the server's matcher. In slice 1

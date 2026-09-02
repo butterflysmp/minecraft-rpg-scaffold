@@ -96,6 +96,25 @@ public abstract class Menu implements InventoryHolder {
     }
 
     /**
+     * A drag was PERMITTED and will land after {@link #handleDrag} returns. Default: nothing.
+     *
+     * <p>Exists because a permitted drag changes the menu's contents and dispatches nothing else. A
+     * menu that derives anything from its own slots -- a crafting preview, a cost readout -- would
+     * otherwise show a stale answer until the next click, and the drag path is rare enough that
+     * nobody would notice for a long time.
+     *
+     * <p><b>The contents have NOT changed yet when this is called.</b> That is the same situation
+     * {@code InventoryClickEvent} creates for a permitted place, and it wants the same answer: a
+     * one-tick hop, through the {@code Scheduler}, before reading the slots. A subclass that reads
+     * the inventory synchronously here sees the grid as it was BEFORE the drag.
+     *
+     * <p>No slot is passed, deliberately. A drag has many destinations and no single one, which is
+     * why it cannot be reported through {@link MenuClick} -- that record's javadoc pins it to one
+     * raw slot with {@code itemMoved} meaning a permitted put-in or take-out.
+     */
+    protected void onDragPermitted() {}
+
+    /**
      * May this item be placed in an input slot? Asked with the item still on the CURSOR, before the
      * place is permitted.
      *
@@ -186,6 +205,18 @@ public abstract class Menu implements InventoryHolder {
         if (!acceptsInput(event.getOldCursor())) return;
 
         event.setCancelled(false);
+
+        // The menu's contents are about to change with nothing else dispatched. Told here rather
+        // than left to be noticed, because a stale derived value on the rare drag path is a defect
+        // that survives every amount of clicking.
+        //
+        // REJECTED, so it is not re-proposed: InventoryDragEvent.getNewItems() would let a subclass
+        // project the post-drag contents synchronously with no scheduler hop. Cleverer, and wrong --
+        // it would be a SECOND way of answering "the contents changed, recompute" beside the
+        // one-tick hop a permitted CLICK already uses for the identical reason. Two copies of that
+        // rule will drift, and the drifting one will be this path, because it is the one nobody
+        // exercises.
+        onDragPermitted();
     }
 
     public final void handleClose(InventoryCloseEvent event) {

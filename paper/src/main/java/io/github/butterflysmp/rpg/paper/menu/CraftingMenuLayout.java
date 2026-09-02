@@ -55,7 +55,20 @@ public final class CraftingMenuLayout {
      */
     public static final int RESULT_SLOT = 24;
 
-    /** The nine grid slots, in matrix order. Iteration order is 0..8, not a hash order. */
+    /**
+     * The nine grid slots.
+     *
+     * <p><b>ITERATION ORDER IS UNSPECIFIED, and a caller that needs one must sort.</b> This is built
+     * through a {@code LinkedHashSet} in matrix order and then handed to {@code Set.copyOf}, which
+     * returns an immutable set whose iteration order the JDK explicitly does not define -- the
+     * insertion order is discarded. An earlier version of this javadoc promised "0..8, not a hash
+     * order", which was simply false.
+     *
+     * <p>It matters because iteration order must never decide which of a player's slots gets drained
+     * or filled. {@code MenuRouting} already sorts this through a {@code TreeSet} in four places for
+     * exactly that reason -- the shift-click target search, the collect's grid tier, and both
+     * empty-slot walks.
+     */
     public static final Set<Integer> GRID_SLOTS = gridSlots();
 
     private static Set<Integer> gridSlots() {
