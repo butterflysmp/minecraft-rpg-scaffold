@@ -58,6 +58,7 @@ import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import io.github.butterflysmp.rpg.paper.weapon.ArmorItems;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
+import io.github.butterflysmp.rpg.paper.weapon.GearItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearRefresher;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -911,7 +912,7 @@ public final class RpgCommand {
         // re-roll on every join, refresh and enchant click. See EnchantRollItems.
         if (weapon != null) {
             item = WeaponItems.mint(weapon, adapters);
-            EnchantRollItems.rollOnAcquire(item, GearClass.of(weapon.weaponClass()), adapters);
+            EnchantRollItems.rollOnAcquire(item, GearItems.gearClassOf(weapon), adapters);
             name = WeaponItems.displayName(weapon.displayName(), weapon.rarity());
         } else if (shield != null) {
             // A SHIELD ROLLS TOO, since Slice 2. It did not in Slice 1 because EnchantRoll was keyed
@@ -919,7 +920,7 @@ public final class RpgCommand {
             // GearClass.SHIELD is that roster's key, and the pool is the shield-gated enchants plus
             // the universal ones.
             item = ShieldItems.mint(shield, adapters);
-            EnchantRollItems.rollOnAcquire(item, GearClass.SHIELD, adapters);
+            EnchantRollItems.rollOnAcquire(item, GearItems.gearClassOf(shield), adapters);
             name = WeaponItems.displayName(shield.displayName(), shield.rarity());
         } else {
             // ARMOR ROLLS TOO, since Slice 2a. It did not through Slice 1 because EnchantRoll.roll
@@ -928,7 +929,7 @@ public final class RpgCommand {
             // onto a helmet. GearClass.ARMOR is that roster's key, and the pool is the armor-gated
             // enchants plus the universal ones.
             item = ArmorItems.mint(piece, adapters);
-            EnchantRollItems.rollOnAcquire(item, GearClass.ARMOR, adapters);
+            EnchantRollItems.rollOnAcquire(item, GearItems.gearClassOf(piece), adapters);
             name = WeaponItems.displayName(piece.displayName(), piece.rarity());
         }
 
@@ -1621,7 +1622,7 @@ public final class RpgCommand {
             if (weapon == null) continue; // validated at boot; skip a dangling grant
             ItemStack item = WeaponItems.mint(weapon, adapters);
             // Inside the loop: each kit weapon is its own instance and rolls its own candidates.
-            EnchantRollItems.rollOnAcquire(item, GearClass.of(weapon.weaponClass()), adapters);
+            EnchantRollItems.rollOnAcquire(item, GearItems.gearClassOf(weapon), adapters);
 
             int hotbar = grant.equip() ? firstEmptyHotbarSlot(player) : -1;
             if (hotbar >= 0) {

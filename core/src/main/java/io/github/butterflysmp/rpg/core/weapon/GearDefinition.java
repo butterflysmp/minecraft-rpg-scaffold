@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core.weapon;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * What every piece of authored gear has, whatever kind it is: an id, a name, a rarity, a material
@@ -31,6 +32,25 @@ import java.util.List;
  * name it, colour it by tier and carry its tag", which is the whole of what the three mint paths had
  * in common, and nothing more. Everything with real per-kind logic in it stays on the record.
  *
+ * <h2>The sixth member, and why it passed the test the other four failed</h2>
+ *
+ * {@link #craftResult()} was added by the mint-on-craft slice, and it is the first member admitted
+ * since the three-example design above. It is here rather than on the three records because the
+ * reverse index that reads it walks all three kinds as one collection, and a member the interface
+ * does not declare cannot be read that way.
+ *
+ * <p>It passes each of the four tests the rejected candidates failed. It is not a stat -- it carries
+ * no number and means the same thing for every kind. It is not a class -- it is absent on most gear
+ * by design rather than absent on some KINDS. It is not durability -- it says nothing about wear.
+ * And it is a plain {@code String} token, so unlike a lore builder it can exist in {@code core} at
+ * all.
+ *
+ * <p><b>It is an OPT-IN identity claim, and deliberately not {@link #material()}.</b> A material is
+ * PRESENTATION: {@code WeaponDefinition.DEFAULT_MATERIAL} is {@code iron_sword} and every
+ * sword-shaped weapon leaves it there, so materials are contested by design and say nothing about
+ * which weapon a crafted sword should become. A craft result is a claim, made once, by one
+ * definition.
+ *
  * <h2>Sealed, so a fourth kind is a compile error at every switch</h2>
  *
  * The same compiler-guided discipline {@link Rarity}/{@code RarityColors} and {@link GearClass}/
@@ -55,4 +75,24 @@ public sealed interface GearDefinition
 
     /** Authored flavour lines, already defensively copied by the record. Never null; may be empty. */
     List<String> flavor();
+
+    /**
+     * The vanilla craft result that mints this definition, if it opts in. Empty for gear that does
+     * not participate in mint-on-craft, which is most of it.
+     *
+     * <p><b>An identity claim, not a presentation choice.</b> Crafting this vanilla item hands the
+     * player THIS definition's minted item instead of vanilla's. Read only by
+     * {@link CraftResultIndex}.
+     *
+     * <p>Boot REFUSES a claim that does not equal {@link #material()}, because the mint builds the
+     * item from {@code material()} and not from what was crafted -- so a mismatched pair would let a
+     * player craft iron and receive diamond. It also refuses a claim on a material with no
+     * durability, which would otherwise index cleanly and then never mint, silently.
+     *
+     * <p>For ARMOR this is per PIECE, not per tier file: one {@code iron.yml} yields four
+     * definitions and each claims its own slot's item.
+     *
+     * @return the material token, never blank when present. Never null.
+     */
+    Optional<String> craftResult();
 }

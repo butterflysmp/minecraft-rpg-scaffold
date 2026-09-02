@@ -1,6 +1,10 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
+import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
+import io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems;
+import io.github.butterflysmp.rpg.paper.weapon.GearItems;
+import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -9,6 +13,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.ItemCraftResult;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Optional;
 import java.util.Set;
 
 import static io.github.butterflysmp.rpg.paper.menu.CraftingMenuLayout.CLOSE_SLOT;
@@ -181,10 +186,9 @@ public final class CraftingMenu extends Menu {
             }
         }
 
-        ItemCraftResult result = commitCraft();
-        if (result == null) return;
+        ItemStack crafted = commitCraft();
+        if (crafted == null) return;
 
-        ItemStack crafted = result.getResult();
         if (cursorEmpty) {
             viewer.setItemOnCursor(crafted);
             return;
@@ -226,10 +230,15 @@ public final class CraftingMenu extends Menu {
      * items handed over, whatever pass it stopped on.
      */
     private void craftRepeatedly() {
-        for (int crafted = 0; crafted < MAX_BULK_CRAFTS; crafted++) {
-            ItemCraftResult result = commitCraft();
-            if (result == null) return;
-            MenuSafety.give(viewer, result.getResult());
+        for (int pass = 0; pass < MAX_BULK_CRAFTS; pass++) {
+            // The SAME call the single-click path makes, returning the SAME finished item. This is
+            // the third caller of the craft output, and the reason commitCraft returns an ItemStack
+            // rather than an ItemCraftResult: with the mint applied by the callers, a bulk craft
+            // would have shipped every item plain and unrolled while a single click minted -- and a
+            // gate row that counts output rather than opening it would have passed.
+            ItemStack crafted = commitCraft();
+            if (crafted == null) return;
+            MenuSafety.give(viewer, crafted);
         }
     }
 
@@ -248,9 +257,21 @@ public final class CraftingMenu extends Menu {
      * <p>Everything written back is CLONED. {@code ItemCraftResult}'s own javadoc says it "makes no
      * guarantees about the nature or mutability of the returned values".
      *
-     * @return the result, or {@code null} when nothing was crafted and nothing was changed.
+     * <p><b>Returns the FINISHED item -- minted and rolled -- not the raw {@code ItemCraftResult}.</b>
+     * That is deliberate and it is the difference between one place to forget and three. Three
+     * callers read this output: {@link #craftOnceToCursor}, {@link #craftRepeatedly} and (through
+     * its own path) the preview. With the mint applied by each caller, the bulk path would have
+     * shipped plain unrolled items while a single click minted, and a gate row that counts output
+     * rather than inspecting it would never have noticed.
+     *
+     * <p><b>The roll happens HERE, and only here.</b> Crafting is an acquisition path, so it rolls
+     * exactly as {@code /rpg give} and the kit grant do -- see
+     * {@link EnchantRollItems#rollOnAcquire}. The preview never enters this method, which is how it
+     * mints without rolling: a structural guarantee rather than a rule someone has to remember.
+     *
+     * @return the item to hand over, or {@code null} when nothing was crafted and nothing changed.
      */
-    private ItemCraftResult commitCraft() {
+    private ItemStack commitCraft() {
         ItemStack[] matrix = readMatrix();
 
         // The screen, BEFORE the server is ever asked. Exhaustive switch expression, no default.
@@ -270,7 +291,39 @@ public final class CraftingMenu extends Menu {
         for (ItemStack overflow : result.getOverflowItems()) {
             MenuSafety.give(viewer, overflow);
         }
-        return result;
+
+        ItemStack vanilla = result.getResult();
+        Optional<GearDefinition> claimed = claimFor(vanilla);
+        if (claimed.isEmpty()) return vanilla;
+
+        // Minted, then rolled, in that order and never the other way: mint builds a FRESH meta with
+        // an empty container, so a roll written first would be discarded by it.
+        GearDefinition definition = claimed.get();
+        ItemStack minted = GearItems.mint(definition, adapters);
+        EnchantRollItems.rollOnAcquire(minted, GearItems.gearClassOf(definition), adapters);
+        return minted;
+    }
+
+    /**
+     * Which gear definition, if any, this vanilla result should be replaced by.
+     *
+     * <p>Shared by the commit and the preview so the slot cannot advertise one item and hand over
+     * another -- the third time this arc has met two callers that agree today, and the reason they
+     * share a function rather than an intention.
+     *
+     * <p>The durability test here is BELT-AND-BRACES, not the real check. Boot already refuses a
+     * {@code craft_result} naming a material with no durability
+     * ({@code ContentValidator.validateCraftResults}), so nothing in the index can fail it. It stays
+     * because it costs nothing and because the index is reachable from a future caller that has not
+     * been through that validation.
+     *
+     * <p>Note this is a DIFFERENT test from the Crafter block's durability guard, which is the whole
+     * policy there and applies to items no definition has ever claimed. They must not be merged.
+     */
+    private Optional<GearDefinition> claimFor(ItemStack vanillaResult) {
+        if (isEmpty(vanillaResult)) return Optional.empty();
+        if (WeaponDurability.maxOf(vanillaResult).isEmpty()) return Optional.empty();
+        return adapters.craftResults().forResult(vanillaResult.getType().getKey().getKey());
     }
 
     // ----------------------------------------------------------------- preview
@@ -294,7 +347,21 @@ public final class CraftingMenu extends Menu {
             case CONTAINS_GEAR -> null;
             case VANILLA_ELIGIBLE -> {
                 ItemCraftResult result = Bukkit.craftItemResult(matrix, viewer.getWorld());
-                yield isEmpty(result.getResult()) ? null : result.getResult().clone();
+                if (isEmpty(result.getResult())) yield null;
+
+                // THE PREVIEW MINTS, so the slot shows what the player will actually receive rather
+                // than the vanilla item it is about to replace. Same claimFor the commit uses.
+                //
+                // BUT IT DOES NOT ROLL, deliberately. The roll is a ThreadLocalRandom draw: if both
+                // sides rolled they would draw INDEPENDENTLY, and the slot would advertise enchant
+                // candidates the player is not going to get. Rolling only here would waste a draw on
+                // a stack that is usually discarded. So the preview is the minted, UNROLLED item,
+                // and the enchant lines are the one expected difference between what is shown and
+                // what is received.
+                Optional<GearDefinition> claimed = claimFor(result.getResult());
+                yield claimed.isPresent()
+                        ? GearItems.mint(claimed.get(), adapters)
+                        : result.getResult().clone();
             }
         };
 

@@ -8,6 +8,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -79,8 +80,13 @@ public final class ShieldLoader {
                     + "(one '- ' item per line). Ignoring it.");
         }
 
+        // The mint-on-craft claim. Optional, no default: opting in is a per-file economy decision,
+        // not something the loader infers. A blank value is refused by the record and named here as
+        // a skipped file.
+        Optional<String> craftResult = Optional.ofNullable(s.getString("craft_result"));
+
         return new ShieldDefinition(id, displayName, rarity, material, blockDr,
-                s.getStringList("flavor"));
+                s.getStringList("flavor"), craftResult);
     }
 
     /** Unknown rarity throws, which the caller turns into a named, skipped file. */

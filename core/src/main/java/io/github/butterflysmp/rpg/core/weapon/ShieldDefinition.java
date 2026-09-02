@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.core.weapon;
 import io.github.butterflysmp.rpg.core.combat.Shield;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A shield, as authored in {@code content/shields/&lt;id&gt;.yml}.
@@ -38,7 +39,8 @@ public record ShieldDefinition(
         Rarity rarity,
         String material,
         double blockDr,
-        List<String> flavor
+        List<String> flavor,
+        Optional<String> craftResult
 ) implements GearDefinition {
 
     /**
@@ -77,6 +79,16 @@ public record ShieldDefinition(
                     + "; it must be between 0 and 1 (0.5 means half the damage is stopped)");
         }
         flavor = flavor == null ? List.of() : List.copyOf(flavor);
+        craftResult = CraftResultToken.normalise(craftResult, "shield", id);
+    }
+
+    /**
+     * The shape without a craft-result claim, so existing callers and tests keep compiling. Most
+     * gear makes no claim.
+     */
+    public ShieldDefinition(String id, String displayName, Rarity rarity, String material,
+                            double blockDr, List<String> flavor) {
+        this(id, displayName, rarity, material, blockDr, flavor, Optional.empty());
     }
 
     /** Does this shield block anything at all? Zero is legal and means it does not. */

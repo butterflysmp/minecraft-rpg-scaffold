@@ -17,6 +17,23 @@ rarity: common
 # never raises it and never reports a block for the rider to read.
 material: shield
 
+# MINT ON CRAFT. Crafting a vanilla shield hands the player THIS shield instead -- lore, block_dr,
+# enchant roll and all -- which is what stops a plain vanilla shield being something anyone holds.
+# Until this key existed, a crafted shield gave ZERO custom protection while still playing vanilla's
+# block animation, which is the most deceptive state an item in this project has ever had.
+#
+# It is an OPT-IN, and it must EQUAL `material:` above. Boot refuses a mismatch, because the item is
+# minted from `material` and not from what was crafted -- so claiming one item while rendering as
+# another would let a player craft iron and receive diamond. Boot also refuses a claim on a material
+# with no durability, since mint-on-craft only replaces durable results and the claim would
+# otherwise index cleanly and then silently never fire.
+#
+# Deliberately NOT the same thing as `material:`. A material is presentation and is contested by
+# design -- every sword-shaped weapon leaves it at iron_sword -- so it says nothing about which
+# definition a crafted item should become. Only one definition may claim a given result; two claims
+# and NEITHER mints, loudly, at boot.
+craft_result: shield
+
 # THE DAMAGE REDUCTION: how much of an incoming hit this shield turns away, as a
 # fraction between 0 and 1. 0.35 means just over a third is stopped.
 #

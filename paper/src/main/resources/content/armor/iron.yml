@@ -13,17 +13,21 @@ flavor:
 pieces:
   head:
     material: iron_helmet
+    craft_result: iron_helmet
     display_name: "Iron Helmet"
     defense: 2
   chest:
     material: iron_chestplate
+    craft_result: iron_chestplate
     display_name: "Iron Chestplate"
     defense: 6
   legs:
     material: iron_leggings
+    craft_result: iron_leggings
     display_name: "Iron Leggings"
     defense: 5
   feet:
     material: iron_boots
+    craft_result: iron_boots
     display_name: "Iron Boots"
     defense: 2

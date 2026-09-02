@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
+import io.github.butterflysmp.rpg.core.weapon.CraftResultIndex;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
 import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
@@ -30,20 +31,29 @@ import java.util.logging.Logger;
  * <p>{@code enchants} rides along for exactly the same reason: EnchantLore needs an enchant's
  * display name and max_level to render "Unbreaking III", and the only things that render lore are
  * WeaponItems.mint and remint, both of which already take an AdapterContext.
+ *
+ * <p>{@code craftResults} is the third instance of that argument. The only thing that asks "should
+ * this crafted item become one of ours" is {@code CraftingMenu}, which is constructed with nothing
+ * but a player and this context -- so threading the three gear registries through the hijack table
+ * to reach one lookup would be exactly the five-signature detour {@code elements} was admitted to
+ * avoid. The index is built once at boot and is immutable afterwards, like every other registry here.
  */
 public record AdapterContext(Scheduler scheduler, Keys keys,
                              VisualRegistry visuals, StatusRegistry statuses,
                              ElementRegistry elements, EnchantRegistry enchants,
                              Logger log, Set<String> warned,
                              ImmobilizeStatus immobilize, SoakedStatus soaked,
-                             ImmobilizeStatus freeze, CombatantStats stats, double anchorDrift) {
+                             ImmobilizeStatus freeze, CombatantStats stats, double anchorDrift,
+                             CraftResultIndex craftResults) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
                           EnchantRegistry enchants, Logger log,
-                          CombatantStats stats, double anchorDrift) {
+                          CombatantStats stats, double anchorDrift,
+                          CraftResultIndex craftResults) {
         this(scheduler, keys, visuals, statuses, elements, enchants, log, ConcurrentHashMap.newKeySet(),
-                new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), stats, anchorDrift);
+                new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), stats, anchorDrift,
+                craftResults);
     }
 
     /**

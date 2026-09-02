@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
+import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import org.bukkit.Material;
@@ -27,8 +28,13 @@ import java.util.Optional;
  *
  * <h2>What stays per-kind, and why the abstraction stops here</h2>
  *
+ * <p><b>Read this as being about the BODIES, not the dispatch.</b> {@link #mint} and {@link #remint}
+ * below are one-line exhaustive switches that choose which body to call, and that much IS mechanical
+ * and belongs here -- it is the sealed type earning its keep. What follows is why the three bodies
+ * they dispatch TO are still three bodies.
+ *
  * <ul>
- *   <li><b>{@code mint} itself.</b> A weapon pins an attack-damage modifier and hides it; a shield
+ *   <li><b>{@code mint}'s BODY.</b> A weapon pins an attack-damage modifier and hides it; a shield
  *       pins nothing and hides nothing; armor pins nothing and hides vanilla's armor lines. Three
  *       different answers to "what attributes does this item carry", and the shield's javadoc
  *       explicitly argues AGAINST the flag armor requires.
@@ -125,6 +131,50 @@ public final class GearItems {
             case WeaponDefinition weapon -> WeaponItems.remint(item, weapon, adapters);
             case ShieldDefinition shield -> ShieldItems.remint(item, shield, adapters);
             case ArmorDefinition armor -> ArmorItems.remint(item, armor, adapters);
+        };
+    }
+
+    /**
+     * Mint a fresh item from any gear definition, dispatched on the definition's own type.
+     *
+     * <p>{@link #remint}'s missing sibling, added when mint-on-craft needed a caller that holds a
+     * {@code GearDefinition} and does not know which kind it is. Same exhaustive switch, same no
+     * default arm, same reason: a fourth gear kind stops compiling here until someone says how it
+     * mints.
+     *
+     * <p><b>This does NOT roll enchant candidates, and must not.</b> {@code remint} calls the same
+     * per-kind bodies, so a roll placed anywhere below would fire on every join, every refresh and
+     * every enchant-table click. Rolling is the ACQUISITION path's job -- see
+     * {@link EnchantRollItems#rollOnAcquire}, whose javadoc records why the rule is about the call
+     * site rather than about a flag. A caller minting for a player calls {@link #gearClassOf} and
+     * rolls afterwards, exactly as {@code /rpg give} does.
+     */
+    public static ItemStack mint(GearDefinition definition, AdapterContext adapters) {
+        return switch (definition) {
+            case WeaponDefinition weapon -> WeaponItems.mint(weapon, adapters);
+            case ShieldDefinition shield -> ShieldItems.mint(shield, adapters);
+            case ArmorDefinition armor -> ArmorItems.mint(armor, adapters);
+        };
+    }
+
+    /**
+     * The enchant-roll class a definition draws its candidates from.
+     *
+     * <p>Extracted because this if-chain had FIVE copies coming -- {@code /rpg give}'s three arms,
+     * the kit grant, and mint-on-craft -- which is precisely the shape {@link #remint} was created
+     * to kill. Each copy independently decides that a shield draws {@code SHIELD} and a piece of
+     * armor draws {@code ARMOR}, and a copy that got it wrong would roll Bulwark onto a helmet.
+     *
+     * <p><b>The payoff is the next slice.</b> Tools are a fourth arm of the sealed type, and this
+     * switch stops the build until someone says what class a tool rolls on. Without it a crafted
+     * pickaxe would silently never roll, nothing would be red, and -- because gear is never rolled
+     * retroactively -- every pickaxe made before anyone noticed would be permanently unrollable.
+     */
+    public static GearClass gearClassOf(GearDefinition definition) {
+        return switch (definition) {
+            case WeaponDefinition weapon -> GearClass.of(weapon.weaponClass());
+            case ShieldDefinition shield -> GearClass.SHIELD;
+            case ArmorDefinition armor -> GearClass.ARMOR;
         };
     }
 

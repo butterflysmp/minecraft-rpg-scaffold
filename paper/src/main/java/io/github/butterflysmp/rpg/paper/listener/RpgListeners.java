@@ -479,12 +479,43 @@ public final class RpgListeners implements Listener {
             return;
         }
 
-        boolean refuse = switch (CraftMatrixScreen.verdict(
+        // GUARD ONE -- THE CORRECTNESS INVARIANT. An INGREDIENT is ours, so the craft would eat a
+        // player's minted item. This is the rule the whole arc rests on and it is not negotiable.
+        boolean containsGear = switch (CraftMatrixScreen.verdict(
                 crafter.getInventory().getContents(), adapters.keys())) {
             case CONTAINS_GEAR -> true;
             case VANILLA_ELIGIBLE -> false;
         };
-        if (refuse) event.setCancelled(true);
+        if (containsGear) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // GUARD TWO -- THE POLICY. The OUTPUT should be ours. Our table mints on craft; a Crafter
+        // does not, so without this a Crafter is the one remaining route to a plain vanilla shield,
+        // and the hole widens with every gear kind the roadmap adds. Refusing also stops RPG gear
+        // being redstone-farmed, by construction rather than by a list.
+        //
+        // KEPT SEPARATE FROM GUARD ONE ON PURPOSE, and the two must never be merged into one
+        // condition. They refuse for different reasons and have different scopes: guard one protects
+        // an item a player already owns and applies to INGREDIENTS; this one is an economy decision
+        // about OUTPUTS and applies to items no definition has ever claimed. Someone will eventually
+        // want to relax this -- a config flag, a permission, an exception for one material -- and if
+        // the two are welded together they will relax the invariant with it, and a Crafter will
+        // quietly start eating minted weapons again.
+        //
+        // ALLOWLIST-SHAPED: everything durable is refused, with no carve-outs for materials that
+        // "will never be gear". The moment it becomes "durable except shears, flint and steel,
+        // fishing rods" it is ANY_BUT_SHIELD in a new costume, and the next durable item Minecraft
+        // adds would be admitted by default rather than refused by default.
+        //
+        // ACCEPTED COST: cancelling keeps the ingredients, so a redstone clock will pulse a full
+        // Crafter forever with nothing coming out, and CrafterCraftEvent has no feedback channel to
+        // say why. A REFUSED CRAFTER LOOKS LIKE A JAM, NOT AN ERROR -- the same shape as the
+        // sneak-right-click dead click, and accepted for the same reason.
+        if (WeaponDurability.maxOf(event.getResult()).isPresent()) {
+            event.setCancelled(true);
+        }
     }
 
     /**

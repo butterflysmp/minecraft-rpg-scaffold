@@ -16,17 +16,21 @@ flavor:
 pieces:
   head:
     material: netherite_helmet
+    craft_result: netherite_helmet
     display_name: "Netherite Helmet"
     defense: 3
   chest:
     material: netherite_chestplate
+    craft_result: netherite_chestplate
     display_name: "Netherite Chestplate"
     defense: 8
   legs:
     material: netherite_leggings
+    craft_result: netherite_leggings
     display_name: "Netherite Leggings"
     defense: 6
   feet:
     material: netherite_boots
+    craft_result: netherite_boots
     display_name: "Netherite Boots"
     defense: 3

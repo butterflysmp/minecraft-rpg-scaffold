@@ -10,17 +10,21 @@ flavor:
 pieces:
   head:
     material: chainmail_helmet
+    craft_result: chainmail_helmet
     display_name: "Chainmail Helmet"
     defense: 2
   chest:
     material: chainmail_chestplate
+    craft_result: chainmail_chestplate
     display_name: "Chainmail Chestplate"
     defense: 5
   legs:
     material: chainmail_leggings
+    craft_result: chainmail_leggings
     display_name: "Chainmail Leggings"
     defense: 4
   feet:
     material: chainmail_boots
+    craft_result: chainmail_boots
     display_name: "Chainmail Boots"
     defense: 1

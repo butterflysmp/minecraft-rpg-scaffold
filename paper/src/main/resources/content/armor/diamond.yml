@@ -41,17 +41,21 @@ pieces:
   # ---------------------------------------------------------------------------------------------
   head:
     material: diamond_helmet
+    craft_result: diamond_helmet
     display_name: "Diamond Helmet"
     defense: 3
   chest:
     material: diamond_chestplate
+    craft_result: diamond_chestplate
     display_name: "Diamond Chestplate"
     defense: 8
   legs:
     material: diamond_leggings
+    craft_result: diamond_leggings
     display_name: "Diamond Leggings"
     defense: 6
   feet:
     material: diamond_boots
+    craft_result: diamond_boots
     display_name: "Diamond Boots"
     defense: 3
