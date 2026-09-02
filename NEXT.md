@@ -581,6 +581,183 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Crafting, Slice 1 (the grid surface) — what it created or exposed
+
+- **THE BOOT GATE IS THE SOLE WITNESS FOR EVERY PATH THAT CAN LOSE OR DUPLICATE AN ITEM.** Read this
+  before trusting the test count. The slice ends with **1078 tests green (core 627, storage 17,
+  paper 434)** and that number is genuinely misleading about what is covered here.
+
+  Five mutations were witnessed red. **All five are on the PURE classes** — `GridClickIntent`,
+  `CraftingMenuLayout`, and the matrix screen's walk. Everything below has **NO automated witness of
+  any kind**:
+
+  **Every row below is witnessed by a GATE ROW AND NOTHING ELSE.** The gate has now been run once,
+  by hand, and passed. Re-run it after any change to these methods, because the suite will not
+  notice.
+
+  | no automated witness | lives in | what goes wrong unseen | sole witness |
+  |---|---|---|---|
+  | merge overflow arithmetic | `MenuRouting.merge` | a 64-onto-40 place loses the remainder | row 10 |
+  | the cursor swap | `MenuRouting.swapCursor` | two writes, one of them wrong | row 9 |
+  | the drag widening | `Menu.handleDrag` | a drag spanning both inventories is permitted | row 6 |
+  | shift-click top-up ORDERING | `MenuRouting.shiftMove` | 64 cobblestone lands beside the stack instead of on it | row 11 |
+  | `shiftClickDispatches` performing no move | `MenuRouting.shiftMove` | the preview is given away AND the craft output on top | row 13 |
+  | the `getResultingMatrix` write-back | `CraftingMenu.commitCraft` | a cake's three empty buckets are destroyed | row 12 |
+  | the `getOverflowItems` give | `CraftingMenu.commitCraft` | remainders that would not fit vanish | **row 12c ONLY** |
+  | `returnEverything`'s clear-before-give | `Menu.returnEverything` | duplication on a re-entrant close | rows 16-19 |
+  | own-inventory-only drags still passing | `Menu.handleDrag` | every menu silently blocks backpack drags | rows 1c/1d |
+  | preview and commit agreeing | `CraftingMenu.craftOnceToCursor` | a substituted result is merged onto the cursor | **NOTHING — see below** |
+
+  **The last row has no witness at all, and cannot get one here.** A third-party
+  `PrepareItemCraftEvent` listener may CHANGE a result rather than null it, and nothing on the dev
+  server does that — so gate row 1e passes on a build that has the bug. The re-check inside
+  `craftOnceToCursor` is the only protection that exists; it is not belt-and-braces over a gate row.
+
+  **The cause is structural, not laziness.** `MenuRouting`, `Menu` and `CraftingMenu` cannot be
+  constructed without a running server and this project has no MockBukkit — a fact already stated in
+  four places in this repo. **Proven rather than assumed:** `placeAllowed`'s EXCLUSIVE occupancy rule
+  was mutated to always-allow and **all 428 paper tests stayed green**. That mutation was run
+  specifically to establish the absence of a witness.
+
+  So: **a future reader who sees "1078 tests, all green" and refactors `MenuRouting` has nothing
+  stopping them.** That is the real cost of having no MockBukkit, recorded here rather than argued
+  away. Anyone touching this surface re-runs the operator gate; the suite will not save them.
+
+  What was done about it instead of shrugging: the decidable part was extracted until it WAS
+  witnessable (`GridClickIntent` is a pure function precisely because the router is not testable),
+  `accepted` was threaded through it as a parameter so the acceptance gate has a witness at all, and
+  the matrix screen's walk was split behind a `Predicate` seam following `ContentValidator`'s
+  precedent — which is what catches a screen that only ever looks at slot 0, the bug that passes
+  every casual in-game trial where the tester used the first cell.
+
+- **The plan's own mutation table was wrong and is corrected at the source.** It listed twelve rows
+  as though each had a witness. Five did. The prose predicting the other seven is known-false and the
+  table now says which rows are boot-gate-owned. This is NEXT.md rule 2 applied to a plan rather than
+  to a test.
+
+- **`craftItemResult` MAY MODIFY THE MATRIX ARRAY IT IS GIVEN, and the first implementation passed
+  live references.** Only `getCraftingRecipe` disclaims mutation, and it does so by pointing at the
+  craft call as the thing that does: *"This method will not modify the provided ItemStack array, for
+  that, use `craftItem(ItemStack[], World, Player)`."* No `craftItemResult` overload disclaims it.
+  Since `Inventory.getItem` hands back a stack mirroring the slot, the server could write THROUGH
+  into the player's grid — on the PREVIEW path, which runs several times a second, and on the
+  commit's empty-result abort, which deliberately writes nothing back. `readMatrix` now clones.
+  Caught by reading the javadoc while answering a review question, not by any test, which is the
+  point of the entry above.
+
+- **BOOT GATE RUN AND PASSED IN FULL, 2026-09-01 — all 28 rows, operator-confirmed.** Rows 7, 8, 12
+  and 12c passed by name; nothing failed at any point.
+
+  **Rows 7, 8, 12 and 12c are the ones that carry the slice**, and each is the sole witness for
+  something no test in this repo can see. Row 7 puts a minted weapon in the grid beside otherwise
+  valid ingredients and the result stays empty — the only check that the gear-tag screen fires. Row 8
+  repeats it in the player's own 2x2 grid AND in a Crafter block, which row 7 cannot reach and which
+  is the only in-game proof `CrafterCraftEvent` is wired at all. Row 12 crafts a cake and counts
+  buckets, the only witness for `getResultingMatrix()`. Row 12c is described below.
+
+  Row **12b did not run because it was impossible as written**: it called for two milk buckets in one
+  slot, and `MILK_BUCKET.getMaxStackSize()` is **1**. It was written from reasoning and the number
+  was never checked. It did not fail and did not pass — **it was never a test**, and it is replaced
+  by 12c rather than counted.
+
+- **`getOverflowItems()` HAD NO WITNESS ANYWHERE, INCLUDING IN THE GATE THAT CLAIMED TO COVER IT.**
+  This is the sharper half of the 12b mistake and it survived the first correction. Row 12's cake
+  DOES leave three empty buckets, but they **fit back into the matrix**, so it exercises
+  `getResultingMatrix()` and never reaches the overflow give. The unwitnessed table above credited a
+  check to a row that could never have exercised it — the same shape as a mutation row predicting a
+  red it never gets, one level up.
+
+  **Reaching it needs a remainder-producing ingredient that STACKS**, so consuming one leaves the
+  slot occupied and the remainder homeless. Buckets are exactly the wrong choice. Read from the live
+  registry rather than recalled — `Material.getMaxStackSize()` throws
+  `ExceptionInInitializerError` headless, so this needed a booted server:
+
+  | material | max stack | crafting remainder |
+  |---|---|---|
+  | `DRAGON_BREATH` | 64 | `GLASS_BOTTLE` |
+  | `HONEY_BOTTLE` | **16** | `GLASS_BOTTLE` |
+  | `LAVA_BUCKET` / `MILK_BUCKET` / `WATER_BUCKET` | **1** | `BUCKET` |
+
+  **That sweep is exhaustive over the whole `Material` enum: exactly TWO stacking materials with a
+  crafting remainder exist.** So the row is reachable, and honey is the only practical family.
+
+  Then verified by making the server perform the craft rather than by reasoning about it — 2 honey
+  bottles in each of four cells of a 2x2, through the same `craftItemResult` call
+  `CraftingMenu.commitCraft` uses:
+
+  ```
+  PROBE recipe=ItemStack{HONEY_BLOCK x 1}
+  PROBE result=ItemStack{HONEY_BLOCK x 1}
+  PROBE resultingMatrix=HONEY_BOTTLE x1 | HONEY_BOTTLE x1 | AIR | HONEY_BOTTLE x1 | HONEY_BOTTLE x1 | AIR | ...
+  PROBE overflow=[GLASS_BOTTLE x1, GLASS_BOTTLE x1, GLASS_BOTTLE x1, GLASS_BOTTLE x1]
+  ```
+
+  **Gate row 12c** is therefore: two honey bottles in each of four cells, craft one honey block,
+  expect **four glass bottles delivered to you** with each cell still holding a honey bottle. Count
+  bottles before and after. **RUN AND PASSED.** It is the only row in existence that reaches
+  `getOverflowItems()` — the probe above proved the API path, and 12c is what proves our handling of
+  it.
+
+- **THE STALE-JAR TRAP FIRED, AND WAS NOT ARGUED WITH.** While chasing the above, `dev-server.sh`
+  printed `rm: cannot remove 'run/plugins/rpg-...jar': Device or resource busy` and `set -e` aborted
+  before deploying — the exact incident CLAUDE.md's VERIFICATION section records. The mtimes settled
+  it rather than a story: deployed `21:54:24` / 551386 bytes against target `22:00:48` / 552257
+  bytes, and `grep -c "Done ("` on the log returned **0**, so no server had booted at all. Two
+  orphaned `paper.jar --nogui` JVMs from an earlier boot held the lock; killing them and confirming
+  `rm` then succeeded was what fixed it. **Had the sweep been read at that moment it would have shown
+  nothing, and "no results" is indistinguishable from "no such material exists"** — which is the
+  precise wrong answer this whole entry exists to avoid.
+
+- **TWO CALLERS THAT AGREE TODAY ARE NOT TWO CALLERS SHARING AN INPUT — third instance.** The Stats
+  Slice 3 section already names this shape (*"SHARING A FORMULA IS NOT SHARING ITS INPUTS ... they
+  agree TODAY"*), and crafting met it again: the preview uses the event-free `craftItemResult`
+  overload and the commit uses the event-firing one, so a third-party `PrepareItemCraftEvent`
+  listener that CHANGES a result (rather than nulling it) makes them disagree. The empty-result abort
+  cannot see that, because a substituted result is not empty; on the merge-onto-cursor path the
+  player would have received more of what was already on their cursor instead of what they crafted.
+  `craftOnceToCursor` now re-checks the CRAFTED item rather than trusting the preview it was
+  authorised against.
+
+  **No gate row can catch it** — nothing on the dev server mutates a craft result, so the
+  preview-matches-what-you-receive row passes on a build that has the bug. The code guard is the only
+  protection, not a belt-and-braces on top of one. **Slice 2 meets this shape again** the moment
+  recipes come from content and the two callers stop being the same server matcher.
+
+- **A guard that fails OPEN is worse than no guard, and one shipped for a day.**
+  `onCrafterCraft` began `if (!(getState() instanceof Crafter crafter)) return;` -- a bare return
+  with no cancel. Near-unreachable, but it was the single line in the slice that said "unsure means
+  CRAFT" while every other line said the opposite, and it sat in the guard for the surface with the
+  weakest witness. It now cancels. The cost of being wrong that way is a Crafter that will not
+  craft; the cost of the other way is a player's weapon.
+
+- **`RpgListeners` is the single Listener, and both crafting guards went into it.** The plan
+  specified a separate `CraftGuardListener` class; `RpgListeners:77-80` says *"The single Bukkit
+  Listener. Registered once, in RpgPlugin. Resist adding a second one."* The instruction wins.
+  Consequence: `RpgPlugin` needed no change at all, and `onDisable`'s `getHolder() instanceof Menu`
+  walk already covers `CraftingMenu`.
+
+  **What caught it was INCIDENTAL, and that is the lesson rather than the outcome.** The brief, the
+  plan, and the plan review all specified a second Listener class against an explicit written
+  instruction none of them had read. It surfaced only because someone went looking for where to put
+  a handler and read the surrounding javadoc on the way past. Nothing in the process was aiming at
+  it. **A plan-versus-instructions pass belongs BEFORE building** -- read CLAUDE.md and the javadoc
+  of every file the plan says it will modify, and check the plan against them deliberately. Cheap,
+  and it turns a lucky catch into a check. The same pass would have flagged the `MenuIcons`/`Menu`
+  javadoc conventions this slice had to infer.
+
+- **`PrepareItemCraftEvent` cannot reach the Crafter block, structurally.** `CrafterInventory`'s
+  superinterfaces are `{Inventory, Iterable<ItemStack>}`; it does not extend `CraftingInventory`, and
+  `PrepareItemCraftEvent`'s only constructor takes one. `CrafterCraftEvent` covers that surface and,
+  unlike the other event, IS `Cancellable`. A single-handler implementation would have left a
+  redstone-driven Crafter eating minted gear with nothing firing.
+
+- **Still owed:** the whole operator gate except row 1. Rows 7, 8 and 12 carry the slice — 8 is the
+  only in-game proof `CrafterCraftEvent` is wired, 12 (craft a cake, count buckets) the only one that
+  catches container-remainder destruction, and the own-inventory drag rows the only ones that catch a
+  regression in every OTHER menu. **Gate row 1b (the region/thread witness) is operator-owned, not
+  machine-runnable** — it needs a player clicking in a menu, and the plan was wrong to list it as
+  something the build could run.
+
 ### Stats, Slice 3 (`/rpg stats`) — what it created or exposed
 
 - **BOOT GATE RUN AND PASSED, 2026-08-31: all eight rows, operator-confirmed**, including both
@@ -3925,6 +4102,58 @@ the old example is now false and is part of the change — the same closing clau
 A superseded plan gets a note at the top naming what stopped being true; it does not get edited into
 looking as though it always said the new thing.
 
+
+### A GATE ROW CAN BE IMPOSSIBLE, OR REAL BUT NON-DISCRIMINATING, AND BOTH CREDIT COVERAGE THAT DOES NOT EXIST
+
+**WHY THIS IS A RULE HERE AND NOT GENERAL ADVICE.** In a project with real automated coverage, a
+miscredited manual check is a nuisance: the suite still runs the code, and a defect has other ways to
+surface. **In this repo the boot gate is not a supplement to the suite — for eight behaviours it IS
+the suite**, exactly as the unwitnessed table in the Crafting Slice 1 section now records. Nothing
+constructs `MenuRouting`, `Menu` or `CraftingMenu`, because nothing can without a server. So a
+miscredited gate row here is not a gap in redundant cover. It is **an unwitnessed defect wearing a
+passing row**, and the suite is structurally incapable of noticing it — no red exists to be missed.
+That is what makes this worth a rule rather than a habit.
+
+**HOW IT DIFFERS FROM RULE 2, precisely.** Rule 2's second failure mode is INSENSITIVITY: the test
+runs the mutated line and observes something else. This one is NON-REACHABILITY: the check never
+enters the call at all. Different defects, and the second is harder to see — insensitivity at least
+has you standing in the right method, where the fix is a better assertion. Non-reachability puts you
+in a neighbouring call that passes honestly, so there is nothing to sharpen and nothing to notice.
+
+Crafting Slice 1 produced one of each, in the same afternoon, over the same property, and **both were
+written by the reviewer specifying the checks** — which is the point. This catches the person whose
+job is deciding what gets verified, not the person implementing it.
+
+**IMPOSSIBLE.** Row 12b was written from reasoning as *"two milk buckets in one slot"*.
+`MILK_BUCKET.getMaxStackSize()` is **1**, so the state it described cannot exist, and the number was
+never checked — the first rule in `CLAUDE.md`, applied to a gate table instead of to code. It did not
+fail and it did not pass. **A row that cannot run is not a partial pass and must not be counted**:
+the gate was 27/27, never 27/28.
+
+**REAL BUT NON-DISCRIMINATING, and this is the dangerous one.** Row 12 — craft a cake, count the
+three empty buckets — is a genuine row that genuinely passed. It was then credited, in the review
+message that put the line into this file, as the witness for `getOverflowItems()`, **and it can never
+reach that call**: the cake's buckets FIT BACK into the matrix, so the row exercises
+`getResultingMatrix()` and stops. A passing row stood in for a call that had never once executed.
+Nothing looked wrong, because nothing was red — and here, nothing else was ever going to be.
+
+Reaching the overflow give needed a remainder-producing ingredient that **stacks**, so consuming one
+leaves the slot occupied and the remainder homeless. Buckets are precisely the wrong family. A sweep
+of the whole `Material` enum found **exactly two** candidates — `HONEY_BOTTLE` (16) and
+`DRAGON_BREATH` (64), both remaindering to `GLASS_BOTTLE` — and row 12c was built from one of them.
+
+So, when a row is named as the witness for a specific code path:
+
+- **State which line it reaches.** "Row 12 covers the remainder handling" is not a claim until you
+  can say *which call* it enters. Two adjacent calls in the same method are not the same witness.
+- **Check the row is physically possible before writing it.** Stack sizes, recipe shapes and
+  registry contents are all queryable. `Material.getMaxStackSize()` throws headless, so it needs a
+  booted server — that is a reason to boot, not a reason to guess.
+- **Prefer a row whose PASS is impossible without the path.** Row 12c fails visibly if the overflow
+  give is deleted, because four glass bottles simply never arrive. Row 12 passes either way.
+- **A row that turns out to be impossible gets REPLACED and SAID SO**, never quietly swapped. The
+  original stays in the table marked as never-a-test, because the next reader's question is "was this
+  checked", and "it was replaced because it could not exist" is a different answer from "it passed".
 
 - After every commit: `./mvnw -pl core test`. After every batch:
   `./mvnw clean package` and a manual boot.

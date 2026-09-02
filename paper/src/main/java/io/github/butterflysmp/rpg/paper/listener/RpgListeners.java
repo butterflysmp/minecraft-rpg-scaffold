@@ -19,6 +19,8 @@ import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.health.ArmorBarOverride;
 import io.github.butterflysmp.rpg.paper.health.AttackSpeedAttributeOverride;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
+import io.github.butterflysmp.rpg.paper.menu.CraftMatrixScreen;
+import io.github.butterflysmp.rpg.paper.menu.CraftingMenu;
 import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
@@ -45,7 +47,11 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.block.Block;
+import org.bukkit.block.Crafter;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.CrafterCraftEvent;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import io.papermc.paper.event.entity.EntityKnockbackEvent;
@@ -71,7 +77,9 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiFunction;
 
 /**
  * The single Bukkit Listener. Registered once, in RpgPlugin.
@@ -114,6 +122,27 @@ public final class RpgListeners implements Listener {
      */
     private final MeleeHits meleeHits = new MeleeHits(Bukkit::getCurrentTick);
 
+    /**
+     * The blocks whose vanilla screen we replace outright, and what opens INSTEAD.
+     *
+     * <p><b>A table rather than a second hand-written if-block, because this rule has a documented
+     * history of being got wrong.</b> The enchanting table's own comment records that its cancel
+     * once sat inside the {@code !isSneaking} guard, so a sneak-right-click skipped the block
+     * entirely, nothing cancelled the event, and the vanilla enchanting screen opened -- the one
+     * screen the hijack exists to replace. Writing that shape a second time by hand is a bet that
+     * any future correction lands in both copies. Here there is one copy, in
+     * {@link #openHijackedBlock}, and the third hijack is free: {@code Menu}'s own javadoc already
+     * names the anvil and class-select screens as coming.
+     *
+     * <p>The opener takes the clicked block because the enchanting table needs it (bookshelf power
+     * is frozen at open); the crafting table ignores it. One signature beats two.
+     *
+     * <p>Built in the CONSTRUCTOR rather than as a field initialiser: the openers close over
+     * {@code weapons}, {@code adapters} and friends, and a field initialiser runs before the
+     * constructor body assigns them, which definite-assignment analysis rejects outright.
+     */
+    private final Map<Material, BiFunction<Player, Block, Menu>> hijackedBlocks;
+
     public RpgListeners(CooldownTracker cooldowns, ResourcePool resources, ProfileService profiles,
                         WeaponRegistry weapons, ShieldRegistry shields, ArmorRegistry armor,
                         WeaponService weaponService,
@@ -132,6 +161,12 @@ public final class RpgListeners implements Listener {
         this.nameplates = nameplates;
         this.statsBar = statsBar;
         this.healthRegen = healthRegen;
+
+        this.hijackedBlocks = Map.of(
+                Material.ENCHANTING_TABLE,
+                (player, block) -> new EnchantMenu(player, weapons, shields, armor, adapters, block),
+                Material.CRAFTING_TABLE,
+                (player, block) -> new CraftingMenu(player, adapters));
     }
 
     @EventHandler
@@ -198,9 +233,10 @@ public final class RpgListeners implements Listener {
      * present). ironblade has no right_click, so its right-click passes through and doors and
      * chests still work with it in hand; only a weapon that uses the input consumes it.
      *
-     * The ONE exception is an enchanting table, which is cancelled unconditionally whatever is
-     * held and whether or not you are sneaking -- the custom table replaces vanilla enchanting, so
-     * the vanilla screen must never open. See the block below.
+     * The exceptions are the HIJACKED BLOCKS -- today an enchanting table and a crafting table,
+     * listed in {@link #hijackedBlocks}. Each is cancelled unconditionally whatever is held and
+     * whether or not you are sneaking, because our menu replaces that block's vanilla screen
+     * outright and it must never open. See {@link #openHijackedBlock}.
      */
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
@@ -208,32 +244,15 @@ public final class RpgListeners implements Listener {
         Action action = event.getAction();
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
-        // VANILLA ENCHANTING NEVER OPENS ON THIS BLOCK, sneaking or not. The custom table replaces
-        // it outright, so suppressing it is unconditional and sneaking only decides what happens
-        // INSTEAD of it.
-        //
-        // The cancel used to live inside the !isSneaking guard, which meant a sneak-right-click
-        // skipped this block entirely, nothing cancelled the event, and the vanilla enchanting
-        // screen opened -- the one screen this whole pass exists to replace. Sneaking suppresses a
-        // container GUI only when you are holding a PLACEABLE item; with an empty hand it does
-        // nothing at all, so the guard was resting on a rule that does not exist.
-        //
-        // Accepted consequence: you also cannot place a block against an enchanting table any more.
-        // That and vanilla enchanting are both things the custom table is here to take over, and a
-        // player who wants to build against one can break and re-place it.
+        // THE VANILLA SCREEN NEVER OPENS ON A HIJACKED BLOCK, sneaking or not. Our menus replace
+        // those screens outright, so suppressing them is unconditional and sneaking only decides
+        // what happens INSTEAD.
         //
         // Ahead of WeaponFire.attempt deliberately, so the weapon never spends mana on a click
         // that opened a menu.
         if (action == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null
-                && event.getClickedBlock().getType() == Material.ENCHANTING_TABLE) {
-            event.setCancelled(true);
-            if (!event.getPlayer().isSneaking()) {
-                new EnchantMenu(event.getPlayer(), weapons, shields, armor, adapters, event.getClickedBlock()).open();
-                return;
-            }
-            // Sneaking: fall through to WeaponFire.attempt so the weapon's right_click still fires
-            // -- the escape hatch that keeps a Mage able to cast while standing at a table. Vanilla
-            // is already cancelled above, so the table opens for neither of us.
+                && openHijackedBlock(event)) {
+            return;
         }
 
         WeaponFire.attempt(event.getPlayer(), "right_click", weapons, weaponService, adapters,
@@ -308,6 +327,57 @@ public final class RpgListeners implements Listener {
     }
 
     /**
+     * Suppress a hijacked block's vanilla screen and open ours instead.
+     *
+     * <p><b>THE CANCEL IS UNCONDITIONAL AND COMES FIRST</b>, before anything looks at sneaking.
+     * That ordering is the whole point of this method existing once rather than twice. It used to
+     * live inside the {@code !isSneaking} guard, which meant a sneak-right-click skipped the block
+     * entirely, nothing cancelled the event, and the vanilla enchanting screen opened -- the one
+     * screen the hijack exists to replace. Sneaking suppresses a container GUI only when you are
+     * holding a PLACEABLE item; with an empty hand it does nothing at all, so that guard was
+     * resting on a rule that does not exist.
+     *
+     * <p><b>The bill, stated rather than inherited.</b> The enchanting table's version of this note
+     * waved the cost off with "a player who wants to build against one can break and re-place it",
+     * which was written about a block a base has one of. Crafting tables are everywhere, and this
+     * costs two real, permanent, player-facing things:
+     *
+     * <ul>
+     *   <li>No block can be placed against any face of any crafting table or enchanting table.
+     *   <li>The vanilla RECIPE BOOK is gone for 3x3 crafting entirely -- its search, its auto-fill
+     *       and its "craftable now" filter do not exist in our menu. Until Quick Craft lands,
+     *       players craft from memory.
+     * </ul>
+     *
+     * <p>Unconditional is still right. The alternative is classifying which held items suppress a
+     * block-entity GUI, and that list goes stale the first time Minecraft adds a placeable -- the
+     * denylist defect again, in a place where being wrong opens the very screen we replaced.
+     *
+     * <p><b>The sneak path can be a silent dead click, and that is accepted rather than unnoticed.</b>
+     * Sneaking with a weapon that binds no {@code right_click} leaves the event cancelled and
+     * nothing happens, with no feedback. That is already true of the enchanting table and is the
+     * price of the escape hatch that keeps a Mage able to cast while standing at one.
+     *
+     * @return true if a menu was opened and the caller should stop; false to fall through to
+     *         {@code WeaponFire.attempt}, which is both the sneak escape hatch and the ordinary
+     *         "this block is not ours" path.
+     */
+    private boolean openHijackedBlock(PlayerInteractEvent event) {
+        Block block = event.getClickedBlock();
+        BiFunction<Player, Block, Menu> opener = hijackedBlocks.get(block.getType());
+        if (opener == null) return false;
+
+        event.setCancelled(true);
+
+        // Sneaking: fall through to WeaponFire.attempt so the weapon's right_click still fires.
+        // Vanilla is already cancelled above, so the block's own screen opens for neither of us.
+        if (event.getPlayer().isSneaking()) return false;
+
+        opener.apply(event.getPlayer(), block).open();
+        return true;
+    }
+
+    /**
      * Route a click to the menu that owns the top inventory.
      *
      * DISPATCH-ONLY, and the routing lives in Menu because the rule it enforces has to be the same
@@ -342,6 +412,79 @@ public final class RpgListeners implements Listener {
         if (event.getView().getTopInventory().getHolder() instanceof Menu menu) {
             menu.handleClose(event);
         }
+    }
+
+    /**
+     * NO VANILLA RECIPE EVER CONSUMES A MINTED ITEM, on any surface that resolves through this
+     * event.
+     *
+     * <p>Hijacking the crafting table block protects ONE surface. This protects the others: the 2x2
+     * grid in the player's own inventory, the recipe book's auto-fill, and any workbench screen that
+     * reaches a player by a route the block hijack does not cover. A minted item eaten at any of
+     * them is the same silent, unrecoverable loss.
+     *
+     * <p>LOWEST so the result is blanked before any other plugin reads it, and so nothing downstream
+     * is reasoning about a result that must not exist.
+     *
+     * <p><b>The event is not {@code Cancellable} and has no {@code setResult}</b> -- verified
+     * against the pinned API, not assumed. Suppression is the covariant {@code getInventory()},
+     * whose {@code CraftingInventory} does have {@code setResult}. Blanking to null is the refusal.
+     *
+     * <p><b>This event CANNOT cover the Crafter block</b>, which is why {@link #onCrafterCraft}
+     * exists beside it rather than as belt and braces. See that method.
+     *
+     * <p>Our own crafting menu never relies on this: it screens its matrix before consulting any
+     * matcher. The commit path DOES re-enter here, because the player-taking overload of
+     * {@code craftItemResult} fires this event by contract -- and it passes, because the matrix was
+     * already screened and holds nothing of ours.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPrepareCraft(PrepareItemCraftEvent event) {
+        boolean refuse = switch (CraftMatrixScreen.verdict(
+                event.getInventory().getMatrix(), adapters.keys())) {
+            case CONTAINS_GEAR -> true;
+            case VANILLA_ELIGIBLE -> false;
+        };
+        if (refuse) event.getInventory().setResult(null);
+    }
+
+    /**
+     * The Crafter block, which {@link #onPrepareCraft} is STRUCTURALLY UNABLE to reach.
+     *
+     * <p>Not a guess and not defensive duplication: {@code CrafterInventory}'s superinterfaces are
+     * {@code Inventory} and {@code Iterable<ItemStack>}. It does NOT extend
+     * {@code CraftingInventory}, and {@code PrepareItemCraftEvent}'s only constructor takes a
+     * {@code CraftingInventory}. The event therefore cannot be constructed for a Crafter, so a
+     * redstone-driven Crafter would happily eat a minted item with the other handler in place and
+     * nothing would fire.
+     *
+     * <p>This event, unlike that one, IS {@code Cancellable}. Cancelling is the refusal: the block
+     * keeps its ingredients and simply does not craft.
+     *
+     * <p>The matrix comes from the block's own container, because the event carries the recipe and
+     * the result but not the ingredients, and {@code CrafterInventory} exposes no {@code getMatrix}.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onCrafterCraft(CrafterCraftEvent event) {
+        // FAILS CLOSED. A CrafterCraftEvent whose block is not a Crafter should be impossible, and
+        // if it ever happens we cannot read the ingredients -- which means we cannot tell whether
+        // one of them is a player's minted gear. "Unsure means NO CRAFT" is the rule the whole arc
+        // rests on, and a bare return here would have been the single line in this slice that said
+        // the opposite, in the guard for the surface with the weakest witness.
+        //
+        // The cost of being wrong in this direction is a Crafter that refuses to craft. The cost of
+        // being wrong in the other is a player's weapon, silently and unrecoverably.
+        if (!(event.getBlock().getState() instanceof Crafter crafter)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        boolean refuse = switch (CraftMatrixScreen.verdict(
+                crafter.getInventory().getContents(), adapters.keys())) {
+            case CONTAINS_GEAR -> true;
+            case VANILLA_ELIGIBLE -> false;
+        };
+        if (refuse) event.setCancelled(true);
     }
 
     /**

@@ -24,6 +24,11 @@ import java.util.function.Supplier;
  * <p>{@link Menu#handleClick} has ALREADY cancelled the event before this is called. Nothing here
  * cancels; it only ever UN-cancels, on one path, or performs a move ITSELF. That is what makes a
  * {@code return} added later by someone who has not read this safe.
+ *
+ * <p><b>What an input slot ACCEPTS is now per-slot</b>, via {@link Menu#slotPolicy}. The whitelist
+ * property is unchanged: {@link GridClickIntent} names every permitted action for each policy and
+ * everything else reaches {@code REFUSE}. The decision itself lives there rather than here, because
+ * this class cannot be built in a unit test and that one can.
  */
 final class MenuRouting {
 
@@ -57,18 +62,6 @@ final class MenuRouting {
             InventoryAction.COLLECT_TO_CURSOR,
             InventoryAction.CLONE_STACK,
             InventoryAction.UNKNOWN);
-
-    /**
-     * The only two actions an input slot permits by un-cancelling: put a whole stack in, take a
-     * whole stack out.
-     *
-     * <p>Whole-stack only. {@code PLACE_ONE} and {@code PICKUP_HALF} would let a player split a
-     * stack across the boundary, and a slot holding "half a weapon" is a state nothing downstream
-     * is written for.
-     */
-    private static final Set<InventoryAction> INPUT_ACTIONS = Set.of(
-            InventoryAction.PICKUP_ALL,
-            InventoryAction.PLACE_ALL);
 
     /**
      * What a player may do inside their OWN inventory while a menu is open. They have to be able
@@ -139,19 +132,115 @@ final class MenuRouting {
 
         // 6. The menu itself.
         int slot = event.getRawSlot();
-        if (menu.inputSlots().contains(slot) && click == ClickType.LEFT
-                && INPUT_ACTIONS.contains(event.getAction())) {
-            if (event.getAction() == InventoryAction.PLACE_ALL
-                    && !placeAllowed(menu, slot, event.getCursor())) {
-                return null;                       // stays cancelled: the place never happened
-            }
-            event.setCancelled(false);             // THE exception, and the only one
-            return new MenuClick(slot, click, event.getAction(), true);
+        if (menu.inputSlots().contains(slot)) {
+            return inputClick(event, menu, slot, click);
         }
 
         // Everything else in the menu -- including a RIGHT-click on that same input slot -- stays
         // cancelled and is handed over as a button press.
         return new MenuClick(slot, click, event.getAction(), false);
+    }
+
+    /**
+     * A click on a declared input slot, decided by {@link GridClickIntent} and then carried out.
+     *
+     * <p>The decision is asked BEFORE anything moves, against the slot as it rests: an
+     * {@code InventoryClickEvent} fires before the click applies, so the slot still holds its
+     * occupant and only the incoming item's landing is pending.
+     *
+     * <p>{@code acceptsInput} is asked only when the answer depends on it, which
+     * {@link GridClickIntent#consultsAcceptance} decides. That is not an optimisation: the method
+     * is not a pure query -- {@code EnchantMenu}'s says a sentence in chat when it refuses -- so
+     * asking it on a pickup would tell a player their own weapon is not one of their weapons as
+     * they took it back out.
+     */
+    private static MenuClick inputClick(InventoryClickEvent event, Menu menu, int slot,
+                                        ClickType click) {
+        InventoryAction action = event.getAction();
+        SlotPolicy policy = menu.slotPolicy(slot);
+
+        ItemStack cursor = event.getCursor();
+        ItemStack resting = menu.getInventory().getItem(slot);
+        boolean restingEmpty = isEmpty(resting);
+        boolean similar = !restingEmpty && !isEmpty(cursor) && resting.isSimilar(cursor);
+
+        boolean accepted = GridClickIntent.consultsAcceptance(action, click, policy)
+                && menu.acceptsInput(cursor);
+
+        // Exhaustive switch EXPRESSION, no default arm: a sixth intent is a compile error here
+        // until someone says what the router should DO about it.
+        return switch (GridClickIntent.of(action, click, policy, restingEmpty, similar, accepted)) {
+            case REFUSE -> null;                    // stays cancelled: the move never happened
+            case PERMIT -> {
+                event.setCancelled(false);          // vanilla applies it; both endpoints are fixed
+                yield new MenuClick(slot, click, action, true);
+            }
+            case MERGE_ALL -> merge(event, menu, slot, Integer.MAX_VALUE);
+            case MERGE_ONE -> merge(event, menu, slot, 1);
+            case SWAP -> swapCursor(event, menu, slot);
+        };
+    }
+
+    /**
+     * Top a resting stack up from the cursor, by at most {@code limit} items.
+     *
+     * <p>Performed rather than permitted so the arithmetic is ours and can be asserted. The two
+     * writes are computed from CLONES taken before either lands, so there is no window in which
+     * the total is wrong: what leaves the cursor is exactly what arrives in the slot.
+     *
+     * <p>{@code getMaxStackSize()} is read from the RESTING item, not from its Material. A weapon
+     * minted with {@code setMaxStackSize(1)} therefore has zero room and this refuses, which is the
+     * same answer the enchant slot gives for its own reasons.
+     */
+    private static MenuClick merge(InventoryClickEvent event, Menu menu, int slot, int limit) {
+        if (!(event.getWhoClicked() instanceof Player player)) return null;
+
+        ItemStack cursor = event.getCursor();
+        ItemStack resting = menu.getInventory().getItem(slot);
+        if (isEmpty(cursor) || isEmpty(resting)) return null;
+
+        int room = resting.getMaxStackSize() - resting.getAmount();
+        int moved = Math.min(Math.min(limit, cursor.getAmount()), room);
+        if (moved <= 0) return null;
+
+        ItemStack topped = resting.clone();
+        topped.setAmount(resting.getAmount() + moved);
+
+        ItemStack remaining = cursor.clone();
+        remaining.setAmount(cursor.getAmount() - moved);
+
+        menu.getInventory().setItem(slot, topped);
+        player.setItemOnCursor(remaining.getAmount() <= 0 ? null : remaining);
+        player.updateInventory();
+        return new MenuClick(slot, event.getClick(), event.getAction(), true);
+    }
+
+    /**
+     * Exchange the cursor and a resting stack.
+     *
+     * <p><b>This is the one two-way move the router performs, and the reason it is safe is not the
+     * reason the number key is refused.</b> {@link #swapWithInput} refuses a both-full number key
+     * because that gesture names a SLOT and not a direction: both endpoints are resting storage and
+     * there is no intent to infer. A cursor click has a designated incoming side -- the player is
+     * holding one thing and clicking one destination -- and crosses no inventory boundary. The
+     * server picks nothing here either.
+     *
+     * <p>Both clones are taken before either write, so the pair cannot be observed half-applied.
+     */
+    private static MenuClick swapCursor(InventoryClickEvent event, Menu menu, int slot) {
+        if (!(event.getWhoClicked() instanceof Player player)) return null;
+
+        ItemStack cursor = event.getCursor();
+        ItemStack resting = menu.getInventory().getItem(slot);
+        if (isEmpty(cursor) || isEmpty(resting)) return null;
+
+        ItemStack incoming = cursor.clone();
+        ItemStack outgoing = resting.clone();
+
+        menu.getInventory().setItem(slot, incoming);
+        player.setItemOnCursor(outgoing);
+        player.updateInventory();
+        return new MenuClick(slot, event.getClick(), event.getAction(), true);
     }
 
     /**
@@ -168,6 +257,19 @@ final class MenuRouting {
      * IN, a full input slot and an empty other slot moves OUT, and the two remaining cases are
      * refused -- both full is the two-way swap vanilla would do, and both empty is nothing to move.
      *
+     * <p><b>This rule does NOT change for a STACKING slot, and that is a decision rather than an
+     * oversight.</b> A cursor click on an occupied grid slot merges or swaps because the cursor is
+     * a designated incoming side. A number key or F names a SLOT, not a direction: both endpoints
+     * are resting storage, so "exactly one side full" is how intent is inferred, and when both are
+     * full there is no intent to infer. Vanilla guesses "swap", and that guess crosses an inventory
+     * boundary in two directions at once.
+     *
+     * <p><b>Latent hazard if that is ever relaxed:</b> the IN branch below writes the slot BLINDLY,
+     * which is safe only because {@code restingEmpty} has already been established. Under
+     * {@code STACKING}, {@link #placeAllowed} now returns true for an occupied-but-similar slot, so
+     * relaxing the one-side-full test without also teaching that write to merge would turn it into
+     * a destructive overwrite of whatever was resting there.
+     *
      * @param read  the other slot's current contents. May be air; never assumed non-null.
      * @param write sets the other slot. {@code null} clears it.
      */
@@ -176,8 +278,8 @@ final class MenuRouting {
                                            Consumer<ItemStack> write) {
         ItemStack other = read.get();
         ItemStack resting = menu.getInventory().getItem(hovered);
-        boolean otherEmpty = other == null || other.getType().isAir();
-        boolean restingEmpty = resting == null || resting.getType().isAir();
+        boolean otherEmpty = isEmpty(other);
+        boolean restingEmpty = isEmpty(resting);
 
         // Both full, or both empty. Neither is a one-way move.
         if (otherEmpty == restingEmpty) return null;
@@ -275,7 +377,7 @@ final class MenuRouting {
         if (!(event.getWhoClicked() instanceof Player player)) return null;
 
         ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem == null || clickedItem.getType().isAir()) return null;
+        if (isEmpty(clickedItem)) return null;
         // Cloned because getCurrentItem() can hand back a view backed by the slot we are about to
         // clear. Moving a reference to a slot we then empty is how an item becomes air in transit.
         ItemStack moving = clickedItem.clone();
@@ -284,7 +386,19 @@ final class MenuRouting {
             int slot = event.getRawSlot();
             // ONLY an input slot leaves the menu. A filler pane, a candidate icon and the close
             // button are display items the menu owns, and none of them is a thing to own.
-            if (!menu.inputSlots().contains(slot)) return null;
+            if (!menu.inputSlots().contains(slot)) {
+                // ...but the menu may still want the GESTURE, as a button press. A crafting result
+                // reads shift-click as "do it repeatedly" rather than "move this item".
+                //
+                // DISPATCH ONLY, and the early return here is the whole point: falling through to
+                // the clear-and-give below would hand the player the DISPLAY item and then whatever
+                // onClick produces on top of it -- one free item per shift-click, from a preview
+                // nobody paid for. itemMoved is false because nothing moved.
+                if (menu.shiftClickDispatches(slot)) {
+                    return new MenuClick(slot, event.getClick(), event.getAction(), false);
+                }
+                return null;
+            }
 
             menu.getInventory().setItem(slot, null);      // clear FIRST, so a failed give cannot
             MenuSafety.give(player, moving);              // leave a second copy behind
@@ -292,37 +406,95 @@ final class MenuRouting {
             return new MenuClick(slot, event.getClick(), event.getAction(), true);
         }
 
-        // From the player's inventory: into the first EMPTY input slot that accepts it. Sorted so
-        // a multi-input menu fills left to right rather than in Set.of's unspecified order -- the
-        // one consumer today has a single input slot, so nothing depends on it yet.
-        Integer target = null;
-        for (int slot : new TreeSet<>(menu.inputSlots())) {
-            ItemStack resting = menu.getInventory().getItem(slot);
-            if (resting == null || resting.getType().isAir()) {
-                target = slot;
-                break;
-            }
-        }
-        // Every input slot occupied. Refused silently: the player can see the slot is full, and
-        // acceptsInput has not been asked, so nothing has claimed the ITEM was the problem.
+        // From the player's inventory. Sorted so a multi-input menu fills left to right rather than
+        // in Set.of's unspecified order.
+        //
+        // TOP UP FIRST, THEN FILL AN EMPTY SLOT -- in that order, because that is what vanilla
+        // does and the difference is invisible when it is wrong. Shift-clicking 64 cobblestone into
+        // a grid that already holds cobblestone must land it ON that stack; a first-empty-slot
+        // search puts it in the next cell along, throws no error, reddens nothing, and reads to a
+        // player as the menu simply being weird.
+        Integer target = topUpTarget(menu, moving);
+        if (target == null) target = firstEmptyInput(menu);
+
+        // Every input slot occupied and none of them able to take this. Refused silently: the
+        // player can see the slots are full, and acceptsInput has not been asked, so nothing has
+        // claimed the ITEM was the problem.
         if (target == null) return null;
         if (!placeAllowed(menu, target, moving)) return null;
 
-        event.setCurrentItem(null);                       // clear the source FIRST, same reason
-        menu.getInventory().setItem(target, moving);
+        ItemStack resting = menu.getInventory().getItem(target);
+        if (isEmpty(resting)) {
+            event.setCurrentItem(null);                   // clear the source FIRST, same reason
+            menu.getInventory().setItem(target, moving);
+        } else {
+            // A top-up. Only what fits moves; the remainder stays in the source slot, which is
+            // vanilla's behaviour and is why this cannot simply overwrite.
+            int moved = Math.min(resting.getMaxStackSize() - resting.getAmount(), moving.getAmount());
+            if (moved <= 0) return null;
+
+            ItemStack topped = resting.clone();
+            topped.setAmount(resting.getAmount() + moved);
+
+            ItemStack leftover = moving.clone();
+            leftover.setAmount(moving.getAmount() - moved);
+
+            event.setCurrentItem(leftover.getAmount() <= 0 ? null : leftover);
+            menu.getInventory().setItem(target, topped);
+        }
+
         player.updateInventory();
         return new MenuClick(target, event.getClick(), event.getAction(), true);
     }
 
     /**
+     * The first STACKING input slot already holding a matching stack with room in it, or
+     * {@code null}.
+     *
+     * <p>Only stacking slots, because an EXCLUSIVE slot holds one whole item and has no notion of
+     * room: topping one up is exactly the merge its policy exists to refuse.
+     */
+    private static Integer topUpTarget(Menu menu, ItemStack moving) {
+        for (int slot : new TreeSet<>(menu.inputSlots())) {
+            boolean stacking = switch (menu.slotPolicy(slot)) {
+                case STACKING -> true;
+                case EXCLUSIVE -> false;
+            };
+            if (!stacking) continue;
+
+            ItemStack resting = menu.getInventory().getItem(slot);
+            if (isEmpty(resting)) continue;
+            if (!resting.isSimilar(moving)) continue;
+            if (resting.getAmount() >= resting.getMaxStackSize()) continue;
+            return slot;
+        }
+        return null;
+    }
+
+    /** The first input slot holding nothing at all, or {@code null}. Policy-independent. */
+    private static Integer firstEmptyInput(Menu menu) {
+        for (int slot : new TreeSet<>(menu.inputSlots())) {
+            if (isEmpty(menu.getInventory().getItem(slot))) return slot;
+        }
+        return null;
+    }
+
+    /**
      * May this item go into this input slot? Two questions, and they are deliberately different.
      *
-     * <p><b>Occupancy, which the menu is not asked about.</b> The target slot must be EMPTY.
-     * Vanilla MERGES a place onto a matching stack rather than swapping, so without this a cursor
-     * of one item passes every validity check the menu could make and the slot still ends up
-     * holding two. Reading the slot is reliable here: {@code InventoryClickEvent} fires BEFORE the
-     * place applies, so the slot still holds its resting occupant and only the incoming item's
-     * landing is pending.
+     * <p><b>Occupancy, which the menu is not asked about, and which the POLICY decides.</b> For an
+     * EXCLUSIVE slot the target must be EMPTY: vanilla MERGES a place onto a matching stack rather
+     * than swapping, so without this a cursor of one item passes every validity check the menu
+     * could make and the slot still ends up holding two. For a STACKING slot an occupied target is
+     * fine when the resting item would stack with the incoming one and has room. Reading the slot
+     * is reliable here: {@code InventoryClickEvent} fires BEFORE the place applies, so the slot
+     * still holds its resting occupant and only the incoming item's landing is pending.
+     *
+     * <p>The DISSIMILAR case is absent on purpose. This answers "may it go IN", and a dissimilar
+     * cursor onto an occupied stacking slot is a swap rather than a place -- decided by
+     * {@link GridClickIntent} and performed by {@link #swapCursor}, on a path that asks
+     * {@code acceptsInput} exactly as this does. A shift-click has no cursor to swap with, so
+     * answering false here is the right answer for every caller that reaches it.
      *
      * <p><b>Validity, which is the menu's own.</b> Asked with the item still in the player's
      * hands -- on the cursor for a click-place, in its source slot for a shift-click -- which is
@@ -335,7 +507,28 @@ final class MenuRouting {
      */
     private static boolean placeAllowed(Menu menu, int slot, ItemStack incoming) {
         ItemStack resting = menu.getInventory().getItem(slot);
-        if (resting != null && !resting.getType().isAir()) return false;
+        boolean restingEmpty = isEmpty(resting);
+
+        // Exhaustive switch EXPRESSION, no default arm: a third policy is a compile error rather
+        // than a silent adoption of whichever occupancy rule happened to be written last.
+        boolean occupancyOk = switch (menu.slotPolicy(slot)) {
+            case EXCLUSIVE -> restingEmpty;
+            case STACKING -> restingEmpty
+                    || (resting.isSimilar(incoming) && resting.getAmount() < resting.getMaxStackSize());
+        };
+        if (!occupancyOk) return false;
+
         return menu.acceptsInput(incoming);
+    }
+
+    /**
+     * Air, null and a zero stack are all "nothing here".
+     *
+     * <p>One copy because the three-part test was written out at six call sites and a fourth
+     * condition added to only five of them is exactly the kind of drift that ends in an item
+     * becoming air in transit.
+     */
+    private static boolean isEmpty(ItemStack item) {
+        return item == null || item.getType().isAir() || item.getAmount() <= 0;
     }
 }

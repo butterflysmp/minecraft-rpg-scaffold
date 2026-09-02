@@ -61,6 +61,41 @@ public abstract class Menu implements InventoryHolder {
     }
 
     /**
+     * How one input slot accepts items. Asked only about slots in {@link #inputSlots()}.
+     *
+     * <p>Defaults to {@link SlotPolicy#EXCLUSIVE}, which is today's rule and the conservative one:
+     * one whole stack, into an empty slot, LEFT-click only. A menu that wants a vanilla-feeling
+     * stacking grid says so per slot, so a menu can have both kinds -- an enchant-style single slot
+     * beside a grid -- without either rule leaking into the other.
+     *
+     * <p>{@link #inputSlots()} stays the UNION of every slot holding a player's items, whatever
+     * their policies. That is what keeps {@link #returnEverything}, the shift-move, the hotbar move
+     * and the offhand move covering all of them: a second parallel set would leave stacking slots
+     * out of the return path, and every close would silently eat what rested in them.
+     */
+    protected SlotPolicy slotPolicy(int slot) {
+        return SlotPolicy.EXCLUSIVE;
+    }
+
+    /**
+     * May a shift-click on this NON-INPUT menu slot be dispatched to {@link #onClick} as a button
+     * press?
+     *
+     * <p>Default false: a display slot swallows shift-clicks, exactly as it always has. This exists
+     * for a slot the menu OWNS and hands over itself -- a crafting result -- where shift-click means
+     * "do it repeatedly" rather than "move this item".
+     *
+     * <p><b>DISPATCH ONLY. This must PERFORM NO MOVE.</b> Returning true routes the gesture to
+     * {@link #onClick} with {@code itemMoved=false} and nothing else happens. It must never fall
+     * through to the router's clear-and-give for an input slot: that would hand the player the
+     * DISPLAY item and then whatever {@code onClick} produces on top of it, which is one free item
+     * per shift-click. The obvious implementation of this hook is the broken one.
+     */
+    protected boolean shiftClickDispatches(int slot) {
+        return false;
+    }
+
+    /**
      * May this item be placed in an input slot? Asked with the item still on the CURSOR, before the
      * place is permitted.
      *
@@ -96,20 +131,61 @@ public abstract class Menu implements InventoryHolder {
     }
 
     /**
-     * Any drag touching the menu is refused outright.
+     * A drag is refused unless EVERY slot it touches is a stacking input slot.
      *
-     * <p>{@code getRawSlots()} spans BOTH inventories in one event, and a mixed drag has no safe
-     * partial reading -- vanilla would spread the cursor stack across the filler panes. A drag
-     * entirely inside the player's own inventory is left alone, because it is none of our business.
+     * <p><b>This is not the "performed, never permitted" rule being broken, and the difference is
+     * worth reading before changing it.</b> The router refuses shift-click, the number key and F as
+     * gestures and PERFORMS them instead, on the stated principle that the SERVER must never pick
+     * the destination -- it would scan a whole inventory for a shift-click, and swap two ways for a
+     * number key. A drag is different in the one way that matters: {@code getRawSlots()}
+     * ENUMERATES its destinations, chosen by the player, and hands them over BEFORE we decide. So
+     * un-cancelling a drag whose every raw slot we have verified is CONSISTENT with that principle
+     * rather than an exception to it. Nothing here is a slot chosen by someone other than us; we
+     * simply agree with a list the player already made.
+     *
+     * <p>Cancelled FIRST and un-cancelled only at the end, the same shape {@link #handleClick} uses,
+     * so a {@code return} added later by someone who has not read this is safe. Every one of the
+     * four refusals below is a bare {@code return} onto an already-cancelled event.
+     *
+     * <p>A drag entirely inside the player's own inventory is left alone, because it is none of our
+     * business -- that is the one path that never cancels.
      */
     public final void handleDrag(InventoryDragEvent event) {
         int topSize = event.getView().getTopInventory().getSize();
+
+        boolean touchesMenu = false;
         for (int raw : event.getRawSlots()) {
             if (raw < topSize) {
-                event.setCancelled(true);
-                return;
+                touchesMenu = true;
+                break;
             }
         }
+        if (!touchesMenu) return;
+
+        event.setCancelled(true);      // FIRST. Every refusal below is now just a return.
+
+        for (int raw : event.getRawSlots()) {
+            // Spanning both halves. A mixed drag has no safe partial reading, and un-cancelling it
+            // would let vanilla spread the stack across whatever the bottom half holds.
+            if (raw >= topSize) return;
+
+            // Chrome, filler and the result slot are display items the menu owns.
+            if (!inputSlots().contains(raw)) return;
+
+            // Exhaustive switch EXPRESSION, no default arm: a third SlotPolicy constant is a
+            // compile error here rather than silently joining the permitted arm.
+            boolean stacking = switch (slotPolicy(raw)) {
+                case STACKING -> true;
+                case EXCLUSIVE -> false;
+            };
+            if (!stacking) return;
+        }
+
+        // Asked ONCE about the dragged item, before anything lands -- the same moment, and the same
+        // question, that placeAllowed asks for a click-place.
+        if (!acceptsInput(event.getOldCursor())) return;
+
+        event.setCancelled(false);
     }
 
     public final void handleClose(InventoryCloseEvent event) {
