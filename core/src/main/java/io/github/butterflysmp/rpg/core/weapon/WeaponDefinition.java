@@ -32,7 +32,8 @@ public record WeaponDefinition(
         double attackSpeed,
         double sweep,
         List<TriggerBinding> triggers,
-        List<String> flavor
+        List<String> flavor,
+        Optional<String> craftResult
 ) implements GearDefinition {
     /** The item a weapon renders as when its content does not say otherwise: a sword. */
     public static final String DEFAULT_MATERIAL = "iron_sword";
@@ -84,6 +85,19 @@ public record WeaponDefinition(
         triggers = List.copyOf(triggers);
         // Optional authored prose for the tooltip -- absent is empty, never null.
         flavor = flavor == null ? List.of() : List.copyOf(flavor);
+        craftResult = CraftResultToken.normalise(craftResult, "weapon", id);
+    }
+
+    /**
+     * Every shape above, without a craft-result claim. Most gear does not make one, and this keeps
+     * the ten-argument canonical constructor from reaching every existing caller and test.
+     */
+    public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
+                            WeaponClass weaponClass, String material, double attackDamage,
+                            double attackSpeed, double sweep, List<TriggerBinding> triggers,
+                            List<String> flavor) {
+        this(id, displayName, element, rarity, weaponClass, material, attackDamage, attackSpeed,
+                sweep, triggers, flavor, Optional.empty());
     }
 
     /** A sword-shaped MELEE weapon with no declared attack damage: the shape older tests use. */

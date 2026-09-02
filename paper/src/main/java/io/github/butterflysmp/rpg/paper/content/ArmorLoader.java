@@ -10,6 +10,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -153,7 +154,19 @@ public final class ArmorLoader {
         // mismatch against vanilla loudly at boot, which is the better place to catch it.
         double defense = s.getDouble("defense", 0.0);
 
-        return new ArmorDefinition(material, displayName, rarity, material, slot, defense, flavor);
+        // THE CLAIM IS READ FROM THIS SLOT'S SECTION, never from the tier file's top level.
+        //
+        // One tier file yields FOUR definitions, so a file-level key would have all four claiming
+        // the same item -- the index would see a four-way contest, drop the result, and ALL ARMOR
+        // WOULD SILENTLY STOP MINTING. Worse, the boot warning would name four armor definitions
+        // sharing a craft_result, which reads as a content authoring error and sends whoever
+        // investigates into the yml rather than into this method.
+        //
+        // `s` is the slot's own section, the same one `material` above came from.
+        Optional<String> craftResult = Optional.ofNullable(s.getString("craft_result"));
+
+        return new ArmorDefinition(material, displayName, rarity, material, slot, defense, flavor,
+                craftResult);
     }
 
     /** Unknown rarity throws, which the caller turns into a named, skipped file. */

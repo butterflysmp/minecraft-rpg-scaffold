@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core.weapon;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * One piece of armor, as authored in {@code content/armor/&lt;tier&gt;.yml}.
@@ -45,7 +46,8 @@ public record ArmorDefinition(
         String material,
         ArmorSlot slot,
         double defense,
-        List<String> flavor
+        List<String> flavor,
+        Optional<String> craftResult
 ) implements GearDefinition {
 
     public ArmorDefinition {
@@ -77,5 +79,17 @@ public record ArmorDefinition(
                     + "; it must be zero or more (it mirrors the piece's vanilla armor points)");
         }
         flavor = flavor == null ? List.of() : List.copyOf(flavor);
+        craftResult = CraftResultToken.normalise(craftResult, "armor", id);
+    }
+
+    /**
+     * The shape without a craft-result claim, so existing callers and tests keep compiling.
+     *
+     * <p>Note a claim on armor is per PIECE: one tier file yields four definitions and each names
+     * its own slot's item, so this is never "the tier's" craft result.
+     */
+    public ArmorDefinition(String id, String displayName, Rarity rarity, String material,
+                           ArmorSlot slot, double defense, List<String> flavor) {
+        this(id, displayName, rarity, material, slot, defense, flavor, Optional.empty());
     }
 }

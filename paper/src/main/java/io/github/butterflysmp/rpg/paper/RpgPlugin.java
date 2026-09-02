@@ -10,6 +10,8 @@ import io.github.butterflysmp.rpg.core.combat.ManaRegen;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.combat.stat.CompositeHealthListener;
+import io.github.butterflysmp.rpg.core.weapon.CraftResultIndex;
+import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
@@ -66,6 +68,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -141,6 +144,7 @@ public final class RpgPlugin extends JavaPlugin {
     private ShieldRegistry shields;
     private ArmorRegistry armor;
     private MobRegistry mobs;
+    private CraftResultIndex craftResults;
     private CooldownTracker cooldowns;
     private ResourcePool resources;
     private CombatantStats stats;
@@ -258,6 +262,39 @@ public final class RpgPlugin extends JavaPlugin {
         // here, with the server up, which is why these arrive as predicates.
         validateContent();
 
+        // WHICH CRAFTED ITEM BECOMES WHICH GEAR. Built once, here, because the crafting preview runs
+        // several times a second and a scan per craft would walk every definition on every grid
+        // change. Built AFTER the loaders and BEFORE the AdapterContext that carries it.
+        //
+        // Keyed on craft_result and never on material: materials are contested by design (every
+        // sword-shaped weapon leaves material at DEFAULT_MATERIAL), so an index keyed on them would
+        // warn forever about correct content and never mint a sword. See CraftResultIndex.
+        List<GearDefinition> allGear = new ArrayList<>();
+        allGear.addAll(weapons.all());
+        allGear.addAll(shields.all());
+        allGear.addAll(armor.all());
+        this.craftResults = CraftResultIndex.build(allGear,
+                problem -> getLogger().warning("Content: " + problem));
+
+        // THE POSITIVE CONTROL, and it matters as much as the collision warning above. An index that
+        // built EMPTY -- a renamed key, a load-order slip, registries not yet populated -- produces
+        // exactly the same log as an index with no collisions: silence. Every craft would then stay
+        // vanilla and nothing anywhere would say why. So the count that DID register is printed, and
+        // a gate row reads this line before anyone starts crafting.
+        getLogger().info("Mint-on-craft: " + craftResults.size() + " result(s) indexed from "
+                + craftResults.claimed() + " gear definition(s) that claim one"
+                + (craftResults.contested() > 0
+                        ? ", " + craftResults.contested() + " dropped as contested" : ""));
+
+        // ZERO IS A DEFECT, NOT A QUIET NO-OP -- the same rule the loader counts above follow. Zero
+        // here means no crafted item will ever become RPG gear, which in play is indistinguishable
+        // from the feature not existing.
+        if (craftResults.size() == 0) {
+            getLogger().warning("No craft_result claims were indexed -- crafting will never mint RPG "
+                    + "gear, and a crafted shield will give ZERO custom protection. Expected at "
+                    + "least shield.yml and the armor pieces to claim one.");
+        }
+
         // The immobilize anchor's drift tolerance -- the one tuning knob, in config.yml so it
         // can be dialled without a rebuild (edit + restart). Clamped so a typo can't break it.
         saveDefaultConfig();
@@ -282,7 +319,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         // Built once and shared: the adapters' warn-once set must outlive the
         // short-lived BukkitCombatant and PaperCombatWorld instances.
-        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, elements, enchants, getLogger(), stats, anchorDrift);
+        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, elements, enchants, getLogger(), stats, anchorDrift, craftResults);
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
@@ -460,6 +497,25 @@ public final class RpgPlugin extends JavaPlugin {
                     EntityType type = entityType(name);
                     return type != null && type.isAlive();
                 }));
+        // A craft_result must name a real DURABLE material and must equal its own material. Both
+        // mistakes are completely silent in play -- one hands the player a different item than the
+        // one they crafted, the other indexes cleanly and then never fires -- and boot is the only
+        // moment the claim and the Bukkit registry are in the same JVM. Same argument, and the same
+        // shape, as ArmorConsistency directly above.
+        //
+        // getMaxDurability() is why this is a predicate rather than a direct call: it throws
+        // ExceptionInInitializerError with no server, which is what keeps the walk unit-testable.
+        List<GearDefinition> claimants = new ArrayList<>();
+        claimants.addAll(weapons.all());
+        claimants.addAll(shields.all());
+        claimants.addAll(armor.all());
+        problems.addAll(validator.validateCraftResults(claimants,
+                name -> Material.matchMaterial(name) != null,
+                name -> {
+                    Material material = Material.matchMaterial(name);
+                    return material != null && material.getMaxDurability() > 0;
+                }));
+
         for (String problem : problems) {
             getLogger().warning("Content: " + problem);
         }

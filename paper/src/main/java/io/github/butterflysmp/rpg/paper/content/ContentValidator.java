@@ -6,6 +6,8 @@ import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.kit.KitDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
+import io.github.butterflysmp.rpg.core.weapon.CraftResultToken;
+import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import org.bukkit.NamespacedKey;
@@ -13,6 +15,7 @@ import org.bukkit.NamespacedKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
@@ -175,6 +178,72 @@ public final class ContentValidator {
         return problems;
     }
 
+
+    /**
+     * A {@code craft_result} must name a real, DURABLE material, and must equal its own
+     * {@code material}.
+     *
+     * <p><b>Both mistakes are completely silent at runtime</b>, which is what puts them here rather
+     * than anywhere else. This is the same argument {@code ArmorConsistency} makes for the same
+     * reason -- a defense mismatch "is invisible from every single vantage point ... nothing throws,
+     * nothing logs, no test can see it ... the ONLY moment the two numbers are in the same JVM is
+     * boot" -- and these two are that shape exactly. Read them as one pattern with it, not as two
+     * new inventions.
+     *
+     * <p><b>1. It must EQUAL the definition's own material.</b> The mint builds the item from
+     * {@code material()}, not from what was crafted: {@code ArmorItems.mint} does
+     * {@code new ItemStack(materialOf(armor.material(), armor.slot()))}. So a definition claiming
+     * {@code iron_chestplate} while rendering as {@code diamond_chestplate} means the player crafts
+     * iron and RECEIVES DIAMOND. There is no legitimate reason for the two to differ -- the crafted
+     * item must look like the thing you crafted, or the recipe lies -- so this is refused rather
+     * than gated.
+     *
+     * <p><b>2. It must be DURABLE.</b> The index is opt-in, so a claim on a material with no
+     * durability -- {@code ability_stone} is {@code amethyst_shard} -- would index perfectly
+     * cleanly and then be dropped by the mint's durability gate, every time, forever. No error, no
+     * warning, no mint: the author sees nothing at all. Named here instead.
+     *
+     * <p>Both arrive as predicate seams for the reason every check in this class does: resolving a
+     * name to a {@code Material}, and asking that Material its maximum durability, both need the
+     * Bukkit registry and a running server. {@code Material.getMaxDurability()} in particular throws
+     * {@code ExceptionInInitializerError} headless. The WALK stays unit-testable.
+     *
+     * @param materialExists    does this name resolve to a Material at all
+     * @param materialIsDurable does it resolve to one with durability (max &gt; 0)
+     * @return every problem found, each naming the definition at fault. Empty is good.
+     */
+    public List<String> validateCraftResults(Collection<? extends GearDefinition> gear,
+                                             Predicate<String> materialExists,
+                                             Predicate<String> materialIsDurable) {
+        List<String> problems = new ArrayList<>();
+        for (GearDefinition definition : gear) {
+            Optional<String> claim = definition.craftResult();
+            if (claim.isEmpty()) continue;
+            String result = claim.get();
+
+            if (!materialExists.test(result)) {
+                problems.add("gear '" + definition.id() + "' claims craft_result '" + result
+                        + "', which is not a material; it can never be crafted and will never mint");
+                continue;   // the two checks below cannot mean anything for a name that resolves to nothing
+            }
+
+            // Compared on the NORMALISED token, so a claim spelled 'minecraft:IRON_CHESTPLATE'
+            // against a material spelled 'iron_chestplate' is agreement rather than a false alarm.
+            if (!result.equals(CraftResultToken.token(definition.material()))) {
+                problems.add("gear '" + definition.id() + "' claims craft_result '" + result
+                        + "' but mints as material '" + definition.material()
+                        + "'. Crafting the first would hand the player the second. "
+                        + "Make them the same, or remove the claim.");
+            }
+
+            if (!materialIsDurable.test(result)) {
+                problems.add("gear '" + definition.id() + "' claims craft_result '" + result
+                        + "', which has no durability. Mint-on-craft only replaces durable results, "
+                        + "so this claim would never fire and nothing would say so. Remove it.");
+            }
+        }
+        return problems;
+    }
 
     /**
      * A custom mob's {@code base_entity} must name a real, LIVING entity type.

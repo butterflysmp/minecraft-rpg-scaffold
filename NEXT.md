@@ -581,6 +581,104 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Crafting, Slice 2 (mint on craft) — what it created or exposed
+
+- **THE ZERO-GUARD CAUGHT A REAL DEFECT ON ITS FIRST BOOT, and it was the two-content-trees trap.**
+  The new index prints what it registered, not only what it refused, and the first boot said:
+
+  ```
+  Mint-on-craft: 0 result(s) indexed from 0 gear definition(s) that claim one
+  No craft_result claims were indexed -- crafting will never mint RPG gear, and a crafted
+  shield will give ZERO custom protection.
+  ```
+
+  Nothing was wrong with the code. `saveResource(path, false)` **never overwrites**, so
+  `run/plugins/Rpg/content/` still held the pre-slice files: `grep -c craft_result` was **0** in the
+  deployed tree and **1** in the source. A boot with `--refresh-content` then read
+  **25 result(s) indexed from 25** — one shield, twenty-four armor pieces.
+
+  **Without the count line this would have looked like success.** A silent index and a working index
+  produce the same log, every craft would have stayed vanilla, and the natural next step — opening the
+  gate rows and finding a plain shield — would have sent the hunt into the mint path rather than into
+  the deployed content folder. Print what a scan FOUND, not only what it rejected.
+
+- **`craft_result` is a NEW opt-in content key, and it is deliberately not `material`.** A material is
+  PRESENTATION: `WeaponDefinition.DEFAULT_MATERIAL` is `iron_sword` and every sword-shaped weapon
+  leaves it there, so `ironblade` and `emberblade` already share one today and always will. An index
+  keyed on materials would have `iron_sword` permanently contested, would warn on every boot about
+  content that is correct, and **no sword would ever mint**. A warning that fires forever is one
+  people learn to scroll past. The claim is made once, by one definition, and a second claim is a
+  genuine authoring error rather than the norm.
+
+  A contested result is **DROPPED, not first-wins**: the loaders sort files for determinism, so
+  first-wins would let alphabetical order make an economy decision, and a rename would silently change
+  which weapon a player receives.
+
+- **TWO CONTENT MISTAKES THAT ARE INVISIBLE IN PLAY, refused at boot.** Both are the shape
+  `ArmorConsistency` already documents — no throw, no log, no test can see them, and boot is the only
+  moment the claim and the Bukkit registry are in the same JVM.
+  1. A claim that differs from its own `material` would let a player **craft iron and receive
+     diamond**, because the mint builds from `material()` and not from what was crafted.
+  2. A claim on a material with no durability would index cleanly and then be dropped by the mint's
+     durability gate on every craft, forever, with the author seeing nothing at all.
+
+- **`commitCraft` returns the FINISHED item, and that is a defect avoided rather than a style
+  choice.** It used to return an `ItemCraftResult`, which meant the mint had to be applied by its
+  callers — and there are **three**, not two: `craftOnceToCursor`, `craftRepeatedly` and the preview.
+  `craftRepeatedly` is the shift-click bulk path, so the version that applied the mint per-caller
+  would have shipped **every bulk-crafted item plain and unrolled while a single click minted** — and
+  gate row 13 passes either way, because it counts output rather than opening it. One place to forget
+  instead of three.
+
+- **The preview MINTS but does not ROLL, obtained structurally.** The roll is a `ThreadLocalRandom`
+  draw: if both sides rolled they would draw independently and the slot would advertise candidates the
+  player will not receive. The preview never enters `commitCraft`, so this is a property of the call
+  graph rather than a rule someone has to remember. **The enchant lines are the one expected
+  difference** between what the result slot shows and what arrives — a gate row that does not say so
+  fails on a correct build.
+
+- **`gearClassOf` was extracted before it became a fifth copy.** Deriving a roll's `GearClass` already
+  had four (`RpgCommand:914/922/931/1624`); crafting would have made five, which is exactly the shape
+  `GearItems.remint` was created to kill. It is now an exhaustive switch with no default arm, and
+  **tools — the next slice, and a fourth arm — will stop the build here** until someone says what
+  class they roll on. Without it a crafted pickaxe would silently never roll, and because gear is
+  never rolled retroactively, every one made before anyone noticed would be permanently unrollable.
+
+- **STILL NO AUTOMATED WITNESS — three new entries, all gate-only.** Same cause as Slice 1:
+  `CraftingMenu` and `RpgListeners` cannot be constructed without a server.
+
+  | no automated witness | lives in | what goes wrong unseen | sole witness |
+  |---|---|---|---|
+  | the Crafter's DURABLE-RESULT guard | `RpgListeners.onCrafterCraft` | plain vanilla gear leaks in through a Crafter, or every Crafter jams | **rows N9 + N10** |
+  | mint-on-result itself | `CraftingMenu.commitCraft` | a crafted shield arrives plain, giving zero protection | rows N2, N3 |
+  | the bulk path minting | `CraftingMenu.craftRepeatedly` | bulk crafts ship plain while single clicks mint | **row N5b ONLY** |
+
+  `Material.getMaxDurability()` throws `ExceptionInInitializerError` headless — established while
+  resolving row 12c — which is what puts the durability guard here rather than in a test.
+
+- **THE TWO CRAFTER GUARDS MUST NEVER BE MERGED.** `CONTAINS_GEAR` is a **correctness invariant**
+  protecting an INGREDIENT a player already owns; the durable-result refusal is a **policy** about
+  OUTPUTS, applying to items no definition has ever claimed. Someone will eventually want to relax the
+  policy — a config flag, a permission, one material — and if the two are one condition they will
+  relax the invariant with it and a Crafter will quietly start eating minted weapons again.
+
+- **THE HONEST BILL FOR THE CRAFTER, SWEPT NOT ASSERTED.** `getMaxDurability() > 0` across `Material`
+  on a booted server: **84 durable materials**. Beyond weapons, armour, tools and shields, a Crafter
+  can no longer produce:
+
+  `BRUSH`, `CARROT_ON_A_STICK`, `FISHING_ROD`, `FLINT_AND_STEEL`, `SHEARS`,
+  `WARPED_FUNGUS_ON_A_STICK`, `WOLF_ARMOR`, `MACE`, and the seven `*_SPEAR` variants.
+
+  **Automated shear production for a wool farm stops working**, and that is a real thing players
+  build. Refusing early is still right: allowing automated iron-chestplate production today and
+  minting chestplates tomorrow means either breaking farms people have built or grandfathering plain
+  gear into the economy. A cancelled `CrafterCraftEvent` keeps its ingredients and has no feedback
+  channel, so **a refused Crafter looks like a jam, not an error**.
+
+- **Still owed:** the whole operator gate except N1. Rows N2, N3, N5b, N9 and N10 carry the slice, and
+  **N5b is the one most likely to be skipped** — it is not at the end of the sequence and it must be
+  run by OPENING every bulk-crafted item, never by counting them.
+
 ### Crafting, Slice 1 (the grid surface) — what it created or exposed
 
 - **THE BOOT GATE IS THE SOLE WITNESS FOR EVERY PATH THAT CAN LOSE OR DUPLICATE AN ITEM.** Read this

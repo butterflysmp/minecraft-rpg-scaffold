@@ -13,6 +13,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -146,8 +147,14 @@ public final class WeaponLoader {
 
         // WeaponDefinition rejects an empty trigger list (and a negative attack_damage) -- caught above,
         // named, skipped.
+        // The mint-on-craft claim. OPTIONAL and with NO default, unlike material above -- a default
+        // would opt every weapon in and, since materials are contested by design (every sword-shaped
+        // weapon leaves material at DEFAULT_MATERIAL), would index nothing at all. Absent is the
+        // norm; a blank value is refused by the record and named as a skipped file.
+        Optional<String> craftResult = Optional.ofNullable(s.getString("craft_result"));
+
         return new WeaponDefinition(id, displayName, element, rarity, weaponClass, material,
-                attackDamage, attackSpeed, sweep, bindings, flavor);
+                attackDamage, attackSpeed, sweep, bindings, flavor, craftResult);
     }
 
     private static Rarity rarity(String raw) {

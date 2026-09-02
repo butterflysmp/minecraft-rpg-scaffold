@@ -14,17 +14,21 @@ flavor:
 pieces:
   head:
     material: golden_helmet
+    craft_result: golden_helmet
     display_name: "Golden Helmet"
     defense: 2
   chest:
     material: golden_chestplate
+    craft_result: golden_chestplate
     display_name: "Golden Chestplate"
     defense: 5
   legs:
     material: golden_leggings
+    craft_result: golden_leggings
     display_name: "Golden Leggings"
     defense: 3
   feet:
     material: golden_boots
+    craft_result: golden_boots
     display_name: "Golden Boots"
     defense: 1

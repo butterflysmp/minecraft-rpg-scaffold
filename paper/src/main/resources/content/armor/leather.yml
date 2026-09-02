@@ -21,17 +21,21 @@ flavor:
 pieces:
   head:
     material: leather_helmet
+    craft_result: leather_helmet
     display_name: "Leather Cap"
     defense: 1
   chest:
     material: leather_chestplate
+    craft_result: leather_chestplate
     display_name: "Leather Tunic"
     defense: 3
   legs:
     material: leather_leggings
+    craft_result: leather_leggings
     display_name: "Leather Pants"
     defense: 2
   feet:
     material: leather_boots
+    craft_result: leather_boots
     display_name: "Leather Boots"
     defense: 1
