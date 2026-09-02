@@ -160,8 +160,13 @@ spear variants among them. Automated shear production for a wool farm stops work
 
 # Slice 3 — the grid's vanilla feel
 
-Run and passed 2026-09-02, operator-confirmed: every row below, the re-opened rows listed next,
-and M6 against a mutated build. Rows S1, S6, S11 and S12 carry the slice.
+Run and passed 2026-09-02, operator-confirmed: every row below, and the re-opened rows listed next.
+Rows S1, S6, S11 and S12 carry the slice.
+
+**M6 IS NOT RUN AND IS STILL OWED.** It was briefly recorded as run — inferred from "the gate was
+run" rather than reported — and corrected the same day. It is a separate BUILD, not a row, which is
+how it fell through: a report covering the rows does not cover it. A pass is written here only when
+someone says it was observed.
 
 Three defects found by RUNNING the slice 2 gate; every row there passed, so these are findings
 rather than failures.
@@ -203,7 +208,7 @@ shape again), plus **N5b** and **N8** from slice 2. **Row 20 is REWRITTEN below,
 | S10 | **In creative mode**, middle-click a filler pane. | Nothing is cloned. | **sole witness** for the `CREATIVE` refusal, which was split into its own statement when `DOUBLE_CLICK` left it. Without this row that guard has no check at all |
 | S11 | **REGRESSION — the ENCHANT menu.** Open it with a weapon in its slot. Double-click a matching stack held in your inventory. | **The weapon slot is untouched.** The gesture collects from your inventory only. | **sole witness** that collect sources are STACKING slots, not `inputSlots()`. This is a BASE-CLASS change exactly as `handleDrag` was, and the enchant tests are structurally blind to it — the same blindness that made 1c and 1d necessary |
 
-## Mutation 6 — run against a MUTATED build
+## Mutation 6 — OWED. Run against a MUTATED build
 
 | # | action | expected | notes |
 |---|---|---|---|
