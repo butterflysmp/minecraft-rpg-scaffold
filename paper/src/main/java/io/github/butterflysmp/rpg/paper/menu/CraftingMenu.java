@@ -210,7 +210,10 @@ public final class CraftingMenu extends Menu {
         if (isEmpty(getInventory().getItem(RESULT_SLOT))) return;
 
         if (click.click().isShiftClick()) {
-            craftRepeatedly();
+            // Read ONCE, here, before anything can move it. The field is live -- every commit
+            // recomputes the preview -- so this read is the pin, and craftRepeatedly is handed a
+            // value rather than a place to look.
+            craftRepeatedly(previewedRecipe);
         } else {
             craftOnceToCursor();
         }
@@ -284,19 +287,30 @@ public final class CraftingMenu extends Menu {
      * <p>Each pass is atomic: {@link #commitCraft} either debits the matrix and yields a result, or
      * changes nothing and yields null. So an interrupted run leaves the grid consistent with the
      * items handed over, whatever pass it stopped on.
+     *
+     * @param pinned the recipe the preview matched, <b>captured by the CALLER before this runs</b>
+     *               and never re-read from {@link #previewedRecipe} in here. That is the whole
+     *               difference between the fix and a fix-shaped bug: each pass commits and then
+     *               recomputes the preview, so the FIELD MOVES during the loop -- it tracks whatever
+     *               the shrinking grid now makes. Re-pinning to that mid-loop is the exact defect
+     *               the pin exists to close: a grid loaded with planks and 50 iron crafts its
+     *               shields, runs out of planks, re-matches to the iron nugget recipe and converts
+     *               the remaining ingots. With a pin apparently in place.
      */
-    private void craftRepeatedly() {
-        // CAPTURED ONCE, BEFORE THE LOOP, AND NEVER RE-READ INSIDE IT. This is the whole difference
-        // between the fix and a fix-shaped bug.
+    private void craftRepeatedly(Optional<NamespacedKey> pinned) {
+        // A PARAMETER RATHER THAN A FIELD READ, AND THAT IS THE ONLY THING PROTECTING THIS.
         //
-        // Each pass commits and then recomputes the preview, so `previewedRecipe` MOVES during the
-        // loop -- it tracks whatever the shrinking grid now makes. Re-reading the field per pass
-        // would therefore re-pin to that, which is the defect this pin exists to close: a grid
-        // loaded with planks and 50 iron crafts its shields, runs out of planks, re-matches to the
-        // iron nugget recipe and converts the remaining ingots. With a pin apparently in place.
+        // Taking it as an argument does not make the bug impossible -- previewedRecipe is still a
+        // field and still in scope. What it does is make violating the rule something a reader has
+        // to WRITE IN, against a parameter that is already correct, rather than the natural thing to
+        // reach for. "The pin is a field, read it" is the version someone writes next year, and it
+        // now has to be written next to a parameter that already holds the answer.
         //
-        // "The pin is a field, read it" is the version someone writes next year.
-        Optional<NamespacedKey> pinned = previewedRecipe;
+        // THIS IS CONSPICUOUS, NOT WITNESSED, and the distinction is deliberate. The property has NO
+        // check: no test can see it (the field's movement needs a live menu and a live grid), and
+        // gate mutation M6 -- the one build that could have shown it -- was declined twice and is
+        // recorded in GATE-crafting.md as WILL NOT BE RUN. Re-read the field here and every test
+        // stays green, every gate row still passes, and players lose ingots.
 
         for (int pass = 0; pass < MAX_BULK_CRAFTS; pass++) {
             // The SAME call the single-click path makes, returning the SAME finished item. This is
