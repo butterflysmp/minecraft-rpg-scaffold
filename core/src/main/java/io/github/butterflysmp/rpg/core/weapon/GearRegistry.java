@@ -7,15 +7,15 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Immutable-after-load lookup for one kind of gear. The body the three registries were.
+ * Immutable-after-load lookup for one kind of gear. The body the per-kind registries were.
  *
- * <p>Kept as a base class with three thin subclasses rather than one registry parameterised at every
+ * <p>Kept as a base class with one thin subclass per kind rather than one registry parameterised at every
  * call site, and that is a deliberate trade. {@code GearRegistry<WeaponDefinition>} spelled out at
  * ~30 call sites would be noisier than {@code WeaponRegistry} and would let a caller declare a
  * registry of the wrong kind wherever the type is inferred. The subclasses cost three lines each and
  * keep every existing signature, every field, and every test untouched.
  *
- * <p>THREE registries and not one map keyed by kind, still: they hold different record types, and a
+ * <p>FOUR registries and not one map keyed by kind, still: they hold different record types, and a
  * shared map would hand back something every caller downcasts. The cost is a resolve-order at the
  * one place that needs all three -- {@code /rpg give} -- plus the boot-time id-collision warning,
  * because no registry can see the others to reject a shared id.

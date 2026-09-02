@@ -216,6 +216,70 @@ shape again), plus **N5b** and **N8** from slice 2. **Row 20 is REWRITTEN below,
 
 ---
 
+# Slice 4 — tools, the fourth gear kind
+
+`ToolDefinition` joins the sealed `GearDefinition`. Five iron tools ship in one file:
+pickaxe, axe, shovel, hoe and **shears** — the untiered one, which is the point.
+
+**Setup:** boot on a **FRESH data folder**, or with `--refresh-content`. `saveResource(path,
+false)` never overwrites, so on a populated `run/plugins/Rpg/` the new `content/tools/`
+directory is the most likely thing in this slice to silently not arrive. Only a fresh folder
+exposes it.
+
+## The boot log — read these three lines before touching anything
+
+| # | action | expected | notes |
+|---|---|---|---|
+| T1 | Read the aggregate content line. | `... 5 tools, ...`, and the **tools zero-guard does NOT fire**. | **sole witness** for the SHIPPING half of the pipeline. The loader working and the file reaching disk are different things, and on a populated data folder they are indistinguishable |
+| T2 | Read the mint-on-craft line. | **`30 indexed, 30 claiming, of 35 gear definitions`.** | **count** · arithmetic written in, not `> 0`: it was 25/25/30, and five tools all claiming makes it 30/30/35. A count that moves by the WRONG amount is the parse defect the third number exists to catch |
+| T3 | Read for any `Tool 'x' shares its id` collision warnings. | **None.** | the four-registry loop. Tools resolve LAST, so a tool is the one kind that can lose every contest |
+
+## The mint, and the footer noun
+
+| # | action | expected | notes |
+|---|---|---|---|
+| T4 | Craft an **iron pickaxe**. Read the tooltip's last line. | Minted gear whose footer reads **exactly `Common Pickaxe`**. | **discriminating** · NOT `Common Tool` — that is what a default arm, a null kind or a fallback would each produce, and all three are indistinguishable in play. NOT `Common Iron Pickaxe` either: the footer says what KIND of gear it is, not its name |
+| T5 | Craft **shears**. Read the footer. | **`Common Shears`**. | **discriminating** · the UNTIERED tool as an ordinary entry. `shears` is the whole material token with no tier prefix, so this is the row a `tiers x kinds` loader could not pass without a special case. Nothing else distinguishes a flat list from a grid |
+| T6 | Craft a **DIAMOND pickaxe**. | **Plain vanilla.** No rarity name, no lore, no footer. | **discriminating** · no diamond tier ships, so nothing claims it. This is what proves `craft_result` is a PER-DEFINITION opt-in rather than "tools mint now" · also the specific item row N4 now names |
+
+## The thing a tooltip cannot tell you
+
+| # | action | expected | notes |
+|---|---|---|---|
+| T7 | **MINE with the minted iron pickaxe.** Break stone; compare the break time against a plain iron pickaxe. Check that durability ticks down. Check vanilla's own tooltip lines are still shown. | **Identical to plain in every respect.** | **discriminating · sole witness** for `ToolItems.mint` pinning nothing and flagging nothing. `ShieldDefinition` records this failure one kind over: a shield on the wrong material "would mint and render fine and then never block anything". A tool that mints, footers correctly and **digs like a fist** passes every other row here |
+
+## The enchant surface — the regression rows
+
+| # | action | expected | notes |
+|---|---|---|---|
+| T8 | Open the enchant table with the minted pickaxe in the input slot. | All three slots offer **Unbreaking and only Unbreaking**. | the pool-of-one, OBSERVED rather than predicted. No shipped enchant is gated on tools, so `poolFor(TOOL, ..)` returns the universal set alone and `candidateCount` clamps to 1. Not a defect — a content gap, recorded in `EnchantRoll` |
+| T9 | **THE SILENT ONE.** With the pickaxe in the table, confirm it is NOT offered Protection, Growth or Mana Bank. Then run `/rpg enchant show` holding it. | Treated as a **tool**. No armor enchants anywhere. | **discriminating · sole witness** for the `HeldGear`/`PlacedGear` collapse. Their old `shield != null ? SHIELD : ARMOR` tail returned ARMOR for a tool — silently. The sibling accessors throw an NPE and announce themselves; **this one does not**, which is why it needs a row and they do not |
+| T10 | **THE INVARIANT.** Put the minted pickaxe in the **crafting grid** with anything else. | No recipe matches. It is **never consumed**. | **discriminating · sole witness** for the tool arm of `CraftMatrixScreen.isGear`. That chain is the whitelist protecting minted items from vanilla recipes; a kind missing from it is not "not gear", it is gear the crafting surface will eat. Nothing compiles-fails when it falls behind |
+| T11 | `/rpg give iron_pickaxe`, then `/rpg refresh`. | Given, and the refresh **counts it**. | the fourth arm of `GearRefresher`'s tag chain. Silent if forgotten: the tool would keep stale lore for ever |
+
+## The loader's flat list
+
+| # | action | expected | notes |
+|---|---|---|---|
+| T12 | In `run/plugins/Rpg/content/tools/iron.yml`, **delete the `kind:` line from ONE entry**. Restart. | That entry is **named and skipped**; the log says the other entries are unaffected; the count reads **4**. | **discriminating · sole witness** that a bad entry costs the ENTRY, not the file. `ArmorLoader` is all-or-nothing per tier deliberately, and this deliberately is not — a missing hoe is a missing hoe, and losing four good tools to one typo is worse. Restore the line afterwards |
+
+## Re-run from earlier slices
+
+| # | why it re-opens |
+|---|---|
+| N1 | its arithmetic MOVES — see T2 |
+| N4 | now names a specific item: a **diamond pickaxe** (see T6) |
+| 21, 22 | `RpgCommand.HeldGear` and `EnchantMenu.PlacedGear` were both rewritten. The enchant swaps and the end-to-end enchant are what say the collapse changed no behaviour for the three existing kinds |
+| S1 | carries M6 below |
+
+## Mutation 6 — STILL OWED from slice 3, cleared here
+
+| # | action | expected | notes |
+|---|---|---|---|
+| M6 | Build with the pin **re-read inside** `craftRepeatedly`'s loop rather than captured before it. Run **S1**. | The ingot count goes to **zero**. | Owed since slice 3 and recorded then as NOT run. This slice boots a server anyway, so it is the cheapest it will ever be to clear. Restore and re-run S1 clean afterwards |
+
+---
+
 # Maintenance
 
 - When a slice changes `MenuRouting`, `Menu` or `CraftingMenu`, list by number which rows

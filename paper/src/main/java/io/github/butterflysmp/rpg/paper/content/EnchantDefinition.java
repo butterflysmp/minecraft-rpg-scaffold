@@ -203,6 +203,25 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                 // through the door the check did not name. Stated as what the gate CAN be rather
                 // than what it cannot, so the next gear kind is refused by default instead of
                 // silently admitted.
+                //
+                // THAT PROMISE WAS TESTED BY GearClass.TOOL AND IT HELD. `class: tool` is refused
+                // here, deliberately, by this same allowlist rather than by a new clause -- no code
+                // changed when tools landed. The newest refused constant is named because an
+                // explanation written against three fighting classes, SHIELD and ARMOR stops
+                // describing the axis it guards the moment the axis grows.
+                //
+                // AND ADMITTING TOOL WOULD TAKE MORE THAN ADDING IT TO THIS LIST, which is the part
+                // worth writing down rather than rediscovering. DamageEnchantItems reads the main
+                // hand through GearClass.of(WeaponClass), and `of` can only yield MELEE, RANGER or
+                // MAGE -- it has no TOOL arm and must not grow one, exactly as it has none for
+                // SHIELD or ARMOR (GearClassTest pins all three). So a tool-gated damage enchant
+                // would stay structurally unreachable even with this arm opened. Whoever fleshes out
+                // a tool enchant pool needs a reader that can SEE a tool first; the gate is the
+                // second step, not the first.
+                //
+                // Note a tool IS held in the main hand, so the constant's NAME reads as though it
+                // should pass. It does not, and that is not an oversight: the name describes where
+                // the mechanism looks, the allowlist describes what it can find there.
                 yield gearClass == null
                         || gearClass == GearClass.MELEE
                         || gearClass == GearClass.RANGER

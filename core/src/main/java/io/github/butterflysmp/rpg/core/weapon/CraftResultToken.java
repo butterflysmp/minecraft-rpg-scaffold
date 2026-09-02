@@ -6,8 +6,8 @@ import java.util.Optional;
 /**
  * The one place a {@code craft_result} token is normalised, and the one place a claim is validated.
  *
- * <p>Its own class because FOUR things need the same answer and would otherwise each grow their own:
- * the three gear records validating what content authored, and {@link CraftResultIndex} normalising
+ * <p>Its own class because FIVE things need the same answer and would otherwise each grow their own:
+ * the four gear records validating what content authored, and {@link CraftResultIndex} normalising
  * both the keys it stores and the material names it is later asked about. A lookup that normalised
  * differently from the build would miss every entry, and the symptom would be "crafting mints
  * nothing" with no error anywhere -- which is exactly the failure this arc keeps writing guards

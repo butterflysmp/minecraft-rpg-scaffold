@@ -6,10 +6,13 @@ import io.github.butterflysmp.rpg.core.enchant.EnchantLoreLines;
 import io.github.butterflysmp.rpg.core.enchant.EnchantSlot;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.core.weapon.GearClass;
+import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
+import io.github.butterflysmp.rpg.core.weapon.ToolDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.xp.XpCurve;
@@ -17,8 +20,10 @@ import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantEffectLine;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantItems;
+import io.github.butterflysmp.rpg.paper.weapon.GearItems;
 import io.github.butterflysmp.rpg.paper.weapon.ArmorItems;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
+import io.github.butterflysmp.rpg.paper.weapon.ToolItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -64,6 +69,7 @@ public final class EnchantMenu extends Menu {
     private final WeaponRegistry weapons;
     private final ShieldRegistry shields;
     private final ArmorRegistry armor;
+    private final ToolRegistry tools;
     private final AdapterContext adapters;
 
     /**
@@ -78,12 +84,13 @@ public final class EnchantMenu extends Menu {
     private final int bookshelfPower;
 
     public EnchantMenu(Player viewer, WeaponRegistry weapons, ShieldRegistry shields,
-                       ArmorRegistry armor, AdapterContext adapters, Block table) {
+                       ArmorRegistry armor, ToolRegistry tools, AdapterContext adapters, Block table) {
         super(viewer, EnchantMenuLayout.SIZE,
                 MenuIcons.line("Enchantments", NamedTextColor.DARK_GRAY));
         this.weapons = weapons;
         this.shields = shields;
         this.armor = armor;
+        this.tools = tools;
         this.adapters = adapters;
         // BEFORE render(), which paints the readout from it. Assigned after, every table on the
         // server reads 0/30 for ever, and only a boot gate with a ring built round it would notice.
@@ -98,35 +105,42 @@ public final class EnchantMenu extends Menu {
     }
 
     /**
-     * The gear in the input slot: exactly one of a weapon, a shield or a piece of armor.
+     * The gear in the input slot: ONE {@link GearDefinition}, whatever kind it is.
      *
      * <p><b>ONE record, ONE dispatch</b>, deliberately shape-aligned with {@code RpgCommand.HeldGear}
      * -- same members, same meanings. The alternative was forking every site that reads a class or
-     * re-mints into per-kind arms, which triples them and guarantees they drift.
+     * re-mints into per-kind arms, which multiplies them and guarantees they drift.
      *
-     * <p><b>Both accessors were TWO-WAY TERNARIES until armor arrived, and that is the trap this
-     * comment exists to mark.</b> {@code weapon != null ? ... : shield} reads as a complete
-     * dispatch and is not one: adding a third field without rewriting both would have sent every
-     * piece of armor down the shield branch, minting a helmet as a shield with no compiler
-     * complaint anywhere. Three kinds means an if-chain, not a ternary.
+     * <p><b>Both accessors were TWO-WAY TERNARIES until armor arrived, then IF-CHAINS until tools
+     * did, and that history is the trap this comment exists to mark.</b>
+     * {@code weapon != null ? ... : shield} read as a complete dispatch and was not one: adding a
+     * third field without rewriting both would have sent every piece of armor down the shield
+     * branch, minting a helmet as a shield with no compiler complaint anywhere.
+     *
+     * <p><b>The if-chain that replaced it was the same defect with one more rung.</b> Adding a
+     * fourth field would have left {@code remint} ending in {@code ArmorItems.remint(placed, armor,
+     * ..)} with {@code armor} null -- an NPE inside a menu render, loud -- and {@code gearClass}
+     * ending in {@code shield != null ? SHIELD : ARMOR}, returning ARMOR for a tool. That second
+     * one is SILENT, and it is the dangerous half: the tool draws the armor roster and is offered
+     * enchants that can never fire on it.
+     *
+     * <p>So there are no per-kind fields left. Both accessors delegate to {@link GearItems}, whose
+     * switches are exhaustive over the sealed {@link GearDefinition} with no default arm. The next
+     * gear kind is a compile error here instead of two wrong behaviours, one of them quiet.
      */
-    private record PlacedGear(String id, WeaponDefinition weapon, ShieldDefinition shield,
-                              ArmorDefinition armor) {
+    private record PlacedGear(String id, GearDefinition gear) {
 
         /**
-         * The enchant-gating class. NEVER NULL: a weapon maps through {@code of()}, a shield IS
-         * SHIELD, a piece of armor IS ARMOR.
+         * The enchant-gating class. NEVER NULL, and not this record's decision any more:
+         * {@code GearItems.gearClassOf} is the one place each kind's roster key is chosen.
          */
         GearClass gearClass() {
-            if (weapon != null) return GearClass.of(weapon.weaponClass());
-            return shield != null ? GearClass.SHIELD : GearClass.ARMOR;
+            return GearItems.gearClassOf(gear);
         }
 
         /** Returns a NEW stack, so the caller's reference is stale afterwards. */
         ItemStack remint(ItemStack placed, AdapterContext adapters) {
-            if (weapon != null) return WeaponItems.remint(placed, weapon, adapters);
-            if (shield != null) return ShieldItems.remint(placed, shield, adapters);
-            return ArmorItems.remint(placed, armor, adapters);
+            return GearItems.remint(placed, gear, adapters);
         }
     }
 
@@ -155,7 +169,7 @@ public final class EnchantMenu extends Menu {
                         + " refusing to edit its enchants.", NamedTextColor.RED);
                 return null;
             }
-            return new PlacedGear(weaponId, definition, null, null);
+            return new PlacedGear(weaponId, definition);
         }
 
         String shieldId = ShieldItems.shieldId(placed, adapters.keys()).orElse(null);
@@ -166,7 +180,7 @@ public final class EnchantMenu extends Menu {
                         + " refusing to edit its enchants.", NamedTextColor.RED);
                 return null;
             }
-            return new PlacedGear(shieldId, null, definition, null);
+            return new PlacedGear(shieldId, definition);
         }
 
         String armorId = ArmorItems.armorId(placed, adapters.keys()).orElse(null);
@@ -177,7 +191,18 @@ public final class EnchantMenu extends Menu {
                         + " refusing to edit its enchants.", NamedTextColor.RED);
                 return null;
             }
-            return new PlacedGear(armorId, null, null, definition);
+            return new PlacedGear(armorId, definition);
+        }
+
+        String toolId = ToolItems.toolId(placed, adapters.keys()).orElse(null);
+        if (toolId != null) {
+            ToolDefinition definition = tools.find(toolId).orElse(null);
+            if (definition == null) {
+                say("'" + toolId + "' has no content file loaded -- cannot re-mint it, so"
+                        + " refusing to edit its enchants.", NamedTextColor.RED);
+                return null;
+            }
+            return new PlacedGear(toolId, definition);
         }
 
         return null;   // not ours; acceptsInput already refused it at the door
@@ -191,8 +216,9 @@ public final class EnchantMenu extends Menu {
     protected boolean acceptsInput(ItemStack cursor) {
         if (WeaponItems.weaponId(cursor, adapters.keys()).isEmpty()
                 && ShieldItems.shieldId(cursor, adapters.keys()).isEmpty()
-                && ArmorItems.armorId(cursor, adapters.keys()).isEmpty()) {
-            say("That is not one of your weapons, shields or armor.", NamedTextColor.GRAY);
+                && ArmorItems.armorId(cursor, adapters.keys()).isEmpty()
+                && ToolItems.toolId(cursor, adapters.keys()).isEmpty()) {
+            say("That is not one of your weapons, shields, armor or tools.", NamedTextColor.GRAY);
             return false;
         }
 
@@ -270,7 +296,7 @@ public final class EnchantMenu extends Menu {
         if (gear == null) {
             getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.ENCHANTING_TABLE,
                     MenuIcons.line("Enchanting", NamedTextColor.WHITE),
-                    List.of(MenuIcons.line("Place a weapon, shield or piece of armor above", NamedTextColor.GRAY),
+                    List.of(MenuIcons.line("Place a weapon, shield, armor piece or tool above", NamedTextColor.GRAY),
                             MenuIcons.line("to see the enchants it can carry.", NamedTextColor.GRAY),
                             MenuIcons.blank(),
                             MenuIcons.line("Unlocks are paid for in XP.", NamedTextColor.DARK_GRAY))));

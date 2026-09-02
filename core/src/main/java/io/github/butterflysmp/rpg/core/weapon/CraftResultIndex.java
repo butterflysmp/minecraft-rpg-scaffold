@@ -13,7 +13,7 @@ import java.util.function.Consumer;
  *
  * <p>The reverse of everything else in this package: every other gear lookup is by id, and this one
  * answers "the player just crafted an {@code iron_chestplate} -- is that ours?". Built ONCE at boot
- * from all three registries, because the crafting preview runs several times a second and a scan per
+ * from all four registries, because the crafting preview runs several times a second and a scan per
  * craft would be a walk of every definition on every grid change.
  *
  * <h2>Keyed on {@code craft_result}, never on {@code material}</h2>
@@ -53,7 +53,7 @@ public final class CraftResultIndex {
     /**
      * Walk every definition and index the ones that claim a craft result.
      *
-     * @param gear      all gear, from all three registries. A definition with no claim is skipped.
+     * @param gear      all gear, from all four registries. A definition with no claim is skipped.
      * @param onProblem called ONCE per contested result, naming every claimant, so the operator can
      *                  open the right files. The seam that keeps this class free of a Logger and
      *                  therefore unit-testable -- the same trade {@code ContentValidator} makes with

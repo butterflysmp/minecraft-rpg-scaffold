@@ -30,6 +30,7 @@ public final class GearClassLabel {
             case MAGE   -> "Magic";
             case SHIELD -> "Shield";
             case ARMOR  -> "Armor";
+            case TOOL   -> "Tool";
         };
     }
 
@@ -62,8 +63,8 @@ public final class GearClassLabel {
      */
     public static String describeEnchant(GearClass gearClass) {
         return switch (gearClass) {
-            case MELEE, RANGER, MAGE, SHIELD -> "a " + of(gearClass) + " enchant";
-            case ARMOR                       -> "an " + of(gearClass) + " enchant";
+            case MELEE, RANGER, MAGE, SHIELD, TOOL -> "a " + of(gearClass) + " enchant";
+            case ARMOR                             -> "an " + of(gearClass) + " enchant";
         };
     }
 
@@ -74,6 +75,11 @@ public final class GearClassLabel {
             // "a piece of armor", not "an Armor armor": the inert sentence reads "... on a piece of
             // armor", and armor is the one gear kind whose label is not also its noun.
             case ARMOR               -> "a piece of armor";
+            // "a tool", lower case and unlabelled, for the reason the shield arm is: the label and
+            // the noun are the same word, so "a Tool tool" is what building it from of() would give.
+            // Which KIND of tool is ToolLoreLines.kindNoun's job, on the item's own footer -- this
+            // sentence is about the gear an enchant is sitting on, and every tool sits the same way.
+            case TOOL                -> "a tool";
         };
     }
 }

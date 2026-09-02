@@ -115,6 +115,19 @@ public final class EnchantRoll {
      * job it was written for, not a defect -- and raising the cap would not let a player run four
      * anyway, because {@link #SLOTS} times one active candidate each is three regardless.
      *
+     * <p><b>TOOLS ARE THE OPPOSITE EXTREME, AND THE THIRD TIME THIS PARAGRAPH HAS NEEDED CORRECTING.
+     * A tool's pool is ONE.</b> No shipped enchant is gated on tools, so {@code poolFor(TOOL, ..)}
+     * returns the universal set and nothing else -- which is Unbreaking, alone. {@code candidateCount}
+     * then computes {@code min(1, 3) = 1}, so every slot offers exactly one candidate and it is the
+     * same book in all three.
+     *
+     * <p>Nothing throws and nothing is red; the table simply shows a player one enchant three times.
+     * That is a CONTENT gap, not a defect in this file -- the clamp and the count are behaving
+     * exactly as written -- but it is recorded here because the two sentences above make claims
+     * ("a 1..3 count is genuinely observable", "one class with a big enough pool") that a
+     * one-enchant pool quietly falsifies. The observability argument now holds for shields and armor
+     * and fails for tools, and the fix is a tool-gated enchant rather than a change here.
+     *
      * <p>Rarity-weighting stays deferred anyway: one class with a big enough pool is not a reason to
      * design a tier curve for all of them. But it is now deferred BY CHOICE rather than by
      * impossibility, and that distinction is the thing worth re-reading before the next roster pass.

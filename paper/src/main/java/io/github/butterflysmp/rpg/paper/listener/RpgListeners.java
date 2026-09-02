@@ -11,6 +11,7 @@ import io.github.butterflysmp.rpg.core.combat.ShieldExchange;
 import io.github.butterflysmp.rpg.core.enchant.Thorns;
 import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
+import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -107,6 +108,7 @@ public final class RpgListeners implements Listener {
     private final WeaponRegistry weapons;
     private final ShieldRegistry shields;
     private final ArmorRegistry armor;
+    private final ToolRegistry tools;
     private final WeaponService weaponService;
     private final AdapterContext adapters;
     private final PlayerHealthSystem healthSystem;
@@ -145,6 +147,7 @@ public final class RpgListeners implements Listener {
 
     public RpgListeners(CooldownTracker cooldowns, ResourcePool resources, ProfileService profiles,
                         WeaponRegistry weapons, ShieldRegistry shields, ArmorRegistry armor,
+                        ToolRegistry tools,
                         WeaponService weaponService,
                         AdapterContext adapters,
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
@@ -155,6 +158,7 @@ public final class RpgListeners implements Listener {
         this.weapons = weapons;
         this.shields = shields;
         this.armor = armor;
+        this.tools = tools;
         this.weaponService = weaponService;
         this.adapters = adapters;
         this.healthSystem = healthSystem;
@@ -164,7 +168,7 @@ public final class RpgListeners implements Listener {
 
         this.hijackedBlocks = Map.of(
                 Material.ENCHANTING_TABLE,
-                (player, block) -> new EnchantMenu(player, weapons, shields, armor, adapters, block),
+                (player, block) -> new EnchantMenu(player, weapons, shields, armor, tools, adapters, block),
                 Material.CRAFTING_TABLE,
                 (player, block) -> new CraftingMenu(player, adapters));
     }
@@ -177,7 +181,7 @@ public final class RpgListeners implements Listener {
         // Content reloads only on restart and a dev restart reconnects you, so this one handler
         // covers both the stale emberblade you come back to and the live player logging in after
         // a content update. Already on the joining player's own thread; no scheduler hop needed.
-        GearRefresher.refresh(event.getPlayer(), weapons, shields, armor, adapters);
+        GearRefresher.refresh(event.getPlayer(), weapons, shields, armor, tools, adapters);
         // Returns immediately; the read happens on the storage I/O thread.
         profiles.onJoin(event.getPlayer().getUniqueId());
         // Register custom health at base 100, render the heart bar, and start the equip reconcile loop.

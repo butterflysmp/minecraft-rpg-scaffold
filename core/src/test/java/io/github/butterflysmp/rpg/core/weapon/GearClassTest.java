@@ -77,7 +77,7 @@ class GearClassTest {
     }
 
     @Test
-    void theAxisIsExactlyTheThreeFightingClassesPlusShieldAndArmor() {
+    void theAxisIsExactlyTheThreeFightingClassesPlusShieldArmorAndTool() {
         // A count, so adding a constant is a visible decision here rather than a silent widening of
         // every enchant gate in the game.
         //
@@ -87,7 +87,38 @@ class GearClassTest {
         // tail, the /rpg enchant SHOW refusal, EnchantMenu.PlacedGear.gearClass (a two-way ternary
         // that would have minted a helmet as a shield), and EnchantDefinition's ANY_BUT_SHIELD gate.
         // The repo's own comments claimed the compiler covered this. It does not; it covers three.
-        assertEquals(5, GearClass.values().length);
+        //
+        // ADDING TOOL WAS MEASURED THE SAME WAY, and the by-hand sweep is recorded in the slice-4
+        // plan rather than re-listed here. Of the five sites above: two were DELETED outright (both
+        // gearClass accessors collapsed onto GearItems.gearClassOf, which is compiler-checked), the
+        // effect tail turned out never to enumerate this enum at all, the SHOW refusal was already
+        // gone, and ANY_BUT_SHIELD is now MAIN_HAND_ONLY -- an allowlist, so it refused TOOL before
+        // anyone wrote a line. What the sweep found INSTEAD were three the old list did not name:
+        // /rpg give's final else, GearRefresher's tag chain, and RpgPlugin's two all-kinds lists.
+        // The lesson survives the fix: widening this enum is a checklist, not a build.
+        assertEquals(6, GearClass.values().length);
+    }
+
+    @Test
+    void noWeaponEverMapsToToolEither() {
+        // The third of the triplet. A weapon presenting TOOL would draw the tool pool -- today just
+        // Unbreaking -- so its own class enchant would silently stop being offered, and nothing
+        // anywhere would say why.
+        for (WeaponClass weaponClass : WeaponClass.values()) {
+            assertNotEquals(GearClass.TOOL, GearClass.of(weaponClass),
+                    weaponClass + " mapped to TOOL -- only a tool may present that");
+        }
+    }
+
+    @Test
+    void fromNameKnowsTheToolTokenSoContentCanGateOnIt() {
+        assertEquals(GearClass.TOOL, GearClass.fromName("tool"));
+        assertEquals(GearClass.TOOL, GearClass.fromName("TOOL"));
+        // Same values()-loop hazard the armor token records: `class: tool` in an enchant file began
+        // PARSING the instant this constant existed. It does not follow that such a file LOADS --
+        // EnchantDefinition's gates are allowlists and refuse it -- but the parse is what would let
+        // a future universal-effect enchant gate on tools with no code change at all.
+        assertNull(GearClass.fromName("tools"), "the token is singular, matching the enum");
     }
 
     @Test

@@ -1,0 +1,90 @@
+# The first tools, and the fourth kind of gear.
+#
+# THIS FILE IS A CONTAINER, NOT A TIER. The filename names nothing -- it is not an id, and
+# nothing in the schema says these five belong together or that a `diamond.yml` must mirror
+# them. That is deliberate. Armor is authored one file per tier because armor genuinely is a
+# closed four-slot axis; tools are not. Of the 84 durable materials on a booted server, a
+# tier-by-kind grid describes 24 -- shears, a brush, a fishing rod, flint and steel, a mace, a
+# carrot on a stick and seven spears all sit outside it. A file shape that asserted a grid
+# would need a special case for the first one of those to arrive.
+#
+# Which is why SHEARS is in here, at the bottom, as an ordinary entry. It is the untiered tool,
+# it is iron, and having it beside the four regular ones is what proves the flat list is a flat
+# list rather than a grid wearing one.
+#
+# EVERY KEY IS PER ENTRY, including rarity. A file-level `rarity:` would assert these five are a
+# group and would quietly decide the rarity curve for five more tiers that have not shipped.
+# That is an economy decision, and it is not this slice's to make as a side effect.
+#
+# THE SECTION KEY IS THE ID AND THE MATERIAL. One string, so the two cannot disagree, and it is
+# already what a player would type at /rpg give.
+#
+# WHAT A MINTED TOOL DOES NOT CHANGE: mining speed, harvest level, durability, and vanilla's own
+# tooltip lines. ToolItems.mint pins no attribute modifier and sets no item flag, so a minted
+# iron pickaxe digs exactly as a plain one does. There is no stat key here because there is no
+# stat -- a tool's whole mechanical content is vanilla's, and we add rarity, a name, flavour and
+# an enchant container on top of an item that already worked.
+
+tools:
+
+  iron_pickaxe:
+    # REQUIRED, no default. The kind is what the rarity footer's noun comes from -- this one
+    # reads "Common Pickaxe", not "Common Tool". There is no fallback on purpose: a generic
+    # footer would be invisible in play and permanent on every item minted before anyone
+    # noticed, and gear is never re-minted retroactively.
+    #
+    # It must AGREE with the key above. `kind: shovel` here would mint a pickaxe whose footer
+    # says "Shovel", so boot refuses it and names the entry -- the same shape, and the same
+    # answer, as a craft_result that does not equal its own material.
+    kind: pickaxe
+    display_name: "Iron Pickaxe"
+    rarity: common
+    # MINT ON CRAFT. Crafting a vanilla iron pickaxe hands the player THIS one instead.
+    #
+    # OPT-IN, PER ENTRY. That is what makes it a real feature rather than "tools mint now": no
+    # other tier ships, so crafting a DIAMOND pickaxe still gives a plain vanilla one, because
+    # nothing claims it. Boot refuses a claim that does not equal the material, and refuses one
+    # on a material with no durability.
+    craft_result: iron_pickaxe
+    flavor:
+      - "Bites stone like it owes it money."
+
+  iron_axe:
+    kind: axe
+    display_name: "Iron Axe"
+    rarity: common
+    craft_result: iron_axe
+    flavor:
+      - "Fells trees. Has opinions about doors."
+
+  iron_shovel:
+    kind: shovel
+    display_name: "Iron Shovel"
+    rarity: common
+    craft_result: iron_shovel
+    flavor:
+      - "Every hole starts as someone's good idea."
+
+  iron_hoe:
+    kind: hoe
+    display_name: "Iron Hoe"
+    rarity: common
+    craft_result: iron_hoe
+    flavor:
+      - "Underestimated by everyone except the wheat."
+
+  # THE UNTIERED ONE, and the reason the loader reads a flat list.
+  #
+  # There is no wooden, stone, diamond or netherite shears -- iron is the only one vanilla has,
+  # so `shears` is the whole material token with no tier prefix at all. In a `tiers x kinds`
+  # loader this needs a special case. Here it needs nothing: it is an entry like the other four,
+  # and ToolKind.matchesMaterial accepts a bare token precisely so it can be.
+  #
+  # A future flint_and_steel, mace or fishing rod arrives the same way.
+  shears:
+    kind: shears
+    display_name: "Shears"
+    rarity: common
+    craft_result: shears
+    flavor:
+      - "Two knives that learned to cooperate."
