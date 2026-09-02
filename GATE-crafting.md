@@ -158,6 +158,56 @@ spear variants among them. Automated shear production for a wool farm stops work
 
 ---
 
+# Slice 3 — the grid's vanilla feel
+
+Not yet run. Three defects found by RUNNING the slice 2 gate; every row there passed, so these
+are findings rather than failures.
+
+**Re-opened by this slice**, because it changes `MenuRouting`, `Menu` and `CraftingMenu`:
+**6, 9, 10, 11, 13, 1c, 1d, 16-19** and **12, 12c** (the last two because `commitCraft` changed
+shape again), plus **N5b** and **N8** from slice 2. **Row 20 is REWRITTEN below, not re-run.**
+
+## Row 20, superseded 2026-09-02
+
+| # | action | expected | notes |
+|---|---|---|---|
+| ~~20~~ | ~~Double-click a filler pane while holding a matching item.~~ | ~~Nothing sweeps out of the menu. COLLECT_TO_CURSOR stays refused.~~ | **SUPERSEDED — the gesture changed.** It is now performed rather than refused, so "nothing happens" is no longer the correct observable. Replaced by S12, which asserts the same exploit is still closed while the gesture works. Kept because "replaced because the gesture changed" is a different answer from "it passed" |
+
+## The recipe pin
+
+| # | action | expected | notes |
+|---|---|---|---|
+| S1 | **THE REPORTED CASE.** Shield layout: 6 oak planks in each plank slot, **50 iron ingots** in the iron slot. **Count the ingots first.** Shift-click the result. | **Six shields, and FORTY-FOUR IRON INGOTS still in the grid.** | discriminating · **sole witness** for the pin · **count** — the defect's signature is a number, not an appearance. Unpinned, the loop re-matches to iron nuggets and converts the remaining 44 |
+| S2 | 64 planks in each plank slot, shift-click. | Stops at 64 crafts with material still loaded. A **second** shift-click continues from there. | proves the `MAX_BULK_CRAFTS` bound and the pin-mismatch exit are DIFFERENT exits, which otherwise look identical |
+| S3 | **Firework rockets** — paper and gunpowder, plenty of both — shift-clicked. | Crafts normally, repeatedly. | **sole witness** that the pin works for `ComplexRecipe`. `Recipe` declares no key; only `CraftingRecipe` and `ComplexRecipe` do. Nothing else in the gate reaches a complex recipe, and slice 1 delegated to the server's matcher precisely to handle them |
+
+## The drag refresh
+
+| # | action | expected | notes |
+|---|---|---|---|
+| S4 | Drag-distribute a stack across the grid to complete a recipe, then **touch nothing else**. | The result slot fills **on its own**, within a tick. | **sole witness** for `onDragPermitted`. Before this slice the preview stayed stale until the next click |
+
+## The double-click collect
+
+| # | action | expected | notes |
+|---|---|---|---|
+| S5 | Cursor holds 1 plank. **63+ planks in your inventory**, planks ALSO loaded in the grid. Double-click. **Count grid contents first.** | Cursor fills to 64. **The grid is UNTOUCHED** and the loaded recipe survives. | **count** — the inventory alone could fill it, so the grid must not be reached |
+| S6 | Cursor holds 1 plank. Only **10** planks in your inventory, plenty in the grid. Double-click. **Count both first.** | Takes the 10 **AND** reaches into the grid. | **THE ONE THAT CATCHES A DEAD SECOND TIER.** Without it, a collect that never touches the grid passes S5 perfectly, and "inventory first" is indistinguishable from "inventory only" · **count** |
+| S7 | Several partial plank stacks plus one full stack in your inventory. Double-click. | The **partials** drain first; the full stack is broken into last. | the half of vanilla's behaviour that is kept, and nothing else in the gate exercises it |
+| S12 | **Hold glass panes matching the filler. Double-click.** | **NOTHING leaves the menu chrome.** | **discriminating · replaces row 20** · the row worth failing the slice over. Vanilla's collect would sweep every matching stack out of the top inventory, and this menu paints forty identical panes. Performing the gesture is what answers that — the objection was never dropped |
+| S8 | Load a recipe. **Double-click the RESULT slot.** **Count ingredients first.** | **Exactly ONE craft's worth consumed.** | **count** · NOT "nothing happens" — a double-click fires LEFT then DOUBLE_CLICK, and the LEFT half already crafted. Two crafts is the defect, and it is invisible except by counting |
+| S9 | Load a full recipe, then double-click a matching stack held in your inventory. | The preview reflects the grid **within the same click** — no second action needed. | the collect refreshes synchronously, because we performed it and know the grid. Finding 2 in a new costume |
+| S10 | **In creative mode**, middle-click a filler pane. | Nothing is cloned. | **sole witness** for the `CREATIVE` refusal, which was split into its own statement when `DOUBLE_CLICK` left it. Without this row that guard has no check at all |
+| S11 | **REGRESSION — the ENCHANT menu.** Open it with a weapon in its slot. Double-click a matching stack held in your inventory. | **The weapon slot is untouched.** The gesture collects from your inventory only. | **sole witness** that collect sources are STACKING slots, not `inputSlots()`. This is a BASE-CLASS change exactly as `handleDrag` was, and the enchant tests are structurally blind to it — the same blindness that made 1c and 1d necessary |
+
+## Mutation 6 — run against a MUTATED build
+
+| # | action | expected | notes |
+|---|---|---|---|
+| M6 | Build with the pin **re-read inside** `craftRepeatedly`'s loop rather than captured before it. Run **S1**. | The ingot count goes to **zero** — the mutant converts them. | The pin's capture-once property has NO unit witness: the field moves during the loop, which needs a live menu and a live grid. Listing the mutation without executing it would be a prediction nothing tests. Run once, then restore and re-run S1 clean |
+
+---
+
 # Maintenance
 
 - When a slice changes `MenuRouting`, `Menu` or `CraftingMenu`, list by number which rows
