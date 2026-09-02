@@ -16,6 +16,8 @@ import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
+import io.github.butterflysmp.rpg.core.weapon.ToolDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
@@ -38,6 +40,7 @@ import io.github.butterflysmp.rpg.paper.content.VisualRegistry;
 import io.github.butterflysmp.rpg.paper.content.ArmorConsistency;
 import io.github.butterflysmp.rpg.paper.content.ArmorLoader;
 import io.github.butterflysmp.rpg.paper.content.ShieldLoader;
+import io.github.butterflysmp.rpg.paper.content.ToolLoader;
 import io.github.butterflysmp.rpg.paper.content.WeaponLoader;
 import io.github.butterflysmp.rpg.paper.health.DamagePopupManager;
 import io.github.butterflysmp.rpg.paper.health.MobDeathSystem;
@@ -143,6 +146,7 @@ public final class RpgPlugin extends JavaPlugin {
     private WeaponRegistry weapons;
     private ShieldRegistry shields;
     private ArmorRegistry armor;
+    private ToolRegistry tools;
     private MobRegistry mobs;
     private CraftResultIndex craftResults;
     private CooldownTracker cooldowns;
@@ -180,12 +184,14 @@ public final class RpgPlugin extends JavaPlugin {
         this.weapons = new WeaponLoader(getLogger()).loadAll(new File(contentDir, "weapons"));
         this.shields = new ShieldLoader(getLogger()).loadAll(new File(contentDir, "shields"));
         this.armor = new ArmorLoader(getLogger()).loadAll(new File(contentDir, "armor"));
+        this.tools = new ToolLoader(getLogger()).loadAll(new File(contentDir, "tools"));
         this.mobs = new MobLoader(getLogger()).loadAll(new File(contentDir, "mobs"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
                 + kits.size() + " kits, " + weapons.size() + " weapons, "
-                + shields.size() + " shields, " + armor.size() + " armor, " + mobs.size() + " mobs");
+                + shields.size() + " shields, " + armor.size() + " armor, "
+                + tools.size() + " tools, " + mobs.size() + " mobs");
 
         // ZERO IS A DEFECT, NOT A QUIET NO-OP. A loader that discovers nothing reads exactly like
         // one that worked, and this is the failure mode CLAUDE.md records twice: getResource on a
@@ -251,6 +257,48 @@ public final class RpgPlugin extends JavaPlugin {
             }
         }
 
+        // And again on content/tools, which this slice adds. NEWEST directory, so it is the most
+        // likely of the four to arrive empty for the reason the shield guard already records: an
+        // existing run/ data folder predates it entirely and saveResource never overwrites, so the
+        // only thing that puts iron.yml on disk is the jar enumeration finding it. On a populated
+        // data folder that failure is invisible; only a FRESH one exposes it.
+        //
+        // FIVE is the expected count, and the arithmetic is worth stating because it is not a grid:
+        // four tiered kinds plus shears, which has no tier at all. A number below five means an
+        // ENTRY was skipped -- not the file -- and its own warning will have named it.
+        if (tools.size() == 0) {
+            getLogger().warning("No tools loaded from content/tools -- /rpg give can mint none, and "
+                    + "crafting an iron pickaxe will hand out a plain vanilla one. Note this does "
+                    + "NOT break mining: an untagged pickaxe digs exactly as a minted one does, "
+                    + "because we pin no attributes. Expected 5 tools from iron.yml.");
+        }
+
+        // ONE ID, FOUR REGISTRIES. /rpg give resolves weapons, then shields, then armor, then
+        // tools, so a shared id silently shadows whichever comes later -- and that looks exactly
+        // like the shadowed tool having failed to load, which the zero-check above would NOT fire
+        // for. No registry can see the others, so this is the only place a collision is visible.
+        //
+        // Tools resolve LAST, so this loop has three arms where armor's has two. Not symmetry for
+        // its own sake: a tool is the one kind that can lose every contest, so it is the one whose
+        // collisions most need naming.
+        for (ToolDefinition tool : tools.all()) {
+            if (weapons.find(tool.id()).isPresent()) {
+                getLogger().warning("Tool '" + tool.id() + "' shares its id with a weapon. "
+                        + "/rpg give resolves weapons first, so the tool cannot be minted by id. "
+                        + "Rename one of the two content files.");
+            }
+            if (shields.find(tool.id()).isPresent()) {
+                getLogger().warning("Tool '" + tool.id() + "' shares its id with a shield. "
+                        + "/rpg give resolves shields first, so the tool cannot be minted by id. "
+                        + "Rename one of the two content files.");
+            }
+            if (armor.find(tool.id()).isPresent()) {
+                getLogger().warning("Tool '" + tool.id() + "' shares its id with a piece of armor. "
+                        + "/rpg give resolves armor first, so the tool cannot be minted by id. "
+                        + "Rename one of the two content files.");
+            }
+        }
+
         // The tooltip number against vanilla's. This is the ONLY moment the two live in the same
         // JVM: content/armor authors the defense a piece DISPLAYS, vanilla owns the defense it
         // DELIVERS, and nothing makes them agree. A mismatch is invisible from every vantage point
@@ -273,6 +321,7 @@ public final class RpgPlugin extends JavaPlugin {
         allGear.addAll(weapons.all());
         allGear.addAll(shields.all());
         allGear.addAll(armor.all());
+        allGear.addAll(tools.all());
         this.craftResults = CraftResultIndex.build(allGear,
                 problem -> getLogger().warning("Content: " + problem));
 
@@ -301,7 +350,7 @@ public final class RpgPlugin extends JavaPlugin {
         if (craftResults.size() == 0) {
             getLogger().warning("No craft_result claims were indexed -- crafting will never mint RPG "
                     + "gear, and a crafted shield will give ZERO custom protection. Expected at "
-                    + "least shield.yml and the armor pieces to claim one.");
+                    + "least shield.yml, the armor pieces and the iron tools to claim one.");
         }
 
         // The immobilize anchor's drift tolerance -- the one tuning knob, in config.yml so it
@@ -387,7 +436,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         // The one and only registerEvents call. Keep it that way.
         getServer().getPluginManager().registerEvents(
-                new RpgListeners(cooldowns, resources, profiles, weapons, shields, armor, weaponService, adapters,
+                new RpgListeners(cooldowns, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                         healthSystem, nameplates, statsBar, healthRegen), this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
@@ -410,7 +459,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, mobs, nameplates, resources),
+                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources),
                         "RPG commands"));
     }
 
@@ -518,6 +567,7 @@ public final class RpgPlugin extends JavaPlugin {
         claimants.addAll(weapons.all());
         claimants.addAll(shields.all());
         claimants.addAll(armor.all());
+        claimants.addAll(tools.all());
         problems.addAll(validator.validateCraftResults(claimants,
                 name -> Material.matchMaterial(name) != null,
                 name -> {
@@ -594,6 +644,7 @@ public final class RpgPlugin extends JavaPlugin {
     public WeaponRegistry weapons() { return weapons; }
 
     public ShieldRegistry shields() { return shields; }
+    public ToolRegistry tools() { return tools; }
     public ArmorRegistry armor() { return armor; }
     public CooldownTracker cooldowns() { return cooldowns; }
     public ResourcePool resources() { return resources; }

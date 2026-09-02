@@ -36,7 +36,7 @@ import java.util.Optional;
  *
  * {@link #craftResult()} was added by the mint-on-craft slice, and it is the first member admitted
  * since the three-example design above. It is here rather than on the three records because the
- * reverse index that reads it walks all three kinds as one collection, and a member the interface
+ * reverse index that reads it walks all four kinds as one collection, and a member the interface
  * does not declare cannot be read that way.
  *
  * <p>It passes each of the four tests the rejected candidates failed. It is not a stat -- it carries
@@ -59,9 +59,9 @@ import java.util.Optional;
  * rather than falling through some default arm.
  */
 public sealed interface GearDefinition
-        permits WeaponDefinition, ShieldDefinition, ArmorDefinition {
+        permits WeaponDefinition, ShieldDefinition, ArmorDefinition, ToolDefinition {
 
-    /** The content id, unique across ALL THREE registries -- the boot warns when it is not. */
+    /** The content id, unique across ALL FOUR registries -- the boot warns when it is not. */
     String id();
 
     /** The authored name, before {@code WeaponItems.displayName} recolours it by rarity. */

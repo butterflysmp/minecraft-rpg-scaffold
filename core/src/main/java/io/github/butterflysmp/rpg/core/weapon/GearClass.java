@@ -54,7 +54,31 @@ public enum GearClass {
      * <p>Like {@link #SHIELD}, {@link #of} can never produce this value -- armor has no
      * {@link WeaponClass} -- and only a piece of armor presents it directly.
      */
-    ARMOR;
+    ARMOR,
+
+    /**
+     * A tool -- a pickaxe, an axe, a shovel, a hoe, shears, and whatever joins {@link ToolKind}
+     * next.
+     *
+     * <p><b>ONE constant, not one per {@link ToolKind}</b>, for the reason {@link #ARMOR} gives at
+     * length: nothing gates an enchant on WHICH tool. The two axes stay separate -- this one answers
+     * "what may this enchant sit on", {@code ToolKind} answers "what is this item called and which
+     * vanilla item is it". A pickaxe-only enchant, if one ever lands, is a job for {@code ToolKind},
+     * not for a widening of this enum.
+     *
+     * <p><b>Its roll pool is currently ONE: Unbreaking.</b> No shipped enchant is gated on tools, so
+     * {@code EnchantRoll.poolFor(TOOL, ..)} returns the universal set and nothing else. That is a
+     * content gap, not a defect -- and it is stated here because a pool of one makes
+     * {@code candidateCount}'s {@code 1..min(poolSize, 3)} degenerate, so every slot offers the same
+     * single book. See {@code EnchantRoll}'s own note on which pools are which size.
+     *
+     * <p>Like {@link #SHIELD} and {@link #ARMOR}, {@link #of} can never produce this value -- a tool
+     * has no {@link WeaponClass} -- and only a tool presents it directly. A tool held in the main
+     * hand is still not a weapon: {@code EnchantDefinition}'s {@code MAIN_HAND_ONLY} gate names the
+     * three fighting classes explicitly and therefore refuses this one, which is the allowlist doing
+     * its job rather than an oversight.
+     */
+    TOOL;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides

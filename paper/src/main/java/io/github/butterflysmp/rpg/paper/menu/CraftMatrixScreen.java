@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.menu;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.weapon.ArmorItems;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
+import io.github.butterflysmp.rpg.paper.weapon.ToolItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import org.bukkit.inventory.ItemStack;
 
@@ -11,11 +12,11 @@ import org.bukkit.inventory.ItemStack;
  * anything of ours?
  *
  * <p><b>A MINTED ITEM IS NOT ITS MATERIAL.</b> This is the load-bearing rule of the whole crafting
- * arc, and it is structural rather than a list of exceptions. Every minted weapon, shield and armor
- * piece is an ordinary vanilla Material carrying a PDC tag. The server's recipe matcher sees only
- * the Material, so a minted item whose base is Blaze Powder, a white dye, a tulip or an ingot will
- * be consumed by a vanilla recipe and turned into a plain output. That loss is silent and
- * unrecoverable, and no amount of care in the menu prevents it -- the matcher never asked us.
+ * arc, and it is structural rather than a list of exceptions. Every minted weapon, shield, armor
+ * piece and tool is an ordinary vanilla Material carrying a PDC tag. The server's recipe matcher
+ * sees only the Material, so a minted item whose base is Blaze Powder, a white dye, a tulip or an
+ * ingot will be consumed by a vanilla recipe and turned into a plain output. That loss is silent
+ * and unrecoverable, and no amount of care in the menu prevents it -- the matcher never asked us.
  *
  * <p>So: matching is by IDENTITY, and a minted item's identity is its gear id, not its Material.
  *
@@ -29,7 +30,7 @@ import org.bukkit.inventory.ItemStack;
  * EMPTY, so {@link MatrixVerdict#CONTAINS_GEAR} simply means "no recipe" -- which is exactly the
  * fail-safe direction. A refusal costs a player nothing; a false match costs them an item.
  *
- * <p><b>All three tag keys are asked, and they stay separate.</b> {@code GearItems}' own javadoc
+ * <p><b>All FOUR tag keys are asked, and they stay separate.</b> {@code GearItems}' own javadoc
  * says why a single {@code gear_id} plus a kind byte would be worse. The armor asymmetry does not
  * weaken this: an UNTAGGED vanilla chestplate contributes its full Defense and is not ours, but a
  * MINTED piece carries rarity, lore and an enchant container, and eating one is the same loss as
@@ -98,13 +99,26 @@ public final class CraftMatrixScreen {
     /**
      * Is this one item ours?
      *
-     * <p>Asks all three keys through the same wrappers {@code EnchantMenu.acceptsInput} uses, so
+     * <p>Asks EVERY gear key through the same wrappers {@code EnchantMenu.acceptsInput} uses, so
      * the two places that decide "is this ours" cannot drift into disagreeing.
+     *
+     * <p><b>A KEY MISSING FROM THIS CHAIN IS A HOLE IN THE CONTAINS_GEAR INVARIANT, and it is
+     * silent.</b> This is the whitelist that stops a vanilla recipe consuming a minted item: an
+     * unlisted kind is not "not gear", it is gear that the crafting surface will happily eat. The
+     * tool arm was added with the fourth kind and this note with it, because nothing here fails to
+     * compile when the chain falls behind {@code GearDefinition} -- there is no switch, no sealed
+     * type and no test that can see the omission. It has to be remembered, so it is written down at
+     * the place that has to remember it.
+     *
+     * <p>Deliberately NOT rewritten as a loop over the keys: {@code Keys} holds far more than gear
+     * tags, and a loop over all of them would let a future ability or status key silently start
+     * protecting items it has nothing to do with. Four named calls, one per gear kind.
      */
     public static boolean isGear(ItemStack item, Keys keys) {
         if (item == null) return false;
         return WeaponItems.weaponId(item, keys).isPresent()
                 || ShieldItems.shieldId(item, keys).isPresent()
-                || ArmorItems.armorId(item, keys).isPresent();
+                || ArmorItems.armorId(item, keys).isPresent()
+                || ToolItems.toolId(item, keys).isPresent();
     }
 }

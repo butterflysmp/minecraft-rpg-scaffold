@@ -37,6 +37,23 @@ public final class Keys {
      * adds rarity, lore and an enchant container on top rather than switching mitigation on.
      */
     public final NamespacedKey armorId;
+
+    /**
+     * A minted tool's id (a STRING), the fourth gear tag beside {@link #weaponId},
+     * {@link #shieldId} and {@link #armorId}. An item is one of our tools IFF it carries this.
+     *
+     * <p>Like {@link #armorId}, this governs DISPLAY AND IDENTITY ONLY, and more completely so: an
+     * untagged vanilla pickaxe mines exactly as a minted one does, because {@code ToolItems.mint}
+     * pins no attributes and hides none. This key adds rarity, a footer noun, flavour and an enchant
+     * container on top of an item that already worked.
+     *
+     * <p>A FOURTH key rather than a merged {@code gear_id} plus a kind byte, for the reason
+     * {@code GearItems} states: one key would let a single item answer to two registries during any
+     * future migration, and the boot-time collision warning is what currently keeps ids unique
+     * across the four.
+     */
+    public final NamespacedKey toolId;
+
     public final NamespacedKey abilityId;
 
     /** Identity of the attack-damage modifier that cancels a weapon's vanilla melee. */
@@ -139,6 +156,7 @@ public final class Keys {
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
         this.shieldId = new NamespacedKey(plugin, "shield_id");
         this.armorId = new NamespacedKey(plugin, "armor_id");
+        this.toolId = new NamespacedKey(plugin, "tool_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
         this.meleeSuppressor = new NamespacedKey(plugin, "vanilla_melee_suppressor");
         this.soaked = new NamespacedKey(plugin, "soaked_slow");

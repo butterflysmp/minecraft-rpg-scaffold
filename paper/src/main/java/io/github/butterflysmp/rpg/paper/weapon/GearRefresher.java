@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.GearRegistry;
 import io.github.butterflysmp.rpg.core.weapon.RefreshVerdict;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
+import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
@@ -51,7 +52,8 @@ public final class GearRefresher {
      * give.
      */
     public static int refresh(Player player, WeaponRegistry weapons, ShieldRegistry shields,
-                              ArmorRegistry armor, AdapterContext adapters) {
+                              ArmorRegistry armor, ToolRegistry tools,
+                              AdapterContext adapters) {
         PlayerInventory inventory = player.getInventory();
         ItemStack[] contents = inventory.getContents();
         Keys keys = adapters.keys();
@@ -64,6 +66,7 @@ public final class GearRefresher {
             ItemStack rebuilt = rebuild(item, keys.weaponId, weapons, adapters);
             if (rebuilt == null) rebuilt = rebuild(item, keys.shieldId, shields, adapters);
             if (rebuilt == null) rebuilt = rebuild(item, keys.armorId, armor, adapters);
+            if (rebuilt == null) rebuilt = rebuild(item, keys.toolId, tools, adapters);
 
             if (rebuilt != null) {
                 inventory.setItem(slot, rebuilt);

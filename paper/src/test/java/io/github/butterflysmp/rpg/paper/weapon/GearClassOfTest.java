@@ -6,12 +6,15 @@ import io.github.butterflysmp.rpg.core.weapon.ArmorSlot;
 import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ToolDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ToolKind;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -46,8 +49,38 @@ class GearClassOfTest {
         assertEquals(GearClass.ARMOR, GearItems.gearClassOf(
                 new ArmorDefinition("a", "A", Rarity.COMMON, "iron_helmet", ArmorSlot.HEAD, 2.0,
                         List.of())));
+
+        assertEquals(GearClass.TOOL, GearItems.gearClassOf(
+                new ToolDefinition("iron_pickaxe", "T", Rarity.COMMON, "iron_pickaxe",
+                        ToolKind.PICKAXE, List.of())));
         // Mutation: return SHIELD for the armor arm -> reddens. That mutation rolls Bulwark and
         // Thorns onto a helmet, which is a real balance defect that throws nothing.
+        //
+        // Mutation: return ARMOR for the TOOL arm -> reddens. That is the exact silent failure the
+        // HeldGear/PlacedGear collapse was made to delete -- their old `shield != null ? SHIELD :
+        // ARMOR` tail would have returned ARMOR for a tool, offering a pickaxe Protection, Growth
+        // and Mana Bank: enchants that can never fire on it, sold for XP.
+    }
+
+    @Test
+    void everyGearKindResolvesToADISTINCTRoster() {
+        // The axis, not the cases that came to mind. Two kinds sharing a roster is the defect shape
+        // here -- it is what "pass SHIELD to make armor work" would have been -- so distinctness is
+        // asserted rather than left implied by four equality checks.
+        List<GearClass> rosters = List.of(
+                GearItems.gearClassOf(weapon(WeaponClass.MELEE)),
+                GearItems.gearClassOf(new ShieldDefinition("s", "S", Rarity.COMMON, "shield", 0.35,
+                        List.of())),
+                GearItems.gearClassOf(new ArmorDefinition("a", "A", Rarity.COMMON, "iron_helmet",
+                        ArmorSlot.HEAD, 2.0, List.of())),
+                GearItems.gearClassOf(new ToolDefinition("iron_pickaxe", "T", Rarity.COMMON,
+                        "iron_pickaxe", ToolKind.PICKAXE, List.of())));
+
+        assertEquals(4, rosters.size(), "the walk must not be empty or short");
+        assertEquals(rosters.size(), Set.copyOf(rosters).size(),
+                "two gear kinds collapsed to one roster: " + rosters);
+        // Mutation: point the tool arm at ARMOR -> reddens on the distinctness check as well as
+        // above, so the guard survives someone deleting the literal assertion.
     }
 
     @Test

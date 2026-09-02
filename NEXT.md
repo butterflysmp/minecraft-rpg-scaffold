@@ -581,6 +581,102 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Crafting, Slice 4 (tools, the fourth gear kind) — what it created or exposed
+
+- **THE BRIEF'S HEADLINE FINDING WAS WRONG, AND IT WAS THE REVIEWER'S.** The slice-4 brief carried a
+  section headed *"THE ONE REAL HAZARD: `Gate.MAIN_HAND_ONLY` SILENTLY ADMITS TOOLS"*, claiming a
+  pickaxe becomes eligible to roll Sharpness. It does not. That arm is already an **allowlist** —
+  `null || MELEE || RANGER || MAGE` — so `class: tool` was refused at boot before this slice wrote a
+  line, and `EnchantRoll.poolFor`'s `!= heldClass` filter is total over a class it does not know.
+
+  **The mechanism is the useful part: a read of `requireGate` was TRUNCATED at the `SHIELD_ONLY`
+  arm, and `MAIN_HAND_ONLY` was then reasoned about from its NAME** — which sounds slot-shaped —
+  rather than from its body. A partial read treated as complete. Recorded as retracted rather than
+  quietly dropped: a superseded claim gets a note saying what stopped being true.
+
+  **Renaming it to `WEAPON_ONLY` was proposed and rejected as actively harmful.** `NEXT.md:4269`
+  cites `MAIN_HAND_ONLY` **by name** as rule 1's own worked example. Renaming retires a live rule's
+  only exemplar — rule 3 (a change can delete a rule's only witness) applied to a rename.
+
+- **THE COMPILER COVERED SIX SITES. THE SWEEP FOUND FOUR MORE, AND ONE WAS A REAL HOLE.**
+  `GearClassTest` already records that adding `ARMOR` gave three compile errors and five silent
+  sites. Adding `TOOL` gave **six** compile errors (`GearItems` x3, `GearClassLabel` x3) plus one red
+  test. Where the old five landed:
+
+  | the site `GearClassTest` names | for `TOOL` |
+  |---|---|
+  | `HeldGear.gearClass` | **deleted** — collapsed onto `GearItems.gearClassOf` |
+  | HeldGear's effect tail | covered: `EnchantEffectLine` never enumerates `GearClass`, it compares `!=` and formats through two exhaustive switches |
+  | the `/rpg enchant` SHOW refusal | already gone; only stale prose remained |
+  | `EnchantMenu.PlacedGear.gearClass` | **deleted** — same collapse |
+  | `ANY_BUT_SHIELD` | now `MAIN_HAND_ONLY`, an allowlist. All THREE class-gated arms are allowlists, so `TOOL` is refused by all three |
+
+  **And four the old list did not name**, none compiler-checked: `/rpg give`'s final `else` ·
+  `GearRefresher`'s three-tag chain · `RpgPlugin`'s `allGear` and `claimants` · and
+  **`CraftMatrixScreen.isGear`**, which is the one that mattered.
+
+- **`isGear` IS A WHITELIST, AND A KIND MISSING FROM IT IS NOT "NOT GEAR" — IT IS GEAR THE CRAFTING
+  SURFACE WILL EAT.** That chain is what makes `CONTAINS_GEAR` true, and `CONTAINS_GEAR` is what
+  stops a vanilla recipe consuming a minted item. It is four `||`-ed calls: no switch, no sealed
+  type, no test that can see an omission, and nothing fails to compile when it falls behind
+  `GearDefinition`. It was found by grepping every `ArmorItems.armorId(` call site, not by the
+  compiler and not by 1144 green tests. **Witnessed by gate row T10 and by nothing else.**
+
+- **THE TWO ACCESSORS FAILED DIFFERENTLY, AND ONLY ONE WAS SILENT.** Worth keeping because it
+  decides what a gate can catch. With a fourth field added to the old `HeldGear`/`PlacedGear`:
+  `remint` and `displayName` end in `armor.xxx()` with `armor` null and **throw**; `gearClass` ends
+  in `shield != null ? SHIELD : ARMOR` and **returns ARMOR** — the tool draws Protection, Growth and
+  Mana Bank, enchants that can never fire on it. That is `requireGate`'s own named failure, *"sell a
+  player an XP unlock that does nothing"*, arriving through a door that check does not watch. The
+  NPEs need no gate row. **The silent one is T9.**
+
+- **`./mvnw compile` REPORTED `BUILD SUCCESS` WITH THREE COMPILE ERRORS PRESENT.** Adding
+  `ToolDefinition` to the `permits` clause and `TOOL` to `GearClass` touched only `core/`, so
+  incremental compilation **skipped `paper/` entirely** and never re-checked the sealed type or the
+  enum. `GearItems.class` was stamped 14:51:25 against edits made at 15:36. `clean` was required to
+  see any of it.
+
+  This does NOT contradict `ContentValidator.checkEffect`'s javadoc, which says clean catches
+  nothing there that a plain build does not — **that was measured for a change inside `paper/`**.
+  The bound is sharper: **a module whose own sources did not change is not recompiled, however the
+  sealed types and enums it consumes have grown.** Cross-module exhaustiveness needs `clean`, and a
+  green incremental build is not evidence of anything after a `core/`-only edit.
+
+- **THE LOADER READS A FLAT LIST, DELIBERATELY UNLIKE `ArmorLoader`.** Armor walks the `ArmorSlot`
+  ENUM rather than the file's keys, so a tier defining three slots is a named refusal. That is right
+  for armor and wrong for tools: **of the 84 durable materials, the tier-by-kind grid describes 24**
+  (the sweep at the slice-2 entry above). Shears, brush, fishing rod, flint and steel, mace, carrot
+  on a stick and seven spears sit outside it. A `tiers x kinds` shape would model a structure that
+  fits under a third of what the loader will hold, and the first irregular would need a special case
+  in a loader designed around regularity.
+
+  Two consequences stated where they are relied on: a tool file's key **is** the id and the material
+  (one string, so they cannot disagree), and **a bad entry costs the ENTRY, not the file** — the
+  opposite of armor's all-or-nothing tier, because tools are not a set. Shears ships in the same
+  file as the four regular kinds precisely so the flat list is exercised rather than asserted.
+
+- **A `kind` THAT DISAGREES WITH ITS MATERIAL IS REFUSED AT BOOT**, the same answer slice 2 gave to
+  `craft_result != material`. It lives in the record rather than `ContentValidator` because it needs
+  no Bukkit registry, which makes it a refusal and a unit test instead of a boot warning.
+
+  **The comparison is `endsWith("_" + token)`, and the underscore IS the check.**
+  `"iron_pickaxe".endsWith("axe")` is `true`, so a bare suffix test accepts `material: iron_pickaxe`
+  with `kind: axe` — the one pair the refusal exists for. Watched red as mutation 2, at both the
+  `ToolKind` and `ToolDefinition` layers.
+
+- **A TOOL'S ROLL POOL IS ONE, AND `EnchantRoll`'s PARAGRAPH WAS WRONG A THIRD TIME.** No shipped
+  enchant is gated on tools, so `poolFor(TOOL, ..)` returns the universal set alone — Unbreaking —
+  and `candidateCount` clamps to `min(1, 3) = 1`: every slot offers the same single book. Nothing
+  throws. That file already admits its pool paragraph *"was wrong for two slices before anyone
+  noticed"*; a one-enchant pool falsifies its observability claim in the opposite direction from
+  armor's four, and it is corrected there rather than left for a fourth time.
+
+- **STILL OWED:** M6, the slice-3 pin mutation, is carried into this slice's gate because this slice
+  boots a server anyway. A tool-gated enchant, whenever the roster pass happens — until then T8
+  records the degenerate table honestly rather than the code pretending otherwise.
+
+---
+
 ### Crafting, Slice 3 (the grid's vanilla feel) — what it created or exposed
 
 - **THE GATE WAS NOT IN THE REPOSITORY, AND THAT IS THE FINDING.** `GATE-crafting.md` is now
@@ -4297,13 +4393,24 @@ grep -rn 'switch (' --include=*.java core/src/main paper/src/main storage/src/ma
 Classify each: a switch is safe if it is an EXPRESSION (assigned, returned or yielded) or a PATTERN
 switch over a sealed type. It is a trap only if it is a STATEMENT over enum CONSTANTS.
 
-**Audited 2026-08-31 at `82b0959`, all 36 switches in main sources.** Every remaining switch
-statement is a pattern switch over a sealed type -- compiler-checked -- **except one**:
+**Audited 2026-09-02 at `0677e37`, all 51 switches in main sources** — re-run before adding
+`GearClass.TOOL` and creating `ToolKind`, which is what this checklist is for. Ten are statements;
+**nine are pattern switches over sealed types** (`CastSpec`, `EffectSpec` x3, `StatusDefinition`,
+`VisualSpec`, `CastResult` x2, `ContentValidator:327`), verified by reading each first `case` label.
+Every one is compiler-checked. **The tenth is the known trap, and it is now DISCHARGED:**
 
-- `RpgCommand.java:1069`, `switch (op)` over `EnchantOp`: three of six constants, no default arm.
-  Deliberately partial (the other ops return before reaching it), so it is not a live bug -- but it
-  is the one place a new `EnchantOp` would fall through with nothing said. Give it a default that
-  throws, or a comment stating the partiality, the next time that enum is touched.
+- `RpgCommand.java:1231`, `switch (op)` over `EnchantOp`: three of six constants, no default arm.
+  **The line had drifted from the 1069 recorded at the last audit** — which is itself the argument
+  for re-running the grep rather than trusting the note. Deliberately partial (the other ops return
+  before reaching it), so never a live bug. Discharged with the **comment** option rather than a
+  throwing default, and the comment says why: the switch sits AFTER the state write and the re-mint,
+  so a default that threw would turn a missing chat message into a half-applied edit — worse than
+  the silence it replaced.
+
+> **The previous audit stood for three slices and four enum additions.** "Run before adding any enum
+> constant" is easy to skip precisely because nothing enforces it, and a stale audit reads exactly
+> like a current one. The date and SHA above REPLACE the old line rather than sitting beside it, so
+> there is only ever one answer to "when was this last true".
 
 `ContentValidator.checkEffect` is the counter-example worth knowing: a switch STATEMENT that IS
 exhaustiveness-checked, because its labels are type patterns over a sealed interface. Its javadoc

@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.weapon;
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ToolDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.core.weapon.GearClass;
@@ -131,6 +132,7 @@ public final class GearItems {
             case WeaponDefinition weapon -> WeaponItems.remint(item, weapon, adapters);
             case ShieldDefinition shield -> ShieldItems.remint(item, shield, adapters);
             case ArmorDefinition armor -> ArmorItems.remint(item, armor, adapters);
+            case ToolDefinition tool -> ToolItems.remint(item, tool, adapters);
         };
     }
 
@@ -154,6 +156,7 @@ public final class GearItems {
             case WeaponDefinition weapon -> WeaponItems.mint(weapon, adapters);
             case ShieldDefinition shield -> ShieldItems.mint(shield, adapters);
             case ArmorDefinition armor -> ArmorItems.mint(armor, adapters);
+            case ToolDefinition tool -> ToolItems.mint(tool, adapters);
         };
     }
 
@@ -175,6 +178,7 @@ public final class GearItems {
             case WeaponDefinition weapon -> GearClass.of(weapon.weaponClass());
             case ShieldDefinition shield -> GearClass.SHIELD;
             case ArmorDefinition armor -> GearClass.ARMOR;
+            case ToolDefinition tool -> GearClass.TOOL;
         };
     }
 
