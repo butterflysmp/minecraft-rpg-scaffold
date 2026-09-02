@@ -4105,24 +4105,37 @@ looking as though it always said the new thing.
 
 ### A GATE ROW CAN BE IMPOSSIBLE, OR REAL BUT NON-DISCRIMINATING, AND BOTH CREDIT COVERAGE THAT DOES NOT EXIST
 
-This is the rule above one level up. A mutation row predicts a red it never gets; a **gate** row
-claims a witness it never was. The suite cannot catch either, because neither is a test — both are
-prose asserting that something was checked.
+**WHY THIS IS A RULE HERE AND NOT GENERAL ADVICE.** In a project with real automated coverage, a
+miscredited manual check is a nuisance: the suite still runs the code, and a defect has other ways to
+surface. **In this repo the boot gate is not a supplement to the suite — for eight behaviours it IS
+the suite**, exactly as the unwitnessed table in the Crafting Slice 1 section now records. Nothing
+constructs `MenuRouting`, `Menu` or `CraftingMenu`, because nothing can without a server. So a
+miscredited gate row here is not a gap in redundant cover. It is **an unwitnessed defect wearing a
+passing row**, and the suite is structurally incapable of noticing it — no red exists to be missed.
+That is what makes this worth a rule rather than a habit.
 
-Crafting Slice 1 produced one of each, in the same afternoon, over the same property.
+**HOW IT DIFFERS FROM RULE 2, precisely.** Rule 2's second failure mode is INSENSITIVITY: the test
+runs the mutated line and observes something else. This one is NON-REACHABILITY: the check never
+enters the call at all. Different defects, and the second is harder to see — insensitivity at least
+has you standing in the right method, where the fix is a better assertion. Non-reachability puts you
+in a neighbouring call that passes honestly, so there is nothing to sharpen and nothing to notice.
 
-**IMPOSSIBLE.** Row 12b called for *"two milk buckets in one slot"*. `MILK_BUCKET.getMaxStackSize()`
-is **1**, so the state it described cannot exist. It was written from reasoning and the number was
-never checked — the first rule in `CLAUDE.md`, in a gate table rather than in code. It did not fail
-and it did not pass. **A row that cannot run is not a partial pass and must not be counted**: the
-gate was 27/27, never 27/28.
+Crafting Slice 1 produced one of each, in the same afternoon, over the same property, and **both were
+written by the reviewer specifying the checks** — which is the point. This catches the person whose
+job is deciding what gets verified, not the person implementing it.
+
+**IMPOSSIBLE.** Row 12b was written from reasoning as *"two milk buckets in one slot"*.
+`MILK_BUCKET.getMaxStackSize()` is **1**, so the state it described cannot exist, and the number was
+never checked — the first rule in `CLAUDE.md`, applied to a gate table instead of to code. It did not
+fail and it did not pass. **A row that cannot run is not a partial pass and must not be counted**:
+the gate was 27/27, never 27/28.
 
 **REAL BUT NON-DISCRIMINATING, and this is the dangerous one.** Row 12 — craft a cake, count the
-three empty buckets — is a genuine row that genuinely passed. It was also credited in this file's own
-unwitnessed table as the witness for `getOverflowItems()`, **and it can never reach that call**: the
-cake's buckets FIT BACK into the matrix, so the row exercises `getResultingMatrix()` and stops. A
-passing row was standing in for a check that had never once executed. Nothing looked wrong, because
-nothing was red.
+three empty buckets — is a genuine row that genuinely passed. It was then credited, in the review
+message that put the line into this file, as the witness for `getOverflowItems()`, **and it can never
+reach that call**: the cake's buckets FIT BACK into the matrix, so the row exercises
+`getResultingMatrix()` and stops. A passing row stood in for a call that had never once executed.
+Nothing looked wrong, because nothing was red — and here, nothing else was ever going to be.
 
 Reaching the overflow give needed a remainder-producing ingredient that **stacks**, so consuming one
 leaves the slot occupied and the remainder homeless. Buckets are precisely the wrong family. A sweep
