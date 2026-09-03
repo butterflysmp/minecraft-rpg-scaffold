@@ -20,6 +20,7 @@ import org.bukkit.inventory.ItemCraftResult;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -803,7 +804,9 @@ public final class CraftingMenu extends Menu {
         for (int index = 0; index < CraftingMenuLayout.SUGGESTIONS; index++) {
             int slot = CraftingMenuLayout.rawSlotForSuggestion(index);
             if (index >= ranked.size()) {
-                getInventory().setItem(slot, MenuIcons.filler());
+                // An EMPTY cell, not chrome. Painted in FILLER the column disappeared whenever it
+                // was short, which reads as a broken feature rather than an empty one.
+                getInventory().setItem(slot, MenuIcons.pane(MenuIcons.EMPTY_SUGGESTION));
                 continue;
             }
             CraftCount.Craftable craftable = ranked.get(index);
@@ -822,12 +825,48 @@ public final class CraftingMenu extends Menu {
      */
     private ItemStack suggestionIcon(Recipe recipe, CraftCount.Craftable craftable) {
         ItemStack result = recipe == null ? null : recipe.getResult();
-        if (isEmpty(result)) return MenuIcons.filler();
+        if (isEmpty(result)) return MenuIcons.pane(MenuIcons.EMPTY_SUGGESTION);
 
-        ItemStack icon = result.clone();
-        icon.editMeta(meta -> meta.lore(List.of(
-                MenuIcons.line("Craft " + craftable.count() + " more", NamedTextColor.GRAY),
-                MenuIcons.line("Uses items from your inventory", NamedTextColor.DARK_GRAY))));
+        // THE ICON IS THE MINTED ITEM, through the SAME claimFor-then-mint the result slot uses.
+        // A suggestion showing a plain iron sword for a craft that hands over a minted weapon is
+        // the same broken promise the result slot's preview exists to avoid -- "you receive what
+        // you were shown", on a surface with no result slot.
+        //
+        // NOT a second preview builder. A renderer separate from the real one is the "two callers
+        // that agree today" shape this arc has closed three times, and it would drift the first
+        // time a lore line moved.
+        Optional<GearDefinition> claimed = claimFor(result);
+        ItemStack icon = claimed.isPresent()
+                ? GearItems.mint(claimed.get(), adapters)
+                : result.clone();
+
+        // AND IT DOES NOT ROLL. The reasoning is refreshPreview's, quoted here so the next reader
+        // finds it without going looking: the roll is a ThreadLocalRandom draw, so a preview that
+        // rolled would advertise enchant candidates drawn INDEPENDENTLY of the ones the craft will
+        // produce. Rarity and stats are deterministic from the definition, so showing them is a
+        // promise the craft keeps; candidates are random per item, so showing them is a promise it
+        // breaks. EnchantRollItems.rollOnAcquire must never become reachable from here.
+        //
+        // Structurally guaranteed rather than remembered: the roll lives in commitCraft, and this
+        // method does not call it.
+
+        // APPENDED ABOVE the item's own lore, never replacing it. meta.lore(List.of(..)) would wipe
+        // the entire gear tooltip the mint just built -- stats, flavour, rarity footer -- which is
+        // the whole reason for minting in the first place. Chrome on top, item underneath, one
+        // blank line between, so the RARITY FOOTER stays the last line exactly as it is on the real
+        // item in the player's hand.
+        icon.editMeta(meta -> {
+            List<Component> lore = new ArrayList<>();
+            lore.add(MenuIcons.line("Craft " + craftable.count() + " more", NamedTextColor.GRAY));
+            lore.add(MenuIcons.line("Uses items from your inventory", NamedTextColor.DARK_GRAY));
+
+            List<Component> existing = meta.lore();
+            if (existing != null && !existing.isEmpty()) {
+                lore.add(MenuIcons.blank());
+                lore.addAll(existing);
+            }
+            meta.lore(lore);
+        });
         return icon;
     }
 
@@ -986,12 +1025,10 @@ public final class CraftingMenu extends Menu {
                 MenuIcons.placeholder(Material.BOOK, "Recipe Browser",
                         "Everything you can make, paginated."));
 
-        // Decoration, painted once and never repainted. The arrow does NOT change with the recipe:
-        // the status bar is the state indicator, and a second one would be a competing answer to
-        // "did it match" that could drift from the first.
-        getInventory().setItem(CraftingMenuLayout.ARROW_SLOT,
-                MenuIcons.icon(Material.ARROW, MenuIcons.line("", NamedTextColor.DARK_GRAY),
-                        List.of()));
+        // Decoration, painted once and never repainted. Nothing in the chrome changes with the
+        // recipe -- the status bar is the menu's only state indicator, and CraftStatus's javadoc
+        // holds the reasoning. (Slot 22 used to carry an arrow here; it is plain filler now, laid
+        // down by the loop above.)
         getInventory().setItem(CraftingMenuLayout.INDICATOR_SLOT,
                 MenuIcons.icon(Material.CRAFTING_TABLE,
                         MenuIcons.line("Crafting", NamedTextColor.WHITE),

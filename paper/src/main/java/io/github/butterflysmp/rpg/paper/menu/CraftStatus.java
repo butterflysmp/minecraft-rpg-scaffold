@@ -15,6 +15,20 @@ import org.bukkit.Material;
  * <p>A second source would drift the first time someone changed one and not the other, which is the
  * defect this arc has now met on preview-versus-commit, count-versus-assembly, and tier-versus-mint.
  *
+ * <h2>THIS BAR IS THE MENU'S ONLY STATE INDICATOR, and that is a decision</h2>
+ *
+ * <b>Nothing else in the crafting screen may change with the recipe.</b> A second thing that moved
+ * when a match resolved would be a competing answer to "did it match", and two answers to one
+ * question drift the first time somebody changes one of them.
+ *
+ * <p>This was originally written on {@code CraftingMenuLayout.ARROW_SLOT} -- the arrow between the
+ * grid and the result -- explaining that the arrow is painted ONCE and never repainted, precisely so
+ * it could not become a second indicator. <b>That constant was deleted when the arrow was removed
+ * from the layout, and the reasoning moved here rather than going with it.</b> The rule outlived its
+ * example: deleting a decoration should not delete the rule about decorations, and a change that
+ * removes a rule's only witness without touching the rule is the failure {@code NEXT.md}'s third
+ * rule names.
+ *
  * <h2>RED collapses two causes, deliberately</h2>
  *
  * {@link #INVALID} means "the grid holds something and nothing will come of it". That is true both

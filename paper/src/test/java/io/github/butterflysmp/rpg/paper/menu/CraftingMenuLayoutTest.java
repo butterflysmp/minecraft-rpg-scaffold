@@ -75,8 +75,14 @@ class CraftingMenuLayoutTest {
                 "the column between the grid and the arrow is not a cell");
         assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(9),
                 "the column left of the grid is not a cell");
-        assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(CraftingMenuLayout.ARROW_SLOT),
-                "the arrow is decoration, not an ingredient cell");
+        // Slot 22 sits DIRECTLY RIGHT of grid cell 21, and this is what pins the grid to three
+        // columns rather than letting it quietly extend into column 4.
+        //
+        // A LITERAL, not a constant, because the constant is gone: 22 used to be ARROW_SLOT and is
+        // now ordinary filler. The assertion is not about the arrow and never was -- deleting it
+        // with the decoration would have removed the only guard on the grid's right-hand bound.
+        assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(22),
+                "slot 22 is immediately right of the grid and must never be an ingredient cell");
         // Mutation: drop the column bound in matrixIndexOf -> slots 9 and 13 redden.
         // NOTE these moved with the grid in slice 5: the old literals were 10 and 14, and slot 10
         // is now a grid CELL. A relayout that left them alone would have asserted the opposite of

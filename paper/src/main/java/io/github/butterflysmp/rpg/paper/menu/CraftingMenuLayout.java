@@ -68,20 +68,25 @@ public final class CraftingMenuLayout {
      */
     public static final int RESULT_SLOT = 23;
 
-    /**
-     * The arrow between the grid and the result. Row 2, column 4. Pure decoration.
-     *
-     * <p>Painted once and never repainted, so it is not a state indicator -- the STATUS BAR is
-     * ({@link #STATUS_SLOTS}). An arrow that changed with the recipe would be a second, competing
-     * answer to "did it match", and two of those drift.
-     */
-    public static final int ARROW_SLOT = 22;
+    // SLOT 22 WAS THE ARROW, and is now ordinary filler. The constant is gone with it.
+    //
+    // Its javadoc carried a DECISION rather than a description -- that the arrow is painted once
+    // and never repainted, so the status bar stays the menu's only state indicator. That rule
+    // outlives the decoration it was written on, so it moved to CraftStatus's class javadoc before
+    // this constant was deleted. See NEXT.md's third rule: a change can remove a rule's only
+    // witness without touching the rule.
+    //
+    // CraftingMenuLayoutTest still pins slot 22 as resolving to no matrix index. That assertion is
+    // NOT about the arrow -- 22 sits directly right of grid cell 21, so it is what stops the grid
+    // quietly extending into column 4.
 
     /**
      * The screen's own icon, row 0 column 4: a crafting table, so the menu says what it is.
      *
-     * <p>Decoration, like {@link #ARROW_SLOT}. It is centred over the grid rather than over the
-     * whole window because it labels the crafting half, not the suggestion column.
+     * <p>Pure decoration, painted once. It is centred over the grid rather than over the whole
+     * window because it labels the crafting half, not the suggestion column. Like everything else
+     * in the chrome it must never change with the recipe -- see {@code CraftStatus} for why the bar
+     * is the only thing that does.
      */
     public static final int INDICATOR_SLOT = 4;
 

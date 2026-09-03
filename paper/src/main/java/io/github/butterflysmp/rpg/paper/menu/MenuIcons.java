@@ -34,6 +34,26 @@ public final class MenuIcons {
     public static final Material FILLER = Material.BLACK_STAINED_GLASS_PANE;
 
     /**
+     * An EMPTY QUICK-CRAFT CELL. Not a second filler -- a cell that is waiting to hold something.
+     *
+     * <p>The suggestion column is often short: with three cells and an ordinary inventory, one or
+     * two may have nothing to show. Painted in {@link #FILLER} they were invisible, and a column
+     * that vanishes when it is short reads as a broken feature rather than an empty one.
+     *
+     * <p><b>LIGHT gray, and the distinction from plain gray is LOAD-BEARING rather than a shade
+     * preference.</b> Plain {@code GRAY_STAINED_GLASS_PANE} is {@code CraftStatus.EMPTY}'s colour --
+     * the status bar's "grid is empty" state -- and gate rows S12b and S12c exist to pin the two
+     * apart. Using it here would put two meanings on one material in one screen, which is exactly
+     * how row S12 rotted when the chrome went black: an operator holding panes "matching the
+     * filler" tested nothing and the row passed.
+     *
+     * <p>It reads as gray to a player and is a different material to the code, which is the whole
+     * point. <b>Anything that collapses this and the status bar's gray into one constant is a
+     * REGRESSION, not a simplification</b> -- and every other gate row would still pass after it.
+     */
+    public static final Material EMPTY_SUGGESTION = Material.LIGHT_GRAY_STAINED_GLASS_PANE;
+
+    /**
      * A blank pane in a given colour, for a readout rather than for chrome.
      *
      * <p>Same shape as {@link #filler()} -- an empty display name, because a blank name still hovers
