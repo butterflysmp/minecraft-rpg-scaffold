@@ -1,6 +1,8 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.OptionalInt;
 import java.util.Set;
 
@@ -77,6 +79,78 @@ public final class CraftingMenuLayout {
             slots.add(rawSlotForMatrix(index));
         }
         return Set.copyOf(slots);
+    }
+
+    private static final int SUGGESTION_ROW = 4;
+
+    /** How many suggestions the inline column shows. The rest live in the browser. */
+    public static final int SUGGESTIONS = COLUMNS;
+
+    /**
+     * The Quick Craft suggestions: the whole of row 4.
+     *
+     * <p><b>ROW 4, NOT ROW 5, AND THAT IS A SAFETY DECISION RATHER THAN A LOOK.</b> A suggestion is
+     * a button that spends materials the instant it is clicked -- no confirmation, no undo. Row 5
+     * sits directly above the player's own inventory, which is the boundary they cross most often
+     * coming up from the hotbar, so a control that consumes ingredients would be one row of travel
+     * from an ordinary misclick. Row 5 is left as chrome deliberately; it is a buffer, not waste.
+     *
+     * <p><b>Shift-clicking a suggestion cannot move it, and that is already true rather than
+     * arranged.</b> {@code MenuRouting.shiftMove} only ever moves an item out of a slot in
+     * {@code inputSlots()}, and these are not input slots -- the same reason the result slot needed
+     * {@code shiftClickDispatches} to be heard at all. Said here because "why is there an empty row
+     * under the suggestions" is exactly the question someone answers by filling it in.
+     *
+     * <p><b>Ordered, unlike {@link #GRID_SLOTS}.</b> A {@code List}, because suggestion index N must
+     * always render in the same cell -- a ranking whose cells shuffled between recomputes would be
+     * unclickable. {@code GRID_SLOTS} is a {@code Set} whose iteration order the JDK leaves
+     * undefined, and that difference is the whole reason this is a different type.
+     */
+    public static final List<Integer> SUGGESTION_SLOTS = suggestionSlots();
+
+    /**
+     * The browser button, centred in the chrome row below the suggestions.
+     *
+     * <p>Row 5 column 4. The only functional cell in that row, so the buffer above the player's
+     * inventory stays a buffer everywhere it matters.
+     */
+    public static final int BROWSER_SLOT = (SUGGESTION_ROW + 1) * COLUMNS + 4;
+
+    private static List<Integer> suggestionSlots() {
+        List<Integer> slots = new ArrayList<>();
+        for (int index = 0; index < SUGGESTIONS; index++) {
+            slots.add(rawSlotForSuggestion(index));
+        }
+        return List.copyOf(slots);
+    }
+
+    /**
+     * The raw slot showing suggestion {@code index}.
+     *
+     * @param index 0..8, left to right.
+     */
+    public static int rawSlotForSuggestion(int index) {
+        if (index < 0 || index >= SUGGESTIONS) {
+            throw new IllegalArgumentException(
+                    "suggestion index " + index + " is outside 0.." + (SUGGESTIONS - 1));
+        }
+        return SUGGESTION_ROW * COLUMNS + index;
+    }
+
+    /**
+     * The suggestion a raw slot shows, or empty for anything that is not a suggestion cell.
+     *
+     * <p>Empty for the grid, the result, the chrome and the browser button, so a click that is not a
+     * suggestion simply is not one -- no bounds check at the call site, the same contract
+     * {@link #matrixIndexOf} has.
+     */
+    public static OptionalInt suggestionIndexOf(int rawSlot) {
+        if (rawSlot < 0 || rawSlot >= SIZE) return OptionalInt.empty();
+
+        int row = rawSlot / COLUMNS;
+        if (row != SUGGESTION_ROW) return OptionalInt.empty();
+
+        return OptionalInt.of(rawSlot % COLUMNS);
     }
 
     /**

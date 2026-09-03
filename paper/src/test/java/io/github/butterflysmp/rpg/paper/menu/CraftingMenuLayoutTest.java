@@ -117,6 +117,98 @@ class CraftingMenuLayoutTest {
         // duplication path, asserted rather than argued.
     }
 
+    // --- The Quick Craft column -------------------------------------------------------------
+
+    /** Row 4, left to right. Written out for the reason EXPECTED is: a test that recomputes cannot fail. */
+    private static final List<Integer> EXPECTED_SUGGESTIONS =
+            List.of(36, 37, 38, 39, 40, 41, 42, 43, 44);
+
+    @Test
+    void theSuggestionColumnSitsInROW4() {
+        // PINNED AS LITERALS, because this is a SAFETY decision and not a look. A suggestion spends
+        // materials on a single click with no confirmation; row 5 sits directly above the player's
+        // own inventory, one row of travel from an ordinary misclick coming up off the hotbar.
+        // Moving the column down must be a deliberate edit to this list, not a quiet constant change.
+        assertEquals(EXPECTED_SUGGESTIONS, CraftingMenuLayout.SUGGESTION_SLOTS);
+        for (int index = 0; index < EXPECTED_SUGGESTIONS.size(); index++) {
+            assertEquals(EXPECTED_SUGGESTIONS.get(index),
+                    CraftingMenuLayout.rawSlotForSuggestion(index), "suggestion " + index);
+        }
+        // Mutation: SUGGESTION_ROW 4 -> 5 -> every row reddens naming the index.
+    }
+
+    @Test
+    void theSuggestionOrderIsSTABLE_BecauseIndexNMustAlwaysRenderInCellN() {
+        // GRID_SLOTS is a Set.copyOf whose iteration order the JDK leaves undefined; this is a List
+        // for exactly that reason. A ranking whose cells shuffled between recomputes would be
+        // unclickable -- the player aims at the third icon and the fourth one crafts.
+        for (int index = 0; index < CraftingMenuLayout.SUGGESTIONS; index++) {
+            int raw = CraftingMenuLayout.rawSlotForSuggestion(index);
+            assertEquals(OptionalInt.of(index), CraftingMenuLayout.suggestionIndexOf(raw),
+                    "raw slot " + raw + " should map back to suggestion " + index);
+            assertEquals(raw, CraftingMenuLayout.SUGGESTION_SLOTS.get(index),
+                    "the list and the function must agree at " + index);
+        }
+        // Mutation: build SUGGESTION_SLOTS through a Set -> the list assertion reddens.
+    }
+
+    @Test
+    void theSuggestionsNeverOverlapTheGridTheResultOrTheBrowser() {
+        // The whole surface again. A suggestion cell that was also a grid cell would be read into
+        // the crafting matrix as an ingredient; one that was the browser button would craft when the
+        // player meant to navigate.
+        for (int raw : CraftingMenuLayout.SUGGESTION_SLOTS) {
+            assertFalse(CraftingMenuLayout.GRID_SLOTS.contains(raw), "slot " + raw + " is a grid cell");
+            assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(raw),
+                    "slot " + raw + " resolves to a matrix index");
+            assertNotEquals(CraftingMenuLayout.RESULT_SLOT, raw);
+            assertNotEquals(CraftingMenuLayout.CLOSE_SLOT, raw);
+            assertNotEquals(CraftingMenuLayout.BROWSER_SLOT, raw);
+        }
+        assertEquals(9, CraftingMenuLayout.SUGGESTION_SLOTS.size(), "the walk must not be empty or short");
+        // Mutation: move the column onto row 3 -> the grid overlap assertions redden.
+    }
+
+    @Test
+    void theBrowserButtonIsTheONLYFunctionalCellBelowTheSuggestions() {
+        // Row 5 is a deliberate buffer between a materials-spending button and the player's own
+        // inventory. Exactly one cell in it does anything.
+        assertEquals(49, CraftingMenuLayout.BROWSER_SLOT);
+        assertEquals(OptionalInt.empty(), CraftingMenuLayout.suggestionIndexOf(
+                CraftingMenuLayout.BROWSER_SLOT), "the browser button must not craft");
+        assertEquals(OptionalInt.empty(),
+                CraftingMenuLayout.matrixIndexOf(CraftingMenuLayout.BROWSER_SLOT));
+        // Mutation: put the browser button in row 4 -> it lands inside SUGGESTION_SLOTS ->
+        // suggestionIndexOf resolves -> reddens.
+    }
+
+    @Test
+    void everySlotInTheWholeInventoryIsEitherASuggestionOrNot() {
+        // Exactly nine raw slots may resolve as suggestions, and they are exactly the nine above.
+        // A widened bound would make a filler pane craft when clicked.
+        List<Integer> resolving = new ArrayList<>();
+        for (int raw = 0; raw < CraftingMenuLayout.SIZE; raw++) {
+            if (CraftingMenuLayout.suggestionIndexOf(raw).isPresent()) resolving.add(raw);
+        }
+        assertEquals(EXPECTED_SUGGESTIONS, resolving, "exactly these raw slots are suggestion cells");
+
+        for (int raw = CraftingMenuLayout.SIZE; raw < CraftingMenuLayout.SIZE + 36; raw++) {
+            assertEquals(OptionalInt.empty(), CraftingMenuLayout.suggestionIndexOf(raw),
+                    "raw slot " + raw + " is in the player's own inventory");
+        }
+        // Mutation: drop the `row != SUGGESTION_ROW` check -> every slot resolves -> reddens.
+        // Mutation: drop the `rawSlot >= SIZE` guard -> reddens on 54.
+    }
+
+    @Test
+    void anOutOfRangeSuggestionIndexIsRefusedLoudly() {
+        assertThrows(IllegalArgumentException.class,
+                () -> CraftingMenuLayout.rawSlotForSuggestion(-1));
+        assertThrows(IllegalArgumentException.class,
+                () -> CraftingMenuLayout.rawSlotForSuggestion(CraftingMenuLayout.SUGGESTIONS));
+        // Mutation: drop the bounds check -> silently returns a slot in the chrome or the grid.
+    }
+
     @Test
     void anOutOfRangeMatrixIndexIsRefusedLoudly() {
         assertThrows(IllegalArgumentException.class, () -> CraftingMenuLayout.rawSlotForMatrix(-1));
