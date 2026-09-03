@@ -180,8 +180,27 @@ underneath it.
 **Record in the body, because they become unverifiable the moment the branch goes:**
 
 - the branch **tip SHA** and its **tree SHA**
-- the squash's own tree SHA, and that the two were EQUAL
-- the `check-absorbed.sh` verdict verbatim, including the positive-control line
+- the `check-absorbed.sh` verdict, in full, **including the positive-control line** — a verdict
+  quoted without its control is a search that may have been blind
+
+> **THE THIRD ITEM CANNOT GO IN THE BODY, AND THE FIRST DRAFT ASKED FOR IT ANYWAY.** It said to
+> record *"the squash's own tree SHA, and that the two were EQUAL"*. **A commit message cannot
+> contain its own tree SHA** — the tree is an input to the hash, and the message is part of the
+> commit that names it. Nor can it contain the `ABSORBED` verdict, which is computed against the
+> squash that does not exist yet. Both were discovered on the **first attempt to follow the
+> convention**, one merge after it landed, by trying to write the body and finding two of its three
+> required fields unwritable.
+>
+> **Recording the branch tree is what makes the equality checkable, and it is sufficient**, because
+> the squash's own tree is free forever: `git rev-parse <squash>^{tree}`. A reader compares that to
+> the tree written down here. The convention was asking the body to carry a number the reader can
+> always recompute, at the price of a number they cannot — which is backwards.
+>
+> So: the **verdict goes in the PR conversation** (it survives the branch, is timestamped, and is
+> where a reviewer looks), and the **body carries the tip and tree** that make it re-checkable. State
+> in the body that the check ran and passed; do not paste a SHA into it that you had to invent to get
+> there. **A convention that cannot be followed gets followed approximately**, which is worse than a
+> narrower one that can.
 
 Then `git branch -D`, `git push origin --delete`, `git fetch --prune`.
 
