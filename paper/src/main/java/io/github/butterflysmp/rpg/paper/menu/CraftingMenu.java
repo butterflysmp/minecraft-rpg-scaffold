@@ -789,12 +789,31 @@ public final class CraftingMenu extends Menu {
         // and the constructor calls refreshSuggestions immediately afterwards. render() runs once,
         // so there is no repaint that could blank a live column.
         //
-        // A PLACEHOLDER, not a dead button. MenuIcons.placeholder says "not implemented yet" out
-        // loud rather than rendering something that looks clickable and does nothing -- its own
-        // javadoc argues the case, and this is the consumer it was kept for.
+        // A REAL BUTTON NOW. It was MenuIcons.placeholder -- "not implemented yet" said out loud,
+        // which was the honest rendering while the browser did not exist. The browser exists, so
+        // placeholder became the wrong constructor entirely: reaching for it is a claim that
+        // something is NOT BUILT, and this one is.
+        //
+        // MATERIAL VERIFIED AGAINST THE PINNED JAR, not remembered: `javap -cp <paper-api
+        // 26.1.2.build.74-stable> org.bukkit.Material | grep KNOWLEDGE_BOOK` prints
+        // `public static final org.bukkit.Material KNOWLEDGE_BOOK;`. Note LEGACY_KNOWLEDGE_BOOK
+        // exists alongside it and would compile silently -- the non-legacy constant is the one.
+        //
+        // KNOWLEDGE_BOOK IS THE FIRST ICON IN THIS PLUGIN WITH A REAL VANILLA EFFECT: right-clicking
+        // one grants recipes and consumes it. It is safe HERE, and the safety is structural rather
+        // than lucky:
+        //   - Menu.handleClick cancels the event unconditionally, before dispatch;
+        //   - BROWSER_SLOT is not in inputSlots(), so the router performs no move and the item
+        //     cannot be taken onto the cursor or into the inventory.
+        // Stated rather than inherited silently, because the NEXT person adding an icon may pick
+        // something with an effect and put it on a slot where it CAN be taken -- and nothing in the
+        // type system distinguishes a decorative BARRIER from a functional book.
         getInventory().setItem(CraftingMenuLayout.BROWSER_SLOT,
-                MenuIcons.placeholder(Material.BOOK, "Recipe Browser",
-                        "Everything you can make, paginated."));
+                MenuIcons.icon(Material.KNOWLEDGE_BOOK,
+                        MenuIcons.line("Recipe Book", NamedTextColor.GREEN),
+                        List.of(MenuIcons.line("Everything you can craft right now",
+                                        NamedTextColor.GRAY),
+                                MenuIcons.line("Click to browse", NamedTextColor.DARK_GRAY))));
 
         // Decoration, painted once and never repainted. Nothing in the chrome changes with the
         // recipe -- the status bar is the menu's only state indicator, and CraftStatus's javadoc

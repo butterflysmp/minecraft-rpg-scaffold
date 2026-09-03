@@ -793,6 +793,101 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ---
 
+### A WORKING READOUT WAS WEARING THE PLACEHOLDER'S CLOTHES, AND THE GATE ROW WOULD HAVE PASSED ON IT
+
+**2026-09-03.** The recipe browser's empty state was built with `MenuIcons.placeholder`, so a player
+with an empty inventory saw:
+
+```
+Nothing you can make right now
+Not implemented yet.
+materials for any recipe
+```
+
+**It announced the feature was MISSING while the feature was working correctly and had measured
+zero.**
+
+> **This is `placeholder`'s own javadoc warning, inverted.** That method exists because *"a readout
+> showing 0% when nothing is counted is indistinguishable from a working readout that measured
+> zero."* Here the working readout that measured zero **was built out of the placeholder** — so it
+> did not merely fail to distinguish itself, it actively claimed the opposite.
+>
+> **The rule that falls out: reaching for `placeholder` is a CLAIM THAT SOMETHING IS NOT BUILT.** A
+> surface that correctly measured nothing needs `icon`, and needs to say so in its name.
+
+**AND GATE ROW Q33 WOULD HAVE PASSED ON IT.** The row's expected text named the notice — *"an
+explicit 'Nothing you can make right now' notice"* — and said nothing about its lore. An operator
+would have hovered, read the name, ticked a **SOLE WITNESS**, and left the screen saying the feature
+was unimplemented. **A row that cannot fail on the defect in front of it is not a witness.** Tightened
+to require the name *and the absence of lore*, explicitly naming "Not implemented yet." as the thing
+that must not be there.
+
+**The aggravating detail:** `MenuIcons.icon`, `close` and `filler` have **no unit test at all** —
+they need a live server — which was verified rather than assumed (`grep` for them across
+`paper/src/test` returns nothing). So that row's wording is not one witness among several. It is the
+only one.
+
+---
+
+### `MenuIcons.placeholder` IS UNUSED AGAIN — SECOND GRADUATION, DIFFERENT SHAPE, AND IT IS KEPT
+
+Its javadoc carried *"Currently unused, and kept on purpose"* from the first graduation. **That
+sentence was FALSE while it was written down**, in the interval where the browser button and the
+empty state were both using it — a small instance of the same drift this file keeps recording, and
+one nothing would have reported.
+
+**The two graduations are not the same event, and both are worth having:**
+
+| # | what happened | the pattern |
+|---|---|---|
+| 1 | the enchant bookshelf slot became a **readout by gaining a SCALE** | *"0/30"* reads as a measurement where a bare *"0%"* could not. **Worth copying** |
+| 2 | the browser button became a **real feature**; and separately a **working readout that had been wearing the placeholder's clothes** got its own icon | the second half **shipped a wrong message** — see the entry above |
+
+**DECIDED, WITH A DATE: KEPT.** Zero consumers twice is a fair argument for deletion and it was
+weighed rather than waved past. It stays because `MenuIcons` is the reusable base — `Menu`,
+`MenuRouting` and `MenuSafety` all landed with no consumer at all — and because the anvil,
+class-select and stat screens are each still ahead and will want the rule it encodes.
+
+> **The condition for reversing that, so "kept for future use" cannot run forever:** if a THIRD
+> graduation arrives and none of those three screens has been built, delete it. At that point the
+> prediction has been wrong twice.
+
+---
+
+### THE CLOSE BUTTON LOST ITS LORE, AND THE ARGUMENT FOR THE LORE WAS KEPT
+
+`MenuIcons.close()` is name-only now. Its javadoc used to argue for the line it carried — *"returning
+the weapon is the part a player standing there holding something valuable actually wants to know"* —
+and **that argument was sound**, so it is quoted and answered rather than deleted with the line.
+Deleting it would lose why the line existed, and the next person to think "the close button should
+explain itself" would rediscover it from scratch.
+
+**Two things make the loss small rather than free, and neither was obvious:**
+
+- **The behaviour was never the BUTTON's.** `Menu.returnEverything` runs on every close — Esc, death,
+  disconnect, shutdown — so lore on the button implied the return was a property of clicking it.
+  **Gate row 16 closes with Esc precisely because it is not.**
+- **It is ONE button on TWO screens.** The enchant table is where *"Returns your weapon"* was most
+  accurate, and keeping it there was **considered and rejected**: it would mean two close buttons,
+  which is the drift `MenuIcons`' class javadoc exists to stop. One slightly plainer button beats two
+  that are subtly different.
+
+---
+
+### TWO BARRIERS ON ONE SCREEN, FIXED BEFORE IT WAS A COMPLAINT
+
+An empty browser showed the close button **and** the empty-state notice — both `BARRIER`, same
+screen, distinguished only by name and position. Clicking the wrong one is harmless (`Menu` cancels
+first), so this was never a defect; it was a distinction that **required a hover to perceive**.
+
+The empty state is now `STRUCTURE_VOID`. Worth recording because of *when* it happened: barrier was
+chosen for the empty state **before the browser had its own close button**, and was still correct at
+that moment. The collision arrived with a later, unrelated change, and nothing connects the two —
+which is the general shape, not a slip: **an icon choice is only unique with respect to the screen as
+it exists on the day.**
+
+---
+
 ### THE BROWSER'S FOUNDING PREMISE WAS REVERSED, DELIBERATELY, AFTER IT WAS BUILT
 
 **2026-09-03, operator decision.** The recipe browser now shows **only what the player can craft

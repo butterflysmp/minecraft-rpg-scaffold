@@ -271,12 +271,30 @@ public final class RecipeBrowserMenu extends Menu {
         }
 
         // THE EMPTY STATE. An empty inventory means an empty browser, and a grid of nothing is
-        // indistinguishable from a menu that failed to load. MenuIcons.placeholder's argument
-        // exactly: a surface showing nothing because it MEASURED nothing must say so.
+        // indistinguishable from a menu that failed to load, so it says which.
+        //
+        // NAME ONLY, NO LORE, AND NOT MenuIcons.placeholder. It WAS placeholder, and that rendered:
+        //
+        //     Nothing you can make right now
+        //     Not implemented yet.
+        //     materials for any recipe
+        //
+        // -- announcing the feature was MISSING while it was working correctly and had measured
+        // zero. That is placeholder's own javadoc warning inverted: it exists because "0%" cannot be
+        // told apart from a working readout that measured zero, and here the working readout was
+        // built out of the placeholder. Reaching for placeholder is a claim that something is NOT
+        // BUILT.
+        //
+        // STRUCTURE_VOID, not BARRIER, and verified on the pinned jar the same way KNOWLEDGE_BOOK
+        // was. When the browser is empty the close button is on screen too -- two BARRIERs, same
+        // material, distinguished only by name and position, so telling them apart needs a hover.
+        // Clicking the wrong one is harmless (Menu cancels first), but a distinction that survives
+        // without hovering is worth one constant.
         if (visible.isEmpty()) {
-            getInventory().setItem(RecipeBrowserLayout.EMPTY_STATE_SLOT, MenuIcons.placeholder(
-                    Material.BARRIER, "Nothing you can make right now",
-                    "materials for any recipe"));
+            getInventory().setItem(RecipeBrowserLayout.EMPTY_STATE_SLOT, MenuIcons.icon(
+                    Material.STRUCTURE_VOID,
+                    MenuIcons.line("Nothing you can make right now", NamedTextColor.GRAY),
+                    List.of()));
         }
 
         for (int slot : RecipeBrowserLayout.FOOTER_FILLER) {
