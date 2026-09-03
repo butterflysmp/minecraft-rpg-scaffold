@@ -18,6 +18,22 @@
 # and exited 0. Non-zero, green, one module's 55 tests gone. A bare total cannot
 # see that; module presence can.
 #
+# STALENESS IS THE SECOND HOLE, and it is the same defect one layer up: this
+# script reads whatever reports are ON DISK, from whenever they were written.
+# Reports outlive the code they tested.
+#
+# Measured 2026-09-03: a branch with ~14 tests' worth of new work was reverted
+# with `git stash`, and this script -- run against the reverted tree, with no
+# build in between -- reported
+#
+#     Tests run across all modules: 1196
+#
+# for a tree that has 1182. Green, precise, and describing code that was no
+# longer there. That is the stale-jar trap of CLAUDE.md's verification section,
+# occurring inside the tool used to prove the tests ran.
+#
+# So: if any source file is NEWER than the newest surefire report, the reports
+# describe an older tree and the total is not about the code in front of you.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -57,6 +73,84 @@ for m in $MODULES; do
 done
 
 echo "Tests run across all modules: $total"
+
+# --- STALENESS -------------------------------------------------------------
+#
+# The newest source file against the newest report. `find -newer` is a strict
+# mtime comparison, so a source touched in the same second as the report does
+# not trip it -- deliberately: the false-positive cost here is a scary message
+# on a correct run, and this guard is worth nothing if people learn to ignore it.
+#
+# EXIT 1, not a warning. A warning on a green line is read as green; the whole
+# point is that a stale total is indistinguishable from a fresh one.
+#
+# TWO HAZARDS THIS BLOCK WAS BITTEN BY ON ITS FIRST VERSION. Both are documented
+# above for OTHER pipelines in this same file, and both were walked into anyway.
+# Read them before adding a pipeline here.
+#
+#   1. `find -printf` IS GNU-ONLY, and the first version sent its stderr to
+#      /dev/null. Where find lacks -printf that is an error, swallowed, an empty
+#      result, and the staleness check SILENTLY SKIPPED -- reports present, guard
+#      never run, green total for a stale tree. Exactly the outcome this guard
+#      exists to prevent, and CLAUDE.md:104's "a discovery finding nothing is a
+#      defect". The FIRST shape in the verification family reappearing inside the
+#      fix for the FIFTH.
+#
+#      So the discovery is cross-checked against a count taken WITHOUT -printf,
+#      and a mismatch is an error rather than a skip.
+#
+#   2. NO `head` IN A PIPELINE IN THIS SCRIPT. `... | sort -rn | head -1` under
+#      `set -euo pipefail`: sort buffers all input, head exits after one line,
+#      sort takes SIGPIPE, pipefail propagates and set -e kills the script with a
+#      bare exit 1 and no output -- which reads as a test failure. MEASURED
+#      2026-09-03: `seq 1 5000000 | sort -rn | head -1` exits 141 under these
+#      flags; the real find-based shape exits 1. It survived only because 130
+#      report files fit the 64KB pipe buffer. Capture, then trim.
+
+# The positive control for the discovery below: counted with no -printf, so it
+# works wherever `find` does. `find | wc -l` cannot fail -- see the module loop.
+report_count=$(find ./core ./storage ./paper -path '*/target/surefire-reports/*.txt' -type f | wc -l)
+
+if [ "$report_count" -gt 0 ]; then
+  printf_err=$(mktemp)
+  # No `head`. Captured whole, trimmed with parameter expansion afterwards.
+  report_times=$(find ./core ./storage ./paper -path '*/target/surefire-reports/*.txt' -type f \
+    -printf '%T@ %p\n' 2>"$printf_err" | sort -rn) || true
+  find_error=$(cat "$printf_err"); rm -f "$printf_err"
+
+  if [ -n "$find_error" ] || [ -z "$report_times" ]; then
+    echo "::error::THE STALENESS CHECK COULD NOT RUN. $report_count report(s) are on disk, but"
+    echo "::error::the timestamp scan returned nothing -- most likely 'find -printf' is unsupported."
+    echo "::error::Refusing to pass: a skipped staleness check is why this guard was written."
+    [ -n "$find_error" ] && echo "$find_error" | sed 's/^/  /'
+    exit 1
+  fi
+
+  newest_line=${report_times%%$'\n'*}      # first line: "<epoch> <path>"
+  newest_report=${newest_line#* }          # drop the timestamp
+
+  newer_err=$(mktemp)
+  newer_all=$(find ./core/src ./storage/src ./paper/src -name '*.java' -type f \
+    -newer "$newest_report" 2>"$newer_err") || true
+  newer_error=$(cat "$newer_err"); rm -f "$newer_err"
+
+  if [ -n "$newer_error" ]; then
+    echo "::error::THE STALENESS CHECK COULD NOT RUN -- scanning sources failed."
+    echo "$newer_error" | sed 's/^/  /'
+    exit 1
+  fi
+
+  if [ -n "$newer_all" ]; then
+    echo "::error::STALE REPORTS -- source files are newer than the newest surefire report."
+    echo "::error::The total above describes an OLDER tree. Run a build before believing it."
+    echo "newest report: $newest_report"
+    echo "newer sources (first 5):"
+    # awk, not head: it reads its whole input, so there is no early exit to
+    # SIGPIPE the writer. See hazard 2 above.
+    echo "$newer_all" | awk 'NR <= 5' | sed 's/^/  /'
+    exit 1
+  fi
+fi
 
 if [ -n "$missing" ]; then
   echo "::error::missing surefire reports for module(s):$missing"

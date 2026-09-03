@@ -789,6 +789,126 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ---
 
+### `check-tests.sh` COULD REPORT A TOTAL FOR CODE THAT WAS NO LONGER THERE
+
+**Found 2026-09-03, and it is the stale-jar trap occurring inside the tool used to prove the tests
+ran.** The script existed to catch "a green build that ran no tests". It could not catch "a green
+count describing an older tree", because it reads whatever surefire reports are on disk, from
+whenever they were written. **Reports outlive the code they tested.**
+
+**Measured, not reasoned:** a branch carrying ~14 tests' worth of new work was reverted with
+`git stash`, and the script — run against the reverted tree with no build in between — printed
+
+```
+Tests run across all modules: 1196
+```
+
+for a tree that has **1182**. Green, precise, and about code that had just been removed. It was
+noticed only because the number was recognisable; a smaller drift would have passed unremarked, and
+the whole point of the script is that nobody re-derives the number by hand.
+
+**The guard added:** if any source file is newer than the newest surefire report, the reports
+describe an older tree — **exit 1**, naming the offending sources. Not a warning: a warning printed
+under a green total is read as green, and the failure mode being closed is precisely that a stale
+total is indistinguishable from a fresh one.
+
+**Both directions were proved before it was believed**, per this file's own rule that a check which
+never fires looks exactly like one that passed:
+
+| state | result |
+|---|---|
+| the stale tree that produced the 1196 | **fires**, exit 1, names `CraftingMenu.java` |
+| immediately after `./mvnw clean test` | **passes**, exit 0, and reports the true 1182 |
+
+> **The wider point, and it generalises past this script.** This repo has a verification section
+> whose four entries are all "a check that did not run looks like a check that passed". This is the
+> fifth shape: **a check that ran, correctly, against something other than what you are looking at.**
+> The mutation-marker discipline (`grep` for the marker; confirm it compiled) already guards that for
+> mutations. Nothing guarded it for the test count.
+>
+> **It also raises a fair question about every count relayed in that session, and that one closes
+> clean:** the reviewer counted `@Test` occurrences directly from origin at each commit — 1176 at
+> `bdca392`, 1182 at `d70bb25` and at master — by a different method than the script uses, and they
+> agree. The trap did not bite retroactively. Two independent methods agreeing is what settles it;
+> re-running the same script would not have.
+
+> **AND THE FIRST SHAPE REAPPEARED INSIDE THE FIX FOR THE FIFTH.** Found in review, one commit
+> later. The guard above was written as
+>
+> ```bash
+> newest_report=$(find ... -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+> if [ -n "$newest_report" ]; then
+> ```
+>
+> **`find -printf` is GNU-only.** Where `find` lacks it — a BSD/macOS `find`, a busybox one, a
+> different `find` first on `PATH` — that is an error, **swallowed by `2>/dev/null`**, producing an
+> empty result, skipping the `if`, and printing a green total for a stale tree **with no message at
+> all**. The guard against "a count describing an older tree" would have disabled itself silently and
+> produced exactly the 1196-for-an-1182-tree outcome it was written to prevent.
+>
+> The dangerous case was never "no reports on disk" — the module loop already shouts about that. It
+> was **reports present, `find` broken**, which is CLAUDE.md:104 — *a discovery finding nothing is a
+> defect* — broken by the guard that enforces it.
+>
+> **The pairing is the useful part, and it is why this sits here rather than in its own entry:** the
+> four original shapes are all "a check that did not run looks like a check that passed"; the fifth is
+> "a check that ran against something else". Writing the fifth did not confer any immunity to the
+> first. **A new guard is a new place for the old shapes to live**, and it arrives without any of the
+> scar tissue that protects the code it is guarding.
+>
+> **The fix is a positive control INSIDE the guard**, the same device `check-absorbed.sh` uses to
+> reach its BLIND verdict: the report count is taken a second time **without `-printf`**, using the
+> `find | wc -l` idiom this script already documents as pipefail-safe. Reports on disk plus an empty
+> timestamp scan is now an **error naming the likely cause**, not a skip. Both `find`s capture stderr
+> instead of discarding it.
+>
+> **Proved in three directions, and the third is the new one.** Clean tree → passes, exit 0, 1182.
+> Touched source → fires, exit 1, names the file. `-printf` broken → **errors**, exit 1, *"130
+> report(s) are on disk, but the timestamp scan returned nothing"*; restore → exit 0 again. On the
+> first attempt at the third the **marker count read 0** — the substitution had not applied — and the
+> exit 1 came from the staleness path, not the broken-`printf` path. Counting the marker before
+> believing the result is what caught it, for the fifth time this session.
+>
+> **A second defect rode along, and it was already documented twice in the same file.**
+> `... | sort -rn | head -1` under `set -euo pipefail`: `sort` buffers all input, `head` exits after
+> one line, `sort` takes SIGPIPE, `pipefail` propagates, `set -e` kills the script with a bare exit 1
+> and no output — reading as a test failure. **Measured rather than argued:**
+> `seq 1 5000000 | sort -rn | head -1` exits **141** under those flags; the real find-based shape
+> exits **1**. It survives today only because 130 report files fit inside the 64KB pipe buffer, and
+> would have begun failing a few hundred reports from now as an unexplained exit 1. Twenty lines
+> above it, that script explains this exact hazard for `find | wc -l` and again for `grep`. **Having
+> the rule written down twice, in the file being edited, did not stop it being walked into** — so the
+> comment now names both hazards as KNOWN IN THIS SCRIPT, to be found rather than rediscovered.
+
+---
+
+### A DECISION DIALOG'S ANALYSIS PANEL IS A CLAIM, NOT A VERIFIED FACT
+
+**Slice 6 planning, 2026-09-03.** A dialog option's description asserted that an unprobeable
+`RecipeChoice` is dropped by `satisfyingGroups` → `CraftCount`, and a whole design section was built
+on it: an "exclusion axis" with two members, inert rendering for both, and a gate row recording one
+as possibly-unrunnable.
+
+**It was false, and four lines of code said so.** `RecipeProbe.satisfyingGroups` calls
+`choice.test(...)`, and `PredicateRecipeChoice.test` works — testing is the one thing a predicate
+does. The only empty path is `choice == null`, which `ingredientsOf` already filters. A
+predicate-choice recipe is fully probeable, countable and **craftable**.
+
+**The javadoc directly above that method, written in the previous slice by the same author, says it
+outright:** *"Every `RecipeChoice` implementation answers `test`; none of them is required to answer
+anything else."* That sentence exists because slice 5's whole inversion depends on it.
+
+**This is the `MAIN_HAND_ONLY` miss again** — reasoning from a plausible framing instead of opening
+the method — with the aggravating detail that the framing came from a structured decision panel,
+which reads as settled analysis rather than as a proposition. **Both parties took it as read.**
+
+**What survived the correction:** the exclusion axis has exactly ONE member, `ComplexRecipe`, which
+genuinely exposes no ingredients. And the real limitation is narrower and different in kind: a
+predicate choice cannot **enumerate what it accepts for display**. That is a LORE honesty problem —
+*"these are the materials"* versus *"these are the materials I can list"* — not a craftability one.
+
+---
+
 ### NAMED DEBT: `core/weapon` holds everything that is crafting-and-menu arithmetic, not weapons
 
 **Recorded 2026-09-02, during Quick Craft's first half. Re-sized 2026-09-03, because it drifted
