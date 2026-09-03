@@ -786,6 +786,518 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 - **STILL OWED:** the rest of the gate — Q1 and Q3-Q17 are unrun. And the second half: the browser,
   navigate-only, with pure page math in `core/`.
+- **BOTH DELIVERED, slice 6, 2026-09-03.** The gate rows are **Q24-Q31**, numbered from the real
+  high-water mark rather than from the placeholder's Q11/Q12. **And the browser is NOT
+  navigate-only** -- it crafts, which is why **Q12 is SUPERSEDED rather than enabled**: the row's
+  observable stopped being the correct one when the gesture changed.
+
+---
+
+### OWED: FIVE MEASUREMENTS, AND THIS MUST NOT BECOME A LIST
+
+**Owed as of 2026-09-03, slice 6.** Gate row Q24 **passed** and its figure **was not written down**:
+
+| measurement | state |
+|---|---|
+| Q24 catalogue build time (µs) | **OWED** |
+| entries | **OWED** |
+| unkeyed skipped | **OWED** |
+| not fully listable — **Q29's evidence**, whatever its value | **OWED** |
+| mutation 8: stageable, or unrunnable with a reason | **OWED** |
+
+**`Q2`'s craftable / probed / distinct-stack counts from SLICE 5 ARE STILL OWED ON THIS SAME PAGE.**
+That is the point of putting these here rather than in a report: **two entries is a list, and a list
+of owed measurements is a thing people stop reading.** One of them has now survived a whole slice.
+
+**How to close both:** boot, open the browser once, read
+`Recipe catalogue built: N entries in Nµs (N unkeyed skipped, N not fully listable)`, write the five
+figures into Q24 and Q29, and **delete the instrument in that same commit**. One commit.
+
+> **THE INSTRUMENT SHIPPED, DELIBERATELY, and the reasoning is in `RecipeCatalogue` and the gate.**
+> *No number, no deletion* — the rule *"delete it in the commit that records the number"* protects
+> the **number**, not the deletion, and deleting it first makes an only-once measurement permanently
+> unrecoverable rather than merely unrecorded. It logs **at most once per server lifetime** (verified:
+> `entries == null` guards both entry points, `entries` is assigned once before the empty-catalogue
+> early return, one instance exists), so shipping it costs one console line.
+
+---
+
+### OWED: NOTHING IN THE REPO CAN DETECT THE NEXT ICON COLLISION
+
+**Found 2026-09-03 by the barrier/barrier clash on the empty browser** — the close button and the
+empty-state notice, same material, one screen, distinguished only by name and position.
+
+**Neither of the two rows that touch icons can see it.** Q33 pins the empty-state notice's material;
+Q35 pins the recipe book's. **Neither asks whether any two icons on one screen share one**, and no
+unit test can — `MenuIcons.icon`, `close` and `filler` need a live server, which was verified by
+grepping `paper/src/test` rather than assumed.
+
+**The collision came from two individually-correct decisions meeting.** Barrier was right for the
+empty state when it was chosen, because the browser had no close button yet; barrier was right for
+the close button; and nothing connects the two changes. **An icon choice is only unique with respect
+to the screen as it exists on the day it is made** — so the same is available to a third, and the
+next one may not be harmless.
+
+**THE CHEAP SHAPE, and it makes this a unit test instead of a gate row nobody thought to write:**
+
+> **Let the layout classes own the chrome MATERIALS beside the slot constants** — the way
+> `CraftingMenuLayout` already owns *where*. `RecipeBrowserLayout` would declare `CLOSE_MATERIAL`,
+> `EMPTY_STATE_MATERIAL`, `PREV_MATERIAL`, `PAGE_MATERIAL`, `BACK_MATERIAL` next to `CLOSE_SLOT`,
+> `EMPTY_STATE_SLOT` and the rest.
+>
+> **Screen-wide uniqueness then becomes an assertion over a set**, in the same file and the same test
+> that already assert no slot is both an entry and a control — `RecipeBrowserLayoutTest` has that
+> shape already. `Material` is a plain enum and constructs headless, so this is testable where the
+> icons themselves are not.
+
+**Not done in slice 6**, deliberately: it touches `CraftingMenu`, `EnchantMenu`, `RecipeBrowserMenu`
+and two layout classes, and slice 6 has already reversed its own premise once. **Do it when something
+else already has those files open** — the same disposition the `core/weapon` debt and the duplicate
+`isEmpty` take. Until then the guard is that this entry exists.
+
+---
+
+### THE FOURTH LOWER-BOUND COUNT — AND THE FIRST ONE INSIDE A **REVIEW**
+
+**2026-09-03.** The slice 6 gate was named before the run, as the rule requires, and the set held
+**ten** browser rows. The section holds **eleven**. `Q34` — armor sorts head, chest, legs, feet — was
+missing, and the tick-through page published for the operator carried the omission through. Caught in
+review; the gate then ran 32 of 32.
+
+**HOW THE SET GOT SHORT.** It was assembled by extending the **re-run half twice** for the UI changes
+and treating the **new half as settled**. Q34 had landed in `8bec9e4` alongside Q32 and Q33, in the
+window between those two extensions.
+
+**AND THE REVIEWER'S CHECK HAD THE SAME SHAPE AS THE MISTAKE — this is the part worth keeping.** It
+was a grep for the rows *expected to have been added*:
+
+```
+**Q(2[569]|3[23])**
+```
+
+rather than for **the axis: every live `Q` row in the section**. Q34 matched neither the assembling
+pattern nor the reviewing one. **Two independent checks, both enumerating the cases they already had
+in mind, and therefore both blind in exactly the same place.**
+
+> **RULE 1 APPLIES TO THE GREP YOU REVIEW WITH, NOT ONLY THE ONE YOU VERIFY WITH.** *Enumerate the
+> axis, not the cases you currently have.* The rules section states this for gates, switch statements
+> and denylists; it is just as true of the pattern you check someone's work with, and a review grep
+> feels like verification while being another hand count.
+
+**This is the FOURTH instance this session of a count obtained by looking being reported as a total,
+and the first inside a review rather than a sweep:**
+
+| reported | actual | how the number was obtained |
+|---|---|---|
+| five arrow references | seven | a grep shaped by the identifier |
+| two places carrying the Q10 claim | five | a hand search of the likely spots |
+| two orphaned javadocs | five | the files that slice had open |
+| **ten rows in the gate set** | **eleven** | **a grep for the rows expected to be there** |
+
+**WHY IT WAS CATCHABLE AT ALL, and this is the load-bearing half:** naming the set before the run did
+not make it **complete** — it made it **RECOVERABLE**. A set named at report time would have been ten
+rows, self-consistent, and would have read as *31 of 31* for ever with nothing to compare against.
+**The rule added at `aee4fe1` did not prevent this defect; it is the only reason the defect could be
+found.** That is a fair thing to want from a process rule and worth separating from prevention.
+
+---
+
+### A WORKING READOUT WAS WEARING THE PLACEHOLDER'S CLOTHES, AND THE GATE ROW WOULD HAVE PASSED ON IT
+
+**2026-09-03.** The recipe browser's empty state was built with `MenuIcons.placeholder`, so a player
+with an empty inventory saw:
+
+```
+Nothing you can make right now
+Not implemented yet.
+materials for any recipe
+```
+
+**It announced the feature was MISSING while the feature was working correctly and had measured
+zero.**
+
+> **This is `placeholder`'s own javadoc warning, inverted.** That method exists because *"a readout
+> showing 0% when nothing is counted is indistinguishable from a working readout that measured
+> zero."* Here the working readout that measured zero **was built out of the placeholder** — so it
+> did not merely fail to distinguish itself, it actively claimed the opposite.
+>
+> **The rule that falls out: reaching for `placeholder` is a CLAIM THAT SOMETHING IS NOT BUILT.** A
+> surface that correctly measured nothing needs `icon`, and needs to say so in its name.
+
+**AND GATE ROW Q33 WOULD HAVE PASSED ON IT.** The row's expected text named the notice — *"an
+explicit 'Nothing you can make right now' notice"* — and said nothing about its lore. An operator
+would have hovered, read the name, ticked a **SOLE WITNESS**, and left the screen saying the feature
+was unimplemented. **A row that cannot fail on the defect in front of it is not a witness.** Tightened
+to require the name *and the absence of lore*, explicitly naming "Not implemented yet." as the thing
+that must not be there.
+
+**The aggravating detail:** `MenuIcons.icon`, `close` and `filler` have **no unit test at all** —
+they need a live server — which was verified rather than assumed (`grep` for them across
+`paper/src/test` returns nothing). So that row's wording is not one witness among several. It is the
+only one.
+
+---
+
+### `MenuIcons.placeholder` IS UNUSED AGAIN — SECOND GRADUATION, DIFFERENT SHAPE, AND IT IS KEPT
+
+Its javadoc carried *"Currently unused, and kept on purpose"* from the first graduation. **That
+sentence was FALSE while it was written down**, in the interval where the browser button and the
+empty state were both using it — a small instance of the same drift this file keeps recording, and
+one nothing would have reported.
+
+**The two graduations are not the same event, and both are worth having:**
+
+| # | what happened | the pattern |
+|---|---|---|
+| 1 | the enchant bookshelf slot became a **readout by gaining a SCALE** | *"0/30"* reads as a measurement where a bare *"0%"* could not. **Worth copying** |
+| 2 | the browser button became a **real feature**; and separately a **working readout that had been wearing the placeholder's clothes** got its own icon | the second half **shipped a wrong message** — see the entry above |
+
+**DECIDED, WITH A DATE: KEPT.** Zero consumers twice is a fair argument for deletion and it was
+weighed rather than waved past. It stays because `MenuIcons` is the reusable base — `Menu`,
+`MenuRouting` and `MenuSafety` all landed with no consumer at all — and because the anvil,
+class-select and stat screens are each still ahead and will want the rule it encodes.
+
+> **The condition for reversing that, so "kept for future use" cannot run forever:** if a THIRD
+> graduation arrives and none of those three screens has been built, delete it. At that point the
+> prediction has been wrong twice.
+
+---
+
+### THE CLOSE BUTTON LOST ITS LORE, AND THE ARGUMENT FOR THE LORE WAS KEPT
+
+`MenuIcons.close()` is name-only now. Its javadoc used to argue for the line it carried — *"returning
+the weapon is the part a player standing there holding something valuable actually wants to know"* —
+and **that argument was sound**, so it is quoted and answered rather than deleted with the line.
+Deleting it would lose why the line existed, and the next person to think "the close button should
+explain itself" would rediscover it from scratch.
+
+**Two things make the loss small rather than free, and neither was obvious:**
+
+- **The behaviour was never the BUTTON's.** `Menu.returnEverything` runs on every close — Esc, death,
+  disconnect, shutdown — so lore on the button implied the return was a property of clicking it.
+  **Gate row 16 closes with Esc precisely because it is not.**
+- **It is ONE button on TWO screens.** The enchant table is where *"Returns your weapon"* was most
+  accurate, and keeping it there was **considered and rejected**: it would mean two close buttons,
+  which is the drift `MenuIcons`' class javadoc exists to stop. One slightly plainer button beats two
+  that are subtly different.
+
+---
+
+### TWO BARRIERS ON ONE SCREEN — ACCEPTED, DELIBERATELY, AND THE GATE ROW PAYS FOR IT
+
+An empty browser shows the close button **and** the empty-state notice — both `BARRIER`, same
+screen, distinguished only by name and position. Clicking the wrong one is harmless (`Menu` cancels
+first and neither is an input slot), so this was never a defect; it is a distinction that **requires
+a hover to perceive**.
+
+**It was changed to `STRUCTURE_VOID` and then changed back on operator instruction, 2026-09-03.**
+Barrier is this plugin's "nothing here" icon and reads that way at a glance; the collision costs a
+hover in one state. **Recorded so the duplication reads as a decision someone took, rather than as an
+icon nobody noticed was already in use** — which is exactly what it would look like otherwise, and
+the reading a future reviewer would be right to have.
+
+> **THE COST LANDED ON THE GATE, WHICH IS WHERE A REVERSAL'S COST USUALLY SHOWS UP.** Q33 hovers the
+> empty-state notice and checks it has a name and **no lore**. With two barriers on screen, the close
+> button *also* answers that description — a `BARRIER`, named, no lore — so an operator hovering the
+> wrong one gets **exactly what the row is looking for and ticks it**. The row now names **slot 22**
+> and warns about the second barrier.
+>
+> That is the second time in two changes that Q33 could have passed without observing the thing it
+> witnesses. **A sole-witness row degrades quietly when the screen around it changes**, and neither
+> degradation came from editing the row.
+
+**And worth recording about the ORIGINAL collision, separately from the decision:** barrier was
+chosen for the empty state **before the browser had its own close button**, and was correct then. The
+collision arrived with a later, unrelated change, and nothing connects the two. That is a general
+shape rather than a slip: **an icon choice is only unique with respect to the screen as it exists on
+the day it is made.**
+
+---
+
+### THE BROWSER'S FOUNDING PREMISE WAS REVERSED, DELIBERATELY, AFTER IT WAS BUILT
+
+**2026-09-03, operator decision.** The recipe browser now shows **only what the player can craft
+right now**. It was built to page through the whole 1214-recipe roster.
+
+**The argument it was built on was mine, and it was correct for the brief it was made under:**
+
+> *"A browser paging through `Result.suggestions` is a taller suggestion column, not a browser."*
+
+That holds for a browser whose purpose is to make the Q16 squeeze reachable — the three-cell column
+fills with gear, so armor and every vanilla recipe are unreachable from the crafting screen, and
+something has to answer for them. **It is not the brief any more.** The purpose is *"an easy way to
+craft quickly"*, and against that purpose 1214 entries is clutter. The reversal is recorded here, and
+the old reasoning is replaced at each of its call sites rather than left sitting in the files looking
+live — `RecipeCatalogue`'s "why this is not RecipeProbe" section said the opposite in so many words.
+
+**WHAT SURVIVED UNCHANGED, which is most of it:**
+
+- the **static catalogue** — built lazily on first open, cached for the server lifetime. Still the
+  right shared structure, because roster membership, key, tier, body slot and ingredient shape do not
+  depend on any player. The browser filters it per player at open. **Gate row Q24 is untouched.**
+- the **tier ordering**, and its row.
+
+**WHAT IT COST, AND THE COST IS THE PART WORTH WRITING DOWN:**
+
+> **ARMOR THE PLAYER CANNOT YET AFFORD IS NOW INVISIBLE EVERYWHERE.** Squeezed out of the column by
+> tier order (Q16), hidden in the browser by the filter. **No surface answers "what does a netherite
+> helmet need?"**
+>
+> That is a consequence of the product decision, **not a defect** — and it is written into
+> `RecipeCatalogue`, `RecipeBrowserMenu` and the gate, at the three places someone would meet it,
+> rather than left to arrive as a complaint nobody can explain. If it ever needs answering, the
+> answer is a **third surface**, a lookup, not a filter flag on this one.
+
+**WHAT IT RESOLVED — the inert-entry apparatus became unnecessary and came out.**
+
+It existed because the browser claimed to show EVERYTHING, so omitting a recipe that the vanilla grid
+*can* craft would have been a **false absence** — Q10's mistake in UI form. Under *"what you can
+craft here, right now"* a multi-star firework is absent **honestly**: it genuinely cannot be crafted
+here. Gone with it: the `inert` flag, the red pane, and the "Cannot be crafted here / use the
+crafting grid" lore. Gate rows **Q30 and Q31 are struck as SUPERSEDED**, exactly as Q12 was — the
+contract changed, so their observables stopped being correct. Not deleted, not wrong.
+
+> **THE `not fully listable` BOOT COUNT IS KEPT, and this is the distinction that saved it.** It was
+> Q31's runnability evidence; it is now **Q29's**. A listed recipe whose ingredients cannot be fully
+> enumerated still needs *"(accepts more than can be listed)"*. **That hazard was always about LORE,
+> never about craftability** — which is exactly why it survived a reversal that deleted everything
+> around it. A count kept for the wrong reason would have been deleted with the apparatus.
+
+**WHAT CHANGED SHAPE, and one of these would have been an unrunnable row:**
+
+- **Q26 was "an entry you cannot afford".** That is now **impossible by construction on a fresh
+  view** — every listed entry was affordable when the list was built. Rewritten as a **staleness**
+  row: spend the materials elsewhere, then click the entry the list still shows. Q8's shape on the
+  third surface. Kept, because *"refuses cleanly, nothing debited"* is still what must hold and the
+  debit-before-craft hazard has not moved.
+- **Q25 stopped being "the row Q16 hands off to."** Reworded to check tier order among what IS
+  craftable.
+
+**TWO NEW FAILURE MODES THE FILTER CREATES**, both now rows, both sole witnesses:
+
+| mode | why it is new | row |
+|---|---|---|
+| **the list SHRINKS under the player** | crafting removes entries, so the last page can cease to exist. `PageMath.clampPage` existed already; the defect was calling it only on NAVIGATION — the obvious moment, and **not** the one that changes the page count | **Q32** |
+| **an empty inventory means an empty browser** | which reads as broken. `MenuIcons.placeholder`'s argument exactly: a surface showing nothing because it MEASURED nothing must be distinguishable from one that is broken | **Q33** |
+
+**COST NOTE, and getting it wrong is the confusion Q24 was written to prevent.** Filtering scores the
+**whole roster per open**, not 45 entries per page. That is the walk **Q2** measured at **298µs**
+against a 50000µs tick. **Q24 is a different walk** — the catalogue BUILD, paid once per server. Both
+numbers are cited at their own call sites, and neither is allowed to stand in for the other.
+
+---
+
+### ARMOR SORTS HEAD, CHEST, LEGS, FEET — AND THE ENUM GAINED A CONSUMER WITHOUT GAINING ITS RULE
+
+`ArmorSlot` was **already** declared `HEAD, CHEST, LEGS, FEET`, so the required order is its
+declaration order and no new constant was needed. `CraftOrder.WITHIN_TIER` sorts armor by
+`ordinal()`.
+
+**Its javadoc said "a closed, UNORDERED enum".** By the time anything sorted by it, that was false —
+**rule 3, caught late**. Nothing failed: the old text was not wrong about anything the code did on
+the day it was written; it simply stopped describing the enum the moment something depended on the
+order, and no compiler, test or reader reports that. `SuggestionTier` carries the same warning, and
+gained *its* second consumer in this same arc. **An enum that acquires an ordering acquires a rule,
+and the rule lives in its javadoc or nowhere.**
+
+**ONE COMPARATOR, THREE CONSUMERS — and "one comparator" does NOT mean "one total order".**
+
+The column ranks `tier -> COUNT -> tiebreak`; the browser and the catalogue rank
+`tier -> tiebreak`. Those are genuinely different orders and must stay different: three cells should
+spend themselves on what the player can make most of, while a browser that led with count would
+reshuffle its whole list every time the player crafted one item. **What must not be duplicated is the
+tiebreak underneath both**, so `CraftOrder` is an interface implemented by `CraftCount.Craftable` and
+by `RecipeCatalogue.Entry`, and the shared piece is `WITHIN_TIER`.
+
+> **WHY THIS WAS WORTH THE INTERFACE.** Armor is squeezed out of the three-cell column (Q16), so a
+> column that ordered armor differently from the browser **would look identical in play** for as long
+> as the column stayed at three cells. Two orderings that agree today, written in two places, with no
+> observable that can tell them apart — the same shape as the craft path before `InventoryCraft`.
+> Closed the same way.
+
+**AND A MUTATION CAUGHT THE TEST THAT WAS SUPPOSED TO CATCH IT.** The column's armor test first used
+`diamond_helmet` (HEAD) and `leather_boots` (FEET) — where `d < l` alphabetically **and** head
+precedes feet, so a key-only tiebreak and the body-slot tiebreak give the **same answer**. The
+mutation that swaps the shared tiebreak for a key-only one **ran green** against it. Rewritten with
+`z_helmet` (HEAD) and `a_boots` (FEET), where the two orders disagree completely; the mutation then
+reddened. **A test that cannot fail is worth nothing however green** — and the second time this
+session that a mutation has found a defect in its own test rather than in the code.
+
+---
+
+### FIVE ORPHANED JAVADOCS, INVISIBLE BECAUSE JAVADOC IGNORES THEM SILENTLY
+
+**Found 2026-09-03 while moving code, not while looking for them.** Java attaches a doc comment to
+the declaration that *immediately* follows it. Two doc comments in a row means the **first one is
+attached to nothing and is discarded** — no warning from `javac`, none from the IDE, and the text
+still reads perfectly well in the source file.
+
+**TWO were found BY HAND while moving code. A SWEEP THEN FOUND THREE MORE**, in files this slice does
+not otherwise touch. That is the finding worth keeping: the hand-found pair had already been written
+up as "two", and **two was never a count of the defect — it was the reach of where I happened to be
+looking.** A defect that is invisible to reading is also invisible to *incidental* discovery, so the
+first number any hand-search produces is a lower bound and should be reported as one.
+
+| file | the orphan | it was sitting above | fix |
+|---|---|---|---|
+| `CraftingMenu` | *"Which gear definition, if any, this vanilla result should be replaced by"* — 16 lines, incl. the belt-and-braces durability reasoning | `identityOf`, which has its own javadoc | moved with `claimFor` into `InventoryCraft` |
+| `RecipeProbe` | *"The player's carried items, grouped by `isSimilar`…"* — the whole grouping rationale | `probeOne`, which has its own javadoc | reattached to `groupsOf` |
+| `BukkitCombatant` | the whole `snapshot` freeze rationale, incl. the region-ownership argument | a SECOND doc comment on the **same** method | **merged** — this pair describes one declaration, so it does not move |
+| `RpgPlugin` | *"Warns, never disables the plugin. Fail-soft…"* | `entityType`, which it plainly does not describe | moved to `validateContent`, which had none |
+| `GearClassLabel` | *"The whole noun phrase, for naming the gear an enchant is SITTING ON"* | `describeEnchant` | moved to `describe`, declared BELOW it and documented nowhere |
+
+**The three fixes are not one shape.** One pair merges, two move, and deciding which needs reading
+what the text actually describes — `RpgPlugin`'s orphan is about validation and was sitting above an
+entity-type lookup. A blind "delete the first of two" would have destroyed three explanations.
+
+**What makes this worth an entry rather than a tidy-up:** the failure is *invisible in the place you
+would look*. Reading the source, the comment sits directly above the thing it describes and looks
+correct; only generated javadoc, or a careful reader counting `*/` against `{`, shows the loss. It is
+the documentation equivalent of a check that did not run — **the text is there, and it does nothing.**
+
+> **THIS IS NOT THE STALE-PROSE FAMILY, AND FILING IT THERE WOULD LOSE THE POINT.** Stale prose —
+> `37c0ea7`'s "nine suggestions in row 4", `SuggestionTier`'s "NINE suggestion slots", the withdrawn
+> browser note — **was TRUE when it was written** and aged out from under itself. The remedy is to
+> re-read it when the thing it describes moves, and the failure is a *lapsed* claim.
+>
+> **An orphaned doc comment was NEVER WIRED UP.** It was wrong from the keystroke: present in the
+> file, absent from the generated docs, invisible to the compiler, invisible to every test, and
+> invisible to any `grep` for its content — because the content is right there, spelled correctly,
+> next to the method it describes. **There is no moment at which re-reading it would help**, which is
+> what makes it a different defect and not a variant.
+>
+> The two families do share one property, and it is the one this file keeps circling: **the artefact
+> looks correct in the place you would look.** Stale prose reads true because it once was; an orphan
+> reads attached because it is adjacent. Neither is caught by reading. Both need a mechanical check —
+> and for orphans that check is trivial, had never been run before, and found FIVE on its first run.
+
+Found because a class-extraction moved `claimFor` and its doc comment had to be located to move with
+it. It would not have been found by reading.
+
+**The sweep, so this is a measurement rather than an anecdote** — a `*/` line immediately followed by
+a `/**` line. **Across EVERY source file, not one package**: scoping the first run to `menu/` is
+exactly what made the count "two" when it was five.
+
+```bash
+find core/src storage/src paper/src -name '*.java' -type f -exec \
+  awk 'prev ~ /^[[:space:]]*\*\/$/ && $0 ~ /^[[:space:]]*\/\*\*$/ {print FILENAME":"FNR} {prev=$0}' {} +
+```
+
+Two details in that one line, both of which were wrong first:
+
+- **`FNR`, not `NR`.** With `-exec ... {} +` awk receives many files in ONE invocation, so `NR` keeps
+  counting across file boundaries. The first run of the corrected sweep reported an orphan at
+  `CraftCount.java: 7694` — in a file of 250 lines. **The FILE was right and the LINE was nonsense**,
+  which is the worst kind of wrong for a tool whose output you are about to go and look at.
+- **`[[:space:]]*` for the indentation**, not a fixed four or five spaces: the original hardcoded the
+  depth of a top-level member and would have missed every orphan on a nested class or record.
+
+**Five before, ZERO after**, across 378 source files.
+
+> **AND THE SWEEP CARRIES A POSITIVE CONTROL, because it is a DISCOVERY and not an assertion.** A
+> scan reporting zero is indistinguishable from a scan that cannot see — CLAUDE.md:104, which this
+> file has now recorded instances of three separate times. So an orphan is injected and the sweep is
+> required to report it before "zero" is allowed to mean anything:
+>
+> ```
+>   control marker (must be 1): 1
+>   sweep sees: 1  (must be 1)
+>   restored, markers left: 0
+> ```
+>
+> Without that, "zero orphans" and "the awk pattern has a typo" are the same output.
+
+---
+
+### THE MOVE'S FAITHFULNESS WAS PROVED BY DIFF, AND THE SUITE COULD NOT HAVE PROVED IT
+
+**Slice 6 moved `commitCraft`, `craftOneFromInventory`, `debit`, `claimFor` and the bulk loop out of
+`CraftingMenu` into `InventoryCraft`** so the recipe browser could share them instead of copying the
+most-gated method in the arc.
+
+**"Full suite green" is not evidence for a pure relocation.** It was green before the move as well.
+The suite is a REGRESSION signal; what was actually claimed — *these bodies are unchanged* — needs a
+different instrument. So each moved body was extracted from both files and diffed:
+
+```
+IDENTICAL  commitCraft            (47 lines)
+IDENTICAL  claimFor               (5 lines)
+IDENTICAL  craftOneFromInventory  (33 lines)
+IDENTICAL  debit                  (14 lines)
+IDENTICAL  the pin + the bulk loop (16 lines)
+```
+
+> **AND "IDENTICAL" THERE IS OVER-ROUNDED. Reviewer-caught, 2026-09-03, and the rounding matters more
+> than the fact.** Those verdicts are post-NORMALISATION. The raw bodies **differ**, in exactly five
+> places, all requalifications:
+>
+> | | `MenuSafety.isEmpty` | `CraftingMenu.matches` |
+> |---|---|---|
+> | `commitCraft` | 1 | 1 |
+> | `claimFor` | 1 | — |
+> | `craftOneFromInventory` | 1 | — |
+> | `debit` | 1 | — |
+>
+> **The accurate claim is: "identical apart from five call-site requalifications, each to a target
+> separately proved byte-identical."** Both targets were then proved, with a control:
+>
+> ```
+> MenuSafety.isEmpty vs the old CraftingMenu.isEmpty  IDENTICAL apart from the access modifier
+>     old:  return item == null || item.getType().isAir() || item.getAmount() <= 0;
+>     new:  return item == null || item.getType().isAir() || item.getAmount() <= 0;
+> identityOf IDENTICAL (3 lines) · matches IDENTICAL (4 lines)     [vs master 4187cd1]
+> control: PASS -- injecting `<= 0` -> `< 0` was seen
+> ```
+>
+> **THE POINT IS THAT ROUNDING DEFEATS THE WHOLE METHOD.** Proving a move by diff rather than by
+> suite exists to produce an EXACT claim; collapsing it to IDENTICAL discards precisely the thing a
+> reader would re-check, and hands them a stronger claim than was tested. **It is also where a real
+> defect of this kind would hide**: a `MenuSafety.isEmpty` differing from the predicate it replaced by
+> a single character would change four call sites at once, silently, and every normalised diff would
+> still print IDENTICAL. The normalisation is only sound *because* the targets were separately
+> proved — so a report that omits the target proof is not a weaker version of this argument, it is
+> a different and invalid one.
+
+The normalisation covered exactly three things, and no others: the access modifier, the
+`CraftingMenu.` qualifier on the moved `matches` call, and `isEmpty` → `MenuSafety.isEmpty`.
+
+> **A CAUTION ON THE EXTRACTION ITSELF, from the reviewer's own pass.** Their first attempt reported
+> `matches: CHANGED` — a **false finding**, produced by a crude fixed-line-range slice that had
+> picked up neighbouring code shifted by `claimFor`'s removal. A brace-matched extraction, counting
+> `{` against `}` from the signature, showed it identical. **The check that got it right parsed
+> structure; the one that got it wrong counted lines.** Worth keeping because the false finding
+> arrived inside a message asking for MORE precision, which is exactly when a plausible-looking red
+> is least likely to be re-examined.
+
+**And the comparison carried a positive control**, because a diff that finds nothing looks exactly
+like a diff that ran and matched — this file's oldest lesson. A change was injected into the moved
+loop and the comparison was required to report it:
+
+```
+control: PASS -- the injected change was seen:
+      4c4
+      <         int crafted = 0;
+      >         int crafted = 1; // CONTROLMARK
+```
+
+Without that line, five `IDENTICAL` verdicts would have been worth nothing.
+
+---
+
+### A THIRD COPY OF `isEmpty` WAS ABOUT TO BE WRITTEN
+
+`CraftingMenu` and `MenuRouting` each carry a private `isEmpty(ItemStack)` with byte-identical
+bodies. `InventoryCraft` would have been the **third**, which is where a duplication stops being
+something a reader can hold in their head.
+
+**A canonical `MenuSafety.isEmpty` now exists and new code uses it. The two existing copies were
+deliberately NOT migrated**, and the reason is the same disposition the `core/weapon` debt takes:
+both files are heavily boot-gated — `MenuRouting` carries the routing rows — and widening this
+slice's diff into them to inline a one-line predicate buys a tidier `grep` at the price of re-gating
+routing. **They go when something else already has those files open.**
+
+Recorded so it is a decision with a date on it rather than an inconsistency someone finds later and
+has to reconstruct.
 
 ---
 
@@ -880,6 +1392,25 @@ never fires looks exactly like one that passed:
 > the rule written down twice, in the file being edited, did not stop it being walked into** — so the
 > comment now names both hazards as KNOWN IN THIS SCRIPT, to be found rather than rediscovered.
 
+> **A KNOWN SHARP EDGE IN THE FIX, RECORDED RATHER THAN SANDED OFF — reviewer-raised 2026-09-03.**
+> The new guard hard-fails on **any** bytes on that `find`'s stderr, not only on an unsupported
+> `-printf`. A benign cause — an unreadable directory under some module's `target/` — would abort a
+> correct run with `THE STALENESS CHECK COULD NOT RUN`.
+>
+> **That is a real tension with the script's own stated design cost:** its staleness comment says the
+> false-positive price is *"a scary message on a correct run, and this guard is worth nothing if
+> people learn to ignore it."* This check can produce exactly that.
+>
+> **Deliberately NOT narrowed** (e.g. to `grep -q 'printf'`), because the alternative failure is the
+> one the fix exists to prevent: a stderr cause nobody predicted, filtered out, and silently
+> swallowed — the self-disabling shape all over again, reintroduced by the narrowing. **Fail loud on
+> the unexpected** is the correct default for a guard whose whole subject is checks that quietly do
+> not run.
+>
+> **So: WATCH IT, do not pre-emptively change it.** If it ever fires for a benign reason, that is
+> evidence, and the fix at that point is to handle *that specific cause* by name — not to widen the
+> filter back out. Logged here so the first person it bites finds a decision instead of a bug.
+
 ---
 
 ### A DECISION DIALOG'S ANALYSIS PANEL IS A CLAIM, NOT A VERIFIED FACT
@@ -934,8 +1465,9 @@ inside the same slice that recorded it.**
 | `CraftResultToken` | material-token normalisation |
 | `CraftCount` | how many of each recipe the player can make, ranked |
 | `SuggestionTier` | which display category a craft suggestion sorts in |
+| `PageMath` | where page N of a paged menu starts and stops |
 
-**None of the five is about weapons.** All five are crafting-and-menu arithmetic that happened to be
+**None of the six is about weapons.** All six are crafting-and-menu arithmetic that happened to be
 extractable into `core`, and `weapon` was simply the package `core` already had.
 
 **The deviation was deliberate and is still the right call.** Slice 5 considered opening a
@@ -945,7 +1477,7 @@ ones. This entry exists so that reasoning is on the record rather than looking l
 
 **What paying it down would take**, so a future slice can size it honestly:
 
-- Move the five classes to `core/.../core/craft/`, plus their test files.
+- Move the six classes to `core/.../core/craft/`, plus their test files.
 - **The import cost, MEASURED 2026-09-03 rather than estimated** — the previous "~20 imports" was a
   guess and was wrong in both directions:
   - **10 import lines to rewrite, across 7 distinct files** outside the package (`MenuRouting`,
@@ -956,7 +1488,7 @@ ones. This entry exists so that reasoning is on the record rather than looking l
     is the larger half. Upper bound: the count is `grep -l` on the class names, so it includes
     javadoc mentions and the classes' own files; the real figure is lower.
   - Command, so the next reader re-measures rather than trusting this:
-    `grep -rlE "import io\.github\.butterflysmp\.rpg\.core\.weapon\.(CollectPlan|CraftResultIndex|CraftResultToken|CraftCount|SuggestionTier);" --include=*.java core/src paper/src storage/src`
+    `grep -rlE "import io\.github\.butterflysmp\.rpg\.core\.weapon\.(CollectPlan|CraftResultIndex|CraftResultToken|CraftCount|SuggestionTier|PageMath);" --include=*.java core/src paper/src storage/src`
 - **`GearDefinition` and the four gear records STAY in `core/weapon`.** `CraftResultIndex` takes a
   `Collection<? extends GearDefinition>`, so the new package would import the old one — which is
   correct and one-directional, and is the check that the split is real rather than cosmetic.
@@ -968,8 +1500,15 @@ ones. This entry exists so that reasoning is on the record rather than looking l
 expensive to review and buys nothing a reader could see.
 
 **AND WHEN YOU ADD A CLASS TO `core/weapon`, ASK WHICH SIDE OF THIS TABLE IT IS ON.** That question
-is the only thing standing between this debt and the next silent arrival — it has already failed
-once, in the slice that wrote it down.
+is the only thing standing between this debt and the next silent arrival — it has failed once, in
+the slice that wrote it down, and been answered once since.
+
+> **`PageMath` is the answer, 2026-09-03, slice 6.** It went into `core/weapon` for the same reason
+> the other five did — it is pure arithmetic and that is where `core`'s pure arithmetic lives — and
+> it was added to the table **in the commit that created it**, rather than being noticed a slice
+> later. That is the whole mechanism working once. It is recorded because "the rule fired" is as
+> worth knowing as "the rule was missed": the previous entry only has evidence of the failure mode,
+> which makes the rule look like a lament rather than something that works when run.
 
 ---
 
@@ -4748,6 +5287,73 @@ a melee basic, where nothing read it any more.
 ---
 
 ## Rules for this work
+
+### A COUNT OBTAINED BY LOOKING IS A LOWER BOUND
+
+**Until a mechanical sweep with a positive control has run, report it as "at least N, unswept."**
+
+This sits above the individual findings below because it is what all of them have in common, and it
+is why each was believed downstream. **Three instances in one session, identical structure**, each a
+hand count reported as a total:
+
+| reported | actual | how the number was obtained |
+|---|---|---|
+| five arrow references | **seven** | a `grep` shaped by the identifier (`ARROW_SLOT\|ARROW\b`), not by the word. `grep -i arrow` found 60 lines |
+| two places carrying the over-broad Q10 claim | **five** | a hand search of the places it seemed likely to be |
+| two orphaned javadocs | **five** | the files that slice happened to have open |
+
+**None of the three was a careless count.** Each was an honest tally of what the searcher could see,
+and in each the search itself was the limit — the identifier was not the word, the likely spots were
+not all the spots, the open files were not the repo. *"Two" was never a count of the defect; it was
+the reach of where I happened to be looking.*
+
+**The tell is that a hand count and a total are reported in the same words.** "There are two" and
+"I found two" are indistinguishable in a report, and only one of them is a claim about the codebase.
+So say which:
+
+- **"at least N, unswept"** — a hand count. Correct, bounded, and honest about the bound.
+- **"N"** — only after a sweep that could have found more, *and* a positive control proving it can
+  see. A discovery that finds nothing looks exactly like a discovery that cannot look
+  (CLAUDE.md:104), so the control is not optional decoration — without it the sweep's number is
+  another hand count wearing a script.
+
+**Corollary, and it is the sharp end:** a defect that is invisible to reading is *also invisible to
+incidental discovery*. Orphaned javadocs were found while moving code, not while looking for them —
+so the count that came out of that encounter had no relationship to the population. **The moment you
+notice a defect class you did not know existed, the first number you have is the weakest one you will
+ever have.** Sweep before reporting it.
+
+### A NORMALISATION INSIDE A COMPARISON IS A PREMISE, NOT A FORMATTING STEP
+
+**Every normalised diff claims that what it erased does not matter, and that claim needs its evidence
+attached where the result is stated.**
+
+Slice 6's move proved five method bodies `IDENTICAL` — after `sed` had rewritten `isEmpty(` to
+`MenuSafety.isEmpty(` and `matches(` to `CraftingMenu.matches(` on one side. The raw bodies differ in
+exactly five places. Reporting the post-normalisation verdict as "identical" asserted something
+stronger than had been tested.
+
+**The accurate form is: "identical apart from five call-site requalifications, each to a target
+separately proved byte-identical."** And the reason the distinction is not pedantry: the
+normalisation is sound ONLY BECAUSE the targets were separately proved, so **a report that omits the
+target proof is not a weaker version of the argument — it is a different and invalid one.**
+
+**It is also exactly where a defect of this shape hides.** A `MenuSafety.isEmpty` differing from the
+predicate it replaced by a single character would change four call sites at once, silently, and every
+normalised diff would still print `IDENTICAL`.
+
+**Every `sed`-normalised comparison in this repo has this structure whether or not anyone wrote the
+premise down.** When you erase something to make two things compare equal, state what you erased and
+why it was safe to erase, next to the verdict — not in a script nobody reads.
+
+### DO NOT POINT A LINE EDITOR AT A FILE THAT CONTAINS ANOTHER LANGUAGE'S SYNTAX
+
+`sed -i` on `NEXT.md` — which carries `awk`, `sed`, shell and Java as *content* — mangled it twice in
+one session, once because an inserted line beginning `awk` was parsed as sed's `a` (append) command.
+That is a **category error, not a slip**: the fast tool is fast because it interprets, and this file
+is the worst possible target for interpretation. Use the editing tool for prose files; keep `sed` for
+files whose content is not itself a program. (The recovery held because the file had been copied to
+the scratchpad first, and because the restore was *verified* byte-identical rather than assumed.)
 
 ### ENUMERATE THE AXIS, NOT THE CASES YOU CURRENTLY HAVE
 

@@ -1,5 +1,7 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
+import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ArmorSlot;
 import io.github.butterflysmp.rpg.core.weapon.CollectPlan;
 import io.github.butterflysmp.rpg.core.weapon.CraftCount;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
@@ -186,7 +188,13 @@ public final class RecipeProbe {
             }
 
             String key = keyed.getKey().toString();
-            candidates.add(new CraftCount.Candidate(key, tierOf(recipe, adapters), slots));
+            // The ARMOR SLOT is populated here too, not only in the browser's path. Armor is
+            // squeezed out of the three-cell column today (Q16), so nothing in play would reveal a
+            // column that ordered armor differently -- which is exactly why it is filled in here
+            // rather than left null "because the column cannot show it anyway".
+            GearDefinition claimed = claimedBy(recipe, adapters);
+            candidates.add(new CraftCount.Candidate(key, SuggestionTiers.of(claimed),
+                    claimed instanceof ArmorDefinition armor ? armor.slot() : null, slots));
             recipes.put(key, recipe);
         }
 
@@ -215,8 +223,21 @@ public final class RecipeProbe {
      * {@code getIngredientList} -- verified against the pinned jar, the latter pair is DEPRECATED
      * and flattens a choice to one representative stack, which would silently narrow every recipe
      * that accepts alternatives to whichever material Bukkit happened to list first.
+     *
+     * <h2>MADE PUBLIC IN SLICE 6, AND THE EXPOSURE IS ADDITIVE</h2>
+     *
+     * {@link RecipeCatalogue} and {@link IngredientLore} read this to decide whether a recipe is
+     * inert and to render its materials. <b>Nothing about {@link #of} changed</b>: the suggestion
+     * column still consumes exactly what it consumed before, from the same walk, filtered the same
+     * way.
+     *
+     * <p>This is stated here AND at the call sites because two consumers sharing one walk is exactly
+     * how a change to one would slip into the other -- and because gate row Q10(b) asserts a
+     * multi-star firework never reaches the COLUMN. If exposing complex recipes had widened
+     * {@code Result.suggestions}, Q10 would have been broken by a change that reads like a
+     * visibility edit.
      */
-    private static List<RecipeChoice> ingredientsOf(Recipe recipe) {
+    public static List<RecipeChoice> ingredientsOf(Recipe recipe) {
         if (recipe instanceof ShapedRecipe shaped) {
             List<RecipeChoice> ingredients = new ArrayList<>();
             for (String row : shaped.getShape()) {
@@ -237,18 +258,6 @@ public final class RecipeProbe {
     }
 
     /**
-     * The player's carried items, grouped by {@code isSimilar} and with their slots recorded.
-     *
-     * <p>{@code isSimilar} is the grouping key rather than {@code Material}, because it is the same
-     * comparison {@code ExactChoice.test} makes: two stacks that differ only in meta are different
-     * ingredients as far as a recipe is concerned, and merging them would let a named or enchanted
-     * item stand in for a plain one.
-     *
-     * <p>Storage contents only -- the 36 main slots. Armor being worn and the offhand are not
-     * crafting materials, and consuming what someone is wearing would be a surprise no button
-     * should be able to deliver.
-     */
-    /**
      * Probe ONE recipe against a fresh set of groups.
      *
      * <p><b>THE BULK LOOP CALLS THIS, NOT {@link #of}.</b> A shift-click that crafts sixty-four
@@ -261,13 +270,27 @@ public final class RecipeProbe {
      */
     public static CraftCount.Candidate probeOne(Recipe recipe, List<Group> groups,
                                                 SuggestionTier tier) {
+        return probeOne(recipe, groups, tier, null);
+    }
+
+    /**
+     * As {@link #probeOne(Recipe, List, SuggestionTier)}, carrying the armor slot for ordering.
+     *
+     * <p>The browser calls this one: its catalogue already knows each recipe's tier AND body slot,
+     * so re-deriving either per pass would be the roster lookup the catalogue exists to have done
+     * once. The three-argument overload stays for callers that make no armor.
+     *
+     * @param armorSlot which body slot this makes, or null for everything that is not armor
+     */
+    public static CraftCount.Candidate probeOne(Recipe recipe, List<Group> groups,
+                                                SuggestionTier tier, ArmorSlot armorSlot) {
         List<RecipeChoice> ingredients = ingredientsOf(recipe);
         if (ingredients == null || ingredients.isEmpty()) return null;
         if (!(recipe instanceof Keyed keyed)) return null;
 
         List<List<Integer>> slots = new ArrayList<>(ingredients.size());
         for (RecipeChoice choice : ingredients) slots.add(satisfyingGroups(choice, groups));
-        return new CraftCount.Candidate(keyed.getKey().toString(), tier, slots);
+        return new CraftCount.Candidate(keyed.getKey().toString(), tier, armorSlot, slots);
     }
 
     /**
@@ -283,16 +306,63 @@ public final class RecipeProbe {
      * through that validation.
      */
     public static SuggestionTier tierOf(Recipe recipe, AdapterContext adapters) {
-        ItemStack result = recipe == null ? null : recipe.getResult();
-        if (result == null || result.getType().isAir()) return SuggestionTier.VANILLA;
-        if (WeaponDurability.maxOf(result).isEmpty()) return SuggestionTier.VANILLA;
-
-        GearDefinition claimed = adapters.craftResults()
-                .forResult(result.getType().getKey().getKey()).orElse(null);
-        return SuggestionTiers.of(claimed);
+        return SuggestionTiers.of(claimedBy(recipe, adapters));
     }
 
-    /** The player's carried stacks, grouped and gear-filtered. Cheap: 36 slots, no recipe walk. */
+    /**
+     * Which body slot this recipe's output is worn in, or null when it does not mint armor.
+     *
+     * <p>The within-tier half of {@link io.github.butterflysmp.rpg.core.weapon.CraftOrder}: armor
+     * sorts head, chest, legs, feet, and this is where that data enters the system. Everything else
+     * -- weapons, shields, tools, vanilla -- is null and falls through to the recipe-key tiebreak.
+     *
+     * <p>Shares {@link #claimedBy} with {@link #tierOf} rather than repeating the lookup, so a
+     * recipe cannot sort into the ARMOR tier and then report no slot.
+     */
+    public static ArmorSlot armorSlotOf(Recipe recipe, AdapterContext adapters) {
+        return claimedBy(recipe, adapters) instanceof ArmorDefinition armor ? armor.slot() : null;
+    }
+
+    /**
+     * The gear definition this craft mints, or null for an ordinary vanilla craft.
+     *
+     * <p><b>Extracted so tier and armor slot cannot disagree.</b> Both are projections of the same
+     * answer, and two copies of this lookup would be two chances to classify one recipe two ways --
+     * the "two callers that agree today" shape this arc has now closed three times.
+     *
+     * <p>The durability gate is belt-and-braces for the reason {@code InventoryCraft.claimFor}
+     * carries it: boot already refuses a {@code craft_result} on a material with no durability, so
+     * nothing in the index can fail it, but the index is reachable from a caller that has not been
+     * through that validation.
+     */
+    public static GearDefinition claimedBy(Recipe recipe, AdapterContext adapters) {
+        ItemStack result = recipe == null ? null : recipe.getResult();
+        if (result == null || result.getType().isAir()) return null;
+        if (WeaponDurability.maxOf(result).isEmpty()) return null;
+
+        return adapters.craftResults()
+                .forResult(result.getType().getKey().getKey()).orElse(null);
+    }
+
+    /**
+     * The player's carried items, grouped by {@code isSimilar} and with their slots recorded.
+     *
+     * <p>{@code isSimilar} is the grouping key rather than {@code Material}, because it is the same
+     * comparison {@code ExactChoice.test} makes: two stacks that differ only in meta are different
+     * ingredients as far as a recipe is concerned, and merging them would let a named or enchanted
+     * item stand in for a plain one.
+     *
+     * <p>Storage contents only -- the 36 main slots. Armor being worn and the offhand are not
+     * crafting materials, and consuming what someone is wearing would be a surprise no button
+     * should be able to deliver.
+     *
+     * <p><b>CHEAP: 36 slots, NO RECIPE WALK.</b> That is the load-bearing half of the sentence and
+     * it is why the bulk loop may call this once per pass -- see {@link #probeOne} and the bulk
+     * trap. The cost note was carried by this method's original one-line javadoc and was dropped
+     * when the fuller rationale replaced it in slice 6; it is restored here because "what does this
+     * cost" is what stops the next reader calling it in a loop, and the rationale above does not
+     * answer that.
+     */
     public static List<Group> groupsOf(PlayerInventory inventory, Keys keys) {
         return groups(inventory, keys);
     }

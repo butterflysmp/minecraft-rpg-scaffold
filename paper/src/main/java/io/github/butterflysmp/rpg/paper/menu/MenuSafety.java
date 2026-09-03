@@ -76,4 +76,30 @@ public final class MenuSafety {
         }
         return needed <= 0;
     }
+
+    /**
+     * Is this stack nothing at all -- absent, air, or a zero-count husk?
+     *
+     * <p>All three, because the API produces all three. {@code getItem} on an empty slot returns
+     * {@code null}; a cleared slot can come back as {@code AIR}; and an amount that has been
+     * decremented to zero is a live {@code ItemStack} that renders as nothing. Testing only one of
+     * them is the classic way a menu ends up with an invisible unclickable item in a slot it
+     * believes is free.
+     *
+     * <h2>THIS IS THE CANONICAL COPY, AND IT IS NOT YET THE ONLY ONE</h2>
+     *
+     * The identical private predicate exists in {@code CraftingMenu} and {@code MenuRouting}.
+     * {@code InventoryCraft} would have been the THIRD, which is where it stopped being a
+     * duplication a reader can hold in their head.
+     *
+     * <p><b>The two existing copies were deliberately NOT migrated in the slice that wrote this.</b>
+     * Both files are heavily boot-gated -- {@code MenuRouting} carries the routing rows -- and
+     * widening a slice's diff into them to inline a one-line predicate buys a tidier grep at the
+     * price of re-gating routing. New code uses this one; the copies go when something else already
+     * has those files open. Recorded in {@code NEXT.md} so it is a decision with a date on it rather
+     * than an inconsistency someone finds later.
+     */
+    public static boolean isEmpty(ItemStack item) {
+        return item == null || item.getType().isAir() || item.getAmount() <= 0;
+    }
 }

@@ -143,16 +143,46 @@ public final class MenuIcons {
     }
 
     /**
-     * The close button.
+     * The close button: a labelled BARRIER, and <b>no lore at all</b>.
      *
-     * <p>Labelled "Close" on a BARRIER, not "Back" with an arrow: there is no parent menu yet and a
-     * back-arrow promises somewhere to go back to. It says what it does -- returning the weapon is
-     * the part a player standing there holding something valuable actually wants to know.
+     * <p>Labelled "Close" on a BARRIER, not "Back" with an arrow: a back-arrow promises somewhere to
+     * go back to, and this closes rather than navigates. (The recipe browser's "Back to crafting" IS
+     * a navigation and has its own icon; this is not it.)
+     *
+     * <h2>THE LORE LINE WENT, AND THE ARGUMENT FOR IT IS KEPT RATHER THAN DELETED</h2>
+     *
+     * It used to read <i>"Returns your weapon."</i>, and this javadoc used to argue for it:
+     *
+     * <blockquote>
+     * <i>"It says what it does -- returning the weapon is the part a player standing there holding
+     * something valuable actually wants to know."</i>
+     * </blockquote>
+     *
+     * <p><b>That argument was sound and is preserved because it is the reasoning, not a mistake.</b>
+     * Deleting the paragraph with the line would lose why the line existed, and the next person to
+     * think "the close button should explain itself" would have to rediscover it. This is rule 3 in
+     * its other direction: an argument can outlive the thing it argued for, and the fix is to say
+     * what replaced it.
+     *
+     * <p><b>What replaced it:</b> the button is now name-only, on operator instruction, for a
+     * quieter screen. Two things make the loss small rather than free:
+     *
+     * <ul>
+     *   <li><b>The behaviour was never the BUTTON's.</b> {@code Menu.returnEverything} runs on every
+     *       close -- Esc, death, disconnect, shutdown -- so lore on the button implied the return was
+     *       a property of clicking it. Gate row 16 closes with Esc precisely because it is not.
+     *   <li><b>It is ONE button on both screens</b>, and the enchant table is where the line was most
+     *       accurate. Keeping it there was considered and REJECTED: it would mean two close buttons,
+     *       which is exactly the drift this class exists to stop -- see the class javadoc. One
+     *       slightly plainer button beats two that are subtly different.
+     * </ul>
+     *
+     * <p>Changed 2026-09-03. Gate rows 16, 22 and Q22 are re-run because this appearance changed on
+     * BOTH screens, and slice 5's precedent applies: <i>the enchant menu was recoloured; its
+     * behaviour must not have moved with its appearance.</i>
      */
     public static ItemStack close() {
-        return icon(Material.BARRIER,
-                line("Close", NamedTextColor.RED),
-                List.of(line("Returns your weapon.", NamedTextColor.GRAY)));
+        return icon(Material.BARRIER, line("Close", NamedTextColor.RED), List.of());
     }
 
     /**
@@ -162,13 +192,38 @@ public final class MenuIcons {
      * nothing is counted is indistinguishable from a working readout that measured zero -- which is
      * the exact failure CLAUDE.md's verification section is about, in a place a player can see.
      *
-     * <p><b>Currently unused, and kept on purpose.</b> Its only consumer was the enchant table's
-     * bookshelf slot, which now prints a real count. It stays because {@code MenuIcons} is the
-     * reusable base -- {@code Menu}, {@code MenuRouting} and {@code MenuSafety} all landed with no
-     * consumer at all -- and because the rule it encodes is one the anvil, class-select and stat
-     * screens will each need before they are finished. The graduation is also the pattern worth
-     * copying: a placeholder becomes a readout by gaining a SCALE, so "0/30" reads as a measurement
-     * where a bare "0%" could not.
+     * <h2>UNUSED AGAIN, 2026-09-03 — AND KEPT, AS A DECISION WITH A DATE ON IT</h2>
+     *
+     * <b>KEPT.</b> Not by default -- zero consumers twice is a fair argument for deletion and it was
+     * considered. It stays because {@code MenuIcons} is the reusable base ({@code Menu},
+     * {@code MenuRouting} and {@code MenuSafety} all landed with no consumer at all), and because
+     * the anvil, class-select and stat screens are still ahead and each will want the rule this
+     * encodes before it is finished. <b>Delete it if a third graduation arrives with none of those
+     * screens built</b> -- at that point "kept for future use" has been wrong twice.
+     *
+     * <h2>TWO GRADUATIONS, AND THEY ARE DIFFERENT SHAPES</h2>
+     *
+     * <ol>
+     *   <li><b>A placeholder became a READOUT by gaining a SCALE.</b> The enchant table's bookshelf
+     *       slot: <i>"0/30"</i> reads as a measurement where a bare <i>"0%"</i> could not. That is
+     *       the pattern worth copying.
+     *   <li><b>A placeholder became a real FEATURE, and separately, a readout that had been WEARING
+     *       THE PLACEHOLDER'S CLOTHES got its own icon.</b> The recipe browser button stopped being
+     *       unbuilt; and the browser's empty state -- <i>"Nothing you can make right now"</i> -- had
+     *       been built out of {@code placeholder}, so it rendered <b>"Not implemented yet."</b>
+     *       underneath a feature that was working correctly and had measured zero.
+     * </ol>
+     *
+     * <p><b>The second half of (2) is the one that shipped a wrong message, and it is this method's
+     * own warning inverted.</b> The paragraph above says a bare {@code 0%} cannot be told apart from
+     * a working readout that measured zero. The empty state was the working readout that measured
+     * zero -- and it was built out of the placeholder, so it announced that the feature was missing.
+     * <b>Reaching for this method is a claim that something is NOT BUILT.</b> A surface that
+     * correctly measured nothing needs {@link #icon}, and needs to say so in its name.
+     *
+     * <p>Gate row Q33 <b>would have passed on that defect</b>: it named the notice and not its lore,
+     * so an operator would have ticked a SOLE WITNESS while the screen read "not implemented yet".
+     * The row is tightened to require the name AND the absence of lore.
      */
     public static ItemStack placeholder(Material material, String name, String whatIsMissing) {
         return icon(material,

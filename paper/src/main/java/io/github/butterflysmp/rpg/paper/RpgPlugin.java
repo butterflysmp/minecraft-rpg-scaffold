@@ -509,10 +509,6 @@ public final class RpgPlugin extends JavaPlugin {
     }
 
     /**
-     * Warns, never disables the plugin. Fail-soft: the ability still loads and still
-     * deals its damage; it just tells you which reference is dangling.
-     */
-    /**
      * A content {@code base_entity} name -> Bukkit EntityType, or null if it names nothing. Uses the
      * Registry rather than {@code EntityType.valueOf}, matching how the plugin resolves attributes,
      * potion effects and sounds -- and unlike valueOf it returns null instead of throwing, which is
@@ -523,6 +519,10 @@ public final class RpgPlugin extends JavaPlugin {
         return Registry.ENTITY_TYPE.get(NamespacedKey.minecraft(name.toLowerCase(Locale.ROOT)));
     }
 
+    /**
+     * Warns, never disables the plugin. Fail-soft: the ability still loads and still
+     * deals its damage; it just tells you which reference is dangling.
+     */
     private void validateContent() {
         var validator = new ContentValidator(visuals, statuses, elements,
                 key -> Registry.MOB_EFFECT.get(key) != null,

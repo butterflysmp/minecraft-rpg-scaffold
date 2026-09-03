@@ -56,8 +56,7 @@ public final class BukkitCombatant {
      * follows -- and it is the ONLY place they are read, now that
      * {@code CombatWorld.attackDamage} has been retired. There is no longer a hit-time route to a
      * caster's attack damage, only this cast-time freeze.
-     */
-    /**
+     *
      * <b>THE THREE DAMAGE SUMMANDS BELOW ARE READ BY {@code /rpg stats} TOO, and they must stay
      * STRAIGHT READS.</b>
      *

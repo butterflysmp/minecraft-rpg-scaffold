@@ -494,23 +494,224 @@ things, so bring a way to count.
 | Q13 | **THE DEBIT.** Hold the materials for one craft **split across three separate stacks** (e.g. 3 + 2 + 1 planks). Note each stack's slot and size. Click the suggestion. | Exactly the right total leaves, **from the slots the probe counted**, and no other slot moves | **count · sole witness** that the debit applies to RECORDED slots rather than re-finding them by similarity. A second search can land on different stacks than the count used |
 | Q14 | **THE REMAINDER.** Craft a cake from a suggestion (three milk buckets). **Count buckets first.** | Three **EMPTY BUCKETS** arrive in the inventory. Nothing is destroyed | **count · discriminating** · the case that makes "consumed = input minus resulting" incoherent — a milk bucket does not decrease, it BECOMES a bucket. On the inventory path the resulting matrix and the overflow both collapse to "give it to the player" |
 
-## The browser — NOT YET APPLICABLE
+## The browser — LIVE from slice 6
+
+> ## GATE RESULT — 2026-09-03, operator-confirmed: **32 of 32 GREEN**
+>
+> **Q11, Q24, Q25, Q26, Q27, Q28, Q29, Q32, Q33, Q34, Q35** — every live row in this section —
+> plus the twenty-one re-runs **Q1, Q3, Q6, Q7, Q8, Q9, Q10, Q13, Q14, Q15, Q16, Q17, Q22, 12, 12c,
+> 16, 22, S1, S2, 13, N5b**. Q12, Q30 and Q31 are struck as superseded and correctly absent.
+>
+> ### Q34 WAS MISSING FROM THE NAMED SET, AND WAS CAUGHT IN REVIEW
+>
+> The set as first named held ten browser rows; this section holds **eleven**. It was assembled by
+> extending the RE-RUN half twice for the UI changes and treating the NEW half as settled. **Q34
+> landed in `8bec9e4` alongside Q32 and Q33**, and the tick-through page published for the operator
+> carried the omission through.
+>
+> **The reviewer's check had the same shape as the mistake:** a grep for
+> <code>\*\*Q(2[569]&#124;3[23])\*\*</code> — *the rows expected to have been added*, not the axis,
+> which is EVERY LIVE `Q` ROW IN THIS SECTION. No pattern on either side could match Q34.
+>
+> > **Rule 1 applies to the grep you REVIEW with, not only the one you verify with.** Enumerate the
+> > axis, not the cases you currently have. Recorded in `NEXT.md`.
+>
+> **And the reason it was catchable at all:** naming the set before the run did not make it
+> complete — it made it **RECOVERABLE**. A set named afterwards would have been ten rows and
+> self-consistent for ever.
+>
+> ### FIVE MEASUREMENTS ARE STILL OWED, AND THE INSTRUMENT SURVIVES BECAUSE OF IT
+>
+> | measurement | value |
+> |---|---|
+> | Q24 catalogue build time | **NOT RECORDED — OWED** |
+> | entries | **NOT RECORDED — OWED** |
+> | unkeyed skipped | **NOT RECORDED — OWED** |
+> | not fully listable (Q29's evidence) | **NOT RECORDED — OWED** |
+> | mutation 8 stageable? | **NOT RECORDED — OWED** |
+>
+> **NO NUMBER, NO DELETION.** The rule *"delete the instrument in the commit that records the
+> number"* exists so a passing row cannot cause the removal to be skipped. **It cuts both ways:**
+> deleting it before the number is written down makes an only-once measurement **permanently
+> unrecoverable** rather than merely unrecorded.
+>
+> **Shipping it costs almost nothing, and that is VERIFIED rather than assumed.** `build()` is
+> guarded by `entries == null` at both entry points; `entries` is assigned once, never reset, and
+> assigned *before* the empty-catalogue early return — so even that path cannot re-run it. One
+> instance exists, constructed once in `RpgListeners`. **The line logs AT MOST ONCE PER SERVER
+> LIFETIME**, on the first browser open, and never at all if nobody opens the browser.
+>
+> That is the opposite of slice 5's instrument, which was per menu instance and would have logged
+> for every player on every table open, for ever. **This one is a single console line that announces
+> its own debt.** Whoever next reads a boot log can close it in a one-line commit.
+
+> ## ⛔ TWO DECISIONS TO TAKE BEFORE THE FIRST ROW IS RUN
+>
+> **Both are decided from evidence only the operator has, and BOTH MUST BE WRITTEN DOWN HERE BEFORE
+> THE GATE STARTS — not while writing the report.** Deciding a row's runnability afterwards is the
+> failure rule 4 names: a row that turns out to be unrunnable, recorded after the fact, is
+> indistinguishable in the report from a row that ran and passed.
+>
+> **DECISION 1 — WITHDRAWN. Q31 is superseded, so its runnability is moot.** It asked whether the
+> catalogue's `not fully listable` count was non-zero. That count is **kept**, and still worth
+> reading and writing down here, but it is now **Q29's** evidence rather than a row's runnability
+> gate: a listed recipe whose ingredients cannot be fully enumerated still needs the honesty line
+> *"(accepts more than can be listed)"*. That hazard was always about LORE, never about
+> craftability — which is exactly why it survived a reversal that deleted the inert apparatus
+> around it.
+>
+> Read it anyway when the server boots and record it here:
+> `Recipe catalogue built: N entries in Nus (N unkeyed skipped, N not fully listable)`.
+>
+> **DECISION 2 — can mutation 8 be staged?** It reddens only against a **stale catalogue**. Attempt,
+> before the gate: open the browser (building the cache), then `Bukkit.removeRecipe(key)` on a recipe
+> you can see in it, then click that entry.
+>
+> | outcome | verdict to write here, now |
+> |---|---|
+> | the removal takes effect | **STAGEABLE.** Run it, watch it red |
+> | it cannot be staged | **UNRUNNABLE — record the reason.** Do not leave it sitting in a table where the other twelve were watched red |
+>
+> **Write both verdicts into this file before running anything.** Row 12b's shape is the precedent: a
+> mutation whose red state cannot exist credits coverage that does not exist.
+
+> ## ⏳ THE INSTRUMENT SHIPS, DELIBERATELY — AND IS OWED A ONE-LINE COMMIT
+>
+> `RecipeCatalogue.build()` ends with a temporary `log().info("Recipe catalogue built: …")`. It
+> exists to put a real number in **Q24**.
+>
+> > **THIS BANNER USED TO SAY "🚫 MERGE BLOCKER — the branch is NOT merge-ready until this is
+> > deleted", and it was RIGHT AT THE TIME and is kept here rather than replaced silently.** Its
+> > argument stands and has not been withdrawn: *Q24 will pass, and a passing row is exactly when
+> > "remove before merge" gets skipped; nothing about a green gate creates pressure to go back and
+> > delete a log line.* That is why the removal was made a merge condition.
+> >
+> > **What changed is which failure is worse.** The gate ran green and **the five figures were never
+> > recorded** — so the rule *"delete the instrument in the commit that records the number"* had its
+> > precondition unmet. **It cuts both ways: NO NUMBER, NO DELETION.** Deleting it now makes an
+> > only-once measurement **permanently unrecoverable** rather than merely unrecorded, and the rule
+> > was written to protect the number, not to protect the deletion.
+>
+> **The cost of shipping it is verified, not assumed** — see the gate-result block above:
+> `entries == null` guards both entry points, `entries` is assigned once and never reset (and
+> assigned *before* the empty-catalogue early return), and one instance exists. **At most one console
+> line per server lifetime**, on the first browser open. Slice 5's instrument was per menu instance
+> and would have logged for every player on every table open; this one is not that.
+>
+> **WHAT IS OWED, and it is one commit:** boot a server, open the browser once, read the line, write
+> the five figures into the Q24 row and Q29's evidence, and delete the instrument in that same
+> commit. Anyone with a boot log can close this.
+
+**Q12 IS SUPERSEDED, NOT DELETED.** It read *"Navigates only; nothing is crafted or consumed"*,
+which was true of the placeholder and is **false by design** now: the browser crafts. It stays
+struck through and visible, as row 20 → S12 was handled — **the gesture changed, so its observable
+stopped being correct**, which is a different thing from a row that was wrong.
+
+**Q11 IS REWORDED, not merely re-enabled.** *"the last page is not short or duplicated"* is
+ambiguous: **a genuinely short last page is CORRECT** — 1214 recipes at 45 a page ends with a short
+one, every time. The two real defects are named instead.
 
 | # | action | expected | notes |
 |---|---|---|---|
-| ~~Q11~~ | ~~Open the browser. Page forward and back.~~ | ~~Pages navigate; the last page is not short or duplicated~~ | **NOT YET APPLICABLE — the browser is a placeholder this half.** Slot **26** says "Not implemented yet". Recorded rather than omitted, the same discipline row 1b uses: a row that cannot be run must say so rather than sit among rows that can |
-| ~~Q12~~ | ~~Click an entry in the browser.~~ | ~~Navigates only; nothing is crafted or consumed~~ | **NOT YET APPLICABLE**, as Q11. These two become live in the second half and are the reason the browser is navigate-only |
+| **Q11** | Open the browser (slot **26**). Page to the end and back to page 1. | **No entry appears on two pages, and no entry the catalogue holds is missing from the last page.** A SHORT final page is correct and is not a failure | **discriminating** · reworded this slice. The unit sweep `everyEntryAppearsExactlyOnceAcrossAllPages` already proves the arithmetic over every list size; this row proves the RENDERER uses it — the half no unit test can reach |
+| ~~Q12~~ | ~~Click an entry in the browser.~~ | ~~Navigates only; nothing is crafted or consumed~~ | **SUPERSEDED by Q24-Q28.** Not a failure and not withdrawn as wrong: the browser became a crafting surface in slice 6, so this row's observable stopped being the correct one. Kept visible so the change of intent is on the record rather than looking like a deleted row |
+| **Q24** | **THE LAZY BUILD'S COST.** **PASSED 2026-09-03 -- but the FIGURE WAS NOT RECORDED, so the instrument SURVIVES DELIBERATELY. Deleting it before the number is written down makes an only-once measurement PERMANENTLY UNRECOVERABLE rather than merely unrecorded; it logs at most once per server lifetime, so leaving it in costs one console line. Re-run this row, write the figures in, and delete it in that commit.** First player after a restart opens the browser. Watch for a hitch, then read the log line. | No perceptible stall. **Write the logged microsecond figure into this row.** | **SOLE WITNESS, and the only time the cost is ever paid.** The catalogue walk has NO early bail — keeping everything is the point — so **Q2's 298µs must not be cited for it**: that number is the suggestion probe, which dies on most recipes' first ingredient. The instrument is `Recipe catalogue built: N entries in Nus`, and it is **deleted in the commit that records this number** |
+| **Q25** | **TIER ORDERING.** Open the browser at page 1. Walk down it. | Every minted-gear recipe appears **before** any vanilla one, **and the boundary is where the TIER changes, not where the page ends** | **discriminating** · REWORDED for the reversal: it checks the tier order among what IS CRAFTABLE. It is no longer "the row Q16 hands off to" -- under the craftable-now contract **Q16's squeeze is not answered anywhere**, by design. See the note below the table |
+| **Q26** | **THE LIST GOES STALE UNDER YOU.** Open the browser, note an entry. **Without closing it**, spend those materials elsewhere (a hopper, a second player, a shift-click on another entry that shares them). Then click the noted entry. **Count materials first.** | Refuses with *"You do not have the materials for that."* **Nothing debited, nothing given** | **count · discriminating** · REWRITTEN for the reversal. *"Click something you cannot afford"* is now **impossible by construction on a fresh view** -- every listed entry was affordable when the list was built -- so the row would have been unrunnable as written. This is Q8's shape on the third surface, and the thing that must hold has not changed: the craft re-verifies against the LIVE inventory and a refusal costs nothing |
+| **Q27** | **A BROWSER CRAFT OF MINTED GEAR.** Carry the materials. Click a claiming recipe. **Open the item.** | Arrives **minted AND rolled** -- stats, rarity footer, enchant candidates -- identical to the column and the grid | **discriminating** · *open it, do not count it.* A count sees an item arrive and cannot see that it is a plain iron sword. This is the row that proves the third surface shares `InventoryCraft` rather than reimplementing it |
+| **Q28** | **BULK INTO A FULL INVENTORY.** Fill every slot but one. Shift-click an affordable entry. | Stops, says how many were made, **and NOTHING is on the ground** | **count · discriminating** · Q17's shape on the THIRD surface. `MenuSafety.fits` is checked before each pass, so a full inventory costs no ingredients |
+| **Q29** | **INGREDIENT LORE vs REALITY.** Hover an entry, read "Needs:". Then craft it and watch what leaves your inventory. | The listed ingredients **are** what the craft actually consumes | **discriminating** · the lore is built from `RecipeProbe.ingredientsOf`, the same list the assembly draws against, so this row checks they have not drifted |
+| ~~Q30~~ | ~~Find a multi-star firework rocket in the browser. Hover it, then click it.~~ | ~~Lore says "Cannot be crafted here" and "Use the crafting grid for this one"; clicking does nothing~~ | **SUPERSEDED by the craftable-now contract**, exactly as Q12 was. The inert-entry apparatus is GONE, so there is nothing to observe. It existed because a browser claiming to show EVERYTHING could not omit a grid-craftable recipe without that being a FALSE absence -- Q10's mistake in UI form. Under *"what you can craft here, right now"* a multi-star firework is absent **honestly**. Not deleted and not wrong: the contract changed, so the observable stopped being the correct one |
+| ~~Q31~~ | ~~Read the boot log's `not fully listable` count; if non-zero, find one and hover it.~~ | ~~The honesty line appears~~ | **SUPERSEDED as a row, but its EVIDENCE survives and moves to Q29.** The `not fully listable` count is KEPT in the catalogue log: it stopped being this row's runnability gate and became the honesty line's. That hazard was always about **LORE**, never about craftability -- a listed recipe whose ingredients cannot be fully enumerated still needs *"(accepts more than can be listed)"*, and under the new contract such a recipe is still listed and still craftable |
+| **Q32** | **THE LIST SHRINKS UNDER THE PLAYER.** Carry materials for a handful of recipes so the browser has **more than one page**. Go to the LAST page. **Bulk-craft (shift-click) everything on it** until the page empties. | You land on a **valid page** showing real entries -- never a blank grid, never an error | **SOLE WITNESS, and the failure mode the filter created.** Crafting shrinks the list, so the last page can cease to exist under you. `PageMath.clampPage` exists for this; the defect would be calling it only on NAVIGATION, which is the obvious moment and **not** the one that changes the page count. The browser re-clamps after every recompute |
+| **Q33** | **AN EMPTY BROWSER IS NOT A BROKEN ONE.** Empty your inventory completely. Open the browser. **Hover the item in SLOT 22 — the centre of the third row — and read its whole tooltip.** The slot is named because an empty browser shows **TWO BARRIERS**: this notice and the close button in the footer. Hovering the wrong one gives a barrier with a name and no lore, which is what this row is looking for | The **NAME** reads **"Nothing you can make right now"** and there are **NO LORE LINES AT ALL** — in particular **not** *"Not implemented yet."* The icon is a **BARRIER** | **SOLE WITNESS · discriminating · TIGHTENED 2026-09-03, and it would have PASSED on the defect it now catches.** The row previously named the notice and not its lore, so an operator would have ticked a sole witness while the screen said the feature was missing: the empty state was built out of `MenuIcons.placeholder`, which always emits "Not implemented yet." **A row that cannot fail on the defect in front of it is not a witness.** `MenuIcons.icon`/`close`/`filler` have NO unit test — they need a live server — so this row's wording is the only check that exists |
+| **Q34** | **ARMOR SORTS HEAD, CHEST, LEGS, FEET.** Carry materials for **two or more different armor pieces** (leather is cheapest: 24 leather makes all four). Open the browser and read them in order. | Helmet, chestplate, leggings, boots -- **in that order**, whatever their names | **discriminating**, and that is worth stating: a comparator that fell back to the recipe key would give **boots, chestplate, helmet, leggings** -- alphabetical, plausible, and wrong. Pinned in core by `CraftOrderTest`, which iterates `ArmorSlot.values()` rather than listing four constants, so a fifth slot joins the assertion automatically |
+| **Q35** | **THE RECIPE BOOK BUTTON.** Open the crafting table. Look at slot **26**. Hover it, then click it. | A **green KNOWLEDGE_BOOK** named **"Recipe Book"**, lore *"Everything you can craft right now"* / *"Click to browse"*. **No "Not implemented yet."** Clicking opens the browser | **SOLE WITNESS.** Nothing anywhere observes that button's appearance. Was `MenuIcons.placeholder(Material.BOOK, …)` while the browser did not exist; the browser exists, so placeholder became the wrong constructor — reaching for it is a claim that something is NOT BUILT. **KNOWLEDGE_BOOK is the first icon in this plugin with a REAL vanilla effect** (right-click grants recipes): safe here because `Menu.handleClick` cancels unconditionally and slot 26 is not an input slot, so it can never be taken — see the call-site comment |
 
-> **THE BROWSER IS NO LONGER A CONVENIENCE.** With the column at THREE cells and thirty claiming
-> definitions, it is **the only route to anything below tier 2** — all armor, and every vanilla
-> recipe. Shipping the first half without it leaves most craftable things unreachable from this menu
+> ## THE BROWSER NO LONGER ANSWERS Q16, AND NOTHING ELSE DOES EITHER
+>
+> **Read this before running Q25, which used to be "the row Q16 hands off to".**
+>
+> Q16 records that the three-cell column shows neither vanilla nor armor — passing **by design**,
+> because the column fills with gear. The browser was built to make those reachable. **It no longer
+> does:** under the craftable-now contract it hides everything the player cannot currently afford,
+> and armor is the gear kind a player is least likely to be able to afford at the moment they look.
+>
+> **So armor the player cannot yet afford is invisible EVERYWHERE.** Squeezed out of the column by
+> tier order, hidden here by the filter. **No surface answers "what does a netherite helmet need?"**
+>
+> That is a **consequence of a product decision, not a defect**, and it is written into the gate
+> rather than left to arrive as a complaint. Q16 still passes and still means what it said; what
+> changed is that the sentence *"and the browser is where those become reachable"* is no longer
+> true and must not be repeated. If it ever needs answering, the answer is a **third surface** — a
+> lookup — not a filter flag on this one.
+
+> **Q8 IS THE MUTATION THAT MAY HAVE NO RED STATE.** "The click trusts the cached recipe instead of
+> re-resolving" reddens only against a **stale catalogue** — a recipe that left the roster after
+> first open. Staging attempt: open the browser (building the cache), remove a recipe from the live
+> roster with `Bukkit.removeRecipe(key)`, then click its entry. **If that cannot be staged on the dev
+> server, record it as UNRUNNABLE with the reason** rather than leaving it in a table where every
+> other mutation was watched red.
+
+
+> ~~**THE BROWSER IS NO LONGER A CONVENIENCE.** With the column at THREE cells and thirty claiming
+> definitions, it is the only route to anything below tier 2 — all armor, and every vanilla recipe.
+> Shipping the first half without it leaves most craftable things unreachable from this menu
 > entirely. That is a scope fact rather than a tuning detail, and it raises the cost of deferring the
-> second half well above what it was when the column had nine cells.
-
+> second half well above what it was when the column had nine cells.~~
+>
+> **WITHDRAWN IN PLACE, 2026-09-03 — the deferral it argued against did not happen.** The browser
+> shipped in slice 6, so "the cost of deferring the second half" is no longer a live question. Kept
+> struck through rather than deleted because it is the reasoning that *caused* the second half to be
+> built immediately rather than parked, and a gate file that silently drops the arguments it acted on
+> reads as though the decisions made themselves.
+>
+> **What it said that is still TRUE, and is now Q25's job to check:** the column cannot reach armor
+> or vanilla, so the browser is the only route to them. That claim moved from prose into a
+> discriminating row, which is where it belonged.
 ## Re-run from earlier slices
+
+> **NAMED BEFORE THE RUN, per the rule added at `aee4fe1`. TWENTY-ONE rows:**
+> **Q1, Q3, Q6, Q7, Q8, Q9, Q10, Q13, Q14, Q15, Q16, Q17, Q22, 12, 12c, 16, 22, S1, S2, 13, N5b.**
+>
+> **THREE ADDED 2026-09-03 FOR THE UI CHANGES, named here rather than at report time:**
+>
+> | row | why it re-opens |
+> |---|---|
+> | **16** | close with **Esc**. The close button's appearance changed, and this is the row that proves the return does NOT depend on clicking it — which is the reason the *"Returns your weapon."* lore came off in the first place |
+> | **22** | the enchant table end to end. **`MenuIcons.close()` is SHARED**, so the enchant screen changed too. Slice 5's precedent exactly: *the enchant menu was recoloured; its behaviour must not have moved with its appearance* |
+> | **Q22** | the close button surviving repaints. It observes that the button EXISTS at all, and the button was edited. Unaffected by lore in principle — re-run anyway, because "in principle" is what this list is for |
+>
+> Naming them here rather than in the report is the whole point: a list written afterwards is a list
+> of what was run, not a list of what was owed, and the two are indistinguishable once the report is
+> the only artefact.
+>
+> **The first draft of this list covered the shared CRAFT path and MISSED the shared PROBE.** It had
+> Q3, Q6, Q7, Q8, Q13, Q14, Q17 — every row witnessing `commitCraft`, because a second caller enters
+> it. But `RecipeProbe` and `SuggestionTier` are BOTH modified this slice and both feed the
+> suggestion column, so the same reasoning that added 12/12c applies to them:
+>
+> - **Q10** — the enumerable boundary, and this slice changes what `RecipeProbe` EXPOSES;
+> - **Q16** — three cells, and the row the browser now hands off to;
+> - **Q15** — the tier order, and `SuggestionTier` is being edited;
+> - **Q9** — the icon gains ingredient lines through `chromeOver`, and Q9 observes "rarity footer last";
+> - **Q1** — the column's appearance, same cause.
+
+> **Q10 IS A LIVE RISK, NOT ONLY A RE-RUN.** If exposing complex recipes changed what
+> `Result.suggestions` contains, a multi-star firework could appear in the COLUMN — contradicting
+> Q10(b), a discriminating sole-witness row.
+>
+> **It does not, and the reason is structural rather than careful: the exposure is ADDITIVE and
+> SEPARATELY CONSUMED.** `ingredientsOf` changed visibility only; `RecipeProbe.of` still filters
+> exactly as it did, and the catalogue reads the newly-public method on its own walk. Stated here AND
+> at the call site, because two consumers sharing one walk is precisely how this would slip in later.
 
 | # | why it re-opens |
 |---|---|
+| **Q1, Q3, Q9, Q15, Q16** | the shared PROBE, not the shared craft. `RecipeProbe` and `SuggestionTier` are both modified and both feed the column |
+| **Q6, Q7, Q8, Q13, Q14, Q17** | `commitCraft`, `craftOneFromInventory` and `debit` all **changed file** — they now live in `InventoryCraft`. A pure move is still a change to the code these rows witness |
+| **Q10** | see the risk note above. The one row that could be broken by a visibility edit |
+| **Q15 (again), Q1, Q3** | **the COLUMN's comparator changed.** `CraftCount.RANKING`'s final term is now the shared `CraftOrder.WITHIN_TIER` instead of a local key comparison. Nothing a player can see should move — armor is squeezed out of the column, which is precisely why this is re-run rather than reasoned about. **The two orderings agreeing today is the whole hazard** |
 | **12, 12c** | `commitCraft` changed shape a FOURTH time. Still the only witnesses for `getResultingMatrix` and `getOverflowItems` — **and they matter MORE this slice, not less**: on the inventory path both collapse into "give it to the player", so no Q row can tell the two calls apart |
 | **S1, S2** | the pin and the `MAX_BULK_CRAFTS` bound — **and the GRID bulk loop itself changed.** `craftRepeatedly` now stops before the inventory overflows, which is a fix to a defect the grid has shipped since slice 3. These are not re-run out of caution; the code under them moved |
 | S3 | the `ComplexRecipe` path through the grid — and now the other half of Q10 |
