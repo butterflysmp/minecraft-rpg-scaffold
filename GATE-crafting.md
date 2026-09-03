@@ -15,8 +15,24 @@ kept in a plan document: plans are per-slice and get superseded, and the gate ou
 
 - A rendered tick-through version may exist as a published page for convenience. **If the
   two ever disagree, this file wins.**
-- Report at **row granularity** — "28 of 28, rows 7, 8, 12 and 12c by name" — never "the
-  gate passed".
+- **NAME THE ROWS YOU ARE ABOUT TO RUN, BEFORE YOU RUN THEM.** Then a count against that
+  list is recoverable, and "eleven of eleven" is a complete answer because the eleven are
+  written down. **A count against an unnamed set is not an answer, however precise the
+  number looks.**
+
+  > This replaces a weaker rule: *"Report at row granularity — '28 of 28, rows 7, 8, 12 and
+  > 12c by name' — never 'the gate passed'."* It asked for naming at REPORT time, which is
+  > the moment the information is hardest to reconstruct and easiest to skip.
+  >
+  > **Worked example, still unrecovered:** slice 5's first run was reported as **34 of 34**.
+  > The old rule was satisfied in spirit — a precise count, not "it passed" — and the
+  > breakdown is gone anyway, because no list existed to count against. The 34 also exceeds
+  > the 20 runnable Q rows, so it evidently folded in re-gate rows, and which ones is part of
+  > the same lost answer. The eleven-row re-gate below is the counter-example: the set was
+  > named in the commit that requested it, so "eleven of eleven" reconstructs completely.
+  >
+  > Same shape as Q2's missing craftable / probed / distinct-stack counts: **observed by
+  > someone, never written down.** Both are still owed.
 - Where a row says **count**, write the number down before and after. A duplication and a
   theft look identical in a screenshot of the after state.
 - A row marked **sole witness** names the behaviour it is the only check for. Skipping it is
@@ -203,7 +219,9 @@ shape again), plus **N5b** and **N8** from slice 2. **Row 20 is REWRITTEN below,
 | S5 | Cursor holds 1 plank. **63+ planks in your inventory**, planks ALSO loaded in the grid. Double-click. **Count grid contents first.** | Cursor fills to 64. **The grid is UNTOUCHED** and the loaded recipe survives. | **count** — the inventory alone could fill it, so the grid must not be reached |
 | S6 | Cursor holds 1 plank. Only **10** planks in your inventory, plenty in the grid. Double-click. **Count both first.** | Takes the 10 **AND** reaches into the grid. | **THE ONE THAT CATCHES A DEAD SECOND TIER.** Without it, a collect that never touches the grid passes S5 perfectly, and "inventory first" is indistinguishable from "inventory only" · **count** |
 | S7 | Several partial plank stacks plus one full stack in your inventory. Double-click. | The **partials** drain first; the full stack is broken into last. | the half of vanilla's behaviour that is kept, and nothing else in the gate exercises it |
-| S12 | **Hold glass panes matching the filler. Double-click.** | **NOTHING leaves the menu chrome.** | **discriminating · replaces row 20** · the row worth failing the slice over. Vanilla's collect would sweep every matching stack out of the top inventory, and this menu paints forty identical panes. Performing the gesture is what answers that — the objection was never dropped |
+| S12 | **Hold BLACK stained glass panes. Double-click.** | **NOTHING leaves the menu chrome.** | **discriminating · replaces row 20** · **REWRITTEN in slice 5 — it silently stopped being a test.** It said "panes matching the filler", and the filler went from GRAY to BLACK. An operator holding gray panes after that change tests nothing and the row PASSES. The material is now named explicitly so the row cannot rot the same way again |
+| S12b | **With the grid EMPTY, hold GRAY panes. Double-click.** | **The status bar does not move either.** | **discriminating · new in slice 5, and it exists because of S12's rot.** Gray is no longer chrome: it is the status bar's EMPTY colour. So a gray double-click now targets the one bottom-row region that is NOT filler, and it must be just as immovable. The bar is menu furniture, not an input slot |
+| S12c | **Hold LIGHT GRAY panes. Double-click.** | **Nothing leaves the suggestion column.** | **discriminating · third chrome colour, third immovable surface.** Empty quick-craft cells are `LIGHT_GRAY_STAINED_GLASS_PANE` so a short column is visible instead of vanishing into black. Every colour that appears in this menu needs a row: the collect gesture chooses its own sources, and a region nobody tested is a region nobody knows is safe |
 | S8 | Load a recipe. **Double-click the RESULT slot.** **Count ingredients first.** | **Exactly ONE craft's worth consumed.** | **count** · NOT "nothing happens" — a double-click fires LEFT then DOUBLE_CLICK, and the LEFT half already crafted. Two crafts is the defect, and it is invisible except by counting |
 | S9 | Load a full recipe, then double-click a matching stack held in your inventory. | The preview reflects the grid **within the same click** — no second action needed. | the collect refreshes synchronously, because we performed it and know the grid. Finding 2 in a new costume |
 | S10 | **In creative mode**, middle-click a filler pane. | Nothing is cloned. | **sole witness** for the `CREATIVE` refusal, which was split into its own statement when `DOUBLE_CLICK` left it. Without this row that guard has no check at all |
@@ -313,6 +331,202 @@ same thing in the same words.
 
 ---
 
+---
+
+# Slice 5 — Quick Craft (FIRST HALF)
+
+**RUN AND PASSED 2026-09-02, operator-confirmed: 34 of 34.** Q2 measured 298 microseconds against a
+50000-microsecond tick.
+
+> **THE ROW-BY-ROW BREAKDOWN WAS NOT RELAYED, and this file's own rule asks for it:** *"Report at row
+> granularity — never 'the gate passed'."* "34 of 34" is the summary that rule exists to refuse.
+> Recorded as given rather than expanded into a list nobody confirmed — inventing the breakdown
+> would be exactly the miscredit rule 4 names. **Ask the operator which rows, and write them here.**
+>
+> The 34 is also more than the 20 runnable Q rows, so it evidently includes the re-gate list; which
+> rows those were is part of the same missing answer.
+
+**THE FOLLOW-UP RE-GATE RAN AND PASSED, operator-confirmed 2026-09-03: ELEVEN OF ELEVEN.**
+
+| row | what it re-covered |
+|---|---|
+| **Q1** | the relayout — column 7, grid at 10-12/19-21/28-30, status bar in row 5 |
+| **Q3** | a suggestion click after the column moved |
+| **Q9** | the minted suggestion tooltip, and mint-without-roll on the received item |
+| **Q15** | the tier order in three cells |
+| **Q16** | neither vanilla nor armor appearing — passing by the column being all gear |
+| **Q23** | the two grays in one glance |
+| **S12** | black panes, after the row was rewritten for the chrome change |
+| **S12b** | gray panes over the status bar |
+| **S12c** | light gray panes over the empty suggestion cells |
+| **6** | a drag touching chrome, after slot 22 became a pane |
+| **1c** | own-inventory drags, same reason |
+
+**This is the rule above working.** The eleven were named in the commit that asked for them, before
+the run, so "eleven of eleven" reconstructs to a complete answer. Contrast the 34/34 above, which
+cannot.
+
+> An earlier wording listed "Q23" and "the new two-grays row" as separate entries. **They are the
+> same row** — Q23 IS the two-grays row — so the list read as twelve. A count that double-counts is
+> the shape rule 4 warns about from the other side: it credits coverage that is not there, by
+> arithmetic rather than by a row that cannot fail.
+
+**THE LAYOUT CHANGED AFTER THESE ROWS WERE WRITTEN AND BEFORE THEY WERE RUN.** The grid slid one
+column left, the suggestion column moved to column 7 and shrank from nine cells to three, the close
+button moved from slot 0 to 49, the chrome went black, and the bottom row became a status bar.
+Running the gate before that change would have spent it on a layout that was about to move.
+
+> **THAT SWEEP WAS INCOMPLETE, and the claim that it was complete is withdrawn.** This paragraph
+> previously said "rows naming a slot were updated with it". **Q1 named three rows and was missed** —
+> it still described row 4, nine cells and a chrome row 5 after all three had moved, and it was
+> caught by a reader rather than by the sweep. Corrected 2026-09-02.
+>
+> The mechanism is the one `NEXT.md` records for the firework claim: a sweep that reports itself
+> complete is trusted by everyone downstream, and nothing checks it. **Prose has no compiler.** When
+> a layout moves, grep the gate for every slot NUMBER and every row/column WORD, not only for the
+> constants that changed.
+>
+> **AND THAT REMEDY WAS STILL NOT ENOUGH.** The map above drew the close button at row 0 column 0
+> for a further commit, in a diagram whose own legend already said `close ...... 49`. The label was
+> corrected when the button moved; **the picture was not**, and the commit that edited rows 2-5 of
+> this very map left row 0 alone.
+>
+> A glyph in an ASCII diagram is neither a slot number nor a row word, so grepping for both would
+> have sailed straight past it. **The check that finds this is reading the map against the code, cell
+> by cell** — which nobody had done, because a diagram looks like documentation rather than like a
+> claim. It is a claim. Corrected 2026-09-03.
+
+Crafting from the INVENTORY rather than the grid. **Three** suggestions beside the grid, clicked to
+craft immediately, shift-clicked to craft repeatedly. The browser button is a visible placeholder
+this half.
+
+```
+row 0    .   .   .   .  [I]  .   .   .   .      X  close ...... 49 (row 5)
+row 1    .   G   G   G   .   .   .  [Q]  .      I  indicator .. 4
+row 2    .   G   G   G   .  [R]  .  [Q] [»]     G  grid ....... 10 11 12 / 19 20 21 / 28 29 30
+row 3    .   G   G   G   .   .   .  [Q]  .      R  result ..... 23
+row 4    .   .   .   .   .   .   .   .   .      Q  suggestions  16 25 34
+row 5   [S] [S] [S] [S] [X] [S] [S] [S] [S]     »  browser .... 26
+                                                S  status bar . 45-48, 50-53
+                                                   slot 22 is now plain filler
+```
+
+**The close button is INSIDE the status bar's row**, at slot 49, and the bar must never paint over
+it — `STATUS_SLOTS` is the row minus that slot, pinned by a unit test. See row Q22.
+
+**Setup:** a survival-mode player with a varied inventory — planks in several separate stacks,
+milk buckets, iron, and at least one MINTED item (`/rpg give iron_pickaxe`). Several rows count
+things, so bring a way to count.
+
+## RUN Q2 FIRST — it can invalidate the rest
+
+| # | action | expected | notes |
+|---|---|---|---|
+| Q2 | **Open the table. Read the log for `Quick Craft: first recompute took ...`.** | A duration **comfortably under 50000 microseconds** (one tick). | **RAN AND PASSED 2026-09-02, operator-confirmed: 298 microseconds.** 0.6% of a tick, ~168x headroom. **THE CADENCE STANDS** — no change to the recompute trigger, and Q5/Q6 are unaffected. This was the row to run first because it was the only one whose answer could have moved the others |
+
+> **RESULT, 2026-09-02: `298` microseconds against a 50000-microsecond tick.**
+>
+> **THE COUNTS WERE NOT RELAYED.** The log line also prints craftable / probed / distinct-stack
+> counts, and they did not reach the record. **They are not decoration:** the probe costs
+> `distinct stacks × recipes`, so 298µs from three stacks and 298µs from thirty are different
+> measurements wearing the same number. Ask the operator for them if the line is still in a log,
+> and write them here. At this headroom it changes no decision — it changes what the number
+> *means* to the next reader.
+>
+> **WHAT THIS MEASUREMENT DOES NOT COVER**, so it is never mistaken for a load test:
+> - the **cold first** recompute only — a later, slower one was never timed
+> - **one inventory**, whatever that player happened to be carrying
+> - **one player**, on a **test server**, with no other load
+>
+> None of that is a concern at 168x headroom. It is the honest scope of what was observed.
+>
+> **THE INSTRUMENT HAS BEEN REMOVED**, per `PLAN-1b-swing-listener.md:134` — *"log once, observe on
+> boot, then remove before the commit lands."* Taken out in the same commit that recorded this
+> number, because **a passing row is exactly when "remove before merge" gets skipped.**
+>
+> It was never fit to stay: `measured` was per **menu instance** and a new `CraftingMenu` is built
+> on every table open, so left in it would have logged for every player on every open, for ever.
+> If a permanent measurement is ever wanted, that is a **different instrument** — a threshold
+> warning that logs only above some bound — and a separate decision.
+
+## The column
+
+| # | action | expected | notes |
+|---|---|---|---|
+| Q1 | Open the table with materials for several recipes. | **Column 7 (slots 16, 25, 34)** shows suggestion icons with counts. The grid is at 10-12 / 19-21 / 28-30 with the result at 23. **Row 5 is the status bar**, with the close button at 49 inside it. The browser placeholder is at 26 | the surface exists and did not disturb the grid. **REWRITTEN: this row described the pre-relayout screen — row 4, nine cells, row 5 as chrome — long after the layout moved. See the note under the slice header** |
+| Q15 | **THE TIER ORDER.** Carry materials for a shield AND plenty of planks (so torches/sticks are craftable in quantity). Read the column left to right. | The **shield sorts before** the sticks, even though far more sticks are makeable. Order is `WEAPON → ACCESSORY → TOOL → ARMOR → MATERIAL → VANILLA`, then most-craftable | **discriminating** for the ordering. A column sorted by count alone buries a minted shield under sixty-four torches |
+| Q16 | **THE SQUEEZE.** Carry common materials only — planks, sticks, cobble, iron, leather. Read all THREE cells. | **NEITHER VANILLA NOR ARMOR appears.** With 30 claiming definitions and the tier order, three cells means the shield and two tools | **written down as INTENDED, not a bug.** The column went from nine cells to three in slice 5, so this is now much stronger than "vanilla may be squeezed out": armor is squeezed out too, **every time**. If the three cells are a shield and two tools, the row PASSES. "Sticks and torches vanished from the crafting helper" is exactly what this looks like from outside — and so does "my armor recipes are gone" |
+| Q3 | Click a suggestion. **Count the ingredients first.** | The item arrives **in the INVENTORY**, not on the cursor. Exactly one craft's ingredients leave. The count updates | **count** · the destination is the disambiguator between the two surfaces — see Q4 |
+| Q5 | Stage a recipe in the grid, then read the suggestion counts. | They have **DROPPED** by what was staged | written down as EXPECTED, or someone reports it as a bug. The grid is deliberately NOT counted, because counting it would mean consuming it |
+
+## The two surfaces
+
+| # | action | expected | notes |
+|---|---|---|---|
+| Q4 | Stage a full recipe in the grid, then click a suggestion. | **BOTH hold:** the suggestion's item reaches the inventory AND the staged grid is **untouched** with its preview intact | **discriminating** · the two surfaces are independent. A grid craft goes to the CURSOR, a suggestion to the INVENTORY — if someone later routes the suggestion to the cursor "for consistency", that disambiguator is gone |
+
+## The rows that carry the slice
+
+| # | action | expected | notes |
+|---|---|---|---|
+| Q6 | **THE BULK TRAP.** Shift-click a suggestion with materials for many crafts. | Crafts repeatedly, with **no per-iteration stall**. One roster walk at the end, not sixty-four | **sole witness** for the bulk trap. The loop re-probes ONE recipe per pass; recomputing the roster inside it reads almost identically and is 64x the work |
+| Q17 | **NOTHING REACHES THE GROUND.** Fill your inventory to a handful of free slots. Shift-click a suggestion for a NON-STACKABLE output (a shield or a tool) with materials for many. **Stand still and watch your feet.** | It stops when the inventory can no longer take one, says **"made N"**, and **NOT ONE ITEM DROPS** | **discriminating · sole witness** for `MenuSafety.fits`. The old behaviour was `give`'s drop branch firing up to 64 times — a pile of entities and the same message repeated. Non-stackable output is the case a lower `MAX_BULK_CRAFTS` could not have fixed |
+| Q7 | **THE INVARIANT.** Hold a minted iron pickaxe plus plain materials. Read every suggestion. | The pickaxe is **never counted** toward any suggestion and is **never consumed** by one | **discriminating · sole witness** for `isGear`'s THIRD surface — after the grid screen and the Crafter guard. That chain is a whitelist with nothing that compile-fails, and slice 4 found it had already fallen behind the gear axis once. **The row to fail the slice over** |
+| Q8 | **STALENESS, PINNED.** Stage almost everything so a suggestion shows a count it can no longer deliver. **Count your materials first.** Click it. | Refuses **cleanly and says why** — and **the ingredients are STILL THERE** | **count · discriminating** · the count is advisory, the click is authoritative. Above all it must not debit on a refusal: debit-before-craft is theft, on the path least likely to be hand-tested |
+| Q9 | **Two halves, and the second is new.** (a) Look at the shield SUGGESTION ICON and note its rarity and stats. (b) Craft it and open the received item. | **(a) The icon shows the MINTED tooltip** — rarity-coloured name, `Damage Reduction`, flavour, rarity footer last — not a plain vanilla shield. **(b) The received shield's RARITY AND STATS MATCH what the icon showed, and it has enchant candidates the icon did NOT show.** | **discriminating · sole witness for mint-without-roll on the suggestion path.** The icon mints through the same `claimFor`-then-`GearItems.mint` the result slot uses, and deliberately does NOT roll: rarity and stats are deterministic from the definition, so showing them is a promise the craft keeps; candidates are a `ThreadLocalRandom` draw, so showing them would be a promise it breaks. **Open it rather than counting it** — a count passes on the very defect this catches.<br><br>**The LORE ORDERING is NOT gate-only** — `MenuIconsTest` pins chrome on top, exactly one blank, the item's own lore preserved in order, and no trailing blank when it has none. What needs a live server, and so genuinely needs this row, is the mint-versus-roll behaviour on a real `ItemMeta`: that the icon carries a gear tooltip at all, and that candidates appear only after the craft |
+| Q10 | **THE SCOPE BOUNDARY, both halves.** Hold paper and gunpowder. **(a)** Check the suggestions for a BASIC firework rocket. **(b)** Then build a MULTI-STAR rocket in the grid — several firework stars plus paper and gunpowder. | **(a) The basic rocket DOES appear as a suggestion and crafts from it.** **(b) The multi-star rocket does NOT appear as a suggestion, and still crafts normally in the grid.** | **discriminating · sole witness** for where the enumerable boundary actually falls. The basic rocket is an ordinary shapeless recipe and enumerates fine; only the customizable ones are `ComplexRecipe`, which is a bare marker interface exposing no ingredients. **This row is what stops someone "restoring parity" by hand-implementing complex recipes** — and by distinguishing the two cases it says accurately WHERE the boundary is, rather than asserting a blanket absence that is simply false |
+
+## The status bar — a three-arm switch needs its three arms observed
+
+| # | action | expected | notes |
+|---|---|---|---|
+| Q18 | Open the table with an **empty grid**. Look at the bottom row. | **GRAY**, all eight cells — **and the close button is still there** at slot 49 | the EMPTY arm, and the first sighting of the close button inside the bar's row |
+| Q19 | Lay a **valid** recipe. Then clear the grid. | **LIME** while it matches, back to **GRAY** when cleared | the VALID arm, **and that the bar goes BACK.** A bar that only ever turns green is indistinguishable from one that latches |
+| Q20 | Put **junk** in the grid — items that form no recipe. | **RED** | the INVALID arm |
+| Q21 | Put a **MINTED item** in the grid (`/rpg give iron_pickaxe`). | **RED** | **discriminating** · the CONTAINS_GEAR collapse, OBSERVED rather than assumed. `CraftMatrixScreen` hides that matrix from the matcher, so nothing will come of it and red is honest. RED deliberately means two things — "no such recipe" and "contains gear" — and a fourth state was not asked for |
+| Q23 | **TWO GRAYS, ONE SCREEN.** Carry materials for FEWER THAN THREE craftable things, and leave the grid EMPTY. Look at the suggestion column and the status bar **in one glance**. | The empty suggestion cells and the empty-grid bar are **visibly DIFFERENT colours** — light gray beside gray | **discriminating** · the empty cells are `LIGHT_GRAY`, the bar's EMPTY state is `GRAY`, and they carry different meanings. **If someone later "tidies" both to one constant every other row still passes** — including S12b and S12c, which would then be testing the same material twice. This is the only row that looks at them together |
+| Q22 | **THE CLOSE BUTTON SURVIVES REPAINTS, and the SEQUENCE is the point.** Open the table. Lay a valid recipe (**LIME**). Break it (**RED**). Clear it (**GRAY**). **NOW** click the X. | The menu **closes and the grid comes back** — the same path Esc uses | **discriminating · sole witness** for the `STATUS_SLOTS` exclusion surviving in play. The bar repaints on EVERY state change, so checking the button only on open would pass on a build where every repaint clobbers it. **And the failure is quiet**: Esc still works, so the symptom is "the X disappeared", not a broken menu |
+
+## The consume path
+
+| # | action | expected | notes |
+|---|---|---|---|
+| Q13 | **THE DEBIT.** Hold the materials for one craft **split across three separate stacks** (e.g. 3 + 2 + 1 planks). Note each stack's slot and size. Click the suggestion. | Exactly the right total leaves, **from the slots the probe counted**, and no other slot moves | **count · sole witness** that the debit applies to RECORDED slots rather than re-finding them by similarity. A second search can land on different stacks than the count used |
+| Q14 | **THE REMAINDER.** Craft a cake from a suggestion (three milk buckets). **Count buckets first.** | Three **EMPTY BUCKETS** arrive in the inventory. Nothing is destroyed | **count · discriminating** · the case that makes "consumed = input minus resulting" incoherent — a milk bucket does not decrease, it BECOMES a bucket. On the inventory path the resulting matrix and the overflow both collapse to "give it to the player" |
+
+## The browser — NOT YET APPLICABLE
+
+| # | action | expected | notes |
+|---|---|---|---|
+| ~~Q11~~ | ~~Open the browser. Page forward and back.~~ | ~~Pages navigate; the last page is not short or duplicated~~ | **NOT YET APPLICABLE — the browser is a placeholder this half.** Slot **26** says "Not implemented yet". Recorded rather than omitted, the same discipline row 1b uses: a row that cannot be run must say so rather than sit among rows that can |
+| ~~Q12~~ | ~~Click an entry in the browser.~~ | ~~Navigates only; nothing is crafted or consumed~~ | **NOT YET APPLICABLE**, as Q11. These two become live in the second half and are the reason the browser is navigate-only |
+
+> **THE BROWSER IS NO LONGER A CONVENIENCE.** With the column at THREE cells and thirty claiming
+> definitions, it is **the only route to anything below tier 2** — all armor, and every vanilla
+> recipe. Shipping the first half without it leaves most craftable things unreachable from this menu
+> entirely. That is a scope fact rather than a tuning detail, and it raises the cost of deferring the
+> second half well above what it was when the column had nine cells.
+
+## Re-run from earlier slices
+
+| # | why it re-opens |
+|---|---|
+| **12, 12c** | `commitCraft` changed shape a FOURTH time. Still the only witnesses for `getResultingMatrix` and `getOverflowItems` — **and they matter MORE this slice, not less**: on the inventory path both collapse into "give it to the player", so no Q row can tell the two calls apart |
+| **S1, S2** | the pin and the `MAX_BULK_CRAFTS` bound — **and the GRID bulk loop itself changed.** `craftRepeatedly` now stops before the inventory overflows, which is a fix to a defect the grid has shipped since slice 3. These are not re-run out of caution; the code under them moved |
+| S3 | the `ComplexRecipe` path through the grid — and now the other half of Q10 |
+| **13** | `shiftClickDispatches` widened to the suggestion slots — it must still perform NO move — **and the bulk loop it dispatches into changed** |
+| **N5b** | the bulk path minting, **through the same changed loop** |
+| T10 | `isGear` on the crafting grid, now that a third caller shares the chain |
+| 21, 22, S11 | `Menu` is a shared base and `EnchantMenu` is its other subclass — **and the enchant menu was RECOLOURED to black chrome.** Its behaviour must not have moved with its appearance |
+| **1c, 1d, 6** | drags touching chrome. The chrome changed material, and these rows are about which slots a drag may reach |
+| **16** | "load the grid, close with Esc" — the grid moved, and the close BUTTON moved into the status bar's row. Run it both ways: Esc, and the button |
+| **12, 12c** | they place items in GRID slots, **and the grid slid one column left** (10-12 / 19-21 / 28-30). A row that names old slot numbers is testing filler |
+
+> **`readMatrix` / `writeMatrix` walk `GRID_SLOTS`.** Verify by observation that matrix index 0-8
+> still maps row-major onto the NEW raw slots — that a shaped recipe laid top-left in the visible
+> grid still matches. A transpose or an offset here matches every shapeless recipe correctly and
+> every shaped one wrongly, which reads as "some recipes are broken" rather than as a layout bug.
+> `CraftingMenuLayoutTest` pins the inverse pair, so this is belt-and-braces on a unit-tested claim.
 # Maintenance
 
 - When a slice changes `MenuRouting`, `Menu` or `CraftingMenu`, list by number which rows

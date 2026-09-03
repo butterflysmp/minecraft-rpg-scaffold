@@ -581,6 +581,254 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Crafting, Slice 5 (Quick Craft, first half) — what it created or exposed
+
+- **THE GATE ROWS WERE NOT IN THE REPOSITORY, AND NOTHING FAILED WHEN THEY WERE NOT.** Q1-Q14 were
+  written in the slice plan and in review chat, and two commits landed on the branch — one of them
+  explicitly a docs commit naming the Q2 instrument — without either carrying them. `GATE-crafting.md`
+  on the branch was **byte-identical to master's**, last touched by the slice 4 flip.
+
+  **This is the corollary this file already records, recurring one slice after it was written:**
+  *A WITNESS THAT IS NOT IN THE REPOSITORY IS NOT A WITNESS.* The plan's own verification step said
+  "NEXT.md and GATE-crafting.md updated in the same commit that builds the rows"; the step did not
+  run, and no check anywhere noticed. A verification step that is itself unverified is the same shape
+  as the gate row it was written to protect.
+
+  **What would actually catch it** is not more discipline: it is committing the rows in the SAME
+  commit as the code they witness, so an empty gate diff is visible in the same review as the
+  feature. Recorded rather than fixed, because a pre-commit hook checking "did GATE-crafting.md move"
+  would fire on every non-gate commit and be disabled within a week.
+
+- **"CONSUMED = INPUT MATRIX MINUS RESULTING MATRIX" IS INCOHERENT, and it was the reviewer's own
+  prescription.** It is the obvious way to debit an inventory craft and it is wrong for exactly the
+  case rows 12 and 12c exist for: a milk bucket does not DECREASE when a cake is made, it BECOMES an
+  empty bucket. There is no per-slot quantity to subtract, and code that tries lands on either
+  "three buckets vanished" or "three buckets appeared from nowhere".
+
+  What holds instead, and is now in `commitCraft`'s javadoc:
+
+  ```
+  A       is exactly what left the inventory (what the assembly took, BY SLOT)
+  R + O   is exactly what the engine says remains
+  the player ends at   inventory - A + R + O + result
+  ```
+
+  **True without ever knowing which part of A was consumed and which was transformed.** Any
+  formulation that needs to know is wrong for cake. The GRID gets this free — writing the resulting
+  matrix over the slots the input came from IS `-A + R` in one operation — which is precisely why the
+  asymmetry between the two callers is easy to miss. The reviewer's DIAGNOSIS was right; the
+  mechanism prescribed would have shipped the cake bug on a new surface.
+
+- **`RecipeChoice` CANNOT BE ENUMERATED TOTALLY, so the question was inverted.** Verified against the
+  pinned jar: `getItemStack()` is DEPRECATED, and the three implementations expose their contents
+  three different ways — `MaterialChoice.getChoices()`, `ExactChoice.getChoices()` (meta-sensitive),
+  `ItemTypeChoice.itemTypes()`. A fourth, `PredicateRecipeChoice`, wraps an arbitrary lambda and is
+  not enumerable by anybody.
+
+  `test(ItemStack)` is on the interface, undeprecated, and total — and it is the question the craft
+  itself will ask. So the adapter probes each ingredient slot with the player's own distinct stacks.
+  It works because the two sides have opposite cardinality: the recipe's accepted set is unbounded,
+  the inventory is a few dozen stacks. **Ask the small side.** "Enumerate `MaterialChoice`, skip the
+  rest" was rejected as `ANY_BUT_SHIELD` in a fourth costume.
+
+- **STATE THE MECHANISM YOU VERIFIED; DEFER THE MEMBERSHIP YOU CANNOT.** The general rule the
+  firework correction below produced, and it outlives the specific claim.
+
+  Two different things get written in the same sentence: *why a boundary exists*, and *what falls on
+  each side of it*. `ComplexRecipe` declaring no methods is checkable in the pinned jar in ten
+  seconds. **Which vanilla recipes are registered as complex is server RUNTIME data that cannot be
+  read from the API jar at all** — not by the reviewer, not by the builder.
+
+  So: **the code explains why the boundary exists; the gate row discovers where it falls.** A javadoc
+  that names items is asserting something it cannot check, and it will be repeated by everyone who
+  reads it. A row that observes both sides is a measurement.
+
+  That resolution is correct **regardless of who was right about rockets**, which is what makes it a
+  rule rather than a patch — and it is the same shape as the arc's other standing answer to
+  unverifiable confidence: `getMaxDurability()` became a predicate rather than a direct call so the
+  walk stayed testable and the Bukkit question stayed at the boot.
+
+- **THIS ARC IS VIGILANT ABOUT TWO COPIES OF CODE AND CASUAL ABOUT TWO COPIES OF AN EXPLANATION.**
+  The firework claim was wrong in **FIVE places**. The review that caught it said two. Nobody had
+  counted, including the person correcting it.
+
+  **The mechanism, and it is worth more than the correction:** when a claim is restated in a new
+  file, **it is copied from the previous restatement, not re-derived from the source.** Slice 1
+  wrote "firework rockets, firework stars and dye tables"; slice 3 quoted slice 1; slice 5 quoted
+  slice 3 twice and the gate row once. Each author believed they were repeating something already
+  checked. **Nobody re-opened the jar, because the sentence already existed and looked settled.**
+
+  This project has an extraction rule, an exhaustive-switch rule and a single-source-of-truth rule
+  for CODE — `GearItems` exists precisely because an if-chain had five copies coming. **Prose has no
+  compiler**, no `md5sum` check like the one that verified those method bodies were byte-identical
+  before they moved, and no test that reddens. So duplicated explanation is the one duplication this
+  repo does not defend against at all.
+
+  **What to actually do about it**, since "be careful" is not a mechanism:
+  - When restating a claim in a new file, **cite where it was verified** — "verified against the
+    pinned jar", with the check — rather than restating the conclusion alone. A citation is a
+    pointer back to a source; a conclusion is a copy.
+  - When a claim turns out wrong, **grep for it before correcting one site.** The count is the
+    finding. `grep -rn 'firework' --include=*.java --include=*.md .` took one command and found
+    three sites nobody had named.
+
+- **RULE 1 APPLIES TO THE GREP YOU VERIFY WITH, NOT ONLY TO THE CODE YOU WRITE.** The same defect
+  from the other side, found when the arrow was deleted.
+
+  The enumeration used was `ARROW_SLOT|ARROW\b` — the identifier and the shouted word. It reported
+  five sites and the true count was **seven**: two more mentions existed in ordinary lowercase prose,
+  where the arrow was a POSITIONAL LANDMARK rather than a named thing — *"one cell right of the
+  arrow"*, *"the column between the grid and the arrow"*. Neither pattern could ever have matched
+  them. Measured afterwards: `ARROW_SLOT|ARROW\b` finds 3 hits in the tree; `grep -i arrow` finds 60.
+
+  **This is "enumerate the axis, not the cases you currently have" pointed at the search itself.**
+  A grep built from the identifier enumerates the cases the identifier happens to cover; the AXIS is
+  *every mention of the thing* — any casing, any part of speech, and including the ones where it is
+  used to locate something else rather than to name itself. The identifier-shaped grep is a denylist
+  wearing a different hat: it admits everything nobody thought to spell out.
+
+  **And a diagram is neither.** The same deletion left an ASCII layout map drawing the close button
+  at a slot it had moved away from, in a picture whose own legend gave the right number. No grep for
+  slot numbers or row words reaches a glyph in a drawing. **The check for a diagram is reading it
+  against the code, cell by cell** — a map looks like documentation and is actually a claim.
+
+  Practically: when removing or moving a thing, `grep -i` its plain-English name as well as its
+  identifier, and open every diagram that draws it.
+
+- **COMPLEX RECIPES ARE PERMANENTLY ABSENT FROM SUGGESTIONS — but "firework rockets are absent" was
+  TOO BROAD, and it was written in five places before anyone checked.** `ComplexRecipe` is a bare
+  marker interface (verified from the pinned jar: it declares nothing), so a recipe registered that
+  way exposes no ingredients and cannot be counted. **That is the mechanism, and it is all that was
+  ever verifiable.**
+
+  What was NOT verifiable, and was asserted anyway: WHICH vanilla recipes those are. The basic
+  one-flight firework rocket is an ordinary shapeless recipe and enumerates perfectly well; only the
+  customizable multi-star variants are complex. The blanket claim reached `GATE-crafting.md`'s Q10
+  row, `RecipeProbe`'s class javadoc, two places in `CraftingMenu`'s, and this file — because it was
+  inherited from slice 1's wording and repeated rather than re-checked.
+
+  **Which recipes are complex is server RUNTIME data and cannot be read from the API jar at all.** So
+  every site now states the mechanism, and the LIST belongs to the gate, where it is observed rather
+  than asserted. **Q10 is a better row for it**: it checks both halves — the basic rocket appears and
+  crafts, the multi-star one does not appear and still crafts in the grid — so it says where the
+  boundary actually falls instead of claiming a blanket absence.
+
+  Whatever falls on the complex side still crafts in the GRID through the server's matcher. **The
+  grid remains the complete surface**; Quick Craft is a convenience over the enumerable subset.
+  Hand-implementing them is exactly the mistake `CraftingMenu`'s class javadoc records the previous
+  project making.
+
+- **THE SUGGESTION ORDERING IS A SIX-POSITION TIER AXIS, MINTED FIRST**: `WEAPON → ACCESSORY → TOOL
+  → ARMOR → MATERIAL → VANILLA`, then most-craftable, then key. A shield is ACCESSORY — a display
+  category deliberately wider than the gear kind, so a future accessory kind joins it rather than
+  forcing a seventh position.
+
+  **Core owns the axis and the sort; paper decides which one a recipe IS.** Classifying needs
+  `CraftResultIndex` and the sealed `GearDefinition`, both Bukkit-side, so `SuggestionTiers.of` does
+  it with an **exhaustive switch and no default arm** — a fifth gear kind is a compile error until
+  someone ranks it, rather than silently sorting below vanilla planks. Same inversion as the recipe
+  probe: core is told, and sorts.
+
+  **Two consequences, stated rather than discovered:**
+  - **Nothing maps to `MATERIAL` today.** No source of truth says "this vanilla item is an
+    intermediate rather than a product", so `SuggestionTiers` cannot return it. It is a held-open
+    position with **no test and no gate row** — exercised only as a sort position in
+    `theSixTiersSortInDeclarationOrder`. Recorded on the constant itself.
+  - **A player may never see a `VANILLA` suggestion at all.** 24 armor + 5 tools + 1 shield claim a
+    `craft_result` against NINE slots, so common materials can fill the column with gear. That is the
+    direction asked for, and it is written down because *"sticks and torches vanished from the
+    crafting helper"* is exactly what it will look like from outside.
+
+- **THE BULK LOOP DROPPED ITEMS ON THE FLOOR, AND IT WAS ALREADY SHIPPED.** `craftRepeatedly` is the
+  SHARED loop: 64 shields into a filling inventory has always ended with `MenuSafety.give` dropping
+  the remainder at the player's feet — a pile of entities, a lag vector, and the same message 64
+  times. Quick Craft did not introduce it; it would have inherited it.
+
+  Both loops now ask `MenuSafety.fits` BEFORE each pass and stop cleanly, saying how many were made.
+  Nothing reaches the ground for any item, whatever its stack size. `MAX_BULK_CRAFTS` stays exactly
+  what its javadoc says — the runaway guard, not a batch size.
+
+  **Lowering `MAX_BULK_CRAFTS` was rejected:** one number cannot serve a stackable output (64 sticks
+  is fine) and a non-stackable one, and it would leave the drop path intact whenever the inventory is
+  nearly full. **This re-gates the GRID rows — S1, S2, 13, N5b — not only Q6.**
+
+- **NEW ENTRIES, ALL GATE-ONLY.** Same cause as every crafting slice: `CraftingMenu` cannot be
+  constructed without a server.
+
+  | no automated witness | lives in | what goes wrong unseen | sole witness (row in GATE-crafting.md) |
+  |---|---|---|---|
+  | the inventory DEBIT | `CraftingMenu.debit` | the wrong stacks are reduced when materials span several | **row Q13 ONLY** |
+  | craft-before-debit ordering | `CraftingMenu.craftOneFromInventory` | a refusal takes the ingredients anyway — theft, on the least-tested path | **row Q8 ONLY** |
+  | the remainder give | `CraftingMenu.craftOneFromInventory` | a cake's three empty buckets are destroyed | **row Q14 ONLY** |
+  | `isGear` on the probe | `RecipeProbe.groupsOf` | a minted item is counted as a material and consumed | **row Q7 ONLY** |
+  | the bulk re-probe | `CraftingMenu.craftFromSuggestion` | the roster is walked 64 times per shift-click | **row Q6 ONLY** |
+  | the recompute cadence | `CraftingMenu.refreshSuggestions` | a full walk on every grid change | **row Q2 ONLY** |
+
+  **Rows 12 and 12c matter MORE this slice, not less.** On the grid the resulting matrix and the
+  overflow have different destinations and those two rows witness them separately. On the inventory
+  path **both collapse into "give it to the player"**, so no Q row can tell the two calls apart —
+  nothing new would notice if `getOverflowItems` stopped being read.
+
+- **Q2 RAN AND PASSED: 298 MICROSECONDS against a 50000-microsecond tick.** 0.6% of a tick, roughly
+  168x headroom, operator-confirmed 2026-09-02. **The cadence stands** — the recompute trigger is
+  unchanged and Q5/Q6 are unaffected. The named risk that the tier sort landed in the path Q2
+  measures is closed.
+
+  **The instrument was removed in the same commit that recorded the number**, per
+  `PLAN-1b-swing-listener.md:134`. Worth stating why that mattered here: **a PASSING row is exactly
+  when "remove before merge" gets skipped** — a failure forces a decision, a pass invites moving on.
+
+  **The counts did not reach the record**, and they are not decoration: the probe costs
+  `distinct stacks × recipes`, so 298µs from three stacks and from thirty are different measurements
+  wearing the same number. Recorded as missing rather than guessed. **And the honest scope**: cold
+  first recompute, one inventory, one player, a test server. Not a load test, and nothing at this
+  headroom depends on it being one.
+
+- **STILL OWED:** the rest of the gate — Q1 and Q3-Q17 are unrun. And the second half: the browser,
+  navigate-only, with pure page math in `core/`.
+
+---
+
+### NAMED DEBT: `core/weapon` holds four classes that have nothing to do with weapons
+
+**Recorded 2026-09-02, during Quick Craft's first half.** Not a note to act on now — a named debt, so
+the reader who eventually opens that package finds the reason rather than inferring nobody noticed.
+
+`core/src/main/java/.../core/weapon/` currently contains, alongside the actual gear model:
+
+| class | what it is |
+|---|---|
+| `CollectPlan` | which stacks a double-click gathers, in what order |
+| `CraftResultIndex` | which gear definition a crafted vanilla item becomes |
+| `CraftResultToken` | material-token normalisation |
+| `CraftCount` | how many of each recipe the player can make |
+
+**None of the four is about weapons.** All four are crafting-and-menu arithmetic that happened to be
+extractable into `core`, and `weapon` was simply the package `core` already had.
+
+**The deviation was deliberate and is still the right call.** Slice 5 considered opening a
+`core/craft` package for `CraftCount` and did not, because the alternative was crafting logic split
+across two packages with no principle separating them — one badly-named package beats two arbitrary
+ones. This entry exists so that reasoning is on the record rather than looking like an oversight.
+
+**What paying it down would take**, so a future slice can size it honestly:
+
+- Move the four classes to `core/.../core/craft/`, plus their four test files.
+- ~20 import updates across `paper/` — `MenuRouting`, `CraftingMenu`, `CraftMatrixScreen`,
+  `RecipeProbe`, `RpgPlugin` (which carries `CraftResultIndex` on `AdapterContext`), and the gear
+  records that call `CraftResultToken.normalise`.
+- **`GearDefinition` and the four gear records STAY in `core/weapon`.** `CraftResultIndex` takes a
+  `Collection<? extends GearDefinition>`, so the new package would import the old one — which is
+  correct and one-directional, and is the check that the split is real rather than cosmetic.
+- **Re-verify:** `./mvnw clean test` (a package move is exactly the kind of change an incremental
+  build hides — see the slice 4 entry), and the marker sweep. No boot gate: nothing observable
+  changes, which is what makes this cheap and also what makes it easy to keep deferring.
+
+**Do it when something else already touches those files**, not on its own. A pure-rename commit
+across twenty imports is expensive to review and buys nothing a reader could see.
+
+---
+
 ### Crafting, Slice 4 (tools, the fourth gear kind) — what it created or exposed
 
 - **THE BRIEF'S HEADLINE FINDING WAS WRONG, AND IT WAS THE REVIEWER'S.** The slice-4 brief carried a
@@ -725,7 +973,8 @@ Before milestone 2, two things worth measuring rather than assuming:
 
   **`Recipe` DECLARES NO KEY** — verified by javap against the pinned jar, where the interface has
   exactly one method, `getResult()`. The identity narrows through `instanceof Keyed`, which covers
-  `CraftingRecipe` (shaped, shapeless) **and `ComplexRecipe`** (firework rockets, dye tables). That
+  `CraftingRecipe` (shaped, shapeless) **and `ComplexRecipe`** (customizable fireworks, dye recipes
+  — corrected slice 5: the BASIC rocket is shapeless, not complex). That
   completeness matters: slice 1 delegated to the server's matcher SPECIFICALLY because it handles
   complex recipes, so a pin that could not represent one would have re-introduced the hand-rolled
   matcher this arc deleted. `MerchantRecipe` is the only unkeyed recipe in the API and no crafting

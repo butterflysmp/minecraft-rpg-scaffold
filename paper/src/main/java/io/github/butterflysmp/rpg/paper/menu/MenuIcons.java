@@ -6,6 +6,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,8 +19,54 @@ public final class MenuIcons {
 
     private MenuIcons() {}
 
-    /** The pane that means "nothing here". Deliberately the dullest item in the game. */
-    public static final Material FILLER = Material.GRAY_STAINED_GLASS_PANE;
+    /**
+     * The pane that means "nothing here". Deliberately the dullest item in the game.
+     *
+     * <p><b>BLACK since slice 5, and changed HERE so both menus move together.</b> That is the whole
+     * reason this constant is shared rather than per-menu -- see the class javadoc: chrome that
+     * drifts between screens reads as two different plugins. The enchant table is fully black too,
+     * with no exception.
+     *
+     * <p><b>GRAY is no longer chrome, and that matters to more than the eye.</b> It is now the
+     * status bar's EMPTY colour, so a gray pane in this menu is a READOUT rather than furniture.
+     * Gate row S12 had to be rewritten for exactly this: it said "hold panes matching the filler",
+     * and an operator holding gray panes after this change would have tested nothing and passed.
+     */
+    public static final Material FILLER = Material.BLACK_STAINED_GLASS_PANE;
+
+    /**
+     * An EMPTY QUICK-CRAFT CELL. Not a second filler -- a cell that is waiting to hold something.
+     *
+     * <p>The suggestion column is often short: with three cells and an ordinary inventory, one or
+     * two may have nothing to show. Painted in {@link #FILLER} they were invisible, and a column
+     * that vanishes when it is short reads as a broken feature rather than an empty one.
+     *
+     * <p><b>LIGHT gray, and the distinction from plain gray is LOAD-BEARING rather than a shade
+     * preference.</b> Plain {@code GRAY_STAINED_GLASS_PANE} is {@code CraftStatus.EMPTY}'s colour --
+     * the status bar's "grid is empty" state -- and gate rows S12b and S12c exist to pin the two
+     * apart. Using it here would put two meanings on one material in one screen, which is exactly
+     * how row S12 rotted when the chrome went black: an operator holding panes "matching the
+     * filler" tested nothing and the row passed.
+     *
+     * <p>It reads as gray to a player and is a different material to the code, which is the whole
+     * point. <b>Anything that collapses this and the status bar's gray into one constant is a
+     * REGRESSION, not a simplification</b> -- and every other gate row would still pass after it.
+     */
+    public static final Material EMPTY_SUGGESTION = Material.LIGHT_GRAY_STAINED_GLASS_PANE;
+
+    /**
+     * A blank pane in a given colour, for a readout rather than for chrome.
+     *
+     * <p>Same shape as {@link #filler()} -- an empty display name, because a blank name still hovers
+     * -- so a status cell and a chrome cell are visually identical apart from the colour, which is
+     * the only thing carrying meaning.
+     */
+    public static ItemStack pane(Material material) {
+        ItemStack item = new ItemStack(material);
+        item.editMeta(meta -> meta.displayName(Component.empty()
+                .decoration(TextDecoration.ITALIC, false)));
+        return item;
+    }
 
     /**
      * A named, non-italic lore line.
@@ -35,6 +82,46 @@ public final class MenuIcons {
     /** A blank lore line, non-italic for the same reason. */
     public static Component blank() {
         return Component.empty().decoration(TextDecoration.ITALIC, false);
+    }
+
+    /**
+     * Menu chrome on top of an item's own lore, separated by one blank line.
+     *
+     * <p>Extracted so it has a REAL WITNESS. The thing that uses it --
+     * {@code CraftingMenu.suggestionIcon} -- needs a live {@code ItemMeta} and a minted stack, so it
+     * is boot-gate-only; the ORDERING is not, and it is the half that is easy to get wrong. Same
+     * trade {@code CollectPlan} and {@code GridClickIntent} make.
+     *
+     * <p><b>The rarity footer must stay LAST</b>, exactly as it is on the real item in the player's
+     * hand. That is why chrome goes on top rather than appended: a suggestion icon that ended in
+     * "Uses items from your inventory" would put the tier badge in the middle of the tooltip, which
+     * is the same defect {@code GearLore.appendRarityFooter} warns about from the other direction.
+     *
+     * <p><b>NO TRAILING BLANK when there is nothing underneath</b>, which is the one case worth
+     * naming: an unclaimed vanilla result has no lore of its own, and a separator with nothing after
+     * it renders as a stray empty row.
+     *
+     * <p><b>Deliberately NOT {@code EnchantLore.applied}, which is the same shape and would be wrong
+     * here.</b> That method guards on the PREPENDED block being empty; this one guards on the
+     * UNDERNEATH being empty. {@code applied(existing, chrome)} with no existing lore yields
+     * {@code chrome + blank} -- a trailing separator. The two are close enough that someone will
+     * eventually try to merge them, so the difference is written down rather than left to be
+     * rediscovered.
+     *
+     * @param chrome   the menu's own lines. Never null; an empty list yields {@code existing}.
+     * @param existing the item's own lore, or null for an item that has none.
+     */
+    public static List<Component> chromeOver(List<Component> chrome, List<Component> existing) {
+        if (chrome == null || chrome.isEmpty()) {
+            return existing == null ? List.of() : List.copyOf(existing);
+        }
+        if (existing == null || existing.isEmpty()) return List.copyOf(chrome);
+
+        List<Component> out = new ArrayList<>(chrome.size() + 1 + existing.size());
+        out.addAll(chrome);
+        out.add(blank());
+        out.addAll(existing);
+        return out;
     }
 
     /** A display item: a material, a name, and lore. No behaviour, no PDC, nothing to carry. */
