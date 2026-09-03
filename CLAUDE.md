@@ -161,6 +161,30 @@ Do **not** bump `paper.version` alone. Order of operations:
 
 Never use version ranges. Pin exact builds so the build is reproducible.
 
+## Squash-merge bodies — the squash outlives everything it was made from
+
+A squash body is the only durable account of a branch. The commits are gone, and once the branch is
+deleted the tree comparison behind `ABSORBED` **cannot be re-run by anyone** — only the report of it
+survives. So write the body for a reader who has none of that.
+
+**Open with a FRESH SUMMARY OF THE FINAL STATE**, written at merge time. Then the per-commit history
+underneath it.
+
+> **`37c0ea7` is the worked example of getting this wrong.** Its body opens with *"Nine suggestions
+> in row 4"* — true when the first of nine commits was written, **false three commits later in the
+> same squash**, and now the top-line description of what slice 5 shipped. The column had moved to
+> column 7 and shrunk to three cells before the branch merged. Nothing lied; the first paragraph
+> simply aged out from under itself, and a default squash body always leads with the OLDEST
+> description of the work.
+
+**Record in the body, because they become unverifiable the moment the branch goes:**
+
+- the branch **tip SHA** and its **tree SHA**
+- the squash's own tree SHA, and that the two were EQUAL
+- the `check-absorbed.sh` verdict verbatim, including the positive-control line
+
+Then `git branch -D`, `git push origin --delete`, `git fetch --prune`.
+
 ## Branch cleanup — `--merged` LIES here, and so does the obvious replacement
 
 Every PR on this repo is **squash**-merged. The branch's commits never become ancestors of `master`,
