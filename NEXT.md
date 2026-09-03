@@ -631,6 +631,47 @@ Before milestone 2, two things worth measuring rather than assuming:
   the inventory is a few dozen stacks. **Ask the small side.** "Enumerate `MaterialChoice`, skip the
   rest" was rejected as `ANY_BUT_SHIELD` in a fourth costume.
 
+- **STATE THE MECHANISM YOU VERIFIED; DEFER THE MEMBERSHIP YOU CANNOT.** The general rule the
+  firework correction below produced, and it outlives the specific claim.
+
+  Two different things get written in the same sentence: *why a boundary exists*, and *what falls on
+  each side of it*. `ComplexRecipe` declaring no methods is checkable in the pinned jar in ten
+  seconds. **Which vanilla recipes are registered as complex is server RUNTIME data that cannot be
+  read from the API jar at all** — not by the reviewer, not by the builder.
+
+  So: **the code explains why the boundary exists; the gate row discovers where it falls.** A javadoc
+  that names items is asserting something it cannot check, and it will be repeated by everyone who
+  reads it. A row that observes both sides is a measurement.
+
+  That resolution is correct **regardless of who was right about rockets**, which is what makes it a
+  rule rather than a patch — and it is the same shape as the arc's other standing answer to
+  unverifiable confidence: `getMaxDurability()` became a predicate rather than a direct call so the
+  walk stayed testable and the Bukkit question stayed at the boot.
+
+- **THIS ARC IS VIGILANT ABOUT TWO COPIES OF CODE AND CASUAL ABOUT TWO COPIES OF AN EXPLANATION.**
+  The firework claim was wrong in **FIVE places**. The review that caught it said two. Nobody had
+  counted, including the person correcting it.
+
+  **The mechanism, and it is worth more than the correction:** when a claim is restated in a new
+  file, **it is copied from the previous restatement, not re-derived from the source.** Slice 1
+  wrote "firework rockets, firework stars and dye tables"; slice 3 quoted slice 1; slice 5 quoted
+  slice 3 twice and the gate row once. Each author believed they were repeating something already
+  checked. **Nobody re-opened the jar, because the sentence already existed and looked settled.**
+
+  This project has an extraction rule, an exhaustive-switch rule and a single-source-of-truth rule
+  for CODE — `GearItems` exists precisely because an if-chain had five copies coming. **Prose has no
+  compiler**, no `md5sum` check like the one that verified those method bodies were byte-identical
+  before they moved, and no test that reddens. So duplicated explanation is the one duplication this
+  repo does not defend against at all.
+
+  **What to actually do about it**, since "be careful" is not a mechanism:
+  - When restating a claim in a new file, **cite where it was verified** — "verified against the
+    pinned jar", with the check — rather than restating the conclusion alone. A citation is a
+    pointer back to a source; a conclusion is a copy.
+  - When a claim turns out wrong, **grep for it before correcting one site.** The count is the
+    finding. `grep -rn 'firework' --include=*.java --include=*.md .` took one command and found
+    three sites nobody had named.
+
 - **COMPLEX RECIPES ARE PERMANENTLY ABSENT FROM SUGGESTIONS — but "firework rockets are absent" was
   TOO BROAD, and it was written in five places before anyone checked.** `ComplexRecipe` is a bare
   marker interface (verified from the pinned jar: it declares nothing), so a recipe registered that
@@ -705,10 +746,23 @@ Before milestone 2, two things worth measuring rather than assuming:
   path **both collapse into "give it to the player"**, so no Q row can tell the two calls apart —
   nothing new would notice if `getOverflowItems` stopped being read.
 
-- **STILL OWED:** the whole gate — Q1-Q14 are unrun. **Q2 first**, because it is the only row whose
-  answer can invalidate others: if the recompute is not comfortably sub-tick the CADENCE changes, and
-  Q5, Q6 and the recompute trigger move with it. Its instrument is temporary and must be removed
-  before merge. And the second half: the browser, navigate-only, with pure page math in `core/`.
+- **Q2 RAN AND PASSED: 298 MICROSECONDS against a 50000-microsecond tick.** 0.6% of a tick, roughly
+  168x headroom, operator-confirmed 2026-09-02. **The cadence stands** — the recompute trigger is
+  unchanged and Q5/Q6 are unaffected. The named risk that the tier sort landed in the path Q2
+  measures is closed.
+
+  **The instrument was removed in the same commit that recorded the number**, per
+  `PLAN-1b-swing-listener.md:134`. Worth stating why that mattered here: **a PASSING row is exactly
+  when "remove before merge" gets skipped** — a failure forces a decision, a pass invites moving on.
+
+  **The counts did not reach the record**, and they are not decoration: the probe costs
+  `distinct stacks × recipes`, so 298µs from three stacks and from thirty are different measurements
+  wearing the same number. Recorded as missing rather than guessed. **And the honest scope**: cold
+  first recompute, one inventory, one player, a test server. Not a load test, and nothing at this
+  headroom depends on it being one.
+
+- **STILL OWED:** the rest of the gate — Q1 and Q3-Q17 are unrun. And the second half: the browser,
+  navigate-only, with pure page math in `core/`.
 
 ---
 

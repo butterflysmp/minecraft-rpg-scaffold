@@ -111,15 +111,6 @@ public final class CraftingMenu extends Menu {
      */
     private String poolSignature = "";
 
-    /**
-     * Has the recompute cost been reported yet?
-     *
-     * <p>Per MENU rather than per plugin, and once inside it. Gate row Q2 needs ONE honest number
-     * to read; a line per recompute would bury it, and no line at all would leave the row with
-     * nothing to observe -- which is the shape of a check that cannot be run.
-     */
-    private boolean measured;
-
     private final AdapterContext adapters;
 
     public CraftingMenu(Player viewer, AdapterContext adapters) {
@@ -729,28 +720,25 @@ public final class CraftingMenu extends Menu {
         if (!force && signature.equals(poolSignature)) return;
         poolSignature = signature;
 
-        // MEASURED, NOT ASSUMED, and printed ONCE per menu so gate row Q2 has something to read.
+        // MEASURED, NOT ASSUMED -- and the measurement is DONE, so the instrument is gone.
         //
         // This is the one hot path in the slice: a walk of the whole recipe roster, probing every
-        // ingredient slot against every distinct stack the player carries. The plan's estimate is
-        // that bailing on the first unsatisfiable slot keeps the average nothing like the worst
-        // case -- but an estimate in a javadoc is not a measurement, and this project has a rule
-        // about believing the two are the same thing.
+        // ingredient slot against every distinct stack the player carries. An estimate in a javadoc
+        // is not a measurement, so gate row Q2 timed it on a real server rather than trusting the
+        // reasoning about bailing on the first unsatisfiable slot.
         //
-        // IF THIS IS NOT COMFORTABLY SUB-TICK, THE CADENCE IS WHAT CHANGES, NOT THE ALGORITHM.
-        // A tick is 50ms. The honest responses to a slow number are to stop recomputing on grid
-        // changes, or to recompute off the click path entirely -- not to make the walk cleverer.
-        long startNanos = System.nanoTime();
+        // Q2, 2026-09-02: 298 MICROSECONDS against a 50000-microsecond tick. 0.6% of a tick,
+        // roughly 168x headroom. THE CADENCE STANDS.
+        //
+        // The temporary timing block that produced that number was removed in the same commit that
+        // recorded it -- PLAN-1b-swing-listener.md's rule, "log once, observe on boot, then remove
+        // before the commit lands", and a PASSING row is exactly when that step gets skipped.
+        //
+        // IF THIS EVER STOPS BEING SUB-TICK, THE CADENCE IS WHAT CHANGES, NOT THE ALGORITHM: stop
+        // recomputing on grid changes, or move the walk off the click path. Not a cleverer walk.
+        // A permanent measurement would be a DIFFERENT instrument -- a threshold warning that logs
+        // only above some bound -- and a separate decision, not this one left in.
         suggestions = RecipeProbe.of(viewer.getInventory(), adapters);
-        long elapsedMicros = (System.nanoTime() - startNanos) / 1_000L;
-
-        if (!measured) {
-            measured = true;
-            adapters.log().info("Quick Craft: first recompute took " + elapsedMicros + " microseconds ("
-                    + suggestions.suggestions().size() + " craftable of "
-                    + suggestions.recipes().size() + " probed, from "
-                    + suggestions.groups().size() + " distinct stacks). A tick is 50000.");
-        }
 
         renderSuggestions();
     }

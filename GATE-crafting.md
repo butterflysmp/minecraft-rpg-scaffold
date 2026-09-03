@@ -331,20 +331,32 @@ things, so bring a way to count.
 
 | # | action | expected | notes |
 |---|---|---|---|
-| Q2 | **Open the table. Read the boot log for `Quick Craft: first recompute took ...`.** Then write the number into this row. | A duration **comfortably under 50000 microseconds** (one tick). The line also reports craftable / probed / distinct-stack counts. | **RUN THIS BEFORE THE OTHERS.** It is the only row whose answer changes other rows: if the walk is not comfortably sub-tick, **the CADENCE changes — not the algorithm** — and Q5, Q6 and the recompute trigger all move with it. Spending the rest of the gate first would be spending it on a design that is about to change |
+| Q2 | **Open the table. Read the log for `Quick Craft: first recompute took ...`.** | A duration **comfortably under 50000 microseconds** (one tick). | **RAN AND PASSED 2026-09-02, operator-confirmed: 298 microseconds.** 0.6% of a tick, ~168x headroom. **THE CADENCE STANDS** — no change to the recompute trigger, and Q5/Q6 are unaffected. This was the row to run first because it was the only one whose answer could have moved the others |
 
-> **THE Q2 INSTRUMENT IS TEMPORARY AND MUST BE REMOVED BEFORE MERGE.** Repo pattern, from
-> `PLAN-1b-swing-listener.md:134`: *"log once, observe on boot, then remove before the commit
-> lands."* Observe the number, **record it in the row above**, then delete the timing block from
-> `CraftingMenu.refreshSuggestions`.
+> **RESULT, 2026-09-02: `298` microseconds against a 50000-microsecond tick.**
 >
-> **Two things it is not**, so the number is read for what it is:
-> - `measured` is per **menu instance**, and a new `CraftingMenu` is constructed on every table
->   open. Left in, every player logs an INFO line every time they open a table, for ever.
-> - It only ever times the **cold first** recompute of each menu. A later slow one is never seen.
+> **THE COUNTS WERE NOT RELAYED.** The log line also prints craftable / probed / distinct-stack
+> counts, and they did not reach the record. **They are not decoration:** the probe costs
+> `distinct stacks × recipes`, so 298µs from three stacks and 298µs from thirty are different
+> measurements wearing the same number. Ask the operator for them if the line is still in a log,
+> and write them here. At this headroom it changes no decision — it changes what the number
+> *means* to the next reader.
 >
-> If a permanent measurement is wanted, that is a **different instrument** — a threshold warning
-> that logs only above some bound — and a separate decision. Not this one left in.
+> **WHAT THIS MEASUREMENT DOES NOT COVER**, so it is never mistaken for a load test:
+> - the **cold first** recompute only — a later, slower one was never timed
+> - **one inventory**, whatever that player happened to be carrying
+> - **one player**, on a **test server**, with no other load
+>
+> None of that is a concern at 168x headroom. It is the honest scope of what was observed.
+>
+> **THE INSTRUMENT HAS BEEN REMOVED**, per `PLAN-1b-swing-listener.md:134` — *"log once, observe on
+> boot, then remove before the commit lands."* Taken out in the same commit that recorded this
+> number, because **a passing row is exactly when "remove before merge" gets skipped.**
+>
+> It was never fit to stay: `measured` was per **menu instance** and a new `CraftingMenu` is built
+> on every table open, so left in it would have logged for every player on every open, for ever.
+> If a permanent measurement is ever wanted, that is a **different instrument** — a threshold
+> warning that logs only above some bound — and a separate decision.
 
 ## The column
 
