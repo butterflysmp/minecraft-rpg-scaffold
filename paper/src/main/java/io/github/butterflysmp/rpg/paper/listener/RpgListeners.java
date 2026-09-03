@@ -24,6 +24,7 @@ import io.github.butterflysmp.rpg.paper.menu.CraftMatrixScreen;
 import io.github.butterflysmp.rpg.paper.menu.CraftingMenu;
 import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
+import io.github.butterflysmp.rpg.paper.menu.RecipeCatalogue;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenSystem;
@@ -111,6 +112,16 @@ public final class RpgListeners implements Listener {
     private final ToolRegistry tools;
     private final WeaponService weaponService;
     private final AdapterContext adapters;
+
+    /**
+     * The recipe roster the browser pages through. ONE instance, for the whole server.
+     *
+     * <p>Built lazily on the first browser open and cached for the server lifetime. It lives here
+     * rather than as a static field because CLAUDE.md's third architecture invariant rules out
+     * static mutable singletons, and rather than on the menu because a per-menu instance would
+     * rebuild the whole roster every time anyone opened a crafting table.
+     */
+    private final RecipeCatalogue recipeCatalogue;
     private final PlayerHealthSystem healthSystem;
     private final MobNameplateManager nameplates;
     private final StatsBarSystem statsBar;
@@ -161,6 +172,7 @@ public final class RpgListeners implements Listener {
         this.tools = tools;
         this.weaponService = weaponService;
         this.adapters = adapters;
+        this.recipeCatalogue = new RecipeCatalogue(adapters);
         this.healthSystem = healthSystem;
         this.nameplates = nameplates;
         this.statsBar = statsBar;
@@ -170,7 +182,7 @@ public final class RpgListeners implements Listener {
                 Material.ENCHANTING_TABLE,
                 (player, block) -> new EnchantMenu(player, weapons, shields, armor, tools, adapters, block),
                 Material.CRAFTING_TABLE,
-                (player, block) -> new CraftingMenu(player, adapters));
+                (player, block) -> new CraftingMenu(player, adapters, recipeCatalogue));
     }
 
     @EventHandler

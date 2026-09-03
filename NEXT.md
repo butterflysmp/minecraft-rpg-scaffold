@@ -786,6 +786,96 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 - **STILL OWED:** the rest of the gate — Q1 and Q3-Q17 are unrun. And the second half: the browser,
   navigate-only, with pure page math in `core/`.
+- **BOTH DELIVERED, slice 6, 2026-09-03.** The gate rows are **Q24-Q31**, numbered from the real
+  high-water mark rather than from the placeholder's Q11/Q12. **And the browser is NOT
+  navigate-only** -- it crafts, which is why **Q12 is SUPERSEDED rather than enabled**: the row's
+  observable stopped being the correct one when the gesture changed.
+
+---
+
+### TWO ORPHANED JAVADOCS, INVISIBLE BECAUSE JAVADOC IGNORES THEM SILENTLY
+
+**Found 2026-09-03 while moving code, not while looking for them.** Java attaches a doc comment to
+the declaration that *immediately* follows it. Two doc comments in a row means the **first one is
+attached to nothing and is discarded** — no warning from `javac`, none from the IDE, and the text
+still reads perfectly well in the source file.
+
+Both instances were in the crafting arc, both written by the same author, both several slices old:
+
+| file | the orphan | it was sitting above |
+|---|---|---|
+| `CraftingMenu` | *"Which gear definition, if any, this vanilla result should be replaced by"* — 16 lines, including the belt-and-braces durability reasoning | `identityOf`, which has its own javadoc |
+| `RecipeProbe` | *"The player's carried items, grouped by `isSimilar`…"* — the whole grouping rationale | `probeOne`, which has its own javadoc |
+
+**What makes this worth an entry rather than a tidy-up:** the failure is *invisible in the place you
+would look*. Reading the source, the comment sits directly above the thing it describes and looks
+correct; only generated javadoc, or a careful reader counting `*/` against `{`, shows the loss. It is
+the documentation equivalent of a check that did not run — **the text is there, and it does nothing.**
+
+Found because a class-extraction moved `claimFor` and its doc comment had to be located to move with
+it. It would not have been found by reading.
+
+**The sweep, so this is a measurement rather than an anecdote** — a `*/` line immediately followed by
+a `/**` line, across the whole menu package:
+
+```bash
+awk 'prev ~ /^     \*\/$/ && $0 ~ /^    \/\*\*$/ {c++} {prev=$0} END {print c+0}' <file>
+```
+
+Two before, **zero after**. Worth re-running when a class grows a lot of documentation.
+
+---
+
+### THE MOVE'S FAITHFULNESS WAS PROVED BY DIFF, AND THE SUITE COULD NOT HAVE PROVED IT
+
+**Slice 6 moved `commitCraft`, `craftOneFromInventory`, `debit`, `claimFor` and the bulk loop out of
+`CraftingMenu` into `InventoryCraft`** so the recipe browser could share them instead of copying the
+most-gated method in the arc.
+
+**"Full suite green" is not evidence for a pure relocation.** It was green before the move as well.
+The suite is a REGRESSION signal; what was actually claimed — *these bodies are unchanged* — needs a
+different instrument. So each moved body was extracted from both files and diffed:
+
+```
+IDENTICAL  commitCraft            (47 lines)
+IDENTICAL  claimFor               (5 lines)
+IDENTICAL  craftOneFromInventory  (33 lines)
+IDENTICAL  debit                  (14 lines)
+IDENTICAL  the pin + the bulk loop (16 lines)
+```
+
+normalising only the three things the move is *allowed* to change: the access modifier, the
+`CraftingMenu.` qualifier on the moved `matches` call, and `isEmpty` → `MenuSafety.isEmpty`.
+
+**And the comparison carried a positive control**, because a diff that finds nothing looks exactly
+like a diff that ran and matched — this file's oldest lesson. A change was injected into the moved
+loop and the comparison was required to report it:
+
+```
+control: PASS -- the injected change was seen:
+      4c4
+      <         int crafted = 0;
+      >         int crafted = 1; // CONTROLMARK
+```
+
+Without that line, five `IDENTICAL` verdicts would have been worth nothing.
+
+---
+
+### A THIRD COPY OF `isEmpty` WAS ABOUT TO BE WRITTEN
+
+`CraftingMenu` and `MenuRouting` each carry a private `isEmpty(ItemStack)` with byte-identical
+bodies. `InventoryCraft` would have been the **third**, which is where a duplication stops being
+something a reader can hold in their head.
+
+**A canonical `MenuSafety.isEmpty` now exists and new code uses it. The two existing copies were
+deliberately NOT migrated**, and the reason is the same disposition the `core/weapon` debt takes:
+both files are heavily boot-gated — `MenuRouting` carries the routing rows — and widening this
+slice's diff into them to inline a one-line predicate buys a tidier `grep` at the price of re-gating
+routing. **They go when something else already has those files open.**
+
+Recorded so it is a decision with a date on it rather than an inconsistency someone finds later and
+has to reconstruct.
 
 ---
 

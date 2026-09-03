@@ -1,12 +1,9 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
-import io.github.butterflysmp.rpg.core.weapon.CollectPlan;
 import io.github.butterflysmp.rpg.core.weapon.CraftCount;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
-import io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearItems;
-import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -65,23 +62,6 @@ import static io.github.butterflysmp.rpg.paper.menu.CraftingMenuLayout.SIZE;
 public final class CraftingMenu extends Menu {
 
     /**
-     * How many crafts one shift-click may perform.
-     *
-     * <p>A bound rather than "until the grid runs dry" alone. The loop's exit already depends on the
-     * matrix shrinking each pass, and a recipe that somehow did not consume anything would spin
-     * forever inside a click handler, taking the server's main thread with it. This is the guard
-     * that does not depend on the recipe behaving.
-     *
-     * <p><b>It is ALSO an ordinary per-gesture batch size, and reaching it is not a defect signal.</b>
-     * 64 planks in each plank slot is 64 shields, so a stack-loaded grid hits this bound in normal
-     * play and stops with material still loaded -- a second shift-click simply continues. That is
-     * indistinguishable, to a player and to a reader, from stopping because nothing more could be
-     * made. Said out loud because the runaway-guard framing alone invites someone to treat arrival
-     * here as a bug, or to "fix" it by removing the bound.
-     */
-    private static final int MAX_BULK_CRAFTS = 64;
-
-    /**
      * The recipe the RESULT SLOT is currently showing, or empty when it shows nothing.
      *
      * <p>Written by {@link #refreshPreview} and read by the two commit paths, so that what a player
@@ -113,9 +93,37 @@ public final class CraftingMenu extends Menu {
 
     private final AdapterContext adapters;
 
-    public CraftingMenu(Player viewer, AdapterContext adapters) {
+    /**
+     * The shared craft path, which used to be a dozen private methods on this class.
+     *
+     * <p>Moved to {@link InventoryCraft} in slice 6 because the recipe browser is a SEPARATE menu
+     * with no {@code CraftingMenu} instance to call into, so the alternative was a second copy of
+     * the most-gated method in the arc. The move was proved faithful by diffing each moved body
+     * against its original -- byte-identical -- rather than by the suite, which was green before the
+     * move too.
+     *
+     * <p>What stayed here: the pin helpers {@code identityOf}/{@code matches} (so
+     * {@code RecipePinTest} does not move), the GRID loop in {@link #craftRepeatedly} (it writes the
+     * matrix back over itself, which no other surface does), and every message and repaint.
+     */
+    private final InventoryCraft inventoryCraft;
+
+    /**
+     * The recipe roster the browser pages through, shared across every player on the server.
+     *
+     * <p><b>Passed in, not built here, and deliberately not a static field.</b> It is built once and
+     * cached for the server lifetime, so a per-menu instance would rebuild it every time anyone
+     * opened a crafting table -- and a {@code static} one would be the mutable singleton CLAUDE.md's
+     * third architecture invariant rules out. {@code RpgListeners} owns the single instance, which
+     * is also the one registration point for the hijacked blocks that construct this menu.
+     */
+    private final RecipeCatalogue catalogue;
+
+    public CraftingMenu(Player viewer, AdapterContext adapters, RecipeCatalogue catalogue) {
         super(viewer, SIZE, MenuIcons.line("Crafting", NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
+        this.catalogue = catalogue;
+        this.inventoryCraft = new InventoryCraft(viewer, adapters);
         render();
         refreshPreview();
         refreshSuggestions(true);
@@ -210,7 +218,16 @@ public final class CraftingMenu extends Menu {
         }
 
         if (click.slot() == CraftingMenuLayout.BROWSER_SLOT) {
-            say("The recipe browser is not built yet.");
+            // CLOSE FIRST, OPEN AFTER. Opening an inventory from inside a click handler while
+            // another is open is the classic way to end up with a desynced client holding a ghost
+            // item, so this closes, and the scheduler hop lands the open on the next tick when the
+            // close has actually happened.
+            //
+            // returnEverything runs on the close, so whatever the player loaded into the grid comes
+            // back to them rather than being stranded behind a menu they navigated away from.
+            viewer.closeInventory();
+            adapters.scheduler().onEntityLater(viewer,
+                    () -> new RecipeBrowserMenu(viewer, adapters, catalogue).open(), 1);
             return;
         }
 
@@ -309,7 +326,7 @@ public final class CraftingMenu extends Menu {
             }
         }
 
-        CraftOutcome outcome = commitCraft(readMatrix(), previewedRecipe);
+        InventoryCraft.CraftOutcome outcome = inventoryCraft.commitCraft(readMatrix(), previewedRecipe);
         if (outcome == null) return;
         // The grid IS the matrix, so writing it back both debits the ingredients and returns the
         // remainders in one write. Quick Craft has no such luck -- see craftFromSuggestion.
@@ -352,7 +369,7 @@ public final class CraftingMenu extends Menu {
      * <p>Ingredients come from the GRID only. Pulling more from the player's inventory is Quick
      * Craft's job and needs a craftability model this slice does not have.
      *
-     * <p>Each pass is atomic: {@link #commitCraft} either debits the matrix and yields a result, or
+     * <p>Each pass is atomic: {@link InventoryCraft#commitCraft} either debits the matrix and yields a result, or
      * changes nothing and yields null. So an interrupted run leaves the grid consistent with the
      * items handed over, whatever pass it stopped on.
      *
@@ -381,7 +398,7 @@ public final class CraftingMenu extends Menu {
         // stays green, every gate row still passes, and players lose ingots.
 
         int made = 0;
-        for (int pass = 0; pass < MAX_BULK_CRAFTS; pass++) {
+        for (int pass = 0; pass < InventoryCraft.MAX_BULK_CRAFTS; pass++) {
             // STOP BEFORE THE INVENTORY OVERFLOWS, rather than relying on MenuSafety.give's drop
             // branch. That branch is the right answer for ONE item the player already owned; it is
             // the wrong answer sixty-four times in a row, which is a pile of entities at their feet
@@ -406,7 +423,7 @@ public final class CraftingMenu extends Menu {
             // rather than an ItemCraftResult: with the mint applied by the callers, a bulk craft
             // would have shipped every item plain and unrolled while a single click minted -- and a
             // gate row that counts output rather than opening it would have passed.
-            CraftOutcome outcome = commitCraft(readMatrix(), pinned);
+            InventoryCraft.CraftOutcome outcome = inventoryCraft.commitCraft(readMatrix(), pinned);
             if (outcome == null) return;
             writeMatrix(outcome.resultingMatrix());
             MenuSafety.give(viewer, outcome.crafted());
@@ -414,160 +431,6 @@ public final class CraftingMenu extends Menu {
         }
     }
 
-    /**
-     * Perform ONE craft against the grid, or nothing at all.
-     *
-     * <p><b>The grid afterwards is the server's resulting matrix, never the grid minus one per
-     * slot.</b> Decrementing destroys container remainders: a cake leaves three EMPTY BUCKETS
-     * behind, honey bottles leave glass bottles, and a hand-rolled debit silently deletes them.
-     * {@code getResultingMatrix()} already holds them.
-     *
-     * <p>{@code getOverflowItems()} is the other half of that: remainders that could not fit back
-     * into the matrix. Dropping them on the floor of this method would be a second silent loss, so
-     * they go to the player through the one give path.
-     *
-     * <p>Everything written back is CLONED. {@code ItemCraftResult}'s own javadoc says it "makes no
-     * guarantees about the nature or mutability of the returned values".
-     *
-     * <p><b>Returns the FINISHED item -- minted and rolled -- not the raw {@code ItemCraftResult}.</b>
-     * That is deliberate and it is the difference between one place to forget and three. Three
-     * callers read this output: {@link #craftOnceToCursor}, {@link #craftRepeatedly} and (through
-     * its own path) the preview. With the mint applied by each caller, the bulk path would have
-     * shipped plain unrolled items while a single click minted, and a gate row that counts output
-     * rather than inspecting it would never have noticed.
-     *
-     * <p><b>The roll happens HERE, and only here.</b> Crafting is an acquisition path, so it rolls
-     * exactly as {@code /rpg give} and the kit grant do -- see
-     * {@link EnchantRollItems#rollOnAcquire}. The preview never enters this method, which is how it
-     * mints without rolling: a structural guarantee rather than a rule someone has to remember.
-     *
-     * <h2>IT TAKES A MATRIX, AND THAT IS THE SLICE 5 WIDENING</h2>
-     *
-     * It used to read {@code GRID_SLOTS} itself. Quick Craft's matrix is not the grid -- it is a
-     * scratch copy assembled from inventory stacks -- so the matrix became a PARAMETER rather than
-     * this method growing a second copy of itself. {@code Bukkit.craftItemResult} already takes a
-     * bare {@code ItemStack[]}, so the engine never knew about the grid in the first place.
-     *
-     * <p><b>The two callers do NOT differ only in where leftovers land</b>, and an early draft of
-     * the slice-5 plan said they did. For the GRID the matrix IS the grid, so writing the resulting
-     * matrix back does two jobs in one write: it removes what was consumed AND returns the
-     * remainders. For the INVENTORY nothing writes back at all -- {@code craftItemResult} never
-     * touches an inventory -- so the caller must debit what it assembled and hand the remainders
-     * over itself. Hence {@link CraftOutcome}: this method stops at the point the two genuinely
-     * diverge and returns both halves rather than deciding for them.
-     *
-     * <p>The OVERFLOW give stays in here, because it does not diverge: on both surfaces a remainder
-     * that would not fit back into the matrix goes to the player.
-     *
-     * <h2>THE CONSERVATION RULE, and why "consumed = input MINUS resulting" is WRONG</h2>
-     *
-     * The obvious way to debit an inventory craft is to work out what was consumed by subtracting
-     * the resulting matrix from the input matrix, per slot. <b>That formulation is incoherent for
-     * exactly the case rows 12 and 12c exist for.</b> A milk bucket does not DECREASE when a cake is
-     * made -- it BECOMES an empty bucket. There is no per-slot quantity to subtract, and any code
-     * that tries lands on either "three buckets vanished" or "three buckets appeared from nowhere".
-     *
-     * <p>What holds instead, with no such question asked:
-     *
-     * <pre>
-     * A       is exactly what left the inventory  (what the assembly took, BY SLOT)
-     * R + O   is exactly what the engine says remains  (resulting matrix + overflow)
-     *
-     * the player ends at   inventory - A + R + O + result
-     * </pre>
-     *
-     * <b>That is true WITHOUT EVER KNOWING which part of A was consumed and which was transformed.</b>
-     * Any formulation that needs to know is wrong for cake. So the inventory caller debits the whole
-     * assembly and hands back the whole resulting matrix, and the two net to the same thing a
-     * per-slot diff would have produced for the easy cases and nothing sane for the hard one.
-     *
-     * <p>The GRID gets this for free -- writing the resulting matrix over the slots the input came
-     * from IS {@code -A + R} in one operation -- which is precisely why the asymmetry between the
-     * two callers is easy to miss.
-     *
-     * @return the outcome, or {@code null} when nothing was crafted and nothing changed.
-     */
-    private CraftOutcome commitCraft(ItemStack[] matrix, Optional<NamespacedKey> pinned) {
-        // The screen, BEFORE the server is ever asked. Exhaustive switch expression, no default.
-        boolean eligible = switch (CraftMatrixScreen.verdict(matrix, adapters.keys())) {
-            case VANILLA_ELIGIBLE -> true;
-            case CONTAINS_GEAR -> false;
-        };
-        if (!eligible) return null;
-
-        // YOU RECEIVE WHAT YOU WERE SHOWN. Match first, compare to the pin, and refuse WITHOUT
-        // COMMITTING if the grid now makes something else.
-        //
-        // This closes by construction the divergence this arc has met three times -- NEXT.md's
-        // Stats Slice 3 "SHARING A FORMULA IS NOT SHARING ITS INPUTS", the substitution re-check in
-        // craftOnceToCursor, and row N8's caveat are all the same defect. It is the first time it is
-        // made UNREACHABLE rather than guarded: two callers cannot disagree about which recipe this
-        // is, because only one of them decides and the other is handed the answer.
-        //
-        // An UNKEYED match cannot be pinned. Recipe declares no key -- only CraftingRecipe and
-        // ComplexRecipe do -- so a hypothetical unkeyed crafting recipe would be unpinnable, and
-        // BULK refuses rather than proceeding blind. A single click still commits: it matches once
-        // and commits once, so re-matching cannot diverge, and craftOnceToCursor's own re-check
-        // still covers a substituted result. Weaker, and said so.
-        if (!matches(Bukkit.getCraftingRecipe(matrix, viewer.getWorld()), pinned)) return null;
-
-        // The PLAYER overload: this is a real craft, and its javadoc says it calls
-        // PrepareItemCraftEvent so other plugins observe it. Re-entering our own guard is harmless
-        // -- the matrix was screened one line above and holds nothing of ours.
-        ItemCraftResult result = Bukkit.craftItemResult(matrix, viewer.getWorld(), viewer);
-        if (isEmpty(result.getResult())) return null;
-
-        // The overflow, on BOTH surfaces. Dropping these on the floor of this method would be a
-        // silent loss; they go to the player through the one give path.
-        for (ItemStack overflow : result.getOverflowItems()) {
-            MenuSafety.give(viewer, overflow);
-        }
-
-        ItemStack vanilla = result.getResult();
-        Optional<GearDefinition> claimed = claimFor(vanilla);
-        if (claimed.isEmpty()) return new CraftOutcome(vanilla, result.getResultingMatrix());
-
-        // Minted, then rolled, in that order and never the other way: mint builds a FRESH meta with
-        // an empty container, so a roll written first would be discarded by it.
-        GearDefinition definition = claimed.get();
-        ItemStack minted = GearItems.mint(definition, adapters);
-        EnchantRollItems.rollOnAcquire(minted, GearItems.gearClassOf(definition), adapters);
-        return new CraftOutcome(minted, result.getResultingMatrix());
-    }
-
-    /**
-     * One craft's two outputs: the finished item, and what the matrix became.
-     *
-     * <p>Both are needed because the two surfaces send the matrix to different places -- the grid
-     * writes it back over itself, Quick Craft hands it to the player. Returning both is what lets
-     * {@link #commitCraft} stay one method: it does everything that is common and stops exactly
-     * where the surfaces diverge.
-     *
-     * @param crafted         the item to hand over -- already minted and rolled where content claims
-     *                        the result. Never null in a returned outcome.
-     * @param resultingMatrix what the server says the matrix holds afterwards. <b>The remainders
-     *                        live in here</b>: a cake leaves three EMPTY BUCKETS, honey bottles
-     *                        leave glass bottles. Whichever surface receives it must not decrement
-     *                        by hand instead -- that is what destroys them.
-     */
-    private record CraftOutcome(ItemStack crafted, ItemStack[] resultingMatrix) {}
-
-    /**
-     * Which gear definition, if any, this vanilla result should be replaced by.
-     *
-     * <p>Shared by the commit and the preview so the slot cannot advertise one item and hand over
-     * another -- the third time this arc has met two callers that agree today, and the reason they
-     * share a function rather than an intention.
-     *
-     * <p>The durability test here is BELT-AND-BRACES, not the real check. Boot already refuses a
-     * {@code craft_result} naming a material with no durability
-     * ({@code ContentValidator.validateCraftResults}), so nothing in the index can fail it. It stays
-     * because it costs nothing and because the index is reachable from a future caller that has not
-     * been through that validation.
-     *
-     * <p>Note this is a DIFFERENT test from the Crafter block's durability guard, which is the whole
-     * policy there and applies to items no definition has ever claimed. They must not be merged.
-     */
     /**
      * The stable identity of a matched recipe, or empty when it has none.
      *
@@ -595,12 +458,6 @@ public final class CraftingMenu extends Menu {
     static boolean matches(Recipe matched, Optional<NamespacedKey> pinned) {
         if (pinned.isEmpty()) return false;
         return identityOf(matched).map(pinned.get()::equals).orElse(false);
-    }
-
-    private Optional<GearDefinition> claimFor(ItemStack vanillaResult) {
-        if (isEmpty(vanillaResult)) return Optional.empty();
-        if (WeaponDurability.maxOf(vanillaResult).isEmpty()) return Optional.empty();
-        return adapters.craftResults().forResult(vanillaResult.getType().getKey().getKey());
     }
 
     // ----------------------------------------------------------------- preview
@@ -644,7 +501,7 @@ public final class CraftingMenu extends Menu {
                 // a stack that is usually discarded. So the preview is the minted, UNROLLED item,
                 // and the enchant lines are the one expected difference between what is shown and
                 // what is received.
-                Optional<GearDefinition> claimed = claimFor(result.getResult());
+                Optional<GearDefinition> claimed = inventoryCraft.claimFor(result.getResult());
                 yield claimed.isPresent()
                         ? GearItems.mint(claimed.get(), adapters)
                         : result.getResult().clone();
@@ -834,7 +691,7 @@ public final class CraftingMenu extends Menu {
         // NOT a second preview builder. A renderer separate from the real one is the "two callers
         // that agree today" shape this arc has closed three times, and it would drift the first
         // time a lore line moved.
-        Optional<GearDefinition> claimed = claimFor(result);
+        Optional<GearDefinition> claimed = inventoryCraft.claimFor(result);
         ItemStack icon = claimed.isPresent()
                 ? GearItems.mint(claimed.get(), adapters)
                 : result.clone();
@@ -897,22 +754,9 @@ public final class CraftingMenu extends Menu {
             return;
         }
 
-        NamespacedKey pin = RecipeProbe.keyOf(recipe);
-        Optional<NamespacedKey> pinned = Optional.ofNullable(pin);
-
-        int crafted = 0;
-        int passes = bulk ? MAX_BULK_CRAFTS : 1;
-        boolean full = false;
-        for (int pass = 0; pass < passes; pass++) {
-            // The same look-before-you-leap the grid loop does, and for the same reason -- see
-            // craftRepeatedly. Checked BEFORE the craft so a full inventory costs no ingredients.
-            if (!MenuSafety.fits(viewer, recipe.getResult())) {
-                full = true;
-                break;
-            }
-            if (!craftOneFromInventory(recipe, pinned)) break;
-            crafted++;
-        }
+        InventoryCraft.Outcome outcome = inventoryCraft.craft(recipe, bulk);
+        int crafted = outcome.crafted();
+        boolean full = outcome.inventoryFull();
 
         if (full) {
             say("Your inventory is full -- made " + crafted + ".");
@@ -923,70 +767,6 @@ public final class CraftingMenu extends Menu {
         // ONCE, after the loop. Never inside it.
         refreshSuggestions(true);
         viewer.updateInventory();
-    }
-
-    /**
-     * One craft out of the inventory. Returns false without changing anything if it cannot.
-     *
-     * <p>Every early return here happens BEFORE {@code commitCraft}, so a refusal costs the player
-     * nothing. The single debit is the last mutation, exactly as {@code EnchantMenu}'s XP deduction
-     * is -- which is why there is no rollback anywhere in this method.
-     */
-    private boolean craftOneFromInventory(Recipe recipe, Optional<NamespacedKey> pinned) {
-        List<RecipeProbe.Group> groups = RecipeProbe.groupsOf(viewer.getInventory(), adapters.keys());
-        CraftCount.Candidate candidate = RecipeProbe.probeOne(recipe, groups, RecipeProbe.tierOf(recipe, adapters));
-        if (candidate == null) return false;
-
-        List<CraftCount.Stock> stock = RecipeProbe.stockOf(groups);
-
-        // THE COUNT, not the assignment. A non-empty assignment only says every slot can be filled
-        // once; the count says whether the player can actually afford it -- see CraftCount.assign.
-        if (CraftCount.rank(List.of(candidate), stock).isEmpty()) return false;
-
-        RecipeProbe.Assembly assembly =
-                RecipeProbe.assemble(recipe, groups, CraftCount.assign(candidate, stock));
-        if (assembly == null) return false;
-
-        CraftOutcome outcome = commitCraft(assembly.matrix(), pinned);
-        if (outcome == null) return false;   // pin mismatch or the server declined: nothing taken
-
-        // CRAFTED. Now, and only now, take the ingredients.
-        debit(assembly.draws());
-
-        // The matrix was a scratch copy, so nothing writes back -- whatever the server left in it is
-        // a REMAINDER the player is owed. A cake's three empty buckets arrive here.
-        //
-        // Note this is the whole of the "input minus resulting" the plan describes: we debit exactly
-        // what we assembled and hand back exactly what came out, which nets to the same thing with
-        // no per-slot subtraction to get wrong when an ingredient CHANGES TYPE mid-craft.
-        for (ItemStack remainder : outcome.resultingMatrix()) {
-            if (!isEmpty(remainder)) MenuSafety.give(viewer, remainder.clone());
-        }
-        MenuSafety.give(viewer, outcome.crafted());
-        return true;
-    }
-
-    /**
-     * Remove exactly what the assembly took, from the slots it took it from.
-     *
-     * <p><b>By SLOT, never by similarity.</b> Re-finding the stacks by comparing items would be a
-     * second search that can land on different slots than the probe counted -- which is how "the
-     * player had 64 planks across three stacks" quietly goes wrong. The assembly recorded the slots;
-     * this applies them. Same shape the collect gesture uses.
-     */
-    private void debit(List<CollectPlan.Source> draws) {
-        for (CollectPlan.Source draw : draws) {
-            ItemStack stack = viewer.getInventory().getItem(draw.slot());
-            if (isEmpty(stack)) continue;
-            int left = stack.getAmount() - draw.amount();
-            if (left <= 0) {
-                viewer.getInventory().setItem(draw.slot(), null);
-            } else {
-                ItemStack reduced = stack.clone();
-                reduced.setAmount(left);
-                viewer.getInventory().setItem(draw.slot(), reduced);
-            }
-        }
     }
 
     // ------------------------------------------------------------------ chrome

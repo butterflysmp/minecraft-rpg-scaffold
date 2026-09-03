@@ -494,23 +494,87 @@ things, so bring a way to count.
 | Q13 | **THE DEBIT.** Hold the materials for one craft **split across three separate stacks** (e.g. 3 + 2 + 1 planks). Note each stack's slot and size. Click the suggestion. | Exactly the right total leaves, **from the slots the probe counted**, and no other slot moves | **count · sole witness** that the debit applies to RECORDED slots rather than re-finding them by similarity. A second search can land on different stacks than the count used |
 | Q14 | **THE REMAINDER.** Craft a cake from a suggestion (three milk buckets). **Count buckets first.** | Three **EMPTY BUCKETS** arrive in the inventory. Nothing is destroyed | **count · discriminating** · the case that makes "consumed = input minus resulting" incoherent — a milk bucket does not decrease, it BECOMES a bucket. On the inventory path the resulting matrix and the overflow both collapse to "give it to the player" |
 
-## The browser — NOT YET APPLICABLE
+## The browser — LIVE from slice 6
+
+**Q12 IS SUPERSEDED, NOT DELETED.** It read *"Navigates only; nothing is crafted or consumed"*,
+which was true of the placeholder and is **false by design** now: the browser crafts. It stays
+struck through and visible, as row 20 → S12 was handled — **the gesture changed, so its observable
+stopped being correct**, which is a different thing from a row that was wrong.
+
+**Q11 IS REWORDED, not merely re-enabled.** *"the last page is not short or duplicated"* is
+ambiguous: **a genuinely short last page is CORRECT** — 1214 recipes at 45 a page ends with a short
+one, every time. The two real defects are named instead.
 
 | # | action | expected | notes |
 |---|---|---|---|
-| ~~Q11~~ | ~~Open the browser. Page forward and back.~~ | ~~Pages navigate; the last page is not short or duplicated~~ | **NOT YET APPLICABLE — the browser is a placeholder this half.** Slot **26** says "Not implemented yet". Recorded rather than omitted, the same discipline row 1b uses: a row that cannot be run must say so rather than sit among rows that can |
-| ~~Q12~~ | ~~Click an entry in the browser.~~ | ~~Navigates only; nothing is crafted or consumed~~ | **NOT YET APPLICABLE**, as Q11. These two become live in the second half and are the reason the browser is navigate-only |
+| **Q11** | Open the browser (slot **26**). Page to the end and back to page 1. | **No entry appears on two pages, and no entry the catalogue holds is missing from the last page.** A SHORT final page is correct and is not a failure | **discriminating** · reworded this slice. The unit sweep `everyEntryAppearsExactlyOnceAcrossAllPages` already proves the arithmetic over every list size; this row proves the RENDERER uses it — the half no unit test can reach |
+| ~~Q12~~ | ~~Click an entry in the browser.~~ | ~~Navigates only; nothing is crafted or consumed~~ | **SUPERSEDED by Q24-Q28.** Not a failure and not withdrawn as wrong: the browser became a crafting surface in slice 6, so this row's observable stopped being the correct one. Kept visible so the change of intent is on the record rather than looking like a deleted row |
+| **Q24** | **THE LAZY BUILD'S COST.** First player after a restart opens the browser. Watch for a hitch, then read the log line. | No perceptible stall. **Write the logged microsecond figure into this row.** | **SOLE WITNESS, and the only time the cost is ever paid.** The catalogue walk has NO early bail — keeping everything is the point — so **Q2's 298µs must not be cited for it**: that number is the suggestion probe, which dies on most recipes' first ingredient. The instrument is `Recipe catalogue built: N entries in Nus`, and it is **deleted in the commit that records this number** |
+| **Q25** | **TIER ORDERING.** Open the browser at page 1. Walk down it. | Every minted-gear recipe appears **before** any vanilla one, **and the boundary is where the TIER changes, not where the page ends** | **discriminating** · the row **Q16 hands off to**. Q16 passes by the column being all gear; this is where the squeezed-out armor and vanilla become reachable. The "not where the page ends" clause is the point: *"page 1 is the gear page"* is arithmetic over two numbers that can both move, and is deliberately NOT the invariant |
+| **Q26** | **AN ENTRY YOU CANNOT AFFORD.** Empty your inventory. Click any entry. **Count materials first.** | Refuses with *"You do not have the materials for that."* **Nothing debited, nothing given** | **count · discriminating** · the wording differs from the column's *"You no longer have…"* deliberately: the column just showed a button claiming the player could, the browser never promised affordability |
+| **Q27** | **A BROWSER CRAFT OF MINTED GEAR.** Carry the materials. Click a claiming recipe. **Open the item.** | Arrives **minted AND rolled** — stats, rarity footer, enchant candidates — identical to the column and the grid | **discriminating** · *open it, do not count it.* A count sees an item arrive and cannot see that it is a plain iron sword. This is the row that proves the third surface shares `InventoryCraft` rather than reimplementing it |
+| **Q28** | **BULK INTO A FULL INVENTORY.** Fill every slot but one. Shift-click an affordable entry. | Stops, says how many were made, **and NOTHING is on the ground** | **count · discriminating** · Q17's shape on the THIRD surface. `MenuSafety.fits` is checked before each pass, so a full inventory costs no ingredients |
+| **Q29** | **INGREDIENT LORE vs REALITY.** Hover an entry, read "Needs:". Then craft it and watch what leaves your inventory. | The listed ingredients **are** what the craft consumes | **discriminating** · the lore is built from `RecipeProbe.ingredientsOf`, the same list the assembly draws against, so this row checks they have not drifted |
+| **Q30** | **AN INERT ENTRY.** Find a multi-star firework rocket in the browser. Hover it, then click it. | Lore says **"Cannot be crafted here"** and **"Use the crafting grid for this one"**. Clicking does **nothing at all** — no message, no craft | **discriminating** · the runnable inert case. `ComplexRecipe` exposes no ingredients, so no amount of material helps. **The click must be silent**: a refusal message here would be indistinguishable from Q26's at exactly the moment a player needs to tell a PERMANENT refusal from a TEMPORARY one |
+| **Q31** | **AN UNLISTABLE INGREDIENT.** Read the boot log's `not fully listable` count. If it is **zero**, this row is **NOT RUNNABLE** — record it as such **with the count**. If non-zero, find one and hover it. | The honesty line *"(this recipe accepts more than can be listed)"* appears | **may be UNRUNNABLE, and that is decided BEFORE the gate, not while writing the report.** Rule 2, and row 12b's shape: a row whose observable cannot exist credits coverage that does not exist. The count is printed by the catalogue precisely so this can be decided from evidence |
 
-> **THE BROWSER IS NO LONGER A CONVENIENCE.** With the column at THREE cells and thirty claiming
-> definitions, it is **the only route to anything below tier 2** — all armor, and every vanilla
-> recipe. Shipping the first half without it leaves most craftable things unreachable from this menu
+> **Q8 IS THE MUTATION THAT MAY HAVE NO RED STATE.** "The click trusts the cached recipe instead of
+> re-resolving" reddens only against a **stale catalogue** — a recipe that left the roster after
+> first open. Staging attempt: open the browser (building the cache), remove a recipe from the live
+> roster with `Bukkit.removeRecipe(key)`, then click its entry. **If that cannot be staged on the dev
+> server, record it as UNRUNNABLE with the reason** rather than leaving it in a table where every
+> other mutation was watched red.
+
+
+> ~~**THE BROWSER IS NO LONGER A CONVENIENCE.** With the column at THREE cells and thirty claiming
+> definitions, it is the only route to anything below tier 2 — all armor, and every vanilla recipe.
+> Shipping the first half without it leaves most craftable things unreachable from this menu
 > entirely. That is a scope fact rather than a tuning detail, and it raises the cost of deferring the
-> second half well above what it was when the column had nine cells.
-
+> second half well above what it was when the column had nine cells.~~
+>
+> **WITHDRAWN IN PLACE, 2026-09-03 — the deferral it argued against did not happen.** The browser
+> shipped in slice 6, so "the cost of deferring the second half" is no longer a live question. Kept
+> struck through rather than deleted because it is the reasoning that *caused* the second half to be
+> built immediately rather than parked, and a gate file that silently drops the arguments it acted on
+> reads as though the decisions made themselves.
+>
+> **What it said that is still TRUE, and is now Q25's job to check:** the column cannot reach armor
+> or vanilla, so the browser is the only route to them. That claim moved from prose into a
+> discriminating row, which is where it belonged.
 ## Re-run from earlier slices
+
+> **NAMED BEFORE THE RUN, per the rule added at `aee4fe1`. EIGHTEEN rows:**
+> **Q1, Q3, Q6, Q7, Q8, Q9, Q10, Q13, Q14, Q15, Q16, Q17, 12, 12c, S1, S2, 13, N5b.**
+>
+> Naming them here rather than in the report is the whole point: a list written afterwards is a list
+> of what was run, not a list of what was owed, and the two are indistinguishable once the report is
+> the only artefact.
+>
+> **The first draft of this list covered the shared CRAFT path and MISSED the shared PROBE.** It had
+> Q3, Q6, Q7, Q8, Q13, Q14, Q17 — every row witnessing `commitCraft`, because a second caller enters
+> it. But `RecipeProbe` and `SuggestionTier` are BOTH modified this slice and both feed the
+> suggestion column, so the same reasoning that added 12/12c applies to them:
+>
+> - **Q10** — the enumerable boundary, and this slice changes what `RecipeProbe` EXPOSES;
+> - **Q16** — three cells, and the row the browser now hands off to;
+> - **Q15** — the tier order, and `SuggestionTier` is being edited;
+> - **Q9** — the icon gains ingredient lines through `chromeOver`, and Q9 observes "rarity footer last";
+> - **Q1** — the column's appearance, same cause.
+
+> **Q10 IS A LIVE RISK, NOT ONLY A RE-RUN.** If exposing complex recipes changed what
+> `Result.suggestions` contains, a multi-star firework could appear in the COLUMN — contradicting
+> Q10(b), a discriminating sole-witness row.
+>
+> **It does not, and the reason is structural rather than careful: the exposure is ADDITIVE and
+> SEPARATELY CONSUMED.** `ingredientsOf` changed visibility only; `RecipeProbe.of` still filters
+> exactly as it did, and the catalogue reads the newly-public method on its own walk. Stated here AND
+> at the call site, because two consumers sharing one walk is precisely how this would slip in later.
 
 | # | why it re-opens |
 |---|---|
+| **Q1, Q3, Q9, Q15, Q16** | the shared PROBE, not the shared craft. `RecipeProbe` and `SuggestionTier` are both modified and both feed the column |
+| **Q6, Q7, Q8, Q13, Q14, Q17** | `commitCraft`, `craftOneFromInventory` and `debit` all **changed file** — they now live in `InventoryCraft`. A pure move is still a change to the code these rows witness |
+| **Q10** | see the risk note above. The one row that could be broken by a visibility edit |
 | **12, 12c** | `commitCraft` changed shape a FOURTH time. Still the only witnesses for `getResultingMatrix` and `getOverflowItems` — **and they matter MORE this slice, not less**: on the inventory path both collapse into "give it to the player", so no Q row can tell the two calls apart |
 | **S1, S2** | the pin and the `MAX_BULK_CRAFTS` bound — **and the GRID bulk loop itself changed.** `craftRepeatedly` now stops before the inventory overflows, which is a fix to a defect the grid has shipped since slice 3. These are not re-run out of caution; the code under them moved |
 | S3 | the `ComplexRecipe` path through the grid — and now the other half of Q10 |

@@ -215,8 +215,21 @@ public final class RecipeProbe {
      * {@code getIngredientList} -- verified against the pinned jar, the latter pair is DEPRECATED
      * and flattens a choice to one representative stack, which would silently narrow every recipe
      * that accepts alternatives to whichever material Bukkit happened to list first.
+     *
+     * <h2>MADE PUBLIC IN SLICE 6, AND THE EXPOSURE IS ADDITIVE</h2>
+     *
+     * {@link RecipeCatalogue} and {@link IngredientLore} read this to decide whether a recipe is
+     * inert and to render its materials. <b>Nothing about {@link #of} changed</b>: the suggestion
+     * column still consumes exactly what it consumed before, from the same walk, filtered the same
+     * way.
+     *
+     * <p>This is stated here AND at the call sites because two consumers sharing one walk is exactly
+     * how a change to one would slip into the other -- and because gate row Q10(b) asserts a
+     * multi-star firework never reaches the COLUMN. If exposing complex recipes had widened
+     * {@code Result.suggestions}, Q10 would have been broken by a change that reads like a
+     * visibility edit.
      */
-    private static List<RecipeChoice> ingredientsOf(Recipe recipe) {
+    public static List<RecipeChoice> ingredientsOf(Recipe recipe) {
         if (recipe instanceof ShapedRecipe shaped) {
             List<RecipeChoice> ingredients = new ArrayList<>();
             for (String row : shaped.getShape()) {
@@ -236,18 +249,6 @@ public final class RecipeProbe {
         return null;
     }
 
-    /**
-     * The player's carried items, grouped by {@code isSimilar} and with their slots recorded.
-     *
-     * <p>{@code isSimilar} is the grouping key rather than {@code Material}, because it is the same
-     * comparison {@code ExactChoice.test} makes: two stacks that differ only in meta are different
-     * ingredients as far as a recipe is concerned, and merging them would let a named or enchanted
-     * item stand in for a plain one.
-     *
-     * <p>Storage contents only -- the 36 main slots. Armor being worn and the offhand are not
-     * crafting materials, and consuming what someone is wearing would be a surprise no button
-     * should be able to deliver.
-     */
     /**
      * Probe ONE recipe against a fresh set of groups.
      *
@@ -292,7 +293,18 @@ public final class RecipeProbe {
         return SuggestionTiers.of(claimed);
     }
 
-    /** The player's carried stacks, grouped and gear-filtered. Cheap: 36 slots, no recipe walk. */
+    /**
+     * The player's carried items, grouped by {@code isSimilar} and with their slots recorded.
+     *
+     * <p>{@code isSimilar} is the grouping key rather than {@code Material}, because it is the same
+     * comparison {@code ExactChoice.test} makes: two stacks that differ only in meta are different
+     * ingredients as far as a recipe is concerned, and merging them would let a named or enchanted
+     * item stand in for a plain one.
+     *
+     * <p>Storage contents only -- the 36 main slots. Armor being worn and the offhand are not
+     * crafting materials, and consuming what someone is wearing would be a surprise no button
+     * should be able to deliver.
+     */
     public static List<Group> groupsOf(PlayerInventory inventory, Keys keys) {
         return groups(inventory, keys);
     }
