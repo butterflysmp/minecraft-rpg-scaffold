@@ -20,7 +20,6 @@ import org.bukkit.inventory.ItemCraftResult;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;

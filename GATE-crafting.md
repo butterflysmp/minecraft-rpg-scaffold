@@ -15,8 +15,24 @@ kept in a plan document: plans are per-slice and get superseded, and the gate ou
 
 - A rendered tick-through version may exist as a published page for convenience. **If the
   two ever disagree, this file wins.**
-- Report at **row granularity** — "28 of 28, rows 7, 8, 12 and 12c by name" — never "the
-  gate passed".
+- **NAME THE ROWS YOU ARE ABOUT TO RUN, BEFORE YOU RUN THEM.** Then a count against that
+  list is recoverable, and "eleven of eleven" is a complete answer because the eleven are
+  written down. **A count against an unnamed set is not an answer, however precise the
+  number looks.**
+
+  > This replaces a weaker rule: *"Report at row granularity — '28 of 28, rows 7, 8, 12 and
+  > 12c by name' — never 'the gate passed'."* It asked for naming at REPORT time, which is
+  > the moment the information is hardest to reconstruct and easiest to skip.
+  >
+  > **Worked example, still unrecovered:** slice 5's first run was reported as **34 of 34**.
+  > The old rule was satisfied in spirit — a precise count, not "it passed" — and the
+  > breakdown is gone anyway, because no list existed to count against. The 34 also exceeds
+  > the 20 runnable Q rows, so it evidently folded in re-gate rows, and which ones is part of
+  > the same lost answer. The eleven-row re-gate below is the counter-example: the set was
+  > named in the commit that requested it, so "eleven of eleven" reconstructs completely.
+  >
+  > Same shape as Q2's missing craftable / probed / distinct-stack counts: **observed by
+  > someone, never written down.** Both are still owed.
 - Where a row says **count**, write the number down before and after. A duplication and a
   theft look identical in a screenshot of the after state.
 - A row marked **sole witness** names the behaviour it is the only check for. Skipping it is
@@ -330,9 +346,25 @@ same thing in the same words.
 > The 34 is also more than the 20 runnable Q rows, so it evidently includes the re-gate list; which
 > rows those were is part of the same missing answer.
 
-**A FOLLOW-UP LANDED AFTER THAT RUN** — the UI changes below — so a NAMED SUBSET is re-run rather
-than the whole gate. **ELEVEN ROWS: Q1, Q3, Q9, Q15, Q16, Q23, S12, S12b, S12c, 6, 1c.** Everything
-else was unaffected.
+**THE FOLLOW-UP RE-GATE RAN AND PASSED, operator-confirmed 2026-09-03: ELEVEN OF ELEVEN.**
+
+| row | what it re-covered |
+|---|---|
+| **Q1** | the relayout — column 7, grid at 10-12/19-21/28-30, status bar in row 5 |
+| **Q3** | a suggestion click after the column moved |
+| **Q9** | the minted suggestion tooltip, and mint-without-roll on the received item |
+| **Q15** | the tier order in three cells |
+| **Q16** | neither vanilla nor armor appearing — passing by the column being all gear |
+| **Q23** | the two grays in one glance |
+| **S12** | black panes, after the row was rewritten for the chrome change |
+| **S12b** | gray panes over the status bar |
+| **S12c** | light gray panes over the empty suggestion cells |
+| **6** | a drag touching chrome, after slot 22 became a pane |
+| **1c** | own-inventory drags, same reason |
+
+**This is the rule above working.** The eleven were named in the commit that asked for them, before
+the run, so "eleven of eleven" reconstructs to a complete answer. Contrast the 34/34 above, which
+cannot.
 
 > An earlier wording listed "Q23" and "the new two-grays row" as separate entries. **They are the
 > same row** — Q23 IS the two-grays row — so the list read as twelve. A count that double-counts is
