@@ -581,6 +581,46 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### NAMED DEBT: `core/weapon` holds four classes that have nothing to do with weapons
+
+**Recorded 2026-09-02, during Quick Craft's first half.** Not a note to act on now — a named debt, so
+the reader who eventually opens that package finds the reason rather than inferring nobody noticed.
+
+`core/src/main/java/.../core/weapon/` currently contains, alongside the actual gear model:
+
+| class | what it is |
+|---|---|
+| `CollectPlan` | which stacks a double-click gathers, in what order |
+| `CraftResultIndex` | which gear definition a crafted vanilla item becomes |
+| `CraftResultToken` | material-token normalisation |
+| `CraftCount` | how many of each recipe the player can make |
+
+**None of the four is about weapons.** All four are crafting-and-menu arithmetic that happened to be
+extractable into `core`, and `weapon` was simply the package `core` already had.
+
+**The deviation was deliberate and is still the right call.** Slice 5 considered opening a
+`core/craft` package for `CraftCount` and did not, because the alternative was crafting logic split
+across two packages with no principle separating them — one badly-named package beats two arbitrary
+ones. This entry exists so that reasoning is on the record rather than looking like an oversight.
+
+**What paying it down would take**, so a future slice can size it honestly:
+
+- Move the four classes to `core/.../core/craft/`, plus their four test files.
+- ~20 import updates across `paper/` — `MenuRouting`, `CraftingMenu`, `CraftMatrixScreen`,
+  `RecipeProbe`, `RpgPlugin` (which carries `CraftResultIndex` on `AdapterContext`), and the gear
+  records that call `CraftResultToken.normalise`.
+- **`GearDefinition` and the four gear records STAY in `core/weapon`.** `CraftResultIndex` takes a
+  `Collection<? extends GearDefinition>`, so the new package would import the old one — which is
+  correct and one-directional, and is the check that the split is real rather than cosmetic.
+- **Re-verify:** `./mvnw clean test` (a package move is exactly the kind of change an incremental
+  build hides — see the slice 4 entry), and the marker sweep. No boot gate: nothing observable
+  changes, which is what makes this cheap and also what makes it easy to keep deferring.
+
+**Do it when something else already touches those files**, not on its own. A pure-rename commit
+across twenty imports is expensive to review and buys nothing a reader could see.
+
+---
+
 ### Crafting, Slice 4 (tools, the fourth gear kind) — what it created or exposed
 
 - **THE BRIEF'S HEADLINE FINDING WAS WRONG, AND IT WAS THE REVIEWER'S.** The slice-4 brief carried a

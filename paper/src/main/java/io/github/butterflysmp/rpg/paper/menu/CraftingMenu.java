@@ -107,6 +107,15 @@ public final class CraftingMenu extends Menu {
      */
     private String poolSignature = "";
 
+    /**
+     * Has the recompute cost been reported yet?
+     *
+     * <p>Per MENU rather than per plugin, and once inside it. Gate row Q2 needs ONE honest number
+     * to read; a line per recompute would bury it, and no line at all would leave the row with
+     * nothing to observe -- which is the shape of a check that cannot be run.
+     */
+    private boolean measured;
+
     private final AdapterContext adapters;
 
     public CraftingMenu(Player viewer, AdapterContext adapters) {
@@ -434,6 +443,32 @@ public final class CraftingMenu extends Menu {
      * <p>The OVERFLOW give stays in here, because it does not diverge: on both surfaces a remainder
      * that would not fit back into the matrix goes to the player.
      *
+     * <h2>THE CONSERVATION RULE, and why "consumed = input MINUS resulting" is WRONG</h2>
+     *
+     * The obvious way to debit an inventory craft is to work out what was consumed by subtracting
+     * the resulting matrix from the input matrix, per slot. <b>That formulation is incoherent for
+     * exactly the case rows 12 and 12c exist for.</b> A milk bucket does not DECREASE when a cake is
+     * made -- it BECOMES an empty bucket. There is no per-slot quantity to subtract, and any code
+     * that tries lands on either "three buckets vanished" or "three buckets appeared from nowhere".
+     *
+     * <p>What holds instead, with no such question asked:
+     *
+     * <pre>
+     * A       is exactly what left the inventory  (what the assembly took, BY SLOT)
+     * R + O   is exactly what the engine says remains  (resulting matrix + overflow)
+     *
+     * the player ends at   inventory - A + R + O + result
+     * </pre>
+     *
+     * <b>That is true WITHOUT EVER KNOWING which part of A was consumed and which was transformed.</b>
+     * Any formulation that needs to know is wrong for cake. So the inventory caller debits the whole
+     * assembly and hands back the whole resulting matrix, and the two net to the same thing a
+     * per-slot diff would have produced for the easy cases and nothing sane for the hard one.
+     *
+     * <p>The GRID gets this for free -- writing the resulting matrix over the slots the input came
+     * from IS {@code -A + R} in one operation -- which is precisely why the asymmetry between the
+     * two callers is easy to miss.
+     *
      * @return the outcome, or {@code null} when nothing was crafted and nothing changed.
      */
     private CraftOutcome commitCraft(ItemStack[] matrix, Optional<NamespacedKey> pinned) {
@@ -669,7 +704,29 @@ public final class CraftingMenu extends Menu {
         if (!force && signature.equals(poolSignature)) return;
         poolSignature = signature;
 
+        // MEASURED, NOT ASSUMED, and printed ONCE per menu so gate row Q2 has something to read.
+        //
+        // This is the one hot path in the slice: a walk of the whole recipe roster, probing every
+        // ingredient slot against every distinct stack the player carries. The plan's estimate is
+        // that bailing on the first unsatisfiable slot keeps the average nothing like the worst
+        // case -- but an estimate in a javadoc is not a measurement, and this project has a rule
+        // about believing the two are the same thing.
+        //
+        // IF THIS IS NOT COMFORTABLY SUB-TICK, THE CADENCE IS WHAT CHANGES, NOT THE ALGORITHM.
+        // A tick is 50ms. The honest responses to a slow number are to stop recomputing on grid
+        // changes, or to recompute off the click path entirely -- not to make the walk cleverer.
+        long startNanos = System.nanoTime();
         suggestions = RecipeProbe.of(viewer.getInventory(), adapters.keys());
+        long elapsedMicros = (System.nanoTime() - startNanos) / 1_000L;
+
+        if (!measured) {
+            measured = true;
+            adapters.log().info("Quick Craft: first recompute took " + elapsedMicros + " microseconds ("
+                    + suggestions.suggestions().size() + " craftable of "
+                    + suggestions.recipes().size() + " probed, from "
+                    + suggestions.groups().size() + " distinct stacks). A tick is 50000.");
+        }
+
         renderSuggestions();
     }
 
