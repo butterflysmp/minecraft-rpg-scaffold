@@ -5,8 +5,28 @@ package io.github.butterflysmp.rpg.core.weapon;
  *
  * <p>Quick Craft ranks by this first and by how many the player can make second, so a suggestion
  * that mints RPG gear always outranks one that makes sticks. <b>Declaration order IS the ordering</b>
- * -- {@link Enum#ordinal()} is the sort key -- so reordering these constants reorders the column,
- * and that is the intended way to change it.
+ * -- {@link Enum#ordinal()} is the sort key -- and that is the intended way to change it.
+ *
+ * <h2>THERE ARE TWO CONSUMERS, NOT ONE</h2>
+ *
+ * This javadoc used to say reordering these constants "reorders the column", naming the suggestion
+ * column alone. Since slice 6 it also orders the <b>recipe browser's catalogue</b> -- which is to
+ * say, <i>which page every recipe in the game lands on</i>. Reordering a constant now moves entries
+ * between pages for every player, which is a far larger blast radius than three cells.
+ *
+ * <p><b>Naming one consumer when there are two is how a rule loses track of who depends on it</b>,
+ * and it is the same drift the named-debt entry in {@code NEXT.md} records: a note that enumerates
+ * the cases alive when it was written rather than the axis it guards. Both are listed here so the
+ * next addition has to consider both:
+ *
+ * <ul>
+ *   <li>the Quick Craft <b>suggestion column</b> -- {@code CraftCount.rank} sorts by this ordinal;
+ *   <li>the <b>recipe browser catalogue</b> -- tier first, then recipe key, deciding page placement.
+ * </ul>
+ *
+ * <p>The browser's invariant is <b>"all gear sorts ahead of all vanilla"</b>. It is deliberately NOT
+ * "page 1 is the gear page": that is arithmetic over two numbers that can both move, and nothing
+ * would warn anyone when it stopped holding.
  *
  * <h2>Core defines the AXIS; paper decides which one a recipe IS</h2>
  *
@@ -58,15 +78,25 @@ public enum SuggestionTier {
     /**
      * An ordinary vanilla craft that mints nothing.
      *
-     * <p><b>A PLAYER MAY NEVER SEE ONE, AND THAT IS INTENDED.</b> Twenty-four armor pieces, five
-     * tools and one shield all claim a {@code craft_result} today, against NINE suggestion slots.
-     * A player carrying common materials can therefore fill the whole column with gear and see no
-     * vanilla suggestion at all.
+     * <p><b>A PLAYER MAY NEVER SEE ONE IN THE COLUMN, AND THAT IS INTENDED.</b> Twenty-four armor
+     * pieces, five tools and one shield all claim a {@code craft_result} today, against <b>THREE</b>
+     * suggestion cells. A player carrying common materials can therefore fill the whole column with
+     * gear and see no vanilla suggestion at all.
+     *
+     * <p><i>(This paragraph said NINE until slice 6. The column moved to column 7 and shrank to
+     * three cells during slice 5 and this text was not revisited -- the same aging-out-from-under-
+     * itself that CLAUDE.md's squash-body convention was written about. Three makes the point
+     * harder, not softer: the odds of a vanilla craft reaching the column went DOWN.)</i>
      *
      * <p>That is the direction the ordering was asked for. It is written down here because
      * <i>"sticks and torches vanished from the crafting helper"</i> is exactly what it will look
      * like from the outside, and the next person to hear that report should find this paragraph
      * rather than a bug.
+     *
+     * <p><b>The recipe browser is the answer to it</b>, and is why that trade-off is now acceptable
+     * rather than merely intended: every vanilla recipe is reachable there, on its own pages, sorted
+     * last. Gate row Q16 records the column's three-cell limit as passing BY DESIGN; the browser is
+     * what it hands off to.
      */
     VANILLA
 }

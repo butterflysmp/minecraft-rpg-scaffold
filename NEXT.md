@@ -934,8 +934,9 @@ inside the same slice that recorded it.**
 | `CraftResultToken` | material-token normalisation |
 | `CraftCount` | how many of each recipe the player can make, ranked |
 | `SuggestionTier` | which display category a craft suggestion sorts in |
+| `PageMath` | where page N of a paged menu starts and stops |
 
-**None of the five is about weapons.** All five are crafting-and-menu arithmetic that happened to be
+**None of the six is about weapons.** All six are crafting-and-menu arithmetic that happened to be
 extractable into `core`, and `weapon` was simply the package `core` already had.
 
 **The deviation was deliberate and is still the right call.** Slice 5 considered opening a
@@ -945,7 +946,7 @@ ones. This entry exists so that reasoning is on the record rather than looking l
 
 **What paying it down would take**, so a future slice can size it honestly:
 
-- Move the five classes to `core/.../core/craft/`, plus their test files.
+- Move the six classes to `core/.../core/craft/`, plus their test files.
 - **The import cost, MEASURED 2026-09-03 rather than estimated** — the previous "~20 imports" was a
   guess and was wrong in both directions:
   - **10 import lines to rewrite, across 7 distinct files** outside the package (`MenuRouting`,
@@ -956,7 +957,7 @@ ones. This entry exists so that reasoning is on the record rather than looking l
     is the larger half. Upper bound: the count is `grep -l` on the class names, so it includes
     javadoc mentions and the classes' own files; the real figure is lower.
   - Command, so the next reader re-measures rather than trusting this:
-    `grep -rlE "import io\.github\.butterflysmp\.rpg\.core\.weapon\.(CollectPlan|CraftResultIndex|CraftResultToken|CraftCount|SuggestionTier);" --include=*.java core/src paper/src storage/src`
+    `grep -rlE "import io\.github\.butterflysmp\.rpg\.core\.weapon\.(CollectPlan|CraftResultIndex|CraftResultToken|CraftCount|SuggestionTier|PageMath);" --include=*.java core/src paper/src storage/src`
 - **`GearDefinition` and the four gear records STAY in `core/weapon`.** `CraftResultIndex` takes a
   `Collection<? extends GearDefinition>`, so the new package would import the old one — which is
   correct and one-directional, and is the check that the split is real rather than cosmetic.
@@ -968,8 +969,15 @@ ones. This entry exists so that reasoning is on the record rather than looking l
 expensive to review and buys nothing a reader could see.
 
 **AND WHEN YOU ADD A CLASS TO `core/weapon`, ASK WHICH SIDE OF THIS TABLE IT IS ON.** That question
-is the only thing standing between this debt and the next silent arrival — it has already failed
-once, in the slice that wrote it down.
+is the only thing standing between this debt and the next silent arrival — it has failed once, in
+the slice that wrote it down, and been answered once since.
+
+> **`PageMath` is the answer, 2026-09-03, slice 6.** It went into `core/weapon` for the same reason
+> the other five did — it is pure arithmetic and that is where `core`'s pure arithmetic lives — and
+> it was added to the table **in the commit that created it**, rather than being noticed a slice
+> later. That is the whole mechanism working once. It is recorded because "the rule fired" is as
+> worth knowing as "the rule was missed": the previous entry only has evidence of the failure mode,
+> which makes the rule look like a lament rather than something that works when run.
 
 ---
 
