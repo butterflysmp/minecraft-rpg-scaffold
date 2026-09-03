@@ -523,6 +523,27 @@ things, so bring a way to count.
 > **Write both verdicts into this file before running anything.** Row 12b's shape is the precedent: a
 > mutation whose red state cannot exist credits coverage that does not exist.
 
+> ## 🚫 MERGE BLOCKER — THE INSTRUMENT IS STILL IN THE BUILD
+>
+> `RecipeCatalogue.build()` ends with a temporary `log().info("Recipe catalogue built: …")`. It
+> exists solely to put a real number in **Q24**, and it **must be deleted in the same commit that
+> records that number.**
+>
+> **THIS IS THE LIVE RISK ON THIS BRANCH, and the reason it is a banner rather than a footnote:
+> Q24 WILL PASS.** This file's own note — `PLAN-1b-swing-listener.md:134`, and slice 5's finding —
+> says a passing row is *exactly* when "remove before merge" gets skipped. Nothing about a green gate
+> creates any pressure to go back and delete a log line, and the branch would merge clean with a
+> debug instrument logging on every server's first browser open, forever.
+>
+> **The branch is NOT merge-ready until this is done.** Sequence, in order, no steps combined:
+>
+> 1. take the two decisions above from the boot log, write the verdicts into their tables;
+> 2. run Q24-Q31 and the eighteen named re-runs; report against that list;
+> 3. **record Q24's µs figure AND delete the instrument IN ONE COMMIT** — if the number is in and the
+>    log line is still there, step 3 is not finished;
+> 4. merge: squash body carrying the branch tip and tree SHAs per the corrected convention, and the
+>    `check-absorbed.sh` verdict — with its positive-control line — in the PR conversation.
+
 **Q12 IS SUPERSEDED, NOT DELETED.** It read *"Navigates only; nothing is crafted or consumed"*,
 which was true of the placeholder and is **false by design** now: the browser crafts. It stays
 struck through and visible, as row 20 → S12 was handled — **the gesture changed, so its observable

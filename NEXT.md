@@ -4950,6 +4950,73 @@ a melee basic, where nothing read it any more.
 
 ## Rules for this work
 
+### A COUNT OBTAINED BY LOOKING IS A LOWER BOUND
+
+**Until a mechanical sweep with a positive control has run, report it as "at least N, unswept."**
+
+This sits above the individual findings below because it is what all of them have in common, and it
+is why each was believed downstream. **Three instances in one session, identical structure**, each a
+hand count reported as a total:
+
+| reported | actual | how the number was obtained |
+|---|---|---|
+| five arrow references | **seven** | a `grep` shaped by the identifier (`ARROW_SLOT\|ARROW\b`), not by the word. `grep -i arrow` found 60 lines |
+| two places carrying the over-broad Q10 claim | **five** | a hand search of the places it seemed likely to be |
+| two orphaned javadocs | **five** | the files that slice happened to have open |
+
+**None of the three was a careless count.** Each was an honest tally of what the searcher could see,
+and in each the search itself was the limit — the identifier was not the word, the likely spots were
+not all the spots, the open files were not the repo. *"Two" was never a count of the defect; it was
+the reach of where I happened to be looking.*
+
+**The tell is that a hand count and a total are reported in the same words.** "There are two" and
+"I found two" are indistinguishable in a report, and only one of them is a claim about the codebase.
+So say which:
+
+- **"at least N, unswept"** — a hand count. Correct, bounded, and honest about the bound.
+- **"N"** — only after a sweep that could have found more, *and* a positive control proving it can
+  see. A discovery that finds nothing looks exactly like a discovery that cannot look
+  (CLAUDE.md:104), so the control is not optional decoration — without it the sweep's number is
+  another hand count wearing a script.
+
+**Corollary, and it is the sharp end:** a defect that is invisible to reading is *also invisible to
+incidental discovery*. Orphaned javadocs were found while moving code, not while looking for them —
+so the count that came out of that encounter had no relationship to the population. **The moment you
+notice a defect class you did not know existed, the first number you have is the weakest one you will
+ever have.** Sweep before reporting it.
+
+### A NORMALISATION INSIDE A COMPARISON IS A PREMISE, NOT A FORMATTING STEP
+
+**Every normalised diff claims that what it erased does not matter, and that claim needs its evidence
+attached where the result is stated.**
+
+Slice 6's move proved five method bodies `IDENTICAL` — after `sed` had rewritten `isEmpty(` to
+`MenuSafety.isEmpty(` and `matches(` to `CraftingMenu.matches(` on one side. The raw bodies differ in
+exactly five places. Reporting the post-normalisation verdict as "identical" asserted something
+stronger than had been tested.
+
+**The accurate form is: "identical apart from five call-site requalifications, each to a target
+separately proved byte-identical."** And the reason the distinction is not pedantry: the
+normalisation is sound ONLY BECAUSE the targets were separately proved, so **a report that omits the
+target proof is not a weaker version of the argument — it is a different and invalid one.**
+
+**It is also exactly where a defect of this shape hides.** A `MenuSafety.isEmpty` differing from the
+predicate it replaced by a single character would change four call sites at once, silently, and every
+normalised diff would still print `IDENTICAL`.
+
+**Every `sed`-normalised comparison in this repo has this structure whether or not anyone wrote the
+premise down.** When you erase something to make two things compare equal, state what you erased and
+why it was safe to erase, next to the verdict — not in a script nobody reads.
+
+### DO NOT POINT A LINE EDITOR AT A FILE THAT CONTAINS ANOTHER LANGUAGE'S SYNTAX
+
+`sed -i` on `NEXT.md` — which carries `awk`, `sed`, shell and Java as *content* — mangled it twice in
+one session, once because an inserted line beginning `awk` was parsed as sed's `a` (append) command.
+That is a **category error, not a slip**: the fast tool is fast because it interprets, and this file
+is the worst possible target for interpretation. Use the editing tool for prose files; keep `sed` for
+files whose content is not itself a program. (The recovery held because the file had been copied to
+the scratchpad first, and because the restore was *verified* byte-identical rather than assumed.)
+
 ### ENUMERATE THE AXIS, NOT THE CASES YOU CURRENTLY HAVE
 
 **Armor Slice 2a hit this three times in one slice, in three different disguises. It is one defect.**
