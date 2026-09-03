@@ -496,6 +496,52 @@ things, so bring a way to count.
 
 ## The browser — LIVE from slice 6
 
+> ## GATE RESULT — 2026-09-03, operator-confirmed: **31 of 31 GREEN**
+>
+> Against the set named before the run: the ten browser rows **Q11, Q24, Q25, Q26, Q27, Q28, Q29,
+> Q32, Q33, Q35** plus the twenty-one re-runs **Q1, Q3, Q6, Q7, Q8, Q9, Q10, Q13, Q14, Q15, Q16,
+> Q17, Q22, 12, 12c, 16, 22, S1, S2, 13, N5b**. Ten and twenty-one reconcile to thirty-one, so the
+> count is complete **with respect to the set that was named**.
+>
+> ### ⚠ BUT THE SET WAS SHORT ONE LIVE ROW. **Q34 WAS NOT RUN.**
+>
+> This section holds **ELEVEN** live rows, not ten — Q11, Q24, Q25, Q26, Q27, Q28, Q29, Q32, Q33,
+> **Q34**, Q35. (Q12, Q30 and Q31 are struck as superseded and correctly absent.) **Q34 — armor
+> sorts HEAD, CHEST, LEGS, FEET — is missing from the named set**, so the gate is
+> **31 of 32**, with one row **NOT RUN**.
+>
+> **Recorded as NOT RUN rather than folded into the pass**, per this file's own rule: the next
+> reader's question is *"was this checked"*, and *"it was not in the list"* is a different answer
+> from *"it passed"*.
+>
+> **What is uncovered, precisely.** `CraftOrderTest` pins the ordering RULE in `core` — ten tests,
+> and the armor mutation was watched red. What no unit test can reach is the **WIRING**: that
+> `RecipeCatalogue` populates `armorSlot` from a live recipe's claimed `ArmorDefinition`, and that
+> the browser sorts with `CraftOrder.TIER_FIRST`. **Q34 is the only check for either.** A comparator
+> falling back to the recipe key renders boots, chestplate, helmet, leggings — alphabetical,
+> plausible, and wrong.
+>
+> **Owed. Run it before merge**, or record a reason it cannot be run.
+>
+> ### THE Q24 NUMBERS ARE ALSO OWED, AND THE INSTRUMENT IS DELIBERATELY STILL IN
+>
+> | measurement | value |
+> |---|---|
+> | Q24 catalogue build time | **NOT RECORDED — OWED** |
+> | entries | **NOT RECORDED — OWED** |
+> | unkeyed skipped | **NOT RECORDED — OWED** |
+> | not fully listable (Q29's evidence) | **NOT RECORDED — OWED** |
+> | mutation 8 stageable? | **NOT RECORDED — OWED** |
+>
+> **The instrument has NOT been deleted, and that is the correct order.** Q24 is an only-once
+> measurement — the cost is paid once per server lifetime and the log line goes with the deletion —
+> so deleting it before the number is written down makes the number **unrecoverable**, not merely
+> inconvenient. **Q2's counts from slice 5 are the worked example and are still marked owed in this
+> file.** Writing an invented figure here would be worse than the blank: a blank is visibly owed, a
+> plausible number is not.
+>
+> **The merge blocker below stands until both are resolved.**
+
 > ## ⛔ TWO DECISIONS TO TAKE BEFORE THE FIRST ROW IS RUN
 >
 > **Both are decided from evidence only the operator has, and BOTH MUST BE WRITTEN DOWN HERE BEFORE
