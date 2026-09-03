@@ -496,34 +496,31 @@ things, so bring a way to count.
 
 ## The browser — LIVE from slice 6
 
-> ## GATE RESULT — 2026-09-03, operator-confirmed: **31 of 31 GREEN**
+> ## GATE RESULT — 2026-09-03, operator-confirmed: **32 of 32 GREEN**
 >
-> Against the set named before the run: the ten browser rows **Q11, Q24, Q25, Q26, Q27, Q28, Q29,
-> Q32, Q33, Q35** plus the twenty-one re-runs **Q1, Q3, Q6, Q7, Q8, Q9, Q10, Q13, Q14, Q15, Q16,
-> Q17, Q22, 12, 12c, 16, 22, S1, S2, 13, N5b**. Ten and twenty-one reconcile to thirty-one, so the
-> count is complete **with respect to the set that was named**.
+> **Q11, Q24, Q25, Q26, Q27, Q28, Q29, Q32, Q33, Q34, Q35** — every live row in this section —
+> plus the twenty-one re-runs **Q1, Q3, Q6, Q7, Q8, Q9, Q10, Q13, Q14, Q15, Q16, Q17, Q22, 12, 12c,
+> 16, 22, S1, S2, 13, N5b**. Q12, Q30 and Q31 are struck as superseded and correctly absent.
 >
-> ### ⚠ BUT THE SET WAS SHORT ONE LIVE ROW. **Q34 WAS NOT RUN.**
+> ### Q34 WAS MISSING FROM THE NAMED SET, AND WAS CAUGHT IN REVIEW
 >
-> This section holds **ELEVEN** live rows, not ten — Q11, Q24, Q25, Q26, Q27, Q28, Q29, Q32, Q33,
-> **Q34**, Q35. (Q12, Q30 and Q31 are struck as superseded and correctly absent.) **Q34 — armor
-> sorts HEAD, CHEST, LEGS, FEET — is missing from the named set**, so the gate is
-> **31 of 32**, with one row **NOT RUN**.
+> The set as first named held ten browser rows; this section holds **eleven**. It was assembled by
+> extending the RE-RUN half twice for the UI changes and treating the NEW half as settled. **Q34
+> landed in `8bec9e4` alongside Q32 and Q33**, and the tick-through page published for the operator
+> carried the omission through.
 >
-> **Recorded as NOT RUN rather than folded into the pass**, per this file's own rule: the next
-> reader's question is *"was this checked"*, and *"it was not in the list"* is a different answer
-> from *"it passed"*.
+> **The reviewer's check had the same shape as the mistake:** a grep for
+> <code>\*\*Q(2[569]&#124;3[23])\*\*</code> — *the rows expected to have been added*, not the axis,
+> which is EVERY LIVE `Q` ROW IN THIS SECTION. No pattern on either side could match Q34.
 >
-> **What is uncovered, precisely.** `CraftOrderTest` pins the ordering RULE in `core` — ten tests,
-> and the armor mutation was watched red. What no unit test can reach is the **WIRING**: that
-> `RecipeCatalogue` populates `armorSlot` from a live recipe's claimed `ArmorDefinition`, and that
-> the browser sorts with `CraftOrder.TIER_FIRST`. **Q34 is the only check for either.** A comparator
-> falling back to the recipe key renders boots, chestplate, helmet, leggings — alphabetical,
-> plausible, and wrong.
+> > **Rule 1 applies to the grep you REVIEW with, not only the one you verify with.** Enumerate the
+> > axis, not the cases you currently have. Recorded in `NEXT.md`.
 >
-> **Owed. Run it before merge**, or record a reason it cannot be run.
+> **And the reason it was catchable at all:** naming the set before the run did not make it
+> complete — it made it **RECOVERABLE**. A set named afterwards would have been ten rows and
+> self-consistent for ever.
 >
-> ### THE Q24 NUMBERS ARE ALSO OWED, AND THE INSTRUMENT IS DELIBERATELY STILL IN
+> ### FIVE MEASUREMENTS ARE STILL OWED, AND THE INSTRUMENT SURVIVES BECAUSE OF IT
 >
 > | measurement | value |
 > |---|---|
@@ -533,14 +530,20 @@ things, so bring a way to count.
 > | not fully listable (Q29's evidence) | **NOT RECORDED — OWED** |
 > | mutation 8 stageable? | **NOT RECORDED — OWED** |
 >
-> **The instrument has NOT been deleted, and that is the correct order.** Q24 is an only-once
-> measurement — the cost is paid once per server lifetime and the log line goes with the deletion —
-> so deleting it before the number is written down makes the number **unrecoverable**, not merely
-> inconvenient. **Q2's counts from slice 5 are the worked example and are still marked owed in this
-> file.** Writing an invented figure here would be worse than the blank: a blank is visibly owed, a
-> plausible number is not.
+> **NO NUMBER, NO DELETION.** The rule *"delete the instrument in the commit that records the
+> number"* exists so a passing row cannot cause the removal to be skipped. **It cuts both ways:**
+> deleting it before the number is written down makes an only-once measurement **permanently
+> unrecoverable** rather than merely unrecorded.
 >
-> **The merge blocker below stands until both are resolved.**
+> **Shipping it costs almost nothing, and that is VERIFIED rather than assumed.** `build()` is
+> guarded by `entries == null` at both entry points; `entries` is assigned once, never reset, and
+> assigned *before* the empty-catalogue early return — so even that path cannot re-run it. One
+> instance exists, constructed once in `RpgListeners`. **The line logs AT MOST ONCE PER SERVER
+> LIFETIME**, on the first browser open, and never at all if nobody opens the browser.
+>
+> That is the opposite of slice 5's instrument, which was per menu instance and would have logged
+> for every player on every table open, for ever. **This one is a single console line that announces
+> its own debt.** Whoever next reads a boot log can close it in a one-line commit.
 
 > ## ⛔ TWO DECISIONS TO TAKE BEFORE THE FIRST ROW IS RUN
 >
@@ -572,26 +575,32 @@ things, so bring a way to count.
 > **Write both verdicts into this file before running anything.** Row 12b's shape is the precedent: a
 > mutation whose red state cannot exist credits coverage that does not exist.
 
-> ## 🚫 MERGE BLOCKER — THE INSTRUMENT IS STILL IN THE BUILD
+> ## ⏳ THE INSTRUMENT SHIPS, DELIBERATELY — AND IS OWED A ONE-LINE COMMIT
 >
 > `RecipeCatalogue.build()` ends with a temporary `log().info("Recipe catalogue built: …")`. It
-> exists solely to put a real number in **Q24**, and it **must be deleted in the same commit that
-> records that number.**
+> exists to put a real number in **Q24**.
 >
-> **THIS IS THE LIVE RISK ON THIS BRANCH, and the reason it is a banner rather than a footnote:
-> Q24 WILL PASS.** This file's own note — `PLAN-1b-swing-listener.md:134`, and slice 5's finding —
-> says a passing row is *exactly* when "remove before merge" gets skipped. Nothing about a green gate
-> creates any pressure to go back and delete a log line, and the branch would merge clean with a
-> debug instrument logging on every server's first browser open, forever.
+> > **THIS BANNER USED TO SAY "🚫 MERGE BLOCKER — the branch is NOT merge-ready until this is
+> > deleted", and it was RIGHT AT THE TIME and is kept here rather than replaced silently.** Its
+> > argument stands and has not been withdrawn: *Q24 will pass, and a passing row is exactly when
+> > "remove before merge" gets skipped; nothing about a green gate creates pressure to go back and
+> > delete a log line.* That is why the removal was made a merge condition.
+> >
+> > **What changed is which failure is worse.** The gate ran green and **the five figures were never
+> > recorded** — so the rule *"delete the instrument in the commit that records the number"* had its
+> > precondition unmet. **It cuts both ways: NO NUMBER, NO DELETION.** Deleting it now makes an
+> > only-once measurement **permanently unrecoverable** rather than merely unrecorded, and the rule
+> > was written to protect the number, not to protect the deletion.
 >
-> **The branch is NOT merge-ready until this is done.** Sequence, in order, no steps combined:
+> **The cost of shipping it is verified, not assumed** — see the gate-result block above:
+> `entries == null` guards both entry points, `entries` is assigned once and never reset (and
+> assigned *before* the empty-catalogue early return), and one instance exists. **At most one console
+> line per server lifetime**, on the first browser open. Slice 5's instrument was per menu instance
+> and would have logged for every player on every table open; this one is not that.
 >
-> 1. take the two decisions above from the boot log, write the verdicts into their tables;
-> 2. run Q24-Q31 and the eighteen named re-runs; report against that list;
-> 3. **record Q24's µs figure AND delete the instrument IN ONE COMMIT** — if the number is in and the
->    log line is still there, step 3 is not finished;
-> 4. merge: squash body carrying the branch tip and tree SHAs per the corrected convention, and the
->    `check-absorbed.sh` verdict — with its positive-control line — in the PR conversation.
+> **WHAT IS OWED, and it is one commit:** boot a server, open the browser once, read the line, write
+> the five figures into the Q24 row and Q29's evidence, and delete the instrument in that same
+> commit. Anyone with a boot log can close this.
 
 **Q12 IS SUPERSEDED, NOT DELETED.** It read *"Navigates only; nothing is crafted or consumed"*,
 which was true of the placeholder and is **false by design** now: the browser crafts. It stays
@@ -606,7 +615,7 @@ one, every time. The two real defects are named instead.
 |---|---|---|---|
 | **Q11** | Open the browser (slot **26**). Page to the end and back to page 1. | **No entry appears on two pages, and no entry the catalogue holds is missing from the last page.** A SHORT final page is correct and is not a failure | **discriminating** · reworded this slice. The unit sweep `everyEntryAppearsExactlyOnceAcrossAllPages` already proves the arithmetic over every list size; this row proves the RENDERER uses it — the half no unit test can reach |
 | ~~Q12~~ | ~~Click an entry in the browser.~~ | ~~Navigates only; nothing is crafted or consumed~~ | **SUPERSEDED by Q24-Q28.** Not a failure and not withdrawn as wrong: the browser became a crafting surface in slice 6, so this row's observable stopped being the correct one. Kept visible so the change of intent is on the record rather than looking like a deleted row |
-| **Q24** | **THE LAZY BUILD'S COST.** First player after a restart opens the browser. Watch for a hitch, then read the log line. | No perceptible stall. **Write the logged microsecond figure into this row.** | **SOLE WITNESS, and the only time the cost is ever paid.** The catalogue walk has NO early bail — keeping everything is the point — so **Q2's 298µs must not be cited for it**: that number is the suggestion probe, which dies on most recipes' first ingredient. The instrument is `Recipe catalogue built: N entries in Nus`, and it is **deleted in the commit that records this number** |
+| **Q24** | **THE LAZY BUILD'S COST.** **PASSED 2026-09-03 -- but the FIGURE WAS NOT RECORDED, so the instrument SURVIVES DELIBERATELY. Deleting it before the number is written down makes an only-once measurement PERMANENTLY UNRECOVERABLE rather than merely unrecorded; it logs at most once per server lifetime, so leaving it in costs one console line. Re-run this row, write the figures in, and delete it in that commit.** First player after a restart opens the browser. Watch for a hitch, then read the log line. | No perceptible stall. **Write the logged microsecond figure into this row.** | **SOLE WITNESS, and the only time the cost is ever paid.** The catalogue walk has NO early bail — keeping everything is the point — so **Q2's 298µs must not be cited for it**: that number is the suggestion probe, which dies on most recipes' first ingredient. The instrument is `Recipe catalogue built: N entries in Nus`, and it is **deleted in the commit that records this number** |
 | **Q25** | **TIER ORDERING.** Open the browser at page 1. Walk down it. | Every minted-gear recipe appears **before** any vanilla one, **and the boundary is where the TIER changes, not where the page ends** | **discriminating** · REWORDED for the reversal: it checks the tier order among what IS CRAFTABLE. It is no longer "the row Q16 hands off to" -- under the craftable-now contract **Q16's squeeze is not answered anywhere**, by design. See the note below the table |
 | **Q26** | **THE LIST GOES STALE UNDER YOU.** Open the browser, note an entry. **Without closing it**, spend those materials elsewhere (a hopper, a second player, a shift-click on another entry that shares them). Then click the noted entry. **Count materials first.** | Refuses with *"You do not have the materials for that."* **Nothing debited, nothing given** | **count · discriminating** · REWRITTEN for the reversal. *"Click something you cannot afford"* is now **impossible by construction on a fresh view** -- every listed entry was affordable when the list was built -- so the row would have been unrunnable as written. This is Q8's shape on the third surface, and the thing that must hold has not changed: the craft re-verifies against the LIVE inventory and a refusal costs nothing |
 | **Q27** | **A BROWSER CRAFT OF MINTED GEAR.** Carry the materials. Click a claiming recipe. **Open the item.** | Arrives **minted AND rolled** -- stats, rarity footer, enchant candidates -- identical to the column and the grid | **discriminating** · *open it, do not count it.* A count sees an item arrive and cannot see that it is a plain iron sword. This is the row that proves the third surface shares `InventoryCraft` rather than reimplementing it |

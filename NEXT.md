@@ -793,6 +793,115 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ---
 
+### OWED: FIVE MEASUREMENTS, AND THIS MUST NOT BECOME A LIST
+
+**Owed as of 2026-09-03, slice 6.** Gate row Q24 **passed** and its figure **was not written down**:
+
+| measurement | state |
+|---|---|
+| Q24 catalogue build time (µs) | **OWED** |
+| entries | **OWED** |
+| unkeyed skipped | **OWED** |
+| not fully listable — **Q29's evidence**, whatever its value | **OWED** |
+| mutation 8: stageable, or unrunnable with a reason | **OWED** |
+
+**`Q2`'s craftable / probed / distinct-stack counts from SLICE 5 ARE STILL OWED ON THIS SAME PAGE.**
+That is the point of putting these here rather than in a report: **two entries is a list, and a list
+of owed measurements is a thing people stop reading.** One of them has now survived a whole slice.
+
+**How to close both:** boot, open the browser once, read
+`Recipe catalogue built: N entries in Nµs (N unkeyed skipped, N not fully listable)`, write the five
+figures into Q24 and Q29, and **delete the instrument in that same commit**. One commit.
+
+> **THE INSTRUMENT SHIPPED, DELIBERATELY, and the reasoning is in `RecipeCatalogue` and the gate.**
+> *No number, no deletion* — the rule *"delete it in the commit that records the number"* protects
+> the **number**, not the deletion, and deleting it first makes an only-once measurement permanently
+> unrecoverable rather than merely unrecorded. It logs **at most once per server lifetime** (verified:
+> `entries == null` guards both entry points, `entries` is assigned once before the empty-catalogue
+> early return, one instance exists), so shipping it costs one console line.
+
+---
+
+### OWED: NOTHING IN THE REPO CAN DETECT THE NEXT ICON COLLISION
+
+**Found 2026-09-03 by the barrier/barrier clash on the empty browser** — the close button and the
+empty-state notice, same material, one screen, distinguished only by name and position.
+
+**Neither of the two rows that touch icons can see it.** Q33 pins the empty-state notice's material;
+Q35 pins the recipe book's. **Neither asks whether any two icons on one screen share one**, and no
+unit test can — `MenuIcons.icon`, `close` and `filler` need a live server, which was verified by
+grepping `paper/src/test` rather than assumed.
+
+**The collision came from two individually-correct decisions meeting.** Barrier was right for the
+empty state when it was chosen, because the browser had no close button yet; barrier was right for
+the close button; and nothing connects the two changes. **An icon choice is only unique with respect
+to the screen as it exists on the day it is made** — so the same is available to a third, and the
+next one may not be harmless.
+
+**THE CHEAP SHAPE, and it makes this a unit test instead of a gate row nobody thought to write:**
+
+> **Let the layout classes own the chrome MATERIALS beside the slot constants** — the way
+> `CraftingMenuLayout` already owns *where*. `RecipeBrowserLayout` would declare `CLOSE_MATERIAL`,
+> `EMPTY_STATE_MATERIAL`, `PREV_MATERIAL`, `PAGE_MATERIAL`, `BACK_MATERIAL` next to `CLOSE_SLOT`,
+> `EMPTY_STATE_SLOT` and the rest.
+>
+> **Screen-wide uniqueness then becomes an assertion over a set**, in the same file and the same test
+> that already assert no slot is both an entry and a control — `RecipeBrowserLayoutTest` has that
+> shape already. `Material` is a plain enum and constructs headless, so this is testable where the
+> icons themselves are not.
+
+**Not done in slice 6**, deliberately: it touches `CraftingMenu`, `EnchantMenu`, `RecipeBrowserMenu`
+and two layout classes, and slice 6 has already reversed its own premise once. **Do it when something
+else already has those files open** — the same disposition the `core/weapon` debt and the duplicate
+`isEmpty` take. Until then the guard is that this entry exists.
+
+---
+
+### THE FOURTH LOWER-BOUND COUNT — AND THE FIRST ONE INSIDE A **REVIEW**
+
+**2026-09-03.** The slice 6 gate was named before the run, as the rule requires, and the set held
+**ten** browser rows. The section holds **eleven**. `Q34` — armor sorts head, chest, legs, feet — was
+missing, and the tick-through page published for the operator carried the omission through. Caught in
+review; the gate then ran 32 of 32.
+
+**HOW THE SET GOT SHORT.** It was assembled by extending the **re-run half twice** for the UI changes
+and treating the **new half as settled**. Q34 had landed in `8bec9e4` alongside Q32 and Q33, in the
+window between those two extensions.
+
+**AND THE REVIEWER'S CHECK HAD THE SAME SHAPE AS THE MISTAKE — this is the part worth keeping.** It
+was a grep for the rows *expected to have been added*:
+
+```
+**Q(2[569]|3[23])**
+```
+
+rather than for **the axis: every live `Q` row in the section**. Q34 matched neither the assembling
+pattern nor the reviewing one. **Two independent checks, both enumerating the cases they already had
+in mind, and therefore both blind in exactly the same place.**
+
+> **RULE 1 APPLIES TO THE GREP YOU REVIEW WITH, NOT ONLY THE ONE YOU VERIFY WITH.** *Enumerate the
+> axis, not the cases you currently have.* The rules section states this for gates, switch statements
+> and denylists; it is just as true of the pattern you check someone's work with, and a review grep
+> feels like verification while being another hand count.
+
+**This is the FOURTH instance this session of a count obtained by looking being reported as a total,
+and the first inside a review rather than a sweep:**
+
+| reported | actual | how the number was obtained |
+|---|---|---|
+| five arrow references | seven | a grep shaped by the identifier |
+| two places carrying the Q10 claim | five | a hand search of the likely spots |
+| two orphaned javadocs | five | the files that slice had open |
+| **ten rows in the gate set** | **eleven** | **a grep for the rows expected to be there** |
+
+**WHY IT WAS CATCHABLE AT ALL, and this is the load-bearing half:** naming the set before the run did
+not make it **complete** — it made it **RECOVERABLE**. A set named at report time would have been ten
+rows, self-consistent, and would have read as *31 of 31* for ever with nothing to compare against.
+**The rule added at `aee4fe1` did not prevent this defect; it is the only reason the defect could be
+found.** That is a fair thing to want from a process rule and worth separating from prevention.
+
+---
+
 ### A WORKING READOUT WAS WEARING THE PLACEHOLDER'S CLOTHES, AND THE GATE ROW WOULD HAVE PASSED ON IT
 
 **2026-09-03.** The recipe browser's empty state was built with `MenuIcons.placeholder`, so a player

@@ -72,6 +72,29 @@ public enum SuggestionTier {
      * held open because the operator asked for this axis and because the alternative -- adding it
      * later -- would renumber every tier below it. It is not dead structure, but it is not covered
      * either, and a reader deserves to know which.
+     *
+     * <h2>THE CONDITION FOR REMOVING IT, so "held open" cannot run for ever</h2>
+     *
+     * <b>Added 2026-09-03.</b> This constant was held open with <i>no stated condition under which
+     * the prediction would be judged wrong</i> -- which makes "kept for future use" unfalsifiable,
+     * and a note that can never be wrong is a note nobody ever revisits.
+     * {@code MenuIcons.placeholder} was given the same treatment in the same pass, for the same
+     * reason.
+     *
+     * <p><b>Remove it if BOTH hold:</b>
+     *
+     * <ul>
+     *   <li>a slice ships that <i>would</i> have populated it -- a crafting-intermediate concept, a
+     *       content flag distinguishing a component from a product, anything that could answer
+     *       <i>"is this vanilla item a material?"</i> -- <b>and does not use this constant</b>; and
+     *   <li>{@code SuggestionTiers} still cannot return it.
+     * </ul>
+     *
+     * <p>At that point the axis has been extended past this position without needing it, and the
+     * renumbering argument has been paid for nothing. <b>Deleting it is then a one-line change plus
+     * whatever the ordering tests assert</b>, and both {@code CraftOrderTest} and
+     * {@code RecipeCatalogueOrderTest} iterate {@code values()} rather than listing constants, so
+     * they follow the enum rather than having to be edited alongside it.
      */
     MATERIAL,
 

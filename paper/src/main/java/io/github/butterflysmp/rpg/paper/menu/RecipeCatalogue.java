@@ -254,9 +254,27 @@ public final class RecipeCatalogue {
         // build it runs on the MAIN THREAD inside a player's click rather than at boot where nobody
         // is waiting. Q2's number must not be cited for it.
         //
-        // This log line is TEMPORARY: it exists to put a real number in the gate row, and is deleted
-        // in the commit that records that number. See PLAN-1b-swing-listener.md:134, and slice 5's
-        // lesson that a passing row is exactly when "remove before merge" gets skipped.
+        // THIS LOG LINE SURVIVES DELIBERATELY. It is temporary, it exists to put a real number in
+        // gate row Q24, and it is deleted IN THE COMMIT THAT RECORDS THAT NUMBER -- see
+        // PLAN-1b-swing-listener.md:134, and slice 5's lesson that a passing row is exactly when
+        // "remove before merge" gets skipped.
+        //
+        // Q24 PASSED ON 2026-09-03 AND THE FIGURE WAS NOT WRITTEN DOWN, so that rule's precondition
+        // is unmet. IT CUTS BOTH WAYS: no number, no deletion. Deleting this before the figure is
+        // recorded makes an ONLY-ONCE measurement PERMANENTLY UNRECOVERABLE rather than merely
+        // unrecorded -- the cost is paid once per server lifetime and this line is the only way to
+        // observe it. The rule exists to protect the number, not to protect the deletion.
+        //
+        // Shipping it costs one console line, and that is VERIFIED rather than assumed: build() is
+        // guarded by `entries == null` at both entry points, `entries` is assigned once and never
+        // reset -- and assigned BEFORE the empty-catalogue early return above, so even that path
+        // cannot re-run it -- and exactly one RecipeCatalogue is constructed, in RpgListeners. So
+        // this logs AT MOST ONCE PER SERVER LIFETIME, on the first browser open, and never at all if
+        // nobody opens the browser. Slice 5's instrument was per menu instance and would have logged
+        // for every player on every table open, for ever; this is not that.
+        //
+        // TO CLOSE IT: boot, open the browser once, read this line, write the five figures into Q24
+        // and Q29's evidence, and delete this block in the same commit. One line of work.
         adapters.log().info("Recipe catalogue built: " + entries.size() + " entries in "
                 + micros + "us (" + skipped + " unkeyed skipped, "
                 + partiallyListable + " not fully listable)");
