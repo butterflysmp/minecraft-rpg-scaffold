@@ -76,10 +76,32 @@ public final class CraftCount {
      *              order. An EMPTY list means "nothing the player holds satisfies this slot", which
      *              is how an unprobeable {@code RecipeChoice} arrives -- see {@link #countOf}.
      */
-    public record Candidate(String key, SuggestionTier tier, List<List<Integer>> slots) {}
+    public record Candidate(String key, SuggestionTier tier, ArmorSlot armorSlot,
+                            List<List<Integer>> slots) {
+
+        /**
+         * For everything that is not armor, which is every tier but {@link SuggestionTier#ARMOR}.
+         *
+         * <p>A convenience overload rather than a nullable argument at each site: eight call sites
+         * predate the ordering and none of them makes armor. Adding the component this way left all
+         * eight compiling untouched, which kept this an ordering change rather than a mechanical
+         * edit across two modules. Same shape {@code AdapterContext} uses for its canonical and
+         * convenience constructors.
+         */
+        public Candidate(String key, SuggestionTier tier, List<List<Integer>> slots) {
+            this(key, tier, null, slots);
+        }
+    }
 
     /** A recipe the player can make, its display tier, and how many times. Never a count of zero. */
-    public record Craftable(String key, SuggestionTier tier, int count) {}
+    public record Craftable(String key, SuggestionTier tier, ArmorSlot armorSlot, int count)
+            implements CraftOrder {
+
+        /** For everything that is not armor. See {@link Candidate#Candidate(String, SuggestionTier, List)}. */
+        public Craftable(String key, SuggestionTier tier, int count) {
+            this(key, tier, null, count);
+        }
+    }
 
     /**
      * TIER FIRST, then most-craftable, then key.
@@ -89,14 +111,27 @@ public final class CraftCount {
      * craftable shield under sixty-four torches. {@link SuggestionTier}'s declaration order IS this
      * ordering.
      *
-     * <p>The key tiebreak is not decoration: without it the order would depend on the iteration
+     * <p>The tiebreak is not decoration: without it the order would depend on the iteration
      * order of {@code recipeIterator()}, which is the server's business and may differ between
      * boots. The same concern {@link CollectPlan}'s slot tiebreak addresses.
+     *
+     * <h2>THE FINAL TERM IS SHARED, AND USED TO BE A LOCAL {@code key} COMPARISON</h2>
+     *
+     * <b>It is {@link CraftOrder#WITHIN_TIER}.</b>
+     * It used to be the latter, which was correct and was also the second copy of a rule -- and when
+     * armor gained a body-slot order, the column's copy would have kept sorting armor
+     * alphabetically while the browser sorted it head-down. <b>Armor is squeezed out of the
+     * three-cell column today</b> (gate row Q16), so that disagreement would have been invisible in
+     * play for as long as it took someone to widen the column.
+     *
+     * <p>Count leads the tiebreak here and nowhere else, deliberately: three cells should be spent
+     * on what the player can make most of. See {@link CraftOrder} for why the browser must not
+     * inherit that.
      */
     private static final Comparator<Craftable> RANKING =
             Comparator.comparingInt((Craftable c) -> c.tier().ordinal())
                     .thenComparing(Comparator.comparingInt(Craftable::count).reversed())
-                    .thenComparing(Craftable::key);
+                    .thenComparing(CraftOrder.WITHIN_TIER);
 
     /**
      * Rank every candidate the player can actually make.
@@ -120,7 +155,14 @@ public final class CraftCount {
         for (Candidate candidate : candidates) {
             if (candidate == null || candidate.key() == null) continue;
             int count = countOf(candidate, totals);
-            if (count > 0) ranked.add(new Craftable(candidate.key(), tierOf(candidate), count));
+            if (count > 0) {
+                // The armor slot rides through UNCHANGED. rank() decides counts, never ordering
+                // inputs -- if it defaulted or recomputed this, the browser and the column would be
+                // ordering by different data while sharing a comparator, which is the same defect
+                // one level down.
+                ranked.add(new Craftable(candidate.key(), tierOf(candidate),
+                        candidate.armorSlot(), count));
+            }
         }
 
         ranked.sort(RANKING);

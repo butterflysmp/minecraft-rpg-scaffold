@@ -1,5 +1,9 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
+import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ArmorSlot;
+import io.github.butterflysmp.rpg.core.weapon.CraftOrder;
+import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.SuggestionTier;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import org.bukkit.Bukkit;
@@ -16,18 +20,49 @@ import java.util.List;
  *
  * <h2>WHY THIS IS NOT {@link RecipeProbe}</h2>
  *
- * {@code RecipeProbe} answers <i>"what can I make RIGHT NOW"</i>: it drops anything the player
- * cannot currently satisfy. That is exactly right for the suggestion column and exactly wrong for a
- * browser -- the armor a player lacks materials for is precisely what they opened the browser to
- * find, and under the probe it is as absent on page 4 as it is in cell 2.
+ * {@code RecipeProbe.of} answers <i>"what can I make RIGHT NOW"</i> by walking the roster and
+ * scoring it against one player's inventory, every time. This answers <i>"what recipes EXIST"</i>,
+ * once, for everybody.
  *
- * <p>So this is a SECOND walk of a different shape: the full roster, unfiltered by inventory.
+ * <p><b>The browser needs both, and that is why both exist.</b> It filters this list down to what
+ * the player can craft -- so the visible result resembles the probe's -- but the expensive,
+ * player-independent half (roster membership, key, tier, body slot, ingredient shape) is computed
+ * ONCE here rather than per open.
+ *
+ * <p><i>(An earlier version of this paragraph argued the opposite: that a browser must show what the
+ * player CANNOT yet afford, because "the armor a player lacks materials for is precisely what they
+ * opened the browser to find". That was correct for a browser meant to answer the Q16 squeeze. It is
+ * not the brief -- see below -- and the sentence is replaced rather than left sitting here looking
+ * live.)</i>
+ *
+ * <h2>THE CATALOGUE IS THE FULL ROSTER. THE BROWSER IS NOT.</h2>
+ *
+ * <b>The browser shows only what the player can craft RIGHT NOW</b>, and filters this list per
+ * player each time it opens. That is a reversal of the premise this class was written under, taken
+ * deliberately: the brief is <i>"an easy way to craft quickly"</i>, not a recipe encyclopedia, and
+ * 1214 entries is clutter against that purpose.
+ *
+ * <p><b>The static catalogue survives the reversal unchanged, and is still the right structure.</b>
+ * Roster membership, key, tier, body slot and ingredients do not depend on any player, so they are
+ * computed once and shared; only the filter and the counts are per-player, and those are cheap. The
+ * build-once decision, its lazy trigger and gate row Q24 are all untouched.
+ *
+ * <h2>WHAT THIS COSTS, SAID OUT LOUD</h2>
+ *
+ * <b>Armor the player cannot yet afford is now invisible EVERYWHERE.</b> The suggestion column is
+ * three cells ranked by tier, so armor is squeezed out of it (gate row Q16); the browser now hides
+ * what cannot be crafted. Between them, <b>no surface answers "what does a netherite helmet
+ * need?"</b>
+ *
+ * <p>That is a consequence of the product decision, not a defect, and it is written here rather than
+ * left to be discovered as a complaint. If it ever needs answering, the answer is a third surface --
+ * a lookup — not a filter flag on this one.
  *
  * <h2>STATIC vs DYNAMIC, split by what actually changes</h2>
  *
- * The catalogue is STATIC -- roster membership, key, tier, whether it is inert. The COUNTS are
- * dynamic and are scored per rendered page, never stored here. Mixing the two is what would force a
- * rebuild on every inventory change.
+ * The catalogue is STATIC -- roster membership, key, tier, body slot, ingredient shape. The COUNTS
+ * and the craftable-now FILTER are dynamic: the browser recomputes both per open, and after every
+ * craft. Mixing the two is what would force a full roster rebuild on every inventory change.
  *
  * <h2>BUILT ON FIRST OPEN, NOT AT BOOT</h2>
  *
@@ -67,32 +102,34 @@ public final class RecipeCatalogue {
      * {@link #resolve}, which has the side benefit that what the player sees is always resolved from
      * the live roster rather than from whatever was true at first open.
      *
-     * @param id    the recipe's key. The identity a click re-resolves through.
-     * @param tier  what kind of thing it makes. The primary sort.
-     * @param inert this menu can NEVER craft it -- see {@link #isInert}. It is still shown.
+     * @param id        the recipe's key. The identity a click re-resolves through.
+     * @param tier      what kind of thing it makes. The primary sort.
+     * @param armorSlot which body slot, when it makes armor. Null otherwise -- see {@link CraftOrder}.
      */
-    public record Entry(NamespacedKey id, SuggestionTier tier, boolean inert) {}
+    public record Entry(NamespacedKey id, SuggestionTier tier, ArmorSlot armorSlot)
+            implements CraftOrder {
+
+        /** {@link CraftOrder} orders by string key; the catalogue's identity is a namespaced one. */
+        @Override
+        public String key() {
+            return id == null ? null : id.toString();
+        }
+    }
 
     /**
-     * TIER FIRST, THEN KEY -- the browser's whole ordering, extracted so it has a unit test.
+     * The catalogue's order, which is {@link CraftOrder#TIER_FIRST} and NOT a second copy of it.
      *
-     * <p>Building the catalogue needs a running server. Deciding what order it comes out in does
-     * not, and that is where the defects are, so the comparator is a named constant rather than a
-     * lambda buried in {@link #build}. Same trade {@code CollectPlan} and {@code MenuIcons} make.
+     * <p>It was a local {@code tier -> key} comparator until armor gained a body-slot order. Keeping
+     * it local would have meant the catalogue sorted armor alphabetically while the browser sorted
+     * it head-down, or -- worse and more likely -- both being edited to agree and drifting later.
+     * <b>Armor is squeezed out of the three-cell column</b> (gate row Q16), so a disagreement
+     * between two of the three orderings is invisible in play. See {@link CraftOrder}.
      *
-     * <p><b>The tiebreak must be STATIC and DETERMINISTIC.</b> Without it entries shuffle between
-     * rebuilds and a player's memory of where something sits is worthless.
-     * {@code CraftingMenuLayout.GRID_SLOTS}' javadoc records this repo being bitten once already by
-     * an iteration order the JDK does not define. The recipe key is the obvious choice: it is
-     * unique, stable across restarts, and already the identity a click re-resolves through.
-     *
-     * <p><b>The invariant is "all gear sorts ahead of all vanilla". It is NOT "page 1 is the gear
-     * page"</b> -- that is arithmetic over two numbers that can both move, and nothing would warn
-     * anyone when it stopped holding.
+     * <p>The alias is kept rather than inlined because {@code RecipeCatalogueOrderTest} names it,
+     * and because "the catalogue has an order, and it is the shared one" is worth being able to
+     * read at this end rather than only at the other.
      */
-    static final Comparator<Entry> ORDER =
-            Comparator.comparingInt((Entry entry) -> entry.tier().ordinal())
-                    .thenComparing(entry -> entry.id().toString());
+    static final Comparator<CraftOrder> ORDER = CraftOrder.TIER_FIRST;
 
     private final AdapterContext adapters;
 
@@ -101,7 +138,7 @@ public final class RecipeCatalogue {
     /**
      * How many entries have at least one ingredient this surface cannot ENUMERATE for display.
      *
-     * <p>Not a craftability count -- see {@link #isInert}. It feeds the honesty line in the
+     * <p>Not a craftability count. It feeds the honesty line in the
      * ingredient lore: <i>"these are the materials"</i> versus <i>"these are the materials I can
      * list"</i>.
      */
@@ -136,27 +173,28 @@ public final class RecipeCatalogue {
     }
 
     /**
-     * Can this menu never craft it, whatever the player is carrying?
+     * A recipe with no ingredients to enumerate -- {@code ComplexRecipe}, and nothing else.
      *
-     * <p><b>The exclusion axis has exactly ONE member: a recipe that exposes no ingredients.</b>
-     * {@code ComplexRecipe} -- multi-star fireworks, dye recipes, book cloning -- declares none at
-     * all, so there is nothing to assemble a matrix out of and no amount of material helps.
+     * <p><b>These are now simply ABSENT from the browser, and that is honest under the current
+     * contract.</b> They cannot be probed, so they can never be counted, so they never survive the
+     * craftable-now filter. Nothing special happens to them; they fall out for the same reason a
+     * recipe the player lacks materials for falls out.
      *
-     * <p><b>An earlier draft had a second member and it was FALSE.</b> The premise was that an
-     * unprobeable {@code RecipeChoice} gets dropped by {@code satisfyingGroups}. It does not:
-     * that method calls {@code choice.test(..)}, and every {@code RecipeChoice} implementation
-     * answers {@code test} -- it extends {@code Predicate<ItemStack>}, verified on the pinned jar.
-     * The only empty path is a null choice, which {@code ingredientsOf} already filters. A
-     * predicate-choice recipe is fully probeable, countable and CRAFTABLE here.
+     * <p><b>There used to be a whole apparatus here -- an "inert" flag, a red pane, and lore reading
+     * "Cannot be crafted here / use the crafting grid".</b> It existed because the browser claimed
+     * to show EVERYTHING, and under that claim omitting a grid-craftable recipe would have been a
+     * false absence: Q10's mistake in UI form. Under <i>"what you can craft here, right now"</i> the
+     * absence is true, so the apparatus is gone and gate rows Q30/Q31 are struck as superseded.
      *
-     * <p>Inert entries are still LISTED, and that is the decision worth defending. Excluding them
-     * would tell the player a recipe does not exist when it does and they can make it -- in the
-     * vanilla grid, through the server's own matcher. Routing them into the ordinary
-     * missing-materials refusal would be worse still: that refusal is temporary and actionable,
-     * this one is permanent, and a player would gather materials, return, and meet the identical
-     * message for ever.
+     * <p>Kept as a named method only because it explains the absence. <b>The exclusion axis still
+     * has exactly ONE member</b>, and the correction that established that is worth not losing: an
+     * earlier draft claimed an unprobeable {@code RecipeChoice} was a second member. It is not --
+     * {@code satisfyingGroups} calls {@code choice.test(..)}, and every {@code RecipeChoice}
+     * implementation answers {@code test} (it extends {@code Predicate<ItemStack>}, verified on the
+     * pinned jar). A predicate-choice recipe is fully probeable, countable and craftable, and shows
+     * up in this browser like anything else.
      */
-    public static boolean isInert(Recipe recipe) {
+    static boolean hasNoEnumerableIngredients(Recipe recipe) {
         List<?> ingredients = RecipeProbe.ingredientsOf(recipe);
         return ingredients == null || ingredients.isEmpty();
     }
@@ -181,7 +219,12 @@ public final class RecipeCatalogue {
                 continue;
             }
 
-            built.add(new Entry(id, RecipeProbe.tierOf(recipe, adapters), isInert(recipe)));
+            // ONE lookup, two projections. Tier and armor slot are both derived from the gear
+            // definition this craft claims, so asking twice would be two chances to classify one
+            // recipe two ways.
+            GearDefinition claimed = RecipeProbe.claimedBy(recipe, adapters);
+            built.add(new Entry(id, SuggestionTiers.of(claimed),
+                    claimed instanceof ArmorDefinition armor ? armor.slot() : null));
             if (!IngredientLore.fullyListable(recipe)) unlistable++;
         }
 

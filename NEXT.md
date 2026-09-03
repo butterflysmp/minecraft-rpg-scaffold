@@ -793,6 +793,117 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ---
 
+### THE BROWSER'S FOUNDING PREMISE WAS REVERSED, DELIBERATELY, AFTER IT WAS BUILT
+
+**2026-09-03, operator decision.** The recipe browser now shows **only what the player can craft
+right now**. It was built to page through the whole 1214-recipe roster.
+
+**The argument it was built on was mine, and it was correct for the brief it was made under:**
+
+> *"A browser paging through `Result.suggestions` is a taller suggestion column, not a browser."*
+
+That holds for a browser whose purpose is to make the Q16 squeeze reachable — the three-cell column
+fills with gear, so armor and every vanilla recipe are unreachable from the crafting screen, and
+something has to answer for them. **It is not the brief any more.** The purpose is *"an easy way to
+craft quickly"*, and against that purpose 1214 entries is clutter. The reversal is recorded here, and
+the old reasoning is replaced at each of its call sites rather than left sitting in the files looking
+live — `RecipeCatalogue`'s "why this is not RecipeProbe" section said the opposite in so many words.
+
+**WHAT SURVIVED UNCHANGED, which is most of it:**
+
+- the **static catalogue** — built lazily on first open, cached for the server lifetime. Still the
+  right shared structure, because roster membership, key, tier, body slot and ingredient shape do not
+  depend on any player. The browser filters it per player at open. **Gate row Q24 is untouched.**
+- the **tier ordering**, and its row.
+
+**WHAT IT COST, AND THE COST IS THE PART WORTH WRITING DOWN:**
+
+> **ARMOR THE PLAYER CANNOT YET AFFORD IS NOW INVISIBLE EVERYWHERE.** Squeezed out of the column by
+> tier order (Q16), hidden in the browser by the filter. **No surface answers "what does a netherite
+> helmet need?"**
+>
+> That is a consequence of the product decision, **not a defect** — and it is written into
+> `RecipeCatalogue`, `RecipeBrowserMenu` and the gate, at the three places someone would meet it,
+> rather than left to arrive as a complaint nobody can explain. If it ever needs answering, the
+> answer is a **third surface**, a lookup, not a filter flag on this one.
+
+**WHAT IT RESOLVED — the inert-entry apparatus became unnecessary and came out.**
+
+It existed because the browser claimed to show EVERYTHING, so omitting a recipe that the vanilla grid
+*can* craft would have been a **false absence** — Q10's mistake in UI form. Under *"what you can
+craft here, right now"* a multi-star firework is absent **honestly**: it genuinely cannot be crafted
+here. Gone with it: the `inert` flag, the red pane, and the "Cannot be crafted here / use the
+crafting grid" lore. Gate rows **Q30 and Q31 are struck as SUPERSEDED**, exactly as Q12 was — the
+contract changed, so their observables stopped being correct. Not deleted, not wrong.
+
+> **THE `not fully listable` BOOT COUNT IS KEPT, and this is the distinction that saved it.** It was
+> Q31's runnability evidence; it is now **Q29's**. A listed recipe whose ingredients cannot be fully
+> enumerated still needs *"(accepts more than can be listed)"*. **That hazard was always about LORE,
+> never about craftability** — which is exactly why it survived a reversal that deleted everything
+> around it. A count kept for the wrong reason would have been deleted with the apparatus.
+
+**WHAT CHANGED SHAPE, and one of these would have been an unrunnable row:**
+
+- **Q26 was "an entry you cannot afford".** That is now **impossible by construction on a fresh
+  view** — every listed entry was affordable when the list was built. Rewritten as a **staleness**
+  row: spend the materials elsewhere, then click the entry the list still shows. Q8's shape on the
+  third surface. Kept, because *"refuses cleanly, nothing debited"* is still what must hold and the
+  debit-before-craft hazard has not moved.
+- **Q25 stopped being "the row Q16 hands off to."** Reworded to check tier order among what IS
+  craftable.
+
+**TWO NEW FAILURE MODES THE FILTER CREATES**, both now rows, both sole witnesses:
+
+| mode | why it is new | row |
+|---|---|---|
+| **the list SHRINKS under the player** | crafting removes entries, so the last page can cease to exist. `PageMath.clampPage` existed already; the defect was calling it only on NAVIGATION — the obvious moment, and **not** the one that changes the page count | **Q32** |
+| **an empty inventory means an empty browser** | which reads as broken. `MenuIcons.placeholder`'s argument exactly: a surface showing nothing because it MEASURED nothing must be distinguishable from one that is broken | **Q33** |
+
+**COST NOTE, and getting it wrong is the confusion Q24 was written to prevent.** Filtering scores the
+**whole roster per open**, not 45 entries per page. That is the walk **Q2** measured at **298µs**
+against a 50000µs tick. **Q24 is a different walk** — the catalogue BUILD, paid once per server. Both
+numbers are cited at their own call sites, and neither is allowed to stand in for the other.
+
+---
+
+### ARMOR SORTS HEAD, CHEST, LEGS, FEET — AND THE ENUM GAINED A CONSUMER WITHOUT GAINING ITS RULE
+
+`ArmorSlot` was **already** declared `HEAD, CHEST, LEGS, FEET`, so the required order is its
+declaration order and no new constant was needed. `CraftOrder.WITHIN_TIER` sorts armor by
+`ordinal()`.
+
+**Its javadoc said "a closed, UNORDERED enum".** By the time anything sorted by it, that was false —
+**rule 3, caught late**. Nothing failed: the old text was not wrong about anything the code did on
+the day it was written; it simply stopped describing the enum the moment something depended on the
+order, and no compiler, test or reader reports that. `SuggestionTier` carries the same warning, and
+gained *its* second consumer in this same arc. **An enum that acquires an ordering acquires a rule,
+and the rule lives in its javadoc or nowhere.**
+
+**ONE COMPARATOR, THREE CONSUMERS — and "one comparator" does NOT mean "one total order".**
+
+The column ranks `tier -> COUNT -> tiebreak`; the browser and the catalogue rank
+`tier -> tiebreak`. Those are genuinely different orders and must stay different: three cells should
+spend themselves on what the player can make most of, while a browser that led with count would
+reshuffle its whole list every time the player crafted one item. **What must not be duplicated is the
+tiebreak underneath both**, so `CraftOrder` is an interface implemented by `CraftCount.Craftable` and
+by `RecipeCatalogue.Entry`, and the shared piece is `WITHIN_TIER`.
+
+> **WHY THIS WAS WORTH THE INTERFACE.** Armor is squeezed out of the three-cell column (Q16), so a
+> column that ordered armor differently from the browser **would look identical in play** for as long
+> as the column stayed at three cells. Two orderings that agree today, written in two places, with no
+> observable that can tell them apart — the same shape as the craft path before `InventoryCraft`.
+> Closed the same way.
+
+**AND A MUTATION CAUGHT THE TEST THAT WAS SUPPOSED TO CATCH IT.** The column's armor test first used
+`diamond_helmet` (HEAD) and `leather_boots` (FEET) — where `d < l` alphabetically **and** head
+precedes feet, so a key-only tiebreak and the body-slot tiebreak give the **same answer**. The
+mutation that swaps the shared tiebreak for a key-only one **ran green** against it. Rewritten with
+`z_helmet` (HEAD) and `a_boots` (FEET), where the two orders disagree completely; the mutation then
+reddened. **A test that cannot fail is worth nothing however green** — and the second time this
+session that a mutation has found a defect in its own test rather than in the code.
+
+---
+
 ### FIVE ORPHANED JAVADOCS, INVISIBLE BECAUSE JAVADOC IGNORES THEM SILENTLY
 
 **Found 2026-09-03 while moving code, not while looking for them.** Java attaches a doc comment to
@@ -848,11 +959,17 @@ exactly what made the count "two" when it was five.
 
 ```bash
 find core/src storage/src paper/src -name '*.java' -type f -exec \
-  awk 'prev ~ /^[[:space:]]*\*\/$/ && $0 ~ /^[[:space:]]*\/\*\*$/ {print FILENAME": "NR} {prev=$0}' {} +
+  awk 'prev ~ /^[[:space:]]*\*\/$/ && $0 ~ /^[[:space:]]*\/\*\*$/ {print FILENAME":"FNR} {prev=$0}' {} +
 ```
 
-Note the indentation is `[[:space:]]*` rather than a fixed four/five spaces: the first version hard-
-coded the depth of a top-level member and would have missed every orphan on a nested class.
+Two details in that one line, both of which were wrong first:
+
+- **`FNR`, not `NR`.** With `-exec ... {} +` awk receives many files in ONE invocation, so `NR` keeps
+  counting across file boundaries. The first run of the corrected sweep reported an orphan at
+  `CraftCount.java: 7694` — in a file of 250 lines. **The FILE was right and the LINE was nonsense**,
+  which is the worst kind of wrong for a tool whose output you are about to go and look at.
+- **`[[:space:]]*` for the indentation**, not a fixed four or five spaces: the original hardcoded the
+  depth of a top-level member and would have missed every orphan on a nested class or record.
 
 **Five before, ZERO after**, across 378 source files.
 

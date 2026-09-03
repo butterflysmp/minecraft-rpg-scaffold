@@ -1,5 +1,7 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
+import io.github.butterflysmp.rpg.core.weapon.CraftCount;
+import io.github.butterflysmp.rpg.core.weapon.CraftOrder;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.PageMath;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -13,38 +15,62 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 
 /**
- * Every recipe on the server, paged, craftable straight out of the inventory.
+ * Everything the player can craft RIGHT NOW, paged, straight out of their inventory.
  *
- * <p>The second half of Quick Craft. The suggestion column is three cells ranked by tier, so armor
- * and every vanilla recipe are unreachable from the crafting screen entirely -- gate row Q16, which
- * passes BY DESIGN. This is what it hands off to.
+ * <h2>THE CONTRACT IS "WHAT YOU CAN CRAFT HERE, RIGHT NOW"</h2>
  *
- * <h2>NO INPUT SLOTS AT ALL</h2>
+ * <b>This reverses the premise the slice began under, deliberately.</b> The browser was built to
+ * page through the whole 1214-recipe roster, on the argument that the three-cell suggestion column
+ * squeezes out armor and vanilla (gate row Q16) and something had to make them reachable. The brief
+ * changed: this is <i>an easy way to craft quickly</i>, not a recipe encyclopedia, and a
+ * thousand-entry list is clutter against that purpose.
  *
- * {@link #inputSlots} is empty, so the router permits no moves into this menu and
- * {@code returnEverything} has nothing to return. Every slot is chrome. That makes the whole
- * class a read-and-click surface, which is what lets it be much shorter than {@code CraftingMenu}
- * despite doing a comparable job.
+ * <p>So the static {@link RecipeCatalogue} is FILTERED per player at open. What survives:
  *
- * <h2>THREE CLICK OUTCOMES AND A FOURTH NON-CLICK STATE</h2>
+ * <ul>
+ *   <li>the catalogue itself — built lazily on first open, cached for the server lifetime, still the
+ *       right shared structure because roster, key, tier, body slot and ingredients do not depend on
+ *       any player;
+ *   <li>the tier ordering, and the head-chest-legs-feet order within armor.
+ * </ul>
  *
- * <table>
- *   <tr><td>craftable now</td><td>crafts -- left for one, shift-left for a bulk run</td></tr>
- *   <tr><td>materials missing</td><td>refuses: "You do not have the materials for that."</td></tr>
- *   <tr><td>gone from the roster</td><td>refuses: "That recipe is no longer available."</td></tr>
- *   <tr><td><b>inert</b></td><td><b>not clickable.</b> Its lore says to use the grid</td></tr>
- * </table>
+ * <h2>WHAT IT RESOLVES</h2>
  *
- * <p>The last two rows are the reason the dead-entry decision matters. A missing-materials refusal
- * is TEMPORARY and actionable; a refusal for a recipe this menu structurally cannot make is
- * PERMANENT. Routing both into one message means the player gathers materials, returns, and meets
- * the identical refusal for ever.
+ * The inert-entry apparatus is gone. It existed because a browser claiming to show EVERYTHING could
+ * not omit a grid-craftable recipe without that being a FALSE absence — Q10's mistake in UI form.
+ * Under this contract a multi-star firework is absent <b>honestly</b>: it cannot be crafted here.
+ *
+ * <h2>WHAT IT COSTS</h2>
+ *
+ * <b>Armor the player cannot yet afford is invisible everywhere</b> — squeezed out of the column by
+ * Q16, hidden here by the filter. No surface answers "what does a netherite helmet need?". A
+ * consequence of the product decision, not a defect; see {@link RecipeCatalogue}.
+ *
+ * <h2>COST: THIS SCORES THE WHOLE ROSTER PER OPEN, NOT PER PAGE</h2>
+ *
+ * <b>The number that covers this walk is gate row Q2's 298µs</b> — the suggestion probe, which does
+ * exactly this work: group the inventory, probe every recipe, rank. <b>NOT Q24</b>, which measures
+ * the catalogue BUILD and is paid once per server. Two different walks, two different numbers, and
+ * crossing them is precisely the confusion Q24's note was written to prevent.
+ *
+ * <h2>TWO FAILURE MODES THE FILTER CREATES</h2>
+ *
+ * <ol>
+ *   <li><b>The list SHRINKS under the player.</b> Craft the last entry on page 3 and page 3 may
+ *       cease to exist. So the page is re-clamped after EVERY recompute, not only on navigation —
+ *       see {@link #recompute}.
+ *   <li><b>An empty inventory means an empty browser</b>, which reads as broken. There is an
+ *       explicit empty state; {@code MenuIcons.placeholder}'s argument applies exactly — a surface
+ *       showing nothing because it measured nothing must be distinguishable from one that is broken.
+ * </ol>
  */
 public final class RecipeBrowserMenu extends Menu {
 
@@ -52,14 +78,28 @@ public final class RecipeBrowserMenu extends Menu {
     private final RecipeCatalogue catalogue;
     private final InventoryCraft inventoryCraft;
 
-    /** Zero-based. Every read goes through {@code PageMath.clampPage} first. */
+    /** Zero-based. Every read goes through {@link PageMath#clampPage} first. */
     private int page;
+
+    /** What the player can craft, as of the last {@link #recompute}. Ordered, never null. */
+    private List<CraftCount.Craftable> visible = List.of();
+
+    /**
+     * Recipe key to its catalogue entry, so a click re-resolves without a second roster walk.
+     *
+     * <p>Deliberately holds the ENTRY and not the {@code Recipe}: the entry is the cache-safe
+     * identity, and {@link RecipeCatalogue#resolve} against it is what re-checks the live roster.
+     * Caching the {@code Recipe} object here and clicking that would be exactly the stale-cache trust
+     * the catalogue's design exists to avoid.
+     */
+    private Map<String, RecipeCatalogue.Entry> shown = Map.of();
 
     public RecipeBrowserMenu(Player viewer, AdapterContext adapters, RecipeCatalogue catalogue) {
         super(viewer, RecipeBrowserLayout.SIZE, MenuIcons.line("Recipes", NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
         this.catalogue = catalogue;
         this.inventoryCraft = new InventoryCraft(viewer, adapters);
+        recompute();
         render();
     }
 
@@ -95,7 +135,8 @@ public final class RecipeBrowserMenu extends Menu {
         int slot = click.slot();
 
         if (slot == RecipeBrowserLayout.BACK_SLOT) {
-            adapters.scheduler().onEntity(viewer, () -> new CraftingMenu(viewer, adapters, catalogue).open());
+            adapters.scheduler().onEntity(viewer,
+                    () -> new CraftingMenu(viewer, adapters, catalogue).open());
             return;
         }
         if (slot == RecipeBrowserLayout.PREV_SLOT) {
@@ -110,22 +151,21 @@ public final class RecipeBrowserMenu extends Menu {
         OptionalInt index = RecipeBrowserLayout.entryIndexOf(slot);
         if (index.isEmpty()) return;                    // the page readout and the filler are inert
 
-        List<RecipeCatalogue.Entry> entries = catalogue.entries();
         int at = PageMath.startIndex(page, RecipeBrowserLayout.ENTRIES_PER_PAGE) + index.getAsInt();
-        if (at >= entries.size()) return;               // an empty cell on a short final page
+        if (at >= visible.size()) return;               // an empty cell on a short final page
 
-        RecipeCatalogue.Entry entry = entries.get(at);
+        CraftCount.Craftable entry = visible.get(at);
 
-        // INERT: not clickable, and it says so in its lore rather than in a message. A message here
-        // would be indistinguishable from the missing-materials one at exactly the moment the player
-        // needs to tell them apart.
-        if (entry.inert()) return;
-
-        // THE STALE-CACHE PATH, and the whole reason a cache built once per server lifetime is
-        // survivable: the entry is re-resolved against the LIVE roster before anything is committed.
-        Recipe recipe = catalogue.resolve(entry);
+        // THE STALENESS PATH. Under the craftable-now contract a listed entry was affordable when
+        // the list was built -- but the list can be seconds old, and the materials can be gone: a
+        // hopper, another plugin, or the player crafting the same materials away in this very menu.
+        // So the recipe is re-resolved against the LIVE roster and the craft re-verifies against the
+        // LIVE inventory. Nothing here trusts that the list is still true.
+        RecipeCatalogue.Entry catalogued = shown.get(entry.key());
+        Recipe recipe = catalogued == null ? null : catalogue.resolve(catalogued);
         if (recipe == null) {
             say("That recipe is no longer available.");
+            recompute();
             render();
             return;
         }
@@ -134,12 +174,16 @@ public final class RecipeBrowserMenu extends Menu {
         if (outcome.inventoryFull()) {
             say("Your inventory is full -- made " + outcome.crafted() + ".");
         } else if (outcome.crafted() == 0) {
-            // Deliberately NOT "you no longer have" -- the column says that because it just showed a
-            // button claiming the player could. The browser never promised affordability.
+            // Reachable ONLY when the list is stale -- see above. On a fresh view every listed entry
+            // is affordable by construction, which is why the gate row for this is a STALENESS row
+            // and not a "click something you cannot afford" row: that state cannot be staged.
             say("You do not have the materials for that.");
         }
 
-        // ONCE, after the run. Never inside it.
+        // ONCE, after the run. Never inside it. recompute() re-clamps the page, which is what stops
+        // a bulk craft that empties the last page from leaving the player on a page that no longer
+        // exists.
+        recompute();
         render();
         viewer.updateInventory();
     }
@@ -150,36 +194,96 @@ public final class RecipeBrowserMenu extends Menu {
     }
 
     private void turnTo(int requested) {
-        int clamped = PageMath.clampPage(requested, catalogue.entries().size(),
+        int clamped = PageMath.clampPage(requested, visible.size(),
                 RecipeBrowserLayout.ENTRIES_PER_PAGE);
         if (clamped == page) return;                    // already there; do not repaint for nothing
         page = clamped;
         render();
     }
 
+    /**
+     * Score the whole catalogue against the player's current inventory, and re-clamp the page.
+     *
+     * <h2>THE RE-CLAMP IS THE POINT, and it belongs HERE rather than in {@link #render}</h2>
+     *
+     * Crafting shrinks this list. Bulk-craft everything on the last page and that page ceases to
+     * exist, leaving {@code page} pointing past the end — a blank grid that reads as a broken menu,
+     * or an index past the end of the list. {@link PageMath#clampPage} exists for this; the defect
+     * would have been calling it only on navigation, because navigation is the obvious moment and
+     * <b>crafting is the one that actually changes the page count.</b>
+     *
+     * <p>Clamping here rather than in {@code render} means every path that changes the list — open,
+     * craft, stale-recipe refusal — is covered by construction, and {@code render} can assume its
+     * page is valid.
+     *
+     * <h2>Cost</h2>
+     *
+     * One inventory grouping plus one probe per catalogue entry. This is the walk gate row <b>Q2</b>
+     * measured at 298µs against a 50000µs tick — NOT Q24, which times the catalogue build.
+     */
+    private void recompute() {
+        List<RecipeProbe.Group> groups = RecipeProbe.groupsOf(viewer.getInventory(), adapters.keys());
+        List<CraftCount.Stock> stock = RecipeProbe.stockOf(groups);
+
+        List<CraftCount.Candidate> candidates = new ArrayList<>();
+        Map<String, RecipeCatalogue.Entry> live = new HashMap<>();
+
+        for (RecipeCatalogue.Entry entry : catalogue.entries()) {
+            Recipe recipe = catalogue.resolve(entry);
+            if (recipe == null) continue;               // left the roster since the catalogue built
+
+            // The tier and body slot come from the CATALOGUE, already computed once at build. A
+            // recipe that exposes no ingredients returns null here and is simply absent -- honestly,
+            // under this contract.
+            CraftCount.Candidate candidate =
+                    RecipeProbe.probeOne(recipe, groups, entry.tier(), entry.armorSlot());
+            if (candidate == null) continue;
+
+            candidates.add(candidate);
+            live.put(candidate.key(), entry);
+        }
+
+        // rank() applies the count invariant -- it never over-states, and it drops anything the
+        // player cannot actually afford. THAT is the filter; there is no separate one to keep in
+        // step with it.
+        List<CraftCount.Craftable> ranked = new ArrayList<>(CraftCount.rank(candidates, stock));
+
+        // ...then re-sorted into BROWSER order. rank() leads with count because the three-cell column
+        // should spend its cells on what the player can make most of; a browser that did the same
+        // would reshuffle the whole list every time the player crafted one item. Tier and the
+        // within-tier tiebreak are shared -- see CraftOrder.
+        ranked.sort(CraftOrder.TIER_FIRST);
+
+        this.visible = List.copyOf(ranked);
+        this.shown = Map.copyOf(live);
+        this.page = PageMath.clampPage(page, visible.size(), RecipeBrowserLayout.ENTRIES_PER_PAGE);
+    }
+
     private void render() {
-        List<RecipeCatalogue.Entry> entries = catalogue.entries();
         int size = RecipeBrowserLayout.ENTRIES_PER_PAGE;
-
-        // CLAMP FIRST. PageMath's start/end pair is only sliceable for a clamped page -- that is its
-        // stated contract, and this is the call site it exists for. The catalogue can also have
-        // shrunk under a player who left the menu open.
-        page = PageMath.clampPage(page, entries.size(), size);
-
         int from = PageMath.startIndex(page, size);
-        int to = PageMath.endIndex(page, size, entries.size());
+        int to = PageMath.endIndex(page, size, visible.size());
 
         for (int cell = 0; cell < size; cell++) {
             int at = from + cell;
             getInventory().setItem(RecipeBrowserLayout.ENTRY_SLOTS.get(cell),
-                    at < to ? iconFor(entries.get(at)) : null);
+                    at < to ? iconFor(visible.get(at)) : null);
+        }
+
+        // THE EMPTY STATE. An empty inventory means an empty browser, and a grid of nothing is
+        // indistinguishable from a menu that failed to load. MenuIcons.placeholder's argument
+        // exactly: a surface showing nothing because it MEASURED nothing must say so.
+        if (visible.isEmpty()) {
+            getInventory().setItem(RecipeBrowserLayout.EMPTY_STATE_SLOT, MenuIcons.placeholder(
+                    Material.BARRIER, "Nothing you can make right now",
+                    "materials for any recipe"));
         }
 
         for (int slot : RecipeBrowserLayout.FOOTER_FILLER) {
             getInventory().setItem(slot, MenuIcons.filler());
         }
 
-        int pages = PageMath.pageCount(entries.size(), size);
+        int pages = PageMath.pageCount(visible.size(), size);
 
         // HIDDEN, not disabled, at the ends. A greyed-out button a player can still click and get
         // nothing from is the same "did I break it" experience as one that does nothing silently.
@@ -199,7 +303,8 @@ public final class RecipeBrowserMenu extends Menu {
                 Material.PAPER,
                 MenuIcons.line("Page " + PageMath.displayPage(page) + " of " + pages,
                         NamedTextColor.WHITE),
-                List.of(MenuIcons.line(entries.size() + " recipes", NamedTextColor.DARK_GRAY))));
+                List.of(MenuIcons.line(visible.size() + " you can craft now",
+                        NamedTextColor.DARK_GRAY))));
 
         getInventory().setItem(RecipeBrowserLayout.BACK_SLOT, MenuIcons.icon(
                 Material.CRAFTING_TABLE,
@@ -208,19 +313,17 @@ public final class RecipeBrowserMenu extends Menu {
     }
 
     /**
-     * The icon for one entry: the item it makes, minted where content claims it, plus the
-     * ingredient lines as chrome.
-     *
-     * <p><b>Resolved from the LIVE roster, not from the cache</b>, for the same reason the click is:
-     * a recipe that has left the roster should look gone rather than craftable.
+     * The icon for one entry: the item it makes, minted where content claims it, plus how many and
+     * what it needs.
      *
      * <p>Minted, and NOT rolled -- the identical reasoning {@code CraftingMenu.suggestionIcon}
      * records. Rarity and stats are deterministic from the definition, so showing them is a promise
      * the craft keeps; enchant candidates are a random draw per item, so showing them is a promise
      * it breaks.
      */
-    private ItemStack iconFor(RecipeCatalogue.Entry entry) {
-        Recipe recipe = catalogue.resolve(entry);
+    private ItemStack iconFor(CraftCount.Craftable entry) {
+        RecipeCatalogue.Entry catalogued = shown.get(entry.key());
+        Recipe recipe = catalogued == null ? null : catalogue.resolve(catalogued);
         ItemStack result = recipe == null ? null : recipe.getResult();
         if (MenuSafety.isEmpty(result)) {
             return MenuIcons.pane(MenuIcons.EMPTY_SUGGESTION);
@@ -232,15 +335,9 @@ public final class RecipeBrowserMenu extends Menu {
                 : result.clone();
 
         List<Component> chrome = new ArrayList<>();
-        if (entry.inert()) {
-            // ALL THREE TRUE THINGS: the recipe exists, this menu cannot make it, and the grid can.
-            // An inert entry that does not say what to do instead is only two-thirds honest.
-            chrome.add(MenuIcons.line("Cannot be crafted here", NamedTextColor.RED));
-            chrome.add(MenuIcons.line("Use the crafting grid for this one", NamedTextColor.DARK_GRAY));
-        } else {
-            chrome.addAll(IngredientLore.of(recipe));
-            chrome.add(MenuIcons.line("Click to craft from your inventory", NamedTextColor.DARK_GRAY));
-        }
+        chrome.add(MenuIcons.line("Craft " + entry.count() + " more", NamedTextColor.GRAY));
+        chrome.addAll(IngredientLore.of(recipe));
+        chrome.add(MenuIcons.line("Uses items from your inventory", NamedTextColor.DARK_GRAY));
 
         // Chrome on top, the item's own lore underneath, so the RARITY FOOTER stays last exactly as
         // it is on the real item. MenuIconsTest pins that ordering.

@@ -3,9 +3,26 @@ package io.github.butterflysmp.rpg.core.weapon;
 /**
  * The four body slots armor is worn in.
  *
- * A closed, unordered enum, for the same reason {@link Rarity} is one and elements are not: this is
- * a fixed axis Minecraft decided, not authored content. Adding a fifth is a Minecraft event, not a
- * content edit.
+ * A closed enum, for the same reason {@link Rarity} is one and elements are not: this is a fixed
+ * axis Minecraft decided, not authored content. Adding a fifth is a Minecraft event, not a content
+ * edit.
+ *
+ * <h2>DECLARATION ORDER IS THE ORDERING -- HEAD, CHEST, LEGS, FEET</h2>
+ *
+ * <b>This javadoc said "unordered" until 2026-09-03, and by then it was false.</b>
+ * {@link CraftOrder#WITHIN_TIER} sorts armor by {@link #ordinal()}, so <b>reordering these constants
+ * reorders the recipe browser</b> -- head-down, the way a player reads a character sheet and the way
+ * the vanilla inventory stacks the four slots.
+ *
+ * <p><b>This is rule 3 caught late: the enum gained a consumer without gaining the rule that governs
+ * it.</b> Nothing failed, because the old text was not wrong about anything the code did on the day
+ * it was written -- it simply stopped describing the enum the moment something sorted by it, and no
+ * compiler, test or reader would report that. {@link SuggestionTier} carries the same warning for
+ * the same reason, and gained a second consumer in the same arc.
+ *
+ * <p>So: reordering these constants is a deliberate product change, not a tidy-up. The order is
+ * pinned by a test that iterates {@link #values()} rather than listing four constants, so a fifth
+ * slot joins the assertion automatically instead of slipping in below FEET unnoticed.
  *
  * <p><b>THE CONSTANT NAMES ARE LOAD-BEARING AND MUST NOT BE PRETTIED.</b> They are the strings
  * {@code DefenseModifierItems.desiredModifiers} keys its map by -- it uses

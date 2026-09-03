@@ -50,6 +50,23 @@ final class RecipeBrowserLayout {
     static final int BACK_SLOT = 48;
 
     /**
+     * Where the "nothing you can make right now" notice goes when the list is empty.
+     *
+     * <h2>It is an ENTRY slot, not a footer one, and that is deliberate</h2>
+     *
+     * The notice must occupy the space the missing entries would have. Put in the footer it would
+     * sit under a full grid of nothing, which is the reading it exists to prevent -- a surface
+     * showing nothing because it MEASURED nothing has to be distinguishable from one that is broken
+     * ({@code MenuIcons.placeholder}'s argument).
+     *
+     * <p>Slot 22 is the centre of the third row: the middle of the entry area, where a player's eye
+     * lands. It is a normal entry slot the rest of the time, and it is only painted when
+     * {@code visible.isEmpty()} -- so it can never cover a real entry, which
+     * {@code RecipeBrowserLayoutTest} asserts rather than leaves to reading.
+     */
+    static final int EMPTY_STATE_SLOT = 22;
+
+    /**
      * Every slot an entry may occupy: rows 0-4, left to right, top to bottom.
      *
      * <p><b>Insertion-ordered and exposed as a List, not a Set.</b> The nth entry of a page goes in

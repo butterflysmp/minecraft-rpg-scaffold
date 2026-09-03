@@ -123,6 +123,29 @@ class RecipeBrowserLayoutTest {
     }
 
     @Test
+    void theEmptyStateSitsInTheENTRYAreaNotTheFooter() {
+        // It must occupy the space the missing entries would have. In the footer it would sit under
+        // a full grid of nothing -- which is the reading it exists to prevent.
+        assertTrue(RecipeBrowserLayout.ENTRY_SLOTS.contains(RecipeBrowserLayout.EMPTY_STATE_SLOT),
+                "the empty-state notice must be inside the entry area");
+        assertTrue(RecipeBrowserLayout.EMPTY_STATE_SLOT < RecipeBrowserLayout.FOOTER_START);
+        assertFalse(RecipeBrowserLayout.FOOTER_FILLER.contains(RecipeBrowserLayout.EMPTY_STATE_SLOT));
+        // Mutation: move it to 49 -> reddens, and in game the notice would hide under the page
+        // readout while the grid showed 45 blank cells.
+    }
+
+    @Test
+    void theEmptyStateSlotIsAnORDINARYEntrySlotTheRestOfTheTime() {
+        // It is painted ONLY when the visible list is empty, so it must be a normal entry cell
+        // otherwise -- if it were reserved, one recipe would be unreachable on every full page.
+        int index = RecipeBrowserLayout.entryIndexOf(RecipeBrowserLayout.EMPTY_STATE_SLOT)
+                .orElseThrow(() -> new AssertionError("the empty-state slot must resolve to an entry"));
+        assertTrue(index >= 0 && index < RecipeBrowserLayout.ENTRIES_PER_PAGE);
+        assertEquals(45, RecipeBrowserLayout.ENTRIES_PER_PAGE,
+                "reserving the empty-state cell would drop this to 44 and lose a recipe per page");
+    }
+
+    @Test
     void theLayoutAndPageMathAgreeAboutWhatFitsOnAPage() {
         // The two classes that must not disagree, checked against each other rather than against a
         // number typed twice. 100 entries at 45 a page is 3 pages: 45, 45, 10.
