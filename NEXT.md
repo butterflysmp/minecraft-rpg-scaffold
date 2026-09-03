@@ -832,6 +832,54 @@ never fires looks exactly like one that passed:
 > agree. The trap did not bite retroactively. Two independent methods agreeing is what settles it;
 > re-running the same script would not have.
 
+> **AND THE FIRST SHAPE REAPPEARED INSIDE THE FIX FOR THE FIFTH.** Found in review, one commit
+> later. The guard above was written as
+>
+> ```bash
+> newest_report=$(find ... -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+> if [ -n "$newest_report" ]; then
+> ```
+>
+> **`find -printf` is GNU-only.** Where `find` lacks it — a BSD/macOS `find`, a busybox one, a
+> different `find` first on `PATH` — that is an error, **swallowed by `2>/dev/null`**, producing an
+> empty result, skipping the `if`, and printing a green total for a stale tree **with no message at
+> all**. The guard against "a count describing an older tree" would have disabled itself silently and
+> produced exactly the 1196-for-an-1182-tree outcome it was written to prevent.
+>
+> The dangerous case was never "no reports on disk" — the module loop already shouts about that. It
+> was **reports present, `find` broken**, which is CLAUDE.md:104 — *a discovery finding nothing is a
+> defect* — broken by the guard that enforces it.
+>
+> **The pairing is the useful part, and it is why this sits here rather than in its own entry:** the
+> four original shapes are all "a check that did not run looks like a check that passed"; the fifth is
+> "a check that ran against something else". Writing the fifth did not confer any immunity to the
+> first. **A new guard is a new place for the old shapes to live**, and it arrives without any of the
+> scar tissue that protects the code it is guarding.
+>
+> **The fix is a positive control INSIDE the guard**, the same device `check-absorbed.sh` uses to
+> reach its BLIND verdict: the report count is taken a second time **without `-printf`**, using the
+> `find | wc -l` idiom this script already documents as pipefail-safe. Reports on disk plus an empty
+> timestamp scan is now an **error naming the likely cause**, not a skip. Both `find`s capture stderr
+> instead of discarding it.
+>
+> **Proved in three directions, and the third is the new one.** Clean tree → passes, exit 0, 1182.
+> Touched source → fires, exit 1, names the file. `-printf` broken → **errors**, exit 1, *"130
+> report(s) are on disk, but the timestamp scan returned nothing"*; restore → exit 0 again. On the
+> first attempt at the third the **marker count read 0** — the substitution had not applied — and the
+> exit 1 came from the staleness path, not the broken-`printf` path. Counting the marker before
+> believing the result is what caught it, for the fifth time this session.
+>
+> **A second defect rode along, and it was already documented twice in the same file.**
+> `... | sort -rn | head -1` under `set -euo pipefail`: `sort` buffers all input, `head` exits after
+> one line, `sort` takes SIGPIPE, `pipefail` propagates, `set -e` kills the script with a bare exit 1
+> and no output — reading as a test failure. **Measured rather than argued:**
+> `seq 1 5000000 | sort -rn | head -1` exits **141** under those flags; the real find-based shape
+> exits **1**. It survives today only because 130 report files fit inside the 64KB pipe buffer, and
+> would have begun failing a few hundred reports from now as an unexplained exit 1. Twenty lines
+> above it, that script explains this exact hazard for `find | wc -l` and again for `grep`. **Having
+> the rule written down twice, in the file being edited, did not stop it being walked into** — so the
+> comment now names both hazards as KNOWN IN THIS SCRIPT, to be found rather than rediscovered.
+
 ---
 
 ### A DECISION DIALOG'S ANALYSIS PANEL IS A CLAIM, NOT A VERIFIED FACT
