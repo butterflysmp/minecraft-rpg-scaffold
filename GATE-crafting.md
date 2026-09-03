@@ -351,6 +351,8 @@ things, so bring a way to count.
 | # | action | expected | notes |
 |---|---|---|---|
 | Q1 | Open the table with materials for several recipes. | Row 4 shows suggestion icons with counts; rows 0-3 are unchanged; row 5 shows only chrome and the browser placeholder | the surface exists and did not disturb the grid |
+| Q15 | **THE TIER ORDER.** Carry materials for a shield AND plenty of planks (so torches/sticks are craftable in quantity). Read the column left to right. | The **shield sorts before** the sticks, even though far more sticks are makeable. Order is `WEAPON → ACCESSORY → TOOL → ARMOR → MATERIAL → VANILLA`, then most-craftable | **discriminating** for the ordering. A column sorted by count alone buries a minted shield under sixty-four torches |
+| Q16 | **THE VANILLA SQUEEZE.** Carry common materials only — planks, sticks, cobble, iron, leather. Read the whole column. | It is legitimate for **NO vanilla suggestion to appear at all**: 24 armor + 5 tools + 1 shield claim a craft_result against nine slots | **written down as INTENDED, not a bug.** "Sticks and torches vanished from the crafting helper" is exactly what this looks like from outside. If the column is entirely gear, the row PASSES |
 | Q3 | Click a suggestion. **Count the ingredients first.** | The item arrives **in the INVENTORY**, not on the cursor. Exactly one craft's ingredients leave. The count updates | **count** · the destination is the disambiguator between the two surfaces — see Q4 |
 | Q5 | Stage a recipe in the grid, then read the suggestion counts. | They have **DROPPED** by what was staged | written down as EXPECTED, or someone reports it as a bug. The grid is deliberately NOT counted, because counting it would mean consuming it |
 
@@ -365,10 +367,11 @@ things, so bring a way to count.
 | # | action | expected | notes |
 |---|---|---|---|
 | Q6 | **THE BULK TRAP.** Shift-click a suggestion with materials for many crafts. | Crafts repeatedly, with **no per-iteration stall**. One roster walk at the end, not sixty-four | **sole witness** for the bulk trap. The loop re-probes ONE recipe per pass; recomputing the roster inside it reads almost identically and is 64x the work |
+| Q17 | **NOTHING REACHES THE GROUND.** Fill your inventory to a handful of free slots. Shift-click a suggestion for a NON-STACKABLE output (a shield or a tool) with materials for many. **Stand still and watch your feet.** | It stops when the inventory can no longer take one, says **"made N"**, and **NOT ONE ITEM DROPS** | **discriminating · sole witness** for `MenuSafety.fits`. The old behaviour was `give`'s drop branch firing up to 64 times — a pile of entities and the same message repeated. Non-stackable output is the case a lower `MAX_BULK_CRAFTS` could not have fixed |
 | Q7 | **THE INVARIANT.** Hold a minted iron pickaxe plus plain materials. Read every suggestion. | The pickaxe is **never counted** toward any suggestion and is **never consumed** by one | **discriminating · sole witness** for `isGear`'s THIRD surface — after the grid screen and the Crafter guard. That chain is a whitelist with nothing that compile-fails, and slice 4 found it had already fallen behind the gear axis once. **The row to fail the slice over** |
 | Q8 | **STALENESS, PINNED.** Stage almost everything so a suggestion shows a count it can no longer deliver. **Count your materials first.** Click it. | Refuses **cleanly and says why** — and **the ingredients are STILL THERE** | **count · discriminating** · the count is advisory, the click is authoritative. Above all it must not debit on a refusal: debit-before-craft is theft, on the path least likely to be hand-tested |
 | Q9 | Craft a shield from a suggestion. Open it. | It **mints and rolls** — lore, `Damage Reduction`, enchant candidates — identical to the grid path | proves the single commit path. **Open it rather than counting it**: a count passes on the very defect this catches |
-| Q10 | **THE SCOPE BOUNDARY.** Hold paper and gunpowder. Check the suggestions. Then craft a firework rocket **in the grid**. | Firework rockets do **NOT** appear as a suggestion — **and still craft normally in the grid** | **discriminating · sole witness** for the ComplexRecipe boundary. `ComplexRecipe` is a bare marker interface exposing no ingredients, so it can never be counted. **This row is what stops someone "restoring parity" by hand-implementing them** — precisely the mistake `CraftingMenu`'s javadoc records the previous project making |
+| Q10 | **THE SCOPE BOUNDARY, both halves.** Hold paper and gunpowder. **(a)** Check the suggestions for a BASIC firework rocket. **(b)** Then build a MULTI-STAR rocket in the grid — several firework stars plus paper and gunpowder. | **(a) The basic rocket DOES appear as a suggestion and crafts from it.** **(b) The multi-star rocket does NOT appear as a suggestion, and still crafts normally in the grid.** | **discriminating · sole witness** for where the enumerable boundary actually falls. The basic rocket is an ordinary shapeless recipe and enumerates fine; only the customizable ones are `ComplexRecipe`, which is a bare marker interface exposing no ingredients. **This row is what stops someone "restoring parity" by hand-implementing complex recipes** — and by distinguishing the two cases it says accurately WHERE the boundary is, rather than asserting a blanket absence that is simply false |
 
 ## The consume path
 
@@ -389,9 +392,10 @@ things, so bring a way to count.
 | # | why it re-opens |
 |---|---|
 | **12, 12c** | `commitCraft` changed shape a FOURTH time. Still the only witnesses for `getResultingMatrix` and `getOverflowItems` — **and they matter MORE this slice, not less**: on the inventory path both collapse into "give it to the player", so no Q row can tell the two calls apart |
-| S1, S2, S3 | the pin, the `MAX_BULK_CRAFTS` bound, and the `ComplexRecipe` path through the grid |
-| 13 | `shiftClickDispatches` widened to the suggestion slots — it must still perform NO move |
-| N5b | the bulk path minting |
+| **S1, S2** | the pin and the `MAX_BULK_CRAFTS` bound — **and the GRID bulk loop itself changed.** `craftRepeatedly` now stops before the inventory overflows, which is a fix to a defect the grid has shipped since slice 3. These are not re-run out of caution; the code under them moved |
+| S3 | the `ComplexRecipe` path through the grid — and now the other half of Q10 |
+| **13** | `shiftClickDispatches` widened to the suggestion slots — it must still perform NO move — **and the bulk loop it dispatches into changed** |
+| **N5b** | the bulk path minting, **through the same changed loop** |
 | T10 | `isGear` on the crafting grid, now that a third caller shares the chain |
 | 21, 22, S11 | `Menu` is a shared base and `EnchantMenu` is its other subclass |
 # Maintenance

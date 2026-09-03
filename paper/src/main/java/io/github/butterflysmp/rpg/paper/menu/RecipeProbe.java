@@ -2,7 +2,11 @@ package io.github.butterflysmp.rpg.paper.menu;
 
 import io.github.butterflysmp.rpg.core.weapon.CollectPlan;
 import io.github.butterflysmp.rpg.core.weapon.CraftCount;
+import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
+import io.github.butterflysmp.rpg.core.weapon.SuggestionTier;
+import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
@@ -42,14 +46,27 @@ import java.util.Map;
  *
  * <h2>COMPLEX RECIPES ARE INVISIBLE HERE, PERMANENTLY, AND THAT IS NOT A GAP TO FILL</h2>
  *
- * {@code ComplexRecipe} is a bare marker interface -- verified: it extends {@code Recipe, Keyed} and
- * declares nothing at all. It exposes no ingredients, so no amount of effort makes firework rockets,
- * firework stars or dye tables countable. They are absent from suggestions.
+ * {@code ComplexRecipe} is a bare marker interface -- verified against the pinned jar: it extends
+ * {@code Recipe, Keyed} and declares nothing at all. It exposes no ingredients, so a recipe
+ * registered that way cannot be counted by anybody, ever.
  *
- * <p><b>They still craft perfectly well IN THE GRID</b>, through the server's matcher, and gate row
- * S3 proves it. So the grid remains the complete surface and Quick Craft is a convenience over the
- * enumerable subset. <b>Do not "restore parity" by hand-implementing them</b> -- that is precisely
- * the mistake the class javadoc of {@code CraftingMenu} records the previous project making.
+ * <p><b>BE PRECISE ABOUT WHICH RECIPES THOSE ARE, because an earlier version of this paragraph was
+ * not.</b> It claimed firework rockets, firework stars and dye tables are all absent. They are not:
+ * the basic one-flight firework rocket is an ordinary shapeless recipe and enumerates perfectly
+ * well. Only the CUSTOMIZABLE variants -- the multi-star rockets, and the dye/colouring recipes that
+ * take an arbitrary number of inputs -- are complex. Gate row Q10 checks both halves for exactly
+ * that reason.
+ *
+ * <p><b>Which vanilla recipes are registered as {@code ComplexRecipe} cannot be verified from the
+ * API jar</b> -- it is server runtime data. So the rule stated here is the MECHANISM (no ingredients
+ * exposed, therefore not countable) rather than a list of items, and the list belongs to the gate,
+ * where it is observed.
+ *
+ * <p><b>Whatever falls on the complex side still crafts perfectly well IN THE GRID</b>, through the
+ * server's matcher, and gate row S3 proves it. So the grid remains the complete surface and Quick
+ * Craft is a convenience over the enumerable subset. <b>Do not "restore parity" by hand-implementing
+ * them</b> -- that is precisely the mistake the class javadoc of {@code CraftingMenu} records the
+ * previous project making.
  *
  * <h2>PROBE, do not enumerate the CHOICES</h2>
  *
@@ -141,8 +158,8 @@ public final class RecipeProbe {
      * prints it at boot-gate time. If it is not comfortably sub-tick, the CADENCE is what changes --
      * not this algorithm.
      */
-    public static Result of(PlayerInventory inventory, Keys keys) {
-        List<Group> groups = groups(inventory, keys);
+    public static Result of(PlayerInventory inventory, AdapterContext adapters) {
+        List<Group> groups = groups(inventory, adapters.keys());
         if (groups.isEmpty()) return Result.empty();
 
         List<CraftCount.Stock> stock = stockOf(groups);
@@ -169,7 +186,7 @@ public final class RecipeProbe {
             }
 
             String key = keyed.getKey().toString();
-            candidates.add(new CraftCount.Candidate(key, slots));
+            candidates.add(new CraftCount.Candidate(key, tierOf(recipe, adapters), slots));
             recipes.put(key, recipe);
         }
 
@@ -242,14 +259,37 @@ public final class RecipeProbe {
      *
      * @return the candidate, or null for a recipe this surface cannot count.
      */
-    public static CraftCount.Candidate probeOne(Recipe recipe, List<Group> groups) {
+    public static CraftCount.Candidate probeOne(Recipe recipe, List<Group> groups,
+                                                SuggestionTier tier) {
         List<RecipeChoice> ingredients = ingredientsOf(recipe);
         if (ingredients == null || ingredients.isEmpty()) return null;
         if (!(recipe instanceof Keyed keyed)) return null;
 
         List<List<Integer>> slots = new ArrayList<>(ingredients.size());
         for (RecipeChoice choice : ingredients) slots.add(satisfyingGroups(choice, groups));
-        return new CraftCount.Candidate(keyed.getKey().toString(), slots);
+        return new CraftCount.Candidate(keyed.getKey().toString(), tier, slots);
+    }
+
+    /**
+     * Which tier a recipe's OUTPUT sorts in.
+     *
+     * <p>Asks the same {@code claimFor} question the commit does -- does content claim this crafted
+     * material -- and hands the answer to {@link SuggestionTiers}. Sharing the lookup is what stops
+     * a suggestion sorting as a weapon and then minting nothing, or the reverse.
+     *
+     * <p>The durability gate is here for the same belt-and-braces reason {@code CraftingMenu.claimFor}
+     * carries it: boot already refuses a {@code craft_result} on a material with no durability, so
+     * nothing in the index can fail it, but the index is reachable from a caller that has not been
+     * through that validation.
+     */
+    public static SuggestionTier tierOf(Recipe recipe, AdapterContext adapters) {
+        ItemStack result = recipe == null ? null : recipe.getResult();
+        if (result == null || result.getType().isAir()) return SuggestionTier.VANILLA;
+        if (WeaponDurability.maxOf(result).isEmpty()) return SuggestionTier.VANILLA;
+
+        GearDefinition claimed = adapters.craftResults()
+                .forResult(result.getType().getKey().getKey()).orElse(null);
+        return SuggestionTiers.of(claimed);
     }
 
     /** The player's carried stacks, grouped and gear-filtered. Cheap: 36 slots, no recipe walk. */

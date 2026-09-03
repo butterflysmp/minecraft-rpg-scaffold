@@ -631,12 +631,62 @@ Before milestone 2, two things worth measuring rather than assuming:
   the inventory is a few dozen stacks. **Ask the small side.** "Enumerate `MaterialChoice`, skip the
   rest" was rejected as `ANY_BUT_SHIELD` in a fourth costume.
 
-- **COMPLEX RECIPES ARE PERMANENTLY ABSENT FROM SUGGESTIONS, and gate row Q10 exists to stop someone
-  fixing it.** `ComplexRecipe` is a bare marker interface — it declares nothing — so firework
-  rockets, firework stars and dye tables expose no ingredients to count. They still craft in the
-  GRID through the server's matcher. **The grid remains the complete surface**; Quick Craft is a
-  convenience over the enumerable subset. Hand-implementing them is exactly the mistake
-  `CraftingMenu`'s class javadoc records the previous project making.
+- **COMPLEX RECIPES ARE PERMANENTLY ABSENT FROM SUGGESTIONS — but "firework rockets are absent" was
+  TOO BROAD, and it was written in five places before anyone checked.** `ComplexRecipe` is a bare
+  marker interface (verified from the pinned jar: it declares nothing), so a recipe registered that
+  way exposes no ingredients and cannot be counted. **That is the mechanism, and it is all that was
+  ever verifiable.**
+
+  What was NOT verifiable, and was asserted anyway: WHICH vanilla recipes those are. The basic
+  one-flight firework rocket is an ordinary shapeless recipe and enumerates perfectly well; only the
+  customizable multi-star variants are complex. The blanket claim reached `GATE-crafting.md`'s Q10
+  row, `RecipeProbe`'s class javadoc, two places in `CraftingMenu`'s, and this file — because it was
+  inherited from slice 1's wording and repeated rather than re-checked.
+
+  **Which recipes are complex is server RUNTIME data and cannot be read from the API jar at all.** So
+  every site now states the mechanism, and the LIST belongs to the gate, where it is observed rather
+  than asserted. **Q10 is a better row for it**: it checks both halves — the basic rocket appears and
+  crafts, the multi-star one does not appear and still crafts in the grid — so it says where the
+  boundary actually falls instead of claiming a blanket absence.
+
+  Whatever falls on the complex side still crafts in the GRID through the server's matcher. **The
+  grid remains the complete surface**; Quick Craft is a convenience over the enumerable subset.
+  Hand-implementing them is exactly the mistake `CraftingMenu`'s class javadoc records the previous
+  project making.
+
+- **THE SUGGESTION ORDERING IS A SIX-POSITION TIER AXIS, MINTED FIRST**: `WEAPON → ACCESSORY → TOOL
+  → ARMOR → MATERIAL → VANILLA`, then most-craftable, then key. A shield is ACCESSORY — a display
+  category deliberately wider than the gear kind, so a future accessory kind joins it rather than
+  forcing a seventh position.
+
+  **Core owns the axis and the sort; paper decides which one a recipe IS.** Classifying needs
+  `CraftResultIndex` and the sealed `GearDefinition`, both Bukkit-side, so `SuggestionTiers.of` does
+  it with an **exhaustive switch and no default arm** — a fifth gear kind is a compile error until
+  someone ranks it, rather than silently sorting below vanilla planks. Same inversion as the recipe
+  probe: core is told, and sorts.
+
+  **Two consequences, stated rather than discovered:**
+  - **Nothing maps to `MATERIAL` today.** No source of truth says "this vanilla item is an
+    intermediate rather than a product", so `SuggestionTiers` cannot return it. It is a held-open
+    position with **no test and no gate row** — exercised only as a sort position in
+    `theSixTiersSortInDeclarationOrder`. Recorded on the constant itself.
+  - **A player may never see a `VANILLA` suggestion at all.** 24 armor + 5 tools + 1 shield claim a
+    `craft_result` against NINE slots, so common materials can fill the column with gear. That is the
+    direction asked for, and it is written down because *"sticks and torches vanished from the
+    crafting helper"* is exactly what it will look like from outside.
+
+- **THE BULK LOOP DROPPED ITEMS ON THE FLOOR, AND IT WAS ALREADY SHIPPED.** `craftRepeatedly` is the
+  SHARED loop: 64 shields into a filling inventory has always ended with `MenuSafety.give` dropping
+  the remainder at the player's feet — a pile of entities, a lag vector, and the same message 64
+  times. Quick Craft did not introduce it; it would have inherited it.
+
+  Both loops now ask `MenuSafety.fits` BEFORE each pass and stop cleanly, saying how many were made.
+  Nothing reaches the ground for any item, whatever its stack size. `MAX_BULK_CRAFTS` stays exactly
+  what its javadoc says — the runaway guard, not a batch size.
+
+  **Lowering `MAX_BULK_CRAFTS` was rejected:** one number cannot serve a stackable output (64 sticks
+  is fine) and a non-stackable one, and it would leave the drop path intact whenever the inventory is
+  nearly full. **This re-gates the GRID rows — S1, S2, 13, N5b — not only Q6.**
 
 - **NEW ENTRIES, ALL GATE-ONLY.** Same cause as every crafting slice: `CraftingMenu` cannot be
   constructed without a server.
@@ -846,7 +896,8 @@ across twenty imports is expensive to review and buys nothing a reader could see
 
   **`Recipe` DECLARES NO KEY** — verified by javap against the pinned jar, where the interface has
   exactly one method, `getResult()`. The identity narrows through `instanceof Keyed`, which covers
-  `CraftingRecipe` (shaped, shapeless) **and `ComplexRecipe`** (firework rockets, dye tables). That
+  `CraftingRecipe` (shaped, shapeless) **and `ComplexRecipe`** (customizable fireworks, dye recipes
+  — corrected slice 5: the BASIC rocket is shapeless, not complex). That
   completeness matters: slice 1 delegated to the server's matcher SPECIFICALLY because it handles
   complex recipes, so a pin that could not represent one would have re-introduced the hand-rolled
   matcher this arc deleted. `MerchantRecipe` is the only unkeyed recipe in the API and no crafting

@@ -41,9 +41,13 @@ import static io.github.butterflysmp.rpg.paper.menu.CraftingMenuLayout.SIZE;
  *
  * <p><b>The matcher is the server's, and that is the most important line in this class.</b> The
  * previous project hand-rolled shaped/shapeless matching by walking {@code recipeIterator()}, which
- * skips {@code ComplexRecipe} -- so it then had to hand-implement firework rockets, firework stars
- * and dye tables purely to restore parity with the vanilla UI it had displaced. Delegating deletes
- * all of that.
+ * skips {@code ComplexRecipe} -- so it then had to hand-implement the CUSTOMIZABLE firework and dye
+ * recipes purely to restore parity with the vanilla UI it had displaced. Delegating deletes all of
+ * that.
+ *
+ * <p>(Corrected in slice 5: an earlier wording said "firework rockets" flatly. The BASIC rocket is
+ * an ordinary shapeless recipe; only the multi-star variants are complex. The distinction matters
+ * now that Quick Craft enumerates -- see {@code RecipeProbe} and gate row Q10.)
  *
  * <p><b>Two different overloads, deliberately.</b> Verified from the Paper sources jar, not assumed
  * from the names:
@@ -385,7 +389,27 @@ public final class CraftingMenu extends Menu {
         // recorded in GATE-crafting.md as WILL NOT BE RUN. Re-read the field here and every test
         // stays green, every gate row still passes, and players lose ingots.
 
+        int made = 0;
         for (int pass = 0; pass < MAX_BULK_CRAFTS; pass++) {
+            // STOP BEFORE THE INVENTORY OVERFLOWS, rather than relying on MenuSafety.give's drop
+            // branch. That branch is the right answer for ONE item the player already owned; it is
+            // the wrong answer sixty-four times in a row, which is a pile of entities at their feet
+            // and a lag vector, with the same message repeated for each.
+            //
+            // This defect predates Quick Craft -- 64 shields into a full inventory has always gone
+            // to the ground -- so the fix is HERE, in the shared loop, and re-gates the GRID rows
+            // (S1, S2, 13, N5b) rather than only the new ones.
+            //
+            // MAX_BULK_CRAFTS stays exactly what its javadoc says: the runaway guard. Lowering it
+            // was rejected -- one number cannot serve a stackable output (64 sticks is fine) and a
+            // non-stackable one, and it would leave the drop path intact for a nearly-full
+            // inventory anyway.
+            ItemStack preview = getInventory().getItem(RESULT_SLOT);
+            if (!MenuSafety.fits(viewer, preview)) {
+                say("Your inventory is full -- made " + made + ".");
+                return;
+            }
+
             // The SAME call the single-click path makes, returning the SAME finished item. This is
             // the third caller of the craft output, and the reason commitCraft returns an ItemStack
             // rather than an ItemCraftResult: with the mint applied by the callers, a bulk craft
@@ -395,6 +419,7 @@ public final class CraftingMenu extends Menu {
             if (outcome == null) return;
             writeMatrix(outcome.resultingMatrix());
             MenuSafety.give(viewer, outcome.crafted());
+            made++;
         }
     }
 
@@ -558,9 +583,9 @@ public final class CraftingMenu extends Menu {
      * <p>{@code Recipe} declares only {@code getResult()} -- it does NOT extend {@code Keyed}, which
      * was verified against the pinned jar rather than assumed. The narrowing below is therefore
      * mandatory, and it covers everything a crafting grid can return: {@code CraftingRecipe} (shaped
-     * and shapeless) and {@code ComplexRecipe} (firework rockets, dye tables, book cloning) both
-     * implement {@code Keyed}. The only unkeyed recipe in the API is {@code MerchantRecipe}, which
-     * no crafting grid produces.
+     * and shapeless) and {@code ComplexRecipe} (customizable fireworks, dye recipes, book cloning)
+     * both implement {@code Keyed}. The only unkeyed recipe in the API is {@code MerchantRecipe},
+     * which no crafting grid produces.
      *
      * <p>That completeness matters: slice 1 delegated matching to the server SPECIFICALLY because it
      * handles {@code ComplexRecipe}, so an identity that could not represent one would have
@@ -716,7 +741,7 @@ public final class CraftingMenu extends Menu {
         // A tick is 50ms. The honest responses to a slow number are to stop recomputing on grid
         // changes, or to recompute off the click path entirely -- not to make the walk cleverer.
         long startNanos = System.nanoTime();
-        suggestions = RecipeProbe.of(viewer.getInventory(), adapters.keys());
+        suggestions = RecipeProbe.of(viewer.getInventory(), adapters);
         long elapsedMicros = (System.nanoTime() - startNanos) / 1_000L;
 
         if (!measured) {
@@ -829,12 +854,21 @@ public final class CraftingMenu extends Menu {
 
         int crafted = 0;
         int passes = bulk ? MAX_BULK_CRAFTS : 1;
+        boolean full = false;
         for (int pass = 0; pass < passes; pass++) {
+            // The same look-before-you-leap the grid loop does, and for the same reason -- see
+            // craftRepeatedly. Checked BEFORE the craft so a full inventory costs no ingredients.
+            if (!MenuSafety.fits(viewer, recipe.getResult())) {
+                full = true;
+                break;
+            }
             if (!craftOneFromInventory(recipe, pinned)) break;
             crafted++;
         }
 
-        if (crafted == 0) {
+        if (full) {
+            say("Your inventory is full -- made " + crafted + ".");
+        } else if (crafted == 0) {
             say("You no longer have the materials for that.");
         }
 
@@ -852,7 +886,7 @@ public final class CraftingMenu extends Menu {
      */
     private boolean craftOneFromInventory(Recipe recipe, Optional<NamespacedKey> pinned) {
         List<RecipeProbe.Group> groups = RecipeProbe.groupsOf(viewer.getInventory(), adapters.keys());
-        CraftCount.Candidate candidate = RecipeProbe.probeOne(recipe, groups);
+        CraftCount.Candidate candidate = RecipeProbe.probeOne(recipe, groups, RecipeProbe.tierOf(recipe, adapters));
         if (candidate == null) return false;
 
         List<CraftCount.Stock> stock = RecipeProbe.stockOf(groups);

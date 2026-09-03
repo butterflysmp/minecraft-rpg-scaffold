@@ -41,4 +41,39 @@ public final class MenuSafety {
         player.sendMessage(Component.text("Your inventory was full -- dropped at your feet.",
                 NamedTextColor.YELLOW));
     }
+
+    /**
+     * Would this whole stack fit in the player's inventory, without anything reaching the ground?
+     *
+     * <p><b>The look-before-you-leap half of {@link #give}, and it exists because a BULK loop must
+     * not rely on the drop branch.</b> {@code give} is a last line of defence: it is correct for one
+     * item the player already owned, where the ground is better than deletion. It is the wrong
+     * answer sixty-four times in a row -- that is a pile of entities at the player's feet, which is
+     * a lag vector as well as a surprise, and no message repeated sixty-four times helps.
+     *
+     * <p>So a bulk loop asks this BEFORE each pass and stops cleanly when the answer is no, having
+     * crafted only what it could hand over. Nothing reaches the ground for any item, whatever its
+     * stack size.
+     *
+     * <p><b>Deliberately not "is there an empty slot".</b> A partially-filled matching stack is real
+     * room, and ignoring it would stop a stick craft with 63 sticks and eleven free slots. The room
+     * is summed the way {@code addItem} actually fills: partial matching stacks first, then empties.
+     *
+     * <p>Storage contents only -- the 36 main slots, which is exactly what {@code addItem} uses.
+     * Armor and the offhand are not somewhere a craft result may land.
+     */
+    public static boolean fits(Player player, ItemStack item) {
+        if (item == null || item.getType().isAir()) return true;
+
+        int needed = item.getAmount();
+        for (ItemStack slot : player.getInventory().getStorageContents()) {
+            if (slot == null || slot.getType().isAir()) {
+                needed -= item.getMaxStackSize();
+            } else if (slot.isSimilar(item)) {
+                needed -= Math.max(0, slot.getMaxStackSize() - slot.getAmount());
+            }
+            if (needed <= 0) return true;
+        }
+        return needed <= 0;
+    }
 }

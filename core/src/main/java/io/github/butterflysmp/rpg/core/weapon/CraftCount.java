@@ -65,25 +65,37 @@ public final class CraftCount {
      * One candidate recipe, already probed.
      *
      * @param key   the caller's recipe identity, opaque here. Orders ties, so a ranking is stable.
+     * @param tier  what KIND of thing this makes. <b>Supplied by the caller, never derived here</b>
+     *              -- classifying a recipe needs {@code CraftResultIndex} and the sealed
+     *              {@code GearDefinition} hierarchy, both of which are Bukkit-side. Same inversion
+     *              the recipe probe uses: core is told, and sorts. Null is treated as
+     *              {@link SuggestionTier#VANILLA}, so a caller that has not been taught about tiers
+     *              still gets a sane ordering rather than an exception inside a click handler.
      * @param slots one entry per INGREDIENT slot the recipe requires; each entry lists the
      *              {@link Stock#id}s that satisfy that slot, in the caller's own deterministic
      *              order. An EMPTY list means "nothing the player holds satisfies this slot", which
      *              is how an unprobeable {@code RecipeChoice} arrives -- see {@link #countOf}.
      */
-    public record Candidate(String key, List<List<Integer>> slots) {}
+    public record Candidate(String key, SuggestionTier tier, List<List<Integer>> slots) {}
 
-    /** A recipe the player can make, and how many times. Never a count of zero. */
-    public record Craftable(String key, int count) {}
+    /** A recipe the player can make, its display tier, and how many times. Never a count of zero. */
+    public record Craftable(String key, SuggestionTier tier, int count) {}
 
     /**
-     * Most-craftable first, ties broken by key.
+     * TIER FIRST, then most-craftable, then key.
      *
-     * <p>The tiebreak is not decoration: without it the order would depend on the iteration order of
-     * {@code recipeIterator()}, which is the server's business and may differ between boots. The
-     * same concern {@link CollectPlan}'s slot tiebreak addresses.
+     * <p>The tier leads because a suggestion that mints RPG gear is worth more than one that makes
+     * sticks however many sticks are available -- a column sorted by count alone would bury a
+     * craftable shield under sixty-four torches. {@link SuggestionTier}'s declaration order IS this
+     * ordering.
+     *
+     * <p>The key tiebreak is not decoration: without it the order would depend on the iteration
+     * order of {@code recipeIterator()}, which is the server's business and may differ between
+     * boots. The same concern {@link CollectPlan}'s slot tiebreak addresses.
      */
     private static final Comparator<Craftable> RANKING =
-            Comparator.comparingInt(Craftable::count).reversed()
+            Comparator.comparingInt((Craftable c) -> c.tier().ordinal())
+                    .thenComparing(Comparator.comparingInt(Craftable::count).reversed())
                     .thenComparing(Craftable::key);
 
     /**
@@ -108,7 +120,7 @@ public final class CraftCount {
         for (Candidate candidate : candidates) {
             if (candidate == null || candidate.key() == null) continue;
             int count = countOf(candidate, totals);
-            if (count > 0) ranked.add(new Craftable(candidate.key(), count));
+            if (count > 0) ranked.add(new Craftable(candidate.key(), tierOf(candidate), count));
         }
 
         ranked.sort(RANKING);
@@ -182,6 +194,19 @@ public final class CraftCount {
             chosen.add(pick);
         }
         return chosen;
+    }
+
+    /**
+     * A candidate's tier, defaulting an absent one to {@link SuggestionTier#VANILLA}.
+     *
+     * <p>Null-tolerant on purpose. This runs inside a click handler on every recompute, and a
+     * caller that has not been taught about tiers should get an unsorted-to-the-bottom suggestion
+     * rather than a {@code NullPointerException} that breaks the whole menu. Defaulting DOWN is the
+     * safe direction: an unclassified recipe sinks below everything classified rather than
+     * displacing a minted weapon from the top of the column.
+     */
+    private static SuggestionTier tierOf(Candidate candidate) {
+        return candidate.tier() == null ? SuggestionTier.VANILLA : candidate.tier();
     }
 
     /** Sum the stock by group id, ignoring non-positive amounts. */

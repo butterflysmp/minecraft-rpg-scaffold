@@ -32,7 +32,7 @@ class CraftCountTest {
 
     @SafeVarargs
     private static Candidate recipe(String key, List<Integer>... slots) {
-        return new Candidate(key, List.of(slots));
+        return new Candidate(key, SuggestionTier.VANILLA, List.of(slots));
     }
 
     // ----------------------------------------------------------------- the arithmetic
@@ -72,7 +72,7 @@ class CraftCountTest {
         // The full grid, all one ingredient. Executed rather than reasoned about.
         List<List<Integer>> slots = new ArrayList<>();
         for (int i = 0; i < 9; i++) slots.add(only(1));
-        Candidate block = new Candidate("block", slots);
+        Candidate block = new Candidate("block", SuggestionTier.VANILLA, slots);
 
         assertEquals(1, CraftCount.rank(List.of(block), List.of(new Stock(1, 9))).get(0).count());
         assertEquals(7, CraftCount.rank(List.of(block), List.of(new Stock(1, 64))).get(0).count(),
@@ -167,9 +167,84 @@ class CraftCountTest {
         // Degenerate input, and the arithmetic answer would be Integer.MAX_VALUE from an empty min.
         // A suggestion offering two billion of something is the most over-stating answer available.
         assertEquals(List.of(), CraftCount.rank(
-                List.of(new Candidate("nothing", List.of())),
+                List.of(new Candidate("nothing", SuggestionTier.VANILLA, List.of())),
                 List.of(new Stock(1, 64))));
         // Mutation: drop the MAX_VALUE guard -> reddens with a count of 2147483647.
+    }
+
+    // ------------------------------------------------------------- the tier axis
+
+    private static Candidate tiered(String key, SuggestionTier tier, int group) {
+        return new Candidate(key, tier, List.of(only(group)));
+    }
+
+    @Test
+    void TIERBeatsCountSoACraftableShieldOutranksSixtyFourTorches() {
+        // THE ordering decision. A column sorted by count alone buries a minted shield under a pile
+        // of sticks, which is the opposite of what the column is for.
+        List<Craftable> ranked = CraftCount.rank(
+                List.of(tiered("torches", SuggestionTier.VANILLA, 1),
+                        tiered("shield", SuggestionTier.ACCESSORY, 2)),
+                List.of(new Stock(1, 64), new Stock(2, 1)));
+
+        assertEquals("shield", ranked.get(0).key(), "one shield outranks sixty-four torches");
+        assertEquals(1, ranked.get(0).count());
+        assertEquals("torches", ranked.get(1).key());
+        // Mutation: sort by count before tier -> reddens. That is the ordering this replaced.
+    }
+
+    @Test
+    void theSixTiersSortInDeclarationOrder() {
+        // Declaration order IS the ordering, so this walks the axis rather than naming pairs. A
+        // reordering of the enum is a deliberate act that this test follows; a reordering of the
+        // COMPARATOR is a bug that it catches.
+        List<Candidate> candidates = new ArrayList<>();
+        List<Stock> stock = new ArrayList<>();
+        for (SuggestionTier tier : SuggestionTier.values()) {
+            candidates.add(tiered(tier.name(), tier, tier.ordinal()));
+            stock.add(new Stock(tier.ordinal(), 1));
+        }
+
+        List<Craftable> ranked = CraftCount.rank(candidates, stock);
+        assertEquals(SuggestionTier.values().length, ranked.size(), "the walk must not be short");
+        for (int index = 0; index < ranked.size(); index++) {
+            assertEquals(SuggestionTier.values()[index], ranked.get(index).tier(),
+                    "position " + index + " is out of tier order");
+        }
+        // Mutation: reverse the tier comparator -> reddens naming the position.
+        // Note this is the ONLY place SuggestionTier.MATERIAL is exercised at all, and only as a
+        // sort position -- nothing can classify a recipe INTO it. See the constant's own javadoc.
+    }
+
+    @Test
+    void withinOneTierTheMostCraftableStillLeads() {
+        // The tier leads, but it does not flatten. Two weapons sort by how many you can make.
+        List<Craftable> ranked = CraftCount.rank(
+                List.of(tiered("few", SuggestionTier.WEAPON, 1),
+                        tiered("many", SuggestionTier.WEAPON, 2)),
+                List.of(new Stock(1, 2), new Stock(2, 9)));
+
+        assertEquals("many", ranked.get(0).key());
+        assertEquals(9, ranked.get(0).count());
+        // Mutation: drop the count comparator and keep only tier -> order falls back to key,
+        // "few" before "many" -> reddens.
+    }
+
+    @Test
+    void aNullTierSinksToVANILLARatherThanThrowing() {
+        // This runs inside a click handler on every recompute. A caller that has not been taught
+        // about tiers must get a sane ordering, not a NullPointerException that breaks the menu --
+        // and it must sink BELOW everything classified rather than displacing a weapon.
+        List<Craftable> ranked = CraftCount.rank(
+                List.of(new Candidate("untagged", null, List.of(only(1))),
+                        tiered("weapon", SuggestionTier.WEAPON, 2)),
+                List.of(new Stock(1, 64), new Stock(2, 1)));
+
+        assertEquals("weapon", ranked.get(0).key());
+        assertEquals(SuggestionTier.VANILLA, ranked.get(1).tier(), "an absent tier defaults DOWN");
+        // Mutation: default a null tier to WEAPON -> the untagged recipe displaces a real weapon
+        // -> reddens.
+        // Mutation: drop the null guard -> NullPointerException -> reddens.
     }
 
     // ------------------------------------------------------------- the ranking
