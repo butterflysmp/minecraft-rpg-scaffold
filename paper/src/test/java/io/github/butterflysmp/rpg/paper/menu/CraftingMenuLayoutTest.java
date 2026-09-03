@@ -24,12 +24,12 @@ class CraftingMenuLayoutTest {
      * The nine cells, by hand, in the server's matrix order.
      *
      * <pre>
-     * [ 11 12 13 ]
-     * [ 20 21 22 ]
-     * [ 29 30 31 ]
+     * [ 10 11 12 ]
+     * [ 19 20 21 ]
+     * [ 28 29 30 ]
      * </pre>
      */
-    private static final int[] EXPECTED = {11, 12, 13, 20, 21, 22, 29, 30, 31};
+    private static final int[] EXPECTED = {10, 11, 12, 19, 20, 21, 28, 29, 30};
 
     @Test
     void theGridSitsWhereTheLayoutSaysItDoes() {
@@ -37,7 +37,7 @@ class CraftingMenuLayoutTest {
             assertEquals(EXPECTED[index], CraftingMenuLayout.rawSlotForMatrix(index),
                     "matrix index " + index);
         }
-        // Mutation: FIRST_GRID_COLUMN 2 -> 1 -> every row reddens naming the index.
+        // Mutation: FIRST_GRID_COLUMN 1 -> 2 -> every row reddens naming the index.
     }
 
     @Test
@@ -71,11 +71,16 @@ class CraftingMenuLayoutTest {
         assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(CraftingMenuLayout.CLOSE_SLOT));
         assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(CraftingMenuLayout.RESULT_SLOT),
                 "the RESULT slot is not a grid cell -- if it were, the matrix would include its own output");
-        assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(14),
-                "the column between the grid and the result is not a cell");
-        assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(10),
+        assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(13),
+                "the column between the grid and the arrow is not a cell");
+        assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(9),
                 "the column left of the grid is not a cell");
-        // Mutation: drop the column bound in matrixIndexOf -> slots 10 and 14 redden.
+        assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(CraftingMenuLayout.ARROW_SLOT),
+                "the arrow is decoration, not an ingredient cell");
+        // Mutation: drop the column bound in matrixIndexOf -> slots 9 and 13 redden.
+        // NOTE these moved with the grid in slice 5: the old literals were 10 and 14, and slot 10
+        // is now a grid CELL. A relayout that left them alone would have asserted the opposite of
+        // the truth and passed for the wrong reason.
     }
 
     @Test
@@ -87,9 +92,9 @@ class CraftingMenuLayoutTest {
         for (int raw = 0; raw < CraftingMenuLayout.SIZE; raw++) {
             if (CraftingMenuLayout.matrixIndexOf(raw).isPresent()) resolving.add(raw);
         }
-        assertEquals(List.of(11, 12, 13, 20, 21, 22, 29, 30, 31), resolving,
+        assertEquals(List.of(10, 11, 12, 19, 20, 21, 28, 29, 30), resolving,
                 "exactly these raw slots are grid cells");
-        // Mutation: widen the row bound to `row <= GRID` -> slots 38,39,40 join the list -> reddens.
+        // Mutation: widen the row bound to `row <= GRID` -> slots 37,38,39 join the list -> reddens.
     }
 
     @Test
@@ -119,22 +124,26 @@ class CraftingMenuLayoutTest {
 
     // --- The Quick Craft column -------------------------------------------------------------
 
-    /** Row 4, left to right. Written out for the reason EXPECTED is: a test that recomputes cannot fail. */
+    /** Column 7, rows 1-3, top to bottom. Written out for the reason EXPECTED is. */
     private static final List<Integer> EXPECTED_SUGGESTIONS =
-            List.of(36, 37, 38, 39, 40, 41, 42, 43, 44);
+            List.of(16, 25, 34);
 
     @Test
-    void theSuggestionColumnSitsInROW4() {
+    void theSuggestionColumnSitsBesideTheGridInCOLUMN7() {
         // PINNED AS LITERALS, because this is a SAFETY decision and not a look. A suggestion spends
-        // materials on a single click with no confirmation; row 5 sits directly above the player's
-        // own inventory, one row of travel from an ordinary misclick coming up off the hotbar.
-        // Moving the column down must be a deliberate edit to this list, not a quiet constant change.
+        // materials on a single click with no confirmation, so it must stay AWAY from the player's
+        // own inventory boundary -- the edge they cross most often coming up off the hotbar.
+        //
+        // It was row 4 and is now column 7 rows 1-3, which is FURTHER from that boundary, beside
+        // the grid at eye level. The concern that put it low is better served by putting it high;
+        // it was satisfied by the move, not abandoned. Moving it DOWN must be a deliberate edit to
+        // this list, not a quiet constant change.
         assertEquals(EXPECTED_SUGGESTIONS, CraftingMenuLayout.SUGGESTION_SLOTS);
         for (int index = 0; index < EXPECTED_SUGGESTIONS.size(); index++) {
             assertEquals(EXPECTED_SUGGESTIONS.get(index),
                     CraftingMenuLayout.rawSlotForSuggestion(index), "suggestion " + index);
         }
-        // Mutation: SUGGESTION_ROW 4 -> 5 -> every row reddens naming the index.
+        // Mutation: SUGGESTION_COLUMN 7 -> 8 -> every row reddens naming the index.
     }
 
     @Test
@@ -165,7 +174,7 @@ class CraftingMenuLayoutTest {
             assertNotEquals(CraftingMenuLayout.CLOSE_SLOT, raw);
             assertNotEquals(CraftingMenuLayout.BROWSER_SLOT, raw);
         }
-        assertEquals(9, CraftingMenuLayout.SUGGESTION_SLOTS.size(), "the walk must not be empty or short");
+        assertEquals(3, CraftingMenuLayout.SUGGESTION_SLOTS.size(), "the walk must not be empty or short");
         // Mutation: move the column onto row 3 -> the grid overlap assertions redden.
     }
 
@@ -173,7 +182,7 @@ class CraftingMenuLayoutTest {
     void theBrowserButtonIsTheONLYFunctionalCellBelowTheSuggestions() {
         // Row 5 is a deliberate buffer between a materials-spending button and the player's own
         // inventory. Exactly one cell in it does anything.
-        assertEquals(49, CraftingMenuLayout.BROWSER_SLOT);
+        assertEquals(26, CraftingMenuLayout.BROWSER_SLOT);
         assertEquals(OptionalInt.empty(), CraftingMenuLayout.suggestionIndexOf(
                 CraftingMenuLayout.BROWSER_SLOT), "the browser button must not craft");
         assertEquals(OptionalInt.empty(),
@@ -198,6 +207,42 @@ class CraftingMenuLayoutTest {
         }
         // Mutation: drop the `row != SUGGESTION_ROW` check -> every slot resolves -> reddens.
         // Mutation: drop the `rawSlot >= SIZE` guard -> reddens on 54.
+    }
+
+    // --- The status bar, and the close button inside it ---------------------------------------
+
+    @Test
+    void theStatusBarCanNEVERPaintOverTheCloseButton() {
+        // THE guard, and the reason STATUS_SLOTS is set subtraction rather than a loop that skips.
+        //
+        // The bar spans the bottom row and CLOSE_SLOT is 49, inside it. Painting over the button
+        // leaves the menu closable ONLY by Esc -- and Esc WORKS, so the symptom is "the X
+        // disappeared", not anything that looks broken. Nothing else in the project would notice.
+        assertFalse(CraftingMenuLayout.STATUS_SLOTS.contains(CraftingMenuLayout.CLOSE_SLOT),
+                "the status bar must never paint over the close button");
+        assertEquals(8, CraftingMenuLayout.STATUS_SLOTS.size(),
+                "row 5 is nine slots; the close button is not one of them");
+        // Mutation: drop the `slots.remove(CLOSE_SLOT)` -> both assertions redden.
+    }
+
+    @Test
+    void theStatusBarIsEXACTLYTheBottomRowMinusTheButton() {
+        // The literals, so a bar that drifted onto another row reddens here rather than being
+        // discovered in game. 45..53 is row 5; 49 is the button.
+        assertEquals(List.of(45, 46, 47, 48, 50, 51, 52, 53),
+                CraftingMenuLayout.STATUS_SLOTS.stream().sorted().toList(),
+                "the bar is row 5 minus slot 49");
+
+        // And it must not overlap anything functional. The grid and the suggestions are three rows
+        // up, but asserting it costs nothing and a future relayout is exactly when it stops holding.
+        for (int slot : CraftingMenuLayout.STATUS_SLOTS) {
+            assertFalse(CraftingMenuLayout.GRID_SLOTS.contains(slot), "slot " + slot + " is a grid cell");
+            assertEquals(OptionalInt.empty(), CraftingMenuLayout.suggestionIndexOf(slot),
+                    "slot " + slot + " is a suggestion cell");
+            assertNotEquals(CraftingMenuLayout.RESULT_SLOT, slot);
+            assertNotEquals(CraftingMenuLayout.BROWSER_SLOT, slot);
+        }
+        // Mutation: build the bar from row 4 -> the literal list reddens.
     }
 
     @Test

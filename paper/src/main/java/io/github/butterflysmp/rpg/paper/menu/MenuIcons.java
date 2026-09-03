@@ -18,8 +18,34 @@ public final class MenuIcons {
 
     private MenuIcons() {}
 
-    /** The pane that means "nothing here". Deliberately the dullest item in the game. */
-    public static final Material FILLER = Material.GRAY_STAINED_GLASS_PANE;
+    /**
+     * The pane that means "nothing here". Deliberately the dullest item in the game.
+     *
+     * <p><b>BLACK since slice 5, and changed HERE so both menus move together.</b> That is the whole
+     * reason this constant is shared rather than per-menu -- see the class javadoc: chrome that
+     * drifts between screens reads as two different plugins. The enchant table is fully black too,
+     * with no exception.
+     *
+     * <p><b>GRAY is no longer chrome, and that matters to more than the eye.</b> It is now the
+     * status bar's EMPTY colour, so a gray pane in this menu is a READOUT rather than furniture.
+     * Gate row S12 had to be rewritten for exactly this: it said "hold panes matching the filler",
+     * and an operator holding gray panes after this change would have tested nothing and passed.
+     */
+    public static final Material FILLER = Material.BLACK_STAINED_GLASS_PANE;
+
+    /**
+     * A blank pane in a given colour, for a readout rather than for chrome.
+     *
+     * <p>Same shape as {@link #filler()} -- an empty display name, because a blank name still hovers
+     * -- so a status cell and a chrome cell are visually identical apart from the colour, which is
+     * the only thing carrying meaning.
+     */
+    public static ItemStack pane(Material material) {
+        ItemStack item = new ItemStack(material);
+        item.editMeta(meta -> meta.displayName(Component.empty()
+                .decoration(TextDecoration.ITALIC, false)));
+        return item;
+    }
 
     /**
      * A named, non-italic lore line.

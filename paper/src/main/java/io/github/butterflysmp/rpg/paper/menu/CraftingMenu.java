@@ -652,6 +652,36 @@ public final class CraftingMenu extends Menu {
         };
 
         getInventory().setItem(RESULT_SLOT, preview);
+
+        // THE STATUS BAR IS PAINTED HERE, from the SAME matrix and the SAME previewedRecipe the
+        // result slot was just painted from. One call, one trigger: the bar cannot claim a match
+        // the result slot is not showing, because neither reads anything the other does not.
+        //
+        // Note this fires on EVERY preview refresh, which is exactly what makes the close-button
+        // exclusion load-bearing rather than a first-paint concern -- see STATUS_SLOTS.
+        paintStatus(CraftStatus.of(gridEmpty(matrix), previewedRecipe.isPresent()));
+    }
+
+    /** Is every grid cell empty? The bar's first question, and the only one it asks of the matrix. */
+    private static boolean gridEmpty(ItemStack[] matrix) {
+        for (ItemStack cell : matrix) {
+            if (!isEmpty(cell)) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Repaint the bottom row in this state's colour.
+     *
+     * <p>Iterates {@link CraftingMenuLayout#STATUS_SLOTS}, which is the bottom row MINUS the close
+     * button. <b>There is no skip here to forget</b>: the set cannot contain slot 49, so this loop
+     * has no way to paint over it however often it runs.
+     */
+    private void paintStatus(CraftStatus status) {
+        ItemStack pane = MenuIcons.pane(status.material());
+        for (int slot : CraftingMenuLayout.STATUS_SLOTS) {
+            getInventory().setItem(slot, pane.clone());
+        }
     }
 
     // ------------------------------------------------------------------ matrix
@@ -955,6 +985,18 @@ public final class CraftingMenu extends Menu {
         getInventory().setItem(CraftingMenuLayout.BROWSER_SLOT,
                 MenuIcons.placeholder(Material.BOOK, "Recipe Browser",
                         "Everything you can make, paginated."));
+
+        // Decoration, painted once and never repainted. The arrow does NOT change with the recipe:
+        // the status bar is the state indicator, and a second one would be a competing answer to
+        // "did it match" that could drift from the first.
+        getInventory().setItem(CraftingMenuLayout.ARROW_SLOT,
+                MenuIcons.icon(Material.ARROW, MenuIcons.line("", NamedTextColor.DARK_GRAY),
+                        List.of()));
+        getInventory().setItem(CraftingMenuLayout.INDICATOR_SLOT,
+                MenuIcons.icon(Material.CRAFTING_TABLE,
+                        MenuIcons.line("Crafting", NamedTextColor.WHITE),
+                        List.of(MenuIcons.line("Lay a recipe in the grid,", NamedTextColor.GRAY),
+                                MenuIcons.line("or click a suggestion.", NamedTextColor.GRAY))));
     }
 
     private void say(String message) {
