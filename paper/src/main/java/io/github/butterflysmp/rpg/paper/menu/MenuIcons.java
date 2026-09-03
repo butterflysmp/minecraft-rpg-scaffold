@@ -6,6 +6,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -81,6 +82,46 @@ public final class MenuIcons {
     /** A blank lore line, non-italic for the same reason. */
     public static Component blank() {
         return Component.empty().decoration(TextDecoration.ITALIC, false);
+    }
+
+    /**
+     * Menu chrome on top of an item's own lore, separated by one blank line.
+     *
+     * <p>Extracted so it has a REAL WITNESS. The thing that uses it --
+     * {@code CraftingMenu.suggestionIcon} -- needs a live {@code ItemMeta} and a minted stack, so it
+     * is boot-gate-only; the ORDERING is not, and it is the half that is easy to get wrong. Same
+     * trade {@code CollectPlan} and {@code GridClickIntent} make.
+     *
+     * <p><b>The rarity footer must stay LAST</b>, exactly as it is on the real item in the player's
+     * hand. That is why chrome goes on top rather than appended: a suggestion icon that ended in
+     * "Uses items from your inventory" would put the tier badge in the middle of the tooltip, which
+     * is the same defect {@code GearLore.appendRarityFooter} warns about from the other direction.
+     *
+     * <p><b>NO TRAILING BLANK when there is nothing underneath</b>, which is the one case worth
+     * naming: an unclaimed vanilla result has no lore of its own, and a separator with nothing after
+     * it renders as a stray empty row.
+     *
+     * <p><b>Deliberately NOT {@code EnchantLore.applied}, which is the same shape and would be wrong
+     * here.</b> That method guards on the PREPENDED block being empty; this one guards on the
+     * UNDERNEATH being empty. {@code applied(existing, chrome)} with no existing lore yields
+     * {@code chrome + blank} -- a trailing separator. The two are close enough that someone will
+     * eventually try to merge them, so the difference is written down rather than left to be
+     * rediscovered.
+     *
+     * @param chrome   the menu's own lines. Never null; an empty list yields {@code existing}.
+     * @param existing the item's own lore, or null for an item that has none.
+     */
+    public static List<Component> chromeOver(List<Component> chrome, List<Component> existing) {
+        if (chrome == null || chrome.isEmpty()) {
+            return existing == null ? List.of() : List.copyOf(existing);
+        }
+        if (existing == null || existing.isEmpty()) return List.copyOf(chrome);
+
+        List<Component> out = new ArrayList<>(chrome.size() + 1 + existing.size());
+        out.addAll(chrome);
+        out.add(blank());
+        out.addAll(existing);
+        return out;
     }
 
     /** A display item: a material, a name, and lore. No behaviour, no PDC, nothing to carry. */

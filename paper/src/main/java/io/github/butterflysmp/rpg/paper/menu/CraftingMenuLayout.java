@@ -59,8 +59,12 @@ public final class CraftingMenuLayout {
     private static final int FIRST_GRID_COLUMN = 1;
 
     /**
-     * The result. Row 2, column 5 -- vertically centred on the grid, one cell right of the arrow,
-     * mirroring the vanilla screen this replaces.
+     * The result. Row 2, column 5 -- vertically centred on the grid, with column 4 between it and
+     * the grid's right-hand edge at column 3. Mirrors the vanilla screen this replaces.
+     *
+     * <p>(It used to be described as "one cell right of the arrow". The arrow was column 4 and is
+     * gone; and the replacement phrasing "one cell right of the grid's edge" would have been wrong
+     * too -- that is column 4, the gap. Two columns, with one between.)
      *
      * <p><b>Not an input slot, and that is load-bearing.</b> {@code Menu.returnEverything} iterates
      * {@code inputSlots()}; a preview listed there would be handed to the player on every close,

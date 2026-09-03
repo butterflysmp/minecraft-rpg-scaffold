@@ -72,7 +72,7 @@ class CraftingMenuLayoutTest {
         assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(CraftingMenuLayout.RESULT_SLOT),
                 "the RESULT slot is not a grid cell -- if it were, the matrix would include its own output");
         assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(13),
-                "the column between the grid and the arrow is not a cell");
+                "column 4 -- between the grid and the result -- is not a cell");
         assertEquals(OptionalInt.empty(), CraftingMenuLayout.matrixIndexOf(9),
                 "the column left of the grid is not a cell");
         // Slot 22 sits DIRECTLY RIGHT of grid cell 21, and this is what pins the grid to three

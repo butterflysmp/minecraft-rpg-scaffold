@@ -331,8 +331,13 @@ same thing in the same words.
 > rows those were is part of the same missing answer.
 
 **A FOLLOW-UP LANDED AFTER THAT RUN** — the UI changes below — so a NAMED SUBSET is re-run rather
-than the whole gate: **Q1, Q3, Q9, Q15, Q16, Q23, S12, S12c, 6, 1c**, plus **S12b** and the new
-two-grays row. Everything else was unaffected by it.
+than the whole gate. **ELEVEN ROWS: Q1, Q3, Q9, Q15, Q16, Q23, S12, S12b, S12c, 6, 1c.** Everything
+else was unaffected.
+
+> An earlier wording listed "Q23" and "the new two-grays row" as separate entries. **They are the
+> same row** — Q23 IS the two-grays row — so the list read as twelve. A count that double-counts is
+> the shape rule 4 warns about from the other side: it credits coverage that is not there, by
+> arithmetic rather than by a row that cannot fail.
 
 **THE LAYOUT CHANGED AFTER THESE ROWS WERE WRITTEN AND BEFORE THEY WERE RUN.** The grid slid one
 column left, the suggestion column moved to column 7 and shrank from nine cells to three, the close
@@ -348,13 +353,23 @@ Running the gate before that change would have spent it on a layout that was abo
 > complete is trusted by everyone downstream, and nothing checks it. **Prose has no compiler.** When
 > a layout moves, grep the gate for every slot NUMBER and every row/column WORD, not only for the
 > constants that changed.
+>
+> **AND THAT REMEDY WAS STILL NOT ENOUGH.** The map above drew the close button at row 0 column 0
+> for a further commit, in a diagram whose own legend already said `close ...... 49`. The label was
+> corrected when the button moved; **the picture was not**, and the commit that edited rows 2-5 of
+> this very map left row 0 alone.
+>
+> A glyph in an ASCII diagram is neither a slot number nor a row word, so grepping for both would
+> have sailed straight past it. **The check that finds this is reading the map against the code, cell
+> by cell** — which nobody had done, because a diagram looks like documentation rather than like a
+> claim. It is a claim. Corrected 2026-09-03.
 
 Crafting from the INVENTORY rather than the grid. **Three** suggestions beside the grid, clicked to
 craft immediately, shift-clicked to craft repeatedly. The browser button is a visible placeholder
 this half.
 
 ```
-row 0   [X]  .   .   .  [I]  .   .   .   .      X  close ...... 49 (row 5!)
+row 0    .   .   .   .  [I]  .   .   .   .      X  close ...... 49 (row 5)
 row 1    .   G   G   G   .   .   .  [Q]  .      I  indicator .. 4
 row 2    .   G   G   G   .  [R]  .  [Q] [»]     G  grid ....... 10 11 12 / 19 20 21 / 28 29 30
 row 3    .   G   G   G   .   .   .  [Q]  .      R  result ..... 23
@@ -426,7 +441,7 @@ things, so bring a way to count.
 | Q17 | **NOTHING REACHES THE GROUND.** Fill your inventory to a handful of free slots. Shift-click a suggestion for a NON-STACKABLE output (a shield or a tool) with materials for many. **Stand still and watch your feet.** | It stops when the inventory can no longer take one, says **"made N"**, and **NOT ONE ITEM DROPS** | **discriminating · sole witness** for `MenuSafety.fits`. The old behaviour was `give`'s drop branch firing up to 64 times — a pile of entities and the same message repeated. Non-stackable output is the case a lower `MAX_BULK_CRAFTS` could not have fixed |
 | Q7 | **THE INVARIANT.** Hold a minted iron pickaxe plus plain materials. Read every suggestion. | The pickaxe is **never counted** toward any suggestion and is **never consumed** by one | **discriminating · sole witness** for `isGear`'s THIRD surface — after the grid screen and the Crafter guard. That chain is a whitelist with nothing that compile-fails, and slice 4 found it had already fallen behind the gear axis once. **The row to fail the slice over** |
 | Q8 | **STALENESS, PINNED.** Stage almost everything so a suggestion shows a count it can no longer deliver. **Count your materials first.** Click it. | Refuses **cleanly and says why** — and **the ingredients are STILL THERE** | **count · discriminating** · the count is advisory, the click is authoritative. Above all it must not debit on a refusal: debit-before-craft is theft, on the path least likely to be hand-tested |
-| Q9 | **Two halves, and the second is new.** (a) Look at the shield SUGGESTION ICON and note its rarity and stats. (b) Craft it and open the received item. | **(a) The icon shows the MINTED tooltip** — rarity-coloured name, `Damage Reduction`, flavour, rarity footer last — not a plain vanilla shield. **(b) The received shield's RARITY AND STATS MATCH what the icon showed, and it has enchant candidates the icon did NOT show.** | **discriminating · sole witness for mint-without-roll on the suggestion path.** The icon mints through the same `claimFor`-then-`GearItems.mint` the result slot uses, and deliberately does NOT roll: rarity and stats are deterministic from the definition, so showing them is a promise the craft keeps; candidates are a `ThreadLocalRandom` draw, so showing them would be a promise it breaks. **Open it rather than counting it** — a count passes on the very defect this catches |
+| Q9 | **Two halves, and the second is new.** (a) Look at the shield SUGGESTION ICON and note its rarity and stats. (b) Craft it and open the received item. | **(a) The icon shows the MINTED tooltip** — rarity-coloured name, `Damage Reduction`, flavour, rarity footer last — not a plain vanilla shield. **(b) The received shield's RARITY AND STATS MATCH what the icon showed, and it has enchant candidates the icon did NOT show.** | **discriminating · sole witness for mint-without-roll on the suggestion path.** The icon mints through the same `claimFor`-then-`GearItems.mint` the result slot uses, and deliberately does NOT roll: rarity and stats are deterministic from the definition, so showing them is a promise the craft keeps; candidates are a `ThreadLocalRandom` draw, so showing them would be a promise it breaks. **Open it rather than counting it** — a count passes on the very defect this catches.<br><br>**The LORE ORDERING is NOT gate-only** — `MenuIconsTest` pins chrome on top, exactly one blank, the item's own lore preserved in order, and no trailing blank when it has none. What needs a live server, and so genuinely needs this row, is the mint-versus-roll behaviour on a real `ItemMeta`: that the icon carries a gear tooltip at all, and that candidates appear only after the craft |
 | Q10 | **THE SCOPE BOUNDARY, both halves.** Hold paper and gunpowder. **(a)** Check the suggestions for a BASIC firework rocket. **(b)** Then build a MULTI-STAR rocket in the grid — several firework stars plus paper and gunpowder. | **(a) The basic rocket DOES appear as a suggestion and crafts from it.** **(b) The multi-star rocket does NOT appear as a suggestion, and still crafts normally in the grid.** | **discriminating · sole witness** for where the enumerable boundary actually falls. The basic rocket is an ordinary shapeless recipe and enumerates fine; only the customizable ones are `ComplexRecipe`, which is a bare marker interface exposing no ingredients. **This row is what stops someone "restoring parity" by hand-implementing complex recipes** — and by distinguishing the two cases it says accurately WHERE the boundary is, rather than asserting a blanket absence that is simply false |
 
 ## The status bar — a three-arm switch needs its three arms observed

@@ -855,18 +855,10 @@ public final class CraftingMenu extends Menu {
         // the whole reason for minting in the first place. Chrome on top, item underneath, one
         // blank line between, so the RARITY FOOTER stays the last line exactly as it is on the real
         // item in the player's hand.
-        icon.editMeta(meta -> {
-            List<Component> lore = new ArrayList<>();
-            lore.add(MenuIcons.line("Craft " + craftable.count() + " more", NamedTextColor.GRAY));
-            lore.add(MenuIcons.line("Uses items from your inventory", NamedTextColor.DARK_GRAY));
-
-            List<Component> existing = meta.lore();
-            if (existing != null && !existing.isEmpty()) {
-                lore.add(MenuIcons.blank());
-                lore.addAll(existing);
-            }
-            meta.lore(lore);
-        });
+        icon.editMeta(meta -> meta.lore(MenuIcons.chromeOver(
+                List.of(MenuIcons.line("Craft " + craftable.count() + " more", NamedTextColor.GRAY),
+                        MenuIcons.line("Uses items from your inventory", NamedTextColor.DARK_GRAY)),
+                meta.lore())));
         return icon;
     }
 

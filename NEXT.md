@@ -672,6 +672,29 @@ Before milestone 2, two things worth measuring rather than assuming:
     finding. `grep -rn 'firework' --include=*.java --include=*.md .` took one command and found
     three sites nobody had named.
 
+- **RULE 1 APPLIES TO THE GREP YOU VERIFY WITH, NOT ONLY TO THE CODE YOU WRITE.** The same defect
+  from the other side, found when the arrow was deleted.
+
+  The enumeration used was `ARROW_SLOT|ARROW\b` — the identifier and the shouted word. It reported
+  five sites and the true count was **seven**: two more mentions existed in ordinary lowercase prose,
+  where the arrow was a POSITIONAL LANDMARK rather than a named thing — *"one cell right of the
+  arrow"*, *"the column between the grid and the arrow"*. Neither pattern could ever have matched
+  them. Measured afterwards: `ARROW_SLOT|ARROW\b` finds 3 hits in the tree; `grep -i arrow` finds 60.
+
+  **This is "enumerate the axis, not the cases you currently have" pointed at the search itself.**
+  A grep built from the identifier enumerates the cases the identifier happens to cover; the AXIS is
+  *every mention of the thing* — any casing, any part of speech, and including the ones where it is
+  used to locate something else rather than to name itself. The identifier-shaped grep is a denylist
+  wearing a different hat: it admits everything nobody thought to spell out.
+
+  **And a diagram is neither.** The same deletion left an ASCII layout map drawing the close button
+  at a slot it had moved away from, in a picture whose own legend gave the right number. No grep for
+  slot numbers or row words reaches a glyph in a drawing. **The check for a diagram is reading it
+  against the code, cell by cell** — a map looks like documentation and is actually a claim.
+
+  Practically: when removing or moving a thing, `grep -i` its plain-English name as well as its
+  identifier, and open every diagram that draws it.
+
 - **COMPLEX RECIPES ARE PERMANENTLY ABSENT FROM SUGGESTIONS — but "firework rockets are absent" was
   TOO BROAD, and it was written in five places before anyone checked.** `ComplexRecipe` is a bare
   marker interface (verified from the pinned jar: it declares nothing), so a recipe registered that
