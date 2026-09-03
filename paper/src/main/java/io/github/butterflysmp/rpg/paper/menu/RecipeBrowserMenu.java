@@ -285,14 +285,19 @@ public final class RecipeBrowserMenu extends Menu {
         // built out of the placeholder. Reaching for placeholder is a claim that something is NOT
         // BUILT.
         //
-        // STRUCTURE_VOID, not BARRIER, and verified on the pinned jar the same way KNOWLEDGE_BOOK
-        // was. When the browser is empty the close button is on screen too -- two BARRIERs, same
-        // material, distinguished only by name and position, so telling them apart needs a hover.
-        // Clicking the wrong one is harmless (Menu cancels first), but a distinction that survives
-        // without hovering is worth one constant.
+        // BARRIER, and that is a DECIDED choice rather than the default one. It was briefly
+        // STRUCTURE_VOID: when the browser is empty the close button is on screen too, so the
+        // screen carries TWO BARRIERS -- same material, distinguished only by name and position,
+        // which needs a hover to perceive.
+        //
+        // The operator chose barrier back, 2026-09-03. Barrier is this plugin's "nothing here"
+        // icon and reads that way at a glance; the collision costs a hover in one state, and
+        // misclicking is harmless because Menu cancels first and neither slot is an input slot.
+        // Recorded so the duplication reads as a decision someone took rather than as an icon
+        // nobody noticed was already in use -- which is what it would look like otherwise.
         if (visible.isEmpty()) {
             getInventory().setItem(RecipeBrowserLayout.EMPTY_STATE_SLOT, MenuIcons.icon(
-                    Material.STRUCTURE_VOID,
+                    Material.BARRIER,
                     MenuIcons.line("Nothing you can make right now", NamedTextColor.GRAY),
                     List.of()));
         }

@@ -874,17 +874,34 @@ explain itself" would rediscover it from scratch.
 
 ---
 
-### TWO BARRIERS ON ONE SCREEN, FIXED BEFORE IT WAS A COMPLAINT
+### TWO BARRIERS ON ONE SCREEN — ACCEPTED, DELIBERATELY, AND THE GATE ROW PAYS FOR IT
 
-An empty browser showed the close button **and** the empty-state notice — both `BARRIER`, same
+An empty browser shows the close button **and** the empty-state notice — both `BARRIER`, same
 screen, distinguished only by name and position. Clicking the wrong one is harmless (`Menu` cancels
-first), so this was never a defect; it was a distinction that **required a hover to perceive**.
+first and neither is an input slot), so this was never a defect; it is a distinction that **requires
+a hover to perceive**.
 
-The empty state is now `STRUCTURE_VOID`. Worth recording because of *when* it happened: barrier was
-chosen for the empty state **before the browser had its own close button**, and was still correct at
-that moment. The collision arrived with a later, unrelated change, and nothing connects the two —
-which is the general shape, not a slip: **an icon choice is only unique with respect to the screen as
-it exists on the day.**
+**It was changed to `STRUCTURE_VOID` and then changed back on operator instruction, 2026-09-03.**
+Barrier is this plugin's "nothing here" icon and reads that way at a glance; the collision costs a
+hover in one state. **Recorded so the duplication reads as a decision someone took, rather than as an
+icon nobody noticed was already in use** — which is exactly what it would look like otherwise, and
+the reading a future reviewer would be right to have.
+
+> **THE COST LANDED ON THE GATE, WHICH IS WHERE A REVERSAL'S COST USUALLY SHOWS UP.** Q33 hovers the
+> empty-state notice and checks it has a name and **no lore**. With two barriers on screen, the close
+> button *also* answers that description — a `BARRIER`, named, no lore — so an operator hovering the
+> wrong one gets **exactly what the row is looking for and ticks it**. The row now names **slot 22**
+> and warns about the second barrier.
+>
+> That is the second time in two changes that Q33 could have passed without observing the thing it
+> witnesses. **A sole-witness row degrades quietly when the screen around it changes**, and neither
+> degradation came from editing the row.
+
+**And worth recording about the ORIGINAL collision, separately from the decision:** barrier was
+chosen for the empty state **before the browser had its own close button**, and was correct then. The
+collision arrived with a later, unrelated change, and nothing connects the two. That is a general
+shape rather than a slip: **an icon choice is only unique with respect to the screen as it exists on
+the day it is made.**
 
 ---
 
