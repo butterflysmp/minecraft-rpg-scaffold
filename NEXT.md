@@ -793,36 +793,81 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ---
 
-### TWO ORPHANED JAVADOCS, INVISIBLE BECAUSE JAVADOC IGNORES THEM SILENTLY
+### FIVE ORPHANED JAVADOCS, INVISIBLE BECAUSE JAVADOC IGNORES THEM SILENTLY
 
 **Found 2026-09-03 while moving code, not while looking for them.** Java attaches a doc comment to
 the declaration that *immediately* follows it. Two doc comments in a row means the **first one is
 attached to nothing and is discarded** — no warning from `javac`, none from the IDE, and the text
 still reads perfectly well in the source file.
 
-Both instances were in the crafting arc, both written by the same author, both several slices old:
+**TWO were found BY HAND while moving code. A SWEEP THEN FOUND THREE MORE**, in files this slice does
+not otherwise touch. That is the finding worth keeping: the hand-found pair had already been written
+up as "two", and **two was never a count of the defect — it was the reach of where I happened to be
+looking.** A defect that is invisible to reading is also invisible to *incidental* discovery, so the
+first number any hand-search produces is a lower bound and should be reported as one.
 
-| file | the orphan | it was sitting above |
-|---|---|---|
-| `CraftingMenu` | *"Which gear definition, if any, this vanilla result should be replaced by"* — 16 lines, including the belt-and-braces durability reasoning | `identityOf`, which has its own javadoc |
-| `RecipeProbe` | *"The player's carried items, grouped by `isSimilar`…"* — the whole grouping rationale | `probeOne`, which has its own javadoc |
+| file | the orphan | it was sitting above | fix |
+|---|---|---|---|
+| `CraftingMenu` | *"Which gear definition, if any, this vanilla result should be replaced by"* — 16 lines, incl. the belt-and-braces durability reasoning | `identityOf`, which has its own javadoc | moved with `claimFor` into `InventoryCraft` |
+| `RecipeProbe` | *"The player's carried items, grouped by `isSimilar`…"* — the whole grouping rationale | `probeOne`, which has its own javadoc | reattached to `groupsOf` |
+| `BukkitCombatant` | the whole `snapshot` freeze rationale, incl. the region-ownership argument | a SECOND doc comment on the **same** method | **merged** — this pair describes one declaration, so it does not move |
+| `RpgPlugin` | *"Warns, never disables the plugin. Fail-soft…"* | `entityType`, which it plainly does not describe | moved to `validateContent`, which had none |
+| `GearClassLabel` | *"The whole noun phrase, for naming the gear an enchant is SITTING ON"* | `describeEnchant` | moved to `describe`, declared BELOW it and documented nowhere |
+
+**The three fixes are not one shape.** One pair merges, two move, and deciding which needs reading
+what the text actually describes — `RpgPlugin`'s orphan is about validation and was sitting above an
+entity-type lookup. A blind "delete the first of two" would have destroyed three explanations.
 
 **What makes this worth an entry rather than a tidy-up:** the failure is *invisible in the place you
 would look*. Reading the source, the comment sits directly above the thing it describes and looks
 correct; only generated javadoc, or a careful reader counting `*/` against `{`, shows the loss. It is
 the documentation equivalent of a check that did not run — **the text is there, and it does nothing.**
 
+> **THIS IS NOT THE STALE-PROSE FAMILY, AND FILING IT THERE WOULD LOSE THE POINT.** Stale prose —
+> `37c0ea7`'s "nine suggestions in row 4", `SuggestionTier`'s "NINE suggestion slots", the withdrawn
+> browser note — **was TRUE when it was written** and aged out from under itself. The remedy is to
+> re-read it when the thing it describes moves, and the failure is a *lapsed* claim.
+>
+> **An orphaned doc comment was NEVER WIRED UP.** It was wrong from the keystroke: present in the
+> file, absent from the generated docs, invisible to the compiler, invisible to every test, and
+> invisible to any `grep` for its content — because the content is right there, spelled correctly,
+> next to the method it describes. **There is no moment at which re-reading it would help**, which is
+> what makes it a different defect and not a variant.
+>
+> The two families do share one property, and it is the one this file keeps circling: **the artefact
+> looks correct in the place you would look.** Stale prose reads true because it once was; an orphan
+> reads attached because it is adjacent. Neither is caught by reading. Both need a mechanical check —
+> and for orphans that check is trivial, had never been run before, and found FIVE on its first run.
+
 Found because a class-extraction moved `claimFor` and its doc comment had to be located to move with
 it. It would not have been found by reading.
 
 **The sweep, so this is a measurement rather than an anecdote** — a `*/` line immediately followed by
-a `/**` line, across the whole menu package:
+a `/**` line. **Across EVERY source file, not one package**: scoping the first run to `menu/` is
+exactly what made the count "two" when it was five.
 
 ```bash
-awk 'prev ~ /^     \*\/$/ && $0 ~ /^    \/\*\*$/ {c++} {prev=$0} END {print c+0}' <file>
+find core/src storage/src paper/src -name '*.java' -type f -exec \
+  awk 'prev ~ /^[[:space:]]*\*\/$/ && $0 ~ /^[[:space:]]*\/\*\*$/ {print FILENAME": "NR} {prev=$0}' {} +
 ```
 
-Two before, **zero after**. Worth re-running when a class grows a lot of documentation.
+Note the indentation is `[[:space:]]*` rather than a fixed four/five spaces: the first version hard-
+coded the depth of a top-level member and would have missed every orphan on a nested class.
+
+**Five before, ZERO after**, across 378 source files.
+
+> **AND THE SWEEP CARRIES A POSITIVE CONTROL, because it is a DISCOVERY and not an assertion.** A
+> scan reporting zero is indistinguishable from a scan that cannot see — CLAUDE.md:104, which this
+> file has now recorded instances of three separate times. So an orphan is injected and the sweep is
+> required to report it before "zero" is allowed to mean anything:
+>
+> ```
+>   control marker (must be 1): 1
+>   sweep sees: 1  (must be 1)
+>   restored, markers left: 0
+> ```
+>
+> Without that, "zero orphans" and "the awk pattern has a typo" are the same output.
 
 ---
 
@@ -844,8 +889,47 @@ IDENTICAL  debit                  (14 lines)
 IDENTICAL  the pin + the bulk loop (16 lines)
 ```
 
-normalising only the three things the move is *allowed* to change: the access modifier, the
+> **AND "IDENTICAL" THERE IS OVER-ROUNDED. Reviewer-caught, 2026-09-03, and the rounding matters more
+> than the fact.** Those verdicts are post-NORMALISATION. The raw bodies **differ**, in exactly five
+> places, all requalifications:
+>
+> | | `MenuSafety.isEmpty` | `CraftingMenu.matches` |
+> |---|---|---|
+> | `commitCraft` | 1 | 1 |
+> | `claimFor` | 1 | — |
+> | `craftOneFromInventory` | 1 | — |
+> | `debit` | 1 | — |
+>
+> **The accurate claim is: "identical apart from five call-site requalifications, each to a target
+> separately proved byte-identical."** Both targets were then proved, with a control:
+>
+> ```
+> MenuSafety.isEmpty vs the old CraftingMenu.isEmpty  IDENTICAL apart from the access modifier
+>     old:  return item == null || item.getType().isAir() || item.getAmount() <= 0;
+>     new:  return item == null || item.getType().isAir() || item.getAmount() <= 0;
+> identityOf IDENTICAL (3 lines) · matches IDENTICAL (4 lines)     [vs master 4187cd1]
+> control: PASS -- injecting `<= 0` -> `< 0` was seen
+> ```
+>
+> **THE POINT IS THAT ROUNDING DEFEATS THE WHOLE METHOD.** Proving a move by diff rather than by
+> suite exists to produce an EXACT claim; collapsing it to IDENTICAL discards precisely the thing a
+> reader would re-check, and hands them a stronger claim than was tested. **It is also where a real
+> defect of this kind would hide**: a `MenuSafety.isEmpty` differing from the predicate it replaced by
+> a single character would change four call sites at once, silently, and every normalised diff would
+> still print IDENTICAL. The normalisation is only sound *because* the targets were separately
+> proved — so a report that omits the target proof is not a weaker version of this argument, it is
+> a different and invalid one.
+
+The normalisation covered exactly three things, and no others: the access modifier, the
 `CraftingMenu.` qualifier on the moved `matches` call, and `isEmpty` → `MenuSafety.isEmpty`.
+
+> **A CAUTION ON THE EXTRACTION ITSELF, from the reviewer's own pass.** Their first attempt reported
+> `matches: CHANGED` — a **false finding**, produced by a crude fixed-line-range slice that had
+> picked up neighbouring code shifted by `claimFor`'s removal. A brace-matched extraction, counting
+> `{` against `}` from the signature, showed it identical. **The check that got it right parsed
+> structure; the one that got it wrong counted lines.** Worth keeping because the false finding
+> arrived inside a message asking for MORE precision, which is exactly when a plausible-looking red
+> is least likely to be re-examined.
 
 **And the comparison carried a positive control**, because a diff that finds nothing looks exactly
 like a diff that ran and matched — this file's oldest lesson. A change was injected into the moved
@@ -969,6 +1053,25 @@ never fires looks exactly like one that passed:
 > above it, that script explains this exact hazard for `find | wc -l` and again for `grep`. **Having
 > the rule written down twice, in the file being edited, did not stop it being walked into** — so the
 > comment now names both hazards as KNOWN IN THIS SCRIPT, to be found rather than rediscovered.
+
+> **A KNOWN SHARP EDGE IN THE FIX, RECORDED RATHER THAN SANDED OFF — reviewer-raised 2026-09-03.**
+> The new guard hard-fails on **any** bytes on that `find`'s stderr, not only on an unsupported
+> `-printf`. A benign cause — an unreadable directory under some module's `target/` — would abort a
+> correct run with `THE STALENESS CHECK COULD NOT RUN`.
+>
+> **That is a real tension with the script's own stated design cost:** its staleness comment says the
+> false-positive price is *"a scary message on a correct run, and this guard is worth nothing if
+> people learn to ignore it."* This check can produce exactly that.
+>
+> **Deliberately NOT narrowed** (e.g. to `grep -q 'printf'`), because the alternative failure is the
+> one the fix exists to prevent: a stderr cause nobody predicted, filtered out, and silently
+> swallowed — the self-disabling shape all over again, reintroduced by the narrowing. **Fail loud on
+> the unexpected** is the correct default for a guard whose whole subject is checks that quietly do
+> not run.
+>
+> **So: WATCH IT, do not pre-emptively change it.** If it ever fires for a benign reason, that is
+> evidence, and the fix at that point is to handle *that specific cause* by name — not to widen the
+> filter back out. Logged here so the first person it bites finds a decision instead of a bug.
 
 ---
 

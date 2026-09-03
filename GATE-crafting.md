@@ -496,6 +496,33 @@ things, so bring a way to count.
 
 ## The browser — LIVE from slice 6
 
+> ## ⛔ TWO DECISIONS TO TAKE BEFORE THE FIRST ROW IS RUN
+>
+> **Both are decided from evidence only the operator has, and BOTH MUST BE WRITTEN DOWN HERE BEFORE
+> THE GATE STARTS — not while writing the report.** Deciding a row's runnability afterwards is the
+> failure rule 4 names: a row that turns out to be unrunnable, recorded after the fact, is
+> indistinguishable in the report from a row that ran and passed.
+>
+> **DECISION 1 — is Q31 runnable?** Boot the server, open the browser once, and read the catalogue's
+> log line: `Recipe catalogue built: N entries in Nus (N unkeyed skipped, N not fully listable)`.
+>
+> | `not fully listable` | verdict to write here, now |
+> |---|---|
+> | `0` | **Q31 IS NOT RUNNABLE.** Record it as such **with the count**, in the row. Its observable cannot exist on this server, so running the gate without it credits no coverage — and claiming it passed would credit coverage that does not exist |
+> | `> 0` | **Q31 IS RUNNABLE.** Write the count here, find one of those recipes, and run the row |
+>
+> **DECISION 2 — can mutation 8 be staged?** It reddens only against a **stale catalogue**. Attempt,
+> before the gate: open the browser (building the cache), then `Bukkit.removeRecipe(key)` on a recipe
+> you can see in it, then click that entry.
+>
+> | outcome | verdict to write here, now |
+> |---|---|
+> | the removal takes effect | **STAGEABLE.** Run it, watch it red |
+> | it cannot be staged | **UNRUNNABLE — record the reason.** Do not leave it sitting in a table where the other twelve were watched red |
+>
+> **Write both verdicts into this file before running anything.** Row 12b's shape is the precedent: a
+> mutation whose red state cannot exist credits coverage that does not exist.
+
 **Q12 IS SUPERSEDED, NOT DELETED.** It read *"Navigates only; nothing is crafted or consumed"*,
 which was true of the placeholder and is **false by design** now: the browser crafts. It stays
 struck through and visible, as row 20 → S12 was handled — **the gesture changed, so its observable

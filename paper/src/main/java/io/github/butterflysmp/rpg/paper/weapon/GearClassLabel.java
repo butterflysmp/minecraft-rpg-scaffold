@@ -35,20 +35,6 @@ public final class GearClassLabel {
     }
 
     /**
-     * The whole noun phrase, for naming the gear an enchant is SITTING ON: "a Magic weapon",
-     * "a shield".
-     *
-     * <p>This exists because the inert sentence used to end in a hardcoded "weapon"
-     * ({@code "... on a " + label + " weapon"}), which reads correctly for the three fighting
-     * classes and absurdly for the fourth -- "a Melee enchant on a Shield weapon". A shield is not a
-     * weapon of class shield; it is a shield.
-     *
-     * <p><b>Built on {@link #of} rather than repeating the words</b>, so there is still exactly ONE
-     * place each label is spelled. The switch stays exhaustive with no default arm: the three-class
-     * arm lists its constants explicitly rather than defaulting, so a new constant still fails to
-     * compile here.
-     */
-    /**
      * The enchant's own gate as a noun phrase: "a Melee enchant", "an Armor enchant".
      *
      * <p><b>This exists because the article is not always "a".</b> The three inert sentences in
@@ -68,6 +54,20 @@ public final class GearClassLabel {
         };
     }
 
+    /**
+     * The whole noun phrase, for naming the gear an enchant is SITTING ON: "a Magic weapon",
+     * "a shield".
+     *
+     * <p>This exists because the inert sentence used to end in a hardcoded "weapon"
+     * ({@code "... on a " + label + " weapon"}), which reads correctly for the three fighting
+     * classes and absurdly for the fourth -- "a Melee enchant on a Shield weapon". A shield is not a
+     * weapon of class shield; it is a shield.
+     *
+     * <p><b>Built on {@link #of} rather than repeating the words</b>, so there is still exactly ONE
+     * place each label is spelled. The switch stays exhaustive with no default arm: the three-class
+     * arm lists its constants explicitly rather than defaulting, so a new constant still fails to
+     * compile here.
+     */
     public static String describe(GearClass gearClass) {
         return switch (gearClass) {
             case MELEE, RANGER, MAGE -> "a " + of(gearClass) + " weapon";

@@ -304,6 +304,13 @@ public final class RecipeProbe {
      * <p>Storage contents only -- the 36 main slots. Armor being worn and the offhand are not
      * crafting materials, and consuming what someone is wearing would be a surprise no button
      * should be able to deliver.
+     *
+     * <p><b>CHEAP: 36 slots, NO RECIPE WALK.</b> That is the load-bearing half of the sentence and
+     * it is why the bulk loop may call this once per pass -- see {@link #probeOne} and the bulk
+     * trap. The cost note was carried by this method's original one-line javadoc and was dropped
+     * when the fuller rationale replaced it in slice 6; it is restored here because "what does this
+     * cost" is what stops the next reader calling it in a loop, and the rationale above does not
+     * answer that.
      */
     public static List<Group> groupsOf(PlayerInventory inventory, Keys keys) {
         return groups(inventory, keys);
