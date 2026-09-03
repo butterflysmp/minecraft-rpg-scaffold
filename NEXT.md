@@ -581,6 +581,87 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Crafting, Slice 5 (Quick Craft, first half) — what it created or exposed
+
+- **THE GATE ROWS WERE NOT IN THE REPOSITORY, AND NOTHING FAILED WHEN THEY WERE NOT.** Q1-Q14 were
+  written in the slice plan and in review chat, and two commits landed on the branch — one of them
+  explicitly a docs commit naming the Q2 instrument — without either carrying them. `GATE-crafting.md`
+  on the branch was **byte-identical to master's**, last touched by the slice 4 flip.
+
+  **This is the corollary this file already records, recurring one slice after it was written:**
+  *A WITNESS THAT IS NOT IN THE REPOSITORY IS NOT A WITNESS.* The plan's own verification step said
+  "NEXT.md and GATE-crafting.md updated in the same commit that builds the rows"; the step did not
+  run, and no check anywhere noticed. A verification step that is itself unverified is the same shape
+  as the gate row it was written to protect.
+
+  **What would actually catch it** is not more discipline: it is committing the rows in the SAME
+  commit as the code they witness, so an empty gate diff is visible in the same review as the
+  feature. Recorded rather than fixed, because a pre-commit hook checking "did GATE-crafting.md move"
+  would fire on every non-gate commit and be disabled within a week.
+
+- **"CONSUMED = INPUT MATRIX MINUS RESULTING MATRIX" IS INCOHERENT, and it was the reviewer's own
+  prescription.** It is the obvious way to debit an inventory craft and it is wrong for exactly the
+  case rows 12 and 12c exist for: a milk bucket does not DECREASE when a cake is made, it BECOMES an
+  empty bucket. There is no per-slot quantity to subtract, and code that tries lands on either
+  "three buckets vanished" or "three buckets appeared from nowhere".
+
+  What holds instead, and is now in `commitCraft`'s javadoc:
+
+  ```
+  A       is exactly what left the inventory (what the assembly took, BY SLOT)
+  R + O   is exactly what the engine says remains
+  the player ends at   inventory - A + R + O + result
+  ```
+
+  **True without ever knowing which part of A was consumed and which was transformed.** Any
+  formulation that needs to know is wrong for cake. The GRID gets this free — writing the resulting
+  matrix over the slots the input came from IS `-A + R` in one operation — which is precisely why the
+  asymmetry between the two callers is easy to miss. The reviewer's DIAGNOSIS was right; the
+  mechanism prescribed would have shipped the cake bug on a new surface.
+
+- **`RecipeChoice` CANNOT BE ENUMERATED TOTALLY, so the question was inverted.** Verified against the
+  pinned jar: `getItemStack()` is DEPRECATED, and the three implementations expose their contents
+  three different ways — `MaterialChoice.getChoices()`, `ExactChoice.getChoices()` (meta-sensitive),
+  `ItemTypeChoice.itemTypes()`. A fourth, `PredicateRecipeChoice`, wraps an arbitrary lambda and is
+  not enumerable by anybody.
+
+  `test(ItemStack)` is on the interface, undeprecated, and total — and it is the question the craft
+  itself will ask. So the adapter probes each ingredient slot with the player's own distinct stacks.
+  It works because the two sides have opposite cardinality: the recipe's accepted set is unbounded,
+  the inventory is a few dozen stacks. **Ask the small side.** "Enumerate `MaterialChoice`, skip the
+  rest" was rejected as `ANY_BUT_SHIELD` in a fourth costume.
+
+- **COMPLEX RECIPES ARE PERMANENTLY ABSENT FROM SUGGESTIONS, and gate row Q10 exists to stop someone
+  fixing it.** `ComplexRecipe` is a bare marker interface — it declares nothing — so firework
+  rockets, firework stars and dye tables expose no ingredients to count. They still craft in the
+  GRID through the server's matcher. **The grid remains the complete surface**; Quick Craft is a
+  convenience over the enumerable subset. Hand-implementing them is exactly the mistake
+  `CraftingMenu`'s class javadoc records the previous project making.
+
+- **NEW ENTRIES, ALL GATE-ONLY.** Same cause as every crafting slice: `CraftingMenu` cannot be
+  constructed without a server.
+
+  | no automated witness | lives in | what goes wrong unseen | sole witness (row in GATE-crafting.md) |
+  |---|---|---|---|
+  | the inventory DEBIT | `CraftingMenu.debit` | the wrong stacks are reduced when materials span several | **row Q13 ONLY** |
+  | craft-before-debit ordering | `CraftingMenu.craftOneFromInventory` | a refusal takes the ingredients anyway — theft, on the least-tested path | **row Q8 ONLY** |
+  | the remainder give | `CraftingMenu.craftOneFromInventory` | a cake's three empty buckets are destroyed | **row Q14 ONLY** |
+  | `isGear` on the probe | `RecipeProbe.groupsOf` | a minted item is counted as a material and consumed | **row Q7 ONLY** |
+  | the bulk re-probe | `CraftingMenu.craftFromSuggestion` | the roster is walked 64 times per shift-click | **row Q6 ONLY** |
+  | the recompute cadence | `CraftingMenu.refreshSuggestions` | a full walk on every grid change | **row Q2 ONLY** |
+
+  **Rows 12 and 12c matter MORE this slice, not less.** On the grid the resulting matrix and the
+  overflow have different destinations and those two rows witness them separately. On the inventory
+  path **both collapse into "give it to the player"**, so no Q row can tell the two calls apart —
+  nothing new would notice if `getOverflowItems` stopped being read.
+
+- **STILL OWED:** the whole gate — Q1-Q14 are unrun. **Q2 first**, because it is the only row whose
+  answer can invalidate others: if the recompute is not comfortably sub-tick the CADENCE changes, and
+  Q5, Q6 and the recompute trigger move with it. Its instrument is temporary and must be removed
+  before merge. And the second half: the browser, navigate-only, with pure page math in `core/`.
+
+---
+
 ### NAMED DEBT: `core/weapon` holds four classes that have nothing to do with weapons
 
 **Recorded 2026-09-02, during Quick Craft's first half.** Not a note to act on now — a named debt, so

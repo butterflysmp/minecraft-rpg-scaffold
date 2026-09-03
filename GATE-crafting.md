@@ -313,6 +313,87 @@ same thing in the same words.
 
 ---
 
+---
+
+# Slice 5 — Quick Craft (FIRST HALF)
+
+**NOT YET RUN.** Every row below is unrun as of 2026-09-02.
+
+Crafting from the INVENTORY rather than the grid. Nine suggestions in row 4 (slots 36-44),
+clicked to craft immediately, shift-clicked to craft repeatedly. The browser button (slot 49)
+is a visible placeholder this half.
+
+**Setup:** a survival-mode player with a varied inventory — planks in several separate stacks,
+milk buckets, iron, and at least one MINTED item (`/rpg give iron_pickaxe`). Several rows count
+things, so bring a way to count.
+
+## RUN Q2 FIRST — it can invalidate the rest
+
+| # | action | expected | notes |
+|---|---|---|---|
+| Q2 | **Open the table. Read the boot log for `Quick Craft: first recompute took ...`.** Then write the number into this row. | A duration **comfortably under 50000 microseconds** (one tick). The line also reports craftable / probed / distinct-stack counts. | **RUN THIS BEFORE THE OTHERS.** It is the only row whose answer changes other rows: if the walk is not comfortably sub-tick, **the CADENCE changes — not the algorithm** — and Q5, Q6 and the recompute trigger all move with it. Spending the rest of the gate first would be spending it on a design that is about to change |
+
+> **THE Q2 INSTRUMENT IS TEMPORARY AND MUST BE REMOVED BEFORE MERGE.** Repo pattern, from
+> `PLAN-1b-swing-listener.md:134`: *"log once, observe on boot, then remove before the commit
+> lands."* Observe the number, **record it in the row above**, then delete the timing block from
+> `CraftingMenu.refreshSuggestions`.
+>
+> **Two things it is not**, so the number is read for what it is:
+> - `measured` is per **menu instance**, and a new `CraftingMenu` is constructed on every table
+>   open. Left in, every player logs an INFO line every time they open a table, for ever.
+> - It only ever times the **cold first** recompute of each menu. A later slow one is never seen.
+>
+> If a permanent measurement is wanted, that is a **different instrument** — a threshold warning
+> that logs only above some bound — and a separate decision. Not this one left in.
+
+## The column
+
+| # | action | expected | notes |
+|---|---|---|---|
+| Q1 | Open the table with materials for several recipes. | Row 4 shows suggestion icons with counts; rows 0-3 are unchanged; row 5 shows only chrome and the browser placeholder | the surface exists and did not disturb the grid |
+| Q3 | Click a suggestion. **Count the ingredients first.** | The item arrives **in the INVENTORY**, not on the cursor. Exactly one craft's ingredients leave. The count updates | **count** · the destination is the disambiguator between the two surfaces — see Q4 |
+| Q5 | Stage a recipe in the grid, then read the suggestion counts. | They have **DROPPED** by what was staged | written down as EXPECTED, or someone reports it as a bug. The grid is deliberately NOT counted, because counting it would mean consuming it |
+
+## The two surfaces
+
+| # | action | expected | notes |
+|---|---|---|---|
+| Q4 | Stage a full recipe in the grid, then click a suggestion. | **BOTH hold:** the suggestion's item reaches the inventory AND the staged grid is **untouched** with its preview intact | **discriminating** · the two surfaces are independent. A grid craft goes to the CURSOR, a suggestion to the INVENTORY — if someone later routes the suggestion to the cursor "for consistency", that disambiguator is gone |
+
+## The rows that carry the slice
+
+| # | action | expected | notes |
+|---|---|---|---|
+| Q6 | **THE BULK TRAP.** Shift-click a suggestion with materials for many crafts. | Crafts repeatedly, with **no per-iteration stall**. One roster walk at the end, not sixty-four | **sole witness** for the bulk trap. The loop re-probes ONE recipe per pass; recomputing the roster inside it reads almost identically and is 64x the work |
+| Q7 | **THE INVARIANT.** Hold a minted iron pickaxe plus plain materials. Read every suggestion. | The pickaxe is **never counted** toward any suggestion and is **never consumed** by one | **discriminating · sole witness** for `isGear`'s THIRD surface — after the grid screen and the Crafter guard. That chain is a whitelist with nothing that compile-fails, and slice 4 found it had already fallen behind the gear axis once. **The row to fail the slice over** |
+| Q8 | **STALENESS, PINNED.** Stage almost everything so a suggestion shows a count it can no longer deliver. **Count your materials first.** Click it. | Refuses **cleanly and says why** — and **the ingredients are STILL THERE** | **count · discriminating** · the count is advisory, the click is authoritative. Above all it must not debit on a refusal: debit-before-craft is theft, on the path least likely to be hand-tested |
+| Q9 | Craft a shield from a suggestion. Open it. | It **mints and rolls** — lore, `Damage Reduction`, enchant candidates — identical to the grid path | proves the single commit path. **Open it rather than counting it**: a count passes on the very defect this catches |
+| Q10 | **THE SCOPE BOUNDARY.** Hold paper and gunpowder. Check the suggestions. Then craft a firework rocket **in the grid**. | Firework rockets do **NOT** appear as a suggestion — **and still craft normally in the grid** | **discriminating · sole witness** for the ComplexRecipe boundary. `ComplexRecipe` is a bare marker interface exposing no ingredients, so it can never be counted. **This row is what stops someone "restoring parity" by hand-implementing them** — precisely the mistake `CraftingMenu`'s javadoc records the previous project making |
+
+## The consume path
+
+| # | action | expected | notes |
+|---|---|---|---|
+| Q13 | **THE DEBIT.** Hold the materials for one craft **split across three separate stacks** (e.g. 3 + 2 + 1 planks). Note each stack's slot and size. Click the suggestion. | Exactly the right total leaves, **from the slots the probe counted**, and no other slot moves | **count · sole witness** that the debit applies to RECORDED slots rather than re-finding them by similarity. A second search can land on different stacks than the count used |
+| Q14 | **THE REMAINDER.** Craft a cake from a suggestion (three milk buckets). **Count buckets first.** | Three **EMPTY BUCKETS** arrive in the inventory. Nothing is destroyed | **count · discriminating** · the case that makes "consumed = input minus resulting" incoherent — a milk bucket does not decrease, it BECOMES a bucket. On the inventory path the resulting matrix and the overflow both collapse to "give it to the player" |
+
+## The browser — NOT YET APPLICABLE
+
+| # | action | expected | notes |
+|---|---|---|---|
+| ~~Q11~~ | ~~Open the browser. Page forward and back.~~ | ~~Pages navigate; the last page is not short or duplicated~~ | **NOT YET APPLICABLE — the browser is a placeholder this half.** Slot 49 says "Not implemented yet". Recorded rather than omitted, the same discipline row 1b uses: a row that cannot be run must say so rather than sit among rows that can |
+| ~~Q12~~ | ~~Click an entry in the browser.~~ | ~~Navigates only; nothing is crafted or consumed~~ | **NOT YET APPLICABLE**, as Q11. These two become live in the second half and are the reason the browser is navigate-only |
+
+## Re-run from earlier slices
+
+| # | why it re-opens |
+|---|---|
+| **12, 12c** | `commitCraft` changed shape a FOURTH time. Still the only witnesses for `getResultingMatrix` and `getOverflowItems` — **and they matter MORE this slice, not less**: on the inventory path both collapse into "give it to the player", so no Q row can tell the two calls apart |
+| S1, S2, S3 | the pin, the `MAX_BULK_CRAFTS` bound, and the `ComplexRecipe` path through the grid |
+| 13 | `shiftClickDispatches` widened to the suggestion slots — it must still perform NO move |
+| N5b | the bulk path minting |
+| T10 | `isGear` on the crafting grid, now that a third caller shares the chain |
+| 21, 22, S11 | `Menu` is a shared base and `EnchantMenu` is its other subclass |
 # Maintenance
 
 - When a slice changes `MenuRouting`, `Menu` or `CraftingMenu`, list by number which rows
