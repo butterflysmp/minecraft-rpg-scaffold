@@ -789,10 +789,21 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ---
 
-### NAMED DEBT: `core/weapon` holds four classes that have nothing to do with weapons
+### NAMED DEBT: `core/weapon` holds everything that is crafting-and-menu arithmetic, not weapons
 
-**Recorded 2026-09-02, during Quick Craft's first half.** Not a note to act on now — a named debt, so
-the reader who eventually opens that package finds the reason rather than inferring nobody noticed.
+**Recorded 2026-09-02, during Quick Craft's first half. Re-sized 2026-09-03, because it drifted
+inside the same slice that recorded it.**
+
+> **THE HEADING USED TO SAY "FOUR CLASSES", AND THAT IS THE FINDING.** `SuggestionTier` landed in
+> `core/weapon` in the same slice, from the same author, days after this entry was written to stop
+> exactly this — and it was not added to the table. By its own javadoc it is *"a display CATEGORY,
+> not the gear axis"*, so it belongs with the crafting arithmetic rather than the gear model.
+>
+> **This is rule 1 pointed at a table instead of at code.** The entry enumerated *the cases that
+> existed when it was written* rather than *the axis it was guarding*, so a fifth arrival had nothing
+> to fail against. A list of names needs updating by hand every time; a stated axis absorbs the next
+> one. The heading now names the axis, and anything matching it belongs in the table below whether or
+> not someone remembers to add it.
 
 `core/src/main/java/.../core/weapon/` currently contains, alongside the actual gear model:
 
@@ -801,9 +812,10 @@ the reader who eventually opens that package finds the reason rather than inferr
 | `CollectPlan` | which stacks a double-click gathers, in what order |
 | `CraftResultIndex` | which gear definition a crafted vanilla item becomes |
 | `CraftResultToken` | material-token normalisation |
-| `CraftCount` | how many of each recipe the player can make |
+| `CraftCount` | how many of each recipe the player can make, ranked |
+| `SuggestionTier` | which display category a craft suggestion sorts in |
 
-**None of the four is about weapons.** All four are crafting-and-menu arithmetic that happened to be
+**None of the five is about weapons.** All five are crafting-and-menu arithmetic that happened to be
 extractable into `core`, and `weapon` was simply the package `core` already had.
 
 **The deviation was deliberate and is still the right call.** Slice 5 considered opening a
@@ -813,10 +825,18 @@ ones. This entry exists so that reasoning is on the record rather than looking l
 
 **What paying it down would take**, so a future slice can size it honestly:
 
-- Move the four classes to `core/.../core/craft/`, plus their four test files.
-- ~20 import updates across `paper/` — `MenuRouting`, `CraftingMenu`, `CraftMatrixScreen`,
-  `RecipeProbe`, `RpgPlugin` (which carries `CraftResultIndex` on `AdapterContext`), and the gear
-  records that call `CraftResultToken.normalise`.
+- Move the five classes to `core/.../core/craft/`, plus their test files.
+- **The import cost, MEASURED 2026-09-03 rather than estimated** — the previous "~20 imports" was a
+  guess and was wrong in both directions:
+  - **10 import lines to rewrite, across 7 distinct files** outside the package (`MenuRouting`,
+    `CraftingMenu`, `CraftMatrixScreen`, `RecipeProbe`, `RpgPlugin` — which carries
+    `CraftResultIndex` on `AdapterContext` — and their tests).
+  - **Plus up to 15 files INSIDE `core/weapon` that would GAIN an import**, because they reference
+    these types with no import today. That half was missing from the old estimate entirely, and it
+    is the larger half. Upper bound: the count is `grep -l` on the class names, so it includes
+    javadoc mentions and the classes' own files; the real figure is lower.
+  - Command, so the next reader re-measures rather than trusting this:
+    `grep -rlE "import io\.github\.butterflysmp\.rpg\.core\.weapon\.(CollectPlan|CraftResultIndex|CraftResultToken|CraftCount|SuggestionTier);" --include=*.java core/src paper/src storage/src`
 - **`GearDefinition` and the four gear records STAY in `core/weapon`.** `CraftResultIndex` takes a
   `Collection<? extends GearDefinition>`, so the new package would import the old one — which is
   correct and one-directional, and is the check that the split is real rather than cosmetic.
@@ -824,8 +844,12 @@ ones. This entry exists so that reasoning is on the record rather than looking l
   build hides — see the slice 4 entry), and the marker sweep. No boot gate: nothing observable
   changes, which is what makes this cheap and also what makes it easy to keep deferring.
 
-**Do it when something else already touches those files**, not on its own. A pure-rename commit
-across twenty imports is expensive to review and buys nothing a reader could see.
+**Do it when something else already touches those files**, not on its own. A pure-rename commit is
+expensive to review and buys nothing a reader could see.
+
+**AND WHEN YOU ADD A CLASS TO `core/weapon`, ASK WHICH SIDE OF THIS TABLE IT IS ON.** That question
+is the only thing standing between this debt and the next silent arrival — it has already failed
+once, in the slice that wrote it down.
 
 ---
 
