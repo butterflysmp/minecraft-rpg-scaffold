@@ -581,6 +581,450 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Flint Staff visuals, PR 2 (the bolt gets a body) — what it created or exposed
+
+The flint item is back: a real `Material.FLINT` entity, un-pickup-able, driven to the positions
+`ProjectileFlight` computes. PR 1 drew the particles that surrounded it; this puts the thing they
+surrounded back inside them.
+
+#### A PROJECTILE BODY HAS THREE EXITS, AND THE THIRD HAS NO CALLER LEFT TO RUN IT
+
+The obvious enumeration is two — the `castRay` hit and the fuse expiry, both of which reach
+`onImpact`. The axis has a third member:
+
+> **THE SCHEDULED CONTINUATION NEVER RUNS.** `step()` ends in `world.schedule(next, 1, …)`, and a
+> task scheduled into a region that unloads — or a server that stops — does not fire. There is no
+> `finally` on a chain of scheduled callbacks.
+
+Neither the trail nor the grenade had this exposure, because neither leaves a persistent entity that
+only our code can remove. It is **new with the body**, and what it leaves behind is a real item with
+gravity off and pickup disabled — the "why is there a flint floating in the woods" report, weeks
+later.
+
+The fix is not a new mechanism, because a new mechanism could fail to run for the same reason. It is
+to **arm vanilla's own timer at spawn** — see the next section.
+
+#### THE DESPAWN GATE IS `age`, NOT `pickupDelay` — AND THE CODEBASE SAID OTHERWISE
+
+`PaperCombatWorld.throwMarker`'s javadoc claimed `setPickupDelay(MAX)` makes an item *"non-mergable
+and non-despawning"*. Checked in the pinned jars rather than recalled:
+
+```
+ItemEntity.tick():
+    if (pickupDelay > 0 && pickupDelay != 32767) pickupDelay--;   // 32767 = INFINITE_PICKUP_DELAY
+    if (age != -32768)                           age++;           // -32768 = INFINITE_LIFETIME
+    if (!level.isClientSide && age >= 6000)      discard();       //  6000 = LIFETIME
+```
+
+`isMergable()` does early-out on `pickupDelay == 32767`, so **non-mergable was right**.
+**Non-despawning was false** — the despawn is gated on a completely different field, and
+`setUnlimitedLifetime()` is the only thing that sets it. `CraftItem.setPickupDelay` is
+`Math.min(v, 32767)`, so the clamp half of the claim was right too.
+
+That mattered more than a doc fix, because it is exactly the claim the next person writing a marker
+inherits — or "fixes" by reaching for `setUnlimitedLifetime`, which would convert a **bounded**
+exposure into permanent litter. **Never call `setUnlimitedLifetime(true)` or `setWillAge(false)` on
+a marker**; both are on the `Item` API and either removes the only backstop these entities have.
+
+So exit 3 was already bounded at 6000 ticks (5 minutes) — and can be bounded far tighter for free.
+`CraftItem.setTicksLived` writes straight into `ItemEntity.age`, so a marker spawned **pre-aged**
+is discarded by vanilla `expectedLifetimeTicks + 60` after birth whether or not anything of ours
+runs again. For the staff's 40-tick fuse that is ~5 seconds instead of 5 minutes. `CraftEntity`
+requires the value `> 0`, hence the clamp.
+
+**Nothing in the build can witness this.** `FakeWorld` has no vanilla despawn timer. Gate row F4 is
+the only evidence the arithmetic works, which is why it is a figure row with a clock rather than a
+tick — see below.
+
+#### A GATE ROW CANNOT FAIL A CONDITION THE GATE'S PLATFORM CANNOT CREATE
+
+The plan for this slice moved the marker at the TOP of each step, beside the trail present. That is
+a Folia defect, and the reasoning is one step of arithmetic:
+
+> `step(P1)` is scheduled by `step(P0)` via `schedule(next = P1, …)`, so it runs on **`region(P1)`**.
+> The marker is still at **`P0`**, because that is where the last move put it. Moving it at the top
+> of the step touches an entity in `region(P0)` from `region(P1)`'s thread. **You own the
+> destination; Folia requires you to own where the entity IS.**
+
+Verified in the adapter: `removeMarker` and `markerLocation` do **no** region hop — they are
+`getEntity(uuid)` and then touch it, relying entirely on the caller already being on the entity's
+region. A `moveMarker` written the same way inherits that contract and violates it. Contrast
+`present()`, which hops onto the right region itself — **the trail is a world write at a point and
+belongs at the top; the marker is an entity write and does not. They look like the same operation
+and are not.**
+
+Fixed two ways: the move happens at the **END** of the step, to `next`, while still on
+`region(position)` where the marker actually is; and the adapter uses **`teleportAsync`**, since a
+synchronous cross-region teleport is illegal on Folia even when you own the source.
+
+`EffectApplier.trackEmber` had already solved this and says so in its javadoc — it schedules at the
+item's **live** position, "which is what re-enters the region that owns the item". A flight that
+schedules at a **computed** position cannot use that trick, because its entity is one step behind by
+construction. The precedent was three files away.
+
+**Why this is the entry worth keeping:** the dev server is Paper, where every region is one thread.
+This would have passed every boot row on the gate and failed only on the platform the whole
+core/paper split exists to support. Unlike an impossible row, **it looks green rather than looking
+impossible** — there is no way to tell a passing row from an untestable one by reading the page.
+
+#### THE BODY AND THE BURST DIVERGED BY UP TO A FULL STEP
+
+Removing the marker "before detonating" is right about the FRAME and silent about the PLACE. The
+impact is at `hit.point()`, somewhere along the segment just traced; the marker sits at the
+segment's START. At the staff's speed 1.4 that is up to **1.4 blocks** between where the flint
+vanishes and where the fire appears, and the fuse exit has the same gap.
+
+cfde822 had no such gap by construction — its hit was found within 0.7 blocks of the item's own
+location. `trackEmber` states the principle directly: *"The boom lands with the blast: same tick,
+same place, so they cannot diverge."*
+
+Fixed with a `moveMarker(id, impactPoint)` immediately before `removeMarker` on both exits.
+Demonstrated by mutation: drop that move and the body retires at `x=2` while the burst plays at
+`x=3`. **The symptom reads in game as "the bolt passed through it"** and would have been
+misdiagnosed as a hit-detection bug that is not happening.
+
+One ordering this design does **not** guarantee, stated rather than hidden: on Folia a removal
+immediately following a *cross-region* `teleportAsync` acts on an entity mid-handoff. The pre-age is
+what makes a missed removal bounded rather than permanent — which is exactly what that backstop is
+for, and the reason it is not redundant with the two ordinary exits.
+
+#### THE BODY SPAWNS ON THE FRAME THE TRAIL REFUSES TO DRAW ON
+
+PR 1 skips the trail at `elapsed == 0` because that position is the caster's eye. The body has the
+**opposite** requirement — cfde822 dropped its flint immediately, at the eye, and a bolt that pops
+into existence one tick downrange is a different weapon.
+
+```
+a PARTICLE at the eye is a flash inside your own camera   -> skip it
+a rendered BODY at the eye is the bolt leaving the staff  -> spawn it
+```
+
+So `step()` spawns on the frame it refuses to draw on. That reads as an inconsistency and the
+obvious tidy is to align them, which reintroduces one defect or the other. The reasoning is written
+at **both** sites, each pointing at the other, and one test asserts **both halves together** —
+apart they look like two unrelated facts; together they are the rule.
+
+(Worth knowing: the launch frame also runs step 0 inline, whose end-of-step move carries the body
+one step downrange within the same tick. The invariant is "when step N runs, the body is at step N's
+position", and cfde822's thrown item behaved the same way — velocity 1.4 also carried it more than a
+block during its own first tick.)
+
+#### THE REMEDY FOR NOT KNOWING A MECHANISM IS A CONTROL, NOT A CAVEAT
+
+The open question "does the driven body **tumble**?" cannot be answered by a single observation.
+Suppose it spins: that still does not say whether teleporting *preserved* the spin or whether spin
+never depended on velocity at all — and that difference decides whether the candidate fix (a
+velocity each tick that the teleport overrides) is a real fix or cargo cult.
+
+So F1 is a **pair**, run in one session, exactly as C4 needs C5:
+
+- **F1a** the flint bolt, teleport-driven.
+- **F1b** `ability_stone`'s blaze powder, velocity-driven vanilla physics, the existing
+  `throw_embers` path.
+
+F1b spins and F1a does not → velocity matters, candidate warranted. Both spin identically → spin is
+not velocity-derived, the candidate is unnecessary, **the question closes on the spot**. Neither
+spins → it was never about our code.
+
+This is the same shape as the C4/C5 debt, arrived at before the measurement instead of after it.
+
+#### A CLIENT-SIDE OBSERVATION CANNOT SETTLE A SERVER-SIDE CLAIM, AND THE CONVERSE HOLDS TOO
+
+`F1a` produced two readings of one event, in two frames, and they disagree:
+
+- **The eye:** the flint spawns at the muzzle and does not move.
+- **The log:** 23 teleports completed, **0** target-vs-actual mismatches, and `removeMarker`'s
+  independent `getLocation()` reporting the entity at the last teleported point in 9 of 12 flights.
+
+Neither reading is wrong and neither answers the other. The server moves the entity; the player does
+not see it move. **The mistake available here is treating one witness as a verdict on the other's
+question** — concluding "teleportAsync does not move the entity" from an eye reading, or concluding
+"the body is fine" from a log reading. Both were available and both are false.
+
+The practical rule: **name which frame a claim lives in before deciding what evidence could refute
+it.** A rendering question needs an eye; an entity-state question needs a log; and an instrument that
+reads only one frame cannot close a question that spans both.
+
+#### PRE-REGISTERING THE ANSWER IS THE SAME DEFECT AS PRE-REGISTERING THE EXCUSE
+
+`NEXT.md` already records that *a pre-registered explanation for an unexpected result is a blindfold
+if the result has a second cause* — a rule about deciding in advance what a WRONG reading will mean.
+This is that rule pointed the other way, and it is worth naming separately because it does not look
+like the same mistake while you are making it.
+
+Two readings were requested — the eye and the log — with the log stated to be decisive. **The eye
+reading arrived first, a conclusion was built on it (`teleportAsync` "does not move this entity at
+all"), and that conclusion was written into the same instruction that sent someone to go read the
+log.** The log was then ceremonial: an instrument dispatched to confirm a verdict already entered.
+It happened to disagree, which is the only reason this is recorded rather than shipped.
+
+**The check survives only if the conclusion waits for it.** When two readings are outstanding and
+one is called decisive, the other one's arrival is not permission to stop — and an instruction to go
+measure must not travel alongside the answer it is measuring.
+
+*(Recorded by the operator against their own reasoning, which is why it is here at all: the failure
+is invisible from inside it, and only the person who did it can report the ordering.)*
+
+#### THE PR 2 GATE — NINE FIGURES, RECORDED AS THE OPERATOR WROTE THEM
+
+Not ticks. The page that produced these carried no checkbox on any figure row, which is the
+instrument change the C4/C5 debt bought.
+
+| row | what it asked | **figure, verbatim** |
+|---|---|---|
+| **F1a** | does the driven body move, and follow the stream? | **"Flies with the flames"** |
+| **P1** | in phase, or exactly one step behind? | **"Level"** |
+| **F3** | does the flint vanish AT the burst, or a stride short? | **"Touching the burst"** |
+| **F1b** | `ability_stone` blaze powder, same session: spins / slides? | **"same"** |
+| **F2** | trail count with the body present: right / thin / busy? | **"right"** |
+| **W1** | fired across water — does the body follow the flames or float? | **"Follows"** |
+| **W2** | fired through fire — does the body survive? | **"Vanishes"** |
+| **W3** | is there flint in the hopper? | **"Flint inside"** |
+| **F4** | far chunk — how long until an orphan is gone? (expected ~5s) | **"5sa"** |
+
+**What each one closes:**
+
+- **F1a "Flies with the flames"** — the design works. The body is on the stream, which is what four
+  readings and two rejected mechanisms were for.
+- **P1 "Level"** — no one-step lag. The phase reading taken from the jar (scheduler at bytecode
+  offset 37, `ServerLevel.tick` at 431, same server tick) is **confirmed in game**. Had this read
+  "one step behind" it would have been indistinguishable from F3, which is why it was a separate row.
+- **F3 "Touching the burst"** — **the deferral is vindicated.** The gap is real arithmetically (0 to
+  1.4 blocks, mean ~0.7) and **imperceptible in play**. The reposition that would have "closed" it
+  was inert; the honest record is that it needed no closing. Keep the sized candidate unadopted.
+- **F1b "same"** — this was the CONTROL, and it settles the tumble question the operator decision
+  raised. A velocity-driven vanilla item and our driven body behave alike, so spin is not something
+  the design has to buy separately, and the "give it a velocity so physics spins it" candidate is
+  **unnecessary rather than merely unused**. The question closes on the spot, exactly as the paired
+  design predicted it could.
+- **F2 "right"** — **this is the judgement the two-PR split was constructed to preserve, and it paid
+  for itself.** cfde822's trail numbers shipped untuned through PR 1, deliberately expected to read
+  sparse without a body, and now read RIGHT with one. Had the count been raised to compensate in
+  PR 1, this slice would have added the body into a stream tuned for its absence. **No tuning. Do
+  not touch the counts.**
+- **W1 "Follows"** — **ONE SHOT, low over water.** Recorded as *observed once*, NOT as a property.
+  The buoyancy exposure enumerated on `spawnMarker` is not disproved by it, only unhit: `ItemEntity`
+  applies `setUnderwaterMovement` when actually submerged, and **a deep pass is a different test
+  that nobody has run.** Do not cite this row as "water is fine".
+- **W2 "Vanishes"** — **fire destroys the body, as predicted from `fireImmune()`.** On a fire weapon.
+  Harmless to resolution: the flight continues, `removeMarker` no-ops, and the bolt loses its body.
+  Accepted on the record rather than discovered later.
+- **F4 "5sa"** — **the pre-age arithmetic is confirmed.** Predicted `6000 - fuse(40) - grace(60)`
+  ⇒ ~100 ticks ⇒ ~5 s, and that is what was seen. This is the ONLY evidence that arithmetic works —
+  `FakeWorld` has no vanilla despawn timer — which is why it was a figure row with a clock rather
+  than a tick. A bare "nothing left floating" could not have told ~5 s from vanilla's 5-minute
+  `LIFETIME`.
+
+#### W3 FOUND A LIVE DUPLICATION EXPLOIT THAT HAD BEEN ON `master` SINCE `throw_embers` SHIPPED
+
+**"Flint inside."** The predicted leak was real, observed, and **not introduced by the branch that
+found it.**
+
+A marker is a REAL item stack that nobody paid for, so anything that collects one mints it out of
+nothing. `HopperBlockEntity.getItemsAtAndAbove` filters only on `EntitySelector.ENTITY_STILL_ALIVE`,
+and `addItem(Container, ItemEntity)` copies the stack in and discards the entity — **no pickup-delay
+check anywhere on that path.**
+
+**`throwMarker` has gone through the same shared configuration since `throw_embers` shipped**, where
+it set only `setPickupDelay` and `setPersistent`. `ability_stone`'s embers are real blaze powder and
+are an EASIER target than a bolt, not a harder one: **they land and REST for the whole fuse**, while
+a bolt is only ever passing through. The gate found a live exploit; it did not create one.
+
+**Closed, and witnessed on both marker kinds:**
+
+| row | observation, as seen |
+|---|---|
+| **W3′** | *"hopper under the flint bolt's path, opened after the shot: empty"* |
+| **W3″** | *"hopper beside a landed `ability_stone` ember: empty"* |
+
+**W3″ carries the weight.** It is the instance that was broken on `master` before this branch
+existed, and the ONLY evidence that the fix reached the SHARED path rather than just the new caller.
+W3′ passing alone would have left the older exploit live while reading as fixed.
+
+**No test in this repo could have found this**, and that is worth knowing rather than regretting:
+nothing in `core` can put a hopper under a flight path. It took a gate row.
+
+#### THREE COLLECTORS, TWO FIELDS — AND THE TWO THAT SHARE A FIELD CANNOT BE STATED SEPARATELY
+
+The fix, and a correction that was caught one read before the squash.
+
+|collector | answered by |
+|---|---|
+| players | `pickupDelay` — `ItemEntity.playerTouch` returns early while it is `> 0` |
+| mobs | `canMobPickup`, a genuinely separate boolean — **never set here at all** until W3 |
+| hoppers / hopper minecarts | neither; refused at `InventoryPickupItemEvent` against a PDC tag |
+
+**The first draft of that fix claimed three explicit answers and wrote two calls for the first one.**
+Decompiled from the pinned jar:
+
+```java
+public void setCanPlayerPickup(boolean b) { getHandle().pickupDelay = b ? 0 : 32767; }
+```
+
+`setCanPlayerPickup(false)` **IS** `setPickupDelay(32767)` — the same field, the same value. Player
+refusal and non-mergability are one write by the platform's construction (32767 is
+`INFINITE_PICKUP_DELAY`: the countdown is skipped, *and* `isMergable()` early-returns on it). They
+are not separable, and a comment claiming they were had already been written.
+
+**The trap left behind:** `setCanPlayerPickup(true)` writes `pickupDelay = 0`, which does not merely
+let players collect a marker — it silently makes it **mergable**. Anyone reading that call as
+player-only would take out non-mergability without noticing.
+
+The tag lives on the **ENTITY, never on the stack**: the stack must stay ordinary vanilla flint or
+blaze powder, or a marker that somehow *was* collected would deposit a tagged item into the economy.
+And the listener is gated on the tag, never the material, so a genuine drop a player earned is
+collected exactly as vanilla intends.
+
+Fixed in the SHARED `configureMarker`, exactly where `setVelocity(zero)` went and for the same
+reason: one change closes both marker kinds, and a third kind inherits the protection instead of
+having to remember it. **A marker has to SAY it is collectible rather than forget to say it isn't.**
+
+#### ABSENT IS NOT ZERO — SECOND INSTANCE IN TWO SLICES, ON THE SAME WEAPON
+
+`F1a` first failed with the body rising slowly and forever, never going near the flight path. The
+cause, read out of the pinned server jar rather than guessed:
+
+```java
+// ItemEntity(Level, double, double, double, ItemStack), last statement
+setDeltaMovement(random.nextDouble()*0.2 - 0.1,   // x: ±0.1
+                 0.2,                              // y: CONSTANT UPWARD POP
+                 random.nextDouble()*0.2 - 0.1);   // z: ±0.1
+```
+
+**A FRESH `ItemEntity` IS NOT STATIONARY.** Every dropped item gets that little pop. `spawnMarker`
+then called `setGravity(false)`, which removes the only force that would ever bring it back down.
+
+**It is a COMPOUND, which is why neither half looked like a bug worth writing down.** Gravity on with
+a stray velocity is a wrong arc that still lands. Velocity zeroed with gravity off is correct. Only
+the two together float.
+
+**And it is the same defect shape as the particle `extra` default one slice earlier:** the reflexive
+reading of "unset" was 0 and both times it was not — `extra` defaulted to 1.0, `deltaMovement`
+defaults to an upward pop.
+
+> **WHEN A NEW CALL SITE OMITS WHAT A SIBLING SETS, ASK WHAT THE PLATFORM PUTS THERE INSTEAD.**
+
+The mechanism that produced it is worth as much as the fix: **`spawnMarker` was specified as a DIFF
+from `throwMarker`** — *"no lift, no velocity, gravity off, pre-aged"*. Three of those four are a
+line REMOVED. **"No velocity" needed a line ADDED**, and read identically to the other three in the
+spec. A spec written as a diff from a sibling turns *set it to zero* into *omit the call*.
+
+Fixed structurally rather than locally: the zeroing lives in the shared `configureMarker`, so a
+future third marker kind inherits stillness and must opt OUT of it. `throwMarker` overrides it
+immediately with its throw velocity. **A marker now has to SAY it moves rather than forget to say it
+does not.**
+
+#### `teleportAsync` MOVES THE ENTITY AND THE CLIENT NEVER HEARS ABOUT IT
+
+The second `F1a` failure, and the finding that decided the whole design. Both frames are witnessed
+and they disagree:
+
+| frame | evidence |
+|---|---|
+| **server** | 23 repositions completed, **0** target-vs-actual mismatches; `removeMarker`'s *independent* `getLocation()` reporting the entity at the final teleport target in 9 of 12 flights. Coordinates march down the flight path. |
+| **client** | a straight-up shot, third person, outdoors — the flight where the body decelerates to ~zero near the apex and hangs nearly still, **the one configuration in which a slow, visible body exists at all**. Nothing was there. It appeared at the muzzle and disappeared at the muzzle. |
+
+**`teleportAsync` repositions this Item entity server-side and the change does not reach the client's
+entity tracker.**
+
+**THE MECHANISM IS UNKNOWN AND NO GUESS ABOUT IT IS RECORDED ANYWHERE.** Not `POST_TELEPORT` tickets,
+not tracker deltas. The observation is solid; the explanation is not, and conflating those is what
+made this take four readings.
+
+**SCOPE, STATED NARROWLY ON PURPOSE:** observed for an **Item** entity with **gravity disabled**,
+spawned via `World#spawn`, repositioned **per-tick and per-4-ticks**, on the **pinned Paper build**.
+NOT established for other entity types, other spawn paths, or Folia. *A finding stated wider than its
+evidence is how this repo's own `non-despawning` javadoc happened.*
+
+**What it cost, and what it bought.** The per-4-tick probe existed to test a retrigger hypothesis —
+*an asynchronous operation retriggered faster than it completes never completes* — which the log
+**disproved**: spaced teleports completed cleanly and still were not seen. The design moved to
+driving the body by velocity, which routes it through `move(MoverType.SELF, …)`, the path every
+ordinary thrown item uses and **the only one observed to render** (`throw_embers`' blaze powder).
+That is now the *positive* argument for the design rather than a way around a defect.
+
+**One unpredicted property, worth keeping:** six teleports completed `FALSE`, every one of them the
+last move of a flight, all logged *after* `removeMarker` had run. `teleportAsync`'s effect can land
+after subsequent synchronous calls on the same entity — so any code that teleports and then touches
+that entity in the same frame is racing its own callback.
+
+#### DEFERRED BY DECISION: F3's STRIDE IS OPEN, AND ITS ABSENCE IS NOT AN OVERSIGHT
+
+The body is removed where it is, not repositioned to the burst first. The gap is **0 to 1.4 blocks,
+mean ~0.7** at the staff's speed — computed from the geometry, not estimated: the impact resolves at
+the ray's hit point somewhere in `[position, position + velocity]` while the body sits at the
+segment's start.
+
+**A reposition that would have closed it was built, verified inert, and deleted.** It compiled, read
+well, carried an accurate javadoc, and moved the entity somewhere no player could see. **Do not read
+`resolve()`'s missing reposition as an oversight and "fix" it back into a call that does nothing.**
+The core test pins the stride and says so in its name.
+
+The candidate that stays inside the witnessed mechanism, **sized and deliberately not adopted**:
+drive the marker by `(impact - position)` on the resolving tick and delay the removal one tick so the
+platform's mover carries it there. It reintroduces a scheduled removal that can fail to run (bounded
+by the pre-age, which is what the pre-age is for), and it would be the **second** attempt at closing
+this gap. It gets a witness before it gets believed.
+
+#### THE DESIGN ACQUIRED A PHASE SENSITIVITY THAT THE MECHANISM IT REPLACED DID NOT HAVE
+
+A velocity write is only correct if the platform moves the entity by it **on the same tick it is
+set**. If the caller ran after the entity had already ticked, the body would sit exactly one computed
+step behind — permanently. That is not divergence: it does not accumulate, does not grow with range,
+and **no unit test can see it**, because `FakeWorld` has no tick order.
+
+Verified on Paper from the jar: `PaperScheduler.onRegionLater` → `GlobalRegionScheduler`, and in
+`MinecraftServer.tickChildren` the scheduler ticks at bytecode offset **37** while `ServerLevel.tick`
+runs at offset **431** — same server tick, scheduler first.
+
+**UNESTABLISHED on Folia**, where region tasks run on per-region threads. The predecessor mechanism
+was not phase-sensitive at all, so **this is a property the design acquired knowingly, on the
+strength of a check covering one of two target platforms.** Recorded beside the code in
+`PaperCombatWorld.driveMarker`, not only here.
+
+#### THE INTERACTION AXIS WAS CREATED BY THE DESIGN CHANGE — THE EASIEST KIND TO MISS
+
+The old body participated in nothing: no velocity, so nothing pushed it; repositioned every tick, so
+nothing could carry it away. **A driven body is a fully participating vanilla item entity in motion**,
+and vanilla does a great deal to those. There was no prior exposure to carry forward and notice.
+
+Enumerated once, in `PaperCombatWorld.spawnMarker`, rather than discovered one player report at a
+time: water and lava buoyancy and drag; **fire, lava and cactus DESTROY items** (`fireImmune()` is
+true only when the *stack* resists fire, and flint does not — on a FIRE weapon); explosions and
+pistons push them.
+
+**And one that is an economy leak rather than a quirk. Checked, not assumed:**
+`HopperBlockEntity.getItemsAtAndAbove` filters only on `EntitySelector.ENTITY_STILL_ALIVE`, and
+`addItem(Container, ItemEntity)` copies the stack in and discards the entity — **no pickup-delay
+check anywhere on that path**. `setPickupDelay(MAX)` stops players, not hoppers. Since the marker is
+a real flint nobody paid for, **a hopper under the flight line CREATES flint**. Bounded by a ~2s
+flight at roughly eye height. `InventoryPickupItemEvent` is cancellable and these markers can be
+tagged through `Keys`, so a mitigation is cheap — and is a DECISION rather than something to smuggle
+into a movement change.
+
+None of these affect RESOLUTION: `castRay` owns what the bolt hits and never consults the body, so
+the worst case throughout is a body somewhere other than the flames.
+
+#### OPEN AND UNREMEDIED: GRAZING COLLISIONS, WITH THE REMEDY WITHDRAWN RATHER THAN UNCHOSEN
+
+Vanilla's mover owns the body's displacement; `castRay` owns resolution. They agree in free flight
+and on walls. They can part company on a **graze** — a fence post or slab corner that `castRay`
+passes (`ignorePassableBlocks = true`, `FluidCollisionMode.NEVER`) but the mover collides with. Since
+the body is driven by VELOCITY and never repositioned, that offset **persists** for the rest of the
+flight.
+
+Two candidate remedies, both closed off:
+
+- **`setNoPhysics(true)`** exists on the Bukkit API and does not survive: `ItemEntity.tick()` assigns
+  `noPhysics` itself on both branches every tick, so an externally-set value lasts less than a tick.
+- **A low-frequency corrective teleport** was proposed and then **WITHDRAWN**, because teleports were
+  subsequently shown to be client-invisible. It would have corrected the body's position on the
+  server and changed nothing a player sees — the same inert-call shape as the F3 reposition.
+
+So this ships **unremedied and on the record**. If it bites, the honest first move is to record what
+it looks like, not to reach for either of the above.
+
+
 ### Flint Staff visuals, PR 1 (the bolt becomes visible and audible) — what it created or exposed
 
 The Fire Bolt was functionally correct and visually unusable: you could not see where it went, what

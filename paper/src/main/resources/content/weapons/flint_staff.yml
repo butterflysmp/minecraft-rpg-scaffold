@@ -64,26 +64,31 @@ triggers:
     on_cast:
       - type: visual
         visual_id: flint_cast
-    # THE OLD BOLT WAS AN ITEM ENTITY, AND HALF OF THAT IS NOW BACK.
+    # THE OLD BOLT WAS AN ITEM ENTITY, AND IT IS ONE AGAIN.
     #
     # StaffListener.launchFlintStaffBolt dropped a REAL Material.FLINT item with pickup disabled,
     # then tracked it per tick: it TUMBLED as it flew, left a flame-and-smoke trail, and resolved
     # on the first LivingEntity within 0.7 blocks or when Item.isOnGround flipped.
     #
-    # WHAT IS RESTORED HERE: the per-tick trail, drawn at the bolt's live computed position -- the
-    # same position whether or not a flint chunk is rendered there, which is why this is a proper
-    # subset of the old look rather than an approximation of it.
+    # `item: flint` is that body, and `trail: flint_trail` is the stream around it. They arrived in
+    # that order across two slices -- the trail first, deliberately, so the body could be authored
+    # against a stream somebody had actually watched.
     #
-    # WHAT IS STILL MISSING: the ITEM BODY. There is no flint chunk tumbling inside the stream
-    # yet. That crosses core/paper -- core computes the positions, and a rendered entity is a
-    # paper concern -- and is its own slice. Expect the trail to read SPARSE until it lands; see
-    # the header of visuals/flint_trail.yml before touching the counts.
+    # HOW THE BODY IS DRIVEN, AND WHY IT IS NOT THROWN: core computes the positions and the item is
+    # moved to them. It is NOT handed to vanilla physics, because this bolt resolves on a traced
+    # segment -- if physics owned the position, the thing you see and the thing you hit would be two
+    # different objects. That is the one structural difference from the old repo, which detected its
+    # hit within 0.7 blocks of the item's own location and so had them coincide by construction.
     #
     # WHAT IS DELIBERATELY NOT COMING BACK: the resolution rule. The old bolt resolved on contact
     # within 0.7 blocks; this resolves on ProjectileFlight's per-step castRay, which traces the
     # segment actually travelled and so cannot tunnel. Do NOT re-author this onto throw_embers to
-    # get the item body -- that effect detonates on a FUSE with no landing detection, so the bolt
+    # get an item body -- that effect detonates on a FUSE with no landing detection, so the bolt
     # would fly THROUGH the mob you aimed at and explode a second later.
+    #
+    # OPEN, AND ANSWERED AT A BOOT RATHER THAN HERE: whether a driven item TUMBLES the way a thrown
+    # one does. cfde822's spun because it had velocity; this one's position is set outright. If it
+    # slides facing one way it is a visibly different object from the one that was asked for.
     #
     # Speed and lifetime approximate the old throw (velocity 1.4, 40-tick timeout).
     cast:
@@ -92,6 +97,7 @@ triggers:
       gravity: 0.05
       max_lifetime_ticks: 40
       trail: flint_trail
+      item: flint
     on_hit:
       # Was ember_burst, which is tuned for the Ability Stone's three near-simultaneous ember
       # detonations (count 30 -> 10, spread 1.0 -> 0.3, per its own comment) -- a fix made for

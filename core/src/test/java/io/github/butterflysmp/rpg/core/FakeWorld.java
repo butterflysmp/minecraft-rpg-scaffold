@@ -246,7 +246,15 @@ public final class FakeWorld implements CombatWorld {
         return id;
     }
 
+    /** Where each marker was when it was REMOVED, id -> position. The live position map is erased
+     *  on removal, so without this a test cannot ask the question that matters for a projectile
+     *  body: did the flint vanish AT the burst, or a stride short of it? */
+    public final Map<UUID, Vec3> markerRemovedAt = new HashMap<>();
+
     @Override public void removeMarker(UUID markerId) {
+        if (markerPositions.containsKey(markerId)) {
+            markerRemovedAt.put(markerId, markerPositions.get(markerId));
+        }
         markers.remove(markerId);
         markerPositions.remove(markerId);
     }
@@ -255,10 +263,45 @@ public final class FakeWorld implements CombatWorld {
         return Optional.ofNullable(markerPositions.get(markerId));
     }
 
-    /** Drift a marker to a new spot, so a test can prove a fuse detonates at the LIVE
-     *  position, not where the marker was planted. The production analogue is a marker
-     *  that pops or falls before the fuse fires. */
-    public void moveMarker(UUID markerId, Vec3 to) { markerPositions.put(markerId, to); }
+    /** Where each marker was SPAWNED, id -> position, kept even after the marker is removed.
+     *  Separate from {@link #markerPositions}, which is erased on removal: a test that asks "was
+     *  the body created at the caster's eye on the launch frame" still needs an answer after the
+     *  bolt has resolved and cleaned itself up. */
+    public final Map<UUID, Vec3> markerSpawnedAt = new HashMap<>();
+
+    /** Every marker id ever spawned, in order, INCLUDING removed ones -- so a test can tell
+     *  "one marker, correctly cleaned up" from "no marker was ever created", which the live
+     *  {@link #markers} map cannot: both leave it empty. */
+    public final List<UUID> markersEverSpawned = new ArrayList<>();
+
+    @Override public UUID spawnMarker(Vec3 at, String itemId, int expectedLifetimeTicks) {
+        UUID id = UUID.randomUUID();
+        markers.put(id, itemId);
+        markerPositions.put(id, at);
+        markerSpawnedAt.put(id, at);
+        markersEverSpawned.add(id);
+        return id;
+    }
+
+    /** Drift a marker to a new spot -- a TEST HELPER again, not a port method. The flight drives
+     *  its body by velocity now; this remains because throw_embers tests need to prove a fuse
+     *  detonates at the LIVE position rather than where the marker was planted. */
+    public void moveMarker(UUID markerId, Vec3 to) {
+        if (markerPositions.containsKey(markerId)) markerPositions.put(markerId, to);
+    }
+
+    /** Every velocity handed to {@link #driveMarker}, id -> the vectors in order. The flight sets
+     *  one per tick, so this is the computed path as the platform would have been asked to walk it. */
+    public final Map<UUID, List<Vec3>> markerVelocities = new HashMap<>();
+
+    @Override public void driveMarker(UUID markerId, Vec3 stepVelocity) {
+        // Absent is a no-op, exactly as in production, where fire or lava may already have
+        // destroyed the body mid-flight.
+        if (!markerPositions.containsKey(markerId)) return;
+        markerVelocities.computeIfAbsent(markerId, k -> new ArrayList<>()).add(stepVelocity);
+        // The fake stands in for vanilla move(): the body is displaced by the velocity it was given.
+        markerPositions.put(markerId, markerPositions.get(markerId).add(stepVelocity));
+    }
 
     /**
      * Run the clock forward, firing every task that comes due. Deterministic: no sleeping,

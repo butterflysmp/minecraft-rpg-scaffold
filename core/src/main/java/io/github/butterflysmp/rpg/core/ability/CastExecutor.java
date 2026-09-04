@@ -242,7 +242,8 @@ public final class CastExecutor {
      */
     private void launch(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec) {
         ProjectileFlight.launch(world, caster, aim.origin(), aim.direction().scale(spec.speed()),
-                spec.gravity(), spec.maxLifetimeTicks(), spec.trail(),
+                spec.gravity(), spec.maxLifetimeTicks(),
+                new ProjectileFlight.Look(spec.trail(), spec.item()),
                 (target, point) -> detonate(ability, caster, target, point));
     }
 

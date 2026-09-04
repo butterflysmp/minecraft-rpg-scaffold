@@ -13,6 +13,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
@@ -179,8 +180,8 @@ public final class PaperCombatWorld implements CombatWorld {
      * never set down inside a block, so the pop cannot arise. We do NOT zero the velocity here:
      * the point is that it flies.
      *
-     * setPickupDelay(MAX) keeps it un-collectible (and, at the 32767 clamp, non-mergable and
-     * non-despawning); the short fuse makes vanilla item edge cases irrelevant anyway.
+     * setPickupDelay(MAX) keeps it un-collectible and non-mergable (see {@link #configureMarker},
+     * which records what that value does and, more importantly, what it does NOT do).
      * setPersistent(false) is the unload backstop. Its normal removal is the fuse task, which
      * calls removeMarker below -- a leaked real Item is the leak-on-death hazard one more time.
      *
@@ -189,20 +190,262 @@ public final class PaperCombatWorld implements CombatWorld {
      */
     @Override
     public UUID throwMarker(Vec3 origin, Vec3 velocity, String itemId) {
+        Location spawnAt = toLocation(origin).add(0, THROW_ORIGIN_LIFT, 0);
+        Item marker = world.spawn(spawnAt, Item.class, item -> {
+            configureMarker(item, itemId);
+            item.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z())); // thrown -- it flies
+        });
+        return marker.getUniqueId();
+    }
+
+    /**
+     * How long vanilla lets a dropped item live before {@code discard()}s it, in ticks --
+     * {@code ItemEntity.LIFETIME}. Read out of the pinned server jar rather than remembered.
+     */
+    private static final int VANILLA_ITEM_LIFETIME_TICKS = 6000;
+
+    /**
+     * Slack between when a driven marker's owner SHOULD have removed it and when vanilla removes it
+     * anyway. Three seconds: long enough that a normally-resolving bolt is never killed out from
+     * under its own flight by a tick of scheduling jitter, short enough that an orphan is gone
+     * before anybody walks over to look at it.
+     */
+    private static final int ORPHAN_GRACE_TICKS = 60;
+
+    /**
+     * The shared item configuration behind both marker kinds, and the one place the meaning of
+     * {@code setPickupDelay(Integer.MAX_VALUE)} is written down.
+     *
+     * <p><b>WHAT THAT VALUE DOES.</b> {@code CraftItem.setPickupDelay} is {@code Math.min(v, 32767)},
+     * and 32767 is {@code ItemEntity.INFINITE_PICKUP_DELAY}. In {@code ItemEntity.tick()} the
+     * countdown is skipped at that value, and {@code isMergable()} returns false for it. So the item
+     * is permanently un-collectible and never merges with a neighbouring stack.
+     *
+     * <p><b>WHAT IT DOES NOT DO, and this javadoc used to claim otherwise.</b> It does NOT stop the
+     * item despawning. The despawn is gated on a different field entirely:
+     *
+     * <pre>
+     *   if (age != -32768) age++;                                  // -32768 = INFINITE_LIFETIME
+     *   if (!level.isClientSide &amp;&amp; age >= 6000) discard();         //  6000 = LIFETIME
+     * </pre>
+     *
+     * <p>{@code age}, not {@code pickupDelay}. The earlier wording here said "non-mergable and
+     * non-despawning"; the first half is right and the second was false, which matters because it is
+     * exactly the claim the next person writing a marker would inherit -- or "fix" by reaching for
+     * {@code setUnlimitedLifetime}, turning a bounded exposure into permanent world litter.
+     *
+     * <p><b>So: never call {@code setUnlimitedLifetime(true)} or {@code setWillAge(false)} on a
+     * marker.</b> Both exist on the Item API, both set or preserve that {@code -32768}, and either
+     * one removes the only backstop these entities have.
+     */
+    private void configureMarker(Item item, String itemId) {
         Material material = Material.matchMaterial(itemId);
         if (material == null || !material.isItem()) {
             ctx.warnOnce("Unknown marker material '" + itemId + "'; using BLAZE_POWDER");
             material = Material.BLAZE_POWDER;
         }
-        ItemStack stack = new ItemStack(material);
-        Location spawnAt = toLocation(origin).add(0, THROW_ORIGIN_LIFT, 0);
-        Item marker = world.spawn(spawnAt, Item.class, item -> {
-            item.setItemStack(stack);
-            item.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z())); // thrown -- it flies
-            item.setPickupDelay(Integer.MAX_VALUE);  // never collectible
-            item.setPersistent(false);               // unload backstop
+        item.setItemStack(new ItemStack(material));
+        item.setPersistent(false);               // unload backstop
+
+        // THREE COLLECTORS -- BUT ONLY TWO FIELDS, AND THAT IS THE PLATFORM'S CHOICE, NOT OURS.
+        //
+        // A marker is a REAL item stack that nobody paid for, so anything that picks one up mints
+        // it out of nothing. Three things do:
+        //
+        //   players           -> pickupDelay. ItemEntity.playerTouch returns early while it is > 0.
+        //   mobs              -> canMobPickup, a genuinely separate boolean, and one that was never
+        //                        set here at all until the W3 gate row.
+        //   hoppers and
+        //   hopper minecarts  -> consult NEITHER. Checked, not assumed:
+        //                        HopperBlockEntity.getItemsAtAndAbove filters only on
+        //                        ENTITY_STILL_ALIVE, and addItem(Container, ItemEntity) copies the
+        //                        stack in and discards the entity -- no pickup-delay check anywhere
+        //                        on that path. Refused at InventoryPickupItemEvent instead, which is
+        //                        what the markerEntity tag below is for.
+        //
+        // PLAYER REFUSAL AND NON-MERGABILITY ARE THE SAME WRITE AND CANNOT BE STATED SEPARATELY.
+        // An earlier version of this comment claimed they could, and called both
+        // setPickupDelay(MAX) "for non-mergability" and setCanPlayerPickup(false) "for players".
+        // Decompiled from the pinned jar, CraftItem.setCanPlayerPickup(b) is literally
+        //     getHandle().pickupDelay = b ? 0 : 32767;
+        // -- the same field, the same value. The two calls were one fact written twice.
+        //
+        // So there is ONE call, on the field we actually depend on. 32767 is
+        // ItemEntity.INFINITE_PICKUP_DELAY: the countdown is skipped at that value, so players are
+        // refused forever, AND isMergable() early-returns on it, so a marker never merges into a
+        // neighbouring stack. Both properties, one write, by the platform's construction.
+        //
+        // DO NOT "restore" setCanPlayerPickup(false) as a clearer spelling of the player half: it
+        // is an alias for this line, not an addition to it. And never call it with TRUE -- that
+        // writes pickupDelay = 0, which does not merely let players collect the marker, it silently
+        // makes it MERGABLE as well.
+        //
+        // In the SHARED path, exactly where setVelocity(zero) went and for the same reason: this
+        // closes both marker kinds at once, and a third kind inherits the protection instead of
+        // having to remember it. A MARKER HAS TO SAY IT IS COLLECTIBLE RATHER THAN FORGET TO SAY
+        // IT ISN'T.
+        item.setPickupDelay(Integer.MAX_VALUE);  // clamped to 32767: no player pickup, no merging
+        item.setCanMobPickup(false);
+        item.getPersistentDataContainer().set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);
+
+        // ZERO THE VELOCITY HERE, AS THE BASELINE, RATHER THAN AT EACH CALL SITE.
+        //
+        // A FRESH ItemEntity IS NOT STATIONARY. Its constructor ends with
+        //     setDeltaMovement(random*0.2 - 0.1, 0.2, random*0.2 - 0.1)
+        // -- read out of the pinned server jar. That constant 0.2 on Y is the little POP a dropped
+        // item makes, and it is applied to every item this method will ever configure.
+        //
+        // Combined with a driven marker's setGravity(false), which removes the only force that
+        // would ever bring it back down, that pop becomes a bolt that rises gently forever and
+        // never goes anywhere near its flight path. Gravity on with a stray velocity is merely a
+        // wrong arc that still lands; velocity zeroed with gravity off is correct. ONLY THE TWO
+        // TOGETHER FLOAT, which is why neither alone looks like a bug worth writing down.
+        //
+        // It lives in the SHARED configuration and not in spawnMarker because that is what makes
+        // the mistake unrepeatable. spawnMarker was specified as a diff from throwMarker -- "no
+        // lift, no velocity, gravity off, pre-aged" -- and three of those four are a line REMOVED
+        // while "no velocity" needed a line ADDED. The two read identically in a spec and do not
+        // behave identically in a platform. A future third marker kind inherits stillness here and
+        // has to opt OUT of it, which is the direction that fails safe.
+        //
+        // throwMarker overrides this immediately afterwards with its throw velocity: the point is
+        // that a marker must now SAY it moves, not merely forget to say it does not.
+        item.setVelocity(new Vector(0, 0, 0));
+    }
+
+    /**
+     * A body rendered at a position CORE computes, going nowhere on its own -- the Flint Staff's
+     * flint chunk. Its counterpart {@link #throwMarker} hands an item to physics and reads back
+     * where physics took it; this one is the opposite arrangement, because a projectile that
+     * resolves on a traced segment cannot let physics own the position or the thing you see and the
+     * thing you hit are two different objects.
+     *
+     * <p>Four deliberate differences from {@code throwMarker}, each of which would be a defect if
+     * copied across: <b>no {@link #THROW_ORIGIN_LIFT}</b> (core gives an exact point, not a
+     * thrower's feet -- the caller's origin is already an eye), <b>no velocity</b>, <b>gravity
+     * off</b> (we own the position; physics must not fight the teleports for it), and <b>pre-aged</b>.
+     *
+     * <p><b>THE PRE-AGE IS THE POINT, AND IT IS THE THIRD EXIT.</b> A driven marker has three ways
+     * to end, not two: the flight hits something, the flight's fuse expires, or <b>the scheduled
+     * continuation never runs at all</b> -- a region unloads, or the server stops. There is no
+     * {@code finally} on a chain of scheduled callbacks, and what is left behind is a real entity
+     * that only our code removes.
+     *
+     * <p>So rather than adding a mechanism that could itself fail to run, we arm vanilla's own
+     * timer: {@code CraftItem.setTicksLived} writes straight into {@code ItemEntity.age}, so
+     * spawning the item pre-aged makes vanilla {@code discard()} it {@code expectedLifetimeTicks +
+     * }{@link #ORPHAN_GRACE_TICKS} after birth, whether or not anything of ours ever runs again.
+     * For the Flint Staff's 40-tick fuse that is about five seconds instead of the five minutes
+     * plain {@code LIFETIME} would give.
+     *
+     * <p>{@code CraftEntity.setTicksLived} requires a value {@code > 0} ("Age value (%s) must be
+     * greater than 0"), hence the clamp -- which also keeps an absurdly long authored fuse from
+     * producing a negative age rather than a long-lived marker.
+     *
+     * <p><b>THE INTERACTION AXIS, ENUMERATED ONCE HERE RATHER THAN DISCOVERED ONE REPORT AT A TIME.</b>
+     * A driven marker is a FULLY PARTICIPATING vanilla item entity in motion, and vanilla does a
+     * great deal to those. The predecessor design participated in nothing -- no velocity, so nothing
+     * pushed it; repositioned every tick, so nothing could carry it away -- so this whole axis was
+     * CREATED by the move to velocity. That is the easiest kind to miss: there was no prior exposure
+     * to carry forward and notice.
+     *
+     * <p>Accepted, on the record, unless a gate row says otherwise:
+     * <ul>
+     *   <li><b>Water and lava</b> give an item buoyancy and heavy drag ({@code setUnderwaterMovement}
+     *       in {@code ItemEntity.tick}). A bolt fired across a pond diverges from the computed path
+     *       immediately and visibly. Not exotic -- a normal shot on a normal map. <b>Gate row.</b></li>
+     *   <li><b>Fire, lava and cactus DESTROY items.</b> {@code ItemEntity.fireImmune()} is true only
+     *       when the STACK resists fire, and flint does not -- so on a FIRE weapon the body can be
+     *       destroyed mid-flight. Harmless to resolution: the flight continues, {@link #removeMarker}
+     *       finds nothing and no-ops, and the bolt simply loses its body. <b>Gate row.</b></li>
+     *   <li><b>Hoppers eat it, and this one is an ECONOMY LEAK rather than a cosmetic quirk.</b>
+     *       Checked rather than assumed: {@code HopperBlockEntity.getItemsAtAndAbove} filters only on
+     *       {@code EntitySelector.ENTITY_STILL_ALIVE}, and {@code addItem(Container, ItemEntity)}
+     *       copies the stack in and discards the entity -- <b>no pickup-delay check anywhere on that
+     *       path</b>. {@code setPickupDelay(MAX)} stops players, not hoppers. Since the marker is a
+     *       real flint nobody paid for, a hopper under the flight line CREATES flint. Bounded by a
+     *       ~2 second flight at roughly eye height, so it needs a hopper almost directly under the
+     *       shot. A mitigation exists and is cheap -- {@code InventoryPickupItemEvent} is cancellable,
+     *       and these markers can be tagged through {@code Keys} -- and is deliberately NOT taken
+     *       here: it is its own decision, not a thing to smuggle into a movement change.</li>
+     *   <li><b>Explosions and pistons</b> push item entities. Same class as the fluids: the body
+     *       leaves the path and the flight does not.</li>
+     * </ul>
+     *
+     * <p>None of these affect RESOLUTION. {@code castRay} owns what the bolt hits and never consults
+     * the body, so the worst case throughout is a body that is somewhere other than the flames.
+     *
+     * <p>A world write, so only legal on the thread owning {@code at}.
+     */
+    @Override
+    public UUID spawnMarker(Vec3 at, String itemId, int expectedLifetimeTicks) {
+        int ticksLived = Math.max(1,
+                VANILLA_ITEM_LIFETIME_TICKS - expectedLifetimeTicks - ORPHAN_GRACE_TICKS);
+        Item marker = world.spawn(toLocation(at), Item.class, item -> {
+            configureMarker(item, itemId);
+            item.setGravity(false);            // core owns the position; physics must not compete
+            item.setTicksLived(ticksLived);    // armed self-destruct -- see the javadoc above
         });
         return marker.getUniqueId();
+    }
+
+    /**
+     * Drive a marker: hand the platform's own mover this tick's displacement and let IT move the
+     * entity. Deliberately NOT a reposition.
+     *
+     * <p><b>REPOSITIONING WAS TRIED AND IS NOT AVAILABLE.</b> {@code teleportAsync} was verified to
+     * move this entity server-side -- 23 repositions, zero target-vs-actual mismatches, corroborated
+     * by {@link #removeMarker}'s independent read finding it at the final target -- and verified NOT
+     * to reach the client's entity tracker: a straight-up shot, the one flight where the body
+     * decelerates to nearly nothing around 20 blocks and hangs there, showed nothing at all. The
+     * MECHANISM behind that is unknown and no guess about it belongs in this file.
+     *
+     * <p>Scope of that finding, stated narrowly on purpose: observed for an <b>Item</b> entity with
+     * gravity disabled, spawned via {@code World#spawn}, repositioned per-tick and per-4-ticks, on
+     * the pinned Paper build. NOT established for other entity types, other spawn paths, or Folia.
+     * A finding stated wider than its evidence is how this class's own {@code non-despawning} claim
+     * happened.
+     *
+     * <p>Setting the velocity instead routes the body through {@code move(MoverType.SELF, …)}, which
+     * is the path every ordinary thrown item uses and the only one observed to render -- the same
+     * mechanism that makes {@code throw_embers}' blaze powder visibly fly and spin.
+     *
+     * <p><b>Why this lands exactly on the computed path.</b> The caller's vector is one tick's
+     * displacement, already carrying the ability's own gravity. {@link #spawnMarker} disables the
+     * entity's gravity, and {@code Entity.getGravity()} returns 0 when it is disabled, so
+     * {@code applyGravity()} adds nothing before the move. Vanilla's drag is applied AFTER the move,
+     * so overwriting the velocity next tick discards it before it can matter. The displacement is
+     * therefore precisely what was asked for -- not corrected toward it.
+     *
+     * <p><b>Only legal on the thread owning WHERE THE MARKER IS</b>, the same unhopped contract
+     * {@link #removeMarker} and {@link #markerLocation} keep. It is an entity write like any other.
+     * {@code ProjectileFlight} places the call at the END of a step for that reason; do not move it.
+     *
+     * <p><b>THIS MECHANISM IS PHASE-SENSITIVE, AND THE PHASE IS VERIFIED ON ONE OF TWO TARGET
+     * PLATFORMS.</b> Setting a velocity is only correct if the platform moves the entity by it on
+     * the SAME tick it is set; if the caller ran after the entity had already ticked, the body would
+     * sit exactly one computed step behind the flight, permanently. That is not divergence -- it
+     * does not accumulate or grow with range -- and no unit test can see it, because
+     * {@code FakeWorld} has no tick order.
+     *
+     * <p>On Paper it is verified from the jar: {@code PaperScheduler.onRegionLater} reaches
+     * {@code GlobalRegionScheduler}, and in {@code MinecraftServer.tickChildren} the scheduler ticks
+     * at bytecode offset 37 while {@code ServerLevel.tick} runs at offset 431 -- same server tick,
+     * scheduler first, so the velocity is consumed later that tick.
+     *
+     * <p><b>On Folia it is UNESTABLISHED.</b> Region tasks run on per-region threads there and that
+     * ordering does not carry over. The predecessor mechanism -- repositioning -- was not
+     * phase-sensitive at all, so this is a property the design ACQUIRED, knowingly, on the strength
+     * of a check that covers one platform. Re-establish it before trusting this on Folia.
+     */
+    @Override
+    public void driveMarker(UUID markerId, Vec3 stepVelocity) {
+        if (world.getEntity(markerId) instanceof Item marker) {
+            marker.setVelocity(new Vector(stepVelocity.x(), stepVelocity.y(), stepVelocity.z()));
+        }
+        // Silently absent is CORRECT here and is a reachable state, not a defensive one: a driven
+        // body is a fully participating item entity, and fire, lava and cactus destroy those. The
+        // flight continues and resolves normally with no body -- see spawnMarker's interaction note.
     }
 
     @Override

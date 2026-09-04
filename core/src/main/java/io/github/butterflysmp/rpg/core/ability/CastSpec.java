@@ -17,17 +17,35 @@ public sealed interface CastSpec {
      * a trail every step -- there was simply no way for the schema to produce anything but null,
      * and the call site's {@code // a bare projectile leaves no trail} read as a decision when it
      * was the only value available.
+     *
+     * <p>{@code item} is a material id RENDERED AS THE PROJECTILE'S BODY -- a real item entity
+     * driven to the positions this flight computes, un-pickup-able, removed when the bolt resolves.
+     * Also optional, and absent for the same two dev weapons.
+     *
+     * <p>The two are independent on purpose. A trail without a body is what the Flint Staff shipped
+     * as one slice earlier; a body without a trail is a silent thrown rock. Neither implies the
+     * other, so neither defaults from the other.
      */
-    record Projectile(double speed, double gravity, int maxLifetimeTicks, String trail)
+    record Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item)
             implements CastSpec {
 
         /**
-         * A projectile with no trail -- every call site that predates the field, and both dev
+         * A projectile with a trail but NO RENDERED BODY -- what the Flint Staff was between the
+         * trail landing and the body landing, and what any projectile that wants particles without
+         * an entity still is.
+         */
+        public Projectile(double speed, double gravity, int maxLifetimeTicks, String trail) {
+            this(speed, gravity, maxLifetimeTicks, trail, null);
+        }
+
+        /**
+         * A projectile with neither -- every call site that predates both fields, and both dev
          * weapons. The same optional-argument ladder {@code AbilityDefinition} uses for its
-         * authored description: the convenience constructor drops the tail.
+         * authored description: each convenience constructor drops the TAIL, never a middle field,
+         * so a reader counting arguments never has to work out which one was omitted.
          */
         public Projectile(double speed, double gravity, int maxLifetimeTicks) {
-            this(speed, gravity, maxLifetimeTicks, null);
+            this(speed, gravity, maxLifetimeTicks, null, null);
         }
     }
 

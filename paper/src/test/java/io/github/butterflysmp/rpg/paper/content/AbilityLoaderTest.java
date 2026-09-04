@@ -115,6 +115,52 @@ class AbilityLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
     }
 
+    /**
+     * A projectile's optional BODY: authored -> carried, absent -> null, and independent of the
+     * trail. A trail with no body is what the Flint Staff shipped as one slice earlier, so a schema
+     * that defaulted one from the other would have made that state unexpressible.
+     */
+    @Test
+    void aProjectileItemIsOptionalAndIndependentOfTheTrail() throws IOException {
+        write("bodied.yml", """
+                id: bodied
+                element: fire
+                cast:
+                  type: projectile
+                  speed: 1.4
+                  trail: flint_trail
+                  item: flint
+                on_hit:
+                  - type: damage
+                    amount: 20
+                    element: fire
+                """);
+        write("trail_only.yml", """
+                id: trail_only
+                element: fire
+                cast:
+                  type: projectile
+                  trail: flint_trail
+                on_hit:
+                  - type: damage
+                    amount: 20
+                    element: fire
+                """);
+        write("without_trail.yml", VALID);
+
+        var registry = load();
+        var bodied = (CastSpec.Projectile) registry.find("bodied").orElseThrow().cast();
+        var trailOnly = (CastSpec.Projectile) registry.find("trail_only").orElseThrow().cast();
+        var bare = (CastSpec.Projectile) registry.find("solar_grenade").orElseThrow().cast();
+
+        assertEquals("flint", bodied.item());
+        assertEquals("flint_trail", bodied.trail());
+        assertNull(trailOnly.item(), "a trail must not imply a body");
+        assertEquals("flint_trail", trailOnly.trail());
+        assertNull(bare.item(), "and a projectile that names neither gets neither");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
     /** on_cast carries its visuals, and is empty (never null) when the file names none. */
     @Test
     void onCastIsParsedAndAbsentMeansEmpty() throws IOException {

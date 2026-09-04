@@ -10,18 +10,20 @@
 # THE COUPLING IS INVISIBLE AT BOTH ENDS.
 #
 # ------------------------------------------------------------------------------------------
-# THESE NUMBERS ARE cfde822's, AND THEY ARE DELIBERATELY UNTUNED. DO NOT RAISE THE COUNT.
+# THESE NUMBERS ARE cfde822's, AND THEY ARE STILL UNTUNED -- BUT THE QUESTION IS NOW OPEN.
 #
-# cfde822 drew this stream around a real FLINT ITEM ENTITY tumbling through the middle of it.
-# That body does not exist yet -- it is PR 2 -- so this stream will probably read SPARSE.
+# cfde822 drew this stream around a real FLINT ITEM ENTITY tumbling through the middle of it. For
+# one slice that body did not exist, so the stream was expected to read SPARSE and the counts were
+# held UNCHANGED on purpose: raising them then would have meant the body landed into a stream tuned
+# for its absence, leaving the finished bolt too busy, from a tuning nobody made wrongly.
 #
-# That is the expected reading, not a defect to compensate for. If the count is raised now, PR 2
-# adds the body back into a stream tuned for its absence, and the finished bolt is too busy --
-# from a tuning nobody made wrongly, with nothing warning at either end.
+# THE BODY HAS NOW LANDED (`item: flint` on the staff's cast). So the count is judged for the first
+# time against what it was authored for -- gate row F2 -- and this is the boot at which raising it
+# is legitimate if it reads thin WITH the flint in it.
 #
-# The prediction is only safe because the numbers are verifiably cfde822's INCLUDING the speeds
-# below, so sparseness has one candidate cause rather than two. A pre-registered explanation for
-# an unexpected result is a blindfold if the result has a second cause.
+# Do not change it before that reading. The numbers are verifiably cfde822's INCLUDING the speeds
+# below, which is what keeps a wrong appearance attributable to one cause rather than two: a
+# pre-registered explanation for an unexpected result is a blindfold if the result has a second cause.
 # ------------------------------------------------------------------------------------------
 #
 # `speed` is Bukkit's `extra`. It is authored EXPLICITLY here, and 0.0 is cfde822's value -- the

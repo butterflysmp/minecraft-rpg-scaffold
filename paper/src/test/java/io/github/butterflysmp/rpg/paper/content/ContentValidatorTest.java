@@ -298,6 +298,8 @@ class ContentValidatorTest {
         var trigger = weapons.find("flint_staff").orElseThrow().triggers().get(0);
         var cast = assertInstanceOf(CastSpec.Projectile.class, trigger.ability().cast());
         assertEquals("flint_trail", cast.trail(), "the bolt must leave something behind it");
+        assertEquals("flint", cast.item(),
+                "and it must BE something -- cfde822's bolt was a real flint item, not bare particles");
         assertEquals(List.of(new EffectSpec.Visual("flint_cast")), trigger.ability().onCast(),
                 "and must be audible on the frame the trigger is pressed");
 

@@ -14,6 +14,8 @@ import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
+import org.bukkit.event.inventory.InventoryPickupItemEvent;
+import org.bukkit.persistence.PersistentDataType;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
@@ -239,6 +241,40 @@ public final class RpgListeners implements Listener {
      * key changes -- and {@code RecipeCatalogue.resolve} re-checks the live roster on every click
      * regardless. Invalidating would throw away a correct cache to fix nothing.
      */
+    /**
+     * A HOPPER MAY NOT EAT ONE OF OUR MARKERS. Without this, it duplicates items into the economy.
+     *
+     * <p>A marker -- a thrown ember, a projectile's rendered body -- is a REAL item stack that
+     * nobody paid for. Three things collect items and each has to be told separately:
+     * {@code setCanPlayerPickup(false)} and {@code setCanMobPickup(false)} handle two of them on the
+     * entity, in {@code PaperCombatWorld.configureMarker}. <b>A hopper consults neither.</b>
+     * {@code HopperBlockEntity.getItemsAtAndAbove} filters only on {@code ENTITY_STILL_ALIVE}, and
+     * {@code addItem(Container, ItemEntity)} copies the stack in and discards the entity -- there is
+     * no pickup-delay check anywhere on that path. So the third collector is refused here, at the
+     * only place it can be.
+     *
+     * <p><b>This fixes a PRE-EXISTING defect, surfaced by a gate row rather than introduced by the
+     * change that found it.</b> {@code throw_embers} has thrown real blaze powder through the same
+     * shared configuration since it shipped, and an ember is an EASIER hopper target than a bolt,
+     * not a harder one: it lands and rests for its whole fuse, while a bolt is only ever passing
+     * through.
+     *
+     * <p>Gated on the entity tag, never on the material, so a genuine flint or blaze-powder drop a
+     * player earned is collected exactly as vanilla intends. The tag is on the ENTITY and not the
+     * stack for the same reason: the stack must stay ordinary, or a marker that somehow was
+     * collected would put a tagged item into circulation.
+     *
+     * <p>Covers hopper minecarts as well as hoppers -- both reach an inventory through this one
+     * event, which is why it is cancelled here rather than in a block-specific handler.
+     */
+    @EventHandler
+    public void onHopperPickup(InventoryPickupItemEvent event) {
+        if (event.getItem().getPersistentDataContainer()
+                .has(adapters.keys().markerEntity, PersistentDataType.BYTE)) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler
     public void onResourcesReloaded(ServerResourcesReloadedEvent event) {
         RecipeRegistrar.Report report = RecipeRegistrar.registerAll(
