@@ -24,6 +24,8 @@ import io.github.butterflysmp.rpg.paper.menu.CraftMatrixScreen;
 import io.github.butterflysmp.rpg.paper.menu.CraftingMenu;
 import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
+import io.github.butterflysmp.rpg.core.recipe.RecipeRegistry;
+import io.github.butterflysmp.rpg.paper.content.RecipeRegistrar;
 import io.github.butterflysmp.rpg.paper.menu.RecipeCatalogue;
 import io.github.butterflysmp.rpg.paper.menu.RecipeProbe;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
@@ -46,6 +48,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import io.papermc.paper.event.server.ServerResourcesReloadedEvent;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
@@ -64,6 +67,7 @@ import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
@@ -124,6 +128,10 @@ public final class RpgListeners implements Listener {
      * rebuild the whole roster every time anyone opened a crafting table.
      */
     private final RecipeCatalogue recipeCatalogue;
+
+    /** Held for {@link #onResourcesReloaded}: re-registering recipes needs the plugin and the content. */
+    private final Plugin plugin;
+    private final RecipeRegistry recipes;
     private final PlayerHealthSystem healthSystem;
     private final MobNameplateManager nameplates;
     private final StatsBarSystem statsBar;
@@ -164,7 +172,10 @@ public final class RpgListeners implements Listener {
                         WeaponService weaponService,
                         AdapterContext adapters,
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
-                        StatsBarSystem statsBar, HealthRegenSystem healthRegen) {
+                        StatsBarSystem statsBar, HealthRegenSystem healthRegen,
+                        Plugin plugin, RecipeRegistry recipes) {
+        this.plugin = plugin;
+        this.recipes = recipes;
         this.cooldowns = cooldowns;
         this.resources = resources;
         this.profiles = profiles;
@@ -185,6 +196,63 @@ public final class RpgListeners implements Listener {
                 (player, block) -> new EnchantMenu(player, weapons, shields, armor, tools, adapters, block),
                 Material.CRAFTING_TABLE,
                 (player, block) -> new CraftingMenu(player, adapters, recipeCatalogue));
+    }
+
+    /**
+     * A datapack reload wipes every recipe we registered. Put them back.
+     *
+     * <h2>THE DEFECT THIS CLOSES, OBSERVED 2026-09-04 AS GATE ROW R2</h2>
+     *
+     * Vanilla {@code /reload} rebuilds the server's recipe manager and does <b>NOT</b> re-enable
+     * plugins. {@code onEnable} is the only thing that calls {@code registerAll}, so before this
+     * handler existed the Flint Staff's recipe was <b>silently gone until the next restart</b>: the
+     * craft simply stopped working, nothing logged, nothing warned.
+     *
+     * <p><b>Scoped to the REGISTRAR, not to the content.</b> This is not a property of the Flint
+     * Staff -- it is a property of anything registered into the recipe manager at enable time on
+     * this build, so the next mechanism that registers something meets it too. Fixing it here means
+     * that mechanism inherits the fix instead of rediscovering the bug.
+     *
+     * <h2>Why this ships WITH the mechanism rather than as its own slice</h2>
+     *
+     * Not "never ship a known defect" -- this slice deliberately ships one, and says so: scorch is
+     * {@code kind: fire}, so the Flint Staff's burn is vanilla-rated and does not credit the caster.
+     * That gap is <b>STATED</b>: written in the content file, filed as a named debt, explainable to
+     * a player who notices.
+     *
+     * <p>This one was <b>SILENT</b>. And the alternative to fixing it was a caveat carried on every
+     * remaining gate row -- "never run this after a /reload" -- which is the decisive argument:
+     * <b>a caveat that must be remembered on every row is one that gets forgotten.</b> That is the
+     * {@code continue}-inside-the-loop against {@code STATUS_SLOTS}, and the memory version was
+     * watched to fail this same week: the stale-jar trap was disarmed by {@code set -e} happening
+     * to fire, not by anyone remembering it was armed.
+     *
+     * <p><b>Re-entry is safe because the registrar was already written for it</b> -- remove-then-add
+     * unconditionally, so a key that survived and a key that vanished take the same path. That was
+     * written to avoid depending on an undocumented answer, and it is what makes this handler three
+     * lines instead of a redesign.
+     *
+     * <h2>DO NOT ADD A CATALOGUE INVALIDATION HERE</h2>
+     *
+     * It is the reflexive move and it is wrong. {@code RecipeCatalogue} caches for the server's
+     * lifetime and holds key, tier and ingredients -- none of which a drop-and-re-add under the SAME
+     * key changes -- and {@code RecipeCatalogue.resolve} re-checks the live roster on every click
+     * regardless. Invalidating would throw away a correct cache to fix nothing.
+     */
+    @EventHandler
+    public void onResourcesReloaded(ServerResourcesReloadedEvent event) {
+        RecipeRegistrar.Report report = RecipeRegistrar.registerAll(
+                plugin, recipes.all(), adapters.craftResults(), plugin.getLogger());
+
+        // Logged in the SAME shape as the boot line, because that line is the gate's instrument and
+        // a second one is now producible by this route. `replaced` is the CROSS-CHECK on R2's
+        // finding: 0 means removeRecipe found nothing, so the reload really had dropped the recipe;
+        // 1 would mean the key was still there and R2's failure was something else -- a
+        // contradiction to resolve, not a pass.
+        plugin.getLogger().info("Custom recipes: " + report.registered() + " registered, "
+                + report.replaced() + " replaced, " + report.refused() + " refused, of "
+                + report.authored() + " authored (re-registered after a " + event.getCause()
+                + " resource reload)");
     }
 
     @EventHandler

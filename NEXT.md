@@ -762,6 +762,69 @@ the one above, because the danger is not that someone believes CI covers this �
 check at the top of a PR is exactly what makes a gate feel optional. **This is the moment a gate
 gets skipped**, and the table below is the list of what would be skipped with it.
 
+#### A /reload SILENTLY STRIPPED EVERY RECIPE WE REGISTER — found by gate row R2, fixed in the same slice
+
+**Observed 2026-09-04.** Vanilla `/reload` rebuilds the server's recipe manager and does **not**
+re-enable plugins. `onEnable` was the only caller of `registerAll`, so after any reload our recipes
+were **gone until the next restart**: the craft stopped working, the browser stopped listing it,
+and **nothing logged and nothing warned**.
+
+**THIS WAS NEVER ABOUT THE FLINT STAFF.** It was a property of anything registered into the recipe
+manager at enable time on this build, so the next mechanism that registers something would have met
+it too. The finding and the fix therefore belong at the **registrar**, not on a content file — which
+is why the handler sits beside `RecipeRegistrar` and `flint_staff.yml` says nothing about reloads.
+
+**The fix:** `io.papermc.paper.event.server.ServerResourcesReloadedEvent` re-runs `registerAll`.
+Paper's own javadoc names the use — *"Intended for use to re-register custom recipes, advancements
+that may be lost during a reload like this"* — and the event was **confirmed present on
+paper-api 26.1.2.build.74-stable before it was chosen**, because R2 exists precisely because
+`/reload confirm` was a remembered command that turned out not to be there.
+
+Re-entry is safe for free: the registrar's unconditional remove-then-add was written so a key that
+survived and a key that vanished take the same path, which is what makes the handler three lines
+rather than a redesign.
+
+##### WHY IT SHIPPED IN THIS SLICE, AND THE FIRST REASON IS NOT THE REAL ONE
+
+"Do not ship a mechanism with a known defect" **does not settle it, and this slice is its own
+counter-example** — it deliberately ships a documented gap: scorch is `kind: fire`, so the staff's
+burn is vanilla-rated and does not credit the caster. If that principle decided things, this slice
+would already be blocked by its own named debt.
+
+**The real distinction is STATED versus SILENT.** Scorch's gap is visible: written in the content
+file, filed above, explainable to a player who notices. The reload gap was invisible — no log, no
+warning, the recipe simply gone.
+
+**And the argument that actually settles it is about the alternative.** Not fixing meant a caveat
+carried on every remaining gate row — *never run this after a `/reload`*:
+
+> **A CAVEAT THAT MUST BE REMEMBERED ON EVERY ROW IS ONE THAT GETS FORGOTTEN.**
+
+That is `continue`-inside-the-loop against `STATUS_SLOTS` — a set that *cannot* contain the close
+slot beats a loop that remembers to skip it — and the memory version was watched to fail **in this
+same week's work**: the stale-jar trap was disarmed by `set -e` happening to fire, not by anyone
+remembering it was armed. A structural fix removes the thing to remember.
+
+##### DO NOT ADD A CATALOGUE INVALIDATION — it is the reflexive move and it is wrong
+
+`RecipeCatalogue` caches for the server's lifetime and holds key, tier and ingredients. **A
+drop-and-re-add under the SAME key changes none of them**, and `RecipeCatalogue.resolve` re-checks
+the live roster on every click regardless. Invalidating on reload would throw away a correct cache
+to fix nothing. Written here because it is exactly what the next reader will reach for.
+
+##### The number that confirmed the finding, and the one that would have refuted it
+
+The re-registration logs a second `Custom recipes:` line, and its `replaced` is a cross-check rather
+than decoration:
+
+- **`0 replaced`** — `removeRecipe` found nothing, so the reload really had dropped the recipe.
+  **This is what was observed**, so R2's finding is confirmed by a second, independent route.
+- `1 replaced` would have meant the key was still present and R2's failure had some other cause —
+  a contradiction to resolve before shipping, not a pass.
+
+Worth keeping as a shape: a fix whose log line also re-tests the defect it fixes turns "did the fix
+fire" into "did the fix fire, **and was the thing it fixes real**".
+
 #### STANDING CONDITION: every scripted boot leaves a JVM holding the jar, so the stale-jar trap is ARMED BY DEFAULT
 
 **Recorded 2026-09-03. This is not a quirk of one run — it is the state the dev loop is in after
@@ -879,6 +942,7 @@ So on a boot-witnessed row, "which build was this observed on" is not metadata a
 | the `replaced` counter itself | `RecipeRegistrar` | a dead counter makes R2's number meaningless | **R4** (the instrument's own control) |
 | minting from a custom recipe | `commitCraft` | a plain stick for a flint | 7C |
 | the Crafter refusing our recipe | `onCrafterCraft` | a redstone flint-to-stick machine | 7E |
+| recipes surviving a `/reload` | `onResourcesReloaded` | every custom recipe silently gone until restart | R2 (the craft), R6 (the roster) |
 | `fits` against the delivered item | `InventoryCraft.craft` | up to 64 weapons on the floor | 7F |
 | WEAPON tier occupying the column | `SuggestionTiers` | the first ordinal was unreachable until now | Q15, Q16 |
 

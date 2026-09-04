@@ -733,18 +733,24 @@ one, every time. The two real defects are named instead.
 The first slice in which crafting something the server did not previously know how to craft produces
 RPG gear. Everything before this rode recipes Minecraft already had.
 
-**THE SET, NAMED BEFORE THE RUN.** Live rows in this section: **R1, R2, R4, R5, 7A, 7B, 7C, 7D,
-7E, 7F, 7G** — eleven. Plus the **thirteen** re-runs at the bottom of this section (Q16, Q15, Q25,
-T10, Q7, Q10, Q27, Q29, 12, 12c, S1, S2, N5b). **Twenty-four in total.** Row **7H** is struck as
+**THE SET, NAMED BEFORE THE RUN.** Live rows in this section: **R1, R2, R4, R5, R6, 7A, 7B, 7C,
+7D, 7E, 7F, 7G** — twelve. Plus the **thirteen** re-runs at the bottom of this section (Q16, Q15, Q25,
+T10, Q7, Q10, Q27, Q29, 12, 12c, S1, S2, N5b). **Twenty-five in total.** Row **7H** is struck as
 IMPOSSIBLE, and **R3 was MERGED INTO R2** on 2026-09-04 when R2 became a behavioural check; both
 are correctly absent from any count.
 
 > Counted from the LIVE rows in this section, not by extending slice 6's list. That is what Q34 cost.
 
-> ### GATE RESULT — IN PROGRESS, **2 of 24**
+> ### GATE RESULT — IN PROGRESS, **3 of 25**
 >
-> **PASSED:** R1, R4 (2026-09-04) — their observed lines are recorded below the registration table.
-> **UNRUN:** R2, R5, 7A–7G, and all thirteen re-runs. **R2 was ATTEMPTED 2026-09-04 and its premise turned out to be wrong** -- `/reload confirm` does not exist on this build; the row was re-instrumented and R3 merged into it. See the correction under the registration table.
+> **PASSED:** R1, R4, R6 (2026-09-04) — every observed line is recorded below the registration
+> table, not merely claimed.
+> **R2: FAILED, FIXED, AND THE FIX IS ONLY HALF-WITNESSED.** R6 proves the recipe is back on the
+> ROSTER (the registrar readback plus `0 replaced`). **R2 itself asks whether it still CRAFTS, and
+> that has not been done by anyone** — it needs a player at a table. Counted as UNRUN, deliberately:
+> a roster entry and a successful craft are not the same claim, and this slice has already been
+> bitten once by treating a log line as if it were the behaviour behind it.
+> **UNRUN:** R2 (the craft), R5, 7A–7G, and all thirteen re-runs.
 >
 > **This is not a passing gate and must not be cited as one.** The suite is green either way for
 > everything this slice does, so 1257 passing tests and a green CI check say the slice broke nothing
@@ -774,14 +780,87 @@ wrong at a glance instead of reading self-consistently and wrong.
 > **Every row here passes by reading a log line, and a stale jar prints a correct-looking one** —
 > the previous build was also correct. There is no second signal. This is how a green row certifies
 > the wrong build.
+>
+> **AND EVERY ROW IN THIS SLICE NEEDS A FRESH BOOT — no `/reload` earlier in the same session.**
+> Armed 2026-09-04 by R2, and mostly disarmed the same day by the fix: a reload used to strip our
+> recipes until restart, so 7A-7G run after one would have failed and read as MINT failures rather
+> than as a missing recipe. The `ServerResourcesReloadedEvent` handler now puts them back, which is
+> exactly why the caveat was not left standing — **a caveat that must be remembered on every row is
+> one that gets forgotten.** It is written here anyway, because the fix is one slice old and the
+> trap it replaced was invisible.
 
 | # | action | expected | notes |
 |---|---|---|---|
 | R1 | **Fresh content.** `./scripts/dev-server.sh --refresh-content`. Read the line. | `1 registered, 0 replaced, 0 refused, of 1 authored (1 minting gear)` | **`--refresh-content` IS REQUIRED.** `content/recipes/` is a brand-new directory; `saveResource(path, false)` never overwrites, so a populated `run/` data folder predates it and ships nothing. `0 replaced` says the remove call is not spuriously matching on a virgin roster · **PASSED 2026-09-03**, exactly this line. **Provenance, because the first observation did not have it:** originally read on a jar built *before* the slice was committed, from a tree **asserted** rather than verified to match it. Re-run against a jar built by `./mvnw clean package` from the **clean committed tree** of the docs commit that added this sentence — so anyone can reproduce it by checking out that commit and rebuilding. An observation whose build you cannot name is a number, not a verification |
-| R2 | **`/reload confirm` DOES NOT EXIST on this build — see the correction below the table.** Boot, then have the OPERATOR run vanilla **`/reload`** (in chat in-game, or at the console). Then **craft the staff** and **open the browser**. | **The staff still crafts and still appears in the browser.** If it does not, the recipe did not survive the reload | **THE INSTRUMENT CHANGED, AND THE ROW IS NOW A BEHAVIOURAL CHECK, NOT A LOG READ.** Vanilla `/reload` rebuilds the recipe manager but does **NOT** re-enable plugins, so `onEnable` never re-runs, so a **second `Custom recipes:` line can never appear** and `replaced` can never be this row's witness. Whether our recipe survives is therefore only observable by USING it. **Record whether the reload was CLEAN** (`grep -cE "ERROR|SEVERE"`) alongside the result: `/reload` is untidy, and a failure during a broken reload does not settle how the roster treats our recipes |
+| R2 | **Boot fresh, then have the OPERATOR run vanilla `/reload`** (chat in-game or console — `/reload confirm` does NOT exist on this build). Then **craft the staff**. | **It still crafts.** | **FAILED 2026-09-04, FIXED the same day, CRAFT NOT YET RE-RUN.** R6 witnesses the roster; this row witnesses the CRAFT, and they are not the same claim. Still counted UNRUN. The failure is preserved below the table because it is why the event handler exists. Before the fix, any `/reload` silently removed every recipe we register, until restart. Now `ServerResourcesReloadedEvent` re-registers them. Record whether the reload was CLEAN (`grep -cE "ERROR\|SEVERE"`) beside the result |
+| R6 | **THE FIX'S OWN WITNESS, AND R2'S SECOND ONE.** Boot, run `/reload`, read the **second** `Custom recipes:` line. | `1 registered, **0 replaced**, 0 refused, of 1 authored (re-registered after a COMMAND resource reload)` | **discriminating · this row does two jobs.** (1) The line existing at all proves the handler fired. (2) **`replaced` CROSS-CHECKS R2's finding independently:** `0 replaced` means `removeRecipe` found nothing, so the reload really HAD dropped the recipe; **`1 replaced` would mean the key was still there and R2's failure was something else — a contradiction to resolve before shipping, not a pass.** Note R2's original witness (a second `Custom recipes:` line) is producible after all — by re-registration, not by plugin re-enable. **PASSED 2026-09-04**, line below the table |
 | R3 | **MERGED INTO R2 — do not run separately.** Its action ("after R2, craft the staff") is now literally R2's action, because R2 became a behavioural check when its log witness turned out to be unproducible. | — | **This row was written when R2 read a NUMBER and R3 confirmed the behaviour behind it. With R2 reading the behaviour directly they are one row**, and keeping both would mean a set of 25 in which one row is a duplicate of another counted twice. Retired rather than deleted so the merge is visible: see the correction below the table |
 | **R4** | **THE INSTRUMENT'S OWN CONTROL.** Temporarily call `RecipeRegistrar.registerAll` **twice** in one `onEnable`, logging **BOTH** reports. Boot. Read both lines. | `0 replaced` on the first pass, **`1 replaced` on the second** | **discriminating · sole witness that the counter CAN move · run this BEFORE trusting R2.** If it prints `0 replaced` twice, the counter is dead and R2's number means nothing — a number that cannot move is not a measurement. **Both** lines must be logged: one line leaves a `0 replaced` ambiguous between a dead counter and a mutation that never applied. Revert afterwards and confirm by re-reading R1. **PASSED 2026-09-04 — the observed lines are below the table** |
-| R5 | **RE-INSTRUMENTED, same root cause as R2.** Boot, open the browser (**note the `Recipe catalogue built:` line**), run `/reload`, then **RESTART** and open the browser again. Compare the two lines. | N identical across the two BOOTS | **The original read "`/reload` twice, compare the line" and could not have worked:** `RecipeCatalogue` is built lazily on first open and cached on the `RpgListeners` instance, which is created in `onEnable` — and vanilla `/reload` does not re-enable the plugin. One instance, one build, one line however many times the browser is opened. Comparing across RESTARTS is what actually re-runs the walk. Still a free duplicate-key detector: a recipe registered twice under one key would move the count |
+| R5 | **A DUPLICATE-KEY DETECTOR, and the `/reload` in it is load-bearing — see the note.** Boot, open the browser and note `Recipe catalogue built: N entries`. Run `/reload`. **RESTART**, open the browser again, compare N. | N identical across the two boots | **RE-SPECIFIED TWICE, and the reload survived both times for a REASON that changed.** Originally "reload twice, compare the line" — impossible, because `RecipeCatalogue` is cached on the `RpgListeners` instance built in `onEnable` and vanilla `/reload` does not re-enable, so there is one build and one line however often the browser opens. Comparing across RESTARTS is what re-runs the walk. **And the reload stays in the procedure because since the R2 fix it is the ONLY way to make the plugin register its recipes TWICE in one server lifetime** — which is exactly the condition under which a duplicate could appear. Without it this row is just two identical boots and detects nothing new |
+
+> ## R2 — FAILED 2026-09-04, THEN FIXED. The failure is kept because it is why the handler exists.
+>
+> **Kept visible the way row 20 and Q12 were kept.** A row that now passes because the code changed
+> is not the same as a row that always passed, and deleting the failure would delete the reason.
+>
+> ### The failure, observed
+>
+> `/reload`, then the staff **would not craft**, and it was **absent from the browser** — the
+> catalogue had been built after the reload and never saw the recipe, which is the unremarkable of
+> the two possible states (the other, a stale catalogue refusing the click cleanly, would have been
+> the dead-entry path doing its job; it is not what happened).
+>
+> ### THE FINDING, and it is not about the Flint Staff
+>
+> > **Any `/reload` silently removed every recipe this plugin registers, until the server restarts.**
+> > Vanilla `/reload` rebuilds the recipe manager and does not re-enable plugins, so `onEnable` --
+> > the only thing that called `registerAll` -- never ran again.
+>
+> **Scoped at the REGISTRAR, not at the content.** It was a property of anything registered into the
+> recipe manager at enable time on this build, so the next mechanism that registers something would
+> have met it too. That is why the fix is a listener beside the registrar and not a note on
+> `flint_staff.yml`.
+>
+> ### The fix, and why it shipped in this slice rather than the next
+>
+> `io.papermc.paper.event.server.ServerResourcesReloadedEvent` -- **confirmed present on
+> paper-api 26.1.2.build.74-stable before it was chosen**, not remembered, because this row exists
+> precisely because `/reload confirm` was a remembered command that was not there. Paper's own
+> javadoc names the use: *"Intended for use to re-register custom recipes, advancements that may be
+> lost during a reload like this."*
+>
+> **The reason it shipped now is NOT "do not ship a known defect"** -- this slice deliberately ships
+> one and says so: scorch is `kind: fire`, so the staff's burn is vanilla-rated and does not credit
+> the caster. That gap is **STATED** -- in the content file, in `NEXT.md`, explainable to a player
+> who notices. This one was **SILENT**: nothing logged, nothing warned, the recipe was simply gone.
+>
+> And the decisive argument is about the alternative, which was a caveat on every remaining row --
+> *never run this after a `/reload`*:
+>
+> > **A CAVEAT THAT MUST BE REMEMBERED ON EVERY ROW IS ONE THAT GETS FORGOTTEN.**
+>
+> That is `continue`-inside-the-loop against `STATUS_SLOTS`, and the memory version was watched to
+> fail **this same week**: the stale-jar trap was disarmed by `set -e` happening to fire, not by
+> anyone remembering it was armed.
+>
+> ### Observed after the fix — and it confirms the finding independently
+>
+> ```
+> [13:50:24] [Rpg] Custom recipes: 1 registered, 0 replaced, 0 refused, of 1 authored (1 minting gear)
+> [13:50:57] Reloading!
+> [13:50:57] Loaded 1515 recipes
+> [13:50:57] [Rpg] Custom recipes: 1 registered, 0 replaced, 0 refused, of 1 authored (re-registered after a COMMAND resource reload)
+> ```
+>
+> **`0 replaced` is the cross-check, and it is the answer that confirms R2.** `removeRecipe` found
+> nothing to remove, so the recipe really had been dropped by the reload. `1 replaced` would have
+> meant the key survived and R2's failure was something else — a contradiction to resolve before
+> shipping, not a pass. Zero `ERROR`/`SEVERE` lines: the reload was clean, so the number is not an
+> artifact of a broken one.
+>
+> The registrar's readback (`getRecipe(key)` after `addRecipe`) is inside `registerAll`, so
+> `1 registered` already means the recipe is back **on the roster** — the craft in R2 is the
+> player-facing half of the same claim.
 
 > ## R2's PREMISE WAS WRONG, AND THE ATTEMPT IS WHAT FOUND IT — 2026-09-04
 >

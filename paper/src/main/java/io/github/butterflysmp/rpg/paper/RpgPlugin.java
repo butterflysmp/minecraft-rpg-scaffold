@@ -484,7 +484,8 @@ public final class RpgPlugin extends JavaPlugin {
         // The one and only registerEvents call. Keep it that way.
         getServer().getPluginManager().registerEvents(
                 new RpgListeners(cooldowns, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
-                        healthSystem, nameplates, statsBar, healthRegen), this);
+                        healthSystem, nameplates, statsBar, healthRegen,
+                        this, recipes), this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
         // paper-plugin.yml. We do NOT call PacketEvents.setAPI() or .load()
