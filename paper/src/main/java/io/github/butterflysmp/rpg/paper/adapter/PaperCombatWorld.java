@@ -13,6 +13,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
@@ -244,8 +245,36 @@ public final class PaperCombatWorld implements CombatWorld {
             material = Material.BLAZE_POWDER;
         }
         item.setItemStack(new ItemStack(material));
-        item.setPickupDelay(Integer.MAX_VALUE);  // never collectible, never merges
         item.setPersistent(false);               // unload backstop
+
+        // THREE COLLECTORS, THREE EXPLICIT ANSWERS, NONE OF THEM ACCIDENTAL.
+        //
+        // A marker is a REAL item stack that nobody paid for, so anything that picks one up mints
+        // it out of nothing. There are three things that do, and the delay below only ever stopped
+        // one of them -- by SIDE EFFECT, since it is set for non-mergability:
+        //
+        //   players           -> setCanPlayerPickup(false), stated rather than inferred
+        //   mobs              -> setCanMobPickup(false), which was never set at all
+        //   hoppers and
+        //   hopper minecarts  -> consult NO entity flag. HopperBlockEntity.getItemsAtAndAbove
+        //                        filters only on ENTITY_STILL_ALIVE, and addItem(Container,
+        //                        ItemEntity) copies the stack in and discards the entity -- there is
+        //                        no pickup-delay check anywhere on that path. They are refused at
+        //                        InventoryPickupItemEvent instead, which is what markerEntity tags
+        //                        this for.
+        //
+        // The 32767 clamp stays for the reason it was actually there: ItemEntity.isMergable()
+        // early-returns on INFINITE_PICKUP_DELAY, so a marker never merges into a neighbouring
+        // stack. It is NOT load-bearing for player pickup any more; that is stated above.
+        //
+        // In the SHARED path, exactly where setVelocity(zero) went and for the same reason: this
+        // closes both marker kinds at once, and a third kind inherits the protection instead of
+        // having to remember it. A MARKER HAS TO SAY IT IS COLLECTIBLE RATHER THAN FORGET TO SAY
+        // IT ISN'T.
+        item.setPickupDelay(Integer.MAX_VALUE);  // non-mergability (see isMergable)
+        item.setCanPlayerPickup(false);
+        item.setCanMobPickup(false);
+        item.getPersistentDataContainer().set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);
 
         // ZERO THE VELOCITY HERE, AS THE BASELINE, RATHER THAN AT EACH CALL SITE.
         //

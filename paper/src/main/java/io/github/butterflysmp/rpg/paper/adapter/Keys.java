@@ -152,7 +152,23 @@ public final class Keys {
      */
     public final NamespacedKey attackSpeedOverride;
 
+    /**
+     * Marks an Item entity as one of OUR markers -- a thrown ember, a projectile's rendered body --
+     * rather than a real drop a player owns. A BYTE tag; only its presence is read.
+     *
+     * <p>It exists because a marker is a REAL item stack that nobody paid for, and the three things
+     * that collect items have to be told so separately. Two are entity flags; the third is a hopper,
+     * which consults no flag at all and has to be refused at the event. This key is how that
+     * listener tells a marker from a genuine drop, so it cancels the one and never the other.
+     *
+     * <p>On the ENTITY, not on the ItemStack: the stack inside a marker is a plain vanilla flint or
+     * blaze powder and must stay that way, or a hopper that did collect one would deposit a tagged
+     * item into the economy.
+     */
+    public final NamespacedKey markerEntity;
+
     public Keys(Plugin plugin) {
+        this.markerEntity = new NamespacedKey(plugin, "marker_entity");
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
         this.shieldId = new NamespacedKey(plugin, "shield_id");
         this.armorId = new NamespacedKey(plugin, "armor_id");
