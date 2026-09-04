@@ -247,32 +247,44 @@ public final class PaperCombatWorld implements CombatWorld {
         item.setItemStack(new ItemStack(material));
         item.setPersistent(false);               // unload backstop
 
-        // THREE COLLECTORS, THREE EXPLICIT ANSWERS, NONE OF THEM ACCIDENTAL.
+        // THREE COLLECTORS -- BUT ONLY TWO FIELDS, AND THAT IS THE PLATFORM'S CHOICE, NOT OURS.
         //
         // A marker is a REAL item stack that nobody paid for, so anything that picks one up mints
-        // it out of nothing. There are three things that do, and the delay below only ever stopped
-        // one of them -- by SIDE EFFECT, since it is set for non-mergability:
+        // it out of nothing. Three things do:
         //
-        //   players           -> setCanPlayerPickup(false), stated rather than inferred
-        //   mobs              -> setCanMobPickup(false), which was never set at all
+        //   players           -> pickupDelay. ItemEntity.playerTouch returns early while it is > 0.
+        //   mobs              -> canMobPickup, a genuinely separate boolean, and one that was never
+        //                        set here at all until the W3 gate row.
         //   hoppers and
-        //   hopper minecarts  -> consult NO entity flag. HopperBlockEntity.getItemsAtAndAbove
-        //                        filters only on ENTITY_STILL_ALIVE, and addItem(Container,
-        //                        ItemEntity) copies the stack in and discards the entity -- there is
-        //                        no pickup-delay check anywhere on that path. They are refused at
-        //                        InventoryPickupItemEvent instead, which is what markerEntity tags
-        //                        this for.
+        //   hopper minecarts  -> consult NEITHER. Checked, not assumed:
+        //                        HopperBlockEntity.getItemsAtAndAbove filters only on
+        //                        ENTITY_STILL_ALIVE, and addItem(Container, ItemEntity) copies the
+        //                        stack in and discards the entity -- no pickup-delay check anywhere
+        //                        on that path. Refused at InventoryPickupItemEvent instead, which is
+        //                        what the markerEntity tag below is for.
         //
-        // The 32767 clamp stays for the reason it was actually there: ItemEntity.isMergable()
-        // early-returns on INFINITE_PICKUP_DELAY, so a marker never merges into a neighbouring
-        // stack. It is NOT load-bearing for player pickup any more; that is stated above.
+        // PLAYER REFUSAL AND NON-MERGABILITY ARE THE SAME WRITE AND CANNOT BE STATED SEPARATELY.
+        // An earlier version of this comment claimed they could, and called both
+        // setPickupDelay(MAX) "for non-mergability" and setCanPlayerPickup(false) "for players".
+        // Decompiled from the pinned jar, CraftItem.setCanPlayerPickup(b) is literally
+        //     getHandle().pickupDelay = b ? 0 : 32767;
+        // -- the same field, the same value. The two calls were one fact written twice.
+        //
+        // So there is ONE call, on the field we actually depend on. 32767 is
+        // ItemEntity.INFINITE_PICKUP_DELAY: the countdown is skipped at that value, so players are
+        // refused forever, AND isMergable() early-returns on it, so a marker never merges into a
+        // neighbouring stack. Both properties, one write, by the platform's construction.
+        //
+        // DO NOT "restore" setCanPlayerPickup(false) as a clearer spelling of the player half: it
+        // is an alias for this line, not an addition to it. And never call it with TRUE -- that
+        // writes pickupDelay = 0, which does not merely let players collect the marker, it silently
+        // makes it MERGABLE as well.
         //
         // In the SHARED path, exactly where setVelocity(zero) went and for the same reason: this
         // closes both marker kinds at once, and a third kind inherits the protection instead of
         // having to remember it. A MARKER HAS TO SAY IT IS COLLECTIBLE RATHER THAN FORGET TO SAY
         // IT ISN'T.
-        item.setPickupDelay(Integer.MAX_VALUE);  // non-mergability (see isMergable)
-        item.setCanPlayerPickup(false);
+        item.setPickupDelay(Integer.MAX_VALUE);  // clamped to 32767: no player pickup, no merging
         item.setCanMobPickup(false);
         item.getPersistentDataContainer().set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);
 

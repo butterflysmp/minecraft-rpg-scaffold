@@ -802,8 +802,10 @@ instrument change the C4/C5 debt bought.
   sparse without a body, and now read RIGHT with one. Had the count been raised to compensate in
   PR 1, this slice would have added the body into a stream tuned for its absence. **No tuning. Do
   not touch the counts.**
-- **W1 "Follows"** — water did not visibly divert it on the shot taken. Recorded as observed; the
-  buoyancy exposure enumerated on `spawnMarker` is not thereby disproved, only unhit.
+- **W1 "Follows"** — **ONE SHOT, low over water.** Recorded as *observed once*, NOT as a property.
+  The buoyancy exposure enumerated on `spawnMarker` is not disproved by it, only unhit: `ItemEntity`
+  applies `setUnderwaterMovement` when actually submerged, and **a deep pass is a different test
+  that nobody has run.** Do not cite this row as "water is fine".
 - **W2 "Vanishes"** — **fire destroys the body, as predicted from `fireImmune()`.** On a fire weapon.
   Harmless to resolution: the flight continues, `removeMarker` no-ops, and the bolt loses its body.
   Accepted on the record rather than discovered later.
@@ -813,22 +815,69 @@ instrument change the C4/C5 debt bought.
   than a tick. A bare "nothing left floating" could not have told ~5 s from vanilla's 5-minute
   `LIFETIME`.
 
-#### OPEN, AND IT SHIPS AS A DEFECT UNLESS DECIDED: W3 — HOPPERS DUPLICATE THE BOLT
+#### W3 FOUND A LIVE DUPLICATION EXPLOIT THAT HAD BEEN ON `master` SINCE `throw_embers` SHIPPED
 
-**"Flint inside."** The predicted leak is real and observed.
+**"Flint inside."** The predicted leak was real, observed, and **not introduced by the branch that
+found it.**
 
-The marker is a real `FLINT` stack that nobody paid for, and
-`HopperBlockEntity.getItemsAtAndAbove` filters only on `EntitySelector.ENTITY_STILL_ALIVE` while
-`addItem(Container, ItemEntity)` copies the stack in and discards the entity — **no pickup-delay
-check anywhere on that path**. `setPickupDelay(MAX)` stops players, not hoppers. So a hopper under
-the flight line **creates flint from nothing**, once per shot, on a 24-tick cooldown weapon.
+A marker is a REAL item stack that nobody paid for, so anything that collects one mints it out of
+nothing. `HopperBlockEntity.getItemsAtAndAbove` filters only on `EntitySelector.ENTITY_STILL_ALIVE`,
+and `addItem(Container, ItemEntity)` copies the stack in and discards the entity — **no pickup-delay
+check anywhere on that path.**
 
-Bounded but not negligible: it needs a hopper roughly under a ~2 s flight at about eye height, and it
-is repeatable at will by anyone who works out the geometry.
+**`throwMarker` has gone through the same shared configuration since `throw_embers` shipped**, where
+it set only `setPickupDelay` and `setPersistent`. `ability_stone`'s embers are real blaze powder and
+are an EASIER target than a bolt, not a harder one: **they land and REST for the whole fuse**, while
+a bolt is only ever passing through. The gate found a live exploit; it did not create one.
 
-**The fix is cheap and is a DECISION, not a patch to smuggle into a movement change.**
-`InventoryPickupItemEvent` is cancellable, and these markers can be tagged through `Keys` so the
-listener cancels only for them. It is deliberately NOT taken here.
+**Closed, and witnessed on both marker kinds:**
+
+| row | observation, as seen |
+|---|---|
+| **W3′** | *"hopper under the flint bolt's path, opened after the shot: empty"* |
+| **W3″** | *"hopper beside a landed `ability_stone` ember: empty"* |
+
+**W3″ carries the weight.** It is the instance that was broken on `master` before this branch
+existed, and the ONLY evidence that the fix reached the SHARED path rather than just the new caller.
+W3′ passing alone would have left the older exploit live while reading as fixed.
+
+**No test in this repo could have found this**, and that is worth knowing rather than regretting:
+nothing in `core` can put a hopper under a flight path. It took a gate row.
+
+#### THREE COLLECTORS, TWO FIELDS — AND THE TWO THAT SHARE A FIELD CANNOT BE STATED SEPARATELY
+
+The fix, and a correction that was caught one read before the squash.
+
+|collector | answered by |
+|---|---|
+| players | `pickupDelay` — `ItemEntity.playerTouch` returns early while it is `> 0` |
+| mobs | `canMobPickup`, a genuinely separate boolean — **never set here at all** until W3 |
+| hoppers / hopper minecarts | neither; refused at `InventoryPickupItemEvent` against a PDC tag |
+
+**The first draft of that fix claimed three explicit answers and wrote two calls for the first one.**
+Decompiled from the pinned jar:
+
+```java
+public void setCanPlayerPickup(boolean b) { getHandle().pickupDelay = b ? 0 : 32767; }
+```
+
+`setCanPlayerPickup(false)` **IS** `setPickupDelay(32767)` — the same field, the same value. Player
+refusal and non-mergability are one write by the platform's construction (32767 is
+`INFINITE_PICKUP_DELAY`: the countdown is skipped, *and* `isMergable()` early-returns on it). They
+are not separable, and a comment claiming they were had already been written.
+
+**The trap left behind:** `setCanPlayerPickup(true)` writes `pickupDelay = 0`, which does not merely
+let players collect a marker — it silently makes it **mergable**. Anyone reading that call as
+player-only would take out non-mergability without noticing.
+
+The tag lives on the **ENTITY, never on the stack**: the stack must stay ordinary vanilla flint or
+blaze powder, or a marker that somehow *was* collected would deposit a tagged item into the economy.
+And the listener is gated on the tag, never the material, so a genuine drop a player earned is
+collected exactly as vanilla intends.
+
+Fixed in the SHARED `configureMarker`, exactly where `setVelocity(zero)` went and for the same
+reason: one change closes both marker kinds, and a third kind inherits the protection instead of
+having to remember it. **A marker has to SAY it is collectible rather than forget to say it isn't.**
 
 #### ABSENT IS NOT ZERO — SECOND INSTANCE IN TWO SLICES, ON THE SAME WEAPON
 
@@ -955,6 +1004,25 @@ into a movement change.
 
 None of these affect RESOLUTION: `castRay` owns what the bolt hits and never consults the body, so
 the worst case throughout is a body somewhere other than the flames.
+
+#### OPEN AND UNREMEDIED: GRAZING COLLISIONS, WITH THE REMEDY WITHDRAWN RATHER THAN UNCHOSEN
+
+Vanilla's mover owns the body's displacement; `castRay` owns resolution. They agree in free flight
+and on walls. They can part company on a **graze** — a fence post or slab corner that `castRay`
+passes (`ignorePassableBlocks = true`, `FluidCollisionMode.NEVER`) but the mover collides with. Since
+the body is driven by VELOCITY and never repositioned, that offset **persists** for the rest of the
+flight.
+
+Two candidate remedies, both closed off:
+
+- **`setNoPhysics(true)`** exists on the Bukkit API and does not survive: `ItemEntity.tick()` assigns
+  `noPhysics` itself on both branches every tick, so an externally-set value lasts less than a tick.
+- **A low-frequency corrective teleport** was proposed and then **WITHDRAWN**, because teleports were
+  subsequently shown to be client-invisible. It would have corrected the body's position on the
+  server and changed nothing a player sees — the same inert-call shape as the F3 reposition.
+
+So this ships **unremedied and on the record**. If it bites, the honest first move is to record what
+it looks like, not to reach for either of the above.
 
 
 ### Flint Staff visuals, PR 1 (the bolt becomes visible and audible) — what it created or exposed
