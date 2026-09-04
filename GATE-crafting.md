@@ -747,21 +747,27 @@ R2 became a behavioural check. All three are correctly absent from any count.
 
 > Counted from the LIVE rows in this section, not by extending slice 6's list. That is what Q34 cost.
 
-> ### GATE RESULT — IN PROGRESS, **3 of 24**
+> ### GATE RESULT — GREEN, **24 of 24**, operator-confirmed 2026-09-04
 >
-> **PASSED:** R1, R4, R6 (2026-09-04) — every observed line is recorded below the registration
-> table, not merely claimed.
-> **R2: FAILED, FIXED, AND THE FIX IS ONLY HALF-WITNESSED.** R6 proves the recipe is back on the
-> ROSTER (the registrar readback plus `0 replaced`). **R2 itself asks whether it still CRAFTS, and
-> that has not been done by anyone** — it needs a player at a table. Counted as UNRUN, deliberately:
-> a roster entry and a successful craft are not the same claim, and this slice has already been
-> bitten once by treating a log line as if it were the behaviour behind it.
-> **UNRUN:** R2 (the craft), 7A–7G, and all thirteen re-runs.
+> Against the set named before the run: **R1, R2, R4, R6, 7A, 7B, 7C, 7D, 7E, 7F, 7G** and the
+> thirteen re-runs **Q16, Q15, Q25, T10, Q7, Q10, Q27, Q29, 12, 12c, S1, S2, N5b**. **7H** and **R5**
+> struck IMPOSSIBLE and **R3** merged into R2 — all three correctly absent from the count.
 >
-> **This is not a passing gate and must not be cited as one.** The suite is green either way for
-> everything this slice does, so 1257 passing tests and a green CI check say the slice broke nothing
-> already covered — they say nothing about whether it works. Twenty-one rows are what would say
-> that.
+> **THE PER-ROW FIGURES WERE NOT CAPTURED, and that is recorded rather than papered over.** The
+> counting rows — 7F's staves-made, S1's ingot count, S2's exit, 12's buckets, 12c's bottles, R2's
+> error count, and confirmation that 7E's Crafter was pulsed — passed by observation at the time and
+> the numbers were not written down. The operator elected not to re-run to recover them.
+>
+> **So this verdict is not re-checkable at row granularity, and nobody should later cite it as if it
+> were.** It is the same shape as Q2's counts: a row that passed, without the number it passed on.
+> That makes three instances on this page now, which is exactly the drift the OWED entries exist to
+> make visible — noted once, here, and not argued further.
+>
+> **7E and 7F both pass BY ABSENCE** — a jammed Crafter, an empty floor — which is also what a row
+> nobody triggered looks like. Their rows were strengthened on 2026-09-04 to demand the positive
+> half (that the Crafter was pulsed; how many staves were made before stopping). **That requirement
+> applies from the NEXT run**, since it postdates this one.
+
 
 ## Registration — and the instrument that measures it
 
@@ -798,7 +804,7 @@ wrong at a glance instead of reading self-consistently and wrong.
 | # | action | expected | notes |
 |---|---|---|---|
 | R1 | **Fresh content.** `./scripts/dev-server.sh --refresh-content`. Read the line. | `1 registered, 0 replaced, 0 refused, of 1 authored (1 minting gear)` | **`--refresh-content` IS REQUIRED.** `content/recipes/` is a brand-new directory; `saveResource(path, false)` never overwrites, so a populated `run/` data folder predates it and ships nothing. `0 replaced` says the remove call is not spuriously matching on a virgin roster · **PASSED 2026-09-03**, exactly this line. **Provenance, because the first observation did not have it:** originally read on a jar built *before* the slice was committed, from a tree **asserted** rather than verified to match it. Re-run against a jar built by `./mvnw clean package` from the **clean committed tree** of the docs commit that added this sentence — so anyone can reproduce it by checking out that commit and rebuilding. An observation whose build you cannot name is a number, not a verification |
-| R2 | **Boot fresh, then have the OPERATOR run vanilla `/reload`** (chat in-game or console — `/reload confirm` does NOT exist on this build). Then **craft the staff**. | **It still crafts.** | **FAILED 2026-09-04, FIXED the same day, CRAFT NOT YET RE-RUN.** R6 witnesses the roster; this row witnesses the CRAFT, and they are not the same claim. Still counted UNRUN. The failure is preserved below the table because it is why the event handler exists. Before the fix, any `/reload` silently removed every recipe we register, until restart. Now `ServerResourcesReloadedEvent` re-registers them. Record whether the reload was CLEAN (`grep -cE "ERROR\|SEVERE"`) beside the result |
+| R2 | **Boot fresh, then have the OPERATOR run vanilla `/reload`** (chat in-game or console — `/reload confirm` does NOT exist on this build). Then **craft the staff**. | **It still crafts.** | **FAILED 2026-09-04, FIXED the same day, then PASSED on the gate run.** R6 witnesses the roster; this row witnesses the CRAFT, and they are not the same claim -- both were taken. The failure is preserved below the table because it is why the event handler exists. Before the fix, any `/reload` silently removed every recipe we register, until restart. Now `ServerResourcesReloadedEvent` re-registers them. Record whether the reload was CLEAN (`grep -cE "ERROR\|SEVERE"`) beside the result |
 | R6 | **THE FIX'S OWN WITNESS, AND R2'S SECOND ONE.** Boot, run `/reload`, read the **second** `Custom recipes:` line. | `1 registered, **0 replaced**, 0 refused, of 1 authored (re-registered after a COMMAND resource reload)` | **discriminating · this row does two jobs.** (1) The line existing at all proves the handler fired. (2) **`replaced` CROSS-CHECKS R2's finding independently:** `0 replaced` means `removeRecipe` found nothing, so the reload really HAD dropped the recipe; **`1 replaced` would mean the key was still there and R2's failure was something else — a contradiction to resolve before shipping, not a pass.** Note R2's original witness (a second `Custom recipes:` line) is producible after all — by re-registration, not by plugin re-enable. **PASSED 2026-09-04**, line below the table |
 | R3 | **MERGED INTO R2 — do not run separately.** Its action ("after R2, craft the staff") is now literally R2's action, because R2 became a behavioural check when its log witness turned out to be unproducible. | — | **This row was written when R2 read a NUMBER and R3 confirmed the behaviour behind it. With R2 reading the behaviour directly they are one row**, and keeping both would mean a set of 25 in which one row is a duplicate of another counted twice. Retired rather than deleted so the merge is visible: see the correction below the table |
 | **R4** | **THE INSTRUMENT'S OWN CONTROL.** Temporarily call `RecipeRegistrar.registerAll` **twice** in one `onEnable`, logging **BOTH** reports. Boot. Read both lines. | `0 replaced` on the first pass, **`1 replaced` on the second** | **discriminating · sole witness that the counter CAN move · run this BEFORE trusting R2.** If it prints `0 replaced` twice, the counter is dead and R2's number means nothing — a number that cannot move is not a measurement. **Both** lines must be logged: one line leaves a `0 replaced` ambiguous between a dead counter and a mutation that never applied. Revert afterwards and confirm by re-reading R1. **PASSED 2026-09-04 — the observed lines are below the table** |
