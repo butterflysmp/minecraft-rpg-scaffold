@@ -246,6 +246,30 @@ public final class PaperCombatWorld implements CombatWorld {
         item.setItemStack(new ItemStack(material));
         item.setPickupDelay(Integer.MAX_VALUE);  // never collectible, never merges
         item.setPersistent(false);               // unload backstop
+
+        // ZERO THE VELOCITY HERE, AS THE BASELINE, RATHER THAN AT EACH CALL SITE.
+        //
+        // A FRESH ItemEntity IS NOT STATIONARY. Its constructor ends with
+        //     setDeltaMovement(random*0.2 - 0.1, 0.2, random*0.2 - 0.1)
+        // -- read out of the pinned server jar. That constant 0.2 on Y is the little POP a dropped
+        // item makes, and it is applied to every item this method will ever configure.
+        //
+        // Combined with a driven marker's setGravity(false), which removes the only force that
+        // would ever bring it back down, that pop becomes a bolt that rises gently forever and
+        // never goes anywhere near its flight path. Gravity on with a stray velocity is merely a
+        // wrong arc that still lands; velocity zeroed with gravity off is correct. ONLY THE TWO
+        // TOGETHER FLOAT, which is why neither alone looks like a bug worth writing down.
+        //
+        // It lives in the SHARED configuration and not in spawnMarker because that is what makes
+        // the mistake unrepeatable. spawnMarker was specified as a diff from throwMarker -- "no
+        // lift, no velocity, gravity off, pre-aged" -- and three of those four are a line REMOVED
+        // while "no velocity" needed a line ADDED. The two read identically in a spec and do not
+        // behave identically in a platform. A future third marker kind inherits stillness here and
+        // has to opt OUT of it, which is the direction that fails safe.
+        //
+        // throwMarker overrides this immediately afterwards with its throw velocity: the point is
+        // that a marker must now SAY it moves, not merely forget to say it does not.
+        item.setVelocity(new Vector(0, 0, 0));
     }
 
     /**
