@@ -27,6 +27,13 @@ public final class FakeWorld implements CombatWorld {
     public final List<Dummy> entities = new ArrayList<>();
     public final List<String> presented = new ArrayList<>();
 
+    /** WHERE each of those was presented, parallel to {@link #presented}, one entry per call.
+     *  It exists because a COUNT cannot see a visual drawn at the wrong PLACE: a projectile trail
+     *  that draws on the launch frame puts its first puff inside the shooter's eye and still
+     *  presents exactly once per tick. The count is identical; only the position tells them
+     *  apart. */
+    public final List<Vec3> presentedAt = new ArrayList<>();
+
     /** The start point of every castRay -- a projectile's launch origin is its first one. */
     public final List<Vec3> castRayFrom = new ArrayList<>();
 
@@ -225,7 +232,10 @@ public final class FakeWorld implements CombatWorld {
         queue.add(new Scheduled(now + delayTicks, seq++, task));
     }
 
-    @Override public void present(Vec3 at, String visualId) { presented.add(visualId); }
+    @Override public void present(Vec3 at, String visualId) {
+        presented.add(visualId);
+        presentedAt.add(at);
+    }
 
     @Override public UUID throwMarker(Vec3 origin, Vec3 velocity, String itemId) {
         UUID id = UUID.randomUUID();

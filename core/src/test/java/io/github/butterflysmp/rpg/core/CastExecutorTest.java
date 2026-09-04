@@ -23,6 +23,94 @@ class CastExecutorTest {
                 0, ResourceCost.FREE, cast, List.of(onHit));
     }
 
+    /** The same, plus a cast visual -- the on_cast hook, whose whole point is WHEN it fires. */
+    private static AbilityDefinition withCastVisual(CastSpec cast, String castVisual,
+                                                    EffectSpec... onHit) {
+        return new AbilityDefinition("test", "Test", "fire", "none",
+                0, ResourceCost.FREE, cast, List.of(onHit), List.of(),
+                List.of(new EffectSpec.Visual(castVisual)));
+    }
+
+    /** An aim from an eye, so "at the origin" and "at the caster's feet" are distinguishable. */
+    private static final Aim EYE_FORWARD = new Aim(new Vec3(0, 1.62, 0), new Vec3(1, 0, 0));
+
+    /**
+     * THE POINT OF THE HOOK: a projectile makes its noise when you PRESS, not when it lands.
+     *
+     * Asserted as an ORDERING against the impact visual, not as mere presence. Presence alone
+     * passes on an on_cast wired into on_hit, which for a projectile fires ~5 ticks late at the
+     * far end of the shot -- exactly the bug the hook exists to prevent.
+     *
+     * Mutation, run rather than reasoned: fire onCast from detonate() -- i.e. treat it as another
+     * on_hit -- and this reddens with "expected: <[flint_cast]> but was: <[]>".
+     *
+     * WHAT IT DOES NOT CATCH, stated because the first draft of this comment claimed it did.
+     * Moving the applyAll below the switch leaves this test GREEN: for a projectile the switch
+     * only SCHEDULES the flight, so on_cast still fires on the launch frame either way, and the
+     * list is [flint_cast] before and after. It is
+     * {@link #onCastFiresAtTheAimOriginWhileASelfDetonationLandsAtTheFeet} that catches that one,
+     * because a Self cast detonates synchronously -- verified: "expected: <[flint_cast, boom]>
+     * but was: <[boom, flint_cast]>". Two tests, two different mutations; neither covers both.
+     */
+    @Test
+    void onCastFiresOnTheLaunchFrameNotAtTheProjectilesImpact() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        cast(world, caster, withCastVisual(new CastSpec.Projectile(1.0, 0, 5),
+                "flint_cast", new EffectSpec.Visual("flint_impact")), EYE_FORWARD);
+
+        assertEquals(List.of("flint_cast"), world.presented,
+                "you hear the staff fire on the frame you pressed, with the bolt still in the air");
+
+        world.advanceTicks(50);
+
+        assertEquals(List.of("flint_cast", "flint_impact"), world.presented,
+                "and the impact visual lands after it, not before");
+    }
+
+    /**
+     * The hook is cast-shape independent, and it fires at the AIM ORIGIN -- the eye.
+     *
+     * That is deliberately not where a Self cast detonates: that arm uses caster.position(), the
+     * FEET, because a self-detonation at eye height would float. The two are ~1.5 blocks apart.
+     * Irrelevant for a sound, visible for a particle, so it is asserted rather than assumed.
+     */
+    @Test
+    void onCastFiresAtTheAimOriginWhileASelfDetonationLandsAtTheFeet() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+
+        cast(world, caster, withCastVisual(new CastSpec.Self(), "flint_cast",
+                new EffectSpec.Visual("boom")), EYE_FORWARD);
+
+        assertEquals(List.of("flint_cast", "boom"), world.presented);
+        assertEquals(1.62, world.presentedAt.get(0).y(), 1e-9, "on_cast fires at the eye");
+        assertEquals(0.0, world.presentedAt.get(1).y(), 1e-9, "the Self detonation is at the feet");
+    }
+
+    /**
+     * The vanilla-driven basic melee hit fires NO cast visual. It never went through
+     * AbilityService's check-spend-commit gate -- there is no cooldown to trip and no mana to
+     * spend for a free swing -- and on_cast means "the cast was committed". Firing it here would
+     * play the staff's noise on every sword swing vanilla resolves.
+     */
+    @Test
+    void landBasicMeleeDoesNotFireOnCast() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        caster.attackDamage = 8.0;
+
+        executor(world, () -> {}).landBasicMelee(
+                withCastVisual(new CastSpec.Melee(3, 120), "flint_cast", basicAttack()),
+                caster.snapshot(), given(victim), AttackCharge.FULL_CHARGE);
+
+        assertTrue(victim.health < 100, "the hit itself still lands");
+        assertEquals(List.of(), world.presented, "but nothing announces a cast that never happened");
+    }
+
     /** Run an ability with no cooldown and no cost, so only resolution is under test. */
     private static void cast(FakeWorld world, FakeWorld.Dummy caster, AbilityDefinition def) {
         cast(world, caster, def, FORWARD);

@@ -84,7 +84,13 @@ public final class VisualLoader {
             case "particle" -> new VisualSpec.Particles(
                     particle(str(m, type, "particle")),
                     (int) numOr(m, type, "count", 10),
-                    numOr(m, type, "spread", 0.0));
+                    numOr(m, type, "spread", 0.0),
+                    // 1.0, NOT 0.0. This is Bukkit's `extra`, and the 6-arg spawnParticle this
+                    // adapter used to call already passed 1.0 (its default chain ends at
+                    // dconst_1). Every visual on disk was authored against that value without
+                    // anyone choosing it, so 1.0 is what "absent" has always meant here.
+                    // See VisualSpec.Particles.
+                    numOr(m, type, "speed", 1.0));
             case "sound" -> {
                 String key = str(m, type, "key");
                 yield new VisualSpec.Sound(key, soundKey(key),

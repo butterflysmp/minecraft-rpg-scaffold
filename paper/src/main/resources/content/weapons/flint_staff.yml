@@ -57,15 +57,33 @@ triggers:
     cost:
       resource: mana
       amount: 5
-    # THE OLD BOLT WAS AN ITEM ENTITY, NOT A PROJECTILE, and it will not look the same.
+    # WHAT YOU HEAR THE MOMENT YOU PRESS. Not on_hit: this weapon's on_hit fires at the IMPACT
+    # POINT after up to 40 ticks of flight, so a cast noise put there would arrive at the far end
+    # of the shot. on_cast fires at the aim origin on the frame the cast is committed, and only on
+    # a Success -- a press refused by the 24-tick cooldown or by 5 mana is silent.
+    on_cast:
+      - type: visual
+        visual_id: flint_cast
+    # THE OLD BOLT WAS AN ITEM ENTITY, AND HALF OF THAT IS NOW BACK.
     #
     # StaffListener.launchFlintStaffBolt dropped a REAL Material.FLINT item with pickup disabled,
-    # then tracked it per tick: so it TUMBLED as it flew and left a flame-and-smoke trail, and it
-    # resolved on the first LivingEntity within 0.7 blocks or when Item.isOnGround flipped.
-    # `cast: type: projectile` is a different thing and will read as a cleaner, straighter shot.
+    # then tracked it per tick: it TUMBLED as it flew, left a flame-and-smoke trail, and resolved
+    # on the first LivingEntity within 0.7 blocks or when Item.isOnGround flipped.
     #
-    # Written down so the difference is a KNOWN PORT GAP rather than something reported as a bug.
-    # Restoring the thrown-item look is a separate and bigger decision than this slice.
+    # WHAT IS RESTORED HERE: the per-tick trail, drawn at the bolt's live computed position -- the
+    # same position whether or not a flint chunk is rendered there, which is why this is a proper
+    # subset of the old look rather than an approximation of it.
+    #
+    # WHAT IS STILL MISSING: the ITEM BODY. There is no flint chunk tumbling inside the stream
+    # yet. That crosses core/paper -- core computes the positions, and a rendered entity is a
+    # paper concern -- and is its own slice. Expect the trail to read SPARSE until it lands; see
+    # the header of visuals/flint_trail.yml before touching the counts.
+    #
+    # WHAT IS DELIBERATELY NOT COMING BACK: the resolution rule. The old bolt resolved on contact
+    # within 0.7 blocks; this resolves on ProjectileFlight's per-step castRay, which traces the
+    # segment actually travelled and so cannot tunnel. Do NOT re-author this onto throw_embers to
+    # get the item body -- that effect detonates on a FUSE with no landing detection, so the bolt
+    # would fly THROUGH the mob you aimed at and explode a second later.
     #
     # Speed and lifetime approximate the old throw (velocity 1.4, 40-tick timeout).
     cast:
@@ -73,9 +91,13 @@ triggers:
       speed: 1.4
       gravity: 0.05
       max_lifetime_ticks: 40
+      trail: flint_trail
     on_hit:
+      # Was ember_burst, which is tuned for the Ability Stone's three near-simultaneous ember
+      # detonations (count 30 -> 10, spread 1.0 -> 0.3, per its own comment) -- a fix made for
+      # another weapon that this one silently inherited. flint_impact is cfde822's own burst.
       - type: visual
-        visual_id: ember_burst
+        visual_id: flint_impact
       - type: damage
         amount: 20
         element: fire

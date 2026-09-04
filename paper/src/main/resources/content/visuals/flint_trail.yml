@@ -1,0 +1,49 @@
+# The Flint Staff's bolt in flight: flame and smoke drawn once per tick at the bolt's live
+# position. Id is the filename: flint_trail.
+#
+# NOT ember_trail. That file is authored for a thrown ember (count 1, spread 0, a clean unbroken
+# LINE) and its only consumers are throw_embers. Borrowing it would make this staff the second
+# weapon depending on numbers tuned for the first -- which is precisely the trap ember_burst
+# already sprang on this weapon: ember_burst's count went 30 -> 10 for the Ability Stone's
+# three-ember throw, and the Flint Staff, which fires ONE bolt on a 24-tick cooldown, silently
+# inherited a fix made for a weapon it has nothing to do with. A SHARED VISUAL IS A COUPLING AND
+# THE COUPLING IS INVISIBLE AT BOTH ENDS.
+#
+# ------------------------------------------------------------------------------------------
+# THESE NUMBERS ARE cfde822's, AND THEY ARE DELIBERATELY UNTUNED. DO NOT RAISE THE COUNT.
+#
+# cfde822 drew this stream around a real FLINT ITEM ENTITY tumbling through the middle of it.
+# That body does not exist yet -- it is PR 2 -- so this stream will probably read SPARSE.
+#
+# That is the expected reading, not a defect to compensate for. If the count is raised now, PR 2
+# adds the body back into a stream tuned for its absence, and the finished bolt is too busy --
+# from a tuning nobody made wrongly, with nothing warning at either end.
+#
+# The prediction is only safe because the numbers are verifiably cfde822's INCLUDING the speeds
+# below, so sparseness has one candidate cause rather than two. A pre-registered explanation for
+# an unexpected result is a blindfold if the result has a second cause.
+# ------------------------------------------------------------------------------------------
+#
+# `speed` is Bukkit's `extra`. It is authored EXPLICITLY here, and 0.0 is cfde822's value -- the
+# particles sit where they are put and the bolt's own motion draws the line. The schema default
+# is 1.0, not 0.0, because the 6-arg spawnParticle this repo used to call passed 1.0 and every
+# older visual was authored against it; so an omitted `speed` here would mean a fast outward
+# spray, which is NOT what the old staff did. See VisualSpec.Particles.
+#
+# The trail's FIRST puff is drawn one tick AFTER launch, not on the launch frame -- see
+# ProjectileFlight.step. On the launch frame the bolt's position IS the caster's eye, so drawing
+# there would put flame inside the shooter's own camera. cfde822's tracker had the same delay
+# (runTaskTimer with a 1-tick initial delay).
+
+steps:
+  - type: particle
+    particle: FLAME
+    count: 2
+    spread: 0.05
+    speed: 0.0
+
+  - type: particle
+    particle: SMOKE
+    count: 1
+    spread: 0.03
+    speed: 0.0

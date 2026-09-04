@@ -43,9 +43,13 @@ final class AbilitySchema {
             case "self"       -> new CastSpec.Self();
             case "melee"      -> new CastSpec.Melee(s.getDouble("reach", 3.0), s.getDouble("arc_degrees", 90));
             case "ray"        -> new CastSpec.Ray(s.getDouble("range", 30));
+            // `trail` is OPTIONAL and absent means null -- a bare projectile that leaves nothing,
+            // which is what hunters_bow and ember_staff get and what they have always had. The
+            // flight loop has always presented a trail every tick; until this line there was no
+            // way for a file to name one.
             case "projectile" -> new CastSpec.Projectile(
                     s.getDouble("speed", 1.0), s.getDouble("gravity", 0.03),
-                    s.getInt("max_lifetime_ticks", 100));
+                    s.getInt("max_lifetime_ticks", 100), s.getString("trail"));
             case "dash"       -> new CastSpec.Dash(
                     s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4),
                     parseDashDirection(s.getString("direction", "movement_else_forward")));
@@ -59,6 +63,36 @@ final class AbilitySchema {
             case "reverse_facing"        -> CastSpec.DashDirection.REVERSE_FACING;
             default -> throw new IllegalArgumentException("Unknown dash direction: " + raw);
         };
+    }
+
+    /**
+     * The {@code on_cast} list: VISUALS ONLY, and the narrowness is the point.
+     *
+     * <p>The case this hook was built for is a sound at the moment you press the button. The
+     * obvious wider bound -- {@code EffectSpec.Untargeted} -- would also admit {@code burst}
+     * (mob damage at the caster's own eye on every cast), {@code area} (a lingering field there)
+     * and {@code throw_embers}, none of which has been designed, and the last of which would be
+     * outright degenerate: the applier's four-argument entry point passes a ZERO direction, so a
+     * fan would be computed around a zero vector. Enumerating one case and then picking a bound
+     * that silently carries three more is how a schema grows behaviour nobody chose.
+     *
+     * <p>{@code AbilityDefinition.onCast} is typed {@code List<EffectSpec.Visual>}, so the
+     * compiler states the rule for every call site in core. This is the YAML half of it, because
+     * YAML is untyped and a file can write anything.
+     */
+    static List<EffectSpec.Visual> parseCastVisuals(List<Map<?, ?>> raw) {
+        List<EffectSpec.Visual> out = new ArrayList<>();
+        for (Map<?, ?> m : raw) {
+            EffectSpec spec = parseEffect(m);
+            if (!(spec instanceof EffectSpec.Visual v)) {
+                throw new IllegalArgumentException(
+                        "Effect '" + m.get("type") + "' cannot appear in on_cast; only 'visual' can. "
+                                + "on_cast fires at the caster the instant a cast is committed, and "
+                                + "nothing else has been designed to happen there");
+            }
+            out.add(v);
+        }
+        return out;
     }
 
     static List<EffectSpec> parseEffects(List<Map<?, ?>> raw) {

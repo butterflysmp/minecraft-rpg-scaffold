@@ -1,0 +1,28 @@
+# The Flint Staff firing -- what you hear the instant you press right-click, with the bolt still
+# in the air. Id is the filename: flint_cast.
+#
+# Sound only. The bolt itself is drawn by flint_trail, one puff per tick along its flight.
+#
+# THIS IS THE FIRST CONSUMER OF `on_cast`, and it is why that hook exists. The repo's older idiom
+# for a cast noise is an untargeted visual in `on_hit` -- rekindle.yml and ability_stone.yml both
+# do it, and it works because a Dash's untargeted effects fire once at the origin whether or not
+# it catches anyone. A PROJECTILE's on_hit fires at the IMPACT POINT, after flight, so under that
+# idiom the staff would announce itself a fifth of a second late, at the far end of the shot.
+#
+# Both keys verified present in net/minecraft/sounds/SoundEvents.class on the pinned 26.1.2
+# server jar before shipping. soundKey() resolves at LOAD, so a bad key is a named boot failure
+# rather than a silent no-op -- but a remembered API name is exactly what gate row R2 cost, so it
+# was checked rather than recalled.
+#
+# Numbers are cfde822 StaffListener's, unchanged.
+
+steps:
+  - type: sound
+    key: item.flintandsteel.use   # the strike -- flint catching
+    volume: 1.0
+    pitch: 1.4
+
+  - type: sound
+    key: entity.blaze.shoot       # the launch, layered under it
+    volume: 0.6
+    pitch: 1.6

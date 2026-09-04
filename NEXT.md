@@ -581,6 +581,242 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Flint Staff visuals, PR 1 (the bolt becomes visible and audible) — what it created or exposed
+
+The Fire Bolt was functionally correct and visually unusable: you could not see where it went, what
+it hit, or whether it hit. This slice gives it a per-tick trail and a cast sound. The ITEM BODY — a
+real tumbling flint — is PR 2, deliberately.
+
+#### THE GATE — 15 rows, observed in-game at tip `c734362` / tree `15ddaeb`
+
+Reported green by the operator. Thirteen rows are binary and their expectations ARE the row text,
+reproduced here so this record stands without the gate page:
+
+| row | expectation | result |
+|---|---|---|
+| A1 | boot `--refresh-content`: 10 visuals (7 + 3), no `Unknown visual_id`, no unresolved sound key | OBSERVED |
+| B1 | sky shot: both cast sounds immediate, ~2s before the mid-air pop | OBSERVED |
+| B2 | spam through the 24-tick cooldown: one sound pair per cooldown | OBSERVED |
+| B3 | mana below 5: silence | OBSERVED |
+| C1 | F5 third person: stream starts ahead of the model, not at its head | OBSERVED |
+| C2 | first person, dark: no flame flash at the crosshair on the click frame | OBSERVED |
+| C3 | sky arc: flame and smoke once per tick along the whole path | OBSERVED |
+| C4 | `flint_trail` flame behaviour | **MEASUREMENT — NOT CAPTURED** (see below) |
+| C5 | `ember_trail` flame behaviour | **MEASUREMENT — NOT CAPTURED** (see below) |
+| D1 | mob hit: a fwoosh (`item.firecharge.use`), not a bang | OBSERVED |
+| D2 | sky expiry: impact plays in mid-air at ~40 ticks | OBSERVED |
+| D3 | mob visibly burns for ~4s after a hit | OBSERVED |
+| E1 | `ability_stone` Rekindle unchanged | OBSERVED |
+| E2 | `ember_staff` / `solar_lance` unchanged | OBSERVED |
+| E3 | `hunters_bow` leaves no trail | OBSERVED |
+
+**The thirteen are deliberately NOT expanded into reconstructed one-line results.** The verdict is a
+day old and the detail is not. A reconstructed detail is a fabricated detail even when the verdict it
+decorates is true, and it is WORSE than a missing one, because it reads as contemporaneous.
+
+#### NAMED DEBT: C4 AND C5 WERE RUN AND REPORTED GOOD, BUT THEIR FIGURES WERE NEVER CAPTURED, SO THE `speed` FIELD HAS NO PRODUCTION WITNESS
+
+The pair was the only end-to-end evidence that `speed` reaches the renderer. `flint_trail` authors
+0.0 and `ember_trail` runs at the unchosen 1.0 default, so **flint hanging BESIDE ember drifting** is
+the field doing its job.
+
+**C4 alone is not evidence.** A still flame is also exactly what a field that never arrived would
+produce. "Good" is true of both outcomes and distinguishes neither — which is the whole reason the
+row was a matched PAIR and not a single observation.
+
+What IS established without it: `VisualLoaderTest` asserts an absent `speed` is 1.0 and an explicit
+0.0 survives; `ContentValidatorTest` asserts the shipped files carry cfde822's four values through
+the real loaders. **The field is proven as far as `VisualSpec.Particles`.** The unwitnessed span is
+the last hop — `PaperCombatWorld.present`'s 7-arg `spawnParticle` to what a player actually sees.
+E1/E2 passing is weak evidence for that hop (six visuals at 1.0 look unchanged), and *weak* is the
+right word: it tests the DEFAULT surviving, not a non-default arriving.
+
+**Recoverable, and cheaply.** Boot, fire the staff, fire Rekindle, watch one flame of each, write two
+words. Under a minute. **Closes at the PR 2 boot**, where the same pair has to be looked at anyway.
+
+#### A GLOBAL AFFIRMATION IS NOT A MEASUREMENT, AND AN INSTRUMENT THAT COUNTS TICKS WILL COLLECT TICKS
+
+Why the debt above exists at all, and it is about the gate page rather than about anyone's care.
+
+The page marked C4 and C5 as measurements and then gave each **a checkbox AND a text field — and
+only the checkbox moved the progress bar.** So completing the page meant ticking, and the figure the
+row existed to collect contributed nothing to the count. Asking twice afterwards does not repair an
+instrument that made the wrong answer the easy one.
+
+> **NEXT GATE PAGE: A ROW THAT NEEDS A FIGURE GETS NO CHECKBOX.** Its text field is what marks it
+> complete, and the progress count treats a blank field as UNRUN. The page must not be able to reach
+> 100% with a measurement missing.
+
+This is the same family as the defects `CLAUDE.md` already records — a check that did not run looking
+exactly like a check that passed — but one layer out: here the check DID run, and the instrument
+discarded its result while recording that it had happened.
+
+**IT HAS NOW HAPPENED THREE TIMES, WHICH IS WHY THE FIX BELONGS IN THE PAGE AND NOT IN ANYONE'S
+ATTENTION.** Found by grepping this file and `GATE-crafting.md` for the phrasing such a debt gets
+written in:
+
+- `GATE-crafting.md:756` and `NEXT.md:3275` — Crafting Slice 7, per-row figures not captured. **Still
+  open.**
+- `NEXT.md:3897` — the defense/shields row 5, where the exact HP figure was not captured and the row
+  fell back to "operator-observed rather than measured". The predicted ladder (`75 / 70 / 50 / 40`
+  over four hits) was written down; the observed one was not, so the row cannot distinguish the four
+  cases it was designed to separate.
+- C4/C5, here.
+
+Three independent slices, the same instrument, the same loss. Nobody was careless three times; the
+page collects what it counts.
+
+#### A PRE-REGISTERED EXPLANATION FOR AN UNEXPECTED RESULT IS A BLINDFOLD IF THE RESULT HAS A SECOND CAUSE
+
+This is the durable one out of this slice, and it is a rule about *planning*, not about particles.
+
+The plan said: ship cfde822's trail numbers UNCHANGED, and if the stream reads sparse at the boot,
+record that as EXPECTED (the item body is missing) rather than fixing it. That instruction is
+correct — raising the count now would mean PR 2 adds the body back into a stream tuned for its
+absence, and the finished bolt is too busy, from a tuning nobody made wrongly.
+
+It is also safe **only if the numbers really are cfde822's**. Three of the four new particle steps
+were not. They omitted `speed`, and so inherited the schema default of 1.0 where the old repo had
+0.0 — a fast outward spray in place of particles that sit where they are put. Had that shipped, the
+instruction would have converted **a wrong appearance into an expected one and closed the
+question**: the stream would have read wrong, the pre-registered explanation would have absorbed it,
+and nobody would have looked again.
+
+> **Deciding in advance what a wrong reading will mean costs you the reading.** Pair the prediction
+> with the thing that would DISTINGUISH the two causes, or do not pre-register it.
+
+Here the distinguishing thing is a test:
+`ContentValidatorTest.theShippedFlintStaffCarriesCfde822sNumbers` loads the actual shipped yml
+through the actual loaders and asserts every `speed`. With it green, "sparse" has exactly one
+candidate cause. Verified by mutation — delete the `speed: 0.0` from `flint_trail.yml` and it
+reddens with `expected: <0.0> but was: <1.0>`, which is precisely the defect described above.
+
+Note where the error sat: the same document that FOUND the 1.0 default, and correctly protected six
+shipped files from a 0.0 default, then authored four new steps that inherited 1.0 a page later. The
+evidence was on screen in the message that named the remedy.
+
+#### THE PARTICLE `extra` DEFAULT WAS 1.0 ALL ALONG, AND NOBODY CHOSE IT
+
+`PaperCombatWorld.present` called the 6-argument `spawnParticle(Particle, Location, int, double,
+double, double)`. Decompiled from the pinned Paper API (`javap -p -c org.bukkit.World`), its default
+chain ends at `dconst_1`. So every visual in `content/` — `ember_burst`, `ember_trail`,
+`solar_detonation`, `solar_lance`, `arc_surge`, `void_slash` — has been running at extra 1.0, tuned
+by eye against a value nobody selected.
+
+**The finding's blast radius runs in BOTH directions, and only one is obvious.** It says the new
+`speed` field must default to 1.0 (0.0, the reflexive default for a new numeric field, would
+silently restyle all six). It ALSO says every newly authored file must state its own `extra`,
+because "absent" now means a value chosen for backward compatibility rather than for that file. The
+first direction was applied immediately; the second was missed. Guarded now by
+`VisualLoaderTest.anAbsentSpeedIsOnePreservingWhatEveryOlderVisualWasAuthoredAgainst`.
+
+**This observation was MADE at the PR 1 boot and its figure was LOST — it is gate row C5, and the
+debt above is where it now lives.** `ember_trail.yml` is `count 1, spread 0.0` and its comment claims
+it "places a single flame at the ember and nowhere else", while running at extra 1.0. Whether it
+actually sits still is the question C5 answered and did not write down. **Do not change the file; look
+at the PR 2 boot, and record what is seen.** If it drifts, the comment is wrong and that is a second,
+independent witness for authoring `extra` explicitly everywhere.
+
+#### THE LAUNCH-FRAME TRAIL PUFF LANDED IN THE CASTER'S EYE, AND A COUNT ASSERTION CANNOT SEE IT
+
+`ProjectileFlight.step` presents the trail at `position` BEFORE stepping, and on the launch frame
+`position` IS `aim.origin()` — which for a weapon is the player's eye. So the first flame of every
+shot spawned inside the shooter's own camera. cfde822 never did this: its tracker was
+`runTaskTimer(plugin, 1L, 1L)`, first draw one tick AFTER launch at an already-moved position. Fixed
+by skipping the present when `elapsed == 0`, which reproduces that delay exactly.
+
+The part worth keeping: **the obvious test is structurally blind to it.** "The trail presents once
+per flight tick" is TRUE whether or not the first draw is in your face — the count is identical
+either way. Only the POSITION distinguishes them, which is why `FakeWorld` gained `presentedAt`
+alongside `presented`. A guard that cannot fail for the reason it claims is the defect this file
+already records twice.
+
+Deliberately NOT generalised to `EffectApplier.trackEmber`, which draws inline on its own launch
+frame and should keep doing so: `throw_embers` spawns a real item AT the origin, so its frame-0
+particle sits on a visible body rather than in a face. Different situation; `ability_stone` was out
+of scope.
+
+#### A SHARED VISUAL IS A COUPLING, AND THE COUPLING IS INVISIBLE AT BOTH ENDS
+
+`ember_burst.yml`'s own comment records that its count went 30 → 10 and its spread 1.0 → 0.3, "kept
+tight so three near-simultaneous detonations don't read as scattered clutter" — a tuning made for
+the Ability Stone's three-ember throw. The Flint Staff, which fires ONE bolt on a 24-tick cooldown
+and has the exact opposite need, was firing that same file and silently inherited the fix.
+
+Neither weapon's file was touched. Nothing warned at either end. That is rule 3 in tuning: a change
+made for one consumer degraded another that shares the asset. The staff now has `flint_impact.yml`,
+`flint_trail.yml` and `flint_cast.yml` of its own, and each says in its header what it is for.
+
+There is no mechanism proposed to detect the next one. Worth knowing that a `visual_id` reference is
+a dependency with no arity: nothing in the repo can say "this file has two consumers with opposing
+needs".
+
+#### `on_cast` IS A NEW CONTENT-MODEL CONCEPT, AND ITS BOUND IS DELIBERATELY NARROWER THAN ITS TYPE
+
+The repo's older idiom for a cast noise is an untargeted `visual` in `on_hit` — `rekindle.yml` and
+`ability_stone.yml` both do it, and it works because a Dash's untargeted effects fire once at the
+origin whether or not it catches anyone. A **projectile** breaks it: its `on_hit` fires at the impact
+point, after flight, so the staff would have announced itself a fifth of a second late at the far
+end of the shot.
+
+`AbilityDefinition.onCast` is typed `List<EffectSpec.Visual>`, **not** `List<EffectSpec.Untargeted>`,
+and the narrowness is the point. `Untargeted` also permits `Area`, `Burst` and `ThrowEmbers`. None
+was designed for this position; `Burst` would deal mob damage at the caster's own eye on every cast,
+and `ThrowEmbers` is outright degenerate there — the applier's four-argument entry point passes a
+ZERO direction, so the fan would be computed around a zero vector. Enumerating the one case you have
+and then picking a bound that carries three you have not decided about is how a schema grows
+behaviour nobody chose.
+
+#### DEFERRED WITH A TEST: HIT AND MISS ARE INDISTINGUISHABLE IN THE VISUAL FILE
+
+On lifetime expiry `ProjectileFlight` calls `onImpact.at(null, next)`, so a MISS detonates and plays
+the same visual and the same sound a HIT plays. Targeted effects are skipped; the visual is not.
+
+cfde822 had the same property — same sound both ways, and its bursts differed only 14 FLAME against
+12, which is imperceptible. So fixing it is **new scope, not restoration**, and it is not bundled
+under "match the old repo".
+
+**Why it is deferred rather than built.** The reason you cannot tell a hit from a miss is that the
+bolt is invisible, and that is what this slice fixes. Once you can see it, a bolt that stops in a
+mob's chest and one that sails past and pops in empty air are already distinguishable by POSITION. A
+hit also carries feedback a miss structurally cannot: hurt flash, knockback, health drop, and scorch
+burning the mob for 80 ticks. The two events are not indistinguishable in the field — they are
+indistinguishable in the VISUAL FILE, which is a smaller claim than it sounds. And `on_cast` is
+already one new content-model concept in this slice; `on_miss` would be a second, in the same slice,
+for a weapon with one trigger.
+
+**THE TEST, AND IT RUNS AFTER PR 2, NOT PR 1.** Fire at a mob at max range, then deliberately past
+it. If it is not clear within about a second which one happened, it comes back as its own scoped item
+and gets built against a bolt that has actually been watched — rather than tuned now against a
+baseline nobody has seen. It is evaluated after the item body lands because the body changes how the
+terminal frame reads, and that judgment is not being spent twice against a partial state.
+
+**GATE ROW D3 CONFIRMED THE PREMISE THIS DEFERRAL RESTS ON, and that is recorded here rather than in
+the row list, because the deferral is what a future reader will act on.** D3 — "mob visibly burns for
+~4s after a hit" — was OBSERVED. So the paragraph above is not a hopeful argument any more: a hit
+really does carry feedback a miss structurally cannot, and hit and miss ARE distinguishable **in the
+field** even though they remain identical **in the visual file**. Had D3 failed, the deferral would
+have lost its leg and `on_miss` would be owed now rather than after PR 2.
+
+#### WHAT PR 1's GATE MAY AND MAY NOT CLAIM — read this before citing "15/15 green"
+
+**This gate did not claim the staff matches cfde822, and still does not.** It claimed exactly two
+things: **a per-tick flame trail is drawn at the bolt's computed position, and the two cast sounds
+play on trigger.** Faithfulness is a PR 2 row, because half of what would be compared — the flint
+item body — does not exist yet. **A future reader seeing "15/15 green" will otherwise read it as
+"the port was verified."**
+
+PR 1 is a proper SUBSET of the target, not an approximation of it: cfde822 drew FLAME x2 + SMOKE x1
+at the item's live position, and that position is the same number whether or not a flint chunk is
+rendered there. Nothing here gets thrown away or rewritten by PR 2.
+
+Two things are open at the PR 2 boot, not one:
+
+1. **C4/C5** — the `speed` field's production witness, above.
+2. **Whether the trail needs the count it deliberately did not get.** Only answerable now, because
+   the stream has been seen WITHOUT the body and will be seen again WITH it. Do not pre-judge it in
+   either direction; that is the whole reason the numbers shipped untuned.
+
 ### Crafting, Slice 7 (custom recipes, and the Flint Staff) — what it created or exposed
 
 The first slice in which crafting a thing the server did not previously know how to craft produces

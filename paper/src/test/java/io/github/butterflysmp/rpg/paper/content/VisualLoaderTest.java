@@ -109,6 +109,56 @@ class VisualLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
     }
 
+    /**
+     * AN ABSENT `speed` IS 1.0, NOT 0.0, AND THIS TEST IS THE ONLY THING HOLDING THAT.
+     *
+     * `speed` is Bukkit's `extra`. Before the field existed, PaperCombatWorld.present called the
+     * 6-argument spawnParticle, whose default chain in the pinned Paper API ends at `dconst_1` --
+     * so every visual in content/ was authored, by eye, against extra = 1.0, without anyone
+     * choosing it. 0.0 is the reflexive default for a new numeric field and it would silently
+     * restyle ember_burst, ember_trail, solar_detonation, solar_lance, arc_surge and void_slash
+     * at once, with no test failing and nothing in a diff to point at.
+     *
+     * Mutation: change the 1.0 in VisualLoader to 0.0 -> this reddens. Nothing else does.
+     */
+    @Test
+    void anAbsentSpeedIsOnePreservingWhatEveryOlderVisualWasAuthoredAgainst() throws IOException {
+        write("bare.yml", """
+                steps:
+                  - type: particle
+                    particle: FLAME
+                """);
+
+        var particles = (VisualSpec.Particles) load().find("bare").orElseThrow().steps().get(0);
+        assertEquals(1.0, particles.speed(), 1e-9,
+                "absent speed must stay the extra=1.0 the 6-arg spawnParticle always passed");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** And a file that states one gets it -- flint_impact's 0.05 flame drift. */
+    @Test
+    void speedIsParsedWhenAuthored() throws IOException {
+        write("drift.yml", """
+                steps:
+                  - type: particle
+                    particle: FLAME
+                    count: 14
+                    spread: 0.2
+                    speed: 0.05
+                  - type: particle
+                    particle: SMOKE
+                    count: 4
+                    spread: 0.1
+                    speed: 0.0
+                """);
+
+        var steps = load().find("drift").orElseThrow().steps();
+        assertEquals(0.05, ((VisualSpec.Particles) steps.get(0)).speed(), 1e-9);
+        assertEquals(0.0, ((VisualSpec.Particles) steps.get(1)).speed(), 1e-9,
+                "an explicit 0.0 must survive, not fall back to the 1.0 default");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
     @Test
     void unknownParticleIsSkippedNotCrashed() throws IOException {
         write("aaa_typo.yml", """

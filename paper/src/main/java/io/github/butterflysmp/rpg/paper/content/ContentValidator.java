@@ -58,6 +58,11 @@ public final class ContentValidator {
             for (EffectSpec effect : ability.onHit()) {
                 checkEffect(effect, "ability '" + ability.id() + "'", problems);
             }
+            // on_cast dangles a visual_id exactly the way on_hit does, and is exactly as invisible
+            // when it does: the cast still fires, it just makes no noise.
+            for (EffectSpec effect : ability.onCast()) {
+                checkEffect(effect, "ability '" + ability.id() + "' on_cast", problems);
+            }
         }
         for (StatusDefinition status : statuses.all()) {
             if (status instanceof StatusDefinition.Potion potion
@@ -143,6 +148,9 @@ public final class ContentValidator {
                 String label = "weapon '" + weapon.id() + "' trigger '" + binding.input() + "'";
                 for (EffectSpec effect : binding.ability().onHit()) {
                     checkEffect(effect, label, problems);
+                }
+                for (EffectSpec effect : binding.ability().onCast()) {
+                    checkEffect(effect, label + " on_cast", problems);
                 }
             }
         }
