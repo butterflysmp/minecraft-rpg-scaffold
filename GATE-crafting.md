@@ -733,15 +733,14 @@ one, every time. The two real defects are named instead.
 The first slice in which crafting something the server did not previously know how to craft produces
 RPG gear. Everything before this rode recipes Minecraft already had.
 
-**THE SET, NAMED BEFORE THE RUN.** Live rows in this section: **R1, R2, R4, R5, R6, 7A, 7B, 7C,
-7D, 7E, 7F, 7G** — twelve. Plus the **thirteen** re-runs at the bottom of this section (Q16, Q15, Q25,
-T10, Q7, Q10, Q27, Q29, 12, 12c, S1, S2, N5b). **Twenty-five in total.** Row **7H** is struck as
-IMPOSSIBLE, and **R3 was MERGED INTO R2** on 2026-09-04 when R2 became a behavioural check; both
-are correctly absent from any count.
+**THE SET, NAMED BEFORE THE RUN.** Live rows in this section: **R1, R2, R4, R6, 7A, 7B, 7C, 7D,
+7E, 7F, 7G** — eleven. Plus the **thirteen** re-runs at the bottom of this section (Q16, Q15, Q25,
+T10, Q7, Q10, Q27, Q29, 12, 12c, S1, S2, N5b). **Twenty-four in total.** Rows **7H** and **R5** are struck as IMPOSSIBLE, and **R3 was MERGED INTO R2** on 2026-09-04 when
+R2 became a behavioural check. All three are correctly absent from any count.
 
 > Counted from the LIVE rows in this section, not by extending slice 6's list. That is what Q34 cost.
 
-> ### GATE RESULT — IN PROGRESS, **3 of 25**
+> ### GATE RESULT — IN PROGRESS, **3 of 24**
 >
 > **PASSED:** R1, R4, R6 (2026-09-04) — every observed line is recorded below the registration
 > table, not merely claimed.
@@ -750,11 +749,11 @@ are correctly absent from any count.
 > that has not been done by anyone** — it needs a player at a table. Counted as UNRUN, deliberately:
 > a roster entry and a successful craft are not the same claim, and this slice has already been
 > bitten once by treating a log line as if it were the behaviour behind it.
-> **UNRUN:** R2 (the craft), R5, 7A–7G, and all thirteen re-runs.
+> **UNRUN:** R2 (the craft), 7A–7G, and all thirteen re-runs.
 >
 > **This is not a passing gate and must not be cited as one.** The suite is green either way for
 > everything this slice does, so 1257 passing tests and a green CI check say the slice broke nothing
-> already covered — they say nothing about whether it works. Twenty-two rows are what would say
+> already covered — they say nothing about whether it works. Twenty-one rows are what would say
 > that.
 
 ## Registration — and the instrument that measures it
@@ -796,7 +795,7 @@ wrong at a glance instead of reading self-consistently and wrong.
 | R6 | **THE FIX'S OWN WITNESS, AND R2'S SECOND ONE.** Boot, run `/reload`, read the **second** `Custom recipes:` line. | `1 registered, **0 replaced**, 0 refused, of 1 authored (re-registered after a COMMAND resource reload)` | **discriminating · this row does two jobs.** (1) The line existing at all proves the handler fired. (2) **`replaced` CROSS-CHECKS R2's finding independently:** `0 replaced` means `removeRecipe` found nothing, so the reload really HAD dropped the recipe; **`1 replaced` would mean the key was still there and R2's failure was something else — a contradiction to resolve before shipping, not a pass.** Note R2's original witness (a second `Custom recipes:` line) is producible after all — by re-registration, not by plugin re-enable. **PASSED 2026-09-04**, line below the table |
 | R3 | **MERGED INTO R2 — do not run separately.** Its action ("after R2, craft the staff") is now literally R2's action, because R2 became a behavioural check when its log witness turned out to be unproducible. | — | **This row was written when R2 read a NUMBER and R3 confirmed the behaviour behind it. With R2 reading the behaviour directly they are one row**, and keeping both would mean a set of 25 in which one row is a duplicate of another counted twice. Retired rather than deleted so the merge is visible: see the correction below the table |
 | **R4** | **THE INSTRUMENT'S OWN CONTROL.** Temporarily call `RecipeRegistrar.registerAll` **twice** in one `onEnable`, logging **BOTH** reports. Boot. Read both lines. | `0 replaced` on the first pass, **`1 replaced` on the second** | **discriminating · sole witness that the counter CAN move · run this BEFORE trusting R2.** If it prints `0 replaced` twice, the counter is dead and R2's number means nothing — a number that cannot move is not a measurement. **Both** lines must be logged: one line leaves a `0 replaced` ambiguous between a dead counter and a mutation that never applied. Revert afterwards and confirm by re-reading R1. **PASSED 2026-09-04 — the observed lines are below the table** |
-| R5 | **A DUPLICATE-KEY DETECTOR, and the `/reload` in it is load-bearing — see the note.** Boot, open the browser and note `Recipe catalogue built: N entries`. Run `/reload`. **RESTART**, open the browser again, compare N. | N identical across the two boots | **RE-SPECIFIED TWICE, and the reload survived both times for a REASON that changed.** Originally "reload twice, compare the line" — impossible, because `RecipeCatalogue` is cached on the `RpgListeners` instance built in `onEnable` and vanilla `/reload` does not re-enable, so there is one build and one line however often the browser opens. Comparing across RESTARTS is what re-runs the walk. **And the reload stays in the procedure because since the R2 fix it is the ONLY way to make the plugin register its recipes TWICE in one server lifetime** — which is exactly the condition under which a duplicate could appear. Without it this row is just two identical boots and detects nothing new |
+| ~~R5~~ | ~~Compare `Recipe catalogue built: N entries` across boots to detect a duplicate key.~~ | — | **IMPOSSIBLE — never a test.** Struck 2026-09-04 after its second re-specification failed too, and struck on EVIDENCE rather than on the third rewrite. The condition cannot occur: `RecipeCatalogue.build()` walks `Bukkit.recipeIterator()` → `RecipeManager.getRecipes()` → `RecipeMap.values()` → **`byKey.values()`**, and `byKey` is a `java.util.Map<ResourceKey, RecipeHolder>` — one value per key **by definition of Map**. Two entries under one key can never reach the count, whatever the registrar does. (`RecipeMap` does hold a duplicate-capable `Multimap byType`, and `removeRecipe` was verified to clean **both** — but the iterator never reads `byType`, so that is a second independent reason, not the load-bearing one.) Nothing is lost: a recipe failing to register is already caught earlier and better by R1/R6's `registered` count. **Carrying this as runnable would credit coverage that does not exist** |
 
 > ## R2 — FAILED 2026-09-04, THEN FIXED. The failure is kept because it is why the handler exists.
 >

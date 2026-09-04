@@ -762,6 +762,53 @@ the one above, because the danger is not that someone believes CI covers this �
 check at the top of a PR is exactly what makes a gate feel optional. **This is the moment a gate
 gets skipped**, and the table below is the list of what would be skipped with it.
 
+#### THE PATTERN: ASK WHERE THE OBSERVATION SITS RELATIVE TO THE STATE IT DESCRIBES
+
+**Three rows in one gate section had the same defect, and none of them could be caught by reading
+the row.** All three were internally coherent, all three cited a real mechanism, and all three were
+found only by attempting them.
+
+| row | its witness | why it could not work |
+|---|---|---|
+| **R2**, first form | a second `Custom recipes:` line after `/reload` | vanilla `/reload` never re-enables the plugin, so the line is **unproducible** |
+| **R5**, first form | a second `Recipe catalogue built:` line after `/reload` | the catalogue is cached on the `RpgListeners` instance made in `onEnable`, so likewise **unproducible** |
+| **R5**, second form | catalogue counts before a `/reload` and after a RESTART | both readings are **single-registration** states; the double-registered state exists for half a minute between them and nothing looks at it |
+
+The first two are "the state never occurs". **The third is subtler and is the one worth naming**: the
+state DID occur, the row's mechanism was real, and the measurement was simply taken on either side
+of it. Reading that row gives no warning at all — it names a genuine cause and then samples around
+it.
+
+> **FOR EVERY ROW, ASK WHERE THE OBSERVATION SITS RELATIVE TO THE STATE IT DESCRIBES.** Not only
+> "is this state reachable" but **"does the measurement happen while it holds"**.
+
+That question would have caught all three at writing time, and it is cheap: trace the procedure
+step by step and mark, at each step, what the world looks like and what is being read.
+
+##### And when a row fails that question, SIZE IT BEFORE REWRITING IT
+
+R5's third form would have been a one-line fix — reload *first*, then open the browser for the first
+time, so the catalogue builds after two registrations. Correct, and it would have been the wrong
+move, because the row's condition **cannot occur at all**:
+
+`RecipeCatalogue.build()` walks `Bukkit.recipeIterator()` → `RecipeManager.getRecipes()` →
+`RecipeMap.values()` → **`byKey.values()`**, and `byKey` is a `java.util.Map<ResourceKey,
+RecipeHolder>`. One value per key, by definition of `Map`. A duplicate cannot reach the count
+whatever the registrar does.
+
+*(`RecipeMap` does hold a duplicate-capable `Multimap byType`, and `removeRecipe` was verified to
+clean both structures — but the iterator never reads `byType`. Two independent reasons, and the
+weaker one is the interesting one: had the iterator walked `byType`, the row would have been worth
+keeping with the corrected ordering.)*
+
+So R5 was struck as **IMPOSSIBLE — never a test**, on the same footing as 7H. **A row rewritten
+until it runs, when its condition cannot occur, credits coverage that does not exist** — which is
+worse than no row, because the count says 24 and one of them can never fail.
+
+**The rule that follows: when a row cannot observe its state, ask whether the state is reachable
+BEFORE fixing the procedure.** The reflex is to repair the measurement; the question is whether
+there is anything to measure.
+
 #### A /reload SILENTLY STRIPPED EVERY RECIPE WE REGISTER — found by gate row R2, fixed in the same slice
 
 **Observed 2026-09-04.** Vanilla `/reload` rebuilds the server's recipe manager and does **not**
@@ -943,6 +990,7 @@ So on a boot-witnessed row, "which build was this observed on" is not metadata a
 | minting from a custom recipe | `commitCraft` | a plain stick for a flint | 7C |
 | the Crafter refusing our recipe | `onCrafterCraft` | a redstone flint-to-stick machine | 7E |
 | recipes surviving a `/reload` | `onResourcesReloaded` | every custom recipe silently gone until restart | R2 (the craft), R6 (the roster) |
+| a duplicate recipe key | — | nothing: `byKey` is a Map, so it cannot occur. R5 struck IMPOSSIBLE | none needed |
 | `fits` against the delivered item | `InventoryCraft.craft` | up to 64 weapons on the floor | 7F |
 | WEAPON tier occupying the column | `SuggestionTiers` | the first ordinal was unreachable until now | Q15, Q16 |
 
