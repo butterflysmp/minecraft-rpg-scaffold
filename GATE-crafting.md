@@ -608,8 +608,15 @@ struck through and visible, as row 20 → S12 was handled — **the gesture chan
 stopped being correct**, which is a different thing from a row that was wrong.
 
 **Q11 IS REWORDED, not merely re-enabled.** *"the last page is not short or duplicated"* is
-ambiguous: **a genuinely short last page is CORRECT** — 1214 recipes at 45 a page ends with a short
+ambiguous: **a genuinely short last page is CORRECT** — 1095 recipes at 45 a page ends with a short
 one, every time. The two real defects are named instead.
+
+> **The roster figure was corrected from 1214 to 1095 on 2026-09-04, and the correction makes this
+> example WORK.** 1214 was an estimate that predated the catalogue filtering to keyed
+> shaped/shapeless recipes, and it gives 26 full pages with a remainder of **44** — a "short" last
+> page of 44 out of 45, which barely illustrates the point the row is making. The measured 1095
+> gives 24 full pages and a last page of **15**, which does. An unverified number was quietly
+> weakening the row that cited it.
 
 | # | action | expected | notes |
 |---|---|---|---|

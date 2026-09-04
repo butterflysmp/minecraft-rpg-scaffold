@@ -28,7 +28,7 @@ import java.util.Set;
  * <h2>THE CONTRACT IS "WHAT YOU CAN CRAFT HERE, RIGHT NOW"</h2>
  *
  * <b>This reverses the premise the slice began under, deliberately.</b> The browser was built to
- * page through the whole 1214-recipe roster, on the argument that the three-cell suggestion column
+ * page through the whole 1095-recipe roster, on the argument that the three-cell suggestion column
  * squeezes out armor and vanilla (gate row Q16) and something had to make them reachable. The brief
  * changed: this is <i>an easy way to craft quickly</i>, not a recipe encyclopedia, and a
  * thousand-entry list is clutter against that purpose.

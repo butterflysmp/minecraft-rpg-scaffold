@@ -1207,33 +1207,61 @@ So on a boot-witnessed row, "which build was this observed on" is not metadata a
 
 ---
 
-### OWED: FIVE MEASUREMENTS, AND THIS MUST NOT BECOME A LIST
+### Q24's MEASUREMENTS — CLOSED 2026-09-04. Q2's ARE STILL OWED.
 
-**Owed as of 2026-09-03, slice 6.** Gate row Q24 **passed** and its figure **was not written down**:
+**Recorded from the slice-7 gate run**, which opened the browser three times across three server
+lifetimes. The instrument was deleted in the same commit, as the rule below requires.
 
-| measurement | state |
+| measurement | value |
 |---|---|
-| Q24 catalogue build time (µs) | **OWED** |
-| entries | **OWED** |
-| unkeyed skipped | **OWED** |
-| not fully listable — **Q29's evidence**, whatever its value | **OWED** |
-| mutation 8: stageable, or unrunnable with a reason | **OWED** |
+| entries | **1095** |
+| catalogue build time | **7137 µs / 7994 µs / 11159 µs** — all three runs |
+| unkeyed skipped | **0** |
+| not fully listable — **Q29's evidence** | **0** |
+| mutation 8: stageable, or unrunnable with a reason | **STILL OWED** |
 
-**`Q2`'s craftable / probed / distinct-stack counts from SLICE 5 ARE STILL OWED ON THIS SAME PAGE.**
-That is the point of putting these here rather than in a report: **two entries is a list, and a list
-of owed measurements is a thing people stop reading.** One of them has now survived a whole slice.
+**THE SPREAD IS PART OF THE MEASUREMENT, NOT NOISE AROUND IT.** 7.1 ms to 11.2 ms is a **57 %
+spread across three runs**. A single reading would have been written down as "7 ms" and would have
+been misleading — and the entry this one replaced was itself a number recorded without what it
+means. *Do not create the second instance while closing the first.*
 
-**How to close both:** boot, open the browser once, read
-`Recipe catalogue built: N entries in Nµs (N unkeyed skipped, N not fully listable)`, write the five
-figures into Q24 and Q29, and **delete the instrument in that same commit**. One commit.
+**WHAT IT MEANS AGAINST Q2, which is why this note exists at all.** The two figures measure
+different things and were always at risk of being confused:
 
-> **THE INSTRUMENT SHIPPED, DELIBERATELY, and the reasoning is in `RecipeCatalogue` and the gate.**
+| | build | of a 50 ms tick |
+|---|---|---|
+| Q2 — the suggestion probe | **298 µs** | 0.6 % (168x headroom) |
+| Q24 — the catalogue walk | **7137–11159 µs** | **14–22 %** |
+
+The catalogue is **24x to 37x** the probe, which is exactly what *"no early bail"* predicted: the
+probe stops once it has three cells, and the walk cannot stop at all. It is paid **once per server
+lifetime**, inside a player's click.
+
+**"No perceptible stall" HOLDS — with far less headroom than Q2's.** A fifth of a tick is not a
+stutter, but it is not 0.6 % either, and a row that recorded only "passed" would have hidden the
+difference. If the roster grows or the walk gains work, this is the figure that moves first.
+
+**`Q2`'s craftable / probed / distinct-stack counts from SLICE 5 REMAIN OWED**, and are **not**
+recoverable from the gate run: no instrument for them exists in the code and no such line appears in
+any server log. Closing them needs a new instrument, which is a change, not a reading. **Better an
+open debt than one that quietly looks closed** — that is the whole reason this page exists rather
+than a report.
+
+> **THE INSTRUMENT SHIPPED, DELIBERATELY, and the reasoning was in `RecipeCatalogue` and the gate.**
 > *No number, no deletion* — the rule *"delete it in the commit that records the number"* protects
-> the **number**, not the deletion, and deleting it first makes an only-once measurement permanently
-> unrecoverable rather than merely unrecorded. It logs **at most once per server lifetime** (verified:
-> `entries == null` guards both entry points, `entries` is assigned once before the empty-catalogue
-> early return, one instance exists), so shipping it costs one console line.
+> the **number**, not the deletion, and deleting it first would have made an only-once measurement
+> permanently unrecoverable rather than merely unrecorded. That rule paid off exactly as written:
+> the figures above were read out of logs from a gate run nobody was thinking about measurement
+> during, a slice after they were owed.
 
+> **AND IT CORRECTED A NUMBER THE REPO HAD ASSERTED FIVE TIMES.** The roster was written down as
+> **1214** in `GATE-crafting.md` (Q11's rewording), twice in this file, and — found only by
+> enumerating rather than fixing the cited sites — twice more in Java: `RecipeBrowserMenu` and
+> `RecipeCatalogue`. It was an estimate that predated the catalogue filtering to keyed
+> shaped/shapeless recipes, and it was never re-read once a real number existed. **The observation
+> outranks the prose**, and for once the correction arrived *with* the observation rather than a
+> slice later. It also makes Q11's own example work: 1214 gives a last page of 44 out of 45, which
+> barely illustrates "a genuinely short last page"; the measured 1095 gives 15.
 ---
 
 ### OWED: NOTHING IN THE REPO CAN DETECT THE NEXT ICON COLLISION
@@ -1431,7 +1459,7 @@ the day it is made.**
 ### THE BROWSER'S FOUNDING PREMISE WAS REVERSED, DELIBERATELY, AFTER IT WAS BUILT
 
 **2026-09-03, operator decision.** The recipe browser now shows **only what the player can craft
-right now**. It was built to page through the whole 1214-recipe roster.
+right now**. It was built to page through the whole 1095-recipe roster.
 
 **The argument it was built on was mine, and it was correct for the brief it was made under:**
 
@@ -1440,7 +1468,7 @@ right now**. It was built to page through the whole 1214-recipe roster.
 That holds for a browser whose purpose is to make the Q16 squeeze reachable — the three-cell column
 fills with gear, so armor and every vanilla recipe are unreachable from the crafting screen, and
 something has to answer for them. **It is not the brief any more.** The purpose is *"an easy way to
-craft quickly"*, and against that purpose 1214 entries is clutter. The reversal is recorded here, and
+craft quickly"*, and against that purpose 1095 entries is clutter. The reversal is recorded here, and
 the old reasoning is replaced at each of its call sites rather than left sitting in the files looking
 live — `RecipeCatalogue`'s "why this is not RecipeProbe" section said the opposite in so many words.
 
