@@ -93,8 +93,49 @@ public interface CombatWorld {
     UUID throwMarker(Vec3 origin, Vec3 velocity, String itemId);
 
     /**
-     * Remove a marker thrown by {@link #throwMarker}. A no-op if it is already gone, so the
-     * fuse task can call it unconditionally. Only legal on the thread owning the marker.
+     * Plant a marker of material {@code itemId} AT {@code at} and return its id -- inert, going
+     * nowhere on its own. The caller owns its position from here and moves it with
+     * {@link #moveMarker}.
+     *
+     * <p>The opposite of {@link #throwMarker} in the one way that matters: that one hands the item
+     * to physics and reads back where physics took it, this one is a body rendered at a position
+     * something else computed. A projectile that resolves on a traced segment cannot let physics
+     * own the position, or the thing you see and the thing you hit are two different objects.
+     *
+     * <p><b>{@code expectedLifetimeTicks} is not decoration.</b> It is how long the caller expects
+     * to need the marker, and the adapter uses it to arm a death that does NOT depend on the caller
+     * ever coming back. That matters because the caller is a chain of scheduled callbacks with no
+     * {@code finally}: a task scheduled into a region that unloads, or a server that stops, simply
+     * does not fire, and what is left behind is a real entity that only our code removes. Every
+     * other exit is the caller's job; this parameter covers the exit where there is no caller left.
+     *
+     * <p>Only legal on the thread owning {@code at}'s region, like every other world write.
+     */
+    UUID spawnMarker(Vec3 at, String itemId, int expectedLifetimeTicks);
+
+    /**
+     * Move a marker to {@code to}.
+     *
+     * <p><b>Only legal on the thread owning WHERE THE MARKER CURRENTLY IS -- not where it is
+     * going.</b> That distinction is the whole hazard of this method. A caller stepping a
+     * projectile is scheduled onto the region of the point it has flown TO, while the marker is
+     * still sitting at the point it flew FROM; moving it at the top of such a step touches an
+     * entity in one region from another region's thread. Move it at the END of the step, while you
+     * are still on the region the marker is actually in.
+     *
+     * <p>Contrast {@link #present}, which the adapter hops onto the right region by itself. This
+     * one cannot: an entity write has to happen where the entity is, and only the caller knows
+     * that. {@code EffectApplier.trackEmber} sidesteps the whole problem by scheduling at the
+     * item's LIVE position; a flight that schedules at a COMPUTED position cannot, because its
+     * entity is one step behind by construction.
+     *
+     * <p>A no-op if the marker is already gone.
+     */
+    void moveMarker(UUID markerId, Vec3 to);
+
+    /**
+     * Remove a marker from {@link #throwMarker} or {@link #spawnMarker}. A no-op if it is already
+     * gone, so the fuse task can call it unconditionally. Only legal on the thread owning the marker.
      */
     void removeMarker(UUID markerId);
 

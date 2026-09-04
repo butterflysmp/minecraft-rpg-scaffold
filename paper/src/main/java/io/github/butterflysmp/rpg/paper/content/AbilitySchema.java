@@ -47,9 +47,14 @@ final class AbilitySchema {
             // which is what hunters_bow and ember_staff get and what they have always had. The
             // flight loop has always presented a trail every tick; until this line there was no
             // way for a file to name one.
+            // `item` is the material rendered as the bolt's BODY, likewise optional. Independent of
+            // `trail`: a trail with no body is what the Flint Staff shipped as one slice earlier.
+            // Not validated against a real Material here -- the adapter warns once and falls back,
+            // exactly as it does for throw_embers' `item`. Validating one and not the other would
+            // make the remaining gap look deliberate.
             case "projectile" -> new CastSpec.Projectile(
                     s.getDouble("speed", 1.0), s.getDouble("gravity", 0.03),
-                    s.getInt("max_lifetime_ticks", 100), s.getString("trail"));
+                    s.getInt("max_lifetime_ticks", 100), s.getString("trail"), s.getString("item"));
             case "dash"       -> new CastSpec.Dash(
                     s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4),
                     parseDashDirection(s.getString("direction", "movement_else_forward")));

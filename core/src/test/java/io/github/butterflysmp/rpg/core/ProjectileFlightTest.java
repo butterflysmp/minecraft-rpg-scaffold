@@ -8,6 +8,8 @@ import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -90,6 +92,148 @@ class ProjectileFlightTest {
                 "the first puff must not land in the shooter's camera");
         assertEquals(1.0, first.x(), 1e-9, "it lands one tick of travel downrange");
         assertEquals(1.62, first.y(), 1e-9, "at the height it was fired from");
+    }
+
+    /** 1 block/tick, no gravity, a rendered BODY, and a payload that presents nothing. */
+    private static AbilityDefinition bolt(String trail, String item, int lifetime) {
+        return new AbilityDefinition("grenade", "Grenade", "fire", "hunter",
+                0, ResourceCost.FREE,
+                new CastSpec.Projectile(1.0, 0, lifetime, trail, item),
+                List.of(new EffectSpec.Damage(12, "fire")));
+    }
+
+    /**
+     * THE BODY SPAWNS ON THE LAUNCH FRAME, AT THE AIM ORIGIN -- the very frame and the very point
+     * the TRAIL refuses to draw at.
+     *
+     * <p>Both halves are asserted in ONE test on purpose. Apart they look like two unrelated facts
+     * and the asymmetry reads as an oversight; together they are the rule:
+     *
+     * <pre>
+     *   a PARTICLE at the eye is a flash inside your own camera  -> skip it
+     *   a rendered BODY at the eye is the bolt leaving the staff -> spawn it
+     * </pre>
+     *
+     * <p>The old repo dropped its flint immediately, at the eye. A bolt that pops into existence one
+     * tick downrange is a different weapon. If someone ever "aligns" these two, this test is what
+     * tells them which defect they just reintroduced.
+     *
+     * <p>Mutation: move the spawnMarker call from launch() into step()'s elapsed > 0 branch -> the
+     * origin assertion reddens. Drop the `elapsed > 0` from the trail guard -> the empty-presented
+     * assertion reddens. Neither mutation reddens the other's assertion.
+     */
+    @Test
+    void theBodySpawnsOnTheLaunchFrameAtTheEyeWhereTheTrailDeliberatelyDoesNot() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        cast(world, caster, bolt("flint_trail", "flint", 5), EYE_FORWARD);
+
+        assertEquals(List.of(), world.presented,
+                "the TRAIL must not draw on the launch frame -- that point is the caster's eye");
+        assertEquals(1, world.markersEverSpawned.size(), "exactly one body, created immediately");
+
+        UUID body = world.markersEverSpawned.get(0);
+        assertEquals("flint", world.markers.get(body), "and it is the authored material");
+        assertEquals(EYE_FORWARD.origin(), world.markerSpawnedAt.get(body),
+                "the BODY must appear AT the eye -- the bolt leaving the staff, not a tick downrange");
+    }
+
+    /**
+     * The body is driven along the path core computes, one move per flight tick. It is not thrown
+     * and left to physics: this projectile resolves on a traced segment, so if physics owned the
+     * position the thing you see and the thing you hit would be two different objects.
+     *
+     * <p>NOTE WHERE IT IS AFTER THE LAUNCH FRAME, because the first version of this test guessed
+     * wrong. The body is CREATED at the eye -- {@code markerSpawnedAt} proves that, and the frame-0
+     * test above asserts it -- but the launch frame also RUNS step 0 inline, and step 0 ends by
+     * moving the body to where tick 1 will resolve. So by the time {@code cast()} returns, the body
+     * has already left the muzzle. That is the flight's first tick doing its job, not a bug: the
+     * invariant is "when step N runs, the body is at step N's position", and it holds from the
+     * first tick onward. cfde822's thrown item behaved the same way -- a velocity of 1.4 also
+     * carried it more than a block during its own first tick.
+     */
+    @Test
+    void theBodyIsDrivenAlongTheComputedPath() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        cast(world, caster, bolt(null, "flint", 5), EYE_FORWARD);
+        UUID body = world.markersEverSpawned.get(0);
+
+        assertEquals(EYE_FORWARD.origin(), world.markerSpawnedAt.get(body), "born at the muzzle");
+        assertEquals(new Vec3(1, 1.62, 0), world.markerPositions.get(body),
+                "and step 0, which runs inline on the launch frame, has already carried it one step");
+
+        world.advanceTicks(1);
+        assertEquals(new Vec3(2, 1.62, 0), world.markerPositions.get(body), "one tick of travel");
+
+        world.advanceTicks(1);
+        assertEquals(new Vec3(3, 1.62, 0), world.markerPositions.get(body), "and the next");
+    }
+
+    /**
+     * THE BODY IS REMOVED WHEN THE BOLT HITS, AND IT VANISHES *AT* THE BURST.
+     *
+     * <p>Two claims, and the second is the one with teeth. The impact resolves at the ray's hit
+     * point, somewhere along the segment just traced, while the marker is still back at the
+     * segment's START -- at the staff's speed 1.4 that is up to 1.4 blocks between where the flint
+     * disappears and where the fire appears. cfde822 had no such gap, because its hit was found
+     * within 0.7 blocks of the item's own location and the two coincided by construction.
+     *
+     * <p>A stride between them reads in game as "the bolt passed through it" and gets misdiagnosed
+     * as a hit-detection bug that is not happening.
+     *
+     * <p>Mutation: drop the moveMarker from ProjectileFlight.resolve -> the removal position
+     * assertion reddens with the segment start instead of the hit point. Drop the removeMarker ->
+     * the leak assertion reddens.
+     */
+    @Test
+    void theBodyIsRemovedAtTheHitPointNotAStrideShortOfIt() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(3, 1.62, 0));
+        world.entities.add(target);
+
+        cast(world, caster, bolt(null, "flint", 50), EYE_FORWARD);
+        UUID body = world.markersEverSpawned.get(0);
+        world.advanceTicks(50);
+
+        assertTrue(target.health < 100, "the bolt connected");
+        assertEquals(Map.of(), world.markers, "no body may outlive the bolt");
+        assertEquals(target.position(), world.markerRemovedAt.get(body),
+                "the flint must vanish AT the burst, not a stride short of it");
+    }
+
+    /** The same, on the other exit: a clean miss still retires its body, where it went off. */
+    @Test
+    void theBodyIsRemovedWhenTheFuseExpires() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        cast(world, caster, bolt(null, "flint", 5), EYE_FORWARD);
+        UUID body = world.markersEverSpawned.get(0);
+        world.advanceTicks(50);
+
+        assertEquals(Map.of(), world.markers, "a miss leaks a real entity just as easily as a hit");
+        assertEquals(new Vec3(5, 1.62, 0), world.markerRemovedAt.get(body),
+                "and it goes out where the fuse ran out, with the detonation");
+    }
+
+    /**
+     * A projectile that asks for no body spawns none. This is what keeps hunters_bow and
+     * ember_staff byte-identical -- and note that the LIVE markers map cannot tell "one body,
+     * correctly cleaned up" from "no body was ever made", which is why markersEverSpawned exists.
+     */
+    @Test
+    void aProjectileWithNoItemSpawnsNoBody() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        cast(world, caster, bolt("flint_trail", null, 5), EYE_FORWARD);
+        world.advanceTicks(50);
+
+        assertEquals(List.of(), world.markersEverSpawned, "no item id means no entity, ever");
     }
 
     /**

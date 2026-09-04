@@ -246,7 +246,15 @@ public final class FakeWorld implements CombatWorld {
         return id;
     }
 
+    /** Where each marker was when it was REMOVED, id -> position. The live position map is erased
+     *  on removal, so without this a test cannot ask the question that matters for a projectile
+     *  body: did the flint vanish AT the burst, or a stride short of it? */
+    public final Map<UUID, Vec3> markerRemovedAt = new HashMap<>();
+
     @Override public void removeMarker(UUID markerId) {
+        if (markerPositions.containsKey(markerId)) {
+            markerRemovedAt.put(markerId, markerPositions.get(markerId));
+        }
         markers.remove(markerId);
         markerPositions.remove(markerId);
     }
@@ -255,10 +263,34 @@ public final class FakeWorld implements CombatWorld {
         return Optional.ofNullable(markerPositions.get(markerId));
     }
 
-    /** Drift a marker to a new spot, so a test can prove a fuse detonates at the LIVE
-     *  position, not where the marker was planted. The production analogue is a marker
-     *  that pops or falls before the fuse fires. */
-    public void moveMarker(UUID markerId, Vec3 to) { markerPositions.put(markerId, to); }
+    /** Where each marker was SPAWNED, id -> position, kept even after the marker is removed.
+     *  Separate from {@link #markerPositions}, which is erased on removal: a test that asks "was
+     *  the body created at the caster's eye on the launch frame" still needs an answer after the
+     *  bolt has resolved and cleaned itself up. */
+    public final Map<UUID, Vec3> markerSpawnedAt = new HashMap<>();
+
+    /** Every marker id ever spawned, in order, INCLUDING removed ones -- so a test can tell
+     *  "one marker, correctly cleaned up" from "no marker was ever created", which the live
+     *  {@link #markers} map cannot: both leave it empty. */
+    public final List<UUID> markersEverSpawned = new ArrayList<>();
+
+    @Override public UUID spawnMarker(Vec3 at, String itemId, int expectedLifetimeTicks) {
+        UUID id = UUID.randomUUID();
+        markers.put(id, itemId);
+        markerPositions.put(id, at);
+        markerSpawnedAt.put(id, at);
+        markersEverSpawned.add(id);
+        return id;
+    }
+
+    /** Move a marker. Also the drift hook a throw_embers fuse test uses to prove it detonates at
+     *  the LIVE position rather than where the marker was planted; the production analogue there
+     *  is an item that falls or rolls before the fuse fires. */
+    @Override public void moveMarker(UUID markerId, Vec3 to) {
+        // Deliberately does NOT resurrect a removed marker: production teleports an entity that is
+        // gone, which is a no-op, and a fake that quietly re-created it would hide a use-after-free.
+        if (markerPositions.containsKey(markerId)) markerPositions.put(markerId, to);
+    }
 
     /**
      * Run the clock forward, firing every task that comes due. Deterministic: no sleeping,

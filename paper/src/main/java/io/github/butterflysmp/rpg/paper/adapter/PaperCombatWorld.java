@@ -179,8 +179,8 @@ public final class PaperCombatWorld implements CombatWorld {
      * never set down inside a block, so the pop cannot arise. We do NOT zero the velocity here:
      * the point is that it flies.
      *
-     * setPickupDelay(MAX) keeps it un-collectible (and, at the 32767 clamp, non-mergable and
-     * non-despawning); the short fuse makes vanilla item edge cases irrelevant anyway.
+     * setPickupDelay(MAX) keeps it un-collectible and non-mergable (see {@link #configureMarker},
+     * which records what that value does and, more importantly, what it does NOT do).
      * setPersistent(false) is the unload backstop. Its normal removal is the fuse task, which
      * calls removeMarker below -- a leaked real Item is the leak-on-death hazard one more time.
      *
@@ -189,20 +189,126 @@ public final class PaperCombatWorld implements CombatWorld {
      */
     @Override
     public UUID throwMarker(Vec3 origin, Vec3 velocity, String itemId) {
+        Location spawnAt = toLocation(origin).add(0, THROW_ORIGIN_LIFT, 0);
+        Item marker = world.spawn(spawnAt, Item.class, item -> {
+            configureMarker(item, itemId);
+            item.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z())); // thrown -- it flies
+        });
+        return marker.getUniqueId();
+    }
+
+    /**
+     * How long vanilla lets a dropped item live before {@code discard()}s it, in ticks --
+     * {@code ItemEntity.LIFETIME}. Read out of the pinned server jar rather than remembered.
+     */
+    private static final int VANILLA_ITEM_LIFETIME_TICKS = 6000;
+
+    /**
+     * Slack between when a driven marker's owner SHOULD have removed it and when vanilla removes it
+     * anyway. Three seconds: long enough that a normally-resolving bolt is never killed out from
+     * under its own flight by a tick of scheduling jitter, short enough that an orphan is gone
+     * before anybody walks over to look at it.
+     */
+    private static final int ORPHAN_GRACE_TICKS = 60;
+
+    /**
+     * The shared item configuration behind both marker kinds, and the one place the meaning of
+     * {@code setPickupDelay(Integer.MAX_VALUE)} is written down.
+     *
+     * <p><b>WHAT THAT VALUE DOES.</b> {@code CraftItem.setPickupDelay} is {@code Math.min(v, 32767)},
+     * and 32767 is {@code ItemEntity.INFINITE_PICKUP_DELAY}. In {@code ItemEntity.tick()} the
+     * countdown is skipped at that value, and {@code isMergable()} returns false for it. So the item
+     * is permanently un-collectible and never merges with a neighbouring stack.
+     *
+     * <p><b>WHAT IT DOES NOT DO, and this javadoc used to claim otherwise.</b> It does NOT stop the
+     * item despawning. The despawn is gated on a different field entirely:
+     *
+     * <pre>
+     *   if (age != -32768) age++;                                  // -32768 = INFINITE_LIFETIME
+     *   if (!level.isClientSide &amp;&amp; age >= 6000) discard();         //  6000 = LIFETIME
+     * </pre>
+     *
+     * <p>{@code age}, not {@code pickupDelay}. The earlier wording here said "non-mergable and
+     * non-despawning"; the first half is right and the second was false, which matters because it is
+     * exactly the claim the next person writing a marker would inherit -- or "fix" by reaching for
+     * {@code setUnlimitedLifetime}, turning a bounded exposure into permanent world litter.
+     *
+     * <p><b>So: never call {@code setUnlimitedLifetime(true)} or {@code setWillAge(false)} on a
+     * marker.</b> Both exist on the Item API, both set or preserve that {@code -32768}, and either
+     * one removes the only backstop these entities have.
+     */
+    private void configureMarker(Item item, String itemId) {
         Material material = Material.matchMaterial(itemId);
         if (material == null || !material.isItem()) {
             ctx.warnOnce("Unknown marker material '" + itemId + "'; using BLAZE_POWDER");
             material = Material.BLAZE_POWDER;
         }
-        ItemStack stack = new ItemStack(material);
-        Location spawnAt = toLocation(origin).add(0, THROW_ORIGIN_LIFT, 0);
-        Item marker = world.spawn(spawnAt, Item.class, item -> {
-            item.setItemStack(stack);
-            item.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z())); // thrown -- it flies
-            item.setPickupDelay(Integer.MAX_VALUE);  // never collectible
-            item.setPersistent(false);               // unload backstop
+        item.setItemStack(new ItemStack(material));
+        item.setPickupDelay(Integer.MAX_VALUE);  // never collectible, never merges
+        item.setPersistent(false);               // unload backstop
+    }
+
+    /**
+     * A body rendered at a position CORE computes, going nowhere on its own -- the Flint Staff's
+     * flint chunk. Its counterpart {@link #throwMarker} hands an item to physics and reads back
+     * where physics took it; this one is the opposite arrangement, because a projectile that
+     * resolves on a traced segment cannot let physics own the position or the thing you see and the
+     * thing you hit are two different objects.
+     *
+     * <p>Four deliberate differences from {@code throwMarker}, each of which would be a defect if
+     * copied across: <b>no {@link #THROW_ORIGIN_LIFT}</b> (core gives an exact point, not a
+     * thrower's feet -- the caller's origin is already an eye), <b>no velocity</b>, <b>gravity
+     * off</b> (we own the position; physics must not fight the teleports for it), and <b>pre-aged</b>.
+     *
+     * <p><b>THE PRE-AGE IS THE POINT, AND IT IS THE THIRD EXIT.</b> A driven marker has three ways
+     * to end, not two: the flight hits something, the flight's fuse expires, or <b>the scheduled
+     * continuation never runs at all</b> -- a region unloads, or the server stops. There is no
+     * {@code finally} on a chain of scheduled callbacks, and what is left behind is a real entity
+     * that only our code removes.
+     *
+     * <p>So rather than adding a mechanism that could itself fail to run, we arm vanilla's own
+     * timer: {@code CraftItem.setTicksLived} writes straight into {@code ItemEntity.age}, so
+     * spawning the item pre-aged makes vanilla {@code discard()} it {@code expectedLifetimeTicks +
+     * }{@link #ORPHAN_GRACE_TICKS} after birth, whether or not anything of ours ever runs again.
+     * For the Flint Staff's 40-tick fuse that is about five seconds instead of the five minutes
+     * plain {@code LIFETIME} would give.
+     *
+     * <p>{@code CraftEntity.setTicksLived} requires a value {@code > 0} ("Age value (%s) must be
+     * greater than 0"), hence the clamp -- which also keeps an absurdly long authored fuse from
+     * producing a negative age rather than a long-lived marker.
+     *
+     * <p>A world write, so only legal on the thread owning {@code at}.
+     */
+    @Override
+    public UUID spawnMarker(Vec3 at, String itemId, int expectedLifetimeTicks) {
+        int ticksLived = Math.max(1,
+                VANILLA_ITEM_LIFETIME_TICKS - expectedLifetimeTicks - ORPHAN_GRACE_TICKS);
+        Item marker = world.spawn(toLocation(at), Item.class, item -> {
+            configureMarker(item, itemId);
+            item.setGravity(false);            // core owns the position; physics must not compete
+            item.setTicksLived(ticksLived);    // armed self-destruct -- see the javadoc above
         });
         return marker.getUniqueId();
+    }
+
+    /**
+     * Move a marker. {@code teleportAsync}, NOT {@code teleport}: a synchronous teleport across a
+     * region boundary is illegal on Folia, and the async form is the API that performs the handoff.
+     * On Paper it completes immediately, so nothing about the flight's timing changes here.
+     *
+     * <p><b>Only legal on the thread owning WHERE THE MARKER IS -- not where it is going</b>, the
+     * same unhopped contract {@link #removeMarker} and {@link #markerLocation} below keep. Note
+     * that {@code removeMarker}'s "the caller already satisfies that" is a weaker guarantee for
+     * this method's callers than it was for the fuse task's: a flight schedules itself onto the
+     * region of the point it has flown TO while its marker is still at the point it flew FROM, so
+     * the call has to be placed at the END of a step rather than the top. {@code ProjectileFlight}
+     * documents that ordering at the call site; do not move it.
+     */
+    @Override
+    public void moveMarker(UUID markerId, Vec3 to) {
+        if (world.getEntity(markerId) instanceof Item marker) {
+            marker.teleportAsync(toLocation(to));
+        }
     }
 
     @Override
