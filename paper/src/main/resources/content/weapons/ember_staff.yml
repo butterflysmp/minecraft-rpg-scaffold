@@ -5,6 +5,16 @@
 #
 # blaze_rod is the staff item (per-weapon material, from the bow commit). Reuses the shipped
 # solar_detonation visual and scorch status, so no new visual/status files.
+#
+# THIS IS A DEV/TEST FIXTURE AND IS NOT BALANCED. It is not meant to be.
+#
+# Said out loud because from slice 7 the roster contains a COMMON staff -- the Flint Staff, 20
+# damage on a 24-tick cooldown for 5 mana -- that out-damages this RARE one (16 in a burst, on a
+# 20-tick cooldown, for 30 mana). A rare item doing less than a common one is otherwise a bug report
+# waiting to happen, and the answer is that neither number was chosen against the other: the Flint
+# Staff's are the old repo's, kept deliberately, and these exist to exercise the burst/cost path.
+#
+# Do not "fix" the discrepancy by retuning this file in isolation. Rebalancing is its own pass.
 
 id: ember_staff
 display_name: "Ember Staff"

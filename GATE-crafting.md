@@ -455,7 +455,7 @@ things, so bring a way to count.
 |---|---|---|---|
 | Q1 | Open the table with materials for several recipes. | **Column 7 (slots 16, 25, 34)** shows suggestion icons with counts. The grid is at 10-12 / 19-21 / 28-30 with the result at 23. **Row 5 is the status bar**, with the close button at 49 inside it. The browser placeholder is at 26 | the surface exists and did not disturb the grid. **REWRITTEN: this row described the pre-relayout screen — row 4, nine cells, row 5 as chrome — long after the layout moved. See the note under the slice header** |
 | Q15 | **THE TIER ORDER.** Carry materials for a shield AND plenty of planks (so torches/sticks are craftable in quantity). Read the column left to right. | The **shield sorts before** the sticks, even though far more sticks are makeable. Order is `WEAPON → ACCESSORY → TOOL → ARMOR → MATERIAL → VANILLA`, then most-craftable | **discriminating** for the ordering. A column sorted by count alone buries a minted shield under sixty-four torches |
-| Q16 | **THE SQUEEZE.** Carry common materials only — planks, sticks, cobble, iron, leather. Read all THREE cells. | **NEITHER VANILLA NOR ARMOR appears.** With 30 claiming definitions and the tier order, three cells means the shield and two tools | **written down as INTENDED, not a bug.** The column went from nine cells to three in slice 5, so this is now much stronger than "vanilla may be squeezed out": armor is squeezed out too, **every time**. If the three cells are a shield and two tools, the row PASSES. "Sticks and torches vanished from the crafting helper" is exactly what this looks like from outside — and so does "my armor recipes are gone" |
+| Q16 | **THE SQUEEZE.** Carry common materials only — planks, sticks, cobble, iron, leather, **and flint**. Read all THREE cells. | **NEITHER VANILLA NOR ARMOR appears**, and the **Flint Staff takes the top cell**. Three cells means the staff, the shield and one tool | **written down as INTENDED, not a bug.** The column went from nine cells to three in slice 5, so this is much stronger than "vanilla may be squeezed out": armor is squeezed out too, **every time**. "Sticks and torches vanished from the crafting helper" is exactly what this looks like from outside — and so does "my armor recipes are gone". **REWORDED in slice 7, and it would otherwise have kept passing:** flint was not on the old carry list, so the Flint Staff could never have appeared and the three cells would still have read shield-and-two-tools. With flint carried this becomes the **only** row that witnesses WEAPON outranking ACCESSORY and TOOL in the squeeze — the tier's first ordinal had been unreachable since it was written |
 | Q3 | Click a suggestion. **Count the ingredients first.** | The item arrives **in the INVENTORY**, not on the cursor. Exactly one craft's ingredients leave. The count updates | **count** · the destination is the disambiguator between the two surfaces — see Q4 |
 | Q5 | Stage a recipe in the grid, then read the suggestion counts. | They have **DROPPED** by what was staged | written down as EXPECTED, or someone reports it as a bug. The grid is deliberately NOT counted, because counting it would mean consuming it |
 
@@ -608,8 +608,15 @@ struck through and visible, as row 20 → S12 was handled — **the gesture chan
 stopped being correct**, which is a different thing from a row that was wrong.
 
 **Q11 IS REWORDED, not merely re-enabled.** *"the last page is not short or duplicated"* is
-ambiguous: **a genuinely short last page is CORRECT** — 1214 recipes at 45 a page ends with a short
+ambiguous: **a genuinely short last page is CORRECT** — 1095 recipes at 45 a page ends with a short
 one, every time. The two real defects are named instead.
+
+> **The roster figure was corrected from 1214 to 1095 on 2026-09-04, and the correction makes this
+> example WORK.** 1214 was an estimate that predated the catalogue filtering to keyed
+> shaped/shapeless recipes, and it gives 26 full pages with a remainder of **44** — a "short" last
+> page of 44 out of 45, which barely illustrates the point the row is making. The measured 1095
+> gives 24 full pages and a last page of **15**, which does. An unverified number was quietly
+> weakening the row that cited it.
 
 | # | action | expected | notes |
 |---|---|---|---|
@@ -728,6 +735,275 @@ one, every time. The two real defects are named instead.
 > grid still matches. A transpose or an offset here matches every shapeless recipe correctly and
 > every shaped one wrongly, which reads as "some recipes are broken" rather than as a layout bug.
 > `CraftingMenuLayoutTest` pins the inverse pair, so this is belt-and-braces on a unit-tested claim.
+# Slice 7 — custom recipes, and the Flint Staff
+
+The first slice in which crafting something the server did not previously know how to craft produces
+RPG gear. Everything before this rode recipes Minecraft already had.
+
+**THE SET, NAMED BEFORE THE RUN.** Live rows in this section: **R1, R2, R4, R6, 7A, 7B, 7C, 7D,
+7E, 7F, 7G** — eleven. Plus the **thirteen** re-runs at the bottom of this section (Q16, Q15, Q25,
+T10, Q7, Q10, Q27, Q29, 12, 12c, S1, S2, N5b). **Twenty-four in total.** Rows **7H** and **R5** are struck as IMPOSSIBLE, and **R3 was MERGED INTO R2** on 2026-09-04 when
+R2 became a behavioural check. All three are correctly absent from any count.
+
+> Counted from the LIVE rows in this section, not by extending slice 6's list. That is what Q34 cost.
+
+> ### GATE RESULT — GREEN, **24 of 24**, operator-confirmed 2026-09-04
+>
+> Against the set named before the run: **R1, R2, R4, R6, 7A, 7B, 7C, 7D, 7E, 7F, 7G** and the
+> thirteen re-runs **Q16, Q15, Q25, T10, Q7, Q10, Q27, Q29, 12, 12c, S1, S2, N5b**. **7H** and **R5**
+> struck IMPOSSIBLE and **R3** merged into R2 — all three correctly absent from the count.
+>
+> **THE PER-ROW FIGURES WERE NOT CAPTURED, and that is recorded rather than papered over.** The
+> counting rows — 7F's staves-made, S1's ingot count, S2's exit, 12's buckets, 12c's bottles, R2's
+> error count, and confirmation that 7E's Crafter was pulsed — passed by observation at the time and
+> the numbers were not written down. The operator elected not to re-run to recover them.
+>
+> **So this verdict is not re-checkable at row granularity, and nobody should later cite it as if it
+> were.** It is the same shape as Q2's counts: a row that passed, without the number it passed on.
+> That makes three instances on this page now, which is exactly the drift the OWED entries exist to
+> make visible — noted once, here, and not argued further.
+>
+> **7E and 7F both pass BY ABSENCE** — a jammed Crafter, an empty floor — which is also what a row
+> nobody triggered looks like. Their rows were strengthened on 2026-09-04 to demand the positive
+> half (that the Crafter was pulsed; how many staves were made before stopping). **That requirement
+> applies from the NEXT run**, since it postdates this one.
+
+
+## Registration — and the instrument that measures it
+
+Every row here reads one boot line:
+
+```
+Custom recipes: N registered, M replaced, K refused, of A authored (I minting gear)
+```
+
+`A` comes from the REGISTRY and the rest from the registrar's own walk, so a dead registrar reads
+wrong at a glance instead of reading self-consistently and wrong.
+
+> **BEFORE EVERY BOOT IN THIS SECTION: kill every `java.exe` and confirm the deployed jar is not
+> locked. AFTER: compare `target` and deployed mtimes.**
+>
+> Not caution — a standing condition, recorded in `NEXT.md`. `echo stop | dev-server.sh` does **not**
+> stop the server: the piped command lands on the first tick after `Done`, throws
+> `NullPointerException ... CommandSourceStack.getLevel() is null`, is swallowed as "an unexpected
+> error", and the JVM runs on holding `run/plugins/rpg-*.jar`. The next boot then cannot `rm -f` it,
+> `set -e` aborts **before deploying**, and the boot after that reads a STALE jar.
+>
+> **Every row here passes by reading a log line, and a stale jar prints a correct-looking one** —
+> the previous build was also correct. There is no second signal. This is how a green row certifies
+> the wrong build.
+>
+> **AND EVERY ROW IN THIS SLICE NEEDS A FRESH BOOT — no `/reload` earlier in the same session.**
+> Armed 2026-09-04 by R2, and mostly disarmed the same day by the fix: a reload used to strip our
+> recipes until restart, so 7A-7G run after one would have failed and read as MINT failures rather
+> than as a missing recipe. The `ServerResourcesReloadedEvent` handler now puts them back, which is
+> exactly why the caveat was not left standing — **a caveat that must be remembered on every row is
+> one that gets forgotten.** It is written here anyway, because the fix is one slice old and the
+> trap it replaced was invisible.
+
+| # | action | expected | notes |
+|---|---|---|---|
+| R1 | **Fresh content.** `./scripts/dev-server.sh --refresh-content`. Read the line. | `1 registered, 0 replaced, 0 refused, of 1 authored (1 minting gear)` | **`--refresh-content` IS REQUIRED.** `content/recipes/` is a brand-new directory; `saveResource(path, false)` never overwrites, so a populated `run/` data folder predates it and ships nothing. `0 replaced` says the remove call is not spuriously matching on a virgin roster · **PASSED 2026-09-03**, exactly this line. **Provenance, because the first observation did not have it:** originally read on a jar built *before* the slice was committed, from a tree **asserted** rather than verified to match it. Re-run against a jar built by `./mvnw clean package` from the **clean committed tree** of the docs commit that added this sentence — so anyone can reproduce it by checking out that commit and rebuilding. An observation whose build you cannot name is a number, not a verification |
+| R2 | **Boot fresh, then have the OPERATOR run vanilla `/reload`** (chat in-game or console — `/reload confirm` does NOT exist on this build). Then **craft the staff**. | **It still crafts.** | **FAILED 2026-09-04, FIXED the same day, then PASSED on the gate run.** R6 witnesses the roster; this row witnesses the CRAFT, and they are not the same claim -- both were taken. The failure is preserved below the table because it is why the event handler exists. Before the fix, any `/reload` silently removed every recipe we register, until restart. Now `ServerResourcesReloadedEvent` re-registers them. Record whether the reload was CLEAN (`grep -cE "ERROR\|SEVERE"`) beside the result |
+| R6 | **THE FIX'S OWN WITNESS, AND R2'S SECOND ONE.** Boot, run `/reload`, read the **second** `Custom recipes:` line. | `1 registered, **0 replaced**, 0 refused, of 1 authored (re-registered after a COMMAND resource reload)` | **discriminating · this row does two jobs.** (1) The line existing at all proves the handler fired. (2) **`replaced` CROSS-CHECKS R2's finding independently:** `0 replaced` means `removeRecipe` found nothing, so the reload really HAD dropped the recipe; **`1 replaced` would mean the key was still there and R2's failure was something else — a contradiction to resolve before shipping, not a pass.** Note R2's original witness (a second `Custom recipes:` line) is producible after all — by re-registration, not by plugin re-enable. **PASSED 2026-09-04**, line below the table |
+| R3 | **MERGED INTO R2 — do not run separately.** Its action ("after R2, craft the staff") is now literally R2's action, because R2 became a behavioural check when its log witness turned out to be unproducible. | — | **This row was written when R2 read a NUMBER and R3 confirmed the behaviour behind it. With R2 reading the behaviour directly they are one row**, and keeping both would mean a set of 25 in which one row is a duplicate of another counted twice. Retired rather than deleted so the merge is visible: see the correction below the table |
+| **R4** | **THE INSTRUMENT'S OWN CONTROL.** Temporarily call `RecipeRegistrar.registerAll` **twice** in one `onEnable`, logging **BOTH** reports. Boot. Read both lines. | `0 replaced` on the first pass, **`1 replaced` on the second** | **discriminating · sole witness that the counter CAN move · run this BEFORE trusting R2.** If it prints `0 replaced` twice, the counter is dead and R2's number means nothing — a number that cannot move is not a measurement. **Both** lines must be logged: one line leaves a `0 replaced` ambiguous between a dead counter and a mutation that never applied. Revert afterwards and confirm by re-reading R1. **PASSED 2026-09-04 — the observed lines are below the table** |
+| ~~R5~~ | ~~Compare `Recipe catalogue built: N entries` across boots to detect a duplicate key.~~ | — | **IMPOSSIBLE — never a test.** Struck 2026-09-04 after its second re-specification failed too, and struck on EVIDENCE rather than on the third rewrite. The condition cannot occur: `RecipeCatalogue.build()` walks `Bukkit.recipeIterator()` → `RecipeManager.getRecipes()` → `RecipeMap.values()` → **`byKey.values()`**, and `byKey` is a `java.util.Map<ResourceKey, RecipeHolder>` — one value per key **by definition of Map**. Two entries under one key can never reach the count, whatever the registrar does. (`RecipeMap` does hold a duplicate-capable `Multimap byType`, and `removeRecipe` was verified to clean **both** — but the iterator never reads `byType`, so that is a second independent reason, not the load-bearing one.) Nothing is lost: a recipe failing to register is already caught earlier and better by R1/R6's `registered` count. **Carrying this as runnable would credit coverage that does not exist** |
+
+> ## R2 — FAILED 2026-09-04, THEN FIXED. The failure is kept because it is why the handler exists.
+>
+> **Kept visible the way row 20 and Q12 were kept.** A row that now passes because the code changed
+> is not the same as a row that always passed, and deleting the failure would delete the reason.
+>
+> ### The failure, observed
+>
+> `/reload`, then the staff **would not craft**, and it was **absent from the browser** — the
+> catalogue had been built after the reload and never saw the recipe, which is the unremarkable of
+> the two possible states (the other, a stale catalogue refusing the click cleanly, would have been
+> the dead-entry path doing its job; it is not what happened).
+>
+> ### THE FINDING, and it is not about the Flint Staff
+>
+> > **Any `/reload` silently removed every recipe this plugin registers, until the server restarts.**
+> > Vanilla `/reload` rebuilds the recipe manager and does not re-enable plugins, so `onEnable` --
+> > the only thing that called `registerAll` -- never ran again.
+>
+> **Scoped at the REGISTRAR, not at the content.** It was a property of anything registered into the
+> recipe manager at enable time on this build, so the next mechanism that registers something would
+> have met it too. That is why the fix is a listener beside the registrar and not a note on
+> `flint_staff.yml`.
+>
+> ### The fix, and why it shipped in this slice rather than the next
+>
+> `io.papermc.paper.event.server.ServerResourcesReloadedEvent` -- **confirmed present on
+> paper-api 26.1.2.build.74-stable before it was chosen**, not remembered, because this row exists
+> precisely because `/reload confirm` was a remembered command that was not there. Paper's own
+> javadoc names the use: *"Intended for use to re-register custom recipes, advancements that may be
+> lost during a reload like this."*
+>
+> **The reason it shipped now is NOT "do not ship a known defect"** -- this slice deliberately ships
+> one and says so: scorch is `kind: fire`, so the staff's burn is vanilla-rated and does not credit
+> the caster. That gap is **STATED** -- in the content file, in `NEXT.md`, explainable to a player
+> who notices. This one was **SILENT**: nothing logged, nothing warned, the recipe was simply gone.
+>
+> And the decisive argument is about the alternative, which was a caveat on every remaining row --
+> *never run this after a `/reload`*:
+>
+> > **A CAVEAT THAT MUST BE REMEMBERED ON EVERY ROW IS ONE THAT GETS FORGOTTEN.**
+>
+> That is `continue`-inside-the-loop against `STATUS_SLOTS`, and the memory version was watched to
+> fail **this same week**: the stale-jar trap was disarmed by `set -e` happening to fire, not by
+> anyone remembering it was armed.
+>
+> ### Observed after the fix — and it confirms the finding independently
+>
+> ```
+> [13:50:24] [Rpg] Custom recipes: 1 registered, 0 replaced, 0 refused, of 1 authored (1 minting gear)
+> [13:50:57] Reloading!
+> [13:50:57] Loaded 1515 recipes
+> [13:50:57] [Rpg] Custom recipes: 1 registered, 0 replaced, 0 refused, of 1 authored (re-registered after a COMMAND resource reload)
+> ```
+>
+> **`0 replaced` is the cross-check, and it is the answer that confirms R2.** `removeRecipe` found
+> nothing to remove, so the recipe really had been dropped by the reload. `1 replaced` would have
+> meant the key survived and R2's failure was something else — a contradiction to resolve before
+> shipping, not a pass. Zero `ERROR`/`SEVERE` lines: the reload was clean, so the number is not an
+> artifact of a broken one.
+>
+> The registrar's readback (`getRecipe(key)` after `addRecipe`) is inside `registerAll`, so
+> `1 registered` already means the recipe is back **on the roster** — the craft in R2 is the
+> player-facing half of the same claim.
+
+> ## R2's PREMISE WAS WRONG, AND THE ATTEMPT IS WHAT FOUND IT — 2026-09-04
+>
+> R2 was written as "type `/reload confirm`, read the `Custom recipes:` line again". **Both halves
+> are wrong on Paper 26.1.2**, and neither could have been discovered by reasoning about the row.
+> Observed:
+>
+> ```
+> [13:25:16] [Server thread/INFO]: Incorrect argument for command
+> reload confirm<--[HERE]
+> [13:25:19] [Server thread/INFO]: Reloading!
+> [13:25:19] [Server thread/INFO]: Loaded 1515 recipes
+> ```
+>
+> **1. `/reload confirm` is not a command here.** Brigadier rejected `confirm` as an incorrect
+> argument, because the `reload` that resolves is **vanilla** `/reload`, which takes none.
+> Bukkit's plugin-reload is **gone from this build** — `org/bukkit/command/defaults/` is EMPTY in
+> `run/versions/26.1.2/paper-26.1.2.jar`. The only two `ReloadCommand` classes present are
+> `net.minecraft.server.commands.ReloadCommand` (vanilla, datapacks) and
+> `io.papermc.paper.command.subcommands.ReloadCommand` (`/paper reload`, config only). Neither
+> re-enables a plugin.
+>
+> **2. So the row's WITNESS could never have fired.** Vanilla `/reload` does not re-run
+> `onEnable`, so there is no second `Enabling Rpg` and **no second `Custom recipes:` line, ever**.
+> `replaced` is unreachable by this route. A row whose evidence cannot be produced is not a failing
+> row — it is a row measuring the wrong thing, and it would have been recorded as "inconclusive"
+> forever.
+>
+> **The underlying question survives, and got SHARPER.** `Reloading!` was followed by
+> `Loaded 1515 recipes` — the recipe manager was rebuilt, and 1515 is the same count the boot
+> logged at `13:25:09`, i.e. the datapack/vanilla total with **ours not among it**. Our recipe is
+> added by `onEnable` *after* that load. So the live question is no longer "what does the roster do
+> with our recipe" but:
+>
+> > **Does `rpg:flint_staff` survive a rebuild of the recipe manager that nothing re-adds it after?**
+>
+> **UNVERIFIED, and it must not be designed around.** The mechanism above makes "it is dropped until
+> restart" the plausible answer, and a plausible answer is exactly what CLAUDE.md's VERIFICATION
+> section says to distrust. It is settled by USING the recipe after a reload, which is what R2 now
+> asks for. If it does not survive, that is a real product finding — **custom recipes silently
+> vanish after any `/reload` until the server restarts** — and it belongs in `NEXT.md`, not in a
+> bug report from a player.
+>
+> **What this does NOT change:** the registrar's unconditional remove-then-add stays correct. It was
+> written so the code holds under both answers to a question the pinned API does not document, and
+> that reasoning is untouched by the command's absence. **R4 still stands** — it proved `replaced`
+> can move (`0 -> 1`), which was always about the counter being a live instrument, not about
+> `/reload` specifically.
+
+> ## OBSERVED LINES — R1 and R4, 2026-09-04
+>
+> **Written down because Q2's counts were observed by someone, never recorded, and are still owed
+> three slices later.** A row that says "passed" without the number it passed on is a row nobody
+> can re-check, and next year "R4 passed" without the `0 -> 1` says nothing at all.
+>
+> ### R4 — PASSED. The counter was proven able to move.
+>
+> Both reports logged, from `RecipeRegistrar.registerAll` called twice in one `onEnable`:
+>
+> ```
+> [12:46:41 INFO]: [Rpg] R4 PASS 1 -- Custom recipes: 1 registered, 0 replaced, 0 refused, of 1 authored
+> [12:46:41 INFO]: [Rpg] R4 PASS 2 -- Custom recipes: 1 registered, 1 replaced, 0 refused, of 1 authored
+> ```
+>
+> `replaced` **0 -> 1**. That, and not the word "passed", is what makes R2's figure a measurement
+> rather than a constant.
+>
+> **TWO WITNESSES ON DIFFERENT SUBSTRATES, and the second is the one that settles it.** The log
+> lines are a RUNTIME witness that the booted jar had the double call. On their own they are
+> weaker than they look: two lines could in principle come from one call inside a loop. So the
+> mutation was also confirmed at BUILD time, on the artifact:
+>
+> - the `R4 PASS 1` and `R4 PASS 2` string constants present in the compiled `RpgPlugin.class`;
+> - `javap -p -c` showing **two** `RecipeRegistrar.registerAll` invocations in the bytecode.
+>
+> **The marker comment cannot survive compilation, so grepping the source would have proved nothing
+> about the jar.** That is the general rule this row contributes: a marker you can only find in the
+> source is not evidence about the thing that ran.
+>
+> **The revert was held to the same standard**, which is where the discipline usually gets dropped:
+> restored from a scratchpad copy (never `git checkout --`), then `md5sum` identical to the
+> pre-mutation copy, `git status` clean, and — after a fresh `./mvnw clean package` — **zero**
+> `R4 PASS` strings and **one** `registerAll` invocation in the REBUILT class. Nothing was committed
+> for R4; the wire confirmed the branch tip unchanged.
+>
+> ### R1 — PASSED, on a build named rather than assumed.
+>
+> ```
+> [12:49:46 INFO]: [Rpg] Custom recipes: 1 registered, 0 replaced, 0 refused, of 1 authored (1 minting gear)
+> ```
+>
+> Exactly **one** `Custom recipes:` line, which is also the observation that the R4 revert landed —
+> "it went back" is a claim, and this is the check. Deploy settled by mtimes: target `12:49:21`,
+> deployed `12:49:40`.
+>
+> **Both boots followed the standing condition** at the top of this section: every `java.exe` killed
+> and the deployed jar confirmed unlocked BEFORE booting, mtimes compared AFTER. R4's own boot:
+> target `12:45:44`, deployed `12:46:35`.
+
+## The rows that carry the slice
+
+
+
+| # | action | expected | notes |
+|---|---|---|---|
+| 7A | **THE GRID.** Open a crafting table. Flint in the top cell, sticks in the two below it. | The result slot shows a **Flint Staff** — minted, with its stats and rarity footer — not a stick | the recipe registered AND the preview resolves the claim by RECIPE KEY. A plain stick here means the mint did not fire |
+| 7B | **THE OTHER TWO SURFACES.** Carry flint and sticks. Read the **suggestion column**, then open the **browser**. Craft from **each**. | The staff appears on both and crafts from both | all three surfaces share `claimFor`. A surface showing a plain stick is the "you receive what you were shown" break the mint-in-preview machinery exists to prevent |
+| 7C | **MINTED AND ROLLED, ON ALL THREE.** Craft the staff from the grid, from the column, and from the browser. **OPEN EACH ONE.** | All three arrive minted **and rolled** — stats, rarity footer, enchant candidates | **discriminating · sole witness** · *open them, do not count them.* Q27's discipline, three times. A count sees an item arrive and cannot see it is a plain stick |
+| 7D | **A GHOST RECIPE.** Edit the deployed `content/recipes/flint_staff.yml` to `mints: no_such_weapon`. Boot. | A **named** warning saying the recipe mints something that is not any weapon, shield, armor piece or tool — **and the line reads `0 registered ... 1 refused`**. The recipe is NOT on the roster | **discriminating** · registering it anyway would hand a player a plain stick for their flint forever, with nothing saying why. Restore the file after |
+| 7E | **THE CRAFTER BLOCK.** Put flint and two sticks in a Crafter and **pulse it — record that you pulsed it**. | **Nothing comes out.** It jams, keeping its ingredients | **discriminating · sole witness** for the recipe arm of guard two. Our recipe's registered result is a plain STICK, which is not durable — so the existing durability test waves it through, and without the new arm a redstone Crafter is a flint-to-stick machine. **PASSES BY ABSENCE, AND SO DOES A ROW NOBODY TRIGGERED.** An unpulsed Crafter and a correctly-refusing one produce the identical observation: nothing. So the record must state the pulse happened, or the row proves only that a Crafter left alone does nothing. A refused Crafter looks like a JAM, not an error; accepted, and shared with every other guard-two refusal |
+| 7F | **THE `fits` ROW. COUNT THIS ONE.** Fill every inventory slot, then free exactly one and put a **partial stack of plain sticks** in it. Carry flint and sticks. Shift-click the staff in the **suggestion column**. | It makes **at most what fits** and says so. **NOTHING lands on the floor.** | **discriminating · count** · the defect's signature is a number and a pile. `fits` credits a partial stick stack as room; the minted staff carries meta, is not `isSimilar`, and needs a whole slot. Unfixed, `fits` says yes 64 times and 64 weapons hit the ground. **PASSES PARTLY BY ABSENCE, so record BOTH numbers: how many staves were MADE, and that zero reached the floor.** "Nothing on the floor" is also what a craft that never started looks like — the made-count is what separates the fix working from the row not running |
+| 7G | **THE STAFF ITSELF.** Right-click with it. | A bolt flies, deals 20 fire damage, and the target **burns for 4 seconds** | the burn is `setFireTicks`, so it is VANILLA-rated and does **not credit you** — that is the named debt in `NEXT.md`, not a bug. The bolt is a projectile and will NOT tumble or trail flame like the old thrown-flint item; also a known port gap |
+| ~~7H~~ | ~~**Two definitions claiming one recipe key mint NOTHING.**~~ | — | **IMPOSSIBLE — never a test.** Under the recipe-names-the-gear direction the claim lives on the recipe, a recipe's id is its filename, and one directory cannot hold two files of one name. `RecipeRegistry` throws on a duplicate id, so the collision cannot be authored at all. The reachable neighbours are 7D (a recipe minting nothing) and the unit test `twoRecipesMayMintTheSameGear`, which pins that two recipes minting ONE weapon is a FEATURE |
+
+## Re-runs — and the one row that changes wording
+
+**Q16 IS REWORDED, and the reason is worth reading**: as previously written it would still have
+PASSED. Its carry list was "planks, sticks, cobble, iron, leather" — **flint is not on it**, so the
+Flint Staff could never have appeared and the three cells would still have been the shield and two
+tools. Adding flint is what makes the row test the new roster.
+
+| # | why it re-opens |
+|---|---|
+| **Q16** | **REWORDED IN PLACE** — the row itself, under "The column", now carries flint and names the staff. Read it there; it is not restated here, so the two cannot drift apart |
+| **Q15** | **THE TIER ORDER, with its first ordinal finally occupied.** No shipped weapon has EVER claimed a craft, so `SuggestionTier.WEAPON` has been unreachable on every surface since it was written. The order `WEAPON → ACCESSORY → TOOL → ARMOR → MATERIAL → VANILLA` has only ever been observed from ACCESSORY down |
+| **Q25** | the browser's tier ordering gains its first WEAPON-tier entry, which makes the tier order visible at the top rather than inferred |
+| **T10, Q7** | `isGear` with a new gear item in play — **and for the first time one whose MATERIAL IS ITSELF A COMMON CRAFTING INGREDIENT.** A minted staff is a stick carrying `weapon_id`. The check was never material-based, so it should hold; the corollary to confirm is that a player holding only Flint Staves **cannot craft a torch from them** |
+| **Q10** | the enumerable boundary now has a custom shaped recipe on OUR side of it. A `ShapedRecipe` we built exposes `getShape()` and `getChoiceMap()`, so it must enumerate exactly like a vanilla one |
+| **Q27, Q29** | `claimFor` changed shape and the browser reads it. Q29's "Needs:" lore is built from `ingredientsOf` over a recipe we authored for the first time |
+| **12, 12c, S1, S2, N5b** | `claimFor`'s signature changed and **the inventory bulk loop's `fits` check moved off `recipe.getResult()`**. These are not re-run out of caution; the code under them moved |
+
 # Maintenance
 
 - When a slice changes `MenuRouting`, `Menu` or `CraftingMenu`, list by number which rows

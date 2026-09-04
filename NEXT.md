@@ -581,6 +581,420 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Crafting, Slice 7 (custom recipes, and the Flint Staff) — what it created or exposed
+
+The first slice in which crafting a thing the server did not previously know how to craft produces
+RPG gear. Six slices of mint-on-craft could only ride recipes Minecraft already had.
+
+#### NAMED DEBT: `scorch` is vanilla-rated and does not credit the caster
+
+**Recorded 2026-09-03, in the slice that shipped the first weapon to depend on it.**
+
+`content/statuses/scorch.yml` is `kind: fire`, which `BukkitCombatant.applyStatus` resolves to
+`entity.setFireTicks(...)`. So the burn is **vanilla fire**: no kill credit to the caster, no
+`DamageSources.magic(shooter)`, and no interaction with the damage system at all.
+
+**What the Flint Staff reproduces exactly, and what it does not.** The old repo's
+`StaffListener.resolveFlintStaffHit` did **two** things, and `status scorch 80` is only the first:
+
+| old | ours |
+|---|---|
+| `target.setFireTicks(FLINT_STAFF_BURN_TICKS)`, 80 ticks | **identical** — this is what `scorch 80` is |
+| `applyFlintStaffIgnition` — 5 damage/second for 4 seconds, `DamageSources.magic(shooter)`, knockback suppressed per tick, cancelled on target death | **not shipped** |
+
+That table is the debt, sized. It is written here rather than left to be discovered as *"the DOT
+feels wrong"*, which is what it will look like from inside the game.
+
+**What paying it down would take:** a real DOT effect kind — a status that ticks damage through
+`CombatantHandle` on a scheduler, crediting a source — which is a status-system change, not a
+content edit. `applyFlintStaffIgnition` in `BSMPMenu` is the working reference implementation.
+
+**Do it in the slice that implements DOT statuses generally**, not for one weapon.
+
+#### NAMED DEBT: `CraftResultIndex` holds two indexes and one of them is not a result index
+
+**Recorded 2026-09-03.** The class now answers two questions: *which gear does this crafted
+MATERIAL become* (the original axis) and *which gear does this RECIPE OF OURS mint* (new). The name
+describes the first only.
+
+**Why it was not renamed in this slice:** a rename touches every consumer — `AdapterContext`,
+`RpgPlugin`, `InventoryCraft`, `RecipeProbe`, `RecipeCatalogue` and the test — for zero behavioural
+change, in a slice that already moves five call sites. **What paying it down would take:** one
+rename plus 6 import lines; re-verify is `./mvnw clean test`, no boot gate.
+
+**Do it when something else already has those files open.**
+
+#### THE AXIS: PLACES THAT USE DURABILITY AS A PROXY FOR PROVENANCE
+
+**This is the entry to read before touching anything durability-shaped**, and it exists because
+three sites that all had to change in this slice were found three separate ways. Three found by
+three insights is luck. Three found by one enumeration is repeatable, and it is what catches the
+fourth.
+
+```bash
+grep -rn "WeaponDurability.maxOf" --include=*.java core paper storage \
+  | grep -v "/target/" | grep -v "/src/test/"
+```
+
+**It returns SIX sites, not three, and the split is the useful half of this entry** — a reader who
+does not have it will either edit three correct sites or dismiss the whole list:
+
+| site | durability is... | verdict |
+|---|---|---|
+| `RpgCommand.java:1045` | the SUBJECT — reports "has no durability", naming `ember_staff` and `ability_stone` | correct, leave alone |
+| `ShieldBlock.java:155` | the SUBJECT — "An item with no durability at all is NOT broken" | correct, leave alone |
+| `ShieldDurability.java:103` | the SUBJECT — early-out on empty | correct, leave alone |
+| **`InventoryCraft.java` / `RecipeProbe.claimedBy`** | a **PROXY for "is this ours"** | narrowed in slice 7 to the material arm only |
+| **`RpgListeners.onCrafterCraft`** | a **PROXY for "is this ours"** (the Crafter output policy) | gained a recipe-key arm in slice 7 |
+
+The second group is the axis. **Durability was a complete statement of "this craft is ours" only
+while a claim could only be made on a material** — every claimable material happened to be durable.
+Recipe-identity claiming ends that: our recipes register a plain vanilla result, and the Flint
+Staff's is a `stick`.
+
+> **A javadoc argued the gate was safe, and this slice falsified the argument.**
+> `RecipeProbe.claimedBy` said the durability gate was belt-and-braces "because boot already refuses
+> a `craft_result` on a material with no durability, so nothing in the index can fail it". True of
+> the material axis, and never true of the recipe axis — `validateCraftResults` makes no such demand
+> of a recipe claim, by design. The paragraph was rewritten in the same edit that broke it. **A
+> justification that outlives its premise is worse than no justification**, because the next reader
+> trusts it.
+
+#### DECISION: the Flint Staff can never break, and it is the first CRAFTABLE gear that cannot
+
+`material: stick`, and `Durability.isBroken` opens with `if (maxDurability <= 0) return false` under
+a javadoc naming it **the staff-and-stone exemption**. So the staff never wears and never breaks.
+
+**It is not the first indestructible gear — it is the first craftable one.** `ember_staff`
+(`blaze_rod`) and `ability_stone` (`amethyst_shard`) are already non-durable on master and already
+never break; the exemption is *named* for them. What is new is that indestructible gear can now
+reach a player through the **economy** rather than only through `/rpg give` or a kit, which is the
+half that matters for balance. The **old** staff could break — `StaffListener` checked
+`ItemRegistry.isBroken` before firing, which is only meaningful on an item that wears.
+
+> **The first draft of this note said "the FIRST piece of gear that never degrades — every shipped
+> weapon, shield, tool and armor piece is durable", and then named `ember_staff` and
+> `ability_stone` as counterexamples four lines later, in its own corollary.** It contradicted
+> itself inside one paragraph, and `CraftResultIndex.forRecipe`'s javadoc — written in the same
+> commit — listed all three non-durable weapons correctly. A claim of primacy is worth checking
+> against the tree before it is written down; `grep -rn "^material:" content/weapons` answers it.
+
+**The corollary matters more than the decision: nobody may "fix" this by requiring gear to be
+durable.** That would break an exemption the codebase holds deliberately, and which the two weapons
+above depend on. If indestructible is not wanted, **the material is the lever**, and it costs one
+word now against a re-mint later.
+
+#### THE 2x2 INVENTORY GRID IS UNGUARDED, AND THE FLINT STAFF IS SAFE BY SHAPE, NOT BY GUARD
+
+The player's own 2x2 crafting grid is the one crafting surface that neither mints nor is hijacked.
+`onPrepareCraft` screens it for our gear used as an **ingredient**, but nothing there replaces a
+vanilla result with minted gear — `commitCraft` is reachable only from `CraftingMenu`.
+
+**This is pre-existing, not opened by custom recipes.** `content/tools/iron.yml` has
+`shears: craft_result: shears`, and vanilla shears is a 2x2 recipe — so crafting shears in the
+inventory grid **today** yields a plain vanilla pair.
+
+`flint_staff` cannot reach it because its shape is three rows tall. Since the person who one day
+shortens a shape will not think to look, `RecipeDefinition.fitsInTwoByTwo()` exists and the boot
+**warns** when a custom recipe fits — so shortening a shape is loud rather than silent.
+
+> **Do NOT close this by refusing our recipe keys in `onPrepareCraft`.** `commitCraft` uses the
+> *player* overload of `craftItemResult`, which fires `PrepareItemCraftEvent` by contract, and the
+> existing handler's `setResult(null)` is honoured — `InventoryCraft` relies on exactly that. A
+> blanket refusal would null our own result. Scoping it by `InventoryType` needs **a measurement
+> that has not been made**: which `InventoryType` `Bukkit.craftItemResult` synthesises. Make that
+> measurement first, or use `CraftItemEvent`, which our path never fires.
+
+#### THE DEFECT `fits` HAD BEEN HIDING BEHIND max-stack-1
+
+`InventoryCraft.craft` asked `MenuSafety.fits(viewer, recipe.getResult())` — the recipe's
+**registered** result. From this slice that is not the item the player receives: a custom recipe
+registers a plain vanilla stack and delivers a minted one.
+
+`fits` credits room in any stack it finds `isSimilar`. A player with no empty slot but 32 plain
+sticks is told a stick fits — and it would; the minted staff carries meta, is not similar, and needs
+a whole slot. `fits` says yes sixty-four times and sixty-four minted weapons hit the floor: the pile
+`fits`' own javadoc was written to prevent.
+
+**It was unreachable before now, and by accident.** Every `craft_result` is a durable material, max
+stack 1, so a matching stack of one credits nothing and only empty slots ever counted — the two
+items agreed for a reason nobody chose. **A stackable craft result is what made them disagree.**
+
+`CraftingMenu.craftRepeatedly` needed no fix and must not grow one: it reads the result slot, which
+`refreshPreview` already minted. Same reasoning, opposite conclusion, and both are commented so the
+asymmetry is not "tidied" later.
+
+#### A GOLDEN-FILE TEST THAT CANNOT FAIL FOR THE REASON IT CLAIMS
+
+`RecipeDefinitionTest.theShapeAndIngredientMapAreDefensivelyCopied` was written asserting that both
+the shape list and the ingredient map are copied from the caller. **The ingredient half could not
+fail**: normalisation rebuilds the map into a fresh `LinkedHashMap` before storing it, so the
+caller's map is never aliased whatever `Map.copyOf` does. Verified by mutation — `ingredients =
+normalised` with `Map.copyOf` removed, all 16 tests still green.
+
+Split into `theShapeIsDefensivelyCopiedFromTheCaller` (a real guard, mutation-proven) and
+`theStoredCollectionsAreUnmodifiable`, which is what actually witnesses `Map.copyOf` — and which
+reddens under that same mutation. **This is CLAUDE.md's fourth recorded verification defect** — a
+defect-asserting test that passes on an accident rather than on the thing it names — found by
+running the mutation rather than by reading the test.
+
+#### `./mvnw` FROM THE WRONG DIRECTORY IS A SILENT PASS
+
+A `cd` inside one tool call left the shell inside `paper/src/main/java/...`. Three subsequent
+`./mvnw ... | grep ERROR` invocations printed nothing and read as green builds. They had not run at
+all: `./mvnw` did not exist there, and `bash: No such file or directory` contains no "ERROR" for the
+grep to find. Two "compiles clean" claims were wrong, and the next real build failed on two missing
+imports that had been there the whole time.
+
+**The same shape as every other entry on CLAUDE.md's verification page**: a check that did not run
+looks exactly like a check that passed. The cheap habit that closes it is grepping for the POSITIVE
+token — `BUILD SUCCESS` — rather than the absence of a negative one.
+
+#### GREEN CI ON A BOOT-WITNESSED SLICE IS A REGRESSION SIGNAL WEARING A COMPLETION BADGE
+
+**The suite is green either way for everything this slice does.** Registration, minting on all three
+surfaces, the Crafter refusal and the `fits` fix have **no unit witness between them** — every one
+of them needs a running server. 1257 passing tests say the slice broke nothing that was already
+covered. They say **nothing** about whether the slice works.
+
+"CI never boots a server" is true and too soft to act on. The statement that changes behaviour is
+the one above, because the danger is not that someone believes CI covers this — it is that a green
+check at the top of a PR is exactly what makes a gate feel optional. **This is the moment a gate
+gets skipped**, and the table below is the list of what would be skipped with it.
+
+#### THE PATTERN: ASK WHERE THE OBSERVATION SITS RELATIVE TO THE STATE IT DESCRIBES
+
+**Three rows in one gate section had the same defect, and none of them could be caught by reading
+the row.** All three were internally coherent, all three cited a real mechanism, and all three were
+found only by attempting them.
+
+| row | its witness | why it could not work |
+|---|---|---|
+| **R2**, first form | a second `Custom recipes:` line after `/reload` | vanilla `/reload` never re-enables the plugin, so the line is **unproducible** |
+| **R5**, first form | a second `Recipe catalogue built:` line after `/reload` | the catalogue is cached on the `RpgListeners` instance made in `onEnable`, so likewise **unproducible** |
+| **R5**, second form | catalogue counts before a `/reload` and after a RESTART | both readings are **single-registration** states; the double-registered state exists for half a minute between them and nothing looks at it |
+
+The first two are "the state never occurs". **The third is subtler and is the one worth naming**: the
+state DID occur, the row's mechanism was real, and the measurement was simply taken on either side
+of it. Reading that row gives no warning at all — it names a genuine cause and then samples around
+it.
+
+> **FOR EVERY ROW, ASK WHERE THE OBSERVATION SITS RELATIVE TO THE STATE IT DESCRIBES.** Not only
+> "is this state reachable" but **"does the measurement happen while it holds"**.
+
+That question would have caught all three at writing time, and it is cheap: trace the procedure
+step by step and mark, at each step, what the world looks like and what is being read.
+
+##### And when a row fails that question, SIZE IT BEFORE REWRITING IT
+
+R5's third form would have been a one-line fix — reload *first*, then open the browser for the first
+time, so the catalogue builds after two registrations. Correct, and it would have been the wrong
+move, because the row's condition **cannot occur at all**:
+
+`RecipeCatalogue.build()` walks `Bukkit.recipeIterator()` → `RecipeManager.getRecipes()` →
+`RecipeMap.values()` → **`byKey.values()`**, and `byKey` is a `java.util.Map<ResourceKey,
+RecipeHolder>`. One value per key, by definition of `Map`. A duplicate cannot reach the count
+whatever the registrar does.
+
+*(`RecipeMap` does hold a duplicate-capable `Multimap byType`, and `removeRecipe` was verified to
+clean both structures — but the iterator never reads `byType`. Two independent reasons, and the
+weaker one is the interesting one: had the iterator walked `byType`, the row would have been worth
+keeping with the corrected ordering.)*
+
+So R5 was struck as **IMPOSSIBLE — never a test**, on the same footing as 7H. **A row rewritten
+until it runs, when its condition cannot occur, credits coverage that does not exist** — which is
+worse than no row, because the count says 24 and one of them can never fail.
+
+**The rule that follows: when a row cannot observe its state, ask whether the state is reachable
+BEFORE fixing the procedure.** The reflex is to repair the measurement; the question is whether
+there is anything to measure.
+
+#### A /reload SILENTLY STRIPPED EVERY RECIPE WE REGISTER — found by gate row R2, fixed in the same slice
+
+**Observed 2026-09-04.** Vanilla `/reload` rebuilds the server's recipe manager and does **not**
+re-enable plugins. `onEnable` was the only caller of `registerAll`, so after any reload our recipes
+were **gone until the next restart**: the craft stopped working, the browser stopped listing it,
+and **nothing logged and nothing warned**.
+
+**THIS WAS NEVER ABOUT THE FLINT STAFF.** It was a property of anything registered into the recipe
+manager at enable time on this build, so the next mechanism that registers something would have met
+it too. The finding and the fix therefore belong at the **registrar**, not on a content file — which
+is why the handler sits beside `RecipeRegistrar` and `flint_staff.yml` says nothing about reloads.
+
+**The fix:** `io.papermc.paper.event.server.ServerResourcesReloadedEvent` re-runs `registerAll`.
+Paper's own javadoc names the use — *"Intended for use to re-register custom recipes, advancements
+that may be lost during a reload like this"* — and the event was **confirmed present on
+paper-api 26.1.2.build.74-stable before it was chosen**, because R2 exists precisely because
+`/reload confirm` was a remembered command that turned out not to be there.
+
+Re-entry is safe for free: the registrar's unconditional remove-then-add was written so a key that
+survived and a key that vanished take the same path, which is what makes the handler three lines
+rather than a redesign.
+
+##### WHY IT SHIPPED IN THIS SLICE, AND THE FIRST REASON IS NOT THE REAL ONE
+
+"Do not ship a mechanism with a known defect" **does not settle it, and this slice is its own
+counter-example** — it deliberately ships a documented gap: scorch is `kind: fire`, so the staff's
+burn is vanilla-rated and does not credit the caster. If that principle decided things, this slice
+would already be blocked by its own named debt.
+
+**The real distinction is STATED versus SILENT.** Scorch's gap is visible: written in the content
+file, filed above, explainable to a player who notices. The reload gap was invisible — no log, no
+warning, the recipe simply gone.
+
+**And the argument that actually settles it is about the alternative.** Not fixing meant a caveat
+carried on every remaining gate row — *never run this after a `/reload`*:
+
+> **A CAVEAT THAT MUST BE REMEMBERED ON EVERY ROW IS ONE THAT GETS FORGOTTEN.**
+
+That is `continue`-inside-the-loop against `STATUS_SLOTS` — a set that *cannot* contain the close
+slot beats a loop that remembers to skip it — and the memory version was watched to fail **in this
+same week's work**: the stale-jar trap was disarmed by `set -e` happening to fire, not by anyone
+remembering it was armed. A structural fix removes the thing to remember.
+
+##### DO NOT ADD A CATALOGUE INVALIDATION — it is the reflexive move and it is wrong
+
+`RecipeCatalogue` caches for the server's lifetime and holds key, tier and ingredients. **A
+drop-and-re-add under the SAME key changes none of them**, and `RecipeCatalogue.resolve` re-checks
+the live roster on every click regardless. Invalidating on reload would throw away a correct cache
+to fix nothing. Written here because it is exactly what the next reader will reach for.
+
+##### The number that confirmed the finding, and the one that would have refuted it
+
+The re-registration logs a second `Custom recipes:` line, and its `replaced` is a cross-check rather
+than decoration:
+
+- **`0 replaced`** — `removeRecipe` found nothing, so the reload really had dropped the recipe.
+  **This is what was observed**, so R2's finding is confirmed by a second, independent route.
+- `1 replaced` would have meant the key was still present and R2's failure had some other cause —
+  a contradiction to resolve before shipping, not a pass.
+
+Worth keeping as a shape: a fix whose log line also re-tests the defect it fixes turns "did the fix
+fire" into "did the fix fire, **and was the thing it fixes real**".
+
+#### STANDING CONDITION: every scripted boot leaves a JVM holding the jar, so the stale-jar trap is ARMED BY DEFAULT
+
+**Recorded 2026-09-03. This is not a quirk of one run — it is the state the dev loop is in after
+every scripted boot, and it arms the trap CLAUDE.md's VERIFICATION section opens with.**
+
+`echo stop | ./scripts/dev-server.sh` does not stop the server. **And the reason is not the one it
+looks like.** The first note written about this said "`stop` never takes on non-tty stdin", which is
+wrong: the command arrives fine. Read the log instead of reasoning about it and the real mechanism
+is there, identically in all three boots of this slice:
+
+```
+[21:52:54 INFO]: Done (5.863s)! For help, type "help"
+[21:52:54 ERROR]: Command exception: /stop
+java.lang.NullPointerException: Cannot invoke "net.minecraft.server.level.ServerLevel.getGameRules()"
+        because the return value of "net.minecraft.commands.CommandSourceStack.getLevel()" is null
+        at net.minecraft.server.dedicated.DedicatedServer.handleConsoleInputs(DedicatedServer.java:622)
+[21:52:54 INFO]: An unexpected error occurred trying to execute that command
+```
+
+A piped `stop` is delivered **instantly**, so it executes on the first tick that processes console
+input — the same second the server finishes starting — when the console command source has no level
+yet. It throws, the throw is swallowed as "an unexpected error", **and the server runs forever.**
+
+So the chain, which holds after every scripted boot:
+
+1. the stop is swallowed, so the JVM survives the script;
+2. the surviving JVM holds `run/plugins/rpg-*.jar`;
+3. the next `dev-server.sh` cannot `rm -f` it (`Device or resource busy`);
+4. `set -e` aborts **before the deploy**, and the boot after that reads a STALE jar.
+
+**Today step 4 saved a verification, by accident.** The R1 provenance re-run hit exactly this and
+aborted. Nothing was designed to disarm the trap — `set -e` happened to fire. Had the deploy been
+non-fatal, or had the script deployed before removing, the server would have booted the previous
+build and printed a correct-looking R1 line for the wrong jar.
+
+**Until the script changes, the manual discipline is: kill every `java.exe` and confirm the deployed
+jar is not locked BEFORE booting, and compare `target` and deployed mtimes AFTER.** Both were done
+for the R1 re-run (target `21:51:53`, deployed `21:52:48`), which is the only reason its number can
+be trusted.
+
+##### OWED: make `dev-server.sh` stop the server rather than hope
+
+Not done in this slice — it is a dev-script change and this slice is about custom recipes — but
+sized here so it is a decision rather than a rediscovery. Two candidate shapes, and the second is
+better:
+
+- **Delay the stop** (`(sleep 30; echo stop) | ...`). One line, and it fixes the NPE by letting the
+  command land after the level exists. But it trades a hang for a guess about boot time, and a slow
+  boot silently returns to the current behaviour — the failure mode is the same one, just rarer,
+  which is worse than loud.
+- **PID file plus an explicit kill.** `dev-server.sh` already `exec`s java as the last statement, so
+  it would need to background it, write `$!` to `run/server.pid`, `wait`, and trap EXIT/INT to kill
+  that PID. A `--stop` flag then kills by PID file, and the boot path can **refuse to start while a
+  live PID file exists** rather than discovering the lock at `rm` time. That converts a silent
+  precondition into a named refusal, which is the direction every other guard in this repo goes.
+
+**Acceptance for either:** two consecutive scripted boots with no manual kill between them, and the
+second one's deployed-jar mtime newer than its `target` mtime. That criterion is what today's run
+had to be checked by hand.
+
+#### VERIFY THE MUTATION AT THE ARTIFACT, AND THE **REVERT** AT THE ARTIFACT TOO
+
+Two lessons from running gate row R4, and the second is the one that usually gets dropped.
+
+**A marker you can only find in the source proves nothing about the thing that ran.** R4's mutation
+was marked with a comment, and a comment **cannot survive compilation** — so `grep` over the source
+would have confirmed only that the file was edited, never that the running jar had the change. Two
+witnesses, on different substrates, are what settled it:
+
+| substrate | witness |
+|---|---|
+| RUNTIME | two `R4 PASS n -- Custom recipes: ...` lines in the boot log |
+| BUILD | the `R4 PASS 1` / `R4 PASS 2` **string constants** in the compiled `RpgPlugin.class`, and `javap -p -c` showing **two** `RecipeRegistrar.registerAll` invocations |
+
+The log lines alone are weaker than they look: two lines could in principle come from one call
+inside a loop. **The bytecode cannot.** A string constant survives compilation where a comment does
+not, which is why the marker for a mutation should be something the compiler keeps.
+
+**Then hold the UNDO to the same standard.** A revert is a change like any other, and "it went back"
+is a claim, not an observation — but the discipline is almost always spent on the mutation and none
+is left for the restore. R4's revert was checked four ways: restored from a scratchpad copy (never
+`git checkout --`), `md5sum` identical to the pre-mutation file, `git status` clean, and — after a
+fresh `./mvnw clean package` — **zero** `R4 PASS` strings and **one** `registerAll` invocation in
+the REBUILT class, confirmed by a boot printing exactly one `Custom recipes:` line.
+
+This sits beside the marker-count entries above for a reason: they are the same defect seen from
+opposite ends. Those record a mutation believed without evidence it applied; this records the
+symmetric risk of a revert believed without evidence it landed — and a stale mutation left in a
+build is worse than one that never applied, because everything after it is measured through it.
+
+#### A PROVENANCE RE-RUN ON A BOOT-WITNESSED ROW IS NOT BOOKKEEPING — IT IS THE CHECK
+
+R1 was re-run only to attach an observation to a commit: the first reading came from a jar built
+before the slice was committed, from a tree **asserted** rather than verified to match. Tidying.
+
+**It caught a live defect** — the held jar and the aborted deploy above.
+
+That is the general lesson, and it is sharper than "re-run things": **a row whose entire content is
+a log line has no second signal.** R1 passes by printing
+`Custom recipes: 1 registered, 0 replaced, 0 refused, of 1 authored`, and a stale jar prints exactly
+that too, because the previous build was also correct. Nothing downstream could have caught it —
+not the suite, which is green either way; not CI, which never boots; not the row itself, which had
+already "passed". The only thing that distinguishes the two readings is **which build produced
+them**, which is precisely what a provenance re-run establishes and nothing else does.
+
+So on a boot-witnessed row, "which build was this observed on" is not metadata about the check. It
+**is** the check.
+
+#### No automated witness
+
+| no automated witness | lives in | what goes wrong unseen | sole witness (row in `GATE-crafting.md`) |
+|---|---|---|---|
+| recipe REGISTRATION | `RecipeRegistrar` | nothing is on the roster; the staff is unobtainable | R1 |
+| what `/reload` does to our recipes | the server | unknown, by admission — the code is correct either way | R2 (records the number) |
+| the `replaced` counter itself | `RecipeRegistrar` | a dead counter makes R2's number meaningless | **R4** (the instrument's own control) |
+| minting from a custom recipe | `commitCraft` | a plain stick for a flint | 7C |
+| the Crafter refusing our recipe | `onCrafterCraft` | a redstone flint-to-stick machine | 7E |
+| recipes surviving a `/reload` | `onResourcesReloaded` | every custom recipe silently gone until restart | R2 (the craft), R6 (the roster) |
+| a duplicate recipe key | — | nothing: `byKey` is a Map, so it cannot occur. R5 struck IMPOSSIBLE | none needed |
+| `fits` against the delivered item | `InventoryCraft.craft` | up to 64 weapons on the floor | 7F |
+| WEAPON tier occupying the column | `SuggestionTiers` | the first ordinal was unreachable until now | Q15, Q16 |
+
+
 ### Crafting, Slice 5 (Quick Craft, first half) — what it created or exposed
 
 - **THE GATE ROWS WERE NOT IN THE REPOSITORY, AND NOTHING FAILED WHEN THEY WERE NOT.** Q1-Q14 were
@@ -793,33 +1207,61 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ---
 
-### OWED: FIVE MEASUREMENTS, AND THIS MUST NOT BECOME A LIST
+### Q24's MEASUREMENTS — CLOSED 2026-09-04. Q2's ARE STILL OWED.
 
-**Owed as of 2026-09-03, slice 6.** Gate row Q24 **passed** and its figure **was not written down**:
+**Recorded from the slice-7 gate run**, which opened the browser three times across three server
+lifetimes. The instrument was deleted in the same commit, as the rule below requires.
 
-| measurement | state |
+| measurement | value |
 |---|---|
-| Q24 catalogue build time (µs) | **OWED** |
-| entries | **OWED** |
-| unkeyed skipped | **OWED** |
-| not fully listable — **Q29's evidence**, whatever its value | **OWED** |
-| mutation 8: stageable, or unrunnable with a reason | **OWED** |
+| entries | **1095** |
+| catalogue build time | **7137 µs / 7994 µs / 11159 µs** — all three runs |
+| unkeyed skipped | **0** |
+| not fully listable — **Q29's evidence** | **0** |
+| mutation 8: stageable, or unrunnable with a reason | **STILL OWED** |
 
-**`Q2`'s craftable / probed / distinct-stack counts from SLICE 5 ARE STILL OWED ON THIS SAME PAGE.**
-That is the point of putting these here rather than in a report: **two entries is a list, and a list
-of owed measurements is a thing people stop reading.** One of them has now survived a whole slice.
+**THE SPREAD IS PART OF THE MEASUREMENT, NOT NOISE AROUND IT.** 7.1 ms to 11.2 ms is a **57 %
+spread across three runs**. A single reading would have been written down as "7 ms" and would have
+been misleading — and the entry this one replaced was itself a number recorded without what it
+means. *Do not create the second instance while closing the first.*
 
-**How to close both:** boot, open the browser once, read
-`Recipe catalogue built: N entries in Nµs (N unkeyed skipped, N not fully listable)`, write the five
-figures into Q24 and Q29, and **delete the instrument in that same commit**. One commit.
+**WHAT IT MEANS AGAINST Q2, which is why this note exists at all.** The two figures measure
+different things and were always at risk of being confused:
 
-> **THE INSTRUMENT SHIPPED, DELIBERATELY, and the reasoning is in `RecipeCatalogue` and the gate.**
+| | build | of a 50 ms tick |
+|---|---|---|
+| Q2 — the suggestion probe | **298 µs** | 0.6 % (168x headroom) |
+| Q24 — the catalogue walk | **7137–11159 µs** | **14–22 %** |
+
+The catalogue is **24x to 37x** the probe, which is exactly what *"no early bail"* predicted: the
+probe stops once it has three cells, and the walk cannot stop at all. It is paid **once per server
+lifetime**, inside a player's click.
+
+**"No perceptible stall" HOLDS — with far less headroom than Q2's.** A fifth of a tick is not a
+stutter, but it is not 0.6 % either, and a row that recorded only "passed" would have hidden the
+difference. If the roster grows or the walk gains work, this is the figure that moves first.
+
+**`Q2`'s craftable / probed / distinct-stack counts from SLICE 5 REMAIN OWED**, and are **not**
+recoverable from the gate run: no instrument for them exists in the code and no such line appears in
+any server log. Closing them needs a new instrument, which is a change, not a reading. **Better an
+open debt than one that quietly looks closed** — that is the whole reason this page exists rather
+than a report.
+
+> **THE INSTRUMENT SHIPPED, DELIBERATELY, and the reasoning was in `RecipeCatalogue` and the gate.**
 > *No number, no deletion* — the rule *"delete it in the commit that records the number"* protects
-> the **number**, not the deletion, and deleting it first makes an only-once measurement permanently
-> unrecoverable rather than merely unrecorded. It logs **at most once per server lifetime** (verified:
-> `entries == null` guards both entry points, `entries` is assigned once before the empty-catalogue
-> early return, one instance exists), so shipping it costs one console line.
+> the **number**, not the deletion, and deleting it first would have made an only-once measurement
+> permanently unrecoverable rather than merely unrecorded. That rule paid off exactly as written:
+> the figures above were read out of logs from a gate run nobody was thinking about measurement
+> during, a slice after they were owed.
 
+> **AND IT CORRECTED A NUMBER THE REPO HAD ASSERTED FIVE TIMES.** The roster was written down as
+> **1214** in `GATE-crafting.md` (Q11's rewording), twice in this file, and — found only by
+> enumerating rather than fixing the cited sites — twice more in Java: `RecipeBrowserMenu` and
+> `RecipeCatalogue`. It was an estimate that predated the catalogue filtering to keyed
+> shaped/shapeless recipes, and it was never re-read once a real number existed. **The observation
+> outranks the prose**, and for once the correction arrived *with* the observation rather than a
+> slice later. It also makes Q11's own example work: 1214 gives a last page of 44 out of 45, which
+> barely illustrates "a genuinely short last page"; the measured 1095 gives 15.
 ---
 
 ### OWED: NOTHING IN THE REPO CAN DETECT THE NEXT ICON COLLISION
@@ -1017,7 +1459,7 @@ the day it is made.**
 ### THE BROWSER'S FOUNDING PREMISE WAS REVERSED, DELIBERATELY, AFTER IT WAS BUILT
 
 **2026-09-03, operator decision.** The recipe browser now shows **only what the player can craft
-right now**. It was built to page through the whole 1214-recipe roster.
+right now**. It was built to page through the whole 1095-recipe roster.
 
 **The argument it was built on was mine, and it was correct for the brief it was made under:**
 
@@ -1026,7 +1468,7 @@ right now**. It was built to page through the whole 1214-recipe roster.
 That holds for a browser whose purpose is to make the Q16 squeeze reachable — the three-cell column
 fills with gear, so armor and every vanilla recipe are unreachable from the crafting screen, and
 something has to answer for them. **It is not the brief any more.** The purpose is *"an easy way to
-craft quickly"*, and against that purpose 1214 entries is clutter. The reversal is recorded here, and
+craft quickly"*, and against that purpose 1095 entries is clutter. The reversal is recorded here, and
 the old reasoning is replaced at each of its call sites rather than left sitting in the files looking
 live — `RecipeCatalogue`'s "why this is not RecipeProbe" section said the opposite in so many words.
 

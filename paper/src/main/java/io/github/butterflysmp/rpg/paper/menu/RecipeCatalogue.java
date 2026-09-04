@@ -40,7 +40,7 @@ import java.util.List;
  * <b>The browser shows only what the player can craft RIGHT NOW</b>, and filters this list per
  * player each time it opens. That is a reversal of the premise this class was written under, taken
  * deliberately: the brief is <i>"an easy way to craft quickly"</i>, not a recipe encyclopedia, and
- * 1214 entries is clutter against that purpose.
+ * 1095 entries is clutter against that purpose.
  *
  * <p><b>The static catalogue survives the reversal unchanged, and is still the right structure.</b>
  * Roster membership, key, tier, body slot and ingredients do not depend on any player, so they are
@@ -200,7 +200,6 @@ public final class RecipeCatalogue {
     }
 
     private void build() {
-        long startedAt = System.nanoTime();
 
         List<Entry> built = new ArrayList<>();
         int unlistable = 0;
@@ -237,8 +236,6 @@ public final class RecipeCatalogue {
         this.entries = List.copyOf(built);
         this.partiallyListable = unlistable;
 
-        long micros = (System.nanoTime() - startedAt) / 1_000;
-
         // CLAUDE.md:104 -- a discovery that finds nothing is a DEFECT, not a quiet no-op. An empty
         // catalogue is indistinguishable from a working browser that happens to be blank, which is
         // exactly the shape that file records for getResource("content/").
@@ -249,34 +246,19 @@ public final class RecipeCatalogue {
             return;
         }
 
-        // THE INSTRUMENT. The catalogue walk has NO early bail -- keeping everything is the point --
-        // so it is a bigger job than the 298us the suggestion probe was measured at, and under lazy
-        // build it runs on the MAIN THREAD inside a player's click rather than at boot where nobody
-        // is waiting. Q2's number must not be cited for it.
+        // THE INSTRUMENT WAS HERE, AND IT WAS DELETED IN THE COMMIT THAT RECORDED ITS NUMBER --
+        // 2026-09-04, exactly as the rule required. The figures are in NEXT.md under
+        // "Q24's MEASUREMENTS": 1095 entries, 7137/7994/11159us across three runs, 0 unkeyed
+        // skipped, 0 not fully listable.
         //
-        // THIS LOG LINE SURVIVES DELIBERATELY. It is temporary, it exists to put a real number in
-        // gate row Q24, and it is deleted IN THE COMMIT THAT RECORDS THAT NUMBER -- see
-        // PLAN-1b-swing-listener.md:134, and slice 5's lesson that a passing row is exactly when
-        // "remove before merge" gets skipped.
+        // WHAT THE NUMBER SAID, kept because it is the reason anyone would re-add a timer here:
+        // the walk has NO early bail -- keeping everything is the point -- so at 7-11ms it is
+        // 24-37x the suggestion probe's 298us, and 14-22% of a 50ms tick, paid once per server
+        // lifetime on the MAIN THREAD inside a player's click. No perceptible stall, but with far
+        // less headroom than the probe's 168x. If this walk ever gains work, that is the figure
+        // that moves first, and it is worth re-measuring rather than assuming.
         //
-        // Q24 PASSED ON 2026-09-03 AND THE FIGURE WAS NOT WRITTEN DOWN, so that rule's precondition
-        // is unmet. IT CUTS BOTH WAYS: no number, no deletion. Deleting this before the figure is
-        // recorded makes an ONLY-ONCE measurement PERMANENTLY UNRECOVERABLE rather than merely
-        // unrecorded -- the cost is paid once per server lifetime and this line is the only way to
-        // observe it. The rule exists to protect the number, not to protect the deletion.
-        //
-        // Shipping it costs one console line, and that is VERIFIED rather than assumed: build() is
-        // guarded by `entries == null` at both entry points, `entries` is assigned once and never
-        // reset -- and assigned BEFORE the empty-catalogue early return above, so even that path
-        // cannot re-run it -- and exactly one RecipeCatalogue is constructed, in RpgListeners. So
-        // this logs AT MOST ONCE PER SERVER LIFETIME, on the first browser open, and never at all if
-        // nobody opens the browser. Slice 5's instrument was per menu instance and would have logged
-        // for every player on every table open, for ever; this is not that.
-        //
-        // TO CLOSE IT: boot, open the browser once, read this line, write the five figures into Q24
-        // and Q29's evidence, and delete this block in the same commit. One line of work.
-        adapters.log().info("Recipe catalogue built: " + entries.size() + " entries in "
-                + micros + "us (" + skipped + " unkeyed skipped, "
-                + partiallyListable + " not fully listable)");
+        // Q2's craftable/probed/distinct-stack counts are a DIFFERENT measurement and are still
+        // owed; this number must not be cited for them.
     }
 }

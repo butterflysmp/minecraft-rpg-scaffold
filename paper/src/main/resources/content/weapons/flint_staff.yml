@@ -1,0 +1,108 @@
+# The Flint Staff, ported from the old repo (BSMPMenu). The first weapon obtainable by CRAFTING
+# rather than by /rpg give or a kit, and the first consumer of custom recipe support.
+#
+# The recipe lives in content/recipes/flint_staff.yml and points AT this file (`mints:
+# flint_staff`). There is deliberately no craft_result here -- see the note at the bottom.
+#
+# Numbers are the old repo's, unchanged and verified against it:
+#   Formulas.FLINT_STAFF_BASE_DAMAGE  = 20
+#   Formulas.FLINT_STAFF_COOLDOWN_MS  = 1200   -> cooldown_ticks 24
+#   StaffListener.FLINT_STAFF_MANA_COST     = 5
+#   StaffListener.FLINT_STAFF_BURN_TICKS    = 80
+
+id: flint_staff
+display_name: "Flint Staff"
+element: fire
+rarity: common
+class: mage
+
+# MATERIAL IS `stick`, FROM THE OLD REPO: ItemFactory.createFlintStaff() is
+# createSwordSlotItem(Material.STICK, "FLINT_STAFF"). Flint plus two sticks producing a stick is
+# faithful and slightly odd, and it is deliberate -- confirmed rather than inherited by accident.
+#
+# TWO CONSEQUENCES WORTH KNOWING BEFORE ANYONE "TIDIES" THIS:
+#
+# 1. THIS STAFF CAN NEVER BREAK, AND THAT IS A DECISION.
+#    A stick has no durability, and Durability.isBroken opens with `if (maxDurability <= 0) return
+#    false` under a javadoc naming it THE STAFF-AND-STONE EXEMPTION. So this weapon never wears and
+#    never breaks.
+#
+#    IT IS NOT THE FIRST INDESTRUCTIBLE GEAR -- it is the first CRAFTABLE one. ember_staff
+#    (blaze_rod) and ability_stone (amethyst_shard) are already non-durable on master and already
+#    never break; the exemption is named for them. What is new is that indestructible gear can now
+#    reach a player through the ECONOMY rather than only through /rpg give or a kit, which is the
+#    half that matters for balance. The OLD staff could break -- StaffListener checked
+#    ItemRegistry.isBroken before firing, which is only meaningful on an item that wears.
+#
+#    THE COROLLARY, which matters more than the decision: nobody may "fix" this by requiring gear to
+#    be durable. That would break an exemption the codebase holds on purpose, and which the two
+#    weapons above depend on. If indestructible is not wanted, THE MATERIAL IS THE LEVER, and
+#    changing it costs one word now and a re-mint later.
+#
+# 2. THE MINTED STAFF STACKS TO 64, because a stick does. Two staves with identical enchant rolls
+#    are isSimilar and will merge. Nothing downstream breaks (weapon lookup is per item), and
+#    ember_staff on a blaze_rod already has this property, so it is not new here.
+material: stick
+
+flavor:
+  - "A shard of flint, lashed and lit."
+  - "Cheap enough to lose. Hot enough to matter."
+
+triggers:
+  right_click:
+    name: "Fire Bolt"
+    description:
+      - "Hurls a mote of burning flint."
+    cooldown_ticks: 24
+    cost:
+      resource: mana
+      amount: 5
+    # THE OLD BOLT WAS AN ITEM ENTITY, NOT A PROJECTILE, and it will not look the same.
+    #
+    # StaffListener.launchFlintStaffBolt dropped a REAL Material.FLINT item with pickup disabled,
+    # then tracked it per tick: so it TUMBLED as it flew and left a flame-and-smoke trail, and it
+    # resolved on the first LivingEntity within 0.7 blocks or when Item.isOnGround flipped.
+    # `cast: type: projectile` is a different thing and will read as a cleaner, straighter shot.
+    #
+    # Written down so the difference is a KNOWN PORT GAP rather than something reported as a bug.
+    # Restoring the thrown-item look is a separate and bigger decision than this slice.
+    #
+    # Speed and lifetime approximate the old throw (velocity 1.4, 40-tick timeout).
+    cast:
+      type: projectile
+      speed: 1.4
+      gravity: 0.05
+      max_lifetime_ticks: 40
+    on_hit:
+      - type: visual
+        visual_id: ember_burst
+      - type: damage
+        amount: 20
+        element: fire
+      # SCORCH IS NOT THE OLD DOT, AND THE DIFFERENCE IS A NAMED DEBT (see NEXT.md).
+      #
+      # What this reproduces EXACTLY is the old resolveFlintStaffHit's visual fire envelope:
+      # `target.setFireTicks(FLINT_STAFF_BURN_TICKS)` with FLINT_STAFF_BURN_TICKS = 80.
+      #
+      # What it does NOT reproduce is applyFlintStaffIgnition, which ran BESIDE that: 5 damage per
+      # second for 4 seconds, DamageSources.magic(shooter), knockback suppressed per tick, cancelled
+      # on target death. Scorch is kind: fire -> setFireTicks, so the burn is VANILLA-RATED and does
+      # NOT CREDIT THE CASTER -- no kill credit, and no interaction with the damage system.
+      #
+      # Accepted for now. Scorch gets implemented properly in a later slice.
+      - type: status
+        status_id: scorch
+        duration_ticks: 80
+
+# NO craft_result HERE, AND DO NOT ADD ONE -- it is the natural thing to reach for.
+#
+# Two reasons, and the first is fatal on its own:
+#
+#   craft_result claims a MATERIAL. This weapon's material is `stick`, so the claim would mint a
+#   Flint Staff from EVERY VANILLA STICK CRAFT ON THE SERVER. That is precisely the design error
+#   recipe-identity claiming exists to avoid.
+#
+#   And boot would refuse it anyway: ContentValidator.validateCraftResults rejects a craft_result on
+#   a material with no durability, which a stick is.
+#
+# The recipe claims this weapon, not the other way round. See content/recipes/flint_staff.yml.

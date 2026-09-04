@@ -111,13 +111,39 @@ final class InventoryCraft {
         NamespacedKey pin = RecipeProbe.keyOf(recipe);
         Optional<NamespacedKey> pinned = Optional.ofNullable(pin);
 
+        // LOOK BEFORE YOU LEAP AT THE ITEM YOU WILL ACTUALLY HAND OVER, not at the recipe's
+        // REGISTERED result. Since slice 7 those can be different items: a custom recipe registers
+        // a plain vanilla stack -- the Flint Staff registers a plain STICK -- and delivers a minted
+        // one.
+        //
+        // THE DEFECT THIS CLOSES, which did not exist before a custom recipe could register a
+        // STACKABLE result. MenuSafety.fits credits room in a partial stack it finds `isSimilar` to
+        // the item. A player with no empty slot but 32 plain sticks would be told a stick FITS --
+        // and it would, but the minted staff carries meta, is not similar to a plain stick, and
+        // needs a whole slot. fits says yes sixty-four times, and sixty-four minted weapons land on
+        // the floor: exactly the pile fits' own javadoc exists to prevent.
+        //
+        // Unreachable before now because every craft_result is a durable material, whose max stack
+        // is 1: a matching stack of one credits nothing, so only empty slots ever counted and the
+        // two items agreed by accident.
+        //
+        // The probe is minted UNROLLED while the delivered item is minted and rolled. That is the
+        // conservative direction: nothing in a real inventory is isSimilar to either, so only
+        // empty-slot room counts for both.
+        //
+        // (CraftingMenu.craftRepeatedly needs no such fix and must not grow one -- it reads the
+        // RESULT SLOT, which refreshPreview already minted. Same reasoning, opposite conclusion.)
+        ItemStack delivered = claimFor(pin, recipe.getResult())
+                .map(definition -> GearItems.mint(definition, adapters))
+                .orElseGet(recipe::getResult);
+
         int crafted = 0;
         int passes = bulk ? MAX_BULK_CRAFTS : 1;
         boolean full = false;
         for (int pass = 0; pass < passes; pass++) {
             // The same look-before-you-leap the grid loop does, and for the same reason -- see
             // craftRepeatedly. Checked BEFORE the craft so a full inventory costs no ingredients.
-            if (!MenuSafety.fits(viewer, recipe.getResult())) {
+            if (!MenuSafety.fits(viewer, delivered)) {
                 full = true;
                 break;
             }
@@ -278,7 +304,11 @@ final class InventoryCraft {
         }
 
         ItemStack vanilla = result.getResult();
-        Optional<GearDefinition> claimed = claimFor(vanilla);
+        // THE PIN IS THE MATCHED KEY, by construction: CraftingMenu.matches returned true just
+        // above, and it only does that when `pinned` is present AND equals the matched recipe's
+        // key. So there is nothing to look up again -- asking Bukkit for the recipe a second time
+        // here would be a second call for a value already in hand.
+        Optional<GearDefinition> claimed = claimFor(pinned.orElse(null), vanilla);
         if (claimed.isEmpty()) return new CraftOutcome(vanilla, result.getResultingMatrix());
 
         // Minted, then rolled, in that order and never the other way: mint builds a FRESH meta with
@@ -313,19 +343,22 @@ final class InventoryCraft {
      * another -- the third time this arc has met two callers that agree today, and the reason they
      * share a function rather than an intention.
      *
-     * <p>The durability test here is BELT-AND-BRACES, not the real check. Boot already refuses a
-     * {@code craft_result} naming a material with no durability
-     * ({@code ContentValidator.validateCraftResults}), so nothing in the index can fail it. It stays
-     * because it costs nothing and because the index is reachable from a future caller that has not
-     * been through that validation.
+     * <p><b>ONE LOOKUP, TWO SOURCES.</b> Since slice 7 a craft can be ours by RECIPE IDENTITY (a
+     * recipe we registered, matched on our own key) or by RESULT MATERIAL (the original
+     * {@code craft_result} axis). Those are two sources behind one question, and deliberately not
+     * two questions callers choose between -- so this delegates to
+     * {@link RecipeProbe#claimedBy(NamespacedKey, ItemStack, AdapterContext)}, which is where the
+     * order, the namespace check and the durability gate's now-narrower scope are all argued.
      *
-     * <p>Note this is a DIFFERENT test from the Crafter block's durability guard, which is the whole
-     * policy there and applies to items no definition has ever claimed. They must not be merged.
+     * <p>This method stays rather than being inlined: three menus call it through the instance, and
+     * it is the name the arc's javadocs cross-reference.
+     *
+     * @param recipeKey the matched recipe's key, or null for a vanilla or unkeyed match.
      */
-    Optional<GearDefinition> claimFor(ItemStack vanillaResult) {
-        if (MenuSafety.isEmpty(vanillaResult)) return Optional.empty();
-        if (WeaponDurability.maxOf(vanillaResult).isEmpty()) return Optional.empty();
-        return adapters.craftResults().forResult(vanillaResult.getType().getKey().getKey());
+    Optional<GearDefinition> claimFor(NamespacedKey recipeKey, ItemStack vanillaResult) {
+        if (recipeKey == null && MenuSafety.isEmpty(vanillaResult)) return Optional.empty();
+        return Optional.ofNullable(
+                RecipeProbe.claimedBy(recipeKey, vanillaResult, adapters));
     }
 
     /**

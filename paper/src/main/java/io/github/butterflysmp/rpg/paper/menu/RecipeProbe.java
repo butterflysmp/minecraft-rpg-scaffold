@@ -296,14 +296,16 @@ public final class RecipeProbe {
     /**
      * Which tier a recipe's OUTPUT sorts in.
      *
-     * <p>Asks the same {@code claimFor} question the commit does -- does content claim this crafted
-     * material -- and hands the answer to {@link SuggestionTiers}. Sharing the lookup is what stops
-     * a suggestion sorting as a weapon and then minting nothing, or the reverse.
+     * <p>Asks the same {@code claimFor} question the commit does -- is this craft ours -- and hands
+     * the answer to {@link SuggestionTiers}. Sharing the lookup is what stops a suggestion sorting
+     * as a weapon and then minting nothing, or the reverse.
      *
-     * <p>The durability gate is here for the same belt-and-braces reason {@code CraftingMenu.claimFor}
-     * carries it: boot already refuses a {@code craft_result} on a material with no durability, so
-     * nothing in the index can fail it, but the index is reachable from a caller that has not been
-     * through that validation.
+     * <p><b>This method holds no gate of its own.</b> It delegates entirely to
+     * {@link #claimedBy(Recipe, AdapterContext)}, which is the single place the two claim sources,
+     * their order, the namespace check and the durability gate's scope are decided and argued. Do
+     * not restate any of that here: this javadoc previously carried a copy of the durability
+     * argument, it was not updated when that argument was falsified by the recipe axis, and it
+     * outlived its own premise by one slice while sitting forty-seven lines from the correction.
      */
     public static SuggestionTier tierOf(Recipe recipe, AdapterContext adapters) {
         return SuggestionTiers.of(claimedBy(recipe, adapters));
@@ -330,13 +332,63 @@ public final class RecipeProbe {
      * answer, and two copies of this lookup would be two chances to classify one recipe two ways --
      * the "two callers that agree today" shape this arc has now closed three times.
      *
-     * <p>The durability gate is belt-and-braces for the reason {@code InventoryCraft.claimFor}
-     * carries it: boot already refuses a {@code craft_result} on a material with no durability, so
-     * nothing in the index can fail it, but the index is reachable from a caller that has not been
-     * through that validation.
+     * <h2>TWO SOURCES, ONE LOOKUP, IN A FIXED ORDER</h2>
+     *
+     * Since slice 7 a craft can be ours for either of two reasons, and they are asked in this
+     * order:
+     *
+     * <ol>
+     *   <li><b>RECIPE IDENTITY</b> -- a recipe WE registered, matched on our own key. Checked
+     *       first because it is the MORE SPECIFIC claim: a key names exactly one recipe, while a
+     *       material names every recipe that produces it. The case is reachable, not theoretical:
+     *       a custom recipe produces a vanilla material, and some definition may claim that same
+     *       material via {@code craft_result}. Both would fire; the key wins.
+     *   <li><b>RESULT MATERIAL</b> -- the original {@code craft_result} axis, unchanged.
+     * </ol>
+     *
+     * The namespace check on the first arm is load-bearing: without it a third-party
+     * {@code otherplugin:flint_staff} would resolve to our weapon.
+     *
+     * <h2>THE DURABILITY GATE GUARDS THE SECOND ARM ONLY, AND THAT IS NOT AN OVERSIGHT</h2>
+     *
+     * <b>This paragraph used to say the gate was belt-and-braces "because boot already refuses a
+     * craft_result on a material with no durability, so nothing in the index can fail it". That
+     * argument DIED with the recipe axis</b> -- {@code ContentValidator.validateCraftResults} makes
+     * no such demand of a recipe claim, and by design: a recipe key is a strong identifier and
+     * needs no narrowing.
+     *
+     * <p>So the gate stays where it was and nowhere else. On the material arm it still narrows a
+     * weak key, and it is still reachable from a caller that has not been through boot validation.
+     * On the recipe arm it would refuse every weapon whose material has no durability -- the Flint
+     * Staff (a stick), the ember_staff (a blaze_rod), the ability_stone (an amethyst_shard) -- by
+     * indexing them cleanly and then never minting them, silently, with no error anywhere.
+     *
+     * <p>This is also a DIFFERENT test from the Crafter block's durability guard, which is a policy
+     * about outputs rather than a narrowing of a key. They must not be merged.
      */
     public static GearDefinition claimedBy(Recipe recipe, AdapterContext adapters) {
-        ItemStack result = recipe == null ? null : recipe.getResult();
+        return claimedBy(keyOf(recipe), recipe == null ? null : recipe.getResult(), adapters);
+    }
+
+    /**
+     * The same question, for a caller that already holds the matched key.
+     *
+     * <p>{@code InventoryCraft.commitCraft} is the reason this overload exists: after
+     * {@code CraftingMenu.matches} returns true, the PIN IS the matched recipe's key by
+     * construction, so asking the server for the recipe a second time would be a second call for a
+     * value already in hand.
+     *
+     * @param recipeKey the matched recipe's key, or null for a vanilla or unkeyed match.
+     * @param result    the vanilla result the craft would produce.
+     */
+    public static GearDefinition claimedBy(NamespacedKey recipeKey, ItemStack result,
+                                           AdapterContext adapters) {
+        if (recipeKey != null && recipeKey.getNamespace().equals(adapters.keys().namespace())) {
+            GearDefinition byRecipe =
+                    adapters.craftResults().forRecipe(recipeKey.getKey()).orElse(null);
+            if (byRecipe != null) return byRecipe;
+        }
+
         if (result == null || result.getType().isAir()) return null;
         if (WeaponDurability.maxOf(result).isEmpty()) return null;
 

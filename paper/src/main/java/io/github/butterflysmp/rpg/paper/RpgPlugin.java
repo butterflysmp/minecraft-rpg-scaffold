@@ -20,6 +20,7 @@ import io.github.butterflysmp.rpg.core.weapon.ToolDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
+import io.github.butterflysmp.rpg.core.recipe.RecipeRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
@@ -41,6 +42,8 @@ import io.github.butterflysmp.rpg.paper.content.ArmorConsistency;
 import io.github.butterflysmp.rpg.paper.content.ArmorLoader;
 import io.github.butterflysmp.rpg.paper.content.ShieldLoader;
 import io.github.butterflysmp.rpg.paper.content.ToolLoader;
+import io.github.butterflysmp.rpg.paper.content.RecipeLoader;
+import io.github.butterflysmp.rpg.paper.content.RecipeRegistrar;
 import io.github.butterflysmp.rpg.paper.content.WeaponLoader;
 import io.github.butterflysmp.rpg.paper.health.DamagePopupManager;
 import io.github.butterflysmp.rpg.paper.health.MobDeathSystem;
@@ -148,6 +151,7 @@ public final class RpgPlugin extends JavaPlugin {
     private ArmorRegistry armor;
     private ToolRegistry tools;
     private MobRegistry mobs;
+    private RecipeRegistry recipes;
     private CraftResultIndex craftResults;
     private CooldownTracker cooldowns;
     private ResourcePool resources;
@@ -186,12 +190,14 @@ public final class RpgPlugin extends JavaPlugin {
         this.armor = new ArmorLoader(getLogger()).loadAll(new File(contentDir, "armor"));
         this.tools = new ToolLoader(getLogger()).loadAll(new File(contentDir, "tools"));
         this.mobs = new MobLoader(getLogger()).loadAll(new File(contentDir, "mobs"));
+        this.recipes = new RecipeLoader(getLogger()).loadAll(new File(contentDir, "recipes"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
                 + kits.size() + " kits, " + weapons.size() + " weapons, "
                 + shields.size() + " shields, " + armor.size() + " armor, "
-                + tools.size() + " tools, " + mobs.size() + " mobs");
+                + tools.size() + " tools, " + mobs.size() + " mobs, "
+                + recipes.size() + " recipes");
 
         // ZERO IS A DEFECT, NOT A QUIET NO-OP. A loader that discovers nothing reads exactly like
         // one that worked, and this is the failure mode CLAUDE.md records twice: getResource on a
@@ -317,12 +323,18 @@ public final class RpgPlugin extends JavaPlugin {
         // Keyed on craft_result and never on material: materials are contested by design (every
         // sword-shaped weapon leaves material at DEFAULT_MATERIAL), so an index keyed on them would
         // warn forever about correct content and never mint a sword. See CraftResultIndex.
+        //
+        // AND, since slice 7, which of OUR OWN recipes mints which gear. Two axes, one index:
+        // WE DO NOT OWN VANILLA RECIPES, SO THEY ARE IDENTIFIED BY THEIR RESULT.
+        // WE OWN OURS, SO THEY ARE IDENTIFIED BY THEIR KEY.
+        // The join happens inside build(), so "a recipe mints gear that does not exist" is a
+        // decision with a unit test rather than a boot-gate-only one.
         List<GearDefinition> allGear = new ArrayList<>();
         allGear.addAll(weapons.all());
         allGear.addAll(shields.all());
         allGear.addAll(armor.all());
         allGear.addAll(tools.all());
-        this.craftResults = CraftResultIndex.build(allGear,
+        this.craftResults = CraftResultIndex.build(allGear, recipes.all(),
                 problem -> getLogger().warning("Content: " + problem));
 
         // THE POSITIVE CONTROL, and it matters as much as the collision warning above. An index that
@@ -351,6 +363,41 @@ public final class RpgPlugin extends JavaPlugin {
             getLogger().warning("No craft_result claims were indexed -- crafting will never mint RPG "
                     + "gear, and a crafted shield will give ZERO custom protection. Expected at "
                     + "least shield.yml, the armor pieces and the iron tools to claim one.");
+        }
+
+        // OUR OWN RECIPES GO ON THE ROSTER, after the index that says which of them mint anything
+        // and before the AdapterContext. Nothing enumerates recipes at boot -- RecipeCatalogue is
+        // built lazily on the first browser open, precisely so another plugin's onEnable can still
+        // register after ours -- so this is safely ahead of every walk.
+        RecipeRegistrar.Report registration =
+                RecipeRegistrar.registerAll(this, recipes.all(), craftResults, getLogger());
+
+        // FOUR NUMBERS, AND `authored` IS THE CONTROL. It comes from the REGISTRY; the other three
+        // come from the registrar's own walk. A registrar that did nothing would otherwise print
+        // "0 registered, 0 replaced, 0 refused" -- self-consistent, and identical to a server with
+        // no recipe files. "0 registered ... of 1 authored" is wrong at a glance.
+        //
+        // `replaced` is also the ONLY observable answer to a question the pinned API does not
+        // document: what /reload does to recipes we added. On a fresh boot it must be 0. After a
+        // /reload, whatever it reads is the fact -- the registration is written so the code is
+        // correct either way, and the gate row records the number rather than asserting one.
+        getLogger().info("Custom recipes: " + registration.registered() + " registered, "
+                + registration.replaced() + " replaced, " + registration.refused() + " refused, of "
+                + registration.authored() + " authored (" + craftResults.recipesIndexed()
+                + " minting gear"
+                + (craftResults.recipesDropped() > 0
+                        ? ", " + craftResults.recipesDropped() + " dropped as minting nothing" : "")
+                + ")");
+
+        // ZERO IS A DEFECT, NOT A QUIET NO-OP -- the same rule as every count above. content/recipes
+        // is BRAND NEW, which makes it the likeliest of all of them to arrive empty: an existing
+        // run/ data folder predates the directory entirely and saveResource never overwrites, so the
+        // only thing that puts flint_staff.yml on disk is the jar enumeration finding it. Boot with
+        // --refresh-content, or this is what you will see.
+        if (registration.registered() == 0) {
+            getLogger().warning("No custom recipes were registered -- every weapon that is only "
+                    + "obtainable by crafting one is unobtainable. Expected at least "
+                    + "flint_staff.yml in content/recipes.");
         }
 
         // The immobilize anchor's drift tolerance -- the one tuning knob, in config.yml so it
@@ -437,7 +484,8 @@ public final class RpgPlugin extends JavaPlugin {
         // The one and only registerEvents call. Keep it that way.
         getServer().getPluginManager().registerEvents(
                 new RpgListeners(cooldowns, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
-                        healthSystem, nameplates, statsBar, healthRegen), this);
+                        healthSystem, nameplates, statsBar, healthRegen,
+                        this, recipes), this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
         // paper-plugin.yml. We do NOT call PacketEvents.setAPI() or .load()
