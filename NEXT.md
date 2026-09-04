@@ -822,6 +822,36 @@ better:
 second one's deployed-jar mtime newer than its `target` mtime. That criterion is what today's run
 had to be checked by hand.
 
+#### VERIFY THE MUTATION AT THE ARTIFACT, AND THE **REVERT** AT THE ARTIFACT TOO
+
+Two lessons from running gate row R4, and the second is the one that usually gets dropped.
+
+**A marker you can only find in the source proves nothing about the thing that ran.** R4's mutation
+was marked with a comment, and a comment **cannot survive compilation** — so `grep` over the source
+would have confirmed only that the file was edited, never that the running jar had the change. Two
+witnesses, on different substrates, are what settled it:
+
+| substrate | witness |
+|---|---|
+| RUNTIME | two `R4 PASS n -- Custom recipes: ...` lines in the boot log |
+| BUILD | the `R4 PASS 1` / `R4 PASS 2` **string constants** in the compiled `RpgPlugin.class`, and `javap -p -c` showing **two** `RecipeRegistrar.registerAll` invocations |
+
+The log lines alone are weaker than they look: two lines could in principle come from one call
+inside a loop. **The bytecode cannot.** A string constant survives compilation where a comment does
+not, which is why the marker for a mutation should be something the compiler keeps.
+
+**Then hold the UNDO to the same standard.** A revert is a change like any other, and "it went back"
+is a claim, not an observation — but the discipline is almost always spent on the mutation and none
+is left for the restore. R4's revert was checked four ways: restored from a scratchpad copy (never
+`git checkout --`), `md5sum` identical to the pre-mutation file, `git status` clean, and — after a
+fresh `./mvnw clean package` — **zero** `R4 PASS` strings and **one** `registerAll` invocation in
+the REBUILT class, confirmed by a boot printing exactly one `Custom recipes:` line.
+
+This sits beside the marker-count entries above for a reason: they are the same defect seen from
+opposite ends. Those record a mutation believed without evidence it applied; this records the
+symmetric risk of a revert believed without evidence it landed — and a stale mutation left in a
+build is worse than one that never applied, because everything after it is measured through it.
+
 #### A PROVENANCE RE-RUN ON A BOOT-WITNESSED ROW IS NOT BOOKKEEPING — IT IS THE CHECK
 
 R1 was re-run only to attach an observation to a commit: the first reading came from a jar built

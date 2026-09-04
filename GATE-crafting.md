@@ -734,10 +734,21 @@ The first slice in which crafting something the server did not previously know h
 RPG gear. Everything before this rode recipes Minecraft already had.
 
 **THE SET, NAMED BEFORE THE RUN.** Live rows in this section: **R1, R2, R3, R4, R5, 7A, 7B, 7C, 7D,
-7E, 7F, 7G** — twelve. Plus the re-runs listed at the bottom of this section. Row **7H** is struck
-as IMPOSSIBLE and is correctly absent from any count.
+7E, 7F, 7G** — twelve. Plus the **thirteen** re-runs at the bottom of this section (Q16, Q15, Q25,
+T10, Q7, Q10, Q27, Q29, 12, 12c, S1, S2, N5b). **Twenty-five in total.** Row **7H** is struck as
+IMPOSSIBLE and is correctly absent from any count.
 
 > Counted from the LIVE rows in this section, not by extending slice 6's list. That is what Q34 cost.
+
+> ### GATE RESULT — IN PROGRESS, **2 of 25**
+>
+> **PASSED:** R1, R4 (2026-09-04) — their observed lines are recorded below the registration table.
+> **UNRUN:** R2, R3, R5, 7A–7G, and all thirteen re-runs.
+>
+> **This is not a passing gate and must not be cited as one.** The suite is green either way for
+> everything this slice does, so 1257 passing tests and a green CI check say the slice broke nothing
+> already covered — they say nothing about whether it works. Twenty-three rows are what would say
+> that.
 
 ## Registration — and the instrument that measures it
 
@@ -766,12 +777,64 @@ wrong at a glance instead of reading self-consistently and wrong.
 | # | action | expected | notes |
 |---|---|---|---|
 | R1 | **Fresh content.** `./scripts/dev-server.sh --refresh-content`. Read the line. | `1 registered, 0 replaced, 0 refused, of 1 authored (1 minting gear)` | **`--refresh-content` IS REQUIRED.** `content/recipes/` is a brand-new directory; `saveResource(path, false)` never overwrites, so a populated `run/` data folder predates it and ships nothing. `0 replaced` says the remove call is not spuriously matching on a virgin roster · **PASSED 2026-09-03**, exactly this line. **Provenance, because the first observation did not have it:** originally read on a jar built *before* the slice was committed, from a tree **asserted** rather than verified to match it. Re-run against a jar built by `./mvnw clean package` from the **clean committed tree** of the docs commit that added this sentence — so anyone can reproduce it by checking out that commit and rebuilding. An observation whose build you cannot name is a number, not a verification |
-| R2 | `/reload confirm`, then read the same line again. | **Record the number, whichever it is.** `1 replaced` means the server kept our recipe across the reload; `0 replaced` means it wiped the roster | **THIS ROW IS THE ANSWER, not an assertion.** What `/reload` does to a plugin-added recipe is not documented on the pinned API, and the registration is deliberately written so the code is correct under BOTH answers — remove-then-add, unconditionally. Write the observed value in here and it stops being a question |
+| R2 | **The OPERATOR types `/reload confirm` in chat, in-game** — it is an operator command and needs no server console. Then read the same line again. | **Record the number, whichever it is** — **and whether the reload was CLEAN.** `1 replaced` means the server kept our recipe across the reload; `0 replaced` means it wiped the roster | **THIS ROW IS THE ANSWER, not an assertion.** What `/reload` does to a plugin-added recipe is not documented on the pinned API, and the registration is written so the code is correct under BOTH answers — remove-then-add, unconditionally. **RECORD THE NUMBER *AND* THE RELOAD'S HEALTH, because `/reload` is a famously untidy operation:** if the log shows errors during it, `replaced` may be an artifact of a broken reload rather than of how the roster treats our recipes, and a bare number gets cited later as settling a question it did not settle. **Not blocked and never was** — the earlier "needs a live console" note was about HEADLESS DRIVING (a piped `stop` is swallowed, so an agent cannot drive it), which is a limit on who runs the row, not on the row |
 | R3 | After R2, craft the staff in the table. | A minted Flint Staff, not a plain stick | end-to-end after a reload. **NOT SUFFICIENT ALONE** — it passes identically whether we re-registered or the old registration survived, which is exactly why R2 carries the verdict and this row does not |
-| **R4** | **THE INSTRUMENT'S OWN CONTROL.** Temporarily call `RecipeRegistrar.registerAll` **twice** in one `onEnable`. Boot. Read the line. | `1 replaced` on the second pass | **discriminating · run this BEFORE trusting R2.** If it prints `0 replaced`, the counter is dead and R2's number meant nothing — a number that cannot move is not a measurement. Revert the double call afterwards, and confirm the revert by re-reading R1's line |
+| **R4** | **THE INSTRUMENT'S OWN CONTROL.** Temporarily call `RecipeRegistrar.registerAll` **twice** in one `onEnable`, logging **BOTH** reports. Boot. Read both lines. | `0 replaced` on the first pass, **`1 replaced` on the second** | **discriminating · sole witness that the counter CAN move · run this BEFORE trusting R2.** If it prints `0 replaced` twice, the counter is dead and R2's number means nothing — a number that cannot move is not a measurement. **Both** lines must be logged: one line leaves a `0 replaced` ambiguous between a dead counter and a mutation that never applied. Revert afterwards and confirm by re-reading R1. **PASSED 2026-09-04 — the observed lines are below the table** |
 | R5 | `/reload` twice, opening the browser each time. Compare `Recipe catalogue built: N entries`. | N identical both times | free duplicate-key detector: a recipe registered twice under one key would show up as a changed entry count |
 
+> ## OBSERVED LINES — R1 and R4, 2026-09-04
+>
+> **Written down because Q2's counts were observed by someone, never recorded, and are still owed
+> three slices later.** A row that says "passed" without the number it passed on is a row nobody
+> can re-check, and next year "R4 passed" without the `0 -> 1` says nothing at all.
+>
+> ### R4 — PASSED. The counter was proven able to move.
+>
+> Both reports logged, from `RecipeRegistrar.registerAll` called twice in one `onEnable`:
+>
+> ```
+> [12:46:41 INFO]: [Rpg] R4 PASS 1 -- Custom recipes: 1 registered, 0 replaced, 0 refused, of 1 authored
+> [12:46:41 INFO]: [Rpg] R4 PASS 2 -- Custom recipes: 1 registered, 1 replaced, 0 refused, of 1 authored
+> ```
+>
+> `replaced` **0 -> 1**. That, and not the word "passed", is what makes R2's figure a measurement
+> rather than a constant.
+>
+> **TWO WITNESSES ON DIFFERENT SUBSTRATES, and the second is the one that settles it.** The log
+> lines are a RUNTIME witness that the booted jar had the double call. On their own they are
+> weaker than they look: two lines could in principle come from one call inside a loop. So the
+> mutation was also confirmed at BUILD time, on the artifact:
+>
+> - the `R4 PASS 1` and `R4 PASS 2` string constants present in the compiled `RpgPlugin.class`;
+> - `javap -p -c` showing **two** `RecipeRegistrar.registerAll` invocations in the bytecode.
+>
+> **The marker comment cannot survive compilation, so grepping the source would have proved nothing
+> about the jar.** That is the general rule this row contributes: a marker you can only find in the
+> source is not evidence about the thing that ran.
+>
+> **The revert was held to the same standard**, which is where the discipline usually gets dropped:
+> restored from a scratchpad copy (never `git checkout --`), then `md5sum` identical to the
+> pre-mutation copy, `git status` clean, and — after a fresh `./mvnw clean package` — **zero**
+> `R4 PASS` strings and **one** `registerAll` invocation in the REBUILT class. Nothing was committed
+> for R4; the wire confirmed the branch tip unchanged.
+>
+> ### R1 — PASSED, on a build named rather than assumed.
+>
+> ```
+> [12:49:46 INFO]: [Rpg] Custom recipes: 1 registered, 0 replaced, 0 refused, of 1 authored (1 minting gear)
+> ```
+>
+> Exactly **one** `Custom recipes:` line, which is also the observation that the R4 revert landed —
+> "it went back" is a claim, and this is the check. Deploy settled by mtimes: target `12:49:21`,
+> deployed `12:49:40`.
+>
+> **Both boots followed the standing condition** at the top of this section: every `java.exe` killed
+> and the deployed jar confirmed unlocked BEFORE booting, mtimes compared AFTER. R4's own boot:
+> target `12:45:44`, deployed `12:46:35`.
+
 ## The rows that carry the slice
+
+
 
 | # | action | expected | notes |
 |---|---|---|---|
