@@ -296,14 +296,16 @@ public final class RecipeProbe {
     /**
      * Which tier a recipe's OUTPUT sorts in.
      *
-     * <p>Asks the same {@code claimFor} question the commit does -- does content claim this crafted
-     * material -- and hands the answer to {@link SuggestionTiers}. Sharing the lookup is what stops
-     * a suggestion sorting as a weapon and then minting nothing, or the reverse.
+     * <p>Asks the same {@code claimFor} question the commit does -- is this craft ours -- and hands
+     * the answer to {@link SuggestionTiers}. Sharing the lookup is what stops a suggestion sorting
+     * as a weapon and then minting nothing, or the reverse.
      *
-     * <p>The durability gate is here for the same belt-and-braces reason {@code CraftingMenu.claimFor}
-     * carries it: boot already refuses a {@code craft_result} on a material with no durability, so
-     * nothing in the index can fail it, but the index is reachable from a caller that has not been
-     * through that validation.
+     * <p><b>This method holds no gate of its own.</b> It delegates entirely to
+     * {@link #claimedBy(Recipe, AdapterContext)}, which is the single place the two claim sources,
+     * their order, the namespace check and the durability gate's scope are decided and argued. Do
+     * not restate any of that here: this javadoc previously carried a copy of the durability
+     * argument, it was not updated when that argument was falsified by the recipe axis, and it
+     * outlived its own premise by one slice while sitting forty-seven lines from the correction.
      */
     public static SuggestionTier tierOf(Recipe recipe, AdapterContext adapters) {
         return SuggestionTiers.of(claimedBy(recipe, adapters));

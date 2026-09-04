@@ -660,18 +660,29 @@ Staff's is a `stick`.
 > justification that outlives its premise is worse than no justification**, because the next reader
 > trusts it.
 
-#### DECISION: the Flint Staff can never break, and it is the first piece of gear that cannot
+#### DECISION: the Flint Staff can never break, and it is the first CRAFTABLE gear that cannot
 
 `material: stick`, and `Durability.isBroken` opens with `if (maxDurability <= 0) return false` under
 a javadoc naming it **the staff-and-stone exemption**. So the staff never wears and never breaks.
-Every other shipped weapon, shield, tool and armor piece is durable, and the **old** staff could
-break — `StaffListener` checked `ItemRegistry.isBroken` before firing, which is only meaningful on
-an item that wears.
+
+**It is not the first indestructible gear — it is the first craftable one.** `ember_staff`
+(`blaze_rod`) and `ability_stone` (`amethyst_shard`) are already non-durable on master and already
+never break; the exemption is *named* for them. What is new is that indestructible gear can now
+reach a player through the **economy** rather than only through `/rpg give` or a kit, which is the
+half that matters for balance. The **old** staff could break — `StaffListener` checked
+`ItemRegistry.isBroken` before firing, which is only meaningful on an item that wears.
+
+> **The first draft of this note said "the FIRST piece of gear that never degrades — every shipped
+> weapon, shield, tool and armor piece is durable", and then named `ember_staff` and
+> `ability_stone` as counterexamples four lines later, in its own corollary.** It contradicted
+> itself inside one paragraph, and `CraftResultIndex.forRecipe`'s javadoc — written in the same
+> commit — listed all three non-durable weapons correctly. A claim of primacy is worth checking
+> against the tree before it is written down; `grep -rn "^material:" content/weapons` answers it.
 
 **The corollary matters more than the decision: nobody may "fix" this by requiring gear to be
-durable.** That would break an exemption the codebase holds deliberately — `ember_staff` is a
-`blaze_rod`, `ability_stone` an `amethyst_shard`. If indestructible is not wanted, **the material is
-the lever**, and it costs one word now against a re-mint later.
+durable.** That would break an exemption the codebase holds deliberately, and which the two weapons
+above depend on. If indestructible is not wanted, **the material is the lever**, and it costs one
+word now against a re-mint later.
 
 #### THE 2x2 INVENTORY GRID IS UNGUARDED, AND THE FLINT STAFF IS SAFE BY SHAPE, NOT BY GUARD
 
@@ -738,6 +749,18 @@ imports that had been there the whole time.
 **The same shape as every other entry on CLAUDE.md's verification page**: a check that did not run
 looks exactly like a check that passed. The cheap habit that closes it is grepping for the POSITIVE
 token — `BUILD SUCCESS` — rather than the absence of a negative one.
+
+#### GREEN CI ON A BOOT-WITNESSED SLICE IS A REGRESSION SIGNAL WEARING A COMPLETION BADGE
+
+**The suite is green either way for everything this slice does.** Registration, minting on all three
+surfaces, the Crafter refusal and the `fits` fix have **no unit witness between them** — every one
+of them needs a running server. 1257 passing tests say the slice broke nothing that was already
+covered. They say **nothing** about whether the slice works.
+
+"CI never boots a server" is true and too soft to act on. The statement that changes behaviour is
+the one above, because the danger is not that someone believes CI covers this — it is that a green
+check at the top of a PR is exactly what makes a gate feel optional. **This is the moment a gate
+gets skipped**, and the table below is the list of what would be skipped with it.
 
 #### No automated witness
 

@@ -25,14 +25,19 @@ class: mage
 # 1. THIS STAFF CAN NEVER BREAK, AND THAT IS A DECISION.
 #    A stick has no durability, and Durability.isBroken opens with `if (maxDurability <= 0) return
 #    false` under a javadoc naming it THE STAFF-AND-STONE EXEMPTION. So this weapon never wears and
-#    never breaks. It is the FIRST piece of gear that never degrades -- every shipped weapon,
-#    shield, tool and armor piece is durable, and the OLD staff could break (StaffListener checked
-#    ItemRegistry.isBroken before firing, which is only meaningful on an item that wears).
+#    never breaks.
+#
+#    IT IS NOT THE FIRST INDESTRUCTIBLE GEAR -- it is the first CRAFTABLE one. ember_staff
+#    (blaze_rod) and ability_stone (amethyst_shard) are already non-durable on master and already
+#    never break; the exemption is named for them. What is new is that indestructible gear can now
+#    reach a player through the ECONOMY rather than only through /rpg give or a kit, which is the
+#    half that matters for balance. The OLD staff could break -- StaffListener checked
+#    ItemRegistry.isBroken before firing, which is only meaningful on an item that wears.
 #
 #    THE COROLLARY, which matters more than the decision: nobody may "fix" this by requiring gear to
-#    be durable. That would break an exemption the codebase holds on purpose -- ember_staff is a
-#    blaze_rod and ability_stone is an amethyst_shard, and both rely on it. If indestructible is not
-#    wanted, THE MATERIAL IS THE LEVER, and changing it costs one word now and a re-mint later.
+#    be durable. That would break an exemption the codebase holds on purpose, and which the two
+#    weapons above depend on. If indestructible is not wanted, THE MATERIAL IS THE LEVER, and
+#    changing it costs one word now and a re-mint later.
 #
 # 2. THE MINTED STAFF STACKS TO 64, because a stick does. Two staves with identical enchant rolls
 #    are isSimilar and will merge. Nothing downstream breaks (weapon lookup is per item), and
