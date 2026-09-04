@@ -1,0 +1,42 @@
+# The first custom (non-vanilla) recipe. Flint over two sticks, exactly as the old repo had it:
+# BSMPMenu's RecipeRegistry.registerFlintStaff -- shape("F","S","S"), F=FLINT, S=STICK.
+#
+# WE DO NOT OWN VANILLA RECIPES, SO THEY ARE IDENTIFIED BY THEIR RESULT.
+# WE OWN OURS, SO THEY ARE IDENTIFIED BY THEIR KEY.
+#
+# That is why the claim lives HERE, pointing at the weapon, rather than on the weapon pointing
+# back. A recipe cannot exist without naming what it produces -- that IS the recipe -- whereas
+# `craft_result` is optional and absent on most gear. See CraftResultIndex for the full argument.
+#
+# THE ID IS THE FILENAME, AND THE FILENAME IS THE KEY. This registers as rpg:flint_staff, and it
+# stays that key across every restart because the filesystem holds it, not a constant somebody has
+# to remember not to change.
+#
+# WHY THERE IS NO `result:` FIELD. The registered result is the MATERIAL of the gear this mints (a
+# plain vanilla stick), resolved at registration. Authoring it separately would be a second place
+# that can disagree about what a craft produces, and the disagreement would be invisible until a
+# player crafted the wrong item.
+
+mints: flint_staff
+
+# THE THREE-ROW SHAPE IS LOAD-BEARING, NOT DECORATIVE. DO NOT SHORTEN IT WITHOUT READING THIS.
+#
+# A player's own 2x2 inventory grid is the one crafting surface that neither mints nor is hijacked:
+# onPrepareCraft screens it for our gear used as an INGREDIENT, but nothing there replaces a vanilla
+# result with minted gear. So a recipe that FITS a 2x2 can be crafted in the inventory and hands
+# over a plain vanilla item.
+#
+# This is a pre-existing hole, not one custom recipes opened -- `shears` claims craft_result and
+# vanilla shears is a 2x2 recipe, so crafting shears in the inventory grid already gives a plain
+# vanilla pair. The Flint Staff is safe from it because it is three rows tall. By SHAPE, not by
+# GUARD.
+#
+# The boot warns if a custom recipe fits 2x2, so shortening this is loud rather than silent.
+shape:
+  - "F"
+  - "S"
+  - "S"
+
+ingredients:
+  F: flint
+  S: stick

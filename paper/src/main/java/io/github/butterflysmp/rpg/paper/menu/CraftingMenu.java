@@ -501,7 +501,7 @@ public final class CraftingMenu extends Menu {
                 // a stack that is usually discarded. So the preview is the minted, UNROLLED item,
                 // and the enchant lines are the one expected difference between what is shown and
                 // what is received.
-                Optional<GearDefinition> claimed = inventoryCraft.claimFor(result.getResult());
+                Optional<GearDefinition> claimed = inventoryCraft.claimFor(previewedRecipe.orElse(null), result.getResult());
                 yield claimed.isPresent()
                         ? GearItems.mint(claimed.get(), adapters)
                         : result.getResult().clone();
@@ -691,7 +691,7 @@ public final class CraftingMenu extends Menu {
         // NOT a second preview builder. A renderer separate from the real one is the "two callers
         // that agree today" shape this arc has closed three times, and it would drift the first
         // time a lore line moved.
-        Optional<GearDefinition> claimed = inventoryCraft.claimFor(result);
+        Optional<GearDefinition> claimed = inventoryCraft.claimFor(RecipeProbe.keyOf(recipe), result);
         ItemStack icon = claimed.isPresent()
                 ? GearItems.mint(claimed.get(), adapters)
                 : result.clone();

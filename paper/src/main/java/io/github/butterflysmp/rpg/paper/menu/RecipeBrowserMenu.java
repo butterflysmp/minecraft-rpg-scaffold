@@ -352,7 +352,7 @@ public final class RecipeBrowserMenu extends Menu {
             return MenuIcons.pane(MenuIcons.EMPTY_SUGGESTION);
         }
 
-        Optional<GearDefinition> claimed = inventoryCraft.claimFor(result);
+        Optional<GearDefinition> claimed = inventoryCraft.claimFor(RecipeProbe.keyOf(recipe), result);
         ItemStack icon = claimed.isPresent()
                 ? GearItems.mint(claimed.get(), adapters)
                 : result.clone();

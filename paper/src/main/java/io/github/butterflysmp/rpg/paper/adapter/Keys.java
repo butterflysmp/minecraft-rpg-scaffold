@@ -177,4 +177,20 @@ public final class Keys {
         this.armorBarOverride = new NamespacedKey(plugin, "armor_bar_override");
         this.attackSpeedOverride = new NamespacedKey(plugin, "attack_speed_override");
     }
+
+    /**
+     * The namespace every key above carries -- the plugin's own, whatever it is called.
+     *
+     * <p>Read from a key rather than written down, because {@code NamespacedKey(Plugin, String)}
+     * takes it from {@code plugin.namespace()}, which is not simply the lower-cased plugin name and
+     * is not ours to predict. Hardcoding {@code "rpg"} would be a literal that is right until
+     * somebody renames the plugin, and then wrong in a way that shows up as "crafting stopped
+     * minting" with nothing red.
+     *
+     * <p>Its caller is the recipe-identity claim: a claim is only consulted for a key in OUR
+     * namespace, so a third-party {@code otherplugin:flint_staff} can never resolve to our weapon.
+     */
+    public String namespace() {
+        return weaponId.getNamespace();
+    }
 }

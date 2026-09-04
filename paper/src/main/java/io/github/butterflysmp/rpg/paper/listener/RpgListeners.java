@@ -25,6 +25,7 @@ import io.github.butterflysmp.rpg.paper.menu.CraftingMenu;
 import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.menu.RecipeCatalogue;
+import io.github.butterflysmp.rpg.paper.menu.RecipeProbe;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenSystem;
@@ -45,6 +46,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -529,6 +531,26 @@ public final class RpgListeners implements Listener {
         // Crafter forever with nothing coming out, and CrafterCraftEvent has no feedback channel to
         // say why. A REFUSED CRAFTER LOOKS LIKE A JAM, NOT AN ERROR -- the same shape as the
         // sneak-right-click dead click, and accepted for the same reason.
+        //
+        // GUARD TWO, FIRST ARM -- A RECIPE OF OURS. Required since slice 7, not defensive.
+        //
+        // The durability test below was a COMPLETE statement of this policy only while every
+        // claimed result was durable, which was true for as long as a claim could only be made on a
+        // material. A custom recipe breaks it: our recipes register a PLAIN VANILLA result, and the
+        // Flint Staff's is a `stick`. A stick is not durable, so the test below waves it straight
+        // through, and a redstone Crafter becomes a machine that turns flint into sticks off a
+        // recipe whose only purpose is to make weapons.
+        //
+        // Matched on the KEY rather than the output, because the output is exactly what durability
+        // can no longer see.
+        NamespacedKey recipeKey = RecipeProbe.keyOf(event.getRecipe());
+        if (recipeKey != null
+                && recipeKey.getNamespace().equals(adapters.keys().namespace())
+                && adapters.craftResults().forRecipe(recipeKey.getKey()).isPresent()) {
+            event.setCancelled(true);
+            return;
+        }
+
         if (WeaponDurability.maxOf(event.getResult()).isPresent()) {
             event.setCancelled(true);
         }

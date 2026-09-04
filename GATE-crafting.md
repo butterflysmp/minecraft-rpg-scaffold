@@ -455,7 +455,7 @@ things, so bring a way to count.
 |---|---|---|---|
 | Q1 | Open the table with materials for several recipes. | **Column 7 (slots 16, 25, 34)** shows suggestion icons with counts. The grid is at 10-12 / 19-21 / 28-30 with the result at 23. **Row 5 is the status bar**, with the close button at 49 inside it. The browser placeholder is at 26 | the surface exists and did not disturb the grid. **REWRITTEN: this row described the pre-relayout screen — row 4, nine cells, row 5 as chrome — long after the layout moved. See the note under the slice header** |
 | Q15 | **THE TIER ORDER.** Carry materials for a shield AND plenty of planks (so torches/sticks are craftable in quantity). Read the column left to right. | The **shield sorts before** the sticks, even though far more sticks are makeable. Order is `WEAPON → ACCESSORY → TOOL → ARMOR → MATERIAL → VANILLA`, then most-craftable | **discriminating** for the ordering. A column sorted by count alone buries a minted shield under sixty-four torches |
-| Q16 | **THE SQUEEZE.** Carry common materials only — planks, sticks, cobble, iron, leather. Read all THREE cells. | **NEITHER VANILLA NOR ARMOR appears.** With 30 claiming definitions and the tier order, three cells means the shield and two tools | **written down as INTENDED, not a bug.** The column went from nine cells to three in slice 5, so this is now much stronger than "vanilla may be squeezed out": armor is squeezed out too, **every time**. If the three cells are a shield and two tools, the row PASSES. "Sticks and torches vanished from the crafting helper" is exactly what this looks like from outside — and so does "my armor recipes are gone" |
+| Q16 | **THE SQUEEZE.** Carry common materials only — planks, sticks, cobble, iron, leather, **and flint**. Read all THREE cells. | **NEITHER VANILLA NOR ARMOR appears**, and the **Flint Staff takes the top cell**. Three cells means the staff, the shield and one tool | **written down as INTENDED, not a bug.** The column went from nine cells to three in slice 5, so this is much stronger than "vanilla may be squeezed out": armor is squeezed out too, **every time**. "Sticks and torches vanished from the crafting helper" is exactly what this looks like from outside — and so does "my armor recipes are gone". **REWORDED in slice 7, and it would otherwise have kept passing:** flint was not on the old carry list, so the Flint Staff could never have appeared and the three cells would still have read shield-and-two-tools. With flint carried this becomes the **only** row that witnesses WEAPON outranking ACCESSORY and TOOL in the squeeze — the tier's first ordinal had been unreachable since it was written |
 | Q3 | Click a suggestion. **Count the ingredients first.** | The item arrives **in the INVENTORY**, not on the cursor. Exactly one craft's ingredients leave. The count updates | **count** · the destination is the disambiguator between the two surfaces — see Q4 |
 | Q5 | Stage a recipe in the grid, then read the suggestion counts. | They have **DROPPED** by what was staged | written down as EXPECTED, or someone reports it as a bug. The grid is deliberately NOT counted, because counting it would mean consuming it |
 
@@ -728,6 +728,66 @@ one, every time. The two real defects are named instead.
 > grid still matches. A transpose or an offset here matches every shapeless recipe correctly and
 > every shaped one wrongly, which reads as "some recipes are broken" rather than as a layout bug.
 > `CraftingMenuLayoutTest` pins the inverse pair, so this is belt-and-braces on a unit-tested claim.
+# Slice 7 — custom recipes, and the Flint Staff
+
+The first slice in which crafting something the server did not previously know how to craft produces
+RPG gear. Everything before this rode recipes Minecraft already had.
+
+**THE SET, NAMED BEFORE THE RUN.** Live rows in this section: **R1, R2, R3, R4, R5, 7A, 7B, 7C, 7D,
+7E, 7F, 7G** — twelve. Plus the re-runs listed at the bottom of this section. Row **7H** is struck
+as IMPOSSIBLE and is correctly absent from any count.
+
+> Counted from the LIVE rows in this section, not by extending slice 6's list. That is what Q34 cost.
+
+## Registration — and the instrument that measures it
+
+Every row here reads one boot line:
+
+```
+Custom recipes: N registered, M replaced, K refused, of A authored (I minting gear)
+```
+
+`A` comes from the REGISTRY and the rest from the registrar's own walk, so a dead registrar reads
+wrong at a glance instead of reading self-consistently and wrong.
+
+| # | action | expected | notes |
+|---|---|---|---|
+| R1 | **Fresh content.** `./scripts/dev-server.sh --refresh-content`. Read the line. | `1 registered, 0 replaced, 0 refused, of 1 authored (1 minting gear)` | **`--refresh-content` IS REQUIRED.** `content/recipes/` is a brand-new directory; `saveResource(path, false)` never overwrites, so a populated `run/` data folder predates it and ships nothing. `0 replaced` says the remove call is not spuriously matching on a virgin roster · **PASSED 2026-09-03**, exactly this line |
+| R2 | `/reload confirm`, then read the same line again. | **Record the number, whichever it is.** `1 replaced` means the server kept our recipe across the reload; `0 replaced` means it wiped the roster | **THIS ROW IS THE ANSWER, not an assertion.** What `/reload` does to a plugin-added recipe is not documented on the pinned API, and the registration is deliberately written so the code is correct under BOTH answers — remove-then-add, unconditionally. Write the observed value in here and it stops being a question |
+| R3 | After R2, craft the staff in the table. | A minted Flint Staff, not a plain stick | end-to-end after a reload. **NOT SUFFICIENT ALONE** — it passes identically whether we re-registered or the old registration survived, which is exactly why R2 carries the verdict and this row does not |
+| **R4** | **THE INSTRUMENT'S OWN CONTROL.** Temporarily call `RecipeRegistrar.registerAll` **twice** in one `onEnable`. Boot. Read the line. | `1 replaced` on the second pass | **discriminating · run this BEFORE trusting R2.** If it prints `0 replaced`, the counter is dead and R2's number meant nothing — a number that cannot move is not a measurement. Revert the double call afterwards, and confirm the revert by re-reading R1's line |
+| R5 | `/reload` twice, opening the browser each time. Compare `Recipe catalogue built: N entries`. | N identical both times | free duplicate-key detector: a recipe registered twice under one key would show up as a changed entry count |
+
+## The rows that carry the slice
+
+| # | action | expected | notes |
+|---|---|---|---|
+| 7A | **THE GRID.** Open a crafting table. Flint in the top cell, sticks in the two below it. | The result slot shows a **Flint Staff** — minted, with its stats and rarity footer — not a stick | the recipe registered AND the preview resolves the claim by RECIPE KEY. A plain stick here means the mint did not fire |
+| 7B | **THE OTHER TWO SURFACES.** Carry flint and sticks. Read the **suggestion column**, then open the **browser**. Craft from **each**. | The staff appears on both and crafts from both | all three surfaces share `claimFor`. A surface showing a plain stick is the "you receive what you were shown" break the mint-in-preview machinery exists to prevent |
+| 7C | **MINTED AND ROLLED, ON ALL THREE.** Craft the staff from the grid, from the column, and from the browser. **OPEN EACH ONE.** | All three arrive minted **and rolled** — stats, rarity footer, enchant candidates | **discriminating · sole witness** · *open them, do not count them.* Q27's discipline, three times. A count sees an item arrive and cannot see it is a plain stick |
+| 7D | **A GHOST RECIPE.** Edit the deployed `content/recipes/flint_staff.yml` to `mints: no_such_weapon`. Boot. | A **named** warning saying the recipe mints something that is not any weapon, shield, armor piece or tool — **and the line reads `0 registered ... 1 refused`**. The recipe is NOT on the roster | **discriminating** · registering it anyway would hand a player a plain stick for their flint forever, with nothing saying why. Restore the file after |
+| 7E | **THE CRAFTER BLOCK.** Put flint and two sticks in a Crafter and pulse it. | **Nothing comes out.** It jams, keeping its ingredients | **discriminating · sole witness** for the recipe arm of guard two. Our recipe's registered result is a plain STICK, which is not durable — so the existing durability test waves it straight through, and without the new arm a redstone Crafter is a flint-to-stick machine. A refused Crafter looks like a JAM, not an error; that is accepted and shared with every other guard-two refusal |
+| 7F | **THE `fits` ROW. COUNT THIS ONE.** Fill every inventory slot, then free exactly one and put a **partial stack of plain sticks** in it. Carry flint and sticks in the crafting grid's reach. Shift-click the staff in the **suggestion column**. | It makes **at most what fits** and says so. **NOTHING lands on the floor.** | **discriminating · count** · the defect's signature is a number and a pile. `fits` credits a partial stick stack as room; the minted staff carries meta, is not `isSimilar`, and needs a whole slot. Unfixed, `fits` says yes 64 times and 64 weapons hit the ground |
+| 7G | **THE STAFF ITSELF.** Right-click with it. | A bolt flies, deals 20 fire damage, and the target **burns for 4 seconds** | the burn is `setFireTicks`, so it is VANILLA-rated and does **not credit you** — that is the named debt in `NEXT.md`, not a bug. The bolt is a projectile and will NOT tumble or trail flame like the old thrown-flint item; also a known port gap |
+| ~~7H~~ | ~~**Two definitions claiming one recipe key mint NOTHING.**~~ | — | **IMPOSSIBLE — never a test.** Under the recipe-names-the-gear direction the claim lives on the recipe, a recipe's id is its filename, and one directory cannot hold two files of one name. `RecipeRegistry` throws on a duplicate id, so the collision cannot be authored at all. The reachable neighbours are 7D (a recipe minting nothing) and the unit test `twoRecipesMayMintTheSameGear`, which pins that two recipes minting ONE weapon is a FEATURE |
+
+## Re-runs — and the one row that changes wording
+
+**Q16 IS REWORDED, and the reason is worth reading**: as previously written it would still have
+PASSED. Its carry list was "planks, sticks, cobble, iron, leather" — **flint is not on it**, so the
+Flint Staff could never have appeared and the three cells would still have been the shield and two
+tools. Adding flint is what makes the row test the new roster.
+
+| # | why it re-opens |
+|---|---|
+| **Q16** | **REWORDED IN PLACE** — the row itself, under "The column", now carries flint and names the staff. Read it there; it is not restated here, so the two cannot drift apart |
+| **Q15** | **THE TIER ORDER, with its first ordinal finally occupied.** No shipped weapon has EVER claimed a craft, so `SuggestionTier.WEAPON` has been unreachable on every surface since it was written. The order `WEAPON → ACCESSORY → TOOL → ARMOR → MATERIAL → VANILLA` has only ever been observed from ACCESSORY down |
+| **Q25** | the browser's tier ordering gains its first WEAPON-tier entry, which makes the tier order visible at the top rather than inferred |
+| **T10, Q7** | `isGear` with a new gear item in play — **and for the first time one whose MATERIAL IS ITSELF A COMMON CRAFTING INGREDIENT.** A minted staff is a stick carrying `weapon_id`. The check was never material-based, so it should hold; the corollary to confirm is that a player holding only Flint Staves **cannot craft a torch from them** |
+| **Q10** | the enumerable boundary now has a custom shaped recipe on OUR side of it. A `ShapedRecipe` we built exposes `getShape()` and `getChoiceMap()`, so it must enumerate exactly like a vanilla one |
+| **Q27, Q29** | `claimFor` changed shape and the browser reads it. Q29's "Needs:" lore is built from `ingredientsOf` over a recipe we authored for the first time |
+| **12, 12c, S1, S2, N5b** | `claimFor`'s signature changed and **the inventory bulk loop's `fits` check moved off `recipe.getResult()`**. These are not re-run out of caution; the code under them moved |
+
 # Maintenance
 
 - When a slice changes `MenuRouting`, `Menu` or `CraftingMenu`, list by number which rows

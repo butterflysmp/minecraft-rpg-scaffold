@@ -2,8 +2,11 @@ package io.github.butterflysmp.rpg.core.weapon;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.butterflysmp.rpg.core.recipe.RecipeDefinition;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,7 +38,7 @@ class CraftResultIndexTest {
     @Test
     void aClaimedResultResolvesToItsDefinition() {
         CraftResultIndex index = CraftResultIndex.build(
-                List.of(shield("shield", "shield")), problem -> fail("unexpected: " + problem));
+                List.of(shield("shield", "shield")), List.of(), problem -> fail("unexpected: " + problem));
 
         assertEquals("shield", index.forResult("shield").orElseThrow().id());
         assertEquals(1, index.size());
@@ -50,7 +53,7 @@ class CraftResultIndexTest {
         // on crafts nobody opted into.
         CraftResultIndex index = CraftResultIndex.build(
                 List.of(shield("shield", null), armor("iron_chestplate", "iron_chestplate", null)),
-                problem -> fail("unexpected: " + problem));
+                List.of(), problem -> fail("unexpected: " + problem));
 
         assertEquals(0, index.size());
         assertEquals(0, index.claimed());
@@ -67,7 +70,7 @@ class CraftResultIndexTest {
         // plain item they can craft again -- never a wrong one they own forever.
         List<String> problems = new ArrayList<>();
         CraftResultIndex index = CraftResultIndex.build(
-                List.of(shield("first", "shield"), shield("second", "shield")), problems::add);
+                List.of(shield("first", "shield"), shield("second", "shield")), List.of(), problems::add);
 
         assertTrue(index.forResult("shield").isEmpty(),
                 "a contested result must resolve to NOTHING, not to whichever was loaded first");
@@ -83,7 +86,7 @@ class CraftResultIndexTest {
         List<String> problems = new ArrayList<>();
         CraftResultIndex.build(
                 List.of(shield("alpha", "shield"), shield("beta", "shield"), shield("gamma", "shield")),
-                problems::add);
+                List.of(), problems::add);
 
         assertEquals(1, problems.size(), "one message per contested result, not one per claimant");
         String message = problems.get(0);
@@ -103,7 +106,7 @@ class CraftResultIndexTest {
         CraftResultIndex index = CraftResultIndex.build(
                 List.of(shield("first", "shield"), shield("second", "shield"),
                         armor("iron_chestplate", "iron_chestplate", "iron_chestplate")),
-                problems::add);
+                List.of(), problems::add);
 
         assertTrue(index.forResult("shield").isEmpty());
         assertEquals("iron_chestplate", index.forResult("iron_chestplate").orElseThrow().id());
@@ -119,7 +122,7 @@ class CraftResultIndexTest {
         // A lookup that normalised differently from the build would miss EVERY entry, and the only
         // symptom would be "crafting mints nothing" with nothing red and nothing logged.
         CraftResultIndex index = CraftResultIndex.build(
-                List.of(shield("shield", "minecraft:SHIELD")), problem -> fail("unexpected: " + problem));
+                List.of(shield("shield", "minecraft:SHIELD")), List.of(), problem -> fail("unexpected: " + problem));
 
         assertTrue(index.forResult("shield").isPresent(), "authored with a namespace, looked up without");
         assertTrue(index.forResult("SHIELD").isPresent(), "case must not matter");
@@ -134,7 +137,7 @@ class CraftResultIndexTest {
         // BOTH index -- so the same craft resolves to whichever the map happened to hold.
         List<String> problems = new ArrayList<>();
         CraftResultIndex index = CraftResultIndex.build(
-                List.of(shield("first", "shield"), shield("second", "MINECRAFT:Shield")), problems::add);
+                List.of(shield("first", "shield"), shield("second", "MINECRAFT:Shield")), List.of(), problems::add);
 
         assertEquals(1, index.contested(), "two spellings of one material are one contested result");
         assertTrue(index.forResult("shield").isEmpty());
@@ -148,7 +151,7 @@ class CraftResultIndexTest {
     void anEmptyIndexIsAnAnswerTheCallerCanSee() {
         // ZERO IS A DEFECT, and the caller cannot warn about what it cannot observe. This pins that
         // size() reports it rather than the index pretending to be populated.
-        CraftResultIndex index = CraftResultIndex.build(List.of(), problem -> fail("unexpected"));
+        CraftResultIndex index = CraftResultIndex.build(List.of(), List.of(), problem -> fail("unexpected"));
 
         assertEquals(0, index.size());
         assertEquals(0, index.claimed());
@@ -164,7 +167,7 @@ class CraftResultIndexTest {
         // runs several times a second. Throwing here would break the preview for everyone rather
         // than declining one mint.
         CraftResultIndex index = CraftResultIndex.build(
-                List.of(shield("shield", "shield")), problem -> fail("unexpected"));
+                List.of(shield("shield", "shield")), List.of(), problem -> fail("unexpected"));
 
         assertTrue(index.forResult(null).isEmpty());
         // Mutation: drop the null guard -> NullPointerException -> reddens.
@@ -183,5 +186,127 @@ class CraftResultIndexTest {
         assertTrue(blank.getMessage().contains("shield"), blank.getMessage());
         // Mutation: treat blank as Optional.empty() -> reddens. The loader turns this throw into a
         // named, skipped file, which is how the author finds out.
+    }
+
+    // ------------------------------------------------- the RECIPE axis (slice 7)
+
+    private static RecipeDefinition recipe(String id, String mints) {
+        return new RecipeDefinition(id, List.of("A"), Map.of('A', "stick"), mints);
+    }
+
+    @Test
+    void aRecipeClaimResolvesToItsGearDefinition() {
+        CraftResultIndex index = CraftResultIndex.build(
+                List.of(shield("flint_staff", null)),
+                List.of(recipe("flint_staff", "flint_staff")),
+                problem -> fail("unexpected: " + problem));
+
+        assertEquals("flint_staff", index.forRecipe("flint_staff").orElseThrow().id());
+        assertEquals(1, index.recipesIndexed());
+        assertEquals(0, index.recipesDropped());
+        // Mutation: skip the recipe walk -> empty Optional -> reddens.
+    }
+
+    @Test
+    void aRecipeClaimDoesNotPopulateTheMaterialMap() {
+        // THE HIGHEST-VALUE TEST IN THE SLICE, and the recipe-axis restatement of
+        // gearThatClaimsNothingIsNotIndexed's mutation note.
+        //
+        // The Flint Staff's material is `stick`. If a recipe claim ALSO wrote itself into the
+        // result map -- keyed on the minted gear's material, which is the obvious "make the two
+        // axes consistent" move -- then EVERY VANILLA STICK CRAFT IN THE WORLD would mint a Flint
+        // Staff. That is precisely the design error the recipe key exists to avoid, and it is
+        // invisible until a player crafts sticks.
+        CraftResultIndex index = CraftResultIndex.build(
+                List.of(shield("flint_staff", null)),
+                List.of(recipe("flint_staff", "flint_staff")),
+                problem -> fail("unexpected: " + problem));
+
+        assertTrue(index.forResult("shield").isEmpty(), "the recipe axis must not claim a material");
+        assertEquals(0, index.size(), "no RESULT is claimed here -- only a recipe");
+        assertEquals(0, index.claimed());
+        assertTrue(index.forRecipe("flint_staff").isPresent(), "and yet the recipe still resolves");
+        // Mutation: back both lookups with one map, or index the recipe under its gear's
+        // material -> reddens on the first two assertions.
+    }
+
+    @Test
+    void twoRecipesMayMintTheSameGear() {
+        // NOT a collision. Two recipes minting one weapon is TWO WAYS TO CRAFT IT, and this test is
+        // what stops someone copying the result axis's drop-both policy across for symmetry.
+        CraftResultIndex index = CraftResultIndex.build(
+                List.of(shield("flint_staff", null)),
+                List.of(recipe("flint_staff", "flint_staff"), recipe("flint_staff_alt", "flint_staff")),
+                problem -> fail("unexpected: " + problem));
+
+        assertEquals("flint_staff", index.forRecipe("flint_staff").orElseThrow().id());
+        assertEquals("flint_staff", index.forRecipe("flint_staff_alt").orElseThrow().id());
+        assertEquals(2, index.recipesIndexed());
+        assertEquals(0, index.recipesDropped());
+        // Mutation: apply the contested-result drop to the recipe axis -> both dropped -> reddens.
+    }
+
+    @Test
+    void aRecipeWhoseMintsNamesNoGearIsDroppedAndReported() {
+        List<String> problems = new ArrayList<>();
+        CraftResultIndex index = CraftResultIndex.build(
+                List.of(shield("shield", null)),
+                List.of(recipe("ghost", "no_such_weapon")),
+                problems::add);
+
+        assertTrue(index.forRecipe("ghost").isEmpty());
+        assertEquals(0, index.recipesIndexed());
+        assertEquals(1, index.recipesDropped());
+        assertEquals(1, problems.size());
+        assertTrue(problems.get(0).contains("no_such_weapon"), problems.get(0));
+        // Mutation: index it against a null definition -> the registrar registers a recipe that
+        // hands the player a plain item for their materials, forever, and nothing says why.
+    }
+
+    @Test
+    void theTwoAxesAreIndependent() {
+        // One definition reachable BOTH ways, and neither lookup standing in for the other. This is
+        // the shape the precedence rule sits on top of: paper asks the recipe axis first.
+        CraftResultIndex index = CraftResultIndex.build(
+                List.of(shield("shield", "shield"), armor("helm", "iron_helmet", null)),
+                List.of(recipe("helm_recipe", "helm")),
+                problem -> fail("unexpected: " + problem));
+
+        assertEquals("shield", index.forResult("shield").orElseThrow().id());
+        assertTrue(index.forRecipe("shield").isEmpty(), "a craft_result claim is not a recipe claim");
+        assertEquals("helm", index.forRecipe("helm_recipe").orElseThrow().id());
+        assertTrue(index.forResult("iron_helmet").isEmpty(), "a recipe claim is not a result claim");
+        // Mutation: let either map fall back to the other -> reddens on the two isEmpty assertions.
+    }
+
+    @Test
+    void forRecipeOnNullIsEmpty() {
+        // Reachable from three of the four call sites: a vanilla recipe, an unkeyed match and an
+        // empty pin all arrive here as null. Throwing would break the preview for every player
+        // rather than declining one mint.
+        CraftResultIndex index = CraftResultIndex.build(
+                List.of(shield("shield", "shield")), List.of(), problem -> fail("unexpected"));
+
+        assertTrue(index.forRecipe(null).isEmpty());
+        // Mutation: drop the null guard -> NullPointerException -> reddens.
+    }
+
+    @Test
+    void theRecipeCountsAreSeparateFromTheResultCounts() {
+        // The boot line prints both. One shared counter would let it read self-consistent and
+        // wrong -- the exact failure the three-number positive control was written to prevent.
+        List<String> problems = new ArrayList<>();
+        CraftResultIndex index = CraftResultIndex.build(
+                List.of(shield("alpha", "shield"), shield("beta", "shield"), armor("h", "x", null)),
+                List.of(recipe("good", "h"), recipe("bad", "nothing")),
+                problems::add);
+
+        assertEquals(0, index.size(), "both shield claimants contested and dropped");
+        assertEquals(2, index.claimed());
+        assertEquals(1, index.contested());
+        assertEquals(1, index.recipesIndexed());
+        assertEquals(1, index.recipesDropped());
+        assertEquals(2, problems.size(), "one for the contested result, one for the ghost recipe");
+        // Mutation: fold recipesDropped into contested -> reddens on two numbers at once.
     }
 }

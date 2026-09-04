@@ -581,6 +581,177 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Crafting, Slice 7 (custom recipes, and the Flint Staff) — what it created or exposed
+
+The first slice in which crafting a thing the server did not previously know how to craft produces
+RPG gear. Six slices of mint-on-craft could only ride recipes Minecraft already had.
+
+#### NAMED DEBT: `scorch` is vanilla-rated and does not credit the caster
+
+**Recorded 2026-09-03, in the slice that shipped the first weapon to depend on it.**
+
+`content/statuses/scorch.yml` is `kind: fire`, which `BukkitCombatant.applyStatus` resolves to
+`entity.setFireTicks(...)`. So the burn is **vanilla fire**: no kill credit to the caster, no
+`DamageSources.magic(shooter)`, and no interaction with the damage system at all.
+
+**What the Flint Staff reproduces exactly, and what it does not.** The old repo's
+`StaffListener.resolveFlintStaffHit` did **two** things, and `status scorch 80` is only the first:
+
+| old | ours |
+|---|---|
+| `target.setFireTicks(FLINT_STAFF_BURN_TICKS)`, 80 ticks | **identical** — this is what `scorch 80` is |
+| `applyFlintStaffIgnition` — 5 damage/second for 4 seconds, `DamageSources.magic(shooter)`, knockback suppressed per tick, cancelled on target death | **not shipped** |
+
+That table is the debt, sized. It is written here rather than left to be discovered as *"the DOT
+feels wrong"*, which is what it will look like from inside the game.
+
+**What paying it down would take:** a real DOT effect kind — a status that ticks damage through
+`CombatantHandle` on a scheduler, crediting a source — which is a status-system change, not a
+content edit. `applyFlintStaffIgnition` in `BSMPMenu` is the working reference implementation.
+
+**Do it in the slice that implements DOT statuses generally**, not for one weapon.
+
+#### NAMED DEBT: `CraftResultIndex` holds two indexes and one of them is not a result index
+
+**Recorded 2026-09-03.** The class now answers two questions: *which gear does this crafted
+MATERIAL become* (the original axis) and *which gear does this RECIPE OF OURS mint* (new). The name
+describes the first only.
+
+**Why it was not renamed in this slice:** a rename touches every consumer — `AdapterContext`,
+`RpgPlugin`, `InventoryCraft`, `RecipeProbe`, `RecipeCatalogue` and the test — for zero behavioural
+change, in a slice that already moves five call sites. **What paying it down would take:** one
+rename plus 6 import lines; re-verify is `./mvnw clean test`, no boot gate.
+
+**Do it when something else already has those files open.**
+
+#### THE AXIS: PLACES THAT USE DURABILITY AS A PROXY FOR PROVENANCE
+
+**This is the entry to read before touching anything durability-shaped**, and it exists because
+three sites that all had to change in this slice were found three separate ways. Three found by
+three insights is luck. Three found by one enumeration is repeatable, and it is what catches the
+fourth.
+
+```bash
+grep -rn "WeaponDurability.maxOf" --include=*.java core paper storage \
+  | grep -v "/target/" | grep -v "/src/test/"
+```
+
+**It returns SIX sites, not three, and the split is the useful half of this entry** — a reader who
+does not have it will either edit three correct sites or dismiss the whole list:
+
+| site | durability is... | verdict |
+|---|---|---|
+| `RpgCommand.java:1045` | the SUBJECT — reports "has no durability", naming `ember_staff` and `ability_stone` | correct, leave alone |
+| `ShieldBlock.java:155` | the SUBJECT — "An item with no durability at all is NOT broken" | correct, leave alone |
+| `ShieldDurability.java:103` | the SUBJECT — early-out on empty | correct, leave alone |
+| **`InventoryCraft.java` / `RecipeProbe.claimedBy`** | a **PROXY for "is this ours"** | narrowed in slice 7 to the material arm only |
+| **`RpgListeners.onCrafterCraft`** | a **PROXY for "is this ours"** (the Crafter output policy) | gained a recipe-key arm in slice 7 |
+
+The second group is the axis. **Durability was a complete statement of "this craft is ours" only
+while a claim could only be made on a material** — every claimable material happened to be durable.
+Recipe-identity claiming ends that: our recipes register a plain vanilla result, and the Flint
+Staff's is a `stick`.
+
+> **A javadoc argued the gate was safe, and this slice falsified the argument.**
+> `RecipeProbe.claimedBy` said the durability gate was belt-and-braces "because boot already refuses
+> a `craft_result` on a material with no durability, so nothing in the index can fail it". True of
+> the material axis, and never true of the recipe axis — `validateCraftResults` makes no such demand
+> of a recipe claim, by design. The paragraph was rewritten in the same edit that broke it. **A
+> justification that outlives its premise is worse than no justification**, because the next reader
+> trusts it.
+
+#### DECISION: the Flint Staff can never break, and it is the first piece of gear that cannot
+
+`material: stick`, and `Durability.isBroken` opens with `if (maxDurability <= 0) return false` under
+a javadoc naming it **the staff-and-stone exemption**. So the staff never wears and never breaks.
+Every other shipped weapon, shield, tool and armor piece is durable, and the **old** staff could
+break — `StaffListener` checked `ItemRegistry.isBroken` before firing, which is only meaningful on
+an item that wears.
+
+**The corollary matters more than the decision: nobody may "fix" this by requiring gear to be
+durable.** That would break an exemption the codebase holds deliberately — `ember_staff` is a
+`blaze_rod`, `ability_stone` an `amethyst_shard`. If indestructible is not wanted, **the material is
+the lever**, and it costs one word now against a re-mint later.
+
+#### THE 2x2 INVENTORY GRID IS UNGUARDED, AND THE FLINT STAFF IS SAFE BY SHAPE, NOT BY GUARD
+
+The player's own 2x2 crafting grid is the one crafting surface that neither mints nor is hijacked.
+`onPrepareCraft` screens it for our gear used as an **ingredient**, but nothing there replaces a
+vanilla result with minted gear — `commitCraft` is reachable only from `CraftingMenu`.
+
+**This is pre-existing, not opened by custom recipes.** `content/tools/iron.yml` has
+`shears: craft_result: shears`, and vanilla shears is a 2x2 recipe — so crafting shears in the
+inventory grid **today** yields a plain vanilla pair.
+
+`flint_staff` cannot reach it because its shape is three rows tall. Since the person who one day
+shortens a shape will not think to look, `RecipeDefinition.fitsInTwoByTwo()` exists and the boot
+**warns** when a custom recipe fits — so shortening a shape is loud rather than silent.
+
+> **Do NOT close this by refusing our recipe keys in `onPrepareCraft`.** `commitCraft` uses the
+> *player* overload of `craftItemResult`, which fires `PrepareItemCraftEvent` by contract, and the
+> existing handler's `setResult(null)` is honoured — `InventoryCraft` relies on exactly that. A
+> blanket refusal would null our own result. Scoping it by `InventoryType` needs **a measurement
+> that has not been made**: which `InventoryType` `Bukkit.craftItemResult` synthesises. Make that
+> measurement first, or use `CraftItemEvent`, which our path never fires.
+
+#### THE DEFECT `fits` HAD BEEN HIDING BEHIND max-stack-1
+
+`InventoryCraft.craft` asked `MenuSafety.fits(viewer, recipe.getResult())` — the recipe's
+**registered** result. From this slice that is not the item the player receives: a custom recipe
+registers a plain vanilla stack and delivers a minted one.
+
+`fits` credits room in any stack it finds `isSimilar`. A player with no empty slot but 32 plain
+sticks is told a stick fits — and it would; the minted staff carries meta, is not similar, and needs
+a whole slot. `fits` says yes sixty-four times and sixty-four minted weapons hit the floor: the pile
+`fits`' own javadoc was written to prevent.
+
+**It was unreachable before now, and by accident.** Every `craft_result` is a durable material, max
+stack 1, so a matching stack of one credits nothing and only empty slots ever counted — the two
+items agreed for a reason nobody chose. **A stackable craft result is what made them disagree.**
+
+`CraftingMenu.craftRepeatedly` needed no fix and must not grow one: it reads the result slot, which
+`refreshPreview` already minted. Same reasoning, opposite conclusion, and both are commented so the
+asymmetry is not "tidied" later.
+
+#### A GOLDEN-FILE TEST THAT CANNOT FAIL FOR THE REASON IT CLAIMS
+
+`RecipeDefinitionTest.theShapeAndIngredientMapAreDefensivelyCopied` was written asserting that both
+the shape list and the ingredient map are copied from the caller. **The ingredient half could not
+fail**: normalisation rebuilds the map into a fresh `LinkedHashMap` before storing it, so the
+caller's map is never aliased whatever `Map.copyOf` does. Verified by mutation — `ingredients =
+normalised` with `Map.copyOf` removed, all 16 tests still green.
+
+Split into `theShapeIsDefensivelyCopiedFromTheCaller` (a real guard, mutation-proven) and
+`theStoredCollectionsAreUnmodifiable`, which is what actually witnesses `Map.copyOf` — and which
+reddens under that same mutation. **This is CLAUDE.md's fourth recorded verification defect** — a
+defect-asserting test that passes on an accident rather than on the thing it names — found by
+running the mutation rather than by reading the test.
+
+#### `./mvnw` FROM THE WRONG DIRECTORY IS A SILENT PASS
+
+A `cd` inside one tool call left the shell inside `paper/src/main/java/...`. Three subsequent
+`./mvnw ... | grep ERROR` invocations printed nothing and read as green builds. They had not run at
+all: `./mvnw` did not exist there, and `bash: No such file or directory` contains no "ERROR" for the
+grep to find. Two "compiles clean" claims were wrong, and the next real build failed on two missing
+imports that had been there the whole time.
+
+**The same shape as every other entry on CLAUDE.md's verification page**: a check that did not run
+looks exactly like a check that passed. The cheap habit that closes it is grepping for the POSITIVE
+token — `BUILD SUCCESS` — rather than the absence of a negative one.
+
+#### No automated witness
+
+| no automated witness | lives in | what goes wrong unseen | sole witness (row in `GATE-crafting.md`) |
+|---|---|---|---|
+| recipe REGISTRATION | `RecipeRegistrar` | nothing is on the roster; the staff is unobtainable | R1 |
+| what `/reload` does to our recipes | the server | unknown, by admission — the code is correct either way | R2 (records the number) |
+| the `replaced` counter itself | `RecipeRegistrar` | a dead counter makes R2's number meaningless | **R4** (the instrument's own control) |
+| minting from a custom recipe | `commitCraft` | a plain stick for a flint | 7C |
+| the Crafter refusing our recipe | `onCrafterCraft` | a redstone flint-to-stick machine | 7E |
+| `fits` against the delivered item | `InventoryCraft.craft` | up to 64 weapons on the floor | 7F |
+| WEAPON tier occupying the column | `SuggestionTiers` | the first ordinal was unreachable until now | Q15, Q16 |
+
+
 ### Crafting, Slice 5 (Quick Craft, first half) — what it created or exposed
 
 - **THE GATE ROWS WERE NOT IN THE REPOSITORY, AND NOTHING FAILED WHEN THEY WERE NOT.** Q1-Q14 were
