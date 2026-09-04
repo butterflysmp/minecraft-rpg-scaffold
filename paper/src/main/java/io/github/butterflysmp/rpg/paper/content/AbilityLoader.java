@@ -6,6 +6,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -61,7 +62,9 @@ public final class AbilityLoader {
                 s.getInt("cooldown_ticks", 0),
                 AbilitySchema.parseCost(s.getConfigurationSection("cost")),
                 AbilitySchema.parseCast(s.getConfigurationSection("cast")),
-                AbilitySchema.parseEffects(s.getMapList("on_hit"))
+                AbilitySchema.parseEffects(s.getMapList("on_hit")),
+                List.of(),   // a standalone ability carries no authored tooltip prose
+                AbilitySchema.parseCastVisuals(s.getMapList("on_cast"))
         );
     }
 }

@@ -101,6 +101,22 @@ public final class CastExecutor {
         // to the wiring is a check a future call site can forget.
         boolean charges = DamagePayload.isBasicAttack(ability.onHit());
 
+        // WHAT YOU HEAR WHEN YOU PRESS THE BUTTON. Fired here, before the switch, so it is
+        // independent of cast shape and lands on the frame the cast was committed -- a projectile
+        // must not wait for its impact to make a noise, which is the whole reason this hook exists.
+        //
+        // Only reached on a Success, so a cast refused by cooldown or mana is silent.
+        //
+        // It fires at aim.origin(). For a weapon that is the caster's EYE, and it is deliberately
+        // NOT caster.position() -- note the Self arm below detonates at the FEET on purpose. The
+        // two are ~1.5 blocks apart: irrelevant for a sound, visible for a particle. The origin is
+        // right here because this is the muzzle, not the caster.
+        //
+        // THREADING: synchronous, on the thread execute() was entered on, which is the caster's
+        // own region -- the same standing the onBasicAttackUse listener documents above. Nothing
+        // here is scheduled, so there is no region hop to get wrong.
+        effects.applyAll(ability.onCast(), source, null, aim.origin());
+
         // A melee use is charged on CONNECT (in the Melee arm below); every other shape is charged
         // at COMMIT, here. An arrow costs the bow whether or not it lands, like vanilla; a swing
         // that touches nothing is free.
@@ -226,7 +242,7 @@ public final class CastExecutor {
      */
     private void launch(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec) {
         ProjectileFlight.launch(world, caster, aim.origin(), aim.direction().scale(spec.speed()),
-                spec.gravity(), spec.maxLifetimeTicks(), null, // a bare projectile leaves no trail
+                spec.gravity(), spec.maxLifetimeTicks(), spec.trail(),
                 (target, point) -> detonate(ability, caster, target, point));
     }
 

@@ -84,6 +84,96 @@ class AbilityLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
     }
 
+    /**
+     * A projectile's optional trail: authored -> carried, absent -> null.
+     *
+     * The absent half is what makes this NOT a change to hunters_bow and ember_staff. They name no
+     * trail, so they get exactly the null the call site used to hardcode.
+     */
+    @Test
+    void aProjectileTrailIsOptionalAndAbsentMeansNull() throws IOException {
+        write("with_trail.yml", """
+                id: with_trail
+                element: fire
+                cast:
+                  type: projectile
+                  speed: 1.4
+                  trail: flint_trail
+                on_hit:
+                  - type: damage
+                    amount: 20
+                    element: fire
+                """);
+        write("without_trail.yml", VALID);
+
+        var registry = load();
+        var withTrail = (CastSpec.Projectile) registry.find("with_trail").orElseThrow().cast();
+        var bare = (CastSpec.Projectile) registry.find("solar_grenade").orElseThrow().cast();
+
+        assertEquals("flint_trail", withTrail.trail());
+        assertNull(bare.trail(), "a projectile that names no trail leaves nothing, as it always did");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** on_cast carries its visuals, and is empty (never null) when the file names none. */
+    @Test
+    void onCastIsParsedAndAbsentMeansEmpty() throws IOException {
+        write("noisy.yml", """
+                id: noisy
+                element: fire
+                cast:
+                  type: projectile
+                on_cast:
+                  - type: visual
+                    visual_id: flint_cast
+                on_hit:
+                  - type: damage
+                    amount: 20
+                    element: fire
+                """);
+        write("quiet.yml", VALID);
+
+        var registry = load();
+        assertEquals(List.of(new EffectSpec.Visual("flint_cast")),
+                registry.find("noisy").orElseThrow().onCast());
+        assertEquals(List.of(), registry.find("solar_grenade").orElseThrow().onCast());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /**
+     * on_cast admits VISUALS ONLY, and a file that asks for anything else is named and skipped.
+     *
+     * The bound is deliberately narrower than EffectSpec.Untargeted, which would also let a
+     * `burst` deal mob damage at the caster's own eye on every cast and let a `throw_embers` fan
+     * around a zero direction vector. Neither was designed; a schema should not carry behaviour
+     * nobody chose. See AbilitySchema.parseCastVisuals.
+     */
+    @Test
+    void aNonVisualEffectInOnCastIsNamedAndSkipped() throws IOException {
+        write("aaa_bad_cast.yml", """
+                id: bad_cast
+                element: fire
+                cast:
+                  type: projectile
+                on_cast:
+                  - type: damage
+                    amount: 20
+                    element: fire
+                on_hit:
+                  - type: damage
+                    amount: 20
+                    element: fire
+                """);
+        write("solar_grenade.yml", VALID);
+
+        var registry = load();
+
+        assertTrue(registry.find("bad_cast").isEmpty(), "the malformed file must be skipped");
+        assertEquals(1, registry.size(), "and every other ability still loads");
+        assertTrue(warningText().contains("on_cast"),
+                "the warning must name the offending section: " + warningText());
+    }
+
     /** The dash cast: a new shape, parsed like every other, carrying its four-effect payload. */
     @Test
     void loadsADashCastWithItsPayload() throws IOException {

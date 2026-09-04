@@ -5,7 +5,31 @@ public sealed interface CastSpec {
     record Self() implements CastSpec {}
     record Melee(double reach, double arcDegrees) implements CastSpec {}
     record Ray(double range) implements CastSpec {}
-    record Projectile(double speed, double gravity, int maxLifetimeTicks) implements CastSpec {}
+    /**
+     * A body arcing under gravity until it hits something. {@code trail} is a visual id presented
+     * at the projectile's live position once per tick of flight, or null for a bare projectile
+     * that leaves nothing.
+     *
+     * <p>{@code trail} is OPTIONAL and defaults to absent, which is what makes it not a change to
+     * the weapons that do not ask for one: {@code hunters_bow} and {@code ember_staff} specify no
+     * trail, get null, and behave byte-identically to before this field existed. The field is here
+     * because {@link io.github.butterflysmp.rpg.core.combat.ProjectileFlight} has ALWAYS presented
+     * a trail every step -- there was simply no way for the schema to produce anything but null,
+     * and the call site's {@code // a bare projectile leaves no trail} read as a decision when it
+     * was the only value available.
+     */
+    record Projectile(double speed, double gravity, int maxLifetimeTicks, String trail)
+            implements CastSpec {
+
+        /**
+         * A projectile with no trail -- every call site that predates the field, and both dev
+         * weapons. The same optional-argument ladder {@code AbilityDefinition} uses for its
+         * authored description: the convenience constructor drops the tail.
+         */
+        public Projectile(double speed, double gravity, int maxLifetimeTicks) {
+            this(speed, gravity, maxLifetimeTicks, null);
+        }
+    }
 
     /**
      * Which way a dash sends the caster. The concrete direction VECTOR is still resolved

@@ -43,7 +43,9 @@ class ContentValidatorTest {
         var registry = new VisualRegistry();
         for (String id : ids) {
             registry.register(new VisualDefinition(id,
-                    List.of(new VisualSpec.Particles(Particle.FLAME, 40, 0.6))));
+                    // speed stated rather than defaulted: the record deliberately has no
+                    // convenience constructor, so no construction can be silent about its extra.
+                    List.of(new VisualSpec.Particles(Particle.FLAME, 40, 0.6, 1.0))));
         }
         return registry;
     }
@@ -161,6 +163,34 @@ class ContentValidatorTest {
         assertEquals(2, problems.size(), problems.toString());
     }
 
+    /**
+     * A DANGLING on_cast visual_id is reported, and the report says on_cast.
+     *
+     * It needs its own walk because on_cast is a separate list from on_hit -- a validator that
+     * only walked on_hit would pass a weapon whose cast sound names a file that does not exist,
+     * and the symptom in game is SILENCE, which is indistinguishable from a weapon that was never
+     * given a cast sound at all. Exactly the invisibility that makes a dangling visual_id a named
+     * warning rather than a quiet no-op everywhere else in this class.
+     *
+     * Mutation: delete the onCast loop in ContentValidator.validate -> 0 problems, reddens.
+     */
+    @Test
+    void aDanglingOnCastVisualIsReportedAndNamedAsOnCast() {
+        var registry = new AbilityRegistry();
+        registry.register(new AbilityDefinition("flint_bolt", "Fire Bolt", "fire",
+                "none", 24, new ResourceCost("mana", 5),
+                new CastSpec.Projectile(1.4, 0.05, 40, "flint_trail"),
+                List.of(new EffectSpec.Visual("flint_impact")), List.of(),
+                List.of(new EffectSpec.Visual("no_such_cast_visual"))));
+
+        var problems = validator(visualsWith("flint_impact"), statusesWith()).validate(registry);
+
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("on_cast"),
+                "the problem must say which list it came from: " + problems.get(0));
+        assertTrue(problems.get(0).contains("no_such_cast_visual"), problems.get(0));
+    }
+
     /** A well-formed key that names no effect. Only a live Registry knows; hence the seam. */
     @Test
     void potionTypeThatNamesNoEffectIsReported() {
@@ -213,6 +243,67 @@ class ContentValidatorTest {
         var problems = validator(visuals, statuses).validate(abilities);
 
         assertTrue(problems.isEmpty(), problems.toString());
+    }
+
+    /**
+     * THE SHIPPED FLINT STAFF, parsed by the loaders that actually run, asserted against the
+     * numbers cfde822 authored -- not a hand-built replica, which would keep passing after
+     * someone edited the yml.
+     *
+     * <p>The `speed` assertions are the load-bearing ones and they are why this test exists at
+     * all. `speed` is Bukkit's `extra`, and the schema default is 1.0 -- because the 6-arg
+     * spawnParticle this adapter used to call passed 1.0, so every older visual was authored by
+     * eye against it. cfde822's staff used 0.0 everywhere EXCEPT the impact flame's 0.05. An
+     * omitted `speed` in either new file would therefore be a fast outward spray where the old
+     * repo had none, and nothing else in the build would notice: the file parses, the visual
+     * plays, and only a boot would show it -- against a bolt nobody has seen before, which is
+     * exactly the reading this slice must not spend twice.
+     *
+     * <p>It also proves the wiring end to end: trail -> the cast, on_cast -> the trigger, and
+     * every visual_id resolving to a file that exists.
+     */
+    @Test
+    void theShippedFlintStaffCarriesCfde822sNumbers(@TempDir Path dir) throws IOException {
+        var log = Logger.getLogger("ContentValidatorTest-" + System.nanoTime());
+        var visuals = new VisualLoader(log).loadAll(
+                copyBundled(dir, "visuals", "flint_cast.yml", "flint_trail.yml", "flint_impact.yml"));
+        var weapons = new WeaponLoader(log).loadAll(copyBundled(dir, "weapons", "flint_staff.yml"));
+
+        assertEquals(3, visuals.size(), "a bundled flint visual failed to parse");
+        assertEquals(1, weapons.size(), "flint_staff.yml failed to parse");
+
+        // --- the trail: FLAME x2 spread 0.05 speed 0.0, SMOKE x1 spread 0.03 speed 0.0 ---
+        var trail = visuals.find("flint_trail").orElseThrow().steps();
+        var trailFlame = assertInstanceOf(VisualSpec.Particles.class, trail.get(0));
+        assertEquals(Particle.FLAME, trailFlame.particle());
+        assertEquals(2, trailFlame.count());
+        assertEquals(0.05, trailFlame.spread(), 1e-9);
+        assertEquals(0.0, trailFlame.speed(), 1e-9, "cfde822's trail flame does not drift");
+        var trailSmoke = assertInstanceOf(VisualSpec.Particles.class, trail.get(1));
+        assertEquals(Particle.SMOKE, trailSmoke.particle());
+        assertEquals(1, trailSmoke.count());
+        assertEquals(0.03, trailSmoke.spread(), 1e-9);
+        assertEquals(0.0, trailSmoke.speed(), 1e-9, "nor its smoke");
+
+        // --- the impact: FLAME x14 spread 0.2 SPEED 0.05 (the one non-zero), SMOKE x4 speed 0 ---
+        var impact = visuals.find("flint_impact").orElseThrow().steps();
+        var impactFlame = assertInstanceOf(VisualSpec.Particles.class, impact.get(0));
+        assertEquals(14, impactFlame.count());
+        assertEquals(0.2, impactFlame.spread(), 1e-9);
+        assertEquals(0.05, impactFlame.speed(), 1e-9,
+                "the ONE non-zero extra in the whole staff -- what puffs the burst outward");
+        assertEquals(0.0, assertInstanceOf(VisualSpec.Particles.class, impact.get(1)).speed(), 1e-9);
+
+        // --- the wiring: the trigger names the trail, and announces itself on cast ---
+        var trigger = weapons.find("flint_staff").orElseThrow().triggers().get(0);
+        var cast = assertInstanceOf(CastSpec.Projectile.class, trigger.ability().cast());
+        assertEquals("flint_trail", cast.trail(), "the bolt must leave something behind it");
+        assertEquals(List.of(new EffectSpec.Visual("flint_cast")), trigger.ability().onCast(),
+                "and must be audible on the frame the trigger is pressed");
+
+        // --- and nothing dangles ---
+        assertTrue(validator(visuals, statusesWith("scorch")).validateWeapons(weapons.all()).isEmpty(),
+                "every visual_id the staff names must resolve");
     }
 
     // --- kit -> ability/weapon/element cross-reference, behind the Predicate<String> seams ---

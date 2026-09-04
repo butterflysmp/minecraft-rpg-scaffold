@@ -54,7 +54,18 @@ public final class ProjectileFlight {
     private static void step(CombatWorld world, Caster caster, Vec3 position, Vec3 velocity,
                              double gravity, int maxLifetimeTicks, int elapsed,
                              String trail, Impact onImpact) {
-        if (trail != null) world.present(position, trail);
+        // NOT on the launch frame. On elapsed == 0 the position IS the aim's origin, which for a
+        // weapon is the caster's EYE -- so drawing here puts the first puff of flame inside the
+        // shooter's own camera. The old repo never did: its tracker was runTaskTimer(plugin, 1L,
+        // 1L), first draw one tick AFTER launch, at a position the bolt had already moved to.
+        //
+        // A per-tick COUNT assertion cannot see this defect -- the count is the same either way --
+        // so the test that guards it asserts the first presented POSITION instead.
+        //
+        // This does NOT generalise to EffectApplier.trackEmber, which draws inline on its launch
+        // frame and should keep doing so: throw_embers spawns a real item AT the origin, so its
+        // frame-0 particle sits on a visible body rather than in a face.
+        if (trail != null && elapsed > 0) world.present(position, trail);
 
         Vec3 next = position.add(velocity);
 

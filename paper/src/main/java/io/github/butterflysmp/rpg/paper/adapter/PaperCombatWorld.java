@@ -248,9 +248,13 @@ public final class PaperCombatWorld implements CombatWorld {
         ctx.scheduler().onRegion(loc, () -> {
             for (VisualSpec step : visual.steps()) {
                 switch (step) {
+                    // The 7-arg overload: offsets, then `extra`. The 6-arg one this used to call
+                    // hardcoded extra = 1.0 (its default chain ends at dconst_1), so passing
+                    // p.speed() with a 1.0 loader default leaves every existing visual identical
+                    // while letting a file ask for something else. See VisualSpec.Particles.
                     case VisualSpec.Particles p ->
                             world.spawnParticle(p.particle(), loc, p.count(),
-                                    p.spread(), p.spread(), p.spread());
+                                    p.spread(), p.spread(), p.spread(), p.speed());
                     case VisualSpec.Sound s ->
                             world.playSound(loc, s.key(), s.volume(), s.pitch());
                 }

@@ -34,10 +34,78 @@ class ProjectileFlightTest {
         new CastExecutor(world).execute(success);
     }
 
+    /**
+     * An aim from an EYE rather than from the origin of the coordinate system, so "the trail did
+     * not draw at the caster's eye" is a claim a test can actually make. With FORWARD, whose
+     * origin is Vec3.ZERO, an eye-puff and a correct first draw would be told apart only by
+     * arithmetic on zero.
+     */
+    private static final Aim EYE_FORWARD = new Aim(new Vec3(0, 1.62, 0), new Vec3(1, 0, 0));
+
+    /** 1 block/tick, no gravity, a trail (or none), and a payload that presents nothing. */
+    private static AbilityDefinition tracer(String trail, int lifetime) {
+        return new AbilityDefinition("grenade", "Grenade", "fire", "hunter",
+                0, ResourceCost.FREE, new CastSpec.Projectile(1.0, 0, lifetime, trail),
+                List.of(new EffectSpec.Damage(12, "fire")));
+    }
+
     private static final EffectSpec.Damage HIT = new EffectSpec.Damage(12, "fire");
 
     /** A basic-attack payload: no literal, deals whatever the caster froze at cast time. */
     private static final EffectSpec.WeaponDamage WEAPON_HIT = new EffectSpec.WeaponDamage("fire");
+
+    /**
+     * THE TRAIL, AND WHERE ITS FIRST PUFF LANDS.
+     *
+     * The launch frame's position IS the aim's origin, which in production is the caster's eye, so
+     * a trail drawn there puts flame inside the shooter's own camera. cfde822 never did:
+     * runTaskTimer(plugin, 1L, 1L) drew first one tick AFTER launch, at a position the bolt had
+     * already moved to.
+     *
+     * NOTE WHAT IS ASSERTED. A count of presents is structurally BLIND to this -- five flight
+     * steps draw five times whether the first lands at the eye or the sixth never happens. Only
+     * the POSITION tells them apart, which is why FakeWorld records presentedAt at all.
+     *
+     * Mutation: restore the unconditional present in ProjectileFlight.step -> the launch-frame
+     * assertion reddens with a stray "flint_trail", and the count becomes 5.
+     */
+    @Test
+    void theTrailIsDrawnOneTickAfterLaunchAndNeverAtTheCastersEye() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        cast(world, caster, tracer("flint_trail", 5), EYE_FORWARD);
+
+        assertEquals(List.of(), world.presented,
+                "nothing may be drawn on the launch frame -- that point is the caster's eye");
+
+        world.advanceTicks(50);
+
+        assertEquals(List.of("flint_trail", "flint_trail", "flint_trail", "flint_trail"),
+                world.presented,
+                "five flight steps, four draws: one per tick AFTER the launch frame");
+
+        Vec3 first = world.presentedAt.get(0);
+        assertNotEquals(EYE_FORWARD.origin(), first,
+                "the first puff must not land in the shooter's camera");
+        assertEquals(1.0, first.x(), 1e-9, "it lands one tick of travel downrange");
+        assertEquals(1.62, first.y(), 1e-9, "at the height it was fired from");
+    }
+
+    /**
+     * A projectile that asks for no trail draws nothing at all. This is what makes the field
+     * OPTIONAL rather than a change to hunters_bow and ember_staff, which specify none.
+     */
+    @Test
+    void aProjectileWithNoTrailDrawsNothing() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        cast(world, caster, tracer(null, 5), EYE_FORWARD);
+        world.advanceTicks(50);
+
+        assertEquals(List.of(), world.presented, "a bare projectile leaves nothing behind it");
+    }
 
     @Test
     void aProjectileTakesTimeToReachItsTarget() {

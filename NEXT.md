@@ -581,6 +581,145 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Flint Staff visuals, PR 1 (the bolt becomes visible and audible) — what it created or exposed
+
+The Fire Bolt was functionally correct and visually unusable: you could not see where it went, what
+it hit, or whether it hit. This slice gives it a per-tick trail and a cast sound. The ITEM BODY — a
+real tumbling flint — is PR 2, deliberately.
+
+#### A PRE-REGISTERED EXPLANATION FOR AN UNEXPECTED RESULT IS A BLINDFOLD IF THE RESULT HAS A SECOND CAUSE
+
+This is the durable one out of this slice, and it is a rule about *planning*, not about particles.
+
+The plan said: ship cfde822's trail numbers UNCHANGED, and if the stream reads sparse at the boot,
+record that as EXPECTED (the item body is missing) rather than fixing it. That instruction is
+correct — raising the count now would mean PR 2 adds the body back into a stream tuned for its
+absence, and the finished bolt is too busy, from a tuning nobody made wrongly.
+
+It is also safe **only if the numbers really are cfde822's**. Three of the four new particle steps
+were not. They omitted `speed`, and so inherited the schema default of 1.0 where the old repo had
+0.0 — a fast outward spray in place of particles that sit where they are put. Had that shipped, the
+instruction would have converted **a wrong appearance into an expected one and closed the
+question**: the stream would have read wrong, the pre-registered explanation would have absorbed it,
+and nobody would have looked again.
+
+> **Deciding in advance what a wrong reading will mean costs you the reading.** Pair the prediction
+> with the thing that would DISTINGUISH the two causes, or do not pre-register it.
+
+Here the distinguishing thing is a test:
+`ContentValidatorTest.theShippedFlintStaffCarriesCfde822sNumbers` loads the actual shipped yml
+through the actual loaders and asserts every `speed`. With it green, "sparse" has exactly one
+candidate cause. Verified by mutation — delete the `speed: 0.0` from `flint_trail.yml` and it
+reddens with `expected: <0.0> but was: <1.0>`, which is precisely the defect described above.
+
+Note where the error sat: the same document that FOUND the 1.0 default, and correctly protected six
+shipped files from a 0.0 default, then authored four new steps that inherited 1.0 a page later. The
+evidence was on screen in the message that named the remedy.
+
+#### THE PARTICLE `extra` DEFAULT WAS 1.0 ALL ALONG, AND NOBODY CHOSE IT
+
+`PaperCombatWorld.present` called the 6-argument `spawnParticle(Particle, Location, int, double,
+double, double)`. Decompiled from the pinned Paper API (`javap -p -c org.bukkit.World`), its default
+chain ends at `dconst_1`. So every visual in `content/` — `ember_burst`, `ember_trail`,
+`solar_detonation`, `solar_lance`, `arc_surge`, `void_slash` — has been running at extra 1.0, tuned
+by eye against a value nobody selected.
+
+**The finding's blast radius runs in BOTH directions, and only one is obvious.** It says the new
+`speed` field must default to 1.0 (0.0, the reflexive default for a new numeric field, would
+silently restyle all six). It ALSO says every newly authored file must state its own `extra`,
+because "absent" now means a value chosen for backward compatibility rather than for that file. The
+first direction was applied immediately; the second was missed. Guarded now by
+`VisualLoaderTest.anAbsentSpeedIsOnePreservingWhatEveryOlderVisualWasAuthoredAgainst`.
+
+**Open observation, owed at the PR 1 boot:** `ember_trail.yml` is `count 1, spread 0.0` and its
+comment claims it "places a single flame at the ember and nowhere else" — but it is running at extra
+1.0. Does it actually sit still in game? **Do not change it; look, and record what is seen.** If it
+drifts, the comment is wrong and that is a second, independent witness for authoring `extra`
+explicitly everywhere.
+
+#### THE LAUNCH-FRAME TRAIL PUFF LANDED IN THE CASTER'S EYE, AND A COUNT ASSERTION CANNOT SEE IT
+
+`ProjectileFlight.step` presents the trail at `position` BEFORE stepping, and on the launch frame
+`position` IS `aim.origin()` — which for a weapon is the player's eye. So the first flame of every
+shot spawned inside the shooter's own camera. cfde822 never did this: its tracker was
+`runTaskTimer(plugin, 1L, 1L)`, first draw one tick AFTER launch at an already-moved position. Fixed
+by skipping the present when `elapsed == 0`, which reproduces that delay exactly.
+
+The part worth keeping: **the obvious test is structurally blind to it.** "The trail presents once
+per flight tick" is TRUE whether or not the first draw is in your face — the count is identical
+either way. Only the POSITION distinguishes them, which is why `FakeWorld` gained `presentedAt`
+alongside `presented`. A guard that cannot fail for the reason it claims is the defect this file
+already records twice.
+
+Deliberately NOT generalised to `EffectApplier.trackEmber`, which draws inline on its own launch
+frame and should keep doing so: `throw_embers` spawns a real item AT the origin, so its frame-0
+particle sits on a visible body rather than in a face. Different situation; `ability_stone` was out
+of scope.
+
+#### A SHARED VISUAL IS A COUPLING, AND THE COUPLING IS INVISIBLE AT BOTH ENDS
+
+`ember_burst.yml`'s own comment records that its count went 30 → 10 and its spread 1.0 → 0.3, "kept
+tight so three near-simultaneous detonations don't read as scattered clutter" — a tuning made for
+the Ability Stone's three-ember throw. The Flint Staff, which fires ONE bolt on a 24-tick cooldown
+and has the exact opposite need, was firing that same file and silently inherited the fix.
+
+Neither weapon's file was touched. Nothing warned at either end. That is rule 3 in tuning: a change
+made for one consumer degraded another that shares the asset. The staff now has `flint_impact.yml`,
+`flint_trail.yml` and `flint_cast.yml` of its own, and each says in its header what it is for.
+
+There is no mechanism proposed to detect the next one. Worth knowing that a `visual_id` reference is
+a dependency with no arity: nothing in the repo can say "this file has two consumers with opposing
+needs".
+
+#### `on_cast` IS A NEW CONTENT-MODEL CONCEPT, AND ITS BOUND IS DELIBERATELY NARROWER THAN ITS TYPE
+
+The repo's older idiom for a cast noise is an untargeted `visual` in `on_hit` — `rekindle.yml` and
+`ability_stone.yml` both do it, and it works because a Dash's untargeted effects fire once at the
+origin whether or not it catches anyone. A **projectile** breaks it: its `on_hit` fires at the impact
+point, after flight, so the staff would have announced itself a fifth of a second late at the far
+end of the shot.
+
+`AbilityDefinition.onCast` is typed `List<EffectSpec.Visual>`, **not** `List<EffectSpec.Untargeted>`,
+and the narrowness is the point. `Untargeted` also permits `Area`, `Burst` and `ThrowEmbers`. None
+was designed for this position; `Burst` would deal mob damage at the caster's own eye on every cast,
+and `ThrowEmbers` is outright degenerate there — the applier's four-argument entry point passes a
+ZERO direction, so the fan would be computed around a zero vector. Enumerating the one case you have
+and then picking a bound that carries three you have not decided about is how a schema grows
+behaviour nobody chose.
+
+#### DEFERRED WITH A TEST: HIT AND MISS ARE INDISTINGUISHABLE IN THE VISUAL FILE
+
+On lifetime expiry `ProjectileFlight` calls `onImpact.at(null, next)`, so a MISS detonates and plays
+the same visual and the same sound a HIT plays. Targeted effects are skipped; the visual is not.
+
+cfde822 had the same property — same sound both ways, and its bursts differed only 14 FLAME against
+12, which is imperceptible. So fixing it is **new scope, not restoration**, and it is not bundled
+under "match the old repo".
+
+**Why it is deferred rather than built.** The reason you cannot tell a hit from a miss is that the
+bolt is invisible, and that is what this slice fixes. Once you can see it, a bolt that stops in a
+mob's chest and one that sails past and pops in empty air are already distinguishable by POSITION. A
+hit also carries feedback a miss structurally cannot: hurt flash, knockback, health drop, and scorch
+burning the mob for 80 ticks. The two events are not indistinguishable in the field — they are
+indistinguishable in the VISUAL FILE, which is a smaller claim than it sounds. And `on_cast` is
+already one new content-model concept in this slice; `on_miss` would be a second, in the same slice,
+for a weapon with one trigger.
+
+**THE TEST, AND IT RUNS AFTER PR 2, NOT PR 1.** Fire at a mob at max range, then deliberately past
+it. If it is not clear within about a second which one happened, it comes back as its own scoped item
+and gets built against a bolt that has actually been watched — rather than tuned now against a
+baseline nobody has seen. It is evaluated after the item body lands because the body changes how the
+terminal frame reads, and that judgment is not being spent twice against a partial state.
+
+#### WHAT PR 1's GATE MAY AND MAY NOT CLAIM
+
+It may claim: **a per-tick flame trail is drawn at the bolt's computed position, and the two cast
+sounds play on the trigger.** It may NOT claim "the staff matches cfde822" — the item body is
+missing, and faithfulness to the old repo is a PR 2 row. PR 1 is a proper SUBSET of the target, not
+an approximation of it: cfde822 drew FLAME x2 + SMOKE x1 at the item's live position, and that
+position is the same number whether or not a flint chunk is rendered there. Nothing here gets thrown
+away or rewritten by PR 2.
+
 ### Crafting, Slice 7 (custom recipes, and the Flint Staff) — what it created or exposed
 
 The first slice in which crafting a thing the server did not previously know how to craft produces

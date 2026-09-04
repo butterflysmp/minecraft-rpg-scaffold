@@ -141,7 +141,10 @@ public final class WeaponLoader {
                     AbilitySchema.parseCost(t.getConfigurationSection("cost")),
                     AbilitySchema.parseCast(t.getConfigurationSection("cast")),
                     AbilitySchema.parseEffects(t.getMapList("on_hit")),
-                    description);
+                    description,
+                    // What is heard/seen the instant the trigger is pressed, as against on_hit's
+                    // "where it resolves". For a projectile weapon those are ticks apart.
+                    AbilitySchema.parseCastVisuals(t.getMapList("on_cast")));
             bindings.add(new TriggerBinding(input, ability));
         }
 

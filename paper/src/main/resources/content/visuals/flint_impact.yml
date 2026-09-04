@@ -1,0 +1,38 @@
+# Where the Flint Staff's bolt lands: a flame puff, a wisp of smoke, and a fire-charge crack.
+# Id is the filename: flint_impact.
+#
+# WHY THIS IS NOT ember_burst, which the staff used to fire. ember_burst's own comment records
+# that its count went 30 -> 10 and its spread 1.0 -> 0.3, "kept tight so three near-simultaneous
+# detonations don't read as scattered clutter" -- a tuning for the Ability Stone's three-ember
+# throw. The Flint Staff fires ONE bolt on a 24-tick cooldown and has the opposite need: it wants
+# to be seen. It was carrying another weapon's fix and nothing warned at either end.
+#
+# Numbers are cfde822 StaffListener.resolveFlintStaffHit's, unchanged.
+#
+# NOTE: it plays on a MISS too. ProjectileFlight calls onImpact.at(null, point) when the fuse
+# expires, so a bolt that hits nothing detonates where it ran out. cfde822 had the same property
+# (its block/timeout burst differed only 12 FLAME against 14, which is imperceptible). Deferred
+# deliberately, with a test to be run after the item body lands -- see NEXT.md.
+#
+# `speed` is Bukkit's `extra`, authored explicitly on BOTH steps. 0.05 on the FLAME is the one
+# non-zero value in the whole staff and it is what makes the puff drift outward rather than sit
+# in a ball; the SMOKE is 0.0. Neither may be omitted: the schema default is 1.0 (see
+# VisualSpec.Particles), which is twenty times the flame's intended drift.
+
+steps:
+  - type: particle
+    particle: FLAME
+    count: 14
+    spread: 0.2
+    speed: 0.05
+
+  - type: particle
+    particle: SMOKE
+    count: 4
+    spread: 0.1
+    speed: 0.0
+
+  - type: sound
+    key: item.firecharge.use   # verified in SoundEvents.class on the pinned 26.1.2 server jar
+    volume: 0.8
+    pitch: 1.5
