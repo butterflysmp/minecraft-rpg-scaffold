@@ -750,6 +750,19 @@ Custom recipes: N registered, M replaced, K refused, of A authored (I minting ge
 `A` comes from the REGISTRY and the rest from the registrar's own walk, so a dead registrar reads
 wrong at a glance instead of reading self-consistently and wrong.
 
+> **BEFORE EVERY BOOT IN THIS SECTION: kill every `java.exe` and confirm the deployed jar is not
+> locked. AFTER: compare `target` and deployed mtimes.**
+>
+> Not caution — a standing condition, recorded in `NEXT.md`. `echo stop | dev-server.sh` does **not**
+> stop the server: the piped command lands on the first tick after `Done`, throws
+> `NullPointerException ... CommandSourceStack.getLevel() is null`, is swallowed as "an unexpected
+> error", and the JVM runs on holding `run/plugins/rpg-*.jar`. The next boot then cannot `rm -f` it,
+> `set -e` aborts **before deploying**, and the boot after that reads a STALE jar.
+>
+> **Every row here passes by reading a log line, and a stale jar prints a correct-looking one** —
+> the previous build was also correct. There is no second signal. This is how a green row certifies
+> the wrong build.
+
 | # | action | expected | notes |
 |---|---|---|---|
 | R1 | **Fresh content.** `./scripts/dev-server.sh --refresh-content`. Read the line. | `1 registered, 0 replaced, 0 refused, of 1 authored (1 minting gear)` | **`--refresh-content` IS REQUIRED.** `content/recipes/` is a brand-new directory; `saveResource(path, false)` never overwrites, so a populated `run/` data folder predates it and ships nothing. `0 replaced` says the remove call is not spuriously matching on a virgin roster · **PASSED 2026-09-03**, exactly this line. **Provenance, because the first observation did not have it:** originally read on a jar built *before* the slice was committed, from a tree **asserted** rather than verified to match it. Re-run against a jar built by `./mvnw clean package` from the **clean committed tree** of the docs commit that added this sentence — so anyone can reproduce it by checking out that commit and rebuilding. An observation whose build you cannot name is a number, not a verification |

@@ -762,6 +762,84 @@ the one above, because the danger is not that someone believes CI covers this �
 check at the top of a PR is exactly what makes a gate feel optional. **This is the moment a gate
 gets skipped**, and the table below is the list of what would be skipped with it.
 
+#### STANDING CONDITION: every scripted boot leaves a JVM holding the jar, so the stale-jar trap is ARMED BY DEFAULT
+
+**Recorded 2026-09-03. This is not a quirk of one run — it is the state the dev loop is in after
+every scripted boot, and it arms the trap CLAUDE.md's VERIFICATION section opens with.**
+
+`echo stop | ./scripts/dev-server.sh` does not stop the server. **And the reason is not the one it
+looks like.** The first note written about this said "`stop` never takes on non-tty stdin", which is
+wrong: the command arrives fine. Read the log instead of reasoning about it and the real mechanism
+is there, identically in all three boots of this slice:
+
+```
+[21:52:54 INFO]: Done (5.863s)! For help, type "help"
+[21:52:54 ERROR]: Command exception: /stop
+java.lang.NullPointerException: Cannot invoke "net.minecraft.server.level.ServerLevel.getGameRules()"
+        because the return value of "net.minecraft.commands.CommandSourceStack.getLevel()" is null
+        at net.minecraft.server.dedicated.DedicatedServer.handleConsoleInputs(DedicatedServer.java:622)
+[21:52:54 INFO]: An unexpected error occurred trying to execute that command
+```
+
+A piped `stop` is delivered **instantly**, so it executes on the first tick that processes console
+input — the same second the server finishes starting — when the console command source has no level
+yet. It throws, the throw is swallowed as "an unexpected error", **and the server runs forever.**
+
+So the chain, which holds after every scripted boot:
+
+1. the stop is swallowed, so the JVM survives the script;
+2. the surviving JVM holds `run/plugins/rpg-*.jar`;
+3. the next `dev-server.sh` cannot `rm -f` it (`Device or resource busy`);
+4. `set -e` aborts **before the deploy**, and the boot after that reads a STALE jar.
+
+**Today step 4 saved a verification, by accident.** The R1 provenance re-run hit exactly this and
+aborted. Nothing was designed to disarm the trap — `set -e` happened to fire. Had the deploy been
+non-fatal, or had the script deployed before removing, the server would have booted the previous
+build and printed a correct-looking R1 line for the wrong jar.
+
+**Until the script changes, the manual discipline is: kill every `java.exe` and confirm the deployed
+jar is not locked BEFORE booting, and compare `target` and deployed mtimes AFTER.** Both were done
+for the R1 re-run (target `21:51:53`, deployed `21:52:48`), which is the only reason its number can
+be trusted.
+
+##### OWED: make `dev-server.sh` stop the server rather than hope
+
+Not done in this slice — it is a dev-script change and this slice is about custom recipes — but
+sized here so it is a decision rather than a rediscovery. Two candidate shapes, and the second is
+better:
+
+- **Delay the stop** (`(sleep 30; echo stop) | ...`). One line, and it fixes the NPE by letting the
+  command land after the level exists. But it trades a hang for a guess about boot time, and a slow
+  boot silently returns to the current behaviour — the failure mode is the same one, just rarer,
+  which is worse than loud.
+- **PID file plus an explicit kill.** `dev-server.sh` already `exec`s java as the last statement, so
+  it would need to background it, write `$!` to `run/server.pid`, `wait`, and trap EXIT/INT to kill
+  that PID. A `--stop` flag then kills by PID file, and the boot path can **refuse to start while a
+  live PID file exists** rather than discovering the lock at `rm` time. That converts a silent
+  precondition into a named refusal, which is the direction every other guard in this repo goes.
+
+**Acceptance for either:** two consecutive scripted boots with no manual kill between them, and the
+second one's deployed-jar mtime newer than its `target` mtime. That criterion is what today's run
+had to be checked by hand.
+
+#### A PROVENANCE RE-RUN ON A BOOT-WITNESSED ROW IS NOT BOOKKEEPING — IT IS THE CHECK
+
+R1 was re-run only to attach an observation to a commit: the first reading came from a jar built
+before the slice was committed, from a tree **asserted** rather than verified to match. Tidying.
+
+**It caught a live defect** — the held jar and the aborted deploy above.
+
+That is the general lesson, and it is sharper than "re-run things": **a row whose entire content is
+a log line has no second signal.** R1 passes by printing
+`Custom recipes: 1 registered, 0 replaced, 0 refused, of 1 authored`, and a stale jar prints exactly
+that too, because the previous build was also correct. Nothing downstream could have caught it —
+not the suite, which is green either way; not CI, which never boots; not the row itself, which had
+already "passed". The only thing that distinguishes the two readings is **which build produced
+them**, which is precisely what a provenance re-run establishes and nothing else does.
+
+So on a boot-witnessed row, "which build was this observed on" is not metadata about the check. It
+**is** the check.
+
 #### No automated witness
 
 | no automated witness | lives in | what goes wrong unseen | sole witness (row in `GATE-crafting.md`) |
