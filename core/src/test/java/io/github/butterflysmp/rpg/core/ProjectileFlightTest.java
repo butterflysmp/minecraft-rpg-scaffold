@@ -140,21 +140,48 @@ class ProjectileFlightTest {
     }
 
     /**
-     * The body is driven along the path core computes, one move per flight tick. It is not thrown
-     * and left to physics: this projectile resolves on a traced segment, so if physics owned the
-     * position the thing you see and the thing you hit would be two different objects.
+     * THE BODY IS DRIVEN BY VELOCITY, AND THE VELOCITY IS EXACTLY THE COMPUTED STEP.
      *
-     * <p>NOTE WHERE IT IS AFTER THE LAUNCH FRAME, because the first version of this test guessed
-     * wrong. The body is CREATED at the eye -- {@code markerSpawnedAt} proves that, and the frame-0
-     * test above asserts it -- but the launch frame also RUNS step 0 inline, and step 0 ends by
-     * moving the body to where tick 1 will resolve. So by the time {@code cast()} returns, the body
-     * has already left the muzzle. That is the flight's first tick doing its job, not a bug: the
-     * invariant is "when step N runs, the body is at step N's position", and it holds from the
-     * first tick onward. cfde822's thrown item behaved the same way -- a velocity of 1.4 also
-     * carried it more than a block during its own first tick.
+     * <p>This is the load-bearing assertion of the whole design. The body is not repositioned --
+     * repositioning was verified to move the entity server-side and verified NOT to reach the
+     * client -- so the ONLY thing that puts it on the path is the vector handed to the platform's
+     * mover each tick. If that vector is not the step, the body is not on the path.
+     *
+     * <p>Gravity is in it: the flight integrates the ability's own gravity per step, and the adapter
+     * disables the entity's, so exactly one gravity applies. A velocity set once at launch would fly
+     * straight while the path arced.
+     *
+     * <p>Mutation: hand driveMarker `nextVelocity` instead of `velocity` and the gravity assertion
+     * reddens by one step of gravity; hand it a constant and the arc flattens.
      */
     @Test
-    void theBodyIsDrivenAlongTheComputedPath() {
+    void theBodyIsDrivenByTheExactComputedStepIncludingGravity() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        // speed 1 forward, gravity 0.1 per tick, so successive steps differ by a known amount.
+        var arcing = new AbilityDefinition("grenade", "Grenade", "fire", "hunter",
+                0, ResourceCost.FREE, new CastSpec.Projectile(1.0, 0.1, 5, null, "flint"),
+                List.of(new EffectSpec.Damage(12, "fire")));
+        cast(world, caster, arcing, EYE_FORWARD);
+        world.advanceTicks(50);
+
+        var driven = world.markerVelocities.get(world.markersEverSpawned.get(0));
+        assertNotNull(driven, "the body must be driven at all");
+        assertEquals(1.0, driven.get(0).x(), 1e-9, "one block of forward travel per tick");
+        assertEquals(0.0, driven.get(0).y(), 1e-9, "the first step has not fallen yet");
+        assertEquals(-0.1, driven.get(1).y(), 1e-9, "the second carries one tick of gravity");
+        assertEquals(-0.2, driven.get(2).y(), 1e-9, "and the third, two");
+    }
+
+    /**
+     * The driven body ends up ON the computed path, not near it. FakeWorld stands in for vanilla's
+     * mover by displacing the marker by whatever velocity it was handed -- which is what the adapter
+     * arranges to be true in production (entity gravity off, so nothing is added before the move;
+     * drag applied after it, so it is overwritten before it can matter).
+     */
+    @Test
+    void theDrivenBodyTracksTheComputedPath() {
         var world = new FakeWorld();
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
 
@@ -163,33 +190,28 @@ class ProjectileFlightTest {
 
         assertEquals(EYE_FORWARD.origin(), world.markerSpawnedAt.get(body), "born at the muzzle");
         assertEquals(new Vec3(1, 1.62, 0), world.markerPositions.get(body),
-                "and step 0, which runs inline on the launch frame, has already carried it one step");
+                "step 0 runs inline on the launch frame and has already driven it one step");
 
         world.advanceTicks(1);
-        assertEquals(new Vec3(2, 1.62, 0), world.markerPositions.get(body), "one tick of travel");
-
-        world.advanceTicks(1);
-        assertEquals(new Vec3(3, 1.62, 0), world.markerPositions.get(body), "and the next");
+        assertEquals(new Vec3(2, 1.62, 0), world.markerPositions.get(body));
     }
 
     /**
-     * THE BODY IS REMOVED WHEN THE BOLT HITS, AND IT VANISHES *AT* THE BURST.
+     * THE BODY IS REMOVED ON A HIT -- AND IS DELIBERATELY *NOT* REPOSITIONED TO THE BURST FIRST.
      *
-     * <p>Two claims, and the second is the one with teeth. The impact resolves at the ray's hit
-     * point, somewhere along the segment just traced, while the marker is still back at the
-     * segment's START -- at the staff's speed 1.4 that is up to 1.4 blocks between where the flint
-     * disappears and where the fire appears. cfde822 had no such gap, because its hit was found
-     * within 0.7 blocks of the item's own location and the two coincided by construction.
+     * <p>The stride this leaves is REAL and is recorded rather than fixed: the impact resolves at
+     * the ray's hit point while the body sits at the segment's start, so the flint vanishes between
+     * 0 and one full step short of the fire -- a mean of about 0.7 blocks at the staff's speed 1.4.
+     * This test PINS that gap so nobody reads the missing reposition as an oversight.
      *
-     * <p>A stride between them reads in game as "the bolt passed through it" and gets misdiagnosed
-     * as a hit-detection bug that is not happening.
+     * <p>The previous version of this test asserted the opposite, and passed, against a reposition
+     * that compiled, read well, carried an accurate javadoc, and did nothing a player could see.
+     * A green test proving an inert call did its job is the exact failure this file exists to avoid.
      *
-     * <p>Mutation: drop the moveMarker from ProjectileFlight.resolve -> the removal position
-     * assertion reddens with the segment start instead of the hit point. Drop the removeMarker ->
-     * the leak assertion reddens.
+     * <p>Mutation: drop the removeMarker and the leak assertion reddens.
      */
     @Test
-    void theBodyIsRemovedAtTheHitPointNotAStrideShortOfIt() {
+    void theBodyIsRemovedOnAHitAndTheStrideToTheBurstIsRecordedNotClosed() {
         var world = new FakeWorld();
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
         var target = new FakeWorld.Dummy(new Vec3(3, 1.62, 0));
@@ -201,23 +223,24 @@ class ProjectileFlightTest {
 
         assertTrue(target.health < 100, "the bolt connected");
         assertEquals(Map.of(), world.markers, "no body may outlive the bolt");
-        assertEquals(target.position(), world.markerRemovedAt.get(body),
-                "the flint must vanish AT the burst, not a stride short of it");
+
+        Vec3 wentOutAt = world.markerRemovedAt.get(body);
+        assertEquals(new Vec3(2, 1.62, 0), wentOutAt,
+                "the body goes out where it was, one step short of the hit -- the RECORDED gap");
+        double stride = target.position().subtract(wentOutAt).length();
+        assertEquals(1.0, stride, 1e-9, "exactly one step of travel, by construction");
     }
 
-    /** The same, on the other exit: a clean miss still retires its body, where it went off. */
+    /** The same on the other exit: a clean miss still retires its body rather than leaking it. */
     @Test
     void theBodyIsRemovedWhenTheFuseExpires() {
         var world = new FakeWorld();
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
 
         cast(world, caster, bolt(null, "flint", 5), EYE_FORWARD);
-        UUID body = world.markersEverSpawned.get(0);
         world.advanceTicks(50);
 
         assertEquals(Map.of(), world.markers, "a miss leaks a real entity just as easily as a hit");
-        assertEquals(new Vec3(5, 1.62, 0), world.markerRemovedAt.get(body),
-                "and it goes out where the fuse ran out, with the detonation");
     }
 
     /**

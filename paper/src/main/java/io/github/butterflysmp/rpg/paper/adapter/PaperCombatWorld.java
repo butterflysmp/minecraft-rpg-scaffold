@@ -301,6 +301,39 @@ public final class PaperCombatWorld implements CombatWorld {
      * greater than 0"), hence the clamp -- which also keeps an absurdly long authored fuse from
      * producing a negative age rather than a long-lived marker.
      *
+     * <p><b>THE INTERACTION AXIS, ENUMERATED ONCE HERE RATHER THAN DISCOVERED ONE REPORT AT A TIME.</b>
+     * A driven marker is a FULLY PARTICIPATING vanilla item entity in motion, and vanilla does a
+     * great deal to those. The predecessor design participated in nothing -- no velocity, so nothing
+     * pushed it; repositioned every tick, so nothing could carry it away -- so this whole axis was
+     * CREATED by the move to velocity. That is the easiest kind to miss: there was no prior exposure
+     * to carry forward and notice.
+     *
+     * <p>Accepted, on the record, unless a gate row says otherwise:
+     * <ul>
+     *   <li><b>Water and lava</b> give an item buoyancy and heavy drag ({@code setUnderwaterMovement}
+     *       in {@code ItemEntity.tick}). A bolt fired across a pond diverges from the computed path
+     *       immediately and visibly. Not exotic -- a normal shot on a normal map. <b>Gate row.</b></li>
+     *   <li><b>Fire, lava and cactus DESTROY items.</b> {@code ItemEntity.fireImmune()} is true only
+     *       when the STACK resists fire, and flint does not -- so on a FIRE weapon the body can be
+     *       destroyed mid-flight. Harmless to resolution: the flight continues, {@link #removeMarker}
+     *       finds nothing and no-ops, and the bolt simply loses its body. <b>Gate row.</b></li>
+     *   <li><b>Hoppers eat it, and this one is an ECONOMY LEAK rather than a cosmetic quirk.</b>
+     *       Checked rather than assumed: {@code HopperBlockEntity.getItemsAtAndAbove} filters only on
+     *       {@code EntitySelector.ENTITY_STILL_ALIVE}, and {@code addItem(Container, ItemEntity)}
+     *       copies the stack in and discards the entity -- <b>no pickup-delay check anywhere on that
+     *       path</b>. {@code setPickupDelay(MAX)} stops players, not hoppers. Since the marker is a
+     *       real flint nobody paid for, a hopper under the flight line CREATES flint. Bounded by a
+     *       ~2 second flight at roughly eye height, so it needs a hopper almost directly under the
+     *       shot. A mitigation exists and is cheap -- {@code InventoryPickupItemEvent} is cancellable,
+     *       and these markers can be tagged through {@code Keys} -- and is deliberately NOT taken
+     *       here: it is its own decision, not a thing to smuggle into a movement change.</li>
+     *   <li><b>Explosions and pistons</b> push item entities. Same class as the fluids: the body
+     *       leaves the path and the flight does not.</li>
+     * </ul>
+     *
+     * <p>None of these affect RESOLUTION. {@code castRay} owns what the bolt hits and never consults
+     * the body, so the worst case throughout is a body that is somewhere other than the flames.
+     *
      * <p>A world write, so only legal on the thread owning {@code at}.
      */
     @Override
@@ -316,23 +349,45 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
-     * Move a marker. {@code teleportAsync}, NOT {@code teleport}: a synchronous teleport across a
-     * region boundary is illegal on Folia, and the async form is the API that performs the handoff.
-     * On Paper it completes immediately, so nothing about the flight's timing changes here.
+     * Drive a marker: hand the platform's own mover this tick's displacement and let IT move the
+     * entity. Deliberately NOT a reposition.
      *
-     * <p><b>Only legal on the thread owning WHERE THE MARKER IS -- not where it is going</b>, the
-     * same unhopped contract {@link #removeMarker} and {@link #markerLocation} below keep. Note
-     * that {@code removeMarker}'s "the caller already satisfies that" is a weaker guarantee for
-     * this method's callers than it was for the fuse task's: a flight schedules itself onto the
-     * region of the point it has flown TO while its marker is still at the point it flew FROM, so
-     * the call has to be placed at the END of a step rather than the top. {@code ProjectileFlight}
-     * documents that ordering at the call site; do not move it.
+     * <p><b>REPOSITIONING WAS TRIED AND IS NOT AVAILABLE.</b> {@code teleportAsync} was verified to
+     * move this entity server-side -- 23 repositions, zero target-vs-actual mismatches, corroborated
+     * by {@link #removeMarker}'s independent read finding it at the final target -- and verified NOT
+     * to reach the client's entity tracker: a straight-up shot, the one flight where the body
+     * decelerates to nearly nothing around 20 blocks and hangs there, showed nothing at all. The
+     * MECHANISM behind that is unknown and no guess about it belongs in this file.
+     *
+     * <p>Scope of that finding, stated narrowly on purpose: observed for an <b>Item</b> entity with
+     * gravity disabled, spawned via {@code World#spawn}, repositioned per-tick and per-4-ticks, on
+     * the pinned Paper build. NOT established for other entity types, other spawn paths, or Folia.
+     * A finding stated wider than its evidence is how this class's own {@code non-despawning} claim
+     * happened.
+     *
+     * <p>Setting the velocity instead routes the body through {@code move(MoverType.SELF, …)}, which
+     * is the path every ordinary thrown item uses and the only one observed to render -- the same
+     * mechanism that makes {@code throw_embers}' blaze powder visibly fly and spin.
+     *
+     * <p><b>Why this lands exactly on the computed path.</b> The caller's vector is one tick's
+     * displacement, already carrying the ability's own gravity. {@link #spawnMarker} disables the
+     * entity's gravity, and {@code Entity.getGravity()} returns 0 when it is disabled, so
+     * {@code applyGravity()} adds nothing before the move. Vanilla's drag is applied AFTER the move,
+     * so overwriting the velocity next tick discards it before it can matter. The displacement is
+     * therefore precisely what was asked for -- not corrected toward it.
+     *
+     * <p><b>Only legal on the thread owning WHERE THE MARKER IS</b>, the same unhopped contract
+     * {@link #removeMarker} and {@link #markerLocation} keep. It is an entity write like any other.
+     * {@code ProjectileFlight} places the call at the END of a step for that reason; do not move it.
      */
     @Override
-    public void moveMarker(UUID markerId, Vec3 to) {
+    public void driveMarker(UUID markerId, Vec3 stepVelocity) {
         if (world.getEntity(markerId) instanceof Item marker) {
-            marker.teleportAsync(toLocation(to));
+            marker.setVelocity(new Vector(stepVelocity.x(), stepVelocity.y(), stepVelocity.z()));
         }
+        // Silently absent is CORRECT here and is a reachable state, not a defensive one: a driven
+        // body is a fully participating item entity, and fire, lava and cactus destroy those. The
+        // flight continues and resolves normally with no body -- see spawnMarker's interaction note.
     }
 
     @Override

@@ -728,6 +728,43 @@ spins → it was never about our code.
 
 This is the same shape as the C4/C5 debt, arrived at before the measurement instead of after it.
 
+#### A CLIENT-SIDE OBSERVATION CANNOT SETTLE A SERVER-SIDE CLAIM, AND THE CONVERSE HOLDS TOO
+
+`F1a` produced two readings of one event, in two frames, and they disagree:
+
+- **The eye:** the flint spawns at the muzzle and does not move.
+- **The log:** 23 teleports completed, **0** target-vs-actual mismatches, and `removeMarker`'s
+  independent `getLocation()` reporting the entity at the last teleported point in 9 of 12 flights.
+
+Neither reading is wrong and neither answers the other. The server moves the entity; the player does
+not see it move. **The mistake available here is treating one witness as a verdict on the other's
+question** — concluding "teleportAsync does not move the entity" from an eye reading, or concluding
+"the body is fine" from a log reading. Both were available and both are false.
+
+The practical rule: **name which frame a claim lives in before deciding what evidence could refute
+it.** A rendering question needs an eye; an entity-state question needs a log; and an instrument that
+reads only one frame cannot close a question that spans both.
+
+#### PRE-REGISTERING THE ANSWER IS THE SAME DEFECT AS PRE-REGISTERING THE EXCUSE
+
+`NEXT.md` already records that *a pre-registered explanation for an unexpected result is a blindfold
+if the result has a second cause* — a rule about deciding in advance what a WRONG reading will mean.
+This is that rule pointed the other way, and it is worth naming separately because it does not look
+like the same mistake while you are making it.
+
+Two readings were requested — the eye and the log — with the log stated to be decisive. **The eye
+reading arrived first, a conclusion was built on it (`teleportAsync` "does not move this entity at
+all"), and that conclusion was written into the same instruction that sent someone to go read the
+log.** The log was then ceremonial: an instrument dispatched to confirm a verdict already entered.
+It happened to disagree, which is the only reason this is recorded rather than shipped.
+
+**The check survives only if the conclusion waits for it.** When two readings are outstanding and
+one is called decisive, the other one's arrival is not permission to stop — and an instruction to go
+measure must not travel alongside the answer it is measuring.
+
+*(Recorded by the operator against their own reasoning, which is why it is here at all: the failure
+is invisible from inside it, and only the person who did it can report the ordering.)*
+
 ### Flint Staff visuals, PR 1 (the bolt becomes visible and audible) — what it created or exposed
 
 The Fire Bolt was functionally correct and visually unusable: you could not see where it went, what

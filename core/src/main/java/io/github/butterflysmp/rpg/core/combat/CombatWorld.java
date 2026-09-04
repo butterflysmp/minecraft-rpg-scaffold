@@ -114,24 +114,35 @@ public interface CombatWorld {
     UUID spawnMarker(Vec3 at, String itemId, int expectedLifetimeTicks);
 
     /**
-     * Move a marker to {@code to}.
+     * Drive a marker: give it {@code stepVelocity} as this tick's motion and let the platform carry
+     * it. Named for what it does -- it does NOT set a position.
      *
-     * <p><b>Only legal on the thread owning WHERE THE MARKER CURRENTLY IS -- not where it is
-     * going.</b> That distinction is the whole hazard of this method. A caller stepping a
-     * projectile is scheduled onto the region of the point it has flown TO, while the marker is
-     * still sitting at the point it flew FROM; moving it at the top of such a step touches an
-     * entity in one region from another region's thread. Move it at the END of the step, while you
-     * are still on the region the marker is actually in.
+     * <p><b>This is the only marker movement mechanism that has been WITNESSED reaching a player.</b>
+     * Its predecessor repositioned the entity outright, which was verified to work server-side (23
+     * repositions, zero target/actual mismatches) and verified NOT to reach the client's entity
+     * tracker (a straight-up shot, where the body hangs nearly still around 20 blocks, showed
+     * nothing there at all). Driving hands the movement to the platform's own mover, which is the
+     * path every ordinary thrown item already uses and which is observed to render.
      *
-     * <p>Contrast {@link #present}, which the adapter hops onto the right region by itself. This
-     * one cannot: an entity write has to happen where the entity is, and only the caller knows
-     * that. {@code EffectApplier.trackEmber} sidesteps the whole problem by scheduling at the
-     * item's LIVE position; a flight that schedules at a COMPUTED position cannot, because its
-     * entity is one step behind by construction.
+     * <p><b>The caller must apply gravity itself, per tick.</b> The velocity is one tick's motion,
+     * not a launch impulse: a value set once at spawn would fly straight while the computed path
+     * arcs. {@code ProjectileFlight} already integrates the ability's own gravity each step and
+     * hands the resulting step vector here, and the adapter suppresses the platform's own gravity so
+     * the two do not both apply.
      *
-     * <p>A no-op if the marker is already gone.
+     * <p><b>Only legal on the thread owning WHERE THE MARKER IS -- not where it is heading.</b> It
+     * is an entity write, exactly like {@link #removeMarker}, and carries the identical unhopped
+     * contract. A caller stepping a projectile is scheduled onto the region of the point it has
+     * flown TO, while the marker still sits at the point it flew FROM, so the call belongs at the
+     * END of a step, while still on the region the marker is actually in.
+     *
+     * <p>Contrast {@link #present}, which the adapter hops onto the right region by itself. This one
+     * cannot: an entity write has to happen where the entity is, and only the caller knows that.
+     *
+     * <p>A no-op if the marker is already gone -- which is a reachable state rather than a
+     * defensive one, because the platform may destroy a marker mid-flight (see the adapter).
      */
-    void moveMarker(UUID markerId, Vec3 to);
+    void driveMarker(UUID markerId, Vec3 stepVelocity);
 
     /**
      * Remove a marker from {@link #throwMarker} or {@link #spawnMarker}. A no-op if it is already

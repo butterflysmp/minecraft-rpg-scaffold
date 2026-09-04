@@ -283,13 +283,24 @@ public final class FakeWorld implements CombatWorld {
         return id;
     }
 
-    /** Move a marker. Also the drift hook a throw_embers fuse test uses to prove it detonates at
-     *  the LIVE position rather than where the marker was planted; the production analogue there
-     *  is an item that falls or rolls before the fuse fires. */
-    @Override public void moveMarker(UUID markerId, Vec3 to) {
-        // Deliberately does NOT resurrect a removed marker: production teleports an entity that is
-        // gone, which is a no-op, and a fake that quietly re-created it would hide a use-after-free.
+    /** Drift a marker to a new spot -- a TEST HELPER again, not a port method. The flight drives
+     *  its body by velocity now; this remains because throw_embers tests need to prove a fuse
+     *  detonates at the LIVE position rather than where the marker was planted. */
+    public void moveMarker(UUID markerId, Vec3 to) {
         if (markerPositions.containsKey(markerId)) markerPositions.put(markerId, to);
+    }
+
+    /** Every velocity handed to {@link #driveMarker}, id -> the vectors in order. The flight sets
+     *  one per tick, so this is the computed path as the platform would have been asked to walk it. */
+    public final Map<UUID, List<Vec3>> markerVelocities = new HashMap<>();
+
+    @Override public void driveMarker(UUID markerId, Vec3 stepVelocity) {
+        // Absent is a no-op, exactly as in production, where fire or lava may already have
+        // destroyed the body mid-flight.
+        if (!markerPositions.containsKey(markerId)) return;
+        markerVelocities.computeIfAbsent(markerId, k -> new ArrayList<>()).add(stepVelocity);
+        // The fake stands in for vanilla move(): the body is displaced by the velocity it was given.
+        markerPositions.put(markerId, markerPositions.get(markerId).add(stepVelocity));
     }
 
     /**

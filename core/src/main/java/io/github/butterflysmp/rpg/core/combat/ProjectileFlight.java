@@ -100,7 +100,7 @@ public final class ProjectileFlight {
         // frame and should keep doing so: throw_embers spawns a real item AT the origin, so its
         // frame-0 particle sits on a visible body rather than in a face.
         //
-        // present() is safe here where moveMarker below is not, and the difference is not arbitrary:
+        // present() is safe here where driveMarker below is not, and the difference is not arbitrary:
         // the adapter hops present() onto the region owning `position` itself. An ENTITY write
         // cannot be hopped that way -- it has to happen where the entity is, and only we know that.
         if (look.trail() != null && elapsed > 0) world.present(position, look.trail());
@@ -109,7 +109,7 @@ public final class ProjectileFlight {
 
         Optional<RayHit> hit = world.castRay(position, next, caster.id());
         if (hit.isPresent()) {
-            resolve(world, markerId, hit.get().point());
+            resolve(world, markerId);
             onImpact.at(hit.get().combatant(), hit.get().point());
             return;
         }
@@ -118,30 +118,37 @@ public final class ProjectileFlight {
         if (nextElapsed >= maxLifetimeTicks) {
             // The fuse ran out mid-air. It still lands -- a projectile that quietly vanishes
             // because it hit nothing would be a bug, not a miss.
-            resolve(world, markerId, next);
+            resolve(world, markerId);
             onImpact.at(null, next);
             return;
         }
 
-        // THE MARKER MOVES HERE, AT THE END OF THE STEP -- NOT AT THE TOP BESIDE THE TRAIL.
+        // THE MARKER IS DRIVEN HERE, AT THE END OF THE STEP -- NOT AT THE TOP BESIDE THE TRAIL.
         //
         // This step was scheduled by the previous one at ITS `next`, which is our `position`, so we
-        // are on region(position) -- and region(position) is where the marker actually IS, because
-        // that is where the previous step's move put it. Moving it at the top of the NEXT step would
-        // touch an entity in region(position) from region(next)'s thread: you would own the
-        // destination while Folia requires you to own the source.
+        // are on region(position) -- and region(position) is where the marker actually IS. Driving
+        // it at the top of the NEXT step would touch an entity in region(position) from
+        // region(next)'s thread: you would own the destination while Folia requires you to own the
+        // source. Setting a velocity is an entity write like any other, so the rule is unchanged
+        // from when this line repositioned the marker instead.
         //
         // The adapter's removeMarker and markerLocation do no region hop of their own -- they are
-        // getEntity(uuid) and then touch it -- so this contract is the caller's to keep, and it is
-        // kept here.
-        //
-        // EffectApplier.trackEmber avoids the problem entirely by scheduling at the item's LIVE
-        // position; a flight that schedules at a COMPUTED position cannot, because the entity is one
-        // step behind by construction. Hence the ordering rather than the trick.
+        // getEntity(uuid) and then touch it -- so this contract is the caller's to keep.
         //
         // On Paper every region is one thread, so getting this wrong would pass every boot row and
         // fail only on Folia -- green rather than merely unverified.
-        if (markerId != null) world.moveMarker(markerId, next);
+        //
+        // WHY A VELOCITY AND NOT A POSITION. Repositioning was verified to work server-side and
+        // verified NOT to reach the client: the entity was where we put it, 23 times out of 23, and
+        // a player watching a near-stationary bolt at 20 blocks saw nothing there. Driving hands the
+        // motion to the platform's own mover -- the path every thrown item already uses, and the
+        // only one observed to render.
+        //
+        // `velocity` is exactly one tick's displacement, already carrying this ability's gravity
+        // (see nextVelocity below), and the adapter suppresses the platform's own gravity so the two
+        // cannot both apply. That is what makes the driven body land ON the computed path rather
+        // than near it.
+        if (markerId != null) world.driveMarker(markerId, velocity);
 
         Vec3 nextVelocity = velocity.add(new Vec3(0, -gravity, 0));
         world.schedule(next, 1, () ->
@@ -150,27 +157,39 @@ public final class ProjectileFlight {
     }
 
     /**
-     * Retire the body AT the point the bolt resolves, then remove it.
+     * Retire the body when the bolt resolves.
      *
-     * <p>The move is not decoration. The impact is at {@code hit.point()}, somewhere along the
-     * segment just traced, while the marker is still back at the segment's START -- at speed 1.4
-     * that is up to 1.4 blocks between where the flint disappears and where the fire appears. The
-     * old repo had no such gap: the item flew by physics and the hit was found within 0.7 blocks of
-     * the item's own location, so the two coincided by construction. {@code trackEmber} states the
-     * same principle for its fuse -- "the boom lands with the blast: same tick, same place, so they
-     * cannot diverge."
+     * <p><b>IT IS NOT REPOSITIONED TO THE IMPACT POINT FIRST, AND THAT ABSENCE IS A DECISION.</b>
+     * Do not read it as an oversight and "fix" it back.
      *
-     * <p>A stride between the two reads in game as "the bolt passed through it", which is a
-     * hit-detection bug that is not happening, so this is cheaper than the misdiagnosis.
+     * <p>There IS a gap. The impact resolves at {@code hit.point()}, somewhere along the segment
+     * just traced, while the body sits at the segment's START -- so the flint vanishes between 0
+     * and one full step short of the burst, which at the staff's speed 1.4 means a mean of about
+     * 0.7 blocks. The old repo had no such gap, because its hit was found within 0.7 blocks of the
+     * item's own location and the two coincided by construction.
      *
-     * <p>Called while still on the region owning the marker (before this step's own move), so both
-     * calls are legal. The one ordering NOT guaranteed is on Folia, where a removal immediately
-     * after a cross-region async teleport acts on an entity mid-handoff; the marker's armed
-     * self-destruct (see {@link CombatWorld#spawnMarker}) is what bounds that rather than a leak.
+     * <p>An earlier version closed it with a reposition immediately before the removal. That
+     * version <b>compiled, read well, carried an accurate javadoc, and did nothing a player could
+     * see</b>: repositioning is verified to move the entity server-side and verified not to reach
+     * the client's entity tracker. Keeping it would have left an inert call in the code with a
+     * convincing comment attached, which is worse than the gap it pretended to close.
+     *
+     * <p>So the gap is RECORDED rather than fixed -- measured at the boot, written down in
+     * {@code NEXT.md}. If it reads badly, the candidate that stays inside the witnessed mechanism is
+     * to drive the marker by {@code (impact - position)} on the resolving tick and delay the removal
+     * one tick so the platform's mover actually carries it there. That is sized and deliberately not
+     * adopted: it reintroduces a scheduled removal that can fail to run, and it would be the SECOND
+     * attempt at closing this gap. It gets a witness before it gets believed.
+     *
+     * <p>Removing without repositioning also closed a race by deletion. The reposition was
+     * asynchronous, and its callback was observed completing AFTER this removal had run -- six
+     * refusals in one session, every one of them the last move of a flight. With no reposition there
+     * is no in-flight callback to lose to.
+     *
+     * <p>Called while still on the region owning the marker, so the write is legal.
      */
-    private static void resolve(CombatWorld world, UUID markerId, Vec3 impact) {
+    private static void resolve(CombatWorld world, UUID markerId) {
         if (markerId == null) return;
-        world.moveMarker(markerId, impact);
         world.removeMarker(markerId);
     }
 }
