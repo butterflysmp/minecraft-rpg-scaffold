@@ -733,21 +733,22 @@ one, every time. The two real defects are named instead.
 The first slice in which crafting something the server did not previously know how to craft produces
 RPG gear. Everything before this rode recipes Minecraft already had.
 
-**THE SET, NAMED BEFORE THE RUN.** Live rows in this section: **R1, R2, R3, R4, R5, 7A, 7B, 7C, 7D,
-7E, 7F, 7G** — twelve. Plus the **thirteen** re-runs at the bottom of this section (Q16, Q15, Q25,
-T10, Q7, Q10, Q27, Q29, 12, 12c, S1, S2, N5b). **Twenty-five in total.** Row **7H** is struck as
-IMPOSSIBLE and is correctly absent from any count.
+**THE SET, NAMED BEFORE THE RUN.** Live rows in this section: **R1, R2, R4, R5, 7A, 7B, 7C, 7D,
+7E, 7F, 7G** — eleven. Plus the **thirteen** re-runs at the bottom of this section (Q16, Q15, Q25,
+T10, Q7, Q10, Q27, Q29, 12, 12c, S1, S2, N5b). **Twenty-four in total.** Row **7H** is struck as
+IMPOSSIBLE, and **R3 was MERGED INTO R2** on 2026-09-04 when R2 became a behavioural check; both
+are correctly absent from any count.
 
 > Counted from the LIVE rows in this section, not by extending slice 6's list. That is what Q34 cost.
 
-> ### GATE RESULT — IN PROGRESS, **2 of 25**
+> ### GATE RESULT — IN PROGRESS, **2 of 24**
 >
 > **PASSED:** R1, R4 (2026-09-04) — their observed lines are recorded below the registration table.
-> **UNRUN:** R2, R3, R5, 7A–7G, and all thirteen re-runs.
+> **UNRUN:** R2, R5, 7A–7G, and all thirteen re-runs. **R2 was ATTEMPTED 2026-09-04 and its premise turned out to be wrong** -- `/reload confirm` does not exist on this build; the row was re-instrumented and R3 merged into it. See the correction under the registration table.
 >
 > **This is not a passing gate and must not be cited as one.** The suite is green either way for
 > everything this slice does, so 1257 passing tests and a green CI check say the slice broke nothing
-> already covered — they say nothing about whether it works. Twenty-three rows are what would say
+> already covered — they say nothing about whether it works. Twenty-two rows are what would say
 > that.
 
 ## Registration — and the instrument that measures it
@@ -777,10 +778,58 @@ wrong at a glance instead of reading self-consistently and wrong.
 | # | action | expected | notes |
 |---|---|---|---|
 | R1 | **Fresh content.** `./scripts/dev-server.sh --refresh-content`. Read the line. | `1 registered, 0 replaced, 0 refused, of 1 authored (1 minting gear)` | **`--refresh-content` IS REQUIRED.** `content/recipes/` is a brand-new directory; `saveResource(path, false)` never overwrites, so a populated `run/` data folder predates it and ships nothing. `0 replaced` says the remove call is not spuriously matching on a virgin roster · **PASSED 2026-09-03**, exactly this line. **Provenance, because the first observation did not have it:** originally read on a jar built *before* the slice was committed, from a tree **asserted** rather than verified to match it. Re-run against a jar built by `./mvnw clean package` from the **clean committed tree** of the docs commit that added this sentence — so anyone can reproduce it by checking out that commit and rebuilding. An observation whose build you cannot name is a number, not a verification |
-| R2 | **The OPERATOR types `/reload confirm` in chat, in-game** — it is an operator command and needs no server console. Then read the same line again. | **Record the number, whichever it is** — **and whether the reload was CLEAN.** `1 replaced` means the server kept our recipe across the reload; `0 replaced` means it wiped the roster | **THIS ROW IS THE ANSWER, not an assertion.** What `/reload` does to a plugin-added recipe is not documented on the pinned API, and the registration is written so the code is correct under BOTH answers — remove-then-add, unconditionally. **RECORD THE NUMBER *AND* THE RELOAD'S HEALTH, because `/reload` is a famously untidy operation:** if the log shows errors during it, `replaced` may be an artifact of a broken reload rather than of how the roster treats our recipes, and a bare number gets cited later as settling a question it did not settle. **Not blocked and never was** — the earlier "needs a live console" note was about HEADLESS DRIVING (a piped `stop` is swallowed, so an agent cannot drive it), which is a limit on who runs the row, not on the row |
-| R3 | After R2, craft the staff in the table. | A minted Flint Staff, not a plain stick | end-to-end after a reload. **NOT SUFFICIENT ALONE** — it passes identically whether we re-registered or the old registration survived, which is exactly why R2 carries the verdict and this row does not |
+| R2 | **`/reload confirm` DOES NOT EXIST on this build — see the correction below the table.** Boot, then have the OPERATOR run vanilla **`/reload`** (in chat in-game, or at the console). Then **craft the staff** and **open the browser**. | **The staff still crafts and still appears in the browser.** If it does not, the recipe did not survive the reload | **THE INSTRUMENT CHANGED, AND THE ROW IS NOW A BEHAVIOURAL CHECK, NOT A LOG READ.** Vanilla `/reload` rebuilds the recipe manager but does **NOT** re-enable plugins, so `onEnable` never re-runs, so a **second `Custom recipes:` line can never appear** and `replaced` can never be this row's witness. Whether our recipe survives is therefore only observable by USING it. **Record whether the reload was CLEAN** (`grep -cE "ERROR|SEVERE"`) alongside the result: `/reload` is untidy, and a failure during a broken reload does not settle how the roster treats our recipes |
+| R3 | **MERGED INTO R2 — do not run separately.** Its action ("after R2, craft the staff") is now literally R2's action, because R2 became a behavioural check when its log witness turned out to be unproducible. | — | **This row was written when R2 read a NUMBER and R3 confirmed the behaviour behind it. With R2 reading the behaviour directly they are one row**, and keeping both would mean a set of 25 in which one row is a duplicate of another counted twice. Retired rather than deleted so the merge is visible: see the correction below the table |
 | **R4** | **THE INSTRUMENT'S OWN CONTROL.** Temporarily call `RecipeRegistrar.registerAll` **twice** in one `onEnable`, logging **BOTH** reports. Boot. Read both lines. | `0 replaced` on the first pass, **`1 replaced` on the second** | **discriminating · sole witness that the counter CAN move · run this BEFORE trusting R2.** If it prints `0 replaced` twice, the counter is dead and R2's number means nothing — a number that cannot move is not a measurement. **Both** lines must be logged: one line leaves a `0 replaced` ambiguous between a dead counter and a mutation that never applied. Revert afterwards and confirm by re-reading R1. **PASSED 2026-09-04 — the observed lines are below the table** |
-| R5 | `/reload` twice, opening the browser each time. Compare `Recipe catalogue built: N entries`. | N identical both times | free duplicate-key detector: a recipe registered twice under one key would show up as a changed entry count |
+| R5 | **RE-INSTRUMENTED, same root cause as R2.** Boot, open the browser (**note the `Recipe catalogue built:` line**), run `/reload`, then **RESTART** and open the browser again. Compare the two lines. | N identical across the two BOOTS | **The original read "`/reload` twice, compare the line" and could not have worked:** `RecipeCatalogue` is built lazily on first open and cached on the `RpgListeners` instance, which is created in `onEnable` — and vanilla `/reload` does not re-enable the plugin. One instance, one build, one line however many times the browser is opened. Comparing across RESTARTS is what actually re-runs the walk. Still a free duplicate-key detector: a recipe registered twice under one key would move the count |
+
+> ## R2's PREMISE WAS WRONG, AND THE ATTEMPT IS WHAT FOUND IT — 2026-09-04
+>
+> R2 was written as "type `/reload confirm`, read the `Custom recipes:` line again". **Both halves
+> are wrong on Paper 26.1.2**, and neither could have been discovered by reasoning about the row.
+> Observed:
+>
+> ```
+> [13:25:16] [Server thread/INFO]: Incorrect argument for command
+> reload confirm<--[HERE]
+> [13:25:19] [Server thread/INFO]: Reloading!
+> [13:25:19] [Server thread/INFO]: Loaded 1515 recipes
+> ```
+>
+> **1. `/reload confirm` is not a command here.** Brigadier rejected `confirm` as an incorrect
+> argument, because the `reload` that resolves is **vanilla** `/reload`, which takes none.
+> Bukkit's plugin-reload is **gone from this build** — `org/bukkit/command/defaults/` is EMPTY in
+> `run/versions/26.1.2/paper-26.1.2.jar`. The only two `ReloadCommand` classes present are
+> `net.minecraft.server.commands.ReloadCommand` (vanilla, datapacks) and
+> `io.papermc.paper.command.subcommands.ReloadCommand` (`/paper reload`, config only). Neither
+> re-enables a plugin.
+>
+> **2. So the row's WITNESS could never have fired.** Vanilla `/reload` does not re-run
+> `onEnable`, so there is no second `Enabling Rpg` and **no second `Custom recipes:` line, ever**.
+> `replaced` is unreachable by this route. A row whose evidence cannot be produced is not a failing
+> row — it is a row measuring the wrong thing, and it would have been recorded as "inconclusive"
+> forever.
+>
+> **The underlying question survives, and got SHARPER.** `Reloading!` was followed by
+> `Loaded 1515 recipes` — the recipe manager was rebuilt, and 1515 is the same count the boot
+> logged at `13:25:09`, i.e. the datapack/vanilla total with **ours not among it**. Our recipe is
+> added by `onEnable` *after* that load. So the live question is no longer "what does the roster do
+> with our recipe" but:
+>
+> > **Does `rpg:flint_staff` survive a rebuild of the recipe manager that nothing re-adds it after?**
+>
+> **UNVERIFIED, and it must not be designed around.** The mechanism above makes "it is dropped until
+> restart" the plausible answer, and a plausible answer is exactly what CLAUDE.md's VERIFICATION
+> section says to distrust. It is settled by USING the recipe after a reload, which is what R2 now
+> asks for. If it does not survive, that is a real product finding — **custom recipes silently
+> vanish after any `/reload` until the server restarts** — and it belongs in `NEXT.md`, not in a
+> bug report from a player.
+>
+> **What this does NOT change:** the registrar's unconditional remove-then-add stays correct. It was
+> written so the code holds under both answers to a question the pinned API does not document, and
+> that reasoning is untouched by the command's absence. **R4 still stands** — it proved `replaced`
+> can move (`0 -> 1`), which was always about the counter being a live instrument, not about
+> `/reload` specifically.
 
 > ## OBSERVED LINES — R1 and R4, 2026-09-04
 >
