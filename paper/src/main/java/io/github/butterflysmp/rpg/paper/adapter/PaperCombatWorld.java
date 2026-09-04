@@ -379,6 +379,23 @@ public final class PaperCombatWorld implements CombatWorld {
      * <p><b>Only legal on the thread owning WHERE THE MARKER IS</b>, the same unhopped contract
      * {@link #removeMarker} and {@link #markerLocation} keep. It is an entity write like any other.
      * {@code ProjectileFlight} places the call at the END of a step for that reason; do not move it.
+     *
+     * <p><b>THIS MECHANISM IS PHASE-SENSITIVE, AND THE PHASE IS VERIFIED ON ONE OF TWO TARGET
+     * PLATFORMS.</b> Setting a velocity is only correct if the platform moves the entity by it on
+     * the SAME tick it is set; if the caller ran after the entity had already ticked, the body would
+     * sit exactly one computed step behind the flight, permanently. That is not divergence -- it
+     * does not accumulate or grow with range -- and no unit test can see it, because
+     * {@code FakeWorld} has no tick order.
+     *
+     * <p>On Paper it is verified from the jar: {@code PaperScheduler.onRegionLater} reaches
+     * {@code GlobalRegionScheduler}, and in {@code MinecraftServer.tickChildren} the scheduler ticks
+     * at bytecode offset 37 while {@code ServerLevel.tick} runs at offset 431 -- same server tick,
+     * scheduler first, so the velocity is consumed later that tick.
+     *
+     * <p><b>On Folia it is UNESTABLISHED.</b> Region tasks run on per-region threads there and that
+     * ordering does not carry over. The predecessor mechanism -- repositioning -- was not
+     * phase-sensitive at all, so this is a property the design ACQUIRED, knowingly, on the strength
+     * of a check that covers one platform. Re-establish it before trusting this on Folia.
      */
     @Override
     public void driveMarker(UUID markerId, Vec3 stepVelocity) {

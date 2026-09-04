@@ -94,8 +94,8 @@ public interface CombatWorld {
 
     /**
      * Plant a marker of material {@code itemId} AT {@code at} and return its id -- inert, going
-     * nowhere on its own. The caller owns its position from here and moves it with
-     * {@link #moveMarker}.
+     * nowhere on its own. The caller owns its motion from here and supplies it with
+     * {@link #driveMarker}.
      *
      * <p>The opposite of {@link #throwMarker} in the one way that matters: that one hands the item
      * to physics and reads back where physics took it, this one is a body rendered at a position
