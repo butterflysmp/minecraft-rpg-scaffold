@@ -1,0 +1,45 @@
+# The Lapis Staff's beam: the line itself, drawn down each chunk-column segment as the ray walks
+# it. Id is the filename: lapis_beam.
+#
+# THIS IS THE REPO'S FIRST VISUAL PRESENTED ALONG A SEGMENT RATHER THAN AT A POINT, and the first
+# whose appearance depends on a DENSITY rather than on a count. Both facts have consequences that
+# are easy to miss:
+#
+#   * `samples_per_block` is read ONLY by presentAlong. A visual drawn with plain present() ignores
+#     it completely. It is authored here because this file is only ever used as a beam.
+#
+#   * A DENSITY-BASED VISUAL DEGRADES WORSE THAN A COUNT-BASED ONE under the client's Particles
+#     video setting. A burst thinned to half its flames is still recognisably a burst; a LINE
+#     thinned to half its samples stops being a line and becomes a dotted trail of unrelated
+#     specks. So a density judged "right" on All is not necessarily right for anyone else, and the
+#     players most likely to be on Decreased or Minimal are the ones on weaker hardware rather
+#     than the ones who chose it. Any figure recorded for this file must say WHICH SETTING it was
+#     judged on -- a density with no setting attached is a measurement missing half its units.
+#
+# NUMBERS ARE cfde822's, UNCHANGED. StaffListener drew DUST at Color.fromRGB(40, 90, 240), size
+# 1.2f, at max(2, distance * 4) points along the whole line.
+#
+# THE ONE DELIBERATE DIVERGENCE IS THE FLOOR, AND IT IS NOT A TUNING CHANGE. cfde822's max(2, ...)
+# floored the WHOLE LINE, where 2 is a sane minimum for a beam. This repo draws one chunk-column
+# SEGMENT at a time, and those segments vary in length, so re-applying that floor per segment would
+# put 2 samples into a 0.05-block sliver beside a chunk plane -- 40 per block at that one spot. A
+# floor of 1 only bounds that spike rather than removing it. So there is no per-segment floor: a
+# sliver draws nothing and its neighbours cover the space. See BeamSamples.
+#
+# `speed` IS INERT FOR DUST. It is Bukkit's `extra` and DUST ignores it entirely -- this is the
+# first particle in the repo that does. It is authored anyway, per the standing rule that an
+# omitted speed means 1.0 and not 0.0, so the next reader is not left working out whether the
+# absence was a choice. 0.0 is cfde822's value. It simply does not matter here.
+#
+# `count: 1` is per SAMPLE POINT, not per beam -- one dust at each of the ~104 points down a
+# 26-block shot. cfde822 spawned 1 per point too.
+
+steps:
+  - type: particle
+    particle: DUST
+    color: [40, 90, 240]   # Color.fromRGB(40, 90, 240) -- lapis blue
+    size: 1.2
+    count: 1
+    spread: 0.0
+    speed: 0.0             # inert for DUST; authored so its absence is not read as a choice
+    samples_per_block: 4

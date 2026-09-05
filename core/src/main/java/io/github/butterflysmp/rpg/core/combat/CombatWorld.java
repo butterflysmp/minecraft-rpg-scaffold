@@ -82,6 +82,26 @@ public interface CombatWorld {
     void present(Vec3 at, String visualId);
 
     /**
+     * Draw a named visual ALONG the segment from {@code from} to {@code to}, rather than at a
+     * point. A beam.
+     *
+     * <p><b>ONE REGION HOP FOR THE WHOLE SEGMENT, AND THE CHUNK-COLUMN WALK IS WHAT MAKES THAT
+     * LEGAL.</b> {@link #present} does its own hop per call, so core walking a segment and calling
+     * it N times would be N region hops per tick -- roughly a hundred, for a 26-block beam at four
+     * samples per block. This is one. It is sound precisely because the only caller hands it a
+     * segment bounded by chunk planes ({@link ChunkTraversal}), so the segment lies inside one
+     * chunk column by construction, and a column belongs to exactly one region. <b>The architecture
+     * that made the beam awkward to draw is the same one that makes drawing it this way safe.</b>
+     *
+     * <p>So the contract is narrower than the signature: DO NOT call this with an arbitrary
+     * segment. A caller that has not confined its segment to a column must walk columns first.
+     *
+     * <p>Fire-and-forget like {@link #present}, and an unknown id is a content mistake rather than
+     * a programming error.
+     */
+    void presentAlong(Vec3 from, Vec3 to, String visualId);
+
+    /**
      * Throw a real item of material {@code itemId} from {@code origin} moving at {@code velocity},
      * and return its id. The item flies and lands under ordinary physics -- it IS the marker for
      * a thrown detonator, so no separate display entity is planted. The id, never the entity, is

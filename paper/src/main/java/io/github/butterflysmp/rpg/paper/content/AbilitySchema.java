@@ -42,7 +42,11 @@ final class AbilitySchema {
         return switch (type) {
             case "self"       -> new CastSpec.Self();
             case "melee"      -> new CastSpec.Melee(s.getDouble("reach", 3.0), s.getDouble("arc_degrees", 90));
-            case "ray"        -> new CastSpec.Ray(s.getDouble("range", 30));
+            // `beam` is OPTIONAL and absent means null -- a ray that draws nothing between the
+            // muzzle and the impact, which is what solar_lance is and what every ray was before
+            // this line. Mirrors `trail` on projectile below, and is validated the same way:
+            // ContentValidator resolves the id at boot, so a typo is named rather than silent.
+            case "ray"        -> new CastSpec.Ray(s.getDouble("range", 30), s.getString("beam"));
             // `trail` is OPTIONAL and absent means null -- a bare projectile that leaves nothing,
             // which is what hunters_bow and ember_staff get and what they have always had. The
             // flight loop has always presented a trail every tick; until this line there was no

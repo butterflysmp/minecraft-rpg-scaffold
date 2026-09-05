@@ -140,7 +140,7 @@ public final class CastExecutor {
                 if (charges && target != null) onBasicAttackUse.run();
             }
 
-            case CastSpec.Ray ray -> launchRay(ability, source, aim, ray.range());
+            case CastSpec.Ray ray -> launchRay(ability, source, aim, ray.range(), ray.beam());
 
             case CastSpec.Projectile projectile -> launch(ability, source, aim, projectile);
 
@@ -261,9 +261,10 @@ public final class CastExecutor {
      * the first costs a tick, which means A RAY IS NO LONGER HITSCAN in general, and its
      * cost varies with aim -- a diagonal crosses more planes than an axis-aligned shot.
      */
-    private void launchRay(AbilityDefinition ability, Caster caster, Aim aim, double range) {
+    private void launchRay(AbilityDefinition ability, Caster caster, Aim aim, double range,
+                           String beam) {
         List<Vec3> endpoints = ChunkTraversal.segmentEndpoints(aim.origin(), aim.direction(), range);
-        stepRay(ability, caster, aim.origin(), endpoints, 0);
+        stepRay(ability, caster, beam, aim.origin(), endpoints, 0);
     }
 
     /**
@@ -275,11 +276,32 @@ public final class CastExecutor {
      * struck; if rays are ever made to PIERCE, that changes, and a set of already-hit ids
      * would have to be threaded through these calls.
      */
-    private void stepRay(AbilityDefinition ability, Caster caster, Vec3 from,
+    private void stepRay(AbilityDefinition ability, Caster caster, String beam, Vec3 from,
                          List<Vec3> endpoints, int index) {
         Vec3 to = endpoints.get(index);
 
         Optional<RayHit> hit = world.castRay(from, to, caster.id());
+
+        // THE BEAM IS DRAWN AS THE RAY WALKS -- one segment per tick, not hitscan and not deferred
+        // to the impact point. The operator's reasoning, recorded here because someone will
+        // eventually read the delay as a bug and try to "fix" it:
+        //
+        //   "Particles only render about 30 blocks out, so particles visible to the caster will be
+        //    drawn within about a tick -- imperceptible to the caster. For a non-caster observing
+        //    the beam under optimal conditions the beam would take about 5 ticks to render, next to
+        //    unobservable. The slight delay doesn't matter, especially in combat."
+        //
+        // MAKING THE RAY HITSCAN TO REMOVE THAT DELAY WOULD REINTRODUCE THE FOLIA REGION PROBLEM
+        // THE CHUNK-COLUMN WALK EXISTS TO PREVENT -- see launchRay above and CombatWorld.castRay.
+        // The walk is not in the way of the beam; it is what makes a one-hop beam segment legal at
+        // all, because a segment bounded by chunk planes lies inside one region by construction.
+        //
+        // DRAW TO WHERE THE RAY ACTUALLY REACHED, NOT TO THE SEGMENT'S FAR END. castRay traces
+        // [from, to] and a hit lands at hit.point() SOMEWHERE INSIDE that, so a beam drawn from-to
+        // would carry on THROUGH the wall or the body that just stopped it. Drawn BEFORE the
+        // detonation so the line reads as arriving at the burst rather than trailing out of it.
+        if (beam != null) world.presentAlong(from, hit.map(RayHit::point).orElse(to), beam);
+
         if (hit.isPresent()) {
             detonate(ability, caster, hit.get().combatant(), hit.get().point());
             return;
@@ -292,7 +314,7 @@ public final class CastExecutor {
             return;
         }
 
-        world.schedule(to, 1, () -> stepRay(ability, caster, to, endpoints, index + 1));
+        world.schedule(to, 1, () -> stepRay(ability, caster, beam, to, endpoints, index + 1));
     }
 
     /**

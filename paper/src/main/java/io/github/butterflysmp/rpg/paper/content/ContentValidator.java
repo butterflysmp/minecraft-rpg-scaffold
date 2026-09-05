@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.content;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
+import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.kit.KitDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
@@ -55,6 +56,7 @@ public final class ContentValidator {
         List<String> problems = new ArrayList<>();
         for (AbilityDefinition ability : abilities.all()) {
             checkElement(ability.element(), "ability '" + ability.id() + "'", problems);
+            checkCast(ability.cast(), "ability '" + ability.id() + "'", problems);
             for (EffectSpec effect : ability.onHit()) {
                 checkEffect(effect, "ability '" + ability.id() + "'", problems);
             }
@@ -146,6 +148,7 @@ public final class ContentValidator {
             checkElement(weapon.element(), "weapon '" + weapon.id() + "'", problems);
             for (TriggerBinding binding : weapon.triggers()) {
                 String label = "weapon '" + weapon.id() + "' trigger '" + binding.input() + "'";
+                checkCast(binding.ability().cast(), label, problems);
                 for (EffectSpec effect : binding.ability().onHit()) {
                     checkEffect(effect, label, problems);
                 }
@@ -331,6 +334,70 @@ public final class ContentValidator {
      * maven-compiler-plugin sees the changed dependency and recompiles the module.
      * `clean` catches nothing here that a plain build does not. Do not re-add the claim.
      */
+    /**
+     * The visual ids a CAST names, as opposed to the ones its effects name.
+     *
+     * <p>Both are equally invisible when they dangle -- the cast still fires, it just draws
+     * nothing -- which is the same argument the on_cast walk above is written on.
+     *
+     * <p><b>A BEAM MAY NOT NAME A VISUAL CONTAINING A SOUND STEP, AND THIS IS THE ONLY PLACE THAT
+     * CAN SAY SO.</b> {@code presentAlong} runs once per CHUNK-COLUMN SEGMENT, so a sound in a beam
+     * would play one to three times depending on how many chunk planes the aim crossed: its
+     * loudness would depend on which way the player was facing, intermittently, and it would look
+     * like a bug in the sound engine rather than a content mistake. {@code VisualSpec} permits
+     * Particles and Sound, and leaving the bound at the full sealed set because the one beam we
+     * have happens not to carry a sound is how a schema grows behaviour nobody chose -- so it is
+     * narrowed here, the same move as typing {@code AbilityDefinition.onCast} as
+     * {@code List<EffectSpec.Visual>} rather than {@code Untargeted}.
+     *
+     * <p><b>Why HERE and not in VisualLoader, which could throw.</b> "Beam" is not a property of a
+     * visual. It is a RELATIONSHIP declared by a {@code cast:} in a different file, so the loader
+     * that could fail the file cannot see it. This class is where every cross-file reference check
+     * already lives, and it warns rather than throws on purpose -- a typo in the 400th weapon must
+     * not take the server down. One case does not justify breaking that.
+     *
+     * <p>{@code Projectile.trail} is checked in the same walk. It was NOT checked before, and
+     * validating the new field while leaving the old one dangling would make the remaining gap
+     * look deliberate -- AbilitySchema's own comment warns about exactly that asymmetry. The walk
+     * costs nothing once written.
+     */
+    private void checkCast(CastSpec cast, String ownerLabel, List<String> problems) {
+        switch (cast) {
+            case CastSpec.Ray ray -> {
+                if (ray.beam() == null) return;
+                VisualDefinition beam = visuals.find(ray.beam()).orElse(null);
+                if (beam == null) {
+                    problems.add(ownerLabel + " names beam visual '" + ray.beam()
+                            + "', which no visual defines");
+                    return;
+                }
+                if (beam.steps().stream().anyMatch(s -> s instanceof VisualSpec.Sound)) {
+                    problems.add(ownerLabel + " names beam visual '" + ray.beam()
+                            + "', which contains a sound step. A beam is drawn once per chunk-column"
+                            + " segment, so the sound would play once per segment and its loudness"
+                            + " would depend on which way the caster is facing. Put the sound in"
+                            + " on_cast or on_hit instead");
+                }
+            }
+            case CastSpec.Projectile projectile -> {
+                if (projectile.trail() != null && visuals.find(projectile.trail()).isEmpty()) {
+                    problems.add(ownerLabel + " names trail visual '" + projectile.trail()
+                            + "', which no visual defines");
+                }
+                // `item` IS DELIBERATELY NOT VALIDATED, and its absence here is a decision rather
+                // than the arm being half-written. It names a MATERIAL, not a visual, and the
+                // Flint Staff slice established the rule: adding material validation for a
+                // projectile's body while leaving EffectSpec.ThrowEmbers.itemId unchecked is worse
+                // than checking neither, because the remaining gap then looks deliberate to a
+                // reader who has no way to tell. Both fall back with a warnOnce in the adapter.
+                // Material validation is one change covering both call sites, or it is not made.
+            }
+            case CastSpec.Self ignored -> { }
+            case CastSpec.Melee ignored -> { }
+            case CastSpec.Dash ignored -> { }
+        }
+    }
+
     private void checkEffect(EffectSpec effect, String ownerLabel, List<String> problems) {
         switch (effect) {
             case EffectSpec.Visual visual -> {

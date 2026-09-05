@@ -7,6 +7,7 @@ import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.kit.KitDefinition;
 import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
+import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.junit.jupiter.api.Test;
@@ -43,9 +44,15 @@ class ContentValidatorTest {
         var registry = new VisualRegistry();
         for (String id : ids) {
             registry.register(new VisualDefinition(id,
-                    // speed stated rather than defaulted: the record deliberately has no
-                    // convenience constructor, so no construction can be silent about its extra.
-                    List.of(new VisualSpec.Particles(Particle.FLAME, 40, 0.6, 1.0))));
+                    // EVERY field stated rather than defaulted: the record deliberately has no
+                    // convenience constructor, so no construction can be silent about its extra --
+                    // nor, since beams, about its dust data or its per-block density. The rule was
+                    // written for `speed` and it was tempting to add a 4-arg ladder when the record
+                    // grew; there is exactly ONE construction site outside the loader (this one),
+                    // so keeping the rule cost a single line and buys the same guarantee for three
+                    // fields instead of one.
+                    List.of(new VisualSpec.Particles(Particle.FLAME, 40, 0.6, 1.0,
+                            null, VisualSpec.DEFAULT_SAMPLES_PER_BLOCK))));
         }
         return registry;
     }
@@ -183,7 +190,13 @@ class ContentValidatorTest {
                 List.of(new EffectSpec.Visual("flint_impact")), List.of(),
                 List.of(new EffectSpec.Visual("no_such_cast_visual"))));
 
-        var problems = validator(visualsWith("flint_impact"), statusesWith()).validate(registry);
+        // flint_trail is registered too, so the ONLY dangling id here is the on_cast one. It was
+        // not, until casts began being walked: this fixture's trail had never resolved either, and
+        // the assertion below passed only because nothing looked at a cast's own visual ids. The
+        // fixture, not the check, was what needed correcting -- a projectile naming a trail that
+        // does not exist IS a problem, and had been an unreported one for two slices.
+        var problems = validator(visualsWith("flint_impact", "flint_trail"), statusesWith())
+                .validate(registry);
 
         assertEquals(1, problems.size(), problems.toString());
         assertTrue(problems.get(0).contains("on_cast"),
@@ -452,5 +465,152 @@ class ContentValidatorTest {
             }
         }
         return dir.toFile();
+    }
+
+    // --- the beam: a cast can now name a visual, and not every visual may be one ----------
+
+    /** An ability whose Ray names {@code beam} as its beam visual. */
+    private static AbilityRegistry rayNaming(String beam) {
+        var registry = new AbilityRegistry();
+        registry.register(new AbilityDefinition("lapis", "Lapis", "kinetic", "none",
+                20, new ResourceCost("mana", 10), new CastSpec.Ray(26, beam), List.of()));
+        return registry;
+    }
+
+    private static VisualRegistry visualWithSteps(String id, VisualSpec... steps) {
+        var registry = new VisualRegistry();
+        registry.register(new VisualDefinition(id, List.of(steps)));
+        return registry;
+    }
+
+    private static VisualSpec.Particles anyDust() {
+        return new VisualSpec.Particles(Particle.DUST, 1, 0.0, 0.0,
+                new Particle.DustOptions(Color.fromRGB(40, 90, 240), 1.2f), 4.0);
+    }
+
+    /**
+     * A CAST'S visual id dangles exactly as invisibly as an effect's, so it is walked too.
+     *
+     * <p>Before this the validator walked on_hit and on_cast but never the CAST, so a mistyped
+     * beam -- or a mistyped projectile trail, which has been possible for two slices -- produced a
+     * weapon that fired, resolved, damaged, and simply drew no line, with one warnOnce buried in
+     * the log at first use rather than a named problem at boot.
+     *
+     * <p>Mutation: drop the checkCast call from validate() -> this reddens.
+     */
+    @Test
+    void aBeamNamingNoKnownVisualIsANamedProblem() {
+        var problems = validator(visualsWith("something_else"), statusesWith())
+                .validate(rayNaming("lapis_beam"));
+
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("lapis_beam"), problems.toString());
+        assertTrue(problems.get(0).contains("beam visual"), problems.toString());
+    }
+
+    /**
+     * A BEAM MAY NOT NAME A VISUAL CONTAINING A SOUND STEP, AND THIS IS THE ONLY CHECK THAT SAYS SO.
+     *
+     * <p><b>The failure it prevents is aim-dependent and intermittent, which is why it is worth a
+     * boot problem rather than a comment.</b> {@code presentAlong} is called once per CHUNK-COLUMN
+     * SEGMENT, so a sound inside a beam visual plays one to three times for the same weapon
+     * depending on how many chunk planes the shot happens to cross. Its loudness would depend on
+     * which way the player is facing. Nobody would read that as a content mistake; they would read
+     * it as a bug in the sound engine and go looking in the wrong place.
+     *
+     * <p>{@code VisualSpec} permits Particles and Sound. Leaving the bound at the full sealed set
+     * because the one beam that exists happens not to carry a sound is how a schema grows behaviour
+     * nobody chose -- the same argument that types {@code AbilityDefinition.onCast} as
+     * {@code List<EffectSpec.Visual>} rather than {@code Untargeted}.
+     *
+     * <p>Note it is only refused FOR A BEAM. The identical visual presented at a point is fine, and
+     * the second half of this test asserts that, because a check that rejected the sound outright
+     * would be a different and wrong rule.
+     *
+     * <p>Mutation: drop the anyMatch clause in checkCast -> the first half reddens with an empty
+     * problem list.
+     */
+    @Test
+    void aBeamNamingAVisualThatContainsASoundIsANamedProblem() {
+        var withSound = visualWithSteps("lapis_beam", anyDust(),
+                new VisualSpec.Sound("entity.breeze.shoot",
+                        NamespacedKey.fromString("entity.breeze.shoot"), 1.0f, 1.2f));
+
+        var problems = validator(withSound, statusesWith()).validate(rayNaming("lapis_beam"));
+
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("sound step"), problems.toString());
+        assertTrue(problems.get(0).contains("per chunk-column segment"),
+                "the message must say WHY, or the author has no idea what to do: " + problems);
+
+        // The same visual, presented at a POINT rather than along a segment, is perfectly fine.
+        // Without this the rule would read as "a visual may not mix particles and sound", which is
+        // not the rule and would be wrong -- flint_impact does exactly that.
+        var asImpact = new AbilityRegistry();
+        asImpact.register(new AbilityDefinition("lapis", "Lapis", "kinetic", "none",
+                20, ResourceCost.FREE, new CastSpec.Ray(26),
+                List.of(new EffectSpec.Visual("lapis_beam"))));
+        assertTrue(validator(withSound, statusesWith()).validate(asImpact).isEmpty(),
+                "a sound is only a problem in a BEAM, not in the visual itself");
+    }
+
+    /** A ray naming no beam is not a problem -- solar_lance's shape, and every ray before this. */
+    @Test
+    void aRayNamingNoBeamIsNotAProblem() {
+        var registry = new AbilityRegistry();
+        registry.register(new AbilityDefinition("solar_lance", "Solar Lance", "fire", "hunter",
+                100, ResourceCost.FREE, new CastSpec.Ray(30), List.of()));
+
+        assertTrue(validator(visualsWith(), statusesWith()).validate(registry).isEmpty(),
+                "an absent beam is the default and must never be reported");
+    }
+
+    /**
+     * THE SHIPPED LAPIS STAFF CARRIES THE PORTED NUMBERS, loaded through the REAL loaders.
+     *
+     * <p>The sibling of {@code theShippedFlintStaffCarriesCfde822sNumbers}, and it exists for the
+     * same reason: every number below is invisible to the rest of the suite. It would parse, load,
+     * register, mint and fire with a range of 30 and 12 damage and nothing would notice.
+     *
+     * <p>It also proves the wiring end to end -- beam -> the cast, on_cast -> the trigger, and
+     * every visual id resolving to a file that exists, including the beam-has-no-sound rule
+     * against the real files rather than a fixture.
+     *
+     * <p>Mutation: change `range: 26` or `amount: 21` in the shipped yml -> this reddens naming it.
+     * Put a sound step into the shipped lapis_beam.yml -> the final assertion reddens.
+     */
+    @Test
+    void theShippedLapisStaffCarriesThePortedNumbers(@TempDir Path dir) throws IOException {
+        var log = Logger.getLogger("ContentValidatorTest-" + System.nanoTime());
+        var visuals = new VisualLoader(log).loadAll(
+                copyBundled(dir, "visuals", "lapis_cast.yml", "lapis_beam.yml", "lapis_impact.yml"));
+        var weapons = new WeaponLoader(log).loadAll(copyBundled(dir, "weapons", "lapis_staff.yml"));
+
+        assertEquals(3, visuals.size(), "a bundled lapis visual failed to parse");
+        assertEquals(1, weapons.size(), "lapis_staff.yml failed to parse");
+
+        var staff = weapons.find("lapis_staff").orElseThrow();
+        assertEquals("breeze_rod", staff.material(), "the material decides indestructibility");
+        assertEquals("kinetic", staff.element(), "considered and chosen -- see the file");
+
+        var trigger = staff.triggers().get(0);
+        assertEquals(20, trigger.ability().cooldownTicks(), "1000ms in the old repo");
+        assertEquals(10, trigger.ability().cost().amount(), 1e-9);
+
+        var cast = assertInstanceOf(CastSpec.Ray.class, trigger.ability().cast());
+        assertEquals(26.0, cast.range(), 1e-9, "26 blocks, not the schema's 30-block default");
+        assertEquals("lapis_beam", cast.beam(), "a ray that draws nothing is not this weapon");
+
+        assertEquals(List.of(new EffectSpec.Visual("lapis_cast")), trigger.ability().onCast(),
+                "audible on the frame the trigger is pressed, not when the beam lands");
+        assertEquals(new EffectSpec.Damage(21, "kinetic"), trigger.ability().onHit().get(1));
+
+        // Deliberately NOT knockback: see the note at the foot of lapis_staff.yml. Ability damage
+        // fires no vanilla event, so nothing pushes the target and nothing needs to suppress it.
+        assertTrue(trigger.ability().onHit().stream().noneMatch(e -> e instanceof EffectSpec.Knockback),
+                "the beam does not knock back, matching the old staff by a different mechanism");
+
+        assertTrue(validator(visuals, statusesWith()).validateWeapons(weapons.all()).isEmpty(),
+                "every visual id the staff names must resolve, and its beam must carry no sound");
     }
 }

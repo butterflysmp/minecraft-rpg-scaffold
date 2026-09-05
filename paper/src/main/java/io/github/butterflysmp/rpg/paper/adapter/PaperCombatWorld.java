@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
+import io.github.butterflysmp.rpg.core.combat.BeamSamples;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.RayHit;
 import io.github.butterflysmp.rpg.paper.content.VisualDefinition;
@@ -491,17 +492,62 @@ public final class PaperCombatWorld implements CombatWorld {
         ctx.scheduler().onRegion(loc, () -> {
             for (VisualSpec step : visual.steps()) {
                 switch (step) {
-                    // The 7-arg overload: offsets, then `extra`. The 6-arg one this used to call
-                    // hardcoded extra = 1.0 (its default chain ends at dconst_1), so passing
-                    // p.speed() with a 1.0 loader default leaves every existing visual identical
-                    // while letting a file ask for something else. See VisualSpec.Particles.
-                    case VisualSpec.Particles p ->
-                            world.spawnParticle(p.particle(), loc, p.count(),
-                                    p.spread(), p.spread(), p.spread(), p.speed());
+                    case VisualSpec.Particles p -> particles(p, loc);
                     case VisualSpec.Sound s ->
                             world.playSound(loc, s.key(), s.volume(), s.pitch());
                 }
             }
         });
+    }
+
+    /**
+     * Draw a named visual ALONG a segment. A beam.
+     *
+     * <p><b>ONE REGION HOP FOR THE WHOLE SEGMENT.</b> {@link #present} hops per call, so drawing a
+     * 26-block beam by calling it a hundred times would be a hundred hops in one tick. This hops
+     * once, and that is legal only because {@code CastExecutor} hands it a segment already bounded
+     * by chunk planes: the segment lies inside one chunk column by construction, and a column
+     * belongs to exactly one region. See CombatWorld.presentAlong for the full argument.
+     *
+     * <p>The hop is on {@code from}, which is the end the caller is already standing on -- it is
+     * where {@code castRay} just traced from, on this same thread.
+     *
+     * <p><b>SOUND STEPS ARE NOT PLAYED HERE, AND THAT IS NOT AN OVERSIGHT.</b> This runs once per
+     * chunk-column SEGMENT, so a sound inside a beam visual would play one to three times depending
+     * on how many chunk planes the aim happened to cross -- its loudness would depend on which way
+     * the player was facing, intermittently. ContentValidator rejects a Sound step in any visual
+     * named as a beam, so reaching this switch with one is already a content error that was
+     * reported at boot; ignoring it here is the quiet half of that same refusal.
+     */
+    @Override
+    public void presentAlong(Vec3 from, Vec3 to, String visualId) {
+        VisualDefinition visual = ctx.visuals().find(visualId).orElse(null);
+        if (visual == null) {
+            ctx.warnOnce("Unknown visual_id '" + visualId + "'; no beam drawn");
+            return;
+        }
+        ctx.scheduler().onRegion(toLocation(from), () -> {
+            for (VisualSpec step : visual.steps()) {
+                if (!(step instanceof VisualSpec.Particles p)) continue;
+                for (Vec3 point : BeamSamples.along(from, to, p.samplesPerBlock())) {
+                    particles(p, toLocation(point));
+                }
+            }
+        });
+    }
+
+    /**
+     * One particle step, at one point. Shared by {@link #present} and {@link #presentAlong} so a
+     * beam and a burst cannot drift in how they read the same authored fields.
+     *
+     * <p>The 8-arg overload: offsets, then {@code extra}, then the DATA OBJECT. Moving here from
+     * the 7-arg one is provably a no-op for every visual that takes no data, rather than an argued
+     * one -- in the pinned API the 7-arg default chain is literally
+     * {@code spawnParticle(..., extra, null)}, and {@code p.dust()} is null for all five particles
+     * in shipped content. See VisualSpec.Particles.
+     */
+    private void particles(VisualSpec.Particles p, Location at) {
+        world.spawnParticle(p.particle(), at, p.count(),
+                p.spread(), p.spread(), p.spread(), p.speed(), p.dust());
     }
 }

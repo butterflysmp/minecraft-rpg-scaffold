@@ -1,0 +1,23 @@
+# The Lapis Staff firing -- what you hear the instant you press right-click. Id is the filename:
+# lapis_cast.
+#
+# Sound only, like flint_cast, and for a related but NOT identical reason. The Flint Staff needed
+# on_cast because its on_hit fires at the impact point after up to 40 ticks of flight. This ray
+# resolves in one or two ticks, so the gap is far smaller -- but it is not zero, and it VARIES WITH
+# AIM: a diagonal shot crosses more chunk planes than an axis-aligned one and so takes an extra
+# tick. A cast noise on on_hit would therefore be late by an amount that depends on which way you
+# are facing, which is worse than being consistently late.
+#
+# Key verified present in net/minecraft/sounds/SoundEvents.class on the pinned 26.1.2 server jar
+# before shipping, not recalled:
+#   unzip -p run/versions/26.1.2/paper-26.1.2.jar net/minecraft/sounds/SoundEvents.class \
+#     | grep -a -o 'entity\.breeze\.[a-z_.]*' | sort -u
+# printed 13 keys including entity.breeze.shoot and entity.breeze.deflect.
+#
+# Numbers are cfde822 StaffListener's, unchanged.
+
+steps:
+  - type: sound
+    key: entity.breeze.shoot
+    volume: 1.0
+    pitch: 1.2
