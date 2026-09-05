@@ -711,18 +711,40 @@ down". One case does not justify breaking that contract.
 Same move as typing `AbilityDefinition.onCast` as `List<EffectSpec.Visual>` rather than
 `Untargeted`, for the same reason.
 
-#### THE PROJECTILE TRAIL HAD NEVER BEEN VALIDATED, AND A TEST FIXTURE HAD BEEN RELYING ON IT
+#### A SHIPPED COVERAGE GAP: NO PROJECTILE TRAIL HAS EVER BEEN VALIDATED ON ANY BOOT
 
 Writing `checkCast` for the beam meant `ContentValidator` walked a cast for the first time. Adding
 the beam check while leaving `Projectile.trail` dangling would have made the remaining gap look
 deliberate — `AbilitySchema`'s own comment warns about exactly that asymmetry — so the walk covers
 both. The trail check costs nothing once the walk exists.
 
-**It immediately reddened `aDanglingOnCastVisualIsReportedAndNamedAsOnCast`**, whose fixture built a
-projectile with `trail: "flint_trail"` and registered no such visual. That test asserted exactly one
-problem and had passed for two slices **only because nothing looked at a cast's visual ids.** The
-fixture was corrected, not the check: a projectile naming a trail that does not exist IS a problem,
-and had been an unreported one.
+**The finding is not that a fixture was wrong. It is that `flint_staff.yml`'s `trail: flint_trail`
+has never been validated on any boot since PR 1 shipped it**, and a typo there would have degraded
+to a `warnOnce` at first cast — silent until a player fired the weapon, and then buried in a log.
+That gap is closed here, in the same walk, because the sealed switch made it nearly free.
+
+It surfaced as a reddened test: `aDanglingOnCastVisualIsReportedAndNamedAsOnCast`'s fixture built a
+projectile with `trail: "flint_trail"` and registered no such visual. It asserted exactly one
+problem and had passed for two slices **only because nothing looked at a cast's visual ids at all.**
+The fixture was corrected, not the check.
+
+**AND RECORD WHY THE PRECEDENT LOOKED ALREADY-SET, BECAUSE THAT IS THE INSTRUCTIVE HALF.**
+
+> **A grep for `trail()` in `ContentValidator` RETURNS A HIT.** The hit is `embers.trail()` —
+> `EffectSpec.ThrowEmbers`, reached through the EFFECT walk — not `CastSpec.Projectile.trail`,
+> which nothing reached. **The confirming evidence was real, and was about something else.**
+
+Sibling of `check-tests.sh` reading a stale report, and of `NR` vs `FNR`: **a check that ran
+correctly against something other than what you were looking at.** Here the variant is the same
+NAME on a different TYPE, which is precisely the one that survives a careful grep — the reader sees
+`trail()`, sees it inside `ContentValidator`, and stops.
+
+`Projectile.item` is deliberately still unvalidated, and the Projectile arm now says so in the code
+rather than leaving the asymmetry to be read as an oversight: it names a MATERIAL, and the Flint
+Staff slice established that validating a projectile's body while leaving
+`EffectSpec.ThrowEmbers.itemId` unchecked is worse than checking neither. Material validation is one
+change covering both call sites, or it is not made.
+
 
 #### A NEW FIELD ON A RECORD IS A CHANCE TO QUIETLY WEAKEN AN INVARIANT THE TESTS STATE
 
@@ -815,11 +837,21 @@ Two `perl` calls were used for one mutation: the first deleted the `checkCast` l
 to insert a `// MUTATION_P6` marker — and found nothing left to match. The guard printed **`DID NOT
 APPLY`** while the tests reddened with two named failures.
 
-Both halves are wrong-looking and only one is wrong: the code WAS mutated, the marker was not. A
-red that follows a guard saying "the mutation did not apply" **proves nothing** — it is the
-mirror-image of this file's own *a mutation is a hypothesis until you have watched it redden*. It
-was redone as a single edit that comments the line out in place, with the marker verified present
-AND the live call verified gone (`grep -c` → 0) before the result was believed.
+Both halves look wrong and only one is: the code WAS mutated, the marker was not.
+
+> **A RED THAT FOLLOWS "THE MUTATION DID NOT APPLY" PROVES NOTHING.** The redness had **no
+> established cause**. It could have been the mutation, or anything else in the tree — an earlier
+> restore that did not take, a stale target, a second edit from the same command. The instrument
+> and the thing it measures came apart, and **only the instrument said so.**
+
+This is a new member of the family this file already keeps: `check-tests.sh` reading a stale
+report, `NR` vs `FNR`, and the `trail()` grep above. In every one of them a check ran correctly
+against something other than what was being asked about. Here the check ran correctly and reported
+correctly — and the temptation was to disbelieve it, because the red beside it looked exactly like
+the expected result.
+
+Redone as a SINGLE edit commenting the line out in place, with **both** directions verified before
+anything was believed: marker present, and the live call gone (`grep -c` → 0).
 
 ---
 

@@ -384,6 +384,13 @@ public final class ContentValidator {
                     problems.add(ownerLabel + " names trail visual '" + projectile.trail()
                             + "', which no visual defines");
                 }
+                // `item` IS DELIBERATELY NOT VALIDATED, and its absence here is a decision rather
+                // than the arm being half-written. It names a MATERIAL, not a visual, and the
+                // Flint Staff slice established the rule: adding material validation for a
+                // projectile's body while leaving EffectSpec.ThrowEmbers.itemId unchecked is worse
+                // than checking neither, because the remaining gap then looks deliberate to a
+                // reader who has no way to tell. Both fall back with a warnOnce in the adapter.
+                // Material validation is one change covering both call sites, or it is not made.
             }
             case CastSpec.Self ignored -> { }
             case CastSpec.Melee ignored -> { }
