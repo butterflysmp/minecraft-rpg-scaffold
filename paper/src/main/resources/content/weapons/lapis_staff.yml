@@ -1,0 +1,113 @@
+# The Lapis Staff, ported from the old repo (BSMPMenu, cfde822). The Flint Staff's pricier,
+# longer-armed sibling, and the first weapon in this repo to draw a BEAM.
+#
+# The recipe lives in content/recipes/lapis_staff.yml and points AT this file (`mints:
+# lapis_staff`). There is deliberately no craft_result here -- see the note at the bottom.
+#
+# Numbers are the old repo's, unchanged and verified against it:
+#   WeaponFormulas.LAPIS_STAFF_BASE_DAMAGE = 21
+#   LAPIS_STAFF_COOLDOWN_MS  = 1000  -> cooldown_ticks 20
+#   LAPIS_STAFF_MANA_COST    = 10
+#   LAPIS_STAFF_RANGE        = 26.0
+#
+# THE SHAPE AGAINST THE FLINT STAFF, WHICH IS THE POINT OF IT: 21 damage vs 20, 10 mana vs 5,
+# 20 ticks vs 24, and 26 blocks of near-instant reach against 40 ticks of flight. Pricier per
+# shot, faster to repeat, and it arrives now instead of later. NEITHER IS REBALANCED -- these are
+# both cfde822's numbers, and the comparison is the design, not an accident to be smoothed out.
+
+id: lapis_staff
+display_name: "Lapis Staff"
+
+# ELEMENT IS `kinetic`, AND IT IS A CONSIDERED CHOICE RATHER THAN A DEFAULT LEFT IN PLACE.
+#
+# cfde822 typed this weapon's damage DamageType.MAGIC. That is a damage-source CATEGORY, not an
+# element, and it does not translate: this repo's element registry holds fire, kinetic, nature,
+# undead, void, water and wither, and there is no arcane or magic among them.
+#
+# `void` was considered and rejected. It is the nearest shipped thing to "magic" and the next
+# reader will reach for it, so: it renders <dark_purple>Void</dark_purple>, while the beam is
+# rgb(40, 90, 240), lapis blue. The tooltip and the beam would disagree on screen, and `void`
+# carries a flavour (see void_slash) this weapon does not have. Trading a wrong colour for a wrong
+# flavour is not an improvement on the neutral.
+#
+# So the tooltip will read <white>Kinetic</white> on a weapon that fires a blue beam, and THAT
+# TENSION IS DELIBERATE. kinetic.yml is explicit that an unflavored weapon is kinetic and not
+# elementless. Do not "fix" this by minting a new element on your own -- an element is one file
+# and costs nothing to add, which is exactly why adding one unasked is easy and wrong.
+element: kinetic
+rarity: uncommon
+class: mage
+
+# MATERIAL IS `breeze_rod`, FROM THE OLD REPO. The same two consequences the Flint Staff records
+# apply here, for the same structural reason, and are carried across rather than rediscovered:
+#
+# 1. THIS STAFF CAN NEVER BREAK. A breeze rod has no durability, and Durability.isBroken opens
+#    with `if (maxDurability <= 0) return false` under a javadoc naming it THE STAFF-AND-STONE
+#    EXEMPTION. It is the SECOND CRAFTABLE indestructible weapon, after flint_staff -- so this is
+#    no longer a one-off, and the balance question it opened (indestructible gear reaching players
+#    through the economy rather than through /rpg give) now has two instances rather than one.
+#    Nobody may "fix" this by requiring gear to be durable: that would break an exemption
+#    ember_staff and ability_stone depend on. THE MATERIAL IS THE LEVER.
+#
+# 2. THE MINTED STAFF STACKS TO 64, because a breeze rod does. Two staves with identical enchant
+#    rolls are isSimilar and will merge. Nothing downstream breaks -- weapon lookup is per item.
+material: breeze_rod
+
+flavor:
+  - "Cut lapis, bound in breeze-iron."
+  - "It does not travel. It arrives."
+
+triggers:
+  right_click:
+    name: "Lapis Beam"
+    description:
+      - "Right-click to fire a blue beam."
+    cooldown_ticks: 20
+    cost:
+      resource: mana
+      amount: 10
+    # WHAT YOU HEAR THE MOMENT YOU PRESS. on_cast rather than on_hit because a ray is NOT hitscan
+    # here -- it walks one chunk column per tick, so the impact is one or two ticks late and the
+    # exact number DEPENDS ON AIM. See lapis_cast.yml.
+    on_cast:
+      - type: visual
+        visual_id: lapis_cast
+    # THE BEAM IS DRAWN AS THE RAY WALKS, one segment per tick, and it stops where the ray stopped
+    # rather than at the segment's far end. See CastExecutor.stepRay for why the delay stays and
+    # why making this hitscan would reintroduce a Folia region bug.
+    #
+    # `beam` is a visual REFERENCE, exactly as `trail` is on a projectile -- the cast names a
+    # visual, it never configures one. The beam's colour, size and per-block density all live in
+    # lapis_beam.yml where they can be retuned without a rebuild.
+    cast:
+      type: ray
+      range: 26
+      beam: lapis_beam
+    on_hit:
+      - type: visual
+        visual_id: lapis_impact
+      - type: damage
+        amount: 21
+        element: kinetic
+
+# THIS BEAM DOES NOT KNOCK ITS TARGET BACK, AND THAT MATCHES cfde822 -- BY A COMPLETELY DIFFERENT
+# MECHANISM. Worth stating because the obvious inference from the old code is the wrong one.
+#
+# cfde822 wrapped this weapon's damage in suppressNext(uuid) BECAUSE it dealt real vanilla damage,
+# which carries knockback. This repo has no suppression concept at all, from which it is natural to
+# conclude the knockback is therefore present and unsuppressed. It is not: EffectSpec.Damage
+# reaches BukkitCombatant.applyDamage, which drains the CUSTOM health store and plays a manual hurt
+# flash -- it never calls entity.damage(), so no vanilla damage event fires, so no
+# EntityKnockbackEvent is ever raised. EffectApplier knocks back only from an explicit
+# EffectSpec.Knockback, which this weapon does not author.
+#
+# A REMEDY THAT IS ABSENT LOOKS LIKE A PROBLEM THAT IS PRESENT. Do not add a knockback canceller
+# here for an event this path never raises.
+
+# NO craft_result HERE, AND DO NOT ADD ONE. Same reasoning as flint_staff and it is fatal on its
+# own: craft_result claims a MATERIAL, and this weapon's material is `breeze_rod`, so the claim
+# would mint a Lapis Staff from EVERY VANILLA BREEZE ROD ON THE SERVER. Boot would refuse it
+# anyway -- ContentValidator.validateCraftResults rejects a craft_result on a material with no
+# durability, which a breeze rod is.
+#
+# The recipe claims this weapon, not the other way round. See content/recipes/lapis_staff.yml.

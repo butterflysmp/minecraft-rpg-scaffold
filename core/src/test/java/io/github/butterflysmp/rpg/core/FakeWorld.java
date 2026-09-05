@@ -237,6 +237,27 @@ public final class FakeWorld implements CombatWorld {
         presentedAt.add(at);
     }
 
+    /** One beam segment: both ends and the visual, exactly as the port was handed them. */
+    public record Beam(Vec3 from, Vec3 to, String visualId) {}
+
+    /**
+     * Every presentAlong call, in order.
+     *
+     * <p>Deliberately NOT merged into {@link #presented}. A beam and a point visual are different
+     * geometry, and a test that could not tell them apart would pass on a beam drawn as a puff --
+     * which is the exact mistake the mechanism exists to avoid.
+     *
+     * <p>And it records BOTH ENDS for the reason {@link #presentedAt} exists at all: a COUNT is
+     * structurally blind to a beam that overshoots. A ray stopped by a wall halfway down its
+     * segment draws exactly one beam whether it stops at the wall or carries on thirteen blocks
+     * through it. Only the endpoint tells them apart.
+     */
+    public final List<Beam> presentedAlong = new ArrayList<>();
+
+    @Override public void presentAlong(Vec3 from, Vec3 to, String visualId) {
+        presentedAlong.add(new Beam(from, to, visualId));
+    }
+
     @Override public UUID throwMarker(Vec3 origin, Vec3 velocity, String itemId) {
         UUID id = UUID.randomUUID();
         markers.put(id, itemId);

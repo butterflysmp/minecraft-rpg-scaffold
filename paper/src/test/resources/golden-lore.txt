@@ -64,6 +64,18 @@
    "The first blade any recruit is handed." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- lapis_staff
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Lapis Beam" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Right-click to fire a blue beam." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["21" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.0s | Mana Cost: 10" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Cut lapis, bound in breeze-iron." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It does not travel. It arrives." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
 
 === SHIELDS ===
 -- shield @bulwark=0.0
@@ -446,4 +458,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 85 renderings ===
+=== 86 renderings ===

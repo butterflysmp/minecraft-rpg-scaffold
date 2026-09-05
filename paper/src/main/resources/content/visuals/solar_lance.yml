@@ -1,10 +1,30 @@
 # The id of this visual is its filename: solar_lance.
 #
 # This presents at the IMPACT POINT, once. It tells you where the lance hit, not
-# that it took two ticks to get there. Feeling the flight would want a visual
-# along the beam, and VisualSpec permits Particles and Sound -- there is no Beam.
-# Do not add one before casting the lance and finding out whether the delay is
-# legible without it.
+# that it took two ticks to get there.
+#
+# A BEAM CONCEPT NOW EXISTS, AND THIS NOTE USED TO SAY IT DID NOT. It said "there
+# is no Beam. Do not add one before casting the lance and finding out whether the
+# delay is legible without it." The Lapis Staff built one: CastSpec.Ray takes an
+# optional `beam` visual id, and CombatWorld.presentAlong draws it down each
+# chunk-column segment as the ray walks.
+#
+# SOLAR LANCE DELIBERATELY DOES NOT USE IT. Two reasons, and the second is the
+# real one:
+#
+#   * It is a DEV weapon -- an ability granted by /rpg, not something a player
+#     obtains -- so its feel was never the thing being protected.
+#
+#   * The old note's condition was never actually discharged. Nobody cast the
+#     lance and reported whether the delay reads without a beam. Adding one now
+#     would answer a question by removing it, and the answer is worth having:
+#     solar_lance is the only ray left that draws nothing between muzzle and
+#     impact, which makes it the control against which a beam's contribution can
+#     be judged at all. It is also what the core test aRayWithNoBeamDrawsNothing
+#     pins, and what gate row L11 checks in game.
+#
+# So this file stays as it is ON PURPOSE, and the prohibition is gone rather than
+# left standing over a mechanism the same commit shipped.
 #
 # END_ROD takes no data object; see void_slash.yml.
 

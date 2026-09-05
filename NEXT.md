@@ -581,6 +581,277 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### The Lapis Staff (a ray that draws itself) — what it created or exposed
+
+A ray now draws a line down itself as it walks. `CastSpec.Ray` takes an optional `beam` visual id,
+`CombatWorld.presentAlong` draws it one chunk-column segment at a time, and the visual schema can
+finally express a coloured DUST. The Lapis Staff is the first consumer: 21 damage, 10 mana, 20
+ticks, 26 blocks, ported from cfde822.
+
+#### A REMEDY THAT IS ABSENT LOOKS LIKE A PROBLEM THAT IS PRESENT
+
+**The brief's decision C was taken on a false premise, and the correction is worth more than the
+decision was.**
+
+C said: accept that this beam knocks targets back where the old one did not, and record the
+divergence. The reasoning was that cfde822 wrapped this weapon's damage in `suppressNext(uuid)`,
+this repo has `Knockback` only as an ADDITIVE effect and no concept of removing one, therefore the
+knockback is present and unsuppressed.
+
+That reasons from the OLD repo's MECHANISM to the NEW repo's BEHAVIOUR, and the step does not hold:
+
+```
+OLD (cfde822):  DamageSources.magic(shooter) -> real vanilla damage
+                -> vanilla knockback -> suppressNext(uuid) cancels it
+
+NEW:            EffectSpec.Damage -> BukkitCombatant.applyDamage()
+                -> custom HP drain + setTarget + playHurtAnimation(0f)
+                -> NO vanilla damage event -> NO EntityKnockbackEvent -> NO knockback
+```
+
+`applyDamage` never calls `entity.damage()` — its own javadoc says *"It does NOT deal vanilla
+damage: vanilla health is a puppet, not truth"* and *"an ability, which fires no vanilla event"*.
+`EffectApplier` knocks back only from an explicit `EffectSpec.Knockback`, which this weapon does not
+author. `RpgListeners.onCombatKnockback` gates on `Cause.ENTITY_ATTACK`, which this path never
+raises.
+
+**Net effect identical to cfde822. Mechanism unrelated.**
+
+> **THE RULE, and it is the durable half: A REMEDY THAT IS ABSENT LOOKS LIKE A PROBLEM THAT IS
+> PRESENT.**
+>
+> The old code's workaround is not evidence that the new code has the fault it worked around.
+> Before porting a mitigation, establish that the mechanism it mitigated still runs.
+>
+> Sibling of *"a check that did not run looks exactly like a check that passed"* — the same
+> inversion, applied to a fix rather than to a test.
+
+**The live cost, had C shipped as written:** "no knockback suppression concept" reads as a TODO, and
+someone eventually adds a canceller for an event this path never raises. Dead code with an
+accurate-sounding name.
+
+**Scoped narrowly, deliberately.** This is a correction to the Lapis Staff brief, not a finding
+about the weapon — the weapon has nothing to say about knockback at all now. The genuinely large
+divergence from cfde822 on this path is that ability damage drains a custom store instead of going
+through vanilla (armour, resistance, i-frames, attribution). That is the system's existing design,
+documented where the damage path lives, and it is **not re-litigated here and not attached to this
+weapon.** Witnessed by gate row L8.
+
+#### A PER-SEGMENT FLOOR SPIKES THE DENSITY IT WAS MEANT TO PROTECT, AND max(1, …) ONLY BOUNDS IT
+
+cfde822 drew `steps = max(2, distance * 4)` over the WHOLE LINE. This repo draws one chunk-column
+segment at a time, and those segments are of variable length by construction, so the floor had to be
+reconsidered rather than copied.
+
+The first draft carried `max(1, …)` across per segment and the plan claimed it "keeps spacing
+uniform". **It does not — it bounds the spike.** A 0.05-block sliver beside a chunk plane gets
+`round(0.2) = 0 -> max(1) = 1` sample, which is **20 per block at that one spot**. Better than the
+floor of 2 (40 per block), and still not uniform.
+
+So there is **no per-segment floor at all**: a sliver draws zero, and the neighbouring segments
+already cover the space it occupies. The floor's real purpose is "never a zero-sample BEAM", which
+belongs at the whole-beam level and not per segment — and the impact visual marks the far end
+regardless.
+
+Pinned by `BeamSamplesTest.aSliverSegmentDrawsNothingRatherThanSpikingTheDensity`. Mutation run:
+restoring `max(1, …)` reddens it with `expected: <0> but was: <1>`.
+
+**The generalisation:** a bound copied from a whole-line algorithm into a per-segment one changes
+meaning silently, and the copy looks more faithful than the correction does.
+
+#### EXCLUDING THE START OF A SEGMENT IS NOT THE PROJECTILE'S GUARD, AND CALLING IT ONE HID A QUESTION
+
+`BeamSamples` excludes the segment's own start. The first draft justified that as "the identical
+rule `ProjectileFlight.step`'s `elapsed > 0` guard enforces for a trail". **It is not, and the
+difference is the whole question.**
+
+```
+ProjectileFlight skips an entire TICK      -> 1.4 blocks at the Flint Staff's speed
+BeamSamples skips 1/samplesPerBlock        -> 0.25 blocks at the authored 4 per block
+```
+
+And the beam figure **does not depend on segment length or aim**: spacing is `1/samplesPerBlock`, so
+the first dust is always a quarter of a block from the eye. That is inside the caster's own head,
+and DUST at size 1.2 is a soft coloured blob rather than a spark.
+
+cfde822 drew at `s = 0` — literally AT the eye — and nobody complained, so this may be entirely
+fine. But the Flint Staff's own gate found a FLAME at the eye WAS a problem, and the two particles
+are not comparable. **We do not know, and before this correction no row asked.** Gate row L0 asks.
+
+What the exclusion actually buys, stated honestly in the code now: it removes the coincident
+double-draw at each segment joint (segment *k*'s far end IS segment *k+1*'s start), and it moves the
+first sample one spacing off the muzzle. Nothing more.
+
+**AND THE COUPLING NOBODY HAD NAMED: L0 and L2 pull in opposite directions.** If L2 reads "too
+sparse", the fix is to raise `samples_per_block` — **which moves the first particle closer to the
+camera.** They must be judged together, the way C4 needs C5. Recorded on the gate page, not left to
+be discovered between two readings taken a week apart.
+
+#### A BEAM'S SOUND WOULD BE LOUDER DEPENDING ON WHICH WAY THE PLAYER FACED
+
+`presentAlong` runs **once per chunk-column segment**. `VisualSpec` permits `Particles` and `Sound`,
+so a beam visual carrying a sound would play it one to three times for the same weapon, depending on
+how many chunk planes the aim happened to cross.
+
+Nobody would read that as a content mistake. They would read it as a bug in the sound engine and go
+looking in the wrong place.
+
+`lapis_beam.yml` has no sound today, which is exactly the trap — nothing stopped one being added,
+and the failure would have been aim-dependent and intermittent. **The case we had was enumerated and
+the bound was left at the full sealed set**, which is how a schema grows behaviour nobody chose. It
+is narrowed now: a visual named as a `beam` that contains a Sound step is a named boot problem.
+
+**Where the check lives was forced, and the placement argument is worth more than the check.** It is
+NOT in `VisualLoader`, which could throw: *"beam" is not a property of a visual.* It is a
+RELATIONSHIP declared by a `cast:` in a different file, so the loader that could fail the file
+cannot see it. `ContentValidator` is where every cross-file reference check already lives, and it
+**warns rather than throws on purpose** — "a typo in the 400th weapon must not take the server
+down". One case does not justify breaking that contract.
+
+Same move as typing `AbilityDefinition.onCast` as `List<EffectSpec.Visual>` rather than
+`Untargeted`, for the same reason.
+
+#### THE PROJECTILE TRAIL HAD NEVER BEEN VALIDATED, AND A TEST FIXTURE HAD BEEN RELYING ON IT
+
+Writing `checkCast` for the beam meant `ContentValidator` walked a cast for the first time. Adding
+the beam check while leaving `Projectile.trail` dangling would have made the remaining gap look
+deliberate — `AbilitySchema`'s own comment warns about exactly that asymmetry — so the walk covers
+both. The trail check costs nothing once the walk exists.
+
+**It immediately reddened `aDanglingOnCastVisualIsReportedAndNamedAsOnCast`**, whose fixture built a
+projectile with `trail: "flint_trail"` and registered no such visual. That test asserted exactly one
+problem and had passed for two slices **only because nothing looked at a cast's visual ids.** The
+fixture was corrected, not the check: a projectile naming a trail that does not exist IS a problem,
+and had been an unreported one.
+
+#### A NEW FIELD ON A RECORD IS A CHANCE TO QUIETLY WEAKEN AN INVARIANT THE TESTS STATE
+
+`VisualSpec.Particles` grew from four fields to six. The reflexive move — and the one first made —
+is a 4-arg convenience constructor dropping the tail, exactly the ladder `CastSpec.Projectile` uses.
+
+But `ContentValidatorTest`'s fixture carries this comment:
+
+> *speed stated rather than defaulted: the record deliberately has no convenience constructor, so no
+> construction can be silent about its extra.*
+
+**The convenience constructor would have made that comment false in the same commit that relied on
+it**, and would have let a construction be silent about `dust` and `samplesPerBlock` as well.
+
+There is exactly **one** construction site outside the loader. Keeping the rule cost a single line
+and now buys the same guarantee for three fields instead of one. The convenience constructor was
+removed.
+
+*(This is the standing finding that a default you discover also binds the NEW code you write in that
+change, not only the old code you are protecting.)*
+
+#### OPENING A GATE FOR ONE MEMBER DELETES THE WITNESS FOR ALL THE OTHERS
+
+`VisualLoaderTest.particleNeedingADataObjectIsRejectedAtLoad` used **DUST** as its specimen. Opening
+the schema to DUST would have deleted that guard's only witness while leaving the rule it guarded —
+*a particle whose data we cannot supply fails at load, not at the first cast in front of a player* —
+fully in force and completely unwatched.
+
+That is this file's own *A TUNING CHANGE CAN DELETE A RULE'S ONLY WITNESS WITHOUT TOUCHING THE
+RULE*, arriving one slice after it was written. The coverage was handed over explicitly rather than
+quietly lost.
+
+**The replacement ENUMERATES THE AXIS.** A hardcoded list of BLOCK/ITEM/VIBRATION would go stale the
+next time Paper adds a data-taking particle and nothing would say so — the `EnchantLoaderTest`
+defect one directory over. So it walks `Particle.values()`, filters to data types that are neither
+`Void` nor `DustOptions`, **fails loudly if that set is empty**, and asserts every member is still
+rejected by name.
+
+**Measured rather than recalled** (probe run inside the test classpath, since a `grep` of the
+sources jar is a lower bound):
+
+```
+non-Void, non-DustOptions particles: 17
+their data classes: [BlockData, Color, DustTransition, Float, Integer,
+                     ItemStack, Spell, Trail, Vibration]        -- 9
+plus DustOptions/DUST                                            -- 18 across 10
+```
+
+So the gate is opened by **data type**, not by name: `getDataType() == DustOptions.class` admits
+DUST and nothing else, today or after a Paper bump. Relaxing it to "has some data object" would
+silently admit seventeen particles whose data the schema still cannot express — mutation run, and
+it reddens naming EFFECT.
+
+#### A GOLDEN FILE WHOSE WHOLE-FILE DIFF IS A LINE-ENDING ARTEFACT
+
+`GoldenLoreTest` reddened on the full build, having passed every focused run. Regenerating and
+diffing showed `1,449c1,461` — every line changed — which reads as a catastrophic tooltip drift and
+is nothing of the sort: the regenerated file is LF and the checked-in one CRLF, so `diff` saw no
+common lines at all. (The test itself normalises; `diff` does not.)
+
+Normalised, the real change is twelve added lines and a count:
+
+```
+> -- lapis_staff  ... "Kinetic" / "Lapis Beam" / 21 / "Cooldown: 1.0s | Mana Cost: 10"
+                      / "Uncommon Magic Weapon"
+< === 85 renderings ===   >  === 86 renderings ===
+```
+
+No existing tooltip moved, so the regeneration was the intent. **The golden file also turned out to
+be an independent confirmation of the port** — it renders the cooldown, mana, damage, rarity and
+class from the shipped yml through the real tooltip path, and every number matches cfde822.
+
+#### THE TREE IS MIXED CRLF/LF AND A SCRIPTED EDIT REPORTS SUCCESS HAVING MATCHED NOTHING
+
+`core.autocrlf=true`, so files are CRLF on checkout — but not all of them (`ChunkTraversal.java` is
+LF, `CastSpec.java` is CRLF), and **a single file can be mixed**: `CombatWorld.java` reports as CRLF
+to `file(1)` while the specific lines being edited were LF.
+
+A `perl -0pi` pattern containing `\n` therefore matches nothing, changes nothing, and exits 0. The
+first edit of this slice did exactly that, and was only caught because the follow-up `grep` was run.
+
+The working method, used for every edit after: **normalise the file to LF in memory, match, write
+back LF** — `autocrlf=true` normalises on hash, so `git diff` showed `20 insertions(+)` and no
+deletions, confirming the rewrite was invisible to git. And **every helper fails loudly**: pattern
+absent → die; pattern found more than once → die, ambiguous, nothing written.
+
+#### A MUTATION MARKER THAT DOES NOT LAND WHILE THE MUTATION DOES
+
+Two `perl` calls were used for one mutation: the first deleted the `checkCast` line, the second was
+to insert a `// MUTATION_P6` marker — and found nothing left to match. The guard printed **`DID NOT
+APPLY`** while the tests reddened with two named failures.
+
+Both halves are wrong-looking and only one is wrong: the code WAS mutated, the marker was not. A
+red that follows a guard saying "the mutation did not apply" **proves nothing** — it is the
+mirror-image of this file's own *a mutation is a hypothesis until you have watched it redden*. It
+was redone as a single edit that comments the line out in place, with the marker verified present
+AND the live call verified gone (`grep -c` → 0) before the result was believed.
+
+---
+
+#### Deferred, deliberately
+
+- **The chunk-plane sample.** Including the far end means a pass-through segment draws its last
+  particle exactly on an `x = 16k` / `z = 16k` plane, which `ChunkTraversal.columnOf` assigns to the
+  NEXT column. On Paper this is nothing. On Folia it is one particle written from the adjacent
+  region's thread, once per plane crossing. Recorded rather than papered over, mirroring how
+  `solar_lance` records the mob-centred-across-a-plane miss. Excluding the far end instead would
+  cost the beam its exactness at the impact point, which is the worse trade.
+
+- **`solar_lance` still has no beam, and its file now says why.** Its standing note ("there is no
+  Beam. Do not add one before casting the lance and finding out whether the delay is legible without
+  it") became false the moment this shipped. The prohibition is gone; the abstention stays, because
+  **the old note's condition was never actually discharged** — nobody cast the lance and reported
+  whether the delay reads. Solar Lance is now the only ray drawing nothing between muzzle and
+  impact, which makes it the control the beam's contribution can be judged against at all. Pinned by
+  `aRayWithNoBeamDrawsNothing` and gate row L11.
+
+- **The element is `kinetic`, and `void` was considered and rejected.** cfde822 typed the damage
+  `DamageType.MAGIC`, a damage-source category rather than an element; the registry holds fire,
+  kinetic, nature, undead, void, water, wither and nothing arcane. `void` is the nearest shipped
+  thing to "magic" and renders `<dark_purple>` against a beam that is lapis blue — trading a wrong
+  colour for a wrong flavour is not an improvement on the neutral. The tooltip will read
+  `<white>Kinetic</white>` on a blue beam and that tension is deliberate, recorded in the weapon
+  file so nobody mints an element unasked.
+
+- **Second craftable indestructible weapon.** `breeze_rod` has no durability, so the
+  staff-and-stone exemption applies exactly as it does to the stick, and it stacks to 64 for the
+  same reason. The balance question the Flint Staff opened — indestructible gear reaching players
+  through the ECONOMY rather than through `/rpg give` — now has two instances rather than one.
 ### Flint Staff visuals, PR 2 (the bolt gets a body) — what it created or exposed
 
 The flint item is back: a real `Material.FLINT` entity, un-pickup-able, driven to the positions
