@@ -736,6 +736,49 @@ Leaving the amount ALONE is the only route to vanilla's own cadence.
 > `customMax / (hearts*2)`; a mob's custom max was bootstrapped FROM its vanilla max, so its factor is
 > **1**. One constant cannot serve both. The instrumentation logs the victim for this reason.
 
+###### THE CONVERSION IS ALREADY WRITTEN, TESTED, AND CALLED TWENTY LINES AWAY
+
+**DO NOT WRITE A FACTOR. The function exists:**
+
+| | |
+|---|---|
+| `core/…/stat/HeartScale.java:73` | `customFromHealthPoints(healthPoints, max)` |
+| `HeartScaleTest:61` | `assertEquals(20.0, customFromHealthPoints(4, 100))` — *exactly* the missing conversion |
+| `RpgListeners:1297` | `HeartScale.customFromHealthPoints(event.getAmount(), adapters.stats().max(id))` |
+
+**That last line is `onRegainHealth`'s REROUTE arm. THE HEAL HALF OF THE BOUNDARY CONVERTS AND THE
+DAMAGE HALF DOES NOT, IN THE SAME FILE** — and `VanillaHealPolicy` is the precedent the damage half
+was explicitly written to mirror. **This is *"an invariant stated in terms of one direction gets
+enforced in one direction"* firing a second time inside the slice that added the rule**, on the same
+two directions it was named for.
+
+**And `k` is not 5.** `heartCount` is tiered (10 HP/heart below 100, 100 HP/heart above) and uses
+`ceil`, so `k = max/(heartCount(max)*2)` is **5 at max 100, 4.59 at 101, 9.09 at 200, and STEPS at the
+boundary**. The mid-window hazard is therefore concrete, not theoretical: **a +HP item crossing 100
+moves `k` by ~8% in a tick.** `customFromHealthPoints` computes all of that. Call it.
+
+###### BUT THE NAIVE SUBSTITUTION IS BLOCKED BY THE MOB ASYMMETRY
+
+**A zombie at custom max 20:** `heartCount(20)` = 2 hearts = 4 points, so
+`customFromHealthPoints(4, 20)` returns **20 — its entire health, from one lava tick.** Mobs must not
+convert at all.
+
+So the function is **exactly right for combatants whose vanilla bar is rewritten from custom HP, and
+exactly wrong for those whose is not.** Settled from the code rather than by entity type:
+
+- **Players**: `PlayerHealthSystem.onChange` → `HeartBarRenderer` → `EntityHeartBar` writes the vanilla
+  MAX_HEALTH attribute and health from the custom numbers. Their vanilla bar is a projection, so a
+  vanilla-scale amount must be converted onto the custom scale.
+- **Mobs**: their vanilla health is **never written from custom**. The nameplate is a per-viewer packet
+  and `bootstrapIfAbsent` seeds custom max **FROM** vanilla MAX_HEALTH, so the two scales are already
+  the same and `k` is 1.
+
+**The branch must be on that property, not on `instanceof Player`.** The store already holds exactly
+this bit: `HealthState.player` (`:165`), set at registration and carried onto every `HealthChange` as
+`targetIsPlayer()`. It coincides with entity type today, which is precisely why the proxy would look
+correct and rot the first time anything else gets a rendered bar. `CombatantStats` exposes no
+`isPlayer(id)` accessor yet — adding one is part of the fix, not of this measurement.
+
 ###### ON UNITS: THE ALGEBRA SETTLES MOST OF IT, AND LEAVES ONE REAL HAZARD
 
 A ratchet is **invariant under positive scaling** — `a > b ⟺ ka > kb`, and `k(a−b) = ka − kb` — so

@@ -1155,7 +1155,38 @@ public final class RpgListeners implements Listener {
      *       reports the same {@code raw} on two victims with different custom max, event amounts are
      *       max-INDEPENDENT and the conversion factor is per-victim. If it varies with max, the
      *       units reasoning is wrong and the conversion is not a simple scale.
+     *   <li><b>{@code raw} vs {@code final}, and {@code vanillaHP} across a whole descent</b> — the
+     *       MITIGATION question, which is the one an argument about denomination cannot reach.
+     *       <b>Vanilla kills using FINAL, not BASE.</b> Any candidate that stops tokening leaves
+     *       vanilla mitigating with its armour/toughness/resistance curves while we mitigate with
+     *       {@code Defense.applyDefense} — two pipelines that must agree, or vanilla kills a player
+     *       who still has custom HP. {@code raw} vs {@code final} measures how far apart they are;
+     *       {@code vanillaHP} measures whether the two stores actually track.
      * </ol>
+     *
+     * <p><b>The symmetry is worth stating, because it is the shape of both mistakes.</b> This
+     * handler's own javadoc is thorough about MITIGATION and silent about DENOMINATION. The
+     * leave-the-amount-alone argument is thorough about DENOMINATION and silent about MITIGATION.
+     * Each is complete on exactly what the other omits, and each reads as finished for that reason.
+     *
+     * <p><b>And a mechanism that comes "for free" is usually an invariant moved somewhere nobody
+     * tests.</b> A window type is one core file with unit tests; the free version is an invariant
+     * spread across {@code ArmorBarOverride}, {@code Defense}, {@code HeartScale}, vanilla's armour
+     * formula and every potion — witnessed by nothing. That is a reason to measure before choosing
+     * it, not a reason to refuse it.
+     *
+     * <h2>THE THREE OUTCOMES, NAMED BEFORE THE BOOT</h2>
+     *
+     * So the boot cannot produce a result nobody classified:
+     * <ul>
+     *   <li><b>{@code iFrames > 0}, an event EVERY tick</b> — the window opens and fails to suppress.
+     *       Tokening's predicted signature; {@code lastDmg} should read ~0.01 and confirm the poison.
+     *   <li><b>{@code iFrames == 0}, an event every tick</b> — the window never opens. Cancelling's
+     *       predicted signature, and what the scratch cancel build should produce.
+     *   <li><b>{@code iFrames > 0}, events NOT every tick</b> — <b>THE THIRD ONE.</b> Something other
+     *       than the ratchet is gating, and BOTH readings above are incomplete. If this appears, stop
+     *       and re-diagnose rather than fitting it to either story.
+     * </ul>
      *
      * <p><b>And {@code victim} is logged because the player/mob asymmetry is unresolved.</b> A player's
      * vanilla bar is a fixed {@code heartCount*2} points regardless of custom max, so its factor is
@@ -1167,14 +1198,17 @@ public final class RpgListeners implements Listener {
         var stats = adapters.stats();
         UUID id = target.getUniqueId();
         plugin.getLogger().info(String.format(
-                "[STEP2] tick=%d victim=%s/%s cause=%s raw=%.4f applied=%.4f iFrames=%d lastDmg=%.4f customMax=%.1f customNow=%.1f",
+                "[STEP2] tick=%d victim=%s/%s cause=%s raw=%.4f final=%.4f applied=%.4f iFrames=%d "
+                        + "lastDmg=%.4f vanillaHP=%.4f customMax=%.1f customNow=%.1f",
                 Bukkit.getCurrentTick(),
                 target.getType(), id.toString().substring(0, 8),
                 event.getCause(),
                 event.getDamage(),          // BASE, the number the reroute currently spends
+                event.getFinalDamage(),     // what VANILLA would kill with -- raw vs final is the gap
                 applied,                    // after the shield, before Defense (which lands a hop later)
                 target.getNoDamageTicks(),  // victimIFrames, the 2026-08-28 field
                 target.getLastDamage(),     // vanilla's lastHurt, read BEFORE we touch the event
+                target.getHealth(),         // the vanilla store, to see whether it TRACKS the custom one
                 stats.max(id), stats.current(id)));
     }
 
