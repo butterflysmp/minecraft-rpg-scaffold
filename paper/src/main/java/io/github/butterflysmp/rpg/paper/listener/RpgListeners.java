@@ -1128,10 +1128,54 @@ public final class RpgListeners implements Listener {
             ShieldDurability.applyWearOnBlock(wearer, block.slot(), adapters.keys(), cooldowns);
         }
 
+        logRerouteMeasurement(event, target, exchange.applied());
+
         event.setDamage(TOKEN_DAMAGE);      // ride: keep i-frames, flash, knockback, cadence
         floorSoTokenCannotKill(target);
         BukkitCombatant.of(target, adapters).handle()
                 .applyDamage(exchange.applied(), attributableId(event, target));
+    }
+
+    /**
+     * TEMPORARY INSTRUMENTATION -- delete with the slice. Reuses the 2026-08-28 STEP0 shape, whose
+     * output is quoted in {@code MeleeHits}' javadoc and now in {@code NEXT.md}.
+     *
+     * <p><b>It exists because three open questions are all answerable from one boot, and none of them
+     * from reading.</b> Nobody should be predicting a number here.
+     *
+     * <ol>
+     *   <li><b>{@code iFrames} + {@code tick}</b> — the observable proxy for vanilla's invulnerability
+     *       state. The (tick, cause, iFrames) sequence says whether the window is OPEN and failing to
+     *       suppress (tokening's predicted signature: iFrames &gt; 0, an event every tick) or never
+     *       opening at all (cancelling's predicted signature: iFrames == 0, an event every tick).
+     *   <li><b>{@code lastDmg}</b> — {@code getLastDamage()} reads vanilla's {@code lastHurt}
+     *       DIRECTLY, so the poisoning is measured rather than inferred from the bytecode. Read
+     *       BEFORE the token, so it reports the PREVIOUS event's residue.
+     *   <li><b>{@code customMax} beside {@code raw}</b> — the denomination question. If the same cause
+     *       reports the same {@code raw} on two victims with different custom max, event amounts are
+     *       max-INDEPENDENT and the conversion factor is per-victim. If it varies with max, the
+     *       units reasoning is wrong and the conversion is not a simple scale.
+     * </ol>
+     *
+     * <p><b>And {@code victim} is logged because the player/mob asymmetry is unresolved.</b> A player's
+     * vanilla bar is a fixed {@code heartCount*2} points regardless of custom max, so its factor is
+     * {@code customMax / (hearts*2)}. A mob's custom max was BOOTSTRAPPED FROM its vanilla max, so its
+     * factor is 1. Those are different numbers, and a single constant would be wrong for one of them.
+     * Two victims in one boot is what witnesses it; it costs one field.
+     */
+    private void logRerouteMeasurement(EntityDamageEvent event, LivingEntity target, double applied) {
+        var stats = adapters.stats();
+        UUID id = target.getUniqueId();
+        plugin.getLogger().info(String.format(
+                "[STEP2] tick=%d victim=%s/%s cause=%s raw=%.4f applied=%.4f iFrames=%d lastDmg=%.4f customMax=%.1f customNow=%.1f",
+                Bukkit.getCurrentTick(),
+                target.getType(), id.toString().substring(0, 8),
+                event.getCause(),
+                event.getDamage(),          // BASE, the number the reroute currently spends
+                applied,                    // after the shield, before Defense (which lands a hop later)
+                target.getNoDamageTicks(),  // victimIFrames, the 2026-08-28 field
+                target.getLastDamage(),     // vanilla's lastHurt, read BEFORE we touch the event
+                stats.max(id), stats.current(id)));
     }
 
     /**

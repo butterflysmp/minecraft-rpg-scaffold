@@ -706,6 +706,50 @@ suffocation is reachable).
 Bukkit in it, so the rule this project keeps getting wrong at the platform boundary becomes something
 a unit test can redden. Reversible if the feel is wrong — but it will have been chosen.
 
+###### CANCELLING DOES NOT PRESERVE THE CADENCE EITHER — AND THE REASON IS WORSE
+
+**Read from the same jar, and it is the prediction the instrumented boot tests.** `actuallyHurt`
+offsets 9–18: `event.isCancelled()` → `ifeq` → **`iconst_0 / ireturn`**. A cancelled event makes
+`actuallyHurt` return **false**.
+
+And in `hurtServer`, a false return hits `ireturn` at **281 — before `putfield lastHurt` (311) AND
+before `putfield invulnerableTime` (319)**, in both the normal and in-window paths.
+
+So cancelling leaves `lastHurt` untouched *and* **never opens the invulnerability window at all**.
+`invulnerableTime` stays 0, the next tick takes the normal path again, and the cancel repeats:
+**20 Hz, same as tokening, by the opposite mechanism.** Tokening opens a window that cannot suppress;
+cancelling opens no window.
+
+**The general rule this yields:** vanilla opens the window only when `actuallyHurt` returns true *and*
+the damage is non-zero (offsets 283–308 early-return for a `ServerPlayer` whose event damage is 0). So
+**every form of suppression skips the window, and every form of reduction poisons the ratchet.**
+Leaving the amount ALONE is the only route to vanilla's own cadence.
+
+> **AND THAT MAY DELETE `DamageWindow` ENTIRELY, VIA THE DENOMINATION FIX.** The token's second job
+> was hiding the 5:1 scale mismatch — but that mismatch exists *because* the reroute spends a
+> vanilla-scale number against a custom-scale store. **Fix the denomination and the mismatch is gone:**
+> vanilla takes 4 of 20 points while custom takes 20 of 100, which is the same fraction of the same
+> bar, and the render agrees rather than fighting. Then the amount can be left alone, `lastHurt` gets
+> its real value, and vanilla's own ratchet owns the cadence for free.
+>
+> **Contingent on the player/mob asymmetry, which is measured and not assumed:** a player's factor is
+> `customMax / (hearts*2)`; a mob's custom max was bootstrapped FROM its vanilla max, so its factor is
+> **1**. One constant cannot serve both. The instrumentation logs the victim for this reason.
+
+###### ON UNITS: THE ALGEBRA SETTLES MOST OF IT, AND LEAVES ONE REAL HAZARD
+
+A ratchet is **invariant under positive scaling** — `a > b ⟺ ka > kb`, and `k(a−b) = ka − kb` — so
+converting before or after a window gives identical results. **The denomination does not matter;
+MIXING denominations does.**
+
+**What is not invariant is `k` itself.** `k` is per-victim and **can change mid-window**: equip a +HP
+item and `appliedThisWindow` is denominated in a scale that no longer exists. That is the real hazard,
+and it is not the one either party first named.
+
+So **if** the type survives the question above: store `appliedThisWindow` in **VANILLA units** —
+max-independent, and the units the event actually speaks — and convert only at application, with the
+`k` current at that moment.
+
 ###### IT MUST STORE WHAT LANDED, NOT WHAT WAS ASKED FOR
 
 **Vanilla stores the post-event amount** — offsets 239/311 write `lastHurt` from `fload_3`, which is
@@ -7518,6 +7562,45 @@ And the measurement that names the numbers, from the 2026-08-28 Step 0 boot, quo
 
 **Lava is 4 on a 10-tick window; a fire tick is 1.** Those two lines predicted D3a in full, nine days
 early.
+
+### A MUTATION PROVES A TEST DISCRIMINATES. IT CANNOT PROVE THE TEST IS ON THE RIGHT SIDE.
+
+**This is the only member of the verification family where the check ran PERFECTLY and still let a
+defect ship.** Every other entry in `CLAUDE.md` and above is a check that never ran, ran blind, or ran
+and was argued with. This one ran, discriminated, reddened under its own documented mutation, and was
+pointing the wrong way the entire time.
+
+> **`HeartBarRendererTest.customZeroShowsAFlooredHalfHeartBecauseTheBarIsNotTheTruth`.** It asserted
+> that custom 0 renders as the half-heart floor, carried the mutation line *"pass filled 0 straight
+> through → a display write drops the live player to 0 HP → reddens"*, and **that mutation genuinely
+> reddened**. The test was correct on the day it was written.
+>
+> Then `PlayerHealthSystem.onChange` started killing on `reachedZero`, and the assertion became the
+> specification of a defect: a render landing behind the queued `setHealth(0)` wrote 1.0 over the
+> kill. Death screen up, health 1, respawn button inert, relog the only recovery.
+>
+> **Every signal this project trusts said the guard was working.** The test ran. It discriminated. Its
+> mutation reddened. None of that is evidence about which side of the boundary is correct, because
+> **"which side is correct" is a fact outside both the test and the code** — it lived in the death
+> system, in another class, which the test could not see and the mutation could not reach.
+
+**So a mutation table answers "does this test have teeth", never "are the teeth pointed at the right
+thing".** The second question is answered only by re-deriving the property from outside the test —
+which in practice means a boot, a spec, or a reviewer.
+
+#### The missing half of the scaffold rule
+
+**A SCAFFOLD'S EXPIRY TAKES ITS TESTS WITH IT, SILENTLY, BECAUSE THEY KEEP PASSING.**
+
+Removing a scaffold is a change someone might notice. Removing *the test that pins the scaffold's
+behaviour* is a change nobody is prompted to make, because it stays green — and it then stands
+guard over the hole the scaffold left.
+
+**So: a scaffold that documents its own expiry condition must NAME ITS GUARDING TEST in the same
+note.** `MIN_LIVE_HEALTH_POINTS` wrote its deadline down — *"Death arrives with the next-phase damage
+system; UNTIL THEN the bar is purely cosmetic and never lethal"* — and did not name
+`customZeroShowsAFlooredHalfHeart…` as the assertion that would have to move with it. The condition
+was met, the constant stayed, and so did the test defending it.
 
 - After every commit: `./mvnw -pl core test`. After every batch:
   `./mvnw clean package` and a manual boot.
