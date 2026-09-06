@@ -588,6 +588,94 @@ A ray now draws a line down itself as it walks. `CastSpec.Ray` takes an optional
 finally express a coloured DUST. The Lapis Staff is the first consumer: 21 damage, 10 mana, 20
 ticks, 26 blocks, ported from cfde822.
 
+#### THE BOOT GATE RAN 2026-09-05 — 12 OF 14, AND THE TWO IT DID NOT RUN ARE THE TWO THAT MATTER MOST
+
+`GATE-lapis-staff.md` carries the rows and now carries the figures. Recorded here in words because
+the branch is what this record has to survive.
+
+**Run, named: L0, L1, L2, L3, L5, L6, L7, L8, L9, L10, L11, L12.** **Unrun: L4 and L4c.**
+
+**Particles setting: JUDGED ON BOTH `All` AND `Decreased`** — better than the gate asked for, and it
+is what makes L2's answer worth having. The row's own warning was that a density judged right on
+All is not necessarily right for anyone else.
+
+| row | figure |
+|---|---|
+| **L0** | **Operator, verbatim: *"a little clutter when casting on All; Decreased was much better. No need to change."*** |
+| **L1** | "lapis blue" — the authored `DustOptions` reached the client |
+| **L2** | **"right", on both settings.** No tuning |
+| **L3** | "right" — size 1.2 stands |
+| **L4 / L4c** | **UNRUN.** No second player available |
+| **L5** | **Operator, verbatim: *"close enough, no need to change."*** |
+| **L6–L12** | green |
+
+**L0 IS AN ACCEPTED, MEASURED IMPERFECTION, AND IT IS NOT "NO BLOB".** The row asked "is there a
+blue blob obscuring your view at the muzzle?" and expected *no*. The answer was *a little clutter,
+and don't change it* — which closes the row and **does not** clear the muzzle. At the shipped
+density the muzzle is slightly cluttered **on the highest particle setting**, and that is the
+baseline any future density change starts from.
+
+> **THAT IS THE WHOLE REASON L0 AND L2 WERE COUPLED.** Raising `samples_per_block` moves the first
+> sample CLOSER to the eye. A later *"it's too sparse"* retune would therefore be starting from an
+> **already-cluttered** muzzle rather than a clean one. The coupling has bitten before anyone
+> touched a number, and it bit as a reading, not as a conflict.
+
+**L5 IS A SOFTER PASS THAN THE ROW EXPECTED.** The row expected "yes"; the answer was "close
+enough, no need to change". Recorded in the operator's words rather than as a tick, because "yes"
+and "close enough" are different readings of a latency row and only one of them was given.
+
+#### L4 / L4c ARE UNRUN, AND THE CONSEQUENCE HAS A NAME: DECISION A IS STILL A PREDICTION
+
+**Decision A's justification remains untested.** That a beam drawn as the ray walks is
+indistinguishable from an instant one **for an observer who is not the caster** is the reason the
+chunk-column traversal was kept rather than making the ray hitscan. **L5 tests the caster and reads
+"close enough". Nothing tests the observer.**
+
+Unrun-with-a-procedure, not skipped. Closeable on one machine with no second person: a **second
+client under a second account**, parked perpendicular to a **26-block shot**, fired **diagonally**
+(most chunk-plane crossings, worst case) and **down an axis** (fewest). Both figures. Written out
+in full in `GATE-lapis-staff.md`, including why two clients on one GPU bias the answer in the safe
+direction.
+
+#### L10 SURFACED A COMMENT THAT WAS REASONED FROM THE MATERIAL, NINE DAYS AFTER THE CODE STOPPED AGREEING WITH IT
+
+**PRE-EXISTING on `master`, not created by this branch** — same handling as the hopper dupe.
+
+`flint_staff.yml`'s trap note said: *"THE MINTED STAFF STACKS TO 64, because a stick does… isSimilar
+and will merge."* It is false, and `lapis_staff.yml` copied it for the breeze rod. `WeaponItems.mint`
+calls `meta.setMaxStackSize(1)` on every weapon it mints, and `ToolItems`, `ArmorItems` and
+`ShieldItems` do the same for their kinds. `347967b` — *"a weapon is a single item, at the source"* —
+landed **2026-08-26**. The comment was written **2026-09-04**, in `88623de`.
+
+**The reasoning was sound. The premise was unavailable.** A stick does stack to 64; two fresh mints
+are byte-identical; `isSimilar` would merge them. Every step holds, against a material whose cap the
+mint overrides one call later. Nothing in the repository said so.
+
+> **A DECISION THAT ISN'T WRITTEN DOWN WILL EVENTUALLY BE CONTRADICTED BY PROSE REASONED FROM FIRST
+> PRINCIPLES.**
+>
+> The rule — **no custom item stacks above 1** — lived only in the operator's head. Fixing the two
+> comments without writing the rule down leaves the next author reasoning from the material again
+> and reaching the same wrong answer, correctly. So the rule is now in `CLAUDE.md` under **Standing
+> decisions**, with this as its worked example, and the corrected notes point at it.
+
+**This is the first in-game witness of `347967b`,** which shipped saying *"NOT witnessed in-game, in
+either direction."* Ten days later a gate row stacked two staves and watched them refuse.
+
+> **AND THE CAP HAS NO TEST — MEASURED, NOT ASSUMED.** `grep -rn "MaxStackSize" paper/src/test
+> core/src/test storage/src/test` returns exactly one hit, `CollectPlanTest`'s
+> `theCursorNeverExceedsItsMaxStackSize`, which is about a double-click cursor and not about
+> minting. **Four `setMaxStackSize(1)` calls — `WeaponItems`, `ToolItems`, `ArmorItems`,
+> `ShieldItems` — and zero tests across 1294.** That is why a comment could contradict the rule for
+> nine days with a green suite: nothing could have reddened. **OWED: a mint test per gear kind.**
+> Not added here — this is a merge, and the change should be readable — but it is the cheap half of
+> this finding and it belongs in the next slice that touches `weapon/`.
+
+**And L10's second half was never a test.** "They merge" could not have been met by working code —
+Rule 4's *impossible row*, arrived at the same way the comment was: written from the material. The
+row is marked never-a-test and replaced by **L10b** (same action, correct expectation), following
+`GATE-crafting.md`'s 12b/12c precedent. The count is unaffected: **12 of 14 turns on L4/L4c.**
+
 #### A REMEDY THAT IS ABSENT LOOKS LIKE A PROBLEM THAT IS PRESENT
 
 **The brief's decision C was taken on a false premise, and the correction is worth more than the
@@ -881,9 +969,11 @@ anything was believed: marker present, and the live call gone (`grep -c` → 0).
   file so nobody mints an element unasked.
 
 - **Second craftable indestructible weapon.** `breeze_rod` has no durability, so the
-  staff-and-stone exemption applies exactly as it does to the stick, and it stacks to 64 for the
-  same reason. The balance question the Flint Staff opened — indestructible gear reaching players
-  through the ECONOMY rather than through `/rpg give` — now has two instances rather than one.
+  staff-and-stone exemption applies exactly as it does to the stick. ~~and it stacks to 64 for the
+  same reason.~~ **The stacking half was wrong when written and is corrected here** — a minted
+  weapon never stacks, whatever its material does; see the gate record above. The balance question
+  the Flint Staff opened — indestructible gear reaching players through the ECONOMY rather than
+  through `/rpg give` — now has two instances rather than one.
 ### Flint Staff visuals, PR 2 (the bolt gets a body) — what it created or exposed
 
 The flint item is back: a real `Material.FLINT` entity, un-pickup-able, driven to the positions

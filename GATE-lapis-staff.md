@@ -5,6 +5,18 @@ because, for every behaviour listed below, **these rows are the only check that 
 the project.** The suite passes with any of them deleted — 1294 tests, and not one of them can see
 a colour, a spacing, or a delay.
 
+## Run 2026-09-05 — 12 of 14, and neither missing row is a pass
+
+**Run:** L0, L1, L2, L3, L5, L6, L7, L8, L9, L10, L11, L12 — named, twelve.
+**Unrun:** **L4 and L4c**, both for want of a second player. Not skipped as unimportant: they are
+the **only** test of decision A's prediction, and that prediction is the reason the ray still walks
+a chunk column per tick rather than being hitscan. **They stay owed**, with a procedure that needs
+no second person, written under the rows below.
+
+L0 and L5 read as accepted judgements rather than clean passes, and the operator's words are kept
+verbatim in the rows. **L10's second half turned out never to have been a test**, and it surfaced a
+wrong comment on `master` — see the row. The full account is in `NEXT.md`, under *The Lapis Staff*.
+
 ## How to use it
 
 - **NAME THE ROWS YOU ARE ABOUT TO RUN, BEFORE YOU RUN THEM.** A count against an unnamed set is
@@ -40,7 +52,11 @@ weaker hardware, not the ones who chose it.
 
 > **A density figure with no setting attached is a measurement missing half its units.**
 
-Setting for this session: `________________`
+Setting for this session: **`All` AND `Decreased` — L0 through L3 were judged on both.**
+
+That is better than the row asked for, and it is what makes L2's "right" mean something: the
+density reads as a line on the setting a player with weaker hardware is most likely to be using,
+not only on the one the runner happened to have. `Minimal` was not tested.
 
 If a second player is present for L4 anyway, have them read **L2** on a *different* setting. It
 costs one more shot and turns a single-machine judgement into two points.
@@ -51,20 +67,45 @@ costs one more shot and turns a single-machine judgement into two points.
 
 | # | action | expect | marks | figure |
 |---|---|---|---|---|
-| **L0** | Fire while looking at a flat wall, from ~3 blocks. Is there a blue blob obscuring your view at the muzzle? | no | figure · **sole witness** for the 0.25-block first sample | |
-| **L1** | What colour is the beam? | lapis blue | figure · the only check that the authored DustOptions reached the client | |
-| **L2** | Fire a full-range shot across open ground. Density: too sparse / right / too busy? | *figure* | figure · **judge with L0, see the coupling below** | |
-| **L3** | How thick is the beam? (authored size 1.2 against vanilla's 1.0) | *figure* | figure | |
-| **L4** | **A SECOND PLAYER** stands perpendicular to a 26-block shot fired past them. Is the beam already whole when they first see it, or can they watch it grow? | whole | figure · **the only test of decision A's prediction** | |
-| **L4c** | **L4's control.** Same shot fired **diagonally** (most chunk-plane crossings, so most ticks) as well as **down an axis** (fewest). Both figures. | *figure, both* | control | |
-| **L5** | Caster-side: does the shot feel instant? | yes | figure | |
-| **L6** | Fire at a wall 5 blocks away, on a 26-block range. | Beam **stops at the wall face**. Does not continue into or through the rock. | discriminating | |
-| **L7** | Fire at a mob 10 blocks away, on a 26-block range. | Beam ends **at the mob**. Does not carry 16 more blocks past it. | discriminating · **sole witness** in game for the draw-to-hit-point rule | |
-| **L8** | Fire at a stationary mob on flat ground. Does it slide? | **no** | witnesses the corrected decision C | |
-| **L9** | Craft LAPIS_BLOCK / DIAMOND / DIAMOND vertically in a 3×3. Then attempt the same in the player's own 2×2 inventory grid. | 3×3 mints a Lapis Staff; 2×2 cannot hold three rows at all | binary | |
-| **L10** | Fire 50 times, then inspect the item. Then stack two staves. | No durability bar. They merge. | binary | |
-| **L11** | **Cast Solar Lance** (`/rpg` grant). | Impact burst only. **No beam.** | control · proves the new mechanism did not leak into the existing ray | |
-| **L12** | Check the boot log for `lapis` warnings. | Silent. No unknown visual id, no beam-sound problem, no 2×2 recipe warning. | binary | |
+| **L0** | Fire while looking at a flat wall, from ~3 blocks. Is there a blue blob obscuring your view at the muzzle? | no | figure · **sole witness** for the 0.25-block first sample | **NOT a clean "no". Operator, verbatim: *"a little clutter when casting on All; Decreased was much better. No need to change."*** ACCEPTED, MEASURED IMPERFECTION — see the coupling below, this is the baseline a density retune starts from |
+| **L1** | What colour is the beam? | lapis blue | figure · the only check that the authored DustOptions reached the client | **"lapis blue".** The authored `Color.fromRGB(40, 90, 240)` reached the client |
+| **L2** | Fire a full-range shot across open ground. Density: too sparse / right / too busy? | *figure* | figure · **judge with L0, see the coupling below** | **"right" — on BOTH All and Decreased.** No tuning. 4 per block stands |
+| **L3** | How thick is the beam? (authored size 1.2 against vanilla's 1.0) | *figure* | figure | **"right".** Size 1.2 stands |
+| **L4** | **A SECOND PLAYER** stands perpendicular to a 26-block shot fired past them. Is the beam already whole when they first see it, or can they watch it grow? | whole | figure · **the only test of decision A's prediction** | **UNRUN 2026-09-05 — no second player available.** Decision A's justification remains a PREDICTION. Procedure that needs no second person is below |
+| **L4c** | **L4's control.** Same shot fired **diagonally** (most chunk-plane crossings, so most ticks) as well as **down an axis** (fewest). Both figures. | *figure, both* | control | **UNRUN 2026-09-05**, with L4 |
+| **L5** | Caster-side: does the shot feel instant? | yes | figure | **NOT "yes" — a softer pass than the row expected. Operator, verbatim: *"close enough, no need to change."*** Accepted; nothing to change, and nothing here speaks for the observer L4 tests |
+| **L6** | Fire at a wall 5 blocks away, on a 26-block range. | Beam **stops at the wall face**. Does not continue into or through the rock. | discriminating | **PASS 2026-09-05** |
+| **L7** | Fire at a mob 10 blocks away, on a 26-block range. | Beam ends **at the mob**. Does not carry 16 more blocks past it. | discriminating · **sole witness** in game for the draw-to-hit-point rule | **PASS 2026-09-05** |
+| **L8** | Fire at a stationary mob on flat ground. Does it slide? | **no** | witnesses the corrected decision C | **PASS 2026-09-05** — no slide, so the corrected decision C holds in game |
+| **L9** | Craft LAPIS_BLOCK / DIAMOND / DIAMOND vertically in a 3×3. Then attempt the same in the player's own 2×2 inventory grid. | 3×3 mints a Lapis Staff; 2×2 cannot hold three rows at all | binary | **PASS 2026-09-05** |
+| **L10** | Fire 50 times, then inspect the item. ~~Then stack two staves.~~ | No durability bar. ~~They merge.~~ | binary | **PASS on the durability half 2026-09-05.** **THE MERGE HALF WAS NEVER A TEST** — `WeaponItems.mint` has capped every minted weapon at `setMaxStackSize(1)` since `347967b`, so two staves cannot merge and the expectation could not have been met by working code. Written from the material, exactly like the `flint_staff.yml` comment it exposed. **The action was performed and the staves did not merge** — the row failed as written and passed in substance. Replaced by **L10b**, which is the same action against the correct expectation. The count is unaffected: 12 of 14 turns on L4/L4c, not on this |
+| **L10b** | **L10's replacement, and it is the SAME ACTION.** Mint two staves and try to stack them onto one slot. | They **refuse to merge** — two items, two slots | binary · **the first in-game witness of `347967b`**, which shipped saying "NOT witnessed in-game, in either direction" | **PASS 2026-09-05, on the observation that failed L10 as written.** The stack was attempted and the staves did not merge; that is what exposed the comment. The row text is corrected to the behaviour the code has, so the next runner is not sent to re-witness a merge that cannot happen |
+| **L11** | **Cast Solar Lance** (`/rpg` grant). | Impact burst only. **No beam.** | control · proves the new mechanism did not leak into the existing ray | **PASS 2026-09-05** — the control held, the beam did not leak into the existing ray |
+| **L12** | Check the boot log for `lapis` warnings. | Silent. No unknown visual id, no beam-sound problem, no 2×2 recipe warning. | binary | **PASS 2026-09-05** — silent |
+
+---
+
+## L4 / L4c ARE UNRUN, AND HERE IS HOW TO CLOSE THEM WITHOUT ANOTHER PERSON
+
+**They are not skipped. Skipping a sole witness is not reduced confidence; it is zero** — and what
+is at zero here is decision A's whole justification: *a beam drawn as the ray walks is
+indistinguishable from an instant one FOR AN OBSERVER WHO IS NOT THE CASTER.* That claim is why the
+chunk-column traversal was kept rather than making the ray hitscan. **L5 tests the caster and read
+"close enough". Nothing tests the observer.** Until L4 runs, the reason for the design is a
+prediction.
+
+**The procedure, requiring one machine and no second person:**
+
+1. Log a **second client on the same machine under a second account** onto the dev server.
+2. Park that client **perpendicular to the shot line**, near its middle, watching across the beam.
+3. From the first client fire a **26-block shot** past them: once **diagonally** (most chunk-plane
+   crossings, so the most ticks — the worst case) and once **down an axis** (fewest — the best).
+4. From the observing client, answer L4's question for each: **already whole, or can you watch it
+   grow?** Record both figures; the diagonal is the one that decides it.
+
+Two clients on one machine share a GPU and can stutter, which biases *toward* seeing growth. That
+is the safe direction for this row: a "whole" verdict under that handicap is stronger, and a
+"grows" verdict wants a re-run before it is believed.
 
 ---
 
@@ -86,6 +127,17 @@ readings, not in advance, and nothing has been built for it.
 Both numbers live in `content/visuals/lapis_beam.yml`. A retune is a yml edit plus
 `--refresh-content`, not a rebuild. That is why `samples_per_block` was made authorable rather
 than left as a constant in Java.
+
+> **2026-09-05 — THE PAIR CAME BACK SPLIT, AND THE SPLIT IS THE BASELINE ANY RETUNE STARTS FROM.**
+> L2 read **"right"** on both settings, so nothing needs raising today. L0 did **not** read a clean
+> "no": *"a little clutter when casting on All; Decreased was much better. No need to change."* At
+> the shipped density the muzzle is **already slightly cluttered on the highest particle setting**
+> — accepted, not absent.
+>
+> So the coupling has bitten before anyone touched a number. A future *"it's too sparse, raise
+> `samples_per_block`"* would move the first sample **closer than 0.25 blocks from an eye that is
+> already carrying clutter**, and would be starting from a measured imperfection rather than from a
+> clean muzzle. **Do not read "L0: no need to change" as "L0: no blob."**
 
 ---
 

@@ -49,8 +49,11 @@ class: mage
 #    Nobody may "fix" this by requiring gear to be durable: that would break an exemption
 #    ember_staff and ability_stone depend on. THE MATERIAL IS THE LEVER.
 #
-# 2. THE MINTED STAFF STACKS TO 64, because a breeze rod does. Two staves with identical enchant
-#    rolls are isSimilar and will merge. Nothing downstream breaks -- weapon lookup is per item.
+# 2. THE MINTED STAFF DOES NOT STACK, AND THE MATERIAL IS NOT WHY. A breeze rod stacks to 64; a
+#    minted staff does not, because WeaponItems.mint calls meta.setMaxStackSize(1) on every weapon
+#    it mints (347967b). Two staves with identical rolls occupy two slots. The standing rule is in
+#    CLAUDE.md ("Standing decisions"); flint_staff.yml carries the long form of why this note used
+#    to say the opposite.
 material: breeze_rod
 
 flavor:

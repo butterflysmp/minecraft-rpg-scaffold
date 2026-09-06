@@ -142,6 +142,25 @@ paper/    adapters. The only module that knows Minecraft exists.
    genuinely cannot express the effect (custom UI, damage numbers, telegraphs,
    fake entities).
 
+## Standing decisions — the operator's, not derivable from the material
+
+A decision that isn't written down will eventually be contradicted by prose reasoned from first
+principles. The reasoning will be sound; the premise was simply unavailable. Everything here is a
+call that has already been made, so **do not re-derive it — and do not write a note that assumes
+the opposite because the material suggests it.**
+
+- **NO CUSTOM ITEM STACKS ABOVE 1.** Every weapon, tool, armour piece and shield we mint is a
+  single item, whatever its base material does. `WeaponItems.mint`, `ToolItems`, `ArmorItems` and
+  `ShieldItems` all call `meta.setMaxStackSize(1)`, at the source, so `/rpg give`, a craft and a
+  re-mint all inherit it. Per-item state is why: durability, enchants and instance data are per
+  item, and one write to a stack of two would edit both.
+
+  > **The worked example is in this repo.** `flint_staff.yml` shipped a trap note reading *"THE
+  > MINTED STAFF STACKS TO 64, because a stick does… isSimilar and will merge."* Correct reasoning
+  > from the material, written **nine days after** `347967b` capped the mint at 1, and wrong on the
+  > day it landed. It shipped in one PR and was copied into `lapis_staff.yml` in the next. Only a
+  > gate row that physically stacked two staves caught it.
+
 ## Upgrade procedure
 
 Do **not** bump `paper.version` alone. Order of operations:
