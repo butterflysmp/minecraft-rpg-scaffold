@@ -1,0 +1,25 @@
+# The second custom recipe. Lapis block over two diamonds, exactly as the old repo had it:
+# BSMPMenu's RecipeRegistry.registerLapisStaff -- shape("L","D","D"), L=LAPIS_BLOCK, D=DIAMOND.
+#
+# THE ID IS THE FILENAME, AND THE FILENAME IS THE KEY. This registers as rpg:lapis_staff and stays
+# that key across every restart because the filesystem holds it. See recipes/flint_staff.yml for
+# the full argument about why the claim points recipe -> weapon and not the reverse, and why there
+# is no `result:` field (the registered result is the minted gear's own MATERIAL, a plain vanilla
+# breeze rod, resolved at registration).
+#
+# THE THREE-ROW SHAPE IS LOAD-BEARING, exactly as the Flint Staff's is. A recipe that FITS a 2x2
+# can be crafted in the player's own inventory grid, which mints nothing and hands over a plain
+# vanilla item -- a pre-existing hole this staff is safe from BY SHAPE rather than by guard. Three
+# rows cannot fit a 2x2. The boot warns if a custom recipe fits one, so shortening this would be
+# loud rather than silent.
+
+mints: lapis_staff
+
+shape:
+  - "L"
+  - "D"
+  - "D"
+
+ingredients:
+  L: lapis_block
+  D: diamond

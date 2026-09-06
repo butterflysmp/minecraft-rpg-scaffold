@@ -1,0 +1,42 @@
+# Where the Lapis Staff's beam lands. Id is the filename: lapis_impact.
+#
+# ITS OWN FILE, NOT SHARED WITH ANYTHING. solar_lance.yml is the other impact visual on a ray and
+# borrowing it would make this weapon the second consumer of numbers tuned for the first -- exactly
+# the trap ember_burst sprang on the Flint Staff, where a count retuned 30 -> 10 for the Ability
+# Stone was silently inherited by a weapon that had nothing to do with it. A SHARED VISUAL IS A
+# COUPLING AND THE COUPLING IS INVISIBLE AT BOTH ENDS.
+#
+# The DUST here carries the SAME colour as lapis_beam, deliberately: the burst should read as the
+# beam arriving rather than as a separate effect. If the beam's colour is ever retuned, this must
+# move with it -- the two are one visual to the eye and two files on disk.
+#
+# NOTE: it plays on a MISS too. stepRay detonates at the end of the aim when nothing is struck, so
+# a beam that hits nothing bursts 26 blocks out in mid-air. cfde822 had the same property.
+#
+# `speed` is authored explicitly on both particle steps. It is INERT on the DUST (see
+# lapis_beam.yml) and REAL on the END_ROD, where 0.05 is what makes the rods drift outward rather
+# than sit in a ball. Neither may be omitted: the schema default is 1.0, twenty times the intended
+# drift. See VisualSpec.Particles.
+#
+# Sound key verified in SoundEvents.class on the pinned 26.1.2 server jar. Numbers are cfde822
+# StaffListener's, unchanged.
+
+steps:
+  - type: particle
+    particle: DUST
+    color: [40, 90, 240]
+    size: 1.2
+    count: 16
+    spread: 0.3
+    speed: 0.0    # inert for DUST
+
+  - type: particle
+    particle: END_ROD
+    count: 10
+    spread: 0.2
+    speed: 0.05   # real here -- the outward drift
+
+  - type: sound
+    key: entity.breeze.deflect
+    volume: 1.0
+    pitch: 1.2

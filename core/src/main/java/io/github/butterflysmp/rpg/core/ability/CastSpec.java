@@ -4,7 +4,33 @@ package io.github.butterflysmp.rpg.core.ability;
 public sealed interface CastSpec {
     record Self() implements CastSpec {}
     record Melee(double reach, double arcDegrees) implements CastSpec {}
-    record Ray(double range) implements CastSpec {}
+    /**
+     * A straight line to the first thing in the way. {@code beam} is a visual id drawn ALONG each
+     * chunk-column segment as the ray walks it, or null for a bare ray that draws nothing between
+     * the muzzle and the impact.
+     *
+     * <p>{@code beam} is OPTIONAL and defaults to absent, which is what makes it not a change to
+     * {@code solar_lance}: it specifies no beam, gets null, and behaves byte-identically to before
+     * this field existed. Exactly the ladder {@link Projectile} uses for {@code trail} and
+     * {@code item}, and for the same reason -- the convenience constructor drops the TAIL, so a
+     * reader counting arguments never has to work out which field was omitted.
+     *
+     * <p><b>A BEAM IS A SEGMENT, AND THAT IS WHY IT IS NOT AN on_hit VISUAL.</b> The nearest
+     * existing thing, {@code EffectSpec.Visual}, presents at a POINT -- it would draw a puff at one
+     * end of the shot instead of a line down it. Same shape as the {@code throw_embers} trap the
+     * Flint Staff hit: the closest available mechanism has the wrong GEOMETRY, and reaching for it
+     * produces something that looks like a bug rather than failing loudly.
+     */
+    record Ray(double range, String beam) implements CastSpec {
+
+        /**
+         * A ray that draws nothing between muzzle and impact -- what {@code solar_lance} is, and
+         * what every ray in this repo was before a beam could be named.
+         */
+        public Ray(double range) {
+            this(range, null);
+        }
+    }
     /**
      * A body arcing under gravity until it hits something. {@code trail} is a visual id presented
      * at the projectile's live position once per tick of flight, or null for a bare projectile

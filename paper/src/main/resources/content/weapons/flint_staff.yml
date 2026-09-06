@@ -39,9 +39,18 @@ class: mage
 #    weapons above depend on. If indestructible is not wanted, THE MATERIAL IS THE LEVER, and
 #    changing it costs one word now and a re-mint later.
 #
-# 2. THE MINTED STAFF STACKS TO 64, because a stick does. Two staves with identical enchant rolls
-#    are isSimilar and will merge. Nothing downstream breaks (weapon lookup is per item), and
-#    ember_staff on a blaze_rod already has this property, so it is not new here.
+# 2. THE MINTED STAFF DOES NOT STACK, AND THE MATERIAL IS NOT WHY. A stick stacks to 64; a minted
+#    staff does not, because WeaponItems.mint calls meta.setMaxStackSize(1) on every weapon it
+#    mints (347967b, "a weapon is a single item, at the source"). Every path that hands a player
+#    one -- /rpg give, a craft, a re-mint -- runs GearItems.mint -> WeaponItems.mint, so two staves
+#    with identical rolls occupy two slots. The reason is per-item state: durability, enchants and
+#    instance data are all per item, and one write to a stack would edit both.
+#
+#    THIS NOTE SAID THE OPPOSITE UNTIL THE LAPIS STAFF'S GATE SURFACED IT (row L10). The wrong half
+#    was reasoned from the material, which is the wrong source -- and the cap was already nine days
+#    old when this file was written. The rule it contradicted was not written down anywhere; it is
+#    in CLAUDE.md ("Standing decisions") now, so the next author reads it instead of re-deriving
+#    the same wrong answer from the same sound reasoning.
 material: stick
 
 flavor:

@@ -906,4 +906,131 @@ class CastExecutorTest {
         assertEquals(98, victim.health, 1e-9, "a quarter-charged swing deals 2 of its 8");
         // Mutation: pass FULL_CHARGE regardless of the argument -> 92 -> reddens.
     }
+
+    // ---------------------------------------------------------------------------------------
+    // THE BEAM. A ray now draws a line down itself as it walks, one chunk-column segment per
+    // tick. These four guard the two things a COUNT cannot see -- where the line STOPS, and
+    // whether it is drawn at all -- plus the promise that solar_lance is unchanged.
+    // ---------------------------------------------------------------------------------------
+
+    /** A 26-block ray with a beam, the Lapis Staff's shape. */
+    private static AbilityDefinition beamRay(String beam, EffectSpec... onHit) {
+        return ability(new CastSpec.Ray(26, beam), onHit);
+    }
+
+    /**
+     * THE BEAM STOPS AT THE BODY IT STRUCK, NOT AT THE SEGMENT'S FAR END.
+     *
+     * <p>This is the whole risk of drawing a beam on a stepped ray, and it is the same
+     * off-by-one-step family that cost the Flint Staff two boots. stepRay traces [from, to] and
+     * detonates at hit.point() SOMEWHERE INSIDE that segment; a beam drawn from-to would carry on
+     * THROUGH the mob it just killed and out the far side.
+     *
+     * <p>NOTE WHAT IS ASSERTED. A count is structurally blind here -- one beam is drawn either
+     * way, on the same tick, with the same visual id. Only the ENDPOINT tells them apart, which is
+     * why FakeWorld.Beam records both ends rather than just the id.
+     *
+     * <p>Mutation, run rather than reasoned: draw to `to` instead of hit.point() -> the endpoint
+     * assertion reddens with the segment's far end (x = 16, the first chunk plane) in place of the
+     * target at x = 5.
+     */
+    @Test
+    void theBeamStopsAtTheBodyItStruckRatherThanAtTheSegmentsFarEnd() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(5, 0, 0));
+        world.entities.add(caster);
+        world.entities.add(victim);
+
+        cast(world, caster, beamRay("lapis_beam", new EffectSpec.Damage(21, "kinetic")));
+
+        assertEquals(1, world.presentedAlong.size(), "one beam, for the one segment that resolved");
+        FakeWorld.Beam beam = world.presentedAlong.get(0);
+        assertEquals("lapis_beam", beam.visualId());
+        assertEquals(Vec3.ZERO, beam.from(), "it starts at the muzzle");
+        assertEquals(new Vec3(5, 0, 0), beam.to(),
+                "and STOPS at the body -- not at the segment's far end, 11 blocks further on");
+    }
+
+    /**
+     * THE SAME FOR A BLOCK. A beam must not be drawn through the wall that stopped it.
+     *
+     * <p>Its own test rather than a second assertion in the one above, because the two arms reach
+     * hit.point() by different routes in the adapter (getHitEntity vs a block hit) and a fix to
+     * one would not necessarily fix the other. Same mutation reddens both, which is the point:
+     * neither alone proves the rule.
+     */
+    @Test
+    void theBeamStopsAtTheWallItStruck() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+        world.wallX = 4;
+
+        cast(world, caster, beamRay("lapis_beam"));
+
+        assertEquals(1, world.presentedAlong.size());
+        assertEquals(new Vec3(4, 0, 0), world.presentedAlong.get(0).to(),
+                "the beam ends at the wall face, not 12 blocks inside the rock");
+    }
+
+    /**
+     * ONE BEAM PER CHUNK-COLUMN SEGMENT, ONE TICK APART -- the walk, drawn as it happens.
+     *
+     * <p>A 26-block ray down the x axis from the origin crosses the x = 16 plane, so
+     * ChunkTraversal splits it into [0, 16] and [16, 26]. The first runs inline on the cast frame;
+     * the second costs a tick. That is decision A made observable: the beam is NOT hitscan, and
+     * the segments are contiguous and non-overlapping so the line has no gap and no double-draw.
+     *
+     * <p>Mutation: draw the whole aim once from launchRay instead of per segment -> the count
+     * becomes 1 and the "before advancing" assertion reddens. Draw from aim.origin() each time
+     * rather than from the segment's own start -> the contiguity assertion reddens.
+     */
+    @Test
+    void theBeamIsDrawnOncePerChunkSegmentOneTickApart() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+
+        cast(world, caster, beamRay("lapis_beam"));
+
+        assertEquals(1, world.presentedAlong.size(),
+                "only the first column is drawn on the cast frame -- a ray is not hitscan");
+        assertEquals(Vec3.ZERO, world.presentedAlong.get(0).from());
+        assertEquals(16.0, world.presentedAlong.get(0).to().x(), 1e-9,
+                "the first segment ends ON the chunk plane, which is what confines it to one region");
+
+        world.advanceTicks(1);
+
+        assertEquals(2, world.presentedAlong.size(), "the second column is drawn a tick later");
+        assertEquals(world.presentedAlong.get(0).to(), world.presentedAlong.get(1).from(),
+                "contiguous: segment two starts exactly where segment one ended, so no gap");
+        assertEquals(26.0, world.presentedAlong.get(1).to().x(), 1e-9, "and runs to full range");
+    }
+
+    /**
+     * A RAY WITH NO BEAM DRAWS NOTHING, WHICH IS WHAT KEEPS solar_lance UNCHANGED.
+     *
+     * <p>`beam` is optional and absent means null, exactly as `trail` and `item` are on Projectile.
+     * This uses the one-argument Ray constructor deliberately -- the shape every ray in the repo
+     * had before this field existed -- so the test is a statement about the DEFAULT and not merely
+     * about a null passed explicitly.
+     *
+     * <p>Mutation: default `beam` to any id, or drop the null check in stepRay -> this reddens
+     * with a beam nobody asked for. Without it, giving every ray a beam would be silent.
+     */
+    @Test
+    void aRayWithNoBeamDrawsNothing() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+
+        cast(world, caster, ability(new CastSpec.Ray(30), new EffectSpec.Visual("solar_lance")));
+        world.advanceTicks(5);
+
+        assertEquals(List.of(), world.presentedAlong,
+                "solar_lance names no beam and must draw none -- byte-identical to before the field");
+        assertEquals(List.of("solar_lance"), world.presented,
+                "its impact visual still lands, so this is not a test of a dead cast");
+    }
 }
