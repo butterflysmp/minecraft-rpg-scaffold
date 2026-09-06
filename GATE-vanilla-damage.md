@@ -1,0 +1,258 @@
+# GATE — the vanilla damage boundary
+
+**This file is the source of truth for this slice's boot gate.** It is versioned with the code
+because, for every behaviour listed below, **these rows are the only check that exists anywhere in
+the project.** 1300 tests pass with any of them deleted, and not one of them can watch a reconcile
+tick revert a number.
+
+## STOPPED AT D3. D4–D16 ARE NOT RUN AND MUST NOT BE.
+
+**The death path is demonstrably broken (D3b), which makes D6, D11 and D14 unrunnable and their
+results meaningless.** A row run against a broken death path does not report on the thing it names.
+D4, D5, D5b, D5c, D7, D8, D9, D10, D12, D13, D15 are simply not reached.
+
+**The test world was left unusable** (D3c) — the operator was stuck in a death loop. Not a code
+finding, but a real cost: **any re-run of D3 needs an escape planned before it starts** (spectator on
+join, or a safe `/spawnpoint` away from the lava), because the failure mode removes the tester's
+ability to continue.
+
+## Status: 6 of 19 — 3 green, 1 failed, 1 half, 1 mechanical
+
+**D1, D2, D6 green; D3 failed two ways; B2 half; D16 mechanical.** D6's pass is what makes this a
+**repair, not a redesign**: the boundary is sound, and both D3 defects are bounded to repeating causes.
+
+**Run:** B1, B2 (partial), D16 — named, three.
+**Unrun:** D1, D2, D3, D4, D5, D5b, D5c, D6, D7, D8, D9, D10, D11, D12, D13, D14, D15.
+
+Nothing here is a pass until someone says it was **observed**. D16 was run mechanically against a
+captured baseline; B1 and B2 were run in game on `master`. **B2's death half is explicitly still
+owed** and is not counted — the row is half-run, and half-run is not passed.
+
+### B1 FOUND A SECOND LIVE DEFECT, and the prediction was wrong in a way worth keeping
+
+The plan predicted creepers might deal **~0** because `attackDamageOf` returns `0.0` for a mob with
+no `ATTACK_DAMAGE` attribute. **It reads 1, not 0** — so the attribute is present, the reasoning
+about its absence was simply wrong, and **the conclusion survived anyway**: a point-blank creeper
+costing 1 of a player's 100 HP is harmless in exactly the way "0" would have been.
+
+**Being right about the consequence is not being right about the mechanism.** Had B1 not been run,
+the record would have carried a confident, specific and false claim ("creepers have no
+`ATTACK_DAMAGE`") that happened to point at a true symptom — the shape `NEXT.md` records as a single
+measurement generalised into a second claim that was never itself measured. **B1 is why this file
+says 1.**
+
+## How to use it
+
+- **NAME THE ROWS YOU ARE ABOUT TO RUN, BEFORE YOU RUN THEM.** A count against an unnamed set is not
+  an answer, however precise the number looks.
+- A row marked **figure** wants a written observation, not a tick. **A figure row has no checkbox** —
+  its text field is what marks it complete, and a blank field is UNRUN, not passed.
+- A row marked **sole witness** names the behaviour it is the only check for. Skipping it is not
+  reduced confidence; it is zero.
+- A row marked **discriminating** fails if the specific defect the slice exists to prevent is present.
+- A row marked **control** exists to stop another row crediting coverage it does not have.
+
+## Rule 4 applies to every row here
+
+*A gate row can be impossible, or real but non-discriminating, and both credit coverage that does not
+exist.*
+
+---
+
+## FIRST: B1 and B2, on master's behaviour
+
+**These two establish a before-state, and D7's expectation is written from B1.** The branch does not
+destroy it — `master` is still exactly where it was — but the working tree no longer carries it, so
+they need a checkout:
+
+```bash
+git checkout master
+./scripts/dev-server.sh --refresh-content     # boots master's behaviour
+#   ... run B1 and B2, write the figures in below ...
+git checkout feat/vanilla-damage-boundary
+./scripts/dev-server.sh --refresh-content     # boots the slice
+```
+
+**B1 is not a formality.** `MobNameplateManager.attackDamageOf` returns `0.0` for a mob with no
+`ATTACK_DAMAGE` attribute and says so in its javadoc — but whether a **Creeper** has that attribute is
+a vanilla fact nobody here has measured. If B1 reads ~0, creepers have been dealing no real damage to
+players and D7 is *"check creepers now work"*. If it reads a real number, D7 is *"check we did not
+break creepers"*. **Write whichever one B1 says is true; do not write both and pick afterwards.**
+
+| # | action | expect | marks | figure |
+|---|---|---|---|---|
+| **B1** | *On master.* Let a creeper explode on you. Does the custom HP number move, and by how much? | *figure* | figure · **baseline; D7's expectation is written from this** | **RUN 2026-09-06 — 1 custom HP, AT POINT-BLANK.** `❤ 100 → 99`; the vanilla hearts did not visibly move. **The hypothesis was wrong in the letter and right in the substance:** the creeper's seeded `ATTACK_DAMAGE` is not absent (that would have read 0), it is **1** — so `onMobMeleeAttack` *was* claiming the blast, and pricing a point-blank creeper at **1% of a player's health**. Vanilla point-blank is roughly 22. **Creepers have been very nearly harmless, and this is a SECOND LIVE DEFECT** found by the same investigation |
+| **B2** | *On master.* Shoot a mob with a plain vanilla bow. Does its nameplate number move? | *figure* | figure · baseline for the PROJECTILE gap | **RUN 2026-09-06, PARTIAL. The nameplate number did NOT move** — the recorded `PROJECTILE` gap is real and confirmed in game. **The death half is UNRUN** (only one or two arrows fired), so *"does it die with its nameplate still reading full"* is still owed and must not be written up as observed. Nothing else depends on it |
+
+---
+
+## The rows
+
+| # | action | expect | marks | result |
+|---|---|---|---|---|
+| **D1** | Take fall damage. Watch the number for a full 2s — past a reconcile tick. | Number drops **and stays down**. | discriminating · **the finding this slice exists for** | **PASS 2026-09-06** — fall damage sticks |
+| **D2** | Hold yourself underwater until you drown. | Number drops and stays. | binary | **PASS 2026-09-06** — drowning sticks |
+| **D3** | Stand in lava for ~3 seconds. | Number drops in roughly **6 steps, not ~60** — vanilla's i-frame cadence survived the ride. | discriminating · **sole witness that REROUTE tokens rather than cancels** | **FAILED 2026-09-06, THREE WAYS — GATE STOPPED HERE.** (a) **4 damage per TICK, not per 10 ticks** — amount right, cadence wrong by 10x. (b) **the player could not die or respawn.** (c) the test world was left unusable. **D3 was written as the sole witness for the tokening decision and it FALSIFIED it.** See the two diagnoses below |
+| **D4** | Drop a mob off a ledge while looking at it. | Its nameplate drops by the fall damage. | binary · the mob half of the boundary | |
+| **D5** | One melee swing on a mob. | Nameplate drops by the weapon's number **exactly once**. | discriminating · **`ENTITY_ATTACK`'s PASS arm; a doubled number means the arm is wrong** | |
+| **D5b** | Sweep-attack **three mobs at once** with a sweeping sword. | Each nameplate drops by the sweep number **exactly once**. | discriminating · **`ENTITY_SWEEP_ATTACK`'s PASS arm — the second one, and it has its own handler** | |
+| **D5c** | Put vanilla Thorns on armour (anvil + book), wear it, let a mob hit you. Then repeat **with one of our Thorns shields also raised**. | Nameplate drops from the thorns hit, credited to you. **WITH BOTH: EXPECT TWO REFLECT NUMBERS OFF ONE HIT. THAT IS CORRECT — READ THE NOTE BELOW BEFORE JUDGING IT.** *Figure: are the two readable, or do they collide?* | figure · vanilla armour Thorns is reachable (the anvil is not hijacked) and is a **separate source** from our shield Thorns | |
+| **D6** | **RUN THIS SOMEWHERE RECOVERABLE — over water, or with an escape ready.** A failed D6 reproduces D3's stuck state, and the second time costs more because the world is already dirty. Full custom HP, fall from lethal height onto ordinary ground **beside deep water**. | The player **dies AND gets a respawn screen**. Both halves — D3 showed the death message can fire without the screen appearing, so "it died" is not the whole row. | discriminating · **now the row the whole diagnosis turns on** | **PASS 2026-09-06. A single lethal fall kills.** This is the measurement that **pins D3b to REPEATING causes** and makes the slice a repair rather than a redesign: the deferred kill completes fine when nothing competes with it, and loses only when a second damage event queues a floor render behind it. The four code reads predicted exactly this |
+| **D3b'** | **Bury yourself in sand or gravel and suffocate to death.** Full custom HP, somewhere recoverable. | The player **dies AND can respawn.** | discriminating · D3b's INDEPENDENT witness, and it must exist before either fix lands · suffocation repeats and is lethal, and its cadence is **untouched by anything the D3a fix changes** — lava's is not | |
+| **D3b''** | **Drown to death**, reusing D2's setup. | The player **dies AND can respawn.** | **the THIRD point in the matrix, at a different (amount, interval) again** · cheap, because the setup already exists | |
+| **D7** | Creeper blast on a player, **at point-blank**, unarmoured. Then repeat from ~4 blocks. | **CHECK CREEPERS NOW WORK** — written from B1, which measured **1** at point-blank. Expect **substantially more than 1** (vanilla's own blast damage, tens not units), and the ~4-block shot to read **visibly smaller** than the point-blank one. | discriminating · **its PASS is impossible without the reroute**: 1 was the old number, and distance-scaling cannot come from a flat melee stat | |
+| **D8** | Take a creeper blast twice: shield **raised**, then **down**. Record both numbers. | Raised is smaller, by what the shield's DR says. | **sole witness** that shields survived the melee gate | |
+| **D9** | Take a warden's sonic boom. | Number moves. | binary | |
+| **D10** | Spawn a creeper and never let it melee anything. Look at it. | Nameplate present, with HP. | **control** — proves the cause gate did not withdraw tracking | |
+| **D11** | `/kill` yourself. Then walk off into the void. | Both kill, and **promptly**. | binary · the two PASS-by-removal arms | |
+| **D12** | Stand in lava ~3s, **then** take one ordinary fall. | *figure, **both separately**: readable / noisy / unreadable* | figure · **the self-facing popup decision, judged on the REPEATING case** | |
+| **D13** | Let a zombie chase you, then let it take fall damage. | It **keeps chasing you** — it did not retarget itself. | discriminating · the self-aggro guard's only witness | |
+| **D14** | Regression: thorns-on-melee, shield-block-on-melee, damage popup, mob death, player death, respawn. | All unchanged. | binary · **melee and sweep are NOT judged here** — D5/D5b own them | |
+| **D15** | Light a mob with a fire weapon and watch its nameplate. | It drains while burning. Rate: *figure* | figure · the Scorch side effect, arriving as a consequence rather than a feature | |
+| **D16** | Read the boot log. | Silent — no new warnings. | binary | **PASS 2026-09-06**, and run as a DIFF rather than a read. Master's build was booted first and its 29 unique `WARNING:`/`SEVERE:` lines captured; the slice's boot produced **the same 29, with zero new** (`comm -13` empty) and **zero** exceptions or `Could not pass event` lines. All 29 are pre-existing negative-content fixtures (`bad.yml`, `tin.yml`, `cursed.yml`, `odd.yml`, `bogus.yml`, …) plus JVM/native-access noise. A read from memory could not have told 29 from 30 |
+
+---
+
+## Why D12 is written against lava and not a fall
+
+One fall number over your own head is obviously fine, and a row that only tested that would read as a
+pass and settle nothing. Lava damages roughly every 10 ticks, and **tokening preserves that cadence**
+— so three seconds in lava is roughly **six popups stacked in the same place.** That is the case the
+decision actually turns on.
+
+If lava reads noisy and a fall reads fine, the answer is probably a per-cause rule rather than
+"always" or "never" — but that is a decision to take **from two figures**, not in advance. Nothing has
+been built for it.
+
+## D3a — THE TOKEN DOES NOT PRESERVE I-FRAMES FOR A REPEATING CAUSE. IT DESTROYS THEM.
+
+**Read out of `run/versions/26.1.2/paper-26.1.2.jar` with `javap -c -p`, not reasoned.**
+`LivingEntity.hurtServer`, offsets 136–191:
+
+```
+136  this.invulnerableTime  >  this.invulnerableDuration / 2   ... else GOTO 248 (normal path)
+152  source.is(DamageTypeTags.BYPASSES_COOLDOWN)               ... if true GOTO 248
+162  amount  >  this.lastHurt ?
+168      if NOT greater  ->  171: iconst_0 / 172: ireturn      ... FULLY IGNORED, NO EVENT
+173      if greater      ->  handleEntityDamage(source, amount, this.lastHurt)   <- FIRES A FRESH EVENT
+188                          computeAmountFromEntityDamageEvent(event) -> fstore_3
+239/311                      putfield lastHurt <- fload_3      ... THE POST-EVENT AMOUNT
+```
+
+**Both `lastHurt` writes take `fload_3`, which offset 191 overwrote with the amount computed FROM OUR
+EVENT.** So `setDamage(0.01)` sets `lastHurt = ~0.01`. Every subsequent 4-damage lava tick then
+satisfies `amount > lastHurt`, skips the `ireturn` at 172, and **raises a fresh `EntityDamageEvent`**,
+which this slice's handler reroutes in full. The i-frame window is still open; it just stopped
+suppressing anything, because we told vanilla the last hit was worth a hundredth of a heart.
+
+The event is constructed with `lastHurt` passed **separately** as the third argument — the
+`INVULNERABILITY_REDUCTION` modifier the API documents as sitting "right under BASE". So
+`event.getDamage()`, which is `getDamage(BASE)`, reads the **full 4**, not the difference. Mechanism
+and measurement agree: **4 per tick, 20 times a second.**
+
+**The three shipped riders never met this because melee is player-paced.** Lava is the first
+*repeating* cause ever tokened in this project. **The entire argument for tokening over cancelling was
+that i-frames survive** — and this row was written as its sole witness precisely so the claim would be
+tested rather than believed. It was, and it is false.
+
+**Cancelling is NOT automatically the answer** — it has its own i-frame problem, which is why tokening
+was chosen. This needs a fresh diagnosis, not a swap to the other option.
+
+## D3b — THE FLOOR THAT STOPS THE TOKEN KILLING YOU ALSO STOPS YOU DYING
+
+**Four reads, no inference:**
+
+1. `EntityScheduler.run` is documented **"Schedules a task to execute on the next tick"** — so
+   `PlayerHealthSystem`'s `setHealth(0)` is *always* deferred by a tick, never immediate.
+2. `CombatantStats.damage` calls `listener.onChange(...)` **unconditionally**, even when the state did
+   not move.
+3. `HealthState.damage` returns `reachedZero` **only on the transition** (`before > 0 && current == 0`).
+   A hit on a combatant already at 0 returns **false**.
+4. So the *next* damage event takes `onChange`'s **render** branch, and `HeartBarRenderer` floors the
+   write at `MIN_LIVE_HEALTH_POINTS = 1.0`.
+
+**The kill is queued for next tick; the very next lava tick queues a render that puts health back to
+1.0.** `PlayerHealthSystem:99` carries the comment `// real death; no floor render competes` — **true
+for the population it was written against** (single mob hits, `/rpg damage`, all i-frame-paced) and
+**false for any repeating source**.
+
+> #### CORRECTION, 2026-09-06 — the first draft of this section was WRONG, and the server log said so
+>
+> It read *"vanilla's death check never sees a zero."* **It does.** The boot log carries six
+> `BaronVonYeetus tried to swim in lava` lines — 14:32:49, 14:35:28, 14:35:39, 14:50:05, 14:50:30,
+> 14:50:41 — and that is a vanilla death message, so `die()` ran and `PlayerDeathEvent` fired **every
+> time**.
+>
+> **What actually fails is the RESPAWN TRANSITION, not the death.** The operator reported no respawn
+> screen, and the log shows why the state looked like "cannot die": each relog puts the player back at
+> the *same* coordinates (9.76 → 9.79 → 10.22 → 10.24 → 10.26, drifting as flowing lava pushes the
+> body), `PlayerHealthSystem.onJoin` re-registers custom HP at **100**, and at D3a's 4-per-tick that is
+> **gone in ~1.25 s** — which is exactly the ~1 s between each join line and the next death message.
+> A death that fires, does not hand over a respawn screen, and is re-entered on every login reads
+> from inside the game as "I cannot die or respawn", and that is what was reported.
+>
+> **The mechanism above may still be the cause — a post-death render restoring health to 1.0 would
+> leave a player dead server-side and alive by health, which is a state with no respawn screen — but
+> it is now a HYPOTHESIS with contrary evidence attached, not a finding.** It was written from three
+> code reads that were each individually correct, and the conclusion drawn from them was not.
+> `CLAUDE.md`: an explanation for why a signal does not count is a hypothesis; test it.
+>
+> **D6 is the test**, and this correction is why it must run before any fix.
+
+> #### AND A GREEN D3b' DOES NOT ACQUIT D3b — DO NOT PRE-REGISTER THAT READING
+>
+> It was written here that a green `D3b'` would mean *"D3b is narrower than we think and (a) may not
+> even be needed."* **That is wrong, and it is the shape of pre-registering an acquittal.**
+>
+> **Suffocation differs from lava in TWO variables at once** — 1 damage every tick versus 4 every ten.
+> A green says only that *the reproducer is neither cadence alone nor amount alone*. **It does not
+> localize, and it does not retract D3.**
+>
+> **The matrix that matters is KILL × REPEATING, and it currently holds exactly ONE point: D3,
+> failed.** D1 and D2 tested *sticking*; D6 tested a *single-hit kill*. So `D3b'` is the **second**
+> point, not the deciding one, and `D3b''` (drown to death, on D2's existing setup) is a cheap third
+> at yet another `(amount, interval)`. **Two witnesses at two different points localize this; one does
+> not.**
+>
+> If `D3b'` is green, the finding is **"suffocation does not reproduce it"**, and candidate (a) stays
+> on the table until something explains why lava did.
+
+**This is a PRE-EXISTING defect in the death path that this slice made REACHABLE**, not one it
+introduced. Nothing repeating had ever drained custom HP before.
+
+**Consequence for D6, and it is now a DISCRIMINATING row rather than a formality:** a single lethal
+fall is one event, so it should still kill. **If D6 passes while D3b fails, the defect is pinned to
+repeating causes specifically** — which is a much smaller fix than "death is broken". Run D6 before
+believing anything wider.
+
+## D5c: TWO REFLECT NUMBERS IS THE PASS, NOT THE FAILURE
+
+**Read this before running D5c, not after.** This slice's headline risk is doubled numbers — D5 and
+D5b exist entirely to catch one — so an observer who sees two reflects off a single mob hit and has
+not been warned will report a bug, and someone will then go hunting a double-count that does not
+exist.
+
+**Two numbers is two mechanisms each firing once:**
+
+| source | what it is | where it fires |
+|---|---|---|
+| **our** Thorns | a **SHIELD** enchant (`thorns.yml` opens *"The second SHIELD enchant"*) | resolved in `ShieldBlock.resolve`, reflected through `applyDamage` — **raises no event** |
+| **vanilla** Thorns | an **ARMOUR** enchantment | raises a real `THORNS` damage event, which `onEnvironmentalDamage` reroutes like any other cause |
+
+Different items, different slots, different code paths. A player wearing both is wearing **two things
+that reflect**, and each reflects once. That is not trap 1's shape, and it is not a defect.
+
+**What WOULD be a defect here:** two numbers with only ONE of the two items equipped. That is the
+observation worth escalating.
+
+**What actually changed for vanilla Thorns** is the slice working as intended: before this it moved
+the mob's vanilla health and the nameplate never budged — a silent no-op on truth. Now it lands in
+custom HP, credited to the armour wearer.
+
+## Why D5 and D5b are two rows
+
+`ENTITY_ATTACK` and `ENTITY_SWEEP_ATTACK` are **two separate PASS arms handled by two separate
+handlers**. One shared witness would credit the second arm with coverage it never got — rule 4 in the
+form it actually ships in. A sweep landing on three mobs at once is precisely where one extra
+application is hardest to notice by eye, and judging it as "unchanged" from memory across a rebuild is
+not a count.
