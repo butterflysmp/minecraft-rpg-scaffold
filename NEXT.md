@@ -581,6 +581,244 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### The vanilla damage boundary — what it created or exposed
+
+**Gate status: UNRUN.** `GATE-vanilla-damage.md` carries the rows. Nothing below that depends on a
+boot is a claim yet, and the two baseline rows **B1/B2 are owed against `master`'s behaviour** — the
+branch preserves it, but the working tree does not, so they need a `git checkout master` and a boot.
+
+**The finding.** `VanillaHealPolicy` enforced its invariant for heals only; there was no damage
+policy at all. Fall, drowning, lava, suffocation, cactus, starvation and explosions moved the vanilla
+bar and `HeartBarRenderer` reverted them. Found by a human taking fall damage. The rule is recorded
+under *"an invariant stated in terms of one direction gets enforced in one direction"*.
+
+**Scorch's `setFireTicks` doing nothing was a SYMPTOM of this, not a bug of its own.** `FIRE_TICK` is
+now classified exactly like `CACTUS` — deliberately no special case, with a test that reddens if one
+appears, because the temptation was to fix the motivating cause instead of the boundary.
+
+**THE CONSTRAINT SCORCH INHERITS, and it becomes unverifiable once this is out of view:**
+
+> **A combatant killed by `VOID` or `KILL` does NOT run the custom death path.** Those two are PASSed
+> (they are removal, not damage — no survivor whose truth could fail to move), so vanilla removes the
+> entity and custom HP never reaches zero. `MobDeathSystem` and `PlayerHealthSystem` both consume
+> `reachedZero`, so neither fires.
+>
+> Nothing leaks — cleanup rides `EntityRemoveFromWorldEvent` → `onMobRemove`, which clears plate and
+> store on death, despawn and chunk-unload alike, so this is not a state bug. But **anything that must
+> happen ON DEATH has to hook `EntityDeathEvent`, which covers both paths, and not `reachedZero`,
+> which covers one.** The operator's rule *"anything with any scorch stacks ignites on death"* would
+> silently skip void- and `/kill`-ed mobs if it hooked the seam instead of the event.
+
+**Two recorded gaps closed as side effects, neither of them the point.** `PROJECTILE` was unowned in
+*both* directions — `PLAN-pass2-mob-to-player.md` deferred mob-arrow→player, and player-bow→mob fell
+through the melee rider's `LivingEntity`-damager check for the identical reason nobody had connected.
+Both reroute now, credited to the shooter off the `DamageSource`. And Scorch's own fire damage starts
+landing in custom HP (gate row D15 takes the rate as a figure).
+
+**A SECOND LIVE DEFECT, now measured: a point-blank creeper blast cost 1 HP out of 100.** The un-gated
+`onMobMeleeAttack` priced explosions from the damager's melee `ATTACK_DAMAGE` stat, and for a creeper
+that seeds to **1**. Vanilla's own point-blank blast is roughly 22. **Creepers have been very nearly
+harmless**, and nothing could see it: no test constructs a creeper, and in play a creeper that does
+nothing looks like a creeper you got lucky with.
+
+> **The prediction was wrong in the mechanism and right in the consequence, and that is the part worth
+> keeping.** The plan reasoned that `attackDamageOf` returns `0.0` for a mob with no `ATTACK_DAMAGE`
+> attribute, and predicted **~0**. The attribute is present; it reads **1**. Had B1 not been run, the
+> record would now carry a confident, specific and **false** claim — *"creepers have no
+> `ATTACK_DAMAGE`"* — sitting next to a true symptom and drawing all its credibility from it. That is
+> this file's own *"a single measurement generalised into a second claim that was never itself
+> measured"*, met in the wild one slice after it was written down.
+>
+> **B1 existed because the plan refused to write the number it had reasoned to.** It said "likely is
+> not a figure" and put a row against it. That instinct is what stopped a plausible falsehood
+> reaching this file, and it cost one boot.
+
+**Tuning consequence to expect, not a defect:** D7 should show creepers dealing tens rather than 1,
+which is a real jump in how dangerous they are. That is the correct number arriving, not a balance
+decision being taken — but it is the first time this project's players will meet it.
+
+#### THE GATE STOPPED AT D3, AND D3 FALSIFIED THE SLICE'S CENTRAL DECISION
+
+D1 (fall sticks) and D2 (drowning sticks) passed — **the boundary works for single-shot causes.** D3
+(lava) failed three ways and the run was stopped there. Full diagnosis in `GATE-vanilla-damage.md`;
+the two mechanisms, both read out of artefacts rather than reasoned:
+
+- **The token does not preserve i-frames for a REPEATING cause — it destroys them.** `javap -c -p` on
+  the running server's `LivingEntity.hurtServer` shows the in-window branch ignores a hit **only if
+  `amount <= lastHurt`**, and that both `lastHurt` writes take the **post-event** amount. So
+  `setDamage(0.01)` sets `lastHurt` to a hundredth, every later 4-damage lava tick exceeds it, a
+  **fresh `EntityDamageEvent`** is raised, and we reroute the full 4 — twenty times a second. **The
+  three shipped riders never met this because melee is player-paced; lava is the first repeating cause
+  ever tokened.**
+- **The half-heart display floor that stops the token killing you also stops you dying.**
+  `EntityScheduler.run` is "next tick"; `CombatantStats.damage` fires `onChange` unconditionally; and
+  `HealthState.damage` reports `reachedZero` only on the *transition*. So the tick after the kill is
+  queued, the next damage event takes the **render** branch and writes health back to the 1.0 floor.
+  `PlayerHealthSystem:99`'s comment — *"real death; no floor render competes"* — is **true for single
+  hits and false for anything repeating**. A pre-existing defect this slice made reachable.
+
+> **THIS IS THE THIRD INSTANCE IN ONE SLICE of the corollary recorded above** — a justification that
+> was true of a narrower population, inherited unchanged into a wider one. `applyHeal`'s
+> self-attribution; `BukkitCombatant`'s aggro line; and now `PlayerHealthSystem`'s no-competing-render
+> comment. **The rule predicted the defect one section before it was found**, which is the strongest
+> evidence for it and the reason it should be consulted rather than admired: when a change widens what
+> reaches a piece of code, the comments explaining why it is safe are part of the change.
+
+**Do not fix this by swapping REROUTE to cancelling.** Cancelling has its own i-frame problem — it was
+the reason tokening was chosen — so the mechanism needs a fresh diagnosis, not the other option off
+the shelf.
+
+##### THE TOKEN WAS LOAD-BEARING TWICE, AND WAS DOCUMENTED FOR NEITHER
+
+Whatever replaces it must satisfy **both**, or it will be judged against half its requirements:
+
+1. **It kept `lastHurt` from being the real amount** — the job everyone knew about, and the one that
+   turned out to be actively harmful for repeating causes.
+2. **It hid a 5:1 SCALE MISMATCH between the vanilla display bar and custom HP.** `HeartBarRenderer`
+   maps a 100-max player onto 10 hearts, so vanilla health is `custom / 5`. Vanilla lava is **4 health
+   points**, which is **20 custom-equivalent**. Untokened, the vanilla bar drains five times faster
+   than the truth, and `custom/5 − 4 ≤ 0` at **custom ≤ 20** — so the player dies a vanilla death at
+   20/100, bypassing the custom death path entirely. The half-heart floor does not help: the hit takes
+   4 off whatever is there.
+
+> **This is why "just remove the token" looked reasonable.** It was proposed against the one reason
+> that was written down, and there were two. **An undocumented second job is indistinguishable from no
+> second job** right up to the point where something is built on its absence.
+
+##### THE WINDOW QUESTION, DECIDED RATHER THAN INHERITED
+
+`MeleeHits.claimWindow` is keyed **per victim**, and it only ever had **one** cause. Environmental has
+**29**, so the shape cannot simply be copied — copying it would inherit per-victim by accident and
+make an unconsidered default look like a decision.
+
+**The deciding case is not an edge case: standing in lava ALWAYS also sets you on fire**, so
+`LAVA` + `FIRE_TICK` is the normal case, not a contrivance. Per-cause would make lava permanently
+25% harder than the content author wrote (4 + 1), and Scorch will add a third stream on top.
+
+**DECISION: per victim, with vanilla's own amount ratchet.** Not plain per-victim, because vanilla is
+neither purely per-victim nor per-cause — it is per-victim *with* a ratchet: within a window the
+largest amount lands, and a larger one tops up the difference. Reimplementing that rule in our
+currency gives lava-suppresses-the-fire-tick (1 < 4, exactly vanilla), keeps authored numbers meaning
+what they say, and bounds the worst case when four causes overlap (lava + fire + drowning +
+suffocation is reachable).
+
+**And it lands in `core/`**: a `DamageWindow` over `(amount, appliedThisWindow)` is pure logic with no
+Bukkit in it, so the rule this project keeps getting wrong at the platform boundary becomes something
+a unit test can redden. Reversible if the feel is wrong — but it will have been chosen.
+
+###### IT MUST STORE WHAT LANDED, NOT WHAT WAS ASKED FOR
+
+**Vanilla stores the post-event amount** — offsets 239/311 write `lastHurt` from `fload_3`, which is
+`computeAmountFromEntityDamageEvent(event)`. **Copy which number it stores, not just the comparison.**
+
+If `DamageWindow` records the *requested* amount while shields, Defense and resistance reduce what
+actually lands, `appliedThisWindow` runs high and **every top-up under-deals — silently, and only for
+mitigated victims**, which is the population least likely to appear in a gate row. **That is D3a's
+defect exactly**: a window whose stored state diverged from what was applied.
+
+So either the window is fed the **final post-mitigation** amount, or it gets a `settle(actualApplied)`
+call after the fact. **Pick one, and put the invariant in the type's javadoc:**
+`appliedThisWindow == the sum of what victims actually took`. **A unit test reddens it:** mutate the
+call to pass the pre-mitigation figure and a mitigated top-up under-deals.
+
+###### THE RULE HAS THREE ARMS, NOT TWO — AND THE THIRD WAS PREDICTED TWICE
+
+Offset 152 of `hurtServer`: `source.is(DamageTypeTags.BYPASSES_COOLDOWN)` jumps **past** the ratchet
+entirely. A two-armed window is missing a branch vanilla has.
+
+**Two design documents already called for it, prospectively:**
+
+- `HANDOFF-damage-system.md:176-182` — the old project's *"Dragon's Plume i-frame bypass"* and
+  *"Bonus Shot i-frame bypass"*, concluding the fork *"will need explicit bypass handling for
+  abilities that should hit through i-frames."*
+- `PLAN-pass2-mob-to-player.md:11-14` — *"no `noDamageTicks` touching, no bypass machinery"*, naming
+  the swarm-melt bypass as a deliberate later fork.
+
+Found by `git grep -in bypass -- '*.md'`. **That is the filing rule firing PROSPECTIVELY, which is
+what it is for — run that class of grep against the DESIGN, not only against the bug.**
+
+**Build the ARM, not the behaviour.** No ability uses a bypass yet, so the predicate is
+**always-false**, documented as the seam, with both citations. *An arm that exists and returns false
+is a decision; a missing arm is an omission nobody finds until an ability is silently swallowed by a
+lava window.*
+
+**Measured, and it changes what always-false means:** `bypasses_cooldown.json` **does not exist** in
+`paper-26.1.2.jar` — the tag is **empty in vanilla**, so `source.is(BYPASSES_COOLDOWN)` is false for
+every vanilla damage type today. Our always-false predicate is therefore not an approximation of the
+platform; it *matches* it. A datapack could populate the tag, which is the other reason the arm exists.
+
+###### VOID, ENUMERATED AGAINST THE WINDOW EXPLICITLY
+
+**A ratcheted `VOID` behind a 4-damage lava window would mean a player in the void does not die** —
+and this slice already took a VOID/KILL decision assuming otherwise. Enumerated rather than assumed:
+
+**`VOID` never reaches `DamageWindow`, because `VanillaDamagePolicy` classifies it `PASS`.** It is
+removal, not damage; we do not ride it at all. Same for `KILL`.
+
+**And vanilla agrees, which is worth recording as external confirmation of a call this project made
+independently.** The tag `bypasses_invulnerability.json` in `paper-26.1.2.jar` contains **exactly two
+entries**:
+
+```json
+{ "values": [ "minecraft:out_of_world", "minecraft:generic_kill" ] }
+```
+
+`out_of_world` and `generic_kill` — **VOID and KILL, the same two constants the policy singled out as
+"leaves no survivor"**, arrived at from the grouping rule rather than from this file. Two independent
+reasons they can never be ratcheted.
+
+##### WHY (a) IS THE CANDIDATE FOR D3b, ON TWO ARGUMENTS
+
+Correctness: a combatant at zero custom HP has no business rendering a bar that reads "alive", so the
+floor should not apply there. One condition, in a pure function.
+
+**And it is the ONLY one of the three candidates witnessable WITHOUT A BOOT** — `HeartBarRendererTest`
+and `FakeHeartBar` already exist and `render` is pure, so the mutation reddens locally. With the test
+world in the state D3 left it, that is worth as much as the correctness argument.
+
+(b) contradicts `HealthState.damage`'s documented "fired once on the transition" contract, which
+`PLAN-death-player.md` relies on for "the kill triggers once", and re-queues a kill every tick. (c)
+is removable in principle — `onChange` already runs on the target's owning thread — but
+`PlayerHealthSystem`'s stated contract is "emitted from any thread" and other callers rely on it; it
+trades a race for a threading assumption.
+
+**Order: `D3b'` (suffocation) first, then (a), then D3a with the window decided.**
+
+#### DEFERRED — PER-CAUSE AMOUNT RULES (a SECOND dimension on the policy)
+
+Requested by the operator after D1 and D2 passed. **Not built in this slice**, and not foldable into
+it. Recorded verbatim, with the exact numbers:
+
+> **Fall:     5x the vanilla amount.**
+> **Drowning: 10% of max health, REGARDLESS of defense or max health.**
+
+**These are two DIFFERENT SHAPES**, which is what makes them a design change rather than a tweak. One
+**scales** the vanilla number; the other **replaces** it and **bypasses the defense pipeline
+entirely** — and `CombatantStats.damage` applies `Defense.applyDefense` unconditionally, so there is
+no route to "ignores defense" today.
+
+Neither is expressible: `forCause` returns an **ACTION**, and the reroute amount is always
+`event.getDamage()`. Expressing them needs a **per-cause amount rule** alongside the per-cause action.
+Its own slice, after this one is not on fire.
+
+*Ambiguity to settle when it is picked up, not now:* "10% of max health, regardless of ... max health"
+is recorded exactly as given. The likely reading is *always exactly 10%, however large max grows* —
+i.e. it scales with max but is not further modified — but that is the operator's to confirm, and
+guessing it here is how a number becomes a claim nobody made.
+
+**What the melee gate withdrew, and why enumerating it mattered.** Gating `onMobMeleeAttack` to
+`ENTITY_ATTACK` took four things away from creeper/warden damage, not one. Three were answered
+(tracking was already done at `EntityAddToWorldEvent`; the shield block **and its durability wear**
+were carried into the new handler; the thorns reflect was withdrawn on purpose). **The shield is the
+one that would have shipped unnoticed** — vanilla lets you block a creeper blast, and losing it is a
+gameplay regression rather than a repricing. It has a sole-witness row (D8) for that reason.
+
+**`CANCEL` does not exist on `VanillaDamagePolicy`, and the sequencing is the point.** The classification
+was settled cause by cause first; the enum is whatever set of actions the arms turned out to need,
+which was two. Copying the heal policy's third constant would have copied its shape and dropped its
+argument — that constant exists there because `SATIATED`/`REGEN` needed it. An arm with no cases is
+the `flint_staff.yml` "stacks to 64" defect one level up.
+
 ### The Lapis Staff (a ray that draws itself) — what it created or exposed
 
 A ray now draws a line down itself as it walks. `CastSpec.Ray` takes an optional `beam` visual id,
@@ -7125,6 +7363,161 @@ as a gap.
 consistent with what they did say. The failure is invisible in exactly the way the rest of this
 section describes: there is no red to miss, because there is nothing for a suite to run. When a
 report is silent about a check, the honest record is silent too, and the check stays owed.
+
+### AN INVARIANT STATED IN TERMS OF ONE DIRECTION GETS ENFORCED IN ONE DIRECTION
+
+**And the missing direction leaves no red anywhere, because nothing was ever asked about it.**
+
+This is not a rule about carelessness. The worked example is some of the most careful code in the
+repo, and the care is what makes it worth recording: thoroughness *inside* a boundary is no evidence
+at all about where the boundary was drawn.
+
+> **`VanillaHealPolicy` is the example.** Its javadoc opens:
+>
+> > "No vanilla **heal** may move a tracked player's bar without moving the truth."
+>
+> It then enumerates **all nine** `RegainReason` constants, refuses a default arm on purpose so a
+> tenth is a compile error, groups the arms by a stated rule ("never cancel a heal you are not ready
+> to replace"), argues `EATING` on reachability-cannot-be-read grounds, and ships with a test that
+> pins the whole axis. Every one of those is right.
+>
+> **And `EntityDamageEvent` had no policy at all.** Fall, drowning, lava, suffocation, cactus,
+> starvation and every explosion moved the vanilla bar and were silently reverted by
+> `HeartBarRenderer` on the next tick — for the entire time that class stood. The defect was found by
+> a human taking fall damage and reading the number, not by anything in the project.
+>
+> **Had the sentence read "nothing vanilla may move the bar without moving the truth", the damage side
+> would have been visibly missing on the day the heal side was written.** One word of scope in one
+> javadoc line decided whether half a boundary looked finished.
+
+#### The rule
+
+**Write the invariant at the width of the thing it protects, then note which half you are building.**
+"Nothing vanilla may move the bar without moving the truth — this class covers heals; damage is
+unbuilt" is the same amount of work and leaves a hole that can be seen. The version scoped to heals
+leaves a hole that reads as a completed boundary.
+
+- **A class named for one direction is not evidence its direction is the only one.**
+  `VanillaHealPolicy` sits in the same package as `HeartBarRenderer`, which reverts *both*
+  directions. The asymmetry was visible from the file list and nobody had a reason to look.
+- **The test cannot help you here.** `VanillaHealPolicyTest` is thorough over its axis and can never
+  ask about a second one. An axis that was never named has no coverage to be missing.
+- **`CLAUDE.md`'s existing rules do not cover this.** Those catch a check that did not run, or ran
+  and was argued with. This is a check that was never *specified*, because the sentence that would
+  have specified it was one word too narrow.
+
+#### Corollary — A JUSTIFICATION INHERITED WITH A MECHANISM DOES NOT INHERIT ITS PREMISE
+
+**The same slice produced a second instance, in the other tense: not a claim that was too narrow when
+written, but one that was exactly right when written and was made false by a later change.**
+
+> `CombatantHandle.applyHeal` attributes a heal to the TARGET, and its javadoc justifies it:
+> *"Self-attribution is the honest placeholder rather than a null that would read as 'unknown'."*
+> **True, and for a good reason: a heal has no causing entity.**
+>
+> The damage boundary reached for the same mechanism, correctly — environmental damage has no dealer
+> either, and gravity crediting the faller is honest. **Then, in the same slice, `onMobMeleeAttack`
+> was gated to `ENTITY_ATTACK`** — which moved creeper `ENTITY_EXPLOSION` and warden `SONIC_BOOM` out
+> of the melee rider and into the new policy. **That changed the population the placeholder was
+> honest about.** Self-attributing those would have recorded a creeper kill as *the victim killing
+> themselves, with no aggro*.
+>
+> It also made `BukkitCombatant.applyDamage`'s aggro line reachable with `source == entity` for the
+> first time, so a mob taking fall damage would have called `setTarget` on **itself**, dropping
+> whatever it was chasing. That line had been correct for its whole life.
+
+**Two decisions in one slice, neither wrong alone.** The rule is that **a justification names the
+domain it was true of, and a change to that domain is a change to the justification** — so when you
+widen what reaches a piece of code, re-read the comments explaining why it is safe, because they were
+written about the narrower thing. Inheriting the prose along with the mechanism is what makes it
+wrong.
+
+### A CHECKPOINT THAT LIVES ONLY IN THE GATE DOCUMENT GETS BUILT PAST
+
+**A precondition on the BUILD belongs in the BUILD section — not in the artefact the build produces.**
+
+> **The vanilla damage boundary needed two baseline measurements taken against `master`'s behaviour**
+> — B1 (does a creeper blast move the custom HP number today?) and B2 (does a bow shot move a mob's
+> nameplate today?). Both are **unrecoverable in kind**: once the branch's behaviour is what boots,
+> there is no before-state left to observe, and D7's expectation is written from B1.
+>
+> They were correctly identified, correctly explained, and correctly marked **"run these first, before
+> the branch exists"** — **inside `GATE-vanilla-damage.md`**, a file that by construction is written
+> at the END of the work and read at the START of the boot. The plan's *build* section said "three
+> commits" and named no stop. **So two commits were written before anyone looked at the gate.**
+>
+> Recoverable — `master` still exists, so the cost was a checkout and a second boot rather than a lost
+> measurement. **The recoverability is why it is worth recording rather than worth forgetting:** the
+> identical mistake against a *destructive* baseline is the same mistake with no way back.
+
+#### The rule
+
+**If a step must happen before code is written, it goes in the commit plan, as a numbered step with
+nothing to build in it.** "Commit 0: run B1/B2, record the figures" would have stopped it. A
+checkpoint phrased as a caution *about* the gate is advice to the person running the gate, who by then
+is downstream of the thing it was meant to prevent.
+
+- **Ask where the reader of this instruction will be standing.** A gate file is read by someone at a
+  keyboard with a client open. A build plan is read by someone about to type. A precondition on typing
+  must be in the second document.
+- **A baseline is a build step, not a test step.** It looks like testing because it involves booting,
+  which is exactly why it files itself under the gate and gets sequenced last.
+
+**Sibling of the corollary already recorded above** — *a witness that is not in the repository is not
+a witness*. That one is about a record kept where nobody can find it; this one is about an
+**instruction** kept where nobody was looking. Same defect, one clause apart: **a rule stated
+somewhere the actor is not reading is not a rule the actor can follow**, whether the actor is looking
+for evidence or for what to do next.
+
+### A FINDING RECORDED IN THE RIGHT WORDS IN THE WRONG FILE IS A FINDING THE NEXT SLICE PAYS FOR AGAIN
+
+**When a slice measures a PLATFORM behaviour, the measurement goes HERE — even when its consequence
+goes in a javadoc.** A javadoc says why *this code* does what it does; it is indexed by the decision it
+justifies. `NEXT.md` is where the *platform's* behaviour is indexed, and that is a different question
+asked by a different person on a different day.
+
+> **`MeleeHits`' class javadoc, section "WHY IT DOES NOT READ noDamageTicks", is the worked example —
+> and it is CORRECT.** It states vanilla's re-hit rule exactly, and carries an instrumented boot from
+> 2026-08-28 whose log lines name the cause and the number that the vanilla damage boundary later
+> tripped over. **That boot produced two things and filed one.** The decision was recorded; the
+> mechanism was recorded only as its supporting argument, inside a class about melee windows.
+>
+> Nine days later the damage boundary chose to token every environmental cause **on the premise that
+> vanilla's invulnerability window would preserve cadence** — a premise this repo had already
+> measured and rejected, in a file nobody reading a damage policy would open. The gate caught it
+> (D3), which cost a boot, a diagnosis and an unusable test world.
+
+#### THE PLATFORM FACTS, INDEXED HERE SO THE NEXT SLICE DOES NOT RE-DERIVE THEM
+
+**Verified by `javap -c -p` on `run/versions/26.1.2/paper-26.1.2.jar`, `LivingEntity.hurtServer`,
+offsets 136–311** — not from memory and not from the wiki:
+
+- Inside the invulnerability window (`invulnerableTime > invulnerableDuration / 2`, and the source is
+  not `BYPASSES_COOLDOWN`), a hit is **fully ignored — no event at all** — only when
+  **`amount <= lastHurt`** (offset 168 → `ireturn` at 172).
+- When `amount > lastHurt`, vanilla calls `handleEntityDamage(source, amount, lastHurt)` and **RAISES
+  A FRESH `EntityDamageEvent`**, with `lastHurt` carried separately as the
+  `INVULNERABILITY_REDUCTION` modifier. **`getDamage()` is `getDamage(BASE)` and therefore reads the
+  FULL incoming amount, not the difference.**
+- **Both `lastHurt` writes (offsets 239 and 311) store the POST-EVENT amount.** So whatever a plugin
+  sets the event damage to *becomes* `lastHurt`.
+
+**The consequence, which is the part worth carrying forward:** *any* `setDamage` to a value below the
+incoming amount destroys the invulnerability window for a **repeating** cause. There is no token value
+that preserves cadence — the comparison happens in vanilla's scale, so scaling down re-poisons it.
+**Do not rely on vanilla's invulnerability window for cadence. Own the cadence** (`MeleeHits` reached
+the same conclusion from the other direction).
+
+And the measurement that names the numbers, from the 2026-08-28 Step 0 boot, quoted in
+`MeleeHits`' javadoc:
+
+```
+[STEP0] OTHER victim=ZOMBIE cause=FIRE_TICK rawDamage=1.0000 victimIFrames=0
+[STEP0] OTHER victim=BAT    cause=LAVA      rawDamage=4.0000 victimIFrames=10
+```
+
+**Lava is 4 on a 10-tick window; a fire tick is 1.** Those two lines predicted D3a in full, nine days
+early.
 
 - After every commit: `./mvnw -pl core test`. After every batch:
   `./mvnw clean package` and a manual boot.
