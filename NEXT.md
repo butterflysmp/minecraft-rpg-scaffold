@@ -7698,6 +7698,29 @@ And the measurement that names the numbers, from the 2026-08-28 Step 0 boot, quo
 **Lava is 4 on a 10-tick window; a fire tick is 1.** Those two lines predicted D3a in full, nine days
 early.
 
+### A MUTATION THAT CANNOT BE EXPRESSED IS A PROPERTY THE TYPE ENFORCES, NOT A TEST THAT IS MISSING
+
+**And the failure mode of recording it as a gap is specific, plausible and bad: someone WIDENS THE
+SIGNATURE so the mutation becomes testable, and deletes the property in the act of testing it.**
+
+> **`DamageWindow` is the worked example.** The mutation list called for *"key on cause instead of
+> victim — lava and fire both land in one window"*. **It cannot be applied**, because
+> `claim(UUID victim, double amount, boolean bypassesCooldown)` **takes no cause**. There is nothing
+> to key on cause *by*.
+>
+> That is not a hole in the coverage. **The per-victim property is enforced by the signature**, which
+> is strictly stronger than a test: a test guards behaviour that code could still change, a signature
+> guards *possibility*. The reachable form of the same error — one shared window across all victims —
+> was run instead and reddens two rows.
+>
+> **The bad repair is to add a `cause` parameter so the mutation can be written.** That would make the
+> defect representable in order to prove it is absent, which is exactly backwards. Named here so
+> nobody reaches for it in good faith.
+
+**So when a planned mutation turns out to be inexpressible, check which it is before recording it:**
+a property the type makes unreachable (say so, and say what enforces it), or a genuine gap in a
+signature that *does* admit the defect. Only the second is owed a test.
+
 ### A MUTATION PROVES A TEST DISCRIMINATES. IT CANNOT PROVE THE TEST IS ON THE RIGHT SIDE.
 
 **This is the only member of the verification family where the check ran PERFECTLY and still let a
@@ -7722,6 +7745,26 @@ pointing the wrong way the entire time.
 **So a mutation table answers "does this test have teeth", never "are the teeth pointed at the right
 thing".** The second question is answered only by re-deriving the property from outside the test —
 which in practice means a boot, a spec, or a reviewer.
+
+#### AND IT HAS NOW BEEN USED FORWARDS — WHICH CHANGES WHAT THESE RULES ARE FOR
+
+**This rule was written to explain a shipped defect. It then found one that had not shipped yet.**
+
+`DamageWindow`'s bypass arm was specified with one mutation covering it — *"ignore
+`bypassesCooldown`"*, which checks the amount it returns. Applying this rule to an arm **not yet
+written** asked the rule's own question — *is the mutation aimed at the right property?* — and found
+the arm has **two**: it must return the full amount **and leave the window untouched**. A bypass that
+also opened the window would return the right number, so the first mutation **stays green** while
+every later claim in that window is ratcheted against a value a bypassing source wrote.
+
+**Both were run. `M5` reddens two rows; `M9` reddens one — and `aBypassingSourceIsNotRatcheted` stayed
+GREEN under M9, which is the proof.** A half-guarded seam, caught before it shipped, by a rule written
+after the last one shipped.
+
+> **That answers the open proposal from the Flint Staff slice** — *a rule that explains three defects
+> retrospectively can usually find the fourth prospectively; it stops being a lesson and becomes a
+> grep.* **It just did.** These rules are not a post-mortem vocabulary. **They are a design
+> checklist**, and the cost of running one against unwritten code is a single extra mutation.
 
 #### The missing half of the scaffold rule
 

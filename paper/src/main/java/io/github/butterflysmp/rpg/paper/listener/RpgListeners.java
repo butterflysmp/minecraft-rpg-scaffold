@@ -1139,10 +1139,12 @@ public final class RpgListeners implements Listener {
         // damage_types registry and DamageType carries no tag membership, so vanilla's
         // BYPASSES_COOLDOWN is unreadable from here. The parameter exists for OUR abilities.
         double toDeal = damageWindow.claim(target.getUniqueId(), event.getDamage(), false);
-        logRerouteMeasurement(event, target, toDeal);
         if (toDeal <= 0.0) {
             // Absorbed. It still tokens and still floors -- it must not reach vanilla either -- but it
-            // resolves no shield and wears no durability, because nothing landed.
+            // resolves no shield and wears no durability, because nothing landed. Logged with
+            // applied=0 so an absorbed event is VISIBLE rather than silent: a window that is working
+            // and a handler that never fired must not look the same in the log.
+            logRerouteMeasurement(event, target, toDeal, 0.0);
             event.setDamage(TOKEN_DAMAGE);
             floorSoTokenCannotKill(target);
             return;
@@ -1163,6 +1165,8 @@ public final class RpgListeners implements Listener {
             ShieldDurability.applyWearOnBlock(wearer, block.slot(), adapters.keys(), cooldowns);
         }
 
+
+        logRerouteMeasurement(event, target, toDeal, exchange.applied());
 
         event.setDamage(TOKEN_DAMAGE);      // ride: keep i-frames, flash, knockback, cadence
         floorSoTokenCannotKill(target);
@@ -1209,6 +1213,27 @@ public final class RpgListeners implements Listener {
      * formula and every potion — witnessed by nothing. That is a reason to measure before choosing
      * it, not a reason to refuse it.
      *
+     * <h2>EVERY LINE CARRIES k TWICE, COMPUTED INDEPENDENTLY</h2>
+     *
+     * <b>{@code applied} is what {@code applyDamage} ACTUALLY RECEIVED, and it is not {@code toDeal}.</b>
+     * Logging only {@code toDeal} would blind this instrument to the vanilla-to-custom conversion —
+     * after that lands, {@code applyDamage} receives {@code k * toDeal} while the line would still
+     * print {@code toDeal}, so the conversion would leave no trace in the instrument built to witness
+     * it.
+     *
+     * <p>And {@code vanillaMax} is <b>k's denominator</b> — {@code vanillaHP} is the CURRENT vanilla
+     * health, which is a different number. With both present, each line gives k two ways:
+     *
+     * <pre>
+     * applied / toDeal          what the code actually did
+     * customMax / vanillaMax    what it should be
+     * </pre>
+     *
+     * <b>They agree or they do not, per event</b> — including across the respawn transient where the
+     * MAX_HEALTH attribute is argued to go stale between {@code register} and the first render. That
+     * turns an argument into a measurement, and it is a positive control INSIDE the reading rather
+     * than beside it.
+     *
      * <h2>THE THREE OUTCOMES, NAMED BEFORE THE BOOT</h2>
      *
      * So the boot cannot produce a result nobody classified:
@@ -1228,21 +1253,26 @@ public final class RpgListeners implements Listener {
      * factor is 1. Those are different numbers, and a single constant would be wrong for one of them.
      * Two victims in one boot is what witnesses it; it costs one field.
      */
-    private void logRerouteMeasurement(EntityDamageEvent event, LivingEntity target, double toDeal) {
+    private void logRerouteMeasurement(EntityDamageEvent event, LivingEntity target,
+                                       double toDeal, double applied) {
         var stats = adapters.stats();
         UUID id = target.getUniqueId();
+        var maxAttr = target.getAttribute(Attribute.MAX_HEALTH);
+        double vanillaMax = maxAttr == null ? Double.NaN : maxAttr.getValue();
         plugin.getLogger().info(String.format(
-                "[STEP2] tick=%d victim=%s/%s cause=%s raw=%.4f final=%.4f toDeal=%.4f iFrames=%d "
-                        + "lastDmg=%.4f vanillaHP=%.4f customMax=%.1f customNow=%.1f",
+                "[STEP2] tick=%d victim=%s/%s cause=%s raw=%.4f final=%.4f toDeal=%.4f applied=%.4f "
+                        + "iFrames=%d lastDmg=%.4f vanillaHP=%.4f vanillaMax=%.4f customMax=%.1f customNow=%.1f",
                 Bukkit.getCurrentTick(),
                 target.getType(), id.toString().substring(0, 8),
                 event.getCause(),
                 event.getDamage(),          // BASE, the number the reroute currently spends
                 event.getFinalDamage(),     // what VANILLA would kill with -- raw vs final is the gap
                 toDeal,                     // what the WINDOW admitted: 0.0000 means absorbed
+                applied,                    // what applyDamage ACTUALLY RECEIVED -- see below
                 target.getNoDamageTicks(),  // victimIFrames, the 2026-08-28 field
                 target.getLastDamage(),     // vanilla's lastHurt, read BEFORE we touch the event
                 target.getHealth(),         // the vanilla store, to see whether it TRACKS the custom one
+                vanillaMax,                 // k's DENOMINATOR. vanillaHP above is CURRENT, not max
                 stats.max(id), stats.current(id)));
     }
 
