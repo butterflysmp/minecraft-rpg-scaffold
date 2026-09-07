@@ -1146,7 +1146,6 @@ public final class RpgListeners implements Listener {
             // resolves no shield and wears no durability, because nothing landed. Logged with
             // applied=0 so an absorbed event is VISIBLE rather than silent: a window that is working
             // and a handler that never fired must not look the same in the log.
-            logRerouteMeasurement(event, target, toDeal, 0.0);
             event.setDamage(TOKEN_DAMAGE);
             floorSoTokenCannotKill(target);
             return;
@@ -1185,114 +1184,11 @@ public final class RpgListeners implements Listener {
                 maxAttr == null ? Double.NaN : maxAttr.getValue(),
                 adapters.stats().isBarPuppeted(id));
 
-        logRerouteMeasurement(event, target, toDeal, applied);
 
         event.setDamage(TOKEN_DAMAGE);      // ride: keep i-frames, flash, knockback, cadence
         floorSoTokenCannotKill(target);
         BukkitCombatant.of(target, adapters).handle()
                 .applyDamage(applied, attributableId(event, target));
-    }
-
-    /**
-     * TEMPORARY INSTRUMENTATION -- delete with the slice. Reuses the 2026-08-28 STEP0 shape, whose
-     * output is quoted in {@code MeleeHits}' javadoc and now in {@code NEXT.md}.
-     *
-     * <p><b>It exists because three open questions are all answerable from one boot, and none of them
-     * from reading.</b> Nobody should be predicting a number here.
-     *
-     * <ol>
-     *   <li><b>{@code iFrames} + {@code tick}</b> — the observable proxy for vanilla's invulnerability
-     *       state. The (tick, cause, iFrames) sequence says whether the window is OPEN and failing to
-     *       suppress (tokening's predicted signature: iFrames &gt; 0, an event every tick) or never
-     *       opening at all (cancelling's predicted signature: iFrames == 0, an event every tick).
-     *   <li><b>{@code lastDmg}</b> — {@code getLastDamage()} reads vanilla's {@code lastHurt}
-     *       DIRECTLY, so the poisoning is measured rather than inferred from the bytecode. Read
-     *       BEFORE the token, so it reports the PREVIOUS event's residue.
-     *   <li><b>{@code customMax} beside {@code raw}</b> — the denomination question. If the same cause
-     *       reports the same {@code raw} on two victims with different custom max, event amounts are
-     *       max-INDEPENDENT and the conversion factor is per-victim. If it varies with max, the
-     *       units reasoning is wrong and the conversion is not a simple scale.
-     *   <li><b>{@code raw} vs {@code final}, and {@code vanillaHP} across a whole descent</b> — the
-     *       MITIGATION question, which is the one an argument about denomination cannot reach.
-     *       <b>Vanilla kills using FINAL, not BASE.</b> Any candidate that stops tokening leaves
-     *       vanilla mitigating with its armour/toughness/resistance curves while we mitigate with
-     *       {@code Defense.applyDefense} — two pipelines that must agree, or vanilla kills a player
-     *       who still has custom HP. {@code raw} vs {@code final} measures how far apart they are;
-     *       {@code vanillaHP} measures whether the two stores actually track.
-     * </ol>
-     *
-     * <p><b>The symmetry is worth stating, because it is the shape of both mistakes.</b> This
-     * handler's own javadoc is thorough about MITIGATION and silent about DENOMINATION. The
-     * leave-the-amount-alone argument is thorough about DENOMINATION and silent about MITIGATION.
-     * Each is complete on exactly what the other omits, and each reads as finished for that reason.
-     *
-     * <p><b>And a mechanism that comes "for free" is usually an invariant moved somewhere nobody
-     * tests.</b> A window type is one core file with unit tests; the free version is an invariant
-     * spread across {@code ArmorBarOverride}, {@code Defense}, {@code HeartScale}, vanilla's armour
-     * formula and every potion — witnessed by nothing. That is a reason to measure before choosing
-     * it, not a reason to refuse it.
-     *
-     * <h2>EVERY LINE CARRIES k TWICE, COMPUTED INDEPENDENTLY</h2>
-     *
-     * <b>{@code applied} is what {@code applyDamage} ACTUALLY RECEIVED, and it is not {@code toDeal}.</b>
-     * Logging only {@code toDeal} would blind this instrument to the vanilla-to-custom conversion —
-     * after that lands, {@code applyDamage} receives {@code k * toDeal} while the line would still
-     * print {@code toDeal}, so the conversion would leave no trace in the instrument built to witness
-     * it.
-     *
-     * <p>And {@code vanillaMax} is <b>k's denominator</b> — {@code vanillaHP} is the CURRENT vanilla
-     * health, which is a different number. With both present, each line gives k two ways:
-     *
-     * <pre>
-     * applied / toDeal          what the code actually did
-     * customMax / vanillaMax    what it should be
-     * </pre>
-     *
-     * <b>They agree or they do not, per event</b> — including across the respawn transient where the
-     * MAX_HEALTH attribute is argued to go stale between {@code register} and the first render. That
-     * turns an argument into a measurement, and it is a positive control INSIDE the reading rather
-     * than beside it.
-     *
-     * <h2>THE THREE OUTCOMES, NAMED BEFORE THE BOOT</h2>
-     *
-     * So the boot cannot produce a result nobody classified:
-     * <ul>
-     *   <li><b>{@code iFrames > 0}, an event EVERY tick</b> — the window opens and fails to suppress.
-     *       Tokening's predicted signature; {@code lastDmg} should read ~0.01 and confirm the poison.
-     *   <li><b>{@code iFrames == 0}, an event every tick</b> — the window never opens. Cancelling's
-     *       predicted signature, and what the scratch cancel build should produce.
-     *   <li><b>{@code iFrames > 0}, events NOT every tick</b> — <b>THE THIRD ONE.</b> Something other
-     *       than the ratchet is gating, and BOTH readings above are incomplete. If this appears, stop
-     *       and re-diagnose rather than fitting it to either story.
-     * </ul>
-     *
-     * <p><b>And {@code victim} is logged because the player/mob asymmetry is unresolved.</b> A player's
-     * vanilla bar is a fixed {@code heartCount*2} points regardless of custom max, so its factor is
-     * {@code customMax / (hearts*2)}. A mob's custom max was BOOTSTRAPPED FROM its vanilla max, so its
-     * factor is 1. Those are different numbers, and a single constant would be wrong for one of them.
-     * Two victims in one boot is what witnesses it; it costs one field.
-     */
-    private void logRerouteMeasurement(EntityDamageEvent event, LivingEntity target,
-                                       double toDeal, double applied) {
-        var stats = adapters.stats();
-        UUID id = target.getUniqueId();
-        var maxAttr = target.getAttribute(Attribute.MAX_HEALTH);
-        double vanillaMax = maxAttr == null ? Double.NaN : maxAttr.getValue();
-        plugin.getLogger().info(String.format(
-                "[STEP2] tick=%d victim=%s/%s cause=%s raw=%.4f final=%.4f toDeal=%.4f applied=%.4f "
-                        + "iFrames=%d lastDmg=%.4f vanillaHP=%.4f vanillaMax=%.4f customMax=%.1f customNow=%.1f",
-                Bukkit.getCurrentTick(),
-                target.getType(), id.toString().substring(0, 8),
-                event.getCause(),
-                event.getDamage(),          // BASE, the number the reroute currently spends
-                event.getFinalDamage(),     // what VANILLA would kill with -- raw vs final is the gap
-                toDeal,                     // what the WINDOW admitted: 0.0000 means absorbed
-                applied,                    // what applyDamage ACTUALLY RECEIVED -- see below
-                target.getNoDamageTicks(),  // victimIFrames, the 2026-08-28 field
-                target.getLastDamage(),     // vanilla's lastHurt, read BEFORE we touch the event
-                target.getHealth(),         // the vanilla store, to see whether it TRACKS the custom one
-                vanillaMax,                 // k's DENOMINATOR. vanillaHP above is CURRENT, not max
-                stats.max(id), stats.current(id)));
     }
 
     /**
