@@ -59,6 +59,38 @@ public final class CombatantStats {
         return states.containsKey(id);
     }
 
+    /**
+     * Is this combatant's VANILLA max-health attribute a PUPPET — written from the custom numbers
+     * rather than being its own truth?
+     *
+     * <h2>It reads the faction bit, and that is a COUPLING, named here rather than left implicit</h2>
+     *
+     * {@code HealthState.player} is documented as <i>"frozen faction, as on the snapshot"</i>. That
+     * answers <b>"is this combatant on the player faction"</b> — which is what {@code dealerIsPlayer}
+     * reads for attribution and kill credit. <b>This method asks a different question</b>, and the two
+     * agree only because the same registration call sets the bit and decides the puppeting:
+     * {@code PlayerHealthSystem} renders the bar for exactly the combatants registered as players.
+     *
+     * <p><b>A shared value is a coupling, and the coupling is invisible at both ends.</b> A puppeted
+     * non-player, or a player-faction entity with a real bar, would break one reader while the other's
+     * tests stayed green. The accessor is therefore named for the property it is USED for, not for the
+     * field it happens to read — and {@code HealthState}'s field carries the matching note.
+     *
+     * <p>What would separate them: anything that puppets a mob's bar (a boss health display), or that
+     * registers a player-faction entity whose vanilla max is its own. On that day this method needs
+     * its own field and the two uses must not be untangled by guesswork.
+     *
+     * <p>Consumed by {@code DamageScale.toCustom} to choose the conversion denominator: a puppeted bar
+     * divides by vanilla's own 20, a real one by the entity's actual attribute.
+     *
+     * @return false for an untracked combatant — it has no custom numbers, so nothing is puppeting
+     *         its bar and its vanilla max is its own
+     */
+    public boolean isBarPuppeted(UUID id) {
+        HealthState state = states.get(id);
+        return state != null && state.player();
+    }
+
     /** Custom current health. Throws if {@code id} is not tracked -- reading an untracked combatant is a bug. */
     public double current(UUID id) {
         return require(id).current();

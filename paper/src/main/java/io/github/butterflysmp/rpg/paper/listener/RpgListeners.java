@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.listener;
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
+import io.github.butterflysmp.rpg.core.combat.DamageScale;
 import io.github.butterflysmp.rpg.core.combat.DamageWindow;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.SweepShare;
@@ -1124,7 +1125,8 @@ public final class RpgListeners implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEnvironmentalDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof LivingEntity target)) return;
-        if (!adapters.stats().tracks(target.getUniqueId())) return;
+        UUID id = target.getUniqueId();
+        if (!adapters.stats().tracks(id)) return;
         if (VanillaDamagePolicy.forCause(event.getCause()) == VanillaDamagePolicy.Action.PASS) return;
 
         // OWN THE CADENCE. The token we are about to write becomes vanilla's lastHurt, which destroys
@@ -1138,7 +1140,7 @@ public final class RpgListeners implements Listener {
         // bypassesCooldown is false and cannot be otherwise today: Bukkit's Tag exposes no
         // damage_types registry and DamageType carries no tag membership, so vanilla's
         // BYPASSES_COOLDOWN is unreadable from here. The parameter exists for OUR abilities.
-        double toDeal = damageWindow.claim(target.getUniqueId(), event.getDamage(), false);
+        double toDeal = damageWindow.claim(id, event.getDamage(), false);
         if (toDeal <= 0.0) {
             // Absorbed. It still tokens and still floors -- it must not reach vanilla either -- but it
             // resolves no shield and wears no durability, because nothing landed. Logged with
@@ -1166,12 +1168,29 @@ public final class RpgListeners implements Listener {
         }
 
 
-        logRerouteMeasurement(event, target, toDeal, exchange.applied());
+        // THE CONVERSION, AND THIS IS ITS ONLY CALL SITE IN THE PROJECT. An audit of every
+        // applyDamage entry found exactly one vanilla-denominated number reaching the custom store --
+        // this one. Sweep, mob-melee and thorns price from stats().attackValue; ability and weapon
+        // damage from content; the dev commands from an operator-typed integer. A second call to
+        // DamageScale.toCustom anywhere would be k squared.
+        //
+        // LAST STEP, on the value handed to applyDamage. The window upstream stays in VANILLA units
+        // (commit 1's invariant), and the shield's DR and reflect are PERCENTAGES, so they COMMUTE
+        // with a scalar -- converting before or after them is the same number. The ordering here is
+        // documentation, not correctness.
+        var maxAttr = target.getAttribute(Attribute.MAX_HEALTH);
+        double applied = DamageScale.toCustom(
+                exchange.applied(),
+                adapters.stats().max(id),
+                maxAttr == null ? Double.NaN : maxAttr.getValue(),
+                adapters.stats().isBarPuppeted(id));
+
+        logRerouteMeasurement(event, target, toDeal, applied);
 
         event.setDamage(TOKEN_DAMAGE);      // ride: keep i-frames, flash, knockback, cadence
         floorSoTokenCannotKill(target);
         BukkitCombatant.of(target, adapters).handle()
-                .applyDamage(exchange.applied(), attributableId(event, target));
+                .applyDamage(applied, attributableId(event, target));
     }
 
     /**

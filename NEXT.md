@@ -963,10 +963,33 @@ trades a race for a threading assumption.
 
 **Order: `D3b'` (suffocation) first, then (a), then D3a with the window decided.**
 
-#### DEFERRED — PER-CAUSE AMOUNT RULES (a SECOND dimension on the policy)
+#### ~~DEFERRED — PER-CAUSE AMOUNT RULES~~ — **CLOSED BY THE CONVERSION**
 
-Requested by the operator after D1 and D2 passed. **Not built in this slice**, and not foldable into
-it. Recorded verbatim, with the exact numbers:
+**Both amount requests are DELIVERED by `DamageScale.toCustom`, exactly, at every max.** They are
+closed here rather than left open because **an open "fall → 5x" sitting beside a fix that already
+delivers 5x gets applied on top of it, and the result is 25x.**
+
+> **Fall:     5x the vanilla amount.** → `k = customMax/20` = **5.00 at max 100**, and the conversion
+> *is* the request. A lethal fall (`raw=25`) becomes 125 against a 100 max: lethal, as vanilla intends.
+>
+> **Drowning: 10% of max health, REGARDLESS of defense or max health.** → a 2-point vanilla tick
+> becomes `2 × max/20` = **exactly a tenth of max, at 100, 150, 400 or 1000.** Pinned by
+> `DamageScaleTest.theOperatorsDrowningRuleIsExactlyTrueAtEVERYMax`.
+
+**THE "REGARDLESS OF DEFENSE" HALF IS NOT CLOSED** — see the standing question below. `CombatantStats`
+applies `Defense.applyDefense` unconditionally, and the conversion does not touch that.
+
+> **These numbers chose the denominator, and were nearly the wrong tool for it.** The obvious factor
+> was `customMax / (heartCount(customMax)*2)` — the *rendered* bar — which gives 10% at max 100 and
+> **7.7% at max 400**. Only the drowning wording, given **unprompted a week earlier**, revealed that
+> the request is exact at every max and the display-scaled factor is not. **The operator pre-answered
+> a question nobody had asked yet**, and that is what stopped this becoming the slice's fourth
+> display-becomes-truth defect.
+
+*The earlier "10% regardless of max health" ambiguity is now settled by the same reading: it means
+exactly a tenth at any max, which is what the conversion produces.*
+
+#### THE ORIGINAL VERBATIM REQUESTS, kept because the record should show what was asked
 
 > **Fall:     5x the vanilla amount.**
 > **Drowning: 10% of max health, REGARDLESS of defense or max health.**
@@ -980,10 +1003,45 @@ Neither is expressible: `forCause` returns an **ACTION**, and the reroute amount
 `event.getDamage()`. Expressing them needs a **per-cause amount rule** alongside the per-cause action.
 Its own slice, after this one is not on fire.
 
-*Ambiguity to settle when it is picked up, not now:* "10% of max health, regardless of ... max health"
-is recorded exactly as given. The likely reading is *always exactly 10%, however large max grows* —
-i.e. it scales with max but is not further modified — but that is the operator's to confirm, and
-guessing it here is how a number becomes a claim nobody made.
+#### OPEN DESIGN QUESTION — should max HP reduce environmental damage proportionally, or not at all?
+
+**Recorded as a QUESTION, never as a tuning item, and the distinction is the point: a question cannot
+be applied on top of the fix. A tuning item can, and that is the 25x.**
+
+A proportional conversion means **extra max HP buys nothing against environmental damage** — a 400 HP
+player dies to the same fall as a 100 HP player, because both lose the same fraction. **The operator
+has said that is right FOR DROWNING** ("regardless of how much health they have"). **He has never been
+asked about FALL**, and *"5x"* read literally would mean a 400 HP player survives falls a 100 HP player
+does not. Both readings are coherent; only one has been stated.
+
+#### STANDING QUESTION — WHICH CAUSES SHOULD `Defense` TOUCH?
+
+Not *"drowning should ignore defense"*. **Drowning is one member of a set, and the set is the
+question.** `CombatantStats.damage` applies `Defense.applyDefense` to every cause unconditionally;
+D3d measured our 20% arriving as vanilla's 8.01% on the one cause vanilla mitigates.
+
+> **THIRD OPERATOR NUMBER IN THIS SLICE THAT WAS A CORRECTNESS STATEMENT, NOT A PREFERENCE** — 5x
+> fall, 10% drowning, and now the defense bypass. **All three were the operator measuring a defect
+> whose cause he could not see.** That is the tuning-request rule firing a third time, and it changes
+> how the NEXT number should be received: **ask "is this a measurement of a bug?" BEFORE "is this a
+> preference?"**
+
+**AMENDMENT, and it is load-bearing: `bypasses_armor` IS EVIDENCE, NOT A MANDATE.**
+
+Every previous appeal to vanilla in this slice was about **MECHANISM** — the i-frame window, the
+ratchet, `lastHurt`, the invulnerability tags — where diverging produced **bugs**, which is what made
+fidelity the argument. **`bypasses_armor` is a BALANCE list.** Recorded without that distinction, the
+next slice implements the whole list as a bug fix on the strength of an argument that was only ever
+about mechanism.
+
+The list is `drown, in_wall, fall, starve, freeze, magic, wither, sonic_boom, on_fire, cramming,
+out_of_world, generic_kill`. **Honouring it means FULL DIAMOND ARMOUR STOPS REDUCING FALL DAMAGE
+ENTIRELY — in the same slice that makes fall five times stronger.** The operator has endorsed the
+bypass **for drowning and nothing else**.
+
+So: vanilla's list is **the starting proposal, and evidence that his instinct is tracking something
+real.** Adopting it is a **balance decision that needs him, per cause**, and it follows from no
+measurement taken so far.
 
 **What the melee gate withdrew, and why enumerating it mattered.** Gating `onMobMeleeAttack` to
 `ENTITY_ATTACK` took four things away from creeper/warden damage, not one. Three were answered
