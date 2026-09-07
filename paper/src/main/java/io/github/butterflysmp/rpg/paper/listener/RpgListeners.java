@@ -3,6 +3,8 @@ package io.github.butterflysmp.rpg.paper.listener;
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
+import io.github.butterflysmp.rpg.core.combat.DamageScale;
+import io.github.butterflysmp.rpg.core.combat.DamageWindow;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.combat.stat.HeartScale;
@@ -33,6 +35,7 @@ import io.github.butterflysmp.rpg.paper.menu.RecipeProbe;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenSystem;
+import io.github.butterflysmp.rpg.paper.health.VanillaDamagePolicy;
 import io.github.butterflysmp.rpg.paper.health.VanillaHealPolicy;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.core.combat.AttackCharge;
@@ -67,6 +70,7 @@ import io.papermc.paper.event.entity.EntityKnockbackEvent;
 import io.papermc.paper.event.entity.EntityMoveEvent;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.damage.DamageSource;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -146,6 +150,12 @@ public final class RpgListeners implements Listener {
      * bridges are both on this class, and nothing else in the plugin has a use for it.
      */
     private final MeleeHits meleeHits = new MeleeHits(Bukkit::getCurrentTick);
+
+    /**
+     * The cadence for environmental damage, owned because the token destroys vanilla's ratchet.
+     * Listener-scoped for MeleeHits' reason -- the one handler that claims from it is on this class.
+     */
+    private final DamageWindow damageWindow = new DamageWindow(Bukkit::getCurrentTick);
 
     /**
      * The blocks whose vanilla screen we replace outright, and what opens INSTEAD.
@@ -333,6 +343,7 @@ public final class RpgListeners implements Listener {
             nameplates.onMobRemove(mob.getUniqueId());
             // And its melee window, or the map grows for the lifetime of the server.
             meleeHits.forget(mob.getUniqueId());
+            damageWindow.forget(mob.getUniqueId());   // and its environmental window, same reason
         }
     }
 
@@ -680,6 +691,7 @@ public final class RpgListeners implements Listener {
         UUID playerId = event.getPlayer().getUniqueId();
         cooldowns.clear(playerId);
         meleeHits.forgetAttacker(playerId);   // drop any swing that never landed
+        damageWindow.forget(playerId);        // and their environmental window, or the map grows
         resources.clear(playerId);
         profiles.onQuit(playerId);
         // Drop custom-health state so no modifier or entry leaks across sessions.
@@ -728,6 +740,11 @@ public final class RpgListeners implements Listener {
         nameplates.onViewerJoin(event.getPlayer());    // restart the per-viewer nameplate LOS loop
         statsBar.onRespawn(event.getPlayer());         // restart the action-bar loop, dead since the death screen
         healthRegen.onRespawn(event.getPlayer());      // and the regeneration loop, dead for the same reason
+        // NOT a leak fix -- a CORRECTNESS one. onQuit does not run on death and onEntityRemove filters
+        // players out, so without this a player who died mid-window respawns still holding it and the
+        // next environmental hit inside WINDOW_TICKS is absorbed. Respawning into lava or a wall is
+        // exactly when environmental damage arrives.
+        damageWindow.forget(event.getPlayer().getUniqueId());
     }
 
     // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is
@@ -857,12 +874,7 @@ public final class RpgListeners implements Listener {
         }
 
         event.setDamage(TOKEN_DAMAGE);                                   // flash + i-frames + shove
-        if (adapters.stats().tracks(swept.getUniqueId())
-                && swept.getHealth() - TOKEN_DAMAGE <= 0.0) {
-            var attr = swept.getAttribute(Attribute.MAX_HEALTH);
-            double vanillaMax = attr == null ? swept.getHealth() : attr.getValue();
-            swept.setHealth(Math.min(vanillaMax, VANILLA_LIVE_FLOOR)); // the token can never kill
-        }
+        floorSoTokenCannotKill(swept);
 
         // The two-arg applyDamage, so the swept mob's popup is a NORMAL white number even when the
         // primary critted. Its DAMAGE still inherits the crit in full -- the stashed figure is
@@ -922,12 +934,7 @@ public final class RpgListeners implements Listener {
         }
 
         event.setDamage(TOKEN_DAMAGE);                                   // flash + i-frames, no double
-        if (adapters.stats().tracks(victim.getUniqueId())
-                && victim.getHealth() - TOKEN_DAMAGE <= 0.0) {
-            var attr = victim.getAttribute(Attribute.MAX_HEALTH);
-            double vanillaMax = attr == null ? victim.getHealth() : attr.getValue();
-            victim.setHealth(Math.min(vanillaMax, VANILLA_LIVE_FLOOR)); // the token can never kill
-        }
+        floorSoTokenCannotKill(victim);
 
         // Fail closed on a missing swing, and claim the window before dealing anything. Both are
         // mutations, so neither may be asked twice for one hit.
@@ -972,6 +979,31 @@ public final class RpgListeners implements Listener {
         if (!(event.getEntity() instanceof Player victim)) return;          // mob->player only
         if (!(event.getDamager() instanceof LivingEntity attacker)) return; // a living melee attacker
         if (attacker instanceof Player) return;                             // player->player is a later rules decision
+
+        // THE CAUSE GATE, ADDED WITH VanillaDamagePolicy, AND ITS ABSENCE WAS LOAD-BEARING.
+        //
+        // Both sibling riders have always gated on cause -- onPlayerMeleeAttack on ENTITY_ATTACK
+        // (":ENTITY_ATTACK only, and that gate -- not handler ordering -- is what keeps sweep out"),
+        // onPlayerSweepAttack on ENTITY_SWEEP_ATTACK. THIS ONE DID NOT, and filtered on entity types
+        // alone. So it claimed EVERY EntityDamageByEntityEvent with a player victim and a living
+        // non-player damager -- a creeper's ENTITY_EXPLOSION and a warden's SONIC_BOOM among them --
+        // and priced each of them as the damager's melee ATTACK_DAMAGE stat.
+        //
+        // Those causes now belong to VanillaDamagePolicy, which prices them from the event's OWN
+        // getDamage() instead. That is the point of the gate rather than a side effect of it: while
+        // this handler claimed causes by entity shape, the boundary was not a function of DamageCause,
+        // so forCause could not be total, its exhaustive switch could not be meaningful, and it could
+        // not be unit-tested without a server. One handler's missing gate was the whole obstacle.
+        //
+        // What the gate withdraws from those causes, and where each thing went:
+        //   - seedCombatStats: NOWHERE NEEDED. onEntityAdd (EntityAddToWorldEvent -- "spawn OR
+        //     chunk-load, both funnel here") already seeds every living non-player at world-add, so
+        //     the call below was belt-and-braces for the melee path, never the sole route to tracking.
+        //   - the shield block AND its durability wear: CARRIED, deliberately, into
+        //     onEnvironmentalDamage. Vanilla lets you block a creeper blast; dropping that would be a
+        //     gameplay regression, not a repricing, and it is the one that would have shipped unseen.
+        //   - the thorns reflect: DELIBERATELY WITHDRAWN. See onEnvironmentalDamage for why.
+        if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return;
 
         // MUST stay first, and not only for the nameplate. bootstrapIfAbsent is what makes the mob
         // TRACKED, and CombatantStats.damage is a silent no-op on an untracked combatant -- so this
@@ -1035,6 +1067,171 @@ public final class RpgListeners implements Listener {
             BukkitCombatant.of(attacker, adapters).handle()
                     .applyDamage(exchange.reflected(), victim.getUniqueId());
         }
+    }
+
+    /**
+     * EVERY OTHER WAY THE WORLD CAN HURT A TRACKED COMBATANT -- the damage half of the boundary
+     * {@link VanillaHealPolicy} states and only half enforces.
+     *
+     * <p>Fall, drowning, lava, fire, suffocation, cactus, starvation, explosions: before this, all of
+     * them moved the VANILLA bar and nothing else. {@code HeartBarRenderer} rewrites that bar from the
+     * custom numbers on the next {@code HealthChange} or reconcile tick, so the damage was visible for
+     * a fraction of a second and then silently reverted -- which reads to a player as a bug, because
+     * it is one. Observed in game as "the health bar changes but the Health number stays at 100".
+     *
+     * <p><b>Both players AND mobs, and the differing gate is deliberate.</b> {@link #onRegainHealth}
+     * gates on "is this a tracked PLAYER" because no vanilla heal was rewriting a mob's health. This
+     * gates on "is this combatant TRACKED": mobs read their nameplates from the same store, so mob
+     * fall damage was broken the same way. Not a copy-paste slip.
+     *
+     * <p><b>An untracked combatant is PASSED, and that does not violate the grouping rule.</b> For an
+     * untracked combatant vanilla health IS the only truth there is, so leaving the event alone moves
+     * the only truth it has. Rerouting would be the bug: {@code CombatantStats.damage} is a silent
+     * no-op on an untracked id, so the token would land and the real damage would vanish.
+     *
+     * <p><b>Registered on the SUPERCLASS.</b> {@code EntityDamageByEntityEvent} declares no
+     * {@code HandlerList} of its own, so this receives those too -- which is exactly why the PASS arms
+     * for {@code ENTITY_ATTACK} and {@code ENTITY_SWEEP_ATTACK} are load-bearing rather than tidy. The
+     * three riders sit at HIGH alongside this one and their relative order is undefined; as with
+     * {@link #onPlayerMeleeAttack}, THE CAUSE GATE AND NOT HANDLER ORDERING is what keeps the four
+     * disjoint. Reroute a melee cause and every swing lands twice, whichever runs first.
+     *
+     * <p><b>getDamage(), never getFinalDamage(), and the two are indistinguishable in a green
+     * build.</b> {@code getDamage()} is {@code getDamage(BASE)} -- the raw amount before vanilla's
+     * armour, resistance and enchantment cuts. We take it raw because {@code CombatantStats.damage}
+     * applies our OWN {@code Defense.applyDefense} a thread-hop later. Taking the final amount would
+     * mitigate twice, and worse than twice: {@code ArmorBarOverride} has rewritten the player's
+     * vanilla ARMOR attribute to MEAN our damage reduction, so vanilla's cut is already this project's
+     * own curve wearing vanilla's formula. Same call the mob->player rider makes, for the same reason.
+     *
+     * <p><b>The shield is resolved here, carried over from the rider that used to see explosions.</b>
+     * {@code ShieldBlock.resolve} takes an {@code EntityDamageEvent}, not the ByEntity subclass, and
+     * self-gates on {@code isApplicable(BLOCKING)} -- so calling it for every cause is correct with no
+     * per-cause branch: a fall has no BLOCKING modifier and resolves to {@code Outcome.NONE}. It must
+     * run BEFORE the token, because {@code setDamage} re-derives every modifier against the new base.
+     *
+     * <p><b>The thorns reflect is NOT carried over, deliberately.</b> Ours is contact reflection off a
+     * blocked melee blow; the creeper whose blast is being blocked has already died in the same tick,
+     * so the reflect would be a computation with no target. {@code exchange.applied()} is used and
+     * {@code exchange.reflected()} is dropped on purpose -- not overlooked. (Vanilla's own THORNS is a
+     * separate matter: it is an ARMOUR enchantment raising its own THORNS event, which this handler
+     * reroutes like any other. Ours is a SHIELD enchant reflected through {@code applyDamage}, which
+     * raises no event. Two sources, not one mechanism applied twice.)
+     *
+     * <p><b>No window claim.</b> {@link MeleeHits}' window is melee's anti-spam guard, keyed on our own
+     * hit history. Environmental cadence is vanilla's, and tokening rather than cancelling is what
+     * preserves it -- lava keeps damaging every ten ticks because vanilla's i-frames survive the ride.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onEnvironmentalDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof LivingEntity target)) return;
+        UUID id = target.getUniqueId();
+        if (!adapters.stats().tracks(id)) return;
+        if (VanillaDamagePolicy.forCause(event.getCause()) == VanillaDamagePolicy.Action.PASS) return;
+
+        // OWN THE CADENCE. The token we are about to write becomes vanilla's lastHurt, which destroys
+        // its ratchet for any cause whose cadence IS the invulnerability window -- lava and
+        // suffocation measured at 20 Hz, and at 20 Hz x blocks contacted on a large hitbox (eight
+        // LAVA events for one golem in one tick). See DamageWindow for why every alternative is dead.
+        //
+        // RAW event damage, deliberately: the window stores VANILLA units, upstream of the shield and
+        // of Defense. Sound because applyDefense is linear in damage, which DefenseTest now guards.
+        //
+        // bypassesCooldown is false and cannot be otherwise today: Bukkit's Tag exposes no
+        // damage_types registry and DamageType carries no tag membership, so vanilla's
+        // BYPASSES_COOLDOWN is unreadable from here. The parameter exists for OUR abilities.
+        double toDeal = damageWindow.claim(id, event.getDamage(), false);
+        if (toDeal <= 0.0) {
+            // Absorbed. It still tokens and still floors -- it must not reach vanilla either -- but it
+            // resolves no shield and wears no durability, because nothing landed. Logged with
+            // applied=0 so an absorbed event is VISIBLE rather than silent: a window that is working
+            // and a handler that never fired must not look the same in the log.
+            event.setDamage(TOKEN_DAMAGE);
+            floorSoTokenCannotKill(target);
+            return;
+        }
+
+        // BEFORE the token, or the BLOCKING modifier reports the token's share of the block rather
+        // than the block. ShieldBlock's own javadoc carries this rule; the ordering here obeys it.
+        ShieldBlock.Outcome block = ShieldBlock.resolve(
+                target, event, adapters.keys(), shields, adapters.enchants());
+        ShieldExchange exchange = ShieldExchange.of(
+                toDeal, block.blocked(), block.effectiveDr(), block.reflectPercent());
+        // The WEAR needs a Player -- it reads an inventory slot -- while the resolve above is happy
+        // with any LivingEntity. The narrowing costs nothing: our shields are player gear, so a mob
+        // victim resolves to Outcome.NONE and never reaches here. It is written as a pattern rather
+        // than a cast so a future mob-held shield is a silent no-wear rather than a ClassCastException
+        // in the middle of a damage event.
+        if (block.blocked() && target instanceof Player wearer) {
+            ShieldDurability.applyWearOnBlock(wearer, block.slot(), adapters.keys(), cooldowns);
+        }
+
+
+        // THE CONVERSION, AND THIS IS ITS ONLY CALL SITE IN THE PROJECT. An audit of every
+        // applyDamage entry found exactly one vanilla-denominated number reaching the custom store --
+        // this one. Sweep, mob-melee and thorns price from stats().attackValue; ability and weapon
+        // damage from content; the dev commands from an operator-typed integer. A second call to
+        // DamageScale.toCustom anywhere would be k squared.
+        //
+        // LAST STEP, on the value handed to applyDamage. The window upstream stays in VANILLA units
+        // (commit 1's invariant), and the shield's DR and reflect are PERCENTAGES, so they COMMUTE
+        // with a scalar -- converting before or after them is the same number. The ordering here is
+        // documentation, not correctness.
+        var maxAttr = target.getAttribute(Attribute.MAX_HEALTH);
+        double applied = DamageScale.toCustom(
+                exchange.applied(),
+                adapters.stats().max(id),
+                maxAttr == null ? Double.NaN : maxAttr.getValue(),
+                adapters.stats().isBarPuppeted(id));
+
+
+        event.setDamage(TOKEN_DAMAGE);      // ride: keep i-frames, flash, knockback, cadence
+        floorSoTokenCannotKill(target);
+        BukkitCombatant.of(target, adapters).handle()
+                .applyDamage(applied, attributableId(event, target));
+    }
+
+    /**
+     * Who to blame for a vanilla damage event: the entity that CAUSED it, or the target itself when
+     * nothing did.
+     *
+     * <p><b>Self-attribution follows {@code applyHeal}'s precedent -- "the honest placeholder rather
+     * than a null that would read as unknown" -- but ONLY where it is still honest.</b> That
+     * justification holds for a heal because a heal has no causing entity, and it held for damage
+     * while the population reaching this handler was sourceless. {@link #onMobMeleeAttack}'s new cause
+     * gate CHANGED THAT POPULATION: creeper blasts and warden booms arrive here now, and self-attributing
+     * those would record a creeper kill as the victim killing themselves, with no aggro -- a regression
+     * against what the melee rider did before the gate, not a rounding error.
+     *
+     * <p>So the causing entity wins where one exists. Gravity still credits the faller. The faction bit
+     * is never touched here: {@code applyDamage} derives {@code dealerIsPlayer} from whatever this
+     * resolves to, so the seam cannot claim a player's damage came from a mob or the reverse.
+     */
+    private static UUID attributableId(EntityDamageEvent event, LivingEntity target) {
+        DamageSource source = event.getDamageSource();
+        Entity causing = source == null ? null : source.getCausingEntity();
+        return causing != null ? causing.getUniqueId() : target.getUniqueId();
+    }
+
+    /**
+     * Keep the 0.01 token from killing a tracked MOB, which death is not supposed to come from.
+     *
+     * <p>Extracted at the third call site rather than copied a third time. Mob death is
+     * {@code MobDeathSystem}'s, through {@code setHealth(0)} on the {@code reachedZero} transition, so
+     * a mob whose puppet health happens to sit below the token must not fall over from the ride.
+     *
+     * <p><b>Mobs only, and that asymmetry is not an omission.</b> A player's vanilla health is already
+     * floored at {@code HeartBarRenderer.MIN_LIVE_HEALTH_POINTS} (1.0) by every render, which is a
+     * hundred times the token -- so a player needs no floor here and adding one would be a second
+     * mechanism competing with the first.
+     */
+    private void floorSoTokenCannotKill(LivingEntity victim) {
+        if (victim instanceof Player) return;
+        if (!adapters.stats().tracks(victim.getUniqueId())) return;
+        if (victim.getHealth() - TOKEN_DAMAGE > 0.0) return;
+        var attr = victim.getAttribute(Attribute.MAX_HEALTH);
+        double vanillaMax = attr == null ? victim.getHealth() : attr.getValue();
+        victim.setHealth(Math.min(vanillaMax, VANILLA_LIVE_FLOOR));
     }
 
     /**

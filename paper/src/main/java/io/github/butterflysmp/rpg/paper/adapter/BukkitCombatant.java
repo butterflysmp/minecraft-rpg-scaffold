@@ -177,7 +177,15 @@ public final class BukkitCombatant {
                 // must turn on the caster, who has already dashed away -- correct for a kite tool.
                 // Melee already aggros via its tokened vanilla event, so re-targeting the same player
                 // here is harmless. Unresolvable/cross-region sources (null) simply don't aggro.
-                if (entity instanceof Mob mob && source instanceof LivingEntity attacker) {
+                //
+                // A SELF-ATTRIBUTED HIT MUST NOT AGGRO ITS TARGET ONTO ITSELF, and that became
+                // reachable the day the vanilla damage boundary landed: environmental damage names no
+                // dealer, so RpgListeners.attributableId falls back to the target's own id, and a mob
+                // taking fall damage would otherwise call setTarget(itself) -- dropping whatever it
+                // was actually chasing. Nothing before that could reach this line with source ==
+                // entity, which is why the guard was not needed until now.
+                if (entity instanceof Mob mob && source instanceof LivingEntity attacker
+                        && !entity.equals(attacker)) {
                     mob.setTarget(attacker);
                 }
 

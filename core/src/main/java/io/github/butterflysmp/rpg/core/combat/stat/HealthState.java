@@ -162,6 +162,22 @@ public final class HealthState {
      */
     private final Stat manaRegenBonus = new Stat(0.0);
 
+    /**
+     * Frozen faction — see the constructor. <b>It now has a SECOND reader asking a DIFFERENT
+     * question.</b>
+     *
+     * <p>{@code CombatantStats.isBarPuppeted} reads this bit to answer <i>"is this combatant's vanilla
+     * max-health attribute written from the custom numbers"</i>, which decides the vanilla-to-custom
+     * damage conversion's denominator. Faction and puppeting are the same bit <b>today only</b>,
+     * because the same registration call sets this and decides whether {@code PlayerHealthSystem}
+     * renders the bar.
+     *
+     * <p><b>Recorded at both ends deliberately: a shared value is a coupling, and the coupling is
+     * invisible from either side.</b> Puppet a mob's bar for a boss display, or register a
+     * player-faction entity whose vanilla max is its own, and one reader breaks while the other's
+     * tests stay green. That is the day this needs to become two fields — see
+     * {@code CombatantStats.isBarPuppeted} for the same note from the other direction.
+     */
     private final boolean player;
     private double current;
 

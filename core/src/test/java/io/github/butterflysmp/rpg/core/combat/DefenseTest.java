@@ -184,4 +184,33 @@ class DefenseTest {
         // Mutation: scale by more than FULL_ARMOR_BAR_POINTS -> a huge defense passes 30 and the
         // attribute clamps -> reddens.
     }
+
+    @Test
+    void applyDefenseIsLINEARInDamageWhichIsWhatLetsDamageWindowRatchetPreMitigation() {
+        // THIS GUARDS ANOTHER CLASS'S DESIGN, AND SAYS SO.
+        //
+        // DamageWindow stores RAW vanilla amounts and returns the DIFFERENCE on a top-up, upstream of
+        // Defense entirely. That is only sound because applyDefense is linear in damage:
+        // f(a) - f(b) == f(a - b). If it were not, a window holding pre-mitigation amounts would make
+        // every top-up under-deal -- silently, and only for MITIGATED victims, which is the population
+        // least likely to appear in a boot gate.
+        //
+        // Linear in BOTH branches: damage * SCALE/(SCALE+defense) is a scalar multiple, and the
+        // non-positive-defense guard returns damage unchanged. The identity is exact in algebra and
+        // near-exact in binary FP, hence EPS -- the same reason theTwoCurvesAreOneCurve carries one.
+        for (double defense : new double[] {0, -50, 20, 25, 100, 10_000}) {
+            for (double[] pair : new double[][] {{10, 4}, {4, 4}, {12, 10}, {0.5, 0.25}, {1e6, 1}}) {
+                double a = pair[0];
+                double b = pair[1];
+                assertEquals(Defense.applyDefense(a, defense) - Defense.applyDefense(b, defense),
+                        Defense.applyDefense(a - b, defense), EPS,
+                        "applyDefense must be linear in damage at defense " + defense
+                                + " for " + a + " over " + b + " -- DamageWindow ratchets pre-mitigation "
+                                + "and its top-ups under-deal the moment this stops holding");
+            }
+        }
+        // Mutation: give applyDefense any non-linear term -- a floor, a cap, a square root, a
+        // subtractive constant -> f(a-b) stops matching f(a)-f(b) -> reddens, naming the defense and
+        // the pair. Verified by adding `- 0.5` to the mitigated branch.
+    }
 }

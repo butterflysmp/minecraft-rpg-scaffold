@@ -85,10 +85,31 @@ public final class PlayerHealthSystem implements HealthListener {
      * Resolves the player and hops onto its own thread before touching Bukkit -- the change may have
      * been emitted from any thread.
      *
-     * The kill lives here, not in a separate death listener, so it and the floored render never race on
-     * the same reachedZero change: on reachedZero we kill INSTEAD OF rendering. setHealth(0) fires a
-     * normal PlayerDeathEvent (keep-inventory forced in RpgListeners); the display floor stays correct
-     * for every non-lethal render. onQuit does not run on death, so custom HP sits at 0 until onRespawn.
+     * The kill lives here, not in a separate death listener, so on THIS change we kill INSTEAD OF
+     * rendering. setHealth(0) fires a normal PlayerDeathEvent (keep-inventory forced in RpgListeners).
+     * onQuit does not run on death, so custom HP sits at 0 until onRespawn.
+     *
+     * <h2>WHAT THIS GUARANTEES, AND WHAT IT USED TO CLAIM</h2>
+     *
+     * This branch guarantees that <b>this invocation</b> does not render. <b>It never guaranteed
+     * anything about the next one</b>, and the previous wording -- "it and the floored render never
+     * race", with the code comment "no floor render competes" -- read as a property of the system.
+     *
+     * <p>It is not one, because {@code reachedZero} fires only on the TRANSITION to zero. The very
+     * next {@code HealthChange} on an already-zero player is not a transition, so it falls through to
+     * the render below -- and the render used to floor at half a heart, landing on top of the queued
+     * {@code setHealth(0)}. Both hops are next-tick ({@code EntityScheduler.run} is documented as
+     * such), so the revival could beat vanilla's death check. Measured 2026-09-06 in lava: death
+     * screen up, health 1, respawn button inert, relog the only recovery.
+     *
+     * <p><b>A DAMAGE TICK AND A PASSIVE HEAL ARE THE SAME EVENT TO THIS METHOD</b> -- both are
+     * non-transitioning changes on a zero-HP player -- so there was one defect here, not two, and
+     * fixing only the damage path would have left it live behind the regeneration loop.
+     *
+     * <p>What closes it is {@code HeartBarRenderer} writing ZERO at zero rather than the floor, so a
+     * late render agrees with the death instead of undoing it. The floor still applies strictly above
+     * zero, which is the case it was always for. This branch's job is unchanged; only its promise has
+     * been corrected to the one it can keep.
      */
     @Override
     public void onChange(HealthChange change) {
@@ -96,7 +117,7 @@ public final class PlayerHealthSystem implements HealthListener {
         Player player = Bukkit.getPlayer(change.target());
         if (player == null) return;
         if (change.reachedZero()) {
-            scheduler.onEntity(player, () -> player.setHealth(0));   // real death; no floor render competes
+            scheduler.onEntity(player, () -> player.setHealth(0));   // see below: the RENDER is what used to compete
             return;
         }
         scheduler.onEntity(player, () ->
