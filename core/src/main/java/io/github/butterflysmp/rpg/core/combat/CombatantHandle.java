@@ -45,7 +45,37 @@ public interface CombatantHandle {
      * @param wasCrit for display only -- the crit multiplier is already inside {@code amount}.
      *                Applying it again here would square the crit.
      */
-    void applyDamage(double amount, UUID sourceId, boolean wasCrit);
+    default void applyDamage(double amount, UUID sourceId, boolean wasCrit) {
+        applyDamage(amount, sourceId, wasCrit, false);
+    }
+
+    /**
+     * As above, stating whether this damage SKIPS the Defense curve entirely.
+     *
+     * <h2>THIS IS THE FIRST INSTANCE OF A PER-CAUSE RULE, NOT A SCORCH FEATURE</h2>
+     *
+     * {@code NEXT.md}'s standing question -- <i>"which causes should {@code Defense} touch?"</i> --
+     * records that {@code CombatantStats.damage} applies {@code Defense.applyDefense} to every cause
+     * unconditionally, and that <b>there is no route to "ignores defense" today.</b> The operator's
+     * drowning rule ("10% of max health, REGARDLESS of defense or max health") has been waiting on
+     * exactly this parameter; scorch is merely its first consumer.
+     *
+     * <p><b>Hence the name.</b> It states the PROPERTY, not the feature. A {@code boolean isScorch}
+     * would have to be replaced by whatever eventually answers the standing question; {@code
+     * bypassesDefense} generalises by having a second caller added, not by being redesigned. Do not
+     * rename it after a status.
+     *
+     * <p><b>What it is NOT:</b> not vanilla's {@code bypasses_armor} tag list. {@code NEXT.md} is
+     * explicit that the tag list <i>"is EVIDENCE, NOT A MANDATE"</i> -- a BALANCE list, unlike the
+     * i-frame and ratchet mechanisms where diverging from vanilla produced bugs. Adopting it wholesale
+     * needs the operator, per cause. This parameter makes that conversation implementable; it does not
+     * pre-answer it.
+     *
+     * @param bypassesDefense when true the amount lands whole. Percent-of-max damage is the shape this
+     *                        exists for: cutting a 5%-of-max burn with armour makes it ordinary damage
+     *                        with extra arithmetic rather than the anti-tank tool it was specified as.
+     */
+    void applyDamage(double amount, UUID sourceId, boolean wasCrit, boolean bypassesDefense);
 
     /**
      * Raise the target's health by {@code amount}, capped at its max by the implementation.
@@ -67,5 +97,28 @@ public interface CombatantHandle {
      */
     void applyImpulse(Vec3 velocity);
 
-    void applyStatus(String statusId, int durationTicks, int amplifier);
+    default void applyStatus(String statusId, int durationTicks, int amplifier) {
+        applyStatus(statusId, durationTicks, amplifier, null, 0.0);
+    }
+
+    /**
+     * As above, naming WHO applied the status and HOW HARD the payload that carried it hits.
+     *
+     * <p>Both were unrepresentable before, and a status that needed either had to do without. Scorch
+     * needs both: {@code applierId} is the kill credit, and {@code sourceDamage} is the cap that stops
+     * a percent-of-max-health burn running away on a large health pool.
+     *
+     * <p><b>{@code sourceDamage} is named for what it IS, not for the one status that reads it.</b> It
+     * is the payload's headline damage as {@code DamagePayload.of} resolves it -- an authored literal,
+     * or the wielder's attack stat for a {@code weapon_damage} payload -- which is the same number the
+     * tooltip prints. A field called {@code scorchCap} would have to be renamed by the second consumer.
+     *
+     * @param applierId    who to credit; may be null where nothing applied it (a dev command)
+     * @param sourceDamage the payload's damage, or {@code <= 0} when the payload declares none. An
+     *                     adapter must treat non-positive as UNDECLARED and substitute a conservative
+     *                     constant -- <b>never as "no cap"</b>, which for a percent-of-max effect is
+     *                     not a fallback but the absence of one
+     */
+    void applyStatus(String statusId, int durationTicks, int amplifier,
+                     UUID applierId, double sourceDamage);
 }

@@ -344,6 +344,7 @@ public final class RpgListeners implements Listener {
             // And its melee window, or the map grows for the lifetime of the server.
             meleeHits.forget(mob.getUniqueId());
             damageWindow.forget(mob.getUniqueId());   // and its environmental window, same reason
+            adapters.scorch().forget(mob.getUniqueId()); // and its burn, or the task outlives the mob
         }
     }
 
@@ -692,6 +693,7 @@ public final class RpgListeners implements Listener {
         cooldowns.clear(playerId);
         meleeHits.forgetAttacker(playerId);   // drop any swing that never landed
         damageWindow.forget(playerId);        // and their environmental window, or the map grows
+        adapters.scorch().forget(playerId);   // and their burn
         resources.clear(playerId);
         profiles.onQuit(playerId);
         // Drop custom-health state so no modifier or entry leaks across sessions.
@@ -745,6 +747,10 @@ public final class RpgListeners implements Listener {
         // next environmental hit inside WINDOW_TICKS is absorbed. Respawning into lava or a wall is
         // exactly when environmental damage arrives.
         damageWindow.forget(event.getPlayer().getUniqueId());
+        // RESPAWN is a correctness fix, not a leak fix -- DamageWindow.forget's reason exactly: quit
+        // handling does not run on death and entity-removal filters players out, so without this a
+        // player who died mid-burn respawns still scorched, burning on the old applier's credit.
+        adapters.scorch().forget(event.getPlayer().getUniqueId());
     }
 
     // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is
@@ -1128,6 +1134,36 @@ public final class RpgListeners implements Listener {
         UUID id = target.getUniqueId();
         if (!adapters.stats().tracks(id)) return;
         if (VanillaDamagePolicy.forCause(event.getCause()) == VanillaDamagePolicy.Action.PASS) return;
+
+        // A SCORCHED VICTIM'S FIRE TICK IS OURS, AND LETTING IT THROUGH IS A DOUBLE-DIP.
+        //
+        // setFireTicks is a VISUAL THAT CARRIES DAMAGE. Scorch keeps the burn's look and takes over
+        // its damage -- on its own 20-tick clock, capped by the applying weapon, credited to the
+        // applier, bypassing Defense. Vanilla's FIRE_TICK is none of those things: since the vanilla
+        // damage boundary landed it reroutes to custom HP uncapped, and attributableId (below) falls
+        // back to the VICTIM's own id because a fire tick names no causing entity. So without this
+        // gate a scorched target takes both streams and the kills credit the corpse.
+        //
+        // THE GATE LIVES HERE, NOT IN VanillaDamagePolicy. That table classifies a CAUSE; this is a
+        // fact about a VICTIM, and the two must not be confused.
+        // VanillaDamagePolicyTest.theMOTIVATINGFireCausesGetNoSpecialTreatment exists specifically to
+        // redden if a Scorch decision leaks into the policy, and it should stay able to.
+        //
+        // BEFORE damageWindow.claim, DELIBERATELY. A suppressed tick dealt nothing, so it must not
+        // consume window budget: claiming first would let a zero-damage fire tick open a window that
+        // absorbs a real lava hit for the next ten ticks (DamageWindow.claim's ratchet arm), which
+        // would make being scorched a DEFENSIVE BUFF against lava. It still tokens and still floors,
+        // because it must not reach vanilla either -- the same shape as the absorbed branch below,
+        // minus the claim.
+        //
+        // Narrow on purpose: FIRE and LAVA are separate causes and still land in full. A scorched
+        // victim standing in real fire loses only the FIRE_TICK stream, which is the one we replaced.
+        if (event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK
+                && adapters.scorch().isScorched(id)) {
+            event.setDamage(TOKEN_DAMAGE);
+            floorSoTokenCannotKill(target);
+            return;
+        }
 
         // OWN THE CADENCE. The token we are about to write becomes vanilla's lastHurt, which destroys
         // its ratchet for any cause whose cadence IS the invulnerability window -- lava and

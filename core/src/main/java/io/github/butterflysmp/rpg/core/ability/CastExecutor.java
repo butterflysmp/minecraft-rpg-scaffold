@@ -90,7 +90,11 @@ public final class CastExecutor {
         // plus the stats frozen on the caster's own thread. Built once, here, because this is the
         // last point that is still unambiguously the caster's frame -- a projectile's impact and
         // an area's pulse both resolve on somebody else's region.
-        Caster source = Caster.of(caster);
+        // The payload's headline damage rides the Caster so a status arm deep inside a burst can read
+        // it as its CAP. Frozen here with everything else: a projectile is capped by what it was
+        // fired with, not by what the caster holds when it lands.
+        Caster source = Caster.of(caster)
+                .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), caster.attackDamage()));
 
         // WHAT COSTS A USE, AND WHEN -- the whole rule, here, rather than left to each caller to
         // remember. Only a BASIC ATTACK charges: an ability already spends mana, and charging it
@@ -181,7 +185,9 @@ public final class CastExecutor {
      */
     public void landBasicMelee(AbilityDefinition ability, CombatantSnapshot caster,
                                Combatant target, double chargeScale) {
-        detonate(ability, Caster.of(caster, chargeScale), target, target.state().position());
+        detonate(ability, Caster.of(caster, chargeScale)
+                .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), caster.attackDamage())),
+                target, target.state().position());
         if (DamagePayload.isBasicAttack(ability.onHit())) onBasicAttackUse.run();
     }
 

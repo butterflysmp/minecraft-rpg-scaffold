@@ -219,9 +219,29 @@ public final class CombatantStats {
      * displays, not a factor for the maths.
      */
     public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, boolean wasCrit) {
+        damage(id, amount, dealer, dealerIsPlayer, wasCrit, false);
+    }
+
+    /**
+     * As above, and {@code bypassesDefense} skips {@link Defense#applyDefense} entirely.
+     *
+     * <p><b>This line was unconditional from the day it was written, and that was the defect.</b>
+     * {@code NEXT.md}'s standing question -- "which causes should {@code Defense} touch?" -- names this
+     * exact call as the reason there is no route to "ignores defense", and the operator's drowning rule
+     * ("REGARDLESS of defense") has been unimplementable because of it. Scorch is the first consumer;
+     * see {@code CombatantHandle.applyDamage}'s javadoc for why the flag is named for the PROPERTY
+     * rather than for scorch.
+     *
+     * <p><b>The bypass is total, not a reduced cut.</b> A percent-of-max burn that armour trims is no
+     * longer percent-of-max damage -- it is ordinary damage wearing a percentage, which defeats the
+     * one thing the shape was chosen for. Armour still reaches scorch, through stack ACCRUAL: fewer
+     * points landed is fewer stacks, so armour delays the burn rather than blunting it.
+     */
+    public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, boolean wasCrit,
+                       boolean bypassesDefense) {
         HealthState state = states.get(id);
         if (state == null) return;
-        double dealt = Defense.applyDefense(amount, state.defenseValue());
+        double dealt = bypassesDefense ? amount : Defense.applyDefense(amount, state.defenseValue());
         boolean reachedZero = state.damage(dealt);
         listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.DAMAGE, dealt,
                 dealer, dealerIsPlayer, state.current(), state.max(), reachedZero, wasCrit));

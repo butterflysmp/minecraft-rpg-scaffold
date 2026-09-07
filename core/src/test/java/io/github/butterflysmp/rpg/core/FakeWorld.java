@@ -421,6 +421,21 @@ public final class FakeWorld implements CombatWorld {
         /** Whether the last applyDamage was flagged a crit. The seam bit, as the port delivered it. */
         public boolean lastDamageWasCrit = false;
 
+        /** The applier the last applyStatus named, or null. The credit half of the widened seam. */
+        public UUID lastStatusApplier;
+
+        /** The payload damage the last applyStatus carried -- a status's basis for a CAP. */
+        public double lastStatusSourceDamage = 0.0;
+
+        /**
+         * Whether the last applyDamage asked to SKIP the Defense curve.
+         *
+         * Recorded rather than acted on: this fake carries no defense, so honouring the flag would be
+         * a no-op and a test asserting "it bypassed" would pass against a port that dropped the
+         * parameter on the floor. Capturing the bit as delivered is what lets a test see the seam.
+         */
+        public boolean lastDamageBypassedDefense = false;
+
         /** The last velocity a dash impulse set on this dummy, or null if never dashed. */
         public Vec3 lastImpulse;
 
@@ -471,10 +486,12 @@ public final class FakeWorld implements CombatWorld {
         }
 
         @Override public UUID id() { return id; }
-        @Override public void applyDamage(double amount, UUID sourceId, boolean wasCrit) {
+        @Override public void applyDamage(double amount, UUID sourceId, boolean wasCrit,
+                                          boolean bypassesDefense) {
             health -= amount;
             lastDamageSource = sourceId;
             lastDamageWasCrit = wasCrit;
+            lastDamageBypassedDefense = bypassesDefense;
             damageCalls++;
         }
         @Override public void applyHeal(double a) { health += a; }
@@ -484,6 +501,10 @@ public final class FakeWorld implements CombatWorld {
             knockbackCalls++;
         }
         @Override public void applyImpulse(Vec3 velocity) { this.lastImpulse = velocity; }
-        @Override public void applyStatus(String id, int dur, int amp) { statuses.add(id); }
+        @Override public void applyStatus(String id, int dur, int amp, UUID applierId, double srcDmg) {
+            statuses.add(id);
+            lastStatusApplier = applierId;
+            lastStatusSourceDamage = srcDmg;
+        }
     }
 }

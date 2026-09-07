@@ -167,8 +167,13 @@ public final class EffectApplier {
                         position.z() - origin.z());
                 target.handle().applyKnockback(dir, k.strength());
             }
+            // The caster and the payload's headline damage both ride the Caster, so a status that
+            // needs to credit someone (scorch's kill credit) or to cap itself against the hit that
+            // carried it (scorch's cap) can, without this arm knowing which status does either.
+            // Element stays out of it: identity, not math, here as everywhere.
             case EffectSpec.Status s ->
-                    target.handle().applyStatus(s.statusId(), s.durationTicks(), s.amplifier());
+                    target.handle().applyStatus(s.statusId(), s.durationTicks(), s.amplifier(),
+                            caster.id(), caster.payloadDamage());
         }
     }
 

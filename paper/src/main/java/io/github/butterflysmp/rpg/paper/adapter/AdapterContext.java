@@ -43,7 +43,8 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              ElementRegistry elements, EnchantRegistry enchants,
                              Logger log, Set<String> warned,
                              ImmobilizeStatus immobilize, SoakedStatus soaked,
-                             ImmobilizeStatus freeze, CombatantStats stats, double anchorDrift,
+                             ImmobilizeStatus freeze, ScorchStatus scorch,
+                             CombatantStats stats, double anchorDrift,
                              CraftResultIndex craftResults) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
@@ -52,8 +53,8 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                           CombatantStats stats, double anchorDrift,
                           CraftResultIndex craftResults) {
         this(scheduler, keys, visuals, statuses, elements, enchants, log, ConcurrentHashMap.newKeySet(),
-                new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), stats, anchorDrift,
-                craftResults);
+                new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), new ScorchStatus(),
+                stats, anchorDrift, craftResults);
     }
 
     /**

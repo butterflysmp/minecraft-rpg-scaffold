@@ -192,6 +192,23 @@ class StatusLoaderTest {
 
         assertTrue(warnings.isEmpty(), warningText());
         assertEquals(1, registry.size());
-        assertInstanceOf(StatusDefinition.Fire.class, registry.find("scorch").orElseThrow());
+        // Scorch, NOT Fire. It was `kind: fire` until the scorch slice, when the burn stopped being
+        // vanilla-rated: this row is what noticed the content change, which is the job. Fire still
+        // exists and is still right for anything wanting only the look -- see StatusDefinition.
+        assertInstanceOf(StatusDefinition.Scorch.class, registry.find("scorch").orElseThrow());
+    }
+
+    @Test
+    void loadsAFireStatusStillBecauseSCORCHDidNotREPLACEIt() throws IOException {
+        // The two kinds are distinct and both are reachable. If scorch had been implemented by
+        // changing what `kind: fire` MEANS, every existing fire status would have silently become a
+        // capped, credited, defense-bypassing DoT -- and nothing in content would have said so.
+        write("emberglow.yml", "kind: fire");
+
+        StatusRegistry registry = load();
+
+        assertTrue(warnings.isEmpty(), warningText());
+        assertInstanceOf(StatusDefinition.Fire.class, registry.find("emberglow").orElseThrow());
+        // Mutation: map "fire" to StatusDefinition.Scorch -> reddens.
     }
 }
