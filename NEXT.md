@@ -7756,6 +7756,37 @@ And the measurement that names the numbers, from the 2026-08-28 Step 0 boot, quo
 **Lava is 4 on a 10-tick window; a fire tick is 1.** Those two lines predicted D3a in full, nine days
 early.
 
+### A GATE ROW NEEDS ITS PRECONDITIONS ENUMERATED, NOT JUST ITS ARITHMETIC
+
+**Two rows in one sitting had correct numbers and unstated conditions, and BOTH would have produced a
+confident WRONG diagnosis rather than merely failing to run.** That is worse than rule 4's
+impossible-row case: an impossible row does nothing, and these would have pointed somewhere specific.
+
+| row | arithmetic | the unstated condition | what it would have "shown" |
+|---|---|---|---|
+| `D4b` | 18x, correct | **`knell.yml` is `base_entity: wither_skeleton`, and wither skeletons are FIRE-IMMUNE** — `is_fire` contains `minecraft:lava` | the Knell takes nothing in lava while the control dies → *"the conversion does not reach tagged mobs"* |
+| `D4c` | 60% / lethal, correct | **the operator's ARMOUR** — our `Defense` applies to every cause, mobs have none, he does | the lethal drop kills both mobs and leaves him standing → *"the conversion works for mobs, not players"* |
+
+**Fire immunity is a property of the SUBJECT. Armour is a property of the RUN.** Neither is visible to
+a table that verifies only numbers, and a row can be arithmetically perfect and physically incapable
+of showing what it claims.
+
+#### The enumeration, because "check the preconditions" is not actionable
+
+Before a row is handed to a runner, say what it assumes about:
+
+- **the subject** — immunities, base entity, whether the content file sets the stat the row reads
+  (`knell.yml` sets **no** defense, which is why D4c's mob figures are exact);
+- **the operator** — armour, held items, enchants, custom stats;
+- **the mode** — creative suppresses damage events entirely, so every damage row passes by not running;
+- **the world** — what else is in it that shares the cause, and whether the subject can be reached at
+  all.
+
+**The two that bit here were both raised BEFORE the boot and neither reached the run list**, which is
+the same defect as *"a checkpoint that lives only in the gate document gets built past"*: a condition
+stated somewhere the runner is not reading is not a condition the runner can meet. **Preconditions
+belong IN the row, as text the runner must satisfy — not in the prose beneath the table.**
+
 ### A GATE ROW NAMED AS A MUTATION'S SUBSTITUTE NEEDS ITS DISCRIMINATION CHECKED LIKE ANY OTHER ROW
 
 **Rule 4, one level up — and the level where it is hardest to catch, because the claim lands in a

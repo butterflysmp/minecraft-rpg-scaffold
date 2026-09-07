@@ -97,7 +97,8 @@ break creepers"*. **Write whichever one B1 says is true; do not write both and p
 | **D3e** | **Stopwatch, lava.** Full custom HP, no armour, straight into lava. | **~2.5 seconds** — 4 raw per 10-tick window × k=5 = 40 custom/sec against 100 HP. **~0.5 s means M5**; a reading anywhere near 20 Hz means commit 1's window regressed. | discriminating · **M5's second witness, and the only row that also re-checks the D3a cadence after the conversion** | |
 | **D3** | Stand in lava for ~3 seconds. | Number drops in roughly **6 steps, not ~60** — vanilla's i-frame cadence survived the ride. | discriminating · **sole witness that REROUTE tokens rather than cancels** | **FAILED 2026-09-06, THREE WAYS — GATE STOPPED HERE.** (a) **4 damage per TICK, not per 10 ticks** — amount right, cadence wrong by 10x. (b) **the player could not die or respawn.** (c) the test world was left unusable. **D3 was written as the sole witness for the tokening decision and it FALSIFIED it.** See the two diagnoses below |
 | **D4** | Drop a mob off a ledge while looking at it. | Its nameplate drops by the fall damage. | binary · the mob half of the boundary | |
-| **D4b** | **THE KNELL — the biggest single change in the conversion, and nothing else covers it.** `/rpg spawn knell` (it is content, so it must be spawned; an ordinary mob will not do). Get it into lava and time it. | It burns down in **vanilla's own time for a 360 HP body** — a lava tick takes **20% of its bar**, where before the fix it took **1.1%**. Compare against D4's untagged mob in the same lava: **both should lose the same FRACTION per tick.** | discriminating · **an 18x change on shipped content** · the untagged mob beside it is the control | |
+| **D4b** | ~~`/rpg spawn knell`, get it into lava, time it.~~ **WITHDRAWN BEFORE IT WAS RUN — THE SUBJECT IS FIRE-IMMUNE.** | ~~20% of its bar per tick~~ | **NEVER A TEST.** `knell.yml` is `base_entity: wither_skeleton`, and wither skeletons are fire-immune; `is_fire` in `paper-26.1.2.jar` contains `minecraft:lava`. **The Knell would have taken NOTHING while the control died normally, and that reads as "the conversion does not reach tagged mobs" — the exact opposite of the truth.** A false negative pointing at a specific wrong diagnosis is worse than no reading. Replaced by **D4c**, which is the same property on a cause both subjects feel | |
+| **D4c** | **D4b's replacement, and it also covers D1b — TWO DROPS, THREE SUBJECTS.** **PRECONDITION: THE OPERATOR WEARS NO ARMOUR.** Not a note — the row is invalid otherwise, see below. Stand a `/rpg spawn knell` and an **ordinary wither skeleton** (same base entity, so the ONLY variable is the `mob_id` tag) on a pillar with you. **Drop 1: ~15 blocks. Drop 2: ~23 blocks.** | **Drop 1 — all three land on exactly 60% of bar** (player 60/100, skeleton 12/20, Knell 216/360). **Drop 2 — all three die.** Under the shipped defect the skeleton dies to one fall and the Knell needs **eighteen**. | discriminating · **an 18x change on shipped content** · the untagged skeleton is the control, and this is `MobSeeding`'s documented symmetric property witnessed in game rather than by proxy | |
 | **D5** | One melee swing on a mob. | Nameplate drops by the weapon's number **exactly once**. | discriminating · **`ENTITY_ATTACK`'s PASS arm; a doubled number means the arm is wrong** | |
 | **D5b** | Sweep-attack **three mobs at once** with a sweeping sword. | Each nameplate drops by the sweep number **exactly once**. | discriminating · **`ENTITY_SWEEP_ATTACK`'s PASS arm — the second one, and it has its own handler** | |
 | **D5c** | Put vanilla Thorns on armour (anvil + book), wear it, let a mob hit you. Then repeat **with one of our Thorns shields also raised**. | Nameplate drops from the thorns hit, credited to you. **WITH BOTH: EXPECT TWO REFLECT NUMBERS OFF ONE HIT. THAT IS CORRECT — READ THE NOTE BELOW BEFORE JUDGING IT.** *Figure: are the two readable, or do they collide?* | figure · vanilla armour Thorns is reachable (the anvil is not hijacked) and is a **separate source** from our shield Thorns | |
@@ -389,6 +390,65 @@ vanilla does — the largest lands, the rest fall inside it.
 **The per-victim decision was taken before this evidence existed, on the lava-while-burning argument.**
 It now has a case from measurement rather than from preference, and the deciding case is not the one
 it was chosen on.
+
+## D4b WAS IMPOSSIBLE, AND THE QUESTION THAT WOULD HAVE CAUGHT IT WAS ASKED BEFORE THE BOOT
+
+**Rule 4's first failure mode — a row that cannot run — and this one is worse than the milk-bucket
+case, because it would not merely have failed to run. It would have produced a confident wrong
+answer.**
+
+`knell.yml` is `base_entity: wither_skeleton`. Wither skeletons are fire-immune, and
+`data/minecraft/tags/damage_type/is_fire.json` in `paper-26.1.2.jar` contains **`minecraft:lava`**. So
+in lava the Knell takes **nothing** while the untagged control dies normally — which reads as *"the
+conversion does not reach tagged mobs"*, **the precise opposite of the truth.**
+
+> **The reviewer raised the fire-immunity risk AND the defense question before the boot, and neither
+> reached the run list I then handed over.** The row survived into a run list because it was checked
+> for *arithmetic* (18x, correct) and never for *physical possibility* — `CLAUDE.md`'s first rule,
+> applied to a gate table instead of to code, one slice after this file recorded that exact lesson.
+
+**`knell.yml` sets NO defense stat** — the whole file is `base_entity`, `display_name`, `max_health:
+360`. Mobs are never reconciled either, so `defenseValue` is 0 for both subjects. **D4c therefore has
+an exact expected value rather than a guess**, and a Knell surviving a drop the skeleton dies to would
+mean the conversion, not armour.
+
+**Same property, on a cause both subjects feel:** fall damage is `bypasses_armor` and nobody is immune
+to it.
+
+```
+fall of raw R          max    k        R=12 (~15 blocks)     R=20 (~23 blocks)
+  player               100    5        60/100  = 60%         100 -> dies
+  ordinary w.skeleton   20    1        12/20   = 60%          20 -> dies
+  Knell                360   18       216/360  = 60%         360 -> dies
+```
+
+**Two drops cover D4c and D1b together**, and the mob pair shares a base entity so the only variable
+is the `mob_id` tag.
+
+### AND THE SAME DEFECT ONE ROW LATER: `D4c` NEEDS "NO ARMOUR" AS A PRECONDITION
+
+**Our `Defense` applies to EVERY cause** — that is the open *"which causes should `Defense` touch?"*
+question — **so the player row is armour-dependent while both mob rows are not.** Mobs are never
+reconciled, so their defense is 0; the operator's is not.
+
+At his own measured diamond value (**defense ≈ 25**: the popup read 3 against `raw=4`, and
+`applyDefense(4, 25) = 3.2`):
+
+```
+                    mobs      naked                 IN DIAMOND
+  ~15 blocks (R=12) 60%       60/100 = 60%          applyDefense(60,25) = 48  -> 48% taken, 52% left
+  ~23 blocks (R=20) die       100 -> dies           applyDefense(100,25) = 80 -> SURVIVES at 20/100
+```
+
+**In armour the lethal drop kills both mobs and leaves him standing — which reads as "the conversion
+works for mobs and not for players."** Second false negative in this table pointing at a *specific*
+wrong diagnosis, in the same sitting as the first.
+
+> **THE PATTERN, and it is why this is a precondition rather than a note: ARITHMETIC CHECKED,
+> CONDITIONS UNCHECKED.** D4b's arithmetic was right and its *subject* was immune. D4c's arithmetic is
+> right and its *run* is armour-dependent. **Fire immunity is a property of the subject; armour is a
+> property of the run.** Both are invisible to a table that only verifies numbers, and both were
+> caught by the reviewer rather than by the table. Generalised in `NEXT.md`.
 
 ## M5 HAS A NAMED WITNESS NOW — AND THE ROW FIRST NAMED FOR IT WAS BLIND
 
