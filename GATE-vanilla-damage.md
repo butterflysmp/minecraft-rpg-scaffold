@@ -225,6 +225,167 @@ fall is one event, so it should still kill. **If D6 passes while D3b fails, the 
 repeating causes specifically** — which is a much smaller fix than "death is broken". Run D6 before
 believing anything wider.
 
+## STEP2, 2026-09-06 — 149 MEASURED EVENTS, AND THE AXIS WAS NOT "REPEATING"
+
+**The defect splits the 29 REROUTE causes by whether VANILLA GATES THE CAUSE ON THE INVULNERABILITY
+WINDOW — not by whether it repeats.** Counted over the whole capture:
+
+| cause | events | with `iFrames=0` | verdict |
+|---|---|---|---|
+| `SUFFOCATION` | 85 | **1** (the first) | i-frame gated → **corrupted, 20 Hz** |
+| `LAVA` | 26 | **1** (the first) | i-frame gated → **corrupted, 20 Hz** |
+| `DROWNING` | 32 | **32 — all of them** | **never gated at all**; clean 20-tick interval |
+| `FALL` | 4 | 4 | not gated |
+
+**`DROWNING` REPEATS AND IS NOT AFFECTED.** Its cadence comes from the air-supply timer, so the
+ratchet has nothing to corrupt — which is why `D3b''` did not reproduce. **Not because it "usually
+wins a race": because it is not in the race.** The reviewer's refusal to score it as a green was
+right, and the reason is now mechanism rather than suspicion.
+
+**And `SUFFOCATION` reproduces in full** — 85 events at 20 Hz with the identical signature. `D3b'`
+would have reproduced had it been run before the fix.
+
+### The token poisoning, measured rather than inferred
+
+```
+tick=191119  LAVA  iFrames=0   lastDmg=0.0000  raw=4.0000  final=4.0000   <- first hit, window shut
+tick=191120  LAVA  iFrames=19  lastDmg=0.0100  raw=4.0000  final=3.9900   <- and every tick after
+tick=191139  LAVA  iFrames=10  lastDmg=0.0100  raw=4.0000  final=4.0000   <- normal path, re-arms to 20
+```
+
+`lastDmg` reads **exactly 0.0100** — `TOKEN_DAMAGE`, on the wire. `raw − final = 0.01` is `lastHurt`
+arriving as `INVULNERABILITY_REDUCTION`, and it **vanishes at `iFrames=10`** where the window check
+fails and the normal path runs. The modifier appears on exactly the branch the bytecode said.
+
+### `(a)` IS WITNESSED, THREE TIMES, INCLUDING BOTH 20 Hz CAUSES
+
+`tried to swim in lava` + `died` (20:52:02); `drowned` (20:53:09); `suffocated in a wall` + `died`
+(20:53:42). Deaths completed and respawns reset custom HP to 100. The suffocation tail shows the floor
+doing its **remaining** job correctly — `vanillaHP=1.0000` while `customNow` ran 3.6 → 0.6 (a sliver
+of a heart, floored), then death at 0.0.
+
+### The denomination defect, measured on the two causes the operator reported
+
+- **Player `FALL raw=25.0000`** on `customMax=100`, and **the player lived.** 25 on a 20-point vanilla
+  bar is lethal; spent unconverted against a 100-scale store it is a quarter of the bar.
+  `customFromHealthPoints(25, 100)` = **125** — instantly lethal, as vanilla intends. That is the
+  operator's "fall → 5x", arrived at from the code.
+- **Player `DROWNING raw=2.0000`** → ~1.0 dealt after Defense, so ~100 s to drown against vanilla's
+  ~10 s. That is the operator's "drowning → 10% of max health".
+
+**Both numbers are the same missing conversion, reported in different units.**
+
+### The mob asymmetry, measured — mobs are already correct
+
+| victim | `customMax` | `vanillaHP` per event | dealt |
+|---|---|---|---|
+| `PLAYER` | 100 | −0.8 (**= 4/5**, the renderer rewriting it) | 4 of 100 |
+| `SPIDER` | 16 | **−0.01, the token only** | 2 of 16 = 12.5%, exactly vanilla |
+| `GLOW_SQUID` | 10 | −0.01 | — |
+
+A spider's 8-damage fall took 8 of 16 — **50%, matching vanilla exactly**. `k = 1` for mobs,
+confirmed by measurement, and converting them would be the bug.
+
+*(The 61.8 HP discontinuity at 20:53:02 is `/rpg damage 60` plus a drowning tick, not a defect.)*
+
+### NO ARMOURED READING EXISTS. ABSENT IS NOT ZERO.
+
+**The mitigation question is UNMEASURED, and a conclusion was drawn from its absence anyway.** Stated
+here because the report that drew it did not.
+
+`bypasses_armor.json` in `paper-26.1.2.jar` contains `drown`, `in_wall`, `fall`, `starve`, `freeze`,
+`magic`, `wither`, `sonic_boom`, `on_fire`, `cramming`, `generic`, `out_of_world`, `generic_kill` and
+more. **So `DROWNING`, `SUFFOCATION` and `FALL` — three of the four causes captured — bypass vanilla
+armour entirely.** `LAVA` is the only armour-mitigated cause in the capture, **and the player was
+unarmoured for it** (custom fell by the full `applied=4.0`, so Defense was 0).
+
+The armoured run was **drowning**, which vanilla does not mitigate — hence `raw == final` throughout.
+**Every trace in the capture shows `raw == final` apart from the token's 0.01, which is exactly what
+an unarmoured run looks like.** The two pipelines were never observed disagreeing because they were
+never observed on the same cause.
+
+**Consequence:** *"possibly no `DamageWindow`, if we can stop suppressing"* rests on vanilla's
+mitigation and ours agreeing, `final=` is the only instrument for that, and **its discriminating case
+did not run.** That conclusion has nothing under it and no suppression change may be designed on it.
+
+**The discriminating row is LAVA IN FULL ARMOUR** — the one cause here vanilla mitigates, measured
+against a player whose Defense is non-zero, comparing `raw`, `final`, and the custom drop.
+
+**Scope, narrower than first stated:** `bypasses_armor` also holds `on_fire`, so the armour-exposed
+rerouted set is small — lava, cactus/`CONTACT`, explosions. Most of what this boundary reroutes,
+vanilla never mitigated. **A green on the armoured-lava row therefore closes more than the two-pipeline
+objection first implied**, but it still gates the design: it is the only cause where the two mitigation
+curves can be seen on the same event.
+
+| # | action | expect | marks | result |
+|---|---|---|---|---|
+| **D3d** | **Full diamond**, non-zero `⛨`. Stand in lava ~2 s. Read the STEP2 lines. | *figure:* `raw`, `final`, and the per-tick custom drop | **the only instrument for whether vanilla's armour curve and `Defense.applyDefense` agree** · gates the D3a design | **RAN 2026-09-06. THE PIPELINES DIVERGE. "STOP SUPPRESSING" IS DEAD.** See below |
+
+### D3d — MEASURED, AND IT CLOSES THE SUPPRESSION QUESTION
+
+Armoured `LAVA`, 18 events, two triples — and the decomposition is exact:
+
+```
+raw=4.0000  final=3.6704  applied=4.0000   x16   in-window: 4.00 - 0.01 invuln = 3.99, then -8.01%
+raw=4.0000  final=3.6800  applied=4.0000   x2    normal path: 4.00 - 8.00%
+```
+
+**`final` is below `raw` by 0.33 — thirty-three times the token.** That is not the invulnerability
+modifier; **it is vanilla running its own armour curve.**
+
+**And the two pipelines take different amounts from the same event:**
+
+| pipeline | reduction on this hit |
+|---|---|
+| vanilla's armour formula | **8.01%** → 3.67 |
+| our `Defense.applyDefense` | **20%** → `applied` 4.0 becomes **3.2** in the store |
+
+The custom figure is corroborated from outside the log: the damage popup read **3**, and
+`Defense.applyDefense(4, 25)` = 3.2. Solving vanilla's formula backwards from 8.01% gives an ARMOR
+attribute of **≈ 4.0**, and `Defense.armorBarPoints(25)` = `0.2 * 20` = **4.0**. Every number closes.
+
+> **AND THE CAUSE OF THE DIVERGENCE IS OUR OWN DISPLAY OVERRIDE.** `ArmorBarOverride` writes our
+> damage reduction *into the vanilla ARMOR attribute* so the bar reads as DR — and **vanilla then runs
+> its own non-linear curve over that number.** Our linear 20% becomes vanilla's 8%. The override was
+> built to change a display; it also changes vanilla's mitigation, because vanilla reads the same
+> field. **A third display-becomes-truth leak in this slice**, and the only one where the leak flows
+> *out* of our system into vanilla's.
+
+**Consequence for the design:** leaving the event amount alone means vanilla mitigates on a curve that
+disagrees with ours by ~2.5x on this hit, against a bar whose scale is already a projection. The
+suppression must stay, and the cadence must be owned. **`DamageWindow` is not deletable.**
+
+### THE IRON GOLEM — D3a's SEVERITY IS 20 Hz x BLOCKS CONTACTED
+
+Grouping every `LAVA` line by `(tick, victim)` across the whole capture:
+
+| victim | events sharing one tick |
+|---|---|
+| `PLAYER` | **44 groups, every one of them 1** |
+| `IRON_GOLEM` | 87x1, 38x2, **309x4**, 5x6, 7x7, **15x8** |
+
+**Up to EIGHT `LAVA` events for one victim in one tick.** The hypothesis holds: contact is per lava
+block, and a golem's 1.4 x 2.7 hitbox occupies several where a player's 0.6 x 1.8 occupies one. The
+player capture showing exactly one per tick was not a property of lava — it was a property of standing
+in a single block.
+
+**The arithmetic matches the observation exactly:** 8 events x 4 raw = 32 per tick against 100 custom
+HP is **3.1 ticks**, and the golem died in 2-3. Twenty hertz alone predicts ~25 ticks and never
+explained it.
+
+**So D3a's severity is not 20 Hz. It is 20 Hz x blocks contacted** — up to 160 events/second on a
+large hitbox.
+
+### AND THIS IS THE PER-VICTIM RATCHET'S EVIDENCE, FROM THE WIRE
+
+Eight same-tick events, **all of them `cause=LAVA`**. A **per-cause** window passes every one through:
+they share a cause, so they share a window slot. A **per-victim** window absorbs them exactly as
+vanilla does — the largest lands, the rest fall inside it.
+
+**The per-victim decision was taken before this evidence existed, on the lava-while-burning argument.**
+It now has a case from measurement rather than from preference, and the deciding case is not the one
+it was chosen on.
+
 ## D5c: TWO REFLECT NUMBERS IS THE PASS, NOT THE FAILURE
 
 **Read this before running D5c, not after.** This slice's headline risk is doubled numbers — D5 and

@@ -757,6 +757,98 @@ two directions it was named for.
 boundary**. The mid-window hazard is therefore concrete, not theoretical: **a +HP item crossing 100
 moves `k` by ~8% in a tick.** `customFromHealthPoints` computes all of that. Call it.
 
+###### k=1 WAS MEASURED ON THE UNTAGGED HALF, AND THE KNELL BREAKS IT TODAY
+
+**The spider that produced `k = 1` is UNTAGGED, so that number is not a measurement of "mobs" — it is
+the fallback branch restated.** `MobSeeding.maxHealth` returns the definition's `max_health` for a
+**tagged** mob and `vanillaMax` unchanged for an untagged one. Two populations, one function.
+
+**`knell.yml` declares `max_health: 360` on a ~20-point vanilla body — `k = 18`.** Unconverted, a lava
+tick takes **1.1%** of the Knell's bar where vanilla intends 20%. That is shipped content, not a
+future boss.
+
+> **`MobSeeding`'s own javadoc predicted this shape in mirror image:** *"A bug that scales every mob of
+> a type would look like the feature working — the Knell would be right — while quietly changing every
+> wither skeleton."* **Ours is the reflection: the untagged mobs are right and the Knell is silently
+> wrong.** The file the k=1 reading came from **named both populations in its own javadoc**, and the
+> reading was generalised across the boundary it drew. Sixth instance of the population rule.
+
+###### AND THE FORMULA IS NOT PLAYER-VS-MOB — IT IS ONE DIVISION, WITH NO BRANCH
+
+The spider took **8 of 16** from a fall. At `heartCount(16)*2 = 4` points an 8-point fall would have
+one-shot it, so **that trace PROVES a mob's vanilla MAX_HEALTH is not rewritten**, where a player's is.
+
+**The discriminator is IS THIS ENTITY'S VANILLA MAX A PUPPET, not its type.** `instanceof Player` gets
+today's answer for a reason that is not the reason, and breaks silently for the first entity that
+decorrelates them.
+
+**And once stated that way the branch disappears**, because both cases are the same division:
+
+```
+k = customMax / <the entity's current vanilla MAX_HEALTH attribute>
+
+  player      vanilla max = heartCount(customMax)*2   -> k = customMax/(hearts*2)   (= customFromHealthPoints)
+  untagged mob vanilla max = customMax                -> k = 1
+  the Knell   vanilla max = 20, customMax = 360       -> k = 18
+```
+
+**One read, one divide, no population test at all.** `customFromHealthPoints` is the *player special
+case* of it, not the general rule — which is why substituting it wholesale was wrong.
+
+**BUT THAT ONE-LINER IS A READ-BACK, AND IT BREAKS THE PROJECT'S OLDEST INVARIANT.**
+
+For a puppeted entity the vanilla MAX_HEALTH attribute is **written by `HeartBarRenderer`**, so
+dividing by it computes the truth *from the display*. `HeartBarRenderer`'s own javadoc forbids exactly
+this: *"It has no way to REPORT a vanilla health value back to the renderer, by design … the
+write-only seam is what guarantees it cannot do otherwise."* **The formula reaches around that seam
+from the other side.**
+
+**And it is invisible at the only max anyone tests.** At `customMax = 100` the attribute reads 20 and
+`heartCount(100)*2` is 20 — identical, so the defect cannot show. At **`customMax = 150`**:
+`heartCount(150)` = 10 + ceil(50/100) = **11 hearts = 22 points**, against a vanilla default of
+**20** — so k is **~10% wrong in the window between `register` and the first render**. `onRespawn`
+resets to full and restarts the reconcile loop, and **respawning into lava or a wall is not
+hypothetical in this slice.**
+
+**So for puppeted entities, derive k from `heartCount(customMax)*2` — what the renderer WILL write —
+not from what it has written.** The branch returns, but on the real property (*is this max a puppet*)
+with a real reason, instead of on `instanceof Player`. The alternative is to PROVE the ordering makes
+the read-back safe; what is not allowed is leaving it resting on `100 == 100`.
+
+###### SOME CAUSES HAVE NO CADENCE OF THEIR OWN. THE WINDOW *IS* THEIR CADENCE.
+
+**The split is not about tick intervals, and "any cause ticking faster than 10 ticks is gated" is
+wrong** — it describes the symptom and credits these causes with a clock they do not have.
+
+**The capture settles it: lava fired on EVERY TICK, 191120 through 191139 consecutively.** Lava does
+not tick every 10 ticks and get gated; **lava attempts damage every tick, and its familiar 10-tick
+rhythm IS the invulnerability window.** Poisoning `lastHurt` did not *accelerate* lava — it removed
+the only clock lava ever had.
+
+| | causes | behaviour under a poisoned `lastHurt` |
+|---|---|---|
+| **No timer of their own** | `LAVA`, `SUFFOCATION` | vanilla's window is their cadence → **20 Hz** |
+| **Their own timer** | `DROWNING` (air supply), `FALL` (instantaneous) | window irrelevant → unaffected |
+
+**AND THIS IS THE RULE SCORCH GETS BUILT AGAINST.** The spec is *5% of max health per second* — **a
+rate, not a mechanism.** Implemented as "deal damage while the status is active", scorch lands in the
+**lava class**: correct-looking, paced entirely by i-frames, and 20 Hz the first time anything writes
+`lastHurt`. **SCORCH MUST OWN AN EXPLICIT 20-TICK SCHEDULE.**
+
+> *"20 ticks is 2× the boundary, safe as specified"* was **true of the number and silent about the
+> implementation** — and the implementation is the part not yet written. Same shape as every other
+> defect in this slice: a claim correct about one property, carried onto another.
+
+###### CLOSE THE DEFERRED TUNING ITEMS WITH THE CONVERSION, EXPLICITLY
+
+**`FALL raw=25` left the player alive; `customFromHealthPoints(25, 100)` = 125, instantly lethal.
+THE CONVERSION *IS* THE OPERATOR'S "5x FALL" REQUEST**, and the drowning item is the same conversion
+in the other unit.
+
+**When the conversion lands, mark both deferred items CLOSED BY THE CONVERSION** rather than leaving
+them open. An open "fall → 5x" sitting beside a fix that already delivers 5x gets applied on top of
+it, and the result is **25x**.
+
 ###### BUT THE NAIVE SUBSTITUTION IS BLOCKED BY THE MOB ASYMMETRY
 
 **A zombie at custom max 20:** `heartCount(20)` = 2 hearts = 4 points, so
