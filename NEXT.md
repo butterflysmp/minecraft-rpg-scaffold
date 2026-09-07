@@ -1014,6 +1014,28 @@ has said that is right FOR DROWNING** ("regardless of how much health they have"
 asked about FALL**, and *"5x"* read literally would mean a 400 HP player survives falls a 100 HP player
 does not. Both readings are coherent; only one has been stated.
 
+#### CARRIED FORWARD — `ArmorBarOverride` LEAKS OUR DR INTO VANILLA'S MITIGATION, AND TOKENING HIDES IT
+
+**Measured, not suspected.** `ArmorBarOverride` writes our damage reduction into the **vanilla ARMOR
+attribute** so the bar reads as DR — and **vanilla then runs its own non-linear curve over that
+number.** On one armoured lava hit:
+
+```
+raw=4.0000  final=3.6704       vanilla took 8.01%
+                                ours took 20%   (Defense.applyDefense(4, 25) = 3.2, popup read 3)
+```
+
+Solving vanilla's formula backwards from 8.01% gives an ARMOR attribute of ≈4.0, and
+`Defense.armorBarPoints(25)` is **exactly 4.0** — every number closes. **It was built to change a
+display and it changes vanilla's mitigation, because vanilla reads the same field.** The only
+outward-flowing display-becomes-truth leak in this slice.
+
+**IT IS INERT TODAY ONLY BECAUSE WE TOKEN.** Vanilla's `final` is applied to a 0.01 token, so its
+curve has nothing to bite. **The moment anything stops suppressing the vanilla amount — a future
+"leave the amount alone" candidate, a new cause that passes through, a mob path that does not token —
+the divergence is live and silent.** Whoever proposes un-suppressing must read this first; it is the
+reason that candidate died once already.
+
 #### STANDING QUESTION — WHICH CAUSES SHOULD `Defense` TOUCH?
 
 Not *"drowning should ignore defense"*. **Drowning is one member of a set, and the set is the
