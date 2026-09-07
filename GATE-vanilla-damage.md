@@ -5,28 +5,54 @@ because, for every behaviour listed below, **these rows are the only check that 
 the project.** 1300 tests pass with any of them deleted, and not one of them can watch a reconcile
 tick revert a number.
 
-## STOPPED AT D3. D4–D16 ARE NOT RUN AND MUST NOT BE.
+## Status after the 2026-09-07 run — the three conversion rows are GREEN
 
-**The death path is demonstrably broken (D3b), which makes D6, D11 and D14 unrunnable and their
-results meaningless.** A row run against a broken death path does not report on the thing it names.
-D4, D5, D5b, D5c, D7, D8, D9, D10, D12, D13, D15 are simply not reached.
+**Run and passed 2026-09-07:** **D1b** (lethal fall kills), **D2b** (drown in exactly 10.0 s),
+**D3e** (lava in 2.55 s, and 7 landings against 44 absorbed re-witnesses commit 1's window).
+**D4c is PARTIAL** — the Knell passed both drops exactly; its untagged control never ran.
 
-**The test world was left unusable** (D3c) — the operator was stuck in a death loop. Not a code
-finding, but a real cost: **any re-run of D3 needs an escape planned before it starts** (spectator on
-join, or a safe `/spawnpoint` away from the lava), because the failure mode removes the tester's
-ability to continue.
+**Earlier:** B1, B2 (partial), D3d, D16 run; D3 failed two ways and drove commits 1 and 2; D1, D2 and
+D6 are struck through or superseded — D1/D2 passed while being **incapable of seeing the 5x error**,
+which is why they were re-specified.
 
-## Status: 6 of 19 — 3 green, 1 failed, 1 half, 1 mechanical
+**Still owed:** D4c's untagged-skeleton control, B2's death half, and D3b′, D3b″, D4, D5, D5b, D5c,
+D7, D8, D9, D10, D11, D12, D13, D14, D15.
 
-**D1, D2, D6 green; D3 failed two ways; B2 half; D16 mechanical.** D6's pass is what makes this a
-**repair, not a redesign**: the boundary is sound, and both D3 defects are bounded to repeating causes.
+**265 STEP2 events across the boot, ZERO exceptions and zero `Could not pass event`.**
 
-**Run:** B1, B2 (partial), D16 — named, three.
-**Unrun:** D1, D2, D3, D4, D5, D5b, D5c, D6, D7, D8, D9, D10, D11, D12, D13, D14, D15.
+Nothing here is a pass until someone says it was **observed**, and half-run is not passed.
 
-Nothing here is a pass until someone says it was **observed**. D16 was run mechanically against a
-captured baseline; B1 and B2 were run in game on `master`. **B2's death half is explicitly still
-owed** and is not counted — the row is half-run, and half-run is not passed.
+### THE 2026-09-07 RUN'S OWN CONTAMINATION AND CORRECTIONS
+
+**A leftover IRON GOLEM killed the first Knell mid-row** (*"Knell was slain by Iron Golem"*, 00:25:37).
+Twelve golems were still in the world from the earlier lava-multiplicity testing, and they aggro on
+wither skeletons. **This is the precondition class recorded one commit earlier — "what else is in the
+world" — biting the very next row.** Enumerating the hazard and then not applying it to the row in
+hand is worse than never having written it. **Clear them (`/kill @e[type=iron_golem]`) before the
+control drop.**
+
+**A "≈2 defense" reading was inferred and was WRONG.** Drowning drops read 9.80 against `applied=10`,
+and that was attributed to armour. **The lava run contradicted it in the same capture** — its first
+landing dropped exactly 20.00 against `applied=20`, which is defense **0**. The real cause is
+`HealthRegen.BASE_PER_SECOND = 0.2` on a `REGEN_PERIOD_TICKS = 20` loop: drowning ticks every 20 ticks,
+so every interval is `−10 +0.2 = −9.8`. **Two data sets disagreed and only one was explained** — and
+the operator's "I don't have any armor" was the correction, not the confirmation.
+
+**The monitor filter missed a death it was armed for.** *"BaronVonYeetus fell from a high place"*
+matches neither `died` nor any other pattern in the watch, so D1b's pass was nearly recorded as a
+survival. A filter that cannot see the outcome it was built for is the same defect as a blind grep,
+one layer out.
+
+### An unplanned finding the traces gave for free
+
+```
+tick=21656  cause=LAVA  raw=4.0000  toDeal=3.0000
+```
+
+**The ratchet returning a DIFFERENCE, in game.** A `FIRE_TICK` (raw 1) had landed first, so lava's 4
+arriving inside that window admitted only the excess — **3**. That is vanilla's `amount > lastHurt`
+rule reimplemented in our units, firing on the lava-while-burning case that decided the per-victim
+design. **No unit test could show it and no row asked for it.**
 
 ### B1 FOUND A SECOND LIVE DEFECT, and the prediction was wrong in a way worth keeping
 
@@ -91,14 +117,14 @@ break creepers"*. **Write whichever one B1 says is true; do not write both and p
 | # | action | expect | marks | result |
 |---|---|---|---|---|
 | **D1** | ~~Take fall damage. Watch the number for a full 2s.~~ **RE-SPECIFIED — see D1b.** | ~~Number drops and stays down.~~ | ~~discriminating~~ | **PASSED 2026-09-06 AND COULD NOT HAVE SEEN THE 5x ERROR.** "Does the number move" is true at any scale factor. Kept, struck through, because *"was this checked"* and *"it passed"* are different answers |
-| **D1b** | **D1's replacement.** Full custom HP, no armour. Fall from a height vanilla kills outright from (~23 blocks). | **The player DIES from the one fall.** | discriminating · **its PASS is impossible without the conversion**: 25 unconverted is a quarter of the bar, and the measured pre-fix reading left the player alive | |
+| **D1b** | **D1's replacement.** Full custom HP, no armour. Fall from a height vanilla kills outright from (~23 blocks). | **The player DIES from the one fall.** | discriminating · **its PASS is impossible without the conversion**: 25 unconverted is a quarter of the bar, and the measured pre-fix reading left the player alive | **PASS 2026-09-07.** `raw=20 -> applied=100.0000` against a 100.0 max -- exactly lethal, not merely enough. "BaronVonYeetus fell from a high place", 00:27:14 |
 | **D2** | ~~Hold yourself underwater until you drown.~~ **RE-SPECIFIED — see D2b.** | ~~Number drops and stays.~~ | ~~binary~~ | **PASSED 2026-09-06 AND COULD NOT HAVE SEEN THE 5x ERROR**, same reason |
-| **D2b** | **D2's replacement, and it is a STOPWATCH row.** Full custom HP, no armour. Drown, timing it. | **~10 seconds, vanilla's own time to drown** — not the ~100 s measured before the fix. **A reading near ~2 s means the conversion was applied TWICE.** | discriminating · time-to-death is the only form of this row that can see a scale error · **NAMED WITNESS for mutation M5**, which has no unit test | |
-| **D3e** | **Stopwatch, lava.** Full custom HP, no armour, straight into lava. | **~2.5 seconds** — 4 raw per 10-tick window × k=5 = 40 custom/sec against 100 HP. **~0.5 s means M5**; a reading anywhere near 20 Hz means commit 1's window regressed. | discriminating · **M5's second witness, and the only row that also re-checks the D3a cadence after the conversion** | |
+| **D2b** | **D2's replacement, and it is a STOPWATCH row.** Full custom HP, no armour. Drown, timing it. | **~10 seconds, vanilla's own time to drown** — not the ~100 s measured before the fix. **A reading near ~2 s means the conversion was applied TWICE.** | discriminating · time-to-death is the only form of this row that can see a scale error · **NAMED WITNESS for mutation M5**, which has no unit test | **PASS 2026-09-07 — 200 ticks, EXACTLY 10.0 s.** 11 events, every one `raw=2.0000 → toDeal=2.0000 → applied=10.0000`. **M5 excluded**: a double conversion would read `applied=50` and ~2 s. The k control agrees both ways on all 11 lines — `10/2 = 5` and `100.0/20.0 = 5`. `iFrames=0` throughout at a clean 20-tick spacing: the window correctly did nothing to a cause it does not gate |
+| **D3e** | **Stopwatch, lava.** Full custom HP, no armour, straight into lava. | **~2.5 seconds** — 4 raw per 10-tick window × k=5 = 40 custom/sec against 100 HP. **~0.5 s means M5**; a reading anywhere near 20 Hz means commit 1's window regressed. | discriminating · **M5's second witness, and the only row that also re-checks the D3a cadence after the conversion** | **PASS 2026-09-07 — 51 ticks, 2.55 s.** And it re-witnesses commit 1: **51 events, 7 LANDINGS, 44 ABSORBED.** Lava still attempts damage every tick — the poisoned ratchet still admits everything — so **our window is now the only thing pacing it**, which is the whole design. Landing gaps 10/10/10 and one 7+13 pair summing to 20, one of them at `iFrames=10`, the exact tick vanilla's normal path re-arms. `raw=4 → toDeal=4 → applied=20`; **M5 excluded** (would be ~0.5 s) |
 | **D3** | Stand in lava for ~3 seconds. | Number drops in roughly **6 steps, not ~60** — vanilla's i-frame cadence survived the ride. | discriminating · **sole witness that REROUTE tokens rather than cancels** | **FAILED 2026-09-06, THREE WAYS — GATE STOPPED HERE.** (a) **4 damage per TICK, not per 10 ticks** — amount right, cadence wrong by 10x. (b) **the player could not die or respawn.** (c) the test world was left unusable. **D3 was written as the sole witness for the tokening decision and it FALSIFIED it.** See the two diagnoses below |
 | **D4** | Drop a mob off a ledge while looking at it. | Its nameplate drops by the fall damage. | binary · the mob half of the boundary | |
 | **D4b** | ~~`/rpg spawn knell`, get it into lava, time it.~~ **WITHDRAWN BEFORE IT WAS RUN — THE SUBJECT IS FIRE-IMMUNE.** | ~~20% of its bar per tick~~ | **NEVER A TEST.** `knell.yml` is `base_entity: wither_skeleton`, and wither skeletons are fire-immune; `is_fire` in `paper-26.1.2.jar` contains `minecraft:lava`. **The Knell would have taken NOTHING while the control died normally, and that reads as "the conversion does not reach tagged mobs" — the exact opposite of the truth.** A false negative pointing at a specific wrong diagnosis is worse than no reading. Replaced by **D4c**, which is the same property on a cause both subjects feel | |
-| **D4c** | **D4b's replacement, and it also covers D1b — TWO DROPS, THREE SUBJECTS.** **PRECONDITION: THE OPERATOR WEARS NO ARMOUR.** Not a note — the row is invalid otherwise, see below. Stand a `/rpg spawn knell` and an **ordinary wither skeleton** (same base entity, so the ONLY variable is the `mob_id` tag) on a pillar with you. **Drop 1: ~15 blocks. Drop 2: ~23 blocks.** | **Drop 1 — all three land on exactly 60% of bar** (player 60/100, skeleton 12/20, Knell 216/360). **Drop 2 — all three die.** Under the shipped defect the skeleton dies to one fall and the Knell needs **eighteen**. | discriminating · **an 18x change on shipped content** · the untagged skeleton is the control, and this is `MobSeeding`'s documented symmetric property witnessed in game rather than by proxy | |
+| **D4c** | **D4b's replacement, and it also covers D1b — TWO DROPS, THREE SUBJECTS.** **PRECONDITION: THE OPERATOR WEARS NO ARMOUR.** Not a note — the row is invalid otherwise, see below. Stand a `/rpg spawn knell` and an **ordinary wither skeleton** (same base entity, so the ONLY variable is the `mob_id` tag) on a pillar with you. **Drop 1: ~15 blocks. Drop 2: ~23 blocks.** | **Drop 1 — all three land on exactly 60% of bar** (player 60/100, skeleton 12/20, Knell 216/360). **Drop 2 — all three die.** Under the shipped defect the skeleton dies to one fall and the Knell needs **eighteen**. | discriminating · **an 18x change on shipped content** · the untagged skeleton is the control, and this is `MobSeeding`'s documented symmetric property witnessed in game rather than by proxy | **PARTIAL 2026-09-07 — THE KNELL PASSED BOTH DROPS; THE CONTROL NEVER RAN.** `raw=12 → applied=216.0000` on 360 max = **60.0%**, beside the player's `raw=12 → applied=60.0000` on 100 = **60.0%**. Lethal drop: `raw=20 → applied=360.0000` on 360, and *"Knell fell from a high place"*. k confirmed both ways — `216/12 = 18` and `360.0/20.0 = 18`. **The ordinary wither skeleton was never dropped**, so the `mob_id`-is-the-only-variable half is UNRUN. **The first Knell was killed mid-row by a leftover IRON GOLEM** — see below |
 | **D5** | One melee swing on a mob. | Nameplate drops by the weapon's number **exactly once**. | discriminating · **`ENTITY_ATTACK`'s PASS arm; a doubled number means the arm is wrong** | |
 | **D5b** | Sweep-attack **three mobs at once** with a sweeping sword. | Each nameplate drops by the sweep number **exactly once**. | discriminating · **`ENTITY_SWEEP_ATTACK`'s PASS arm — the second one, and it has its own handler** | |
 | **D5c** | Put vanilla Thorns on armour (anvil + book), wear it, let a mob hit you. Then repeat **with one of our Thorns shields also raised**. | Nameplate drops from the thorns hit, credited to you. **WITH BOTH: EXPECT TWO REFLECT NUMBERS OFF ONE HIT. THAT IS CORRECT — READ THE NOTE BELOW BEFORE JUDGING IT.** *Figure: are the two readable, or do they collide?* | figure · vanilla armour Thorns is reachable (the anvil is not hijacked) and is a **separate source** from our shield Thorns | |
