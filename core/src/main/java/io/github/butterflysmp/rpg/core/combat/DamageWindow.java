@@ -83,6 +83,28 @@ import java.util.function.LongSupplier;
  * function itself changes between claims. Same class as the conversion-factor hazard, an order of
  * magnitude rarer.
  *
+ * <h2>And the vanilla-to-custom CONVERSION could sit either side of this window</h2>
+ *
+ * <b>Moving it inside would be ALGEBRAICALLY INVARIANT, not merely untested.</b> The ratchet commutes
+ * with a positive scalar:
+ *
+ * <pre>
+ *   returns  a       -&gt;  k*a      ==  k*a
+ *   returns  a - b   -&gt;  k*(a-b)  ==  k*a - k*b
+ *   compares a &gt; b   &lt;=&gt; k*a &gt; k*b        (k &gt; 0)
+ * </pre>
+ *
+ * <b>So no test and no gate row can distinguish the two orderings, and none should ever be claimed
+ * to.</b> The window sits upstream because vanilla units are the units the EVENT speaks and the ones a
+ * reader can check against a log line — a legibility choice, not a correctness one.
+ *
+ * <p><b>THE PROOF HAS ONE PRECONDITION, WHICH IS WHY IT IS WRITTEN HERE:</b> {@code k} must be
+ * <b>constant per victim within a window</b>. It is today — {@code k = customMax / denominator}, and
+ * neither operand moves mid-window in practice. <b>The day anything makes k vary within a window — a
+ * mid-window max change, a per-hit factor — this invariance is gone, the two orderings diverge, and
+ * whichever one is wrong will be wrong silently.</b> Sibling of the linearity invariant above, and it
+ * fails the same way: quietly, and only for the victims it applies to.
+ *
  * <h2>Thread safety</h2>
  *
  * A {@link ConcurrentHashMap}, for {@code CooldownTracker}'s reason: under Folia two victims in

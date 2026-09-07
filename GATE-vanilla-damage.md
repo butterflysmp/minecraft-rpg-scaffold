@@ -93,7 +93,8 @@ break creepers"*. **Write whichever one B1 says is true; do not write both and p
 | **D1** | ~~Take fall damage. Watch the number for a full 2s.~~ **RE-SPECIFIED — see D1b.** | ~~Number drops and stays down.~~ | ~~discriminating~~ | **PASSED 2026-09-06 AND COULD NOT HAVE SEEN THE 5x ERROR.** "Does the number move" is true at any scale factor. Kept, struck through, because *"was this checked"* and *"it passed"* are different answers |
 | **D1b** | **D1's replacement.** Full custom HP, no armour. Fall from a height vanilla kills outright from (~23 blocks). | **The player DIES from the one fall.** | discriminating · **its PASS is impossible without the conversion**: 25 unconverted is a quarter of the bar, and the measured pre-fix reading left the player alive | |
 | **D2** | ~~Hold yourself underwater until you drown.~~ **RE-SPECIFIED — see D2b.** | ~~Number drops and stays.~~ | ~~binary~~ | **PASSED 2026-09-06 AND COULD NOT HAVE SEEN THE 5x ERROR**, same reason |
-| **D2b** | **D2's replacement, and it is a STOPWATCH row.** Full custom HP, no armour. Drown, timing it. | **~10 seconds, vanilla's own time to drown** — not the ~100 s measured before the fix. | discriminating · **time-to-death against vanilla's is the only form of this row that can see a scale error** | |
+| **D2b** | **D2's replacement, and it is a STOPWATCH row.** Full custom HP, no armour. Drown, timing it. | **~10 seconds, vanilla's own time to drown** — not the ~100 s measured before the fix. **A reading near ~2 s means the conversion was applied TWICE.** | discriminating · time-to-death is the only form of this row that can see a scale error · **NAMED WITNESS for mutation M5**, which has no unit test | |
+| **D3e** | **Stopwatch, lava.** Full custom HP, no armour, straight into lava. | **~2.5 seconds** — 4 raw per 10-tick window × k=5 = 40 custom/sec against 100 HP. **~0.5 s means M5**; a reading anywhere near 20 Hz means commit 1's window regressed. | discriminating · **M5's second witness, and the only row that also re-checks the D3a cadence after the conversion** | |
 | **D3** | Stand in lava for ~3 seconds. | Number drops in roughly **6 steps, not ~60** — vanilla's i-frame cadence survived the ride. | discriminating · **sole witness that REROUTE tokens rather than cancels** | **FAILED 2026-09-06, THREE WAYS — GATE STOPPED HERE.** (a) **4 damage per TICK, not per 10 ticks** — amount right, cadence wrong by 10x. (b) **the player could not die or respawn.** (c) the test world was left unusable. **D3 was written as the sole witness for the tokening decision and it FALSIFIED it.** See the two diagnoses below |
 | **D4** | Drop a mob off a ledge while looking at it. | Its nameplate drops by the fall damage. | binary · the mob half of the boundary | |
 | **D4b** | **THE KNELL — the biggest single change in the conversion, and nothing else covers it.** `/rpg spawn knell` (it is content, so it must be spawned; an ordinary mob will not do). Get it into lava and time it. | It burns down in **vanilla's own time for a 360 HP body** — a lava tick takes **20% of its bar**, where before the fix it took **1.1%**. Compare against D4's untagged mob in the same lava: **both should lose the same FRACTION per tick.** | discriminating · **an 18x change on shipped content** · the untagged mob beside it is the control | |
@@ -388,6 +389,47 @@ vanilla does — the largest lands, the rest fall inside it.
 **The per-victim decision was taken before this evidence existed, on the lava-while-burning argument.**
 It now has a case from measurement rather than from preference, and the deciding case is not the one
 it was chosen on.
+
+## M5 HAS A NAMED WITNESS NOW — AND THE ROW FIRST NAMED FOR IT WAS BLIND
+
+**Correction to `5c2fb0b`'s commit body.** It said mutation M5 — the conversion applied twice — *"would
+surface at the gate as an instantly-lethal fall"*. **It would not.**
+
+| cause | correct | double-converted | what the row records |
+|---|---|---|---|
+| **fall** | 25 → **125** (lethal) | 25 → **625** (lethal) | **a death either way — BLIND** |
+| **drowning** | 10/s → **~10 s** | 50/s → **~2 s** | 10 s vs 2 s — **discriminates** |
+| **lava** | 40/s → **~2.5 s** | 200/s → **~0.5 s** | 2.5 s vs 0.5 s — **discriminates** |
+
+Fall is already lethal at 125 against a 100 max, so doubling it changes nothing a human can see. The
+row would have passed under the mutation it was named as guarding.
+
+> **RULE 4, ONE LEVEL UP — and this is the general form worth keeping:**
+> **WHEN A MUTATION HAS NO UNIT WITNESS AND A GATE ROW IS NAMED AS ITS SUBSTITUTE, THAT ROW NEEDS ITS
+> DISCRIMINATION CHECKED LIKE ANY OTHER ROW.** Otherwise *"guarded at the gate"* records coverage that
+> does not exist — **in a commit body, where it reads as settled** and where nothing will ever re-run it.
+
+**D2b and D3e are M5's witnesses**, both stopwatch rows, both with the mutant reading written beside
+the expected one.
+
+## M6 NEEDS A SENTENCE, NOT A ROW — AND NO ROW SHOULD EVER BE CLAIMED FOR IT
+
+`5c2fb0b` filed M6 with M5. **They are not two of a kind.** Converting *inside* the window instead of
+upstream is **algebraically invariant**, not merely unwitnessed:
+
+```
+ratchet returns  a        ->  k*a      ==  k*a
+ratchet returns  a - b    ->  k*(a-b)  ==  k*a - k*b
+comparison       a > b    <=> k*a > k*b        (k > 0)
+```
+
+**Identical output, so no gate row will ever catch M6 and none should be claimed.** Its guard is the
+proof, and that is stronger than the body's *"guarded by the window staying upstream"*.
+
+**The proof has one precondition, and it is where the note belongs:** k must be **constant per victim
+within a window**. It is today — `customMax` does not change mid-window in practice. The note now sits
+in `DamageWindow`'s denomination section beside the linearity invariant it is a sibling of, so anyone
+who makes k non-constant finds what it breaks.
 
 ## D5c: TWO REFLECT NUMBERS IS THE PASS, NOT THE FAILURE
 

@@ -7756,6 +7756,42 @@ And the measurement that names the numbers, from the 2026-08-28 Step 0 boot, quo
 **Lava is 4 on a 10-tick window; a fire tick is 1.** Those two lines predicted D3a in full, nine days
 early.
 
+### A GATE ROW NAMED AS A MUTATION'S SUBSTITUTE NEEDS ITS DISCRIMINATION CHECKED LIKE ANY OTHER ROW
+
+**Rule 4, one level up — and the level where it is hardest to catch, because the claim lands in a
+COMMIT BODY, which reads as settled and which nobody will ever re-run.**
+
+When a mutation has no unit witness, the honest move is to name the gate row that covers it instead.
+**That naming is itself a coverage claim, and it is subject to every trap rule 4 already records.**
+
+> **The worked example is `5c2fb0b`'s own body**, one commit after this file gained the rule about
+> non-discriminating rows. It said mutation M5 — the vanilla-to-custom conversion applied twice —
+> *"would surface at the gate as an instantly-lethal fall."*
+>
+> **It would not.** A lethal fall converts to 125 against a 100 max; double-converted it is 625.
+> **Both are instantly lethal, and the row records a death either way.** The row named as the guard was
+> blind to the mutation it was named for.
+>
+> The rows that discriminate are the STOPWATCH ones — drowning at ~10 s against ~2 s, lava at ~2.5 s
+> against ~0.5 s — because a doubled scale factor is visible only as a *rate*, never as a binary
+> outcome that was already saturated.
+
+**So: state which reading the row would give UNDER the mutation, beside the expected one.** If the two
+readings are the same, the row is not the witness — find one whose output is not already saturated.
+
+#### And the sibling case: some mutations must be claimed by NOBODY
+
+**A mutation that is algebraically invariant has no witness anywhere, and naming a row for it is worse
+than naming none.** M6 — moving the conversion inside the damage window rather than upstream — is
+this: the ratchet commutes with a positive scalar, so `k*(a-b) == k*a - k*b` and `a > b ⟺ k*a > k*b`.
+**Identical output. No test, no boot, no row.**
+
+Its guard is the proof, and the proof has a precondition — k constant per victim within a window — so
+**the note belongs in the code beside the invariant it is a sibling of**, where someone making k vary
+will find it. Not in a gate table, which would imply a check that cannot exist.
+
+**M5 needs a row. M6 needs a sentence. Filing them together, as `5c2fb0b` did, hides both facts.**
+
 ### A MUTATION THAT CANNOT BE EXPRESSED IS A PROPERTY THE TYPE ENFORCES, NOT A TEST THAT IS MISSING
 
 **And the failure mode of recording it as a gap is specific, plausible and bad: someone WIDENS THE
