@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.listener;
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
+import io.github.butterflysmp.rpg.core.combat.DamageWindow;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.combat.stat.HeartScale;
@@ -148,6 +149,12 @@ public final class RpgListeners implements Listener {
      * bridges are both on this class, and nothing else in the plugin has a use for it.
      */
     private final MeleeHits meleeHits = new MeleeHits(Bukkit::getCurrentTick);
+
+    /**
+     * The cadence for environmental damage, owned because the token destroys vanilla's ratchet.
+     * Listener-scoped for MeleeHits' reason -- the one handler that claims from it is on this class.
+     */
+    private final DamageWindow damageWindow = new DamageWindow(Bukkit::getCurrentTick);
 
     /**
      * The blocks whose vanilla screen we replace outright, and what opens INSTEAD.
@@ -335,6 +342,7 @@ public final class RpgListeners implements Listener {
             nameplates.onMobRemove(mob.getUniqueId());
             // And its melee window, or the map grows for the lifetime of the server.
             meleeHits.forget(mob.getUniqueId());
+            damageWindow.forget(mob.getUniqueId());   // and its environmental window, same reason
         }
     }
 
@@ -682,6 +690,7 @@ public final class RpgListeners implements Listener {
         UUID playerId = event.getPlayer().getUniqueId();
         cooldowns.clear(playerId);
         meleeHits.forgetAttacker(playerId);   // drop any swing that never landed
+        damageWindow.forget(playerId);        // and their environmental window, or the map grows
         resources.clear(playerId);
         profiles.onQuit(playerId);
         // Drop custom-health state so no modifier or entry leaks across sessions.
@@ -730,6 +739,11 @@ public final class RpgListeners implements Listener {
         nameplates.onViewerJoin(event.getPlayer());    // restart the per-viewer nameplate LOS loop
         statsBar.onRespawn(event.getPlayer());         // restart the action-bar loop, dead since the death screen
         healthRegen.onRespawn(event.getPlayer());      // and the regeneration loop, dead for the same reason
+        // NOT a leak fix -- a CORRECTNESS one. onQuit does not run on death and onEntityRemove filters
+        // players out, so without this a player who died mid-window respawns still holding it and the
+        // next environmental hit inside WINDOW_TICKS is absorbed. Respawning into lava or a wall is
+        // exactly when environmental damage arrives.
+        damageWindow.forget(event.getPlayer().getUniqueId());
     }
 
     // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is
@@ -1113,12 +1127,33 @@ public final class RpgListeners implements Listener {
         if (!adapters.stats().tracks(target.getUniqueId())) return;
         if (VanillaDamagePolicy.forCause(event.getCause()) == VanillaDamagePolicy.Action.PASS) return;
 
+        // OWN THE CADENCE. The token we are about to write becomes vanilla's lastHurt, which destroys
+        // its ratchet for any cause whose cadence IS the invulnerability window -- lava and
+        // suffocation measured at 20 Hz, and at 20 Hz x blocks contacted on a large hitbox (eight
+        // LAVA events for one golem in one tick). See DamageWindow for why every alternative is dead.
+        //
+        // RAW event damage, deliberately: the window stores VANILLA units, upstream of the shield and
+        // of Defense. Sound because applyDefense is linear in damage, which DefenseTest now guards.
+        //
+        // bypassesCooldown is false and cannot be otherwise today: Bukkit's Tag exposes no
+        // damage_types registry and DamageType carries no tag membership, so vanilla's
+        // BYPASSES_COOLDOWN is unreadable from here. The parameter exists for OUR abilities.
+        double toDeal = damageWindow.claim(target.getUniqueId(), event.getDamage(), false);
+        logRerouteMeasurement(event, target, toDeal);
+        if (toDeal <= 0.0) {
+            // Absorbed. It still tokens and still floors -- it must not reach vanilla either -- but it
+            // resolves no shield and wears no durability, because nothing landed.
+            event.setDamage(TOKEN_DAMAGE);
+            floorSoTokenCannotKill(target);
+            return;
+        }
+
         // BEFORE the token, or the BLOCKING modifier reports the token's share of the block rather
         // than the block. ShieldBlock's own javadoc carries this rule; the ordering here obeys it.
         ShieldBlock.Outcome block = ShieldBlock.resolve(
                 target, event, adapters.keys(), shields, adapters.enchants());
         ShieldExchange exchange = ShieldExchange.of(
-                event.getDamage(), block.blocked(), block.effectiveDr(), block.reflectPercent());
+                toDeal, block.blocked(), block.effectiveDr(), block.reflectPercent());
         // The WEAR needs a Player -- it reads an inventory slot -- while the resolve above is happy
         // with any LivingEntity. The narrowing costs nothing: our shields are player gear, so a mob
         // victim resolves to Outcome.NONE and never reaches here. It is written as a pattern rather
@@ -1128,7 +1163,6 @@ public final class RpgListeners implements Listener {
             ShieldDurability.applyWearOnBlock(wearer, block.slot(), adapters.keys(), cooldowns);
         }
 
-        logRerouteMeasurement(event, target, exchange.applied());
 
         event.setDamage(TOKEN_DAMAGE);      // ride: keep i-frames, flash, knockback, cadence
         floorSoTokenCannotKill(target);
@@ -1194,18 +1228,18 @@ public final class RpgListeners implements Listener {
      * factor is 1. Those are different numbers, and a single constant would be wrong for one of them.
      * Two victims in one boot is what witnesses it; it costs one field.
      */
-    private void logRerouteMeasurement(EntityDamageEvent event, LivingEntity target, double applied) {
+    private void logRerouteMeasurement(EntityDamageEvent event, LivingEntity target, double toDeal) {
         var stats = adapters.stats();
         UUID id = target.getUniqueId();
         plugin.getLogger().info(String.format(
-                "[STEP2] tick=%d victim=%s/%s cause=%s raw=%.4f final=%.4f applied=%.4f iFrames=%d "
+                "[STEP2] tick=%d victim=%s/%s cause=%s raw=%.4f final=%.4f toDeal=%.4f iFrames=%d "
                         + "lastDmg=%.4f vanillaHP=%.4f customMax=%.1f customNow=%.1f",
                 Bukkit.getCurrentTick(),
                 target.getType(), id.toString().substring(0, 8),
                 event.getCause(),
                 event.getDamage(),          // BASE, the number the reroute currently spends
                 event.getFinalDamage(),     // what VANILLA would kill with -- raw vs final is the gap
-                applied,                    // after the shield, before Defense (which lands a hop later)
+                toDeal,                     // what the WINDOW admitted: 0.0000 means absorbed
                 target.getNoDamageTicks(),  // victimIFrames, the 2026-08-28 field
                 target.getLastDamage(),     // vanilla's lastHurt, read BEFORE we touch the event
                 target.getHealth(),         // the vanilla store, to see whether it TRACKS the custom one
