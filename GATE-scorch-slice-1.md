@@ -9,8 +9,9 @@ number arrive on a screen, a kill get credited, or a burn tick at the rate it cl
 
 **Run and passed:** S0, S1, S1c, S2, S2c, S3, S4, S4b, S6, S10, S11 — named, eleven.
 
-**Not run:** **S5** (the one real gap — see below), **S8** (unrunnable as written), **S7** and **S12**
-(both need a second account).
+**Not run:** **S5**, **S7** and **S12** — all three blocked on a SECOND ACCOUNT, and **S8**, which
+had no runnable form at all. **S5 was described as runnable when this page was first written; that was
+wrong, and on mobs it would have produced a FALSE PASS.** See its section below.
 
 **Two rows reported a failure the build did not have.** S1c and S4 were corrected against what the
 content files actually do, **not** by swapping the expectation for whatever the boot produced. Both
@@ -107,7 +108,7 @@ Target max used 2026-09-08: **100 (standard mob) and 360 (Knell)**
 | **S3** | **REQUIREMENT A, WHICH WAS INVERTED BEFORE THIS SLICE.** As the caster, scorch a mob and watch **your own screen** for floating numbers on each burn tick. | **One number per second, on YOUR screen.** | **sole witness** — popups draw only for the dealer. Before the slice, credit fell to the victim and **no number appeared at all** | **PASS 2026-09-08 — the inverted requirement is right way up** |
 | **S4** | **THE CAP, AND THE HANDOVER.** Cast `solar_grenade` at a **100-max** target and watch the whole sequence — burst, then field. | **5, then 2.** The burst applies at cap 6 (`min(5,6)`=5); the field then takes over at cap 2. **The change of number IS the most-recent-applier rule, observed.** | discriminating · **sole witness** in game for the `min` AND for the cap/credit handover | **PASS 2026-09-08 — "both 2 and 5". THE ROW WAS WRONG, NOT THE BUILD:** it expected "2, not 5" and ignored the burst entirely, though one cast applies scorch twice. Rewritten to expect the sequence, which witnesses strictly more than the original |
 | **S4b** | **The cap in the direction it was built for.** A **high-max** target. **Pick an applier whose cap is below 5% of that max** — on the 360-max Knell that is `solar_lance` (cap 12 against 5% = 18). | Each tick held to the **cap**, not to 5% of the big pool. On the Knell: **12/sec**. | **sole witness** for the anti-boss brake; uncapped, 5% of 5000 is 250/sec | **PASS 2026-09-08 — 12/sec on the 360-max Knell**, `min(18, 12)` = 12. The cap binding cleanly. Row rewritten: it had said "use the field", which is right at max 100 and wrong here |
-| **S5** | **DEFENSE BYPASS.** Scorch an **armoured** and an unarmoured target of the **same max**, same ability. | **Identical per-tick numbers.** | discriminating · sole witness for `bypassesDefense` reaching the sink | **UNRUN 2026-09-08 — BOTH FIGURES BLANK. THE ONLY RUNNABLE ROW ON THIS PAGE WITH NOTHING RECORDED.** See below; it is owed before the PR |
+| **S5** | **DEFENSE BYPASS. NEEDS A SECOND ACCOUNT — the target must be a PLAYER, because mobs have no defense.** Second player, max raised above 240, scorched by `solar_lance` **twice: naked, then full diamond + Protection III x4** (defense 56). | **12 and 12.** A broken bypass reads **12 and 7.7**. | discriminating · sole witness for `bypassesDefense` reaching the sink | **UNRUN 2026-09-08 — BOTH FIGURES BLANK, and the row as originally written was NON-DISCRIMINATING: on two mobs it passes by construction.** Re-specified below |
 | **S6** | **Die while burning** as a player, then respawn. | Not on fire. No drain. | **sole witness** for the respawn `forget` site | **PASS 2026-09-08** |
 | **S7** | Scorch a **player**. | It applies and it ticks. | witnesses the deliberate divergence from Soaked/Immobilize, which skip players | **UNRUN 2026-09-08 — needs a second account. OWED:** "players can be scorched" is a deliberate divergence and now has **no witness at all** |
 | **S8** | ~~Cast `solar_lance` at a mob, wait ~2s, cast again.~~ **RE-SPECIFIED — see below.** Stand a mob in `solar_grenade`'s field and confirm the burn outlives any single 40-tick application. | The burn **continues past** a single window while the field keeps pulsing. | binary · the timer refreshes WHOLE | **UNRUN 2026-09-08 — THE ROW WAS UNRUNNABLE AS WRITTEN**, and worse than reported: **no applier in shipped content can refresh its own burn by re-casting.** See the table below |
@@ -118,27 +119,60 @@ Target max used 2026-09-08: **100 (standard mob) and 360 (Knell)**
 
 ---
 
-## S5 IS THE ONE REAL GAP, AND IT IS OWED BEFORE THE PR
+## S5 — RE-SPECIFIED, AND THE PREVIOUS ENTRY ON THIS PAGE WAS WRONG ABOUT IT
 
-**Every other unrun row is blocked on a second account or on a row defect. S5 is blocked on nothing.**
-It is the only runnable row on this page with no figures against it, and what it witnesses is not
-scorch-local:
+**This page previously called S5 "the only runnable row with nothing recorded". That was wrong, and
+it was wrong in the dangerous direction.** Two facts, both verified in the source rather than assumed:
 
-`bypassesDefense` is a **new parameter on `applyDamage` → `CombatantStats.damage`**, named for the
-PROPERTY rather than for scorch, because it is the first instance of the standing question *"which
-causes should `Defense` touch?"* — **the same seam drowning's deferred per-cause rule has to use.**
-Scorch is its first consumer, not its owner.
+1. **`reconcileDefenseModifiers` is called from exactly one place — `PlayerHealthSystem:264` — on a
+   `Player`-typed scan of worn gear.** There is no `defense:` key in mob content (`knell.yml` has
+   none), no `/rpg` defense setter, and no other caller. **A mob's `defenseValue` is always 0.0.**
+2. **Nothing can scorch a player except another player.** Every ability target path excludes the
+   caster by UUID, and `/rpg apply`'s ray trace filters
+   `e instanceof LivingEntity living && !(living instanceof Player)` (`RpgCommand.java:874`) — it is
+   mob-only by construction.
 
-So an unwitnessed bypass is not "one scorch row missing". It is **the seam a future slice will build
-on, with zero in-game evidence that it reaches the sink at all.**
+**So S5 is blocked on a second account, exactly like S7 and S12.** More importantly:
 
-**The procedure:** two targets of the **same max**, one armoured and one not, scorched by the **same
-ability**. Record both per-tick numbers.
+> **RUN ON TWO MOBS, S5 WOULD HAVE PASSED AND WITNESSED NOTHING.** Both targets have defense 0,
+> `applyDefense(x, 0)` returns `x` untouched, and the two ticks are identical **whether or not
+> `bypassesDefense` reaches the sink.** That is rule 4's *real but non-discriminating* case landing on
+> a new core seam — a **false pass** on the one row that page called essential, which is strictly
+> worse than the blank it actually has.
 
-- **equal** → the bypass reaches the sink; armour delays scorch through stack accrual and does not
-  blunt the burn
-- **the armoured one lower** → `bypassesDefense` is not arriving, and `Defense` is being applied to a
-  DoT that was ruled out of it
+### The re-specification, chosen for SEPARATION rather than for realism
+
+The original row named no magnitudes, and the defaults are unreadable: at 20 max the tick is
+`min(5% x 20, 12)` = 1, and armour turns 1.0 into 0.8. **Executed, not estimated:**
+
+| condition | defense | tick if bypass WORKS | tick if bypass is BROKEN |
+|---|---|---|---|
+| naked | 0 | 12 | 12 |
+| full diamond | 20 | 12 | **10.0** |
+| full diamond + Protection III x4 | **56** | 12 | **7.69** |
+
+**The procedure, once a second account is available:**
+
+1. The **target is a second player** — it has to be, per fact 1 above.
+2. Raise that player's max **above 240**, so `5% x max` exceeds `solar_lance`'s cap of 12 and the tick
+   is the cap rather than the percentage. `/rpg healthboost` is the dev instrument. At max 300 the
+   tick is `min(15, 12)` = **12**.
+3. Run it **twice on the same player, changing only the gear** — naked, then full diamond with
+   Protection III on all four pieces (20 + 4x9 = **56** defense). Same subject both times, which
+   removes *"are these really the same max?"* from the row entirely.
+4. The **caster reads their own screen** — popups draw for the dealer, so the operator casting
+   `solar_lance` sees both numbers directly.
+
+**Expect 12 and 12.** A broken bypass reads **12 and 7.7**, which is a difference nobody has to squint
+at — that is the whole point of choosing 56 over 20, and of raising the max at all.
+
+> **Defense 100 is not reachable and the row must not ask for it.** It would halve the tick exactly
+> (`SCALE = 100`, so `applyDefense(12, 100)` = 6), but full diamond is **20** points and Protection III
+> adds **9 per piece**. 56 is the ceiling in shipped content, and a row specifying 100 would be
+> unrunnable in the same way S8 was.
+
+**S5 and S7 share their blocker and should be run in the same sitting** — scorching a second player at
+all *is* S7's witness, so the naked run discharges both.
 
 ---
 
@@ -233,7 +267,8 @@ boot. **Unrun 2026-09-08 — still owed.**
 - **the cap** — whether the `min` binds (**witnessed, S4/S4b**), which at the wrong applier for the
   target's max is invisible
 - **the handover** — the most-recent-applier rule changing cap and credit mid-burn (**witnessed, S4**)
-- **the bypass** — whether armour is genuinely out of the burn (**NOT witnessed — S5, owed**)
+- **the bypass** — whether armour is genuinely out of the burn (**NOT witnessed — S5, owed, and it needs
+  a second account: a mob cannot carry defense, so the row is non-discriminating on mobs**)
 - **the suppression** — whether the burn stays visible while its damage stops being vanilla's
   (**witnessed, S2/S2c**)
 - **the double** — whether re-application adds damage outside the clock (**witnessed, S1c, at the

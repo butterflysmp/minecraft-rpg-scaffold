@@ -664,6 +664,27 @@ the two mechanisms, both read out of artefacts rather than reasoned:
 > evidence for it and the reason it should be consulted rather than admired: when a change widens what
 > reaches a piece of code, the comments explaining why it is safe are part of the change.
 
+> **A FOURTH INSTANCE, 2026-09-08, AND IT IS THE MIRROR OF THE OTHER THREE RATHER THAN A REPEAT.** In
+> all three above the scope was **OMITTED** — the comment never said "single hits only", so a widened
+> population walked straight past it. In `GATE-scorch-slice-1.md` the scope was **STATED and then
+> overridden by PLACEMENT.**
+>
+> The page said the cap is invisible at max 100, so *"use the field, not the lance"*. **Scoped, and
+> true as written** — the lance's cap of 12 never binds against 5% of 100. It sat two lines above
+> `S4b`, which is about a **high-max** target, where it is false: at 360 the lance binds at 12 and
+> reads more clearly than the field's flat 2. **The statement did not overreach. PROXIMITY GRANTED IT
+> SCOPE IT NEVER CLAIMED**, and the operator ran the lance and got the better reading.
+>
+> **So "state the scope" is NOT the fix here — the scope was stated.** The fix is to replace the
+> named instance with the PROPERTY: *the cap is witnessed by any applier whose cap is below 5% of the
+> target's max.* That sentence is **self-selecting** — it cannot be read against the wrong target,
+> because the target is an input to it. **No amount of careful scoping achieves that**, because a
+> scoped statement still has to be read next to the case it was scoped for, and a document does not
+> control what it is read beside.
+>
+> **The general form: when a rule names an instance, a reader one row away gets the instance without
+> the condition. Name the property instead, and the condition travels with it.**
+
 **Do not fix this by swapping REROUTE to cancelling.** Cancelling has its own i-frame problem — it was
 the reason tokening was chosen — so the mechanism needs a fresh diagnosis, not the other option off
 the shelf.
@@ -2264,18 +2285,33 @@ every duration. The only refresh path that exists is `solar_grenade`'s field re-
 20-tick interval against its own 40-tick window — plus two different fire abilities overlapping, or
 two players.
 
-**This is what made the refresh-burn defect survivable in slice 1 and is exactly what accrual ends.**
-Once a weapon applies stacks on damage, a weapon swinging faster than the burn lasts becomes the
-COMMON path through the refresh arm rather than a corner. Whoever writes that slice should treat
-`aRefreshDoesNotDealAnUNSCHEDULEDBurn` as the row that guards the newly-hot path, and should expect
-`S8` to become trivially runnable at the same moment.
-
 **Harmless for the DoT, fatal for Ignite.** The burn rate is flat and reads no stack count, so one
 stack burns exactly as ten do. But Ignite's threshold is **50% of max health as stacks**: a 20 HP
 zombie needs **ten**. At one stack per cast that is **ten casts**; with accrual it is one Flint Staff
 hit. **IGNITE IS UNREACHABLE IN PRACTICE UNTIL ACCRUAL LANDS**, and nothing in slice 1 says so.
 
-**THE HOME, decided rather than left open: ACCRUAL IS ITS OWN SLICE, between 1 and 2.**
+**THE SCHEDULING ARGUMENT, WHICH IS THE REASON AND NOT A CONSEQUENCE: THIS CHANGE FLIPS A DORMANT
+DEFECT CLASS LIVE.**
+
+The table above is not a curiosity about content tuning. It says the refresh arm is **unreachable by
+any single applier in the game today** — which is *why* the refresh-burn defect was survivable in
+slice 1. Not luck, and not a weak test: content that could not reach the code.
+
+**Accrual removes that, in one step.** The moment a weapon applies stacks on damage, a weapon swinging
+faster than the burn lasts makes the refresh arm the **common** path — from unreachable to routine, in
+the same change. Everything that depends on the refresh arm being correct goes from theoretical to
+load-bearing at that instant: `aRefreshDoesNotDealAnUNSCHEDULEDBurn` stops guarding a corner and
+starts guarding the hot path, and `S8` — which had no runnable form at all — becomes trivially
+runnable.
+
+> **"Accrual is deferred" is not a scheduling argument. "This change flips a dormant defect class
+> live" is.** The first says only that work remains, which is true of everything on this page. The
+> second says the change carries a risk profile nothing before it carried, and that is what earns a
+> slice boundary: a change that makes previously-unreachable code routine deserves its own review and
+> its own gate, not a shared one with a mechanic.
+
+**THE HOME, decided on that argument: ACCRUAL IS ITS OWN SLICE, between 1 and 2.**
+
 
 Three candidates were on the table, and the reasoning is recorded so the choice can be overturned on
 its merits rather than re-derived:
@@ -2284,7 +2320,7 @@ its merits rather than re-derived:
 |---|---|
 | back into slice 1 | slice 1 is built, gated and boot-ready. Reopening it changes `GATE-scorch-slice-1.md`'s rows (weapon-hit rows become runnable) and delays a boot that is currently confirming rather than diagnosing |
 | slice 2 becomes "accrual + Ignite" | merges a **content-schema decision** (a new `EffectSpec` kind, which touches the sealed schema and skirts the standing "an element is pure identity, no logic" line) with a **mechanic**. If the schema question goes badly, Ignite is blocked from inside its own slice |
-| **its own slice** | **chosen.** One decision, small enough to read, reviewable on its own, and it unblocks slice 2 cleanly |
+| **its own slice** | **chosen, on the flip argument above.** One decision, small enough to read, reviewable on its own, it unblocks slice 2 cleanly — and it is the change that makes the refresh arm reachable, so it deserves the review and the gate that go with turning dormant code live |
 
 **What would change the decision:** if the schema question turns out trivial — one `EffectApplier`
 arm and no new kind — then a separate slice is ceremony, and it should fold into slice 2. **That is
@@ -7898,8 +7934,10 @@ early.
 confident WRONG diagnosis rather than merely failing to run.** That is worse than rule 4's
 impossible-row case: an impossible row does nothing, and these would have pointed somewhere specific.
 
-**A THIRD ARRIVED ONE SLICE LATER, FROM AN AXIS NEITHER OF THE FIRST TWO NAMED**, which is what turns
-this from an observation about one sitting into a rule with three witnesses.
+**A THIRD ARRIVED ONE SLICE LATER, FROM AN AXIS NEITHER OF THE FIRST TWO NAMED**, and a FOURTH from the
+same boot -- `S5`, where the missing precondition was not a fact about the world at all but a CHOICE OF
+MAGNITUDE. Four witnesses, and the fourth is the one that says a row can name every condition
+correctly and still be unreadable.
 
 | row | arithmetic | the unstated condition | what it would have "shown" |
 |---|---|---|---|
@@ -7941,6 +7979,13 @@ Before a row is handed to a runner, say what it assumes about:
   with *different caps*; an `area` carries its own damage payload on the same interval as the status
   it applies. **Reading the ability's YAML is part of WRITING the row, not part of running it** — the
   runner cannot supply a precondition nobody told them exists.
+- **the SEPARATION** — **a discriminating row must also choose conditions under which the two
+  hypotheses are FAR APART.** This is not a fact about the world like the five above; it is a **choice
+  of magnitude**, and it is the row author's to make. `S5` said "same max, one armoured and one not"
+  and named neither number. On a 20-max target the tick is `min(5% x 20, cap)` = 1, and a realistic
+  armour cut reads **0.8 against 1.0** — a difference the runner has to squint at, on the row that
+  witnesses a new core seam. Choose the max and the defense so the pass and the fail are two obviously
+  different numbers, then say both in the row.
 
 **The two that bit here were both raised BEFORE the boot and neither reached the run list**, which is
 the same defect as *"a checkpoint that lives only in the gate document gets built past"*: a condition
