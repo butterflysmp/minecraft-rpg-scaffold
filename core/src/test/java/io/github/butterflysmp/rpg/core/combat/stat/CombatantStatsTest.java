@@ -709,13 +709,20 @@ class CombatantStatsTest {
         stats.register(victim, CombatantStats.DEFAULT_PLAYER_BASE, true);
         stats.reconcileDefenseModifiers(victim, fullDiamond());
 
-        double dealt = stats.damage(victim, 30, null, false);
+        DamageOutcome outcome = stats.damage(victim, 30, null, false);
 
-        assertEquals(25.0, dealt, EPS, "the RETURN is what landed, not the 30 that was asked for");
-        assertEquals(dealt, recorder.last().amount(), EPS,
+        assertEquals(25.0, outcome.dealt(), EPS, "the RETURN is what landed, not the 30 asked for");
+        assertEquals(outcome.dealt(), recorder.last().amount(), EPS,
                 "and it is the same number the seam publishes -- one basis, two readings");
-        // Mutation: `return amount;` instead of `return dealt;` -> 30 != 25 -> reddens on the first.
+        // AND THE TWO COMPONENTS MUST BE DIFFERENT NUMBERS HERE. Both are doubles and adjacent, so a
+        // transposed construction is representable; 25.0 dealt against 75.0 remaining is what makes a
+        // swap visible. Equal values would have made the transposition a passing coincidence -- the
+        // same trap as asserting the return against an UNDEFENDED victim, where dealt == amount.
+        assertEquals(75.0, outcome.newCurrent(), EPS, "and where it left the target: 100 - 25");
+        // Mutation: `return amount` in place of dealt -> 30 != 25 -> reddens on the first.
         // Mutation: publish `amount` on the seam -> the two readings diverge -> reddens on the second.
+        // Mutation: swap the two components at construction -> 75 != 25 -> reddens on the first AND
+        // the third, which is why they are pinned to different values.
     }
 
     @Test
@@ -727,9 +734,11 @@ class CombatantStatsTest {
         stats.register(victim, CombatantStats.DEFAULT_PLAYER_BASE, true);
         stats.reconcileDefenseModifiers(victim, fullDiamond());
 
-        double dealt = stats.damage(victim, 30, null, false, CritState.NORMAL, DefenseRule.BYPASSED);
+        DamageOutcome outcome =
+                stats.damage(victim, 30, null, false, CritState.NORMAL, DefenseRule.BYPASSED);
 
-        assertEquals(30.0, dealt, EPS, "bypassing, what landed IS what was asked for");
+        assertEquals(30.0, outcome.dealt(), EPS, "bypassing, what landed IS what was asked for");
+        assertEquals(70.0, outcome.newCurrent(), EPS, "and the whole 30 came off");
         // Mutation: return the mitigated figure unconditionally -> 25 != 30 -> reddens.
     }
 
@@ -740,9 +749,46 @@ class CombatantStatsTest {
         // even model, and it would mint stacks from nothing.
         var stats = new CombatantStats();
 
-        assertEquals(0.0, stats.damage(UUID.randomUUID(), 10, null, false), EPS,
-                "nothing was tracked, so nothing landed");
+        DamageOutcome outcome = stats.damage(UUID.randomUUID(), 10, null, false);
+
+        assertEquals(0.0, outcome.dealt(), EPS, "nothing was tracked, so nothing landed");
+        assertEquals(0.0, outcome.newCurrent(), EPS,
+                "and there is no health to report -- which reads correctly as 'not standing', so a "
+                        + "consumer gating on newCurrent > 0 accrues nothing onto an untracked id");
         // Mutation: `return amount;` before the null check -> 10 != 0 -> reddens.
+    }
+
+    @Test
+    void theRETURNReportsCurrentAFTERTheHitAndNOTTheTRANSITIONBit() {
+        // THE PREDICATE DECISION, PINNED. HealthState.damage returns `before > 0 && current == 0`,
+        // which fires exactly ONCE -- right for HealthChange.reachedZero, which is the death hook.
+        // It is the WRONG question for a consumer asking "is this target still standing", and the
+        // difference is REACHABLE rather than theoretical:
+        //
+        //   MobDeathSystem.shouldKill is `reachedZero() && !targetIsPlayer()`, so A PLAYER AT ZERO
+        //   CUSTOM HEALTH IS NEVER KILLED OR REMOVED -- they stay tracked, alive, at the floor. The
+        //   NEXT hit on them has before == 0, so reachedZero is FALSE, and anything keyed on the
+        //   transition would treat a combatant at zero health as a live target. That is D3b's shape.
+        //
+        // For a mob the difference is unreachable only because the store entry is gone by the second
+        // hit. Relying on that would be reading the mob path's cleanup ordering as a signal.
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID player = UUID.randomUUID();
+        stats.register(player, CombatantStats.DEFAULT_PLAYER_BASE, true);
+
+        DamageOutcome crossing = stats.damage(player, 100, null, false);
+        assertEquals(0.0, crossing.newCurrent(), EPS, "the hit that took them to zero");
+        assertTrue(recorder.last().reachedZero(), "and it IS the transition");
+
+        // The second hit on a combatant already at zero -- reachable for a player, who is not killed.
+        DamageOutcome after = stats.damage(player, 5, null, false);
+        assertFalse(recorder.last().reachedZero(),
+                "the transition bit is FALSE on a second hit -- it fires once, by design");
+        assertEquals(0.0, after.newCurrent(), EPS,
+                "but current is still zero, which is the fact a 'still standing' consumer needs. "
+                        + "Keyed on reachedZero, this hit would look like it landed on a live target");
+        // Mutation: return the transition bit instead of current -> the last assertion reddens.
     }
 
     @Test

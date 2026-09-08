@@ -210,9 +210,13 @@ public final class CombatantStats {
      * untracked combatant. Emits a DAMAGE change carrying the new custom current and max, and the
      * dealer's identity.
      *
-     * @return the POST-MITIGATION amount actually dealt; {@code 0.0} on an untracked combatant.
+     * @return what the hit did: the POST-MITIGATION amount that landed, and where it left the
+     *         target. See {@link DamageOutcome} for why the second fact is the post-hit CURRENT
+     *         rather than a transition bit -- a player at zero custom health is never killed or
+     *         removed, so "did this hit cause the transition" and "is the target still standing"
+     *         are different questions with a reachable difference.
      */
-    public double damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer) {
+    public DamageOutcome damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer) {
         return damage(id, amount, dealer, dealerIsPlayer, CritState.NORMAL);
     }
 
@@ -222,7 +226,7 @@ public final class CombatantStats {
      * {@code EffectApplier}, so multiplying here as well would double it. This carries a fact for the
      * displays, not a factor for the maths.
      */
-    public double damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit) {
+    public DamageOutcome damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit) {
         return damage(id, amount, dealer, dealerIsPlayer, crit, DefenseRule.APPLIES);
     }
 
@@ -236,7 +240,7 @@ public final class CombatantStats {
      * io.github.butterflysmp.rpg.core.combat.CombatantHandle#applyDamage}, which carries the same note
      * at the other end of the port.
      */
-    public double damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit,
+    public DamageOutcome damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit,
                          DefenseRule defense) {
         return damage(id, amount, dealer, dealerIsPlayer, crit, defense, null);
     }
@@ -289,10 +293,10 @@ public final class CombatantStats {
      *                It rides for the damage number's glyph and for stack accrual, neither of which
      *                anything downstream can derive.
      */
-    public double damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit,
+    public DamageOutcome damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit,
                          DefenseRule defense, String element) {
         HealthState state = states.get(id);
-        if (state == null) return 0.0;
+        if (state == null) return DamageOutcome.UNTRACKED;
         double dealt = defense == DefenseRule.BYPASSED
                 ? amount
                 : Defense.applyDefense(amount, state.defenseValue());
@@ -300,7 +304,7 @@ public final class CombatantStats {
         listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.DAMAGE, dealt,
                 dealer, dealerIsPlayer, state.current(), state.max(), reachedZero, crit.isCrit(),
                 element));
-        return dealt;
+        return new DamageOutcome(dealt, state.current());
     }
 
     /**

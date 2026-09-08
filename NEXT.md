@@ -2323,9 +2323,25 @@ repo is sound**, and that is the useful result — a clean sample is a real find
 (`ContentValidatorTest.theTwoFAULTS…` named a row that does not redden). So the failure mode is
 live-authoring, not inherited debt. **Do not re-run the other 774.** Execute the note you are writing.
 
-> There is no `SOLE WITNESS` label in this tree — the stratum above was found by phrasing
-> (*"only test"*, *"only thing that"*, *"nowhere else"*). If that class of row is worth finding again,
-> it needs a real label to grep for.
+
+> **THE ESTATE HAS NO CANONICAL SHAPE, SO ANY AUDIT OF IT MUST STATE ITS PATTERN OR IT IS NOT
+> REPRODUCIBLE.** Three counts of the same thing, all correct: `// Mutation` gives **816 / 107**,
+> `// Mutation:` gives **745 / 102**, and the count above (`Mutation:` anywhere, test tree) gives
+> **779 / 106**. **71 notes omit the colon.** Nobody was wrong; the population is not
+> well-defined. A future audit quoting a number without its grep is quoting nothing.
+>
+> **AND THE SAMPLING FRAME NAMED FOR THIS AUDIT DID NOT EXIST.** It was "rows marked SOLE WITNESS" --
+> a label that lives in the **gate pages**, not in the codebase. The stratum above was reconstructed
+> from phrasing instead. Recorded because it is the same rule this file keeps applying to content:
+> **conditions drawn from what EXISTS, not from what someone remembers existing.** If that class of
+> row is worth sampling again it needs a real label to grep for.
+>
+> **WHAT 0-OF-5 DOES AND DOES NOT ESTABLISH.** The five were chosen FOR SEVERITY -- the rows whose
+> own text claims they are the sole catcher. That answers **"are notes misdirecting?"** (no: none
+> misdirected, two understated) and it establishes **NO RATE for the population of 779**. A later
+> reader will otherwise take 0/5 as a population estimate; it is not one, and it was never sampled
+> to be. Understating is the conservative failure mode for a note, which is why the rule that follows
+> is "execute the note you are writing" rather than any claim about the notes already written.
 
 #### DECIDED: ACCRUAL SKIPS A HIT THAT TOOK THE TARGET TO ZERO
 
@@ -2349,6 +2365,41 @@ So: **a hit that brings custom health to zero accrues nothing.** `CombatantStats
 that alongside the mitigated figure, rather than accrual inferring it from `tracks(id)` having gone
 false — which would be reading cleanup ordering as a signal, and would silently invert if the removal
 listener ever moved.
+
+
+##### AND THE PREDICATE IS "CURRENT <= 0 AFTER THIS HIT", NOT "THIS HIT CAUSED THE TRANSITION"
+
+**The two differ, and the difference is REACHABLE, so this is a decision rather than a formality.**
+
+`HealthState.damage` returns `before > 0.0 && current == 0.0` -- **transition-only**, once. That is
+correct for `HealthChange.reachedZero`, which is the death hook and must fire exactly once. It is the
+wrong predicate for accrual, and the reason is one line of `MobDeathSystem`:
+
+```java
+static boolean shouldKill(HealthChange change) {
+    return change.reachedZero() && !change.targetIsPlayer();   // MobDeathSystem.java:119-121
+}
+```
+
+**Players are excluded from death.** A player whose custom health reaches 0 is not killed and not
+removed -- by decision, the respawn lifecycle being a deferred pass -- so they stay TRACKED, alive, at
+the floor. A further hit on them has `before == 0.0`, so `reachedZero` is **false**, and a
+transition-only predicate would accrue scorch onto a combatant at zero health. That is the same shape
+as **D3b**, where a floor render overwrote a death for the same reason.
+
+For a MOB the difference is unreachable: the store entry is gone by the second hit, so `damage()`
+early-returns. **Relying on that would be relying on the mob path's cleanup ordering** -- exactly what
+this decision already refused to do once.
+
+So `damage()` reports the POST-HIT CURRENT, not a transition bit, and accrual's condition is
+`newCurrent > 0` -- "the target is still standing", whether or not this hit is what put it down.
+
+**Hence `DamageOutcome(double dealt, double newCurrent)`** rather than `(double, boolean)`. It reports
+FACTS and leaves the policy at the call site that reads it, which is where the policy is legible; a
+boolean named for the predicate would bake this decision into the return type and have to be renamed
+by the second consumer. Both components are doubles and therefore transposable in principle -- one
+construction site, named accessors, and a test that pins the two to DIFFERENT values so a swap
+reddens.
 
 #### THE ACCRUAL IS DISPLACED, NOT DESCOPED — and slice 2 blocks on it
 
