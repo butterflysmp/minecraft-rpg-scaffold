@@ -1,9 +1,34 @@
-# What "scorch" means. The ability that applies it decides for how long.
-# The id of this status is its filename: scorch.
+# What "scorch" means: a stacking burn on a clock we own.
+#
+#   damage   min(5% of the victim's MAX health, THE CAP) every 20 ticks
+#   cap      the damage of whatever applied the stacks -- so a stronger fire
+#            weapon buys a stronger burn, and a 5000 HP boss is not melted by
+#            percent-max-health running away (5% of 5000 is 250/sec, uncapped)
+#   stacks   1 per 2 damage dealt. Stacks do NOT scale the damage -- they
+#            refresh the timer, suppress the vanilla fire tick, and carry
+#            Ignite's threshold in the next slice.
+#   credit   the MOST RECENT applier. Kills count as theirs.
+#   armour   does NOT reduce the burn. It DOES slow stack accrual, because
+#            stacks come from damage actually landed. Armour delays scorch
+#            rather than blunting it.
+#
+# The ability that applies it still decides for how long. The id of this status
+# is its filename: scorch.
+#
+# WAS `kind: fire` UNTIL THIS SLICE, AND THE EIGHT AUTHORED duration_ticks IN
+# content/ KEPT THEIR VALUES WHILE CHANGING THEIR MEANING. `duration_ticks: 80`
+# used to mean "burn for four seconds"; it now means "the stack window stays
+# open four seconds, refreshed by each new stack." Mostly the same, and NOT the
+# same for anything that applies scorch repeatedly -- solar_grenade's field
+# re-applies five times over its life. No diff anywhere shows this; that is why
+# it is written down here.
 
-kind: fire
+kind: scorch
 
-# The other kind is a vanilla potion effect:
+# The other kinds are a plain vanilla burn (visual only, vanilla-rated damage,
+# no credit) and a vanilla potion effect:
+#
+# kind: fire
 #
 # kind: potion
 # potion_type: slowness   # a lowercase key, not the SLOWNESS constant

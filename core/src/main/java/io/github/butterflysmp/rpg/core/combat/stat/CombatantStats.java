@@ -1,7 +1,9 @@
 package io.github.butterflysmp.rpg.core.combat.stat;
 
 import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
+import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.Defense;
+import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 
 import java.util.Map;
 import java.util.UUID;
@@ -209,7 +211,7 @@ public final class CombatantStats {
      * dealer's identity -- the seam the popup hooks next phase.
      */
     public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer) {
-        damage(id, amount, dealer, dealerIsPlayer, false);
+        damage(id, amount, dealer, dealerIsPlayer, CritState.NORMAL);
     }
 
     /**
@@ -218,13 +220,53 @@ public final class CombatantStats {
      * {@code EffectApplier}, so multiplying here as well would double it. This carries a fact for the
      * displays, not a factor for the maths.
      */
-    public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, boolean wasCrit) {
+    public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit) {
+        damage(id, amount, dealer, dealerIsPlayer, crit, DefenseRule.APPLIES);
+    }
+
+    /**
+     * As above, and {@code bypassesDefense} skips {@link Defense#applyDefense} entirely.
+     *
+     * <p><b>This line was unconditional from the day it was written, and that was the defect.</b>
+     * {@code NEXT.md}'s standing question -- "which causes should {@code Defense} touch?" -- names this
+     * exact call as the reason there is no route to "ignores defense", and the operator's drowning rule
+     * ("REGARDLESS of defense") has been unimplementable because of it. Scorch is the first consumer;
+     * see {@code CombatantHandle.applyDamage}'s javadoc for why the flag is named for the PROPERTY
+     * rather than for scorch.
+     *
+     * <p><b>The bypass is total, not a reduced cut.</b> A percent-of-max burn that armour trims is no
+     * longer percent-of-max damage -- it is ordinary damage wearing a percentage, which defeats the
+     * one thing the shape was chosen for. Armour still reaches scorch, through stack ACCRUAL: fewer
+     * points landed is fewer stacks, so armour delays the burn rather than blunting it.
+     *
+     * <p><b>{@code crit} and {@code defense} are TYPES, and {@code dealerIsPlayer} is deliberately
+     * still a boolean.</b> These three sat adjacent as {@code boolean dealerIsPlayer, boolean wasCrit,
+     * boolean bypassesDefense} -- six orderings, five wrong, all six compiling, and
+     * {@code BukkitCombatant} passes all three positionally. Lifting two of them out leaves one lone
+     * boolean, which has nothing to be transposed with. See {@link DefenseRule}.
+     *
+     * <p><b>AND THAT SAFETY IS A PROPERTY OF THIS SIGNATURE, NOT OF THE PARAMETER.</b>
+     * {@code dealerIsPlayer} is allowed to stay a {@code boolean} <i>because it is the only one</i>.
+     * <b>ADD A SECOND BOOLEAN ANYWHERE IN THIS PARAMETER LIST AND THE TRANSPOSITION HAZARD IS REOPEN
+     * FOR BOTH OF THEM</b> -- and whoever adds it has no reason to look here first, which is exactly
+     * how a condition nobody wrote down gets built past. So: a new flag on this method is a new TYPE,
+     * or it converts {@code dealerIsPlayer} to one as well. It is not a third boolean.
+     *
+     * <p><b>Enforced, not merely stated</b>, because this file's own rule is that a rule living only
+     * in a comment gets built past: {@code DamageSignatureTest} reflects over this class and
+     * {@link io.github.butterflysmp.rpg.core.combat.CombatantHandle} and FAILS THE BUILD if any method
+     * declares two or more {@code boolean} parameters.
+     */
+    public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit,
+                       DefenseRule defense) {
         HealthState state = states.get(id);
         if (state == null) return;
-        double dealt = Defense.applyDefense(amount, state.defenseValue());
+        double dealt = defense == DefenseRule.BYPASSED
+                ? amount
+                : Defense.applyDefense(amount, state.defenseValue());
         boolean reachedZero = state.damage(dealt);
         listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.DAMAGE, dealt,
-                dealer, dealerIsPlayer, state.current(), state.max(), reachedZero, wasCrit));
+                dealer, dealerIsPlayer, state.current(), state.max(), reachedZero, crit.isCrit()));
     }
 
     /**

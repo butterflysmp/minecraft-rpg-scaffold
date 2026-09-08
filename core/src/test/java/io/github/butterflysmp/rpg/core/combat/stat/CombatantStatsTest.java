@@ -1,5 +1,7 @@
 package io.github.butterflysmp.rpg.core.combat.stat;
 
+import io.github.butterflysmp.rpg.core.combat.CritState;
+import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.combat.HealthRegen;
 import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
 import org.junit.jupiter.api.Test;
@@ -430,6 +432,51 @@ class CombatantStatsTest {
         assertEquals(75.0, stats.current(victim), EPS,
                 "a 30 hit against 20 defense lands for 25, not 30 -- the curve took its cut");
         // Mutation: drop the Defense.applyDefense call in damage() -> current is 70 -> reddens.
+    }
+
+    @Test
+    void bypassesDefenseSkipsTheCurveENTIRELYRatherThanReducingItsCut() {
+        // THE FIRST INSTANCE OF THE STANDING PER-CAUSE RULE -- "which causes should Defense touch?"
+        //
+        // Until this parameter existed there was NO route to "ignores defense", which is why the
+        // operator's drowning rule ("10% of max health, REGARDLESS of defense") has sat deferred.
+        // Scorch is the first consumer, not the reason: the flag is named for the property.
+        //
+        // Same victim, same defense, same amount as the row above -- the ONLY difference is the flag,
+        // so this cannot pass by accident of arithmetic the way a differently-sized hit could.
+        var stats = new CombatantStats();
+        UUID victim = UUID.randomUUID();
+        stats.register(victim, CombatantStats.DEFAULT_PLAYER_BASE, true);   // 100/100
+        stats.reconcileDefenseModifiers(victim, fullDiamond());
+        assertEquals(20.0, stats.defenseValue(victim), EPS, "the same 20 points as the row above");
+
+        stats.damage(victim, 30, null, false, CritState.NORMAL, DefenseRule.BYPASSED);
+
+        assertEquals(70.0, stats.current(victim), EPS,
+                "bypassing, the full 30 lands -- not the 25 the curve would have allowed. TOTAL, not "
+                        + "a smaller cut: a percent-of-max burn that armour trims is no longer "
+                        + "percent-of-max damage");
+        // Mutation: make the bypass arm still call applyDefense -> current is 75 -> reddens.
+        // Mutation: make the flag no-op by ignoring it -> current is 75 -> reddens.
+    }
+
+    @Test
+    void theBypassIsOPTINSoEveryExistingCallerIsUntouched() {
+        // The delegating overloads must pass false. If the default ever flipped, EVERY hit in the
+        // game would silently stop being mitigated -- a total armour failure that no existing test
+        // names, because they all use the short forms and would simply start reading larger numbers
+        // wherever a defended victim appears.
+        var stats = new CombatantStats();
+        UUID victim = UUID.randomUUID();
+        stats.register(victim, CombatantStats.DEFAULT_PLAYER_BASE, true);
+        stats.reconcileDefenseModifiers(victim, fullDiamond());
+
+        stats.damage(victim, 30, null, false);          // 4-arg
+        assertEquals(75.0, stats.current(victim), EPS, "the 4-arg form still mitigates");
+
+        stats.damage(victim, 30, null, false, CritState.NORMAL);   // 5-arg
+        assertEquals(50.0, stats.current(victim), EPS, "and so does the 5-arg crit form");
+        // Mutation: change either delegation to pass `true` -> 70 and 40 -> reddens on both.
     }
 
     @Test

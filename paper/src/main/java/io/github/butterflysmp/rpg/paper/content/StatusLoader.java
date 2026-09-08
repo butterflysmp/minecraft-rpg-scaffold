@@ -63,6 +63,7 @@ public final class StatusLoader {
             case "rooted" -> new StatusDefinition.Immobilize(id, false);
             case "freeze" -> new StatusDefinition.Immobilize(id, true);
             case "soaked" -> new StatusDefinition.Soaked(id);
+            case "scorch" -> new StatusDefinition.Scorch(id);
             default -> throw new IllegalArgumentException("Unknown status kind: " + kind);
         };
     }

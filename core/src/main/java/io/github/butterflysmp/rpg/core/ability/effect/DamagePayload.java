@@ -62,8 +62,22 @@ public final class DamagePayload {
      * {@code attackDamage}; a literal {@code Damage} uses its own amount. Empty when the trigger deals
      * no direct damage (a pure heal/status, or a cosmetic-only payload).
      */
-    public static Optional<TriggerDamage> of(List<EffectSpec> onHit, double weaponAttackDamage) {
+    public static Optional<TriggerDamage> of(List<? extends EffectSpec> onHit, double weaponAttackDamage) {
         return firstDamage(onHit, weaponAttackDamage);
+    }
+
+    /**
+     * The same headline number as {@link #of}, flattened to a double, or {@code 0.0} when the payload
+     * deals no direct damage.
+     *
+     * <p>This is what a status carried by the payload uses as its CAP -- the number the tooltip
+     * prints, so what a scorched target's burn is limited to is the same figure the player read off
+     * the weapon. Zero means UNDECLARED, and the adapter must substitute a conservative constant
+     * rather than treating it as "no cap": for a percent-of-max-health effect, absent is not
+     * unlimited, it is a missing brake.
+     */
+    public static double headlineDamage(List<? extends EffectSpec> onHit, double weaponAttackDamage) {
+        return of(onHit, weaponAttackDamage).map(TriggerDamage::amount).orElse(0.0);
     }
 
     /**

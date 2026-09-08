@@ -4,7 +4,10 @@ import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
 import io.github.butterflysmp.rpg.core.combat.Crit;
+import io.github.butterflysmp.rpg.core.combat.CritState;
+import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
+import io.github.butterflysmp.rpg.core.combat.Scorch;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.paper.content.StatusDefinition;
 import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTaskTarget;
@@ -162,14 +165,16 @@ public final class BukkitCombatant {
          * <p>The amount arrives already multiplied by the elemental matrix; EffectApplier did that
          * against the snapshot's shield. All this port carries is a number and a culprit.
          */
-        @Override public void applyDamage(double amount, UUID sourceId, boolean wasCrit) {
+        @Override public void applyDamage(double amount, UUID sourceId, CritState crit,
+                                          DefenseRule defense) {
             ctx.scheduler().onEntity(entity, () -> {
                 // Drain custom HP + fire the seam. dealerIsPlayer reuses the source's faction bit;
                 // the nameplate ignores the dealer this phase, the popup (1b) will need it.
                 Entity source = Attribution.attributableSource(
                         sourceId, entity.getWorld()::getEntity, Bukkit::isOwnedByCurrentRegion);
                 boolean dealerIsPlayer = source instanceof Player;
-                ctx.stats().damage(entity.getUniqueId(), amount, sourceId, dealerIsPlayer, wasCrit);
+                ctx.stats().damage(entity.getUniqueId(), amount, sourceId, dealerIsPlayer, crit,
+                        defense);
 
                 // Aggro-on-hit: the target turns on its attacker -- vanilla's expected default.
                 // Ability damage flashes without a vanilla hit, so it would otherwise provoke
@@ -254,7 +259,8 @@ public final class BukkitCombatant {
          * what kind of thing a "scorch" is. An unknown id is a content mistake, not a
          * programming error: warn once and let the rest of the detonation land.
          */
-        @Override public void applyStatus(String statusId, int durationTicks, int amplifier) {
+        @Override public void applyStatus(String statusId, int durationTicks, int amplifier,
+                                          UUID applierId, double sourceDamage) {
             StatusDefinition def = ctx.statuses().find(statusId).orElse(null);
             if (def == null) {
                 ctx.warnOnce("Unknown status_id '" + statusId + "'; no status applied");
@@ -266,6 +272,37 @@ public final class BukkitCombatant {
                     // the 10s burn someone already took from flint and steel.
                     case StatusDefinition.Fire ignored ->
                             entity.setFireTicks(Math.max(entity.getFireTicks(), durationTicks));
+
+                    // Scorch: the burn's LOOK from vanilla, the burn's DAMAGE from us.
+                    //
+                    // setFireTicks stays, because the operator asked to keep the visual -- and it is
+                    // the same Math.max as Fire's, for the same reason. What does NOT stay is
+                    // vanilla's damage: RpgListeners.onEnvironmentalDamage suppresses the FIRE_TICK
+                    // of a victim with live stacks, so the bar burns on OUR 20-tick clock, capped and
+                    // credited, instead of on vanilla's uncapped one credited to the victim.
+                    //
+                    // A SHARED VISUAL IS A COUPLING. Here the coupling is deliberate and both ends
+                    // are named: this line and the suppression gate. Delete either and the burn
+                    // either doubles or goes invisible.
+                    case StatusDefinition.Scorch ignored -> {
+                        entity.setFireTicks(Math.max(entity.getFireTicks(), durationTicks));
+
+                        // Non-positive means the payload declared no damage, so there is no BASIS for
+                        // a cap. Fall back to a conservative constant, LOUDLY -- never to the 5%
+                        // figure, which would make min(x, x) and hand an undeclared applier an
+                        // uncapped percent-max-health DoT. See Scorch.UNDECLARED_CAP.
+                        double cap = sourceDamage;
+                        if (cap <= 0) {
+                            ctx.warnOnce("Status '" + statusId + "' was applied by a payload declaring"
+                                    + " no damage, so it has no basis for a cap; falling back to "
+                                    + Scorch.UNDECLARED_CAP + ". Give the payload a damage effect.");
+                            cap = Scorch.UNDECLARED_CAP;
+                        }
+                        ctx.scorch().apply(entity.getUniqueId(),
+                                new EntityTaskTarget(entity, ctx.scheduler()),
+                                new EntityScorchSink(entity, ctx),
+                                1, cap, applierId, durationTicks);
+                    }
 
                     case StatusDefinition.Potion potion -> {
                         PotionEffectType type = potionEffect(potion.potionType());

@@ -11,12 +11,29 @@ import org.bukkit.NamespacedKey;
  */
 public sealed interface StatusDefinition
         permits StatusDefinition.Fire, StatusDefinition.Potion,
-                StatusDefinition.Immobilize, StatusDefinition.Soaked {
+                StatusDefinition.Immobilize, StatusDefinition.Soaked, StatusDefinition.Scorch {
 
     String id();
 
     /** A burn. Bukkit has no "burning" potion effect, so this drives setFireTicks. */
     record Fire(String id) implements StatusDefinition {}
+
+    /**
+     * A stacking damage-over-time on an OWNED 20-tick clock: {@code min(5% of max health, the cap)}
+     * per second, capped by the damage of whatever applied it, credited to the most recent applier.
+     *
+     * <p><b>A separate kind from {@link Fire}, not a replacement for it.</b> {@code Fire} means "make
+     * this thing burn, vanilla-rated" and is still the right answer for anything that wants only the
+     * look. Scorch keeps that look -- it still sets fire ticks for the visual -- but owns the damage,
+     * which is why {@code RpgListeners.onEnvironmentalDamage} suppresses the {@code FIRE_TICK} of a
+     * victim with live stacks. <b>A shared visual is a coupling</b>: use vanilla's burn for its
+     * appearance and you import its damage, and since the vanilla damage boundary landed that damage
+     * is real, uncapped, and credited to the VICTIM.
+     *
+     * <p>The mechanic is {@code ScorchStatus}; the arithmetic is {@code core.combat.Scorch}. Duration
+     * comes from the ability, as every other status's does.
+     */
+    record Scorch(String id) implements StatusDefinition {}
 
     /**
      * A movement lock: MOVEMENT_SPEED to zero (kills the mob's AI drive) plus per-tick

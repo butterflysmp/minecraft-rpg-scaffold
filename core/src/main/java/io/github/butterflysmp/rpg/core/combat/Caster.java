@@ -54,7 +54,31 @@ import java.util.UUID;
  * bonus reach a literal-damage weapon like {@code ember_staff} that reads no stat at all.
  */
 public record Caster(UUID id, double attackDamage, double classDamageBonus,
-                     double enchantDamagePercent, double chargeScale, double critMultiplier) {
+                     double enchantDamagePercent, double chargeScale, double critMultiplier,
+                     double payloadDamage) {
+
+    /**
+     * This cast's payload with its HEADLINE DAMAGE attached -- {@code DamagePayload.headlineDamage},
+     * the same figure the tooltip prints.
+     *
+     * <p>It rides the record for the reason the javadoc above gives for {@code classDamageBonus} and
+     * {@code chargeScale}: every method that threads a caster already carries it, so a status arm
+     * buried five calls deep inside a burst can read it without a sixth parameter being threaded past
+     * the untargeted effects that must never see it.
+     *
+     * <p><b>Frozen at cast time, like everything else here, and that is what makes it correct for a
+     * projectile.</b> A staff's bolt flies for up to a hundred ticks; the scorch it applies on impact
+     * is capped by what the staff hit for when it was FIRED, not by whatever the caster happens to be
+     * holding a second later. Re-reading at impact would also be the cross-region read the
+     * snapshot/handle split exists to prevent.
+     *
+     * <p>{@code 0.0} means the payload declares no direct damage. It is NOT a neutral value and must
+     * not be read as "uncapped" -- see {@code DamagePayload.headlineDamage}.
+     */
+    public Caster withPayloadDamage(double payloadDamage) {
+        return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
+                chargeScale, critMultiplier, payloadDamage);
+    }
 
     /**
      * Did this cast crit? DERIVED from the frozen multiplier rather than carried beside it, so the
@@ -99,6 +123,6 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      */
     public static Caster of(CombatantSnapshot snapshot, double chargeScale) {
         return new Caster(snapshot.id(), snapshot.attackDamage(), snapshot.classDamageBonus(),
-                snapshot.enchantDamagePercent(), chargeScale, snapshot.critMultiplier());
+                snapshot.enchantDamagePercent(), chargeScale, snapshot.critMultiplier(), 0.0);
     }
 }

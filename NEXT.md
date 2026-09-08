@@ -664,6 +664,27 @@ the two mechanisms, both read out of artefacts rather than reasoned:
 > evidence for it and the reason it should be consulted rather than admired: when a change widens what
 > reaches a piece of code, the comments explaining why it is safe are part of the change.
 
+> **A FOURTH INSTANCE, 2026-09-08, AND IT IS THE MIRROR OF THE OTHER THREE RATHER THAN A REPEAT.** In
+> all three above the scope was **OMITTED** — the comment never said "single hits only", so a widened
+> population walked straight past it. In `GATE-scorch-slice-1.md` the scope was **STATED and then
+> overridden by PLACEMENT.**
+>
+> The page said the cap is invisible at max 100, so *"use the field, not the lance"*. **Scoped, and
+> true as written** — the lance's cap of 12 never binds against 5% of 100. It sat two lines above
+> `S4b`, which is about a **high-max** target, where it is false: at 360 the lance binds at 12 and
+> reads more clearly than the field's flat 2. **The statement did not overreach. PROXIMITY GRANTED IT
+> SCOPE IT NEVER CLAIMED**, and the operator ran the lance and got the better reading.
+>
+> **So "state the scope" is NOT the fix here — the scope was stated.** The fix is to replace the
+> named instance with the PROPERTY: *the cap is witnessed by any applier whose cap is below 5% of the
+> target's max.* That sentence is **self-selecting** — it cannot be read against the wrong target,
+> because the target is an input to it. **No amount of careful scoping achieves that**, because a
+> scoped statement still has to be read next to the case it was scoped for, and a document does not
+> control what it is read beside.
+>
+> **The general form: when a rule names an instance, a reader one row away gets the instance without
+> the condition. Name the property instead, and the condition travels with it.**
+
 **Do not fix this by swapping REROUTE to cancelling.** Cancelling has its own i-frame problem — it was
 the reason tokening was chosen — so the mechanism needs a fresh diagnosis, not the other option off
 the shelf.
@@ -1064,6 +1085,53 @@ bypass **for drowning and nothing else**.
 So: vanilla's list is **the starting proposal, and evidence that his instinct is tracking something
 real.** Adopting it is a **balance decision that needs him, per cause**, and it follows from no
 measurement taken so far.
+
+##### THE SAME RULE ARRIVING IN A TEST FILE — a new member of the verification family, and the nastiest
+
+The rule above is about an **operator's number**. It has a twin that arrives from the other
+direction, caught 2026-09-08 in scorch slice 1:
+
+> **A TEST WRITTEN FROM OBSERVED BEHAVIOUR ENCODES THE DEFECTS PRESENT WHEN IT WAS WRITTEN.**
+
+This is **not** a check that did not run, and **not** a check on the wrong side of what it guards —
+those are the four already on this page. **This is a check whose PREMISE is the bug.** It passes. It
+discriminates. It reddens under mutation. And **removing the defect BREAKS it.**
+
+**The worked example, and one of the two tests was the best row in the file it lives in.**
+`ScorchStatus.apply`'s refresh arm called `burnOnce`, dealing damage outside the 20-tick clock the
+class exists to own. Two tests had that burn as their premise:
+
+- `reApplyingFasterThanThePeriodStillTicks` asserted `count() > burnsFromApplications`. **That
+  arithmetic only balanced because the refresh burned.** It caught the re-phase trap it was written
+  for *while being wrong about the mechanism* — it was counting inline burns from each application
+  and crediting them to the scheduler.
+- `aNewApplierTakesOverBOTHTheCapAndTheCredit` read `burns.get(1)` — the refresh burn itself. Fixing
+  the defect turned it into an `IndexOutOfBounds`.
+
+**So the suite was not green because the defect was untested. IT WAS GREEN BECAUSE OF THE DEFECT.**
+That inversion is the part to carry. The first reading ("untested") says *add a test*. The true
+reading says **two existing tests must be rewritten against intended behaviour**, because in their
+current form they are evidence of the bug rather than guards against it.
+
+**FILE IT WITH THE TUNING-REQUEST RULE, NOT BESIDE IT.** An operator's number and a developer's
+assertion are both **measurements of current behaviour, and both silently become requirements.** One
+arrives in chat, the other in a test file. The receiving question is the same: **ask "is this a
+measurement of a bug?" BEFORE "is this the spec?"**
+
+**THE TELL, cheap and now fired three times:** in a file where every other decision carries a
+paragraph, **the one line with no comment is the one that was not decided.** The refresh burn was
+that line — `a.stacks`, `a.remaining`, `a.cap` and `a.applierId` each carried one; the `burnOnce`
+between them did not.
+
+**THE COUNTER-EXAMPLE, kept in this note deliberately, because it is the discipline that stops the
+rule above becoming another plausible story.** While proving the rewritten guard still caught the
+re-phase, the mutation's result was **predicted** as burns `[0]` and **measured** as
+`[0, 30, 35, 55, 60, 65, 75, 85, 90]` — `cancel()` fires `onStop`, which drops the map entry, so
+later applications take the new-`Active` path rather than the refresh path. The comment was corrected
+to the observation, **with the artefact separated from the invariant**: the exact list belongs to the
+mutation, while "burns land on the original 20-tick phase" belongs to the code. **A predicted
+mutation result written into a test comment is this same defect one level up** — an assertion about
+behaviour nobody executed.
 
 **What the melee gate withdrew, and why enumerating it mattered.** Gating `onMobMeleeAttack` to
 `ENTITY_ATTACK` took four things away from creeper/warden damage, not one. Three were answered
@@ -2180,6 +2248,112 @@ feels wrong"*, which is what it will look like from inside the game.
 content edit. `applyFlintStaffIgnition` in `BSMPMenu` is the working reference implementation.
 
 **Do it in the slice that implements DOT statuses generally**, not for one weapon.
+
+> **PAID 2026-09-07 by scorch slice 1**, which is the slice that implemented DOT statuses generally,
+> as this entry asked. `kind: scorch` ticks damage through `CombatantHandle` on an owned 20-tick
+> clock, caps itself against the applier's authored damage, credits the applier, and suppresses the
+> vanilla `FIRE_TICK` it replaces. `kind: fire` still exists and is still right for a visual-only
+> burn. **What remains is not this debt but its successor, below.**
+
+#### NAMED DEBT: the cap invariant has no BOOT arm, and the javadoc claimed it did
+**AND THE CAP INVARIANT'S BOOT ARM IS OWED, WHICH THE JAVADOC DENIED UNTIL 2026-09-08.**
+`Scorch.UNDECLARED_CAP` read *"`ScorchContentInvariantTest` walks the bundled content and fails the
+BUILD ...; `ContentValidator` names it at boot for content added after the build"* — and
+**`ContentValidator` contains no such check.** It was deferred in the slice that shipped the constant,
+and the javadoc was written from the plan rather than from the code. The next sentence compounded it:
+*"author a fire ability at 1.5 without **either**"* implies two guards where there is one.
+
+> **This is `flint_staff.yml`'s "THE MINTED STAFF STACKS TO 64" again** — correct reasoning about an
+> intended design, false on the day it landed, invisible to every compiler and test, and found only
+> because someone asked whether the enforcement was real. **It was found by a question about a
+> DIFFERENT invariant**: the review asked why `UNDECLARED_CAP` shipped as a comment while
+> `dealerIsPlayer` got a guard. The premise was wrong — the cap invariant does have a build-failing
+> guard — but checking it surfaced the false half of the same paragraph.
+
+**What is actually covered: bundled content, at build time.** What is not: content added after the
+build — a datapack drop, an operator's own yml, anything reaching `--refresh-content` without a
+rebuild. **The boot arm is genuinely owed** (it was named as deferred in scorch slice 1 and still is);
+the javadoc now says so instead of claiming it exists.
+
+**The transferable form:** when a comment claims a rule is enforced, the claim names a file. **Open
+it.** Enforcement is the one property a javadoc cannot make true by asserting, and it is the property
+readers most reliably take on trust — this file records the reader's side of that trust twice already.
+
+#### THE ACCRUAL IS DISPLACED, NOT DESCOPED — and slice 2 blocks on it
+
+**Recorded 2026-09-08, before slice 2 is planned, because a deferred item with no slice is how a
+dependency becomes a surprise.**
+
+Stack accrual from damage was in slice 1's plan and moved out during implementation. `Scorch.stacksFor`
+and `ScorchStatus.apply`'s bulk `stacks` parameter are **built and tested**; the call site is not
+wired, because `EffectApplier` lives in `core` and cannot name "scorch" (content is data, not code),
+so wiring it needs a new `EffectSpec` kind — `type: status_per_damage` was floated and deliberately
+not invented.
+
+**MEASURED, not inferred:** `BukkitCombatant.java:302` passes `stacks` **hardcoded to `1`**, and it is
+the **only** `ScorchStatus.apply` call site in the project. So it is not merely that weapon hits
+cannot apply scorch — **every application in the shipped slice is exactly one stack.**
+
+**AND IT IS WHY THE REFRESH ARM IS BARELY REACHABLE TODAY — measured 2026-09-08 across all four
+appliers, cooldown against scorch duration:**
+
+| applier | `cooldown_ticks` | scorch `duration_ticks` | can it refresh its own burn? |
+|---|---|---|---|
+| `solar_lance` | 100 | 60 | **no** |
+| `solar_grenade` | 200 | 40 | **no** by re-cast |
+| `rekindle` | 200 | 60 | **no** |
+| `ember_step` | 160 | 60 | **no** |
+
+**NOT ONE APPLIER IN SHIPPED CONTENT CAN REFRESH ITS OWN BURN BY RE-CASTING.** Every cooldown outlives
+every duration. The only refresh path that exists is `solar_grenade`'s field re-applying on its own
+20-tick interval against its own 40-tick window — plus two different fire abilities overlapping, or
+two players.
+
+**Harmless for the DoT, fatal for Ignite.** The burn rate is flat and reads no stack count, so one
+stack burns exactly as ten do. But Ignite's threshold is **50% of max health as stacks**: a 20 HP
+zombie needs **ten**. At one stack per cast that is **ten casts**; with accrual it is one Flint Staff
+hit. **IGNITE IS UNREACHABLE IN PRACTICE UNTIL ACCRUAL LANDS**, and nothing in slice 1 says so.
+
+**THE SCHEDULING ARGUMENT, WHICH IS THE REASON AND NOT A CONSEQUENCE: THIS CHANGE FLIPS A DORMANT
+DEFECT CLASS LIVE.**
+
+The table above is not a curiosity about content tuning. It says the refresh arm is **unreachable by
+any single applier in the game today** — which is *why* the refresh-burn defect was survivable in
+slice 1. Not luck, and not a weak test: content that could not reach the code.
+
+**Accrual removes that, in one step.** The moment a weapon applies stacks on damage, a weapon swinging
+faster than the burn lasts makes the refresh arm the **common** path — from unreachable to routine, in
+the same change. Everything that depends on the refresh arm being correct goes from theoretical to
+load-bearing at that instant: `aRefreshDoesNotDealAnUNSCHEDULEDBurn` stops guarding a corner and
+starts guarding the hot path, and `S8` — which had no runnable form at all — becomes trivially
+runnable.
+
+> **"Accrual is deferred" is not a scheduling argument. "This change flips a dormant defect class
+> live" is.** The first says only that work remains, which is true of everything on this page. The
+> second says the change carries a risk profile nothing before it carried, and that is what earns a
+> slice boundary: a change that makes previously-unreachable code routine deserves its own review and
+> its own gate, not a shared one with a mechanic.
+
+**THE HOME, decided on that argument: ACCRUAL IS ITS OWN SLICE, between 1 and 2.**
+
+
+Three candidates were on the table, and the reasoning is recorded so the choice can be overturned on
+its merits rather than re-derived:
+
+| candidate | why not |
+|---|---|
+| back into slice 1 | slice 1 is built, gated and boot-ready. Reopening it changes `GATE-scorch-slice-1.md`'s rows (weapon-hit rows become runnable) and delays a boot that is currently confirming rather than diagnosing |
+| slice 2 becomes "accrual + Ignite" | merges a **content-schema decision** (a new `EffectSpec` kind, which touches the sealed schema and skirts the standing "an element is pure identity, no logic" line) with a **mechanic**. If the schema question goes badly, Ignite is blocked from inside its own slice |
+| **its own slice** | **chosen, on the flip argument above.** One decision, small enough to read, reviewable on its own, it unblocks slice 2 cleanly — and it is the change that makes the refresh arm reachable, so it deserves the review and the gate that go with turning dormant code live |
+
+**What would change the decision:** if the schema question turns out trivial — one `EffectApplier`
+arm and no new kind — then a separate slice is ceremony, and it should fold into slice 2. **That is
+knowable before any code is written**, by settling the `EffectSpec` shape first. Settle it, then pick.
+
+**The open question the slice opens with**, so it is not rediscovered: `EffectApplier` must apply
+stacks proportional to damage actually landed, without naming a status. `type: status_per_damage`
+carrying a `status_id` and a `damage_per_stack` keeps the naming in content where it belongs; making
+elements carry it does not, and that line is already drawn.
 
 #### NAMED DEBT: `CraftResultIndex` holds two indexes and one of them is not a result index
 
@@ -7784,14 +7958,63 @@ early.
 confident WRONG diagnosis rather than merely failing to run.** That is worse than rule 4's
 impossible-row case: an impossible row does nothing, and these would have pointed somewhere specific.
 
+**A THIRD ARRIVED ONE SLICE LATER, FROM AN AXIS NEITHER OF THE FIRST TWO NAMED**, and a FOURTH from the
+same boot -- `S5`, where the missing precondition was not a fact about the world at all but a CHOICE OF
+MAGNITUDE. Four witnesses, and the fourth is the one that says a row can name every condition
+correctly and still be unreadable.
+
 | row | arithmetic | the unstated condition | what it would have "shown" |
 |---|---|---|---|
 | `D4b` | 18x, correct | **`knell.yml` is `base_entity: wither_skeleton`, and wither skeletons are FIRE-IMMUNE** — `is_fire` contains `minecraft:lava` | the Knell takes nothing in lava while the control dies → *"the conversion does not reach tagged mobs"* |
 | `D4c` | 60% / lethal, correct | **the operator's ARMOUR** — our `Defense` applies to every cause, mobs have none, he does | the lethal drop kills both mobs and leaves him standing → *"the conversion works for mobs, not players"* |
+| `S1c` | 2/tick at 20-tick cadence, correct | **the `area` effect list carries `type: damage amount: 2` ALONGSIDE the scorch it applies** — same interval, same value, different source | two numbers per second read as the refresh-burn defect → *"the fix did not take"*, on a build where it had |
 
-**Fire immunity is a property of the SUBJECT. Armour is a property of the RUN.** Neither is visible to
-a table that verifies only numbers, and a row can be arithmetically perfect and physically incapable
-of showing what it claims.
+**Fire immunity is a property of the SUBJECT. Armour is a property of the RUN. A CO-LOCATED PAYLOAD IS
+A PROPERTY OF THE CAST**, and the third is the one a careful reader of the *status* code cannot see at
+all, because it is not in the code — it is in the ability's YAML, three lines above the status that
+row is about.
+
+> **S1c, 2026-09-08, and the threshold was off by exactly one.** The row said "ONE number per second;
+> TWO means the refresh burn is back". The boot produced **two, correctly**: the field's own
+> `amount: 2` damage tick and the scorch tick, on the same 20-tick cadence at the same value. **With
+> the defect actually present it would have been THREE.** The row's concept was sound and its
+> discrimination real; only the number was wrong, and it was wrong because the row was written from
+> `ScorchStatus`'s clock without reading `solar_grenade.yml`'s effect list.
+>
+> **The near-miss is the point.** A runner who trusted the row would have reported a fixed build as
+> broken, and the reflex on "the fix did not take" is to reopen the fix — the one part that had been
+> proved by mutation.
+
+None of the three is visible to a table that verifies only numbers, and a row can be arithmetically
+perfect and physically incapable of showing what it claims.
+
+#### READ THE CONTENT FILE, NOT THE CLASS — and this is the actionable form of half the list below
+
+> **A ROW'S CONDITIONS MUST COME FROM WHAT CONTENT CAN PRODUCE, NOT FROM WHAT THE MECHANISM PERMITS.**
+
+**Three unreachable numbers have now been specified, all by the same route** — reading the mechanism,
+which is uncapped, instead of the content, which is not:
+
+| the row asked for | the mechanism permits it | content's actual ceiling |
+|---|---|---|
+| `S8` — "wait ~2s, cast again" | any interval | `solar_lance` is `cooldown_ticks: 100` against `duration_ticks: 60` — **the burn expires 40 ticks before the ability returns**, and NO shipped applier's cooldown is shorter than its own duration |
+| `S4b` — "use the field, not the lance" | any applier | true at max 100, **false at 360**, where the lance's cap of 12 binds against 5% = 18 and reads more clearly |
+| `S5` — "a large defense value, say 100" | `Defense.applyDefense` takes any double; `SCALE = 100` halves it exactly | full diamond is **20** points and Protection III adds **9 per piece**, so **56** is the ceiling. Defense 100 does not exist |
+
+**Each was arithmetically correct and physically unavailable**, and each cost a boot row. `Defense`'s
+javadoc even works `100 -> 0.5` as its example, which is what made 100 feel like the natural figure:
+**the class documents the curve, and the curve is not the constraint. The armor files are.**
+
+**This explains three of the six axes below rather than adding a seventh**, and it is the cheaper
+instruction because it names a file to open:
+
+- **the subject** — answered by the mob's yml (`knell.yml` sets no defense, and no mob yml can)
+- **the CAST** — answered by the ability's yml (what else is in the effect list, and on what interval)
+- **the SEPARATION** — answered by the content ceilings (how far apart the two hypotheses can be MADE
+  to sit, which is a fact about authored numbers, not about the formula)
+
+**So: before writing a row, open the yml. The Java tells you what is expressible; only the content
+tells you what is reachable.**
 
 #### The enumeration, because "check the preconditions" is not actionable
 
@@ -7802,12 +8025,84 @@ Before a row is handed to a runner, say what it assumes about:
 - **the operator** — armour, held items, enchants, custom stats;
 - **the mode** — creative suppresses damage events entirely, so every damage row passes by not running;
 - **the world** — what else is in it that shares the cause, and whether the subject can be reached at
-  all.
+  all;
+- **the CAST** — **everything else the same cast does.** Read the ability's own content file before
+  writing a row about one of its effects. A `burst` and an `area` in one file apply the same status
+  with *different caps*; an `area` carries its own damage payload on the same interval as the status
+  it applies. **Reading the ability's YAML is part of WRITING the row, not part of running it** — the
+  runner cannot supply a precondition nobody told them exists.
+- **the SEPARATION** — **a discriminating row must also choose conditions under which the two
+  hypotheses are FAR APART.** This is not a fact about the world like the five above; it is a **choice
+  of magnitude**, and it is the row author's to make. `S5` said "same max, one armoured and one not"
+  and named neither number. On a 20-max target the tick is `min(5% x 20, cap)` = 1, and a realistic
+  armour cut reads **0.8 against 1.0** — a difference the runner has to squint at, on the row that
+  witnesses a new core seam. Choose the max and the defense so the pass and the fail are two obviously
+  different numbers, then say both in the row.
 
 **The two that bit here were both raised BEFORE the boot and neither reached the run list**, which is
 the same defect as *"a checkpoint that lives only in the gate document gets built past"*: a condition
 stated somewhere the runner is not reading is not a condition the runner can meet. **Preconditions
 belong IN the row, as text the runner must satisfy — not in the prose beneath the table.**
+
+### LEGIBILITY OPTIMISED AHEAD OF FALSIFIABILITY MAKES AN UNFALSIFIABLE ROW MORE CONVINCING
+
+**A distinct failure from the preconditions rule above, and it is recorded separately because the
+remedy is different: that one says enumerate the conditions, this one says CHECK THE GAP EXISTS BEFORE
+WIDENING IT.**
+
+> **Widening a gap is only meaningful once the gap can exist.**
+
+**The worked example, 2026-09-08, and both moves were mine and the operator's in sequence.** `S5` was
+sent to be run twice. On the second pass the advice was about **readability** — the numbers are too
+close, at 20 max the tick is 1 and armour makes it 0.8, so raise the max and the defense until the two
+readings are obviously different. **Correct advice. Applied to a row that could not fail.**
+
+Defense is player-only (`reconcileDefenseModifiers` has one production caller, `PlayerHealthSystem:264`,
+on `worn.defense()`; every other caller is a test). Run on two mobs, S5 is **defense 0 against defense
+0** — `applyDefense` returns both unchanged, and the row passes whether or not `bypassesDefense` reaches
+the sink.
+
+**So the separation work was improving the resolution of a measurement of nothing.** And it made the
+row *more* convincing: a row quoting "12 against 7.7, executed" reads far more rigorous than one
+saying "one armoured and one not", while being exactly as blind. **The polish is the hazard.** An
+obviously-vague row invites the question *"what would this actually show?"*; a precise one answers a
+question nobody then asks.
+
+**THE ORDER, and it is the whole rule:**
+
+1. **Can this row FAIL?** Name the state of the world that reddens it, and confirm that state is
+   reachable. For S5: *a target whose `defenseValue` is non-zero* — which requires a player, which
+   requires a second account.
+2. **THEN make the failure legible.** Choose magnitudes so the two outcomes are far apart, per the
+   SEPARATION axis above.
+
+Doing 2 before 1 is how a non-discriminating row acquires the appearance of rigour. **Rule 4 already
+says a row can be real but non-discriminating; this is the mechanism by which such a row gets
+HARDER to spot rather than easier.**
+
+**SECOND INSTANCE, 2026-09-08, AND IT LANDED ON A REMEDY RATHER THAN ON A ROW.** The first was `S5`
+itself: separation work applied to a row that could not fail. The second was the **proposed fix for
+it**, and it came from the operator:
+
+> *"Named constants at the call site, or a small parameter type -- your call which fits the codebase."*
+
+**Named constants are a NON-FIX here, and the reason is the rule.** `applyDamage(amount, id,
+NOT_A_CRIT, BYPASSES_DEFENSE)` reads unambiguously and **compiles exactly as happily transposed**,
+because `NOT_A_CRIT` and `BYPASSES_DEFENSE` are both `boolean`. The call site would have LOOKED safe
+while nothing about what can happen had changed — and the requirement in the same sentence was that
+*"the transposition stops compiling"*, which only a distinct TYPE delivers.
+
+**So the tell fires on remedies as well as on tests: an improvement to how something READS, proposed
+without checking whether it CHANGED WHAT CAN HAPPEN.** Both instances were made by someone who had
+just correctly diagnosed the underlying problem, which is what makes it worth recording rather than
+filing under carelessness. Diagnosing the hazard and fixing the appearance of it are adjacent moves.
+
+**The check that separates them is one question, and it is the same one both times:** *name the state
+of the world this now prevents.* For named constants the honest answer is "none — it prevents a
+misreading, not a miswrite". For the enums it is "the arguments in the wrong order", and that answer
+was then **executed**: transposed, built, and confirmed to fail with `incompatible types: DefenseRule
+cannot be converted to CritState`.
+
 
 ### A GATE ROW NAMED AS A MUTATION'S SUBSTITUTE NEEDS ITS DISCRIMINATION CHECKED LIKE ANY OTHER ROW
 
@@ -7844,6 +8139,114 @@ Its guard is the proof, and the proof has a precondition — k constant per vict
 will find it. Not in a gate table, which would imply a check that cannot exist.
 
 **M5 needs a row. M6 needs a sentence. Filing them together, as `5c2fb0b` did, hides both facts.**
+
+### A SIGNATURE CHANGE INVALIDATES EVERY INCREMENTAL RESULT
+
+> **Run `clean`. Treat an incremental green after a signature change as NO RESULT AT ALL.**
+
+**A new member of the verification family, and the worst-placed one on this page: it emits the exact
+string everyone checks for, on the exact operation that guarantees stale state.**
+
+**Measured 2026-09-08.** After changing `CombatantHandle.applyDamage` and `CombatantStats.damage` to
+take `CritState` and `DefenseRule`, `./mvnw -pl core,paper test-compile` printed:
+
+```
+[INFO] BUILD SUCCESS
+```
+
+**The tree could not compile.** `./mvnw clean test-compile` on the same bytes reported four real
+errors:
+
+```
+FakeWorld.Dummy is not abstract and does not override abstract method
+    applyDamage(double,UUID,CritState,DefenseRule)
+FakeWorld:489 applyDamage(double,UUID,boolean,boolean) does not override ... a supertype
+CombatantStatsTest:451 incompatible types: boolean cannot be converted to CritState
+CombatantStatsTest:475 incompatible types: boolean cannot be converted to CritState
+```
+
+**Why it is specific to signature changes**, and not a general "incremental builds are unreliable"
+grumble: an incremental compiler recompiles what it believes is STALE, and staleness is judged by
+timestamps on the files it knows about. A file whose own bytes did not change but whose **supertype's
+contract did** is not stale by that test. So the compiler skips exactly the files a signature change
+breaks — implementors and call sites — and reports success over the set it did look at.
+
+**HOW IT WAS ACTUALLY CAUGHT, and this is the uncomfortable part: intuition, not process.** The green
+was disbelieved only because `FakeWorld` was known to still carry the old four-argument override, so
+`BUILD SUCCESS` was *impossible* rather than merely suspicious. **Nothing in the workflow would have
+questioned it.** Had the change been one file larger, or made an hour later, the green would have been
+believed — and this file's whole thesis is that a check which did not run looks exactly like a check
+that passed.
+
+**The operational form, because "be careful" is not actionable:**
+
+- **After ANY signature change** — a parameter type, an added or removed parameter, a renamed method,
+  a changed return type, a widened or narrowed interface — **the next build is `clean`.** Not the one
+  after it.
+- **An incremental `BUILD SUCCESS` following a signature change is not evidence.** Do not report it,
+  do not act on it, do not let it end a verification step. It is the absence of a result.
+- **This composes with the mutation rule.** A mutation is not believed until the marker is grepped
+  *and* it compiled; a compile is not believed until it ran over everything. Both are the same
+  discipline: confirm the check reached the thing it claims to be checking.
+
+**And it generalises past compilation.** Any cached, timestamp-driven verifier has this shape — a test
+runner reusing results, a linter with a cache, a build system's up-to-date check. **The question to
+ask of a fast green is not "did it pass" but "what did it actually look at".**
+
+### A CLAIM THAT CANNOT BE WITNESSED SHOULD BE MADE IMPOSSIBLE TO GET WRONG, NOT LEFT TO A ROW THAT WILL NEVER BE TICKED
+
+**This is the rule above arriving from the other side, and the difference is the whole entry.** There,
+unexpressibility was the **better** of two available options — a test could have been written, and the
+signature was stronger. Here it is the **only** option, because the witness is not expensive or
+awkward: it is **unreachable**.
+
+> **`bypassesDefense`'s paper wiring, 2026-09-08.** `GATE-scorch-slice-1.md`'s `S5` was written to
+> witness it and **can never be run.** Defense is player-only — `reconcileDefenseModifiers` has one
+> production caller, `PlayerHealthSystem`, on a scan of WORN GEAR, and `MobDefinition` is
+> `(id, baseEntity, displayName, maxHealth)` with **no defense field**, so a test mob with armour is a
+> FEATURE, not a content file. That makes the row need a second player, and nothing but another player
+> can scorch a player (`/rpg apply` filters `!(living instanceof Player)`). **There is no second
+> account.** Not deferred. Unreachable.
+
+**THE GAP WAS ONE HOP, NOT THE WHOLE CLAIM, AND SIZING IT IS WHAT MADE THE FIX CHEAP.** The arithmetic
+already had witnesses — `CombatantStatsTest.bypassesDefenseSkipsTheCurveENTIRELYRatherThanReducingItsCut`
+proves the curve is skipped, and `FakeWorld` records the flag arriving at the sink. **What had no
+witness was one line of paper wiring passing the right value:**
+
+```java
+handle().applyDamage(amount, applierId, false, true);   // transposed, this still compiles
+```
+
+Transposed it means *"this was a crit, and Defense applies"* — a percent-of-max burn quietly trimmed by
+armour, which is the one property the shape was chosen for.
+
+**NAMED CONSTANTS DO NOT SOLVE THIS, AND THE FIRST PROPOSAL WAS FOR NAMED CONSTANTS.**
+`applyDamage(amount, id, NOT_A_CRIT, BYPASSES_DEFENSE)` reads better and **compiles exactly as happily
+when the two are swapped**, because both are still `boolean`. Legibility is not the property being
+bought. **Only a distinct TYPE turns the transposition into a compile error**, which is why the fix is
+`CritState` and `DefenseRule` rather than two `static final boolean`s.
+
+**AND THE HAZARD WAS ADJACENCY, NOT BOOLEANS.** One layer down, `CombatantStats.damage` carried
+`boolean dealerIsPlayer, boolean wasCrit, boolean bypassesDefense` — **three adjacent booleans, six
+orderings, five wrong, all six compiling**, with `BukkitCombatant` passing all three positionally.
+Typing only the parameter that prompted the review would have left the other pair transposable. Two
+were lifted to types; `dealerIsPlayer` stays a `boolean` **on purpose**, because it is now the only one
+left and a lone boolean has nothing to be swapped with.
+
+**VERIFIED THE WAY A MUTATION IS, because "it now type-checks" is a claim like any other:** the
+arguments at `EntityScorchSink` were transposed and the build was run. It failed with
+`incompatible types: DefenseRule cannot be converted to CritState`. Restored, `md5sum`-checked against
+the pre-mutation copy, and `./mvnw clean package` re-run green.
+
+> **The incremental `test-compile` reported `BUILD SUCCESS` on a tree that could not compile.** Stale
+> outputs, and the four real errors only appeared under `clean`. That is this file's oldest lesson
+> arriving in a new costume — **use `clean` before believing a compile result**, exactly as a mutation
+> is not believed until the marker is grepped.
+
+**How to apply:** when a gate row is found to be unreachable rather than merely unrun, **do not record
+it as owed.** Ask what the row uniquely covered, size that to the smallest hop, and make that hop
+unrepresentable. Then record honestly what IS covered and what is not, so nobody reads "unrun" as
+"untested" — or, worse, reads a permanently-blocked row as work in progress.
 
 ### A MUTATION THAT CANNOT BE EXPRESSED IS A PROPERTY THE TYPE ENFORCES, NOT A TEST THAT IS MISSING
 

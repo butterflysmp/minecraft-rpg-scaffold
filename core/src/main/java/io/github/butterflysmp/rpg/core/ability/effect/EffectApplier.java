@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.Caster;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
+import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.HitDamage;
 import java.util.List;
 import java.util.function.DoubleConsumer;
@@ -133,7 +134,7 @@ public final class EffectApplier {
                                 caster.classDamageBonus()),
                         caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
-                    target.handle().applyDamage(amount, caster.id(), caster.crit());
+                    target.handle().applyDamage(amount, caster.id(), CritState.of(caster.crit()));
                     onDirectDamage.accept(amount);   // inside the gate: a refused hit reports nothing
                 }
             }
@@ -154,7 +155,7 @@ public final class EffectApplier {
                                 caster.classDamageBonus()),
                         caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
-                    target.handle().applyDamage(amount, caster.id(), caster.crit());
+                    target.handle().applyDamage(amount, caster.id(), CritState.of(caster.crit()));
                     onDirectDamage.accept(amount);   // inside the gate: a refused hit reports nothing
                 }
             }
@@ -167,8 +168,13 @@ public final class EffectApplier {
                         position.z() - origin.z());
                 target.handle().applyKnockback(dir, k.strength());
             }
+            // The caster and the payload's headline damage both ride the Caster, so a status that
+            // needs to credit someone (scorch's kill credit) or to cap itself against the hit that
+            // carried it (scorch's cap) can, without this arm knowing which status does either.
+            // Element stays out of it: identity, not math, here as everywhere.
             case EffectSpec.Status s ->
-                    target.handle().applyStatus(s.statusId(), s.durationTicks(), s.amplifier());
+                    target.handle().applyStatus(s.statusId(), s.durationTicks(), s.amplifier(),
+                            caster.id(), caster.payloadDamage());
         }
     }
 
