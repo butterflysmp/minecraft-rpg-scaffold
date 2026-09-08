@@ -2255,6 +2255,30 @@ content edit. `applyFlintStaffIgnition` in `BSMPMenu` is the working reference i
 > vanilla `FIRE_TICK` it replaces. `kind: fire` still exists and is still right for a visual-only
 > burn. **What remains is not this debt but its successor, below.**
 
+#### NAMED DEBT: the cap invariant has no BOOT arm, and the javadoc claimed it did
+**AND THE CAP INVARIANT'S BOOT ARM IS OWED, WHICH THE JAVADOC DENIED UNTIL 2026-09-08.**
+`Scorch.UNDECLARED_CAP` read *"`ScorchContentInvariantTest` walks the bundled content and fails the
+BUILD ...; `ContentValidator` names it at boot for content added after the build"* — and
+**`ContentValidator` contains no such check.** It was deferred in the slice that shipped the constant,
+and the javadoc was written from the plan rather than from the code. The next sentence compounded it:
+*"author a fire ability at 1.5 without **either**"* implies two guards where there is one.
+
+> **This is `flint_staff.yml`'s "THE MINTED STAFF STACKS TO 64" again** — correct reasoning about an
+> intended design, false on the day it landed, invisible to every compiler and test, and found only
+> because someone asked whether the enforcement was real. **It was found by a question about a
+> DIFFERENT invariant**: the review asked why `UNDECLARED_CAP` shipped as a comment while
+> `dealerIsPlayer` got a guard. The premise was wrong — the cap invariant does have a build-failing
+> guard — but checking it surfaced the false half of the same paragraph.
+
+**What is actually covered: bundled content, at build time.** What is not: content added after the
+build — a datapack drop, an operator's own yml, anything reaching `--refresh-content` without a
+rebuild. **The boot arm is genuinely owed** (it was named as deferred in scorch slice 1 and still is);
+the javadoc now says so instead of claiming it exists.
+
+**The transferable form:** when a comment claims a rule is enforced, the claim names a file. **Open
+it.** Enforcement is the one property a javadoc cannot make true by asserting, and it is the property
+readers most reliably take on trust — this file records the reader's side of that trust twice already.
+
 #### THE ACCRUAL IS DISPLACED, NOT DESCOPED — and slice 2 blocks on it
 
 **Recorded 2026-09-08, before slice 2 is planned, because a deferred item with no slice is how a

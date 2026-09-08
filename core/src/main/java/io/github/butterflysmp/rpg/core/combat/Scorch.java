@@ -113,11 +113,23 @@ public final class Scorch {
      * ability silently weakens every undeclared scorch -- surprising in the other direction, and
      * untestable at a fixed number.
      *
-     * <b>The rule is ENFORCED, because a rule that lives only in a comment gets built past.</b>
-     * {@code ScorchContentInvariantTest} walks the bundled content and fails the BUILD if any declared
-     * cap is below this; {@code ContentValidator} names it at boot for content added after the build.
-     * Author a fire ability at 1.5 without either and this constant silently violates its own
-     * invariant, in exactly the direction the rule exists to prevent.
+     * <b>The rule is ENFORCED for BUNDLED content, because a rule that lives only in a comment gets
+     * built past.</b> {@code ScorchContentInvariantTest} walks the bundled content and fails the BUILD
+     * if any declared cap is below this, asserting it found all nine application sites first so a scan
+     * that discovers nothing cannot read as a clean one.
+     *
+     * <p><b>THE BOOT ARM DOES NOT EXIST, AND THIS PARAGRAPH SAID IT DID.</b> Until 2026-09-08 the line
+     * above continued <i>"; {@code ContentValidator} names it at boot for content added after the
+     * build"</i> — and {@code ContentValidator} contains no such check. It was deferred in the slice
+     * that shipped this constant and the javadoc was written from the plan rather than from the code.
+     * Same defect as {@code flint_staff.yml}'s "THE MINTED STAFF STACKS TO 64": correct reasoning about
+     * an intended design, false on the day it landed, and invisible to every compiler and test.
+     *
+     * <p><b>So what is actually covered:</b> content shipped in the jar, at build time. <b>What is
+     * NOT:</b> content added after the build — a datapack drop, an operator's own yml, anything
+     * reaching {@code --refresh-content} without a rebuild. Author a fire ability at 1.5 THERE and this
+     * constant silently violates its own invariant, in exactly the direction the rule exists to
+     * prevent, with nothing to catch it. The boot arm remains owed; see {@code NEXT.md}.
      */
     public static final double UNDECLARED_CAP = 2.0;
 

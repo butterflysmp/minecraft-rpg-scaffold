@@ -39,6 +39,27 @@ import static org.junit.jupiter.api.Assertions.*;
  * This is not "booleans are bad". A single boolean parameter is fine and several of these methods have
  * one. <b>The hazard is ADJACENCY</b> -- two same-typed flags in one list that the compiler cannot tell
  * apart. One is unambiguous; two is a coin flip that type-checks.
+ *
+ * <h2>WHAT THIS COVERS AND WHAT IT DOES NOT -- because this guard has the shape of the thing it guards</h2>
+ *
+ * <b>{@link #DAMAGE_SEAMS} is TODAY'S SET, and a safety scoped to today's set is precisely the defect
+ * {@code dealerIsPlayer} needed this test for.</b> Written down so that extending it is a DECISION
+ * rather than a gap someone falls into.
+ *
+ * <p><b>Covered:</b> {@link CombatantHandle} and {@link CombatantStats} -- the two {@code core} seams a
+ * damage flag has actually been added to, and the two that carried the transposition.
+ *
+ * <p><b>NOT covered, and all on the same damage path:</b> {@code ScorchSink} and
+ * {@code EntityScorchSink} (the sink pair), and {@code BukkitCombatant}'s {@code Handle}
+ * implementation. They are outside this scan for exactly one reason -- <b>they live in {@code paper/},
+ * and {@code core/} must never depend on it</b>, so this test cannot reflect over them from here. That
+ * is an architecture boundary, not a judgement that they are safe.
+ *
+ * <p><b>What adding them would take:</b> a sibling test in {@code paper/src/test} with these same three
+ * rows pointed at those three types -- a copy of this file with a different seam list and no new
+ * mechanism. <b>Do it when a boolean flag is next added anywhere on the paper side of the damage
+ * path.</b> Today {@code ScorchSink.deal} takes {@code (double, UUID)} and carries no flags at all,
+ * which is why the boundary has not yet cost anything.
  */
 class DamageSignatureTest {
 
