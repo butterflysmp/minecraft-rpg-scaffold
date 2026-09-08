@@ -80,17 +80,27 @@ public final class Scorch {
     public static final int PERIOD_TICKS = 20;
 
     /**
-     * The default window for the WEAPON-DAMAGE entry point only -- eight seconds.
+     * The default window, and now the ONLY one -- six seconds.
      *
-     * Every existing content applier keeps its own {@code duration_ticks} (40, 60, 80), exactly as
-     * {@code scorch.yml}'s own header rules: "The ability that applies it decides for how long." The
-     * operator's original "10 seconds" was given without knowing eight authored values already
-     * existed, then revised to 8 once they were on the table.
+     * <p><b>THIS SUPERSEDES THE "8 SECONDS BY DEFAULT" RULING, AND THAT RULING WAS CITED AS THE ENTIRE
+     * JUSTIFICATION FOR THE CONTENT PASS.</b> The reasoning survives untouched: the eight authored
+     * {@code duration_ticks} in content kept their values while changing their meaning under scorch
+     * slice 1 and were never re-decided, so ONE duration everywhere is still right. Only the NUMBER
+     * moved, 160 -> 120. `PLAN-element-content-pass.md` carries the same correction; the squash body
+     * of the content pass cannot be edited and is superseded here.
      *
-     * At {@link #PERIOD_TICKS} this is EIGHT damage ticks over exactly 8.0 seconds -- see
-     * {@code ScorchStatus}, where the ordering that makes the lifetime exact is the whole point.
+     * <p>It is also no longer "for the weapon-damage entry point only". The nine explicit
+     * {@code status: scorch} content sites were stripped in that pass, so every scorch in the game --
+     * ability, weapon, field pulse -- now comes from accrual and runs for this long. The javadoc said
+     * "only" while it had no production caller at all; it has one caller now, and that caller is
+     * everything.
+     *
+     * <p>At {@link #PERIOD_TICKS} this is SIX damage ticks at t=20..120, over exactly 6.0 seconds. The
+     * first burn lands one period IN rather than on application -- see {@code ScorchStatus}, where
+     * deleting the inline first burn and flipping the tick body to burn-then-decrement are one change
+     * and cannot be separated.
      */
-    public static final int DEFAULT_DURATION_TICKS = 160;
+    public static final int DEFAULT_DURATION_TICKS = 120;
 
     /** Damage dealt, post-mitigation, that buys one stack. */
     public static final double DAMAGE_PER_STACK = 2.0;
@@ -198,15 +208,23 @@ public final class Scorch {
     }
 
     /**
-     * The number of damage ticks a scorch of {@code durationTicks} deals, first one INCLUDED.
+     * The number of damage ticks a scorch of {@code durationTicks} deals.
      *
-     * One inline on application plus one per whole period after it, which is
-     * {@code ceil(duration / period)} -- 160 ticks is 8, not 9. Stated here rather than left implicit
-     * in the scheduler because the tick COUNT and the LIFETIME are two numbers and only asserting one
-     * of them cannot see an off-by-one-period overrun. See {@code ScorchStatusTest}.
+     * One per whole period, which is {@code ceil(duration / period)} -- 120 ticks is 6, not 7. Stated
+     * here rather than left implicit in the scheduler because the tick COUNT and the LIFETIME are two
+     * numbers and only asserting one of them cannot see an off-by-one-period defect. See
+     * {@code ScorchStatusTest}.
      *
-     * A duration that is not a whole number of periods rounds UP: 50 ticks burns 3 times and lives 60.
-     * Every authored value in content today (40, 60, 80, 160) is a multiple of the period.
+     * <p>This said "first one INCLUDED ... one inline on application plus one per whole period after
+     * it", and that is no longer how the burn lands: nothing burns on application, and the first tick
+     * is the clock's first edge at t=period. THE COUNT IS UNCHANGED by that -- which is exactly why a
+     * count cannot pin a lifetime, and why the two are asserted separately.
+     *
+     * <p>A duration that is not a whole number of periods rounds UP: 50 ticks burns 3 times and lives
+     * 60. <b>That rule is what makes a SUB-PERIOD duration ordinary rather than degenerate</b> -- one
+     * tick of scorch is its {@code n = 1} instance, burning once and living 20. Measured against the
+     * real scheduler at 1, 19, 21, 41 and 50: burns equalled this function at every one. No content
+     * authors a duration any more; the dev apply command is the only way to reach one.
      */
     public static int damageTicksFor(int durationTicks) {
         if (durationTicks <= 0) return 0;

@@ -144,9 +144,10 @@ triggers:
       # The knockback suppression has no equivalent and is the one genuinely unpaid piece.
       #
       # AND THE DURATION MOVED. This site authored duration_ticks: 80; accrued scorch uses
-      # Scorch.DEFAULT_DURATION_TICKS = 160, which is the operator's "8 seconds by default" applied
-      # to values that changed meaning under scorch slice 1 and were never re-decided. See
-      # content/statuses/scorch.yml, which recorded that debt at the time.
+      # Scorch.DEFAULT_DURATION_TICKS = 120 -- SIX seconds. That supersedes the "8 seconds by default"
+      # ruling; the REASONING is untouched (values that changed meaning under scorch slice 1 and were
+      # never re-decided), only the number moved. See content/statuses/scorch.yml, which recorded that
+      # debt at the time, and Scorch.DEFAULT_DURATION_TICKS.
 
 # NO craft_result HERE, AND DO NOT ADD ONE -- it is the natural thing to reach for.
 #

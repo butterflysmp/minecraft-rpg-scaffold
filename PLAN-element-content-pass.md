@@ -39,8 +39,15 @@ reader to ask who approved it. `content/statuses/scorch.yml` already answered th
 
 **The eight values are not decisions. They are inheritance from the old vanilla-fire meaning, flagged
 at the time as having changed meaning without being re-decided.** And 160 is not an arbitrary
-constant either -- it is the operator ruling *"scorch only lasts for 8s by default"*, which is
+constant either -- it was the operator ruling *"scorch only lasts for 8s by default"*, which is
 exactly 160 ticks.
+
+> **SUPERSEDED, SAME COMMIT AS THE RETUNE: the default is now 120 ticks -- SIX seconds.** The
+> reasoning above is untouched, and it is the whole argument: the eight authored values changed
+> meaning and were never re-decided, so ONE duration everywhere is still right. **Only the number
+> moved.** Recorded here because this document and `1233469`'s body both cite the 8s ruling as the
+> justification for shape (a), and a citation to a ruling that no longer holds is the falsified-prose
+> class this slice has now swept four times. A squash body cannot be edited; this can.
 
 So (a) applies a ruling that predates the values in their current meaning, to values nobody ever
 brought in line. **That is the reconciliation `scorch.yml` recorded as owed.**
