@@ -223,4 +223,35 @@ class ElementLoaderTest {
         assertNull(kinetic.appliesStatus(), "but it accrues NOTHING, and that is the control");
         // Mutation: add applies_status to kinetic.yml -> reddens, and the in-game control is gone.
     }
+
+    @Test
+    void aCHEVRONGlyphIsRejectedTooAndTheMessageSaysSoRatherThanBlamingATag() throws IOException {
+        // THE LIMITATION, MEASURED RATHER THAN CLAIMED IN A JAVADOC.
+        //
+        // The unparsed-tag check cannot tell a typo from an intentional chevron: MiniMessage passes a
+        // bare "<" through untouched, so "<white><</white>" arrives here as the single character "<"
+        // -- byte-identical to what a mistyped tag leaves behind. Rejecting both is the right call.
+        // NAMING A CAUSE WE CANNOT DISTINGUISH IS NOT: an author who wrote a chevron on purpose would
+        // be told to check the spelling of a tag they never wrote, and would go hunting a bug that is
+        // not there. An error that misnames its cause is worse than one that admits what it cannot
+        // separate.
+        //
+        // This row also re-measures a claim about a LIBRARY -- that MiniMessage prints a bare "<"
+        // rather than rejecting it. That is exactly the kind of claim which is true when written and
+        // silently false two versions later, so it is pinned rather than asserted in prose.
+        write("fire.yml", "display_name: \"<red>Fire</red>\"\n"
+                + "damage_symbol: \"<white><</white>\"\n");
+
+        ElementRegistry registry = load();
+
+        assertTrue(registry.find("fire").isEmpty(),
+                "a chevron is rejected like a broken tag, because they are the same string here");
+        assertTrue(warningText().contains("cannot contain < or >"),
+                "the message states the LIMITATION rather than a cause: " + warningText());
+        assertTrue(warningText().contains("chevron"),
+                "and it names the chevron case explicitly, so an author who meant one is not sent "
+                        + "hunting a tag they never wrote: " + warningText());
+        // Mutation: reword the message to "a tag failed to parse, check the spelling" -> the last two
+        // assertions redden. Mutation: drop the < / > check -> the first reddens.
+    }
 }

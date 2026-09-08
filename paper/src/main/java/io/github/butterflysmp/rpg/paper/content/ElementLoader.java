@@ -102,10 +102,20 @@ public final class ElementLoader {
      * {@code <god>*</god>} over a mob's head on every hit. Silent, ugly, and visible only in game.
      *
      * <p>Hence the guard is on the RESULT rather than on the call: deserialize, then look at what
-     * came back. Text still containing {@code <} or {@code >} means a tag did not parse, which is
-     * the only signal MiniMessage gives; empty text means the tags consumed everything
-     * ({@code "<gold></gold>"}). Both are authoring mistakes rather than old files, so both take the
-     * named-and-skipped path.
+     * came back. TWO checks. Empty text means the tags consumed everything
+     * ({@code "<gold></gold>"}), so the number would be marked with an invisible glyph. Text still
+     * containing {@code <} or {@code >} means MiniMessage printed something it did not parse. Both
+     * are authoring mistakes rather than old files, so both take the named-and-skipped path.
+     *
+     * <p><b>THE SECOND CHECK IS A LIMITATION, NOT A DIAGNOSIS, AND THE MESSAGE MUST NOT PRETEND
+     * OTHERWISE.</b> A deliberate chevron reaches this code as the same string a mistyped tag does --
+     * {@code damage_symbol: "<white><</white>"} renders as the single character {@code <}, because a
+     * bare {@code <} is one of the inputs MiniMessage passes through untouched. <b>The two are
+     * indistinguishable here</b>, so this rejects both, and the thrown message says exactly that
+     * rather than blaming a tag the author may never have written. An error that misnames its cause
+     * sends someone hunting a bug that is not there, which is worse than one that admits what it
+     * cannot tell apart. {@code ElementLoaderTest} pins the chevron case so the limitation is a
+     * measured, asserted fact rather than a claim in this paragraph.
      *
      * <p><b>What is deliberately NOT guarded: length.</b> A glyph is one or two characters and a
      * whole word here would read badly, but no demonstrated failure produces one, and inventing a
@@ -135,10 +145,13 @@ public final class ElementLoader {
         }
         if (rendered.indexOf('<') >= 0 || rendered.indexOf('>') >= 0) {
             throw new IllegalArgumentException(
-                    "element '" + id + "' has a 'damage_symbol' of " + raw + " that MiniMessage did "
-                            + "not fully parse -- it renders as the literal text [" + rendered
-                            + "], which is what would be drawn over the mob. MiniMessage does not "
-                            + "reject unknown tags, it prints them, so check the tag spelling");
+                    "element '" + id + "' has a damage_symbol of " + raw + " that renders as the"
+                            + " literal text [" + rendered + "], which is what would be drawn over"
+                            + " the mob. A damage symbol cannot contain < or >. MiniMessage prints"
+                            + " an unparsed tag as its own source text, so a MISTYPED TAG and a"
+                            + " DELIBERATE CHEVRON arrive here as the same string and this rejects"
+                            + " both. If a tag was meant, check its spelling; if a chevron was, it"
+                            + " is not supported.");
         }
         return parsed;
     }

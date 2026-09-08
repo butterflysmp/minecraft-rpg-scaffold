@@ -123,6 +123,33 @@ So:
   > reports success while doing nothing is how the same failure survives three attempts.
 - Before believing a **test guards** something, **break the thing and watch it fail.**
   A test that cannot fail is worth nothing, however green.
+
+  > **AND THE SAME APPLIES TO A GUARD IN PRODUCTION CODE. THE ENFORCEMENT RULE WAS AIMED
+  > ONE STEP SHORT.** `NEXT.md`'s rule — *"when a comment claims a rule is enforced, the
+  > claim names a file, so open it"* — catches **missing** enforcement. It does not catch
+  > **unreachable** enforcement, and it would have passed the case below cleanly, because
+  > the file contained the guard.
+  >
+  > **A guard that cannot fire is indistinguishable from one that protects you.** It
+  > compiles, it reads correctly, it survives review, and every test around it is green.
+  >
+  > **2026-09-08, elements slice.** `ElementLoader.damageSymbol` validated its MiniMessage
+  > with `try { deserialize } catch (RuntimeException)`, and the javadoc claimed a malformed
+  > glyph became a named, skipped file. A probe over **ten** malformed inputs — unknown tag,
+  > unknown colour, bad hex, unclosed tag, mismatched close, a bare `<`, a bogus gradient —
+  > measured that **MiniMessage throws for none of them**; it renders an unparsed tag as its
+  > own source text. The catch could never execute. **This was written one commit after the
+  > marker-grep rule above was strengthened**, which is the evidence that the rule was
+  > mis-aimed rather than ignored.
+  >
+  > The only thing that catches this is mutation discipline pointed at the *guard* instead
+  > of at the code: **write the test that makes the guard fire, and watch it fire.** That
+  > test went red, which is the sole reason the dead catch was found rather than shipped
+  > with a javadoc asserting protection that did not exist.
+  >
+  > So, for any guard whose failure path has never been observed: **feed it the bad input on
+  > purpose.** A `catch` around a library call especially — leniency is a library's default
+  > far more often than anyone assumes, and it is never stated where you are looking.
 - Anything that **discovers** rather than asserts — a scan, a glob, a registry walk —
   must **fail loudly when it discovers nothing.** Finding zero items is a defect, not a
   quiet no-op. `getResource("content/")` on a shaded jar returns a non-null URL whose
@@ -134,6 +161,42 @@ So:
 - Never `git checkout --` a file with uncommitted work to undo a mutation. Copy it to the
   scratchpad first and restore from there.
 - When you report something as verified, **say what you executed** and what it printed.
+
+
+### EVERY FILTER AND EVERY SCRIPTED EDIT NEEDS A POSITIVE CONTROL
+
+**Three instruments reported success without having checked anything, inside a single slice**
+(2026-09-08, elements). Recorded together, because three instances of one shape is a pattern and
+three notes in three places would be three anecdotes:
+
+| instrument | what it reported | what was true |
+|---|---|---|
+| `perl -pi -e '…'` | exit 0, no output | file byte-identical; the *same* regex matched when piped to `perl -ne` |
+| `… \| grep -E "error:"` | no output, so "compiled" printed | Maven prints `[ERROR]`, not `error:`. The tree could not compile |
+| `mvn -q test-compile` behind that filter | `BUILD SUCCESS` printed by the script | a `*/` orphaned by a bad splice; compilation failed |
+
+Two of the three were caught only by a **marker grep**. The third was caught only because a later,
+unfiltered run failed — i.e. by luck of ordering, not by design.
+
+**This is what happens when verification apparatus grows faster than its own controls.** Each of
+these tools was *added* to make a check trustworthy, and each became a new way to be told a check
+passed when it never ran — this file's own headline defect, one level up.
+
+**The operational form, which generalises past these three:**
+
+- **A scripted edit** must be followed by something that must be present if it worked — `grep` for a
+  marker, or a measured line/byte delta (`before`/`after`, `git diff --numstat`). Zero-exit is not
+  evidence. For a mutation, assert **both** directions: the marker landed **and** the original is
+  gone.
+- **A grep filter over tool output** must be proven capable of matching a failure *before* its
+  silence is read as success. Run it once against a known-bad input and require the hit. A filter
+  that has only ever been run against passing output has never been tested.
+- **Never let a filtered command decide an outcome.** `cmd | grep X; echo ok` prints `ok` whatever
+  happened — the exit status belongs to `echo`. Check the command's own status, or print the
+  unfiltered tail.
+
+The rule underneath all three: **silence is not a result.** An instrument that outputs nothing has
+either found nothing or done nothing, and those are the same picture.
 
 ## Architecture invariants
 

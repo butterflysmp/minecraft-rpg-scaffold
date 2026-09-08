@@ -2279,6 +2279,21 @@ the javadoc now says so instead of claiming it exists.
 it.** Enforcement is the one property a javadoc cannot make true by asserting, and it is the property
 readers most reliably take on trust — this file records the reader's side of that trust twice already.
 
+> **AMENDED 2026-09-08 — THIS RULE IS AIMED ONE STEP SHORT, AND ITS OWN CASE IS WHY THAT IS EASY
+> TO MISS.** Opening the named file catches enforcement that is **MISSING**. It does not catch
+> enforcement that is **UNREACHABLE**, and a guard that cannot fire is indistinguishable from one
+> that protects you: it compiles, it reads correctly, and every test around it is green.
+>
+> `ElementLoader.damageSymbol` shipped a `try { deserialize } catch (RuntimeException)` whose javadoc
+> claimed a malformed glyph became a named, skipped file. Measured over **ten** malformed inputs:
+> **MiniMessage throws for none of them.** The check existed, compiled, and could not execute — so
+> "open the file it names" would have passed it. **It was written one commit after the marker-grep
+> rule was strengthened**, which is the evidence the rule was mis-aimed rather than ignored.
+>
+> The full amendment, with the probe as its worked example, is in `CLAUDE.md`'s VERIFICATION
+> section, under *"break the thing and watch it fail"* — because the only thing that catches an
+> unreachable guard is mutation discipline pointed at the GUARD rather than at the code.
+
 #### THE ACCRUAL IS DISPLACED, NOT DESCOPED — and slice 2 blocks on it
 
 **Recorded 2026-09-08, before slice 2 is planned, because a deferred item with no slice is how a
