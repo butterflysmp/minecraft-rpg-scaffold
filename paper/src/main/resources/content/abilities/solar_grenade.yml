@@ -36,9 +36,6 @@ on_hit:
       - type: damage
         amount: 6
         element: fire
-      - type: status
-        status_id: scorch
-        duration_ticks: 40
       # rooted_TEMP: a boot-test fixture, NOT Rooted's real home. The grenade burst
       # hits mobs reliably, so it is a convenient trigger to witness the per-tick
       # Immobilize primitive in-game (mob held in place; killed rooted mob = clean
@@ -49,7 +46,8 @@ on_hit:
         duration_ticks: 60
 
   # The field left behind. Its first pulse is one tick_interval later, by design.
-  # It re-applies scorch so that standing in the fire keeps you burning.
+  # Each pulse's fire damage ACCRUES scorch, so standing in the fire keeps you burning -- the
+  # explicit status effect that used to sit here is gone, and the element does the job.
   - type: area
     radius: 4.0
     duration_ticks: 100
@@ -58,7 +56,3 @@ on_hit:
       - type: damage
         amount: 2
         element: fire
-      - type: status
-        status_id: scorch
-        duration_ticks: 40
-        amplifier: 0

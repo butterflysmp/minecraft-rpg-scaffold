@@ -45,11 +45,30 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ScorchContentInvariantTest {
 
-    /** Every application site of `scorch` in shipped content, as of this slice. Asserted, not logged. */
-    private static final int KNOWN_SCORCH_APPLICATION_SITES = 9;
+    /**
+     * Every site whose damage ACCRUES scorch in shipped content. Asserted, not logged.
+     *
+     * <p><b>This counted `status_id: scorch` and now counts `element: fire` damage effects.</b> The
+     * nine explicit applications were stripped in the content pass -- fire declares
+     * applies_status, so naming the status beside every fire damage effect was saying the same
+     * thing twice, from two cap bases and two stack rules.
+     *
+     * <p><b>IT WAS NOT SET TO ZERO, AND THAT IS THE WHOLE POINT OF THE GUARD.</b> A scan asserting
+     * that it finds nothing cannot tell "correctly empty" from "the regex stopped matching the
+     * schema" -- which is the defect CLAUDE.md records twice and the reason this file exists. So
+     * the count was re-pointed at what now carries the invariant rather than retired: the cap basis
+     * is a damage amount either way, and there are MORE of them than there were explicit statuses.
+     */
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 12;
 
-    /** `status_id: scorch` in both the block and the inline-map spellings content actually uses. */
-    private static final Pattern SCORCH_APPLIED = Pattern.compile("status_id:\\s*scorch\\b");
+    /**
+     * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare
+     * `element: fire` at column 0 is the OWNER element of a weapon, ability or kit -- eight such
+     * lines exist -- and those are not damage sites. Counting them would inflate the guard with
+     * declarations that carry no cap.
+     */
+    private static final Pattern FIRE_DAMAGE =
+            Pattern.compile("(?m)^\\s+element:\\s*fire\\b|element:\\s*fire\\s*\\}");
 
     /** `amount: <n>` on a damage effect. The cap basis. */
     private static final Pattern DAMAGE_AMOUNT = Pattern.compile("amount:\\s*([0-9]+(?:\\.[0-9]+)?)");
@@ -110,7 +129,7 @@ class ScorchContentInvariantTest {
 
         for (Path file : yamlUnder(contentRoot())) {
             String text = read(file);
-            Matcher applies = SCORCH_APPLIED.matcher(text);
+            Matcher applies = FIRE_DAMAGE.matcher(text);
             int inThisFile = 0;
             while (applies.find()) inThisFile++;
             if (inThisFile == 0) continue;
@@ -128,8 +147,8 @@ class ScorchContentInvariantTest {
 
         // The discovery guard, before the verdict: zero sites means the regex stopped matching the
         // schema, not that content is clean.
-        assertEquals(KNOWN_SCORCH_APPLICATION_SITES, sites,
-                "expected " + KNOWN_SCORCH_APPLICATION_SITES + " scorch application sites in content, "
+        assertEquals(KNOWN_FIRE_DAMAGE_SITES, sites,
+                "expected " + KNOWN_FIRE_DAMAGE_SITES + " fire damage sites in content, "
                         + "found " + sites + ". If content genuinely changed, update the constant; if "
                         + "it did not, this scan has gone blind and its clean verdict is worthless");
 
@@ -138,7 +157,7 @@ class ScorchContentInvariantTest {
                         + " cap, or forgetting to declare one is STRONGER than declaring it. Lower the"
                         + " constant or raise the content:\n  " + String.join("\n  ", violations));
         // Mutation: raise UNDECLARED_CAP to 3.0 -> solar_grenade's field tick of 2 violates -> reddens.
-        // Mutation: break SCORCH_APPLIED's regex -> sites drops to 0 -> reddens on the count, NOT
+        // Mutation: break FIRE_DAMAGE's regex -> sites drops to 0 -> reddens on the count, NOT
         // silently passing with an empty violations list. That second mutation is the one that
         // matters, and it is why the count is asserted.
     }

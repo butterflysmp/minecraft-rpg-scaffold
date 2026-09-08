@@ -36,7 +36,7 @@ sweep: 0.5
 # Authored prose (YAML list required; a scalar is ignored with a warning).
 flavor:
   - "Its edge remembers the forge-fire."
-  - "Swing to cut; loose to burn."
+  - "Swing or loose -- both leave embers."
 
 triggers:
   # Free swing. No cost section -> free; mana regenerates while you swing.
@@ -83,6 +83,3 @@ triggers:
           - type: damage
             amount: 12
             element: fire
-          - type: status
-            status_id: scorch
-            duration_ticks: 40

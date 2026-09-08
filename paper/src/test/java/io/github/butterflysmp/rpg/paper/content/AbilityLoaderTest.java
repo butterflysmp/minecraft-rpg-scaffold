@@ -520,24 +520,28 @@ class AbilityLoaderTest {
                 .filter(EffectSpec.Burst.class::isInstance)
                 .map(EffectSpec.Burst.class::cast)
                 .findFirst().orElseThrow(() -> new AssertionError("no burst: mobs would ignite late"));
-        // 3 effects: splash damage, the scorch ignition, and rooted_TEMP -- a boot-test
-        // fixture on the grenade burst. When rooted_TEMP is removed in the status content
-        // pass, this count returns to 2 and the get(2) assertion below is deleted.
-        assertEquals(3, burst.effects().size());
-        assertInstanceOf(EffectSpec.Damage.class, burst.effects().get(0));
-        var ignition = assertInstanceOf(EffectSpec.Status.class, burst.effects().get(1));
-        assertEquals("scorch", ignition.statusId());
-        var rootedTemp = assertInstanceOf(EffectSpec.Status.class, burst.effects().get(2));
+        // TWO effects now: splash damage, and rooted_TEMP -- a boot-test fixture on the grenade
+        // burst. THE EXPLICIT SCORCH IS GONE and is not missing: the splash damage wears
+        // element: fire, and fire declares applies_status in content/elements/fire.yml, so the
+        // burst accrues scorch from the damage rather than naming it twice. When rooted_TEMP is
+        // removed this count returns to 1.
+        assertEquals(2, burst.effects().size());
+        var splash = assertInstanceOf(EffectSpec.Damage.class, burst.effects().get(0));
+        assertEquals("fire", splash.element(),
+                "and THIS is what applies the burn now -- the element, not a status effect");
+        var rootedTemp = assertInstanceOf(EffectSpec.Status.class, burst.effects().get(1));
         assertEquals("rooted", rootedTemp.statusId()); // rooted_TEMP: remove with the fixture
 
-        // The field: a damage pulse, and a scorch that refreshes the burn.
+        // The field: a fire damage pulse, which accrues the burn that keeps you alight while you stand in it.
         var area = def.onHit().stream()
                 .filter(EffectSpec.Area.class::isInstance)
                 .map(EffectSpec.Area.class::cast)
                 .findFirst().orElseThrow();
-        assertEquals(2, area.effects().size());
-        assertInstanceOf(EffectSpec.Damage.class, area.effects().get(0));
-        assertInstanceOf(EffectSpec.Status.class, area.effects().get(1));
+        assertEquals(1, area.effects().size(),
+                "the pulse is DAMAGE ALONE now -- its explicit scorch is gone, and the fire element"
+                        + " accrues the burn that keeps you alight while you stand in it");
+        var pulse = assertInstanceOf(EffectSpec.Damage.class, area.effects().get(0));
+        assertEquals("fire", pulse.element());
     }
 
     /**
@@ -571,9 +575,10 @@ class AbilityLoaderTest {
         assertEquals("blaze_powder", embers.itemId());
         assertTrue(embers.fuseTicks() >= 1, "fuse must be a positive number of ticks");
         assertEquals("ember_burst", embers.visual());
-        // The detonation carries the mob-only burn: damage + scorch.
+        // The detonation carries the mob-only burn: fire damage, which accrues scorch by itself.
         assertTrue(embers.burst().radius() > 0, "the detonation bursts with a real radius");
         assertInstanceOf(EffectSpec.Damage.class, embers.burst().effects().get(0));
-        assertInstanceOf(EffectSpec.Status.class, embers.burst().effects().get(1));
+        assertEquals(1, embers.burst().effects().size(),
+                "damage alone -- the explicit scorch is gone, the element accrues it");
     }
 }

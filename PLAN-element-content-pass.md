@@ -1,14 +1,14 @@
 # PLAN — the element content pass
 
-**This stands between the accrual slice and its boot gate.** Not because the code is unfinished, but
-because a gate run before it would measure an interim state and any tuning ruling taken from it would
-encode that state as a requirement. *A tuning request is a measurement of current behaviour.*
+**DONE. This stood between the accrual slice and its boot gate.** Not because the code was unfinished, but
+because a gate run before it would have measured an interim state, and any tuning ruling taken from it would
+have encoded that state as a requirement. *A tuning request is a measurement of current behaviour.*
 
 Read `CLAUDE.md` first. The mechanisms this pass tunes are in `cad80f0`..`bc414eb`.
 
 ---
 
-## It has TWO jobs, not three
+## It had TWO jobs, not three
 
 A third — *"author the six missing `damage_symbol` glyphs"* — **was raised in review and does not
 exist.** Measured:
@@ -25,66 +25,65 @@ comments already mark it as boot-tunable.
 
 ---
 
-## JOB 1 — accrued scorch's DURATION. Decide this FIRST; job 2 follows from it.
+## JOB 1 — RULED: shape (a). And it is a RECONCILIATION, not a buff.
 
-**This is the blocker, and the strip decision cannot be taken before it.**
+**The framing in the first draft of this plan was wrong, and the correction matters more than the
+ruling.** It called (a) *"a 2x-4x global scorch duration buff shipped as a cleanup"*, which invites a
+reader to ask who approved it. `content/statuses/scorch.yml` already answered that, at the time:
 
-A damage effect authors no duration, so accrual uses `Scorch.DEFAULT_DURATION_TICKS = 160` — a
-constant that had **no production caller** until `941a0d5`. Eight of the nine explicit sites author
-one:
+> *"WAS `kind: fire` UNTIL THIS SLICE, AND THE EIGHT AUTHORED `duration_ticks` IN content/ KEPT THEIR
+> VALUES WHILE CHANGING THEIR MEANING. `duration_ticks: 80` used to mean "burn for four seconds"; it
+> now means "the stack window stays open four seconds, refreshed by each new stack." Mostly the same,
+> and NOT the same for anything that applies scorch repeatedly ... No diff anywhere shows this; that
+> is why it is written down here."*
 
-| site | authored | under accrual |
-|---|---|---|
-| `solar_grenade:40` (burst) | 40 | 160 |
-| `solar_grenade:62` (field pulse) | 40 | 160 |
-| `emberblade:87` | 40 | 160 |
-| `ember_step:30` | 60 | 160 |
-| `rekindle:44` | 60 | 160 |
-| `solar_lance:35` | 60 | 160 |
-| `ability_stone:56` | 60 | 160 |
-| `ember_staff:53` | 60 | 160 |
-| `flint_staff:131` | 80 | 160 |
+**The eight values are not decisions. They are inheritance from the old vanilla-fire meaning, flagged
+at the time as having changed meaning without being re-decided.** And 160 is not an arbitrary
+constant either -- it is the operator ruling *"scorch only lasts for 8s by default"*, which is
+exactly 160 ticks.
 
-**Stripping the nine is therefore a 2x–4x GLOBAL SCORCH DURATION BUFF shipped as a cleanup.** Commit
-size is not the objection; a silent global retune is.
+So (a) applies a ruling that predates the values in their current meaning, to values nobody ever
+brought in line. **That is the reconciliation `scorch.yml` recorded as owed.**
 
-### Three shapes
+### Why not (c) — and the argument that was used to reject it does NOT hold
 
-**(a) 160 is the accrual duration; the nine authored values are deleted as redundant.**
-One duration everywhere, one source of truth, simplest mechanism. It is also the operator's original
-*"scorch lasts 8 seconds"* finally delivered — the per-applier durations only ever existed because
-content declared them. **Cost:** the buff above, plus the new sources below, both landing at once.
+(c) was rejected in review on the grounds that it falsifies `emberblade.yml:67`, *"that scorches all
+it catches."* **Checked: that line is the `right_click` Fireball's own description, and the Fireball's
+burst carries an explicit `status: scorch`.** Under (c) the explicit path still starts burns, so the
+Fireball still scorches and the line stays true. It does not discriminate between the shapes.
 
-**(b) the element declares a duration beside `applies_status`.**
-Keeps accrual tunable without touching the nine. **Cost:** it is the first step toward the general
-effect system explicitly ruled out of the slice — an element declaring a duration is one field away
-from declaring a rate, and the line was drawn at *"name the status and nothing else."* Not
-recommended, recorded so the option is refused rather than forgotten.
+**The weapon-level flavour does discriminate, and it points at (c):**
 
-**(c) ACCRUAL IS REFRESH-ONLY — it adds stacks to a burn that already exists and never starts one.**
-`ScorchStatus.apply` already branches on exactly this (`active.get(id)` running or not), so the change
-is a guard on `ctx.scorch().isScorched(id)`, not new machinery.
+```
+emberblade.yml:37-39
+flavor:
+  - "Its edge remembers the forge-fire."
+  - "Swing to cut; loose to burn."
+```
 
-> **This dissolves every problem in this document at once**, which is why it is worth real
-> consideration rather than a footnote: content keeps full control of *when* a burn starts and *for
-> how long*; the eight authored durations keep meaning what they say; there is no double-application,
-> because the explicit call starts the burn and accrual only feeds it; and the unasked-for new sources
-> below stop being new — a weapon accrues only onto a fire an ability already lit.
->
-> **The costs, and they are real.** `applies_status` would no longer *apply* anything — a naming
-> problem, and possibly a design one. A fire weapon alone would never burn anything, so Ignite becomes
-> unreachable without an ability to light first. And it weakens the bow as a gate instrument (see
-> below), since the bow has no ability to light its own target.
->
-> Whether "abilities light, weapons feed" is the intended shape is **the operator's call and nobody
-> else's.** It is a coherent design, but it is a different one from what the slice was specified as.
+*"Swing to cut; loose to burn"* separates the arms explicitly. **So (a) inherits the very problem
+that was used to reject (c)** -- after the strip, the swing burns too, and that player-visible line
+becomes misleading. **Paid, not argued away:** the line is edited in this pass.
 
----
+(a) still wins, on the reconciliation above and on `hunters_bow:31` (*"A swift arrow wreathed in
+flame"*), which is true under (a) and was already true. **(b) stays refused** -- an element declaring
+a duration is one field from declaring a rate, and the line was drawn at *name the status and nothing
+else*.
 
-## JOB 2 — the nine explicit `status: scorch` sites
+### A falsified FLAVOUR line is worse than a falsified comment
 
-Every one of the nine has a co-located `element: fire` damage effect, so **none would lose its scorch
-if stripped** — verified site by site, not inferred from a count:
+This is the fourth falsified-prose find in the slice and the first in a string a **player** reads.
+
+> **A falsified comment misleads a reader who can check it. A falsified flavour line misleads a player
+> who cannot.** The sweep for prose that outlived its mechanism covers `flavor:` and `description:`,
+> not only comments.
+
+Every player-visible string on the branch was swept. `emberblade:39` is the only one (a) falsifies.
+
+## JOB 2 — DONE: the nine explicit `status: scorch` sites are stripped
+
+Every one had a co-located `element: fire` damage effect, so none lost its scorch — verified site by
+site before the edit, not inferred from a count:
 
 ```
 ability_stone:55  damage 8   <- status :56  |  solar_lance:30  damage 12  <- status :35
@@ -94,68 +93,106 @@ emberblade:83     damage 12  <- status :87  |  solar_grenade:36 damage 6  <- sta
                                             |  solar_grenade:58 damage 2  <- status :62
 ```
 
-Stripping is mechanical dedup verifiable by a grep, not nine judgement calls. **But under (a) it
-carries the duration buff, and under (c) it must NOT happen at all** — the explicit calls become the
-only thing that starts a burn.
+`grep -rc "status_id: scorch"` over `abilities/` + `weapons/`: **9 before, 0 after.**
 
-### The question underneath, which outlives this pass
+### And the answer to the question underneath
 
-**Once elements accrue, is `type: status, status_id: scorch` still legitimate content, or is it now a
-duplicate of what `element: fire` does?** Under (a) it is a duplicate and should go. Under (c) it is
-the *only* way to start a burn and is load-bearing. The answer is not "tidy the nine" either way — it
-is a statement about what the two mechanisms are for.
+**`type: status, status_id: scorch` is no longer legitimate content.** Under (a) it says the same
+thing `element: fire` says, from a different cap basis and a different stack rule, 120 lines apart in
+the same file. It is not "tidying the nine" — it is that the two mechanisms are now one, and the
+element is the one that owns it.
+
+`type: status` remains correct for every status an element does NOT declare: `rooted`, `soaked`,
+`freeze`, `surge`. `solar_grenade`'s `rooted_TEMP` fixture is untouched.
 
 ---
 
-## What changes in game the moment this pass lands — the three interim facts
+## What the pass changed, beyond the strip
 
-These are already true on the branch and are why the gate waits.
+**Four prose edits, three of them created by the strip itself.**
 
-**1. NEW SOURCES.** Scorch now lands where it never did. Audited across all nine fire files, not just
-the explicit status sites:
+| file | what |
+|---|---|
+| `emberblade.yml:39` | *"Swing to cut; loose to burn."* → *"Swing or loose -- both leave embers."* The only player-visible string (a) falsifies. |
+| `ember_step.yml:22` | the comment listed `status` among the per-mob effects; it no longer exists |
+| `solar_grenade.yml:49` | *"It re-applies scorch"* → says HOW: each pulse's fire damage accrues it |
+| `flint_staff.yml:119` | the long scorch-vs-old-DoT note was left anchored to nothing; re-anchored to the damage effect, and told that the duration moved from its authored 80 to 160 |
 
-| source | shape | per hit | rate |
+**One test re-pointed rather than retired.** `ScorchContentInvariantTest` counted
+`KNOWN_SCORCH_APPLICATION_SITES = 9` and now counts `KNOWN_FIRE_DAMAGE_SITES = 12`.
+
+> **IT WAS NOT SET TO ZERO, AND THAT IS THE WHOLE POINT.** A scan asserting it finds nothing cannot
+> tell *correctly empty* from *the regex stopped matching the schema* — the defect `CLAUDE.md` records
+> twice, and the reason that file exists. The cap invariant is carried by a damage amount either way,
+> so the count moved to what now carries it. **There are more sites than there were explicit statuses,
+> not fewer.**
+>
+> The pattern requires an INDENTED `element: fire`, because a bare one at column 0 is the owner
+> element of a weapon, ability or kit — eight such lines exist, plus two kit keys and one line of
+> prose in `fire.yml`. Counting those would have inflated the guard with declarations that carry no
+> cap. **Measured, not guessed: 12.**
+
+**The golden tooltip moved by exactly one line.** `GoldenLoreTest` reddened; the delta, read before
+regenerating, was the `emberblade` flavour edit and nothing else — `git diff --numstat` said `1 1`.
+**Stripping nine status effects moved no tooltip at all**, which is the right result: lore renders
+damage, cadence and cost, never statuses.
+
+---
+
+## What is now true in game
+
+**1. NEW SOURCES — wanted or harmless, source by source.**
+
+| source | shape | per hit | verdict |
 |---|---|---|---|
-| `emberblade:58` | `weapon_damage` fire, 7 dmg, sweep 0.5 | ~3 stacks | every swing, + ~1 per bystander |
-| `hunters_bow:58` | `weapon_damage` fire, 6 dmg | ~3 stacks | **every arrow, `cooldown_ticks: 15`** |
+| `emberblade:58` | `weapon_damage` fire, 7 dmg, sweep 0.5 | ~3 stacks, ~1 per bystander | **wanted** — and the flavour line now says so |
+| `hunters_bow:58` | `weapon_damage` fire, 6 dmg, `cooldown_ticks: 15` | ~3 stacks | **harmless, and it is the gate instrument** |
 | `solar_grenade:23` | direct hit, 8 dmg | ~4 stacks | already covered by its own burst |
 
-The bow was missed by the first audit and is the highest-rate of the three.
+**2. DOUBLE APPLICATION — gone.** One path applies scorch: the element.
 
-**2. DOUBLE APPLICATION.** `solar_grenade` goes from six applications per cast to twelve, from two
-different cap bases, with two different stack rules — the explicit path hardcodes 1, accrual uses
-`stacksFor` (up to 10 on the Flint Staff's 20).
+**3. DURATION — 160 everywhere**, per the reconciliation above.
 
-**3. THE STACK CHANGE SHIPS INVISIBLE.** Stacks do not scale damage today, so 1-vs-10 is unobservable
-— until Ignite reads a 50%-of-max threshold against a count that quietly went up tenfold. **This is
-the one that detonates a slice later**, and it is the reason the count matters now rather than then.
+**What survives the pass is the stack count**, which is the point of accrual and what Ignite is being
+built to read.
 
 ---
 
-## The gate, after this pass — and the one row only a human can see
+## THE ONE THING SLICE 2 INHERITS, AND IT IS A STATEMENT RATHER THAN A NUMBER
 
-**The bow is the instrument, not a balance problem.** `hunters_bow` is a dev weapon; its ~1.33
-applications per second against a 160-tick window means **roughly ten applications inside one burn**.
-Nothing else in the repo applies scorch fast enough to witness **refresh-without-burn** on a live
-client — `aRefreshDoesNotDealAnUNSCHEDULEDBurn` guards it in `ScorchStatusTest`, and the bow is where
-a person can watch it hold.
+**Ignite's threshold is UNDECIDED.** The recorded *"50% of max health as stacks"* is a denominator
+mismatch, not a number to tune: stacks are ABSOLUTE (`max(1, floor(d/2))`) and that threshold is
+RELATIVE, so for any hit of 2 or more, reaching it costs the target's entire health. **A 20 HP zombie
+needs ten stacks; ten stacks is twenty damage; twenty damage is the zombie.** A Flint Staff's 20 buys
+exactly ten and kills in the same hit — and accrual skips a lethal hit, so those stacks never land.
+
+The only route through is the `max(1, ...)` floor, which inverts the design: Ignite would fire only on
+the smallest mobs and only for weak repeated hits. Worked in full in `NEXT.md` beside the original
+claim.
+
+> **Slice 2 decides the DENOMINATOR first and the number second.**
+
+**No stack ceiling is declared.** `ScorchStatus`'s refresh arm is `a.stacks += stacks` with no clamp,
+so the bow can pile ~30 into one window — harmless while stacks do not scale damage, and a limit now
+would be an undemonstrated policy wearing a safety check's costume, the same reason the glyph length
+cap was declined. **The count's meaning needs deciding, not its maximum.**
+
+---
+
+## The gate, next — and the one row only a human can see
+
+**The bow is the instrument, not a balance problem.** ~1.33 applications per second against a
+160-tick window is roughly ten applications inside one burn. Nothing else in the repo applies scorch
+fast enough to witness **refresh-without-burn** on a live client — `aRefreshDoesNotDealAnUNSCHEDULEDBurn`
+guards it in `ScorchStatusTest`, and the bow is where a person can watch it hold.
 
 > **DISCRIMINATING ROW:** shoot a high-HP mob repeatedly and watch the burn's cadence. The tick list
 > must stay on its own 20-tick clock. **If re-application adds an off-schedule burn, that is the
 > refresh defect visible in the only place a human can see it.**
 
-Under shape **(c)** this row needs rebuilding: the bow could not light its own target, so the mob
-must be lit by an ability first and then fed by the bow. Worth noting before choosing, because the
-choice costs the cleanest instrument in the slice.
+Also wanted: glyph legibility on all seven elements; the armoured-target row that proves accrual is
+post-mitigation; the `--refresh-content` verification chain; and `/rpg apply scorch 1 20` onto a live
+accrued burn, which must NOT shorten it.
 
-Other rows the gate will want, once the decisions above are made: glyph legibility on all seven; the
-armoured-target row that proves accrual is post-mitigation; the `--refresh-content` verification chain;
-and `/rpg apply scorch 1 20` onto a live accrued burn.
-
----
-
-## Order
-
-1. **Operator decides job 1** — (a), (b) or (c). Everything else follows.
-2. Job 2 executes that decision across the nine sites.
-3. Gate, written against the decision, with the scorch rows valid as tuning inputs for the first time.
+**The scorch rows are valid as tuning inputs for the first time**, because the interim state this
+document was written to prevent measuring no longer exists.

@@ -30,7 +30,7 @@
    "Cooldown: 3.0s | Mana Cost: 40" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Its edge remembers the forge-fire." color=#AAAAAA O=. B=. S=. U=. I=T
-   "Swing to cut; loose to burn." color=#AAAAAA O=. B=. S=. U=. I=T
+   "Swing or loose -- both leave embers." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Rare Melee Weapon" color=#5555FF O=. B=. S=. U=. I=F
 -- flint_staff

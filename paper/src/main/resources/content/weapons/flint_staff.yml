@@ -116,6 +116,10 @@ triggers:
       - type: damage
         amount: 20
         element: fire
+      # THE FIRE DAMAGE ABOVE IS WHAT NOW APPLIES SCORCH. There is no `type: status` here any more:
+      # fire declares applies_status in content/elements/fire.yml, so a hit wearing element: fire
+      # accrues stacks in proportion to what landed. The 20 above buys ten of them.
+      #
       # SCORCH IS NOT THE OLD DOT, AND WHAT IS LEFT OF THAT DEBT IS SMALLER THAN THIS COMMENT USED
       # TO SAY. The paragraph here read:
       #
@@ -138,9 +142,11 @@ triggers:
       # cancelled on target death. Scorch's rate is percent-of-max instead, so against a 20 HP mob
       # this staff's burn is far weaker than the old one and against a 360 HP boss far stronger.
       # The knockback suppression has no equivalent and is the one genuinely unpaid piece.
-      - type: status
-        status_id: scorch
-        duration_ticks: 80
+      #
+      # AND THE DURATION MOVED. This site authored duration_ticks: 80; accrued scorch uses
+      # Scorch.DEFAULT_DURATION_TICKS = 160, which is the operator's "8 seconds by default" applied
+      # to values that changed meaning under scorch slice 1 and were never re-decided. See
+      # content/statuses/scorch.yml, which recorded that debt at the time.
 
 # NO craft_result HERE, AND DO NOT ADD ONE -- it is the natural thing to reach for.
 #

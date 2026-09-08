@@ -2436,6 +2436,45 @@ stack burns exactly as ten do. But Ignite's threshold is **50% of max health as 
 zombie needs **ten**. At one stack per cast that is **ten casts**; with accrual it is one Flint Staff
 hit. **IGNITE IS UNREACHABLE IN PRACTICE UNTIL ACCRUAL LANDS**, and nothing in slice 1 says so.
 
+> #### THE THRESHOLD ABOVE IS A DENOMINATOR MISMATCH, AND SLICE 2 MUST NOT INHERIT THE NUMBER
+>
+> **Corrected 2026-09-08, during the content pass, before anything was built against it.**
+> *"50% of max health as stacks"* pairs a **RELATIVE** threshold with an **ABSOLUTE** accumulator, and
+> the two do not compose. `Scorch.stacksFor` is `max(1, floor(d / 2))`, so for any hit of 2 or more a
+> target accrues roughly `d/2` stacks — and reaching `0.5 x maxHealth` stacks therefore costs
+> **`maxHealth` damage. The target is dead before it ignites.**
+>
+> The worked example in this very paragraph shows it: a 20 HP zombie needs ten stacks, ten stacks is
+> twenty damage, and twenty damage is the whole zombie. **A Flint Staff's 20 buys exactly ten stacks
+> and kills it in the same hit — and accrual skips a lethal hit** (`newCurrent > 0`), so those stacks
+> never land at all.
+>
+> The only route through is the `max(1, ...)` floor: hits *below* 2 damage buy a full stack each, so
+> `T` chip hits give `T` stacks. That inverts the design — **Ignite would fire only on the smallest
+> mobs and only for weak repeated hits**, and never for the strong hits the percent-max cap exists to
+> matter against:
+>
+> | max health | stacks needed | chip hits inside one 160-tick window |
+> |---|---|---|
+> | 20 | 10 | 10 — marginal, the bow can just about do it |
+> | 100 | 50 | no |
+> | 360 | 180 | no |
+>
+> **So the recorded threshold is not a number to tune; it is a shape that cannot work.** Two
+> individually reasonable constraints, jointly unsatisfiable, with nothing in either one saying so —
+> the third instance of that shape in this slice.
+>
+> **What slice 2 inherits instead:** *Ignite's threshold is UNDECIDED. It must share a denominator
+> with stack accrual, which is ABSOLUTE (`damage / 2`, floored at 1). Decide the denominator first and
+> the number second.* That is a statement slice 2 can act on. `0.5 x max` is a number that would have
+> had to be discovered wrong on a live server.
+>
+> **And this is why no stack CEILING was declared.** `ScorchStatus`'s refresh arm is `a.stacks +=
+> stacks` with no clamp, so the bow can pile ~30 stacks into one window. Harmless while stacks do not
+> scale damage, and a ceiling now would be an undemonstrated limit wearing a safety check's costume —
+> the same reason the glyph length cap was declined. The count's *meaning* is what needs deciding, not
+> its maximum.
+
 **THE SCHEDULING ARGUMENT, WHICH IS THE REASON AND NOT A CONSEQUENCE: THIS CHANGE FLIPS A DORMANT
 DEFECT CLASS LIVE.**
 

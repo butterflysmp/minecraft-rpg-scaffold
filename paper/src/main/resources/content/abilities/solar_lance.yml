@@ -31,6 +31,3 @@ on_hit:
     amount: 12
     element: fire
 
-  - type: status
-    status_id: scorch
-    duration_ticks: 60
