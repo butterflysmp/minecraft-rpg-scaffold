@@ -8,7 +8,7 @@ import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.combat.HitDamage;
 import java.util.List;
-import java.util.function.DoubleConsumer;
+
 import java.util.UUID;
 
 /**
@@ -50,14 +50,14 @@ public final class EffectApplier {
      * Same standing as {@code CastExecutor}'s use listener: a scheduled continuation is NOT the
      * caster's thread, and reporting from one would hand a foreign thread the stash.
      */
-    private final DoubleConsumer onDirectDamage;
+    private final DirectDamage onDirectDamage;
 
     public EffectApplier(CombatWorld world) {
-        this(world, amount -> {});
+        this(world, (amount, element) -> {});
     }
 
     /** With a listener for direct damage dealt. See {@link #onDirectDamage}. */
-    public EffectApplier(CombatWorld world, DoubleConsumer onDirectDamage) {
+    public EffectApplier(CombatWorld world, DirectDamage onDirectDamage) {
         this.world = world;
         this.onDirectDamage = onDirectDamage;
     }
@@ -139,7 +139,7 @@ public final class EffectApplier {
                 if (amount > 0 && target.state().alive()) {
                     target.handle().applyDamage(amount, caster.id(), CritState.of(caster.crit()),
                             DefenseRule.APPLIES, d.element());
-                    onDirectDamage.accept(amount);   // inside the gate: a refused hit reports nothing
+                    onDirectDamage.accept(amount, d.element());   // inside the gate: a refused hit reports nothing
                 }
             }
             case EffectSpec.WeaponDamage wd -> {
@@ -163,7 +163,7 @@ public final class EffectApplier {
                 if (amount > 0 && target.state().alive()) {
                     target.handle().applyDamage(amount, caster.id(), CritState.of(caster.crit()),
                             DefenseRule.APPLIES, wd.element());
-                    onDirectDamage.accept(amount);   // inside the gate: a refused hit reports nothing
+                    onDirectDamage.accept(amount, wd.element());   // inside the gate: a refused hit reports nothing
                 }
             }
             case EffectSpec.Heal h -> target.handle().applyHeal(h.amount());

@@ -172,26 +172,38 @@ public final class WeaponFire {
      * {@code DamagePayload.of} already applies so that two systems cannot disagree about one weapon.
      * No shipped melee payload has more than one; this is the rule written down for the one that does.
      */
-    public static OptionalDouble landVanillaMelee(Player attacker, LivingEntity victim, double chargeScale,
-                                        WeaponRegistry weapons, AdapterContext adapters,
-                                        CooldownTracker cooldowns) {
+    /**
+     * What one melee hit landed: the amount dealt and the element it wore.
+     *
+     * <p><b>ONE VALUE, so the two cannot be sourced separately.</b> The sink below could as easily
+     * have kept a double and a String in two slots, and nothing in the type system would object --
+     * but then a payload reporting twice could leave the first amount beside the second element.
+     * Capturing the pair makes that arrangement unwritable rather than merely unwritten.
+     */
+    public record Landed(double amount, String element) {}
+
+    public static Optional<Landed> landVanillaMelee(Player attacker, LivingEntity victim,
+                                        double chargeScale, WeaponRegistry weapons,
+                                        AdapterContext adapters, CooldownTracker cooldowns) {
         Optional<AbilityDefinition> trigger = WeaponItems.heldWeaponId(attacker, adapters.keys())
                 .flatMap(weapons::find)
                 .flatMap(WeaponDefinition::vanillaMeleeTrigger);
-        if (trigger.isEmpty()) return OptionalDouble.empty();
+        if (trigger.isEmpty()) return Optional.empty();
 
         CombatantSnapshot caster = BukkitCombatant.snapshot(attacker, adapters.stats());
         Combatant target = BukkitCombatant.of(victim, adapters);
 
-        // A one-slot sink rather than a running total: FIRST-WINS, per the javadoc above. The array
-        // is the plain Java idiom for writing to a local from a lambda; it is written and read on
-        // this one thread, synchronously, within the landBasicMelee call below.
-        double[] dealt = {Double.NaN};
+        // A one-slot sink rather than a running total: FIRST-WINS, per the javadoc above. It holds
+        // the PAIR, not an amount and an element in two slots, so no ordering of reports can put one
+        // hit's number beside another hit's element. The array is the plain Java idiom for writing to a
+        // local from a lambda; it is written and read on this one thread, synchronously, within the
+        // landBasicMelee call below.
+        Landed[] landed = {null};
         new CastExecutor(new PaperCombatWorld(victim.getWorld(), adapters),
                 () -> WeaponDurability.applyWearOnUse(attacker, adapters.keys(), cooldowns),
-                amount -> { if (Double.isNaN(dealt[0])) dealt[0] = amount; })
+                (amount, element) -> { if (landed[0] == null) landed[0] = new Landed(amount, element); })
                 .landBasicMelee(trigger.get(), caster, target, chargeScale);
-        return Double.isNaN(dealt[0]) ? OptionalDouble.empty() : OptionalDouble.of(dealt[0]);
+        return Optional.ofNullable(landed[0]);
     }
 
     private static Vec3 toVec3(Location location) {

@@ -2,6 +2,8 @@ package io.github.butterflysmp.rpg.paper.listener;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
+import io.github.butterflysmp.rpg.core.combat.CritState;
+import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.DamageScale;
 import io.github.butterflysmp.rpg.core.combat.DamageWindow;
@@ -860,7 +862,7 @@ public final class RpgListeners implements Listener {
                 .flatMap(weapons::find)
                 .map(WeaponDefinition::sweep)
                 .orElse(SweepShare.NONE);
-        var primary = meleeHits.primaryDamageThisTick(attacker.getUniqueId());
+        var primary = meleeHits.primaryHitThisTick(attacker.getUniqueId());
         if (!SweepShare.sweeps(fraction) || primary.isEmpty()) {
             event.setCancelled(true);
             return;
@@ -882,15 +884,25 @@ public final class RpgListeners implements Listener {
         event.setDamage(TOKEN_DAMAGE);                                   // flash + i-frames + shove
         floorSoTokenCannotKill(swept);
 
-        // The two-arg applyDamage, so the swept mob's popup is a NORMAL white number even when the
-        // primary critted. Its DAMAGE still inherits the crit in full -- the stashed figure is
-        // already multiplied -- so a crit swing sweeps for half of the doubled number. Only the
-        // presentation differs, and deliberately: the crit was rolled for the hit the player aimed
-        // at, and colouring every bystander yellow would claim each of them crit independently. The
-        // visible consequence is a yellow "28" on the primary beside white "14"s on its neighbours,
-        // and no crit particles on the bystanders either -- the burst is spawned on the crit bit.
-        BukkitCombatant.of(swept, adapters).handle()
-                .applyDamage(SweepShare.of(primary.getAsDouble(), fraction), attacker.getUniqueId());
+        // The FOUR-arg applyDamage, so the swept mob keeps a NORMAL white number even when the
+        // primary critted, and now carries the primary's ELEMENT so a fire sweep is fire damage on
+        // every mob it caught. Its DAMAGE still inherits the crit in full -- the stashed figure is
+        // already multiplied -- so a crit swing sweeps for half of the doubled number.
+        //
+        // CRIT AND ELEMENT TRANSFER DIFFERENTLY, AND THE PRECEDENT DOES NOT CARRY FROM ONE TO THE
+        // OTHER. A crit is a PER-HIT ROLL the bystander did not receive, so colouring every
+        // bystander yellow would claim each of them crit independently -- hence the white numbers
+        // and no crit particles here. An element is a PER-WEAPON IDENTITY every target of the swing
+        // genuinely did receive, so drawing them unmarked would assert something false the other
+        // way. Opposite transfer properties; the white-for-sweep decision is untouched.
+        //
+        // THE ELEMENT COMES FROM THE STASH, NOT FROM THE HELD WEAPON. Reading
+        // WeaponDefinition.element() here would be a SECOND derivation of a fact the seam already
+        // reports, and the two can disagree in shipped content: ability_stone declares
+        // element: kinetic at the weapon level while its nested damage effect declares fire.
+        BukkitCombatant.of(swept, adapters).handle().applyDamage(
+                SweepShare.of(primary.get().damage(), fraction), attacker.getUniqueId(),
+                CritState.NORMAL, DefenseRule.APPLIES, primary.get().element());
     }
 
     /**
@@ -953,7 +965,8 @@ public final class RpgListeners implements Listener {
         // is absent whenever nothing was dealt, which is what makes sweep fail closed.
         WeaponFire.landVanillaMelee(attacker, victim, AttackCharge.scale(swing.get().charge()),
                 weapons, adapters, cooldowns)
-                .ifPresent(dealt -> meleeHits.recordPrimaryDamage(attacker.getUniqueId(), dealt));
+                .ifPresent(hit -> meleeHits.recordPrimaryHit(
+                        attacker.getUniqueId(), hit.amount(), hit.element()));
     }
 
     /**

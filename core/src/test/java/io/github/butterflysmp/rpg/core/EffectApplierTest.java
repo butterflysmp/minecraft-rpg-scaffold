@@ -750,7 +750,7 @@ class EffectApplierTest {
         caster.enchantDamagePercent = 15.0;     // Sharpness III
         List<Double> reported = new ArrayList<>();
 
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
 
         assertEquals(1, reported.size(), "one damage effect, one report");
@@ -770,7 +770,7 @@ class EffectApplierTest {
         caster.attackDamage = 8.0;
         List<Double> reported = new ArrayList<>();
 
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")),
                 caster.asCaster(AttackCharge.scale(0.0)), pair(target), Vec3.ZERO);
 
@@ -797,13 +797,13 @@ class EffectApplierTest {
         var dead = new FakeWorld.Dummy(new Vec3(1, 0, 0));
         dead.health = 0.0;                      // already gone: the alive() half of the gate
         caster.attackDamage = 8.0;
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(dead), Vec3.ZERO);
         assertTrue(reported.isEmpty(), "a hit on a corpse reports nothing");
 
         var live = new FakeWorld.Dummy(new Vec3(1, 0, 0));
         caster.attackDamage = 0.0;              // unarmed: the amount > 0 half of the gate
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(live), Vec3.ZERO);
         assertTrue(reported.isEmpty(), "an unarmed swing reports nothing");
         assertEquals(100.0, live.health, 1e-9, "and dealt nothing, which is why it must report nothing");
@@ -837,7 +837,7 @@ class EffectApplierTest {
         caster.critMultiplier = Crit.multiplier(Crit.BASE_CHANCE, Crit.BASE_DAMAGE, 0.0);  // rolled a crit
         List<Double> reported = new ArrayList<>();
 
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
 
         assertEquals(16.0, reported.get(0), 1e-9, "8 x 2.0");
@@ -899,7 +899,7 @@ class EffectApplierTest {
         caster.critMultiplier = 2.0;
         List<Double> reported = new ArrayList<>();
 
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
 
         assertEquals(28.4, reported.get(0), 1e-9, "(8*1.15 + 5) * 2.0 -- the crit lands LAST");
@@ -918,7 +918,7 @@ class EffectApplierTest {
         caster.critMultiplier = 2.0;
         List<Double> reported = new ArrayList<>();
 
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")),
                 caster.asCaster(AttackCharge.scale(0.5)), pair(target), Vec3.ZERO);
 
@@ -1005,5 +1005,46 @@ class EffectApplierTest {
         assertEquals(0, corpse.damageCalls, "a dead target takes no hit");
         assertNull(corpse.lastDamageElement, "and therefore wears no element");
         // Mutation: move the applyDamage call outside the liveness gate -> both reddens.
+    }
+
+    @Test
+    void theSTASHEDAmountAndElementCOMEFROMTHESAMEHitAndTheFIRSTOneWins() {
+        // THE ROW THAT IS ACTUALLY EXPRESSIBLE, AND THE REASON THERE IS NO TRANSPOSITION ROW.
+        //
+        // A stash of (double, String) cannot be transposed -- that is a compile error, and a mutation
+        // that cannot be expressed is a property the TYPE enforces rather than a guard that is
+        // missing. What type-checks perfectly, and is the real hazard, is taking the amount from one
+        // report and the element from another: two slots filled independently would put one hit's
+        // number beside another hit's element, and the swept mobs would burn with the wrong element
+        // at the wrong magnitude.
+        //
+        // So the sink holds the PAIR. Two reports with DIFFERENT values in both fields is the only
+        // fixture that can tell a paired sink from two independent slots -- with matching values, or
+        // with only one field differing, an unpaired implementation passes.
+        //
+        // FIRST-WINS is the rule WeaponFire.landVanillaMelee states and DamagePayload.of already
+        // applies, so the tooltip and the sweep cannot disagree about one weapon. No shipped melee
+        // payload reports twice; this pins the rule for the one that does.
+        record Landed(double amount, String element) {}
+        var world = new FakeWorld();
+        var reported = new ArrayList<Landed>();
+        var applier = new EffectApplier(world, (amount, element) -> {
+            if (reported.isEmpty()) reported.add(new Landed(amount, element));
+        });
+
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        caster.attackDamage = 9.0;
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+
+        applier.applyAll(
+                List.of(new EffectSpec.Damage(12, "fire"), new EffectSpec.Damage(4, "water")),
+                caster.asCaster(), pair(victim), Vec3.ZERO);
+
+        assertEquals(1, reported.size(), "first-wins: the second damage effect does not replace it");
+        assertEquals(12.0, reported.get(0).amount(), 1e-9, "the FIRST effect's amount");
+        assertEquals("fire", reported.get(0).element(), "and the FIRST effect's element, not water");
+        // Mutation: report the element from a later accept than the amount -- e.g. keep the amount
+        // first-wins and let the element overwrite -> "water" != "fire" -> reddens. That is the
+        // unpaired-slots bug, and it is invisible to every other row in this file.
     }
 }
