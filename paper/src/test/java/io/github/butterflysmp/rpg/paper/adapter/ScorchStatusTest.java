@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.adapter;
 import io.github.butterflysmp.rpg.core.combat.Scorch;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -141,20 +142,29 @@ class ScorchStatusTest {
         UUID applier = UUID.randomUUID();
 
         scorch.apply(id, clock, sink, 1, 20.0, applier, 160);
-        int burnsFromApplications = 1;
         for (int i = 0; i < 6; i++) {           // re-apply every 15 ticks, six times
             clock.advance(15);
             scorch.apply(id, clock, sink, 1, 20.0, applier, 160);
-            burnsFromApplications++;
         }
 
-        assertTrue(sink.count() > burnsFromApplications,
-                "SCHEDULED burns must have landed too, not only the inline ones from each apply -- "
-                        + "got " + sink.count() + " burns from " + burnsFromApplications
-                        + " applications; equal would mean the clock was re-phased and never fired");
+        // EXACTLY ONE of these burns is inline -- the first application's. Every other one is the
+        // task firing on its OWN 20-tick phase through six refreshes, which is the whole assertion.
+        // (This row used to count inline burns per application and assert there were more burns than
+        // applications. That worked only because the refresh arm burned; it is asserted directly
+        // now, and the direct form is what catches the re-phase.)
+        assertEquals(List.of(0L, 20L, 40L, 60L, 80L),
+                sink.burns.stream().map(FakeScorchSink.Burn::atTick).toList(),
+                "the task keeps its own phase across refreshes");
         assertEquals(7, scorch.stacks(id), "and the stacks accumulated across the refreshes");
-        // Mutation: cancel and restart the task inside apply()'s refresh arm -> the scheduled burns
-        // vanish, count == 7 == burnsFromApplications -> reddens.
+        // MUTATION, RUN RED (measured, not predicted): cancel and restart the task inside apply()'s
+        // refresh arm. Observed [0, 30, 35, 55, 60, 65, 75, 85, 90] against [0, 20, 40, 60, 80].
+        //
+        // The EXACT list is an artefact of the mutation, not the point: cancel() fires onStop, which
+        // removes the map entry, so the next apply() takes the NEW-Active path instead of the
+        // refresh path -- inline burns at odd phases rather than the silence a pure re-phase gives.
+        // What this row pins is the invariant that survives either shape: BURNS LAND ON THE ORIGINAL
+        // 20-TICK PHASE. Asserting the tick list rather than a count is what makes it insensitive to
+        // which of the two the mutation happens to produce.
     }
 
     @Test
@@ -173,10 +183,18 @@ class ScorchStatusTest {
         assertEquals(first, sink.burns.get(0).applierId(), "credited to the first applier");
 
         scorch.apply(id, clock, sink, 1, 8.0, second, 160);
+        assertEquals(second, scorch.applier(id), "which is what slice 2's ignite will credit");
+
+        // The refresh deals nothing of its own (aRefreshDoesNotDealAnUNSCHEDULEDBurn), so the
+        // takeover is read from the next SCHEDULED tick. That is a STRONGER claim than the inline
+        // read this row used to make: it shows the new cap and credit survive into the clock rather
+        // than only into the call that set them.
+        clock.advance(20);
         assertEquals(8.0, sink.burns.get(1).amount(), EPS, "the NEWEST applier's cap of 8 takes over");
         assertEquals(second, sink.burns.get(1).applierId(), "and so does the credit");
-        assertEquals(second, scorch.applier(id), "which is what slice 2's ignite will credit");
-        // Mutation: keep the original cap/applier on refresh -> both reddens.
+        assertEquals(20L, sink.burns.get(1).atTick(), "and it landed on the clock, at t=20");
+        // Mutation: keep the original cap/applier on refresh -> min(5% of 5000, 20) = 20 credited to
+        // `first`, against an expected 8 credited to `second` -> reddens on both.
     }
 
     @Test
@@ -196,6 +214,36 @@ class ScorchStatusTest {
         clock.advance(100);   // t=200, past the ORIGINAL 160-tick window
         assertTrue(scorch.isScorched(id), "the refresh extended the WHOLE window, so it is still live");
         // Mutation: refresh only a per-stack clock, or fail to rewrite remaining -> expired -> reddens.
+    }
+
+    @Test
+    void aRefreshDoesNotDealAnUNSCHEDULEDBurn() {
+        // THE REFRESH ARM MUST NOT BURN. The inline burn in apply() is for the FIRST application --
+        // a single stack should burn at least once even if it expires inside one period. On a
+        // refresh the task is ALREADY RUNNING and will burn on schedule, so an inline burn there is
+        // damage OUTSIDE the clock this class exists to own, and it scales with HIT RATE rather than
+        // with time: a weapon hitting every 10 ticks deals 2 inline + 1 scheduled per period, THREE
+        // TIMES the stated rate, and "5% of max per second" quietly becomes "5% per second PLUS 5%
+        // per application" for every weapon in the game.
+        var scorch = new ScorchStatus();
+        var clock = new FakeTickTarget();
+        var sink = sinkAt100(clock);
+        UUID id = UUID.randomUUID();
+
+        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS);
+        clock.advance(10);                                   // mid-period: nothing is due here
+        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS);
+
+        clock.advance(400);                                  // well past expiry
+
+        assertTrue(sink.burns.stream().noneMatch(b -> b.atTick() == 10L),
+                "the re-application at t=10 burned on its own -- burns landed at "
+                        + sink.burns.stream().map(b -> String.valueOf(b.atTick())).toList());
+        assertEquals(List.of(0L, 20L, 40L, 60L, 80L, 100L, 120L, 140L),
+                sink.burns.stream().map(FakeScorchSink.Burn::atTick).toList(),
+                "a re-application inside the window buys STACKS and TIME, not a ninth damage tick");
+        assertEquals(40.0, sink.totalDealt(), EPS,
+                "so a full window is 8 x 5% = 40% of max, whatever the hit rate");
     }
 
     // --- The rate is flat -----------------------------------------------------------------------

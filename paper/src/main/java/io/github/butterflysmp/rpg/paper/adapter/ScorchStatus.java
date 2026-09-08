@@ -106,7 +106,12 @@ public final class ScorchStatus {
      */
     public void apply(UUID id, RepeatingTaskTarget target, ScorchSink sink,
                       int stacks, double cap, UUID applierId, int durationTicks) {
-        if (stacks <= 0) return;   // a hit too small to buy a stack scorches nothing
+        // A hit too small to buy a stack scorches nothing -- AND DOES NOT REFRESH AN EXISTING BURN
+        // either, since this returns before the refresh arm below. Correct by the letter of the
+        // spec: stacks are what scorch is made of, and a hit that buys none has not applied it. But
+        // it is the reading a player will report as a bug ("my weak hit didn't extend the burn"), so
+        // it is written down here rather than left to be rediscovered from the symptom.
+        if (stacks <= 0) return;
 
         Active a = active.get(id);
         if (a != null && a.task.isRunning()) {
@@ -114,7 +119,14 @@ public final class ScorchStatus {
             a.remaining = durationTicks;   // refresh the whole timer, and DO NOT restart the task
             a.cap = cap;                   // most recent applier owns the cap...
             a.applierId = applierId;       // ...and the credit. One rule, not two.
-            burnOnce(a, sink);
+            // AND IT DOES NOT BURN. The inline burn below is for the FIRST application only, where
+            // the alternative is a scorch that expires inside one period having dealt nothing. HERE
+            // THE TASK IS ALREADY RUNNING and will burn on schedule, so a burn on refresh is damage
+            // outside the clock this class exists to own -- and it scales with HIT RATE rather than
+            // with time. A weapon hitting every 10 ticks would deal 2 inline + 1 scheduled per
+            // period, three times the stated rate; solar_grenade's field would double its own.
+            // "5% of max per second" has to keep meaning that. A refresh refreshes.
+            // Guarded by ScorchStatusTest.aRefreshDoesNotDealAnUNSCHEDULEDBurn.
             return;
         }
 

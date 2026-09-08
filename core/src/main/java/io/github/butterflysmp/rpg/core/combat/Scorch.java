@@ -143,6 +143,14 @@ public final class Scorch {
      *
      * Floored, not rounded: 1 damage must buy nothing rather than rounding up to a stack, or chip
      * damage scorches. Non-positive returns 0 -- a heal or a fully-absorbed hit accrues nothing.
+     *
+     * <b>THE REMAINDER IS DISCARDED, AND THAT IS THE CHOICE RATHER THAN AN OVERSIGHT.</b> A 3-damage
+     * hit buys one stack and drops 1; ten such hits buy ten stacks, not fifteen. There is deliberately
+     * NO per-victim accumulator carrying the leftover forward, for two reasons: it would be state that
+     * outlives the burn it belongs to (what happens to a remainder when the scorch expires, or when a
+     * different applier takes over?), and it would make the stack a target reaches depend on the
+     * ORDER its hits arrived in rather than on their total. Chip damage advancing toward ignite more
+     * slowly than its raw total suggests is the intended shape, not a rounding artefact.
      */
     public static int stacksFor(double dealtPostMitigation) {
         if (dealtPostMitigation <= 0) return 0;

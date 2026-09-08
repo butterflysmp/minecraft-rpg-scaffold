@@ -1065,6 +1065,53 @@ So: vanilla's list is **the starting proposal, and evidence that his instinct is
 real.** Adopting it is a **balance decision that needs him, per cause**, and it follows from no
 measurement taken so far.
 
+##### THE SAME RULE ARRIVING IN A TEST FILE — a new member of the verification family, and the nastiest
+
+The rule above is about an **operator's number**. It has a twin that arrives from the other
+direction, caught 2026-09-08 in scorch slice 1:
+
+> **A TEST WRITTEN FROM OBSERVED BEHAVIOUR ENCODES THE DEFECTS PRESENT WHEN IT WAS WRITTEN.**
+
+This is **not** a check that did not run, and **not** a check on the wrong side of what it guards —
+those are the four already on this page. **This is a check whose PREMISE is the bug.** It passes. It
+discriminates. It reddens under mutation. And **removing the defect BREAKS it.**
+
+**The worked example, and one of the two tests was the best row in the file it lives in.**
+`ScorchStatus.apply`'s refresh arm called `burnOnce`, dealing damage outside the 20-tick clock the
+class exists to own. Two tests had that burn as their premise:
+
+- `reApplyingFasterThanThePeriodStillTicks` asserted `count() > burnsFromApplications`. **That
+  arithmetic only balanced because the refresh burned.** It caught the re-phase trap it was written
+  for *while being wrong about the mechanism* — it was counting inline burns from each application
+  and crediting them to the scheduler.
+- `aNewApplierTakesOverBOTHTheCapAndTheCredit` read `burns.get(1)` — the refresh burn itself. Fixing
+  the defect turned it into an `IndexOutOfBounds`.
+
+**So the suite was not green because the defect was untested. IT WAS GREEN BECAUSE OF THE DEFECT.**
+That inversion is the part to carry. The first reading ("untested") says *add a test*. The true
+reading says **two existing tests must be rewritten against intended behaviour**, because in their
+current form they are evidence of the bug rather than guards against it.
+
+**FILE IT WITH THE TUNING-REQUEST RULE, NOT BESIDE IT.** An operator's number and a developer's
+assertion are both **measurements of current behaviour, and both silently become requirements.** One
+arrives in chat, the other in a test file. The receiving question is the same: **ask "is this a
+measurement of a bug?" BEFORE "is this the spec?"**
+
+**THE TELL, cheap and now fired three times:** in a file where every other decision carries a
+paragraph, **the one line with no comment is the one that was not decided.** The refresh burn was
+that line — `a.stacks`, `a.remaining`, `a.cap` and `a.applierId` each carried one; the `burnOnce`
+between them did not.
+
+**THE COUNTER-EXAMPLE, kept in this note deliberately, because it is the discipline that stops the
+rule above becoming another plausible story.** While proving the rewritten guard still caught the
+re-phase, the mutation's result was **predicted** as burns `[0]` and **measured** as
+`[0, 30, 35, 55, 60, 65, 75, 85, 90]` — `cancel()` fires `onStop`, which drops the map entry, so
+later applications take the new-`Active` path rather than the refresh path. The comment was corrected
+to the observation, **with the artefact separated from the invariant**: the exact list belongs to the
+mutation, while "burns land on the original 20-tick phase" belongs to the code. **A predicted
+mutation result written into a test comment is this same defect one level up** — an assertion about
+behaviour nobody executed.
+
 **What the melee gate withdrew, and why enumerating it mattered.** Gating `onMobMeleeAttack` to
 `ENTITY_ATTACK` took four things away from creeper/warden damage, not one. Three were answered
 (tracking was already done at `EntityAddToWorldEvent`; the shield block **and its durability wear**
@@ -2180,6 +2227,52 @@ feels wrong"*, which is what it will look like from inside the game.
 content edit. `applyFlintStaffIgnition` in `BSMPMenu` is the working reference implementation.
 
 **Do it in the slice that implements DOT statuses generally**, not for one weapon.
+
+> **PAID 2026-09-07 by scorch slice 1**, which is the slice that implemented DOT statuses generally,
+> as this entry asked. `kind: scorch` ticks damage through `CombatantHandle` on an owned 20-tick
+> clock, caps itself against the applier's authored damage, credits the applier, and suppresses the
+> vanilla `FIRE_TICK` it replaces. `kind: fire` still exists and is still right for a visual-only
+> burn. **What remains is not this debt but its successor, below.**
+
+#### THE ACCRUAL IS DISPLACED, NOT DESCOPED — and slice 2 blocks on it
+
+**Recorded 2026-09-08, before slice 2 is planned, because a deferred item with no slice is how a
+dependency becomes a surprise.**
+
+Stack accrual from damage was in slice 1's plan and moved out during implementation. `Scorch.stacksFor`
+and `ScorchStatus.apply`'s bulk `stacks` parameter are **built and tested**; the call site is not
+wired, because `EffectApplier` lives in `core` and cannot name "scorch" (content is data, not code),
+so wiring it needs a new `EffectSpec` kind — `type: status_per_damage` was floated and deliberately
+not invented.
+
+**MEASURED, not inferred:** `BukkitCombatant.java:302` passes `stacks` **hardcoded to `1`**, and it is
+the **only** `ScorchStatus.apply` call site in the project. So it is not merely that weapon hits
+cannot apply scorch — **every application in the shipped slice is exactly one stack.**
+
+**Harmless for the DoT, fatal for Ignite.** The burn rate is flat and reads no stack count, so one
+stack burns exactly as ten do. But Ignite's threshold is **50% of max health as stacks**: a 20 HP
+zombie needs **ten**. At one stack per cast that is **ten casts**; with accrual it is one Flint Staff
+hit. **IGNITE IS UNREACHABLE IN PRACTICE UNTIL ACCRUAL LANDS**, and nothing in slice 1 says so.
+
+**THE HOME, decided rather than left open: ACCRUAL IS ITS OWN SLICE, between 1 and 2.**
+
+Three candidates were on the table, and the reasoning is recorded so the choice can be overturned on
+its merits rather than re-derived:
+
+| candidate | why not |
+|---|---|
+| back into slice 1 | slice 1 is built, gated and boot-ready. Reopening it changes `GATE-scorch-slice-1.md`'s rows (weapon-hit rows become runnable) and delays a boot that is currently confirming rather than diagnosing |
+| slice 2 becomes "accrual + Ignite" | merges a **content-schema decision** (a new `EffectSpec` kind, which touches the sealed schema and skirts the standing "an element is pure identity, no logic" line) with a **mechanic**. If the schema question goes badly, Ignite is blocked from inside its own slice |
+| **its own slice** | **chosen.** One decision, small enough to read, reviewable on its own, and it unblocks slice 2 cleanly |
+
+**What would change the decision:** if the schema question turns out trivial — one `EffectApplier`
+arm and no new kind — then a separate slice is ceremony, and it should fold into slice 2. **That is
+knowable before any code is written**, by settling the `EffectSpec` shape first. Settle it, then pick.
+
+**The open question the slice opens with**, so it is not rediscovered: `EffectApplier` must apply
+stacks proportional to damage actually landed, without naming a status. `type: status_per_damage`
+carrying a `status_id` and a `damage_per_stack` keeps the naming in content where it belongs; making
+elements carry it does not, and that line is already drawn.
 
 #### NAMED DEBT: `CraftResultIndex` holds two indexes and one of them is not a result index
 
