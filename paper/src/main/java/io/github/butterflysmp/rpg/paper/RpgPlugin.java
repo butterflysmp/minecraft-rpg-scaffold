@@ -414,7 +414,7 @@ public final class RpgPlugin extends JavaPlugin {
         this.nameplates = new MobNameplateManager(scheduler, new PacketNameplateSender(), keys, mobs);
         // Third display: the per-dealer damage-number popup. Pure seam consumer -- reads amount/dealer
         // off the event, so no bind(stats) and no mob-lifecycle hooks (unlike the nameplate).
-        this.popups = new DamagePopupManager(scheduler, new PacketDamagePopupSender());
+        this.popups = new DamagePopupManager(scheduler, new PacketDamagePopupSender(), elements);
         // Fourth consumer: mob death. Also a pure seam consumer (no bind). Wired LAST so the displays
         // above render the final state before it kills the mob on the reachedZero transition.
         this.mobDeath = new MobDeathSystem(scheduler);

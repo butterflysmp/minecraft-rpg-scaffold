@@ -1,6 +1,9 @@
 package io.github.butterflysmp.rpg.paper.health;
 
+import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthChange;
+import io.github.butterflysmp.rpg.paper.content.ElementDefinition;
+import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthListener;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
 import net.kyori.adventure.text.Component;
@@ -39,10 +42,13 @@ public final class DamagePopupManager implements HealthListener {
     private final Scheduler scheduler;
     private final DamagePopupSender sender;
     private final PopupEntityIds ids = new PopupEntityIds();
+    private final ElementRegistry elements;
 
-    public DamagePopupManager(Scheduler scheduler, DamagePopupSender sender) {
+    public DamagePopupManager(Scheduler scheduler, DamagePopupSender sender,
+                              ElementRegistry elements) {
         this.scheduler = scheduler;
         this.sender = sender;
+        this.elements = elements;
     }
 
     @Override
@@ -63,7 +69,8 @@ public final class DamagePopupManager implements HealthListener {
         double z = base.getZ() + jitter(ThreadLocalRandom.current().nextDouble());
         double y = base.getY() + target.getHeight() * CENTER_MASS_FRACTION;
 
-        Component text = DamageNumberText.of(change.amount(), change.wasCrit());
+        Component text = DamageNumberText.of(change.amount(), CritState.of(change.wasCrit()),
+                symbolFor(elements, change.element()));
         // The crit's second channel: vanilla's own crit particle, spawned by us on OUR crit. Legal
         // here -- this runs on the target's owning thread, the same standing that makes the Location
         // read above legal. Shown to everyone, not just the dealer, because a crit landing is a fact
@@ -79,6 +86,38 @@ public final class DamagePopupManager implements HealthListener {
         scheduler.onEntityLater(dealer, () -> sender.destroy(dealer, id), LIFETIME_TICKS);
     }
 
+
+    /**
+     * The glyph this damage should be marked with, or null: no element, an unknown element, or an
+     * element that declares none. Fails soft at all three -- a cosmetic lookup must never cost the
+     * number, and boot validation has already NAMED a dangling element or a missing glyph.
+     *
+     * <p><b>Read straight from the registry, with no cached map, and the reason is not the obvious
+     * one.</b> A {@code Map<String, Component>} built at construction was the first shape here,
+     * justified as parsing once instead of per hit. <b>That justification was already false when it
+     * was written:</b> {@code ElementLoader} parses {@code damage_symbol} at LOAD and
+     * {@code ElementDefinition.damageSymbol} is a {@code Component}, not a string -- so the map would
+     * have been a second copy of data the registry already holds in parsed form, defended by a cost
+     * that a previous commit in this same slice had removed.
+     *
+     * <p>That is the falsified-comment class this slice has swept twice, and it would have been
+     * introduced by the sweep's own author. The only honest argument left for a map is allocation --
+     * one {@code Optional} per hit on a per-hit region-thread path -- which is not worth a second
+     * source of truth that a content refresh could leave stale. So: no map, and no claim.
+     *
+     * <p><b>No explicit null check on {@code elementId}</b>, for the reason {@code ElementAccrual}
+     * records: {@code ElementRegistry.find} is {@code Optional.ofNullable} over a {@code LinkedHashMap},
+     * which permits a null key and returns null rather than throwing, so a null falls out through the
+     * ordinary registry MISS. A check would be indistinguishable from that miss -- no row could
+     * separate them. Declining it there and writing it here would have been the same dead guard twice
+     * in one slice.
+     *
+     * <p>Package-private and static for the same reason {@code shouldShow} and {@code jitter} are:
+     * pure, so it is reddening-testable without a server.
+     */
+    static Component symbolFor(ElementRegistry elements, String elementId) {
+        return elements.find(elementId).map(ElementDefinition::damageSymbol).orElse(null);
+    }
     /**
      * The pure gate: a number is shown only for player-dealt DAMAGE with a known dealer. HEAL / MAX_CHANGE
      * show nothing (no heal numbers this pass); a mob dealer (unattributed or non-player) shows nothing
