@@ -28,6 +28,15 @@ package io.github.butterflysmp.rpg.core.combat.stat;
  * site, the accessors are named, and {@code CombatantStatsTest} pins the two to DIFFERENT values on
  * purpose so a swapped construction reddens rather than passing on a coincidence.
  *
+ * <p><b>KNOWN LIMITATION: {@link #UNTRACKED} is indistinguishable from TRACKED-AT-ZERO from the
+ * return value alone.</b> Both read {@code (0.0, 0.0)}. That is a policy-shaped compromise in a
+ * record that otherwise refuses policy: the honest fact for an untracked id is "there is no
+ * health", which is not the number zero. It does not bite today -- the only consumer gates on
+ * {@code newCurrent > 0} and both readings agree there -- and the fixes (an Optional, or a third
+ * component) cost more than the confusion. Named here rather than left to be derived, because a
+ * later consumer that needs to tell the two apart will get SILENCE from this type rather than a
+ * compile error.
+ *
  * @param dealt      the POST-MITIGATION amount that actually landed; {@code 0.0} on an untracked
  *                   combatant, where nothing happened at all
  * @param newCurrent the target's custom current health AFTER the hit. {@code 0.0} on an untracked

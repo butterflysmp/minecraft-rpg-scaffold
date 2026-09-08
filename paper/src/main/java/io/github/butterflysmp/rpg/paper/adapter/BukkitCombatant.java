@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.Vec3;
+import io.github.butterflysmp.rpg.core.combat.stat.DamageOutcome;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
 import io.github.butterflysmp.rpg.core.combat.Crit;
@@ -179,8 +180,28 @@ public final class BukkitCombatant {
                 Entity source = Attribution.attributableSource(
                         sourceId, entity.getWorld()::getEntity, Bukkit::isOwnedByCurrentRegion);
                 boolean dealerIsPlayer = source instanceof Player;
-                ctx.stats().damage(entity.getUniqueId(), amount, sourceId, dealerIsPlayer, crit,
-                        defense, element);
+                DamageOutcome outcome = ctx.stats().damage(entity.getUniqueId(), amount, sourceId,
+                        dealerIsPlayer, crit, defense, element);
+
+                // STACK ACCRUAL. This is the one site where the hit's PRE-mitigation magnitude and
+                // the POST-mitigation figure that actually landed are both in scope -- the applier
+                // upstream has only the first, and the seam listeners downstream only the second.
+                // The decision is ElementAccrual's and is pure; this only performs it.
+                ElementAccrual.forHit(ctx.elements(), ctx.statuses(), element, outcome, amount)
+                        .ifPresent(accrued -> {
+                            // The vanilla flame is the same visual the explicit path sets, and this
+                            // is now the THIRD end of that coupling: the other two are
+                            // applyStatus's Scorch arm and RpgListeners' FIRE_TICK suppression,
+                            // which reads isScorched to token the vanilla burn away. All three have
+                            // to move together.
+                            entity.setFireTicks(
+                                    Math.max(entity.getFireTicks(), accrued.durationTicks()));
+                            ctx.scorch().apply(entity.getUniqueId(),
+                                    new EntityTaskTarget(entity, ctx.scheduler()),
+                                    new EntityScorchSink(entity, ctx),
+                                    accrued.stacks(), accrued.cap(), sourceId,
+                                    accrued.durationTicks());
+                        });
 
                 // Aggro-on-hit: the target turns on its attacker -- vanilla's expected default.
                 // Ability damage flashes without a vanilla hit, so it would otherwise provoke

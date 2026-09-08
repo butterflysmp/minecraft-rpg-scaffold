@@ -116,17 +116,28 @@ triggers:
       - type: damage
         amount: 20
         element: fire
-      # SCORCH IS NOT THE OLD DOT, AND THE DIFFERENCE IS A NAMED DEBT (see NEXT.md).
+      # SCORCH IS NOT THE OLD DOT, AND WHAT IS LEFT OF THAT DEBT IS SMALLER THAN THIS COMMENT USED
+      # TO SAY. The paragraph here read:
       #
-      # What this reproduces EXACTLY is the old resolveFlintStaffHit's visual fire envelope:
-      # `target.setFireTicks(FLINT_STAFF_BURN_TICKS)` with FLINT_STAFF_BURN_TICKS = 80.
+      #   "Scorch is kind: fire -> setFireTicks, so the burn is VANILLA-RATED and does NOT CREDIT
+      #    THE CASTER -- no kill credit, and no interaction with the damage system. Accepted for
+      #    now. Scorch gets implemented properly in a later slice."
       #
-      # What it does NOT reproduce is applyFlintStaffIgnition, which ran BESIDE that: 5 damage per
-      # second for 4 seconds, DamageSources.magic(shooter), knockback suppressed per tick, cancelled
-      # on target death. Scorch is kind: fire -> setFireTicks, so the burn is VANILLA-RATED and does
-      # NOT CREDIT THE CASTER -- no kill credit, and no interaction with the damage system.
+      # THAT LATER SLICE HAPPENED (d3b8207) AND THE COMMENT DID NOT MOVE. scorch.yml is kind:
+      # scorch, not kind: fire. The burn is 5% of the victim's MAX per second on our own clock,
+      # capped by the applying hit; it is credited through applierId, and it drains custom HP
+      # through the damage system. Every clause above is now false.
       #
-      # Accepted for now. Scorch gets implemented properly in a later slice.
+      # Same shape as the seven element-file comments swept in caa462e -- true when written, false
+      # on the day a slice landed, invisible to every compiler and test. It was missed there
+      # because it lives in a weapon file rather than in content/elements.
+      #
+      # WHAT IS STILL DIFFERENT FROM applyFlintStaffIgnition, which ran BESIDE the old visual
+      # envelope: that was a FLAT 5 damage per second for 4 seconds (20 total, on any target),
+      # DamageSources.magic(shooter), with knockback suppressed per tick and the whole thing
+      # cancelled on target death. Scorch's rate is percent-of-max instead, so against a 20 HP mob
+      # this staff's burn is far weaker than the old one and against a 360 HP boss far stronger.
+      # The knockback suppression has no equivalent and is the one genuinely unpaid piece.
       - type: status
         status_id: scorch
         duration_ticks: 80
