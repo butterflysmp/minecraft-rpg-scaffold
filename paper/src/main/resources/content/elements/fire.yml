@@ -1,3 +1,41 @@
-# An element is pure identity: an id (the filename) and a display name. No logic --
-# it flavors a hit and will gate kits in Phase 3, but it never touches damage.
+# An element is IDENTITY PLUS TWO PROPERTIES. It is still never math -- it multiplies no damage,
+# and the weak/strong triangle deleted in Phase 2A is not coming back. What it now declares is which
+# status its damage accrues, and how its damage numbers are marked.
+#
+# THE COMMENT THAT USED TO BE HERE SAID "No logic -- it flavors a hit ... but it never touches
+# damage." True from Phase 2A until accrual was wired, and false the moment this field landed. It is
+# called out rather than quietly swapped because that is exactly the flint_staff.yml "STACKS TO 64"
+# shape: correct reasoning, invisible to every compiler and test, wrong on the day it shipped.
 display_name: "<red>Fire</red>"
+
+# THE GLYPH DRAWN BEFORE THIS ELEMENT'S DAMAGE NUMBERS. Glyph and colour in ONE MiniMessage field,
+# exactly as display_name carries both -- not a separate symbol field plus a colour field, which
+# would be two values that can disagree.
+#
+# THIS IS DELIBERATELY NOT THE NUMBER'S COLOUR. Colour on a damage number already means crit
+# (yellow) vs normal-or-swept (white), and elements would have been a third meaning on one channel
+# that has to separate seven values on something visible for 0.75s. A glyph ADDS a channel instead
+# of rationing one: nothing goes invisible on a crit, symbol space does not run out at element
+# eight, and it still reads for a player who cannot separate orange from yellow.
+#
+# So fire's tooltip word stays RED while its numbers are marked in ORANGE, and that is intentional.
+# <gold> is vanilla's orange; MiniMessage hex (<color:#FF7A18>) is available if a truer one is wanted.
+#
+# WHICH CODEPOINTS ACTUALLY RENDER IS A CLIENT-FONT QUESTION, NOT A SCHEMA ONE. A glyph the font
+# lacks draws as a missing-glyph box. This set is a boot-tunable candidate: look at it on a real
+# client before treating it as settled, and if the default font cannot carry seven distinguishable
+# marks the answer is a resource pack -- a bigger decision that gets surfaced, not absorbed here.
+damage_symbol: "<gold>✦</gold>"
+
+# THE STATUS THIS ELEMENT'S DAMAGE ACCRUES. Every hit wearing element: fire buys scorch stacks in
+# proportion to what actually LANDED -- post-mitigation, so armour delays the burn rather than
+# blunting it (the operator's ruling; see Scorch and CombatantStats.damage).
+#
+# THE RATE IS NOT AUTHORED HERE. One stack per 2 post-mitigation damage lives in
+# Scorch.DAMAGE_PER_STACK, and the duration in Scorch.DEFAULT_DURATION_TICKS. This field names WHAT
+# accrues and nothing else: an element that could declare arbitrary effects, rates and durations is
+# a far bigger feature than either thing this slice was for, and nobody has asked for it.
+#
+# FIRE IS THE ONLY ELEMENT THAT DECLARES THIS. The other six accrue nothing, and their files say so
+# by omission -- absent means off, never a rejection.
+applies_status: scorch

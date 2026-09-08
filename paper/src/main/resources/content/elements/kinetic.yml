@@ -1,3 +1,12 @@
 # The neutral element -- mandatory, never absent. An unflavored weapon or ability is
 # kinetic, not elementless.
+#
+# It declares no applies_status, and that omission is doing real work: kinetic is the CONTROL for
+# every element feature. An ironblade swing draws its own glyph and does not burn, on the same code
+# path as an emberblade swing that does -- which is what shows the behaviour is driven by content
+# rather than hardcoded to fire.
 display_name: "<white>Kinetic</white>"
+
+# See fire.yml for why this is a glyph rather than the number's colour, and for the client-font
+# caveat that makes this set a boot-tunable candidate rather than a settled one.
+damage_symbol: "<white>◆</white>"
