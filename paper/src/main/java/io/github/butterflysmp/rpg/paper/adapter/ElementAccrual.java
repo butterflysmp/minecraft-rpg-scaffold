@@ -75,33 +75,63 @@ public final class ElementAccrual {
     private ElementAccrual() {}
 
     /**
-     * What a landed hit accrues: which status, how many stacks, capped at what, for how long.
+     * What a landed hit accrues onto a burn: how many stacks, capped at what, for how long.
+     *
+     * <p><b>NAMED FOR SCORCH, AND THAT IS THE POINT.</b> It first carried a {@code statusId} field
+     * that nothing in production read -- {@code BukkitCombatant} calls {@code ctx.scorch().apply}
+     * unconditionally and takes only the three numbers, so the id's only reader was a test. A field
+     * named for a dispatch it does not perform makes the call site look safer than it is.
+     *
+     * <p>Dropping it alone would not have fixed the hazard underneath, which is worth stating because
+     * the sealed switch does NOT protect against it: adding a status kind forces someone to write an
+     * ARM, not to write an arm that returns empty. The day some future arm returns a value here, the
+     * call site would apply SCORCH for it, silently, with no compile error anywhere.
+     *
+     * <p>So the TYPE carries the constraint instead of a field advertising a choice that is not made:
+     * a value of this type IS a scorch application. A second accruable status cannot reuse it without
+     * saying so at the point of writing, and "only scorch accrues" lives in exactly one place -- the
+     * switch in {@link #forHit}.
      *
      * @param stacks never zero -- {@link #forHit} returns empty rather than an application worth
      *               nothing, because {@code ScorchStatus.apply} early-returns on a non-positive
      *               count and a caller cannot tell that apart from a refused application
      */
-    public record Accrued(String statusId, int stacks, double cap, int durationTicks) {}
+    public record ScorchAccrual(int stacks, double cap, int durationTicks) {}
 
     /**
      * The accrual this hit earns, or empty for the many reasons a hit earns none.
      *
      * <p><b>The target must still be STANDING, and the predicate is {@code newCurrent > 0} rather
-     * than "this hit caused the transition".</b> {@code CombatantStats.damage} publishes its seam
-     * event BEFORE returning, and {@code MobDeathSystem.onChange} calls {@code setHealth(0)}
-     * synchronously -- which fires removal, which calls {@code scorch().forget(id)}. Accruing on a
-     * lethal hit would therefore register a {@code RepeatingTask} AFTER the cleanup meant to cancel
-     * it: an ordering inversion, not a race, leaving a map entry and a 160-tick task per lethal fire
-     * kill with nothing left to cancel them. It also keeps Ignite's death-gate unambiguous, since a
-     * killing blow's own stacks never count toward the threshold it is measured against.
+     * than "this hit caused the transition".</b> Two independent reasons, and they do NOT cover the
+     * same targets -- the first is mob-only, and reading them as one grants it scope it never had:
+     *
+     * <ul>
+     *   <li><b>For a MOB, an ordering inversion.</b> {@code CombatantStats.damage} publishes its seam
+     *       event BEFORE returning, and {@code MobDeathSystem.onChange} calls {@code setHealth(0)}
+     *       synchronously -- which fires removal, which calls {@code scorch().forget(id)}. Accruing
+     *       on a lethal hit would register a {@code RepeatingTask} AFTER the cleanup meant to cancel
+     *       it, leaving a map entry and a 160-tick task per lethal fire kill with nothing left to
+     *       cancel them.</li>
+     *   <li><b>For a PLAYER, none of that chain runs at all.</b> {@code MobDeathSystem.shouldKill} is
+     *       {@code reachedZero() && !targetIsPlayer()}, so there is no {@code setHealth(0)}, no
+     *       removal and no {@code forget} to invert. The rule still holds for players, but on the
+     *       OTHER reason: Ignite is death-gated, so a killing blow's own stacks must never count
+     *       toward the threshold that blow is measured against. That reason is path-independent.</li>
+     * </ul>
+     *
+     * <p><b>CONSEQUENCE, NAMED HERE RATHER THAN DISCOVERED IN A GATE: a player at zero custom health
+     * is permanently unscorchable.</b> They are not killed and not removed, so they sit tracked at
+     * the floor and every subsequent hit reports {@code newCurrent == 0} -- they never accrue again
+     * until healed. That is downstream of the deferred respawn lifecycle rather than a defect of this
+     * predicate, which is exactly why it belongs where the predicate lives.
      *
      * @param preMitigationAmount the cap basis. NOT {@code outcome.dealt()} -- armour must delay the
      *                            burn through the STACK COUNT and never lower its ceiling, or it
      *                            re-enters the DoT through the back door after being ruled out of it
      */
-    public static Optional<Accrued> forHit(ElementRegistry elements, StatusRegistry statuses,
-                                           String element, DamageOutcome outcome,
-                                           double preMitigationAmount) {
+    public static Optional<ScorchAccrual> forHit(ElementRegistry elements, StatusRegistry statuses,
+                                                 String element, DamageOutcome outcome,
+                                                 double preMitigationAmount) {
         if (outcome.newCurrent() <= 0) return Optional.empty();
 
         ElementDefinition def = elements.find(element).orElse(null);
@@ -114,8 +144,7 @@ public final class ElementAccrual {
         // silently landing in the "accrues nothing" arm. ContentValidator.validateElements already
         // NAMES a non-accruing status at boot, which is why this returns empty without warning.
         return switch (status) {
-            case StatusDefinition.Scorch ignored -> scorch(def.appliesStatus(), outcome,
-                    preMitigationAmount);
+            case StatusDefinition.Scorch ignored -> scorch(outcome, preMitigationAmount);
             case StatusDefinition.Fire ignored -> Optional.empty();
             case StatusDefinition.Potion ignored -> Optional.empty();
             case StatusDefinition.Immobilize ignored -> Optional.empty();
@@ -123,15 +152,29 @@ public final class ElementAccrual {
         };
     }
 
-    private static Optional<Accrued> scorch(String statusId, DamageOutcome outcome,
-                                            double preMitigationAmount) {
+    private static Optional<ScorchAccrual> scorch(DamageOutcome outcome, double preMitigationAmount) {
         int stacks = Scorch.stacksFor(outcome.dealt());
         if (stacks <= 0) return Optional.empty();
 
-        // The cap floor mirrors the explicit path at BukkitCombatant.applyStatus: a non-positive
-        // basis is UNDECLARED, never "no cap", because for a percent-of-max effect an absent cap is
-        // not a fallback but the absence of one.
-        double cap = preMitigationAmount > 0 ? preMitigationAmount : Scorch.UNDECLARED_CAP;
-        return Optional.of(new Accrued(statusId, stacks, cap, Scorch.DEFAULT_DURATION_TICKS));
+        // THE CAP BASIS IS POSITIVE HERE, BY INVARIANT, SO THERE IS NO FALLBACK BRANCH.
+        //
+        // stacks > 0 means Scorch.stacksFor saw a positive figure, so dealt > 0. And dealt is either
+        // `amount` (DefenseRule.BYPASSED) or Defense.applyDefense(amount, d), which returns `damage`
+        // unchanged when defense <= 0 and otherwise scales it by SCALE/(SCALE+defense) -- a factor in
+        // (0, 1). Both preserve sign, so:  stacks > 0  =>  dealt > 0  =>  preMitigationAmount > 0.
+        //
+        // A `preMitigationAmount > 0 ? ... : Scorch.UNDECLARED_CAP` ternary stood here and WAS DEAD.
+        // It was mirrored from BukkitCombatant.applyStatus, whose fallback is correct and necessary
+        // because THAT path is reachable without a damage effect at all -- a payload declaring only
+        // `type: status` has payloadDamage == 0. Accrual is TRIGGERED BY a damage effect and cannot
+        // reach that state. The copy also took the value and dropped the emphasis: the original says
+        // "fall back to a conservative constant, LOUDLY" and calls warnOnce; the mirror was silent.
+        //
+        // Its test row had to invent the state to reach it -- 25 damage landed from a hit that asked
+        // for 0 -- which is a row whose conditions came from what the signature permits rather than
+        // from what the system can produce. And a mutation inside an unreachable branch can only
+        // redden the row that keeps the branch alive, so the two justified each other while neither
+        // touched production. Both are gone; the invariant is stated once, here.
+        return Optional.of(new ScorchAccrual(stacks, preMitigationAmount, Scorch.DEFAULT_DURATION_TICKS));
     }
 }

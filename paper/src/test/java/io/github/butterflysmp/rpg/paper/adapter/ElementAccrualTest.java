@@ -45,7 +45,7 @@ class ElementAccrualTest {
         return registry;
     }
 
-    private static Optional<ElementAccrual.Accrued> accrue(String element, DamageOutcome outcome,
+    private static Optional<ElementAccrual.ScorchAccrual> accrue(String element, DamageOutcome outcome,
                                                            double amount) {
         return ElementAccrual.forHit(elements("fire", "scorch"), statuses(), element, outcome, amount);
     }
@@ -59,7 +59,6 @@ class ElementAccrualTest {
         // in the victim's remaining health.
         var accrued = accrue("fire", new DamageOutcome(25.0, 75.0), 30.0).orElseThrow();
 
-        assertEquals("scorch", accrued.statusId(), "the status the ELEMENT named, not a hardcode");
         assertEquals(12, accrued.stacks(), "stacksFor(25) -- from what LANDED, so armour delays it");
         assertEquals(30.0, accrued.cap(), EPS,
                 "capped at what was ASKED, pre-mitigation -- armour must never lower the ceiling, "
@@ -148,24 +147,12 @@ class ElementAccrualTest {
         // Mutation: give the non-Scorch switch arms a scorch application -> all three redden.
     }
 
-    // --- The cap floor, and the chip hit ---------------------------------------------------------
-
-    @Test
-    void aHitDeclaringNOMagnitudeFallsBackToTheUNDECLAREDCapRatherThanToNoCap() {
-        // Mirrors the explicit path at BukkitCombatant.applyStatus. For a percent-of-max effect an
-        // absent cap is not a fallback but the ABSENCE of one, which would hand an uncapped
-        // percent-max-health DoT to whatever forgot to declare damage.
-        var accrued = accrue("fire", new DamageOutcome(25.0, 75.0), 0.0).orElseThrow();
-
-        assertEquals(Scorch.UNDECLARED_CAP, accrued.cap(), EPS, "capped, not uncapped");
-        // Mutation: pass the raw 0.0 through -> min(rate*max, 0) is 0, so the burn deals NOTHING and
-        // no other row would notice -- the failure is a silent no-op, not a crash.
-    }
+    // --- The chip hit, and a hit that lands nothing ----------------------------------------------
 
     @Test
     void aHitThatLANDSNothingAccruesNothing() {
         // dealt <= 0 is a fully absorbed hit. stacksFor returns 0, and returning empty rather than
-        // an Accrued with stacks 0 matters: ScorchStatus.apply early-returns on a non-positive
+        // a ScorchAccrual with stacks 0 matters: ScorchStatus.apply early-returns on a non-positive
         // count, so a caller could not tell a refused application from an accepted no-op.
         assertTrue(accrue("fire", new DamageOutcome(0.0, 75.0), 30.0).isEmpty());
     }
