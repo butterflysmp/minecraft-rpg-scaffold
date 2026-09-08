@@ -2249,6 +2249,27 @@ not invented.
 the **only** `ScorchStatus.apply` call site in the project. So it is not merely that weapon hits
 cannot apply scorch — **every application in the shipped slice is exactly one stack.**
 
+**AND IT IS WHY THE REFRESH ARM IS BARELY REACHABLE TODAY — measured 2026-09-08 across all four
+appliers, cooldown against scorch duration:**
+
+| applier | `cooldown_ticks` | scorch `duration_ticks` | can it refresh its own burn? |
+|---|---|---|---|
+| `solar_lance` | 100 | 60 | **no** |
+| `solar_grenade` | 200 | 40 | **no** by re-cast |
+| `rekindle` | 200 | 60 | **no** |
+| `ember_step` | 160 | 60 | **no** |
+
+**NOT ONE APPLIER IN SHIPPED CONTENT CAN REFRESH ITS OWN BURN BY RE-CASTING.** Every cooldown outlives
+every duration. The only refresh path that exists is `solar_grenade`'s field re-applying on its own
+20-tick interval against its own 40-tick window — plus two different fire abilities overlapping, or
+two players.
+
+**This is what made the refresh-burn defect survivable in slice 1 and is exactly what accrual ends.**
+Once a weapon applies stacks on damage, a weapon swinging faster than the burn lasts becomes the
+COMMON path through the refresh arm rather than a corner. Whoever writes that slice should treat
+`aRefreshDoesNotDealAnUNSCHEDULEDBurn` as the row that guards the newly-hot path, and should expect
+`S8` to become trivially runnable at the same moment.
+
 **Harmless for the DoT, fatal for Ignite.** The burn rate is flat and reads no stack count, so one
 stack burns exactly as ten do. But Ignite's threshold is **50% of max health as stacks**: a 20 HP
 zombie needs **ten**. At one stack per cast that is **ten casts**; with accrual it is one Flint Staff
@@ -7877,14 +7898,34 @@ early.
 confident WRONG diagnosis rather than merely failing to run.** That is worse than rule 4's
 impossible-row case: an impossible row does nothing, and these would have pointed somewhere specific.
 
+**A THIRD ARRIVED ONE SLICE LATER, FROM AN AXIS NEITHER OF THE FIRST TWO NAMED**, which is what turns
+this from an observation about one sitting into a rule with three witnesses.
+
 | row | arithmetic | the unstated condition | what it would have "shown" |
 |---|---|---|---|
 | `D4b` | 18x, correct | **`knell.yml` is `base_entity: wither_skeleton`, and wither skeletons are FIRE-IMMUNE** — `is_fire` contains `minecraft:lava` | the Knell takes nothing in lava while the control dies → *"the conversion does not reach tagged mobs"* |
 | `D4c` | 60% / lethal, correct | **the operator's ARMOUR** — our `Defense` applies to every cause, mobs have none, he does | the lethal drop kills both mobs and leaves him standing → *"the conversion works for mobs, not players"* |
+| `S1c` | 2/tick at 20-tick cadence, correct | **the `area` effect list carries `type: damage amount: 2` ALONGSIDE the scorch it applies** — same interval, same value, different source | two numbers per second read as the refresh-burn defect → *"the fix did not take"*, on a build where it had |
 
-**Fire immunity is a property of the SUBJECT. Armour is a property of the RUN.** Neither is visible to
-a table that verifies only numbers, and a row can be arithmetically perfect and physically incapable
-of showing what it claims.
+**Fire immunity is a property of the SUBJECT. Armour is a property of the RUN. A CO-LOCATED PAYLOAD IS
+A PROPERTY OF THE CAST**, and the third is the one a careful reader of the *status* code cannot see at
+all, because it is not in the code — it is in the ability's YAML, three lines above the status that
+row is about.
+
+> **S1c, 2026-09-08, and the threshold was off by exactly one.** The row said "ONE number per second;
+> TWO means the refresh burn is back". The boot produced **two, correctly**: the field's own
+> `amount: 2` damage tick and the scorch tick, on the same 20-tick cadence at the same value. **With
+> the defect actually present it would have been THREE.** The row's concept was sound and its
+> discrimination real; only the number was wrong, and it was wrong because the row was written from
+> `ScorchStatus`'s clock without reading `solar_grenade.yml`'s effect list.
+>
+> **The near-miss is the point.** A runner who trusted the row would have reported a fixed build as
+> broken, and the reflex on "the fix did not take" is to reopen the fix — the one part that had been
+> proved by mutation.
+
+
+None of the three is visible to a table that verifies only numbers, and a row can be arithmetically
+perfect and physically incapable of showing what it claims.
 
 #### The enumeration, because "check the preconditions" is not actionable
 
@@ -7895,7 +7936,12 @@ Before a row is handed to a runner, say what it assumes about:
 - **the operator** — armour, held items, enchants, custom stats;
 - **the mode** — creative suppresses damage events entirely, so every damage row passes by not running;
 - **the world** — what else is in it that shares the cause, and whether the subject can be reached at
-  all.
+  all;
+- **the CAST** — **everything else the same cast does.** Read the ability's own content file before
+  writing a row about one of its effects. A `burst` and an `area` in one file apply the same status
+  with *different caps*; an `area` carries its own damage payload on the same interval as the status
+  it applies. **Reading the ability's YAML is part of WRITING the row, not part of running it** — the
+  runner cannot supply a precondition nobody told them exists.
 
 **The two that bit here were both raised BEFORE the boot and neither reached the run list**, which is
 the same defect as *"a checkpoint that lives only in the gate document gets built past"*: a condition

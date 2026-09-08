@@ -5,7 +5,24 @@ for every behaviour listed below, **these rows are the only check that exists an
 project.** The suite passes with any of them deleted — 1360 tests, and not one of them can see a
 number arrive on a screen, a kill get credited, or a burn tick at the rate it claims.
 
-## Status: UNRUN. Drafted 2026-09-07 against `0affab9` plus the refresh fix below.
+## Run 2026-09-08 — 11 of 16, NOTHING BROKEN, and two "failures" were defects in the ROWS
+
+**Run and passed:** S0, S1, S1c, S2, S2c, S3, S4, S4b, S6, S10, S11 — named, eleven.
+
+**Not run:** **S5** (the one real gap — see below), **S8** (unrunnable as written), **S7** and **S12**
+(both need a second account).
+
+**Two rows reported a failure the build did not have.** S1c and S4 were corrected against what the
+content files actually do, **not** by swapping the expectation for whatever the boot produced. Both
+corrections are recorded in the rows with the reasoning, because a row quietly edited to match an
+observation is indistinguishable from a row that was right.
+
+> **THE ROWS WERE WRONG IN THE SAME WAY, AND IT IS A NAMED RULE.** Both were written from
+> `ScorchStatus`'s clock without reading the applier's own YAML. A gate row's preconditions include
+> **everything else the same cast does** — see `NEXT.md`, *A GATE ROW NEEDS ITS PRECONDITIONS
+> ENUMERATED*, where this is now the third witness and supplied the axis the first two did not name.
+
+---
 
 ## READ THIS BEFORE RUNNING: one defect was found and fixed BEFORE the boot
 
@@ -18,10 +35,9 @@ own.** `solar_grenade`'s field would have burned at twice its stated rate for it
 red before the change with burns at `[0, 10, 20, 40, 60, 80, 100, 120, 140]`, green after at
 `[0, 20, 40, 60, 80, 100, 120, 140]`).
 
-**This matters to the gate in a specific way: S1 alone would NOT have caught it.** A single
-application is precisely the case the defect does not touch. **S1c is the row that catches it**, and
-it exists because the defect was found first. That coupling is what this gate is built around — see
-*S1 AND S1c* below.
+**S1 alone would NOT have caught it.** A single application is precisely the case the defect does not
+touch. **S1c is the row that catches it** — see the corrected threshold in its row, which is the
+whole story of this boot.
 
 > The tell was stylistic, and it is worth keeping as a review heuristic: **in a file where every
 > other decision carries a paragraph, the one line with no comment is the one that was not decided.**
@@ -52,49 +68,104 @@ in this slice — `Scorch.stacksFor` is built and tested, but its call site is a
 row that says "hit it with a fire weapon" is unrunnable.** Every row below casts an ability.
 
 The cap is `caster.payloadDamage()` — the authored headline damage of the effect list carrying the
-status. So each applier predicts its own numbers, and **they differ enough that picking the wrong one
-makes a row blind:**
+status. **So ONE `solar_grenade` cast applies scorch TWICE, at two different caps**, which is the
+thing S4's original text missed:
 
-| applier | authored damage, so cap | `duration_ticks` | on a 100-max target | ticks |
+| applier | authored damage, so cap | `duration_ticks` | on a 100-max target | on the 360-max Knell |
 |---|---|---|---|---|
-| `solar_lance` | 12 | 60 | `min(5, 12)` = **5**/tick | 3 |
-| `solar_grenade` burst | 6 | 40 | `min(5, 6)` = **5**/tick | 2 |
-| `solar_grenade` field | **2** | 40, re-applied every 20 ticks for 100 | `min(5, 2)` = **2**/tick | see S1c |
-| `rekindle` | see file | 60 | | 3 |
-| `ember_step` | see file | see file | | |
+| `solar_lance` | 12 | 60 | `min(5, 12)` = **5**/tick | `min(18, 12)` = **12**/tick — **cap binds** |
+| `solar_grenade` burst | 6 | 40 | `min(5, 6)` = **5**/tick | `min(18, 6)` = **6**/tick |
+| `solar_grenade` field | **2** | 40, re-applied every 20 ticks for 100 | `min(5, 2)` = **2**/tick | **2**/tick |
 
-> **THE FIELD'S CAP OF 2 BINDS ON ANYTHING WITH MAX ABOVE 40**, which is the cheap way to witness the
-> cap without a boss. `Scorch`'s javadoc warns that at max 100 the cap is invisible — that is true of
-> the *lance* (cap 12, which never binds there) and **false of the field**. **S4 uses the field for
-> exactly this reason. Running the cap row with the lance on a 100-max target proves nothing.**
+> **WHICH APPLIER WITNESSES THE CAP DEPENDS ON THE TARGET'S MAX, and stating it as a fixed
+> recommendation was a defect in the first draft of this page.** The original text said "use the
+> field, not the lance". That sentence was scoped to a 100-max target and is true there — the lance's
+> cap of 12 never binds against 5% of 100 — **but it sat next to S4b, which is about a HIGH-max
+> target, where it is false.** At 360 the lance binds at 12 and reads far more clearly than the
+> field's flat 2, because you can see the `min` actually choosing between 18 and 12.
+>
+> **The rule, rather than the recommendation:** the cap is witnessed by any applier whose cap is below
+> `5% x the target's max`. Pick the applier from the target, not from this page.
 
-Record before any row: **the target's custom max** and **which ability you cast**. S1, S4 and S5 are
-unreadable without both.
+**Read the applier's own YAML before running a row about it.** `solar_grenade`'s `area` block carries
+`type: damage amount: 2` *alongside* the scorch it applies, on the same 20-tick interval — which is
+what made S1c's original threshold wrong by exactly one.
 
-Target max used this session: **____________**
+Target max used 2026-09-08: **100 (standard mob) and 360 (Knell)**
 
 ---
 
 ## The rows
 
-| # | action | expect | marks | figure |
+| # | action | expect | marks | result |
 |---|---|---|---|---|
-| **S0** | Cast `solar_lance` at a mob. Does it visibly catch fire? | yes | figure · the burn must stay VISIBLE while its damage stops being vanilla's | |
-| **S1** | **THE RATE.** Cast `solar_lance` at a 100-max mob **once** and do not touch it again. Watch the nameplate. | Drains in **discrete steps of 5**, one per second, **three of them**, then stops. Not a smooth drain, not 20 Hz. | **sole witness** for the whole owned clock · discriminating | |
-| **S1c** | **S1's CONTROL, AND THE ROW THE PRE-BOOT FIX WAS MADE FOR.** Stand a mob in `solar_grenade`'s field for its full 100 ticks. **Count the floating damage numbers per second.** | **ONE scorch number per second, of 2.** The field pulses every 20 ticks, in phase with scorch's own clock. | **discriminating — TWO per second means the refresh burn is back** | |
-| **S2** | While a mob burns from S1, watch for the drain **doubling** — our 5/sec plus a rerouted vanilla fire tick. | Single stream. No double-dip. | discriminating · witnesses the `FIRE_TICK` suppression | |
-| **S2c** | **S2's control, because the suppression is NARROW ON PURPOSE.** Scorch a mob, then push it into **real fire or lava**. | It still takes **FIRE and LAVA damage in full** — only `FIRE_TICK` is replaced. | control · a suppression that swallowed all fire would pass S2 and still be wrong | |
-| **S3** | **REQUIREMENT A, WHICH WAS INVERTED BEFORE THIS SLICE.** As the caster, scorch a mob and watch **your own screen** for floating numbers on each burn tick. | **One number per second, on YOUR screen.** | **sole witness** — popups draw only for the dealer, so this is the only in-game proof the applier reaches the sink. Before the slice, credit fell to the VICTIM, `dealerIsPlayer` was false, and **no number appeared at all** | |
-| **S4** | **THE CAP.** Cast `solar_grenade` and let a **100-max** target stand in the **field**. | **2 per tick, not 5.** The field's cap of 2 binds below 5% of 100. | discriminating · **sole witness** in game for the `min` | |
-| **S4b** | **The cap in the direction it was built for.** Same, against a **high-max** target (a boss, or a mob with a large custom max). | Still **2 per tick** — not 5% of the big pool. | **sole witness** for the anti-boss brake; uncapped, 5% of 5000 is 250/sec | |
-| **S5** | **DEFENSE BYPASS.** Scorch an **armoured** target and an unarmoured one of the **same max**, with the same ability. | **Identical per-tick numbers.** Armour delays scorch through stack accrual rather than blunting the burn. | discriminating · sole witness for `bypassesDefense` reaching the sink | |
-| **S6** | **Die while burning** as a player, then respawn. | Not on fire. No drain. | **sole witness** for the respawn `forget` site — quit handling does not run on death, and the entity-removal handler filters players out | |
-| **S7** | Scorch a **player** (second client, or at yourself). | It applies and it ticks. | witnesses the deliberate divergence from Soaked and Immobilize, which both skip players | |
-| **S8** | Cast `solar_lance` at a mob, wait about two seconds, cast again. | The burn **continues past** the original 60-tick window. | binary · the timer refreshes WHOLE | |
-| **S9** | **CONTROL FOR THE NEW SEALED KIND.** Trigger something still authored `kind: fire`. | A plain vanilla burn — **no** floating numbers, no credit, no capped DoT. | control · proves `kind: scorch` did not swallow the kind it was split from | |
-| **S10** | **KILL CREDIT, END TO END.** Let a mob die **purely to the burn** — scorch it, then stand back and do not touch it. | **Drops, XP orbs, and the MOB_KILLS statistic increment for YOU.** | **sole witness** for `MobDeathSystem`'s player-dealer path on a scorch kill | |
-| **S11** | Check the boot log for scorch warnings. | Silent. No unknown status kind, no cap-invariant complaint. | binary | |
-| **S12** | **THE FLAGGED AUDIT — a figure, NOT a pass.** With a second player, stand an **ally** inside `solar_grenade`'s field. | *figure* — record what happens to them. | figure · **deliberately not gated**, see below | |
+| **S0** | Cast `solar_lance` at a mob. Does it visibly catch fire? | yes | figure · the burn must stay VISIBLE while its damage stops being vanilla's | **PASS 2026-09-08** |
+| **S1** | **THE RATE.** Cast `solar_lance` at a 100-max mob **once** and do not touch it again. Watch the nameplate. | Drains in **discrete steps of 5**, one per second, **three of them**, then stops. Not a smooth drain, not 20 Hz. | **sole witness** for the whole owned clock · discriminating | **PASS 2026-09-08 — "5, 5, 5", one per second, three ticks, then stops.** The owned clock witnessed, at exactly the predicted numbers |
+| **S1c** | **S1's CONTROL, AND THE ROW THE PRE-BOOT FIX WAS MADE FOR.** Stand a mob in `solar_grenade`'s field for its full 100 ticks. **Count the floating damage numbers per second.** | **TWO numbers of 2 per second** — the field's own `amount: 2` payload AND the scorch tick, same cadence, same value, **different sources**. | **discriminating — THREE per second means the refresh burn is back** | **PASS 2026-09-08 at two. THE ROW WAS WRONG, NOT THE BUILD:** it said one, having been written from the clock without reading the `area` effect list. Threshold corrected from 1→2 and the defect signal from 2→3. **Concept sound, discrimination real, number off by one** |
+| **S2** | While a mob burns from S1, watch for the drain **doubling** — our 5/sec plus a rerouted vanilla fire tick. | Single stream. No double-dip. | discriminating · witnesses the `FIRE_TICK` suppression | **PASS 2026-09-08** |
+| **S2c** | **S2's control, because the suppression is NARROW ON PURPOSE.** Scorch a mob, then push it into **real fire or lava**. | Still takes **FIRE and LAVA in full** — only `FIRE_TICK` is replaced. | control · a suppression that swallowed all fire would pass S2 and still be wrong | **PASS 2026-09-08** |
+| **S3** | **REQUIREMENT A, WHICH WAS INVERTED BEFORE THIS SLICE.** As the caster, scorch a mob and watch **your own screen** for floating numbers on each burn tick. | **One number per second, on YOUR screen.** | **sole witness** — popups draw only for the dealer. Before the slice, credit fell to the victim and **no number appeared at all** | **PASS 2026-09-08 — the inverted requirement is right way up** |
+| **S4** | **THE CAP, AND THE HANDOVER.** Cast `solar_grenade` at a **100-max** target and watch the whole sequence — burst, then field. | **5, then 2.** The burst applies at cap 6 (`min(5,6)`=5); the field then takes over at cap 2. **The change of number IS the most-recent-applier rule, observed.** | discriminating · **sole witness** in game for the `min` AND for the cap/credit handover | **PASS 2026-09-08 — "both 2 and 5". THE ROW WAS WRONG, NOT THE BUILD:** it expected "2, not 5" and ignored the burst entirely, though one cast applies scorch twice. Rewritten to expect the sequence, which witnesses strictly more than the original |
+| **S4b** | **The cap in the direction it was built for.** A **high-max** target. **Pick an applier whose cap is below 5% of that max** — on the 360-max Knell that is `solar_lance` (cap 12 against 5% = 18). | Each tick held to the **cap**, not to 5% of the big pool. On the Knell: **12/sec**. | **sole witness** for the anti-boss brake; uncapped, 5% of 5000 is 250/sec | **PASS 2026-09-08 — 12/sec on the 360-max Knell**, `min(18, 12)` = 12. The cap binding cleanly. Row rewritten: it had said "use the field", which is right at max 100 and wrong here |
+| **S5** | **DEFENSE BYPASS.** Scorch an **armoured** and an unarmoured target of the **same max**, same ability. | **Identical per-tick numbers.** | discriminating · sole witness for `bypassesDefense` reaching the sink | **UNRUN 2026-09-08 — BOTH FIGURES BLANK. THE ONLY RUNNABLE ROW ON THIS PAGE WITH NOTHING RECORDED.** See below; it is owed before the PR |
+| **S6** | **Die while burning** as a player, then respawn. | Not on fire. No drain. | **sole witness** for the respawn `forget` site | **PASS 2026-09-08** |
+| **S7** | Scorch a **player**. | It applies and it ticks. | witnesses the deliberate divergence from Soaked/Immobilize, which skip players | **UNRUN 2026-09-08 — needs a second account. OWED:** "players can be scorched" is a deliberate divergence and now has **no witness at all** |
+| **S8** | ~~Cast `solar_lance` at a mob, wait ~2s, cast again.~~ **RE-SPECIFIED — see below.** Stand a mob in `solar_grenade`'s field and confirm the burn outlives any single 40-tick application. | The burn **continues past** a single window while the field keeps pulsing. | binary · the timer refreshes WHOLE | **UNRUN 2026-09-08 — THE ROW WAS UNRUNNABLE AS WRITTEN**, and worse than reported: **no applier in shipped content can refresh its own burn by re-casting.** See the table below |
+| **S9** | **CONTROL FOR THE NEW SEALED KIND.** Trigger something still authored `kind: fire`. | Plain vanilla burn — **no** numbers, no credit, no capped DoT. | control · proves `kind: scorch` did not swallow the kind it was split from | *(not named in the run set)* |
+| **S10** | **KILL CREDIT, END TO END.** Let a mob die **purely to the burn** — scorch it, stand back, do not touch it. | **Drops, XP orbs, and the MOB_KILLS statistic increment for YOU.** | **sole witness** for the player-dealer path on a scorch kill | **PASS 2026-09-08** |
+| **S11** | Check the boot log for scorch warnings. | Silent. | binary | **PASS 2026-09-08 — silent** |
+| **S12** | **THE FLAGGED AUDIT — a figure, NOT a pass.** With a second player, stand an **ally** inside the field. | *figure* — record what happens. | figure · **deliberately not gated** | **UNRUN 2026-09-08 — needs a second account. Stays owed as a figure** |
+
+---
+
+## S5 IS THE ONE REAL GAP, AND IT IS OWED BEFORE THE PR
+
+**Every other unrun row is blocked on a second account or on a row defect. S5 is blocked on nothing.**
+It is the only runnable row on this page with no figures against it, and what it witnesses is not
+scorch-local:
+
+`bypassesDefense` is a **new parameter on `applyDamage` → `CombatantStats.damage`**, named for the
+PROPERTY rather than for scorch, because it is the first instance of the standing question *"which
+causes should `Defense` touch?"* — **the same seam drowning's deferred per-cause rule has to use.**
+Scorch is its first consumer, not its owner.
+
+So an unwitnessed bypass is not "one scorch row missing". It is **the seam a future slice will build
+on, with zero in-game evidence that it reaches the sink at all.**
+
+**The procedure:** two targets of the **same max**, one armoured and one not, scorched by the **same
+ability**. Record both per-tick numbers.
+
+- **equal** → the bypass reaches the sink; armour delays scorch through stack accrual and does not
+  blunt the burn
+- **the armoured one lower** → `bypassesDefense` is not arriving, and `Defense` is being applied to a
+  DoT that was ruled out of it
+
+---
+
+## S8 WAS UNRUNNABLE, AND THE REASON IS WORSE THAN A MIS-SIZED WAIT
+
+The row said "wait ~2s, cast again". `solar_lance`'s cooldown is **100 ticks**, not the ~40 the row
+assumed. But the real finding is one level up — **measured across all four appliers:**
+
+| applier | `cooldown_ticks` | scorch `duration_ticks` | can it refresh its own burn? |
+|---|---|---|---|
+| `solar_lance` | 100 | 60 | **no** |
+| `solar_grenade` | 200 | 40 | **no** by re-cast |
+| `rekindle` | 200 | 60 | **no** |
+| `ember_step` | 160 | 60 | **no** |
+
+**NOT ONE APPLIER CAN REFRESH ITS OWN BURN BY RE-CASTING.** Every cooldown outlives every duration, so
+the row had **no runnable single-ability form at all** — it was not mis-sized, it was impossible, and
+rule 4's impossible-row case is exactly what it was.
+
+The only refresh paths that exist today are `solar_grenade`'s field re-applying on its own 20-tick
+interval against its own 40-tick window, two different fire abilities overlapping, or two players.
+**S8 is re-specified against the field.**
+
+> **This is also why the refresh-burn defect was survivable in slice 1, and what ends when accrual
+> lands.** Once a weapon applies stacks on damage, a weapon swinging faster than the burn lasts makes
+> the refresh arm the COMMON path rather than a corner — and S8 becomes trivially runnable in the same
+> change. See `NEXT.md`, *THE ACCRUAL IS DISPLACED, NOT DESCOPED*.
 
 ---
 
@@ -102,24 +173,27 @@ Target max used this session: **____________**
 
 **S1 measures the rate under exactly the condition the refresh defect does not affect.** One
 application, one clock, one number per second — correct both before and after the fix. A gate built
-only on S1 would have booted, read "5 per second, three ticks", and passed a build that doubled its
-own damage the moment anything re-applied.
+only on S1 would have booted, read "5, 5, 5", and passed a build that doubled its own damage the
+moment anything re-applied. **That is precisely what S1 did read on 2026-09-08**, which is the
+cleanest possible demonstration that it is not sufficient on its own.
 
-**S1c is the discriminating half**, and it works because of a coincidence worth writing down: the
-grenade field's `tick_interval` is 20 and scorch's `PERIOD_TICKS` is 20, so **the field's pulses land
-in phase with the burn's own clock.** With the refresh arm burning, each pulse contributes an inline
-tick *and* a scheduled one, on the same tick:
+**S1c is the discriminating half**, and it works on a phase coincidence: the grenade field's
+`tick_interval` is 20 and scorch's `PERIOD_TICKS` is 20, so the field's pulses land in phase with the
+burn's own clock. **What the first draft of this row missed is that the field's `area` effect list
+carries its own `type: damage amount: 2` on that same interval.** So:
 
 ```
-  correct:          ONE number per second, of 2
-  refresh burning:  TWO numbers per second, same tick
+  correct:          TWO numbers per second, of 2   (field payload + scorch tick)
+  refresh burning:  THREE numbers per second       (field payload + scorch tick + inline refresh burn)
 ```
 
-That is a count, not a judgement, which is what makes it a boot row rather than a figure. **Count the
-numbers. Do not eyeball the drain.**
+Still a count, not a judgement — the discrimination survives the correction intact, because the
+defect adds one number either way. **Count the numbers. Do not eyeball the drain.**
 
-> If the two rows disagree — S1 clean, S1c doubled — the refresh arm is the first place to look, and
-> `aRefreshDoesNotDealAnUNSCHEDULEDBurn` is the test that should have been red.
+> **The near-miss is worth keeping.** A runner trusting the original row would have reported a fixed
+> build as broken, and the reflex on "the fix did not take" is to reopen the fix — the one part that
+> had been proved by mutation. **A row that is wrong in the direction of a false alarm attacks the
+> most-verified code on the page.**
 
 ---
 
@@ -135,7 +209,7 @@ player dealer and a non-null dealer id, and draws on the **dealer's** screen onl
 - **numbers appear on the caster's screen** — the applier reached `ScorchSink.deal`
 - **no numbers at all** — credit fell back to the victim, exactly as before the slice
 
-There is no middle reading, which is why S3 is binary rather than a figure.
+There is no middle reading, which is why S3 is binary rather than a figure. **PASS 2026-09-08.**
 
 ---
 
@@ -148,19 +222,24 @@ attributed to a player.
 
 **A friendly-fire rule is a decision nobody has been asked for.** S12 records what happens so the
 decision is taken from an observation rather than from this paragraph. Do not "fix" it during the
-boot.
+boot. **Unrun 2026-09-08 — still owed.**
 
 ---
 
 ## What these rows are witnessing that no test can
 
-- **the rate** — whether the owned 20-tick clock actually paces the burn in game, rather than the
-  invulnerability window pacing it (the D3/D3a failure, which cost a boot and an unusable test world)
-- **the credit** — whether the applier reaches a screen and a kill statistic
-- **the cap** — whether the `min` binds, which at the wrong applier or the wrong max is invisible
-- **the bypass** — whether armour is genuinely out of the burn
+- **the rate** — whether the owned 20-tick clock actually paces the burn in game (**witnessed, S1**)
+- **the credit** — whether the applier reaches a screen and a kill statistic (**witnessed, S3/S10**)
+- **the cap** — whether the `min` binds (**witnessed, S4/S4b**), which at the wrong applier for the
+  target's max is invisible
+- **the handover** — the most-recent-applier rule changing cap and credit mid-burn (**witnessed, S4**)
+- **the bypass** — whether armour is genuinely out of the burn (**NOT witnessed — S5, owed**)
 - **the suppression** — whether the burn stays visible while its damage stops being vanilla's
-- **the double** — whether re-application adds damage outside the clock (S1c, and only S1c)
+  (**witnessed, S2/S2c**)
+- **the double** — whether re-application adds damage outside the clock (**witnessed, S1c, at the
+  corrected threshold**)
+- **players as victims** — the deliberate divergence from Soaked/Immobilize (**NOT witnessed — S7,
+  owed, needs a second account**)
 
 `ScorchStatusTest` proves the scheduler deals eight ticks across exactly 160 ticks against a fake
 clock. It cannot prove that a single one of them arrived.
