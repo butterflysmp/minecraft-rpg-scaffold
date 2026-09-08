@@ -198,6 +198,60 @@ passed when it never ran — this file's own headline defect, one level up.
 The rule underneath all three: **silence is not a result.** An instrument that outputs nothing has
 either found nothing or done nothing, and those are the same picture.
 
+
+### THE THREE WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
+
+All three were hit in one slice (2026-09-08, elements). They are one table because the shape only
+becomes visible together: **each guard catches the previous failure and cannot see the one below it.**
+
+| failure | what happened | what catches it |
+|---|---|---|
+| **didn't apply** | `perl -i` exited 0 and left the file byte-identical | the **marker grep** |
+| **applied, no bite** | the edit landed and the test stayed green — the assertion matched a *duplicate* of the mutated token | **nothing mechanical** — only reading the red you expected and not getting it |
+| **applied, wrong side** | the test passed on an accident (a floating-point coincidence; an undefended victim where `dealt == amount`) rather than on the thing it guards | **nothing at all** — only designing the fixture so the two values differ |
+
+The marker grep proves the **edit landed**. It cannot prove the edit **reached what the assertion
+reads**. So a green run after a confirmed-applied mutation is not a pass — it means the mutation was
+too narrow, and it must be widened and re-run before anything is reported.
+
+**`contains()` is the loosest common assertion form and therefore where a partial mutation hides.**
+A message asserted with `contains("chevron")` survives a mutation that removes one of two
+occurrences of "chevron" — which is exactly what happened here, and the first mutation was reported
+as a failure rather than a verification because of it.
+
+**So, when mutating to test a MESSAGE, do one of these two — and write down which:**
+
+- **Mutate the WHOLE message**, not a clause of it. This is what was done here. It works because it
+  cannot leave a surviving copy of any asserted token anywhere in the string.
+- **Or assert on a token that appears EXACTLY ONCE** in the message, verified with `grep -c`. This
+  works for the mirror-image reason: with one occurrence there is no duplicate for a partial
+  mutation to hide behind, so any mutation touching the asserted fact necessarily removes it.
+
+The first is safer when the message is being rewritten anyway; the second is better for a standing
+assertion you expect to survive future edits, because it keeps the mutation small and local.
+
+### AND THE ARM THAT MOST EARNS ITS KEEP IS THE ONE MOST LIKELY TO BE UNREACHABLE
+
+The predictive form of the unreachable-guard rule above, and worth applying *before* writing a
+guard rather than after.
+
+A validation arm justified as *"this case would otherwise be silent"* is, by construction, guarding
+a case **nobody has produced yet**. That is the same sentence as *"no shipped content reaches it"* —
+so its only exercise is a test, and if that test asserts the arm EXISTS rather than causing the
+condition, the arm is a dead catch with a green suite around it.
+
+Worked example, `ContentValidator.validateElements`: the arm that warns when an element declares a
+status which cannot accrue (`applies_status: rooted` — resolves perfectly, does nothing forever).
+Every bundled element declares `scorch` or nothing, so **production cannot reach that arm at all.**
+
+**So, for any guard whose triggering case does not exist in shipped content:**
+
+- Write the test to **CAUSE the condition** — author the bad content, run the real walk, observe the
+  warning by its text — never to assert the arm is present.
+- **Say so in the arm's own javadoc:** that no bundled content reaches it, and its only exercise is
+  that test. Otherwise the next reader assumes production covers it, which is how a guard stops
+  being maintained while still looking load-bearing.
+
 ## Architecture invariants
 
 ```

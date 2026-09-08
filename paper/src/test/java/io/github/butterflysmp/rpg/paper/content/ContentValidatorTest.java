@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.content;
 
+import net.kyori.adventure.text.Component;
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
@@ -612,5 +613,146 @@ class ContentValidatorTest {
 
         assertTrue(validator(visuals, statusesWith()).validateWeapons(weapons.all()).isEmpty(),
                 "every visual id the staff names must resolve, and its beam must carry no sound");
+    }
+
+    // --- validateElements: an element checked against ITSELF ------------------------------------
+
+    /**
+     * The five real status kinds, registered under their own ids, so a test can name a status that
+     * genuinely exists and genuinely cannot accrue. Deliberately NOT {@code statusesWith(...)}, which
+     * registers everything as {@code Fire} -- an "unaccruable" assertion built on that helper would
+     * be testing the helper's laziness rather than the kind it names.
+     */
+    private static StatusRegistry realStatusKinds() {
+        var registry = new StatusRegistry();
+        registry.register(new StatusDefinition.Scorch("scorch"));
+        registry.register(new StatusDefinition.Immobilize("rooted", false));
+        registry.register(new StatusDefinition.Immobilize("freeze", true));
+        registry.register(new StatusDefinition.Soaked("soaked"));
+        registry.register(new StatusDefinition.Potion("surge", NamespacedKey.minecraft("speed")));
+        return registry;
+    }
+
+    private static ContentValidator elementValidator(ElementRegistry elements) {
+        return new ContentValidator(visualsWith(), realStatusKinds(), elements, ALL_EXIST, ALL_EXIST);
+    }
+
+    /** An element built the way content builds one: a glyph, and optionally a status it accrues. */
+    private static ElementDefinition element(String id, String appliesStatus) {
+        return new ElementDefinition(id, id, Component.text("*"), appliesStatus);
+    }
+
+    private static ElementRegistry registryOf(ElementDefinition... defs) {
+        var registry = new ElementRegistry();
+        for (ElementDefinition d : defs) registry.register(d);
+        return registry;
+    }
+
+    @Test
+    void anElementAccruingARealStackingStatusIsClean() {
+        var elements = registryOf(element("fire", "scorch"), element("kinetic", null));
+
+        var problems = elementValidator(elements).validateElements(elements.all());
+
+        assertTrue(problems.isEmpty(), "shipped shape must be silent: " + problems);
+    }
+
+    @Test
+    void anElementNamingASTATUSTHATDOESNOTEXISTIsReported() {
+        var elements = registryOf(element("fire", "scorh"));
+
+        var problems = elementValidator(elements).validateElements(elements.all());
+
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("fire") && problems.get(0).contains("scorh"),
+                "names both the element and the status it could not find: " + problems.get(0));
+        // Mutation: drop the null check on statuses.find -> a NullPointerException instead of a
+        // named warning, and boot goes from "one line in the log" to a stack trace.
+    }
+
+    @Test
+    void anElementNamingAStatusTHATEXISTSBUTCANNOTACCRUEIsReported() {
+        // THIS ARM IS UNREACHABLE FROM SHIPPED CONTENT, AND THAT IS WHY THIS TEST CAUSES THE
+        // CONDITION RATHER THAN ASSERTING THE ARM EXISTS.
+        //
+        // Every bundled element declares scorch or nothing, so nothing in content/ can produce this.
+        // A guard justified as "this case would otherwise be silent" is, by construction, guarding a
+        // case nobody has produced -- which is the same sentence as "no shipped content reaches it".
+        // One commit earlier, ElementLoader shipped a catch that could never execute under a javadoc
+        // claiming it protected something; this test is the whole difference between that and a live
+        // guard, so it authors the bad element, runs the REAL walk, and reads the warning back by its
+        // text.
+        //
+        // WHY THE ARM IS WORTH HAVING: `applies_status: rooted` resolves perfectly. The file exists,
+        // the id is right, a plain existence check passes -- and then it does nothing, forever,
+        // because rooted has no stack count and no duration of its own. The only symptom would be an
+        // element that never burns anything.
+        var elements = registryOf(element("nature", "rooted"));
+
+        var problems = elementValidator(elements).validateElements(elements.all());
+
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("does not stack"),
+                "the message must say WHY it cannot accrue, not merely that something is wrong: "
+                        + problems.get(0));
+        // Mutation: give the non-Scorch arms an empty body (treat every status as accruable) -> no
+        // problem is reported -> reddens. That mutation is exactly the dead-guard shape, so this row
+        // is the thing standing between this arm and being one.
+    }
+
+    @Test
+    void aSOAKEDElementIsReportedTooSoTheArmIsNotJustAboutROOTED() {
+        // The second kind, because one arm passing proves the switch handles one kind. Soaked is the
+        // pointed case: it is a STACKING status, so "it stacks" is not the rule -- what it lacks is a
+        // duration of its own and any route through the accrual path, which is a property of the
+        // engine rather than of the word. A future slice that teaches accrual to apply soaked should
+        // redden this row deliberately.
+        var elements = registryOf(element("water", "soaked"));
+
+        var problems = elementValidator(elements).validateElements(elements.all());
+
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("water") && problems.get(0).contains("soaked"),
+                problems.get(0));
+    }
+
+    @Test
+    void anElementWithNODamageSymbolIsNamedButStillLoads() {
+        // A GAP, NOT A MISTAKE, and the distinction is operational. saveResource(path, false) never
+        // overwrites, so a data folder predating this slice holds elements with no damage_symbol.
+        // Rejecting them would take working elements off a running server over a cosmetic field, so
+        // the loader keeps them and this names them -- and the message says --refresh-content,
+        // because that is the actual fix and it is not guessable from "declares no damage_symbol".
+        var elements = registryOf(new ElementDefinition("fire", "fire"));
+
+        var problems = elementValidator(elements).validateElements(elements.all());
+
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("damage_symbol"), problems.get(0));
+        assertTrue(problems.get(0).contains("--refresh-content"),
+                "the message names the fix, not just the fault: " + problems.get(0));
+        // Mutation: drop the damageSymbol null check -> no problem -> reddens.
+    }
+
+    @Test
+    void theTwoFAULTSAreReportedINDEPENDENTLYOnTheSameElement() {
+        // An element can be both unmarked and misconfigured, and each must be named. Without this
+        // row, a `continue` placed one line too early would hide the glyph warning behind the status
+        // one -- and the element would look like it had a single problem when it had two.
+        var elements = registryOf(new ElementDefinition("fire", "fire", null, "rooted"));
+
+        var problems = elementValidator(elements).validateElements(elements.all());
+
+        assertEquals(2, problems.size(), "both faults, not the first one found: " + problems);
+        // MEASURED, AND THE OBVIOUS MUTATION LANDS ON A DIFFERENT ROW THAN EXPECTED. Moving the
+        // `if (appliesStatus == null) continue;` above the glyph check does NOT redden this row --
+        // this element declares a status, so it never reaches the continue. It reddens
+        // anElementWithNODamageSymbolIsNamedButStillLoads instead, whose element declares none.
+        // Recorded because a mutation note naming the wrong row is the "applied, wrong side"
+        // failure in comment form: the next reader runs it, sees a red somewhere else, and either
+        // distrusts the suite or credits this row with a guard it does not provide.
+        //
+        // What THIS row actually guards is ordering-independence of the two faults: reverse the two
+        // checks, or `continue` after reporting the glyph, and the count drops to 1 here.
     }
 }

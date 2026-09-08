@@ -290,6 +290,87 @@ public final class ContentValidator {
         return problems;
     }
 
+
+    /**
+     * Every element's own two properties, checked once at boot.
+     *
+     * <p>Warn, never throw, exactly as {@link #checkElement} and the visual_id/status_id checks do: a
+     * dangling accrual costs one element its burn, not the server its boot.
+     *
+     * <h2>THE SECOND ARM IS THE ONE THAT EARNS ITS KEEP, AND IT IS UNREACHABLE FROM SHIPPED CONTENT</h2>
+     *
+     * <b>Stated here on purpose, so the next reader does not assume production covers it.</b> Every
+     * bundled element declares {@code scorch} or nothing, so nothing in {@code content/} can reach
+     * the "cannot accrue" arm. <b>Its only exercise is {@code ContentValidatorTest}</b>, and that test
+     * CAUSES the condition -- it authors an element naming {@code rooted}, runs this walk, and reads
+     * the warning back by its text -- rather than asserting the arm exists.
+     *
+     * <p>That distinction is not pedantry here. One commit before this was written,
+     * {@code ElementLoader} shipped a {@code catch} that could never execute, under a javadoc
+     * claiming it protected something. <b>An arm justified as "this case would otherwise be silent"
+     * is, by construction, guarding a case nobody has produced</b> -- which is the same sentence as
+     * "no shipped content reaches it". The two properties arrive together, so the guard that most
+     * deserves to exist is the one most likely to be dead.
+     *
+     * <p><b>And it is the arm worth having.</b> {@code applies_status: rooted} resolves perfectly
+     * against the status registry: the file exists, the id is right, a plain existence check passes.
+     * It would then do NOTHING, forever -- rooted has no stack count and no duration of its own, so
+     * accrual has nothing to apply -- and the only symptom is a fire-flavoured element that never
+     * burns anything. That is the exact failure this repo keeps recording, one layer up.
+     *
+     * <p>The switch is EXHAUSTIVE over the sealed {@link StatusDefinition} rather than an
+     * {@code instanceof} chain, so adding a status kind is a compile error here. A new kind that
+     * stacks would otherwise land silently in the "cannot accrue" bucket and be reported as an
+     * authoring mistake when it was a missing arm.
+     *
+     * @return every problem found, each naming the element at fault. Empty is good.
+     */
+    public List<String> validateElements(Collection<ElementDefinition> loadedElements) {
+        List<String> problems = new ArrayList<>();
+        for (ElementDefinition element : loadedElements) {
+            String label = "element '" + element.id() + "'";
+
+            // A missing glyph is a gap rather than a mistake: saveResource(path, false) never
+            // overwrites, so a data folder predating this slice holds elements with no damage_symbol
+            // and they must keep working. Named so an operator knows why numbers are unmarked.
+            if (element.damageSymbol() == null) {
+                problems.add(label + " declares no damage_symbol, so its damage numbers will be "
+                        + "drawn unmarked. Add one, or run --refresh-content if this element "
+                        + "predates the field");
+            }
+
+            if (element.appliesStatus() == null) continue;
+
+            StatusDefinition status = statuses.find(element.appliesStatus()).orElse(null);
+            if (status == null) {
+                problems.add(label + " applies status '" + element.appliesStatus()
+                        + "', which no status defines, so its damage accrues nothing");
+                continue;
+            }
+            switch (status) {
+                case StatusDefinition.Scorch ignored -> { }
+                case StatusDefinition.Fire ignored -> problems.add(cannotAccrue(label, element));
+                case StatusDefinition.Potion ignored -> problems.add(cannotAccrue(label, element));
+                case StatusDefinition.Immobilize ignored -> problems.add(cannotAccrue(label, element));
+                case StatusDefinition.Soaked ignored -> problems.add(cannotAccrue(label, element));
+            }
+        }
+        return problems;
+    }
+
+    /**
+     * The message for a status that resolves but cannot be accrued.
+     *
+     * <p>Extracted so every non-scorch arm of the switch above reads as one decision rather than four
+     * copies of a string, and so the switch stays a list of KINDS -- which is what makes a new sealed
+     * subtype an obvious compile error rather than a line to be filled in by pattern-matching the
+     * neighbours.
+     */
+    private static String cannotAccrue(String label, ElementDefinition element) {
+        return label + " applies status '" + element.appliesStatus() + "', which exists but does "
+                + "not stack, so nothing will accrue. Only scorch can be accrued from damage today; "
+                + "a status with no stack count and no duration of its own has nothing to apply";
+    }
     /**
      * Every element named -- a weapon's, an ability's, a damage effect's -- must resolve to
      * a loaded element. Element is inert identity now, so a dangling one is not a crash, it

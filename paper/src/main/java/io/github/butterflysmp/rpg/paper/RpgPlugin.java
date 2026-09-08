@@ -587,6 +587,10 @@ public final class RpgPlugin extends JavaPlugin {
         // ability's can, and is checked the same walk. Naming the file at boot beats a
         // silent no-visual the first time someone swings it.
         problems.addAll(validator.validateWeapons(weapons.all()));
+
+        // An element name resolving is checked per REFERENCE by checkElement; this checks each
+        // element against ITSELF -- the status it accrues and the glyph it marks its numbers with.
+        problems.addAll(validator.validateElements(elements.all()));
         // An enchant's icon is the one content field that fails INVISIBLY: a typo neither throws
         // nor skips the file, and the enchant works perfectly while rendering as the fallback book.
         // Material.matchMaterial is the same resolver WeaponItems uses, so the check and the render
