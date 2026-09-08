@@ -8092,6 +8092,61 @@ will find it. Not in a gate table, which would imply a check that cannot exist.
 
 **M5 needs a row. M6 needs a sentence. Filing them together, as `5c2fb0b` did, hides both facts.**
 
+### A CLAIM THAT CANNOT BE WITNESSED SHOULD BE MADE IMPOSSIBLE TO GET WRONG, NOT LEFT TO A ROW THAT WILL NEVER BE TICKED
+
+**This is the rule above arriving from the other side, and the difference is the whole entry.** There,
+unexpressibility was the **better** of two available options — a test could have been written, and the
+signature was stronger. Here it is the **only** option, because the witness is not expensive or
+awkward: it is **unreachable**.
+
+> **`bypassesDefense`'s paper wiring, 2026-09-08.** `GATE-scorch-slice-1.md`'s `S5` was written to
+> witness it and **can never be run.** Defense is player-only — `reconcileDefenseModifiers` has one
+> production caller, `PlayerHealthSystem`, on a scan of WORN GEAR, and `MobDefinition` is
+> `(id, baseEntity, displayName, maxHealth)` with **no defense field**, so a test mob with armour is a
+> FEATURE, not a content file. That makes the row need a second player, and nothing but another player
+> can scorch a player (`/rpg apply` filters `!(living instanceof Player)`). **There is no second
+> account.** Not deferred. Unreachable.
+
+**THE GAP WAS ONE HOP, NOT THE WHOLE CLAIM, AND SIZING IT IS WHAT MADE THE FIX CHEAP.** The arithmetic
+already had witnesses — `CombatantStatsTest.bypassesDefenseSkipsTheCurveENTIRELYRatherThanReducingItsCut`
+proves the curve is skipped, and `FakeWorld` records the flag arriving at the sink. **What had no
+witness was one line of paper wiring passing the right value:**
+
+```java
+handle().applyDamage(amount, applierId, false, true);   // transposed, this still compiles
+```
+
+Transposed it means *"this was a crit, and Defense applies"* — a percent-of-max burn quietly trimmed by
+armour, which is the one property the shape was chosen for.
+
+**NAMED CONSTANTS DO NOT SOLVE THIS, AND THE FIRST PROPOSAL WAS FOR NAMED CONSTANTS.**
+`applyDamage(amount, id, NOT_A_CRIT, BYPASSES_DEFENSE)` reads better and **compiles exactly as happily
+when the two are swapped**, because both are still `boolean`. Legibility is not the property being
+bought. **Only a distinct TYPE turns the transposition into a compile error**, which is why the fix is
+`CritState` and `DefenseRule` rather than two `static final boolean`s.
+
+**AND THE HAZARD WAS ADJACENCY, NOT BOOLEANS.** One layer down, `CombatantStats.damage` carried
+`boolean dealerIsPlayer, boolean wasCrit, boolean bypassesDefense` — **three adjacent booleans, six
+orderings, five wrong, all six compiling**, with `BukkitCombatant` passing all three positionally.
+Typing only the parameter that prompted the review would have left the other pair transposable. Two
+were lifted to types; `dealerIsPlayer` stays a `boolean` **on purpose**, because it is now the only one
+left and a lone boolean has nothing to be swapped with.
+
+**VERIFIED THE WAY A MUTATION IS, because "it now type-checks" is a claim like any other:** the
+arguments at `EntityScorchSink` were transposed and the build was run. It failed with
+`incompatible types: DefenseRule cannot be converted to CritState`. Restored, `md5sum`-checked against
+the pre-mutation copy, and `./mvnw clean package` re-run green.
+
+> **The incremental `test-compile` reported `BUILD SUCCESS` on a tree that could not compile.** Stale
+> outputs, and the four real errors only appeared under `clean`. That is this file's oldest lesson
+> arriving in a new costume — **use `clean` before believing a compile result**, exactly as a mutation
+> is not believed until the marker is grepped.
+
+**How to apply:** when a gate row is found to be unreachable rather than merely unrun, **do not record
+it as owed.** Ask what the row uniquely covered, size that to the smallest hop, and make that hop
+unrepresentable. Then record honestly what IS covered and what is not, so nobody reads "unrun" as
+"untested" — or, worse, reads a permanently-blocked row as work in progress.
+
 ### A MUTATION THAT CANNOT BE EXPRESSED IS A PROPERTY THE TYPE ENFORCES, NOT A TEST THAT IS MISSING
 
 **And the failure mode of recording it as a gap is specific, plausible and bad: someone WIDENS THE

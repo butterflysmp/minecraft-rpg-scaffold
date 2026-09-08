@@ -1,5 +1,7 @@
 package io.github.butterflysmp.rpg.core.combat.stat;
 
+import io.github.butterflysmp.rpg.core.combat.CritState;
+import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.combat.HealthRegen;
 import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
 import org.junit.jupiter.api.Test;
@@ -448,7 +450,7 @@ class CombatantStatsTest {
         stats.reconcileDefenseModifiers(victim, fullDiamond());
         assertEquals(20.0, stats.defenseValue(victim), EPS, "the same 20 points as the row above");
 
-        stats.damage(victim, 30, null, false, false, true);
+        stats.damage(victim, 30, null, false, CritState.NORMAL, DefenseRule.BYPASSED);
 
         assertEquals(70.0, stats.current(victim), EPS,
                 "bypassing, the full 30 lands -- not the 25 the curve would have allowed. TOTAL, not "
@@ -472,7 +474,7 @@ class CombatantStatsTest {
         stats.damage(victim, 30, null, false);          // 4-arg
         assertEquals(75.0, stats.current(victim), EPS, "the 4-arg form still mitigates");
 
-        stats.damage(victim, 30, null, false, false);   // 5-arg
+        stats.damage(victim, 30, null, false, CritState.NORMAL);   // 5-arg
         assertEquals(50.0, stats.current(victim), EPS, "and so does the 5-arg crit form");
         // Mutation: change either delegation to pass `true` -> 70 and 40 -> reddens on both.
     }

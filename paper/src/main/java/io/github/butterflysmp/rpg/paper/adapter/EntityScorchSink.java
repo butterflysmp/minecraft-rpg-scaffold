@@ -1,5 +1,8 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
+import io.github.butterflysmp.rpg.core.combat.CritState;
+import io.github.butterflysmp.rpg.core.combat.DefenseRule;
+
 import org.bukkit.entity.LivingEntity;
 
 import java.util.UUID;
@@ -45,6 +48,7 @@ public final class EntityScorchSink implements ScorchSink {
 
     @Override public void deal(double amount, UUID applierId) {
         if (amount <= 0) return;
-        BukkitCombatant.of(entity, ctx).handle().applyDamage(amount, applierId, false, true);
+        BukkitCombatant.of(entity, ctx).handle()
+                .applyDamage(amount, applierId, CritState.NORMAL, DefenseRule.BYPASSED);
     }
 }

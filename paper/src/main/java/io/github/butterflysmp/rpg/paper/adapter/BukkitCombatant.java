@@ -4,6 +4,8 @@ import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
 import io.github.butterflysmp.rpg.core.combat.Crit;
+import io.github.butterflysmp.rpg.core.combat.CritState;
+import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.Scorch;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
@@ -163,16 +165,16 @@ public final class BukkitCombatant {
          * <p>The amount arrives already multiplied by the elemental matrix; EffectApplier did that
          * against the snapshot's shield. All this port carries is a number and a culprit.
          */
-        @Override public void applyDamage(double amount, UUID sourceId, boolean wasCrit,
-                                          boolean bypassesDefense) {
+        @Override public void applyDamage(double amount, UUID sourceId, CritState crit,
+                                          DefenseRule defense) {
             ctx.scheduler().onEntity(entity, () -> {
                 // Drain custom HP + fire the seam. dealerIsPlayer reuses the source's faction bit;
                 // the nameplate ignores the dealer this phase, the popup (1b) will need it.
                 Entity source = Attribution.attributableSource(
                         sourceId, entity.getWorld()::getEntity, Bukkit::isOwnedByCurrentRegion);
                 boolean dealerIsPlayer = source instanceof Player;
-                ctx.stats().damage(entity.getUniqueId(), amount, sourceId, dealerIsPlayer, wasCrit,
-                        bypassesDefense);
+                ctx.stats().damage(entity.getUniqueId(), amount, sourceId, dealerIsPlayer, crit,
+                        defense);
 
                 // Aggro-on-hit: the target turns on its attacker -- vanilla's expected default.
                 // Ability damage flashes without a vanilla hit, so it would otherwise provoke

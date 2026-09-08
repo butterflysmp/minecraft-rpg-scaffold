@@ -5,13 +5,13 @@ because, for every behaviour listed below, **these rows are the only check that 
 the project.** The suite passes with any of them deleted — 1294 tests, and not one of them can see
 a colour, a spacing, or a delay.
 
-## Run 2026-09-05 — 12 of 14, and neither missing row is a pass
+## Run 2026-09-05 — 12 of 14, and the two missing rows are BLOCKED INDEFINITELY, not owed
 
 **Run:** L0, L1, L2, L3, L5, L6, L7, L8, L9, L10, L11, L12 — named, twelve.
 **Unrun:** **L4 and L4c**, both for want of a second player. Not skipped as unimportant: they are
 the **only** test of decision A's prediction, and that prediction is the reason the ray still walks
-a chunk column per tick rather than being hitscan. **They stay owed**, with a procedure that needs
-no second person, written under the rows below.
+a chunk column per tick rather than being hitscan. **They are BLOCKED INDEFINITELY, not owed** -- there is no second account, and
+the procedure below needs one. See the blocked note under the rows.
 
 L0 and L5 read as accepted judgements rather than clean passes, and the operator's words are kept
 verbatim in the rows. **L10's second half turned out never to have been a test**, and it surfaced a
@@ -71,8 +71,8 @@ costs one more shot and turns a single-machine judgement into two points.
 | **L1** | What colour is the beam? | lapis blue | figure · the only check that the authored DustOptions reached the client | **"lapis blue".** The authored `Color.fromRGB(40, 90, 240)` reached the client |
 | **L2** | Fire a full-range shot across open ground. Density: too sparse / right / too busy? | *figure* | figure · **judge with L0, see the coupling below** | **"right" — on BOTH All and Decreased.** No tuning. 4 per block stands |
 | **L3** | How thick is the beam? (authored size 1.2 against vanilla's 1.0) | *figure* | figure | **"right".** Size 1.2 stands |
-| **L4** | **A SECOND PLAYER** stands perpendicular to a 26-block shot fired past them. Is the beam already whole when they first see it, or can they watch it grow? | whole | figure · **the only test of decision A's prediction** | **UNRUN 2026-09-05 — no second player available.** Decision A's justification remains a PREDICTION. Procedure that needs no second person is below |
-| **L4c** | **L4's control.** Same shot fired **diagonally** (most chunk-plane crossings, so most ticks) as well as **down an axis** (fewest). Both figures. | *figure, both* | control | **UNRUN 2026-09-05**, with L4 |
+| **L4** | **A SECOND PLAYER** stands perpendicular to a 26-block shot fired past them. Is the beam already whole when they first see it, or can they watch it grow? | whole | figure · **the only test of decision A's prediction** | **BLOCKED INDEFINITELY (recorded 2026-09-08; unrun since 2026-09-05).** There is no second account, so this row has no runnable form -- see the blocked-indefinitely note below. **Decision A's justification remains a PREDICTION**, and will until an account exists |
+| **L4c** | **L4's control.** Same shot fired **diagonally** (most chunk-plane crossings, so most ticks) as well as **down an axis** (fewest). Both figures. | *figure, both* | control | **BLOCKED INDEFINITELY**, with L4 -- and it is a SEPARATE verdict, easy to lose when L4 is counted alone |
 | **L5** | Caster-side: does the shot feel instant? | yes | figure | **NOT "yes" — a softer pass than the row expected. Operator, verbatim: *"close enough, no need to change."*** Accepted; nothing to change, and nothing here speaks for the observer L4 tests |
 | **L6** | Fire at a wall 5 blocks away, on a 26-block range. | Beam **stops at the wall face**. Does not continue into or through the rock. | discriminating | **PASS 2026-09-05** |
 | **L7** | Fire at a mob 10 blocks away, on a 26-block range. | Beam ends **at the mob**. Does not carry 16 more blocks past it. | discriminating · **sole witness** in game for the draw-to-hit-point rule | **PASS 2026-09-05** |
@@ -86,29 +86,33 @@ costs one more shot and turns a single-machine judgement into two points.
 ---
 
 
-## THE SECOND-CLIENT SITTING — four owed rows across two slices, one procedure
+## L4 AND L4c ARE BLOCKED INDEFINITELY, NOT OWED — there is no second account
 
-**`L4` and `L4c` share their blocker with `GATE-scorch-slice-1.md`'s `S5`, `S7` and `S12`: all of them
-need a second account, and none of them needs anything else.** The procedure written below for L4 is
-the same one that discharges the scorch rows, so **run them in one sitting** rather than standing a
-second client up twice.
+**Corrected 2026-09-08.** An earlier version of this section proposed running these alongside scorch
+slice 1's second-client rows "in one sitting". **That sitting cannot be scheduled: there is no second
+account, and the procedure below needs one.** Two clients on one machine still means two accounts.
 
-**NAME ALL FIVE ROWS BEFORE STARTING, because L4c is easy to drop.** It is L4's control — the same
-shot fired diagonally *and* down an axis — and it is a separate row with a separate verdict, so "four
-rows" is the count of ITEMS and five is the count of VERDICTS:
+**"Owed" was the wrong record**, and the reason it matters is that owed reads as *work in progress* —
+a row someone will get to. These will not be got to. They are **blocked on a resource that does not
+exist**, and the honest entry says so, so nobody re-plans a sitting around them a third time.
 
-| row | gate | what it needs from the second client |
-|---|---|---|
-| `L4` | this file | they OBSERVE a 26-block shot fired past them |
-| `L4c` | this file | the same, fired diagonally and down an axis — **L4's control** |
-| `S5` | scorch slice 1 | they are the TARGET, naked then in full diamond + Protection III |
-| `S7` | scorch slice 1 | they are the target at all — discharged by S5's naked run |
-| `S12` | scorch slice 1 | they stand in `solar_grenade`'s field as an ALLY (figure, not pass/fail) |
+**What is therefore NOT witnessed, stated plainly rather than left as a blank cell:** decision A's
+prediction — *a beam drawn as the ray walks is indistinguishable from an instant one FOR AN OBSERVER
+WHO IS NOT THE CASTER* — is the justification for the chunk-column traversal over hitscan, and it
+**remains a prediction**. `L5` tested the caster and read "close enough". Nothing tests the observer,
+and nothing will until an account exists.
 
-**`S5` is the one with a core seam behind it** — `bypassesDefense` is the parameter drowning's
-deferred per-cause rule will build on, and it currently has no in-game witness at all.
+> **Do not delete these rows.** A blocked row that states its blocker is a live record; a deleted one
+> silently becomes an untested claim nobody remembers making. The same applies to
+> `GATE-scorch-slice-1.md`'s `S7` and `S12`, blocked identically.
 
-## L4 / L4c ARE UNRUN, AND HERE IS HOW TO CLOSE THEM WITHOUT ANOTHER PERSON
+**If a second account ever exists**, these two and scorch's `S5`, `S7` and `S12` share the blocker and
+should run together — **five verdicts, one setup**. The procedure for L4/L4c is below; S5's is in the
+scorch gate. Until then this paragraph is a contingency, not a plan.
+
+## THE PROCEDURE, FOR THE DAY A SECOND ACCOUNT EXISTS
+
+**It needs a second ACCOUNT, which is the blocker above — not merely a second machine.**
 
 **They are not skipped. Skipping a sole witness is not reduced confidence; it is zero** — and what
 is at zero here is decision A's whole justification: *a beam drawn as the ray walks is

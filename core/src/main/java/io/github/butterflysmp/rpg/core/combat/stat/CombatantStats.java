@@ -1,7 +1,9 @@
 package io.github.butterflysmp.rpg.core.combat.stat;
 
 import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
+import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.Defense;
+import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 
 import java.util.Map;
 import java.util.UUID;
@@ -209,7 +211,7 @@ public final class CombatantStats {
      * dealer's identity -- the seam the popup hooks next phase.
      */
     public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer) {
-        damage(id, amount, dealer, dealerIsPlayer, false);
+        damage(id, amount, dealer, dealerIsPlayer, CritState.NORMAL);
     }
 
     /**
@@ -218,8 +220,8 @@ public final class CombatantStats {
      * {@code EffectApplier}, so multiplying here as well would double it. This carries a fact for the
      * displays, not a factor for the maths.
      */
-    public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, boolean wasCrit) {
-        damage(id, amount, dealer, dealerIsPlayer, wasCrit, false);
+    public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit) {
+        damage(id, amount, dealer, dealerIsPlayer, crit, DefenseRule.APPLIES);
     }
 
     /**
@@ -236,15 +238,23 @@ public final class CombatantStats {
      * longer percent-of-max damage -- it is ordinary damage wearing a percentage, which defeats the
      * one thing the shape was chosen for. Armour still reaches scorch, through stack ACCRUAL: fewer
      * points landed is fewer stacks, so armour delays the burn rather than blunting it.
+     *
+     * <p><b>{@code crit} and {@code defense} are TYPES, and {@code dealerIsPlayer} is deliberately
+     * still a boolean.</b> These three sat adjacent as {@code boolean dealerIsPlayer, boolean wasCrit,
+     * boolean bypassesDefense} -- six orderings, five wrong, all six compiling, and
+     * {@code BukkitCombatant} passes all three positionally. Lifting two of them out leaves one lone
+     * boolean, which has nothing to be transposed with. See {@link DefenseRule}.
      */
-    public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, boolean wasCrit,
-                       boolean bypassesDefense) {
+    public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit,
+                       DefenseRule defense) {
         HealthState state = states.get(id);
         if (state == null) return;
-        double dealt = bypassesDefense ? amount : Defense.applyDefense(amount, state.defenseValue());
+        double dealt = defense == DefenseRule.BYPASSED
+                ? amount
+                : Defense.applyDefense(amount, state.defenseValue());
         boolean reachedZero = state.damage(dealt);
         listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.DAMAGE, dealt,
-                dealer, dealerIsPlayer, state.current(), state.max(), reachedZero, wasCrit));
+                dealer, dealerIsPlayer, state.current(), state.max(), reachedZero, crit.isCrit()));
     }
 
     /**

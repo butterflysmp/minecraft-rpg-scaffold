@@ -3,6 +3,8 @@ package io.github.butterflysmp.rpg.core;
 import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
 import io.github.butterflysmp.rpg.core.combat.Caster;
 import io.github.butterflysmp.rpg.core.combat.Crit;
+import io.github.butterflysmp.rpg.core.combat.CritState;
+import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.combat.ChunkTraversal;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
@@ -486,12 +488,12 @@ public final class FakeWorld implements CombatWorld {
         }
 
         @Override public UUID id() { return id; }
-        @Override public void applyDamage(double amount, UUID sourceId, boolean wasCrit,
-                                          boolean bypassesDefense) {
+        @Override public void applyDamage(double amount, UUID sourceId, CritState crit,
+                                          DefenseRule defense) {
             health -= amount;
             lastDamageSource = sourceId;
-            lastDamageWasCrit = wasCrit;
-            lastDamageBypassedDefense = bypassesDefense;
+            lastDamageWasCrit = crit.isCrit();
+            lastDamageBypassedDefense = defense == DefenseRule.BYPASSED;
             damageCalls++;
         }
         @Override public void applyHeal(double a) { health += a; }

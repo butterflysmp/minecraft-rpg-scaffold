@@ -36,17 +36,17 @@ public interface CombatantHandle {
      *                 deals the damage unattributed rather than lying about it.
      */
     default void applyDamage(double amount, UUID sourceId) {
-        applyDamage(amount, sourceId, false);
+        applyDamage(amount, sourceId, CritState.NORMAL);
     }
 
     /**
      * As above, stating whether the hit was a CRIT.
      *
-     * @param wasCrit for display only -- the crit multiplier is already inside {@code amount}.
-     *                Applying it again here would square the crit.
+     * @param crit for display only -- the crit multiplier is already inside {@code amount}.
+     *             Applying it again here would square the crit.
      */
-    default void applyDamage(double amount, UUID sourceId, boolean wasCrit) {
-        applyDamage(amount, sourceId, wasCrit, false);
+    default void applyDamage(double amount, UUID sourceId, CritState crit) {
+        applyDamage(amount, sourceId, crit, DefenseRule.APPLIES);
     }
 
     /**
@@ -71,11 +71,18 @@ public interface CombatantHandle {
      * needs the operator, per cause. This parameter makes that conversation implementable; it does not
      * pre-answer it.
      *
-     * @param bypassesDefense when true the amount lands whole. Percent-of-max damage is the shape this
-     *                        exists for: cutting a 5%-of-max burn with armour makes it ordinary damage
-     *                        with extra arithmetic rather than the anti-tank tool it was specified as.
+     * <p><b>BOTH TRAILING PARAMETERS ARE TYPES RATHER THAN BOOLEANS, AND THAT IS LOAD-BEARING.</b>
+     * They were {@code boolean wasCrit, boolean bypassesDefense} -- two bare positional flags that
+     * compile in either order and mean opposite things swapped. The single call site passing both
+     * explicitly ({@code EntityScorchSink}) is in {@code paper/}, reachable only through a real Bukkit
+     * entity, and the gate row written to witness it is UNREACHABLE: see {@link DefenseRule}'s javadoc
+     * for why, and for why named constants would not have helped.
+     *
+     * @param defense {@link DefenseRule#BYPASSED} makes the amount land whole. Percent-of-max damage is
+     *                the shape this exists for: cutting a 5%-of-max burn with armour makes it ordinary
+     *                damage with extra arithmetic rather than the anti-tank tool it was specified as.
      */
-    void applyDamage(double amount, UUID sourceId, boolean wasCrit, boolean bypassesDefense);
+    void applyDamage(double amount, UUID sourceId, CritState crit, DefenseRule defense);
 
     /**
      * Raise the target's health by {@code amount}, capped at its max by the implementation.
