@@ -2294,6 +2294,62 @@ readers most reliably take on trust — this file records the reader's side of t
 > section, under *"break the thing and watch it fail"* — because the only thing that catches an
 > unreachable guard is mutation discipline pointed at the GUARD rather than at the code.
 
+
+#### THE MUTATION-NOTE ESTATE, SAMPLED 2026-09-08 — CLEAN, AND THE ONE BAD NOTE WAS FRESHLY WRITTEN
+
+**779 mutation notes across 106 files.** A note claiming *"mutation X reddens row Y"* is a claim about
+a mechanism the reader cannot see from where the claim sits — the same shape as *"this rule is
+enforced in file Z"*. Notes written from **intention** and notes written from **execution** read
+identically, and both survive refactors that invalidate them. A wrong one is worse than none: the
+reader runs it, sees red somewhere else, and either distrusts the suite or credits a row with a guard
+it does not have.
+
+**Sampled where being wrong costs most** — the rows that claim to be the SOLE catcher of something,
+since by their own text a false note there means a defect ships unnoticed. That stratum is **7 rows**;
+5 predate this slice. **All 5 were executed against the full suite.**
+
+| row | claim | measured |
+|---|---|---|
+| `AbilityServiceTest.aLockedCastConsumesNoCooldownOrMana` | *"the only test that fails on that reorder"* | **exact** — 1/811, mana 100→60 |
+| `HealthRegenTest` negative-period row | *"the only thing that makes the periodTicks guard load-bearing"* | **exact** — 1/811, heals −0.25 |
+| `EnchantMenuLayoutTest.theFixtureSlots…` | *"reddens HERE and nowhere else in the suite"* | **exact** — 1/553 |
+| `HitDamageTest.eachSummandCanBeAbsent…` | gear-only rows redden, *"as does EffectApplierTest's 92 pin"* | **holds**, understated — 16 rows, both named ones among them |
+| `StatsBarTextTest.theDefenseFieldSits…` | *"only an assertion catches it"* | **holds**, understated — 3 assertions |
+
+**Hit rate: 0 false out of 5.** Two understated the blast radius; none misdirected. **The habit on this
+repo is sound**, and that is the useful result — a clean sample is a real finding, not a null one.
+
+**The one false note found was written in this slice, from reasoning, and caught by executing it**
+(`ContentValidatorTest.theTwoFAULTS…` named a row that does not redden). So the failure mode is
+live-authoring, not inherited debt. **Do not re-run the other 774.** Execute the note you are writing.
+
+> There is no `SOLE WITNESS` label in this tree — the stratum above was found by phrasing
+> (*"only test"*, *"only thing that"*, *"nowhere else"*). If that class of row is worth finding again,
+> it needs a real label to grep for.
+
+#### DECIDED: ACCRUAL SKIPS A HIT THAT TOOK THE TARGET TO ZERO
+
+Accrual runs after `CombatantStats.damage` returns, so a LETHAL fire hit would accrue stacks on a
+combatant whose death was already processed. **Measured, not assumed:** `CombatantStats.damage` calls
+`listener.onChange(...)` *before* returning, and `MobDeathSystem.onChange` calls `mob.setHealth(0)`
+**synchronously**, which fires `EntityDeathEvent` → `EntityRemoveFromWorldEvent` → `onMobRemove`,
+which clears the custom HP store **and calls `scorch().forget(id)`**.
+
+**So accrual would register a `RepeatingTask` AFTER the cleanup meant to cancel it** — an ordering
+inversion, not a race. It is survivable rather than harmless: the burn deals nothing
+(`victimMaxHealth()` is 0 on an untracked id, so `damagePerTick` is 0 and the sink early-returns), but
+a map entry and a 160-tick task per lethal fire kill outlive the mob, and nothing will cancel them.
+
+**And it matters semantically for Ignite**, which is DEATH-GATED — *"a target ignites only when killed
+by a Scorched attack"*. If the killing blow itself accrued, the stack count at death would depend on
+whether the fatal hit's own stacks counted. Skipping makes that unambiguous before the question is
+asked.
+
+So: **a hit that brings custom health to zero accrues nothing.** `CombatantStats.damage` must report
+that alongside the mitigated figure, rather than accrual inferring it from `tracks(id)` having gone
+false — which would be reading cleanup ordering as a signal, and would silently invert if the removal
+listener ever moved.
+
 #### THE ACCRUAL IS DISPLACED, NOT DESCOPED — and slice 2 blocks on it
 
 **Recorded 2026-09-08, before slice 2 is planned, because a deferred item with no slice is how a
