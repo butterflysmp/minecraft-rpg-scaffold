@@ -171,6 +171,12 @@ at — that is the whole point of choosing 56 over 20, and of raising the max at
 > adds **9 per piece**. 56 is the ceiling in shipped content, and a row specifying 100 would be
 > unrunnable in the same way S8 was.
 
+> **ONE SITTING CLOSES THESE AND TWO OLDER ROWS.** `GATE-lapis-staff.md`'s `L4` and `L4c` have been
+> owed since the Lapis slice on the **same blocker**, and that file already documents the procedure
+> (a second client on the same machine, under a second account). Running S5/S7/S12 alongside L4/L4c
+> is **five verdicts across two slices against one setup** — see *THE SECOND-CLIENT SITTING* there.
+> **Name all five before starting; `L4c` is a separate verdict and is the easy one to drop.**
+
 **S5 and S7 share their blocker and should be run in the same sitting** — scorching a second player at
 all *is* S7's witness, so the naked run discharges both.
 

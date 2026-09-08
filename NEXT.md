@@ -7964,6 +7964,34 @@ row is about.
 None of the three is visible to a table that verifies only numbers, and a row can be arithmetically
 perfect and physically incapable of showing what it claims.
 
+#### READ THE CONTENT FILE, NOT THE CLASS — and this is the actionable form of half the list below
+
+> **A ROW'S CONDITIONS MUST COME FROM WHAT CONTENT CAN PRODUCE, NOT FROM WHAT THE MECHANISM PERMITS.**
+
+**Three unreachable numbers have now been specified, all by the same route** — reading the mechanism,
+which is uncapped, instead of the content, which is not:
+
+| the row asked for | the mechanism permits it | content's actual ceiling |
+|---|---|---|
+| `S8` — "wait ~2s, cast again" | any interval | `solar_lance` is `cooldown_ticks: 100` against `duration_ticks: 60` — **the burn expires 40 ticks before the ability returns**, and NO shipped applier's cooldown is shorter than its own duration |
+| `S4b` — "use the field, not the lance" | any applier | true at max 100, **false at 360**, where the lance's cap of 12 binds against 5% = 18 and reads more clearly |
+| `S5` — "a large defense value, say 100" | `Defense.applyDefense` takes any double; `SCALE = 100` halves it exactly | full diamond is **20** points and Protection III adds **9 per piece**, so **56** is the ceiling. Defense 100 does not exist |
+
+**Each was arithmetically correct and physically unavailable**, and each cost a boot row. `Defense`'s
+javadoc even works `100 -> 0.5` as its example, which is what made 100 feel like the natural figure:
+**the class documents the curve, and the curve is not the constraint. The armor files are.**
+
+**This explains three of the six axes below rather than adding a seventh**, and it is the cheaper
+instruction because it names a file to open:
+
+- **the subject** — answered by the mob's yml (`knell.yml` sets no defense, and no mob yml can)
+- **the CAST** — answered by the ability's yml (what else is in the effect list, and on what interval)
+- **the SEPARATION** — answered by the content ceilings (how far apart the two hypotheses can be MADE
+  to sit, which is a fact about authored numbers, not about the formula)
+
+**So: before writing a row, open the yml. The Java tells you what is expressible; only the content
+tells you what is reachable.**
+
 #### The enumeration, because "check the preconditions" is not actionable
 
 Before a row is handed to a runner, say what it assumes about:
@@ -7991,6 +8019,42 @@ Before a row is handed to a runner, say what it assumes about:
 the same defect as *"a checkpoint that lives only in the gate document gets built past"*: a condition
 stated somewhere the runner is not reading is not a condition the runner can meet. **Preconditions
 belong IN the row, as text the runner must satisfy — not in the prose beneath the table.**
+
+### LEGIBILITY OPTIMISED AHEAD OF FALSIFIABILITY MAKES AN UNFALSIFIABLE ROW MORE CONVINCING
+
+**A distinct failure from the preconditions rule above, and it is recorded separately because the
+remedy is different: that one says enumerate the conditions, this one says CHECK THE GAP EXISTS BEFORE
+WIDENING IT.**
+
+> **Widening a gap is only meaningful once the gap can exist.**
+
+**The worked example, 2026-09-08, and both moves were mine and the operator's in sequence.** `S5` was
+sent to be run twice. On the second pass the advice was about **readability** — the numbers are too
+close, at 20 max the tick is 1 and armour makes it 0.8, so raise the max and the defense until the two
+readings are obviously different. **Correct advice. Applied to a row that could not fail.**
+
+Defense is player-only (`reconcileDefenseModifiers` has one production caller, `PlayerHealthSystem:264`,
+on `worn.defense()`; every other caller is a test). Run on two mobs, S5 is **defense 0 against defense
+0** — `applyDefense` returns both unchanged, and the row passes whether or not `bypassesDefense` reaches
+the sink.
+
+**So the separation work was improving the resolution of a measurement of nothing.** And it made the
+row *more* convincing: a row quoting "12 against 7.7, executed" reads far more rigorous than one
+saying "one armoured and one not", while being exactly as blind. **The polish is the hazard.** An
+obviously-vague row invites the question *"what would this actually show?"*; a precise one answers a
+question nobody then asks.
+
+**THE ORDER, and it is the whole rule:**
+
+1. **Can this row FAIL?** Name the state of the world that reddens it, and confirm that state is
+   reachable. For S5: *a target whose `defenseValue` is non-zero* — which requires a player, which
+   requires a second account.
+2. **THEN make the failure legible.** Choose magnitudes so the two outcomes are far apart, per the
+   SEPARATION axis above.
+
+Doing 2 before 1 is how a non-discriminating row acquires the appearance of rigour. **Rule 4 already
+says a row can be real but non-discriminating; this is the mechanism by which such a row gets
+HARDER to spot rather than easier.**
 
 ### A GATE ROW NAMED AS A MUTATION'S SUBSTITUTE NEEDS ITS DISCRIMINATION CHECKED LIKE ANY OTHER ROW
 

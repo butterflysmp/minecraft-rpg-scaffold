@@ -85,6 +85,29 @@ costs one more shot and turns a single-machine judgement into two points.
 
 ---
 
+
+## THE SECOND-CLIENT SITTING — four owed rows across two slices, one procedure
+
+**`L4` and `L4c` share their blocker with `GATE-scorch-slice-1.md`'s `S5`, `S7` and `S12`: all of them
+need a second account, and none of them needs anything else.** The procedure written below for L4 is
+the same one that discharges the scorch rows, so **run them in one sitting** rather than standing a
+second client up twice.
+
+**NAME ALL FIVE ROWS BEFORE STARTING, because L4c is easy to drop.** It is L4's control — the same
+shot fired diagonally *and* down an axis — and it is a separate row with a separate verdict, so "four
+rows" is the count of ITEMS and five is the count of VERDICTS:
+
+| row | gate | what it needs from the second client |
+|---|---|---|
+| `L4` | this file | they OBSERVE a 26-block shot fired past them |
+| `L4c` | this file | the same, fired diagonally and down an axis — **L4's control** |
+| `S5` | scorch slice 1 | they are the TARGET, naked then in full diamond + Protection III |
+| `S7` | scorch slice 1 | they are the target at all — discharged by S5's naked run |
+| `S12` | scorch slice 1 | they stand in `solar_grenade`'s field as an ALLY (figure, not pass/fail) |
+
+**`S5` is the one with a core seam behind it** — `bypassesDefense` is the parameter drowning's
+deferred per-cause rule will build on, and it currently has no in-game witness at all.
+
 ## L4 / L4c ARE UNRUN, AND HERE IS HOW TO CLOSE THEM WITHOUT ANOTHER PERSON
 
 **They are not skipped. Skipping a sole witness is not reduced confidence; it is zero** — and what
