@@ -162,11 +162,17 @@ public final class BukkitCombatant {
          * EntityDamageByEntityEvents, against a bare fist that produced one per swing. Stage 1 made
          * vanilla attack for real, which is the first time this gate has had a double to prevent.
          *
-         * <p>The amount arrives already multiplied by the elemental matrix; EffectApplier did that
-         * against the snapshot's shield. All this port carries is a number and a culprit.
+         * <p>The amount arrives already multiplied by whatever the payload resolved; EffectApplier did
+         * that against the snapshot. This port carries a number, a culprit, the crit bit and -- since
+         * elements gained an accrued status and a damage glyph -- the ELEMENT the hit wore. None of
+         * those four is a factor: the element multiplies nothing here or anywhere.
+         *
+         * <p><b>{@code element} may be null, and that is the loop guard rather than an unconverted
+         * caller.</b> Scorch{@code Sink} deals its burn through the four-argument arity, so a burn tick
+         * has no element to pass and cannot accrue more scorch. See {@code CombatantHandle}.
          */
         @Override public void applyDamage(double amount, UUID sourceId, CritState crit,
-                                          DefenseRule defense) {
+                                          DefenseRule defense, String element) {
             ctx.scheduler().onEntity(entity, () -> {
                 // Drain custom HP + fire the seam. dealerIsPlayer reuses the source's faction bit;
                 // the nameplate ignores the dealer this phase, the popup (1b) will need it.
@@ -174,7 +180,7 @@ public final class BukkitCombatant {
                         sourceId, entity.getWorld()::getEntity, Bukkit::isOwnedByCurrentRegion);
                 boolean dealerIsPlayer = source instanceof Player;
                 ctx.stats().damage(entity.getUniqueId(), amount, sourceId, dealerIsPlayer, crit,
-                        defense);
+                        defense, element);
 
                 // Aggro-on-hit: the target turns on its attacker -- vanilla's expected default.
                 // Ability damage flashes without a vanilla hit, so it would otherwise provoke

@@ -124,14 +124,32 @@ class ScorchTest {
     }
 
     @Test
-    void accrualFLOORSSoChipDamageScorchesNothing() {
-        // Rounded rather than floored, 1 damage buys a stack and every glancing hit scorches. Floored
-        // is also what makes "1 per 2" literally true rather than "1 per 2, ish".
-        assertEquals(0, Scorch.stacksFor(1), "one damage buys nothing");
-        assertEquals(0, Scorch.stacksFor(1.999), "and nor does just under two");
+    void accrualFLOORSTheRATIOButANYLANDEDHITBUYSATLEASTONESTACK() {
+        // THE FLOOR-TO-ZERO ARM WAS DELIBERATE AND HAS BEEN REVERSED. This test previously read
+        // "accrualFLOORSSoChipDamageScorchesNothing" and asserted stacksFor(1) == 0, on the argument
+        // that rounding would let every glancing hit scorch. That argument was sound while nothing
+        // called stacksFor. Wiring accrual made it reachable, and it lands on shipped content:
+        //
+        //   solar_grenade's field tick declares amount: 2 (solar_grenade.yml:59), and accrual reads
+        //   the POST-MITIGATION number. Defense.applyDefense(2, 20) = 1.67 -> the old floor gives
+        //   ZERO -> ScorchStatus.apply early-returns on stacks <= 0 -> THE FIELD STOPS SCORCHING
+        //   ARMOURED TARGETS ENTIRELY. Not chip damage being ignored: a shipped ability silently
+        //   doing nothing, discoverable only in game.
+        //
+        // And it overruns the operator's ruling. The Defense bypass was accepted on "ARMOUR DELAYS
+        // SCORCH RATHER THAN BLUNTING IT". Armour PREVENTING scorch outright is not "delays".
+        //
+        // The floor also restores, in one mechanism, the guarantee the nine explicit
+        // `status: scorch` content sites used to provide before they were stripped: any fire hit
+        // that lands burns.
+        assertEquals(1, Scorch.stacksFor(1), "one damage still buys a stack -- any landed hit burns");
+        assertEquals(1, Scorch.stacksFor(1.999), "and so does just under two");
+        assertEquals(1, Scorch.stacksFor(1.67), "THE CLIFF: applyDefense(2, 20), the armoured field tick");
+        // The RATIO is still floored above the cliff -- that half did not change.
         assertEquals(1, Scorch.stacksFor(3.999), "three-and-a-bit is one stack, not two");
-        // Mutation: Math.round instead of the integer cast -> 1 and 1.999 become 1, 3.999 becomes 2
-        // -> reddens on all three.
+        assertEquals(3, Scorch.stacksFor(7.0), "the emberblade's 7 is three, not four");
+        // Mutation: delete Math.max(1, ...) -> 1, 1.999 and 1.67 all fall to 0 -> reddens on three.
+        // Mutation: Math.round instead of the cast -> 3.999 becomes 2, 7.0 stays 3 -> reddens on one.
     }
 
     @Test

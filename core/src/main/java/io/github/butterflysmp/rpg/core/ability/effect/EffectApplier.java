@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.combat.Caster;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CritState;
+import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.combat.HitDamage;
 import java.util.List;
 import java.util.function.DoubleConsumer;
@@ -122,8 +123,10 @@ public final class EffectApplier {
             // It was extracted because a stat sheet showing "what a swing hits for" would have been
             // the third COPY of the formula, not merely the third description of it.
             case EffectSpec.Damage d -> {
-                // Element is identity, not math -- it flavors the hit and gates kits, but
-                // never multiplies the number. The port downstream carries the amount and a culprit.
+                // Element is identity, not math -- it flavors the hit and gates kits, but never
+                // multiplies the number. It DOES now travel: the port downstream carries the amount,
+                // a culprit, the crit bit and the element. "Not math" was always the true claim;
+                // "goes no further" was a stronger one read into it, and accrual falsified it.
                 //
                 // The ENCHANT multiplier reaches a literal too, and that is the point of applying it
                 // here rather than pre-baking it at projection: d.amount() is not known until the
@@ -134,7 +137,8 @@ public final class EffectApplier {
                                 caster.classDamageBonus()),
                         caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
-                    target.handle().applyDamage(amount, caster.id(), CritState.of(caster.crit()));
+                    target.handle().applyDamage(amount, caster.id(), CritState.of(caster.crit()),
+                            DefenseRule.APPLIES, d.element());
                     onDirectDamage.accept(amount);   // inside the gate: a refused hit reports nothing
                 }
             }
@@ -149,13 +153,16 @@ public final class EffectApplier {
                 // A resolved 0 means unarmed (or untracked) -- deal nothing rather than fire a
                 // spurious 0-damage seam. Unarmed STAYS 0 structurally, not by convention: no held
                 // weapon means no weapon class means no matching grant means a bonus of 0, so
-                // weapon-only melee cannot be resurrected by gear. Element is identity here too.
+                // weapon-only melee cannot be resurrected by gear. Element travels here too, and is
+                // still not math -- a basic attack is the arm accrual most depends on, because a
+                // weapon swinging faster than the burn lasts is what makes the refresh path routine.
                 double amount = HitDamage.dealt(
                         HitDamage.hitBase(caster.attackDamage(), caster.enchantDamagePercent(),
                                 caster.classDamageBonus()),
                         caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
-                    target.handle().applyDamage(amount, caster.id(), CritState.of(caster.crit()));
+                    target.handle().applyDamage(amount, caster.id(), CritState.of(caster.crit()),
+                            DefenseRule.APPLIES, wd.element());
                     onDirectDamage.accept(amount);   // inside the gate: a refused hit reports nothing
                 }
             }
@@ -171,7 +178,9 @@ public final class EffectApplier {
             // The caster and the payload's headline damage both ride the Caster, so a status that
             // needs to credit someone (scorch's kill credit) or to cap itself against the hit that
             // carried it (scorch's cap) can, without this arm knowing which status does either.
-            // Element stays out of it: identity, not math, here as everywhere.
+            // Element stays out of THIS arm, deliberately, and it is the one place that is still
+            // true: a status names ITSELF, so it needs no element to say which one it is. Threading
+            // one here is how a burn would begin re-applying itself -- see EffectApplierTest.
             case EffectSpec.Status s ->
                     target.handle().applyStatus(s.statusId(), s.durationTicks(), s.amplifier(),
                             caster.id(), caster.payloadDamage());

@@ -18,10 +18,16 @@ public interface CombatantHandle {
     /**
      * Deal {@code amount} damage, attributed to {@code sourceId}.
      *
-     * This port carries a number, a culprit, and -- since crit -- one PRESENTATION fact. Element is
-     * still identity, not math, and still never reaches here: an element would only regain a bearing
-     * on the number if a real resistance system existed, and that would belong in core, not in a call
-     * to the server.
+     * This port carries a number, a culprit, and -- since crit, and now since elements -- two
+     * PRESENTATION facts.
+     *
+     * <p><b>ELEMENT REACHES HERE NOW, AND IS STILL NOT MATH.</b> This javadoc previously said it
+     * <i>"still never reaches here"</i>, on the reasoning that an element would only regain a bearing
+     * on the number if a real resistance system existed. <b>That reasoning is still correct and the
+     * conclusion no longer follows</b>: the element multiplies nothing, and if it ever did that would
+     * belong in core rather than in a call to the server. It rides for two things nothing downstream
+     * can derive -- the damage number's GLYPH, which is a content fact only {@code ElementRegistry}
+     * holds, and STACK ACCRUAL, which has to know which status the hit accrues.
      *
      * <p>{@code wasCrit} is a deliberate widening of "a number and a culprit", and it earns its place
      * by being underivable downstream rather than by being convenient. The crit multiplier is rolled
@@ -52,7 +58,24 @@ public interface CombatantHandle {
     /**
      * As above, stating whether this damage SKIPS the Defense curve entirely.
      *
-     * <h2>THIS IS THE FIRST INSTANCE OF A PER-CAUSE RULE, NOT A SCORCH FEATURE</h2>
+     * <h2>THIS ARITY WEARS NO ELEMENT, AND THAT IS THE LOOP GUARD</h2>
+     *
+     * <b>DO NOT "TIDY" THIS INTO A DELEGATION THAT PASSES SOME DEFAULT ELEMENT.</b> It delegates with
+     * {@code null} on purpose, and the whole anti-loop property of stack accrual rests on it.
+     *
+     * <p>Scorch's own burn tick reaches the port through here ({@code EntityScorchSink}), so it has no
+     * element to pass, so it <b>cannot accrue more scorch</b>. That is the loop made
+     * <i>unrepresentable</i> rather than checked: there is no flag to get wrong, no ordering to
+     * preserve, and no condition a later reader has to know about. Give this arity a default element
+     * and a burn begins feeding itself its own ticks -- silently, and only on a large health pool,
+     * where a 5%-of-max burn is big enough to clear {@code Scorch.DAMAGE_PER_STACK}.
+     *
+     * <p>Every other elementless caller reaches the port here too, and each is correct rather than
+     * merely unconverted: the thorns reflect (a shield returning force is not the attacker's element),
+     * the vanilla-damage boundary (fall, drowning and lava have no element and inventing one would be
+     * a lie), and the dev apply command (an instrument, not a hit).
+     *
+     * <h2>AND THE DEFENSE RULE IS THE FIRST PER-CAUSE RULE, NOT A SCORCH FEATURE</h2>
      *
      * {@code NEXT.md}'s standing question -- <i>"which causes should {@code Defense} touch?"</i> --
      * records that {@code CombatantStats.damage} applies {@code Defense.applyDefense} to every cause
@@ -82,7 +105,28 @@ public interface CombatantHandle {
      *                the shape this exists for: cutting a 5%-of-max burn with armour makes it ordinary
      *                damage with extra arithmetic rather than the anti-tank tool it was specified as.
      */
-    void applyDamage(double amount, UUID sourceId, CritState crit, DefenseRule defense);
+    default void applyDamage(double amount, UUID sourceId, CritState crit, DefenseRule defense) {
+        applyDamage(amount, sourceId, crit, defense, null);
+    }
+
+    /**
+     * As above, naming the ELEMENT this damage wears.
+     *
+     * <p>Identity and presentation, never a factor: it multiplies nothing. Two consumers need it and
+     * neither can derive it -- the damage number's glyph (content, held by {@code ElementRegistry})
+     * and stack accrual (which status, and how many stacks the landed damage buys).
+     *
+     * <p><b>Accrual reads the POST-mitigation number, which is why it cannot happen in
+     * {@code EffectApplier}.</b> The applier sits upstream of the Defense curve; what actually landed
+     * is known only after {@code CombatantStats.damage}, which returns it for exactly this reason.
+     * The operator's ruling is that <i>armour DELAYS scorch rather than blunting it</i>, and the
+     * post-mitigation figure is the entire content of "delays".
+     *
+     * @param element a loaded element id ("fire", "kinetic", ...), or {@code null} for damage that
+     *                wears none. Null is the honest value for every non-payload path -- see the
+     *                four-argument arity above, whose elementlessness is the loop guard.
+     */
+    void applyDamage(double amount, UUID sourceId, CritState crit, DefenseRule defense, String element);
 
     /**
      * Raise the target's health by {@code amount}, capped at its max by the implementation.

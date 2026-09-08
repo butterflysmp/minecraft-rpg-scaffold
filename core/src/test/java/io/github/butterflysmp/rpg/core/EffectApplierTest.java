@@ -926,4 +926,84 @@ class EffectApplierTest {
         // Mutation: replace * chargeScale * critMultiplier with * critMultiplier -> 16.0, a badly
         // timed crit hitting as hard as a perfect one -> reddens.
     }
+
+    // --- The element reaches the port ------------------------------------------------------------
+
+    @Test
+    void bothDamageArmsPassTheirOwnSpecsELEMENTToThePort() {
+        // Element used to be read off the spec and dropped here -- "identity, not math" was taken to
+        // mean "goes no further", which was a stronger claim than the reasoning supported. It still
+        // multiplies nothing; it now travels, because two things downstream cannot derive it: the
+        // damage number's glyph, and which status the hit accrues.
+        //
+        // BOTH ARMS, SEPARATELY. They are structurally identical and differ only in where the base
+        // number comes from, which is exactly the shape where one gets wired and the other is
+        // forgotten -- and nothing would notice, because a basic attack and an authored bolt look the
+        // same on screen.
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        caster.attackDamage = 9.0;
+
+        var literalVictim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(12, "fire")),
+                caster.asCaster(), pair(literalVictim), Vec3.ZERO);
+        assertEquals("fire", literalVictim.lastDamageElement,
+                "an authored Damage effect carries its own element to the port");
+
+        var weaponVictim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.WeaponDamage("water")),
+                caster.asCaster(), pair(weaponVictim), Vec3.ZERO);
+        assertEquals("water", weaponVictim.lastDamageElement,
+                "and so does a basic attack -- the arm that is easy to leave behind");
+
+        // Mutation: pass null at either arm -> reddens on that arm alone.
+        // Mutation: pass a literal "fire" at both -> the water row reddens, which is why the two rows
+        // use DIFFERENT elements. Two rows both asserting "fire" could not tell a hardcode apart.
+    }
+
+    @Test
+    void aSTATUSEffectCarriesNoElementBecauseAStatusNamesITSELF() {
+        // THE CONTROL, and it guards a real temptation: "elements now travel" reads as "thread the
+        // element everywhere". The status arm must NOT, and the reason is not tidiness -- an element
+        // reaching a status application is how a burn would start re-applying itself.
+        //
+        // A bare Status effect must leave the damage port entirely untouched: no damage call, so no
+        // element. Asserting damageCalls == 0 rather than lastDamageElement == null is deliberate --
+        // the field starts null, so the weaker assertion would pass against a port that was never
+        // called AND against one called with null, and only one of those is what this row is about.
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Status("scorch", 40, 0)),
+                caster.asCaster(), pair(victim), Vec3.ZERO);
+
+        assertEquals(List.of("scorch"), victim.statuses, "the status still lands");
+        assertEquals(0, victim.damageCalls, "and it reached the port WITHOUT a damage call");
+        assertNull(victim.lastDamageElement, "so no element was delivered");
+        // Mutation: add an applyDamage call to the Status arm -> damageCalls is 1 -> reddens.
+    }
+
+    @Test
+    void aREFUSEDHitDeliversNoElementBecauseItDeliversNothing() {
+        // The element must ride INSIDE the amount>0 && alive gate, not before it. Outside the gate a
+        // dead target would still get a damage number drawn over its corpse, and -- once accrual is
+        // wired -- would accrue stacks from a hit that never landed. Same gate, same reason, as the
+        // onDirectDamage seam the sweep rider reads.
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var corpse = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        corpse.health = 0;
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(12, "fire")),
+                caster.asCaster(), pair(corpse), Vec3.ZERO);
+
+        assertEquals(0, corpse.damageCalls, "a dead target takes no hit");
+        assertNull(corpse.lastDamageElement, "and therefore wears no element");
+        // Mutation: move the applyDamage call outside the liveness gate -> both reddens.
+    }
 }

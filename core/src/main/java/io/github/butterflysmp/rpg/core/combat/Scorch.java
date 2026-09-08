@@ -148,13 +148,29 @@ public final class Scorch {
     }
 
     /**
-     * How many stacks {@code dealtPostMitigation} buys: one per {@link #DAMAGE_PER_STACK}, FLOORED.
+     * How many stacks {@code dealtPostMitigation} buys: one per {@link #DAMAGE_PER_STACK}, floored --
+     * but never fewer than ONE for any damage that actually landed.
      *
      * Post-mitigation by the operator's ruling -- this is fed what actually landed, so armour slows the
      * climb toward ignite even though it does not touch the burn itself.
      *
-     * Floored, not rounded: 1 damage must buy nothing rather than rounding up to a stack, or chip
-     * damage scorches. Non-positive returns 0 -- a heal or a fully-absorbed hit accrues nothing.
+     * <b>THE FLOOR-TO-ZERO ARM WAS DELIBERATE, AND WIRING ACCRUAL FALSIFIED IT.</b> This method
+     * previously returned 0 below {@code DAMAGE_PER_STACK}, on the argument that rounding would let
+     * every glancing hit scorch. Sound while nothing called it. The moment accrual was wired it landed
+     * on shipped content: {@code solar_grenade}'s field tick declares {@code amount: 2}, and against an
+     * armoured target {@code Defense.applyDefense(2, 20) = 1.67} -- which floored to 0 stacks, and
+     * {@code ScorchStatus.apply} early-returns on {@code stacks <= 0}. <b>The lingering field stopped
+     * scorching armoured targets entirely</b>, on shipped content, discoverable only in game.
+     *
+     * It also overran the ruling it was written under. The Defense bypass was accepted on <i>"armour
+     * DELAYS scorch rather than blunting it"</i>. Armour PREVENTING scorch outright is not "delays".
+     *
+     * <b>The floor is also what let the nine explicit {@code status: scorch} content sites be
+     * stripped.</b> Their one real guarantee was "a fire hit burns"; {@code Math.max(1, ...)} keeps it
+     * in a single mechanism, so accrual replaces them rather than trading that away.
+     *
+     * Non-positive still returns 0 -- a heal or a fully-absorbed hit accrues nothing. That arm is
+     * untouched, and it is the one the floor must not swallow.
      *
      * <b>THE REMAINDER IS DISCARDED, AND THAT IS THE CHOICE RATHER THAN AN OVERSIGHT.</b> A 3-damage
      * hit buys one stack and drops 1; ten such hits buy ten stacks, not fifteen. There is deliberately
@@ -166,7 +182,7 @@ public final class Scorch {
      */
     public static int stacksFor(double dealtPostMitigation) {
         if (dealtPostMitigation <= 0) return 0;
-        return (int) (dealtPostMitigation / DAMAGE_PER_STACK);
+        return Math.max(1, (int) (dealtPostMitigation / DAMAGE_PER_STACK));
     }
 
     /**
