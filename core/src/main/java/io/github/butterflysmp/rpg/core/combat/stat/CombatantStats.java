@@ -244,6 +244,18 @@ public final class CombatantStats {
      * boolean bypassesDefense} -- six orderings, five wrong, all six compiling, and
      * {@code BukkitCombatant} passes all three positionally. Lifting two of them out leaves one lone
      * boolean, which has nothing to be transposed with. See {@link DefenseRule}.
+     *
+     * <p><b>AND THAT SAFETY IS A PROPERTY OF THIS SIGNATURE, NOT OF THE PARAMETER.</b>
+     * {@code dealerIsPlayer} is allowed to stay a {@code boolean} <i>because it is the only one</i>.
+     * <b>ADD A SECOND BOOLEAN ANYWHERE IN THIS PARAMETER LIST AND THE TRANSPOSITION HAZARD IS REOPEN
+     * FOR BOTH OF THEM</b> -- and whoever adds it has no reason to look here first, which is exactly
+     * how a condition nobody wrote down gets built past. So: a new flag on this method is a new TYPE,
+     * or it converts {@code dealerIsPlayer} to one as well. It is not a third boolean.
+     *
+     * <p><b>Enforced, not merely stated</b>, because this file's own rule is that a rule living only
+     * in a comment gets built past: {@code DamageSignatureTest} reflects over this class and
+     * {@link io.github.butterflysmp.rpg.core.combat.CombatantHandle} and FAILS THE BUILD if any method
+     * declares two or more {@code boolean} parameters.
      */
     public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit,
                        DefenseRule defense) {

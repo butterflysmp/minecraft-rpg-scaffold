@@ -8056,6 +8056,30 @@ Doing 2 before 1 is how a non-discriminating row acquires the appearance of rigo
 says a row can be real but non-discriminating; this is the mechanism by which such a row gets
 HARDER to spot rather than easier.**
 
+**SECOND INSTANCE, 2026-09-08, AND IT LANDED ON A REMEDY RATHER THAN ON A ROW.** The first was `S5`
+itself: separation work applied to a row that could not fail. The second was the **proposed fix for
+it**, and it came from the operator:
+
+> *"Named constants at the call site, or a small parameter type -- your call which fits the codebase."*
+
+**Named constants are a NON-FIX here, and the reason is the rule.** `applyDamage(amount, id,
+NOT_A_CRIT, BYPASSES_DEFENSE)` reads unambiguously and **compiles exactly as happily transposed**,
+because `NOT_A_CRIT` and `BYPASSES_DEFENSE` are both `boolean`. The call site would have LOOKED safe
+while nothing about what can happen had changed — and the requirement in the same sentence was that
+*"the transposition stops compiling"*, which only a distinct TYPE delivers.
+
+**So the tell fires on remedies as well as on tests: an improvement to how something READS, proposed
+without checking whether it CHANGED WHAT CAN HAPPEN.** Both instances were made by someone who had
+just correctly diagnosed the underlying problem, which is what makes it worth recording rather than
+filing under carelessness. Diagnosing the hazard and fixing the appearance of it are adjacent moves.
+
+**The check that separates them is one question, and it is the same one both times:** *name the state
+of the world this now prevents.* For named constants the honest answer is "none — it prevents a
+misreading, not a miswrite". For the enums it is "the arguments in the wrong order", and that answer
+was then **executed**: transposed, built, and confirmed to fail with `incompatible types: DefenseRule
+cannot be converted to CritState`.
+
+
 ### A GATE ROW NAMED AS A MUTATION'S SUBSTITUTE NEEDS ITS DISCRIMINATION CHECKED LIKE ANY OTHER ROW
 
 **Rule 4, one level up — and the level where it is hardest to catch, because the claim lands in a
@@ -8091,6 +8115,59 @@ Its guard is the proof, and the proof has a precondition — k constant per vict
 will find it. Not in a gate table, which would imply a check that cannot exist.
 
 **M5 needs a row. M6 needs a sentence. Filing them together, as `5c2fb0b` did, hides both facts.**
+
+### A SIGNATURE CHANGE INVALIDATES EVERY INCREMENTAL RESULT
+
+> **Run `clean`. Treat an incremental green after a signature change as NO RESULT AT ALL.**
+
+**A new member of the verification family, and the worst-placed one on this page: it emits the exact
+string everyone checks for, on the exact operation that guarantees stale state.**
+
+**Measured 2026-09-08.** After changing `CombatantHandle.applyDamage` and `CombatantStats.damage` to
+take `CritState` and `DefenseRule`, `./mvnw -pl core,paper test-compile` printed:
+
+```
+[INFO] BUILD SUCCESS
+```
+
+**The tree could not compile.** `./mvnw clean test-compile` on the same bytes reported four real
+errors:
+
+```
+FakeWorld.Dummy is not abstract and does not override abstract method
+    applyDamage(double,UUID,CritState,DefenseRule)
+FakeWorld:489 applyDamage(double,UUID,boolean,boolean) does not override ... a supertype
+CombatantStatsTest:451 incompatible types: boolean cannot be converted to CritState
+CombatantStatsTest:475 incompatible types: boolean cannot be converted to CritState
+```
+
+**Why it is specific to signature changes**, and not a general "incremental builds are unreliable"
+grumble: an incremental compiler recompiles what it believes is STALE, and staleness is judged by
+timestamps on the files it knows about. A file whose own bytes did not change but whose **supertype's
+contract did** is not stale by that test. So the compiler skips exactly the files a signature change
+breaks — implementors and call sites — and reports success over the set it did look at.
+
+**HOW IT WAS ACTUALLY CAUGHT, and this is the uncomfortable part: intuition, not process.** The green
+was disbelieved only because `FakeWorld` was known to still carry the old four-argument override, so
+`BUILD SUCCESS` was *impossible* rather than merely suspicious. **Nothing in the workflow would have
+questioned it.** Had the change been one file larger, or made an hour later, the green would have been
+believed — and this file's whole thesis is that a check which did not run looks exactly like a check
+that passed.
+
+**The operational form, because "be careful" is not actionable:**
+
+- **After ANY signature change** — a parameter type, an added or removed parameter, a renamed method,
+  a changed return type, a widened or narrowed interface — **the next build is `clean`.** Not the one
+  after it.
+- **An incremental `BUILD SUCCESS` following a signature change is not evidence.** Do not report it,
+  do not act on it, do not let it end a verification step. It is the absence of a result.
+- **This composes with the mutation rule.** A mutation is not believed until the marker is grepped
+  *and* it compiled; a compile is not believed until it ran over everything. Both are the same
+  discipline: confirm the check reached the thing it claims to be checking.
+
+**And it generalises past compilation.** Any cached, timestamp-driven verifier has this shape — a test
+runner reusing results, a linter with a cache, a build system's up-to-date check. **The question to
+ask of a fast green is not "did it pass" but "what did it actually look at".**
 
 ### A CLAIM THAT CANNOT BE WITNESSED SHOULD BE MADE IMPOSSIBLE TO GET WRONG, NOT LEFT TO A ROW THAT WILL NEVER BE TICKED
 
