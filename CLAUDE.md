@@ -98,6 +98,29 @@ So:
 - Before believing a **mutation** result, confirm the mutation **compiled and applied**.
   `grep` for your marker; run `test-compile` first. A mutation that does not compile is
   not a mutation.
+
+  > **THE MARKER GREP IS NOT BELT-AND-BRACES. IT IS THE ONLY THING THAT MAKES MUTATION
+  > TESTING A MEASUREMENT RATHER THAN AN ASSERTION.** Twice now the edit has silently
+  > failed to apply, by two unrelated mechanisms, and **the grep was the only thing that
+  > caught either.** Neither exit codes, nor the test run, nor reading the command back
+  > would have.
+  >
+  > - The Flint Staff's **P6**: the edit was split across two calls and the second never
+  >   landed.
+  > - **2026-09-08**, elements slice: `perl -pi -e` **exited 0, printed nothing, and left
+  >   the file byte-identical** — while the *identical* regex matched when the same line
+  >   was piped to `perl -ne`. The tool performing the check reported success while doing
+  >   nothing.
+  >
+  > A mutation run whose marker was never grepped tells you nothing at all. A green suite
+  > under an unapplied mutation reads exactly like a green suite under a real one — which
+  > is this page's own defect, with the tooling rather than the test as the thing that
+  > lied. So: **grep the marker, and grep it again after restoring** (`markers left: 0`),
+  > or do not report the result.
+  >
+  > When an in-place edit no-ops, do not retry it with a cleverer pattern. Splice by line
+  > number (`head`/`sed -n`/`tail` into the file) and re-grep. Retrying an edit that
+  > reports success while doing nothing is how the same failure survives three attempts.
 - Before believing a **test guards** something, **break the thing and watch it fail.**
   A test that cannot fail is worth nothing, however green.
 - Anything that **discovers** rather than asserts — a scan, a glob, a registry walk —

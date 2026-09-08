@@ -162,6 +162,18 @@ public final class Scorch {
      * {@code ScorchStatus.apply} early-returns on {@code stacks <= 0}. <b>The lingering field stopped
      * scorching armoured targets entirely</b>, on shipped content, discoverable only in game.
      *
+     * <b>WHY THE OLD ARGUMENT WAS WRONG, WHICH IS NOT THE SAME AS BEING OVERRULED.</b> It said
+     * <i>"1 damage must buy nothing rather than rounding up to a stack, or chip damage scorches."</i>
+     * That treats a stack as the thing being CREATED, and against that risk it is correct reasoning.
+     * But under {@code Math.max(1, ...)} what a chip hit actually does, almost always, is REFRESH a
+     * burn that is already running -- {@code ScorchStatus.apply} adds the stack and resets the window
+     * on a live burn, and only mints a new one when there is none. <b>Sustained damage keeping a burn
+     * alive is the stated design</b> ("crowd control that comes from sustained damage"), not a leak.
+     *
+     * So the old reasoning was not outvoted. It was aimed at a risk the floor turns out not to create.
+     * Recorded that way on purpose: "we decided differently" invites re-litigation, whereas "the
+     * argument targeted the wrong failure" is checkable and settles it.
+     *
      * It also overran the ruling it was written under. The Defense bypass was accepted on <i>"armour
      * DELAYS scorch rather than blunting it"</i>. Armour PREVENTING scorch outright is not "delays".
      *
