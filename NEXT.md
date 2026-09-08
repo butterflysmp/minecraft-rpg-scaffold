@@ -7923,7 +7923,6 @@ row is about.
 > broken, and the reflex on "the fix did not take" is to reopen the fix — the one part that had been
 > proved by mutation.
 
-
 None of the three is visible to a table that verifies only numbers, and a row can be arithmetically
 perfect and physically incapable of showing what it claims.
 
