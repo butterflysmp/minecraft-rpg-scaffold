@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -251,5 +252,73 @@ class ElementAccrualTest {
         // Mutation: cap from the resolved amount instead of the declared one -> the CRIT row's cap
         // becomes 20 against an expected 10 -> reddens. The normal row does NOT redden, because at
         // multiplier 1.0 declared and resolved are the same number.
+    }
+
+    // --- accruesScorch: the predicate Ignite's fire-kill clause shares with forHit ---------------
+
+    @Test
+    void accruesScorchIsTRUEForAnAccruingHitOfAScorchDeclaringElement() {
+        assertTrue(ElementAccrual.accruesScorch(elements("fire", "scorch"), statuses(),
+                "fire", AccrualRule.ACCRUES));
+    }
+
+    @Test
+    void accruesScorchIsFALSEForAnINERTHitOfTheSameElement() {
+        // THE ROW THAT KEEPS RULING 2 ALIVE UNDER THE FIRE-KILL CLAUSE, and it is the whole reason
+        // the predicate takes the AccrualRule at all.
+        //
+        // Ignite's blast wears element "fire" -- it must, for the glyph and the effectiveness
+        // matrix. So "a fire hit that kills ignites" would mean A BLAST THAT KILLS AN UNSCORCHED MOB
+        // IGNITES IT, and the cascade would recruit everything it killed: the terminator becomes
+        // "you run out of mobs", which is exactly what INERT was chosen to prevent.
+        //
+        // The blast passes INERT and every weapon hit passes ACCRUES, so this ONE clause separates
+        // them. Same element, same registries, opposite answer.
+        assertFalse(ElementAccrual.accruesScorch(elements("fire", "scorch"), statuses(),
+                "fire", AccrualRule.INERT),
+                "an INERT hit feeds neither accrual nor ignition -- the same job, stated once");
+        // Mutation: drop the accrual.accrues() clause -> this reddens, AND the cascade becomes
+        // self-recruiting in game. Nothing else in the suite would notice the second half.
+    }
+
+    @Test
+    void accruesScorchIsFALSEForAnElementThatDeclaresNoStatusOrADIFFERENTOne() {
+        assertFalse(ElementAccrual.accruesScorch(elements("kinetic", null), statuses(),
+                "kinetic", AccrualRule.ACCRUES), "no applies_status: nothing accrues, nothing ignites");
+        assertFalse(ElementAccrual.accruesScorch(elements("nature", "rooted"), statuses(),
+                "nature", AccrualRule.ACCRUES),
+                "declares a status that is NOT scorch -- resolves perfectly and still does not ignite");
+        assertFalse(ElementAccrual.accruesScorch(elements("fire", "scorch"), statuses(),
+                "void", AccrualRule.ACCRUES), "an element the registry has never heard of");
+        assertFalse(ElementAccrual.accruesScorch(elements("fire", "scorch"), statuses(),
+                null, AccrualRule.ACCRUES), "and a hit wearing no element at all");
+        // "rooted" is the discriminating case: it EXISTS in the status registry and resolves, so a
+        // predicate that merely checked "the element declares something" would pass it. Only the
+        // type match rejects it. Mutation: return true for any non-null status -> this reddens.
+    }
+
+    @Test
+    void forHitAndTheIgniteClauseDifferByTheLETHALGATEAloneAndNothingElse() {
+        // THE ANTI-DRIFT ROW. Two call sites ask this question -- forHit for accrual, and
+        // BukkitCombatant for Ignite's fire-kill clause -- and the ONLY thing that may differ
+        // between them is lethality. Written twice, the copies would be two authorities on what "a
+        // fire hit" means and would part company the first time an element gained a status.
+        var elements = elements("fire", "scorch");
+        var statuses = statuses();
+
+        // Same hit, twice, differing ONLY in whether it left the target standing.
+        DamageOutcome survived = new DamageOutcome(25.0, 75.0);
+        DamageOutcome killed = new DamageOutcome(25.0, 0.0);
+
+        assertTrue(ElementAccrual.accruesScorch(elements, statuses, "fire", AccrualRule.ACCRUES),
+                "the shared predicate says yes -- it does not know about lethality at all");
+        assertTrue(ElementAccrual.forHit(elements, statuses, "fire", AccrualRule.ACCRUES,
+                survived, 30.0).isPresent(), "and forHit agrees while the target is standing");
+        assertTrue(ElementAccrual.forHit(elements, statuses, "fire", AccrualRule.ACCRUES,
+                killed, 30.0).isEmpty(), "but refuses the lethal one -- the gate, and only the gate");
+        // Ignite's clause is that third line INVERTED, over the same predicate. Mutation: give the
+        // predicate its own lethality check -> the first assertion reddens; give forHit its own
+        // element check -> nothing reddens here, which is why the extraction is the guard rather
+        // than this row.
     }
 }

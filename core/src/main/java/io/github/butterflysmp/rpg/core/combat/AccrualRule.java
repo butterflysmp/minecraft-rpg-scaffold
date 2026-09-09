@@ -65,7 +65,25 @@ public enum AccrualRule {
      */
     INERT;
 
-    /** True for {@link #ACCRUES}. For the one site that branches on it. */
+    /**
+     * True for {@link #ACCRUES}.
+     *
+     * <p><b>TWO SITES BRANCH ON IT, AND BOTH ARE THE SAME ONE.</b> This javadoc said "the one site"
+     * until 2026-09-09; naming them beats a bare count, because the value of the line is telling a
+     * reader where to look.
+     *
+     * <ul>
+     *   <li>{@code ElementAccrual.accruesScorch} -- the predicate. Every other caller reaches the
+     *       rule through it.</li>
+     *   <li>{@code ElementAccrual.forHit} -- calls that predicate, then adds the lethal gate.</li>
+     * </ul>
+     *
+     * <p>So the second site is the first one wearing a different condition, which is deliberate:
+     * Ignite's trigger asks the same question on the far side of that gate, and it asks it by
+     * calling the predicate rather than by re-reading this flag. <b>If a third site ever branches on
+     * this directly rather than through {@code accruesScorch}, that is the drift the extraction
+     * exists to prevent.</b>
+     */
     public boolean accrues() {
         return this == ACCRUES;
     }

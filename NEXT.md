@@ -631,6 +631,68 @@ ceiling for.
 > will never read it.** The operator recorded that they would have used this argument had the reader
 > count not been measured first -- which is why the measurement went first.
 
+#### THE TRIGGER WIDENED TO FIRE-KILLS, AND THE BLAST'S OWN ELEMENT NEARLY REVERSED RULING 2
+
+**Ruled 2026-09-09.** *"A mob killed by a fire weapon should ignite even though it hasn't had time to
+scorch yet."* Said back plainly, because it is bigger than it sounds: **every mob killed by any of
+nine shipped fire content pieces now explodes** -- `emberblade`, `ember_staff`, `flint_staff`,
+`hunters_bow`, `ability_stone`, `solar_grenade`, `solar_lance`, `rekindle`, `ember_step`. Essentially
+the whole fire kit. **This is commit 1's consequence 4 deliberately inverted:** the lethal-hit accrual
+skip was recorded as *"the only thing between 'any scorch + death ignites' and 'every fire-weapon kill
+detonates'"*, and the second one is now the design.
+
+**THE ACCRUAL GATE WAS NOT TOUCHED.** Widening `newCurrent > 0` would have reintroduced the ordering
+inversion `ElementAccrual` documents -- a `RepeatingTask` registered after the cleanup meant to cancel
+it. So **the IGNITE trigger widened and ACCRUAL did not**: no stacks granted, no `ScorchStatus` entry,
+nothing left to leak.
+
+**THE COLLISION, WHICH IS THE PART THAT MATTERS.** The blast itself carries `element: "fire"` -- it
+must, for the glyph. So *"killed by a fire hit ignites"*, read literally, means **a blast that kills an
+unscorched mob ignites it**, and the cascade recruits everything it kills. The terminator stops being
+"the set you lit" and becomes "you run out of mobs" -- **precisely the outcome ruling 2 chose `INERT`
+to prevent.** Implemented naively, this change silently reverses that decision.
+
+**The discriminator already existed and cost nothing:** the blast is `AccrualRule.INERT`, every weapon
+hit is `ACCRUES`. An INERT hit feeds neither accrual nor ignition -- **the same job, stated once** --
+and `AccrualRule` earned a third consumer with no special case, which is the test of whether the enum
+was the right shape.
+
+**ONE PREDICATE, TWO CALL SITES, AND THAT IS NOT OPTIONAL.** `ElementAccrual.accruesScorch` is the
+extracted condition; `forHit` calls it and adds the lethal gate, Ignite's clause calls it and inverts
+that gate. **The trigger living in two places is acceptable because the DOMAINS ARE DISJOINT** -- the
+adapter cannot see a `/kill` or a drowning, the listener cannot see what the killing blow was made of.
+One question with two reaches. **It would become two authorities the moment the predicate were written
+twice**, which is what the extraction prevents.
+
+> **AND THE ORDER OF TWO LINES IS THE WHOLE MECHANISM.** `BukkitCombatant` reads `isScorched` BEFORE
+> calling `stats.damage`, because that call fires the entire death chain synchronously -- seam,
+> `MobDeathSystem`, `setHealth(0)`, `EntityDeathEvent`, the listener -- and only then returns. **A read
+> taken afterwards would always see `false`**, the suppression would never fire, and every scorched mob
+> killed by fire would blast TWICE. Gate row `I11` is the only thing that can see it: 6 against 12.
+
+#### `DamageOutcome`'s KNOWN LIMITATION BIT, EXACTLY WHERE IT SAID IT WOULD
+
+**`UNTRACKED` is `(0.0, 0.0)`**, so an untracked target reads as `newCurrent <= 0` -- *dead* -- when
+there was never anything to kill. The record's own javadoc said this *"does not bite today -- the only
+consumer gates on `newCurrent > 0` and both readings agree"*, and named the trap anyway on the argument
+that **a later consumer would get silence rather than a compile error.**
+
+**Ignite's fire-kill clause is that consumer, and the two readings do not agree for it:**
+
+| consumer | question | untracked answers |
+|---|---|---|
+| accrual | *is it still STANDING?* | no -- correct |
+| ignite | *did this blow KILL it?* | **yes -- false positive** |
+
+So the clause gates on **`dealt > 0 && newCurrent <= 0`**: `dealt` is what separates *"killed it"* from
+*"there was nothing there"*. **The limitation is unchanged and still not worth an `Optional`;** what
+changed is that reading `newCurrent` alone as "died" is now wrong, and any third consumer asking about
+death rather than standing owes the same clause.
+
+**The record did its job and is now discharged.** The clause exists because that paragraph named the
+trap, not because anything failed -- which is the argument for recording a limitation instead of
+fixing it, and the first time on this page it has been paid out.
+
 #### THE FIVE IGNITE DECISIONS, AND WHY EACH WENT THE WAY IT DID
 
 **Recorded 2026-09-09 with the mechanism.** Two lines already in this file pointed at these

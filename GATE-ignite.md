@@ -2,7 +2,7 @@
 
 **This file is the source of truth for the Ignite boot gate.** It is versioned with the code because
 for several behaviours below **these rows are the only check that exists anywhere in the project**.
-The suite passes with any of them deleted — 1397 tests, and not one of them can see a chain roll
+The suite passes with any of them deleted — 1401 tests, and not one of them can see a chain roll
 through a pack, a death message name the right player, or an explosion fire twice.
 
 ## How to use it
@@ -16,12 +16,17 @@ through a pack, a death message name the right player, or an explosion fire twic
 
 ## What the suite already covers, so these rows do not have to
 
-`IgniteTest` (10 rows, core, on a clock) pins: the fuse lands on tick 10 and not on 9; one blast per
-detonation with nothing left scheduled; mob-only; the corpse excluded from its own blast; the radius
-straddled at ±0.5; credit to the applier and never to the victim; `fire` + `INERT`; `APPLIES` not
-`BYPASSED`; the visual at the detonation point; and `DAMAGE < 20`.
+`IgniteTest` — 10 rows, core, on a clock — pins: the fuse lands on tick 20 and not on 19; one blast
+per detonation with nothing left scheduled; mob-only; the corpse excluded from its own blast; the
+radius straddled at ±0.5; credit to the applier and never to the victim; `fire` + `INERT`; `APPLIES`
+not `BYPASSED`; the visual at the detonation point; and `DAMAGE < 20`.
 
-**All ten were mutation-verified** — each mutation was watched reddening its own row.
+`ElementAccrualTest` adds four rows on the **shared predicate** that Ignite's fire-kill clause and
+stack accrual both call: that an `INERT` hit of a scorch-declaring element answers **no**, that a
+resolving-but-non-scorch status answers no, and that `forHit` and the ignite clause differ by the
+**lethal gate alone**.
+
+**All fourteen were mutation-verified** — each mutation was watched reddening its own row.
 
 **What none of them can see is CHAINING**, because `FakeWorld.Dummy.applyDamage` only decrements a
 number: there is no death path in core, and core never learns that anything died. That is `I5`.
@@ -36,28 +41,33 @@ scorch something without also damaging it, which several rows below need.
 `/rpg give flint_staff` / `emberblade` — fire weapons, for the rows that want scorch applied the way a
 player would.
 
-`Ignite`'s provisional numbers: **fuse 10 ticks, radius 4.0, damage 6.0.** Every expectation below is
+`Ignite`'s provisional numbers: **fuse 20 ticks, radius 4.0, damage 6.0.** Every expectation below is
 written against those; if a row's number is wrong, check the constant before believing the row.
 
 ---
 
 ## The rows
 
-### I1 — a scorched mob that dies explodes, half a second later
+### I1 — a scorched mob that dies explodes, a second later
 `/rpg spawn knell` twice, standing them within 2 blocks of each other. `/rpg apply scorch 1 200` on
 the FIRST only. Kill the first (`/rpg mobdamage 400`).
 
-**Expect:** a visible pause — about half a second — then `solar_detonation` at the corpse, and the
+**Expect:** a visible pause — about a second — then `solar_detonation` at the corpse, and the
 second knell takes **6**.
 
 **The pause is half the row.** An explosion on the death frame means the fuse was dropped, and
 everything downstream (rule 2's serialization, rule 3 being nearly free) rests on it.
 
 **And watch the corpse: NO damage number should appear over it.** The dead mob is excluded from its
-own blast, but its death animation outlasts the fuse, so it can still be present and still tracked
-when the blast lands — and a tracked corpse taking damage renders a number over a body. This row
-cannot separate "the exclusion worked" from "the corpse was already gone", and does not need to: a
-number over a corpse is the artifact, and its absence is the pass.
+own blast, but a death animation and a 20-tick fuse are now the **same order of magnitude**, so
+whether the corpse is still present and still tracked when the blast lands is a race server timing
+decides. A tracked corpse taking damage renders a number over a body.
+
+> **The marginal timing is why this observation is worth making rather than assuming.** At the old
+> 10-tick fuse the corpse was reliably there; at 20 it sometimes will not be — so a missing exclusion
+> would produce an **intermittent** artifact, and an intermittent artifact is the kind nobody
+> reproduces on demand. This row cannot separate "the exclusion worked" from "the corpse was already
+> gone", and does not need to: a number over a corpse is the artifact, and its absence is the pass.
 
 ### I2 — the death message names YOU · **SOLE WITNESS for attribution**
 Same setup, but bring the second knell low first: `/rpg mobdamage` it to under 6, then scorch and kill
@@ -78,7 +88,7 @@ Same as I1, with the neighbour at full health. Read the neighbour's damage numbe
 **Expect exactly `6`. NOT `12`.**
 
 > **NOTHING IN THE SUITE CAN SEE THIS.** A double delivery of `EntityDeathEvent` cannot be
-> constructed in a unit test, so deleting the `forget` guard in `onEntityDeath` leaves 1397 tests
+> constructed in a unit test, so deleting the `forget` guard in `onEntityDeath` leaves 1401 tests
 > green. `6` against `12` is one number apart on a nameplate and it is the whole check.
 >
 > **Known in advance rather than discovered afterwards**, which is why this row was written as the
@@ -104,8 +114,9 @@ Three runs, one neighbour each, scorch applied by `/rpg apply scorch 1 200`:
 Spawn four knells in a loose cluster, all within ~3 blocks of a neighbour. `/rpg mobdamage` them all
 to under 6 so a single blast is lethal. Scorch **all four**. Kill one.
 
-**Expect:** a **rolling wave** — one blast, half a second, the next, half a second, the next. Four
-separate detonations you can count, NOT a single screen-clear.
+**Expect:** a **rolling wave** — one blast, a second, the next, a second, the next. **Four links is
+four seconds end to end**, so this is slow enough to count deliberately: four separate detonations,
+NOT a single screen-clear.
 
 > **THE SERIALIZATION IS THE SAFETY RULE, NOT THE AESTHETIC.** Rule 3 ("each fires exactly once,
 > against current state") is nearly free *because* the chain unrolls through time. If all four land on
@@ -123,13 +134,70 @@ Stand inside the radius of I1's detonation.
 mob-only and a burst is not, deliberately — see `Ignite.detonate`'s javadoc for why a cascade and an
 aimed burst are different things.
 
-### I7 — an UNSCORCHED mob does not ignite · **the negative control**
-`/rpg spawn knell`, do not scorch it, kill it beside a neighbour.
+### I7 — an unscorched mob killed by something NON-FIRE does not ignite · **the negative control**
+`/rpg give ironblade` (kinetic). `/rpg spawn knell`, do **not** scorch it, kill it with the ironblade
+beside a neighbour.
 
 **Expect: NOTHING.** No visual, no damage to the neighbour.
 
-> **Without this row every other row on this page is unfalsifiable.** A build that ignited on every
-> death — the scorch check inverted or dropped — would pass I1 through I5 perfectly.
+> **THE CONTROL GOT STRICTER WHEN THE TRIGGER WIDENED, NOT WEAKER.** It used to read "an unscorched
+> mob does not ignite" — which a build that ignited on **every fire kill** would still pass, since
+> the old fixture never specified the weapon. Now it discriminates between *"ignites on any death"*
+> and *"ignites on a fire death"*, which are different bugs. **The weapon must be non-fire, or the
+> row has stopped being a control.**
+>
+> Without it every other row on this page is unfalsifiable: a build that ignited on every death would
+> pass I1 through I5 perfectly.
+
+### I9 — a mob ONE-SHOT by fire, never scorched, explodes · **SOLE WITNESS for the fire-kill clause**
+`/rpg give flint_staff`. `/rpg spawn knell`, `/rpg mobdamage 355` so it sits at 5, beside a
+neighbour. Do **not** scorch it. Kill it with one bolt.
+
+**Expect:** the blast fires — the neighbour takes **6** — even though the knell was never alight for
+a single tick.
+
+> **NOTHING ELSE ON THIS PAGE REACHES THIS CLAUSE**, and no unit test can: the trigger lives in
+> `BukkitCombatant`, past the seam, and needs a real entity dying from a real hit.
+>
+> **It is the operator's rule** — *"a mob killed by a fire weapon should ignite even though it hasn't
+> had time to scorch yet"* — and it works WITHOUT loosening the accrual gate: no stacks are granted
+> and no `ScorchStatus` entry is created, so nothing is left behind to leak. The kill is credited to
+> **you**, because a mob that was never scorched has no lighter and the killing blow *is* the fire.
+>
+> **The failure that looks like a pass:** if the clause read the element without the `AccrualRule`,
+> this row would still pass — and the cascade would recruit every mob it killed. That is `I10`.
+
+### I10 — a blast kill does NOT recruit · **SOLE WITNESS for ruling 2 under the new clause**
+Two knells at full health beside a third that is scorched and low. Kill the scorched one so its blast
+lands on both neighbours — then bring one neighbour to just under 6 first, so **the blast itself
+kills it**.
+
+**Expect:** the blast kills that neighbour and **NOTHING further happens.** No second detonation, no
+wave.
+
+> **THIS IS THE ROW A NAIVE IMPLEMENTATION FAILS AND NOTHING ELSE CATCHES.** The blast wears
+> `element: fire` — it must, for the glyph — so *"killed by a fire hit ignites"* read literally means
+> **a blast that kills an unscorched mob ignites it**, and the cascade recruits everything it kills.
+> The terminator stops being "the set you lit" and becomes "you run out of mobs".
+>
+> The discriminator is `AccrualRule`: the blast passes `INERT`, every weapon hit passes `ACCRUES`.
+> A build missing that clause passes **I1 through I9** and fails only here — in a spawner or a farm,
+> as a room-clearing chain nobody asked for.
+
+### I11 — scorched AND fire-killed is still ONE blast · **the two-site guard**
+`/rpg apply scorch 1 200` on a knell, then kill it **with the flint staff** beside a full-health
+neighbour. Both clauses are now true at once.
+
+**Expect exactly `6`. NOT `12`.**
+
+> **The trigger deliberately lives in two places** — `onEntityDeath` for the scorched clause,
+> `BukkitCombatant` for the fire-kill clause — because their domains are disjoint: the adapter cannot
+> see a `/kill` or a drowning, and the listener cannot see what the killing blow was made of.
+>
+> **This row is what proves they do not overlap.** The suppression works only because `isScorched` is
+> read **before** the damage call: the whole death chain fires synchronously inside it, so a read
+> taken afterwards would always see `false` and every scorched mob killed by fire would blast twice.
+> `6` against `12`, one number apart — I3's shape on a new path.
 
 ### I8 — **figure** — the burn does not double-dip with the blast
 Scorch a knell, let it burn to death on its own clock (no killing blow), with a neighbour nearby.

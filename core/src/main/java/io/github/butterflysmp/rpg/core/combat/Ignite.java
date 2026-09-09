@@ -61,14 +61,20 @@ public final class Ignite {
      *
      * <p><b>This delay is what makes the "fires exactly once" rule nearly free</b>, and it is the
      * mechanism of {@code DESIGN}'s second safety rule rather than a feel dial with a number
-     * attached. Serializing the chain THROUGH TIME -- A dies, half a second, A explodes, kills B,
-     * half a second, B explodes -- turns "each effect resolves against current state" from a
-     * same-tick graph problem into an ordinary sequence. 10 ticks is {@code DESIGN}'s own worked
-     * example, half a second.
+     * attached. Serializing the chain THROUGH TIME -- A dies, a second, A explodes, kills B, a
+     * second, B explodes -- turns "each effect resolves against current state" from a same-tick
+     * graph problem into an ordinary sequence.
+     *
+     * <p><b>20 TICKS DELIBERATELY EXCEEDS {@code DESIGN}'s WORKED EXAMPLE, WHICH SAYS HALF A
+     * SECOND.</b> Ruled 2026-09-09. Stated rather than left, because a constant whose javadoc cites
+     * a spec it no longer matches is the falsified-prose shape: {@code DESIGN}'s "half a second" is
+     * an illustration of the SHAPE (serialise through time), not a number this has to hit, and at
+     * one second a four-link cascade takes four seconds and reads as a wave a player can watch
+     * roll. At half a second it reads closer to a single event.
      *
      * <p>PROVISIONAL. Shorter reads as a screen-clear; longer as a slow, interruptible chain.
      */
-    public static final int DELAY_TICKS = 10;
+    public static final int DELAY_TICKS = 20;
 
     /**
      * Blast radius, in blocks.
@@ -119,7 +125,7 @@ public final class Ignite {
      * <p><b>THE WORLD, HOWEVER, IS READ INSIDE THE TASK, NEVER AROUND IT.</b>
      * {@link CombatWorld#combatantsNear} is legal only on the thread owning its centre's region, and
      * {@link CombatWorld#schedule} is what puts us on that thread. Resolving the target set before
-     * scheduling would read off the wrong thread AND resolve against a pack that has half a second
+     * scheduling would read off the wrong thread AND resolve against a pack that has a second
      * left to move.
      *
      * <h2>THE TARGETING RULE IS STATED HERE RATHER THAN INHERITED</h2>
@@ -133,7 +139,7 @@ public final class Ignite {
      * <ul>
      *   <li>A burst is <b>aimed and immediate</b>. Someone standing in it made a positioning
      *       decision against a thing they could see coming.</li>
-     *   <li>A cascade is <b>neither</b>: it fires half a second after a death, from a corpse,
+     *   <li>A cascade is <b>neither</b>: it fires a second after a death, from a corpse,
      *       potentially several links downstream of a kill somebody else made, with no telegraph
      *       beyond the first blast.</li>
      *   <li>And it <b>cannot be play-tested against a second player</b>, so a player-damaging
@@ -153,6 +159,15 @@ public final class Ignite {
      *                  propagated along the chain: every scorched mob has an applier by definition,
      *                  so every ignition has a source in every case the ruling admits -- including
      *                  drowning, falling and lava, where there is no killer to credit at all.
+     *
+     *                  <p><b>AND THE FIRE-KILL CLAUSE PASSES THE KILLER HERE, WHICH IS NOT AN
+     *                  EXCEPTION TO THAT RULE.</b> When a fire blow kills a mob that was never
+     *                  scorched ({@code BukkitCombatant}'s second clause), there IS no lighter --
+     *                  nothing ever lit it -- so there is no competing candidate, and <b>the killing
+     *                  blow IS the fire</b>. Crediting the dealer there is the same rule reaching its
+     *                  only answer, not a second rule sitting beside it. Stated because the two
+     *                  sentences look contradictory side by side, and a reader who finds them
+     *                  without this note will take one of them for a bug.
      * @param victimId  the mob that died, excluded from its own blast
      */
     public static void detonate(CombatWorld world, Vec3 at, UUID applierId, UUID victimId) {
@@ -160,17 +175,23 @@ public final class Ignite {
             world.present(at, VISUAL_ID);
             for (Combatant c : world.combatantsNear(at, RADIUS)) {
                 // The corpse, and the exclusion is here for a PLAYER-VISIBLE reason rather than as a
-                // shrug. A dying mob stays a LivingEntity while its death animation plays, and that
-                // animation outlasts this fuse -- so it can still be found here, and it can still be
-                // tracked. A tracked corpse taking the blast emits a HealthChange, and a HealthChange
-                // RENDERS A FLOATING DAMAGE NUMBER OVER A CORPSE. That is the cost, and it is the
-                // reason this line exists.
+                // shrug. A dying mob stays a LivingEntity while its death animation plays, so it can
+                // still be found here and can still be tracked. A tracked corpse taking the blast
+                // emits a HealthChange, and a HealthChange RENDERS A FLOATING DAMAGE NUMBER OVER A
+                // CORPSE. That is the cost, and it is the reason this line exists.
                 //
-                // Whether the corpse is actually still present at +10 ticks is unmeasured -- it is
-                // the server's despawn timing, not ours -- but the failure it prevents is visible to
-                // a player and the guard is one comparison, so it is kept rather than made
-                // conditional on measuring someone else's timing. GATE-ignite.md's I1 records
-                // whether a number ever appears over the corpse.
+                // AND THE TIMING IS NOW MARGINAL, WHICH STRENGTHENS THIS RATHER THAN WEAKENING IT.
+                // At the old 10-tick fuse the animation comfortably outlasted the blast, so the
+                // corpse was reliably present. At 20 the two are the SAME ORDER -- roughly a full
+                // death animation -- so whether the corpse is still there when the blast lands is a
+                // race that server timing decides, not something this code can know. A guard whose
+                // triggering case is a coin-flip is MORE load-bearing than one whose case is
+                // certain: it fires sometimes, so its absence would be an intermittent artifact, and
+                // an intermittent artifact is the kind nobody reproduces on demand.
+                //
+                // The exact animation length is server behaviour, not ours, so it stays a gate
+                // observation and never a claim here. GATE-ignite.md's I1 records whether a number
+                // ever appears over the corpse.
                 if (c.id().equals(victimId)) continue;
                 if (c.state().player()) continue;
                 // DefenseRule.APPLIES, deliberately, and NOT the burn's BYPASSED. The burn's

@@ -217,7 +217,11 @@ class IgniteTest {
 
     @Test
     void theProvisionalNumbersArePinnedAndDAMAGESitsBelowAVanillaMob() {
-        assertEquals(10, Ignite.DELAY_TICKS, "DESIGN's own worked example: half a second");
+        assertEquals(20, Ignite.DELAY_TICKS,
+                "one second -- DELIBERATELY longer than DESIGN's half-second example, so a "
+                        + "four-link cascade takes four seconds and reads as a wave rather than an "
+                        + "event. Changed 10 -> 20 on 2026-09-09; this row is what made that a "
+                        + "decision instead of a drift");
         assertEquals(4.0, Ignite.RADIUS, EPS, "in family with solar_grenade's burst");
         assertEquals(6.0, Ignite.DAMAGE, EPS, "solar_grenade's burst damage");
 
