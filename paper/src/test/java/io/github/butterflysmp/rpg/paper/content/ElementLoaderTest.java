@@ -173,26 +173,77 @@ class ElementLoaderTest {
     }
 
     @Test
-    void aBLANKOrNONSCALARValueIsAHalfFinishedEditRatherThanAnAbsence() throws IOException {
-        // THE ONE THAT WOULD OTHERWISE BE SILENT, AND THE REASON THESE GUARDS EARN THEIR LINES.
+    void aNONSCALARValueIsAHalfFinishedEditRatherThanAnAbsence() throws IOException {
+        // THE ONE THAT WOULD OTHERWISE BE SILENT, AND THE REASON THIS GUARD EARNS ITS LINES.
         // `applies_status: [scorch, soaked]` is a plausible thing to try. getString returns null for
         // a list, so without the guard the element would load, look correct, and accrue nothing
         // FOREVER -- a shipped ability silently doing nothing, which is the exact failure this repo
-        // keeps recording. A blank value is the same class: it reads as "authored" and behaves as
-        // "absent".
+        // keeps recording.
+        //
+        // A BLANK GLYPH USED TO BE ASSERTED HERE AS THE SAME CLASS, AND IT IS NOT ANY MORE. That row
+        // read "and so is a blank glyph" and its premise was that every element is meant to be
+        // marked. Kinetic is now deliberately unmarked, so `damage_symbol: ""` is a DECLARATION and
+        // gets its own row below. Re-derived rather than deleted: the non-scalar half is untouched
+        // and still guards the silent case.
         write("fire.yml", "display_name: \"<red>Fire</red>\"\napplies_status:\n  - scorch\n  - soaked\n");
-        write("water.yml", "display_name: \"<aqua>Water</aqua>\"\ndamage_symbol: \"\"\n");
         write("nature.yml", "display_name: \"<green>Nature</green>\"\n");
 
         ElementRegistry registry = load();
 
         assertTrue(registry.find("fire").isEmpty(), "a list where one status belongs is a skip");
-        assertTrue(registry.find("water").isEmpty(), "and so is a blank glyph");
         assertTrue(registry.find("nature").isPresent(), "the well-formed element is unaffected");
-        assertTrue(warningText().contains("2 element file(s) were skipped"),
-                "the summary counts them: " + warningText());
+        assertTrue(warningText().contains("1 element file(s) were skipped"),
+                "the summary counts it: " + warningText());
         // Mutation: drop the isString guard -> fire loads with appliesStatus null -> reddens.
-        // Mutation: drop the isBlank guard -> water loads with a glyph of "" -> reddens.
+    }
+
+    @Test
+    void anEMPTYGlyphIsADECLARATIONAndANABSENTOneIsAGAP() throws IOException {
+        // THE DISTINCTION #6 EXISTS TO PRESERVE, and it is the whole reason kinetic writes "" rather
+        // than dropping the field.
+        //
+        //   ""       a decision -- this element is deliberately unmarked. Loads, no warning.
+        //   absent   a GAP. saveResource(path, false) never overwrites, so a data folder predating
+        //            the field looks exactly like the decision unless the two are kept apart.
+        //
+        // Same rule Scorch.UNDECLARED_CAP states for a different field: ABSENCE IS NOT A NEUTRAL
+        // VALUE. Collapse them and an operator can never be told which of their elements are
+        // unmarked ON PURPOSE.
+        write("kinetic.yml", "display_name: \"<white>Kinetic</white>\"\ndamage_symbol: \"\"\n");
+        write("nature.yml", "display_name: \"<green>Nature</green>\"\n");
+
+        ElementRegistry registry = load();
+
+        var kinetic = registry.find("kinetic").orElseThrow();
+        assertNotNull(kinetic.damageSymbol(),
+                "an EMPTY glyph is a value, not a null -- that is what tells it from an absent one");
+        assertEquals("", PlainTextComponentSerializer.plainText().serialize(kinetic.damageSymbol()),
+                "and it renders as nothing, so the number is drawn bare");
+
+        assertNull(registry.find("nature").orElseThrow().damageSymbol(),
+                "an ABSENT glyph is null -- the gap ContentValidator names at boot");
+
+        assertTrue(warnings.isEmpty(), "neither is malformed, so neither is skipped: " + warningText());
+        // Mutation: throw on a blank value again -> kinetic is SKIPPED -> reddens.
+        // Mutation: return null for a blank value -> the two become indistinguishable, kinetic gets
+        // named as a legacy gap at every boot, and the first assertion reddens.
+    }
+
+    @Test
+    void ANONBLANKGlyphThatRendersAsNOTHINGIsStillAHalfFinishedEdit() throws IOException {
+        // The third case, which the empty declaration must not swallow. `"<gold></gold>"` is tags
+        // with no content between them -- authored, non-blank, and renders to nothing. It is a typo,
+        // not a decision, and it stays a named skip. The message points at the decision spelling so
+        // an author who meant "unmarked" is told how to say it.
+        write("fire.yml", "display_name: \"<red>Fire</red>\"\ndamage_symbol: \"<gold></gold>\"\n");
+
+        ElementRegistry registry = load();
+
+        assertTrue(registry.find("fire").isEmpty(), "tags that consumed the whole value are a skip");
+        assertTrue(warningText().contains("Write \"\" if the element is meant to be unmarked"),
+                "and the message names the spelling for the deliberate case: " + warningText());
+        // Mutation: treat any empty RENDER as the deliberate case -> fire loads unmarked, a typo
+        // ships as a decision -> reddens.
     }
 
     @Test

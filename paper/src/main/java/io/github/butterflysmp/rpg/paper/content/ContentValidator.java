@@ -330,13 +330,22 @@ public final class ContentValidator {
         for (ElementDefinition element : loadedElements) {
             String label = "element '" + element.id() + "'";
 
-            // A missing glyph is a gap rather than a mistake: saveResource(path, false) never
-            // overwrites, so a data folder predating this slice holds elements with no damage_symbol
-            // and they must keep working. Named so an operator knows why numbers are unmarked.
+            // AN ABSENT GLYPH IS A GAP; AN EMPTY ONE IS A DECISION. Only the first is named.
+            //
+            // saveResource(path, false) never overwrites, so a data folder predating the field holds
+            // elements with no damage_symbol at all -- and those must be reported, or an operator
+            // cannot tell a stale file from an element that is unmarked ON PURPOSE. kinetic is the
+            // purposeful one: it writes damage_symbol: "" and passes here silently.
+            //
+            // The check is `== null` rather than "renders as nothing" for exactly that reason. Both
+            // draw a bare number downstream -- DamagePopupManager collapses them -- but the two are
+            // different FACTS here, and this is the layer that can still tell them apart. Same rule
+            // Scorch.UNDECLARED_CAP states for a different field: ABSENCE IS NOT A NEUTRAL VALUE.
             if (element.damageSymbol() == null) {
-                problems.add(label + " declares no damage_symbol, so its damage numbers will be "
-                        + "drawn unmarked. Add one, or run --refresh-content if this element "
-                        + "predates the field");
+                problems.add(label + " declares no damage_symbol at all, so its damage numbers will "
+                        + "be drawn unmarked. Write an EMPTY damage_symbol if that is deliberate, add a "
+                        + "glyph if it is not, or run --refresh-content if this element predates the "
+                        + "field");
             }
 
             if (element.appliesStatus() == null) continue;

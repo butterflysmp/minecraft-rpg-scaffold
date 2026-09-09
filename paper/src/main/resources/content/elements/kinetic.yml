@@ -2,11 +2,25 @@
 # kinetic, not elementless.
 #
 # It declares no applies_status, and that omission is doing real work: kinetic is the CONTROL for
-# every element feature. An ironblade swing draws its own glyph and does not burn, on the same code
-# path as an emberblade swing that does -- which is what shows the behaviour is driven by content
-# rather than hardcoded to fire.
+# every element feature. An ironblade swing does not burn, on the same code path as an emberblade
+# swing that does -- which is what shows the behaviour is driven by content rather than hardcoded
+# to fire.
 display_name: "<white>Kinetic</white>"
 
-# See fire.yml for why this is a glyph rather than the number's colour, and for the client-font
-# caveat that makes this set a boot-tunable candidate rather than a settled one.
-damage_symbol: "<white>◆</white>"
+# PRESENT AND EMPTY: kinetic is DELIBERATELY UNMARKED, and that is not the same as having no
+# damage_symbol field at all.
+#
+#   ""       a decision. Accepted silently -- an unflavoured hit draws a bare number.
+#   absent   a GAP. ContentValidator names it, because saveResource(path, false) never overwrites
+#            and a data folder predating the field would otherwise look like this decision.
+#
+# Same rule Scorch.UNDECLARED_CAP states for a different field: ABSENCE IS NOT A NEUTRAL VALUE.
+#
+# WHY UNMARKED RATHER THAN MARKED. This carried "<white>◆</white>" and it was wrong: kinetic is what
+# a hit wears when it wears nothing, so a mark on it announces an element the hit does not have.
+# Every number in the game would have been marked, and the glyph would have stopped meaning
+# "elemental" and started meaning "a number".
+#
+# THE CONTROL SURVIVES, AND IS SHARPER FOR IT. An ironblade swing now reads as a bare number beside
+# an emberblade's marked one, so the glyph itself is the observation rather than which glyph.
+damage_symbol: ""

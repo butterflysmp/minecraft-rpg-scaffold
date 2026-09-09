@@ -130,18 +130,32 @@ public final class ElementLoader {
                             + "MiniMessage string, e.g. \"<gold>*</gold>\"");
         }
         String raw = s.getString("damage_symbol");
-        if (raw == null || raw.isBlank()) {
-            throw new IllegalArgumentException(
-                    "element '" + id + "' has a blank 'damage_symbol'. Omit the key entirely to "
-                            + "declare no glyph; a blank value is a half-finished edit");
-        }
+        // PRESENT AND EMPTY IS A CHOICE. ABSENT IS A GAP. THEY MUST NOT COLLAPSE.
+        //
+        // This threw on a blank value, calling it "a half-finished edit" -- correct while every
+        // element was meant to be marked. Kinetic is now deliberately unmarked: it is the NEUTRAL
+        // element, and a mark on an unflavoured hit says something the hit does not mean.
+        //
+        // So `damage_symbol: ""` is a declaration of no glyph, accepted silently. ABSENT keeps its
+        // old meaning -- a data folder that predates the field, since saveResource(path, false) never
+        // overwrites -- and ContentValidator goes on naming it, so a legacy file is still reported
+        // rather than mistaken for a decision.
+        //
+        // This is the rule Scorch.UNDECLARED_CAP already states for a different field: ABSENCE IS
+        // NOT A NEUTRAL VALUE. There, an absent cap is not "no cap" but the absence of one; here, an
+        // absent glyph is not "no glyph" but an unanswered question. Same rule, second field.
+        if (raw.isBlank()) return Component.empty();
+
         Component parsed = MiniMessage.miniMessage().deserialize(raw);
         String rendered = PlainTextComponentSerializer.plainText().serialize(parsed);
         if (rendered.isEmpty()) {
+            // Non-blank source that renders as nothing -- `"<gold></gold>"`, tags with no content
+            // between them. Still a half-finished edit, and STILL DISTINGUISHABLE from the empty
+            // declaration above, because that one never reaches here.
             throw new IllegalArgumentException(
                     "element '" + id + "' has a 'damage_symbol' of " + raw + " that renders as "
-                            + "NOTHING -- the tags consumed the whole value, so the damage number "
-                            + "would be marked with an invisible glyph");
+                            + "NOTHING -- the tags consumed the whole value. Write \"\" if the "
+                            + "element is meant to be unmarked");
         }
         if (rendered.indexOf('<') >= 0 || rendered.indexOf('>') >= 0) {
             throw new IllegalArgumentException(

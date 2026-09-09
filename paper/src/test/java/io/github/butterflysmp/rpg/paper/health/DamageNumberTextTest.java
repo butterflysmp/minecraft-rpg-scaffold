@@ -100,10 +100,20 @@ class DamageNumberTextTest {
 
         assertNull(root.color(),
                 "the ROOT wears no colour of its own -- that is what lets the children keep theirs");
+        assertNull(root.font(),
+                "AND NO FONT, for the same reason and against a failure that does not exist yet. A "
+                        + "resource-pack glyph is reached either by a Private Use Area codepoint or by a "
+                        + "<font:ns:id> tag in damage_symbol -- both pure content, no code change. Font "
+                        + "inherits exactly as colour does, so a font landing on the assembled ROOT would "
+                        + "draw THE DIGITS in the icon font: a damage number rendered as missing sprites, "
+                        + "or as whatever art sits at those codepoints. Asserted before any pack exists, "
+                        + "so the composition is proved rather than debugged against a live client");
         assertEquals(NamedTextColor.GOLD, firstChild(root).color(), "the glyph stays the ELEMENT's gold");
         assertEquals(NamedTextColor.WHITE, lastChild(root).color(), "the number stays white");
         assertEquals("28", ((TextComponent) lastChild(root)).content(), "and it is still the number");
-        // Mutation: colour the assembled ROOT with the number's colour instead of the number child ->
+        // Mutation: colour the assembled ROOT instead of the number child -> root.color() is no longer
+        // null -> reddens. Mutation: set a font on the root -> root.font() is no longer null -> reddens
+        // there and nowhere else. Old note:
         // root.color() is no longer null -> reddens on the first assertion, and the glyph would have
         // inherited it in game.
     }

@@ -735,6 +735,26 @@ class ContentValidatorTest {
     }
 
     @Test
+    void anEMPTYDamageSymbolIsADECISIONAndIsNOTNamed() {
+        // THE PAIR TO THE ROW ABOVE, and neither discriminates alone: "an absent glyph is named"
+        // passes just as well against an implementation that names EVERY unmarked element, which
+        // would report kinetic at every boot forever and train an operator to ignore the line.
+        //
+        // The two differ only in whether the field is present. Downstream they are the same thing --
+        // DamagePopupManager draws a bare number for both -- and THIS is the layer that can still
+        // tell a stale file from a decision.
+        var elements = registryOf(new ElementDefinition("kinetic", "kinetic",
+                Component.empty(), null));
+
+        var problems = elementValidator(elements).validateElements(elements.all());
+
+        assertTrue(problems.isEmpty(),
+                "an element that DECLARES it is unmarked is not a problem: " + problems);
+        // Mutation: check "renders as nothing" instead of == null -> kinetic is named -> reddens,
+        // and that mutation is exactly the collapse this distinction exists to prevent.
+    }
+
+    @Test
     void theTwoFAULTSAreReportedINDEPENDENTLYOnTheSameElement() {
         // An element can be both unmarked and misconfigured, and each must be named. Without this
         // row, a `continue` placed one line too early would hide the glyph warning behind the status

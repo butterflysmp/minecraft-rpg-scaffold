@@ -22,10 +22,54 @@ display_name: "<red>Fire</red>"
 # <gold> is vanilla's orange; MiniMessage hex (<color:#FF7A18>) is available if a truer one is wanted.
 #
 # WHICH CODEPOINTS ACTUALLY RENDER IS A CLIENT-FONT QUESTION, NOT A SCHEMA ONE. A glyph the font
-# lacks draws as a missing-glyph box. This set is a boot-tunable candidate: look at it on a real
-# client before treating it as settled, and if the default font cannot carry seven distinguishable
-# marks the answer is a resource pack -- a bigger decision that gets surfaced, not absorbed here.
-damage_symbol: "<gold>✦</gold>"
+# lacks draws as a missing-glyph box, so this stays boot-tunable: look at it on a real client before
+# treating it as settled. C1 established that four render -- U+2726 (Dingbats), U+2727, U+273F and
+# U+25C6 (Geometric Shapes) -- and everything else is a hypothesis until someone looks.
+#
+# ▲ IS U+25B2, THE SAME BLOCK AS THE PROVEN ◆. If it boxes, try ✺ U+273A or ✹ U+2739, both in the
+# Dingbats block that already renders three of its neighbours.
+#
+# AND IT WAS CHOSEN FOR A SECOND REASON: SHAPE, NOT JUST FIRE-LIKENESS. Fire was ✦ U+2726 and void
+# is ✧ U+2727 -- adjacent codepoints differing only by fill. At damage-number size, floating for
+# under a second, the only thing separating them was gold against purple. That collision was latent
+# only because nobody has swung a fire weapon beside void_slash. A triangle against a star separates
+# on SHAPE, which survives colourblindness and a busy background; two stars do not.
+#
+# THESE SEVEN CODEPOINTS ARE AN INTERIM CHOICE, NOT A DECISION. Written down because the next reader
+# finds seven authored glyphs and reasonably assumes somebody picked them on their merits -- which is
+# how a placeholder becomes permanent.
+#
+# A TEXTURE PACK IS PLANNED, and it changes what a good glyph is. A pack glyph is reached one of two
+# ways, BOTH PURE CONTENT with no code change:
+#
+#   damage_symbol: "<gold></gold>"                 a Private Use Area codepoint
+#   damage_symbol: "<font:rpg:icons><gold>a</gold></font>"   an explicit font
+#
+# So the swap is ONE LINE PER ELEMENT. Vanilla-safe codepoints ship now on purpose: until a pack is
+# REQUIRED, a PUA codepoint draws as an empty box in front of every fire damage number for anyone who
+# has not accepted it. Boxes now in exchange for a better glyph later is the wrong trade.
+#
+# THE COMPOSITION IS ALREADY PROVED SAFE FOR THE FONT CASE. Adventure inherits font exactly as it
+# inherits colour, so a font landing on the assembled root would draw THE DIGITS in the icon font --
+# the damage number itself rendered as missing sprites. DamageNumberTextTest asserts the root carries
+# no font, beside the assertion that it carries no colour, and the mutation reddens.
+#
+# TWO DECISIONS THE PACK NEEDS, AND THEY ARE THE OPERATOR'S:
+#
+#   1. IS THE PACK REQUIRED? A PUA codepoint without it renders as a box. Either the server sets
+#      require-resource-pack, or the glyph set stays vanilla-safe like this one. Server policy, not a
+#      content question.
+#   2. WHITE SPRITE TINTED, OR FULL-COLOUR SPRITE? Minecraft multiplies a bitmap glyph by the text
+#      colour. A white flame drawn ONCE gives all seven elements from one sprite and keeps each
+#      element's authored colour meaningful; a full-colour flame has to be paired with <white> or it
+#      muddies. The first is more work once and less work forever.
+#
+# AND CHECK THE PROVIDER SCHEMA AGAINST THE TARGET VERSION rather than from memory -- the mechanism
+# (bitmap providers, PUA, colour multiplication, ascent/height) has been stable for many versions,
+# but the exact JSON for this Paper build has not been read. EXPECT THE FIRST VISIBLE BUG TO BE
+# VERTICAL ALIGNMENT: ascent and height decide whether the glyph sits on the number's baseline or
+# floats above it.
+damage_symbol: "<gold>▲</gold>"
 
 # THE STATUS THIS ELEMENT'S DAMAGE ACCRUES. Every hit wearing element: fire buys scorch stacks in
 # proportion to what actually LANDED -- post-mitigation, so armour delays the burn rather than

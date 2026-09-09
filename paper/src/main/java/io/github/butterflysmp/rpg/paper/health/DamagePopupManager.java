@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.paper.content.ElementDefinition;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthListener;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -116,7 +117,18 @@ public final class DamagePopupManager implements HealthListener {
      * pure, so it is reddening-testable without a server.
      */
     static Component symbolFor(ElementRegistry elements, String elementId) {
-        return elements.find(elementId).map(ElementDefinition::damageSymbol).orElse(null);
+        Component symbol = elements.find(elementId)
+                .map(ElementDefinition::damageSymbol).orElse(null);
+        // AN EMPTY GLYPH IS A DECLARED "NO GLYPH", and downstream that is the same thing as none.
+        // The distinction between ABSENT and EMPTY is real and lives one layer up -- ContentValidator
+        // names an absent one as a legacy gap and accepts an empty one as a decision -- but by here
+        // both mean "draw the number bare". Collapsing them HERE rather than in the loader is what
+        // keeps the validator able to tell them apart at boot.
+        //
+        // Without this, kinetic would render an empty component plus the separating space, so every
+        // unflavoured number in the game would gain a leading blank.
+        if (symbol == null) return null;
+        return PlainTextComponentSerializer.plainText().serialize(symbol).isEmpty() ? null : symbol;
     }
     /**
      * The pure gate: a number is shown only for player-dealt DAMAGE with a known dealer. HEAL / MAX_CHANGE
