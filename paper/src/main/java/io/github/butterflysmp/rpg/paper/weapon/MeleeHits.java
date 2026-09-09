@@ -98,7 +98,8 @@ public final class MeleeHits {
     public record Swing(UUID victim, double charge) {}
 
     /** What the primary hit dealt, and the tick it dealt it on. */
-    private record PrimaryHit(double damage, long tick) {}
+    /** One swing's primary hit: what it dealt, the element it wore, and the tick it landed on. */
+    public record PrimaryHit(double damage, String element, long tick) {}
 
     /** Remember this attacker's swing. Overwrites any previous one, which by then never landed. */
     public void record(UUID attacker, UUID victim, double charge) {
@@ -173,25 +174,41 @@ public final class MeleeHits {
     }
 
     /**
-     * Remember what the PRIMARY target was just hit for, so the sweep rider can take a fraction of it.
+     * Remember what the PRIMARY target was just hit for AND with what element, so the sweep rider can
+     * take a fraction of the one and carry the other.
      *
      * <p>Stamped with the current tick rather than given a lifecycle, exactly as {@link #landedThisTick}
      * derives its answer from the window's stamp: there is nothing to expire, nothing for
      * {@link #forget} to miss, and no way for a stale number from an earlier swing to be read as this
      * swing's. Overwrites, like {@link #record} -- one attacker has one primary hit per swing.
      *
+     * <p><b>THE TWO FACTS ARRIVE AS ONE VALUE AND ARE STORED AS ONE, NEVER SOURCED SEPARATELY.</b>
+     * That is the property worth protecting here, and it is not the one the types protect: a
+     * {@code double} and a {@code String} cannot be transposed -- that is a compile error, so no row
+     * is written for it -- but a stash that took the amount from one report and the element from
+     * another would type-check perfectly and put one swing's element on another swing's number.
+     * {@code WeaponFire.landVanillaMelee}'s one-slot sink therefore captures the PAIR, not two
+     * fields, so there is no arrangement of calls that can separate them.
+     *
+     * <p><b>Two damage effects in one melee payload are resolved BEFORE this, and the rule is
+     * FIRST-WINS.</b> That sink keeps the first report and drops the rest, matching
+     * {@code DamagePayload.of} so the tooltip and the sweep cannot disagree about one weapon. So this
+     * method is called exactly once per swing and has no ambiguity to detect -- a guard here would be
+     * unreachable. The overwrite above is about a LATER swing replacing an earlier one, which the tick
+     * stamp already makes safe.
+     *
      * <p>Only ever called with a number {@code EffectApplier} actually dealt. That is what makes the
-     * absence in {@link #primaryDamageThisTick} meaningful rather than merely unset.
+     * absence in {@link #primaryHitThisTick} meaningful rather than merely unset.
      */
-    public void recordPrimaryDamage(UUID attacker, double damage) {
-        primaries.put(attacker, new PrimaryHit(damage, currentTick.getAsLong()));
+    public void recordPrimaryHit(UUID attacker, double damage, String element) {
+        primaries.put(attacker, new PrimaryHit(damage, element, currentTick.getAsLong()));
     }
 
     /**
-     * What this attacker's primary hit dealt THIS TICK, or empty.
+     * What this attacker's primary hit dealt THIS TICK and with what element, or empty.
      *
      * <p><b>A pure query, and it MUST NOT consume.</b> One sweeping swing raises one damage event per
-     * swept mob, and every one of them needs this same number: a consume-on-read would serve the
+     * swept mob, and every one of them needs this same value: a consume-on-read would serve the
      * first bystander and silently leave the rest untouched. This is the same lesson
      * {@link #landedThisTick} learned from the 2026-08-28 knockback boot, where a consuming signal
      * would have eaten the second of a sprint hit's two knockback events -- and it is why both
@@ -202,11 +219,16 @@ public final class MeleeHits {
      * different swing and must not be read as this one's. Empty is the FAIL-CLOSED answer the sweep
      * rider deals nothing on: a windowed-out primary, an untagged or broken weapon, a swing that
      * connected with nothing -- none of them stash, so none of them sweep.
+     *
+     * <p><b>PRESENCE MEANS BOTH FACTS ARE KNOWN.</b> One Optional over the pair, never an Optional
+     * amount beside a separately-nullable element: a value that were present with an unknown element
+     * would let the sweep deal damage and accrue nothing, which is exactly the
+     * primary-burns-bystanders-do-not asymmetry that carrying the element exists to remove.
      */
-    public OptionalDouble primaryDamageThisTick(UUID attacker) {
+    public Optional<PrimaryHit> primaryHitThisTick(UUID attacker) {
         PrimaryHit hit = primaries.get(attacker);
-        if (hit == null || hit.tick() != currentTick.getAsLong()) return OptionalDouble.empty();
-        return OptionalDouble.of(hit.damage());
+        if (hit == null || hit.tick() != currentTick.getAsLong()) return Optional.empty();
+        return Optional.of(hit);
     }
 
     /** Drop a victim's window. Call on death, despawn and chunk-unload, or the map grows forever. */

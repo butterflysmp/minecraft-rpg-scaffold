@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core;
 
 import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
+import io.github.butterflysmp.rpg.core.combat.AccrualRule;
 import io.github.butterflysmp.rpg.core.combat.Caster;
 import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.CritState;
@@ -438,6 +439,27 @@ public final class FakeWorld implements CombatWorld {
          */
         public boolean lastDamageBypassedDefense = false;
 
+        /**
+         * The ELEMENT the last applyDamage wore, or null if it wore none.
+         *
+         * Captured as delivered, for the same reason as the bypass bit above: this fake resolves no
+         * element and applies no status, so a test asserting "fire accrued" would pass against a port
+         * that dropped the parameter. The NULL case is the one that matters most -- an elementless
+         * call is what makes scorch unable to accrue from its own burn tick, so a test must be able
+         * to see the difference between "no element" and "some element".
+         */
+        public String lastDamageElement;
+
+        /**
+         * Whether the last applyDamage said its element may ACCRUE, or wears it for display only.
+         *
+         * Captured as delivered, like the bypass bit and the element beside it. This is the half
+         * that used to be unassertable: while the burn tick carried NO element, the loop guard could
+         * only be witnessed behaviourally, and that witness could not tell the guard from an ordinary
+         * registry miss. A named value can be read back.
+         */
+        public AccrualRule lastDamageAccrual;
+
         /** The last velocity a dash impulse set on this dummy, or null if never dashed. */
         public Vec3 lastImpulse;
 
@@ -489,11 +511,14 @@ public final class FakeWorld implements CombatWorld {
 
         @Override public UUID id() { return id; }
         @Override public void applyDamage(double amount, UUID sourceId, CritState crit,
-                                          DefenseRule defense) {
+                                          DefenseRule defense, String element,
+                                          AccrualRule accrual) {
             health -= amount;
             lastDamageSource = sourceId;
             lastDamageWasCrit = crit.isCrit();
             lastDamageBypassedDefense = defense == DefenseRule.BYPASSED;
+            lastDamageElement = element;
+            lastDamageAccrual = accrual;
             damageCalls++;
         }
         @Override public void applyHeal(double a) { health += a; }

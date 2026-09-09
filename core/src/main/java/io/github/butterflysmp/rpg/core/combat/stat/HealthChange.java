@@ -33,10 +33,28 @@ import java.util.UUID;
  * @param wasCrit        whether this DAMAGE was a critical hit -- the bit the displays cannot derive,
  *                       because the roll happened on the dealer's thread a tick earlier and the
  *                       amount alone cannot say whether it was doubled
+ * @param element        the element this DAMAGE wore ("fire", "kinetic", ...), or null for none. The
+ *                       displays cannot derive it: the number's glyph is a content fact only
+ *                       {@code ElementRegistry} holds, and by the time a change reaches a listener the
+ *                       payload that named the element is three hops upstream. Null is the honest
+ *                       value for every non-payload path -- the thorns reflect, the vanilla-damage
+ *                       boundary, and scorch's own burn tick.
  */
 public record HealthChange(UUID target, boolean targetIsPlayer, Kind kind, double amount,
                            UUID dealer, boolean dealerIsPlayer, double newCurrent, double max,
-                           boolean reachedZero, boolean wasCrit) {
+                           boolean reachedZero, boolean wasCrit, String element) {
+
+    /**
+     * A DAMAGE change wearing no element. Keeps every construction site that predates elements
+     * reading unchanged, and -- more than convenience -- it is half of the structural loop guard:
+     * an elementless change cannot accrue a status, and this is the form the burn tick's path builds.
+     */
+    public HealthChange(UUID target, boolean targetIsPlayer, Kind kind, double amount,
+                        UUID dealer, boolean dealerIsPlayer, double newCurrent, double max,
+                        boolean reachedZero, boolean wasCrit) {
+        this(target, targetIsPlayer, kind, amount, dealer, dealerIsPlayer, newCurrent, max,
+                reachedZero, wasCrit, null);
+    }
 
     /**
      * A DAMAGE change that was not a crit -- HEAL and MAX_CHANGE, and any damage path with no crit to

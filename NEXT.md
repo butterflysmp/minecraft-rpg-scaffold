@@ -2279,6 +2279,176 @@ the javadoc now says so instead of claiming it exists.
 it.** Enforcement is the one property a javadoc cannot make true by asserting, and it is the property
 readers most reliably take on trust — this file records the reader's side of that trust twice already.
 
+> **AMENDED 2026-09-08 — THIS RULE IS AIMED ONE STEP SHORT, AND ITS OWN CASE IS WHY THAT IS EASY
+> TO MISS.** Opening the named file catches enforcement that is **MISSING**. It does not catch
+> enforcement that is **UNREACHABLE**, and a guard that cannot fire is indistinguishable from one
+> that protects you: it compiles, it reads correctly, and every test around it is green.
+>
+> `ElementLoader.damageSymbol` shipped a `try { deserialize } catch (RuntimeException)` whose javadoc
+> claimed a malformed glyph became a named, skipped file. Measured over **ten** malformed inputs:
+> **MiniMessage throws for none of them.** The check existed, compiled, and could not execute — so
+> "open the file it names" would have passed it. **It was written one commit after the marker-grep
+> rule was strengthened**, which is the evidence the rule was mis-aimed rather than ignored.
+>
+> The full amendment, with the probe as its worked example, is in `CLAUDE.md`'s VERIFICATION
+> section, under *"break the thing and watch it fail"* — because the only thing that catches an
+> unreachable guard is mutation discipline pointed at the GUARD rather than at the code.
+
+
+#### THE MUTATION-NOTE ESTATE, SAMPLED 2026-09-08 — CLEAN, AND THE ONE BAD NOTE WAS FRESHLY WRITTEN
+
+**779 mutation notes across 106 files.** A note claiming *"mutation X reddens row Y"* is a claim about
+a mechanism the reader cannot see from where the claim sits — the same shape as *"this rule is
+enforced in file Z"*. Notes written from **intention** and notes written from **execution** read
+identically, and both survive refactors that invalidate them. A wrong one is worse than none: the
+reader runs it, sees red somewhere else, and either distrusts the suite or credits a row with a guard
+it does not have.
+
+**Sampled where being wrong costs most** — the rows that claim to be the SOLE catcher of something,
+since by their own text a false note there means a defect ships unnoticed. That stratum is **7 rows**;
+5 predate this slice. **All 5 were executed against the full suite.**
+
+| row | claim | measured |
+|---|---|---|
+| `AbilityServiceTest.aLockedCastConsumesNoCooldownOrMana` | *"the only test that fails on that reorder"* | **exact** — 1/811, mana 100→60 |
+| `HealthRegenTest` negative-period row | *"the only thing that makes the periodTicks guard load-bearing"* | **exact** — 1/811, heals −0.25 |
+| `EnchantMenuLayoutTest.theFixtureSlots…` | *"reddens HERE and nowhere else in the suite"* | **exact** — 1/553 |
+| `HitDamageTest.eachSummandCanBeAbsent…` | gear-only rows redden, *"as does EffectApplierTest's 92 pin"* | **holds**, understated — 16 rows, both named ones among them |
+| `StatsBarTextTest.theDefenseFieldSits…` | *"only an assertion catches it"* | **holds**, understated — 3 assertions |
+
+**Hit rate: 0 false out of 5.** Two understated the blast radius; none misdirected. **The habit on this
+repo is sound**, and that is the useful result — a clean sample is a real finding, not a null one.
+
+**The one false note found was written in this slice, from reasoning, and caught by executing it**
+(`ContentValidatorTest.theTwoFAULTS…` named a row that does not redden). So the failure mode is
+live-authoring, not inherited debt. **Do not re-run the other 774.** Execute the note you are writing.
+
+
+> **THE ESTATE HAS NO CANONICAL SHAPE, SO ANY AUDIT OF IT MUST STATE ITS PATTERN OR IT IS NOT
+> REPRODUCIBLE.** Three counts of the same thing, all correct: `// Mutation` gives **816 / 107**,
+> `// Mutation:` gives **745 / 102**, and the count above (`Mutation:` anywhere, test tree) gives
+> **779 / 106**. **71 notes omit the colon.** Nobody was wrong; the population is not
+> well-defined. A future audit quoting a number without its grep is quoting nothing.
+>
+> **AND THE SAMPLING FRAME NAMED FOR THIS AUDIT DID NOT EXIST.** It was "rows marked SOLE WITNESS" --
+> a label that lives in the **gate pages**, not in the codebase. The stratum above was reconstructed
+> from phrasing instead. Recorded because it is the same rule this file keeps applying to content:
+> **conditions drawn from what EXISTS, not from what someone remembers existing.** If that class of
+> row is worth sampling again it needs a real label to grep for.
+>
+> **WHAT 0-OF-5 DOES AND DOES NOT ESTABLISH.** The five were chosen FOR SEVERITY -- the rows whose
+> own text claims they are the sole catcher. That answers **"are notes misdirecting?"** (no: none
+> misdirected, two understated) and it establishes **NO RATE for the population of 779**. A later
+> reader will otherwise take 0/5 as a population estimate; it is not one, and it was never sampled
+> to be. Understating is the conservative failure mode for a note, which is why the rule that follows
+> is "execute the note you are writing" rather than any claim about the notes already written.
+
+
+#### THE ELEMENT CONTENT PASS — WHAT WAS DECIDED, AND THE SHAPE THAT WAS REFUSED
+
+**Migrated from `PLAN-element-content-pass.md`, which was deleted when the pass landed.** A completed
+plan file at the repo root is scaffolding that documents its own expiry condition and still does not
+remove itself; what follows is the part that outlives it.
+
+**THE DURATION RECONCILIATION.** Eight sites authored a `duration_ticks`, and every one was
+inheritance rather than a decision:
+
+| site | authored | now |
+|---|---|---|
+| `solar_grenade` burst / field pulse, `emberblade` | 40 | 120 |
+| `ember_step`, `rekindle`, `solar_lance`, `ability_stone`, `ember_staff` | 60 | 120 |
+| `flint_staff` | 80 | 120 |
+
+`content/statuses/scorch.yml` recorded the debt at the time: the eight values *"kept their values
+while changing their meaning"* when `kind: fire` became `kind: scorch`, and were never re-decided. So
+collapsing them to one duration is the reconciliation that file already said was owed — **not a
+buff**, which is how it first got written up and is the framing to avoid.
+
+**THE SHAPE THAT WAS CONSIDERED AND REFUSED, because a future reader will re-derive it.** Three ways
+to reconcile the duration were on the table:
+
+- **(a) one duration everywhere** — chosen.
+- **(b) the element declares a duration** beside `applies_status`. **Refused**: an element declaring
+  a duration is one field from declaring a rate, and the line was drawn at *name the status and
+  nothing else*. Refused rather than forgotten.
+- **(c) ACCRUAL IS REFRESH-ONLY** — it feeds a burn that already exists and never starts one.
+  `ScorchStatus.apply` already branches on exactly that, so it was a guard, not new machinery.
+
+**(c) deserves its paragraph, because it dissolves every problem the pass had at once**: content
+keeps *when* a burn starts and *for how long*, the authored durations keep meaning what they say,
+there is no double-application, and the new sources (emberblade melee, every `hunters_bow` arrow)
+stop being new.
+
+**It was refused because it is a DIFFERENT DESIGN, not a smaller one.** Under (c) a fire weapon alone
+never burns anything — abilities light, weapons feed — so `applies_status` would not *apply*
+anything, Ignite would need an ability to light first, and the bow stops being able to witness
+refresh-without-burn. Coherent, and not the design this slice was specified as.
+
+> One argument used against (c) did NOT survive checking, and is recorded so it is not reused:
+> *"it falsifies `emberblade.yml`'s 'that scorches all it catches'"*. That line is the **right_click
+> Fireball's** own description, and the Fireball keeps an explicit `status: scorch` under (c), so it
+> stays true either way. The weapon-level flavour discriminated in the opposite direction — *"Swing
+> to cut; loose to burn"* reads as (c) — and shape (a) is what falsified it, which is why that line
+> was rewritten to *"Swing or loose -- both leave embers."*
+
+#### DECIDED: ACCRUAL SKIPS A HIT THAT TOOK THE TARGET TO ZERO
+
+Accrual runs after `CombatantStats.damage` returns, so a LETHAL fire hit would accrue stacks on a
+combatant whose death was already processed. **Measured, not assumed:** `CombatantStats.damage` calls
+`listener.onChange(...)` *before* returning, and `MobDeathSystem.onChange` calls `mob.setHealth(0)`
+**synchronously**, which fires `EntityDeathEvent` → `EntityRemoveFromWorldEvent` → `onMobRemove`,
+which clears the custom HP store **and calls `scorch().forget(id)`**.
+
+**So accrual would register a `RepeatingTask` AFTER the cleanup meant to cancel it** — an ordering
+inversion, not a race. It is survivable rather than harmless: the burn deals nothing
+(`victimMaxHealth()` is 0 on an untracked id, so `damagePerTick` is 0 and the sink early-returns), but
+a map entry and a 160-tick task per lethal fire kill outlive the mob, and nothing will cancel them.
+
+**And it matters semantically for Ignite**, which is DEATH-GATED — *"a target ignites only when killed
+by a Scorched attack"*. If the killing blow itself accrued, the stack count at death would depend on
+whether the fatal hit's own stacks counted. Skipping makes that unambiguous before the question is
+asked.
+
+So: **a hit that brings custom health to zero accrues nothing.** `CombatantStats.damage` must report
+that alongside the mitigated figure, rather than accrual inferring it from `tracks(id)` having gone
+false — which would be reading cleanup ordering as a signal, and would silently invert if the removal
+listener ever moved.
+
+
+##### AND THE PREDICATE IS "CURRENT <= 0 AFTER THIS HIT", NOT "THIS HIT CAUSED THE TRANSITION"
+
+**The two differ, and the difference is REACHABLE, so this is a decision rather than a formality.**
+
+`HealthState.damage` returns `before > 0.0 && current == 0.0` -- **transition-only**, once. That is
+correct for `HealthChange.reachedZero`, which is the death hook and must fire exactly once. It is the
+wrong predicate for accrual, and the reason is one line of `MobDeathSystem`:
+
+```java
+static boolean shouldKill(HealthChange change) {
+    return change.reachedZero() && !change.targetIsPlayer();   // MobDeathSystem.java:119-121
+}
+```
+
+**Players are excluded from death.** A player whose custom health reaches 0 is not killed and not
+removed -- by decision, the respawn lifecycle being a deferred pass -- so they stay TRACKED, alive, at
+the floor. A further hit on them has `before == 0.0`, so `reachedZero` is **false**, and a
+transition-only predicate would accrue scorch onto a combatant at zero health. That is the same shape
+as **D3b**, where a floor render overwrote a death for the same reason.
+
+For a MOB the difference is unreachable: the store entry is gone by the second hit, so `damage()`
+early-returns. **Relying on that would be relying on the mob path's cleanup ordering** -- exactly what
+this decision already refused to do once.
+
+So `damage()` reports the POST-HIT CURRENT, not a transition bit, and accrual's condition is
+`newCurrent > 0` -- "the target is still standing", whether or not this hit is what put it down.
+
+**Hence `DamageOutcome(double dealt, double newCurrent)`** rather than `(double, boolean)`. It reports
+FACTS and leaves the policy at the call site that reads it, which is where the policy is legible; a
+boolean named for the predicate would bake this decision into the return type and have to be renamed
+by the second consumer. Both components are doubles and therefore transposable in principle -- one
+construction site, named accessors, and a test that pins the two to DIFFERENT values so a swap
+reddens.
+
 #### THE ACCRUAL IS DISPLACED, NOT DESCOPED — and slice 2 blocks on it
 
 **Recorded 2026-09-08, before slice 2 is planned, because a deferred item with no slice is how a
@@ -2313,6 +2483,45 @@ two players.
 stack burns exactly as ten do. But Ignite's threshold is **50% of max health as stacks**: a 20 HP
 zombie needs **ten**. At one stack per cast that is **ten casts**; with accrual it is one Flint Staff
 hit. **IGNITE IS UNREACHABLE IN PRACTICE UNTIL ACCRUAL LANDS**, and nothing in slice 1 says so.
+
+> #### THE THRESHOLD ABOVE IS A DENOMINATOR MISMATCH, AND SLICE 2 MUST NOT INHERIT THE NUMBER
+>
+> **Corrected 2026-09-08, during the content pass, before anything was built against it.**
+> *"50% of max health as stacks"* pairs a **RELATIVE** threshold with an **ABSOLUTE** accumulator, and
+> the two do not compose. `Scorch.stacksFor` is `max(1, floor(d / 2))`, so for any hit of 2 or more a
+> target accrues roughly `d/2` stacks — and reaching `0.5 x maxHealth` stacks therefore costs
+> **`maxHealth` damage. The target is dead before it ignites.**
+>
+> The worked example in this very paragraph shows it: a 20 HP zombie needs ten stacks, ten stacks is
+> twenty damage, and twenty damage is the whole zombie. **A Flint Staff's 20 buys exactly ten stacks
+> and kills it in the same hit — and accrual skips a lethal hit** (`newCurrent > 0`), so those stacks
+> never land at all.
+>
+> The only route through is the `max(1, ...)` floor: hits *below* 2 damage buy a full stack each, so
+> `T` chip hits give `T` stacks. That inverts the design — **Ignite would fire only on the smallest
+> mobs and only for weak repeated hits**, and never for the strong hits the percent-max cap exists to
+> matter against:
+>
+> | max health | stacks needed | chip hits inside one 160-tick window |
+> |---|---|---|
+> | 20 | 10 | 10 — marginal, the bow can just about do it |
+> | 100 | 50 | no |
+> | 360 | 180 | no |
+>
+> **So the recorded threshold is not a number to tune; it is a shape that cannot work.** Two
+> individually reasonable constraints, jointly unsatisfiable, with nothing in either one saying so —
+> the third instance of that shape in this slice.
+>
+> **What slice 2 inherits instead:** *Ignite's threshold is UNDECIDED. It must share a denominator
+> with stack accrual, which is ABSOLUTE (`damage / 2`, floored at 1). Decide the denominator first and
+> the number second.* That is a statement slice 2 can act on. `0.5 x max` is a number that would have
+> had to be discovered wrong on a live server.
+>
+> **And this is why no stack CEILING was declared.** `ScorchStatus`'s refresh arm is `a.stacks +=
+> stacks` with no clamp, so the bow can pile ~30 stacks into one window. Harmless while stacks do not
+> scale damage, and a ceiling now would be an undemonstrated limit wearing a safety check's costume —
+> the same reason the glyph length cap was declined. The count's *meaning* is what needs deciding, not
+> its maximum.
 
 **THE SCHEDULING ARGUMENT, WHICH IS THE REASON AND NOT A CONSEQUENCE: THIS CHANGE FLIPS A DORMANT
 DEFECT CLASS LIVE.**
@@ -7968,6 +8177,7 @@ correctly and still be unreadable.
 | `D4b` | 18x, correct | **`knell.yml` is `base_entity: wither_skeleton`, and wither skeletons are FIRE-IMMUNE** — `is_fire` contains `minecraft:lava` | the Knell takes nothing in lava while the control dies → *"the conversion does not reach tagged mobs"* |
 | `D4c` | 60% / lethal, correct | **the operator's ARMOUR** — our `Defense` applies to every cause, mobs have none, he does | the lethal drop kills both mobs and leaves him standing → *"the conversion works for mobs, not players"* |
 | `S1c` | 2/tick at 20-tick cadence, correct | **the `area` effect list carries `type: damage amount: 2` ALONGSIDE the scorch it applies** — same interval, same value, different source | two numbers per second read as the refresh-burn defect → *"the fix did not take"*, on a build where it had |
+| **the whole element-accrual gate (twelve rows)** | every hit figure, correct | **THE CRIT COIN FLIP** -- a player crits 15% for double BY DEFAULT and it cannot be turned off, so every stated figure is the non-crit value | `A3` INVERTS RATHER THAN FAILS: its two runs are 340 and 339 damage, and a crit kills both, so the pair collapses into two copies of run 1 and reads as a clean pass |
 
 **Fire immunity is a property of the SUBJECT. Armour is a property of the RUN. A CO-LOCATED PAYLOAD IS
 A PROPERTY OF THE CAST**, and the third is the one a careful reader of the *status* code cannot see at

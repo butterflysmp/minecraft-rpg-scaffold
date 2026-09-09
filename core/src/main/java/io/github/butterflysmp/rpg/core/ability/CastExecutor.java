@@ -16,7 +16,7 @@ import io.github.butterflysmp.rpg.core.combat.SweptLine;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.DoubleConsumer;
+import io.github.butterflysmp.rpg.core.ability.effect.DirectDamage;
 
 /**
  * Turns an aim into an impact, then applies the ability's effects there.
@@ -63,7 +63,7 @@ public final class CastExecutor {
      * to prevent.
      */
     public CastExecutor(CombatWorld world, Runnable onBasicAttackUse) {
-        this(world, onBasicAttackUse, amount -> {});
+        this(world, onBasicAttackUse, (amount, element) -> {});
     }
 
     /**
@@ -75,7 +75,7 @@ public final class CastExecutor {
      * <p>The same THREADING rule as {@code onBasicAttackUse} above applies, for the same reason and
      * with the same force -- see {@link EffectApplier} for where it is reported from.
      */
-    public CastExecutor(CombatWorld world, Runnable onBasicAttackUse, DoubleConsumer onDirectDamage) {
+    public CastExecutor(CombatWorld world, Runnable onBasicAttackUse, DirectDamage onDirectDamage) {
         this.world = world;
         this.effects = new EffectApplier(world, onDirectDamage);
         this.onBasicAttackUse = onBasicAttackUse;

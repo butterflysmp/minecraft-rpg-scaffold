@@ -29,28 +29,55 @@ import java.util.function.BooleanSupplier;
  *       exactly one per call, so ten calls would be ten map lookups for one hit.
  * </ol>
  *
- * <h2>THE INHERITED OFF-BY-ONE, WHICH IS A FULL SECOND HERE</h2>
+ * <h2>THE CLOCK IS THE ONLY THING THAT BURNS</h2>
  *
- * <b>A constant inherited from a precedent carries that precedent's tolerances, and nothing in the
- * copy says which ones came along.</b> {@code SoakedStatus} checks {@code remaining <= 0} BEFORE
- * decrementing, so its task acts {@code N/P} times and then stops one whole period later. At period 1
- * that overrun is a single tick -- invisible, which is why the precedent is fine as written. At period
- * 20 it would make an 8-second status live 9.0 seconds:
+ * <b>One rule, not two.</b> Every burn comes from the repeating task; neither arm of {@link #apply}
+ * deals damage. A first application starts the clock, a refresh adds stacks and extends it, and the
+ * clock does the rest.
+ *
+ * <p><b>THIS DELETED A SPECIAL CASE RATHER THAN ADDING ONE, AND THAT IS THE ARGUMENT FOR IT.</b> The
+ * first application used to burn INLINE while a refresh did not -- and that asymmetry is exactly what
+ * produced the nine-burn defect in scorch slice 1, where the refresh arm called {@code burnOnce}
+ * because the first arm did. With both arms silent there is no asymmetry left to copy.
+ *
+ * <h2>THE ORDERING IS COUPLED TO THAT, AND THE PAIR MOVES TOGETHER</h2>
+ *
+ * The tick body BURNS THEN DECREMENTS. It used to decrement first, and that was correct <i>only
+ * because</i> the inline burn had already consumed tick one. <b>Delete the inline burn and keep
+ * decrement-first and the last period goes silent</b> -- a 120-tick scorch burns five times and says
+ * nothing in its sixth second:
  *
  * <pre>
- *   check-then-decrement:  acts t=20..160 (8x), stops t=180   LIFETIME 180 = 9.0s   WRONG
- *   decrement-then-check:  acts t=20..140 (7x), stops t=160   LIFETIME 160 = 8.0s   + 1 inline = 8 ticks
+ *   decrement-then-check, no inline burn:  t=20..100 (5x), stops t=120   FIVE burns   WRONG
+ *   burn-then-decrement,  no inline burn:  t=20..120 (6x), stops t=120   SIX burns    lifetime 120
  * </pre>
  *
- * <b>The tick COUNT and the LIFETIME are two numbers, and {@code ScorchStatusTest} asserts them
- * separately because a count alone cannot pin the lifetime.</b> Verified rather than argued, by
- * mutation: restore the check-then-decrement ordering AND drop the inline first burn, and the status
- * acts 8 times at t=20..160 -- so {@code eightDamageTicksForTheEightSecondDefault} stays GREEN at 8
- * while the status lives 180 ticks. Only {@code theEightSecondStatusLivesEXACTLYEightSeconds} reddens.
+ * <p><b>The class javadoc here previously said the opposite</b> -- that reversing those two lines
+ * "restores {@code SoakedStatus}'s ordering and adds a full period to the lifetime" -- and it was
+ * right under the old premise, where the inline burn existed. {@code ScorchStatusTest}'s lifetime row
+ * was written to catch that flip as a DEFECT and therefore <b>reddened on this correct change</b>.
  *
- * <p>(The single-part mutation -- ordering alone, inline burn kept -- reddens both, because it yields
- * 9 burns. That is worth stating precisely: the count row is not useless here, it simply cannot be
- * relied on to catch a lifetime defect, and the two-part mutation above is the witness.)
+ * > A TEST WRITTEN TO GUARD AN ORDERING MUST BE RE-DERIVED WHEN THE ORDERING'S PREMISE CHANGES. Its
+ * > red is evidence about the premise, not about the code.
+ *
+ * It was re-derived from the new premise rather than nudged to green, and the schedule was MEASURED
+ * by printing it, not predicted: {@code [20, 40, 60, 80, 100, 120]}.
+ *
+ * <h2>THE TICK COUNT AND THE LIFETIME ARE STILL TWO NUMBERS</h2>
+ *
+ * {@code ScorchStatusTest} asserts them separately, because a count alone cannot pin a lifetime. What
+ * changed is only where the first burn lands: t=20 rather than t=0. The general rule is unchanged and
+ * is the one {@link io.github.butterflysmp.rpg.core.combat.Scorch#damageTicksFor} already stated -- a
+ * scorch burns {@code ceil(duration / period)} times and lives that many whole periods.
+ *
+ * <p><b>There is therefore NO degenerate sub-period case to guard, which is worth stating because it
+ * looks like there should be.</b> A duration under one period is not an exception: it is the
+ * {@code n = 1} instance of the same rule, burning once at t=20 and living 20 ticks, exactly as a
+ * 50-tick scorch burns three times and lives 60. Measured across 1, 19, 21, 41 and 50 ticks: burns
+ * equals {@code damageTicksFor} at every one. <b>A refusal here would put back a special case this
+ * change exists to remove.</b> (Sub-period durations are reachable only through the dev apply
+ * command; no content authors one.)
+ *
  *
  * <h2>REFRESH MUST NOT RESTART THE TASK</h2>
  *
@@ -79,12 +106,17 @@ public final class ScorchStatus {
         int remaining;
         double cap;
         UUID applierId;
+        /** The element whose damage most recently applied or refreshed this burn, or null for a dev
+         *  application. SAME rule as cap and applierId -- newest wins -- so the burn is marked with
+         *  whatever last fed it rather than with whatever first lit it. */
+        String element;
 
-        Active(int stacks, int remaining, double cap, UUID applierId) {
+        Active(int stacks, int remaining, double cap, UUID applierId, String element) {
             this.stacks = stacks;
             this.remaining = remaining;
             this.cap = cap;
             this.applierId = applierId;
+            this.element = element;
         }
     }
 
@@ -94,10 +126,10 @@ public final class ScorchStatus {
      * Apply {@code stacks} scorch stacks to {@code id}, or add them and refresh the whole timer if
      * already scorched.
      *
-     * <p>The first damage tick lands INLINE, here, not one period later. {@code RepeatingTask}'s first
-     * tick is scheduled rather than run inline ({@code RepeatingTask.java:42}), which for a DoT would
-     * mean a scorch that expires inside one period deals nothing at all. A hit should always burn at
-     * least once.
+     * <p>NOTHING BURNS HERE. Both arms are silent and the repeating task is the only source of
+     * damage -- see the class javadoc for why deleting the old inline first burn removed a special
+     * case rather than adding one, and why the tick body had to flip to burn-then-decrement in the
+     * same change.
      *
      * @param stacks         how many stacks this application is worth, from {@code Scorch.stacksFor}
      * @param cap            the AUTHORED damage of whatever applied them -- never what it landed
@@ -105,7 +137,8 @@ public final class ScorchStatus {
      * @param durationTicks  the whole window, refreshed on every application
      */
     public void apply(UUID id, RepeatingTaskTarget target, ScorchSink sink,
-                      int stacks, double cap, UUID applierId, int durationTicks) {
+                      int stacks, double cap, UUID applierId, int durationTicks,
+                      String element) {
         // A hit too small to buy a stack scorches nothing -- AND DOES NOT REFRESH AN EXISTING BURN
         // either, since this returns before the refresh arm below. Correct by the letter of the
         // spec: stacks are what scorch is made of, and a hit that buys none has not applied it. But
@@ -117,30 +150,45 @@ public final class ScorchStatus {
         if (a != null && a.task.isRunning()) {
             a.stacks += stacks;
             a.remaining = durationTicks;   // refresh the whole timer, and DO NOT restart the task
+            // THIS ASSIGNMENT CAN SHORTEN A LIVE BURN, AND NOTHING IN THE MECHANISM STOPS IT.
+            // It is safe TODAY only because every content-driven application passes the same
+            // Scorch.DEFAULT_DURATION_TICKS -- the nine authored durations were stripped in the
+            // content pass. THAT IS A CONTENT-SHAPED INVARIANT, NOT A MECHANISM ONE. Contrast
+            // WeaponFire.landVanillaMelee, whose one-slot sink genuinely enforces its first-wins rule
+            // in code; this one is enforced by there being nothing else to pass.
+            //
+            // WHAT BREAKS IT: any SECOND source of durations. An element declaring one (the refused
+            // shape (b) in PLAN-element-content-pass.md), or an ability regaining an authored
+            // duration_ticks. On that day a short application silently truncates a long burn, and
+            // this line becomes Math.max(a.remaining, durationTicks) -- "extend a burn, never shorten
+            // it", the rule BukkitCombatant.java:272-273 and :288 already apply twice.
+            //
+            // Reachable today only through the dev apply command, which takes an operator-chosen
+            // duration. Deferred on THAT reason -- not on "no second duration exists", which was the
+            // false one it was first deferred on.
             a.cap = cap;                   // most recent applier owns the cap...
             a.applierId = applierId;       // ...and the credit. One rule, not two.
-            // AND IT DOES NOT BURN. The inline burn below is for the FIRST application only, where
-            // the alternative is a scorch that expires inside one period having dealt nothing. HERE
-            // THE TASK IS ALREADY RUNNING and will burn on schedule, so a burn on refresh is damage
-            // outside the clock this class exists to own -- and it scales with HIT RATE rather than
-            // with time. A weapon hitting every 10 ticks would deal 2 inline + 1 scheduled per
-            // period, three times the stated rate; solar_grenade's field would double its own.
-            // "5% of max per second" has to keep meaning that. A refresh refreshes.
+            a.element = element;          // ...and the mark. One rule, not three.
+            // AND IT DOES NOT BURN -- which is now the same rule the first-application arm follows
+            // rather than an exception to it. A burn here would be damage outside the clock this
+            // class exists to own, and it would scale with HIT RATE rather than with time: a weapon
+            // hitting every 10 ticks would deal two unscheduled burns per period on top of the
+            // scheduled one, three times the stated rate. "5% of max per second" has to keep
+            // meaning that. A refresh refreshes.
             // Guarded by ScorchStatusTest.aRefreshDoesNotDealAnUNSCHEDULEDBurn.
             return;
         }
 
-        Active na = new Active(stacks, durationTicks, cap, applierId);
-        burnOnce(na, sink);                // tick 1, inline -- see the javadoc above
+        Active na = new Active(stacks, durationTicks, cap, applierId, element);
 
         BooleanSupplier tick = () -> {
-            // DECREMENT FIRST. Reversing these two lines restores SoakedStatus's ordering and adds a
-            // full period to the lifetime -- an 8-second status that lives 9. See the class javadoc
-            // for the mutation that proves the lifetime needs its own assertion.
-            na.remaining -= Scorch.PERIOD_TICKS;
-            if (na.remaining <= 0) return false;
+            // BURN, THEN DECREMENT -- and this ordering is COUPLED to the inline burn being gone.
+            // Decrement-first existed only because the inline burn had already consumed tick one;
+            // keeping it after deleting that burn silently drops the LAST period (a 120-tick scorch
+            // would burn five times and fall silent for its sixth second). The two move together.
             burnOnce(na, sink);
-            return true;
+            na.remaining -= Scorch.PERIOD_TICKS;
+            return na.remaining > 0;
         };
         na.task = RepeatingTask.start(target, Scorch.PERIOD_TICKS, tick, () -> active.remove(id, na));
         active.put(id, na);
@@ -155,7 +203,7 @@ public final class ScorchStatus {
      * {@code ScorchStatusTest.stacksDoNOTScaleTheDamage} is the only thing that would catch it.
      */
     private static void burnOnce(Active a, ScorchSink sink) {
-        sink.deal(Scorch.damagePerTick(sink.victimMaxHealth(), a.cap), a.applierId);
+        sink.deal(Scorch.damagePerTick(sink.victimMaxHealth(), a.cap), a.applierId, a.element);
     }
 
     /**

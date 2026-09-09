@@ -1,6 +1,8 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.Vec3;
+import io.github.butterflysmp.rpg.core.combat.AccrualRule;
+import io.github.butterflysmp.rpg.core.combat.stat.DamageOutcome;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
 import io.github.butterflysmp.rpg.core.combat.Crit;
@@ -162,19 +164,64 @@ public final class BukkitCombatant {
          * EntityDamageByEntityEvents, against a bare fist that produced one per swing. Stage 1 made
          * vanilla attack for real, which is the first time this gate has had a double to prevent.
          *
-         * <p>The amount arrives already multiplied by the elemental matrix; EffectApplier did that
-         * against the snapshot's shield. All this port carries is a number and a culprit.
+         * <p>The amount arrives already multiplied by whatever the payload resolved; EffectApplier did
+         * that against the snapshot. This port carries a number, a culprit, the crit bit and -- since
+         * elements gained an accrued status and a damage glyph -- the ELEMENT the hit wore. None of
+         * those four is a factor: the element multiplies nothing here or anywhere.
+         *
+         * <p><b>{@code element} may be null, and that is the loop guard rather than an unconverted
+         * caller.</b> Scorch{@code Sink} deals its burn through the four-argument arity, so a burn tick
+         * has no element to pass and cannot accrue more scorch. See {@code CombatantHandle}.
          */
         @Override public void applyDamage(double amount, UUID sourceId, CritState crit,
-                                          DefenseRule defense) {
+                                          DefenseRule defense, String element,
+                                          AccrualRule accrual) {
             ctx.scheduler().onEntity(entity, () -> {
                 // Drain custom HP + fire the seam. dealerIsPlayer reuses the source's faction bit;
                 // the nameplate ignores the dealer this phase, the popup (1b) will need it.
                 Entity source = Attribution.attributableSource(
                         sourceId, entity.getWorld()::getEntity, Bukkit::isOwnedByCurrentRegion);
                 boolean dealerIsPlayer = source instanceof Player;
-                ctx.stats().damage(entity.getUniqueId(), amount, sourceId, dealerIsPlayer, crit,
-                        defense);
+                DamageOutcome outcome = ctx.stats().damage(entity.getUniqueId(), amount, sourceId,
+                        dealerIsPlayer, crit, defense, element);
+
+                // STACK ACCRUAL. This is the one site where the hit's PRE-mitigation magnitude and
+                // the POST-mitigation figure that actually landed are both in scope -- the applier
+                // upstream has only the first, and the seam listeners downstream only the second.
+                // The decision is ElementAccrual's and is pure; this only performs it.
+                // THE CAP BASIS IS THE HIT WITHOUT ITS CRIT, AND IT IS RECOVERED RATHER THAN
+                // REPORTED. `amount` arrives post-charge and post-crit from HitDamage.dealt; the
+                // declared magnitude is what it was before the crit multiplied it, and dividing is
+                // how we get back to it. Exact to floating-point noise, not handed to us -- weaker
+                // than being told, which is why it is said here rather than assumed.
+                //
+                // ONE RULE DECIDES BOTH HALVES OF THE CRIT QUESTION, and there is no crit special
+                // case anywhere: STACKS MEASURE WHAT LANDED, THE CAP MEASURES WHAT WAS DECLARED. A
+                // crit changes what lands, so stacks move with it -- the same reason scorch.yml
+                // gives for armour slowing accrual, "stacks come from damage actually landed". A crit
+                // does not change what was declared, so the ceiling does not move.
+                //
+                // UPGRADE TRIGGER: the day a SECOND consumer needs a crit-free magnitude, this stops
+                // being a local convenience and a HitAmount(total, preCrit) record is owed -- the
+                // symmetric twin of DamageOutcome, two facts in as two facts come out.
+                double declaredMagnitude = amount / crit.multiplier();
+
+                ElementAccrual.forHit(ctx.elements(), ctx.statuses(), element, accrual, outcome,
+                                declaredMagnitude)
+                        .ifPresent(accrued -> {
+                            // The vanilla flame is the same visual the explicit path sets, and this
+                            // is now the THIRD end of that coupling: the other two are
+                            // applyStatus's Scorch arm and RpgListeners' FIRE_TICK suppression,
+                            // which reads isScorched to token the vanilla burn away. All three have
+                            // to move together.
+                            entity.setFireTicks(
+                                    Math.max(entity.getFireTicks(), accrued.durationTicks()));
+                            ctx.scorch().apply(entity.getUniqueId(),
+                                    new EntityTaskTarget(entity, ctx.scheduler()),
+                                    new EntityScorchSink(entity, ctx),
+                                    accrued.stacks(), accrued.cap(), sourceId,
+                                    accrued.durationTicks(), element);
+                        });
 
                 // Aggro-on-hit: the target turns on its attacker -- vanilla's expected default.
                 // Ability damage flashes without a vanilla hit, so it would otherwise provoke
@@ -298,10 +345,23 @@ public final class BukkitCombatant {
                                     + Scorch.UNDECLARED_CAP + ". Give the payload a damage effect.");
                             cap = Scorch.UNDECLARED_CAP;
                         }
+                        // FORWARD COVER, AND THE REASON THIS ARM HAS NO CONTENT CALLERS TODAY.
+                        // The content pass stripped every `type: status, status_id: scorch`, so only
+                        // the dev apply command reaches this. THE SCHEMA STILL PERMITS ONE, though --
+                        // and if explicit scorch is ever authored again, ITS CAP IS THE UNHALVED
+                        // headline (caster.payloadDamage()) while accrual caps at
+                        // amount * Scorch.CAP_FRACTION. The two paths would then disagree by a
+                        // factor of two on the same weapon, with nothing watching: the invariant
+                        // that used to compare them was retired when the content pass removed its
+                        // second authoring route. Halve here too, or do not author one.
                         ctx.scorch().apply(entity.getUniqueId(),
                                 new EntityTaskTarget(entity, ctx.scheduler()),
                                 new EntityScorchSink(entity, ctx),
-                                1, cap, applierId, durationTicks);
+                                1, cap, applierId, durationTicks,
+                                // NO ELEMENT: a dev-applied scorch has no element behind it, so its
+                                // burn draws an unmarked number. Honest rather than tidy -- inventing
+                                // "fire" here would mark a burn nothing elemental lit.
+                                null);
                     }
 
                     case StatusDefinition.Potion potion -> {

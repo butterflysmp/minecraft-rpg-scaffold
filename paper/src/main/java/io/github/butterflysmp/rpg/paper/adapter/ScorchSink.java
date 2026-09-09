@@ -34,5 +34,5 @@ public interface ScorchSink {
      * <p>Implementations must pass {@code bypassesDefense = true}. See {@code Scorch}'s javadoc for the
      * three armour channels and why only this one is bypassed.
      */
-    void deal(double amount, UUID applierId);
+    void deal(double amount, UUID applierId, String element);
 }

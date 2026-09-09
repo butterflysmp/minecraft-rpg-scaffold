@@ -38,19 +38,54 @@ class ScorchStatusTest {
     // --- The clock ----------------------------------------------------------------------------
 
     @Test
-    void theFirstBurnLandsONAPPLICATIONNotOnePeriodLater() {
-        // RepeatingTask's first tick is SCHEDULED, not inline (RepeatingTask.java:42). For an
-        // attribute that is right; for a DoT it means a scorch shorter than one period deals nothing
-        // at all. A hit should always burn at least once.
+    void theFirstBurnLandsONEPERIODInBecauseTheCLOCKIsTheOnlyThingThatBurns() {
+        // THIS ROW ASSERTED THE OPPOSITE, AND ITS PREMISE IS GONE RATHER THAN ITS ASSERTION WRONG.
+        //
+        // It read theFirstBurnLandsONAPPLICATIONNotOnePeriodLater, and guarded an inline burnOnce in
+        // the first-application arm. The justification was real: RepeatingTask schedules its first
+        // tick rather than running it inline (RepeatingTask.java:42), so without an inline burn a
+        // scorch shorter than one period would deal nothing.
+        //
+        // THAT JUSTIFICATION TURNED OUT TO BE FALSE, AND IT WAS MEASURED RATHER THAN ARGUED. A
+        // sub-period duration does NOT deal nothing: it burns once at t=20 and lives 20 ticks, which
+        // is the n=1 instance of the round-up damageTicksFor already documents. Printed across 1, 19,
+        // 21, 41 and 50 ticks -- burns equalled damageTicksFor at every one.
+        //
+        // So the inline burn bought nothing and cost the asymmetry that produced slice 1's nine-burn
+        // defect, where the refresh arm burned because the first arm did. Both arms are silent now.
         var scorch = new ScorchStatus();
         var clock = new FakeTickTarget();
         var sink = sinkAt100(clock);
 
-        scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(), 160);
+        scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(), 120, "fire");
 
-        assertEquals(1, sink.count(), "the burn lands immediately, before the clock has moved");
-        assertEquals(0L, sink.burns.get(0).atTick(), "at tick 0");
-        // Mutation: drop the inline burnOnce in apply() -> count 0 -> reddens.
+        assertEquals(0, sink.count(), "nothing burns on application -- the clock has not moved");
+        clock.advance(20);
+        assertEquals(1, sink.count(), "the first burn is the clock's first edge");
+        assertEquals(20L, sink.burns.get(0).atTick(), "at t=20, not t=0");
+        // Mutation: restore the inline burnOnce in apply() -> count 1 before the advance -> reddens.
+    }
+
+    @Test
+    void aSubPeriodScorchStillBurnsOnceRatherThanVanishing() {
+        // THE CASE THE INLINE BURN EXISTED TO PROTECT, held directly now that it does not.
+        //
+        // It looks like it needs a guard and it does not. A refusal here would put back the special
+        // case the inline burn's deletion exists to remove -- one rule, not two.
+        var scorch = new ScorchStatus();
+        var clock = new FakeTickTarget();
+        var sink = sinkAt100(clock);
+        UUID id = UUID.randomUUID();
+
+        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), 1, "fire");
+        clock.advance(400);
+
+        assertEquals(1, sink.count(), "a one-tick scorch burns once, not never");
+        assertEquals(20L, sink.burns.get(0).atTick(), "on the clock's first edge, one period in");
+        assertEquals(Scorch.damageTicksFor(1), sink.count(), "and core's arithmetic agrees");
+        assertFalse(scorch.isScorched(id), "then it is gone");
+        // Mutation: refuse durations below one period -> count 0 -> reddens, which is the row that
+        // stops that refusal being added back as an obvious-looking safety check.
     }
 
     @Test
@@ -61,70 +96,69 @@ class ScorchStatusTest {
         var clock = new FakeTickTarget();
         var sink = sinkAt100(clock);
 
-        scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(), 160);
+        scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(), 120, "fire");
         clock.advance(60);
 
-        assertEquals(4, sink.count(), "tick 0 inline, then 20, 40, 60 -- one per period, not per tick");
-        assertEquals(0L, sink.burns.get(0).atTick());
-        assertEquals(20L, sink.burns.get(1).atTick());
-        assertEquals(40L, sink.burns.get(2).atTick());
-        assertEquals(60L, sink.burns.get(3).atTick());
-        // Mutation: start the task at period 1 -> 61 burns -> reddens. This is the 20 Hz shape D3a
+        assertEquals(3, sink.count(), "20, 40, 60 -- one per period, not per tick, and none at t=0");
+        assertEquals(20L, sink.burns.get(0).atTick());
+        assertEquals(40L, sink.burns.get(1).atTick());
+        assertEquals(60L, sink.burns.get(2).atTick());
+        // Mutation: start the task at period 1 -> 60 burns -> reddens. This is the 20 Hz shape D3a
         // measured, arriving from our own scheduler instead of from a poisoned i-frame window.
     }
 
     @Test
-    void eightDamageTicksForTheEightSecondDefault() {
+    void sixDamageTicksForTheSixSecondDefault() {
         var scorch = new ScorchStatus();
         var clock = new FakeTickTarget();
         var sink = sinkAt100(clock);
 
         scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(),
-                Scorch.DEFAULT_DURATION_TICKS);
+                Scorch.DEFAULT_DURATION_TICKS, "fire");
         clock.advance(400);   // well past expiry
 
-        assertEquals(8, sink.count(), "160 ticks at period 20 is EIGHT burns, first one included");
+        assertEquals(6, sink.count(), "120 ticks at period 20 is SIX burns, at t=20..120");
         assertEquals(Scorch.damageTicksFor(Scorch.DEFAULT_DURATION_TICKS), sink.count(),
                 "and core's arithmetic agrees with what the scheduler actually did");
-        // MEASURED, NOT ASSUMED: this row stays GREEN at 8 under the two-part mutation described in
-        // theEightSecondStatusLivesEXACTLYEightSeconds, where the status lives 180 ticks. It does
-        // redden under the ordering swap alone (9 burns). So the count is a real assertion but not a
-        // sufficient one -- which is why the lifetime is asserted separately rather than inferred.
+        // The count is a real assertion but not a sufficient one -- an ordering defect can preserve
+        // it while moving the lifetime, which is why the lifetime is asserted separately below.
     }
 
     @Test
-    void theEightSecondStatusLivesEXACTLYEightSeconds() {
-        // THE ROW THAT CATCHES THE INHERITED OFF-BY-ONE.
+    void theSixSecondStatusLivesEXACTLYSixSeconds() {
+        // THE ROW THAT CATCHES AN OFF-BY-ONE-PERIOD, RE-DERIVED FROM A NEW PREMISE.
         //
-        // SoakedStatus checks `remaining <= 0` BEFORE decrementing, so its task acts N/P times and
-        // stops one whole period later. At period 1 that is one tick -- invisible, which is why the
-        // precedent is fine. AT PERIOD 20 IT IS A FULL SECOND ON AN 8-SECOND STATUS.
+        // It used to catch SoakedStatus's check-then-decrement ordering, which at period 20 would put
+        // a full extra second on the status. THE PREMISE HAS FLIPPED: with the inline first burn gone,
+        // BURN-THEN-DECREMENT is the correct ordering and decrement-first is the defect -- it drops
+        // the LAST period instead of adding one, so a 120-tick scorch would burn five times and fall
+        // silent through its sixth second.
         //
-        // The tick COUNT is 8 either way. Only the LIFETIME separates them.
+        // > A TEST WRITTEN TO GUARD AN ORDERING MUST BE RE-DERIVED WHEN THE ORDERING'S PREMISE
+        // > CHANGES. Its red is evidence about the premise, not about the code.
+        //
+        // This row reddened on a CORRECT change and was re-derived rather than nudged to green. The
+        // schedule was MEASURED by printing it: [20, 40, 60, 80, 100, 120].
         var scorch = new ScorchStatus();
         var clock = new FakeTickTarget();
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS);
+        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS, "fire");
 
-        clock.advance(140);
-        assertEquals(8, sink.count(), "all eight burns have landed by t=140");
-        assertEquals(140L, sink.lastBurnTick(), "the last burn is at t=140, not t=160");
+        clock.advance(100);
+        assertEquals(5, sink.count(), "five burns have landed by t=100");
+        assertTrue(scorch.isScorched(id), "and the status is still running -- its last second is owed");
 
-        clock.advance(20);   // now at t=160
-        assertFalse(scorch.isScorched(id), "and the status is GONE at t=160 -- 8.0s, not 9.0s");
-        assertEquals(8, sink.count(), "t=160 expires the status and deals nothing");
+        clock.advance(20);   // now at t=120
+        assertEquals(6, sink.count(), "the SIXTH burn lands at t=120, the final period");
+        assertEquals(120L, sink.lastBurnTick(), "the last burn is at t=120, not t=100 and not t=140");
+        assertFalse(scorch.isScorched(id), "and the status expires on that same tick -- 6.0s exactly");
         assertEquals(0, clock.pending(), "no re-armed tick left holding the clock");
         assertEquals(0, scorch.trackedVictims(), "and onStop cleared the map entry");
-        // MUTATION, RUN RED: swap to SoakedStatus's `if (remaining <= 0) return false; remaining -=
-        // PERIOD;` ordering AND drop the inline first burn in apply(). The status then acts 8 times at
-        // t=20..160 -- so eightDamageTicksForTheEightSecondDefault STAYS GREEN AT 8 -- while living
-        // 180 ticks. This row reddens on "all eight burns have landed by t=140: expected 8, was 7".
-        //
-        // The ordering swap ALONE reddens both rows (9 burns), so it does not demonstrate the point.
-        // The two-part mutation is the one that shows the lifetime needs its own assertion, and it was
-        // executed rather than reasoned about.
+        // MUTATION: keep burn-then-decrement but restore decrement-first -> the t=120 burn never
+        // happens -> count 5 and lastBurnTick 100 -> reddens. That is the defect this ordering pairs
+        // with the deleted inline burn to prevent.
     }
 
     // --- Refresh ------------------------------------------------------------------------------
@@ -141,23 +175,23 @@ class ScorchStatusTest {
         UUID id = UUID.randomUUID();
         UUID applier = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 1, 20.0, applier, 160);
+        scorch.apply(id, clock, sink, 1, 20.0, applier, 160, "fire");
         for (int i = 0; i < 6; i++) {           // re-apply every 15 ticks, six times
             clock.advance(15);
-            scorch.apply(id, clock, sink, 1, 20.0, applier, 160);
+            scorch.apply(id, clock, sink, 1, 20.0, applier, 160, "fire");
         }
 
-        // EXACTLY ONE of these burns is inline -- the first application's. Every other one is the
-        // task firing on its OWN 20-tick phase through six refreshes, which is the whole assertion.
-        // (This row used to count inline burns per application and assert there were more burns than
-        // applications. That worked only because the refresh arm burned; it is asserted directly
-        // now, and the direct form is what catches the re-phase.)
-        assertEquals(List.of(0L, 20L, 40L, 60L, 80L),
+        // NONE of these burns is inline -- there is no inline burn any longer. Every one is the
+        // task firing on its OWN 20-tick phase through six refreshes, which is the whole assertion,
+        // and the absence of a t=0 entry is now part of it. (This row once counted inline burns per
+        // application and asserted there were more burns than applications. That worked only because
+        // the refresh arm burned; the direct form is what catches the re-phase.)
+        assertEquals(List.of(20L, 40L, 60L, 80L),
                 sink.burns.stream().map(FakeScorchSink.Burn::atTick).toList(),
                 "the task keeps its own phase across refreshes");
         assertEquals(7, scorch.stacks(id), "and the stacks accumulated across the refreshes");
         // MUTATION, RUN RED (measured, not predicted): cancel and restart the task inside apply()'s
-        // refresh arm. Observed [0, 30, 35, 55, 60, 65, 75, 85, 90] against [0, 20, 40, 60, 80].
+        // refresh arm -> the phase resets on every re-application and the 20-tick clock never lands.
         //
         // The EXACT list is an artefact of the mutation, not the point: cancel() fires onStop, which
         // removes the map entry, so the next apply() takes the NEW-Active path instead of the
@@ -178,11 +212,12 @@ class ScorchStatusTest {
         UUID first = UUID.randomUUID();
         UUID second = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 1, 20.0, first, 160);
+        scorch.apply(id, clock, sink, 1, 20.0, first, 160, "fire");
+        clock.advance(20);   // the clock is the only thing that burns -- nothing lands on application
         assertEquals(20.0, sink.burns.get(0).amount(), EPS, "the first applier's cap of 20");
         assertEquals(first, sink.burns.get(0).applierId(), "credited to the first applier");
 
-        scorch.apply(id, clock, sink, 1, 8.0, second, 160);
+        scorch.apply(id, clock, sink, 1, 8.0, second, 160, "fire");
         assertEquals(second, scorch.applier(id), "which is what slice 2's ignite will credit");
 
         // The refresh deals nothing of its own (aRefreshDoesNotDealAnUNSCHEDULEDBurn), so the
@@ -192,7 +227,9 @@ class ScorchStatusTest {
         clock.advance(20);
         assertEquals(8.0, sink.burns.get(1).amount(), EPS, "the NEWEST applier's cap of 8 takes over");
         assertEquals(second, sink.burns.get(1).applierId(), "and so does the credit");
-        assertEquals(20L, sink.burns.get(1).atTick(), "and it landed on the clock, at t=20");
+        assertEquals(40L, sink.burns.get(1).atTick(),
+                "and it landed on the clock, at t=40 -- the SECOND scheduled edge, since the first "
+                        + "already burned under the original applier");
         // Mutation: keep the original cap/applier on refresh -> min(5% of 5000, 20) = 20 credited to
         // `first`, against an expected 8 credited to `second` -> reddens on both.
     }
@@ -204,11 +241,11 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 10, 20.0, UUID.randomUUID(), 160);   // a 20-damage staff hit
+        scorch.apply(id, clock, sink, 10, 20.0, UUID.randomUUID(), 160, "fire");   // a 20-damage staff hit
         assertEquals(10, scorch.stacks(id), "ten stacks from one call, not ten calls");
 
         clock.advance(100);
-        scorch.apply(id, clock, sink, 3, 20.0, UUID.randomUUID(), 160);
+        scorch.apply(id, clock, sink, 3, 20.0, UUID.randomUUID(), 160, "fire");
         assertEquals(13, scorch.stacks(id), "stacks add");
 
         clock.advance(100);   // t=200, past the ORIGINAL 160-tick window
@@ -230,20 +267,20 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS);
+        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS, "fire");
         clock.advance(10);                                   // mid-period: nothing is due here
-        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS);
+        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS, "fire");
 
         clock.advance(400);                                  // well past expiry
 
         assertTrue(sink.burns.stream().noneMatch(b -> b.atTick() == 10L),
                 "the re-application at t=10 burned on its own -- burns landed at "
                         + sink.burns.stream().map(b -> String.valueOf(b.atTick())).toList());
-        assertEquals(List.of(0L, 20L, 40L, 60L, 80L, 100L, 120L, 140L),
+        assertEquals(List.of(20L, 40L, 60L, 80L, 100L, 120L),
                 sink.burns.stream().map(FakeScorchSink.Burn::atTick).toList(),
-                "a re-application inside the window buys STACKS and TIME, not a ninth damage tick");
-        assertEquals(40.0, sink.totalDealt(), EPS,
-                "so a full window is 8 x 5% = 40% of max, whatever the hit rate");
+                "a re-application inside the window buys STACKS and TIME, not a seventh damage tick");
+        assertEquals(30.0, sink.totalDealt(), EPS,
+                "so a full window is 6 x 5% = 30% of max, whatever the hit rate");
     }
 
     // --- The rate is flat -----------------------------------------------------------------------
@@ -260,11 +297,13 @@ class ScorchStatusTest {
 
         var one = new ScorchStatus();
         var sinkOne = sinkAt100(clock);
-        one.apply(UUID.randomUUID(), clock, sinkOne, 1, 20.0, UUID.randomUUID(), 160);
+        one.apply(UUID.randomUUID(), clock, sinkOne, 1, 20.0, UUID.randomUUID(), 160, "fire");
 
         var ten = new ScorchStatus();
         var sinkTen = sinkAt100(clock);
-        ten.apply(UUID.randomUUID(), clock, sinkTen, 10, 20.0, UUID.randomUUID(), 160);
+        ten.apply(UUID.randomUUID(), clock, sinkTen, 10, 20.0, UUID.randomUUID(), 160, "fire");
+
+        clock.advance(20);   // nothing burns on application; the clock is the only source
 
         assertEquals(5.0, sinkOne.burns.get(0).amount(), EPS, "one stack burns 5% of a 100 pool");
         assertEquals(sinkOne.burns.get(0).amount(), sinkTen.burns.get(0).amount(), EPS,
@@ -273,7 +312,7 @@ class ScorchStatusTest {
     }
 
     @Test
-    void theCapBINDSOnAHighMaxPoolAndTheTotalIsEightTimesIt() {
+    void theCapBINDSOnAHighMaxPoolAndTheTotalIsSixTimesIt() {
         // The anti-boss brake, through the scheduler rather than the arithmetic -- and asserted at a
         // max where it BINDS, because at 100 a capless implementation is indistinguishable.
         var scorch = new ScorchStatus();
@@ -281,15 +320,15 @@ class ScorchStatusTest {
         var sink = new FakeScorchSink(clock, 5000.0);
 
         scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(),
-                Scorch.DEFAULT_DURATION_TICKS);
+                Scorch.DEFAULT_DURATION_TICKS, "fire");
         clock.advance(400);
 
-        assertEquals(8, sink.count(), "eight burns");
+        assertEquals(6, sink.count(), "six burns");
         assertEquals(20.0, sink.burns.get(0).amount(), EPS, "each held to the cap, not 5% of 5000");
-        assertEquals(160.0, sink.totalDealt(), EPS,
-                "so a full window against a capped target is 8 x cap -- 160, whatever the pool. "
-                        + "Uncapped it would be 2000.");
-        // Mutation: drop the cap in Scorch.damagePerTick -> 250 each, 2000 total -> reddens.
+        assertEquals(120.0, sink.totalDealt(), EPS,
+                "so a full window against a capped target is 6 x cap -- 120, whatever the pool. "
+                        + "Uncapped it would be 1500.");
+        // Mutation: drop the cap in Scorch.damagePerTick -> 250 each, 1500 total -> reddens.
     }
 
     @Test
@@ -300,7 +339,8 @@ class ScorchStatusTest {
         var clock = new FakeTickTarget();
         var sink = sinkAt100(clock);
 
-        scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(), 160);
+        scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(), 160, "fire");
+        clock.advance(20);   // nothing burns on application; the clock is the only source
         assertEquals(5.0, sink.burns.get(0).amount(), EPS, "5% of 100");
 
         sink.maxHealth = 200.0;
@@ -318,7 +358,7 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 0, 20.0, UUID.randomUUID(), 160);
+        scorch.apply(id, clock, sink, 0, 20.0, UUID.randomUUID(), 160, "fire");
 
         assertFalse(scorch.isScorched(id), "zero stacks starts nothing");
         assertEquals(0, sink.count(), "and burns nothing");
@@ -336,7 +376,7 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 5, 20.0, UUID.randomUUID(), 160);
+        scorch.apply(id, clock, sink, 5, 20.0, UUID.randomUUID(), 160, "fire");
         int burnsBeforeDeath = sink.count();
 
         clock.active = false;
@@ -358,7 +398,7 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 5, 20.0, UUID.randomUUID(), 160);
+        scorch.apply(id, clock, sink, 5, 20.0, UUID.randomUUID(), 160, "fire");
         int burnsBeforeForget = sink.count();
 
         scorch.forget(id);
@@ -380,8 +420,8 @@ class ScorchStatusTest {
         UUID first = UUID.randomUUID();
         UUID second = UUID.randomUUID();
 
-        scorch.apply(first, clock, a, 1, 20.0, UUID.randomUUID(), 160);
-        scorch.apply(second, clock, b, 3, 20.0, UUID.randomUUID(), 40);
+        scorch.apply(first, clock, a, 1, 20.0, UUID.randomUUID(), 160, "fire");
+        scorch.apply(second, clock, b, 3, 20.0, UUID.randomUUID(), 40, "fire");
 
         assertEquals(2, scorch.trackedVictims(), "keyed per victim");
         assertEquals(1, scorch.stacks(first));

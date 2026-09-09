@@ -68,4 +68,82 @@ class DamageNumberTextTest {
                 "crit and normal differ ONLY by colour, so their text must be identical");
         // Mutation: format the crit's double raw while rounding the normal one -> "12.7" -> reddens.
     }
+
+    // --- The glyph, and the two channels staying separate ----------------------------------------
+
+    /** The glyph an element ships: a mark carrying its OWN colour, as fire.yml's damage_symbol does. */
+    private static Component glyph() {
+        return Component.text("*", NamedTextColor.GOLD);
+    }
+
+    private static Component firstChild(Component root) {
+        return root.children().get(0);
+    }
+
+    private static Component lastChild(Component root) {
+        return root.children().get(root.children().size() - 1);
+    }
+
+    @Test
+    void theGLYPHKeepsItsOWNColourBesideAWHITENumberInTheSAMETree() {
+        // THE ROW THE WHOLE THIRD-SHAPE DECISION RESTS ON, and it must assert BOTH colours in ONE
+        // tree. Asserting them in two separate components would pass against an implementation that
+        // colours the assembled root, because each piece is correct in isolation and only their
+        // COMPOSITION is wrong.
+        //
+        // Adventure lets a child keep an explicit colour, so this works by inheritance rules -- which
+        // is exactly why it is pinned. "Probably works by inheritance rules" is not a witness, and the
+        // failure is silent: the glyph would simply turn yellow on every crit, undoing the reason the
+        // glyph was chosen over colouring the number.
+        Component root = DamageNumberText.of(28.0, false, glyph());
+
+        assertNull(root.color(),
+                "the ROOT wears no colour of its own -- that is what lets the children keep theirs");
+        assertNull(root.font(),
+                "AND NO FONT, for the same reason and against a failure that does not exist yet. A "
+                        + "resource-pack glyph is reached either by a Private Use Area codepoint or by a "
+                        + "<font:ns:id> tag in damage_symbol -- both pure content, no code change. Font "
+                        + "inherits exactly as colour does, so a font landing on the assembled ROOT would "
+                        + "draw THE DIGITS in the icon font: a damage number rendered as missing sprites, "
+                        + "or as whatever art sits at those codepoints. Asserted before any pack exists, "
+                        + "so the composition is proved rather than debugged against a live client");
+        assertEquals(NamedTextColor.GOLD, firstChild(root).color(), "the glyph stays the ELEMENT's gold");
+        assertEquals(NamedTextColor.WHITE, lastChild(root).color(), "the number stays white");
+        assertEquals("28", ((TextComponent) lastChild(root)).content(), "and it is still the number");
+        // Mutation: colour the assembled ROOT instead of the number child -> root.color() is no longer
+        // null -> reddens. Mutation: set a font on the root -> root.font() is no longer null -> reddens
+        // there and nowhere else. Old note:
+        // root.color() is no longer null -> reddens on the first assertion, and the glyph would have
+        // inherited it in game.
+    }
+
+    @Test
+    void aCRITTurnsTheNUMBERYellowAndLEAVESTheGLYPHAlone() {
+        // The pair to the row above, and the one that proves the two channels are independent rather
+        // than merely both present. Same glyph, only the crit differs -- so a mutation that couples
+        // them cannot pass by accident of the fixture.
+        Component root = DamageNumberText.of(56.0, true, glyph());
+
+        assertEquals(NamedTextColor.GOLD, firstChild(root).color(),
+                "a fire crit is still marked as FIRE -- the element does not vanish when it matters most");
+        assertEquals(NamedTextColor.YELLOW, lastChild(root).color(), "and the number carries the crit");
+        // Mutation: apply crit.isCrit() ? YELLOW : WHITE to the root -> the glyph reads yellow, this
+        // row's first assertion reddens, and colour is back to meaning two things at once.
+    }
+
+    @Test
+    void aNullGlyphRendersEXACTLYWhatItDidBeforeGlyphsExisted() {
+        // Every elementless path -- a thorns reflect, fall damage, scorch's own burn tick -- and the
+        // six shipped elements that have not been given a glyph yet. A bare number, no wrapper, no
+        // leading space: the same component the two-argument form returns.
+        Component bare = DamageNumberText.of(28.0, false, null);
+
+        assertTrue(bare.children().isEmpty(), "no wrapper, no gap child -- just the number");
+        assertEquals(NamedTextColor.WHITE, bare.color());
+        assertEquals("28", ((TextComponent) bare).content());
+        assertEquals(((TextComponent) DamageNumberText.of(28.0)).content(),
+                ((TextComponent) bare).content(), "identical to the no-element form");
+        // Mutation: always wrap, even with a null symbol -> children() is non-empty -> reddens, and
+        // every non-elemental number in the game would gain a stray leading space.
+    }
 }

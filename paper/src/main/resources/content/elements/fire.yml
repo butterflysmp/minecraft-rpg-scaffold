@@ -1,3 +1,85 @@
-# An element is pure identity: an id (the filename) and a display name. No logic --
-# it flavors a hit and will gate kits in Phase 3, but it never touches damage.
+# An element is IDENTITY PLUS TWO PROPERTIES. It is still never math -- it multiplies no damage,
+# and the weak/strong triangle deleted in Phase 2A is not coming back. What it now declares is which
+# status its damage accrues, and how its damage numbers are marked.
+#
+# THE COMMENT THAT USED TO BE HERE SAID "No logic -- it flavors a hit ... but it never touches
+# damage." True from Phase 2A until accrual was wired, and false the moment this field landed. It is
+# called out rather than quietly swapped because that is exactly the flint_staff.yml "STACKS TO 64"
+# shape: correct reasoning, invisible to every compiler and test, wrong on the day it shipped.
 display_name: "<red>Fire</red>"
+
+# THE GLYPH DRAWN BEFORE THIS ELEMENT'S DAMAGE NUMBERS. Glyph and colour in ONE MiniMessage field,
+# exactly as display_name carries both -- not a separate symbol field plus a colour field, which
+# would be two values that can disagree.
+#
+# THIS IS DELIBERATELY NOT THE NUMBER'S COLOUR. Colour on a damage number already means crit
+# (yellow) vs normal-or-swept (white), and elements would have been a third meaning on one channel
+# that has to separate seven values on something visible for 0.75s. A glyph ADDS a channel instead
+# of rationing one: nothing goes invisible on a crit, symbol space does not run out at element
+# eight, and it still reads for a player who cannot separate orange from yellow.
+#
+# So fire's tooltip word stays RED while its numbers are marked in ORANGE, and that is intentional.
+# <gold> is vanilla's orange; MiniMessage hex (<color:#FF7A18>) is available if a truer one is wanted.
+#
+# WHICH CODEPOINTS ACTUALLY RENDER IS A CLIENT-FONT QUESTION, NOT A SCHEMA ONE. A glyph the font
+# lacks draws as a missing-glyph box, so this stays boot-tunable: look at it on a real client before
+# treating it as settled. C1 established that four render -- U+2726 (Dingbats), U+2727, U+273F and
+# U+25C6 (Geometric Shapes) -- and everything else is a hypothesis until someone looks.
+#
+# ▲ IS U+25B2, THE SAME BLOCK AS THE PROVEN ◆. If it boxes, try ✺ U+273A or ✹ U+2739, both in the
+# Dingbats block that already renders three of its neighbours.
+#
+# AND IT WAS CHOSEN FOR A SECOND REASON: SHAPE, NOT JUST FIRE-LIKENESS. Fire was ✦ U+2726 and void
+# is ✧ U+2727 -- adjacent codepoints differing only by fill. At damage-number size, floating for
+# under a second, the only thing separating them was gold against purple. That collision was latent
+# only because nobody has swung a fire weapon beside void_slash. A triangle against a star separates
+# on SHAPE, which survives colourblindness and a busy background; two stars do not.
+#
+# THESE SEVEN CODEPOINTS ARE AN INTERIM CHOICE, NOT A DECISION. Written down because the next reader
+# finds seven authored glyphs and reasonably assumes somebody picked them on their merits -- which is
+# how a placeholder becomes permanent.
+#
+# A TEXTURE PACK IS PLANNED, and it changes what a good glyph is. A pack glyph is reached one of two
+# ways, BOTH PURE CONTENT with no code change:
+#
+#   damage_symbol: "<gold></gold>"                 a Private Use Area codepoint
+#   damage_symbol: "<font:rpg:icons><gold>a</gold></font>"   an explicit font
+#
+# So the swap is ONE LINE PER ELEMENT. Vanilla-safe codepoints ship now on purpose: until a pack is
+# REQUIRED, a PUA codepoint draws as an empty box in front of every fire damage number for anyone who
+# has not accepted it. Boxes now in exchange for a better glyph later is the wrong trade.
+#
+# THE COMPOSITION IS ALREADY PROVED SAFE FOR THE FONT CASE. Adventure inherits font exactly as it
+# inherits colour, so a font landing on the assembled root would draw THE DIGITS in the icon font --
+# the damage number itself rendered as missing sprites. DamageNumberTextTest asserts the root carries
+# no font, beside the assertion that it carries no colour, and the mutation reddens.
+#
+# TWO DECISIONS THE PACK NEEDS, AND THEY ARE THE OPERATOR'S:
+#
+#   1. IS THE PACK REQUIRED? A PUA codepoint without it renders as a box. Either the server sets
+#      require-resource-pack, or the glyph set stays vanilla-safe like this one. Server policy, not a
+#      content question.
+#   2. WHITE SPRITE TINTED, OR FULL-COLOUR SPRITE? Minecraft multiplies a bitmap glyph by the text
+#      colour. A white flame drawn ONCE gives all seven elements from one sprite and keeps each
+#      element's authored colour meaningful; a full-colour flame has to be paired with <white> or it
+#      muddies. The first is more work once and less work forever.
+#
+# AND CHECK THE PROVIDER SCHEMA AGAINST THE TARGET VERSION rather than from memory -- the mechanism
+# (bitmap providers, PUA, colour multiplication, ascent/height) has been stable for many versions,
+# but the exact JSON for this Paper build has not been read. EXPECT THE FIRST VISIBLE BUG TO BE
+# VERTICAL ALIGNMENT: ascent and height decide whether the glyph sits on the number's baseline or
+# floats above it.
+damage_symbol: "<gold>▲</gold>"
+
+# THE STATUS THIS ELEMENT'S DAMAGE ACCRUES. Every hit wearing element: fire buys scorch stacks in
+# proportion to what actually LANDED -- post-mitigation, so armour delays the burn rather than
+# blunting it (the operator's ruling; see Scorch and CombatantStats.damage).
+#
+# THE RATE IS NOT AUTHORED HERE. One stack per 2 post-mitigation damage lives in
+# Scorch.DAMAGE_PER_STACK, and the duration in Scorch.DEFAULT_DURATION_TICKS. This field names WHAT
+# accrues and nothing else: an element that could declare arbitrary effects, rates and durations is
+# a far bigger feature than either thing this slice was for, and nobody has asked for it.
+#
+# FIRE IS THE ONLY ELEMENT THAT DECLARES THIS. The other six accrue nothing, and their files say so
+# by omission -- absent means off, never a rejection.
+applies_status: scorch

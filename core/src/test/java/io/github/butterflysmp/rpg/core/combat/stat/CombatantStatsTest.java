@@ -688,4 +688,134 @@ class CombatantStatsTest {
         assertFalse(stats.reconcileManaRegenModifiers(UUID.randomUUID(), Map.of("manaregen:CHEST", 1.0)),
                 "nothing was tracked, so nothing moved, so the caller must not pin");
     }
+
+    // --- The element rides the seam, and damage() reports what actually landed --------------------
+
+    @Test
+    void damageRETURNSThePostMitigationNumberAndTheROWMUSTBEARMOURED() {
+        // THE BLINDNESS TRAP, DESIGNED AROUND RATHER THAN DISCOVERED. Against an UNDEFENDED victim
+        // `dealt` and `amount` are the same number, so this row would pass whether the method returns
+        // the mitigated figure or the raw one -- CLAUDE.md defect #4, a test passing on an arithmetic
+        // accident rather than on the thing it guards. It therefore uses the 20-point fixture, where
+        // applyDefense(30, 20) is exactly 25.0 and the two numbers are five apart.
+        //
+        // The return exists because stack accrual needs the POST-mitigation figure and that number
+        // lived nowhere else: it is computed here and was discarded. The alternative -- recomputing
+        // Defense.applyDefense in BukkitCombatant -- would be a SECOND site applying the curve, which
+        // must stay in sync with this one forever with nothing to catch a divergence.
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID victim = UUID.randomUUID();
+        stats.register(victim, CombatantStats.DEFAULT_PLAYER_BASE, true);
+        stats.reconcileDefenseModifiers(victim, fullDiamond());
+
+        DamageOutcome outcome = stats.damage(victim, 30, null, false);
+
+        assertEquals(25.0, outcome.dealt(), EPS, "the RETURN is what landed, not the 30 asked for");
+        assertEquals(outcome.dealt(), recorder.last().amount(), EPS,
+                "and it is the same number the seam publishes -- one basis, two readings");
+        // AND THE TWO COMPONENTS MUST BE DIFFERENT NUMBERS HERE. Both are doubles and adjacent, so a
+        // transposed construction is representable; 25.0 dealt against 75.0 remaining is what makes a
+        // swap visible. Equal values would have made the transposition a passing coincidence -- the
+        // same trap as asserting the return against an UNDEFENDED victim, where dealt == amount.
+        assertEquals(75.0, outcome.newCurrent(), EPS, "and where it left the target: 100 - 25");
+        // Mutation: `return amount` in place of dealt -> 30 != 25 -> reddens on the first.
+        // Mutation: publish `amount` on the seam -> the two readings diverge -> reddens on the second.
+        // Mutation: swap the two components at construction -> 75 != 25 -> reddens on the first AND
+        // the third, which is why they are pinned to different values.
+    }
+
+    @Test
+    void aBYPASSEDHitReturnsTheWholeAmountBecauseNothingWasTakenFromIt() {
+        // The mirror, on the same victim and the same 30, so only the rule differs. Without it, a
+        // return value hardcoded to `amount` would still pass the row above if that row alone existed.
+        var stats = new CombatantStats();
+        UUID victim = UUID.randomUUID();
+        stats.register(victim, CombatantStats.DEFAULT_PLAYER_BASE, true);
+        stats.reconcileDefenseModifiers(victim, fullDiamond());
+
+        DamageOutcome outcome =
+                stats.damage(victim, 30, null, false, CritState.NORMAL, DefenseRule.BYPASSED);
+
+        assertEquals(30.0, outcome.dealt(), EPS, "bypassing, what landed IS what was asked for");
+        assertEquals(70.0, outcome.newCurrent(), EPS, "and the whole 30 came off");
+        // Mutation: return the mitigated figure unconditionally -> 25 != 30 -> reddens.
+    }
+
+    @Test
+    void anUntrackedCombatantReportsZeroDEALTRatherThanTheAmountAsked() {
+        // damage() is a documented no-op on an untracked combatant. The return must agree with that:
+        // reporting the amount would tell accrual that a hit landed on something the store does not
+        // even model, and it would mint stacks from nothing.
+        var stats = new CombatantStats();
+
+        DamageOutcome outcome = stats.damage(UUID.randomUUID(), 10, null, false);
+
+        assertEquals(0.0, outcome.dealt(), EPS, "nothing was tracked, so nothing landed");
+        assertEquals(0.0, outcome.newCurrent(), EPS,
+                "and there is no health to report -- which reads correctly as 'not standing', so a "
+                        + "consumer gating on newCurrent > 0 accrues nothing onto an untracked id");
+        // Mutation: `return amount;` before the null check -> 10 != 0 -> reddens.
+    }
+
+    @Test
+    void theRETURNReportsCurrentAFTERTheHitAndNOTTheTRANSITIONBit() {
+        // THE PREDICATE DECISION, PINNED. HealthState.damage returns `before > 0 && current == 0`,
+        // which fires exactly ONCE -- right for HealthChange.reachedZero, which is the death hook.
+        // It is the WRONG question for a consumer asking "is this target still standing", and the
+        // difference is REACHABLE rather than theoretical:
+        //
+        //   MobDeathSystem.shouldKill is `reachedZero() && !targetIsPlayer()`, so A PLAYER AT ZERO
+        //   CUSTOM HEALTH IS NEVER KILLED OR REMOVED -- they stay tracked, alive, at the floor. The
+        //   NEXT hit on them has before == 0, so reachedZero is FALSE, and anything keyed on the
+        //   transition would treat a combatant at zero health as a live target. That is D3b's shape.
+        //
+        // For a mob the difference is unreachable only because the store entry is gone by the second
+        // hit. Relying on that would be reading the mob path's cleanup ordering as a signal.
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID player = UUID.randomUUID();
+        stats.register(player, CombatantStats.DEFAULT_PLAYER_BASE, true);
+
+        DamageOutcome crossing = stats.damage(player, 100, null, false);
+        assertEquals(0.0, crossing.newCurrent(), EPS, "the hit that took them to zero");
+        assertTrue(recorder.last().reachedZero(), "and it IS the transition");
+
+        // The second hit on a combatant already at zero -- reachable for a player, who is not killed.
+        DamageOutcome after = stats.damage(player, 5, null, false);
+        assertFalse(recorder.last().reachedZero(),
+                "the transition bit is FALSE on a second hit -- it fires once, by design");
+        assertEquals(0.0, after.newCurrent(), EPS,
+                "but current is still zero, which is the fact a 'still standing' consumer needs. "
+                        + "Keyed on reachedZero, this hit would look like it landed on a live target");
+        // Mutation: return the transition bit instead of current -> the last assertion reddens.
+    }
+
+    @Test
+    void theELEMENTRidesTheSeamAndTheOlderOverloadsCarryNone() {
+        // Element is PRESENTATION AND IDENTITY, never a factor -- the same standing CritState was
+        // admitted on. It rides because two consumers cannot derive it: the popup's glyph is a content
+        // fact only ElementRegistry holds, and accrual has to know WHICH status the hit accrues.
+        //
+        // The null arm is the LOOP GUARD's unit half. Scorch's own burn tick calls an element-less
+        // overload, so it cannot accrue more scorch -- unrepresentable rather than checked. If the
+        // older overloads ever started defaulting to a real element, that guard would be gone.
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID victim = UUID.randomUUID();
+        stats.register(victim, CombatantStats.DEFAULT_PLAYER_BASE, true);
+
+        stats.damage(victim, 5, null, false, CritState.NORMAL, DefenseRule.APPLIES, "fire");
+        assertEquals("fire", recorder.last().element(), "the widest overload carries it through");
+
+        stats.damage(victim, 5, null, false);
+        assertNull(recorder.last().element(), "the 4-arg form wears no element");
+
+        stats.damage(victim, 5, null, false, CritState.NORMAL, DefenseRule.BYPASSED);
+        assertNull(recorder.last().element(),
+                "and nor does the 6-arg form -- the shape scorch's own burn tick calls");
+        // Mutation: hardcode null in the widest overload's HealthChange -> reddens on the first.
+        // Mutation: default the older overloads to "fire" -> reddens on the second and third, and
+        // that mutation IS the loop: a burn accruing from its own tick.
+    }
 }

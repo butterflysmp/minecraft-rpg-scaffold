@@ -2,6 +2,9 @@ package io.github.butterflysmp.rpg.paper.listener;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
+import io.github.butterflysmp.rpg.core.combat.AccrualRule;
+import io.github.butterflysmp.rpg.core.combat.CritState;
+import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.DamageScale;
 import io.github.butterflysmp.rpg.core.combat.DamageWindow;
@@ -860,7 +863,7 @@ public final class RpgListeners implements Listener {
                 .flatMap(weapons::find)
                 .map(WeaponDefinition::sweep)
                 .orElse(SweepShare.NONE);
-        var primary = meleeHits.primaryDamageThisTick(attacker.getUniqueId());
+        var primary = meleeHits.primaryHitThisTick(attacker.getUniqueId());
         if (!SweepShare.sweeps(fraction) || primary.isEmpty()) {
             event.setCancelled(true);
             return;
@@ -882,15 +885,36 @@ public final class RpgListeners implements Listener {
         event.setDamage(TOKEN_DAMAGE);                                   // flash + i-frames + shove
         floorSoTokenCannotKill(swept);
 
-        // The two-arg applyDamage, so the swept mob's popup is a NORMAL white number even when the
-        // primary critted. Its DAMAGE still inherits the crit in full -- the stashed figure is
-        // already multiplied -- so a crit swing sweeps for half of the doubled number. Only the
-        // presentation differs, and deliberately: the crit was rolled for the hit the player aimed
-        // at, and colouring every bystander yellow would claim each of them crit independently. The
-        // visible consequence is a yellow "28" on the primary beside white "14"s on its neighbours,
-        // and no crit particles on the bystanders either -- the burst is spawned on the crit bit.
-        BukkitCombatant.of(swept, adapters).handle()
-                .applyDamage(SweepShare.of(primary.getAsDouble(), fraction), attacker.getUniqueId());
+        // The FOUR-arg applyDamage, so the swept mob keeps a NORMAL white number even when the
+        // primary critted, and now carries the primary's ELEMENT so a fire sweep is fire damage on
+        // every mob it caught. Its DAMAGE still inherits the crit in full -- the stashed figure is
+        // already multiplied -- so a crit swing sweeps for half of the doubled number.
+        //
+        // CRIT AND ELEMENT TRANSFER DIFFERENTLY, AND THE PRECEDENT DOES NOT CARRY FROM ONE TO THE
+        // OTHER. A crit is a PER-HIT ROLL the bystander did not receive, so colouring every
+        // bystander yellow would claim each of them crit independently -- hence the white numbers
+        // and no crit particles here. An element is a PER-WEAPON IDENTITY every target of the swing
+        // genuinely did receive, so drawing them unmarked would assert something false the other
+        // way. Opposite transfer properties; the white-for-sweep decision is untouched.
+        //
+        // THE ELEMENT COMES FROM THE STASH, NOT FROM THE HELD WEAPON. Reading
+        // WeaponDefinition.element() here would be a SECOND derivation of a fact the seam already
+        // reports, and the two can disagree in shipped content: ability_stone declares
+        // element: kinetic at the weapon level while its nested damage effect declares fire.
+        BukkitCombatant.of(swept, adapters).handle().applyDamage(
+                SweepShare.of(primary.get().damage(), fraction), attacker.getUniqueId(),
+                CritState.NORMAL, DefenseRule.APPLIES, primary.get().element(),
+                // ACCRUES, AND IT IS A REAL DECISION RATHER THAN A DEFAULT. INERT is the reflexive
+                // choice here -- "a derived hit, half the primary's damage, not a real one" -- and it
+                // would be wrong: a0eee2b exists so a fire sweep burns what it caught, and
+                // emberblade's flavour was rewritten for it.
+                //
+                // NO GATE ROW CAN SEE THIS. The share is half the primary, so a bystander takes 3,
+                // buys one stack, and on a 20-HP mob its burn reads 1 -- indistinguishable from
+                // anything else lighting it. The unit row is the only witness, which is why it
+                // exists: SweepShareTest's sibling in RpgListeners has no fixture, so the assertion
+                // lives where the decision is readable instead.
+                AccrualRule.ACCRUES);
     }
 
     /**
@@ -953,7 +977,8 @@ public final class RpgListeners implements Listener {
         // is absent whenever nothing was dealt, which is what makes sweep fail closed.
         WeaponFire.landVanillaMelee(attacker, victim, AttackCharge.scale(swing.get().charge()),
                 weapons, adapters, cooldowns)
-                .ifPresent(dealt -> meleeHits.recordPrimaryDamage(attacker.getUniqueId(), dealt));
+                .ifPresent(hit -> meleeHits.recordPrimaryHit(
+                        attacker.getUniqueId(), hit.amount(), hit.element()));
     }
 
     /**
@@ -1156,8 +1181,31 @@ public final class RpgListeners implements Listener {
         // because it must not reach vanilla either -- the same shape as the absorbed branch below,
         // minus the claim.
         //
-        // Narrow on purpose: FIRE and LAVA are separate causes and still land in full. A scorched
-        // victim standing in real fire loses only the FIRE_TICK stream, which is the one we replaced.
+        // NAMED DEBT: THIS SUPPRESSES ONE MEMBER OF A FAMILY OF FOUR, AND THE OTHER THREE DOUBLE-DIP.
+        //
+        // Deferred by the operator 2026-09-09, recorded as a bounded question rather than a symptom.
+        // Observed as "the burn doubles only while standing in fire", which IS the diagnosis: block
+        // contact raises FIRE, the ignition raises FIRE_TICK, and only the second is caught. Step out
+        // and it stops.
+        //
+        //     FIRE_TICK   suppressed while scorched          <- the stream we replaced
+        //     FIRE        NOT. Standing in a fire block.
+        //     LAVA        NOT.
+        //     HOT_FLOOR   NOT. Magma block.
+        //
+        // Under any of the other three, a scorched victim takes OUR capped, credited, defense-
+        // bypassing burn PLUS vanilla's uncapped, uncredited one -- the precise doubling this
+        // suppression exists to prevent, arriving through a sibling cause.
+        //
+        // AND IT IS NOT A ONE-LINE FIX, WHICH IS THE REAL REASON IT IS A QUESTION RATHER THAN A TODO.
+        // Suppressing LAVA would mean a scorched mob takes LESS lava damage than an unscorched one --
+        // scorch as a defensive buff. This repo already refused that shape once, which is why the
+        // FIRE_TICK gate sits BEFORE damageWindow.claim (see above): a suppressed tick dealt nothing,
+        // so it must not consume window budget either.
+        //
+        // THE BOUNDED QUESTION, for whoever takes it: which of these four should scorch suppress, and
+        // does suppressing LAVA make scorch a defensive buff? An answer per cause, like the standing
+        // "which causes should Defense touch?" question DefenseRule was built for.
         if (event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK
                 && adapters.scorch().isScorched(id)) {
             event.setDamage(TOKEN_DAMAGE);

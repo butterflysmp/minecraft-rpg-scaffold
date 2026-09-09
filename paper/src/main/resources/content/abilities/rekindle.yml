@@ -41,4 +41,3 @@ on_hit:
       radius: 4.0
       effects:
         - { type: damage, amount: 8, element: fire }
-        - { type: status, status_id: scorch, duration_ticks: 60 }

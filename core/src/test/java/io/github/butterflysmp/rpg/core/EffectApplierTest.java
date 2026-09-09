@@ -750,7 +750,7 @@ class EffectApplierTest {
         caster.enchantDamagePercent = 15.0;     // Sharpness III
         List<Double> reported = new ArrayList<>();
 
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
 
         assertEquals(1, reported.size(), "one damage effect, one report");
@@ -770,7 +770,7 @@ class EffectApplierTest {
         caster.attackDamage = 8.0;
         List<Double> reported = new ArrayList<>();
 
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")),
                 caster.asCaster(AttackCharge.scale(0.0)), pair(target), Vec3.ZERO);
 
@@ -797,13 +797,13 @@ class EffectApplierTest {
         var dead = new FakeWorld.Dummy(new Vec3(1, 0, 0));
         dead.health = 0.0;                      // already gone: the alive() half of the gate
         caster.attackDamage = 8.0;
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(dead), Vec3.ZERO);
         assertTrue(reported.isEmpty(), "a hit on a corpse reports nothing");
 
         var live = new FakeWorld.Dummy(new Vec3(1, 0, 0));
         caster.attackDamage = 0.0;              // unarmed: the amount > 0 half of the gate
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(live), Vec3.ZERO);
         assertTrue(reported.isEmpty(), "an unarmed swing reports nothing");
         assertEquals(100.0, live.health, 1e-9, "and dealt nothing, which is why it must report nothing");
@@ -837,7 +837,7 @@ class EffectApplierTest {
         caster.critMultiplier = Crit.multiplier(Crit.BASE_CHANCE, Crit.BASE_DAMAGE, 0.0);  // rolled a crit
         List<Double> reported = new ArrayList<>();
 
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
 
         assertEquals(16.0, reported.get(0), 1e-9, "8 x 2.0");
@@ -899,7 +899,7 @@ class EffectApplierTest {
         caster.critMultiplier = 2.0;
         List<Double> reported = new ArrayList<>();
 
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")), caster.asCaster(), pair(target), Vec3.ZERO);
 
         assertEquals(28.4, reported.get(0), 1e-9, "(8*1.15 + 5) * 2.0 -- the crit lands LAST");
@@ -918,12 +918,133 @@ class EffectApplierTest {
         caster.critMultiplier = 2.0;
         List<Double> reported = new ArrayList<>();
 
-        new EffectApplier(world, reported::add).applyAll(
+        new EffectApplier(world, (amount, element) -> reported.add(amount)).applyAll(
                 List.of(new EffectSpec.WeaponDamage("kinetic")),
                 caster.asCaster(AttackCharge.scale(0.5)), pair(target), Vec3.ZERO);
 
         assertEquals(6.4, reported.get(0), 1e-9, "8 at half charge is 3.2, critting is 6.4");
         // Mutation: replace * chargeScale * critMultiplier with * critMultiplier -> 16.0, a badly
         // timed crit hitting as hard as a perfect one -> reddens.
+    }
+
+    // --- The element reaches the port ------------------------------------------------------------
+
+    @Test
+    void bothDamageArmsPassTheirOwnSpecsELEMENTToThePort() {
+        // Element used to be read off the spec and dropped here -- "identity, not math" was taken to
+        // mean "goes no further", which was a stronger claim than the reasoning supported. It still
+        // multiplies nothing; it now travels, because two things downstream cannot derive it: the
+        // damage number's glyph, and which status the hit accrues.
+        //
+        // BOTH ARMS, SEPARATELY. They are structurally identical and differ only in where the base
+        // number comes from, which is exactly the shape where one gets wired and the other is
+        // forgotten -- and nothing would notice, because a basic attack and an authored bolt look the
+        // same on screen.
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        caster.attackDamage = 9.0;
+
+        var literalVictim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(12, "fire")),
+                caster.asCaster(), pair(literalVictim), Vec3.ZERO);
+        assertEquals("fire", literalVictim.lastDamageElement,
+                "an authored Damage effect carries its own element to the port");
+
+        var weaponVictim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.WeaponDamage("water")),
+                caster.asCaster(), pair(weaponVictim), Vec3.ZERO);
+        assertEquals("water", weaponVictim.lastDamageElement,
+                "and so does a basic attack -- the arm that is easy to leave behind");
+
+        // Mutation: pass null at either arm -> reddens on that arm alone.
+        // Mutation: pass a literal "fire" at both -> the water row reddens, which is why the two rows
+        // use DIFFERENT elements. Two rows both asserting "fire" could not tell a hardcode apart.
+    }
+
+    @Test
+    void aSTATUSEffectCarriesNoElementBecauseAStatusNamesITSELF() {
+        // THE CONTROL, and it guards a real temptation: "elements now travel" reads as "thread the
+        // element everywhere". The status arm must NOT, and the reason is not tidiness -- an element
+        // reaching a status application is how a burn would start re-applying itself.
+        //
+        // A bare Status effect must leave the damage port entirely untouched: no damage call, so no
+        // element. Asserting damageCalls == 0 rather than lastDamageElement == null is deliberate --
+        // the field starts null, so the weaker assertion would pass against a port that was never
+        // called AND against one called with null, and only one of those is what this row is about.
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Status("scorch", 40, 0)),
+                caster.asCaster(), pair(victim), Vec3.ZERO);
+
+        assertEquals(List.of("scorch"), victim.statuses, "the status still lands");
+        assertEquals(0, victim.damageCalls, "and it reached the port WITHOUT a damage call");
+        assertNull(victim.lastDamageElement, "so no element was delivered");
+        // Mutation: add an applyDamage call to the Status arm -> damageCalls is 1 -> reddens.
+    }
+
+    @Test
+    void aREFUSEDHitDeliversNoElementBecauseItDeliversNothing() {
+        // The element must ride INSIDE the amount>0 && alive gate, not before it. Outside the gate a
+        // dead target would still get a damage number drawn over its corpse, and -- once accrual is
+        // wired -- would accrue stacks from a hit that never landed. Same gate, same reason, as the
+        // onDirectDamage seam the sweep rider reads.
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var corpse = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        corpse.health = 0;
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(12, "fire")),
+                caster.asCaster(), pair(corpse), Vec3.ZERO);
+
+        assertEquals(0, corpse.damageCalls, "a dead target takes no hit");
+        assertNull(corpse.lastDamageElement, "and therefore wears no element");
+        // Mutation: move the applyDamage call outside the liveness gate -> both reddens.
+    }
+
+    @Test
+    void theSTASHEDAmountAndElementCOMEFROMTHESAMEHitAndTheFIRSTOneWins() {
+        // THE ROW THAT IS ACTUALLY EXPRESSIBLE, AND THE REASON THERE IS NO TRANSPOSITION ROW.
+        //
+        // A stash of (double, String) cannot be transposed -- that is a compile error, and a mutation
+        // that cannot be expressed is a property the TYPE enforces rather than a guard that is
+        // missing. What type-checks perfectly, and is the real hazard, is taking the amount from one
+        // report and the element from another: two slots filled independently would put one hit's
+        // number beside another hit's element, and the swept mobs would burn with the wrong element
+        // at the wrong magnitude.
+        //
+        // So the sink holds the PAIR. Two reports with DIFFERENT values in both fields is the only
+        // fixture that can tell a paired sink from two independent slots -- with matching values, or
+        // with only one field differing, an unpaired implementation passes.
+        //
+        // FIRST-WINS is the rule WeaponFire.landVanillaMelee states and DamagePayload.of already
+        // applies, so the tooltip and the sweep cannot disagree about one weapon. No shipped melee
+        // payload reports twice; this pins the rule for the one that does.
+        record Landed(double amount, String element) {}
+        var world = new FakeWorld();
+        var reported = new ArrayList<Landed>();
+        var applier = new EffectApplier(world, (amount, element) -> {
+            if (reported.isEmpty()) reported.add(new Landed(amount, element));
+        });
+
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        caster.attackDamage = 9.0;
+        var victim = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+
+        applier.applyAll(
+                List.of(new EffectSpec.Damage(12, "fire"), new EffectSpec.Damage(4, "water")),
+                caster.asCaster(), pair(victim), Vec3.ZERO);
+
+        assertEquals(1, reported.size(), "first-wins: the second damage effect does not replace it");
+        assertEquals(12.0, reported.get(0).amount(), 1e-9, "the FIRST effect's amount");
+        assertEquals("fire", reported.get(0).element(), "and the FIRST effect's element, not water");
+        // Mutation: report the element from a later accept than the amount -- e.g. keep the amount
+        // first-wins and let the element overwrite -> "water" != "fire" -> reddens. That is the
+        // unpaired-slots bug, and it is invisible to every other row in this file.
     }
 }

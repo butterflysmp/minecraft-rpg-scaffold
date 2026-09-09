@@ -98,8 +98,58 @@ So:
 - Before believing a **mutation** result, confirm the mutation **compiled and applied**.
   `grep` for your marker; run `test-compile` first. A mutation that does not compile is
   not a mutation.
+
+  > **THE MARKER GREP IS NOT BELT-AND-BRACES. IT IS THE ONLY THING THAT MAKES MUTATION
+  > TESTING A MEASUREMENT RATHER THAN AN ASSERTION.** Twice now the edit has silently
+  > failed to apply, by two unrelated mechanisms, and **the grep was the only thing that
+  > caught either.** Neither exit codes, nor the test run, nor reading the command back
+  > would have.
+  >
+  > - The Flint Staff's **P6**: the edit was split across two calls and the second never
+  >   landed.
+  > - **2026-09-08**, elements slice: `perl -pi -e` **exited 0, printed nothing, and left
+  >   the file byte-identical** — while the *identical* regex matched when the same line
+  >   was piped to `perl -ne`. The tool performing the check reported success while doing
+  >   nothing.
+  >
+  > A mutation run whose marker was never grepped tells you nothing at all. A green suite
+  > under an unapplied mutation reads exactly like a green suite under a real one — which
+  > is this page's own defect, with the tooling rather than the test as the thing that
+  > lied. So: **grep the marker, and grep it again after restoring** (`markers left: 0`),
+  > or do not report the result.
+  >
+  > When an in-place edit no-ops, do not retry it with a cleverer pattern. Splice by line
+  > number (`head`/`sed -n`/`tail` into the file) and re-grep. Retrying an edit that
+  > reports success while doing nothing is how the same failure survives three attempts.
 - Before believing a **test guards** something, **break the thing and watch it fail.**
   A test that cannot fail is worth nothing, however green.
+
+  > **AND THE SAME APPLIES TO A GUARD IN PRODUCTION CODE. THE ENFORCEMENT RULE WAS AIMED
+  > ONE STEP SHORT.** `NEXT.md`'s rule — *"when a comment claims a rule is enforced, the
+  > claim names a file, so open it"* — catches **missing** enforcement. It does not catch
+  > **unreachable** enforcement, and it would have passed the case below cleanly, because
+  > the file contained the guard.
+  >
+  > **A guard that cannot fire is indistinguishable from one that protects you.** It
+  > compiles, it reads correctly, it survives review, and every test around it is green.
+  >
+  > **2026-09-08, elements slice.** `ElementLoader.damageSymbol` validated its MiniMessage
+  > with `try { deserialize } catch (RuntimeException)`, and the javadoc claimed a malformed
+  > glyph became a named, skipped file. A probe over **ten** malformed inputs — unknown tag,
+  > unknown colour, bad hex, unclosed tag, mismatched close, a bare `<`, a bogus gradient —
+  > measured that **MiniMessage throws for none of them**; it renders an unparsed tag as its
+  > own source text. The catch could never execute. **This was written one commit after the
+  > marker-grep rule above was strengthened**, which is the evidence that the rule was
+  > mis-aimed rather than ignored.
+  >
+  > The only thing that catches this is mutation discipline pointed at the *guard* instead
+  > of at the code: **write the test that makes the guard fire, and watch it fire.** That
+  > test went red, which is the sole reason the dead catch was found rather than shipped
+  > with a javadoc asserting protection that did not exist.
+  >
+  > So, for any guard whose failure path has never been observed: **feed it the bad input on
+  > purpose.** A `catch` around a library call especially — leniency is a library's default
+  > far more often than anyone assumes, and it is never stated where you are looking.
 - Anything that **discovers** rather than asserts — a scan, a glob, a registry walk —
   must **fail loudly when it discovers nothing.** Finding zero items is a defect, not a
   quiet no-op. `getResource("content/")` on a shaded jar returns a non-null URL whose
@@ -111,6 +161,123 @@ So:
 - Never `git checkout --` a file with uncommitted work to undo a mutation. Copy it to the
   scratchpad first and restore from there.
 - When you report something as verified, **say what you executed** and what it printed.
+
+
+### EVERY FILTER AND EVERY SCRIPTED EDIT NEEDS A POSITIVE CONTROL
+
+**Three instruments reported success without having checked anything, inside a single slice**
+(2026-09-08, elements). Recorded together, because three instances of one shape is a pattern and
+three notes in three places would be three anecdotes:
+
+| instrument | what it reported | what was true |
+|---|---|---|
+| `perl -pi -e '…'` | exit 0, no output | file byte-identical; the *same* regex matched when piped to `perl -ne` |
+| `… \| grep -E "error:"` | no output, so "compiled" printed | Maven prints `[ERROR]`, not `error:`. The tree could not compile |
+| `mvn -q test-compile` behind that filter | `BUILD SUCCESS` printed by the script | a `*/` orphaned by a bad splice; compilation failed |
+
+Two of the three were caught only by a **marker grep**. The third was caught only because a later,
+unfiltered run failed — i.e. by luck of ordering, not by design.
+
+**This is what happens when verification apparatus grows faster than its own controls.** Each of
+these tools was *added* to make a check trustworthy, and each became a new way to be told a check
+passed when it never ran — this file's own headline defect, one level up.
+
+**The operational form, which generalises past these three:**
+
+- **A scripted edit** must be followed by something that must be present if it worked — `grep` for a
+  marker, or a measured line/byte delta (`before`/`after`, `git diff --numstat`). Zero-exit is not
+  evidence. For a mutation, assert **both** directions: the marker landed **and** the original is
+  gone.
+- **A grep filter over tool output** must be proven capable of matching a failure *before* its
+  silence is read as success. Run it once against a known-bad input and require the hit. A filter
+  that has only ever been run against passing output has never been tested.
+- **Never let a filtered command decide an outcome.** `cmd | grep X; echo ok` prints `ok` whatever
+  happened — the exit status belongs to `echo`. Check the command's own status, or print the
+  unfiltered tail.
+
+The rule underneath all three: **silence is not a result.** An instrument that outputs nothing has
+either found nothing or done nothing, and those are the same picture.
+
+
+### THE THREE WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
+
+All three were hit in one slice (2026-09-08, elements). They are one table because the shape only
+becomes visible together: **each guard catches the previous failure and cannot see the one below it.**
+
+| failure | what happened | what catches it |
+|---|---|---|
+| **didn't apply** | `perl -i` exited 0 and left the file byte-identical | the **marker grep** |
+| **applied, no bite** | the edit landed and the test stayed green — the assertion matched a *duplicate* of the mutated token | **nothing mechanical** — only reading the red you expected and not getting it |
+| **applied, wrong side** | the test passed on an accident (a floating-point coincidence; an undefended victim where `dealt == amount`) rather than on the thing it guards | **nothing at all** — only designing the fixture so the two values differ |
+
+The marker grep proves the **edit landed**. It cannot prove the edit **reached what the assertion
+reads**. So a green run after a confirmed-applied mutation is not a pass — it means the mutation was
+too narrow, and it must be widened and re-run before anything is reported.
+
+**`contains()` is the loosest common assertion form and therefore where a partial mutation hides.**
+A message asserted with `contains("chevron")` survives a mutation that removes one of two
+occurrences of "chevron" — which is exactly what happened here, and the first mutation was reported
+as a failure rather than a verification because of it.
+
+**So, when mutating to test a MESSAGE, do one of these two — and write down which:**
+
+- **Mutate the WHOLE message**, not a clause of it. This is what was done here. It works because it
+  cannot leave a surviving copy of any asserted token anywhere in the string.
+- **Or assert on a token that appears EXACTLY ONCE** in the message, verified with `grep -c`. This
+  works for the mirror-image reason: with one occurrence there is no duplicate for a partial
+  mutation to hide behind, so any mutation touching the asserted fact necessarily removes it.
+
+The first is safer when the message is being rewritten anyway; the second is better for a standing
+assertion you expect to survive future edits, because it keeps the mutation small and local.
+
+### AND THE ARM THAT MOST EARNS ITS KEEP IS THE ONE MOST LIKELY TO BE UNREACHABLE
+
+The predictive form of the unreachable-guard rule above, and worth applying *before* writing a
+guard rather than after.
+
+A validation arm justified as *"this case would otherwise be silent"* is, by construction, guarding
+a case **nobody has produced yet**. That is the same sentence as *"no shipped content reaches it"* —
+so its only exercise is a test, and if that test asserts the arm EXISTS rather than causing the
+condition, the arm is a dead catch with a green suite around it.
+
+Worked example, `ContentValidator.validateElements`: the arm that warns when an element declares a
+status which cannot accrue (`applies_status: rooted` — resolves perfectly, does nothing forever).
+Every bundled element declares `scorch` or nothing, so **production cannot reach that arm at all.**
+
+**So, for any guard whose triggering case does not exist in shipped content:**
+
+- Write the test to **CAUSE the condition** — author the bad content, run the real walk, observe the
+  warning by its text — never to assert the arm is present.
+- **Say so in the arm's own javadoc:** that no bundled content reaches it, and its only exercise is
+  that test. Otherwise the next reader assumes production covers it, which is how a guard stops
+  being maintained while still looking load-bearing.
+
+
+### THREE THINGS THAT DO NOT ANNOUNCE THEIR OWN ABSENCE
+
+Everything else in a plan or a diff is noticed by someone who wanted it. These are not, and each
+cost a slice to find.
+
+**A MUTATION CONFINED TO AN UNREACHABLE BRANCH REDDENS EXACTLY THE ROW THAT KEEPS IT ALIVE.**
+A mutation can only redden through the rows that exercise it. So a dead branch and the row covering
+it justify each other — the branch makes the row pass, the row's red makes the branch look guarded —
+and **the pair is self-sustaining while neither touches production.** It looks exactly like coverage.
+The tell is a row whose fixture had to INVENT a state the system cannot produce; when you find one,
+check the branch it covers before you fix the row.
+
+**THE PLAN ITEMS THAT SILENTLY FAIL TO LAND ARE THE GUARDS.** Not a random sample — selection. A
+missing feature is reported by the person who wanted it; a missing guard produces no symptom at all,
+which is the same property that made it worth planning. Two went missing in one slice
+(`ScorchStatus`'s monotone refresh, `ScorchSinkSignatureTest`) and both were invisible for exactly
+the reason they were needed. **The remedy is not "plan less":** at the end of a slice, diff the plan's
+NAMED ARTIFACTS against what exists on the branch — the same counting that gave `7 -> 7` on the
+lambda sites and `12` on the fire damage sites. Two names, one grep.
+
+**A FALSIFIED COMMENT MISLEADS A READER WHO CAN CHECK IT. A FALSIFIED FLAVOUR LINE MISLEADS A PLAYER
+WHO CANNOT.** So the sweep for prose that outlived its mechanism covers `flavor:` and `description:`
+in content, not only code comments. A developer can diff a comment against the code beside it; a
+player has only the string. `emberblade.yml`'s *"Swing to cut; loose to burn"* became false the day
+melee started accruing scorch, and nothing but a person reading it would ever have said so.
 
 ## Architecture invariants
 

@@ -20,8 +20,8 @@ final class FakeScorchSink implements ScorchSink {
 
     private final FakeTickTarget clock;
 
-    /** One recorded burn: what it dealt, who it credited, and WHEN. */
-    record Burn(double amount, UUID applierId, long atTick) {}
+    /** One recorded burn: what it dealt, who it credited, WHEN, and the element it was MARKED with. */
+    record Burn(double amount, UUID applierId, long atTick, String element) {}
 
     final List<Burn> burns = new ArrayList<>();
 
@@ -32,8 +32,8 @@ final class FakeScorchSink implements ScorchSink {
 
     @Override public double victimMaxHealth() { return maxHealth; }
 
-    @Override public void deal(double amount, UUID applierId) {
-        burns.add(new Burn(amount, applierId, clock.now()));
+    @Override public void deal(double amount, UUID applierId, String element) {
+        burns.add(new Burn(amount, applierId, clock.now(), element));
     }
 
     int count() { return burns.size(); }

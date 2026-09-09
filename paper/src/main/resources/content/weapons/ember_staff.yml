@@ -49,6 +49,3 @@ triggers:
           - type: damage
             amount: 16
             element: fire
-          - type: status
-            status_id: scorch
-            duration_ticks: 60

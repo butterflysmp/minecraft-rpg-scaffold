@@ -208,10 +208,16 @@ public final class CombatantStats {
     /**
      * Deal {@code amount} of custom damage to {@code id}, attributed to {@code dealer}. No-op on an
      * untracked combatant. Emits a DAMAGE change carrying the new custom current and max, and the
-     * dealer's identity -- the seam the popup hooks next phase.
+     * dealer's identity.
+     *
+     * @return what the hit did: the POST-MITIGATION amount that landed, and where it left the
+     *         target. See {@link DamageOutcome} for why the second fact is the post-hit CURRENT
+     *         rather than a transition bit -- a player at zero custom health is never killed or
+     *         removed, so "did this hit cause the transition" and "is the target still standing"
+     *         are different questions with a reachable difference.
      */
-    public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer) {
-        damage(id, amount, dealer, dealerIsPlayer, CritState.NORMAL);
+    public DamageOutcome damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer) {
+        return damage(id, amount, dealer, dealerIsPlayer, CritState.NORMAL);
     }
 
     /**
@@ -220,12 +226,27 @@ public final class CombatantStats {
      * {@code EffectApplier}, so multiplying here as well would double it. This carries a fact for the
      * displays, not a factor for the maths.
      */
-    public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit) {
-        damage(id, amount, dealer, dealerIsPlayer, crit, DefenseRule.APPLIES);
+    public DamageOutcome damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit) {
+        return damage(id, amount, dealer, dealerIsPlayer, crit, DefenseRule.APPLIES);
     }
 
     /**
      * As above, and {@code bypassesDefense} skips {@link Defense#applyDefense} entirely.
+     *
+     * <p><b>THIS OVERLOAD WEARS NO ELEMENT, AND THAT IS A GUARD RATHER THAN AN OMISSION.</b> It is the
+     * form {@code EntityScorchSink} reaches through, so scorch's own burn tick has no element to pass
+     * and therefore <b>cannot accrue more scorch</b>. The loop is unrepresentable, not checked. Do not
+     * "tidy" this into a delegation that passes some default element; see {@link
+     * io.github.butterflysmp.rpg.core.combat.CombatantHandle#applyDamage}, which carries the same note
+     * at the other end of the port.
+     */
+    public DamageOutcome damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit,
+                         DefenseRule defense) {
+        return damage(id, amount, dealer, dealerIsPlayer, crit, defense, null);
+    }
+
+    /**
+     * As above, naming the ELEMENT this damage wears, or null for none.
      *
      * <p><b>This line was unconditional from the day it was written, and that was the defect.</b>
      * {@code NEXT.md}'s standing question -- "which causes should {@code Defense} touch?" -- names this
@@ -239,6 +260,15 @@ public final class CombatantStats {
      * one thing the shape was chosen for. Armour still reaches scorch, through stack ACCRUAL: fewer
      * points landed is fewer stacks, so armour delays the burn rather than blunting it.
      *
+     * <p><b>AND THAT SENTENCE IS ONLY TRUE BECAUSE OF THE RETURN VALUE.</b> It was written one slice
+     * before anything delivered it -- accrual was planned for {@code EffectApplier}, which sits
+     * UPSTREAM of the curve below and could only ever have seen the pre-mitigation figure. The
+     * post-mitigation number exists exactly here, was computed and discarded, and is now returned so
+     * {@code BukkitCombatant} can feed it to {@code Scorch.stacksFor} -- whose parameter has been
+     * named {@code dealtPostMitigation} since the day it was written. <b>Recomputing
+     * {@code Defense.applyDefense} in the caller instead would be a SECOND site applying the curve,</b>
+     * which would have to stay in sync with this one forever with nothing to catch a divergence.
+     *
      * <p><b>{@code crit} and {@code defense} are TYPES, and {@code dealerIsPlayer} is deliberately
      * still a boolean.</b> These three sat adjacent as {@code boolean dealerIsPlayer, boolean wasCrit,
      * boolean bypassesDefense} -- six orderings, five wrong, all six compiling, and
@@ -250,23 +280,31 @@ public final class CombatantStats {
      * <b>ADD A SECOND BOOLEAN ANYWHERE IN THIS PARAMETER LIST AND THE TRANSPOSITION HAZARD IS REOPEN
      * FOR BOTH OF THEM</b> -- and whoever adds it has no reason to look here first, which is exactly
      * how a condition nobody wrote down gets built past. So: a new flag on this method is a new TYPE,
-     * or it converts {@code dealerIsPlayer} to one as well. It is not a third boolean.
+     * or it converts {@code dealerIsPlayer} to one as well. It is not a third boolean. {@code element}
+     * is a {@code String} and so cannot be transposed with anything here, which is why it was allowed
+     * to ride as one rather than needing a wrapper type of its own.
      *
      * <p><b>Enforced, not merely stated</b>, because this file's own rule is that a rule living only
      * in a comment gets built past: {@code DamageSignatureTest} reflects over this class and
      * {@link io.github.butterflysmp.rpg.core.combat.CombatantHandle} and FAILS THE BUILD if any method
      * declares two or more {@code boolean} parameters.
+     *
+     * @param element the element this damage wears, or null. Never a factor -- it multiplies nothing.
+     *                It rides for the damage number's glyph and for stack accrual, neither of which
+     *                anything downstream can derive.
      */
-    public void damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit,
-                       DefenseRule defense) {
+    public DamageOutcome damage(UUID id, double amount, UUID dealer, boolean dealerIsPlayer, CritState crit,
+                         DefenseRule defense, String element) {
         HealthState state = states.get(id);
-        if (state == null) return;
+        if (state == null) return DamageOutcome.UNTRACKED;
         double dealt = defense == DefenseRule.BYPASSED
                 ? amount
                 : Defense.applyDefense(amount, state.defenseValue());
         boolean reachedZero = state.damage(dealt);
         listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.DAMAGE, dealt,
-                dealer, dealerIsPlayer, state.current(), state.max(), reachedZero, crit.isCrit()));
+                dealer, dealerIsPlayer, state.current(), state.max(), reachedZero, crit.isCrit(),
+                element));
+        return new DamageOutcome(dealt, state.current());
     }
 
     /**

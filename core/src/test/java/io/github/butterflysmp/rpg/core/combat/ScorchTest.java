@@ -124,14 +124,32 @@ class ScorchTest {
     }
 
     @Test
-    void accrualFLOORSSoChipDamageScorchesNothing() {
-        // Rounded rather than floored, 1 damage buys a stack and every glancing hit scorches. Floored
-        // is also what makes "1 per 2" literally true rather than "1 per 2, ish".
-        assertEquals(0, Scorch.stacksFor(1), "one damage buys nothing");
-        assertEquals(0, Scorch.stacksFor(1.999), "and nor does just under two");
+    void accrualFLOORSTheRATIOButANYLANDEDHITBUYSATLEASTONESTACK() {
+        // THE FLOOR-TO-ZERO ARM WAS DELIBERATE AND HAS BEEN REVERSED. This test previously read
+        // "accrualFLOORSSoChipDamageScorchesNothing" and asserted stacksFor(1) == 0, on the argument
+        // that rounding would let every glancing hit scorch. That argument was sound while nothing
+        // called stacksFor. Wiring accrual made it reachable, and it lands on shipped content:
+        //
+        //   solar_grenade's field tick declares amount: 2 (solar_grenade.yml:59), and accrual reads
+        //   the POST-MITIGATION number. Defense.applyDefense(2, 20) = 1.67 -> the old floor gives
+        //   ZERO -> ScorchStatus.apply early-returns on stacks <= 0 -> THE FIELD STOPS SCORCHING
+        //   ARMOURED TARGETS ENTIRELY. Not chip damage being ignored: a shipped ability silently
+        //   doing nothing, discoverable only in game.
+        //
+        // And it overruns the operator's ruling. The Defense bypass was accepted on "ARMOUR DELAYS
+        // SCORCH RATHER THAN BLUNTING IT". Armour PREVENTING scorch outright is not "delays".
+        //
+        // The floor also restores, in one mechanism, the guarantee the nine explicit
+        // `status: scorch` content sites used to provide before they were stripped: any fire hit
+        // that lands burns.
+        assertEquals(1, Scorch.stacksFor(1), "one damage still buys a stack -- any landed hit burns");
+        assertEquals(1, Scorch.stacksFor(1.999), "and so does just under two");
+        assertEquals(1, Scorch.stacksFor(1.67), "THE CLIFF: applyDefense(2, 20), the armoured field tick");
+        // The RATIO is still floored above the cliff -- that half did not change.
         assertEquals(1, Scorch.stacksFor(3.999), "three-and-a-bit is one stack, not two");
-        // Mutation: Math.round instead of the integer cast -> 1 and 1.999 become 1, 3.999 becomes 2
-        // -> reddens on all three.
+        assertEquals(3, Scorch.stacksFor(7.0), "the emberblade's 7 is three, not four");
+        // Mutation: delete Math.max(1, ...) -> 1, 1.999 and 1.67 all fall to 0 -> reddens on three.
+        // Mutation: Math.round instead of the cast -> 3.999 becomes 2, 7.0 stays 3 -> reddens on one.
     }
 
     @Test
@@ -146,22 +164,35 @@ class ScorchTest {
     // --- The tick count ----------------------------------------------------------------------
 
     @Test
-    void eightDamageTicksForTheEightSecondDefault() {
-        // First tick INCLUDED, on application. 160 ticks at period 20 is EIGHT, not nine -- and the
-        // difference is a full second of burn. See ScorchStatusTest, where the LIFETIME is asserted
-        // separately: the tick count alone cannot see an off-by-one-period overrun.
-        assertEquals(8, Scorch.damageTicksFor(Scorch.DEFAULT_DURATION_TICKS), "160 ticks is 8 ticks");
-        assertEquals(4, Scorch.damageTicksFor(80), "flint_staff's 80 is 4");
-        assertEquals(3, Scorch.damageTicksFor(60), "solar_lance, ember_step, rekindle, ability_stone");
-        assertEquals(2, Scorch.damageTicksFor(40), "solar_grenade's burst and field");
-        // Mutation: drop the +PERIOD-1 rounding -> 160 stays 8 but 50 becomes 2 -> reddens below.
+    void sixDamageTicksForTheSixSecondDefault() {
+        // RE-DERIVED, NOT NUDGED. This asserted 8 against a 160-tick default and reddened when the
+        // default became 120. That red was the guard working: this row exists so a tuned constant
+        // cannot move the burn silently, and it moved, so it spoke.
+        //
+        // The first tick is NO LONGER on application. Both arms of ScorchStatus.apply are now silent
+        // and the repeating task is the only thing that burns, so the first lands at t=20 and the
+        // last at t=duration. The COUNT is unchanged by that -- ceil(duration/period) either way --
+        // which is exactly why the count alone cannot pin the lifetime, and why ScorchStatusTest
+        // asserts the lifetime separately.
+        assertEquals(6, Scorch.damageTicksFor(Scorch.DEFAULT_DURATION_TICKS), "120 ticks is 6 ticks");
+        assertEquals(4, Scorch.damageTicksFor(80), "four whole periods");
+        assertEquals(3, Scorch.damageTicksFor(60), "three");
+        assertEquals(2, Scorch.damageTicksFor(40), "two");
+        // Mutation: drop the +PERIOD-1 rounding -> 120 stays 6 but 50 becomes 2 -> reddens below.
     }
 
     @Test
     void aDurationThatIsNotAWholeNumberOfPeriodsRoundsUP() {
-        // Stated rather than discovered. Reachable only by a future author -- every authored value in
-        // content today is a multiple of 20 -- but a partial period must still burn, or a 19-tick
-        // scorch would be a no-op that looked applied.
+        // Stated rather than discovered. Reachable only through the dev apply command -- no content
+        // authors a duration at all any more, since accrual uses the default -- but a partial period
+        // must still burn, or a 19-tick scorch would be a no-op that looked applied.
+        //
+        // AND THIS IS THE RULE THAT MAKES A SUB-PERIOD DURATION ORDINARY RATHER THAN DEGENERATE. It
+        // looks like it needs a guard and it does not: one tick of scorch is the n=1 instance of the
+        // same round-up, burning once at t=20 and living 20 ticks, exactly as 50 burns three times
+        // and lives 60. MEASURED against the real scheduler at 1, 19, 21, 41 and 50 ticks -- burns
+        // equalled this function at every one. A refusal would put back a special case that deleting
+        // the inline first burn exists to remove.
         assertEquals(3, Scorch.damageTicksFor(50), "50 ticks burns 3 times and lives 60");
         assertEquals(1, Scorch.damageTicksFor(1), "even one tick of scorch burns once");
         assertEquals(0, Scorch.damageTicksFor(0), "and a zero duration burns not at all");
@@ -171,22 +202,22 @@ class ScorchTest {
     // --- The total, which is what gets tuned against -------------------------------------------
 
     @Test
-    void theFULLWINDOWTotalIsFortyPercentOfMaxUncappedAndEightTimesTheCapWhenItBinds() {
+    void theFULLWINDOWTotalIsThirtyPercentOfMaxUncappedAndSixTimesTheCapWhenItBinds() {
         // THE RATE IS WHAT THE CODE DOES; THE TOTAL IS WHAT THE GAME DOES.
         //
         // Pinned because it is the number that will be tuned against, and nothing else in the codebase
-        // states it. If the period, the rate or the default duration moves, this is the row that says
-        // what actually changed for a player.
+        // states it. This row reddened when DEFAULT_DURATION_TICKS moved 160 -> 120, which is what it
+        // is for: the total must not drift silently when a constant is tuned. Re-derived at 120.
         int ticks = Scorch.damageTicksFor(Scorch.DEFAULT_DURATION_TICKS);
 
-        assertEquals(40.0, ticks * Scorch.damagePerTick(100, 20), EPS,
-                "8 ticks x 5% = 40% of a 100 pool over one full window, cap idle");
-        assertEquals(0.40, ticks * Scorch.RATE_PER_SECOND, EPS,
-                "which is 40% of max for ANY pool the cap does not bind on");
-        assertEquals(160.0, ticks * Scorch.damagePerTick(5000, 20), EPS,
-                "against a capped target it is 8 x cap -- 160 from a 20-damage staff, whatever the pool");
-        assertEquals(2000.0, ticks * capless(5000, 20), EPS,
-                "uncapped that same window would be 2000 -- the cap is a 12.5x cut on a 5000 pool");
+        assertEquals(30.0, ticks * Scorch.damagePerTick(100, 20), EPS,
+                "6 ticks x 5% = 30% of a 100 pool over one full window, cap idle");
+        assertEquals(0.30, ticks * Scorch.RATE_PER_SECOND, EPS,
+                "which is 30% of max for ANY pool the cap does not bind on");
+        assertEquals(120.0, ticks * Scorch.damagePerTick(5000, 20), EPS,
+                "against a capped target it is 6 x cap -- 120 from a 20-damage staff, whatever the pool");
+        assertEquals(1500.0, ticks * capless(5000, 20), EPS,
+                "uncapped that same window would be 1500 -- the cap is a 12.5x cut on a 5000 pool");
         // Mutation: any change to RATE_PER_SECOND, PERIOD_TICKS or DEFAULT_DURATION_TICKS -> reddens,
         // which is the point: the total must not drift silently when a constant is tuned.
     }

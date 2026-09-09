@@ -45,14 +45,32 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ScorchContentInvariantTest {
 
-    /** Every application site of `scorch` in shipped content, as of this slice. Asserted, not logged. */
-    private static final int KNOWN_SCORCH_APPLICATION_SITES = 9;
+    /**
+     * Every site whose damage ACCRUES scorch in shipped content. Asserted, not logged.
+     *
+     * <p><b>This counted `status_id: scorch` and now counts `element: fire` damage effects.</b> The
+     * nine explicit applications were stripped in the content pass -- fire declares
+     * applies_status, so naming the status beside every fire damage effect was saying the same
+     * thing twice, from two cap bases and two stack rules.
+     *
+     * <p><b>IT WAS NOT SET TO ZERO, AND THAT IS THE WHOLE POINT OF THE GUARD.</b> A scan asserting
+     * that it finds nothing cannot tell "correctly empty" from "the regex stopped matching the
+     * schema" -- which is the defect CLAUDE.md records twice and the reason this file exists. So
+     * the count was re-pointed at what now carries the invariant rather than retired: the cap basis
+     * is a damage amount either way, and there are MORE of them than there were explicit statuses.
+     */
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 12;
 
-    /** `status_id: scorch` in both the block and the inline-map spellings content actually uses. */
-    private static final Pattern SCORCH_APPLIED = Pattern.compile("status_id:\\s*scorch\\b");
+    /**
+     * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare
+     * `element: fire` at column 0 is the OWNER element of a weapon, ability or kit -- eight such
+     * lines exist -- and those are not damage sites. Counting them would inflate the guard with
+     * declarations that carry no cap.
+     */
+    private static final Pattern FIRE_DAMAGE =
+            Pattern.compile("(?m)^\\s+element:\\s*fire\\b|element:\\s*fire\\s*\\}");
 
     /** `amount: <n>` on a damage effect. The cap basis. */
-    private static final Pattern DAMAGE_AMOUNT = Pattern.compile("amount:\\s*([0-9]+(?:\\.[0-9]+)?)");
 
     private static Path contentRoot() {
         try {
@@ -97,49 +115,72 @@ class ScorchContentInvariantTest {
         }
     }
 
+    /**
+     * THE DISCOVERY GUARD, WHICH IS WHAT SURVIVED. It walks the bundled content and asserts it found
+     * the fire damage sites it expects, so a scan that stops matching the schema reddens instead of
+     * reading as a clean verdict.
+     *
+     * <h2>THE CAP COMPARISON THAT USED TO LIVE HERE IS RETIRED, AND ITS PREMISE DIED FIRST</h2>
+     *
+     * This method also asserted that every authored fire damage was at least
+     * {@link Scorch#UNDECLARED_CAP}, enforcing the rule in that constant's javadoc: <i>"an author who
+     * forgets cannot get a stronger scorch than an author who declares."</i>
+     *
+     * <p><b>That rule compared two AUTHORING ROUTES, and the content pass removed one of them.</b>
+     * It weighed "declare a status and give it damage" against "declare a status and forget the
+     * damage". After {@code 1233469} stripped the nine explicit sites, nobody writes
+     * {@code type: status, status_id: scorch} at all -- so there is no route on which anything can be
+     * forgotten, and the comparison has no second side.
+     *
+     * <p><b>And the two numbers stopped being comparable at the same moment.</b> The explicit path's
+     * cap is {@code caster.payloadDamage()}, the cast-frozen headline, which {@link Scorch#CAP_FRACTION}
+     * never touches -- the halving happens at the accrual site only. So the assertion set a DAMAGE
+     * effect's authored amount against a STATUS effect's fallback: two mechanisms' numbers, which
+     * stopped being two spellings of one thing the day a single path applied scorch and it was the
+     * element.
+     *
+     * <blockquote>
+     * <b>A RULE OUTLIVES ITS PREMISE SILENTLY, BECAUSE ITS ARITHMETIC KEEPS EVALUATING.</b> The
+     * premise died at {@code 1233469}. The comparison went on returning a boolean for two more
+     * commits -- green on {@code 2 >= 2.0}, measuring nothing -- and only became visible at
+     * {@code eab7738}, when {@code CAP_FRACTION} made the two sides diverge by a factor of two. #5
+     * did not break this rule. It made a dead rule's arithmetic diverge, which is the only reason
+     * anybody looked.
+     * </blockquote>
+     *
+     * <h2>THIS IS A DIFFERENT SPECIES FROM THE TERNARY DELETED IN {@code 20cb8cf}</h2>
+     *
+     * <b>A guard with no instances is not a guard that cannot fire</b>, and the distinction decides
+     * whether forward cover is owed:
+     *
+     * <ul>
+     *   <li>{@code ElementAccrual}'s {@code UNDECLARED_CAP} ternary was unreachable BY THE MECHANISM
+     *       -- {@code stacks > 0} implies {@code amount > 0}, always, and no content can change that.
+     *       Deleted outright, no cover needed.</li>
+     *   <li>This rule is unreachable BY TODAY'S CONTENT. The schema still permits
+     *       {@code type: status, status_id: scorch}, so an author could write one tomorrow.</li>
+     * </ul>
+     *
+     * <p>Hence the one line of forward cover in {@code BukkitCombatant}'s Scorch arm: if explicit
+     * scorch is ever authored again, its cap comes from the UNHALVED headline while accrual's comes
+     * from the halved amount, and the two paths disagree by a factor of two with nothing watching.
+     */
     @Test
-    void everyDeclaredCapIsAtLeastUNDECLARED_CAP() {
-        // THE INVARIANT, ENFORCED.
-        //
-        // For each file that applies scorch, every damage amount in it is a candidate cap (the
-        // resolved cap is DamagePayload's FIRST damage-bearing effect, but checking ALL of them is
-        // strictly stronger and needs no schema parsing). If any is below the constant, the rule
-        // "forgetting must never beat declaring" is false and UNDECLARED_CAP must be lowered.
-        List<String> violations = new ArrayList<>();
+    void theFireDamageSitesAreALLDISCOVERED() {
         int sites = 0;
-
         for (Path file : yamlUnder(contentRoot())) {
-            String text = read(file);
-            Matcher applies = SCORCH_APPLIED.matcher(text);
-            int inThisFile = 0;
-            while (applies.find()) inThisFile++;
-            if (inThisFile == 0) continue;
-            sites += inThisFile;
-
-            Matcher amounts = DAMAGE_AMOUNT.matcher(text);
-            while (amounts.find()) {
-                double declared = Double.parseDouble(amounts.group(1));
-                if (declared < Scorch.UNDECLARED_CAP) {
-                    violations.add(file.getFileName() + " declares a damage of " + declared
-                            + ", below UNDECLARED_CAP " + Scorch.UNDECLARED_CAP);
-                }
-            }
+            Matcher fire = FIRE_DAMAGE.matcher(read(file));
+            while (fire.find()) sites++;
         }
 
-        // The discovery guard, before the verdict: zero sites means the regex stopped matching the
-        // schema, not that content is clean.
-        assertEquals(KNOWN_SCORCH_APPLICATION_SITES, sites,
-                "expected " + KNOWN_SCORCH_APPLICATION_SITES + " scorch application sites in content, "
+        // ZERO IS A DEFECT, NOT A CLEAN VERDICT. This walks a directory looking for matches, and
+        // CLAUDE.md records that failure mode twice: a scan that finds nothing reads exactly like a
+        // scan that ran and found nothing wrong.
+        assertEquals(KNOWN_FIRE_DAMAGE_SITES, sites,
+                "expected " + KNOWN_FIRE_DAMAGE_SITES + " fire damage sites in content, "
                         + "found " + sites + ". If content genuinely changed, update the constant; if "
                         + "it did not, this scan has gone blind and its clean verdict is worthless");
-
-        assertTrue(violations.isEmpty(),
-                "UNDECLARED_CAP (" + Scorch.UNDECLARED_CAP + ") must never exceed the smallest declared"
-                        + " cap, or forgetting to declare one is STRONGER than declaring it. Lower the"
-                        + " constant or raise the content:\n  " + String.join("\n  ", violations));
-        // Mutation: raise UNDECLARED_CAP to 3.0 -> solar_grenade's field tick of 2 violates -> reddens.
-        // Mutation: break SCORCH_APPLIED's regex -> sites drops to 0 -> reddens on the count, NOT
-        // silently passing with an empty violations list. That second mutation is the one that
-        // matters, and it is why the count is asserted.
+        // Mutation: break the regex -> found 0 -> reddens rather than passing vacuously. Re-run after
+        // the content pass re-pointed this from status_id: scorch to element: fire, and again here.
     }
 }
