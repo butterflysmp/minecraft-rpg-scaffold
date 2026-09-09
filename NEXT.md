@@ -631,6 +631,77 @@ ceiling for.
 > will never read it.** The operator recorded that they would have used this argument had the reader
 > count not been measured first -- which is why the measurement went first.
 
+#### THE FIVE IGNITE DECISIONS, AND WHY EACH WENT THE WAY IT DID
+
+**Recorded 2026-09-09 with the mechanism.** Two lines already in this file pointed at these
+decisions before they were written down anywhere -- *"the constants decision puts the blast's numbers
+in code"* and *"while ruling on whether Ignite's blast should hurt players"*. **Those were dangling
+pointers aimed forward**, the same defect the record commit spent a PR removing aimed backward. This
+is the record they point at.
+
+| # | ruled | the reason that is NOT re-derivable from the code |
+|---|---|---|
+| 1 | **Constants in `core/combat/Ignite.java`**, not more constants on `Scorch` | Ignite is a propagation engine that happens to be TRIGGERED by scorch, not more scorch. Not YAML: `ElementDefinition` already drew that line -- *"naming the STATUS and not its rate is the whole scope of this field"* -- and radius/damage/fuse are rates. One status with two tuning homes is the two-authorities problem. **And for the one mechanism DESIGN says can take the server down, "changing it is a code review" is the FEATURE**: `ignite_radius: 50` must not be a content edit |
+| 2 | **Blast is `element: "fire"` + `AccrualRule.INERT`** | It MARKS but does not RECRUIT. DESIGN's rolling wave is already INERT's wave -- *"A dies, half a second, A explodes, kills B"* -- B explodes because **B was scorched**, not because the blast scorched B. ACCRUES would add recruitment the spec never asked for, and its only terminator is running out of mobs. **The costs are asymmetric**: ship INERT and it feels small, flipping is one argument; ship ACCRUES and it clears chunks while rules 2 and 3 are all under suspicion at once |
+| 3 | **`DefenseRule.APPLIES`** -- mitigated, unlike the burn | The burn's exemption exists because it is a PERCENT-OF-MAX effect on a clock; armour blunting it would mean armour reducing a fraction of your own health. **That reason does not transfer to a flat number dealt once.** Extending the exemption because the blast is "scorch's damage" would be proximity granting it scope it never claimed |
+| 4 | **Mob-only** | A burst is aimed and immediate -- someone standing in it chose to. **A cascade is neither**: half a second after a death, from a corpse, links downstream of someone else's kill, no telegraph. And it cannot be play-tested against a second account, so a player-damaging cascade ships with no live witness at all |
+| 5 | **Per-mob applier attribution** -- *the ignition is the fire's doing, not the killing blow's* | See `DESIGN`'s rule 4, reconciled in the same commit. Per-mob is the only **total** rule: the ruling admits drowning, falling and lava, where there is no killer and a null-source fallback is how slice 1's credit came out inverted |
+
+**Decision 3 has NO LIVE WITNESS, and that is permanent rather than temporary.** Every mob is defense
+0 (`reconcileDefenseModifiers` has one production caller, on player worn gear) and decision 4 means no
+player can be caught in a blast -- so `APPLIES` and `BYPASSED` produce the same number on every target
+in the game. No gate row can separate them. **The unit row asserts the FLAG AS DELIVERED**
+(`IgniteTest.theBlastGoesTHROUGHDefenseUnlikeTheBurnItCameFrom`), which is the only thing that can see
+the seam, and the recorded reason above is the only thing defending the choice.
+
+> **AND WHAT DECISION 4 COSTS, said plainly rather than left to be found: Ignite is INCONSISTENT WITH
+> BURSTS.** A player can stand safely inside a cascade that a `solar_grenade` would have hurt them
+> with. That is defensible ONLY because the reason is written down -- in `Ignite.detonate`'s javadoc,
+> not merely here.
+
+#### TWO OF THE FIVE REVERSED THE BRIEF, ON EVIDENCE, AND ONE BRIEF CONTRADICTED ITSELF
+
+**Recorded because the pattern is now three instances and the last two are the operator's own.**
+
+The mechanism brief prescribed the fan-out in `paper/` **and**, two paragraphs later, *"FakeWorld /
+FakeTickTarget for the rows -- clocks, never run-inline stubs, or rule 2's serialization is asserted
+against a fake that cannot express it."* **`FakeWorld` is `core`-only.** Two individually correct
+constraints, jointly unsatisfiable, with nothing in either one saying so -- and separated by
+paragraphs rather than by messages, so no late-arriving constraint excuses it.
+
+The same brief also asserted rule 3's once-ness came from `EntityDeathEvent` and asked for it to be
+verified rather than assumed. **It was verified, and it is false** -- see the next entry.
+
+**The general shape is already a rule on this page** (*two individually reasonable constraints,
+jointly unsatisfiable*). What this pair adds: **it applies to briefs as readily as to code, and the
+author is not the person best placed to notice.** Both reversals were taken on measurement, and both
+are recorded rather than silently applied, so the reasoning can be overturned on its merits.
+
+#### `EntityDeathEvent` DOES NOT GUARANTEE IT FIRES ONCE -- MEASURED FROM THE JAR
+
+**Measured 2026-09-09 from `paper-api-26.1.2.build.74-stable-sources.jar`, not reasoned.** The event
+is `Cancellable` and carries `setReviveHealth`, whose javadoc describes the health an entity revives
+with *"after cancelling the event"* -- **so a cancelled death revives the same mob, which can die
+again and fire again.** Any plugin can do that. There is no once-ness guarantee at any level:
+`EntityDeathEvent`'s entire class javadoc is *"Thrown whenever a LivingEntity dies"*, and `EntityEvent`
+and `Event` say nothing either.
+
+**Still unknown and unanswerable here:** whether a SINGLE death can dispatch the event twice.
+`paper-server` is not in `~/.m2` -- only `paper-api` -- so there is no implementation to read. It is a
+gate row, not a code question.
+
+**Consequence: rule 3's once-ness is BUILT, not inherited.** `RpgListeners.onEntityDeath` reads the
+scorch and immediately forgets it, so a second delivery finds nothing scorched and returns. That
+reuses state that already exists instead of adding a second map with its own lifecycle -- the shape
+this repo has refused before, and `MeleeHits` records the reason: derive from a stamp so *"there is
+nothing to expire, nothing for forget to miss."*
+
+> **THE GUARD'S ONLY WITNESS IS A GATE ROW, AND THAT IS KNOWN IN ADVANCE FOR ONCE.** A double delivery
+> cannot be constructed in a unit test, so **nothing in the suite reddens if the guard is deleted**.
+> The row that can see it is in `GATE-ignite.md`: a scorched mob dies beside a neighbour, and the
+> neighbour takes ONE blast's damage, not two -- `6` against `12`, one number apart on a nameplate.
+> Written as the guard landed rather than discovered missing afterwards.
+
 #### OWED WHEN A BOSS FLAG EXISTS: Ignite's boss and player exclusions
 
 **Recorded 2026-09-09 with the ruling, and deliberately NOT built.** Both were raised as guards

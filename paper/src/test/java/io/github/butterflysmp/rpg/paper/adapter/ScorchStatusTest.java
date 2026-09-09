@@ -420,6 +420,40 @@ class ScorchStatusTest {
     }
 
     @Test
+    void forgettingTwiceIsANoOp() {
+        // IGNITE'S ONCE-NESS GUARD RESTS ON THIS, WHICH IS WHY IT IS PINNED RATHER THAN ASSUMED.
+        // RpgListeners.onEntityDeath reads the scorch and forgets it immediately, so a second
+        // delivery of EntityDeathEvent finds nothing and does nothing. onEntityRemove THEN forgets
+        // the same id again on removal. So in the ordinary life of one scorched mob that dies,
+        // forget is called TWICE for the same id, and the second call must be harmless.
+        //
+        // It is idempotent by inspection -- active.remove(id) returns null the second time and the
+        // `a != null` guard covers it -- but inspection is exactly what this slice has been wrong
+        // about repeatedly, so it is executed here instead.
+        var scorch = new ScorchStatus();
+        var clock = new FakeTickTarget();
+        var sink = sinkAt100(clock);
+        UUID id = UUID.randomUUID();
+
+        scorch.apply(id, clock, sink, 5, 20.0, UUID.randomUUID(), 160, "fire");
+        scorch.forget(id);
+        int burnsAfterFirstForget = sink.count();
+
+        scorch.forget(id);   // the removal-side call, after the death-side one
+
+        assertFalse(scorch.isScorched(id), "still forgotten");
+        assertEquals(0, scorch.trackedVictims(), "and still unmapped");
+        clock.advance(200);
+        assertEquals(burnsAfterFirstForget, sink.count(), "and nothing was restarted by forgetting again");
+
+        // AND ON AN ID THAT WAS NEVER SCORCHED AT ALL -- the case a mob that dies unscorched hits,
+        // where onEntityDeath returns early and onEntityRemove forgets an id with no entry.
+        scorch.forget(UUID.randomUUID());
+        assertEquals(0, scorch.trackedVictims(), "forgetting an unknown id is harmless too");
+        // Mutation: drop the `a != null` guard in forget -> the unknown-id call NPEs -> reddens.
+    }
+
+    @Test
     void twoVictimsBurnIndependently() {
         var scorch = new ScorchStatus();
         var clock = new FakeTickTarget();

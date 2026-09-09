@@ -217,11 +217,36 @@ when ignited"). These four rules are the difference:
    never let one death's explosion be counted by another's same-tick resolution. The
    delay (rule 2) makes this mostly free, but it must be explicit.
 
-4. **Source is ATTRIBUTED THROUGH THE CHAIN.** The explosion's `casterId` is the
-   **original attacker**, propagated through each ignition — so a Mage whose staff
-   starts a 4-mob Ignite chain gets credit for all four. This extends the
-   `casterId`-through-the-port work already built for direct casts. Without it,
-   chained kills credit the exploding corpse, or nobody.
+4. **Source is ATTRIBUTED.** The explosion is credited to **whoever lit the fire** —
+   scorch's most-recent applier for the mob that died, read on the death frame. So a
+   Mage whose staff lights a pack and starts a 4-mob chain gets credit for all four,
+   because they lit all four. Without attribution, chained kills credit the exploding
+   corpse, or nobody.
+
+   > **RULED 2026-09-09. THE INTENT ABOVE IS UNCHANGED; THE MECHANISM IS.** This rule
+   > read *"the original attacker, **propagated through each ignition**"* — a chain-origin
+   > id threaded along the cascade. Under the ruling attribution is carried by the
+   > **status** instead, and propagation is not needed: every scorched mob has an applier
+   > by definition, so each blast already knows its source.
+   >
+   > **THE PRINCIPLE: the ignition is the FIRE'S doing, not the killing blow's** — so it
+   > belongs to whoever lit it, not to whoever landed the last hit.
+   >
+   > **Why per-mob rather than propagated, and it is not simplicity.** Per-mob is the only
+   > rule that is **total**: the ruling admits deaths by drowning, falling and lava, where
+   > there is no killer to credit at all and `getKiller()` is null. A null-source fallback
+   > is exactly how scorch's credit came out **inverted** in slice 1, with a mob recorded
+   > killing itself. Propagation also needs new state threaded through a delayed task —
+   > the one path where state is hardest to reason about — and it gives the wrong answer
+   > in the case the two rules disagree: **a pack lit by two players, chained by one kill.**
+   > There, propagation hands A the credit for B's fire. DESIGN wrote this rule when the
+   > trigger was *"dies to a Scorched **attack**"*, which is attacker-centred; the ruling
+   > made it victim-centred. **Attribution follows the gate, or the mechanism carries two
+   > framings at once.**
+   >
+   > Implemented at `Ignite.detonate`'s `applierId`, read from `ScorchStatus.applier(id)`
+   > on the death frame — whose javadoc has said *"Slice 2's ignite credits this"* since
+   > before the consumer existed, and is now true.
 
 ### The one global interaction rule — decide before building
 
