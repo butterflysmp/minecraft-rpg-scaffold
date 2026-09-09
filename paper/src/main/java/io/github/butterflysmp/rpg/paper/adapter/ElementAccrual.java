@@ -116,8 +116,14 @@ public final class ElementAccrual {
      *   <li><b>For a PLAYER, none of that chain runs at all.</b> {@code MobDeathSystem.shouldKill} is
      *       {@code reachedZero() && !targetIsPlayer()}, so there is no {@code setHealth(0)}, no
      *       removal and no {@code forget} to invert. The rule still holds for players, but on the
-     *       OTHER reason: Ignite is death-gated, so a killing blow's own stacks must never count
-     *       toward the threshold that blow is measured against. That reason is path-independent.</li>
+     *       OTHER reason: Ignite is death-gated, so a killing blow must never scorch the target it
+     *       just killed. That reason is path-independent.
+     *
+     *       <p><b>And since the 2026-09-09 ruling it is load-bearing rather than tidy.</b> "Any mob
+     *       that dies while scorched ignites" means a killing blow that accrued would grant a first
+     *       stack to a mob that had none and then detonate it -- so this skip is the only thing
+     *       between the ruling and EVERY fire-weapon kill exploding. Nothing about the predicate
+     *       changed; what rests on it did.</li>
      * </ul>
      *
      * <p><b>CONSEQUENCE, NAMED HERE RATHER THAN DISCOVERED IN A GATE: a player at zero custom health

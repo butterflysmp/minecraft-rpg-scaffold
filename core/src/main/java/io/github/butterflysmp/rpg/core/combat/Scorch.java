@@ -21,9 +21,32 @@ package io.github.butterflysmp.rpg.core.combat;
  * on anything -- which is precisely the outcome the operator ruled out: <i>"Scorch/Ignite is NOT MEANT
  * TO BE AN EXECUTION, it's meant to be a crowd control that comes from sustained damage."</i>
  *
- * Both statements are recorded here so nobody re-derives the first one from the archive later. Stacks
- * are not decorative: they refresh the timer, they gate the fire-tick suppression in
- * {@code RpgListeners.onEnvironmentalDamage}, and they carry Ignite's threshold in slice 2.
+ * Both statements are recorded here so nobody re-derives the first one from the archive later. What
+ * scorch's PRESENCE does is refresh the timer and gate the fire-tick suppression in
+ * {@code RpgListeners.onEnvironmentalDamage}. What its COUNT does is nothing -- see below.
+ *
+ * <h2>THE STACK COUNT HAS NO CONSUMER, AND THE ACCUMULATOR WAS DELETED RATHER THAN LEFT UNREAD</h2>
+ *
+ * This paragraph read <i>"they carry Ignite's threshold in slice 2"</i>, which was the whole
+ * justification for accumulating a count at all. <b>The operator ruled on 2026-09-09 that any mob
+ * which dies while scorched ignites -- binary, no count</b> -- so that consumer will never exist.
+ *
+ * <p>{@code ScorchStatus.Active.stacks} and its {@code stacks(UUID)} accessor were deleted in the
+ * same commit as this line, deliberately and not as tidying. <b>A write-only field is worse than a
+ * deleted one:</b> the next person wanting a count would find it, read it, and get a number no
+ * consumer has ever validated -- and that number carried a recorded defect, an unclamped
+ * {@code +=} that let a bow pile ~30 stacks into one window. Keeping it would have preserved the
+ * defect and removed the only thing that could ever have surfaced it.
+ *
+ * <p><b>THE RE-ADD TRIGGER, so this is a decision someone makes rather than something rediscovered:
+ * a count comes back only WITH a consumer that defines what it means.</b> That is the moment the
+ * unclamped-accumulation question gets answered instead of inherited.
+ *
+ * <p><b>Consequence to know before relying on {@link #stacksFor}'s magnitude:</b> with the
+ * accumulator gone, {@code ScorchStatus.apply} reads its {@code stacks} argument only as a GATE
+ * ({@code stacks <= 0} means the hit bought none and applied nothing). So {@code stacksFor}'s
+ * arithmetic is live, but only its zero / non-zero result is read today. The first consumer of the
+ * count is also the first reader of the magnitude.
  *
  * <h2>THE CAP IS WHAT MAKES THE DoT RESPOND TO THE APPLIER -- the job stacks would otherwise have</h2>
  *
@@ -40,14 +63,26 @@ package io.github.butterflysmp.rpg.core.combat;
  * working cap and a cap deleted entirely are the same number there. {@code ScorchTest} pins it at a
  * max where it binds; anything less would pass whether this {@code min} exists or not.
  *
- * <h2>ARMOUR DELAYS SCORCH RATHER THAN BLUNTING IT</h2>
+ * <h2>ARMOUR DELAYS THE BURN RATHER THAN BLUNTING IT</h2>
  *
  * Armour reaches scorch by three channels and the operator ruled on all three: the DoT BYPASSES
  * Defense (see {@code CombatantStats.damage}'s {@code bypassesDefense}); stack accrual is POST
  * mitigation ({@link #stacksFor} is fed what actually landed); and the cap is the weapon's AUTHORED
- * number, not what it landed. So armour buys time to ignite and does not reduce the burn once it is on
+ * number, not what it landed. So armour buys time and does not reduce the burn once it is on
  * you -- coherent with crowd control that comes from sustained damage, and the reason the DoT is not
  * "ordinary damage with extra arithmetic".
+ *
+ * <p><b>The heading says THE BURN, and the narrowing is deliberate.</b> It previously said SCORCH,
+ * which read as a claim about everything scorch does. It is a claim about the DoT only, and the
+ * reason is specific to the DoT's shape: it is a PERCENT-OF-MAX effect on a clock, so armour
+ * blunting it would mean armour reducing a fraction of your own health. <b>That reasoning does not
+ * transfer to anything that deals a flat number once.</b>
+ *
+ * <p><b>And armour does NOT delay ignition, which the old wording claimed.</b> That sentence read
+ * "armour buys time to ignite", true only while ignition needed a stack COUNT to accumulate. Under
+ * the 2026-09-09 ruling ignition needs one stack, and {@link #stacksFor} floors at ONE for any
+ * damage that lands -- so an armoured target is ignition-ready on the first hit that gets through,
+ * exactly like an unarmoured one. Armour buys time on the burn. It buys none on ignition.
  */
 public final class Scorch {
 
@@ -240,8 +275,10 @@ public final class Scorch {
      * How many stacks {@code dealtPostMitigation} buys: one per {@link #DAMAGE_PER_STACK}, floored --
      * but never fewer than ONE for any damage that actually landed.
      *
-     * Post-mitigation by the operator's ruling -- this is fed what actually landed, so armour slows the
-     * climb toward ignite even though it does not touch the burn itself.
+     * Post-mitigation by the operator's ruling -- this is fed what actually landed, so armour lowers
+     * the count a hit buys even though it does not touch the burn itself. <b>It does NOT slow any
+     * climb toward ignite:</b> that phrasing outlived the threshold it described, and the floor below
+     * means one landed hit is already enough to ignite on death.
      *
      * <b>THE FLOOR-TO-ZERO ARM WAS DELIBERATE, AND WIRING ACCRUAL FALSIFIED IT.</b> This method
      * previously returned 0 below {@code DAMAGE_PER_STACK}, on the argument that rounding would let
@@ -278,8 +315,14 @@ public final class Scorch {
      * NO per-victim accumulator carrying the leftover forward, for two reasons: it would be state that
      * outlives the burn it belongs to (what happens to a remainder when the scorch expires, or when a
      * different applier takes over?), and it would make the stack a target reaches depend on the
-     * ORDER its hits arrived in rather than on their total. Chip damage advancing toward ignite more
-     * slowly than its raw total suggests is the intended shape, not a rounding artefact.
+     * ORDER its hits arrived in rather than on their total. Chip damage buying fewer stacks than its
+     * raw total suggests is the intended shape, not a rounding artefact.
+     *
+     * <p><b>This paragraph's reasoning is preserved but currently unexercised.</b> It argued against
+     * a remainder accumulator on the strength of what the stack COUNT would mean; since the
+     * 2026-09-09 ruling nothing reads that count (see the class javadoc), so no caller can observe
+     * the discarded remainder either way. Kept rather than deleted because it answers the question a
+     * future count-consumer will ask first, and that consumer is exactly the re-add trigger.
      */
     public static int stacksFor(double dealtPostMitigation) {
         if (dealtPostMitigation <= 0) return 0;

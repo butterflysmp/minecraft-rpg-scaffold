@@ -83,8 +83,13 @@ class ElementAccrualTest {
         // register a RepeatingTask AFTER the cleanup meant to cancel it, leaving a map entry and a
         // 160-tick task per lethal fire kill with nothing left to cancel them.
         //
-        // It also keeps Ignite's death-gate unambiguous: a killing blow's own stacks never count
-        // toward the threshold that blow is measured against.
+        // It also keeps Ignite's death-gate unambiguous: a killing blow never scorches the target it
+        // just killed, so it cannot ignite something that was not already alight.
+        //
+        // AND SINCE THE 2026-09-09 RULING THIS IS LOAD-BEARING RATHER THAN TIDY. "Any mob that dies
+        // while scorched ignites" means that if the killing blow accrued, every fire-weapon kill
+        // would grant a first stack to a mob that had none and then detonate it. This skip is the
+        // only thing between the ruling and "every emberblade kill explodes".
         assertTrue(accrue("fire", new DamageOutcome(25.0, 0.0), 30.0).isEmpty(),
                 "a hit that took the target to zero accrues nothing");
         // Mutation: loosen the gate to newCurrent >= 0 -> ONLY THIS ROW reddens.
@@ -237,9 +242,10 @@ class ElementAccrualTest {
 
         assertEquals(10, normal.stacks(), "stacksFor(20)");
         assertEquals(20, crit.stacks(),
-                "MORE stacks from the crit, because stacks measure what landed. No damage "
-                        + "consequence today -- the burn rate is flat -- and it is what Ignite will "
-                        + "read, so it is stated rather than left to be discovered there");
+                "MORE stacks from the crit, because stacks measure what landed. NO consequence "
+                        + "today: the burn rate is flat, and since the 2026-09-09 ruling Ignite "
+                        + "reads no count either. Pinned as the arithmetic's own property, not "
+                        + "because a consumer is coming");
         assertEquals(critMultiplier * normal.stacks(), (double) crit.stacks(), EPS,
                 "exactly the multiplier's worth, since stacksFor is linear above its floor");
         // Mutation: cap from the resolved amount instead of the declared one -> the CRIT row's cap

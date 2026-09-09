@@ -38,7 +38,7 @@ point of this section.
   ruling was then taken from. The strongest datum in the slice.
 - **The open item, against `23ed254`:** *"the mob takes the normal fire damage in between the scorch
   damage only while standing in fire."* An itemised NEGATIVE observation, and **its phrasing is what
-  diagnosed the cause** — block contact raises `FIRE`, the ignition raises `FIRE_TICK`, and only the
+  diagnosed the cause** — block contact raises `FIRE`, catching fire raises `FIRE_TICK`, and only the
   second is suppressed.
 
 **CONFIRMED AGAINST A STATED DISCRIMINATOR (middle) — one row, A3:**
@@ -114,9 +114,16 @@ Any vanilla 20-HP mob · `hunters_bow` · one arrow. **Expect** `▲6` then six 
 > whose subject changed underneath it while still passing.
 
 ### A3 — a lethal hit accrues nothing (the pair)
-- **Run 1:** `/rpg mobdamage 340` → knell at 20 · one bolt (20). **Dies, NEVER IGNITES.**
-- **Run 2:** fresh knell, `/rpg mobdamage 339` → knell at 21 · same bolt. **Survives at 1, ignites,
-  first burn kills it.**
+- **Run 1:** `/rpg mobdamage 340` → knell at 20 · one bolt (20). **Dies, NEVER CATCHES FIRE.**
+- **Run 2:** fresh knell, `/rpg mobdamage 339` → knell at 21 · same bolt. **Survives at 1, catches
+  fire, first burn kills it.**
+
+> **"IGNITES" WAS REWORDED TO "CATCHES FIRE" ON 2026-09-09, AND IT IS NOT A STYLE EDIT.** Ignite is
+> now a named mechanic whose rule is *"any mob that dies while scorched ignites"* — so **"Dies, NEVER
+> IGNITES" reads as a claim that a dying scorched mob does not explode, which is the exact opposite
+> of the ruling.** The row always meant the ordinary-English sense (no burn appears, because a lethal
+> hit accrues nothing). Both readings are true of run 1, which is what made the collision invisible
+> and would have made it survive a proofread.
 
 **Neither run discriminates alone.** Run 1 passes if accrual were deleted entirely; run 2 passes if
 the gate were loosened to `>= 0`. **A CRIT DESTROYS IT WITHOUT FAILING IT** — 40 kills both.
@@ -196,8 +203,17 @@ was sent to run twice in the previous slice. Post-mitigation stays unit-covered 
 
 **2. Stack counts, which went from 1 to as many as 10.**
 No command reads a mob's stack count, and stacks do not scale damage. **The change has no in-game
-consequence at all** — not merely invisible in a diff, unobservable on a running server. It becomes
-witnessable the day Ignite reads it, which is why that threshold is recorded undecided.
+consequence at all** — not merely invisible in a diff, unobservable on a running server.
+
+> **THE REFUSAL IS NOW PERMANENT, NOT DEFERRED.** This row read *"it becomes witnessable the day
+> Ignite reads it, which is why that threshold is recorded undecided."* Both halves are dead: the
+> operator ruled on 2026-09-09 that **any mob that dies while scorched ignites**, binary, so the
+> threshold is decided AND **Ignite never reads a count.**
+>
+> The accumulator was deleted in the same commit rather than left unread, so there is no longer a
+> count to witness at all. This row cannot become runnable by anything currently planned — it would
+> take a NEW consumer that defines what a count means, which is exactly the re-add trigger recorded
+> in `Scorch`'s javadoc.
 
 **3. `undead ☠` / `water ≈` / `wither ✖` glyph legibility.**
 No shipped content deals those three elements. Authored and unreachable. `wither`'s `<dark_gray>` is
