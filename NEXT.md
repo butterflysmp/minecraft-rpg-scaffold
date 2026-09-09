@@ -654,15 +654,24 @@ all.
 
 Worth its own small commit, and it makes the rows cheaper for every slice after.
 
-#### THE RULING: stacks measure what landed; the cap measures what was declared
+#### THE RULING ON CRIT LIVES IN CODE, AT THE ACCRUAL SITE — NOT HERE
 
-**One rule, and it decides crit's treatment on both sides at once** — crit is *out* of the cap and
-*in* the stacks. Recorded here rather than under `## Rules for this work` because it is a domain rule
-about this mechanism, not a working practice.
+*Stacks measure what landed; the cap measures what was declared.* One rule, deciding crit's treatment
+on both sides at once: crit is **out** of the cap and **in** the stacks.
 
-**DERIVED, NOT RULED**, and that is why it is worth keeping: it falls out of `scorch.yml`'s own stated
-reason for armour slowing accrual — *"stacks come from damage actually landed"*. A derived answer
-survives Ignite's denominator being chosen; a ruled one might not have.
+**It is deliberately NOT restated here.** It governs at
+`ElementAccrual.scorch` (`paper/.../adapter/ElementAccrual.java:166`), where the two arguments *are*
+the rule — `Scorch.stacksFor(outcome.dealt())` against the separately-carried `declaredMagnitude` —
+and it is spelled out in `Scorch`'s class javadoc under *ARMOUR DELAYS SCORCH RATHER THAN BLUNTING
+IT*, which names all three channels the operator ruled on.
+
+**A paraphrase here would be a second authority that can drift**, and it would drift the way the
+mutation-note estate did: three greps, three counts, every one of them locally right. One copy, at
+the place where it decides something, plus this pointer.
+
+Worth knowing when you read it: it was **DERIVED, NOT RULED** — it falls out of `scorch.yml`'s own
+stated reason for armour slowing accrual, *"stacks come from damage actually landed"*. That is why it
+survives Ignite's denominator being chosen, and a ruled answer might not have.
 
 ### The vanilla damage boundary — what it created or exposed
 
@@ -2565,13 +2574,18 @@ two players.
 **Harmless for the DoT, fatal for Ignite.** The burn rate is flat and reads no stack count, so one
 stack burns exactly as ten do. But Ignite's threshold is **50% of max health as stacks**: a 20 HP
 zombie needs **ten**. At one stack per cast that is **ten casts**; with accrual it is one Flint Staff
-hit. **IGNITE IS UNREACHABLE IN PRACTICE UNTIL ACCRUAL LANDS**, and nothing in slice 1 says so.
+hit. **IGNITE IS UNREACHABLE IN PRACTICE, AND THE REASON IS THE THRESHOLD'S DENOMINATOR** — not, as
+this line said until accrual landed, because accrual was missing. A stack-denominated `0.5 x max`
+costs the target its **whole health** to reach, so the target dies before it ignites; the correction
+below works it. Nothing in slice 1 says so.
 
-> **ACCRUAL LANDED 2026-09-09, squashed to `9d375c4`.** The sentence above is kept as written because
-> it was true of slice 1, but its future tense has expired: accrual ships, so Ignite is now reachable
-> in the sense that stacks accumulate. It is **not** reachable in the sense that matters, because the
-> threshold is still undecided — see the denominator correction immediately below, which is the live
-> question and the one thing to answer before any Ignite code is written.
+> **RE-DERIVED 2026-09-09, when accrual landed (`9d375c4`), rather than dated.** This line originally
+> read *"UNREACHABLE IN PRACTICE UNTIL ACCRUAL LANDS"*, which was true when written. Accrual has now
+> landed — **its premise is SATISFIED** — and Ignite is still unreachable, but for a cause the sentence
+> never named. Stamping a date on it would have preserved a conclusion resting on a premise that no
+> longer holds, which is *A RULE OUTLIVES ITS PREMISE SILENTLY* three sections down this same file,
+> and it is the move that let `scorch.yml`'s eight durations keep their values while changing their
+> meaning. A date records when something was written; it does not make a false statement true.
 
 > #### THE THRESHOLD ABOVE IS A DENOMINATOR MISMATCH, AND SLICE 2 MUST NOT INHERIT THE NUMBER
 >
@@ -8744,3 +8758,40 @@ both were invisible for exactly the reason they were wanted.
 **How to apply, and the remedy is not "plan less":** at the end of a slice, diff the plan's NAMED
 ARTIFACTS against what exists on the branch. Two names, one grep. It is the same counting discipline
 that gave `7 -> 7` on the lambda sites and `12` on the fire damage sites.
+
+### A CONTROL THAT FAILS WITH A PLAUSIBLE EXPLANATION IS THE MOST DANGEROUS KIND, BECAUSE THE EXPLANATION IS WHAT STOPS YOU LOOKING
+
+**Named 2026-09-09, element accrual housekeeping, and it is the shape the whole slice kept meeting
+from different angles.** `CLAUDE.md` records the 2026-07-10 instance — a mutation marker firing and
+being dismissed as a race condition when it was a file lock. This is the general rule, and the reason
+to state it separately is that the dangerous case is not a control that fails *inexplicably*. Nobody
+walks away from that one. **It is a control that fails and hands you a good story on the way out.**
+
+A verification pass produces failures constantly, and most have boring causes. So the reflex that
+makes you productive — read the failure, recognise the shape, move on — is exactly the reflex that
+disarms a control. **The better your explanation, the less you look**, and the quality of the story
+is uncorrelated with its truth.
+
+**The worked example, and it was found by disobeying the reflex.** A multi-line grep control failed:
+a phrase that `grep -o` could display could not be matched by `grep -F`. The available story was
+blockquote `>` prefixes surviving the newline-flattening — plausible, mechanically specific, and the
+kind of thing that is usually right. **It was wrong.** `od` on the actual bytes showed
+`A \r > justification`: the tree is CRLF, `tr '\n' ' '` left the carriage returns behind, and they
+landed mid-pattern. Testing the story rather than accepting it is the only reason the real cause
+surfaced — and the real cause was a defect in the edits being verified, not in the control.
+
+**This is the same failure as the others this slice named, wearing different clothes:**
+
+| the thing | the plausible reading that would have ended the investigation |
+|---|---|
+| a green row over a dead branch | "the row covers it — look, the mutation reddens" |
+| a mutation that applied and did not bite | "confirmed applied, suite green, therefore guarded" |
+| a rule whose premise was retired | "the arithmetic still returns a sensible number" |
+| a control that failed | "oh, that will be the blockquote prefixes" |
+
+**How to apply:** when a control fails and you have an explanation, **the explanation is a hypothesis
+and it is now the thing under test.** Say what measurement would distinguish it from the alternatives
+and take that measurement — `od` the bytes, count the lines, print the unfiltered output. If you
+cannot name such a measurement, you do not have an explanation, you have a reason to stop looking.
+And note which way the cost falls: a control that fires and is argued with is **worse** than one that
+never ran, because you now believe you checked.
