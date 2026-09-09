@@ -252,6 +252,33 @@ Every bundled element declares `scorch` or nothing, so **production cannot reach
   that test. Otherwise the next reader assumes production covers it, which is how a guard stops
   being maintained while still looking load-bearing.
 
+
+### THREE THINGS THAT DO NOT ANNOUNCE THEIR OWN ABSENCE
+
+Everything else in a plan or a diff is noticed by someone who wanted it. These are not, and each
+cost a slice to find.
+
+**A MUTATION CONFINED TO AN UNREACHABLE BRANCH REDDENS EXACTLY THE ROW THAT KEEPS IT ALIVE.**
+A mutation can only redden through the rows that exercise it. So a dead branch and the row covering
+it justify each other — the branch makes the row pass, the row's red makes the branch look guarded —
+and **the pair is self-sustaining while neither touches production.** It looks exactly like coverage.
+The tell is a row whose fixture had to INVENT a state the system cannot produce; when you find one,
+check the branch it covers before you fix the row.
+
+**THE PLAN ITEMS THAT SILENTLY FAIL TO LAND ARE THE GUARDS.** Not a random sample — selection. A
+missing feature is reported by the person who wanted it; a missing guard produces no symptom at all,
+which is the same property that made it worth planning. Two went missing in one slice
+(`ScorchStatus`'s monotone refresh, `ScorchSinkSignatureTest`) and both were invisible for exactly
+the reason they were needed. **The remedy is not "plan less":** at the end of a slice, diff the plan's
+NAMED ARTIFACTS against what exists on the branch — the same counting that gave `7 -> 7` on the
+lambda sites and `12` on the fire damage sites. Two names, one grep.
+
+**A FALSIFIED COMMENT MISLEADS A READER WHO CAN CHECK IT. A FALSIFIED FLAVOUR LINE MISLEADS A PLAYER
+WHO CANNOT.** So the sweep for prose that outlived its mechanism covers `flavor:` and `description:`
+in content, not only code comments. A developer can diff a comment against the code beside it; a
+player has only the string. `emberblade.yml`'s *"Swing to cut; loose to burn"* became false the day
+melee started accruing scorch, and nothing but a person reading it would ever have said so.
+
 ## Architecture invariants
 
 ```

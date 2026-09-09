@@ -2343,6 +2343,54 @@ live-authoring, not inherited debt. **Do not re-run the other 774.** Execute the
 > to be. Understating is the conservative failure mode for a note, which is why the rule that follows
 > is "execute the note you are writing" rather than any claim about the notes already written.
 
+
+#### THE ELEMENT CONTENT PASS — WHAT WAS DECIDED, AND THE SHAPE THAT WAS REFUSED
+
+**Migrated from `PLAN-element-content-pass.md`, which was deleted when the pass landed.** A completed
+plan file at the repo root is scaffolding that documents its own expiry condition and still does not
+remove itself; what follows is the part that outlives it.
+
+**THE DURATION RECONCILIATION.** Eight sites authored a `duration_ticks`, and every one was
+inheritance rather than a decision:
+
+| site | authored | now |
+|---|---|---|
+| `solar_grenade` burst / field pulse, `emberblade` | 40 | 120 |
+| `ember_step`, `rekindle`, `solar_lance`, `ability_stone`, `ember_staff` | 60 | 120 |
+| `flint_staff` | 80 | 120 |
+
+`content/statuses/scorch.yml` recorded the debt at the time: the eight values *"kept their values
+while changing their meaning"* when `kind: fire` became `kind: scorch`, and were never re-decided. So
+collapsing them to one duration is the reconciliation that file already said was owed — **not a
+buff**, which is how it first got written up and is the framing to avoid.
+
+**THE SHAPE THAT WAS CONSIDERED AND REFUSED, because a future reader will re-derive it.** Three ways
+to reconcile the duration were on the table:
+
+- **(a) one duration everywhere** — chosen.
+- **(b) the element declares a duration** beside `applies_status`. **Refused**: an element declaring
+  a duration is one field from declaring a rate, and the line was drawn at *name the status and
+  nothing else*. Refused rather than forgotten.
+- **(c) ACCRUAL IS REFRESH-ONLY** — it feeds a burn that already exists and never starts one.
+  `ScorchStatus.apply` already branches on exactly that, so it was a guard, not new machinery.
+
+**(c) deserves its paragraph, because it dissolves every problem the pass had at once**: content
+keeps *when* a burn starts and *for how long*, the authored durations keep meaning what they say,
+there is no double-application, and the new sources (emberblade melee, every `hunters_bow` arrow)
+stop being new.
+
+**It was refused because it is a DIFFERENT DESIGN, not a smaller one.** Under (c) a fire weapon alone
+never burns anything — abilities light, weapons feed — so `applies_status` would not *apply*
+anything, Ignite would need an ability to light first, and the bow stops being able to witness
+refresh-without-burn. Coherent, and not the design this slice was specified as.
+
+> One argument used against (c) did NOT survive checking, and is recorded so it is not reused:
+> *"it falsifies `emberblade.yml`'s 'that scorches all it catches'"*. That line is the **right_click
+> Fireball's** own description, and the Fireball keeps an explicit `status: scorch` under (c), so it
+> stays true either way. The weapon-level flavour discriminated in the opposite direction — *"Swing
+> to cut; loose to burn"* reads as (c) — and shape (a) is what falsified it, which is why that line
+> was rewritten to *"Swing or loose -- both leave embers."*
+
 #### DECIDED: ACCRUAL SKIPS A HIT THAT TOOK THE TARGET TO ZERO
 
 Accrual runs after `CombatantStats.damage` returns, so a LETHAL fire hit would accrue stacks on a
@@ -8129,6 +8177,7 @@ correctly and still be unreadable.
 | `D4b` | 18x, correct | **`knell.yml` is `base_entity: wither_skeleton`, and wither skeletons are FIRE-IMMUNE** — `is_fire` contains `minecraft:lava` | the Knell takes nothing in lava while the control dies → *"the conversion does not reach tagged mobs"* |
 | `D4c` | 60% / lethal, correct | **the operator's ARMOUR** — our `Defense` applies to every cause, mobs have none, he does | the lethal drop kills both mobs and leaves him standing → *"the conversion works for mobs, not players"* |
 | `S1c` | 2/tick at 20-tick cadence, correct | **the `area` effect list carries `type: damage amount: 2` ALONGSIDE the scorch it applies** — same interval, same value, different source | two numbers per second read as the refresh-burn defect → *"the fix did not take"*, on a build where it had |
+| **the whole element-accrual gate (twelve rows)** | every hit figure, correct | **THE CRIT COIN FLIP** -- a player crits 15% for double BY DEFAULT and it cannot be turned off, so every stated figure is the non-crit value | `A3` INVERTS RATHER THAN FAILS: its two runs are 340 and 339 damage, and a crit kills both, so the pair collapses into two copies of run 1 and reads as a clean pass |
 
 **Fire immunity is a property of the SUBJECT. Armour is a property of the RUN. A CO-LOCATED PAYLOAD IS
 A PROPERTY OF THE CAST**, and the third is the one a careful reader of the *status* code cannot see at
