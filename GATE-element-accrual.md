@@ -11,16 +11,18 @@ Run against `1f6c93f` unless a row says otherwise.
 
 | | |
 |---|---|
-| **Run and passed** | A1, A2, A3\*, A4, B1, B2, B3, C1, C2, C3, C4, D1 |
+| **Run and passed** | A1, A2, A3, A4, B1, B2, B3, C1, C2, C3, C4, D1 |
 | **Refused — cannot witness anything** | the six in their own section, which is the more valuable half |
 | **Open, ruled left alone** | the `FIRE_TICK` suppression covers one cause of four |
 
 ### ATTRIBUTION, GRADED — and this section is the point of the file
 
 `GATE-vanilla-damage.md` downgraded two rows because a blanket *"gates green"* is weaker evidence
-than a figure. The same grading applies here, and one row comes out worse than blanket.
+than a figure. The same grading applies here, on **three** rungs rather than two. One row is neither
+itemised nor blanket, and naming the middle rung rather than rounding it to one of the two is the
+point of this section.
 
-**ITEMISED (strong) — the operator's own figures, two of them:**
+**ITEMISED (strongest) — the operator's own figures, two of them:**
 
 - **A1, against `6d5eb34`:** *"knell takes 20 and then 6 18s."* Exact and unprompted. It confirmed
   the six-burn window and the silent first second **in one line**, and it is the measurement the cap
@@ -30,26 +32,34 @@ than a figure. The same grading applies here, and one row comes out worse than b
   diagnosed the cause** — block contact raises `FIRE`, the ignition raises `FIRE_TICK`, and only the
   second is suppressed.
 
-**BLANKET (weaker) — three confirmations, no per-row figures:**
+**CONFIRMED AGAINST A STATED DISCRIMINATOR (middle) — one row, A3:**
+
+> The operator affirmed the specific described outcomes, over repeated runs, **having been told in
+> advance what would invalidate a run and why.** Stronger than the blanket confirmations because the
+> failure mode was named to him before he looked; weaker than the two ITEMISED entries, which are his
+> own unprompted figures.
+>
+> **What he ran, and what he reported.** The pair, multiple times. Run 1's knell died to the bolt
+> **without a flame**; run 2's **survived at 1** and was killed by the first burn; the impact number
+> read a **white 20** on every run. His words: *"it's passed every time without fail."*
+>
+> **WHY A3 COULD NOT USE A BLANKET — and this is the row's DESIGN, not its status.** It is why the
+> re-run had to be staged the way it was, and it is the part to carry forward: A3 **inverts silently
+> under a crit.** Its two runs are 340 and 339 damage, a crit kills both, and the pair collapses into
+> two copies of run 1 — **which reads as a clean pass.** A blanket confirmation is exactly the
+> evidence this row cannot accept, because the failure mode it has IS "looks like a pass".
+>
+> So the discriminator was stated first — the **white 20**, which is the thing that says no crit
+> landed — and the affirmation is worth what it is worth *because it came after that*. **Anyone
+> re-running A3 must stage it the same way**, or a green result carries no information.
+
+**BLANKET (weakest) — three confirmations, no per-row figures:**
 
 | against | words | carried |
 |---|---|---|
 | `1233469` | *"all gates green"* | D1 skipped, named by him |
 | `23ed254` | *"all gates passed"* | two exceptions itemised separately |
-| `1f6c93f` | *"everything passed"* | — |
-
-> ### \*A3 IS UNCONFIRMED UNDER THE CORRECTED PRECONDITION, AND IT IS THE FIRST THING TO RE-RUN
->
-> A3's crit precondition and A4 both reached the operator **in the same message as the final
-> publish**. His *"everything passed"* came after, so A4 is covered by a blanket — thin, but valid.
->
-> **A3 cannot use a blanket, and that is the whole problem.** It inverts silently under a crit: its
-> two runs are 340 and 339 damage, a crit kills both, and the pair collapses into two copies of run 1
-> — **which reads as a clean pass.** A blanket confirmation is exactly the evidence this row cannot
-> accept, because the failure mode it has IS "looks like a pass".
->
-> Whether it was re-run with the white-20 check is **unknown**. Recorded at that granularity rather
-> than inflated. **It is one bolt to settle.**
+| `1f6c93f` | *"everything passed"* | A4 — thin, but valid. A4 and A3's crit precondition both reached him in the same message as the final publish, and this came after |
 
 ---
 
