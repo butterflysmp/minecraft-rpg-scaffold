@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
+import io.github.butterflysmp.rpg.core.combat.AccrualRule;
 import io.github.butterflysmp.rpg.core.combat.Scorch;
 import io.github.butterflysmp.rpg.core.combat.stat.DamageOutcome;
 import io.github.butterflysmp.rpg.paper.content.ElementDefinition;
@@ -130,8 +131,16 @@ public final class ElementAccrual {
      *                            re-enters the DoT through the back door after being ruled out of it
      */
     public static Optional<ScorchAccrual> forHit(ElementRegistry elements, StatusRegistry statuses,
-                                                 String element, DamageOutcome outcome,
+                                                 String element, AccrualRule accrual,
+                                                 DamageOutcome outcome,
                                                  double preMitigationAmount) {
+        // INERT: the hit HAS an element -- it draws that element's glyph -- and must not accrue.
+        // Scorch's own burn tick is the only caller today, and this is the loop guard. It is a
+        // DIFFERENT reason from the null-element early return below: that one means the hit has no
+        // element at all. Same outcome, different facts; collapsing them loses the ability to tell
+        // a burn tick apart from fall damage.
+        if (!accrual.accrues()) return Optional.empty();
+
         if (outcome.newCurrent() <= 0) return Optional.empty();
 
         ElementDefinition def = elements.find(element).orElse(null);

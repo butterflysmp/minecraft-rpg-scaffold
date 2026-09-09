@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
+import io.github.butterflysmp.rpg.core.combat.AccrualRule;
 import io.github.butterflysmp.rpg.core.combat.Scorch;
 import io.github.butterflysmp.rpg.core.combat.stat.DamageOutcome;
 import io.github.butterflysmp.rpg.paper.content.ElementDefinition;
@@ -47,7 +48,8 @@ class ElementAccrualTest {
 
     private static Optional<ElementAccrual.ScorchAccrual> accrue(String element, DamageOutcome outcome,
                                                            double amount) {
-        return ElementAccrual.forHit(elements("fire", "scorch"), statuses(), element, outcome, amount);
+        return ElementAccrual.forHit(elements("fire", "scorch"), statuses(), element,
+                AccrualRule.ACCRUES, outcome, amount);
     }
 
     // --- THE PAIR. Neither row discriminates alone. ----------------------------------------------
@@ -103,21 +105,52 @@ class ElementAccrualTest {
 
     // --- The loop guard, witnessed BEHAVIOURALLY ------------------------------------------------
 
+
     @Test
-    void aBURNTICKAccruesNoStacksBecauseItCarriesNoElement() {
-        // THE LOOP GUARD'S REAL ROW. Scorch's own tick reaches the port through EntityScorchSink,
-        // which calls the four-argument applyDamage and so has no element to pass -- the burn cannot
-        // feed itself. That is structural upstream, but it is asserted HERE as a BEHAVIOUR, because
-        // a structural guard is only as good as the shape that delivers it.
+    void anINERTHitWEARSItsElementAndAccruesNOTHINGFromIt() {
+        // THE LOOP GUARD, AND THIS ROW IS WHY THE RULE IS A NAMED VALUE RATHER THAN AN ABSENCE.
         //
-        // Deliberately NOT written as an `element == null` guard in the production code:
-        // ElementRegistry.find is Optional.ofNullable over a LinkedHashMap, which permits a null key
-        // and returns null rather than throwing, so a null element falls out through the ordinary
-        // registry MISS. An explicit null check would be indistinguishable from that miss -- no row
-        // could separate them -- which is the dead-guard shape this slice already found once.
-        assertTrue(accrue(null, new DamageOutcome(50.0, 300.0), 50.0).isEmpty(),
-                "an elementless hit -- a burn tick, a thorns reflect, fall damage -- accrues nothing");
-        // Mutation: default a null element to "fire" -> reddens, and that mutation IS the loop.
+        // While scorch's burn carried NO element, the guard's only witness was behavioural -- "a burn
+        // tick accrues no stacks" -- and that row COULD NOT TELL THE GUARD FROM A REGISTRY MISS,
+        // because a null element misses the registry anyway. It passed either way, which is the same
+        // ambiguity a dead guard has.
+        //
+        // Here the element is REAL and RESOLVES: "fire" is registered, declares scorch, and the hit
+        // is non-lethal and large enough to buy stacks. Every other reason to return empty is
+        // excluded, so INERT is the ONLY thing that can produce this observation.
+        var elements = elements("fire", "scorch");
+
+        assertTrue(ElementAccrual.forHit(elements, statuses(), "fire",
+                        AccrualRule.INERT, new DamageOutcome(25.0, 75.0), 30.0).isEmpty(),
+                "an INERT hit accrues nothing, even though its element resolves and would accrue");
+
+        // THE CONTROL, in the same fixture and differing only in the rule. Without it, "returns
+        // empty" would pass against an implementation that never accrues at all.
+        assertTrue(ElementAccrual.forHit(elements, statuses(), "fire",
+                        AccrualRule.ACCRUES, new DamageOutcome(25.0, 75.0), 30.0).isPresent(),
+                "and the SAME hit accruing is what proves the rule is doing the work");
+        // Mutation: ignore the rule (drop the !accrual.accrues() early return) -> the first assertion
+        // reddens and the second stays green, which is the pair discriminating.
+    }
+
+    @Test
+    void theTWOReasonsForNoAccrualAreDIFFERENTFactsWithTheSameOutcome() {
+        // Recorded as a row because collapsing them into "the accrual guard" is how one gets deleted.
+        //
+        //   null element  =  the hit HAS no element      -> fall damage, a thorns reflect, /rpg apply
+        //   INERT         =  it HAS one and must not accrue -> scorch's own burn, and nothing else
+        //
+        // The short applyDamage arities still mean the FIRST, correctly, for every caller they have.
+        // Retrofitting INERT onto them would look tidy and would lose the distinction: lava genuinely
+        // has no element, and a burn tick genuinely does.
+        var elements = elements("fire", "scorch");
+
+        assertTrue(ElementAccrual.forHit(elements, statuses(), null,
+                        AccrualRule.ACCRUES, new DamageOutcome(25.0, 75.0), 30.0).isEmpty(),
+                "no element at all -- nothing to accrue, whatever the rule says");
+        assertTrue(ElementAccrual.forHit(elements, statuses(), "fire",
+                        AccrualRule.INERT, new DamageOutcome(25.0, 75.0), 30.0).isEmpty(),
+                "an element, but forbidden from accruing -- a different fact, same outcome");
     }
 
     @Test
@@ -132,7 +165,7 @@ class ElementAccrualTest {
     void anElementDeclaringNOStatusAccruesNothing() {
         // Six of the seven shipped elements. Absent means off.
         assertTrue(ElementAccrual.forHit(elements("kinetic", null), statuses(), "kinetic",
-                new DamageOutcome(25.0, 75.0), 30.0).isEmpty());
+                AccrualRule.ACCRUES, new DamageOutcome(25.0, 75.0), 30.0).isEmpty());
     }
 
     @Test
@@ -143,7 +176,7 @@ class ElementAccrualTest {
         // silently rather than warning per hit.
         for (String id : new String[] {"rooted", "soaked", "surge"}) {
             assertTrue(ElementAccrual.forHit(elements("nature", id), statuses(), "nature",
-                            new DamageOutcome(25.0, 75.0), 30.0).isEmpty(),
+                            AccrualRule.ACCRUES, new DamageOutcome(25.0, 75.0), 30.0).isEmpty(),
                     id + " cannot accrue");
         }
         // Mutation: give the non-Scorch switch arms a scorch application -> all three redden.

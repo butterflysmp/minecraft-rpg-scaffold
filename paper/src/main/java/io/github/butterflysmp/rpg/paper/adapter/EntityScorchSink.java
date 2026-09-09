@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
+import io.github.butterflysmp.rpg.core.combat.AccrualRule;
 import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 
@@ -46,9 +47,32 @@ public final class EntityScorchSink implements ScorchSink {
         return ctx.stats().tracks(id) ? ctx.stats().max(id) : 0.0;
     }
 
-    @Override public void deal(double amount, UUID applierId) {
+    @Override public void deal(double amount, UUID applierId, String element) {
         if (amount <= 0) return;
+        // THE BURN CARRIES ITS ELEMENT AND REFUSES TO ACCRUE FROM IT. The element is here so the
+        // damage number is MARKED like the hit that lit it; AccrualRule.INERT is what stops the burn
+        // feeding itself. Those were ONE fact while the guard was the ABSENCE of an element -- the
+        // burn drew an unmarked number as the price of not looping. They are two values now.
+        //
+        // FLIPPING THIS TO ACCRUES IS A RUNAWAY, NOT A WRONG FIGURE: every period would re-apply
+        // the status, refresh the window and add stacks, and the clock would never run out. Bound
+        // any mutation of it to a fixed number of periods -- a hang is not evidence a guard works.
+        //
+        // AND NO UNIT TEST WITNESSES THIS LINE. MEASURED, not assumed: nothing in paper/src/test
+        // references EntityScorchSink -- every ScorchStatus row runs against FakeScorchSink -- so
+        // flipping INERT to ACCRUES here leaves the whole suite GREEN. It was flipped and the run
+        // was 813/17/569, Failures: 0.
+        //
+        // The GUARD is tested (ElementAccrual.forHit returns empty on INERT, and its mutation
+        // reddens two rows); this CALLER choosing INERT is not, because the choice sits behind a
+        // real Bukkit entity. Same class of gap as PacketDamagePopupSender and EntityTaskTarget,
+        // which this repo already accepts as boot-witnessed -- but louder, because the failure is a
+        // runaway rather than a wrong pixel.
+        //
+        // BOOT ROW THAT WITNESSES IT: light a mob and watch the burn STOP. Six ticks at 20-tick
+        // spacing and then silence. If it never expires, this line says ACCRUES.
         BukkitCombatant.of(entity, ctx).handle()
-                .applyDamage(amount, applierId, CritState.NORMAL, DefenseRule.BYPASSED);
+                .applyDamage(amount, applierId, CritState.NORMAL, DefenseRule.BYPASSED,
+                        element, AccrualRule.INERT);
     }
 }

@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.listener;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
+import io.github.butterflysmp.rpg.core.combat.AccrualRule;
 import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
@@ -902,7 +903,18 @@ public final class RpgListeners implements Listener {
         // element: kinetic at the weapon level while its nested damage effect declares fire.
         BukkitCombatant.of(swept, adapters).handle().applyDamage(
                 SweepShare.of(primary.get().damage(), fraction), attacker.getUniqueId(),
-                CritState.NORMAL, DefenseRule.APPLIES, primary.get().element());
+                CritState.NORMAL, DefenseRule.APPLIES, primary.get().element(),
+                // ACCRUES, AND IT IS A REAL DECISION RATHER THAN A DEFAULT. INERT is the reflexive
+                // choice here -- "a derived hit, half the primary's damage, not a real one" -- and it
+                // would be wrong: a0eee2b exists so a fire sweep burns what it caught, and
+                // emberblade's flavour was rewritten for it.
+                //
+                // NO GATE ROW CAN SEE THIS. The share is half the primary, so a bystander takes 3,
+                // buys one stack, and on a 20-HP mob its burn reads 1 -- indistinguishable from
+                // anything else lighting it. The unit row is the only witness, which is why it
+                // exists: SweepShareTest's sibling in RpgListeners has no fixture, so the assertion
+                // lives where the decision is readable instead.
+                AccrualRule.ACCRUES);
     }
 
     /**

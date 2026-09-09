@@ -57,7 +57,7 @@ class ScorchStatusTest {
         var clock = new FakeTickTarget();
         var sink = sinkAt100(clock);
 
-        scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(), 120);
+        scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(), 120, "fire");
 
         assertEquals(0, sink.count(), "nothing burns on application -- the clock has not moved");
         clock.advance(20);
@@ -77,7 +77,7 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), 1);
+        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), 1, "fire");
         clock.advance(400);
 
         assertEquals(1, sink.count(), "a one-tick scorch burns once, not never");
@@ -96,7 +96,7 @@ class ScorchStatusTest {
         var clock = new FakeTickTarget();
         var sink = sinkAt100(clock);
 
-        scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(), 120);
+        scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(), 120, "fire");
         clock.advance(60);
 
         assertEquals(3, sink.count(), "20, 40, 60 -- one per period, not per tick, and none at t=0");
@@ -114,7 +114,7 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
 
         scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(),
-                Scorch.DEFAULT_DURATION_TICKS);
+                Scorch.DEFAULT_DURATION_TICKS, "fire");
         clock.advance(400);   // well past expiry
 
         assertEquals(6, sink.count(), "120 ticks at period 20 is SIX burns, at t=20..120");
@@ -144,7 +144,7 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS);
+        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS, "fire");
 
         clock.advance(100);
         assertEquals(5, sink.count(), "five burns have landed by t=100");
@@ -175,10 +175,10 @@ class ScorchStatusTest {
         UUID id = UUID.randomUUID();
         UUID applier = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 1, 20.0, applier, 160);
+        scorch.apply(id, clock, sink, 1, 20.0, applier, 160, "fire");
         for (int i = 0; i < 6; i++) {           // re-apply every 15 ticks, six times
             clock.advance(15);
-            scorch.apply(id, clock, sink, 1, 20.0, applier, 160);
+            scorch.apply(id, clock, sink, 1, 20.0, applier, 160, "fire");
         }
 
         // NONE of these burns is inline -- there is no inline burn any longer. Every one is the
@@ -212,12 +212,12 @@ class ScorchStatusTest {
         UUID first = UUID.randomUUID();
         UUID second = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 1, 20.0, first, 160);
+        scorch.apply(id, clock, sink, 1, 20.0, first, 160, "fire");
         clock.advance(20);   // the clock is the only thing that burns -- nothing lands on application
         assertEquals(20.0, sink.burns.get(0).amount(), EPS, "the first applier's cap of 20");
         assertEquals(first, sink.burns.get(0).applierId(), "credited to the first applier");
 
-        scorch.apply(id, clock, sink, 1, 8.0, second, 160);
+        scorch.apply(id, clock, sink, 1, 8.0, second, 160, "fire");
         assertEquals(second, scorch.applier(id), "which is what slice 2's ignite will credit");
 
         // The refresh deals nothing of its own (aRefreshDoesNotDealAnUNSCHEDULEDBurn), so the
@@ -241,11 +241,11 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 10, 20.0, UUID.randomUUID(), 160);   // a 20-damage staff hit
+        scorch.apply(id, clock, sink, 10, 20.0, UUID.randomUUID(), 160, "fire");   // a 20-damage staff hit
         assertEquals(10, scorch.stacks(id), "ten stacks from one call, not ten calls");
 
         clock.advance(100);
-        scorch.apply(id, clock, sink, 3, 20.0, UUID.randomUUID(), 160);
+        scorch.apply(id, clock, sink, 3, 20.0, UUID.randomUUID(), 160, "fire");
         assertEquals(13, scorch.stacks(id), "stacks add");
 
         clock.advance(100);   // t=200, past the ORIGINAL 160-tick window
@@ -267,9 +267,9 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS);
+        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS, "fire");
         clock.advance(10);                                   // mid-period: nothing is due here
-        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS);
+        scorch.apply(id, clock, sink, 1, 20.0, UUID.randomUUID(), Scorch.DEFAULT_DURATION_TICKS, "fire");
 
         clock.advance(400);                                  // well past expiry
 
@@ -297,11 +297,11 @@ class ScorchStatusTest {
 
         var one = new ScorchStatus();
         var sinkOne = sinkAt100(clock);
-        one.apply(UUID.randomUUID(), clock, sinkOne, 1, 20.0, UUID.randomUUID(), 160);
+        one.apply(UUID.randomUUID(), clock, sinkOne, 1, 20.0, UUID.randomUUID(), 160, "fire");
 
         var ten = new ScorchStatus();
         var sinkTen = sinkAt100(clock);
-        ten.apply(UUID.randomUUID(), clock, sinkTen, 10, 20.0, UUID.randomUUID(), 160);
+        ten.apply(UUID.randomUUID(), clock, sinkTen, 10, 20.0, UUID.randomUUID(), 160, "fire");
 
         clock.advance(20);   // nothing burns on application; the clock is the only source
 
@@ -320,7 +320,7 @@ class ScorchStatusTest {
         var sink = new FakeScorchSink(clock, 5000.0);
 
         scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(),
-                Scorch.DEFAULT_DURATION_TICKS);
+                Scorch.DEFAULT_DURATION_TICKS, "fire");
         clock.advance(400);
 
         assertEquals(6, sink.count(), "six burns");
@@ -339,7 +339,7 @@ class ScorchStatusTest {
         var clock = new FakeTickTarget();
         var sink = sinkAt100(clock);
 
-        scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(), 160);
+        scorch.apply(UUID.randomUUID(), clock, sink, 1, 20.0, UUID.randomUUID(), 160, "fire");
         clock.advance(20);   // nothing burns on application; the clock is the only source
         assertEquals(5.0, sink.burns.get(0).amount(), EPS, "5% of 100");
 
@@ -358,7 +358,7 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 0, 20.0, UUID.randomUUID(), 160);
+        scorch.apply(id, clock, sink, 0, 20.0, UUID.randomUUID(), 160, "fire");
 
         assertFalse(scorch.isScorched(id), "zero stacks starts nothing");
         assertEquals(0, sink.count(), "and burns nothing");
@@ -376,7 +376,7 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 5, 20.0, UUID.randomUUID(), 160);
+        scorch.apply(id, clock, sink, 5, 20.0, UUID.randomUUID(), 160, "fire");
         int burnsBeforeDeath = sink.count();
 
         clock.active = false;
@@ -398,7 +398,7 @@ class ScorchStatusTest {
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
-        scorch.apply(id, clock, sink, 5, 20.0, UUID.randomUUID(), 160);
+        scorch.apply(id, clock, sink, 5, 20.0, UUID.randomUUID(), 160, "fire");
         int burnsBeforeForget = sink.count();
 
         scorch.forget(id);
@@ -420,8 +420,8 @@ class ScorchStatusTest {
         UUID first = UUID.randomUUID();
         UUID second = UUID.randomUUID();
 
-        scorch.apply(first, clock, a, 1, 20.0, UUID.randomUUID(), 160);
-        scorch.apply(second, clock, b, 3, 20.0, UUID.randomUUID(), 40);
+        scorch.apply(first, clock, a, 1, 20.0, UUID.randomUUID(), 160, "fire");
+        scorch.apply(second, clock, b, 3, 20.0, UUID.randomUUID(), 40, "fire");
 
         assertEquals(2, scorch.trackedVictims(), "keyed per victim");
         assertEquals(1, scorch.stacks(first));

@@ -58,22 +58,21 @@ public interface CombatantHandle {
     /**
      * As above, stating whether this damage SKIPS the Defense curve entirely.
      *
-     * <h2>THIS ARITY WEARS NO ELEMENT, AND THAT IS THE LOOP GUARD</h2>
+     * <h2>THIS ARITY WEARS NO ELEMENT, AND THAT NO LONGER MEANS "LOOP GUARD"</h2>
      *
-     * <b>DO NOT "TIDY" THIS INTO A DELEGATION THAT PASSES SOME DEFAULT ELEMENT.</b> It delegates with
-     * {@code null} on purpose, and the whole anti-loop property of stack accrual rests on it.
+     * <b>It used to.</b> Scorch's burn tick reached the port through here, so it had no element to
+     * pass and could not accrue more scorch -- the loop made unrepresentable rather than checked. That
+     * claim is now FALSE and has been deleted rather than left standing beside the change that
+     * falsified it: the burn carries its element for the glyph and passes
+     * {@link AccrualRule#INERT} instead.
      *
-     * <p>Scorch's own burn tick reaches the port through here ({@code EntityScorchSink}), so it has no
-     * element to pass, so it <b>cannot accrue more scorch</b>. That is the loop made
-     * <i>unrepresentable</i> rather than checked: there is no flag to get wrong, no ordering to
-     * preserve, and no condition a later reader has to know about. Give this arity a default element
-     * and a burn begins feeding itself its own ticks -- silently, and only on a large health pool,
-     * where a 5%-of-max burn is big enough to clear {@code Scorch.DAMAGE_PER_STACK}.
+     * <p><b>What this arity still means, correctly, for every caller it has: the hit HAS NO
+     * ELEMENT.</b> The thorns reflect (a shield returning force is not the attacker's element), the
+     * vanilla-damage boundary (fall, drowning and lava genuinely have none), and the dev damage and
+     * apply commands. <b>Do not retrofit {@code INERT} onto them to look tidy</b> -- that would
+     * collapse two different facts into one and lose the ability to tell them apart. See
+     * {@link AccrualRule}.
      *
-     * <p>Every other elementless caller reaches the port here too, and each is correct rather than
-     * merely unconverted: the thorns reflect (a shield returning force is not the attacker's element),
-     * the vanilla-damage boundary (fall, drowning and lava have no element and inventing one would be
-     * a lie), and the dev apply command (an instrument, not a hit).
      *
      * <h2>AND THE DEFENSE RULE IS THE FIRST PER-CAUSE RULE, NOT A SCORCH FEATURE</h2>
      *
@@ -126,7 +125,26 @@ public interface CombatantHandle {
      *                wears none. Null is the honest value for every non-payload path -- see the
      *                four-argument arity above, whose elementlessness is the loop guard.
      */
-    void applyDamage(double amount, UUID sourceId, CritState crit, DefenseRule defense, String element);
+    default void applyDamage(double amount, UUID sourceId, CritState crit, DefenseRule defense,
+                             String element) {
+        applyDamage(amount, sourceId, crit, defense, element, AccrualRule.ACCRUES);
+    }
+
+    /**
+     * As above, stating whether this hit's element may ACCRUE the status it declares.
+     *
+     * <p><b>THIS REPLACES A GUARD MADE OF ABSENCE.</b> The four-argument arity above used to be the
+     * loop guard: scorch's burn tick reached the port through it, so it had no element to pass and
+     * could not accrue more scorch. That javadoc has been deleted rather than left standing, because
+     * the burn now carries its element -- for the glyph -- and passes {@link AccrualRule#INERT}.
+     *
+     * <p>A null element and {@code INERT} are DIFFERENT FACTS with the same outcome: the first means
+     * the hit has no element at all (fall damage, a thorns reflect), the second that it has one and
+     * must not accrue. The short arities still mean the first, correctly, for every caller they have.
+     * See {@link AccrualRule}.
+     */
+    void applyDamage(double amount, UUID sourceId, CritState crit, DefenseRule defense,
+                     String element, AccrualRule accrual);
 
     /**
      * Raise the target's health by {@code amount}, capped at its max by the implementation.

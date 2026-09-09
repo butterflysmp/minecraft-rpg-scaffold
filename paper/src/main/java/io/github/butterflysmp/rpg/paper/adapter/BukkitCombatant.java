@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.Vec3;
+import io.github.butterflysmp.rpg.core.combat.AccrualRule;
 import io.github.butterflysmp.rpg.core.combat.stat.DamageOutcome;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
@@ -173,7 +174,8 @@ public final class BukkitCombatant {
          * has no element to pass and cannot accrue more scorch. See {@code CombatantHandle}.
          */
         @Override public void applyDamage(double amount, UUID sourceId, CritState crit,
-                                          DefenseRule defense, String element) {
+                                          DefenseRule defense, String element,
+                                          AccrualRule accrual) {
             ctx.scheduler().onEntity(entity, () -> {
                 // Drain custom HP + fire the seam. dealerIsPlayer reuses the source's faction bit;
                 // the nameplate ignores the dealer this phase, the popup (1b) will need it.
@@ -187,7 +189,7 @@ public final class BukkitCombatant {
                 // the POST-mitigation figure that actually landed are both in scope -- the applier
                 // upstream has only the first, and the seam listeners downstream only the second.
                 // The decision is ElementAccrual's and is pure; this only performs it.
-                ElementAccrual.forHit(ctx.elements(), ctx.statuses(), element, outcome, amount)
+                ElementAccrual.forHit(ctx.elements(), ctx.statuses(), element, accrual, outcome, amount)
                         .ifPresent(accrued -> {
                             // The vanilla flame is the same visual the explicit path sets, and this
                             // is now the THIRD end of that coupling: the other two are
@@ -200,7 +202,7 @@ public final class BukkitCombatant {
                                     new EntityTaskTarget(entity, ctx.scheduler()),
                                     new EntityScorchSink(entity, ctx),
                                     accrued.stacks(), accrued.cap(), sourceId,
-                                    accrued.durationTicks());
+                                    accrued.durationTicks(), element);
                         });
 
                 // Aggro-on-hit: the target turns on its attacker -- vanilla's expected default.
@@ -337,7 +339,11 @@ public final class BukkitCombatant {
                         ctx.scorch().apply(entity.getUniqueId(),
                                 new EntityTaskTarget(entity, ctx.scheduler()),
                                 new EntityScorchSink(entity, ctx),
-                                1, cap, applierId, durationTicks);
+                                1, cap, applierId, durationTicks,
+                                // NO ELEMENT: a dev-applied scorch has no element behind it, so its
+                                // burn draws an unmarked number. Honest rather than tidy -- inventing
+                                // "fire" here would mark a burn nothing elemental lit.
+                                null);
                     }
 
                     case StatusDefinition.Potion potion -> {

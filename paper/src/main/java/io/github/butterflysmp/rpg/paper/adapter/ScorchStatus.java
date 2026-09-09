@@ -106,12 +106,17 @@ public final class ScorchStatus {
         int remaining;
         double cap;
         UUID applierId;
+        /** The element whose damage most recently applied or refreshed this burn, or null for a dev
+         *  application. SAME rule as cap and applierId -- newest wins -- so the burn is marked with
+         *  whatever last fed it rather than with whatever first lit it. */
+        String element;
 
-        Active(int stacks, int remaining, double cap, UUID applierId) {
+        Active(int stacks, int remaining, double cap, UUID applierId, String element) {
             this.stacks = stacks;
             this.remaining = remaining;
             this.cap = cap;
             this.applierId = applierId;
+            this.element = element;
         }
     }
 
@@ -132,7 +137,8 @@ public final class ScorchStatus {
      * @param durationTicks  the whole window, refreshed on every application
      */
     public void apply(UUID id, RepeatingTaskTarget target, ScorchSink sink,
-                      int stacks, double cap, UUID applierId, int durationTicks) {
+                      int stacks, double cap, UUID applierId, int durationTicks,
+                      String element) {
         // A hit too small to buy a stack scorches nothing -- AND DOES NOT REFRESH AN EXISTING BURN
         // either, since this returns before the refresh arm below. Correct by the letter of the
         // spec: stacks are what scorch is made of, and a hit that buys none has not applied it. But
@@ -162,6 +168,7 @@ public final class ScorchStatus {
             // false one it was first deferred on.
             a.cap = cap;                   // most recent applier owns the cap...
             a.applierId = applierId;       // ...and the credit. One rule, not two.
+            a.element = element;          // ...and the mark. One rule, not three.
             // AND IT DOES NOT BURN -- which is now the same rule the first-application arm follows
             // rather than an exception to it. A burn here would be damage outside the clock this
             // class exists to own, and it would scale with HIT RATE rather than with time: a weapon
@@ -172,7 +179,7 @@ public final class ScorchStatus {
             return;
         }
 
-        Active na = new Active(stacks, durationTicks, cap, applierId);
+        Active na = new Active(stacks, durationTicks, cap, applierId, element);
 
         BooleanSupplier tick = () -> {
             // BURN, THEN DECREMENT -- and this ordering is COUPLED to the inline burn being gone.
@@ -196,7 +203,7 @@ public final class ScorchStatus {
      * {@code ScorchStatusTest.stacksDoNOTScaleTheDamage} is the only thing that would catch it.
      */
     private static void burnOnce(Active a, ScorchSink sink) {
-        sink.deal(Scorch.damagePerTick(sink.victimMaxHealth(), a.cap), a.applierId);
+        sink.deal(Scorch.damagePerTick(sink.victimMaxHealth(), a.cap), a.applierId, a.element);
     }
 
     /**
