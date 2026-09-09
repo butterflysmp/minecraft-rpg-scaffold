@@ -18,19 +18,30 @@ import java.util.UUID;
  *
  * The trigger is Bukkit-facing; the detonation is not. This method touches three core calls --
  * {@link CombatWorld#schedule}, {@link CombatWorld#combatantsNear} and {@link CombatWorld#present} --
- * and no server type, so it lives where a CLOCK can see it. That matters more here than anywhere
- * else in the project for two reasons:
+ * and no server type, so it lives where a CLOCK can see it.
  *
- * <ul>
- *   <li><b>{@code FakeWorld} already carries this mechanism's own failure detector.</b> Its
- *       {@code MAX_TASKS_PER_ADVANCE} trip-wire exists for "a task that reschedules itself at a rate
- *       the clock can never outrun" -- which is precisely what a runaway ignite chain is. In core
- *       that detector guards this code for free. In an adapter it would never see it.</li>
- *   <li><b>An adapter no test references is where a silent defect lives.</b> {@code EntityScorchSink}
- *       is the worked example from the previous slice: flipping its accrual rule left the entire
- *       suite green. Putting the fan-out in the adapter layer would give the whole mechanism --
- *       fuse, targeting, attribution, element and defense -- that same shape.</li>
- * </ul>
+ * <p><b>The five properties this mechanism has are all timing- or seam-shaped</b> -- the fuse, the
+ * targeting, the attribution, the element and the defense rule -- and a clock is the only thing that
+ * can assert any of them. <b>An adapter no test references is where a silent defect lives:</b>
+ * {@code EntityScorchSink} is the worked example from the previous slice, where flipping its accrual
+ * rule left the entire suite green. Putting the fan-out in the adapter layer would give this whole
+ * mechanism that same shape. <b>That reason alone carries the placement.</b>
+ *
+ * <h2>AND WHAT CORE CANNOT COVER, IN THE SAME BREATH, SO THE PLACEMENT IS NOT OVER-READ</h2>
+ *
+ * <b>THE CHAIN ITSELF IS EMERGENT FROM THE PAPER EVENT LOOP AND HAS NO CORE WITNESS.</b> Each link
+ * re-enters through {@code RpgListeners.onEntityDeath}; core never learns that anything died, which
+ * is also why one death stays one scheduled task. <b>A green core suite proves each blast is
+ * delayed, targeted, attributed and mitigated. It proves NOTHING about a cascade.</b>
+ * {@code GATE-ignite.md} is the only witness for that.
+ *
+ * <p><b>In particular, {@code FakeWorld}'s runaway trip-wire does NOT guard this.</b> That check
+ * fires on <i>a task that reschedules itself</i>; {@link #detonate} schedules once and never
+ * re-arms, so the detector cannot see an ignite chain -- not rarely, structurally. An earlier draft
+ * of this javadoc claimed the opposite as a reason for the core placement. It was false, and it
+ * contradicted {@code IgniteTest}'s own javadoc in the same commit. Recorded rather than quietly
+ * deleted, because a placement defended by a reason that does not hold is one refactor away from
+ * being moved back.
  *
  * <h2>THE NUMBERS ARE PROVISIONAL, AND THE GATE IS WHAT RULES THEM</h2>
  *
@@ -148,10 +159,18 @@ public final class Ignite {
         world.schedule(at, DELAY_TICKS, () -> {
             world.present(at, VISUAL_ID);
             for (Combatant c : world.combatantsNear(at, RADIUS)) {
-                // The corpse. A dying mob is still a LivingEntity while its death animation plays,
-                // and that animation outlasts this fuse, so it can still be in radius. Excluded
-                // defensively: whether it is actually present at +10 ticks has NOT been measured,
-                // and the exclusion costs nothing either way.
+                // The corpse, and the exclusion is here for a PLAYER-VISIBLE reason rather than as a
+                // shrug. A dying mob stays a LivingEntity while its death animation plays, and that
+                // animation outlasts this fuse -- so it can still be found here, and it can still be
+                // tracked. A tracked corpse taking the blast emits a HealthChange, and a HealthChange
+                // RENDERS A FLOATING DAMAGE NUMBER OVER A CORPSE. That is the cost, and it is the
+                // reason this line exists.
+                //
+                // Whether the corpse is actually still present at +10 ticks is unmeasured -- it is
+                // the server's despawn timing, not ours -- but the failure it prevents is visible to
+                // a player and the guard is one comparison, so it is kept rather than made
+                // conditional on measuring someone else's timing. GATE-ignite.md's I1 records
+                // whether a number ever appears over the corpse.
                 if (c.id().equals(victimId)) continue;
                 if (c.state().player()) continue;
                 // DefenseRule.APPLIES, deliberately, and NOT the burn's BYPASSED. The burn's

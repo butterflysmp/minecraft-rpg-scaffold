@@ -8102,6 +8102,37 @@ Every one is compiler-checked. **The tenth is the known trap, and it is now DISC
 exhaustiveness-checked, because its labels are type patterns over a sealed interface. Its javadoc
 already records the build failure that proves it. Do not "fix" it.
 
+### A MUTATION CAN LAND IN THE COMMENT THAT DESCRIBES THE CODE, AND REPORT AS APPLIED
+
+**Named 2026-09-09, Ignite. The fourth member of the mutation-lies family, which lives as a table in
+`CLAUDE.md`** -- the row is added there; this is the worked instance.
+
+Mutating Ignite's blast from `DefenseRule.APPLIES` to `BYPASSED`, the check printed:
+
+```
+marker present (need >=1): 1   original gone (need 0): 1
+!! MUTATION DID NOT APPLY -- result meaningless
+```
+
+**`perl`'s non-global `s///` had replaced the FIRST occurrence, which was a javadoc line three above
+the call site**, and left the `applyDamage` argument untouched. The marker really was in the file.
+The test run really was green. Both facts were true and the conclusion they invited -- *"BYPASSED
+does not redden, so the defense row does not discriminate"* -- was false.
+
+**This is not "didn't apply" and it is not "applied, no bite".** The edit applied; it applied to the
+wrong *text*. And it is caught by exactly one thing: the **"original gone"** half of the marker grep.
+*"Marker present"* passes it cleanly, because the marker is present.
+
+**Why this repo will meet it again, which is the part worth keeping.** Every dense javadoc here
+quotes the constants and call sites it explains -- that is the house style and it is why the comments
+are useful. **So a mutation target appearing in BOTH a comment and the code it documents is the
+normal case, not an edge case.** `DefenseRule.APPLIES` sat in a comment reading *"DefenseRule.APPLIES,
+deliberately, and NOT the burn's BYPASSED"* immediately above the argument it described.
+
+**How to apply:** `grep -c` the exact target before mutating. If it occurs more than once, mutate a
+string unique to the code -- `CritState.NORMAL, DefenseRule.APPLIES, "fire"` rather than
+`DefenseRule.APPLIES,` -- and assert the code line specifically afterwards, not merely the marker.
+
 ### A MUTATION IS A HYPOTHESIS UNTIL YOU HAVE WATCHED IT REDDEN
 
 **A mutation-table row that predicts "this reddens test X" is a claim, not a guard.**

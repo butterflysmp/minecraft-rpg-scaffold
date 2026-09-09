@@ -199,16 +199,31 @@ The rule underneath all three: **silence is not a result.** An instrument that o
 either found nothing or done nothing, and those are the same picture.
 
 
-### THE THREE WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
+### THE FOUR WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
 
-All three were hit in one slice (2026-09-08, elements). They are one table because the shape only
-becomes visible together: **each guard catches the previous failure and cannot see the one below it.**
+The first three were hit in one slice (2026-09-08, elements); the fourth arrived on 2026-09-09,
+Ignite. They are one table because the shape only becomes visible together: **each guard catches the
+previous failure and cannot see the one below it.**
 
 | failure | what happened | what catches it |
 |---|---|---|
-| **didn't apply** | `perl -i` exited 0 and left the file byte-identical | the **marker grep** |
+| **didn't apply** | `perl -i` exited 0 and left the file byte-identical | the marker grep, **"marker present"** half |
+| **applied to PROSE, reported as applied to CODE** | the target string appeared in **both a javadoc and the code it describes**, and `perl`'s non-global `s///` replaced the *comment* — the one that came first in the file. Marker present, code untouched | the marker grep, **"original gone" half — AND ONLY THAT HALF** |
 | **applied, no bite** | the edit landed and the test stayed green — the assertion matched a *duplicate* of the mutated token | **nothing mechanical** — only reading the red you expected and not getting it |
 | **applied, wrong side** | the test passed on an accident (a floating-point coincidence; an undefended victim where `dealt == amount`) rather than on the thing it guards | **nothing at all** — only designing the fixture so the two values differ |
+
+> **THE SECOND ROW IS WHY THE MARKER GREP IS TWO CHECKS AND NOT ONE.** *"Marker present"* passes
+> cleanly on a misplaced application — the marker really is in the file. Only *"original gone"*
+> notices that the code still says what it always said. **A one-directional marker grep would have
+> reported this as a verified mutation of a line that was never touched**, and the test run beneath
+> it was green for the honest reason: nothing had changed.
+>
+> **This repo makes the shape common rather than rare.** Its javadocs quote their own constants and
+> call sites constantly — `DefenseRule.APPLIES` appeared in a comment three lines above the
+> `applyDamage` call it described — so **a mutation target that appears in both a comment and the
+> code it documents is the normal case here, not an edge one.** Grep the target for its occurrence
+> count before mutating, and mutate a string unique to the code (`CritState.NORMAL,
+> DefenseRule.APPLIES, "fire"`, not `DefenseRule.APPLIES,`).
 
 The marker grep proves the **edit landed**. It cannot prove the edit **reached what the assertion
 reads**. So a green run after a confirmed-applied mutation is not a pass — it means the mutation was

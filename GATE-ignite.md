@@ -53,6 +53,12 @@ second knell takes **6**.
 **The pause is half the row.** An explosion on the death frame means the fuse was dropped, and
 everything downstream (rule 2's serialization, rule 3 being nearly free) rests on it.
 
+**And watch the corpse: NO damage number should appear over it.** The dead mob is excluded from its
+own blast, but its death animation outlasts the fuse, so it can still be present and still tracked
+when the blast lands — and a tracked corpse taking damage renders a number over a body. This row
+cannot separate "the exclusion worked" from "the corpse was already gone", and does not need to: a
+number over a corpse is the artifact, and its absence is the pass.
+
 ### I2 — the death message names YOU · **SOLE WITNESS for attribution**
 Same setup, but bring the second knell low first: `/rpg mobdamage` it to under 6, then scorch and kill
 the first so the blast finishes the second.
@@ -161,7 +167,10 @@ chained by one kill*. It needs a second account. The unit row covers the mechani
 ids; the two-player case is unwitnessable here and is recorded as such rather than left looking
 covered.
 
-**4. Whether the corpse is in radius at +10 ticks.**
-`Ignite` excludes the dead mob from its own blast defensively. Whether a death animation actually
-keeps the entity findable for the length of the fuse **has not been measured**, and the exclusion
-costs nothing either way. A row would be measuring the server's despawn timing, not our code.
+**4. Whether the corpse is in radius at +10 ticks, as a row of its own.**
+Measuring the server's despawn timing is not measuring our code, so there is no row for it. **But
+the exclusion it justifies is not a shrug** — a tracked corpse taking the blast emits a
+`HealthChange`, which renders a **floating damage number over a corpse**. That is player-visible, so
+`I1` carries the observation instead: *no number over the corpse*. What `I1` cannot separate is "the
+exclusion worked" from "the corpse was already gone" — and it does not need to, because the guard is
+one comparison and the artifact it prevents is the thing anyone would report.
