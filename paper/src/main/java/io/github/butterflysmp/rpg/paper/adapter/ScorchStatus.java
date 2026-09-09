@@ -26,13 +26,15 @@ import java.util.function.BooleanSupplier;
  *       ({@code BukkitCombatant}'s Soaked arm) because a movement modifier fights client-side
  *       prediction. A DoT has no such problem, and the operator confirmed players can be scorched.
  *   <li><b>Bulk stacks in one call.</b> A 20-damage hit is ten stacks; {@code SoakedStatus.apply} adds
- *       exactly one per call, so ten calls would be ten map lookups for one hit.
+ *       exactly one per call, so ten calls would be ten map lookups for one hit. (Since the
+ *       2026-09-09 ruling the count is read only as a gate and nothing accumulates it -- the bulk
+ *       parameter survives because {@code Scorch.stacksFor} still answers "did this hit buy any?".)
  * </ol>
  *
  * <h2>THE CLOCK IS THE ONLY THING THAT BURNS</h2>
  *
  * <b>One rule, not two.</b> Every burn comes from the repeating task; neither arm of {@link #apply}
- * deals damage. A first application starts the clock, a refresh adds stacks and extends it, and the
+ * deals damage. A first application starts the clock, a refresh extends it, and the
  * clock does the rest.
  *
  * <p><b>THIS DELETED A SPECIAL CASE RATHER THAN ADDING ONE, AND THAT IS THE ARGUMENT FOR IT.</b> The
@@ -84,8 +86,8 @@ import java.util.function.BooleanSupplier;
  * {@link #apply} rewrites {@code remaining} and leaves the running task alone -- copied from
  * {@code SoakedStatus.java:57}, where it is load-bearing for a different reason and matters far more
  * here. <b>Restarting the task on refresh would re-phase a 20-tick clock, so a weapon hitting every 15
- * ticks would reset it forever and scorch would NEVER TICK AT ALL.</b> Total silent failure: stacks
- * climb, the burn shows, and no damage is ever dealt. Guarded by
+ * ticks would reset it forever and scorch would NEVER TICK AT ALL.</b> Total silent failure: the
+ * window keeps refreshing, the burn shows, and no damage is ever dealt. Guarded by
  * {@code reApplyingFasterThanThePeriodStillTicks}.
  *
  * <h2>The map</h2>
@@ -99,10 +101,9 @@ import java.util.function.BooleanSupplier;
  */
 public final class ScorchStatus {
 
-    /** A live scorch: its handle, stacks, ticks left, and the newest applier's cap and identity. */
+    /** A live scorch: its handle, ticks left, and the newest applier's cap and identity. */
     private static final class Active {
         RepeatingTask task;
-        int stacks;
         int remaining;
         double cap;
         UUID applierId;
@@ -111,8 +112,7 @@ public final class ScorchStatus {
          *  whatever last fed it rather than with whatever first lit it. */
         String element;
 
-        Active(int stacks, int remaining, double cap, UUID applierId, String element) {
-            this.stacks = stacks;
+        Active(int remaining, double cap, UUID applierId, String element) {
             this.remaining = remaining;
             this.cap = cap;
             this.applierId = applierId;
@@ -123,15 +123,16 @@ public final class ScorchStatus {
     private final Map<UUID, Active> active = new ConcurrentHashMap<>();
 
     /**
-     * Apply {@code stacks} scorch stacks to {@code id}, or add them and refresh the whole timer if
-     * already scorched.
+     * Apply scorch to {@code id}, or refresh the whole timer if already scorched.
      *
      * <p>NOTHING BURNS HERE. Both arms are silent and the repeating task is the only source of
      * damage -- see the class javadoc for why deleting the old inline first burn removed a special
      * case rather than adding one, and why the tick body had to flip to burn-then-decrement in the
      * same change.
      *
-     * @param stacks         how many stacks this application is worth, from {@code Scorch.stacksFor}
+     * @param stacks         what this application is worth, from {@code Scorch.stacksFor}. Read ONLY
+     *                       as a gate: {@code <= 0} means the hit bought none and applies nothing.
+     *                       Nothing accumulates it -- the count has no consumer, see {@code Scorch}
      * @param cap            the AUTHORED damage of whatever applied them -- never what it landed
      * @param applierId      who gets the kill credit; overwrites any previous applier
      * @param durationTicks  the whole window, refreshed on every application
@@ -148,7 +149,6 @@ public final class ScorchStatus {
 
         Active a = active.get(id);
         if (a != null && a.task.isRunning()) {
-            a.stacks += stacks;
             a.remaining = durationTicks;   // refresh the whole timer, and DO NOT restart the task
             // THIS ASSIGNMENT CAN SHORTEN A LIVE BURN, AND NOTHING IN THE MECHANISM STOPS IT.
             // It is safe TODAY only because every content-driven application passes the same
@@ -179,7 +179,7 @@ public final class ScorchStatus {
             return;
         }
 
-        Active na = new Active(stacks, durationTicks, cap, applierId, element);
+        Active na = new Active(durationTicks, cap, applierId, element);
 
         BooleanSupplier tick = () -> {
             // BURN, THEN DECREMENT -- and this ordering is COUPLED to the inline burn being gone.
@@ -197,17 +197,20 @@ public final class ScorchStatus {
     /**
      * One tick of burn: {@code min(5% of the victim's max, the cap)}, credited to the applier.
      *
-     * <b>{@code a.stacks} is deliberately not read here.</b> The rate is FLAT -- see {@code Scorch}'s
-     * javadoc for both operator statements and which supersedes which. Multiplying by the stack count
-     * is the one-line change that turns crowd control into a two-second execution, and
-     * {@code ScorchStatusTest.stacksDoNOTScaleTheDamage} is the only thing that would catch it.
+     * <b>The rate is FLAT, and since 2026-09-09 there is no stack count here to read.</b> See
+     * {@code Scorch}'s javadoc for both operator statements and which supersedes which, and for why
+     * the accumulator was deleted rather than left unread. Multiplying by a stack count is the
+     * one-line change that turns crowd control into a two-second execution; that mutation is now
+     * <i>unexpressible</i> rather than merely tested against, which is the stronger guarantee -- the
+     * count would have to be re-added first, and its re-add trigger requires naming a consumer.
      */
     private static void burnOnce(Active a, ScorchSink sink) {
         sink.deal(Scorch.damagePerTick(sink.victimMaxHealth(), a.cap), a.applierId, a.element);
     }
 
     /**
-     * True while {@code id} has live scorch stacks.
+     * True while {@code id} is scorched -- the only question anything asks about scorch's presence,
+     * and since 2026-09-09 the only one it can answer.
      *
      * <p>Read from {@code RpgListeners.onEnvironmentalDamage} to suppress the {@code FIRE_TICK} this
      * status caused: the burn stays visible, the damage comes from our clock. Without that gate a
@@ -217,12 +220,6 @@ public final class ScorchStatus {
     public boolean isScorched(UUID id) {
         Active a = active.get(id);
         return a != null && a.task.isRunning();
-    }
-
-    /** Current stack count on {@code id}, or 0. Slice 2's ignite threshold reads this. */
-    public int stacks(UUID id) {
-        Active a = active.get(id);
-        return a != null && a.task.isRunning() ? a.stacks : 0;
     }
 
     /**

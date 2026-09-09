@@ -13,7 +13,7 @@ loop, the burst/area split, the `FakeWorld` timing harness, the snapshot/handle
 port, stepped rays, and attribution. 156 tests green.
 
 Verified on a real server: the plugin loads, `/rpg cast solar_grenade` detonates
-with particles and sound, mobs ignite on the detonation frame, the lingering
+with particles and sound, mobs CATCH FIRE on the detonation frame, the lingering
 field pulses, mobs aggro the caster, and killing one credits them.
 
 **What is not verified on a real server**, and this shapes the plan:
@@ -286,7 +286,7 @@ criterion here — neither silent failure above is a compile error.
 > is still owed by a human.
 >
 > — **Met. This sentence was false the day after it was written.** The grenade was
-> cast on the renamed build: particles, blaze sound, ignition on the detonation frame,
+> cast on the renamed build: particles, blaze sound, mobs catching fire on the detonation frame,
 > lingering pulses, mob aggro, kill credit. Attribution and the rename both survive on
 > a real server. Line 15 of this file already recorded the pre-rename cast, so the
 > sentence above contradicted its own document. A doc asserting an unmet obligation
@@ -587,9 +587,90 @@ Squashed to **`9d375c4`** on 2026-09-09, from branch tip `efa9c68`, 21 commits. 
 longer exist** — the squash body is the only durable account of the branch, and everything below lived
 only in those bodies or in the gate file. Gate record: `GATE-element-accrual.md`, which is canonical.
 
-The Ignite-denominator debt is **not** repeated here; it is recorded where it was raised, in
-*THE THRESHOLD ABOVE IS A DENOMINATOR MISMATCH*, with the worked arithmetic. It is the live question
-and it blocks slice 2.
+The Ignite-denominator debt is **not** repeated here, and it is no longer a debt: the operator ruled
+that **any mob that dies while scorched ignites**, binary, with no count. It is recorded where it was
+raised, in *THE RULING: ANY MOB THAT DIES WHILE SCORCHED IGNITES*, with the arithmetic that refused
+the threshold shape. **It is settled and it does not block slice 2.**
+
+#### THE RULING DELETED THE COUNT'S ONLY CONSUMER, SO SCORCH STOPS BEING A STACKING STATUS
+
+**Ruled 2026-09-09, immediately after the Ignite ruling, because it is a consequence of it and not a
+separate discovery.** With the accumulator gone, **scorch is a boolean burn with a timer, a cap and a
+credit.** "Stacking" survives in the class name, in prose, and in `scorch.yml`'s player-facing *"1 per
+2 damage dealt"*, and nothing computes with any of it.
+
+**TWO SPECIES LIVE IN `Scorch.stacksFor`, AND CONFLATING THEM IS HOW ONE OF THEM GETS DELETED WRONGLY:**
+
+| | what is true | treatment |
+|---|---|---|
+| **`DAMAGE_PER_STACK`'s VALUE** | ONE arithmetic reader, the division in `stacksFor`; every other hit in the repo is prose. Since the only reader of the result is `stacks <= 0`, and `max(1, ...)` returns >= 1 for any positive input, **2, 7 or 1000 behave identically in production.** NOT unreachable -- the line runs on every hit; its output MAGNITUDE is never read | swept when Ignite lands, per the trigger below |
+| **the `max(1, ...)` FLOOR** | matters only for `dealt` in `(0, 2)`. Nothing produces that: smallest authored fire amount is `2`, and the mitigation route needs a scorchable target with defense > 0, which does not exist. **CONTENT-UNREACHABLE, not dead** | **KEPT**, with forward cover recorded in its javadoc |
+
+**The mutation that separates them:** change `DAMAGE_PER_STACK` and nothing reddens except rows
+asserting the number itself. That is a different signature from an unreachable branch, which reddens
+exactly the row keeping it alive.
+
+**THE TRIGGER, EXACT, BECAUSE "LATER" IS HOW `DEFAULT_DURATION_TICKS`, `ScorchStatus.stacks` AND
+`ScorchSinkSignatureTest` EACH SURVIVED A SLICE:**
+
+> **WHEN IGNITE'S MECHANISM LANDS AND THE COUNT STILL HAS NO READER, THE SWEEP HAPPENS IN THAT
+> SLICE'S OWN CLEANUP -- NOT A FUTURE ONE.**
+
+By then it is measured from both ends and there is nothing left to wait for. The sweep is not done now
+because collapsing it reaches through `ScorchStatus.apply`'s signature, `ElementAccrual` and the
+content prose -- a mechanism sweep inside a slice that has not started.
+
+**DO NOT INVENT A CONSUMER TO JUSTIFY THE MACHINERY.** *"The blast scales with stacks"* would make the
+count live again, and it is a **feature**, not a rescue. Adding one to save a constant is the tail
+wagging the dog, and it would re-introduce the unbounded accumulator this file refused to declare a
+ceiling for.
+
+> **THE DEFENCE THAT DOES NOT SURVIVE, RECORDED SO IT IS NOT REACHED FOR AGAIN.** *"Keep the count,
+> Ignite might read it"* was the obvious argument and it is dead on both ends: the ruling makes the
+> trigger **binary**, and the constants decision puts the blast's numbers in code. **Ignite as ruled
+> will never read it.** The operator recorded that they would have used this argument had the reader
+> count not been measured first -- which is why the measurement went first.
+
+#### OWED WHEN A BOSS FLAG EXISTS: Ignite's boss and player exclusions
+
+**Recorded 2026-09-09 with the ruling, and deliberately NOT built.** Both were raised as guards
+Ignite should carry. Neither can be written today, and writing them anyway would produce **guards
+that cannot fire** -- the `ElementLoader.damageSymbol` dead-catch shape that `CLAUDE.md` records.
+
+- **A boss exclusion has nothing to attach to.** `MobDefinition` is four fields -- `id`,
+  `baseEntity`, `displayName`, `maxHealth` -- with no boss flag, and `MobLoader` reads exactly three
+  keys, so a `boss: true` in YAML is silently ignored today. Bosses are milestone 3.
+- **A player exclusion cannot be reached.** Nothing in the game can scorch a player: `/rpg apply`
+  filters to non-players and no mob casts. Already recorded as refused row 4 in
+  `GATE-element-accrual.md`.
+
+**The trigger:** when a boss flag lands on `MobDefinition`, the boss exclusion becomes writable AND
+testable in the same change. Until then it is owed, not deferred -- there is nothing to do.
+
+#### TWO AoE FAN-OUTS, TWO PLAYER RULES, AND NOTHING SAYS WHICH IS INTENDED
+
+**Found 2026-09-09 while ruling on whether Ignite's blast should hurt players.** The answer was
+argued from an assumed precedent -- *"the mob-only helper is what the grenade uses"* -- and the
+operator refused the argument and checked it. **The precedent was backwards.** Measured:
+
+| helper | skips | serves |
+|---|---|---|
+| `applyToNearbyMobs` (`EffectApplier:296`) | caster **and players** | ONE caller, `:241` -- the thrown-ember denial zone |
+| `applyToEach` (`:281`) via `applyToNearby` (`:253`) | **caster only** | `:196` **`Burst`** and `:308` **`tickArea`** (the lingering field) |
+| `applyToSet` (`:268`) | caster only, but `SweptLine.enemiesAlong` pre-filters | the dash -- mob-only after all, so the two javadocs saying so are correct |
+
+**So bursts AND lingering fields damage other players, in shipped content, today** -- `solar_grenade`
+through *both* halves, plus `emberblade` and `ember_staff`. **With one account it has never been
+observed**, which is the S5/S7/S12 shape: not a defect anyone has seen, and not one anything can see.
+
+**This is an undesigned split, not a precedent.** Two helpers encode two different player rules and
+nothing in the repo says which is intended, so a third fan-out inherits whichever it is written next
+to. **It wants an operator ruling of its own.** Not folded into Ignite: Ignite was ruled mob-only on
+its own merits -- a cascade is delayed, unaimed and downstream of someone else's kill, where a burst
+is aimed and immediate -- precisely so that it does not inherit either side by association.
+
+**Changing burst behaviour is a content-facing change to three shipped weapons and is NOT this
+slice.** Recorded here so the next person to add an AoE finds the question already asked.
 
 #### NAMED DEBT: the suppression names `FIRE_TICK`, and there are FOUR causes
 
@@ -677,7 +758,14 @@ rather than becoming a rival claim.
 
 Worth knowing when you read it: it was **DERIVED, NOT RULED** — it falls out of `scorch.yml`'s own
 stated reason for armour slowing accrual, *"stacks come from damage actually landed"*. That is why it
-survives Ignite's denominator being chosen, and a ruled answer might not have.
+survives Ignite's trigger being ruled, and a ruled answer might not have.
+
+> **RE-DERIVED 2026-09-09, when the ruling landed.** This line read *"survives Ignite's denominator
+> being chosen"* — a denominator nobody will ever choose, since the ruling reads no count at all. The
+> claim it was making is now **stronger than when it was written**, and that is the whole point of the
+> DERIVED/RULED distinction: the ruled answer arrived, went somewhere nobody predicted, and the
+> derived line still holds because it was reasoned from the content's own stated reason rather than
+> from a number.
 
 ### The vanilla damage boundary — what it created or exposed
 
@@ -2502,10 +2590,23 @@ inversion, not a race. It is survivable rather than harmless: the burn deals not
 (`victimMaxHealth()` is 0 on an untracked id, so `damagePerTick` is 0 and the sink early-returns), but
 a map entry and a 160-tick task per lethal fire kill outlive the mob, and nothing will cancel them.
 
-**And it matters semantically for Ignite**, which is DEATH-GATED — *"a target ignites only when killed
-by a Scorched attack"*. If the killing blow itself accrued, the stack count at death would depend on
-whether the fatal hit's own stacks counted. Skipping makes that unambiguous before the question is
-asked.
+**And it matters semantically for Ignite**, which is DEATH-GATED. If the killing blow itself accrued,
+whether a target was scorched at death would depend on whether the fatal hit's own stacks counted.
+Skipping makes that unambiguous before the question is asked.
+
+> **RE-DERIVED 2026-09-09, AND THE SKIP WAS PROMOTED RATHER THAN PRESERVED.** This paragraph
+> justified itself by quoting `DESIGN`'s gate, *"a target ignites only when killed by a Scorched
+> attack"* — a sentence the ruling retired. The conclusion survives, but it is now carrying far more
+> than it was written to carry.
+>
+> **Under the ruling, this skip is the ONLY thing between *"any scorch + death ignites"* and *"every
+> fire-weapon kill detonates".*** Without it the killing blow grants a first stack to a mob that had
+> none, that mob is therefore scorched at the instant it dies, and **every emberblade kill in the
+> game becomes an ignition.** What read as a tidy disambiguation is now load-bearing for the whole
+> mechanic's feel.
+>
+> Recorded because the promotion is invisible: nothing about `newCurrent > 0` changed, and no test
+> would go red. The rule got heavier while the code stayed still.
 
 So: **a hit that brings custom health to zero accrues nothing.** `CombatantStats.damage` must report
 that alongside the mitigated figure, rather than accrual inferring it from `tracks(id)` having gone
@@ -2577,60 +2678,44 @@ every duration. The only refresh path that exists is `solar_grenade`'s field re-
 20-tick interval against its own 40-tick window — plus two different fire abilities overlapping, or
 two players.
 
-**Harmless for the DoT, fatal for Ignite.** The burn rate is flat and reads no stack count, so one
-stack burns exactly as ten do. But Ignite's threshold is **50% of max health as stacks**: a 20 HP
-zombie needs **ten**. At one stack per cast that is **ten casts**; with accrual it is one Flint Staff
-hit. **IGNITE IS UNREACHABLE IN PRACTICE, AND THE REASON IS THE THRESHOLD'S DENOMINATOR** — not, as
-this line said until accrual landed, because accrual was missing. A stack-denominated `0.5 x max`
-costs the target its **whole health** to reach, so the target dies before it ignites; the correction
-below works it. Nothing in slice 1 says so.
+**Harmless for the DoT, and IRRELEVANT to Ignite** -- which is the operator's ruling and not an
+inference from the table. The burn rate is flat and reads no stack count, so one stack burns exactly
+as ten do. **Ignite reads no stack count either.**
 
-> **RE-DERIVED 2026-09-09, when accrual landed (`9d375c4`), rather than dated.** This line originally
-> read *"UNREACHABLE IN PRACTICE UNTIL ACCRUAL LANDS"*, which was true when written. Accrual has now
-> landed — **its premise is SATISFIED** — and Ignite is still unreachable, but for a cause the sentence
-> never named. Stamping a date on it would have preserved a conclusion resting on a premise that no
-> longer holds, which is *A RULE OUTLIVES ITS PREMISE SILENTLY* three sections down this same file,
-> and it is the move that let `scorch.yml`'s eight durations keep their values while changing their
-> meaning. A date records when something was written; it does not make a false statement true.
-
-> #### THE THRESHOLD ABOVE IS A DENOMINATOR MISMATCH, AND SLICE 2 MUST NOT INHERIT THE NUMBER
+> #### THE RULING: ANY MOB THAT DIES WHILE SCORCHED IGNITES
 >
-> **Corrected 2026-09-08, during the content pass, before anything was built against it.**
-> *"50% of max health as stacks"* pairs a **RELATIVE** threshold with an **ABSOLUTE** accumulator, and
-> the two do not compose. `Scorch.stacksFor` is `max(1, floor(d / 2))`, so for any hit of 2 or more a
-> target accrues roughly `d/2` stacks — and reaching `0.5 x maxHealth` stacks therefore costs
-> **`maxHealth` damage. The target is dead before it ignites.**
+> **Ruled 2026-09-09.** Binary. No count, no threshold, and **the killing blow need not be a Scorched
+> attack** -- a scorched mob that drowns, falls or is killed by anything at all still ignites.
+> `DESIGN-status-effects.md` carries the reconciled spec; this entry is the arithmetic behind it.
 >
-> The worked example in this very paragraph shows it: a 20 HP zombie needs ten stacks, ten stacks is
-> twenty damage, and twenty damage is the whole zombie. **A Flint Staff's 20 buys exactly ten stacks
-> and kills it in the same hit — and accrual skips a lethal hit** (`newCurrent > 0`), so those stacks
-> never land at all.
+> It replaces a recorded threshold of *"50% of max health as stacks"* that **three other sources
+> already contradicted** -- `DESIGN`'s death-gate, `DESIGN`'s explicit *"do not implement the
+> living-threshold version"*, and the operator's own rule under *THE CONSTRAINT SCORCH INHERITS*.
+> The threshold was never reconciled against any of them.
 >
-> The only route through is the `max(1, ...)` floor: hits *below* 2 damage buy a full stack each, so
-> `T` chip hits give `T` stacks. That inverts the design — **Ignite would fire only on the smallest
-> mobs and only for weak repeated hits**, and never for the strong hits the percent-max cap exists to
-> matter against:
+> **Why the SHAPE was refused, kept to one sentence because the arithmetic settles it and taste does
+> not:** *"50% of max health as stacks"* paired a RELATIVE threshold with an ABSOLUTE accumulator --
+> `Scorch.stacksFor` is `max(1, floor(d / 2))`, so reaching `0.5 x maxHealth` stacks costs
+> `maxHealth` damage and the target is dead before it ignites. Not a number to tune; a shape that
+> cannot work. **That is settled, not an open question.** Nothing downstream picks a denominator,
+> because nothing reads the count.
 >
-> | max health | stacks needed | chip hits inside one 160-tick window |
-> |---|---|---|
-> | 20 | 10 | 10 — marginal, the bow can just about do it |
-> | 100 | 50 | no |
-> | 360 | 180 | no |
+> **The loop-breaker is UNAFFECTED by the broadening**, which is the reason the broader rule is safe:
+> *"a target can only ignite once because it can only die once"* does not care what killed it.
 >
-> **So the recorded threshold is not a number to tune; it is a shape that cannot work.** Two
-> individually reasonable constraints, jointly unsatisfiable, with nothing in either one saying so —
-> the third instance of that shape in this slice.
+> **WHAT THE BROADER RULE COSTS, deliberately rather than by oversight.** `DESIGN`'s tuning knob
+> *"does the explosion count as a Scorched attack?"* was the on/off switch for chaining. Under the
+> ruling the explosion need not be a Scorched attack -- it needs to KILL A SCORCHED MOB -- so
+> chaining follows automatically and **that switch no longer exists.**
 >
-> **What slice 2 inherits instead:** *Ignite's threshold is UNDECIDED. It must share a denominator
-> with stack accrual, which is ABSOLUTE (`damage / 2`, floored at 1). Decide the denominator first and
-> the number second.* That is a statement slice 2 can act on. `0.5 x max` is a number that would have
-> had to be discovered wrong on a live server.
->
-> **And this is why no stack CEILING was declared.** `ScorchStatus`'s refresh arm is `a.stacks +=
-> stacks` with no clamp, so the bow can pile ~30 stacks into one window. Harmless while stacks do not
-> scale damage, and a ceiling now would be an undemonstrated limit wearing a safety check's costume —
-> the same reason the glyph length cap was declined. The count's *meaning* is what needs deciding, not
-> its maximum.
+> **And this is why no stack CEILING was declared -- the conclusion held before the ruling and holds
+> harder after it.** `ScorchStatus`'s refresh arm was `a.stacks += stacks` with no clamp, so the bow
+> could pile ~30 stacks into one window. That was survivable while the count's *meaning* was
+> undecided. **The ruling decides it by removing the only consumer the count was ever going to
+> have**, so the accumulator is DELETED in the same commit as this entry rather than left as an
+> unread number carrying a recorded defect. The re-add trigger lives in `Scorch`'s javadoc: a count
+> comes back only WITH a consumer that defines what it means, and that is when the unbounded `+=`
+> question gets answered instead of inherited.
 
 **THE SCHEDULING ARGUMENT, WHICH IS THE REASON AND NOT A CONSEQUENCE: THIS CHANGE FLIPS A DORMANT
 DEFECT CLASS LIVE.**
@@ -8667,6 +8752,35 @@ was met, the constant stayed, and so did the test defending it.
 - Do not fix a compile error by widening the architecture.
 - When you say something is verified, say what you executed.
 - **Verify a check ran before believing it passed.** See `CLAUDE.md`.
+
+### AN INSTRUCTION GIVEN BEFORE A CONSTRAINT EXISTS IS NOT REPEALED BY THE CONSTRAINT ARRIVING LATER
+
+**Named 2026-09-09, Ignite commit 1, and the brief was the operator's own.** Two instructions, one
+message apart, that contradicted each other:
+
+1. The constants ruling said: *"ADD A SIGNPOST FROM Scorch's CLASS JAVADOC"* pointing at `Ignite`, so
+   the first person tuning scorch does not read six constants and miss half the fire kit.
+2. The next message's amendment said: *"a heading naming a mechanism that does not exist is a FORWARD
+   dangling reference"* -- and `Ignite` did not exist yet.
+
+Following (1) faithfully produced exactly what (2) forbids. **The signpost was written into
+`Scorch.java` and then removed** before the commit, on the strength of (2).
+
+**Neither instruction was wrong.** (1) is right about commit 2, when the class exists. (2) is right
+about commit 1, when it does not. What was missing is that (1) carried an unstated *"once Ignite
+exists"* which only became visible when (2) supplied the constraint.
+
+**How to apply.** A constraint that arrives after an instruction does not retroactively rewrite it,
+and nothing in the tooling will flag the collision -- both instructions are in the transcript, both
+sound, and the contradiction lives only in their overlap. **When a new constraint lands mid-slice,
+re-read the instructions already given against it** rather than assuming the newest message is a
+delta. The reusable half is that this is a property of *briefs*, not of the person executing them:
+the same shape produces a defect whoever is holding the pen, and the only defence is somebody
+noticing.
+
+> Recorded as a contradictory brief rather than as an execution slip, at the operator's direction and
+> for the reason above -- filing it as "the model added a bad reference" would have kept the sentence
+> and lost the lesson.
 
 ### A RULE OUTLIVES ITS PREMISE SILENTLY, BECAUSE ITS ARITHMETIC KEEPS EVALUATING
 

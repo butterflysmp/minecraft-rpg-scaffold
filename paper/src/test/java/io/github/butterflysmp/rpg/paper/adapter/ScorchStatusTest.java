@@ -166,8 +166,8 @@ class ScorchStatusTest {
     @Test
     void reApplyingFasterThanThePeriodStillTicks() {
         // THE TOTAL SILENT FAILURE. Restarting the task on refresh re-phases the 20-tick clock, so a
-        // weapon hitting every 15 ticks resets it forever: stacks climb, the burn shows, and NO
-        // DAMAGE IS EVER DEALT. SoakedStatus already gets this right for its own reasons
+        // weapon hitting every 15 ticks resets it forever: the window keeps refreshing, the burn
+        // shows, and NO DAMAGE IS EVER DEALT. SoakedStatus already gets this right for its own reasons
         // (SoakedStatus.java:57); it matters far more here, and nothing else would catch it.
         var scorch = new ScorchStatus();
         var clock = new FakeTickTarget();
@@ -189,7 +189,6 @@ class ScorchStatusTest {
         assertEquals(List.of(20L, 40L, 60L, 80L),
                 sink.burns.stream().map(FakeScorchSink.Burn::atTick).toList(),
                 "the task keeps its own phase across refreshes");
-        assertEquals(7, scorch.stacks(id), "and the stacks accumulated across the refreshes");
         // MUTATION, RUN RED (measured, not predicted): cancel and restart the task inside apply()'s
         // refresh arm -> the phase resets on every re-application and the 20-tick clock never lands.
         //
@@ -218,7 +217,7 @@ class ScorchStatusTest {
         assertEquals(first, sink.burns.get(0).applierId(), "credited to the first applier");
 
         scorch.apply(id, clock, sink, 1, 8.0, second, 160, "fire");
-        assertEquals(second, scorch.applier(id), "which is what slice 2's ignite will credit");
+        assertEquals(second, scorch.applier(id), "which is what Ignite will credit");
 
         // The refresh deals nothing of its own (aRefreshDoesNotDealAnUNSCHEDULEDBurn), so the
         // takeover is read from the next SCHEDULED tick. That is a STRONGER claim than the inline
@@ -235,22 +234,29 @@ class ScorchStatusTest {
     }
 
     @Test
-    void stacksAccumulateAndTheTimerRefreshesWHOLERatherThanPerStack() {
+    void theTimerRefreshesWHOLERatherThanPerStack() {
+        // WAS stacksAccumulateAndTheTimerRefreshesWHOLERatherThanPerStack, and it asserted BOTH
+        // halves. The accumulate half was deleted with the accumulator on 2026-09-09 (see Scorch's
+        // javadoc): with no count to read, "ten stacks from one call, not ten calls" has no
+        // observable difference from "one stack from one call" -- there is nothing left that a bulk
+        // application changes. THE REFRESH HALF IS THE ONE THAT WAS EVER LOAD-BEARING, and it is
+        // untouched: it is the invariant the mutation below attacks.
         var scorch = new ScorchStatus();
         var clock = new FakeTickTarget();
         var sink = sinkAt100(clock);
         UUID id = UUID.randomUUID();
 
         scorch.apply(id, clock, sink, 10, 20.0, UUID.randomUUID(), 160, "fire");   // a 20-damage staff hit
-        assertEquals(10, scorch.stacks(id), "ten stacks from one call, not ten calls");
+        assertTrue(scorch.isScorched(id), "one application scorches");
 
         clock.advance(100);
         scorch.apply(id, clock, sink, 3, 20.0, UUID.randomUUID(), 160, "fire");
-        assertEquals(13, scorch.stacks(id), "stacks add");
 
         clock.advance(100);   // t=200, past the ORIGINAL 160-tick window
         assertTrue(scorch.isScorched(id), "the refresh extended the WHOLE window, so it is still live");
         // Mutation: refresh only a per-stack clock, or fail to rewrite remaining -> expired -> reddens.
+        // Still discriminating without the count: t=200 is 40 ticks past the original window, so an
+        // unrefreshed timer has already expired and isScorched returns false.
     }
 
     @Test
@@ -307,7 +313,9 @@ class ScorchStatusTest {
 
         assertEquals(5.0, sinkOne.burns.get(0).amount(), EPS, "one stack burns 5% of a 100 pool");
         assertEquals(sinkOne.burns.get(0).amount(), sinkTen.burns.get(0).amount(), EPS,
-                "and TEN stacks burn exactly the same -- the rate is flat, stacks feed ignite");
+                "and TEN stacks burn exactly the same -- the rate is FLAT. Since the 2026-09-09 "
+                        + "ruling nothing reads the count at all, so this pins the argument is a "
+                        + "gate and never a multiplier");
         // Mutation: multiply by a.stacks in burnOnce -> 50 against 5 -> reddens.
     }
 
@@ -424,8 +432,8 @@ class ScorchStatusTest {
         scorch.apply(second, clock, b, 3, 20.0, UUID.randomUUID(), 40, "fire");
 
         assertEquals(2, scorch.trackedVictims(), "keyed per victim");
-        assertEquals(1, scorch.stacks(first));
-        assertEquals(3, scorch.stacks(second));
+        assertTrue(scorch.isScorched(first), "both are lit");
+        assertTrue(scorch.isScorched(second));
 
         clock.advance(60);
         assertTrue(scorch.isScorched(first), "the 160-tick burn is still going");

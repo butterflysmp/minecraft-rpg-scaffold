@@ -4,9 +4,10 @@
 #   cap      the damage of whatever applied the stacks -- so a stronger fire
 #            weapon buys a stronger burn, and a 5000 HP boss is not melted by
 #            percent-max-health running away (5% of 5000 is 250/sec, uncapped)
-#   stacks   1 per 2 damage dealt. Stacks do NOT scale the damage -- they
-#            refresh the timer, suppress the vanilla fire tick, and carry
-#            Ignite's threshold in the next slice.
+#   stacks   1 per 2 damage dealt, and read ONLY as a yes/no gate: a hit that
+#            buys none applies nothing. Stacks do NOT scale the damage and are
+#            NOT accumulated -- the count has no consumer. Ignite triggers on
+#            "died while scorched", binary, so it never reads one either.
 #   credit   the MOST RECENT applier. Kills count as theirs.
 #   armour   does NOT reduce the burn. It DOES slow stack accrual, because
 #            stacks come from damage actually landed. Armour delays scorch

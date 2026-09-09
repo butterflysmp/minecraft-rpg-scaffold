@@ -42,8 +42,8 @@ differently from a Fire Mage that burns-and-zones, *before* any passive or aspec
 **Propagation tier — one engine, deferred milestone:**
 - **The Nature propagation status — NAME VACATED, see below** — damaging the target damages nearby
   targets. Depth-1, explicitly **not** a chain.
-- **Ignite** (Fire) — a Scorched target killed by a Scorched attack explodes after
-  a delay, damaging nearby targets. Explicitly **chains**.
+- **Ignite** (Fire) — a Scorched target that **dies, to anything at all**, explodes
+  after a delay, damaging nearby targets. Explicitly **chains**.
 
 **Cut for now, on the record so it's a decision not an omission:**
 - **Unstable** (Void) — explode-on-damage + *tether*. Cut because "tether" was
@@ -160,8 +160,15 @@ re-trigger the same status depending on one boolean.*
 
 - **The Nature one (name vacated):** trigger = the target takes damage; effect = damage nearby; re-trigger =
   **no** (depth-1, terminal).
-- **Ignite:** trigger = a Scorched target **dies to a Scorched attack**; effect = a
+- **Ignite:** trigger = a Scorched target **dies, to anything at all**; effect = a
   delayed explosion damaging nearby; re-trigger = **yes** (chains).
+
+> **THE BOOLEAN SURVIVES FOR THE NATURE CONFIG ONLY. IGNITE'S IS NO LONGER A DIAL.**
+> Under the ruling below, Ignite's trigger is *death while Scorched* — so an explosion
+> that kills a Scorched mob re-triggers **structurally**, by satisfying the trigger,
+> not because a switch was set to yes. The engine still needs the boolean, because the
+> Nature status is genuinely depth-1 and something must enforce that. Ignite simply no
+> longer reads it.
 
 ### The four safety rules — load-bearing, state up front
 
@@ -169,13 +176,30 @@ A wrong implementation here doesn't feel bad, it **takes the server down**. The 
 version and the dangerous version look identical in a one-line spec ("targets explode
 when ignited"). These four rules are the difference:
 
-1. **Ignition is DEATH-GATED, never living-threshold.** A target ignites only when
-   *killed* by a Scorched attack — never on repeated application to a living target.
+1. **Ignition is DEATH-GATED, never living-threshold.** A target ignites when it
+   **dies while Scorched** — never on repeated application to a living target.
    This is the primary loop-breaker: a target can only ignite once because it can
    only die once. The living-threshold version (an alive target explodes at N stacks,
    damages a neighbor who crosses their own threshold while alive, …) loops with
    everyone still alive and re-triggering. **Do not implement the living-threshold
    version.** Someone will be tempted; this rule is why not.
+
+   > **THE OPERATOR'S RULING, 2026-09-09, AND IT IS BROADER THAN THIS RULE WAS
+   > WRITTEN.** *Any mob that dies while scorched ignites.* Binary — no stack count,
+   > no threshold, and **the killing blow need not be a Scorched attack.** A scorched
+   > mob that drowns, falls, or is killed by anything at all still ignites.
+   >
+   > **The loop-breaker is UNAFFECTED, which is why the broadening is safe.** *"A
+   > target can only ignite once because it can only die once"* does not care what
+   > killed it. The rule that does the work here is death, not the attack that caused
+   > it — so widening the second leaves the first exactly as strong.
+   >
+   > **And it makes this rule's prohibition stronger, not weaker.** With no threshold
+   > to reach, there is no longer any number a living target could cross; the
+   > living-threshold version is not merely forbidden, it has nothing left to read.
+   >
+   > `NEXT.md`'s *THE RULING: ANY MOB THAT DIES WHILE SCORCHED IGNITES* carries the
+   > arithmetic that refused the threshold shape.
 
 2. **Propagation is DELAYED and SERIALIZED, never instant.** An ignition fires N ticks
    *after* the death, via the existing scheduler (the same deferral primitive as the
@@ -206,8 +230,13 @@ when ignited"). These four rules are the difference:
 With Unstable and Blighted cut, this shrinks to a tractable 2×2, but it must be
 answered as a single global policy, not per-status:
 
-- Can the **Nature propagation** damage kill a Scorched mob and thereby **Ignite** it?
-- Can an **Ignite** explosion trigger a nearby mob's **Nature propagation**?
+- ~~Can the **Nature propagation** damage kill a Scorched mob and thereby **Ignite**
+  it?~~ **ANSWERED BY THE RULING — yes, necessarily.** That *is* a death while
+  Scorched, and the ruling admits no exception for what did the killing. This half is
+  no longer a choice; it fell out of the trigger.
+- Can an **Ignite** explosion trigger a nearby mob's **Nature propagation**? — **STILL
+  OPEN.** Untouched by the ruling, because it turns on what the Nature status accepts
+  as a trigger, not on what Ignite does.
 
 Pick one rule and apply it everywhere: e.g. *propagated damage carries the attacker's
 source and CAN trigger death-gated statuses (Ignite), but does NOT re-trigger the
@@ -215,13 +244,28 @@ propagating status itself (the Nature one stays depth-1).* Whatever the choice, 
 once, globally — answering it per-status is how a Fire/Nature mob pack detonates in a
 way no one can follow.
 
+> **Note what the ruling did to this section: it answered half a global policy question
+> as a SIDE EFFECT of defining one status's trigger.** That is the thing this section
+> warns against — deciding globally-scoped behaviour per-status. It is accepted here
+> because the answer it forces is the same one the worked example above already
+> proposed, but the remaining half must still be decided globally and not by whatever
+> Ignite's implementation happens to make convenient.
+
 ### Tuning knobs (YAML feel-dials, once the engine exists)
 
 - **Ignition delay length** — short = fast rolling cascade; long = slow, dramatic,
   interruptible chain. A feel dial.
-- **Does the explosion count as a Scorched attack?** — the single boolean that
-  controls whether chains propagate through explosions (yes = your intent) or only
-  direct Scorched kills ignite (no = explosions terminal). Testable in isolation.
+
+> **THE SECOND KNOB WAS DELETED BY THE RULING, AND ITS ABSENCE IS DELIBERATE.** It read
+> *"does the explosion count as a Scorched attack? — the single boolean that controls
+> whether chains propagate through explosions."* Under the ruling the explosion does not
+> need to be a Scorched attack; it needs to **kill a Scorched mob**. So chaining follows
+> automatically from the trigger and **there is no switch left to set.**
+>
+> Recorded rather than quietly dropped, because a missing knob produces no symptom: the
+> cost of the broader rule is that *"explosions terminal"* is no longer reachable by
+> configuration. If it is ever wanted, it is a new condition on the trigger, not a dial
+> that was removed — and that is a design change, not a tuning change.
 
 ---
 
@@ -242,6 +286,8 @@ way no one can follow.
   Freeze coincide. Pin during the simple tier.
 - **Global "what triggers what"** — the propagation interaction policy. Decide before
   the engine.
-- **Ignition delay + explosion-re-triggers** — feel dials, tune in play.
+- **Ignition delay** — a feel dial, tune in play. (*Explosion-re-triggers* was the
+  other half of this fork and is **closed**: the ruling makes chaining structural, so
+  there is no dial. See the tuning-knobs section.)
 - **Attack-suppression scope** — how far Freeze's "cannot attack" reaches (melee only?
   ranged? AI pathing?). Pin during Freeze.
