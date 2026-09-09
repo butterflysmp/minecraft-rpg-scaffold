@@ -581,6 +581,89 @@ Before milestone 2, two things worth measuring rather than assuming:
 
 ## Deferred, deliberately
 
+### Element accrual and the damage glyph (fire's damage buys scorch, and wears its mark) — what it created or exposed
+
+Squashed to **`9d375c4`** on 2026-09-09, from branch tip `efa9c68`, 21 commits. **The commit bodies no
+longer exist** — the squash body is the only durable account of the branch, and everything below lived
+only in those bodies or in the gate file. Gate record: `GATE-element-accrual.md`, which is canonical.
+
+The Ignite-denominator debt is **not** repeated here; it is recorded where it was raised, in
+*THE THRESHOLD ABOVE IS A DENOMINATOR MISMATCH*, with the worked arithmetic. It is the live question
+and it blocks slice 2.
+
+#### NAMED DEBT: the suppression names `FIRE_TICK`, and there are FOUR causes
+
+```
+FIRE_TICK   suppressed while scorched     <- the stream we replaced
+FIRE        NOT.  Standing in a fire block.   <- observed live by the operator
+LAVA        NOT.
+HOT_FLOOR   NOT.  Magma block.
+```
+
+Under the other three, a scorched victim takes **our capped, credited, defense-bypassing burn PLUS
+vanilla's uncapped uncredited one** — the precise doubling the suppression exists to prevent,
+arriving through a sibling cause.
+
+**THE BOUNDED QUESTION, and why it is a question rather than a one-line fix: what stops suppression
+becoming immunity?** Suppressing `LAVA` would mean a scorched mob takes **LESS** lava damage than an
+unscorched one — scorch as a defensive buff, which this repo has already refused once. That refusal
+is why the `FIRE_TICK` gate sits **before** `damageWindow.claim`: a suppressed tick dealt nothing, so
+it must not consume window budget either.
+
+So the answer is **per cause**, like the standing *"which causes should `Defense` touch?"* question
+`DefenseRule` was built for — not a list of causes to add to the existing gate.
+
+#### NAMED DEBT: `ScorchStatus`'s refresh is a bare assignment, and it is CONTENT-shaped
+
+The refresh arm assigns the incoming duration over the live one. **It can therefore SHORTEN a burn
+already in flight**, and it is safe today only because every content path now passes the same
+duration — the one-duration-everywhere reconciliation this slice made.
+
+**That is a CONTENT-shaped invariant, not a mechanism one, and the distinction is the point.**
+Contrast `landVanillaMelee`'s one-slot sink, which genuinely enforces its rule in code: no content
+change can violate it. This one is enforced by nothing. **Any second duration source breaks it** — a
+second element declaring a duration, a status re-tune that misses one file, an ability that applies
+scorch with its own number.
+
+A monotone refresh (`max(remaining, incoming)`) was planned this slice and **silently failed to
+land**, which is itself an instance of the guards-are-what-goes-missing rule recorded under
+`## Rules for this work`.
+
+#### NAMED DEBT: `EntityScorchSink` is referenced by no test, and A1's SILENCE is its only witness
+
+**Measured, not assumed: flipping its `AccrualRule.INERT` to `ACCRUES` leaves the entire suite green**
+— 813/17/573, 1403 tests, zero failures — because nothing references the class.
+
+The failure it guards against is a **runaway rather than a wrong figure**: the burn would feed itself,
+each tick accruing stacks that extend the burn. So the symptom is not a number being off by some
+amount, it is a seventh burn number appearing, and then an eighth.
+
+**Its only witness anywhere in the project is the SILENCE after A1's sixth `▲10`.** A boot gate row
+whose evidence is that nothing happens is the weakest possible check, and it is what stands between
+this and a live runaway. `ScorchSinkSignatureTest` was planned and also did not land.
+
+#### NAMED DEBT: no dev command deals ELEMENTAL damage
+
+`/rpg mobdamage` uses the **two-argument arity**, carries no element, and accrues nothing. There is no
+other route.
+
+**Consequence for every future gate: each accrual row must be driven by a real weapon**, which means
+each row inherits that weapon's damage figure, its cap, its cooldown and its crit roll rather than
+stating a clean number. A1 and A2 would both be exact with an `[element]` argument and no weapon at
+all.
+
+Worth its own small commit, and it makes the rows cheaper for every slice after.
+
+#### THE RULING: stacks measure what landed; the cap measures what was declared
+
+**One rule, and it decides crit's treatment on both sides at once** — crit is *out* of the cap and
+*in* the stacks. Recorded here rather than under `## Rules for this work` because it is a domain rule
+about this mechanism, not a working practice.
+
+**DERIVED, NOT RULED**, and that is why it is worth keeping: it falls out of `scorch.yml`'s own stated
+reason for armour slowing accrual — *"stacks come from damage actually landed"*. A derived answer
+survives Ignite's denominator being chosen; a ruled one might not have.
+
 ### The vanilla damage boundary — what it created or exposed
 
 **Gate status: UNRUN.** `GATE-vanilla-damage.md` carries the rows. Nothing below that depends on a
@@ -2483,6 +2566,12 @@ two players.
 stack burns exactly as ten do. But Ignite's threshold is **50% of max health as stacks**: a 20 HP
 zombie needs **ten**. At one stack per cast that is **ten casts**; with accrual it is one Flint Staff
 hit. **IGNITE IS UNREACHABLE IN PRACTICE UNTIL ACCRUAL LANDS**, and nothing in slice 1 says so.
+
+> **ACCRUAL LANDED 2026-09-09, squashed to `9d375c4`.** The sentence above is kept as written because
+> it was true of slice 1, but its future tense has expired: accrual ships, so Ignite is now reachable
+> in the sense that stacks accumulate. It is **not** reachable in the sense that matters, because the
+> threshold is still undecided — see the denominator correction immediately below, which is the live
+> question and the one thing to answer before any Ignite code is written.
 
 > #### THE THRESHOLD ABOVE IS A DENOMINATOR MISMATCH, AND SLICE 2 MUST NOT INHERIT THE NUMBER
 >
@@ -8215,7 +8304,7 @@ which is uncapped, instead of the content, which is not:
 javadoc even works `100 -> 0.5` as its example, which is what made 100 feel like the natural figure:
 **the class documents the curve, and the curve is not the constraint. The armor files are.**
 
-**This explains three of the six axes below rather than adding a seventh**, and it is the cheaper
+**This explains three of the seven axes below rather than adding an eighth**, and it is the cheaper
 instruction because it names a file to open:
 
 - **the subject** — answered by the mob's yml (`knell.yml` sets no defense, and no mob yml can)
@@ -8233,6 +8322,17 @@ Before a row is handed to a runner, say what it assumes about:
 - **the subject** — immunities, base entity, whether the content file sets the stat the row reads
   (`knell.yml` sets **no** defense, which is why D4c's mob figures are exact);
 - **the operator** — armour, held items, enchants, custom stats;
+- **the ROLL** — **what re-rolls on every attempt, whether or not anyone chose it.** A player **crits
+  15% of the time for double damage BY DEFAULT, and it cannot be turned off**, so every hit figure in
+  every row is silently the *non-crit* value. This is the newest axis and the first that is not a
+  fact about the world at all: fire immunity is a property of the SUBJECT, armour a property of the
+  RUN, a co-located payload a property of the CAST — **a crit is a property of the SWING, and it is
+  different every time the row is run.** Twelve element-accrual rows shipped with an unstated coin
+  flip on every figure. A crit fails most rows *loudly* (the number is yellow and roughly double), so
+  it looks self-announcing — but `A3` **INVERTS** under it: its two runs are 340 and 339 damage, a
+  crit kills both, the pair collapses into two copies of run 1, and it **reads as a clean pass**. Say
+  in the row what a crit does to it, and if the row cannot survive one, give the runner the
+  discriminator that says none landed (there, the impact number being **white** rather than yellow);
 - **the mode** — creative suppresses damage events entirely, so every damage row passes by not running;
 - **the world** — what else is in it that shares the cause, and whether the subject can be reached at
   all;
@@ -8242,7 +8342,7 @@ Before a row is handed to a runner, say what it assumes about:
   it applies. **Reading the ability's YAML is part of WRITING the row, not part of running it** — the
   runner cannot supply a precondition nobody told them exists.
 - **the SEPARATION** — **a discriminating row must also choose conditions under which the two
-  hypotheses are FAR APART.** This is not a fact about the world like the five above; it is a **choice
+  hypotheses are FAR APART.** This is not a fact about the world like the six above; it is a **choice
   of magnitude**, and it is the row author's to make. `S5` said "same max, one armoured and one not"
   and named neither number. On a 20-max target the tick is `min(5% x 20, cap)` = 1, and a realistic
   armour cut reads **0.8 against 1.0** — a difference the runner has to squint at, on the row that
@@ -8547,3 +8647,100 @@ was met, the constant stayed, and so did the test defending it.
 - Do not fix a compile error by widening the architecture.
 - When you say something is verified, say what you executed.
 - **Verify a check ran before believing it passed.** See `CLAUDE.md`.
+
+### A RULE OUTLIVES ITS PREMISE SILENTLY, BECAUSE ITS ARITHMETIC KEEPS EVALUATING
+
+**Named 2026-09-09, element accrual.** A rule stated as a formula does not stop working when the thing
+it was reasoned from goes away. It keeps returning a number, and the number keeps looking like an
+answer.
+
+`Scorch`'s undeclared-cap rule is the worked example: it was derived from a premise about what an
+undeclared payload meant, that premise was retired during the content pass, and the rule went on
+computing a perfectly well-formed cap from it. Nothing failed. Nothing could fail — a formula has no
+way to notice that its reason is gone.
+
+**How to apply:** a rule's premise is not a comment on the rule, it is part of the rule. When you
+retire a premise, grep for what was derived from it, and delete or re-derive each one. Do not trust
+the suite to tell you: an orphaned rule still evaluates, and every test written against its output
+still passes.
+
+### A MUTATION CONFINED TO AN UNREACHABLE BRANCH REDDENS EXACTLY THE ROW THAT KEEPS IT ALIVE
+
+**Named 2026-09-09, element accrual.** This is in `CLAUDE.md` as an operational warning; it is here
+because it is the general shape and it generalises past mutation testing.
+
+A mutation can only redden through the rows that exercise it. So a dead branch and the row covering
+it **justify each other** — the branch makes the row pass, the row's red makes the branch look
+guarded — and the pair is self-sustaining while neither touches production. From the outside it is
+indistinguishable from coverage: green suite, real mutation, real red.
+
+**The tell is a row whose fixture had to INVENT a state the system cannot produce.** When you find
+one, check the branch it covers before you fix the row — the row may be the only thing keeping a
+branch alive that should be deleted.
+
+### A GUARD WITH NO INSTANCES IS NOT AUTOMATICALLY A GUARD THAT CANNOT FIRE
+
+**Named 2026-09-09, element accrual, and it is the correction to over-applying the dead-guard rule.**
+Five dead guards were found in one slice, which made "no instances reach this" feel like a delete
+verdict. It is not. **The question is WHY there are no instances,** and there are two answers with
+opposite consequences:
+
+- **MECHANISM-unreachable** — no code path can construct the input. The arm is dead in the strong
+  sense and **gets deleted**, because nothing that ships or could ship reaches it. This is the
+  `ElementLoader.damageSymbol` catch: MiniMessage throws for none of ten malformed inputs, so the
+  `catch` cannot execute at all.
+- **CONTENT-unreachable** — the mechanism can produce it, but no authored file does yet. The arm
+  **stays, and owes forward cover**: a test that CAUSES the condition (authors the bad content, runs
+  the real walk, observes the warning by its text), and a javadoc line saying no bundled content
+  reaches it so the next reader does not assume production covers it. This is
+  `ContentValidator.validateElements`'s `applies_status` arm.
+
+**How to apply:** never delete on "nothing reaches it" alone. Ask whether a content author could
+reach it tomorrow. If yes it is a guard with a coverage debt, not a dead guard.
+
+### A TEST WRITTEN TO GUARD AN ORDERING MUST BE RE-DERIVED WHEN THE ORDERING'S PREMISE CHANGES
+
+**Named 2026-09-09, element accrual.** An ordering test asserts that A happens before B. It does not
+record *why* that order was chosen — and when the reason changes, the assertion keeps passing on the
+old order, which is now either accidental or wrong.
+
+This is the ordering-shaped sibling of the rule two above. A value rule outlives its premise by
+continuing to evaluate; an **ordering** rule outlives its premise by continuing to hold, because the
+code was never changed and the test never had to be.
+
+**How to apply:** when a decision about sequencing changes, do not check that the ordering tests still
+pass. Re-derive what the ordering *should* be from the new premise, and compare. A green ordering test
+after a premise change is evidence of nothing.
+
+### A FALSIFIED COMMENT MISLEADS A READER WHO CAN CHECK IT. A FALSIFIED FLAVOUR LINE MISLEADS A PLAYER WHO CANNOT.
+
+**Named 2026-09-09, element accrual, and it is why the prose sweep covers content and not only code.**
+
+A developer reading a stale comment has the code beside it and can diff the claim against the thing
+it describes. **A player reading a stale `flavor:` or `description:` has only the string.** There is
+no second source, so a falsified flavour line is strictly worse: it cannot be caught by the person it
+misleads.
+
+`emberblade.yml`'s *"Swing to cut; loose to burn"* is the case. It became false the day melee started
+accruing scorch — both halves burn now — and nothing but a person reading it would ever have said so.
+No test can, because no test knows what the sentence means.
+
+**How to apply:** when a mechanism changes, sweep `flavor:` and `description:` in `content/` on the
+same pass as the code comments. Same defect class, worse blast radius, and it is the half that gets
+skipped because it lives in YAML rather than in Java.
+
+### THE PLAN ITEMS THAT SILENTLY FAIL TO LAND ARE THE GUARDS
+
+**Named 2026-09-09, element accrual. Also in `CLAUDE.md`; here with the reason.**
+
+This is **selection, not chance.** A missing feature is reported by the person who wanted it. A
+missing guard produces no symptom at all — which is the same property that made it worth planning in
+the first place. So the plan items that go missing are systematically the ones nobody will notice are
+missing.
+
+Two went missing in one slice — `ScorchStatus`'s monotone refresh and `ScorchSinkSignatureTest` — and
+both were invisible for exactly the reason they were wanted.
+
+**How to apply, and the remedy is not "plan less":** at the end of a slice, diff the plan's NAMED
+ARTIFACTS against what exists on the branch. Two names, one grep. It is the same counting discipline
+that gave `7 -> 7` on the lambda sites and `12` on the fire damage sites.
