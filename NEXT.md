@@ -654,20 +654,26 @@ all.
 
 Worth its own small commit, and it makes the rows cheaper for every slice after.
 
-#### THE RULING ON CRIT LIVES IN CODE, AT THE ACCRUAL SITE — NOT HERE
+#### THE RULING ON CRIT LIVES IN CODE, AT THE ACCRUAL SITE — AND THE LINE BELOW IS A SIGNPOST TO IT
 
 *Stacks measure what landed; the cap measures what was declared.* One rule, deciding crit's treatment
 on both sides at once: crit is **out** of the cap and **in** the stacks.
 
-**It is deliberately NOT restated here.** It governs at
-`ElementAccrual.scorch` (`paper/.../adapter/ElementAccrual.java:166`), where the two arguments *are*
-the rule — `Scorch.stacksFor(outcome.dealt())` against the separately-carried `declaredMagnitude` —
-and it is spelled out in `Scorch`'s class javadoc under *ARMOUR DELAYS SCORCH RATHER THAN BLUNTING
-IT*, which names all three channels the operator ruled on.
+> **THAT WORDING IS A SIGNPOST, NOT THE RULE.** It is here so you know what you are being pointed at
+> — you cannot send a reader to a rule without naming it, or they have to open the code to find out
+> what they were sent for. **The governing statement is at `ElementAccrual.scorch`, and IF THE TWO
+> EVER DISAGREE, THE CODE IS RIGHT AND THIS LINE IS WRONG BY DEFINITION.** Same standing as
+> `GATE-element-accrual.md`'s ruling over the tick-through page.
 
-**A paraphrase here would be a second authority that can drift**, and it would drift the way the
-mutation-note estate did: three greps, three counts, every one of them locally right. One copy, at
-the place where it decides something, plus this pointer.
+It governs at `ElementAccrual.scorch` (`paper/.../adapter/ElementAccrual.java:166`), where the two
+arguments *are* the rule — `Scorch.stacksFor(outcome.dealt())` against the separately-carried
+`declaredMagnitude` — and it is spelled out in `Scorch`'s class javadoc under *ARMOUR DELAYS SCORCH
+RATHER THAN BLUNTING IT*, which names all three channels the operator ruled on.
+
+**An UNMARKED paraphrase here would be a second authority that can drift**, and it would drift the way
+the mutation-note estate did: three greps, three counts, every one of them locally right. The marking
+is what keeps this one a pointer — the day someone edits the code's phrasing, this line becomes stale
+rather than becoming a rival claim.
 
 Worth knowing when you read it: it was **DERIVED, NOT RULED** — it falls out of `scorch.yml`'s own
 stated reason for armour slowing accrual, *"stacks come from damage actually landed"*. That is why it
