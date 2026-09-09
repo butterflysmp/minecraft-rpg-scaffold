@@ -170,32 +170,55 @@ public final class Scorch {
      * exactly the appliers the cap exists to restrain, while a cap field sits in the store looking like
      * it does something. And it is invisible at max 100, where the real cap never binds either.
      *
-     * <b>THE RULE THAT FIXES THIS VALUE, rather than a number chosen by taste:</b> an undeclared cap
-     * must never exceed the SMALLEST DECLARED one, so an author who forgets cannot get a stronger
-     * scorch than an author who declares. The smallest authored fire damage in shipped content is 2.0
-     * ({@code solar_grenade}'s field tick), so that is the value.
+     * <b>THE RULE THAT FIXED THIS VALUE IS RETIRED, AND THE VALUE STAYS AT 2.0.</b> It read: <i>"an
+     * undeclared cap must never exceed the SMALLEST DECLARED one, so an author who forgets cannot get
+     * a stronger scorch than an author who declares"</i>, and 2.0 is {@code solar_grenade}'s field
+     * tick, the smallest authored fire damage in shipped content.
      *
-     * <b>A CONSTANT, NOT A DERIVED MINIMUM.</b> Deriving it at runtime would mean adding one weak
-     * ability silently weakens every undeclared scorch -- surprising in the other direction, and
-     * untestable at a fixed number.
+     * <p><b>That rule compared two AUTHORING ROUTES, and the content pass deleted one of them.</b> It
+     * weighed "declare a status and give it damage" against "declare a status and forget the damage".
+     * After {@code 1233469} stripped the nine explicit sites, nobody writes
+     * {@code type: status, status_id: scorch} at all -- so there is no route on which anything can be
+     * forgotten, and the comparison has no second side.
      *
-     * <b>The rule is ENFORCED for BUNDLED content, because a rule that lives only in a comment gets
-     * built past.</b> {@code ScorchContentInvariantTest} walks the bundled content and fails the BUILD
-     * if any declared cap is below this, asserting it found all nine application sites first so a scan
-     * that discovers nothing cannot read as a clean one.
+     * <p><b>The two numbers also stopped being comparable.</b> This constant stands against
+     * {@code caster.payloadDamage()} -- the cast-frozen headline, which {@link #CAP_FRACTION} never
+     * touches. Accrual's cap is {@code amount * CAP_FRACTION}. The old assertion set a DAMAGE effect's
+     * authored amount against a STATUS effect's fallback: two mechanisms' numbers, which stopped being
+     * two spellings of one thing the day a single path applied scorch and it was the element.
      *
-     * <p><b>THE BOOT ARM DOES NOT EXIST, AND THIS PARAGRAPH SAID IT DID.</b> Until 2026-09-08 the line
-     * above continued <i>"; {@code ContentValidator} names it at boot for content added after the
-     * build"</i> — and {@code ContentValidator} contains no such check. It was deferred in the slice
-     * that shipped this constant and the javadoc was written from the plan rather than from the code.
-     * Same defect as {@code flint_staff.yml}'s "THE MINTED STAFF STACKS TO 64": correct reasoning about
-     * an intended design, false on the day it landed, and invisible to every compiler and test.
+     * <blockquote>
+     * <b>A RULE OUTLIVES ITS PREMISE SILENTLY, BECAUSE ITS ARITHMETIC KEEPS EVALUATING.</b> The
+     * premise died at {@code 1233469}. The check went on returning a boolean for two more commits --
+     * green on {@code 2 >= 2.0}, measuring nothing -- and only became visible at {@code eab7738},
+     * when {@code CAP_FRACTION} made the two sides diverge by a factor of two. Halving the cap did
+     * not break the rule; it made a dead rule's arithmetic diverge, which is the only reason anybody
+     * looked.
+     * </blockquote>
      *
-     * <p><b>So what is actually covered:</b> content shipped in the jar, at build time. <b>What is
-     * NOT:</b> content added after the build — a datapack drop, an operator's own yml, anything
-     * reaching {@code --refresh-content} without a rebuild. Author a fire ability at 1.5 THERE and this
-     * constant silently violates its own invariant, in exactly the direction the rule exists to
-     * prevent, with nothing to catch it. The boot arm remains owed; see {@code NEXT.md}.
+     * <p><b>NOT LOWERED TO 1.0 TO KEEP THE OLD COMPARISON TRUE.</b> That would change LIVE behaviour
+     * -- the dev apply command's burn on anything above 20 max health, halved -- to satisfy a rule
+     * with no live instances. And {@code solar_grenade}'s field was NOT raised to 4 to satisfy it
+     * either: that is a balance change to shipped content smuggled in as invariant maintenance, and
+     * whether the field should hit for 4 is decided watching a grenade.
+     *
+     * <p><b>This is a different species from the ternary deleted in {@code 20cb8cf}, and the
+     * difference decides whether forward cover is owed.</b> A GUARD WITH NO INSTANCES IS NOT A GUARD
+     * THAT CANNOT FIRE: {@code ElementAccrual}'s fallback was unreachable BY THE MECHANISM
+     * ({@code stacks > 0} implies {@code amount > 0}, always), so it was deleted outright. This is
+     * unreachable BY TODAY'S CONTENT, and the schema still permits an explicit scorch tomorrow --
+     * hence the cover note in {@code BukkitCombatant}'s Scorch arm, where the two caps would silently
+     * disagree by a factor of two.
+     *
+     * <p><b>AND THE ENFORCEMENT QUESTION IS MOOT NOW, WHICH IS WORTH RECORDING BECAUSE IT WAS
+     * ARGUED TWICE.</b> This javadoc once claimed a {@code ContentValidator} boot arm that did not
+     * exist -- written from a plan rather than from the code, the same defect as
+     * {@code flint_staff.yml}'s "THE MINTED STAFF STACKS TO 64" -- and was corrected to say only
+     * bundled content was covered, with the boot arm still owed. <b>Neither is owed any more.</b>
+     * There is no rule left to enforce at boot or at build: the comparison it would have made has
+     * no second side. The build-time walk that carried it survives with its OTHER job intact --
+     * {@code ScorchContentInvariantTest} still asserts it discovered every fire damage site, so a
+     * scan gone blind reddens rather than reading clean.
      */
     public static final double UNDECLARED_CAP = 2.0;
 

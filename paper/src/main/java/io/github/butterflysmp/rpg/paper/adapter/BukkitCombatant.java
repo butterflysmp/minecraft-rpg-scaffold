@@ -325,6 +325,15 @@ public final class BukkitCombatant {
                                     + Scorch.UNDECLARED_CAP + ". Give the payload a damage effect.");
                             cap = Scorch.UNDECLARED_CAP;
                         }
+                        // FORWARD COVER, AND THE REASON THIS ARM HAS NO CONTENT CALLERS TODAY.
+                        // The content pass stripped every `type: status, status_id: scorch`, so only
+                        // the dev apply command reaches this. THE SCHEMA STILL PERMITS ONE, though --
+                        // and if explicit scorch is ever authored again, ITS CAP IS THE UNHALVED
+                        // headline (caster.payloadDamage()) while accrual caps at
+                        // amount * Scorch.CAP_FRACTION. The two paths would then disagree by a
+                        // factor of two on the same weapon, with nothing watching: the invariant
+                        // that used to compare them was retired when the content pass removed its
+                        // second authoring route. Halve here too, or do not author one.
                         ctx.scorch().apply(entity.getUniqueId(),
                                 new EntityTaskTarget(entity, ctx.scheduler()),
                                 new EntityScorchSink(entity, ctx),
