@@ -5,6 +5,15 @@ because, for every behaviour listed below, **these rows are the only check that 
 the project.** 1403 tests pass with any of them deleted, and not one of them can watch a burn stop,
 a glyph draw, or a number arrive on a screen.
 
+> **THIS FILE IS CANONICAL. The tick-through page is an operator convenience and is NOT under version
+> control.** Two copies of one record drift, and when they do this one wins — it is in `master`, it is
+> reviewable in a diff, and it is the only copy a future reader can reach. If the page and this file
+> disagree about a row, a figure or an attribution grade, **the page is wrong by definition**; fix the
+> page, or regenerate it from here.
+>
+> Recorded because the mutation-note estate had exactly this problem — three greps gave three counts —
+> and the fix there was the same one: name which copy is the record.
+
 ## GATE COMPLETE — twelve rows run, six refused, one open
 
 Run against `1f6c93f` unless a row says otherwise.
