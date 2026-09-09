@@ -60,8 +60,10 @@ class ElementAccrualTest {
         var accrued = accrue("fire", new DamageOutcome(25.0, 75.0), 30.0).orElseThrow();
 
         assertEquals(12, accrued.stacks(), "stacksFor(25) -- from what LANDED, so armour delays it");
-        assertEquals(30.0, accrued.cap(), EPS,
-                "capped at what was ASKED, pre-mitigation -- armour must never lower the ceiling, "
+        assertEquals(15.0, accrued.cap(), EPS,
+                "HALF of what was ASKED, pre-mitigation. Three distinct numbers -- 25 landed, 30 asked, "
+                        + "15 capped -- so no transposition among them can pass as a coincidence. "
+                        + "Armour must never lower the ceiling, "
                         + "or it re-enters the DoT through the back door after being ruled out of it");
         assertEquals(Scorch.DEFAULT_DURATION_TICKS, accrued.durationTicks(),
                 "the constant whose javadoc has said 'weapon-damage entry point only' since it was "
@@ -165,6 +167,7 @@ class ElementAccrualTest {
         var accrued = accrue("fire", new DamageOutcome(1.67, 18.0), 2.0).orElseThrow();
 
         assertEquals(1, accrued.stacks(), "1.67 landed still buys one stack");
-        assertEquals(2.0, accrued.cap(), EPS, "capped at the authored 2, not at the 1.67 that landed");
+        assertEquals(1.0, accrued.cap(), EPS,
+                "capped at HALF the authored 2, not at the 1.67 that landed");
     }
 }

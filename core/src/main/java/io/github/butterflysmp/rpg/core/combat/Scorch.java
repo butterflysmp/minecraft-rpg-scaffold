@@ -106,7 +106,63 @@ public final class Scorch {
     public static final double DAMAGE_PER_STACK = 2.0;
 
     /**
+     * The fraction of a hit's magnitude that becomes its burn's CEILING.
+     *
+     * <p><b>Named, and named HERE, because every other scorch rate is here.</b> {@link #RATE_PER_SECOND},
+     * {@link #PERIOD_TICKS}, {@link #DAMAGE_PER_STACK}, {@link #DEFAULT_DURATION_TICKS} and
+     * {@link #UNDECLARED_CAP} all live in this file, and the first person tuning scorch will read this
+     * file. A bare {@code * 0.5} in a paper adapter would be the only rate in the system stated
+     * somewhere else, and they would not find it.
+     *
+     * <p>Applied at the accrual site to the hit's PRE-mitigation magnitude -- post-payload-resolution,
+     * post-charge, post-crit, before Defense. A crit therefore still raises the ceiling, now from a
+     * halved base. Armour never lowers it: armour reaches scorch through the STACK COUNT, and letting
+     * it touch the ceiling too would be the back door the Defense bypass was ruled out of.
+     *
+     * <h2>THE CAP IS THE BOSS PROTECTION. THE 5% ARM IS THE THING THAT WOULD RUN AWAY.</h2>
+     *
+     * Stated because it is easy to get backwards, and was. {@code content/statuses/scorch.yml} has it
+     * right: <i>"cap -- the damage of whatever applied the stacks, so a stronger fire weapon buys a
+     * stronger burn, and a 5000 HP boss is NOT MELTED by percent-max-health running away (5% of 5000
+     * is 250/sec, uncapped)"</i>. {@link #damagePerTick} is {@code min(5% of max, cap)}: the percent
+     * arm scales the burn with the VICTIM, and the cap is what stops that scaling from running away on
+     * a large pool.
+     *
+     * <h2>WHAT HALVING ACTUALLY CHANGED: THE TARGET-SIZE RANGE, NOT REACHABILITY</h2>
+     *
+     * The 5% arm binds when {@code 0.05 * max < cap}, so:
+     *
+     * <pre>
+     *   before halving   the arm binds below   max = 20 x hit magnitude
+     *   after  halving   the arm binds below   max = 10 x hit magnitude
+     * </pre>
+     *
+     * <b>So this HALVED THE RANGE OF TARGET SIZES over which the burn scales with the victim.</b> The
+     * percent arm governs small targets and the cap governs large ones, before and after. It did NOT
+     * make the arm unreachable: it stays fully live on any 20-HP vanilla mob, for every weapon, where
+     * {@code min(1.0, cap)} is 1.0 either way.
+     *
+     * <p><b>Measured on the one custom mob that ships.</b> A knell is 360 max, so 5% is 18. A Flint
+     * Staff's 20-damage bolt capped at 20 gave {@code min(18, 20) = 18} -- the arm binding. Halved to
+     * 10 it gives {@code min(18, 10) = 10} -- the CAP binding. The arm is dormant on a knell now,
+     * because 18 exceeds every shipped weapon's halved cap; it becomes live there again the day a
+     * weapon hits for more than 36.
+     *
+     * <p>Ben ruled this from a measured burn rather than a remembered one: 6 x 18 = 108 on a knell,
+     * 30% of the target, observed after the window moved 160 -> 120. The earlier request had been
+     * made against 8 x 18 = 144.
+     */
+    public static final double CAP_FRACTION = 0.5;
+
+    /**
      * The cap used when the thing applying scorch declares no damage number of its own.
+     *
+     * <p><b>{@link #CAP_FRACTION} DOES NOT APPLY TO THIS, AND THAT IS DELIBERATE.</b> The fraction
+     * halves a WEAPON-DERIVED figure; this is a conservative constant standing in for the absence of
+     * one. Halving it to 1.0 "for consistency" would be a tuning change nobody asked for, applied to
+     * the one path that has no weapon behind it. The dev apply command passes this value straight to
+     * {@code ScorchStatus.apply} without going through {@code ElementAccrual}, so it never meets the
+     * fraction at all.
      *
      * <b>A NON-BINDING FALLBACK IS NOT A FALLBACK.</b> Defaulting to the 5% figure makes
      * {@code min(5% of max, 5% of max)} -- an UNCAPPED percent-max-health DoT, 250/sec against a 5000

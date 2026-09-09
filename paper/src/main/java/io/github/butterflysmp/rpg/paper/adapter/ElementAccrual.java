@@ -175,6 +175,11 @@ public final class ElementAccrual {
         // from what the system can produce. And a mutation inside an unreachable branch can only
         // redden the row that keeps the branch alive, so the two justified each other while neither
         // touched production. Both are gone; the invariant is stated once, here.
-        return Optional.of(new ScorchAccrual(stacks, preMitigationAmount, Scorch.DEFAULT_DURATION_TICKS));
+        // HALF the hit, per Scorch.CAP_FRACTION -- which lives in core with every other scorch rate
+        // rather than as a bare 0.5 here, so the next person tuning scorch finds it where they look.
+        // The fraction applies to a WEAPON-DERIVED figure only: Scorch.UNDECLARED_CAP is deliberately
+        // not halved, and never meets this path anyway.
+        return Optional.of(new ScorchAccrual(
+                stacks, preMitigationAmount * Scorch.CAP_FRACTION, Scorch.DEFAULT_DURATION_TICKS));
     }
 }

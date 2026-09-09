@@ -144,6 +144,22 @@ public final class ScorchStatus {
         if (a != null && a.task.isRunning()) {
             a.stacks += stacks;
             a.remaining = durationTicks;   // refresh the whole timer, and DO NOT restart the task
+            // THIS ASSIGNMENT CAN SHORTEN A LIVE BURN, AND NOTHING IN THE MECHANISM STOPS IT.
+            // It is safe TODAY only because every content-driven application passes the same
+            // Scorch.DEFAULT_DURATION_TICKS -- the nine authored durations were stripped in the
+            // content pass. THAT IS A CONTENT-SHAPED INVARIANT, NOT A MECHANISM ONE. Contrast
+            // WeaponFire.landVanillaMelee, whose one-slot sink genuinely enforces its first-wins rule
+            // in code; this one is enforced by there being nothing else to pass.
+            //
+            // WHAT BREAKS IT: any SECOND source of durations. An element declaring one (the refused
+            // shape (b) in PLAN-element-content-pass.md), or an ability regaining an authored
+            // duration_ticks. On that day a short application silently truncates a long burn, and
+            // this line becomes Math.max(a.remaining, durationTicks) -- "extend a burn, never shorten
+            // it", the rule BukkitCombatant.java:272-273 and :288 already apply twice.
+            //
+            // Reachable today only through the dev apply command, which takes an operator-chosen
+            // duration. Deferred on THAT reason -- not on "no second duration exists", which was the
+            // false one it was first deferred on.
             a.cap = cap;                   // most recent applier owns the cap...
             a.applierId = applierId;       // ...and the credit. One rule, not two.
             // AND IT DOES NOT BURN -- which is now the same rule the first-application arm follows

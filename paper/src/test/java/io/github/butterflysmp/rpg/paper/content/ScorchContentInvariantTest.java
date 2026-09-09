@@ -145,6 +145,22 @@ class ScorchContentInvariantTest {
             }
         }
 
+        // THIS COMPARES THE RAW AUTHORED AMOUNT, AND SINCE Scorch.CAP_FRACTION THAT IS NO LONGER
+        // THE EFFECTIVE CAP. The cap an authored amount actually buys is amount * CAP_FRACTION, so
+        // solar_grenade`s field tick of 2 now yields a ceiling of 1.0 -- BELOW UNDECLARED_CAP = 2.0.
+        //
+        // SO THE RULE THIS FILE ENFORCES IS CURRENTLY INVERTED IN FACT: "an author who forgets
+        // cannot get a stronger scorch than an author who declares" is false for any authored
+        // amount below 4.0. The comparison below does not see it, because it measures the raw
+        // number rather than the ceiling -- a row still passing while its subject changed
+        // underneath it, which is the same shape as the A1 gate row after this same commit.
+        //
+        // NOT SILENTLY REPAIRED, because the repair is a decision and not a mechanical one: it is
+        // either lowering UNDECLARED_CAP to 1.0 (which the ruling on CAP_FRACTION explicitly
+        // declined), raising the field tick to 4, or retiring the rule on the grounds that the
+        // content pass made the undeclared path unreachable from content -- no yml declares
+        // `type: status, status_id: scorch` any more, so only the dev apply command reaches it.
+        // Surfaced rather than chosen. See the commit body.
         // The discovery guard, before the verdict: zero sites means the regex stopped matching the
         // schema, not that content is clean.
         assertEquals(KNOWN_FIRE_DAMAGE_SITES, sites,
