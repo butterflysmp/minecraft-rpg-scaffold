@@ -126,14 +126,15 @@ public final class ElementAccrual {
      * until healed. That is downstream of the deferred respawn lifecycle rather than a defect of this
      * predicate, which is exactly why it belongs where the predicate lives.
      *
-     * @param preMitigationAmount the cap basis. NOT {@code outcome.dealt()} -- armour must delay the
+     * @param declaredMagnitude the cap basis: this hit WITHOUT its crit, recovered by the caller. NOT
+     *                          {@code outcome.dealt()} -- armour must delay the
      *                            burn through the STACK COUNT and never lower its ceiling, or it
      *                            re-enters the DoT through the back door after being ruled out of it
      */
     public static Optional<ScorchAccrual> forHit(ElementRegistry elements, StatusRegistry statuses,
                                                  String element, AccrualRule accrual,
                                                  DamageOutcome outcome,
-                                                 double preMitigationAmount) {
+                                                 double declaredMagnitude) {
         // INERT: the hit HAS an element -- it draws that element's glyph -- and must not accrue.
         // Scorch's own burn tick is the only caller today, and this is the loop guard. It is a
         // DIFFERENT reason from the null-element early return below: that one means the hit has no
@@ -153,7 +154,7 @@ public final class ElementAccrual {
         // silently landing in the "accrues nothing" arm. ContentValidator.validateElements already
         // NAMES a non-accruing status at boot, which is why this returns empty without warning.
         return switch (status) {
-            case StatusDefinition.Scorch ignored -> scorch(outcome, preMitigationAmount);
+            case StatusDefinition.Scorch ignored -> scorch(outcome, declaredMagnitude);
             case StatusDefinition.Fire ignored -> Optional.empty();
             case StatusDefinition.Potion ignored -> Optional.empty();
             case StatusDefinition.Immobilize ignored -> Optional.empty();
@@ -161,7 +162,7 @@ public final class ElementAccrual {
         };
     }
 
-    private static Optional<ScorchAccrual> scorch(DamageOutcome outcome, double preMitigationAmount) {
+    private static Optional<ScorchAccrual> scorch(DamageOutcome outcome, double declaredMagnitude) {
         int stacks = Scorch.stacksFor(outcome.dealt());
         if (stacks <= 0) return Optional.empty();
 
@@ -170,9 +171,9 @@ public final class ElementAccrual {
         // stacks > 0 means Scorch.stacksFor saw a positive figure, so dealt > 0. And dealt is either
         // `amount` (DefenseRule.BYPASSED) or Defense.applyDefense(amount, d), which returns `damage`
         // unchanged when defense <= 0 and otherwise scales it by SCALE/(SCALE+defense) -- a factor in
-        // (0, 1). Both preserve sign, so:  stacks > 0  =>  dealt > 0  =>  preMitigationAmount > 0.
+        // (0, 1). Both preserve sign, so:  stacks > 0  =>  dealt > 0  =>  declaredMagnitude > 0.
         //
-        // A `preMitigationAmount > 0 ? ... : Scorch.UNDECLARED_CAP` ternary stood here and WAS DEAD.
+        // A `declaredMagnitude > 0 ? ... : Scorch.UNDECLARED_CAP` ternary stood here and WAS DEAD.
         // It was mirrored from BukkitCombatant.applyStatus, whose fallback is correct and necessary
         // because THAT path is reachable without a damage effect at all -- a payload declaring only
         // `type: status` has payloadDamage == 0. Accrual is TRIGGERED BY a damage effect and cannot
@@ -189,6 +190,6 @@ public final class ElementAccrual {
         // The fraction applies to a WEAPON-DERIVED figure only: Scorch.UNDECLARED_CAP is deliberately
         // not halved, and never meets this path anyway.
         return Optional.of(new ScorchAccrual(
-                stacks, preMitigationAmount * Scorch.CAP_FRACTION, Scorch.DEFAULT_DURATION_TICKS));
+                stacks, declaredMagnitude * Scorch.CAP_FRACTION, Scorch.DEFAULT_DURATION_TICKS));
     }
 }

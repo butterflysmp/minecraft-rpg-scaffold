@@ -137,7 +137,7 @@ public final class EffectApplier {
                                 caster.classDamageBonus()),
                         caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
-                    target.handle().applyDamage(amount, caster.id(), CritState.of(caster.crit()),
+                    target.handle().applyDamage(amount, caster.id(), CritState.of(caster.critMultiplier()),
                             DefenseRule.APPLIES, d.element());
                     onDirectDamage.accept(amount, d.element());   // inside the gate: a refused hit reports nothing
                 }
@@ -161,7 +161,7 @@ public final class EffectApplier {
                                 caster.classDamageBonus()),
                         caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
-                    target.handle().applyDamage(amount, caster.id(), CritState.of(caster.crit()),
+                    target.handle().applyDamage(amount, caster.id(), CritState.of(caster.critMultiplier()),
                             DefenseRule.APPLIES, wd.element());
                     onDirectDamage.accept(amount, wd.element());   // inside the gate: a refused hit reports nothing
                 }

@@ -44,12 +44,12 @@ public final class DamageNumberText {
 
     /** A normal, elementless hit: the rounded amount in white. */
     public static Component of(double amount) {
-        return of(amount, CritState.NORMAL, null);
+        return of(amount, false, null);
     }
 
     /** As above, styled by whether it was a CRIT, and still wearing no element. */
-    public static Component of(double amount, CritState crit) {
-        return of(amount, crit, null);
+    public static Component of(double amount, boolean wasCrit) {
+        return of(amount, wasCrit, null);
     }
 
     /**
@@ -66,9 +66,9 @@ public final class DamageNumberText {
      *               for damage wearing no element -- a thorns reflect, fall damage, scorch's own
      *               burn tick. Null renders exactly what this method rendered before glyphs existed.
      */
-    public static Component of(double amount, CritState crit, Component symbol) {
+    public static Component of(double amount, boolean wasCrit, Component symbol) {
         Component number = Component.text(Long.toString(Math.round(amount)),
-                crit.isCrit() ? NamedTextColor.YELLOW : NamedTextColor.WHITE);
+                wasCrit ? NamedTextColor.YELLOW : NamedTextColor.WHITE);
         if (symbol == null) return number;
         // An EMPTY, uncoloured root. Every child keeps the colour it arrived with, which is what lets
         // an orange glyph sit beside a yellow crit number in one line.

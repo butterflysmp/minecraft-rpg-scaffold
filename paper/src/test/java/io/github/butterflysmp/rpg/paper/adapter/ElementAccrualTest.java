@@ -203,4 +203,47 @@ class ElementAccrualTest {
         assertEquals(1.0, accrued.cap(), EPS,
                 "capped at HALF the authored 2, not at the 1.67 that landed");
     }
+
+    // --- Crit: out of the cap, into the stacks -----------------------------------------------------
+
+    @Test
+    void aCRITAndANORMALHitOfTheSameBaseCapTheSAMEAndStackDIFFERENTLY() {
+        // ONE RULE DECIDES BOTH HALVES, AND THERE IS NO CRIT SPECIAL CASE ANYWHERE:
+        //
+        //     STACKS MEASURE WHAT LANDED. THE CAP MEASURES WHAT WAS DECLARED.
+        //
+        // A crit changes what lands, so stacks move with it -- the same reason scorch.yml gives for
+        // armour slowing accrual, "stacks come from damage actually landed". A crit does not change
+        // what was declared, so the ceiling does not move. Crit-free stacks would mean armour affects
+        // the count and crit does not, two treatments of one quantity with no principle separating
+        // them, and it would make "1 per 2 damage dealt" false on its face.
+        //
+        // THE FIXTURE ONLY DISCRIMINATES ON THE CRIT ROW, WHICH IS THE POINT. BukkitCombatant hands
+        // this the DECLARED magnitude -- amount / critMultiplier -- so a defect that used the
+        // resolved amount instead is invisible at multiplier 1.0, where the two are equal. A fixture
+        // without a crit in it would pass against exactly the bug this guards.
+        double declared = 20.0;                 // a Flint Staff bolt, as authored
+        double critMultiplier = 2.0;
+
+        // NORMAL: nothing was multiplied, so declared == resolved.
+        var normal = accrue("fire", new DamageOutcome(20.0, 340.0), declared).orElseThrow();
+        // CRIT: 40 landed, but the DECLARED magnitude is still 20 -- what the caller recovers.
+        var crit = accrue("fire", new DamageOutcome(40.0, 320.0), declared).orElseThrow();
+
+        assertEquals(normal.cap(), crit.cap(), EPS,
+                "SAME ceiling -- the crit did not raise it, which is the ruling");
+        assertEquals(declared * Scorch.CAP_FRACTION, crit.cap(), EPS,
+                "and it is half the DECLARED 20, not half the 40 that landed");
+
+        assertEquals(10, normal.stacks(), "stacksFor(20)");
+        assertEquals(20, crit.stacks(),
+                "MORE stacks from the crit, because stacks measure what landed. No damage "
+                        + "consequence today -- the burn rate is flat -- and it is what Ignite will "
+                        + "read, so it is stated rather than left to be discovered there");
+        assertEquals(critMultiplier * normal.stacks(), (double) crit.stacks(), EPS,
+                "exactly the multiplier's worth, since stacksFor is linear above its floor");
+        // Mutation: cap from the resolved amount instead of the declared one -> the CRIT row's cap
+        // becomes 20 against an expected 10 -> reddens. The normal row does NOT redden, because at
+        // multiplier 1.0 declared and resolved are the same number.
+    }
 }

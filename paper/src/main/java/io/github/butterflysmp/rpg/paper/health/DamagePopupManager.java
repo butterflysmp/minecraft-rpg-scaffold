@@ -70,7 +70,7 @@ public final class DamagePopupManager implements HealthListener {
         double z = base.getZ() + jitter(ThreadLocalRandom.current().nextDouble());
         double y = base.getY() + target.getHeight() * CENTER_MASS_FRACTION;
 
-        Component text = DamageNumberText.of(change.amount(), CritState.of(change.wasCrit()),
+        Component text = DamageNumberText.of(change.amount(), change.wasCrit(),
                 symbolFor(elements, change.element()));
         // The crit's second channel: vanilla's own crit particle, spawned by us on OUR crit. Legal
         // here -- this runs on the target's owning thread, the same standing that makes the Location

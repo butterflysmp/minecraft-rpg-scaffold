@@ -189,7 +189,25 @@ public final class BukkitCombatant {
                 // the POST-mitigation figure that actually landed are both in scope -- the applier
                 // upstream has only the first, and the seam listeners downstream only the second.
                 // The decision is ElementAccrual's and is pure; this only performs it.
-                ElementAccrual.forHit(ctx.elements(), ctx.statuses(), element, accrual, outcome, amount)
+                // THE CAP BASIS IS THE HIT WITHOUT ITS CRIT, AND IT IS RECOVERED RATHER THAN
+                // REPORTED. `amount` arrives post-charge and post-crit from HitDamage.dealt; the
+                // declared magnitude is what it was before the crit multiplied it, and dividing is
+                // how we get back to it. Exact to floating-point noise, not handed to us -- weaker
+                // than being told, which is why it is said here rather than assumed.
+                //
+                // ONE RULE DECIDES BOTH HALVES OF THE CRIT QUESTION, and there is no crit special
+                // case anywhere: STACKS MEASURE WHAT LANDED, THE CAP MEASURES WHAT WAS DECLARED. A
+                // crit changes what lands, so stacks move with it -- the same reason scorch.yml
+                // gives for armour slowing accrual, "stacks come from damage actually landed". A crit
+                // does not change what was declared, so the ceiling does not move.
+                //
+                // UPGRADE TRIGGER: the day a SECOND consumer needs a crit-free magnitude, this stops
+                // being a local convenience and a HitAmount(total, preCrit) record is owed -- the
+                // symmetric twin of DamageOutcome, two facts in as two facts come out.
+                double declaredMagnitude = amount / crit.multiplier();
+
+                ElementAccrual.forHit(ctx.elements(), ctx.statuses(), element, accrual, outcome,
+                                declaredMagnitude)
                         .ifPresent(accrued -> {
                             // The vanilla flame is the same visual the explicit path sets, and this
                             // is now the THIRD end of that coupling: the other two are

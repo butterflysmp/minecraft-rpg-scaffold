@@ -1181,8 +1181,31 @@ public final class RpgListeners implements Listener {
         // because it must not reach vanilla either -- the same shape as the absorbed branch below,
         // minus the claim.
         //
-        // Narrow on purpose: FIRE and LAVA are separate causes and still land in full. A scorched
-        // victim standing in real fire loses only the FIRE_TICK stream, which is the one we replaced.
+        // NAMED DEBT: THIS SUPPRESSES ONE MEMBER OF A FAMILY OF FOUR, AND THE OTHER THREE DOUBLE-DIP.
+        //
+        // Deferred by the operator 2026-09-09, recorded as a bounded question rather than a symptom.
+        // Observed as "the burn doubles only while standing in fire", which IS the diagnosis: block
+        // contact raises FIRE, the ignition raises FIRE_TICK, and only the second is caught. Step out
+        // and it stops.
+        //
+        //     FIRE_TICK   suppressed while scorched          <- the stream we replaced
+        //     FIRE        NOT. Standing in a fire block.
+        //     LAVA        NOT.
+        //     HOT_FLOOR   NOT. Magma block.
+        //
+        // Under any of the other three, a scorched victim takes OUR capped, credited, defense-
+        // bypassing burn PLUS vanilla's uncapped, uncredited one -- the precise doubling this
+        // suppression exists to prevent, arriving through a sibling cause.
+        //
+        // AND IT IS NOT A ONE-LINE FIX, WHICH IS THE REAL REASON IT IS A QUESTION RATHER THAN A TODO.
+        // Suppressing LAVA would mean a scorched mob takes LESS lava damage than an unscorched one --
+        // scorch as a defensive buff. This repo already refused that shape once, which is why the
+        // FIRE_TICK gate sits BEFORE damageWindow.claim (see above): a suppressed tick dealt nothing,
+        // so it must not consume window budget either.
+        //
+        // THE BOUNDED QUESTION, for whoever takes it: which of these four should scorch suppress, and
+        // does suppressing LAVA make scorch a defensive buff? An answer per cause, like the standing
+        // "which causes should Defense touch?" question DefenseRule was built for.
         if (event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK
                 && adapters.scorch().isScorched(id)) {
             event.setDamage(TOKEN_DAMAGE);

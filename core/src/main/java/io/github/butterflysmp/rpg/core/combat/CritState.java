@@ -1,55 +1,73 @@
 package io.github.butterflysmp.rpg.core.combat;
 
 /**
- * Whether a hit was a critical one, as a TYPE rather than as a boolean.
+ * Whether a hit CRIT, and by how much.
  *
- * <p>Distinct from {@link Crit}, which is the ARITHMETIC -- the chance, the multiplier, and the
- * already-drawn roll. This is the resulting FACT, carried to the displays. The multiplier is applied
- * to the amount long before this travels, so this never touches the maths: it decides a colour, a
- * particle and a popup, not a number.
+ * <p>Replaced a bare {@code boolean wasCrit} on the damage port, because two adjacent transposable
+ * flags compile in either order and mean opposite things swapped. It is the first of three of the
+ * same species, beside {@link DefenseRule} and {@link AccrualRule}.
  *
- * <h2>It is a type for {@link DefenseRule}'s reason, one seat over</h2>
+ * <h2>IT NOW CARRIES THE MULTIPLIER, AND {@code isCrit()} IS DERIVED FROM IT</h2>
  *
- * It sat immediately beside {@code bypassesDefense} in {@code CombatantHandle.applyDamage}, and
- * immediately beside BOTH {@code dealerIsPlayer} and {@code bypassesDefense} in
- * {@code CombatantStats.damage} -- <b>three adjacent booleans, six orderings, five of them wrong and
- * all six compiling.</b> Typing only the defense flag would have left this pair transposable with
- * each other, so the fix takes the pair rather than the single parameter that prompted it.
+ * <b>The precedent is {@code Caster.crit()}, not an invention here:</b> that method derives the fact
+ * from the frozen multiplier <i>"rather than carried beside it, so the two cannot disagree about one
+ * swing"</i>. This is the same shape one layer down. Strictly GREATER than {@link Crit#NO_CRIT}, for
+ * the same reason it gives: a crit whose bonus resolved to 0 multiplies by exactly 1.0 and changed
+ * nothing, so there is no hit to celebrate.
  *
- * <p>{@code dealerIsPlayer} deliberately stays a {@code boolean}: with these two lifted out it is the
- * ONLY boolean left in either signature, and a lone boolean has nothing to be transposed with. The
- * hazard was never "booleans are bad" -- it was ADJACENCY.
+ * <p><b>WHY THE MULTIPLIER HAD TO TRAVEL.</b> The scorch cap is the hit's DECLARED magnitude, and
+ * the accrual site only has the RESOLVED one -- post-charge, post-crit. It needs the crit taken back
+ * out, and the alternatives were worse: a seventh port parameter carrying the crit-free figure would
+ * have put two adjacent {@code double}s on the signature, which is the exact transposable pair
+ * {@code DamageSignatureTest} exists because of, and a swap would silently cap the burn at half the
+ * right figure with nothing failing.
  *
- * <p>See {@link DefenseRule}'s javadoc for the full argument, including why named constants do not
- * solve this and a distinct type does.
+ * <p><b>The site RECOVERS the declared magnitude by dividing; it is not handed it.</b> That is
+ * weaker than being told, and it is worth saying so where it happens. The upgrade trigger is
+ * written down too: the day a SECOND consumer needs a crit-free magnitude, the division stops being
+ * a local convenience and a {@code HitAmount(total, preCrit)} record -- the symmetric twin of
+ * {@code DamageOutcome} -- is owed.
+ *
+ * <h2>THE DISPLAY SEAM TAKES A BOOLEAN AGAIN, AND THAT IS NOT A REGRESSION</h2>
+ *
+ * {@code DamageNumberText} was moved from {@code boolean} to this type on vocabulary grounds, when
+ * this type WAS a bare fact. It has moved back, because the type now means <b>the crit FACTOR</b>
+ * and the display seam genuinely does not have one: {@code HealthChange} carries a bit, and
+ * fabricating a multiplier to satisfy a signature would be the "absence is not a neutral value"
+ * error in a new costume -- a made-up number that reads as real and could be divided by.
+ *
+ * <p>So there is no {@code CRIT} constant and no {@code of(boolean)}: every {@code CritState} in the
+ * system carries a multiplier somebody actually resolved.
+ *
+ * @param multiplier what the hit was multiplied by. {@link Crit#NO_CRIT} (exactly 1.0) for a normal
+ *                   hit, and the resolved factor for a crit. Never below {@code NO_CRIT} -- a
+ *                   negative or zero bonus resolves to {@code NO_CRIT} rather than shrinking a hit.
  */
-public enum CritState {
+public record CritState(double multiplier) {
 
-    /** An ordinary hit. */
-    NORMAL,
+    /** A hit that did not crit: multiplied by exactly one. */
+    public static final CritState NORMAL = new CritState(Crit.NO_CRIT);
 
-    /**
-     * A critical hit.
-     *
-     * <p>Carries a fact for the displays, never a factor for the arithmetic -- the crit multiplier
-     * was already applied to the amount by {@code EffectApplier}, so multiplying again here would
-     * double it.
-     */
-    CRIT;
-
-    /**
-     * Lift an already-drawn boolean into this type.
-     *
-     * <p>The one sanctioned boundary between the two representations, for call sites reading a
-     * roll that is genuinely a boolean ({@code Caster.crit()}). A single named conversion is not the
-     * hazard this type exists to remove: adjacency is, and there is nothing here to sit beside.
-     */
-    public static CritState of(boolean wasCrit) {
-        return wasCrit ? CRIT : NORMAL;
+    public CritState {
+        if (multiplier < Crit.NO_CRIT) {
+            throw new IllegalArgumentException(
+                    "A crit multiplier below " + Crit.NO_CRIT + " would SHRINK the hit, which is not"
+                            + " what a crit is -- got " + multiplier + ". Crit.multiplier already"
+                            + " floors a non-positive bonus at NO_CRIT, so reaching here means a"
+                            + " caller computed one some other way.");
+        }
     }
 
-    /** True for {@link #CRIT}. For the seams that still carry the fact as a boolean. */
+    /**
+     * The state for a resolved multiplier. {@link Crit#NO_CRIT} yields {@link #NORMAL}, so a crit
+     * whose bonus resolved to nothing is not treated as a crit anywhere downstream.
+     */
+    public static CritState of(double multiplier) {
+        return multiplier > Crit.NO_CRIT ? new CritState(multiplier) : NORMAL;
+    }
+
+    /** True when the hit was actually multiplied. DERIVED, so it cannot disagree with the factor. */
     public boolean isCrit() {
-        return this == CRIT;
+        return multiplier > Crit.NO_CRIT;
     }
 }
