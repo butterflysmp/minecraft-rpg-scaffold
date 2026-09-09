@@ -592,6 +592,45 @@ that **any mob that dies while scorched ignites**, binary, with no count. It is 
 raised, in *THE RULING: ANY MOB THAT DIES WHILE SCORCHED IGNITES*, with the arithmetic that refused
 the threshold shape. **It is settled and it does not block slice 2.**
 
+#### THE RULING DELETED THE COUNT'S ONLY CONSUMER, SO SCORCH STOPS BEING A STACKING STATUS
+
+**Ruled 2026-09-09, immediately after the Ignite ruling, because it is a consequence of it and not a
+separate discovery.** With the accumulator gone, **scorch is a boolean burn with a timer, a cap and a
+credit.** "Stacking" survives in the class name, in prose, and in `scorch.yml`'s player-facing *"1 per
+2 damage dealt"*, and nothing computes with any of it.
+
+**TWO SPECIES LIVE IN `Scorch.stacksFor`, AND CONFLATING THEM IS HOW ONE OF THEM GETS DELETED WRONGLY:**
+
+| | what is true | treatment |
+|---|---|---|
+| **`DAMAGE_PER_STACK`'s VALUE** | ONE arithmetic reader, the division in `stacksFor`; every other hit in the repo is prose. Since the only reader of the result is `stacks <= 0`, and `max(1, ...)` returns >= 1 for any positive input, **2, 7 or 1000 behave identically in production.** NOT unreachable -- the line runs on every hit; its output MAGNITUDE is never read | swept when Ignite lands, per the trigger below |
+| **the `max(1, ...)` FLOOR** | matters only for `dealt` in `(0, 2)`. Nothing produces that: smallest authored fire amount is `2`, and the mitigation route needs a scorchable target with defense > 0, which does not exist. **CONTENT-UNREACHABLE, not dead** | **KEPT**, with forward cover recorded in its javadoc |
+
+**The mutation that separates them:** change `DAMAGE_PER_STACK` and nothing reddens except rows
+asserting the number itself. That is a different signature from an unreachable branch, which reddens
+exactly the row keeping it alive.
+
+**THE TRIGGER, EXACT, BECAUSE "LATER" IS HOW `DEFAULT_DURATION_TICKS`, `ScorchStatus.stacks` AND
+`ScorchSinkSignatureTest` EACH SURVIVED A SLICE:**
+
+> **WHEN IGNITE'S MECHANISM LANDS AND THE COUNT STILL HAS NO READER, THE SWEEP HAPPENS IN THAT
+> SLICE'S OWN CLEANUP -- NOT A FUTURE ONE.**
+
+By then it is measured from both ends and there is nothing left to wait for. The sweep is not done now
+because collapsing it reaches through `ScorchStatus.apply`'s signature, `ElementAccrual` and the
+content prose -- a mechanism sweep inside a slice that has not started.
+
+**DO NOT INVENT A CONSUMER TO JUSTIFY THE MACHINERY.** *"The blast scales with stacks"* would make the
+count live again, and it is a **feature**, not a rescue. Adding one to save a constant is the tail
+wagging the dog, and it would re-introduce the unbounded accumulator this file refused to declare a
+ceiling for.
+
+> **THE DEFENCE THAT DOES NOT SURVIVE, RECORDED SO IT IS NOT REACHED FOR AGAIN.** *"Keep the count,
+> Ignite might read it"* was the obvious argument and it is dead on both ends: the ruling makes the
+> trigger **binary**, and the constants decision puts the blast's numbers in code. **Ignite as ruled
+> will never read it.** The operator recorded that they would have used this argument had the reader
+> count not been measured first -- which is why the measurement went first.
+
 #### OWED WHEN A BOSS FLAG EXISTS: Ignite's boss and player exclusions
 
 **Recorded 2026-09-09 with the ruling, and deliberately NOT built.** Both were raised as guards
@@ -8713,6 +8752,35 @@ was met, the constant stayed, and so did the test defending it.
 - Do not fix a compile error by widening the architecture.
 - When you say something is verified, say what you executed.
 - **Verify a check ran before believing it passed.** See `CLAUDE.md`.
+
+### AN INSTRUCTION GIVEN BEFORE A CONSTRAINT EXISTS IS NOT REPEALED BY THE CONSTRAINT ARRIVING LATER
+
+**Named 2026-09-09, Ignite commit 1, and the brief was the operator's own.** Two instructions, one
+message apart, that contradicted each other:
+
+1. The constants ruling said: *"ADD A SIGNPOST FROM Scorch's CLASS JAVADOC"* pointing at `Ignite`, so
+   the first person tuning scorch does not read six constants and miss half the fire kit.
+2. The next message's amendment said: *"a heading naming a mechanism that does not exist is a FORWARD
+   dangling reference"* -- and `Ignite` did not exist yet.
+
+Following (1) faithfully produced exactly what (2) forbids. **The signpost was written into
+`Scorch.java` and then removed** before the commit, on the strength of (2).
+
+**Neither instruction was wrong.** (1) is right about commit 2, when the class exists. (2) is right
+about commit 1, when it does not. What was missing is that (1) carried an unstated *"once Ignite
+exists"* which only became visible when (2) supplied the constraint.
+
+**How to apply.** A constraint that arrives after an instruction does not retroactively rewrite it,
+and nothing in the tooling will flag the collision -- both instructions are in the transcript, both
+sound, and the contradiction lives only in their overlap. **When a new constraint lands mid-slice,
+re-read the instructions already given against it** rather than assuming the newest message is a
+delta. The reusable half is that this is a property of *briefs*, not of the person executing them:
+the same shape produces a defect whoever is holding the pen, and the only defence is somebody
+noticing.
+
+> Recorded as a contradictory brief rather than as an execution slip, at the operator's direction and
+> for the reason above -- filing it as "the model added a bad reference" would have kept the sentence
+> and lost the lesson.
 
 ### A RULE OUTLIVES ITS PREMISE SILENTLY, BECAUSE ITS ARITHMETIC KEEPS EVALUATING
 

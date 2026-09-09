@@ -48,6 +48,48 @@ package io.github.butterflysmp.rpg.core.combat;
  * arithmetic is live, but only its zero / non-zero result is read today. The first consumer of the
  * count is also the first reader of the magnitude.
  *
+ * <h2>THE RULING DID NOT ONLY DELETE A THRESHOLD -- IT DELETED THE COUNT'S ONLY CONSUMER</h2>
+ *
+ * <b>Scorch is now a boolean burn with a timer, a cap and a credit.</b> "Stacking" survives only in
+ * this class's name, in prose, and in {@code scorch.yml}'s player-facing <i>"1 per 2 damage dealt"</i>
+ * -- nothing computes with it.
+ *
+ * <p><b>THE DECISION: SCORCH STOPS BEING A STACKING STATUS.</b> Not in this commit -- collapsing it
+ * reaches through {@code ScorchStatus.apply}'s signature, {@code ElementAccrual} and the content
+ * prose, which is a mechanism sweep inside a slice that has not started.
+ *
+ * <p><b>And NOT "later", which is how {@link #DEFAULT_DURATION_TICKS}, {@code ScorchStatus.stacks}
+ * and {@code ScorchSinkSignatureTest} each survived a slice.</b> The trigger is exact:
+ *
+ * <blockquote>WHEN IGNITE'S MECHANISM LANDS AND THE COUNT STILL HAS NO READER, THE SWEEP HAPPENS IN
+ * THAT SLICE'S OWN CLEANUP -- NOT A FUTURE ONE.</blockquote>
+ *
+ * By then it is measured from both ends and there is nothing left to wait for.
+ *
+ * <p><b>DO NOT invent a consumer to justify the machinery.</b> "The blast scales with stacks" would
+ * make the count live again, and it is a FEATURE -- adding one to rescue a constant is the tail
+ * wagging the dog, and it would re-introduce the unbounded accumulator that {@code NEXT.md} refused
+ * to declare a ceiling for.
+ *
+ * <h2>TWO DIFFERENT SPECIES LIVE IN {@link #stacksFor}, AND THEY WANT DIFFERENT TREATMENT</h2>
+ *
+ * <ul>
+ *   <li><b>{@link #DAMAGE_PER_STACK}'s VALUE has no consumer at all.</b> Its only arithmetic reader
+ *       is the division in {@link #stacksFor}; every other mention in the repo is prose. Since the
+ *       only reader of that result is {@code stacks <= 0}, and {@code max(1, ...)} returns >= 1 for
+ *       every positive input, <b>2, 7 or 1000 give IDENTICAL production behaviour.</b> This is not
+ *       unreachability -- the line executes on every hit. Its output MAGNITUDE is never read. The
+ *       mutation that proves it: change the constant and nothing reddens except rows asserting the
+ *       number itself.</li>
+ *   <li><b>The {@code max(1, ...)} FLOOR is separately CONTENT-UNREACHABLE, and is KEPT.</b> It can
+ *       only matter for {@code dealt} in {@code (0, 2)}, and nothing produces that today: the
+ *       smallest authored fire amount is {@code 2} ({@code solar_grenade}'s field tick), and the
+ *       mitigation route below needs a scorchable target with defense > 0, which does not exist --
+ *       every mob is defense 0 and nothing can scorch a player. <b>A content author writing
+ *       {@code amount: 1} reaches it immediately</b>, so it owes forward cover rather than
+ *       deletion: it is the only thing between such a hit and no scorch at all.</li>
+ * </ul>
+ *
  * <h2>THE CAP IS WHAT MAKES THE DoT RESPOND TO THE APPLIER -- the job stacks would otherwise have</h2>
  *
  * Percent-max-health scales UP with the pool, so it runs away on a boss. The cap stops it, and a
@@ -287,6 +329,13 @@ public final class Scorch {
      * armoured target {@code Defense.applyDefense(2, 20) = 1.67} -- which floored to 0 stacks, and
      * {@code ScorchStatus.apply} early-returns on {@code stacks <= 0}. <b>The lingering field stopped
      * scorching armoured targets entirely</b>, on shipped content, discoverable only in game.
+     *
+     * <p><b>THAT WORKED EXAMPLE IS CURRENTLY UNREACHABLE, AND SAYING SO IS THE POINT.</b> It needs a
+     * scorchable target with defense > 0; every mob is defense 0 and nothing can scorch a player, so
+     * no live path produces sub-2 {@code dealt} today. The floor is kept as FORWARD COVER, not as a
+     * guard anything currently exercises -- the day a payload authors {@code amount: 1}, or a mob
+     * gains defense, it becomes live again with no other warning. Its only exercise is this unit
+     * test, by construction; do not read the example above as something production reaches.
      *
      * <b>WHY THE OLD ARGUMENT WAS WRONG, WHICH IS NOT THE SAME AS BEING OVERRULED.</b> It said
      * <i>"1 damage must buy nothing rather than rounding up to a stack, or chip damage scorches."</i>
