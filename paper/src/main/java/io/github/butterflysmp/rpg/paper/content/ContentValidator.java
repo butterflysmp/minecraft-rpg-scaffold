@@ -443,6 +443,11 @@ public final class ContentValidator {
      * <p>Only reported when the floor STRICTLY exceeds the authored value. Equality means the author
      * wrote the same number the derivation produces, which is redundant but not wrong, and warning
      * about it would train people to ignore the message.
+     *
+     * <p><b>THIS ADDS A NON-DANGLING PROBLEM TO {@code problems}</b> -- the first of its kind in
+     * that list. The reference resolves, and the effect does not do nothing; it enforces the floor.
+     * That is why the boot summary that counts the list names no class. See the note at the
+     * {@code problems} declaration in {@code RpgPlugin.validateContent} for the argument.
      */
     private void checkCooldownFloor(AbilityDefinition ability, String label, List<String> problems) {
         int floor = CastSpec.minimumCooldownTicks(ability.cast());

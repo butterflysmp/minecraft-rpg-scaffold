@@ -301,6 +301,14 @@ public final class CastExecutor {
         //    the beam under optimal conditions the beam would take about 5 ticks to render, next to
         //    unobservable. The slight delay doesn't matter, especially in combat."
         //
+        // MEASURED 2026-09-10 (GATE-volley.md, V3): THE ESTIMATE ABOVE IS RIGHT, AND THE NUMBER IS
+        // 32 BLOCKS. It is a CLIENT cap, not a setting anything here tunes, so it does not move with
+        // server config. The reasoning stands unchanged -- but note what it now implies, which the
+        // estimate was never precise enough to say: A RAY WHOSE RANGE EXCEEDS 32 DRAWS ONLY ITS
+        // NEAR HALF. It still hits at full range; the beam simply stops. That is invisible from this
+        // file and belongs to whoever authors a `range:` -- see GATE-volley.md V3 for the
+        // consequence, which is content's, not this method's.
+        //
         // MAKING THE RAY HITSCAN TO REMOVE THAT DELAY WOULD REINTRODUCE THE FOLIA REGION PROBLEM
         // THE CHUNK-COLUMN WALK EXISTS TO PREVENT -- see launchRay above and CombatWorld.castRay.
         // The walk is not in the way of the beam; it is what makes a one-hop beam segment legal at

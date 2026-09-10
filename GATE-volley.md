@@ -49,6 +49,25 @@ clean, or every number here is off by a multiplier and reads exactly like a brok
 
 Written before the boot, not after, and none of them is a tick-box.
 
+> ### OUTCOME — RUN 2026-09-10. ALL NINE GREEN, AND THREE ANSWERS OUTGREW THEIR ROWS.
+>
+> A green gate is the headline and it is the least interesting part. **Three rows returned something
+> the row did not ask for, and one returned less than it appears to.**
+>
+> | row | verdict | what it actually established |
+> |---|---|---|
+> | V1, V8, V9 | **PASS** | as written |
+> | **V2** | **PASS / HALF OWED** | counts ticked; **no tooltip text was recorded**, so that half is UNRUN |
+> | **V3** | **PASS, CONDITIONAL** | beams are separate — **but a 32-block client cap means the row's real question was never reached** |
+> | V4 | **PASS** | as written |
+> | V5 | **PASS** | one `Content:` warning, the right one, and **scatter silent** — both halves |
+> | **V6** | **PASS** | **Q4 answers as a DELETION**: `on_shot` is a hook nobody needs |
+> | **V7** | **observed, NOT evidence** | **the fixture forced the result**; Q3 is narrowed to two untested cases |
+>
+> **The two worth carrying out of this gate are V3's cap** — which is content's problem, immediately,
+> before `PLAN-cursed-emerald.md` authors `range: 64` — **and V7's non-result**, which reads like a
+> clean answer and is not one.
+
 ### V1 — the wind-up is visible as a wind-up
 
 Press left-click. Expect a chime, then **a full second of nothing**, then the burst.
@@ -76,6 +95,19 @@ line and Rake's *absence* of one are the observation that feeds the tooltip ruli
 printed number is the authored one, and for Rake nothing is printed at all. This costs one glance
 and it is the only place the player-facing half of that gap is looked at.
 
+> #### RESULT — **counts PASS. THE TOOLTIP HALF IS OWED.**
+>
+> The shot counts ticked. **No tooltip text was recorded**, and by this page's own rule *a figure
+> with a blank field is UNRUN* — so that half is **not passed, it is outstanding.**
+>
+> **IT MUST BE WRITTEN FROM WHAT THE OPERATOR SAW, NOT FROM WHAT THE CODE WOULD PRINT.** V5's ruling
+> already states the derivation (*authored renders; Rake shows no line*). Filling this field in from
+> that is copying the prediction into the observation slot and then citing it as confirmation — the
+> two would agree by construction and the row would stop being able to disagree with the code, which
+> is the only thing it is for.
+>
+> **Owed:** Scatter's cooldown line verbatim, and whether Rake shows one at all.
+
 ### V3 — **figure.** Q2, THE MEASUREMENT NOBODY HAS TAKEN
 
 Rake at a wall, from **40 blocks** and again from **64**. Up to four rays in flight at once, each
@@ -90,6 +122,30 @@ this, and this row is what replaces it.
 
 *If eight at one tick are legible, six at two are safe. If they are a blur, content learns the bound
 before it authors against it rather than after.*
+
+> #### RESULT — **PASS, CONDITIONAL ON THE CLIENT CAP.** And it measured something the row was not asking for.
+>
+> Beams are **distinguishable as separate beams**. The row's question is answered in the direction
+> that makes content's life easy.
+>
+> **But it also put a hard number on `stepRay`'s estimate: PARTICLES STOP RENDERING AT 32 BLOCKS.**
+> That is a client cap, not a setting anyone here tuned. Rake's range is **64**, so **the far half of
+> every beam is never drawn — for anyone, at any settings.**
+>
+> **AND THAT IS WHY THE ROW PASSED FOR A REASON IT WAS NOT TESTING.** It asked whether four
+> overlapping beams *at 64 blocks* are legible. **The overlap happens beyond render distance**, so at
+> the caster the question never arises. What was measured is four beams inside a 32-block window,
+> which is a different and easier question than the one written above.
+>
+> **So Q2 is answered ONLY under the cap.** If render distance is ever raised — a client setting, a
+> resource pack, a future Minecraft default — **Q2 returns unanswered and this row has not covered
+> it.** Do not read the tick as closing the question unconditionally; re-run it if the cap moves.
+>
+> **THE CONSEQUENCE IS CONTENT'S, NOT THIS SLICE'S.** `PLAN-cursed-emerald.md` authors `range: 64`.
+> Its beam will **stop halfway to a target it still damages** — the ray hits, the visual does not
+> reach. The content chat needs this number **before** it authors: either the range matches the
+> visible reach, or the shortfall is a recorded decision rather than a surprise. Noted in that plan
+> beside its own `range` row.
 
 ### V4 — the re-aim and the re-roll
 
@@ -153,12 +209,25 @@ is whether it carries the count on its own. If it does, `on_shot` is a hook nobo
 answer is a deletion rather than an addition.
 
 **Then fire Rake at open air.** On a clean miss the impact plays 64 blocks out in mid-air, where the
-caster almost certainly cannot see it — **so a volley that misses has no per-shot feedback at all.**
-That is the sharpest form of the gap and it will not appear in a staging against a target standing
-still. Hit, then miss; both go in this row.
+caster almost certainly cannot see it.
+
+> **~~so a volley that misses has no per-shot feedback at all~~ — STRUCK, THE PREMISE WAS WRONG.**
+> That sentence reasoned from the impact visual alone and **forgot the beams.** They are drawn from
+> the caster *outward*, inside the 32-block window V3 measured, so they are visible on a miss and
+> **they are the per-shot cue.** The miss half needed no staging of its own; V3's measurement settles
+> it. Left visible rather than deleted because the row was written before the boot, and what it got
+> wrong is the useful part.
 
 *If the answer is "a cue is wanted", `on_shot` is the answer and there is no cheaper one:* the chime
 belongs **at the caster, at fire time**, and an impact visual plays **at the target, at land time**.
+
+> #### RESULT — **PASS. Q4 ANSWERS AS A DELETION.**
+>
+> **Eight shots are countable without reading the damage numbers.** The impact visual carries the
+> count on its own, so **`on_shot` is a hook nobody needs.**
+>
+> Deferring it was the right call and **the outcome is that nothing gets added** — the cheapest
+> possible resolution of a question, and one that only a boot could have produced. Q4 is closed.
 
 ### V7 — **figure.** Q3's observation, taken before anyone rules
 
@@ -168,6 +237,26 @@ Start Rake, then **switch to a different weapon before shot 4.**
 reads whatever is in the hand at that tick. Record the numbers. *"Does a swap cancel the burst" and
 "what do the remaining shots hit for" are the same question, and it is a pricing rule rather than a
 housekeeping one.*
+
+> #### RESULT — **observed: SAME DAMAGE. Q3 is NARROWED AND STILL OPEN, not answered.**
+>
+> **THE FIXTURE FORCED THIS RESULT AND NO SWAP COULD HAVE MOVED IT.** `volley_stone`'s payload is an
+> **authored amount: 4**, captured in the walker's closure. A swap changes what is in the hand; it
+> cannot change a number that was already closed over. So *"same damage"* was guaranteed before the
+> weapon left the hotbar — **a row that could not have come out any other way is not evidence**, and
+> this one reads like a clean answer, which is worse than reading like nothing.
+>
+> What a swap *could* move is `enchantDamagePercent`, `classDamageBonus` and `attackDamage`.
+> **This fixture reads none of them** (see PRECONDITIONS — it is deliberately run clean).
+>
+> **So the pricing risk is confined to exactly two untested cases:**
+>
+> | untested case | why the fixture cannot reach it |
+> |---|---|
+> | a volley whose payload is **`weapon_damage`** rather than an authored amount | `volley_stone` authors `4`; nothing re-reads the weapon at shot time |
+> | a swap **TO AN ENCHANTED WEAPON** (or one carrying a class bonus) | the run is clean by construction, so every multiplier is 1 |
+>
+> Either needs a second fixture. Until one exists, Q3 is open for these two and closed for nothing.
 
 ### V8 — the projectile inner cast is not a rumour
 
