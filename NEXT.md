@@ -9593,6 +9593,38 @@ so even when the reason is good** — the operator should not have to diff to le
 > from a glance at something adjacent to the answer.* **The argument was unaffected, which is exactly
 > what lets this class of error survive**: nothing downstream breaks, so nothing reddens.
 
+### A FIGURE WRITTEN MID-COMMIT DESCRIBES THE TREE BEFORE THE COMMIT, AND NOTHING RE-CHECKS IT
+
+**Measured 2026-09-10, closing the volley slice.** `GATE-volley.md:5` opened with *"The suite passes
+with any of them deleted — **1462** tests"*. The suite is **1467** (853 core / 17 storage / 597
+paper, `./mvnw test`, zero failures).
+
+**The five missing are `VolleyFixtureTest`'s, and they shipped IN THE SAME COMMIT AS THE FILE THAT
+UNDERCOUNTED THEM** (`49e7fd4`). The paragraph was written while the tree still lacked them, and by
+the time the commit closed it was false. **So the figure was never true of any tree that has ever
+existed** — and nothing re-reads a prose number, so it would have stayed plausible indefinitely.
+
+**THIS IS A DIFFERENT MECHANISM FROM THE ONE ALREADY FILED, AND THE DISTINCTION IS THE POINT:**
+
+| | route | false since | what would have caught it |
+|---|---|---|---|
+| `8e8731b`'s **1403** | **FABRICATED** — typed fresh and wrong, a measurement nobody took | always | reading the run |
+| `GATE-volley.md`'s **1462** | **FALSIFIED BY ITS OWN COMMIT** — a correct reading of a tree that stopped existing | the moment it was committed | **nothing available at drafting time** |
+| the **27**-for-**29** plan count | **GLANCED** — read off something adjacent to the answer | always | `grep -c`, which was being *prescribed* in the same sentence |
+
+Same wrong number, same kind of file, three different causes. **Care fixes the first and third. It
+cannot fix the second**, because at the moment of writing the figure was right and the writer had no
+way to know what the commit would still contain.
+
+**How to apply:** **re-read every suite figure from the FINAL verify run, after the last file
+lands** — never from the run that was green when the paragraph was written. Quote the per-module
+breakdown next to the total (`853 / 17 / 597 = 1467`) so a reader can check it by addition instead
+of trusting it. Operational form in `CLAUDE.md`.
+
+**And note where this one was found: by the operator, reading the file.** Nothing in 1467 tests
+reads a prose figure in a markdown document, which is the same property that let the boot summary
+name the wrong class for a full slice.
+
 ### THE FIVE DECISIONS
 
 1. **Q1 — each shot re-aims AND re-rolls.** Operator's. `Caster` carries `critMultiplier` frozen at

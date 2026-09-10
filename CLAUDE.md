@@ -210,6 +210,27 @@ So:
   > `git diff --cached --numstat --diff-filter=A` after staging, so an addition cannot hide inside a
   > list of modifications.
 
+- **ANY FIGURE QUOTING THE SUITE IS RE-READ FROM THE FINAL VERIFY RUN, AFTER THE LAST FILE LANDS** —
+  never from the run that was green when the paragraph was written. Quote the breakdown with it
+  (`853 / 17 / 597`), so the total is checkable by addition rather than on trust.
+
+  > **A FIGURE WRITTEN MID-COMMIT DESCRIBES THE TREE BEFORE THE COMMIT, AND NOTHING RE-CHECKS IT.**
+  > `GATE-volley.md` opened with *"1462 tests"*. The suite was **1467**, and the five that made the
+  > difference were `VolleyFixtureTest`'s — **shipped in the same commit as the file that undercounted
+  > them** (`49e7fd4`). It was never true of any tree, and it stays plausible forever, so no later
+  > edit exposes it.
+  >
+  > **Two routes to the same wrong number, and the remedy is not care:**
+  >
+  > | | route | when it was false |
+  > |---|---|---|
+  > | `8e8731b`'s `1403` | **fabricated** — typed fresh and simply wrong | always |
+  > | `GATE-volley.md`'s `1462` | **falsified by its own commit** — correct when drafted | from the moment it was committed |
+  >
+  > Same wrong number, same kind of file, opposite causes. Care fixes the first; only re-reading
+  > after the last file lands fixes the second. Third in the family is the `27`-for-`29` plan count —
+  > *a figure taken from a glance at something adjacent to the answer.* Full entries in `NEXT.md`.
+
 
 ### EVERY FILTER AND EVERY SCRIPTED EDIT NEEDS A POSITIVE CONTROL
 

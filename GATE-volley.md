@@ -2,8 +2,22 @@
 
 **This file is the source of truth for the volley boot gate's CONTENT.** It is versioned with the
 code because for several behaviours below **these rows are the only check that exists anywhere in
-the project.** The suite passes with any of them deleted — 1462 tests, and not one of them can see
-whether eight beams one tick apart read as eight, as one, or as a flicker.
+the project.** The suite passes with any of them deleted — **1467 tests** (853 core / 17 storage /
+597 paper, `./mvnw test` at the slice's final verify), and not one of them can see whether eight
+beams one tick apart read as eight, as one, or as a flicker.
+
+> **THIS FIGURE READ 1462 UNTIL THE SLICE CLOSED, AND IT WAS NEVER TRUE OF ANY TREE.** It counted
+> the suite *before* `VolleyFixtureTest`'s five rows — which shipped **in the same commit as this
+> file** (`49e7fd4`). **A figure written mid-commit describes the tree before the commit, and nothing
+> re-checks it.** So it was stale the moment it was written, and stale in a way no later edit would
+> have exposed: the number stays plausible forever.
+>
+> Distinct from `8e8731b`'s `1403`, which was typed fresh and simply wrong — **a fabricated
+> measurement.** Same wrong number, same kind of file, **opposite cause**: that one was never true,
+> this one was correct when drafted and falsified by the commit that contained it.
+>
+> **So any figure quoting the suite is re-read from the FINAL verify run, after the last file lands
+> — never from the run that was green when the paragraph was written.**
 
 > ### THE GATE EXISTS IN TWO DOCUMENTS, AND THE OTHER ONE LEADS
 >
