@@ -67,7 +67,7 @@ costs one more shot and turns a single-machine judgement into two points.
 
 | # | action | expect | marks | figure |
 |---|---|---|---|---|
-| **L0** | Fire while looking at a flat wall, from ~3 blocks. Is there a blue blob obscuring your view at the muzzle? | no | figure · **sole witness** for the 0.25-block first sample **AS IT STOOD ON 2026-09-05** — left as a record of what that run witnessed, not updated to the current geometry. The first sample is now **gap + 0.25** from the eye; `GATE-beam-gap.md` **G5a** re-reads this row comparatively | **NOT a clean "no". Operator, verbatim: *"a little clutter when casting on All; Decreased was much better. No need to change."*** ACCEPTED, MEASURED IMPERFECTION — see the coupling below, this is the baseline a density retune starts from |
+| **L0** | Fire while looking at a flat wall, from ~3 blocks. Is there a blue blob obscuring your view at the muzzle? | no | figure · **sole witness** for the 0.25-block first sample **AS IT STOOD ON 2026-09-05** — left as a record of what that run witnessed, not updated to the current geometry. The first sample is now **gap + 0.25** from the eye. **RE-READ AS `GATE-beam-gap.md` G5a, 2026-09-10: BETTER — answered by blanket, per-setting figures never taken. This row's baseline is VOID; see the coupling below.** | **NOT a clean "no". Operator, verbatim: *"a little clutter when casting on All; Decreased was much better. No need to change."*** ACCEPTED, MEASURED IMPERFECTION — see the coupling below, this is the baseline a density retune starts from |
 | **L1** | What colour is the beam? | lapis blue | figure · the only check that the authored DustOptions reached the client | **"lapis blue".** The authored `Color.fromRGB(40, 90, 240)` reached the client |
 | **L2** | Fire a full-range shot across open ground. Density: too sparse / right / too busy? | *figure* | figure · **judge with L0, see the coupling below** | **"right" — on BOTH All and Decreased.** No tuning. 4 per block stands |
 | **L3** | How thick is the beam? (authored size 1.2 against vanilla's 1.0) | *figure* | figure | **"right".** Size 1.2 stands |
@@ -190,6 +190,21 @@ than left as a constant in Java.
 > > comes back BETTER, this baseline is VOID** and any future `samples_per_block` retune starts from
 > > somewhere new. Do not carry the 2026-09-05 reading forward as the current state without checking
 > > G5a's result first.
+> >
+> > ### **IT CAME BACK BETTER. THIS BASELINE IS VOID — 2026-09-10.**
+> >
+> > **VOID ON A RULING, NOT ON A REMEASUREMENT, AND A RETUNER NEEDS TO KNOW WHICH.** G5a was
+> > **answered by blanket**: the operator ruled *"it's much better"* and adopted `BEAM_ORIGIN_GAP`
+> > at 1.0. **The per-setting BETTER/SAME/WORSE figures G5a asks for were never recorded** — not on
+> > `All`, not on `Decreased`.
+> >
+> > So: *"a measured imperfection rather than a clean muzzle"* **no longer describes the current
+> > state**, and **nothing has replaced it with a measurement.** A future `samples_per_block` retune
+> > is starting from **a judgement that the muzzle improved** and from no figure at all.
+> >
+> > **That is a weaker starting point than the 2026-09-05 reading it replaced**, which had two named
+> > settings behind it — and it is stated here rather than left for someone to infer from a green
+> > tick.
 >
 > So the coupling has bitten before anyone touched a number. A future *"it's too sparse, raise
 > `samples_per_block`"* would move the first sample ~~**closer than 0.25 blocks from an eye that is

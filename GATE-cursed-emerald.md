@@ -94,7 +94,7 @@ Written before the boot, not after, and none of them is a tick-box.
 > | **CE1** | **PASS** | chime, a full second, then six shots |
 > | **CE2** | **PASS** | six numbers, countable, crits legible by colour |
 > | ~~CE3~~ | — | deleted before the run; `GATE-volley.md` V2 had answered the harder version |
-> | **CE4** | **FINDING — RE-RUN OWED, no tick box** | *"slightly hard to see at BOTH ranges."* Not a pass, and **not a row that can be ticked here** — the re-run is `GATE-beam-gap.md` **G5b**, which is the authority. See below. |
+> | **CE4** | **FINDING — RESOLVED ELSEWHERE, no tick box** | *"slightly hard to see at BOTH ranges."* Fixed by `BEAM_ORIGIN_GAP`; **re-run recorded as `GATE-beam-gap.md` G5b — BETTER, answered by blanket.** Not a row that can be ticked here; G5b is the authority. See below. |
 > | **CE5** | **PASS — RUN, MATCHED PREDICTION** | and **40 mana was MEASURED, NOT APPROVED** |
 > | **CE6** | **PASS** | confirmation, not discovery — V4 is the mechanism's witness |
 > | **CE7** | **UNCHANGED, AS FORCED** | real, and **not evidence about volley pricing** |
@@ -210,7 +210,7 @@ the Lapis Staff draws one at 1.2. ~~If the answer is "yes, blinding", `emerald_b
 `samples_per_block` is the lever, and it is a content fix.~~ **STRUCK — the row was run and that
 sentence is wrong in both halves. It is not a content fix, and the density is not the lever.**
 
-> ## CE4 — **RESULT: FINDING. RE-RUN OWED, NOT GREEN.**
+> ## CE4 — **RESULT: FINDING. ~~RE-RUN OWED, NOT GREEN.~~ RESOLVED 2026-09-10 — see the foot of this section.**
 >
 > **Observed 2026-09-10:** *"slightly hard to see at **both** ranges"* — 3 blocks and 30.
 >
@@ -273,7 +273,9 @@ sentence is wrong in both halves. It is not a content fix, and the density is no
 >
 > - **CE4 IS RE-RUN AFTERWARDS, at both 3 and 30.** The current observation **expires the moment the
 >   geometry changes.** This row is **RE-RUN OWED**, not green, and must not be ticked by the fix
->   landing.
+>   landing. — **CONSTRAINT MET 2026-09-10:** the re-run happened as G5b and the row was **not**
+>   ticked by the fix landing. It was closed by a recorded result, which is the distinction this
+>   line was written to protect.
 >
 >   > ### THIS IS A POINTER, NOT A ROW. THE AUTHORITY IS `GATE-beam-gap.md` **G5b**.
 >   >
@@ -287,6 +289,21 @@ sentence is wrong in both halves. It is not a content fix, and the density is no
 >   > **Updating this line is part of G5b's own completion**, not a later housekeeping task: G5b does
 >   > not count as run until this pointer names its result. **Two files move in one session or they
 >   > drift** — `GATE-ignite.md` records two instances of exactly that in three days.
+>   >
+>   > ---
+>   >
+>   > ### RESOLVED 2026-09-10. **CE4 IS NO LONGER RE-RUN OWED.**
+>   >
+>   > **G5b's result: BETTER — and ANSWERED BY BLANKET.** The operator ruled *"it's much better"* and
+>   > adopted `BEAM_ORIGIN_GAP` at 1.0. **The four figures G5b asked for — 3 and 30, each on `All`
+>   > and `Decreased` — were never taken**, and the gate page's database is empty.
+>   >
+>   > **SOFTER THAN THE LAPIS WITNESS, for the reason this row flagged in advance:** CE4's own
+>   > pre-state records **no Particles setting anywhere in this file**, so a re-run could not have
+>   > been compared cleanly against it even with full figures. That caveat is why G5a and not G5b is
+>   > the better evidence that the gap helped.
+>   >
+>   > **This line is still a status, not a tick.** The result lives in G5b.
 > - **THE LAPIS STAFF IS RE-CHECKED**, because a gap changes it too. That is the *point* of the fix,
 >   and it is also precisely what makes this not a content slice: a content commit titled *"emerald"*
 >   must not alter another weapon's appearance.

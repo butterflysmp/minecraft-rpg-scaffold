@@ -274,10 +274,19 @@ public final class CastExecutor {
     /**
      * How far from the ray's ORIGIN the beam starts being drawn. The first blocks are skipped.
      *
-     * <p><b>PROVISIONAL.</b> {@code GATE-beam-gap.md} is the authority that rules it -- specifically
-     * G5a (the lapis muzzle, before/after, on both Particles settings) and G5b (CE4's re-run). Until
-     * that gate runs this number is nobody's: changing it is housekeeping, not a decision. When the
-     * gate rules it, this paragraph is replaced by an ADOPTED line, on the {@code Ignite} precedent.
+     * <p><b>ADOPTED 2026-09-10</b>, on the gate. It began PROVISIONAL -- {@code cfde822}'s number
+     * for {@code cfde822}'s geometry -- with {@code GATE-beam-gap.md} named as the authority that
+     * would rule it. The gate ran, the operator ruled: <i>"it's much better."</i> An adopted value
+     * changed is a DECISION; a provisional one changed is HOUSEKEEPING, which is why the label
+     * moves rather than being left to disclaim something already settled.
+     *
+     * <p><b>AND THE EVIDENCE CLASS IS NAMED, BECAUSE "1.0, ADOPTED" WITH NO SOURCE IS A MAGIC
+     * NUMBER.</b> This was adopted on <b>the operator's ruling from a boot ANSWERED BY BLANKET</b>
+     * -- two sentences covering the whole gate -- <b>not on a per-setting measurement.</b> G5a's
+     * design asked for BETTER/SAME/WORSE on {@code All} and {@code Decreased} separately, and those
+     * figures were never taken. So: the direction is ruled and solid; the MAGNITUDE has never been
+     * measured against an alternative. Nobody has compared 1.0 to 0.5 or 1.5. A future retune has a
+     * ruling to argue with, not a number.
      *
      * <p><b>WHY IT EXISTS.</b> {@code GATE-cursed-emerald.md} CE4 measured that the Cursed Emerald's
      * beam is hard to see through at BOTH 3 and 30 blocks. Ten times the particle count changing

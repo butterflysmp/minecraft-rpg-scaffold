@@ -63,6 +63,32 @@ blinding"* — **true, and measuring nothing.** Keep it well under 3.
 
 Written before the boot, not after, and none of them is a tick-box.
 
+> ### RUN 2026-09-10. **THE GAP IS ADOPTED AT 1.0 — AND THE WHOLE GATE WAS ANSWERED BY BLANKET.**
+>
+> **The operator's ruling: *"it's much better."*** That is his call on a feel question and it is
+> final. `BEAM_ORIGIN_GAP` is **ADOPTED**.
+>
+> **TWO SENTENCES CARRY THIS ENTIRE GATE** — *"boot gates all green"* and *"it's much better"* — and
+> the gate page's database is **empty**, so there is no per-row record behind them. **Every row below
+> is therefore recorded PER-ROW IN SHAPE AND BLANKET IN EVIDENCE, and each says which.**
+>
+> | row | verdict | evidence class |
+> |---|---|---|
+> | **G-pb** | **PASS** | blanket — **but independently implied**, see below |
+> | **G5a** | **BETTER** | **blanket** — the ruling, not the row's figures |
+> | **G5b** | **BETTER** | **blanket**, same sentence; softer than G5a |
+> | **G5c** | **PASS** | blanket, and **fair here** — two binary rows, nothing broke |
+> | **G5d** | **GREEN** | **from the BYTES, not the boot** — a different kind |
+>
+> **WHY THIS DISTINCTION IS NOT PEDANTRY, AND IT IS G5a'S OWN DESIGN THAT MAKES IT MATTER.** That row
+> exists because **SAME on `All` is a FAILING result** — and *a boot where nothing looks broken reads
+> as "green" whether the muzzle improved or was unchanged.* **That is exactly how L0's "no need to
+> change" got recorded and was never "no blob."** A file asserting *BETTER on All, BETTER on
+> Decreased* would be asserting a measurement nobody took, and the next person retuning
+> `samples_per_block` would start from it.
+>
+> **So: the direction is ruled. The per-setting magnitudes do not exist.**
+
 ### G-pb — **does the gap EXIST? figure.** Lapis Staff, flush against a wall
 
 **Weapon: the LAPIS STAFF** (`/rpg give lapis_staff`), **both shots, on `All` AND `Decreased`.**
@@ -97,6 +123,18 @@ Written before the boot, not after, and none of them is a tick-box.
 > `samples_per_block`. Near-field particles render large, so this should be unambiguous — **but if
 > four reads as ambiguous in practice, the control wants a longer staging** (L6's five blocks gives
 > sixteen), **and that is a finding about this row rather than about the gap.**
+
+> #### RESULT — **PASS, ANSWERED BY BLANKET.** Neither the flush shot nor its control was recorded
+> as a figure.
+>
+> **BUT THIS ROW IS NOT ISOLATED, WHICH IS WHY ITS BLANKET IS ACCEPTABLE WHERE G5a'S STILL OWES A
+> CAVEAT.** G5a and G5b came back **better** — and **a gap that did not exist could not have improved
+> the muzzle.** Existence is therefore **independently implied by the effect rows**, from a different
+> direction than this row measures it.
+>
+> **Two rows agreeing from different directions is the opposite of a control succeeding for the wrong
+> reason.** The Solar Lance confound this row was built to exclude is excluded by that too: a
+> suppressed beam and L11's beamless cast look alike, but only one of them makes the muzzle better.
 
 > **WHY A WALL AND NOT A MOB.** The gap is 1.0, so this row needs a hit point **under one block from
 > the eye**. **Entity collision keeps you further away than a wall does, and the distance is not
@@ -140,6 +178,19 @@ reading — quoted here so the runner does not have to fetch it:
 > measured imperfection rather than a clean muzzle"*, and a future `samples_per_block` retune would
 > then be starting from somewhere new. Say so where the old baseline is stated.
 
+> #### RESULT — **BETTER. ANSWERED BY BLANKET: THE OPERATOR'S RULING, NOT THIS ROW'S FIGURE.**
+>
+> *"It's much better."* **The per-setting BETTER/SAME/WORSE verdicts this row asks for were never
+> recorded** — not on `All`, not on `Decreased`, and the gate page's database is empty.
+>
+> **THE ROW'S DISCRIMINATING HALF THEREFORE DID NOT RUN.** *SAME on `All` is a FAILING result* was
+> the whole design, and a blanket "green" cannot distinguish BETTER from SAME. The ruling is a
+> judgement that the muzzle improved; it is not the two-figure comparison written above.
+>
+> **THE L0/L2 BASELINE IS VOID — ON BLANKET EVIDENCE.** Recorded in `GATE-lapis-staff.md` where the
+> old baseline is stated, and marked there as voided by a **ruling rather than a remeasurement**, so
+> a future retune knows which it is starting from.
+
 ### G5b — **CE4's RE-RUN, at 3 and 30. figure**
 
 Fire the Cursed Emerald at both distances, on **`All` AND `Decreased`**, both recorded.
@@ -158,6 +209,17 @@ Fire the Cursed Emerald at both distances, on **`All` AND `Decreased`**, both re
 `GATE-cursed-emerald.md`'s **CE4 line** has been updated to point at the result. **Two files move in
 one session or they drift** — `GATE-ignite.md` records two instances in three days.
 
+> #### RESULT — **BETTER. ANSWERED BY BLANKET, under the same sentence as G5a.**
+>
+> **Four verdicts were called for — 3 and 30, each on `All` and `Decreased` — and none was taken.**
+>
+> **SOFTER THAN G5a EITHER WAY, for the reason this row was written to flag:** CE4's pre-state
+> records **no Particles setting at all**, so even a full set of figures here could not have been
+> compared cleanly against it. A blanket answer inherits that weakness and adds its own.
+>
+> **The back-edit is done**, which is what closes this row: `GATE-cursed-emerald.md`'s CE4 line now
+> names this result and its evidence class, and is no longer RE-RUN OWED.
+
 ### G5c — **lapis L6/L7 regression only. LABELLED NOT A GAP WITNESS**
 
 Re-run `GATE-lapis-staff.md` L6 (wall at 5 blocks) and L7 (mob at 10 blocks) and confirm they still
@@ -169,6 +231,19 @@ pass.
 > made** — a control that succeeds for the wrong reason if anyone reads it as evidence.
 >
 > Keep it as a cheap regression check. **Do not record it as the lapis witness. G5a is.**
+
+> #### RESULT — **PASS. Answered by blanket, and THIS IS THE ONE ROW WHERE THAT IS A FAIR READING.**
+>
+> Two **binary regression** rows — the beam stops at the wall, the beam stops at the mob — and
+> nothing broke. *"Boot gates all green"* covers a binary regression check in a way it cannot cover
+> a comparative judgement.
+>
+> **RECORDED AS ONE ANSWER, NOT TWO.** L6 and L7 were not observed separately, and writing two
+> verdicts would manufacture a distinction the evidence does not carry.
+>
+> **STILL NOT A GAP WITNESS.** Both observe the beam's END. Their passing confirms the paper
+> prediction that a start-gap cannot move an end — which is worth having, and is not evidence about
+> the gap.
 
 ### G5d — **the prose corrections landed AND are reasoned**
 
@@ -185,10 +260,31 @@ Confirm each of the four, and that each records **WHY** it was wrong rather than
 **A row that can only be ticked from a diff is still a row**, and it is here because falsified gate
 prose is a thing this repo sweeps for and has lost to before.
 
+> #### RESULT — **GREEN FROM THE BYTES, NOT FROM THE BOOT.** The only row here with hard evidence,
+> and it is **a different kind** from the four above.
+>
+> All four corrections verified by reading them at `970aea8`, plus the sweep that was owed:
+> `grep -c "the rest of this file"` returns **0**, so the completeness claim that could not be
+> honoured is gone rather than repaired.
+>
+> **This row could never have been answered by a boot**, which is why its evidence is stronger than
+> every other row's here and why the two must not be added together.
+
 ---
 
-## THE SLICE DOES NOT CLOSE UNTIL EVERY ROW RESOLVES
+## ~~THE SLICE DOES NOT CLOSE UNTIL EVERY ROW RESOLVES~~ — **CLOSED 2026-09-10**
 
-…**and until `GATE-cursed-emerald.md`'s CE4 pointer has been updated to the result.** CE4 is
-currently **RE-RUN OWED**, which is a status, not a tick — it must not be marked green by this
-fix merely landing.
+**What closed it:** the operator's ruling (*"it's much better"*) adopting the gap at **1.0**, a
+blanket-green boot across G-pb/G5a/G5b/G5c, and G5d verified from the bytes.
+`GATE-cursed-emerald.md`'s CE4 pointer has been updated and **is no longer RE-RUN OWED**.
+
+> **CLOSED IS NOT THE SAME AS FULLY MEASURED, AND THIS FILE SAYS SO RATHER THAN LETTING A GREEN
+> IMPLY IT.** Four of the five rows were answered by blanket. **The gap's DIRECTION is ruled; its
+> MAGNITUDE has never been compared against an alternative** — nobody has looked at 0.5 or 1.5, and
+> G5a's per-setting figures do not exist. A future retune argues with a ruling, not with a
+> measurement.
+>
+> **These stay open and are NOT closed by this slice's green:** the Cursed Emerald's **40 mana**
+> (MEASURED, NOT APPROVED, no deadline), the **tooltip ruling** (older and larger than volleys), and
+> **Q3's two untested volley-pricing cases** — a `weapon_damage` payload and a swap to an enchanted
+> weapon.
