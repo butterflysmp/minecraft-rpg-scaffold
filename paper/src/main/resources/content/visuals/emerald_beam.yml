@@ -1,0 +1,47 @@
+# The Cursed Emerald's beam: the line itself, drawn down each chunk-column segment as the ray
+# walks it. Id is the filename: emerald_beam. Six of these are drawn per cast, two ticks apart.
+#
+# `samples_per_block` IS READ ONLY BY presentAlong. A visual drawn with plain present() ignores it
+# completely. It is authored here because this file is only ever used as a beam.
+#
+# THE `4` IS EXACT, NOT EYEBALLED. BeamVisuals.drawTrail's `density` parameter is documented
+# "particles per block" and cfde822's call site passes 4. lapis_beam.yml landed on the same figure
+# independently.
+#
+# A DENSITY-BASED VISUAL DEGRADES WORSE THAN A COUNT-BASED ONE under the client's Particles video
+# setting: a burst thinned to half its flames is still a burst, but a LINE thinned to half its
+# samples stops being a line and becomes a dotted trail of unrelated specks. So ANY DENSITY FIGURE
+# RECORDED FOR THIS FILE MUST NAME THE PARTICLES SETTING IT WAS JUDGED ON -- a density with no
+# setting attached is a measurement missing half its units. The 4 above is inherited arithmetic,
+# not a judgement, and has not yet been judged on any setting.
+#
+# THE BEAM IS ONLY EVER 32 BLOCKS LONG, AND THAT IS A MEASURED CHOICE UPSTREAM. GATE-volley.md V3
+# measured that PARTICLES STOP RENDERING AT 32 BLOCKS on the client -- so cursed_emerald.yml's
+# range was ruled to 32 to match, on the principle that visible reach equals real reach. A longer
+# range would draw only its near half here while the ray still hit at full distance.
+#
+# `speed` IS INERT FOR DUST -- it is Bukkit's `extra` and DUST ignores it entirely. Authored anyway,
+# per the standing rule that an OMITTED speed means 1.0 and not 0.0, so the next reader is not left
+# working out whether the absence was a choice.
+#
+# `count: 1` is per SAMPLE POINT, not per beam -- one dust at each of the ~128 points down a
+# 32-block shot.
+#
+# PARTICLE-ONLY, NO SOUND STEP, AND THAT IS ENFORCED RATHER THAN CONVENTIONAL: ContentValidator
+# refuses a sound inside a beam, because presentAlong runs once per CHUNK-COLUMN SEGMENT, so a
+# sound here would play one to three times per shot depending on which way the player was facing.
+# cfde822's per-shot chime is dropped rather than hidden here -- see the note in
+# weapons/cursed_emerald.yml.
+#
+# Colour is cfde822's Color.fromRGB(40, 220, 90). Size is 1.0, cfde822's, and deliberately SLIMMER
+# than lapis_beam's 1.2 -- six of these overlap in one cast where the Lapis Staff draws one.
+
+steps:
+  - type: particle
+    particle: DUST
+    color: [40, 220, 90]   # Color.fromRGB(40, 220, 90) -- emerald green
+    size: 1.0
+    count: 1
+    spread: 0.0
+    speed: 0.0             # inert for DUST; authored so its absence is not read as a choice
+    samples_per_block: 4

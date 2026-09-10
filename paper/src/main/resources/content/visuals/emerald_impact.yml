@@ -1,0 +1,54 @@
+# Where the Cursed Emerald's beam lands. Id is the filename: emerald_impact. SIX OF THESE PLAY PER
+# CAST, two ticks apart -- on_hit fires per shot under the volley wrapper, not once per volley.
+#
+# ITS OWN FILE, NOT SHARED WITH lapis_impact. Borrowing that one would make this weapon the second
+# consumer of numbers tuned for the first -- exactly the trap ember_burst sprang on the Flint Staff,
+# where a count retuned 30 -> 10 for the Ability Stone was silently inherited by a weapon that had
+# nothing to do with it. A SHARED VISUAL IS A COUPLING AND THE COUPLING IS INVISIBLE AT BOTH ENDS.
+# It matters more here than it did there: six plays per cast means any figure tuned for a
+# single-shot weapon arrives six times over.
+#
+# The DUST carries the SAME colour as emerald_beam, deliberately: the burst should read as the beam
+# arriving rather than as a separate effect. If the beam's colour is ever retuned, this must move
+# with it -- the two are one visual to the eye and two files on disk.
+#
+# COUNTS ARE DELIBERATELY LOW -- 8 DUST AND 4 HAPPY_VILLAGER AGAINST lapis_impact's 16 AND 10 --
+# BECAUSE SIX OF THESE STACK IN 10 TICKS AT NEARLY ONE POINT. A per-shot burst tuned to look right
+# alone is a wall of particles when six of them land on top of each other, and CE3 has to read six
+# bare damage numbers through whatever this draws. If CE3 comes back "I could not read them", THIS
+# FILE IS THE FIRST THING TO THIN, before anything is done to the volley's timing.
+#
+# IT PLAYS ON A MISS TOO. stepRay detonates at the end of the aim when nothing is struck, so a
+# missed volley bursts in mid-air at the end of its range -- inherited behaviour, shared by every
+# ray weapon, deliberately not changed from a content slice (Q5, ruled).
+#
+# AT RANGE 32 THOSE BURSTS LAND AT THE PARTICLE RENDER CAP, WHICH IS A DIFFERENT SITUATION FROM THE
+# ONE THE PLAN REASONED ABOUT. The plan assumed range 64 and concluded six mid-air bursts would be
+# CERTAINLY INVISIBLE to the caster. At 32 they land exactly at the edge of what the client draws,
+# so they are MARGINALLY visible -- which is neither the plan's answer nor its opposite, and is why
+# gate row CE8 exists rather than the reasoning being carried forward with the number changed under
+# it.
+#
+# `speed` is authored explicitly on both steps. It is INERT on the DUST (see emerald_beam.yml) and
+# REAL on HAPPY_VILLAGER, where 0.0 keeps the motes at the impact point rather than drifting.
+# Neither may be omitted: the schema default is 1.0.
+#
+# HAPPY_VILLAGER is cfde822's, and it is the reason the impact reads as green rather than white --
+# it renders as the green sparkle used for villager trades. Verified present in org/bukkit/Particle
+# on the pinned paper-api 26.1.2 jar, with END_ROD (which lapis_impact already ships) as the
+# control.
+
+steps:
+  - type: particle
+    particle: DUST
+    color: [40, 220, 90]
+    size: 1.0
+    count: 8
+    spread: 0.25
+    speed: 0.0    # inert for DUST
+
+  - type: particle
+    particle: HAPPY_VILLAGER
+    count: 4
+    spread: 0.2
+    speed: 0.0    # real here -- 0.0 keeps the motes at the point

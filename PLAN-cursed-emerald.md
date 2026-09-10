@@ -1,7 +1,21 @@
 # PLAN — Cursed Emerald (port from cfde822)
 
-**Status: ACCEPTED IN SHAPE by the feature chat. Two things changed. The content is BLOCKED behind
-the wrapper slice and must not be authored before it ships.**
+**Status: AUTHORED. The wrapper shipped as PR #63 (`ab0739a`) and all five content files landed
+together against it. Four of the five open questions are closed; Q3 is narrowed and still open.**
+
+> ### WHAT THE WRAPPER SLICE AND ITS GATE CHANGED IN THIS PLAN — read before the rest
+>
+> The grammar arrived **exactly as sketched** (`windup_ticks`, `shots`, `interval_ticks`, `of:`), so
+> the YAML below parses as written. What moved is the numbers and the rulings:
+>
+> | | plan said | shipped as | why |
+> |---|---|---|---|
+> | `range` | **64** | **32** | **Operator ruling on a MEASUREMENT.** `GATE-volley.md` V3 measured that particles stop rendering at **32 blocks** — a client cap. 64 would draw half a beam while the ray still hit. The ruling is **visible reach equals real reach**. |
+> | `cooldown_ticks` | **0**, guard-owned | **30** | The wrapper derives the floor and `max(authored, derived)` enforces it either way, so 30 is redundant *as a guard*. Authored anyway for two other reasons — the tooltip renders the authored value, and shipped content must not carry a permanent expected boot warning. |
+> | the in-flight guard | a bespoke `ActiveCasts` set | **a derived cooldown floor** | The property was right and the remedy was not. See the corrected ruling section below. |
+> | the per-shot chime | needs an `on_shot:` hook | **dropped** | Gate V6 ran the row and **refused the hook with evidence.** |
+>
+> **Q1, Q2, Q4 and Q5 are closed — do not re-litigate them.** Q3 is narrowed to two untested cases.
 
 Reviewed against `origin/master` at `24f9796`. **That commit is Ignite's merge — master moved
 during this exchange**, and every citation below has been re-checked there rather than carried
@@ -102,7 +116,7 @@ cast:
   interval_ticks: 2
   of:
     type: ray
-    range: 64
+    range: 32          # SHIPPED AS 32, not the 64 this sketch asked for -- see the header table
     beam: emerald_beam
 ```
 
@@ -130,7 +144,18 @@ Under this ruling it decides a number, and it must be answered in that light.
 
 **Q3 — What cancels a burst in flight? NOW A PRICING QUESTION, NOT A HOUSEKEEPING ONE. See below.**
 
-**Q2 — Do we actually need the walking ray here, or is true hitscan available? STILL OPEN.**
+**Q2 — CLOSED BY THE RANGE RULING, NOT BY OBSERVATION, AND THE DISTINCTION IS THE POINT.**
+`GATE-volley.md` V3 measured the client's particle cap at **32 blocks** and the range was ruled to
+match. **At range 32 the question cannot arise**: the plan's worry was three or four rays in flight
+down a 64-block line, and V3 established that the overlap it was written about happens *beyond
+render distance* — so V3 itself **passed for a reason it was not testing.** With visible reach and
+real reach equal, there is no far half in which rays can pile up unseen.
+
+**IF THE CLIENT CAP EVER RISES, THIS REOPENS.** Q2 is answered only under the cap, and a longer
+range would restore exactly the unwatched condition the plan named.
+
+*The original question, kept because it states what had to be measured:*
+**Do we actually need the walking ray here, or is true hitscan available?**
 **The reviewer's answer: this cannot be settled from the code — it needs a measurement.**
 `stepRay`'s comment records the operator's reasoning for accepting the walk, and it is sound *for
 the case it was written against*: one shot, 26 blocks, *"about a tick"* to the caster and *"about
@@ -157,9 +182,28 @@ the remaining shots hit for" are the same question. **Answer it as a pricing rul
 rule** — and note that the *only* reason it looks like a design choice rather than an exploit is
 that PvP is out of scope.
 
-**Q4 and Q5 — DEFERRED TO THE WRAPPER'S BRIEF.** The reviewer will rule both there, since each
-depends on grammar that does not exist yet. Kept below unchanged, as the statement of what has to
-be ruled.
+**Q4 and Q5 — BOTH RULED WITH THE WRAPPER'S GATE. Kept below unchanged, as the statement of what
+had to be ruled.**
+
+> **Q4 — RULED: `on_cast` FIRES ONCE PER VOLLEY, AND `on_shot` IS NOT COMING. THE ANSWER WAS A
+> DELETION.** `GATE-volley.md` V6 asked whether shots are countable *without* reading the damage
+> numbers. They are — `on_hit` fires per shot and the impact visual carries the count on its own —
+> so the hook the plan asked for is unnecessary. **`on_cast` admits VISUALS ONLY**; `AbilitySchema`
+> throws by name for any other effect type there.
+>
+> **So cfde822's per-shot chime (0.4 / 1.6) has no home and is DROPPED, not deferred.** Recorded as
+> **refused with evidence**: the row that would have justified the hook was run and said the hook is
+> unnecessary. That is a different thing from a gap, and the file says so at the field.
+>
+> **Q5 — RULED: INHERIT THE MISS BEHAVIOUR, NO CHANGE.** `stepRay`'s detonate-on-miss is shared by
+> **every** ray weapon; changing it from inside a content slice would alter the Lapis Staff from a
+> commit whose title says *"emerald"*.
+>
+> **AND THE PLAN'S REASONING FOR THIS ROW IS RE-DERIVED RATHER THAN CARRIED FORWARD, BECAUSE THE
+> NUMBER MOVED UNDER IT.** The note below says *"six mid-air bursts at 64 blocks"* and concluded the
+> caster would certainly not see them. **At range 32 they land AT THE CAP EDGE — marginally visible
+> rather than certainly invisible**, which is neither the plan's answer nor its opposite. New gate
+> row **CE8** takes the observation; the old reasoning is not evidence for the new range.
 
 **Q4 — Does the wrapper fire `on_cast` once, or once per shot?**
 `cfde822` plays two distinct sounds: one chime at wind-up start (`0.6`/`0.7`) and one per shot
@@ -200,10 +244,13 @@ triggers:
     description:
       - "Channel, then loose six"
       - "bolts down your line of sight."
-    cooldown_ticks: 0      # explicit — the guard is the wrapper's. See the note below.
+    cooldown_ticks: 30     # SHIPPED AS 30, not the 0 this sketch asked for. It equals the derived
+                           # floor (20 + 5x2). Redundant as a guard -- max(authored, derived)
+                           # enforces it either way -- and authored for the tooltip and to avoid a
+                           # permanent boot warning. See the corrected ruling below.
     cost:
       resource: mana
-      amount: 40
+      amount: 40           # PLACEHOLDER, re-decided from CE5's observation
     on_cast:
       - { type: visual, visual_id: emerald_windup }
     cast:
@@ -213,7 +260,7 @@ triggers:
       interval_ticks: 2
       of:
         type: ray
-        range: 64
+        range: 32          # SHIPPED AS 32 -- particles cap at 32 blocks (GATE-volley.md V3)
         beam: emerald_beam
     on_hit:
       - { type: visual, visual_id: emerald_impact }
@@ -332,9 +379,34 @@ reddens: no test knows the two numbers are meant to be equal, and `windup_ticks`
 `cooldown_ticks` sit in one file with no stated relationship between them. **Anyone tuning the
 wind-up breaks it, silently, and the breakage is a damage figure rather than a crash.**
 
-**RULING: the wrapper refuses to start while one volley is in flight.** A real guard, which is what
-the source had. This is the same species as `AN INVARIANT ONLY HOLDS WHILE THE THING THAT MAKES IT
-HOLD IS STATED` — the derivation existed only in a plan document, and a plan is not a mechanism.
+**RULING AS WRITTEN: the wrapper refuses to start while one volley is in flight.** A real guard,
+which is what the source had. This is the same species as `AN INVARIANT ONLY HOLDS WHILE THE THING
+THAT MAKES IT HOLD IS STATED` — the derivation existed only in a plan document, and a plan is not a
+mechanism.
+
+> ### WHAT SHIPPED — THE PROPERTY WAS RIGHT AND THE REMEDY WAS NOT
+>
+> **The diagnosis above is correct and is why the plan's `cooldown_ticks: 30` was refused.** The
+> remedy is not what was built. An `ActiveCasts` set is new mutable state with a lifecycle and every
+> abort route to clean up — a guard that can **leak**.
+>
+> **`CastSpec.Volley` derives the floor from the three numbers it already owns**, and
+> `AbilityService` stamps `max(authored, derived)` **last**. No new state, no lifecycle, no leak
+> surface, and **the two durations cannot drift apart because there is only one of them.** A
+> derivation that cannot drift beats a guard that can leak — strictly better, not merely smaller.
+>
+> **This is the named instance of `STATE THE PROPERTY; LET THE REMEDY BE CHOSEN AGAINST THE
+> MATERIAL`** (`NEXT.md`). The property — *these two durations cannot drift apart* — is the durable
+> half and survived being satisfied a different way. The remedy prescribed alongside it was a design
+> decision made before anyone had looked at the material.
+>
+> **AND THE CONSEQUENCE FOR THIS FILE'S OTHER RECOMMENDATION:** the plan then said to author
+> `cooldown_ticks: 0` because *"the guard is the wrapper's"*. **That is now wrong for a reason the
+> plan could not have known**, and the weapon ships **30**. Authoring below the floor emits a boot
+> warning by design — `volley_stone` authors 0 *deliberately*, because it is a test instrument and
+> that warning is its witness — and **shipped content must not carry a permanent expected warning**.
+> The tooltip renders the authored value, so 0 would also print no cooldown line on a weapon whose
+> real guard is 30.
 
 ---
 
@@ -346,12 +418,12 @@ arithmetic, the rest are `cfde822`'s.
 | value | figure | source |
 |---|---|---|
 | damage per shot | **27** | **Operator, this session.** NOT `cfde822`, which was `scalePower(42, level)` — 42 at L1, 100 at L50 — on a gear-score curve with nothing to hang it on here. |
-| range | **64** — **see the measurement below before authoring this** | **Operator, this session.** NOT `cfde822`'s `132.0`, which was matched to a weapon that does not exist in this repo. |
+| range | **32** — *was 64 in this plan* | **Operator ruling, on GATE-volley.md V3's MEASUREMENT** — particles stop rendering at 32 blocks, so visible reach now equals real reach. NOT `cfde822`'s `132.0`, which was matched to a weapon that does not exist in this repo. |
 | shots | 6 | `CURSED_EMERALD_SHOT_COUNT` |
 | interval | 2 ticks | `CURSED_EMERALD_SHOT_INTERVAL` |
 | wind-up | 20 ticks | `CURSED_EMERALD_WINDUP_TICKS` |
 | mana | 40 | `CURSED_EMERALD_MANA_COST`. **The one number nobody re-decided — see below.** |
-| cooldown | **none — an in-flight guard instead** | **RULED BY THE REVIEW.** See below; the first draft's derived `30` was a coincidence dressed as a guard. |
+| cooldown | **30 authored, equal to the derived floor** | **The review refused a bare `30` and was right**; what shipped is the wrapper deriving the floor itself, with `max(authored, derived)` applied last. The 30 in the file is for the TOOLTIP and to avoid a permanent boot warning — not as the guard. See the corrected ruling section. |
 | rarity | uncommon | class javadoc, *"Uncommon, L1-50"* |
 | material | `emerald` | `ItemFactory:225` |
 | element | kinetic | Operator, this session |
@@ -393,7 +465,8 @@ a defect. Everything below uses 162 to stay conservative and comparable.
 - Against `knell` (360 HP, the only mob any gate figure is derived against): **three casts**, or
   two plus change on a lucky roll.
 - Against a vanilla 20 HP mob: **shot one kills it**, and shots two through six carry on down the
-  line to whatever is behind, or miss and detonate at 64 blocks (Q5).
+  line to whatever is behind, or miss and detonate at **32** blocks (Q5 — ruled; re-derived for the
+  new range, see CE8).
 - Beside the shipped roster: `flint_staff` is 20 per shot at 5 mana / 24 ticks, `lapis_staff` 21 at
   10 mana / 20 ticks. So this is **~5.4× the per-cycle damage of the Lapis Staff for 4× the mana**,
   on a 50% longer cycle, with a 1-second commitment before anything happens.
@@ -458,9 +531,15 @@ Written before the boot, not after, and none of them is a tick-box.
   out of firing order**, and "I only saw five" gets filed as a defect when it was a reordering.
   Run CE3 against a single stationary target, and if you sweep, say so.
 - **CE4 — does your own beam blind you?** `cfde822` solved this twice over (draw from the hand,
-  skip the first block) and neither fix came across. Fire at a wall from 3 blocks and from 40.
+  skip the first block) and neither fix came across. Fire at a wall from **3 blocks and from 30**.
   *If the answer is "no", the two fixes were solving a problem this repo's geometry does not have,
   and that is worth writing down as much as a yes is.*
+
+  > **THE DISTANCES MOVED WITH THE RANGE RULING.** This row read *"from 3 blocks and from 40"*, and
+  > **40 is no longer a meaningful staging** — it is past the weapon's whole reach. The near figure
+  > is what this row actually tests (your own beam filling your view is a near-muzzle problem); the
+  > far one is now 30, just inside both the range and the particle cap, so the beam is drawn along
+  > its entire length.
 - **CE5 — mana. figure.** Cast until dry from a full bar; record how many casts and how long the
   refill takes. **This is the observation the 40 gets re-decided from.**
 - **CE6 — track a moving target through the burst.** Q1 landed as re-aim, **so this row is live and
@@ -470,6 +549,31 @@ Written before the boot, not after, and none of them is a tick-box.
   shot 4. **Whatever shots 4–6 hit for is the answer to Q3 arriving as an observation.** *Under a
   per-shot projection this cannot be checked by reading the code — the projection reads whatever
   is in the hand at that tick. Record the numbers before anyone rules on cancellation.*
+
+  > **AND KNOW BEFORE RUNNING IT THAT THIS ROW CANNOT MOVE, SO A PASS PROVES ALMOST NOTHING.**
+  > `GATE-volley.md` V7 ran exactly this staging on `volley_stone` and got *"same damage"* — **forced
+  > by the fixture**, because an authored `amount:` is captured in the walker's closure and no swap
+  > can reach it. **This weapon authors `amount: 27`, so it is the same shape**, and a swap will not
+  > move its numbers either. *A row that could not have come out any other way is not evidence.*
+  >
+  > **Run it anyway** — it confirms the burst is not cancelled and that shots 4–6 still land — but
+  > **record it as "unchanged, as forced" rather than as Q3 answered.** The pricing risk lives in a
+  > `weapon_damage` payload or a swap to an **enchanted** weapon; neither exists here and neither is
+  > tested.
+
+- **CE8 — NEW. Where does a MISSED volley burst, now that the range is 32? figure.**
+  Fire at open sky and **write down whether you can see the impacts at all.**
+
+  **THIS ROW EXISTS BECAUSE THE NUMBER MOVED UNDER THE REASONING.** The plan's Q5 note argued from
+  `range: 64` that six mid-air bursts would be **certainly invisible** to the caster, and that was
+  the whole basis for calling the inherited miss behaviour acceptable. **At 32 the bursts land AT
+  the particle cap** — marginally visible rather than certainly invisible. That is neither the
+  plan's answer nor its opposite, and **re-deriving beats carrying the old conclusion forward with
+  its premise changed.**
+
+  *If six bursts at the cap edge read as noise, the remedy is a content one (thin `emerald_impact`)
+  before it is ever a mechanism one — and changing `stepRay`'s detonate-on-miss stays out of a
+  content slice regardless, because it is shared by every ray weapon.*
 
 ---
 
@@ -495,6 +599,21 @@ the reason is stronger than the one given:
   three unreferenced visuals would sit in the tree invisible at boot forever.
 
 **So: all five files land together, after the wrapper. Nothing here is runnable yet.**
+
+> ### DONE, AND THE SEQUENCING HELD EXACTLY AS WRITTEN.
+>
+> The wrapper shipped first as its own slice with its own fixture and its own gate (PR #63,
+> `ab0739a`), and **all five files landed together afterwards**, against a grammar that existed and
+> had been watched. Neither the recipe nor the visuals went early, so the tree never carried a
+> dropped recipe with a boot warning, nor three orphan visuals that `ContentValidator` has no check
+> for.
+>
+> **This is the worked example that the content/mechanism split holds under load:** a content plan
+> named a blocker it could not build, the blocker became a slice with its own gate, three findings
+> came out of running that gate, and one of them (`range: 64` → `32`) came back and **changed a
+> number in this document before it was ever authored.** The alternative — authoring against a
+> sketched grammar — would have put `range: 64` in the tree and the measurement would have arrived
+> as a bug report.
 
 ---
 
