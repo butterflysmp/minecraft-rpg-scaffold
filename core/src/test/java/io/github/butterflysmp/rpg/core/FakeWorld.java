@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.core;
 import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
 import io.github.butterflysmp.rpg.core.combat.AccrualRule;
 import io.github.butterflysmp.rpg.core.combat.HitAccrual;
+import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.Caster;
 import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.CritState;
@@ -234,6 +235,35 @@ public final class FakeWorld implements CombatWorld {
                             + "; to act on the current frame, act inline");
         }
         queue.add(new Scheduled(now + delayTicks, seq++, task));
+    }
+
+    /**
+     * The entity twin of {@link #schedule}, faked at the SAME fidelity and with one extra rule.
+     *
+     * <p>{@code PaperScheduler.onEntityLater} passes a null retired-runnable, so a task whose
+     * entity is gone when the delay elapses simply NEVER RUNS. This reproduces that: the id is
+     * captured, and the task is dropped at fire time if no dummy with that id is in the world.
+     * Without it a volley whose caster logged out would keep firing in every test and never in
+     * production -- a fake more permissive than the server, the one direction this file must
+     * never be wrong in.
+     */
+    @Override public void scheduleOn(UUID combatantId, int delayTicks, Runnable task) {
+        if (delayTicks < 1) {
+            throw new IllegalArgumentException(
+                    "scheduleOn requires delayTicks >= 1, got " + delayTicks
+                            + "; to act on the current frame, act inline");
+        }
+        queue.add(new Scheduled(now + delayTicks, seq++, () -> {
+            if (combatant(combatantId).isEmpty()) return;   // the entity went; the task does not run
+            task.run();
+        }));
+    }
+
+    @Override public Optional<Aim> aimOf(UUID combatantId) {
+        return entities.stream()
+                .filter(d -> d.id().equals(combatantId))
+                .findFirst()
+                .map(d -> new Aim(d.position().add(new Vec3(0, d.eyeHeight, 0)), d.facing));
     }
 
     @Override public void present(Vec3 at, String visualId) {
@@ -491,6 +521,20 @@ public final class FakeWorld implements CombatWorld {
          *  the value CastExecutorTest already uses for an eye. Non-zero on purpose: the snapshot's
          *  compact constructor rejects 0, since a 0 here would silently trace sight to the feet. */
         public double eyeHeight = 1.62;
+
+        /**
+         * Which way this dummy is LOOKING -- the direction half of {@link FakeWorld#aimOf}.
+         *
+         * <p>Defaults to +X, the same direction {@code CastExecutorTest.FORWARD} aims, so every
+         * test written before a cast could re-aim sees the line it always saw. A test that wants a
+         * caster to TURN mid-cast sets it between ticks; that is the only way to tell a volley
+         * that re-aims from one that fires six shots down the cast frame's line.
+         *
+         * <p>It is a mutable field rather than a snapshot value on purpose, and for the opposite
+         * reason to {@link #attackDamage}'s: that one is here so a test can prove a value stays
+         * FROZEN across a flight, this one so a test can prove a value is RE-READ across a volley.
+         */
+        public Vec3 facing = new Vec3(1, 0, 0);
 
         public Dummy(Vec3 pos) { this.pos = pos; }
 

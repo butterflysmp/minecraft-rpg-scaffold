@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.Vec3;
+import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.BeamSamples;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
@@ -11,6 +12,7 @@ import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.inventory.ItemStack;
@@ -164,6 +166,41 @@ public final class PaperCombatWorld implements CombatWorld {
     @Override
     public void schedule(Vec3 near, int delayTicks, Runnable task) {
         ctx.scheduler().onRegionLater(toLocation(near), task, delayTicks);
+    }
+
+    /**
+     * The entity twin of {@link #schedule}: deferred work on the thread that owns the BODY, not
+     * the thread that owns a point someone guessed the body would still be at.
+     *
+     * <p>A no-op if the combatant is not in this world -- which includes a player who has changed
+     * world mid-volley, and that is the correct answer rather than a gap: their region is not ours
+     * to schedule into. {@code onEntityLater} passes a null retired-runnable, so an entity that
+     * goes between now and the delay simply never runs the task.
+     */
+    @Override
+    public void scheduleOn(UUID combatantId, int delayTicks, Runnable task) {
+        Entity entity = world.getEntity(combatantId);
+        if (entity == null) return;
+        ctx.scheduler().onEntityLater(entity, task, delayTicks);
+    }
+
+    /**
+     * The live eye and look direction, read HERE, on the thread that owns the entity -- enforced by
+     * {@link Regions#requireOwned}, exactly as {@code BukkitCombatant.snapshot} is.
+     *
+     * <p>This is the same pair {@code WeaponFire} builds on the press frame
+     * ({@code getEyeLocation()} and its direction); the difference is only WHEN. A caster who has
+     * turned since the cast frame gets the line they are looking down now.
+     */
+    @Override
+    public Optional<Aim> aimOf(UUID combatantId) {
+        if (!(world.getEntity(combatantId) instanceof LivingEntity living)) return Optional.empty();
+        Regions.requireOwned(living);
+        Location eye = living.getEyeLocation();
+        Vector direction = eye.getDirection();
+        return Optional.of(new Aim(
+                new Vec3(eye.getX(), eye.getY(), eye.getZ()),
+                new Vec3(direction.getX(), direction.getY(), direction.getZ())));
     }
 
     /**
