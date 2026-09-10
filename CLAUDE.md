@@ -248,6 +248,23 @@ So:
   > **Practically:** paste the `git ls-remote --heads origin` line for the ref, before and after.
   > One line in a report retires this class.
 
+- **PROSE REACHING A COMMAND GOES THROUGH A FILE, NEVER THROUGH QUOTING.** `git commit -F <file>`,
+  `gh pr create --body-file`, `gh pr merge --body-file`, a written file for anything else. Never
+  `-m`, never `--body`, never a heredoc.
+
+  > **THE FAILURE MODE IS THAT A COMPOUND COMMAND ABORTS AT PARSE TIME, SO EARLIER STEPS IN IT NEVER
+  > RUN EITHER.** A commit message heredoc broke on an unbalanced quote at line 107; the `git add`
+  > *in the same command* never executed, and the next `git commit -F` then found nothing staged.
+  > **The loud failure is what saved it. The next one may abort something that looked like it
+  > succeeded.**
+  >
+  > **`--body` was banned for one instance of this — a quote break truncating a PR body SILENTLY.**
+  > The ban names too narrow a carrier: it is not `--body` that is dangerous, it is **any
+  > shell-quoted path from prose to argument.** Heredocs and `-m` are the same hazard, and a PR body
+  > was lost to an unescaped quote before either of the two instances in this session.
+  >
+  > Two occurrences is a convention forming by accident, so it is stated rather than left.
+
 
 ### EVERY FILTER AND EVERY SCRIPTED EDIT NEEDS A POSITIVE CONTROL
 
