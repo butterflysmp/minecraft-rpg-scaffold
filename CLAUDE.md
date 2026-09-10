@@ -78,6 +78,13 @@ than one that never ran, because you now believe you checked.
 > deployed `05:39:43`. Had the explanation been trusted, the mutated build would have
 > booted a second time and the restore would have been blamed for the result.
 
+> **AND THE PASSING TWIN, which has no conversation to interrupt: A CONTROL THAT SUCCEEDS FOR THE
+> WRONG REASON.** A gate row staged FOUR mobs against a chain limit of FOUR — so it passed whether the
+> limit existed or not, and no explanation was needed because nothing looked wrong. **When two
+> independent quantities in a row are equal, at least one of them is not being tested.** Ask what the
+> row does if the rule it checks is deleted; if the answer is "the same thing", it is measuring the
+> fixture. Full entry in `NEXT.md`, beside its red-side twin.
+
 This is a distinct failure from the four below, not a variant of them. Those are checks
 that never ran. This is a check that ran, fired, and got talked out of. It survives
 every other fix on this page: you can make every check run, confirm every mutation

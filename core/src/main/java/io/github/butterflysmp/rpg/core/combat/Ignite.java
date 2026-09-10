@@ -43,6 +43,20 @@ import java.util.UUID;
  * deleted, because a placement defended by a reason that does not hold is one refactor away from
  * being moved back.
  *
+ * <h2>THE BLAST RECRUITS, AND THAT REVERSED AN EARLIER RULING</h2>
+ *
+ * Until 2026-09-09 the blast was INERT: it wore fire for the glyph and bought survivors no stacks, so
+ * <i>the ignitable set was the set you lit</i>. <b>That was ruled the other way</b> -- links 1..3 now
+ * ACCRUE, so each blast scorches its survivors and the cascade grows its own fuel.
+ *
+ * <p><b>THE OLD REASONING WAS NOT MISTAKEN, AND IT IS RECORDED RATHER THAN QUIETLY DROPPED.</b> It
+ * argued that recruitment's only terminator would be "you run out of mobs", which in a spawner or a
+ * farm is a room-clearing chain nobody asked for. That was correct, and it is exactly why
+ * {@link #MAX_CHAIN_DEPTH} exists: <b>the operator took the risk deliberately and then bounded it.</b>
+ * Overturned BY RULING, with a bound supplied -- which is a different thing from the argument having
+ * been wrong, and the distinction matters to anyone tempted to remove the cap on the grounds that
+ * recruitment "was fine".
+ *
  * <h2>THE NUMBERS ARE PROVISIONAL, AND THE GATE IS WHAT RULES THEM</h2>
  *
  * Nobody can tune what does not exist, so these are defensible STARTING values chosen from content
@@ -69,12 +83,56 @@ public final class Ignite {
      * SECOND.</b> Ruled 2026-09-09. Stated rather than left, because a constant whose javadoc cites
      * a spec it no longer matches is the falsified-prose shape: {@code DESIGN}'s "half a second" is
      * an illustration of the SHAPE (serialise through time), not a number this has to hit, and at
-     * one second a four-link cascade takes four seconds and reads as a wave a player can watch
-     * roll. At half a second it reads closer to a single event.
+     * one second a cascade reads as a wave a player can watch roll rather than as a single event.
+     *
+     * <h2>THIS BOUNDS THE FUSE. IT DOES NOT BOUND THE WAVE.</h2>
+     *
+     * <b>{@link #MAX_CHAIN_DEPTH} is FOUR LINKS, NOT FOUR SECONDS</b>, and the difference arrived
+     * with recruitment. While the only way into a chain was to be KILLED by a blast, every link was
+     * one fuse from the last and four links really were four seconds. <b>A recruited SURVIVOR takes
+     * a second path with a much longer clock:</b> it burns {@code Scorch.DEFAULT_DURATION_TICKS}
+     * (120 ticks, six seconds), dies on its final burn, and only then starts a fuse.
+     *
+     * <pre>
+     *   four links x (6s burn window + 1s fuse) = UP TO 28 SECONDS
+     * </pre>
+     *
+     * So tuning this toward zero for snappiness does NOT make a cascade short -- it makes each
+     * detonation arrive sooner after its own death, and leaves the burn window untouched. The bound
+     * on the wave is the depth cap; this is the bound on one link's delay.
      *
      * <p>PROVISIONAL. Shorter reads as a screen-clear; longer as a slow, interruptible chain.
      */
     public static final int DELAY_TICKS = 20;
+
+    /**
+     * How many links a cascade may run before it stops propagating.
+     *
+     * <b>DEPTH, NOT A COUNT OF EXPLOSIONS, AND THE DIFFERENCE IS NOT PEDANTRY.</b> A cascade is a
+     * TREE -- one blast can kill two mobs and both ignite. Counting explosions would make "which is
+     * the fourth" depend on iteration order among siblings, which nothing chose and no test could
+     * pin. Depth is a property of the link, so every branch is bounded independently and the answer
+     * does not move when the fan-out loop is reordered.
+     *
+     * <pre>
+     *   depth 1   the ignition caused by a PLAYER kill
+     *   depth 2   a mob killed by (or recruited by) a depth-1 blast
+     *   depth 3   ...
+     *   depth 4   fires, damages normally, and PROPAGATES NOTHING
+     * </pre>
+     *
+     * <p><b>"Propagates nothing" needs no new mechanism.</b> The fourth link passes
+     * {@link HitAccrual#terminal()}, which is INERT -- so it scorches nobody, AND it fails
+     * {@code ElementAccrual.accruesScorch}, so its kills do not ignite either. <b>Both halves of the
+     * rule fall out of a value that already existed</b>, which is the third distinct job the accrual
+     * rule has done without a special case.
+     *
+     * <p><b>The safety property this exists for is DURATION.</b> Width is uncomfortable; unbounded
+     * duration is what takes a server down. Without a cap, a dense room is a chain whose link count
+     * is bounded only by the mob population -- and see {@link #DELAY_TICKS} for why that is far
+     * longer in seconds than the link count suggests.
+     */
+    public static final int MAX_CHAIN_DEPTH = 4;
 
     /**
      * Blast radius, in blocks.
@@ -105,14 +163,17 @@ public final class Ignite {
     /**
      * The visual played at the blast.
      *
-     * <p><b>A SHARED VISUAL IS A COUPLING, AND IT IS NAMED HERE BECAUSE THIS REPO NAMES THEM.</b>
-     * {@code solar_detonation} is authored for {@code solar_grenade} and already reused by
-     * {@code emberblade} and {@code ember_staff}; this is its fourth consumer. Re-tuning it for any
-     * one of them re-tunes it for Ignite too. Reuse rather than a dedicated visual is the same call
-     * the content files already record -- <i>"reuse an existing fire visual; a dedicated one is
-     * later polish"</i>.
+     * <p><b>ITS OWN VISUAL, AND THE POINT IS TO REMOVE A COUPLING RATHER THAN TO ADD POLISH.</b> This
+     * pointed at {@code solar_detonation}, which is authored for {@code solar_grenade} and already
+     * shared with {@code emberblade} and {@code ember_staff} -- so tuning the cascade's bang would
+     * have re-tuned three weapons' fireballs, and tuning theirs would have re-tuned the cascade. A
+     * shared visual is a coupling this repo names; this one is now cut.
+     *
+     * <p>{@code ignite_blast} is an explosion particle and an explosion crack, at a lower pitch than
+     * {@code ember_burst}'s so a cascade is audibly distinct from a thrown ember even though both use
+     * {@code entity.generic.explode}.
      */
-    public static final String VISUAL_ID = "solar_detonation";
+    public static final String VISUAL_ID = "ignite_blast";
 
     /**
      * Schedule the blast for a mob that has just died while scorched.
@@ -169,8 +230,17 @@ public final class Ignite {
      *                  sentences look contradictory side by side, and a reader who finds them
      *                  without this note will take one of them for a bug.
      * @param victimId  the mob that died, excluded from its own blast
+     * @param depth     which link of the cascade this is. {@code 1} for an ignition a PLAYER caused;
+     *                  otherwise the depth of the blast that scorched or killed this mob, plus one.
+     *                  At {@link #MAX_CHAIN_DEPTH} the blast still fires and still damages -- it
+     *                  simply carries {@link HitAccrual#terminal()} and propagates nothing.
      */
-    public static void detonate(CombatWorld world, Vec3 at, UUID applierId, UUID victimId) {
+    public static void detonate(CombatWorld world, Vec3 at, UUID applierId, UUID victimId, int depth) {
+        // The whole limit, in one expression. >= rather than > because depth is 1-based: the FOURTH
+        // explosion is the terminal one, so depth 4 must already be inert.
+        HitAccrual accrual = depth >= MAX_CHAIN_DEPTH
+                ? HitAccrual.terminal()
+                : HitAccrual.chained(depth);
         world.schedule(at, DELAY_TICKS, () -> {
             world.present(at, VISUAL_ID);
             for (Combatant c : world.combatantsNear(at, RADIUS)) {
@@ -201,13 +271,11 @@ public final class Ignite {
                 // Defense like every other discrete hit. See Scorch's armour section, which names
                 // this as the BOUNDARY of that rule rather than an exception to it.
                 //
-                // AccrualRule.INERT: the blast wears fire for the glyph and the effectiveness
-                // matrix, but buys survivors NO stacks. A chain therefore spreads only through mobs
-                // something already lit -- the ignitable set is the set you lit. ACCRUES would make
-                // each blast recruit its own survivors, and the cascade's only terminator would be
-                // running out of mobs.
+                // THE BLAST RECRUITS -- it scorches its survivors -- UNTIL THE LAST LINK, which
+                // passes terminal() and recruits nobody. See the class javadoc: this REVERSED an
+                // earlier ruling, and the bound is what made the reversal safe.
                 c.handle().applyDamage(DAMAGE, applierId,
-                        CritState.NORMAL, DefenseRule.APPLIES, "fire", AccrualRule.INERT);
+                        CritState.NORMAL, DefenseRule.APPLIES, "fire", accrual);
             }
         });
     }

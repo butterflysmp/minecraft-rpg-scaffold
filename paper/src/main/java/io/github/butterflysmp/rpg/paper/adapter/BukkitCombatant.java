@@ -1,7 +1,7 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.Vec3;
-import io.github.butterflysmp.rpg.core.combat.AccrualRule;
+import io.github.butterflysmp.rpg.core.combat.HitAccrual;
 import io.github.butterflysmp.rpg.core.combat.stat.DamageOutcome;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
@@ -176,7 +176,7 @@ public final class BukkitCombatant {
          */
         @Override public void applyDamage(double amount, UUID sourceId, CritState crit,
                                           DefenseRule defense, String element,
-                                          AccrualRule accrual) {
+                                          HitAccrual accrual) {
             ctx.scheduler().onEntity(entity, () -> {
                 // Drain custom HP + fire the seam. dealerIsPlayer reuses the source's faction bit;
                 // the nameplate ignores the dealer this phase, the popup (1b) will need it.
@@ -223,7 +223,7 @@ public final class BukkitCombatant {
                 // symmetric twin of DamageOutcome, two facts in as two facts come out.
                 double declaredMagnitude = amount / crit.multiplier();
 
-                ElementAccrual.forHit(ctx.elements(), ctx.statuses(), element, accrual, outcome,
+                ElementAccrual.forHit(ctx.elements(), ctx.statuses(), element, accrual.rule(), outcome,
                                 declaredMagnitude)
                         .ifPresent(accrued -> {
                             // The vanilla flame is the same visual the explicit path sets, and this
@@ -237,7 +237,7 @@ public final class BukkitCombatant {
                                     new EntityTaskTarget(entity, ctx.scheduler()),
                                     new EntityScorchSink(entity, ctx),
                                     accrued.stacks(), accrued.cap(), sourceId,
-                                    accrued.durationTicks(), element);
+                                    accrued.durationTicks(), element, accrual.depth() + 1);
                         });
 
                 // IGNITE'S SECOND CLAUSE: a fire hit that KILLS ignites what it killed, even though
@@ -264,7 +264,7 @@ public final class BukkitCombatant {
                 // would take 12 instead of 6.
                 if (!wasScorched
                         && outcome.dealt() > 0 && outcome.newCurrent() <= 0
-                        && ElementAccrual.accruesScorch(ctx.elements(), ctx.statuses(), element, accrual)) {
+                        && ElementAccrual.accruesScorch(ctx.elements(), ctx.statuses(), element, accrual.rule())) {
                     // ATTRIBUTION HERE IS NOT AN EXCEPTION TO "THE IGNITION IS THE FIRE'S DOING,
                     // NOT THE KILLING BLOW'S". A mob that was never scorched has no lighter, so
                     // there is no competing candidate -- and in this case THE KILLING BLOW IS THE
@@ -273,7 +273,7 @@ public final class BukkitCombatant {
                     Location at = entity.getLocation();
                     Ignite.detonate(new PaperCombatWorld(entity.getWorld(), ctx),
                             new Vec3(at.getX(), at.getY(), at.getZ()), sourceId,
-                            entity.getUniqueId());
+                            entity.getUniqueId(), accrual.depth() + 1);
                 }
 
                 // Aggro-on-hit: the target turns on its attacker -- vanilla's expected default.
@@ -414,7 +414,11 @@ public final class BukkitCombatant {
                                 // NO ELEMENT: a dev-applied scorch has no element behind it, so its
                                 // burn draws an unmarked number. Honest rather than tidy -- inventing
                                 // "fire" here would mark a burn nothing elemental lit.
-                                null);
+                                null,
+                                // DEPTH 0: no blast caused a dev application, so a mob scorched this
+                                // way ignites at depth 1 -- identical to a player weapon kill, which
+                                // is the same 0 arriving through HitAccrual.weapon().
+                                0);
                     }
 
                     case StatusDefinition.Potion potion -> {

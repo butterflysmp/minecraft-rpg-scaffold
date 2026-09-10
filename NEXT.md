@@ -631,6 +631,103 @@ ceiling for.
 > will never read it.** The operator recorded that they would have used this argument had the reader
 > count not been measured first -- which is why the measurement went first.
 
+#### THE BLAST RECRUITS, BOUNDED AT FOUR LINKS -- AND RULING 2 IS OVERTURNED, NOT CORRECTED
+
+**Ruled 2026-09-09.** Links 1-3 pass `ACCRUES` and scorch their survivors; the **fourth passes
+`terminal()`** and propagates nothing. Ruling 2 -- *the ignitable set is the set you lit* -- is
+reversed.
+
+**THE OLD REASONING WAS NOT WRONG, AND THAT DISTINCTION IS THE RECORD.** It argued that recruitment's
+only terminator would be *"you run out of mobs"*, which in a spawner is a room-clearing chain nobody
+asked for. **That was correct, and it is exactly why `MAX_CHAIN_DEPTH` exists:** the operator took the
+risk deliberately and then bounded it. Overturned **by ruling with a bound supplied** -- which is a
+different thing from the argument having been mistaken, and the difference matters to anyone later
+tempted to delete the cap on the grounds that "recruitment was fine".
+
+**DEPTH, NOT A COUNT OF EXPLOSIONS.** A cascade is a TREE -- one blast can kill two mobs and both
+ignite -- so counting explosions would make "which is the fourth" depend on sibling iteration order,
+which nothing chose and no test could pin. Depth is a property of the link, so every branch is bounded
+independently.
+
+**"Propagates nothing" needed no new mechanism:** the terminal link is INERT, so it scorches nobody
+AND fails `accruesScorch`, so its kills cannot ignite either. Both halves from one value.
+
+#### DEPTH IS DEEPEST-WINS, AND "ONE RULE FOR FIVE FIELDS" WOULD HAVE DEFEATED THE CAP
+
+**The tidiest sentence in the plan was the defect.** `Active`'s other fields are newest-wins; making
+depth the fifth would let a LATER blast write a SHALLOWER depth -- and under recruitment that is
+reachable inside a single ignition, because **THE BURN WINDOW DECOUPLES DEPTH FROM ELAPSED TIME:**
+
+```
+A scorched depth 1, high HP, SURVIVES its burn and dies late -> detonates at 2.
+Meanwhile a fast branch runs 2 -> 3, scorching D at DEPTH 3.
+A's late depth-2 blast reaches D. Newest-wins drops D from 3 to 2 -> D detonates at 3, not 4.
+The frontier advances again.
+```
+
+Repeat with staggered survivors and **the link count from the original root is bounded by the mob
+population, not by 4** -- the spawner scenario the ruling was bounded to avoid, arriving by the back
+door. `Math.max` is required.
+
+**The reason is principled rather than an exception for tidiness:** `cap`, `applierId` and `element`
+are **presentation and credit** facts, where the newest applier is right. **`depth` is a SAFETY
+COUNTER, where the deepest reading is.** *"Extend, never shorten"* is already this codebase's rule at
+`BukkitCombatant`'s two `setFireTicks` sites; this is its next instance.
+
+**THE COST, NAMED:** a player re-lighting a depth-3 mob with a fire weapon no longer restarts its
+chain, because a weapon hit is depth 0 and `max` ignores it. **That is the correct trade** -- under
+newest-wins the same swing re-roots the wave AT WEAPON SPEED, and no gate row could reach it.
+
+#### FOUR LINKS IS NOT FOUR SECONDS, AND THE FIRST DRAFT SAID IT WAS
+
+`DELAY_TICKS` bounds the FUSE. It does not bound the wave. *"A depth-4 cascade is over in four
+seconds"* was true under ruling 2, when the only way into a chain was to be KILLED by a blast: same
+frame, fuse only. **Recruitment adds a second entry path with a six-second clock** -- a recruited
+survivor burns `DEFAULT_DURATION_TICKS` (120 ticks) and only detonates a second after its final burn:
+
+```
+four links x (6s burn window + 1s fuse) = UP TO 28 SECONDS
+```
+
+**And the gate only stages the fast path.** `I5` and `I12` soften every mob so each blast is lethal,
+which is the one-second case. **Nothing on the page witnesses the seven-second link.** Recorded
+because the four-second sentence is the kind a reader can check and will believe.
+
+#### `HitAccrual`: TWO FACTS AS ONE VALUE, ON REPRESENTABILITY ALONE
+
+The depth has to cross the port on the HIT -- both sites that need it (accrual on a survivor, the
+fire-kill clause on an outright kill) see only `element` and `accrual`.
+
+**Not a seventh `int` parameter**, and the reason is not diff size: `(AccrualRule, int)` lets a call
+site write `(INERT, 2)` and `(ACCRUES, 4)`, **both nonsense** -- depth 4 MEANS inert -- and neither
+fails to compile. The 5-arg default would also have to supply `0` as "no depth", **a sentinel int
+meaning absence**, which this port rejected once already when the null-element loop guard became
+`AccrualRule`.
+
+> **AND ONE ARGUMENT WAS AVAILABLE AND NOT BORROWED.** The `DamageSignatureTest` transposition hazard
+> does NOT apply: an `int` beside an enum cannot be swapped, the compiler catches it. That reasoning
+> covers `CritState` and `DefenseRule` and does not reach this. **Representability alone carries it.**
+
+Factories are named for the PROPERTY, not the mechanism -- `weapon()`, `inert()`, `chained(n)`,
+`terminal()` -- because `DefenseRule`'s javadoc in the same package says *do not rename it after a
+status*. **`terminal()` carries no depth**, because an INERT hit's depth is read by nothing ever, and
+storing one would assert a number no code path can reach.
+
+#### `/rpg apply` HAS BEEN WRITTEN BACKWARDS IN EVERY GATE ROW
+
+`/rpg apply <status> <duration> <stacks>` -- **duration first**, stacks capped at 20. Every row said
+`scorch 1 200`, which fails the `stacks` parse; the reader is then left holding `200`, so the shorter
+duration-only overload does not run either. **Nothing executed.** Seven occurrences fixed.
+
+**AND IT REACHES BACK A SLICE.** `GATE-element-accrual.md`'s D1 is staged the same way and was green
+**only** by two blanket confirmations -- itemised nowhere, no figures -- while the one confirmation
+that names it records it as **skipped**. Marked **re-run-owed** rather than un-ticked: a row deleted
+from the passed list reads as one nobody chose to run; a row marked owed reads as one that must be.
+
+> **This is "a check that did not run looks exactly like one that passed", arriving through a channel
+> the page had not covered: not a filter that failed, but a command line that was never valid.** The
+> row's arithmetic was scrutinised repeatedly. Its SYNTAX never was.
+
 #### THE TRIGGER WIDENED TO FIRE-KILLS, AND THE BLAST'S OWN ELEMENT NEARLY REVERSED RULING 2
 
 **Ruled 2026-09-09.** *"A mob killed by a fire weapon should ignite even though it hasn't had time to
@@ -9073,6 +9170,29 @@ both were invisible for exactly the reason they were wanted.
 **How to apply, and the remedy is not "plan less":** at the end of a slice, diff the plan's NAMED
 ARTIFACTS against what exists on the branch. Two names, one grep. It is the same counting discipline
 that gave `7 -> 7` on the lambda sites and `12` on the fire damage sites.
+
+### AND ITS PASSING TWIN: A CONTROL THAT SUCCEEDS FOR THE WRONG REASON
+
+**Named 2026-09-09, Ignite. Placed beside the entry below because the PAIR is the lesson** -- one is a
+red you talk yourself out of, the other is a green you never think to question, and the second is
+worse because nothing prompts the conversation at all.
+
+**The worked example is a gate row.** `I5` staged **four** mobs and expected **four** detonations. The
+chain limit is also four. **So the row passes whether the cap exists or not** -- a build with
+`MAX_CHAIN_DEPTH` deleted produces exactly four detonations, because it runs out of mobs at the same
+moment the cap would have stopped it. The row looked like a cascade test and was a mob-count test.
+
+**Stating the ambiguity in the row does not fix it.** That was the tempting repair -- write "this
+cannot distinguish the two" underneath and leave the staging alone. **The operator still ticks it
+green**, because the observation matches the expectation and the caveat is a paragraph nobody re-reads
+while counting explosions. The fix is to make the row unable to pass for the wrong reason: three mobs,
+so the cap is never approached, and a separate five-mob row that owns the limit.
+
+**How to apply.** For any row whose expected count coincides with a LIMIT the system enforces, ask
+what the row does when the limit is deleted. If the answer is "the same thing", the row is measuring
+the fixture, not the code -- and no wording saves it. **The tell is a number appearing twice for
+different reasons**: four mobs, four links. When two independent quantities in a row are equal, at
+least one of them is not being tested.
 
 ### A CONTROL THAT FAILS WITH A PLAUSIBLE EXPLANATION IS THE MOST DANGEROUS KIND, BECAUSE THE EXPLANATION IS WHAT STOPS YOU LOOKING
 

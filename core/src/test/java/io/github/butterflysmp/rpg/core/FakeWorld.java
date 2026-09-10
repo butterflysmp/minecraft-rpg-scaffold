@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.core;
 
 import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
 import io.github.butterflysmp.rpg.core.combat.AccrualRule;
+import io.github.butterflysmp.rpg.core.combat.HitAccrual;
 import io.github.butterflysmp.rpg.core.combat.Caster;
 import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.CritState;
@@ -451,6 +452,17 @@ public final class FakeWorld implements CombatWorld {
         public String lastDamageElement;
 
         /**
+         * The ignite-chain DEPTH the last applyDamage carried, unwrapped from its {@code HitAccrual}.
+         *
+         * Recorded separately from {@link #lastDamageAccrual} rather than storing the pair, because
+         * the two are asserted independently: a row about recruitment reads the rule, a row about the
+         * chain limit reads the depth, and a row that had to destructure a value object to assert
+         * either would read worse than one that does not. The fake keeps them apart; the PORT keeps
+         * them together, which is where it matters -- see {@code HitAccrual}.
+         */
+        public int lastDamageDepth;
+
+        /**
          * Whether the last applyDamage said its element may ACCRUE, or wears it for display only.
          *
          * Captured as delivered, like the bypass bit and the element beside it. This is the half
@@ -512,13 +524,14 @@ public final class FakeWorld implements CombatWorld {
         @Override public UUID id() { return id; }
         @Override public void applyDamage(double amount, UUID sourceId, CritState crit,
                                           DefenseRule defense, String element,
-                                          AccrualRule accrual) {
+                                          HitAccrual accrual) {
             health -= amount;
             lastDamageSource = sourceId;
             lastDamageWasCrit = crit.isCrit();
             lastDamageBypassedDefense = defense == DefenseRule.BYPASSED;
             lastDamageElement = element;
-            lastDamageAccrual = accrual;
+            lastDamageAccrual = accrual.rule();
+            lastDamageDepth = accrual.depth();
             damageCalls++;
         }
         @Override public void applyHeal(double a) { health += a; }

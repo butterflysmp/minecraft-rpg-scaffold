@@ -2,7 +2,7 @@ package io.github.butterflysmp.rpg.paper.listener;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
-import io.github.butterflysmp.rpg.core.combat.AccrualRule;
+import io.github.butterflysmp.rpg.core.combat.HitAccrual;
 import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.Vec3;
@@ -420,11 +420,19 @@ public final class RpgListeners implements Listener {
         if (!adapters.scorch().isScorched(id)) return;
 
         UUID applier = adapters.scorch().applier(id);
+        // THE THIRD CAPTURE, AND IT MUST BE HERE FOR THE SAME REASON AS THE OTHER TWO. forget()
+        // below drops this entry, so a depth read at detonation returns 0 -- and 0 means "a player
+        // caused this", so EVERY LINK WOULD DETONATE AT DEPTH 1 AND THE CHAIN LIMIT WOULD NEVER
+        // ENGAGE. That failure presents as an unbounded cascade, i.e. as "the limit doesn't work",
+        // with nothing pointing back at the order of these three lines.
+        int depth = adapters.scorch().depth(id);
         Location at = mob.getLocation();
         adapters.scorch().forget(id);        // the guard -- see the javadoc above
 
+        // depth + 1: this mob was scorched BY a blast at `depth`, so its own ignition is the next
+        // link down. A dev application and a player's weapon both store 0, so both detonate at 1.
         Ignite.detonate(new PaperCombatWorld(mob.getWorld(), adapters),
-                new Vec3(at.getX(), at.getY(), at.getZ()), applier, id);
+                new Vec3(at.getX(), at.getY(), at.getZ()), applier, id, depth + 1);
     }
 
     /**
@@ -990,7 +998,7 @@ public final class RpgListeners implements Listener {
                 // anything else lighting it. The unit row is the only witness, which is why it
                 // exists: SweepShareTest's sibling in RpgListeners has no fixture, so the assertion
                 // lives where the decision is readable instead.
-                AccrualRule.ACCRUES);
+                HitAccrual.weapon());
     }
 
     /**

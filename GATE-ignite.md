@@ -2,7 +2,7 @@
 
 **This file is the source of truth for the Ignite boot gate.** It is versioned with the code because
 for several behaviours below **these rows are the only check that exists anywhere in the project**.
-The suite passes with any of them deleted — 1401 tests, and not one of them can see a chain roll
+The suite passes with any of them deleted — 1403 tests, and not one of them can see a chain roll
 through a pack, a death message name the right player, or an explosion fire twice.
 
 ## How to use it
@@ -16,27 +16,37 @@ through a pack, a death message name the right player, or an explosion fire twic
 
 ## What the suite already covers, so these rows do not have to
 
-`IgniteTest` — 10 rows, core, on a clock — pins: the fuse lands on tick 20 and not on 19; one blast
+`IgniteTest` — 12 rows, core, on a clock — pins: the fuse lands on tick 20 and not on 19; one blast
 per detonation with nothing left scheduled; mob-only; the corpse excluded from its own blast; the
-radius straddled at ±0.5; credit to the applier and never to the victim; `fire` + `INERT`; `APPLIES`
-not `BYPASSED`; the visual at the detonation point; and `DAMAGE < 20`.
+radius straddled at ±0.5; credit to the applier and never to the victim; `fire` + **`ACCRUES` with
+the link's own depth**; the **fourth link `INERT` and carrying no depth**; every link below it still
+recruiting; `APPLIES` not `BYPASSED`; the visual at the detonation point; and `DAMAGE < 20`.
+
+`ScorchStatusTest` pins that **`depth` is DEEPEST-wins while `cap` and `applier` are NEWEST-wins**, in
+one fixture where the two rules disagree — the property the chain limit rests on.
 
 `ElementAccrualTest` adds four rows on the **shared predicate** that Ignite's fire-kill clause and
-stack accrual both call: that an `INERT` hit of a scorch-declaring element answers **no**, that a
-resolving-but-non-scorch status answers no, and that `forHit` and the ignite clause differ by the
-**lethal gate alone**.
+stack accrual both call, including that `forHit` and the ignite clause differ by the **lethal gate
+alone**.
 
-**All fourteen were mutation-verified** — each mutation was watched reddening its own row.
+**Every one was mutation-verified** — each mutation watched reddening its own row and no other.
 
 **What none of them can see is CHAINING**, because `FakeWorld.Dummy.applyDamage` only decrements a
-number: there is no death path in core, and core never learns that anything died. That is `I5`.
+number: there is no death path in core, and core never learns that anything died. So the suite proves
+each blast is delayed, targeted, attributed, flagged and **bounded at the right depth** — and proves
+nothing about a cascade. That is `I5` and `I12`.
+
+> **THE CAP HAS A UNIT ROW; ITS DELIVERY DOES NOT.** `IgniteTest` proves `detonate(4)` is terminal.
+> **Nothing in the suite proves the death handler ever passes 4** — that needs `depth` captured before
+> `forget`, which is paper-side ordering with no unit witness, exactly like the once-ness guard.
+> `I12` is the only thing that can see it.
 
 ---
 
 ## Setup
 
 `/rpg spawn knell` — a 360 HP wither skeleton, the gate's usual mob.
-`/rpg apply scorch 1 200` — scorch it directly, no weapon needed. The dev path is the only way to
+`/rpg apply scorch 200 1` — scorch it directly, no weapon needed. The dev path is the only way to
 scorch something without also damaging it, which several rows below need.
 `/rpg give flint_staff` / `emberblade` — fire weapons, for the rows that want scorch applied the way a
 player would.
@@ -46,7 +56,7 @@ written against those; if a row's number is wrong, check the constant before bel
 
 ### THE DEV BURN'S ARITHMETIC, BECAUSE TWO ROWS ARE STAGED AGAINST IT AND ONE USED TO BE IMPOSSIBLE
 
-`/rpg apply scorch 1 200` **declares no payload**, so the cap falls back to
+`/rpg apply scorch 200 1` **declares no payload**, so the cap falls back to
 `Scorch.UNDECLARED_CAP = 2.0`. Against a knell that is:
 
 ```
@@ -60,15 +70,31 @@ burn *kill* has to soften the mob first, and any row that softens a mob and then
 racing a 2/second clock. Both facts below are consequences of this one number, and neither was costed
 when the rows were first written.
 
+### AND THE BLAST NOW SCORCHES ITS SURVIVORS, SO EVERY DAMAGE FIGURE HAS A SECOND HALF
+
+A survivor takes the 6 **and is scorched by it**, at cap `6 × Scorch.CAP_FRACTION(0.5) = 3.0`, for
+`damageTicksFor(120) = 6` burns:
+
+| survivor | burn/sec | total |
+|---|---|---|
+| knell (360, 5% = 18) | `min(18, 3)` = **3** | 6 impact + 18 burn = **24** |
+| vanilla mob (20, 5% = 1) | `min(1, 3)` = **1** | 6 impact + 6 burn = **12** |
+
+> **READ THE FIRST NUMBER AND IGNORE THE BURN THAT FOLLOWS.** Every row below that says "takes 6"
+> means the **impact**, which lands on the fuse tick. The first burn arrives a second later, so a
+> surviving knell shows `6, 3, 3, 3…`. **Without this note the operator sees three numbers and cannot
+> tell which one the row is about** — and `6` followed by `3` is not obviously different from a
+> doubled `6, 6` glanced at in passing.
+
 ---
 
 ## The rows
 
 ### I1 — a scorched mob that dies explodes, a second later
-`/rpg spawn knell` twice, standing them within 2 blocks of each other. `/rpg apply scorch 1 200` on
+`/rpg spawn knell` twice, standing them within 2 blocks of each other. `/rpg apply scorch 200 1` on
 the FIRST only. Kill the first (`/rpg mobdamage 400`).
 
-**Expect:** a visible pause — about a second — then `solar_detonation` at the corpse, and the
+**Expect:** a visible pause — about a second — then `ignite_blast` at the corpse, and the
 second knell takes **6**.
 
 **The pause is half the row.** An explosion on the death frame means the fuse was dropped, and
@@ -104,7 +130,7 @@ Same as I1, with the neighbour at full health. Read the neighbour's damage numbe
 **Expect exactly `6`. NOT `12`.**
 
 > **NOTHING IN THE SUITE CAN SEE THIS.** A double delivery of `EntityDeathEvent` cannot be
-> constructed in a unit test, so deleting the `forget` guard in `onEntityDeath` leaves 1401 tests
+> constructed in a unit test, so deleting the `forget` guard in `onEntityDeath` leaves 1403 tests
 > green. `6` against `12` is one number apart on a nameplate and it is the whole check.
 >
 > **Known in advance rather than discovered afterwards**, which is why this row was written as the
@@ -113,7 +139,7 @@ Same as I1, with the neighbour at full health. Read the neighbour's damage numbe
 > build is exactly what this row measures.
 
 ### I4 — the broadened trigger: it does not care what killed it · **SOLE WITNESS**
-Three runs, one neighbour each, scorch applied by `/rpg apply scorch 1 200`:
+Three runs, one neighbour each, scorch applied by `/rpg apply scorch 200 1`:
 
 - **`/kill`** the scorched knell
 - **drown** it (push it underwater and wait)
@@ -127,21 +153,31 @@ Three runs, one neighbour each, scorch applied by `/rpg apply scorch 1 200`:
 > three fails to ignite, the hook is on the seam and the other two are passing by accident.**
 
 ### I5 — a pack cascades, serialized in time · **SOLE WITNESS for rule 2**
-Spawn four knells in a loose cluster, all within ~3 blocks of a neighbour.
+**THREE** knells in a **STRAIGHT LINE, 3 BLOCKS APART.** Soften all three to under 6
+(`/rpg mobdamage 355`). **Kill the first with a fire weapon.**
 
-**THE ORDER IS LOAD-BEARING. DO IT IN THIS ORDER:**
+**THE GEOMETRY IS A NUMBER, NOT "A LOOSE CLUSTER", AND IT IS DOING REAL WORK:**
 
-1. **SOFTEN** all four to under 6 (`/rpg mobdamage 355`) so a single blast is lethal.
-2. **THEN scorch** all four.
-3. **THEN kill one IMMEDIATELY.**
+```
+3 blocks < RADIUS 4.0   -> each blast reaches its neighbour
+6 blocks > RADIUS 4.0   -> and does NOT reach the one beyond
+```
 
-> **THE BURN IS RACING YOUR STAGING, AND LOSING THE RACE LOOKS LIKE A PASS.** At 2/second a knell
-> sitting at 5 HP **dies to its own burn in about three seconds**. Scorch before the softening is
-> finished — or spend more than a few seconds on step 3 — and one knell dies unaided and starts the
-> wave early. **That is indistinguishable on screen from a cascade you triggered**, and it would be
-> read as a pass while witnessing nothing about the trigger.
+In a cluster where every mob sits inside radius 4 of every other, **blast 1 kills all its neighbours
+at once and they detonate SIMULTANEOUSLY at depth 2** — fewer, fatter waves, and the depth never
+climbs. The line is what makes the chain a chain.
+
+> **THREE, NOT FOUR, AND THE CHANGE IS THE POINT OF THE ROW.** At four mobs this yields four
+> detonations **whether the depth cap exists or not** — so a build with `MAX_CHAIN_DEPTH` deleted
+> passes it exactly as written, and stating the ambiguity in the row does not help: the operator still
+> ticks it green. Three tops out at depth 3 and **never approaches the cap**, so this row tests the
+> WAVE and `I12` owns the LIMIT. One job each.
 >
-> **If a knell dies on its own before you land the kill: respawn and redo. Do not read the result.**
+> **AND THE BURN-RACE WARNING THAT USED TO BE HERE IS DELETED, NOT SOFTENED.** It cautioned that
+> hand-scorching four softened knells races a 2/second burn. **Under recruitment you scorch nothing
+> at all** — the blast recruits the rest, and killing mob 1 with a fire weapon starts the chain
+> through the fire-kill clause. The hazard is gone, and so is the row's last `/rpg apply`: one fewer
+> place for the argument-order bug to live.
 
 **Expect:** a **rolling wave** — one blast, a second, the next, a second, the next. **Four links is
 four seconds end to end**, so this is slow enough to count deliberately: four separate detonations,
@@ -217,37 +253,38 @@ a single tick.
 > **The failure that looks like a pass:** if the clause read the element without the `AccrualRule`,
 > this row would still pass — and the cascade would recruit every mob it killed. That is `I10`.
 
-### I10 — a blast kill does NOT recruit · **SOLE WITNESS for ruling 2 under the new clause**
-Three knells within ~3 blocks of each other:
+### I10 — a blast survivor IS scorched · **SOLE WITNESS for recruitment**
+Two knells, **3 blocks apart**. Soften **A** to under 6 and scorch it
+(`/rpg apply scorch 200 1`). Leave **B** at full health, unscorched. Kill **A**
+(`/rpg mobdamage 400`).
 
-1. **A** — leave at **full health**, then scorch it (`/rpg apply scorch 1 200`).
-2. **B** — soften to under 6 (`/rpg mobdamage 355`) and **do NOT scorch it**. The blast will kill it.
-3. **C** — leave at full health, unscorched. It just takes the 6.
-4. Kill **A** by command (`/rpg mobdamage 400`).
+**Expect:** B takes **6**, and then **burns — `3, 3, 3, 3, 3, 3`.** It was never scorched by hand;
+the blast recruited it.
 
-> **A IS LEFT AT FULL HEALTH DELIBERATELY — it is the only scorched mob here, and a scorched mob that
-> is also LOW races its own burn** (2/second, so a knell at 5 dies unaided in about three seconds).
-> Full health, it cannot die to a 20-damage window, so there is no clock on your staging. **B is
-> softened but never scorched**, so it has no burn either.
-
-**Expect:** the blast kills that neighbour and **NOTHING further happens.** No second detonation, no
-wave.
-
-> **THIS IS THE ROW A NAIVE IMPLEMENTATION FAILS AND NOTHING ELSE CATCHES.** The blast wears
-> `element: fire` — it must, for the glyph — so *"killed by a fire hit ignites"* read literally means
-> **a blast that kills an unscorched mob ignites it**, and the cascade recruits everything it kills.
-> The terminator stops being "the set you lit" and becomes "you run out of mobs".
+> **THIS ROW'S EXPECTATION IS THE EXACT INVERSE OF WHAT IT SAID YESTERDAY, AND THE OLD BODY IS KEPT
+> BELOW RATHER THAN OVERWRITTEN.** A row whose expectation flips silently is how a later reader
+> concludes the earlier reasoning was never there.
 >
-> The discriminator is `AccrualRule`: the blast passes `INERT`, every weapon hit passes `ACCRUES`.
-> A build missing that clause passes **I1 through I9** and fails only here — in a spawner or a farm,
-> as a room-clearing chain nobody asked for.
+> **What it used to say — "a blast kill does NOT recruit", SOLE WITNESS for ruling 2:**
+>
+> > *"The blast wears `element: fire` — it must, for the glyph — so 'killed by a fire hit ignites'
+> > read literally means a blast that kills an unscorched mob ignites it, and the cascade recruits
+> > everything it kills. The terminator stops being 'the set you lit' and becomes 'you run out of
+> > mobs'. A build missing that clause passes I1 through I9 and fails only here — in a spawner or a
+> > farm, as a room-clearing chain nobody asked for."*
+>
+> **That reasoning was not wrong, and it was not discovered to be wrong.** It was **overturned by
+> ruling**, and the ruling supplied the bound it said was missing: `MAX_CHAIN_DEPTH`. Recruitment
+> without a cap really would terminate only when the mobs ran out. **The spawner risk was taken
+> deliberately and then bounded** — which is why `I12` exists and why deleting the cap on the grounds
+> that "recruitment was fine" would reinstate exactly the failure this paragraph describes.
 
-### I11 — scorched AND fire-killed is still ONE blast · **the two-site guard**
+### I11 — scorched AND fire-killed is still ONE blast · **the two-site guard, now the MAIN PATH**
 **In this order**, beside a full-health neighbour:
 
 1. **Soften** the knell to 15 (`/rpg mobdamage 345`) — a flint bolt is **20**, so without this the
    staff cannot kill a 360 HP knell and the row cannot fire at all.
-2. **Scorch** it (`/rpg apply scorch 1 200`).
+2. **Scorch** it (`/rpg apply scorch 200 1`).
 3. **One bolt, immediately.** Both clauses are now true at once: it was scorched *and* a fire blow
    killed it.
 
@@ -267,6 +304,43 @@ wave.
 > read **before** the damage call: the whole death chain fires synchronously inside it, so a read
 > taken afterwards would always see `false` and every scorched mob killed by fire would blast twice.
 > `6` against `12`, one number apart — I3's shape on a new path.
+
+### I12 — the chain STOPS at four links · **SOLE WITNESS for the depth cap**
+**FIVE** knells, straight line, **3 blocks apart**. Soften mobs **1–4** to under 6
+(`/rpg mobdamage 355`). **Leave mob 5 at FULL HEALTH.** Kill mob 1 with a fire weapon.
+
+**Expect four detonations, one per second, walking down the line. Mobs 1–4 die.**
+
+**And the observation on mob 5 is stronger than "it did not explode":**
+
+> **Mob 5 takes a `6` wearing the FIRE GLYPH — and then nothing at all. No burn ticks.**
+
+**THE GLYPH IS THE HALF THAT MAKES THE ROW WORK.** Without it you cannot tell `INERT` from
+out-of-radius — both look like a mob standing there, and *"I spaced them wrong"* is the plausible
+explanation that gets written in the notes column. **The glyph proves the blast REACHED mob 5 and was
+elemental; the absence of ticks proves the rule it carried was terminal.** A blast that missed
+produces no number at all.
+
+| observed | means |
+|---|---|
+| five or more detonations | the depth is not being counted |
+| mob 5 takes 6 **and then burns** | depth counted, `terminal()` not applied |
+| mob 5 takes **nothing** | **STAGING FAULT, not a defect.** Re-space and re-run |
+
+**Mob 5 is at full health deliberately:** softened, it would die to the terminal blast and there would
+be no survivor left to watch for burn ticks.
+
+> **EVERY OTHER ROW ON THIS PAGE PASSES WITH `MAX_CHAIN_DEPTH` DELETED. This is the only row where
+> the cap can red** — and it is also the only witness for a second, independent property: **that
+> `depth` is captured on the death frame before `forget` runs.** Read at detonation it returns 0,
+> every link detonates at depth 1, and the cap never engages — presenting as an unbounded cascade
+> with nothing pointing at the read order. **Two safety properties, one row, no unit cover for
+> either.**
+>
+> **One observation covers both halves of `terminal()`, and only because of the implementation.**
+> *"Does not scorch"* and *"its kills do not ignite"* are the **same line** — the fire-kill clause
+> asks `accruesScorch`, false for INERT. **If that clause ever branches on depth separately from the
+> rule, this row silently stops covering the second half and nothing else covers it.**
 
 ---
 

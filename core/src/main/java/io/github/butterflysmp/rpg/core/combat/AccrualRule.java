@@ -83,6 +83,18 @@ public enum AccrualRule {
      * calling the predicate rather than by re-reading this flag. <b>If a third site ever branches on
      * this directly rather than through {@code accruesScorch}, that is the drift the extraction
      * exists to prevent.</b>
+     *
+     * <p><b>RE-DERIVED 2026-09-09: {@link HitAccrual} NOW SITS BETWEEN THIS ENUM AND THE PORT.</b>
+     * The damage port no longer carries this type -- it carries a {@code HitAccrual}, which wraps
+     * this rule together with an ignite-chain depth, because {@code (INERT, 2)} and
+     * {@code (ACCRUES, 4)} are both nonsense that two separate parameters would let a caller write.
+     * <b>The two branching sites above are unchanged</b>: they still receive this enum, unwrapped by
+     * the adapter via {@code HitAccrual.rule()}.
+     *
+     * <p>What that adds is a THIRD way to reach the wrong answer, and it is worth naming: a caller
+     * that reads {@code accrual.rule()} and ignores {@code accrual.depth()} has silently opted out of
+     * the chain limit. The depth is only meaningful when this is {@link #ACCRUES}, which is why the
+     * two travel as one value.
      */
     public boolean accrues() {
         return this == ACCRUES;

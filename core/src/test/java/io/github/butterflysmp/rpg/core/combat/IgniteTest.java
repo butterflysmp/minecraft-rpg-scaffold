@@ -41,7 +41,7 @@ class IgniteTest {
         var neighbour = new FakeWorld.Dummy(new Vec3(1, 0, 0));
         world.entities.add(neighbour);
 
-        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), victim.id());
+        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), victim.id(), 1);
 
         assertEquals(100, neighbour.health, EPS, "nothing detonates on the death frame");
         assertEquals(0, neighbour.damageCalls, "and the blast has not been dealt early");
@@ -65,7 +65,7 @@ class IgniteTest {
         var neighbour = new FakeWorld.Dummy(new Vec3(1, 0, 0));
         world.entities.add(neighbour);
 
-        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), UUID.randomUUID());
+        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), UUID.randomUUID(), 1);
 
         world.advanceTicks(Ignite.DELAY_TICKS * 10);
         assertEquals(1, neighbour.damageCalls, "a blast is a single event, not a repeating task");
@@ -84,7 +84,7 @@ class IgniteTest {
         world.entities.add(mob);
         world.entities.add(player);
 
-        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), UUID.randomUUID());
+        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), UUID.randomUUID(), 1);
         world.advanceTicks(Ignite.DELAY_TICKS);
 
         assertEquals(100 - Ignite.DAMAGE, mob.health, EPS, "the mob takes the blast");
@@ -106,7 +106,7 @@ class IgniteTest {
         world.entities.add(corpse);      // still findable: a death animation outlasts this fuse
         world.entities.add(neighbour);
 
-        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), corpse.id());
+        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), corpse.id(), 1);
         world.advanceTicks(Ignite.DELAY_TICKS);
 
         assertEquals(100, corpse.health, EPS, "a mob does not blast its own corpse");
@@ -125,7 +125,7 @@ class IgniteTest {
         world.entities.add(inside);
         world.entities.add(outside);
 
-        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), UUID.randomUUID());
+        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), UUID.randomUUID(), 1);
         world.advanceTicks(Ignite.DELAY_TICKS);
 
         assertEquals(100 - Ignite.DAMAGE, inside.health, EPS, "inside the radius takes the blast");
@@ -144,7 +144,7 @@ class IgniteTest {
         var neighbour = new FakeWorld.Dummy(new Vec3(1, 0, 0));
         world.entities.add(neighbour);
 
-        Ignite.detonate(world, Vec3.ZERO, lighter, victim.id());
+        Ignite.detonate(world, Vec3.ZERO, lighter, victim.id(), 1);
         world.advanceTicks(Ignite.DELAY_TICKS);
 
         assertEquals(lighter, neighbour.lastDamageSource,
@@ -162,22 +162,87 @@ class IgniteTest {
     }
 
     @Test
-    void theBlastWearsFireForTheGLYPHButAccruesNOTHING() {
+    void theBlastWearsFireAndRECRUITSUntilTheLastLink() {
+        // THIS ROW ASSERTED THE OPPOSITE UNTIL 2026-09-09, AND THE OLD ASSERTION IS KEPT HERE AS THE
+        // RECORD OF WHAT WAS REFUSED. It read theBlastWearsFireForTheGLYPHButAccruesNOTHING and
+        // pinned AccrualRule.INERT on every link, with this reasoning:
+        //
+        //   "a survivor gains no stacks, so a blast never recruits its own fuel ... that flip is the
+        //    whole difference between a cascade bounded by the set you lit and one whose only
+        //    terminator is running out of mobs."
+        //
+        // THAT REASONING WAS NOT WRONG. It was overturned BY RULING, and the ruling supplied the
+        // bound the reasoning said was missing: MAX_CHAIN_DEPTH. Recruitment without a cap really
+        // would terminate only when the mobs ran out. A row whose expectation flips silently is how
+        // a later reader concludes the earlier argument was never made.
         var world = new FakeWorld();
         var neighbour = new FakeWorld.Dummy(new Vec3(1, 0, 0));
         world.entities.add(neighbour);
 
-        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), UUID.randomUUID());
+        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), UUID.randomUUID(), 1);
         world.advanceTicks(Ignite.DELAY_TICKS);
 
         assertEquals("fire", neighbour.lastDamageElement, "marked as fire: the glyph and the matrix");
-        assertEquals(AccrualRule.INERT, neighbour.lastDamageAccrual,
-                "but INERT -- a survivor gains no stacks, so a blast never recruits its own fuel");
-        assertTrue(neighbour.statuses.isEmpty(), "and nothing was applied as a status");
-        // Mutation: swap INERT for ACCRUES -> the accrual assertion reddens. That flip is the whole
-        // difference between a cascade bounded by the set you lit and one whose only terminator is
-        // running out of mobs, and NOTHING ELSE IN THE SUITE WOULD NOTICE IT -- the damage numbers,
-        // the timing and the targeting are all identical either way.
+        assertEquals(AccrualRule.ACCRUES, neighbour.lastDamageAccrual,
+                "and it RECRUITS -- a survivor is scorched, so the cascade grows its own fuel");
+        assertEquals(1, neighbour.lastDamageDepth, "carrying the depth of the link that dealt it");
+        // Mutation: swap ACCRUES for INERT -> the accrual assertion reddens, and the cascade stops
+        // spreading through anything it does not outright kill. Nothing else in the suite would
+        // notice: the damage numbers, the timing and the targeting are identical either way.
+    }
+
+    @Test
+    void theFOURTHLinkIsTERMINALAndCarriesNoDepth() {
+        // THE CAP, AND IT IS THE ONLY UNIT ROW THAT CAN SEE IT.
+        //
+        // MAX_CHAIN_DEPTH bounds a cascade's DURATION, which is the property that matters: width is
+        // uncomfortable, but an unbounded chain in a dense room runs until the mobs are gone. The
+        // fourth link still fires and still damages -- it simply stops propagating.
+        var world = new FakeWorld();
+        var atCap = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        world.entities.add(atCap);
+
+        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), UUID.randomUUID(), Ignite.MAX_CHAIN_DEPTH);
+        world.advanceTicks(Ignite.DELAY_TICKS);
+
+        assertEquals(100 - Ignite.DAMAGE, atCap.health, EPS,
+                "the last link DAMAGES normally -- it is not a no-op");
+        assertEquals("fire", atCap.lastDamageElement, "and still wears its element, so it draws a glyph");
+        assertEquals(AccrualRule.INERT, atCap.lastDamageAccrual,
+                "but INERT: it recruits nobody, and its kills cannot ignite either");
+        assertEquals(0, atCap.lastDamageDepth,
+                "and it carries NO depth -- an INERT hit's depth is read by nothing, ever");
+        // ONE ASSERTION COVERS BOTH HALVES OF terminal(), AND ONLY BECAUSE OF THE IMPLEMENTATION.
+        // "Does not scorch" and "its kills do not ignite" are the SAME LINE: the fire-kill clause
+        // asks ElementAccrual.accruesScorch, which is false for INERT. If that clause ever branches
+        // on depth separately from the rule, this row silently stops covering the second half and
+        // NOTHING ELSE COVERS IT -- neither here nor in the gate.
+        //
+        // Mutation: delete the cap (always chained) -> the INERT assertion reddens.
+        // Mutation: >= becomes > -> the cascade runs to FIVE links, and this row reddens because
+        // depth 4 would still be accruing. That off-by-one is the whole ruling.
+    }
+
+    @Test
+    void everyLinkBELOWTheCapStillRecruits() {
+        // THE CONTROL FOR THE ROW ABOVE. Without it, "the fourth is inert" passes against an
+        // implementation where EVERY link is inert -- which is the pre-ruling behaviour, and exactly
+        // the regression a careless revert would produce.
+        for (int depth = 1; depth < Ignite.MAX_CHAIN_DEPTH; depth++) {
+            var world = new FakeWorld();
+            var neighbour = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+            world.entities.add(neighbour);
+
+            Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), UUID.randomUUID(), depth);
+            world.advanceTicks(Ignite.DELAY_TICKS);
+
+            assertEquals(AccrualRule.ACCRUES, neighbour.lastDamageAccrual,
+                    "link " + depth + " is below the cap and must still recruit");
+            assertEquals(depth, neighbour.lastDamageDepth,
+                    "and must carry ITS OWN depth -- a constant here would break the chain count");
+        }
+        // The depth assertion is what stops chained(depth) being written as chained(1): every link
+        // would recruit, every link would look right, and the cap would never be reached.
     }
 
     @Test
@@ -186,7 +251,7 @@ class IgniteTest {
         var neighbour = new FakeWorld.Dummy(new Vec3(1, 0, 0));
         world.entities.add(neighbour);
 
-        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), UUID.randomUUID());
+        Ignite.detonate(world, Vec3.ZERO, UUID.randomUUID(), UUID.randomUUID(), 1);
         world.advanceTicks(Ignite.DELAY_TICKS);
 
         assertTrue(neighbour.damageCalls > 0, "control: the blast landed at all");
@@ -205,7 +270,7 @@ class IgniteTest {
     void theBlastPresentsItsVisualAtTheDetonationPointOnTheFuseTick() {
         var world = new FakeWorld();
 
-        Ignite.detonate(world, new Vec3(5, 6, 7), UUID.randomUUID(), UUID.randomUUID());
+        Ignite.detonate(world, new Vec3(5, 6, 7), UUID.randomUUID(), UUID.randomUUID(), 1);
         assertTrue(world.presented.isEmpty(), "the boom waits for the fuse");
 
         world.advanceTicks(Ignite.DELAY_TICKS);
