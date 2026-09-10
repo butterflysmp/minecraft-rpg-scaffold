@@ -67,7 +67,7 @@ costs one more shot and turns a single-machine judgement into two points.
 
 | # | action | expect | marks | figure |
 |---|---|---|---|---|
-| **L0** | Fire while looking at a flat wall, from ~3 blocks. Is there a blue blob obscuring your view at the muzzle? | no | figure · **sole witness** for the 0.25-block first sample | **NOT a clean "no". Operator, verbatim: *"a little clutter when casting on All; Decreased was much better. No need to change."*** ACCEPTED, MEASURED IMPERFECTION — see the coupling below, this is the baseline a density retune starts from |
+| **L0** | Fire while looking at a flat wall, from ~3 blocks. Is there a blue blob obscuring your view at the muzzle? | no | figure · **sole witness** for the 0.25-block first sample **AS IT STOOD ON 2026-09-05** — left as a record of what that run witnessed, not updated to the current geometry. The first sample is now **gap + 0.25** from the eye; `GATE-beam-gap.md` **G5a** re-reads this row comparatively | **NOT a clean "no". Operator, verbatim: *"a little clutter when casting on All; Decreased was much better. No need to change."*** ACCEPTED, MEASURED IMPERFECTION — see the coupling below, this is the baseline a density retune starts from |
 | **L1** | What colour is the beam? | lapis blue | figure · the only check that the authored DustOptions reached the client | **"lapis blue".** The authored `Color.fromRGB(40, 90, 240)` reached the client |
 | **L2** | Fire a full-range shot across open ground. Density: too sparse / right / too busy? | *figure* | figure · **judge with L0, see the coupling below** | **"right" — on BOTH All and Decreased.** No tuning. 4 per block stands |
 | **L3** | How thick is the beam? (authored size 1.2 against vanilla's 1.0) | *figure* | figure | **"right".** Size 1.2 stands |
@@ -192,9 +192,23 @@ than left as a constant in Java.
 > > G5a's result first.
 >
 > So the coupling has bitten before anyone touched a number. A future *"it's too sparse, raise
-> `samples_per_block`"* would move the first sample **closer than 0.25 blocks from an eye that is
-> already carrying clutter**, and would be starting from a measured imperfection rather than from a
+> `samples_per_block`"* would move the first sample ~~**closer than 0.25 blocks from an eye that is
+> already carrying clutter**~~, and would be starting from a measured imperfection rather than from a
 > clean muzzle. **Do not read "L0: no need to change" as "L0: no blob."**
+>
+> > **CORRECTED 2026-09-10 — AND THIS ONE IS A PREDICTION, NOT AN OBSERVATION, WHICH IS WHY BEING
+> > INSIDE A DATED BLOCK DOES NOT EXEMPT IT.** The rest of this block records what the 2026-09-05 run
+> > SAW and stands untouched. This sentence forecasts what a *future* retune would do, and
+> > `BEAM_ORIGIN_GAP` falsified the forecast: at gap 1.0 with `samples_per_block` 4 the first sample
+> > is **1.25 from the eye**, and doubling the density moves it to **1.125** — still a block clear.
+> >
+> > **Its whole function was to warn a retuner off raising the density, and that warning may no
+> > longer apply**, which is what the correction three paragraphs above says outright. The file
+> > stated both positions adjacently until this was fixed.
+> >
+> > **The rest of the paragraph survives:** starting from a measured imperfection rather than a clean
+> > muzzle is still true, and *"no need to change" is still not "no blob"* — pending **G5a**, which
+> > re-reads exactly this.
 
 ---
 
@@ -206,9 +220,24 @@ than left as a constant in Java.
 - **the delay** — whether the chunk-column walk is as invisible as decision A predicts, which is a
   **prediction and not a measurement** until L4/L4c produce figures
 - **the muzzle** — whether a soft coloured blob ~~0.25 blocks from the eye~~ **one gap plus 0.25
-  blocks from the eye** is in the way *(corrected 2026-09-10 with the rest of this file's
-  0.25-from-the-eye figures — `BEAM_ORIGIN_GAP` moved the draw start off the eye; see the L0/L2
-  section above)*
+  blocks from the eye** is in the way *(corrected here, 2026-09-10 — `BEAM_ORIGIN_GAP` moved the
+  draw start off the eye; see the L0/L2 section above)*
+
+  > **THAT PARENTHETICAL SAID "corrected with THE REST OF THIS FILE'S 0.25-from-the-eye figures", AND
+  > IT WAS FALSE.** `grep -n "0\.25"` returns six hits; two were still uncorrected — line 195's
+  > forward-looking prediction and L0's marks column, both since fixed. **Each site now says
+  > "corrected here" and stands on its own**, because a completeness claim has to be re-verified at
+  > every future edit and this one was not verified at its first.
+  >
+  > **AND THE OVERSTATEMENT IS WHAT MADE IT CATCHABLE.** Had it said *"corrected here"* from the
+  > start there would have been nothing to falsify, and two false sentences would have shipped
+  > unnoticed. **A precise claim is a checkable claim** — the fix is to keep making them and make
+  > them true, not to retreat to vaguer ones.
+  >
+  > **FOURTH INSTANCE IN THIS SLICE OF ONE SHAPE: A CLAIM ABOUT A CHECK'S COVERAGE THAT THE CHECK
+  > DOES NOT HAVE.** A control that could not see its own fixture; two suite figures that could not
+  > announce their own staleness; a region rule stated where it could not bite; and this. Four
+  > materials, one defect — **structural rather than careless**, and this repo's headline failure.
 
 `VisualLoaderTest.theShippedLapisBeamCarriesThePortedNumbers` proves the file on disk asks for the
 right numbers. It cannot prove any of them looks right.
