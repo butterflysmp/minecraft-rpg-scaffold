@@ -9534,7 +9534,7 @@ measures a weapon. **`VolleyFixtureTest` pins all of that**, including a row tha
 Emerald's exact triple, so a later edit "tidying" the two triggers into matching numbers deletes the
 property rather than only the prose about it.
 
-### REPORT THE FILE LIST FROM `--numstat`, NOT FROM MEMORY OF THE PLAN
+### REPORT THE FILE LIST FROM `--numstat` **AND** FROM WHAT YOU TOUCHED, AND RECONCILE THEM
 
 **Measured 2026-09-10, commit 3.** The report named **five** files; the commit touched **seven**.
 The two unmentioned were `ability_stone.yml` — edited to narrow a claim this slice had just
@@ -9549,9 +9549,49 @@ report mentions is how `master` gains a change with no record of why** — the D
 memory describes what you set out to do; `--numstat` describes what you did. They agree on the
 boring commits and part company on the ones worth reading — which is when the report matters most.
 
-**How to apply:** paste the file list from `git diff --numstat`, then account for every row. And when
-a fixture's authored fields differ from what was reviewed, **say so even when the reason is good** —
-the operator should not have to diff to learn what changed.
+**How to apply:** paste the file list from `git diff --numstat`, then account for every row **against
+what you know you touched**. And when a fixture's authored fields differ from what was reviewed, **say
+so even when the reason is good** — the operator should not have to diff to learn what changed.
+
+> #### AMENDED 2026-09-10, BY THE RULE'S OWN SECOND APPLICATION. AS FIRST WRITTEN IT WOULD HAVE HIDDEN THE THING IT FOUND.
+>
+> The original said *"report the file list from `--numstat`, **not** from memory of what you set out
+> to do."* **Applied literally, that produces a four-row report with `PLAN-cursed-emerald.md`
+> silently absent — and the report reads as complete.** An untracked file is invisible to
+> `--numstat` **by design**; no amount of care in reading the output recovers it.
+>
+> What actually surfaced it was **reconciling the command's output against what was known to have
+> been touched** — the very faculty the first draft told you to stop using.
+>
+> **So the rule was half-right, and dangerous in the half it got wrong:**
+>
+> | source | failure mode | what it misses |
+> |---|---|---|
+> | **memory alone** | **DRIFTS** | reports the *plan* instead of the work — the original finding, commit 3: five named, seven touched |
+> | **`--numstat` alone** | **BLIND SPOTS** | untracked files, and anything outside the range you diffed |
+>
+> **NEITHER IS THE AUTHORITY. THE DISAGREEMENT IS THE SIGNAL.** A row in one and not the other is
+> the interesting one, in both directions.
+>
+> **What it cost, and it had already been paid before anyone noticed.**
+> `PLAN-cursed-emerald.md` had been **written against `66bd8f9` (2026-09-09 15:23), re-checked at
+> `24f9796` (2026-09-10 01:07), reviewed and ACCEPTED IN SHAPE by the feature chat, and edited by two
+> chats — with zero revisions in git.** `git log --all -- PLAN-cursed-emerald.md` returned empty
+> against a control that returns a commit for a tracked plan, while master already tracked **29**
+> other `PLAN-*.md`. No diff, no history, no recovery, no merge protection: the two-chats-one-file
+> collision the boundary exists to prevent, **made worse than a code collision because git was not
+> watching it.** Committed in `da337e4`.
+>
+> **The duration could only be floored, not measured** — birth time read equal to mtime, reset by the
+> session's own edit. Hence the commit-dated bound rather than a clock figure: every clause of *"at
+> least a day, across two review states, accepted in shape, edited by two chats, zero revisions"* is
+> checkable, which no exact number would have been.
+>
+> **AND THE SAME SLICE PRODUCED THE ERROR IN MINIATURE, IN THE MESSAGE PRAISING THE COUNT.** The
+> operator asserted **27** other plan files from eyeballing a listing while instructing that `grep -c`
+> be run; the count was **29**. Same defect as the `1403` and `1462` test figures — *a figure asserted
+> from a glance at something adjacent to the answer.* **The argument was unaffected, which is exactly
+> what lets this class of error survive**: nothing downstream breaks, so nothing reddens.
 
 ### THE FIVE DECISIONS
 

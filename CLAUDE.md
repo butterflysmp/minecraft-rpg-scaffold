@@ -188,13 +188,27 @@ So:
 - Never `git checkout --` a file with uncommitted work to undo a mutation. Copy it to the
   scratchpad first and restore from there.
 - When you report something as verified, **say what you executed** and what it printed.
-- **Report the FILE LIST from `git diff --numstat`, not from memory of what you set out to do**, and
-  account for every row. The two diverge exactly when something interesting happened — a file you
-  edited because the change falsified something in it, a field that moved from the reviewed plan.
-  Those are the rows worth reading, and a report written from memory is precisely where they go
-  missing. **A report that reads as complete and is not is how `master` gains a change with no
-  record of why.** Say when a reviewed value changed even where the reason is good: the operator
-  should not have to diff to learn what you did. Full entry in `NEXT.md`.
+- **Report the FILE LIST from `git diff --numstat` AND from what you touched, and RECONCILE THEM.**
+  **A row in one and not the other is the interesting one.** Account for every row, in both
+  directions. The two diverge exactly when something interesting happened — a file you edited
+  because the change falsified something in it, a field that moved from the reviewed plan, a file
+  that was never in git at all. **A report that reads as complete and is not is how `master` gains a
+  change with no record of why.** Say when a reviewed value changed even where the reason is good:
+  the operator should not have to diff to learn what you did.
+
+  > **NEITHER LIST IS THE AUTHORITY, AND THE FIRST DRAFT OF THIS RULE NAMED THE WRONG ONE.** It said
+  > *report from `--numstat`, **not** from memory* — and applied literally that hides an **untracked**
+  > file, which `--numstat` cannot see **by design**. **Memory alone DRIFTS** (it reports the plan
+  > instead of the work); **`--numstat` alone has BLIND SPOTS** (untracked files, anything outside the
+  > range you diffed). **The disagreement is the signal.**
+  >
+  > Found 2026-09-10 by the rule's own second application: `PLAN-cursed-emerald.md` had been reviewed,
+  > accepted, and edited by two chats, and had **never been committed** — and the four-row `--numstat`
+  > report that omitted it read as complete. Full entry in `NEXT.md`.
+  >
+  > **Practically:** for a new or moved file use `git status --porcelain`, or
+  > `git diff --cached --numstat --diff-filter=A` after staging, so an addition cannot hide inside a
+  > list of modifications.
 
 
 ### EVERY FILTER AND EVERY SCRIPTED EDIT NEEDS A POSITIVE CONTROL
