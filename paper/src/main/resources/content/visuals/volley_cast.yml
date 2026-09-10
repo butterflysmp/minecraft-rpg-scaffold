@@ -1,0 +1,38 @@
+# The Volley Stone winding up -- what you hear the instant you press, one full second before Rake's
+# first beam. Id is the filename: volley_cast.
+#
+# THE WIND-UP CHIME IS THE TELEGRAPH, AND THE TELEGRAPH IS WHAT MAKES A COMMITMENT FAIR. A volley
+# pays for its burst with a second of doing nothing; silence during that second does not simplify
+# the weapon, it deletes the thing the second was paid for. Gate row V1 exists to check that this is
+# audible BEFORE anything is fired -- an instant first shot means windup_ticks was dropped.
+#
+# ON_CAST FIRES ONCE PER VOLLEY, NOT PER SHOT, and that is a ruling rather than a limitation.
+# CastExecutor:122 already runs on_cast once before the cast switch, so once-per-volley costs
+# nothing; a per-shot cue would need a new `on_shot:` hook, and NOBODY HAS YET HEARD EIGHT KINETIC
+# RAY SHOTS ONE TICK APART IN THIS REPO. A tuning request against a system nobody has watched
+# encodes a guess as a requirement -- which applies to grammar as much as to numbers. V6 takes the
+# observation; the hook is added afterwards or not at all.
+#
+# AND IF V6 SAYS A PER-SHOT CUE IS WANTED, on_shot IS THE ANSWER AND THERE IS NO CHEAPER ONE.
+# Putting the chime in an on_hit impact visual does not work: the impact plays AT THE TARGET, AT
+# LAND TIME -- up to 64 blocks and several ticks away, because the ray walks chunk columns -- and on
+# a clean miss, where the burst goes off in mid-air at full range, not usefully at all. Written down
+# so the next reader does not spend a boot discovering it.
+#
+# Key verified present in net/minecraft/sounds/SoundEvents.class on the pinned 26.1.2 server jar
+# before shipping, not recalled, by the method lapis_cast.yml records:
+#   unzip -p run/versions/26.1.2/paper-26.1.2.jar net/minecraft/sounds/SoundEvents.class \
+#     | grep -a -o 'block\.amethyst[a-z_.]*' | sort -u
+# printed 12 keys including block.amethyst_block.chime. THE FILTER WAS PROVEN CAPABLE OF MATCHING
+# FIRST: the same command with 'entity\.breeze\.[a-z_.]*' printed entity.breeze.shoot, the key
+# lapis_cast.yml already ships and the server already boots without complaint. A grep that has only
+# ever been run against the thing it found has not been tested.
+#
+# Sound only. Particles at the caster during a wind-up would be a second thing to look at while
+# V3 is trying to count beams.
+
+steps:
+  - type: sound
+    key: block.amethyst_block.chime
+    volume: 0.6
+    pitch: 0.7

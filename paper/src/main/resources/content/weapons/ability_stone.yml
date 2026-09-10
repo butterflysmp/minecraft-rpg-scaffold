@@ -15,9 +15,15 @@ display_name: "Ability Stone"
 element: kinetic          # neutral -- it is a tool, not a themed weapon
 # Exotic purely for VISIBILITY. The name's colour is now the rarity tier's, always (an authored
 # colour no longer wins), so a `common` dev tool would mint plain white and read as an Ironblade
-# in a crowded hotbar. Exotic is aqua and nothing else ships at that tier, so the stone is
-# unmistakable. A conscious spend of the tier on a tool: it is in no kit and no loot roll, so it
-# cannot cheapen exotic anywhere a player can reach.
+# in a crowded hotbar. Exotic is aqua, so the stone is unmistakable beside REAL gear. A conscious
+# spend of the tier on a tool: it is in no kit and no loot roll, so it cannot cheapen exotic
+# anywhere a player can reach.
+#
+# NARROWED 2026-09-10. This note used to add "and nothing else ships at that tier", which stopped
+# being true the day volley_stone.yml landed -- a second dev fixture, exotic for this same
+# visibility reason. The claim that survives is the one that was doing the work: exotic is
+# unmistakable against REAL gear. The two dev tools are told apart by MATERIAL, amethyst_shard here
+# and echo_shard there, which is why that choice is commented in both files.
 rarity: exotic
 class: mage               # a dev tool; class is required, mage is as good as any here
 material: amethyst_shard
