@@ -369,8 +369,11 @@ class CastExecutorVolleyTest {
      * in this file and fails only here.
      *
      * <p>Mutation: hoist the {@code aim.pointAt(BEAM_ORIGIN_GAP)} out of the per-shot projection so
-     * it is computed once per volley -> shot three's beam still starts on the +x aim and this
-     * reddens.
+     * it is computed once per volley -> <b>SHOT TWO</b> -- {@code presentedAlong.get(1)}, the first
+     * shot after the turn, and the one this row asserts on -- still carries shot one's {@code +x}
+     * gap, and the assertions below redden. (Named exactly, because a re-runner who sees shot two go
+     * red should not have to work out whether that is the predicted failure or a different one.)
+     * Measured: 855 run, <b>1</b> failed.
      */
     @Test
     void eachShotsBeamStartsOneGapAlongTHATShotsOwnAim() {

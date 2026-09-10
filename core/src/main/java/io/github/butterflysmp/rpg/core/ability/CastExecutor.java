@@ -388,10 +388,24 @@ public final class CastExecutor {
         //
         // THE COLLAPSE POINT IS THIS SEGMENT'S OWN `from`, NOT `beamEnd`, AND THAT IS A REGION RULE
         // RATHER THAN A TASTE. PaperCombatWorld.presentAlong hops on ctx.scheduler().onRegion(from)
-        // -- its javadoc's "the end the caller is already standing on". For any non-final segment
-        // `beamEnd` is `to`, which lies exactly ON a chunk plane, and ChunkTraversal.columnOf(16.0)
-        // is 1 while the segment [0,16] is column 0. Collapsing to beamEnd would schedule INTO A
-        // DIFFERENT REGION to draw nothing, and would falsify that javadoc.
+        // -- its javadoc's "the end the caller is already standing on".
+        //
+        // THE UNIVERSAL PROPERTY, stated as the guarantee rather than as an example: `from` is
+        // ALWAYS in this segment's own column and is where the caller already stands. `beamEnd` is
+        // guaranteed NEITHER -- for a non-final segment it is `to`, which lies exactly ON a chunk
+        // plane, and a boundary coordinate belongs to the column on its POSITIVE side
+        // (columnOf = floor(x / 16)). So collapsing to beamEnd schedules into a DIFFERENT region to
+        // draw nothing, and falsifies that javadoc -- but ONLY when the ray travels +x or +z:
+        //
+        //   +x from 15.6 -> segment [15.6, 16.0], columnOf(16.0) = 1, segment column 0   HAZARD
+        //   -x from 32.4 -> segment [32.4, 32.0], columnOf(32.0) = 2, segment column 2   none
+        //
+        // THE ASYMMETRY IS STATED BECAUSE THE FIRST DRAFT OF THIS COMMENT DID NOT. It cited the +x
+        // instance under a universal that does not hold for -x/-z, and the test staged the rule on a
+        // -x fixture where it could not bite. That is the same blind spot the paragraph above warns
+        // about -- an implementation that fails BY AIM DIRECTION -- reappearing one layer up, inside
+        // the warning about it. theSuppressedSegmentCollapsesToAPointInItsOwnCHUNKCOLUMN now stages
+        // the +x case and carries a control proving its far end really is in the next column.
         //
         // COST, AND IT IS UNMEASURED: presentAlong schedules its region hop BEFORE BeamSamples
         // returns empty, so every suppressed segment costs one no-op hop. For a six-shot volley

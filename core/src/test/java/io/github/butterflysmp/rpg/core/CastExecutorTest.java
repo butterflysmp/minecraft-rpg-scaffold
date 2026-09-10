@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.ability.*;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.AttackCharge;
+import io.github.butterflysmp.rpg.core.combat.ChunkTraversal;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
@@ -1062,10 +1063,11 @@ class CastExecutorTest {
         assertEquals(0.0, suppressed.to().subtract(suppressed.from()).length(), 1e-9,
                 "and it draws nothing: a zero-length span, which BeamSamples turns into no points");
         assertEquals(origin, suppressed.from(),
-                "collapsed to the SEGMENT'S OWN from, not to its far end. PaperCombatWorld hops on "
-                        + "the first argument, and the far end lies on a chunk plane -- columnOf(32.0) "
-                        + "is 2 while this segment is column 2 only at its start. Collapsing to the "
-                        + "far end would schedule into a different region to draw nothing");
+                "collapsed to the SEGMENT'S OWN from, not to its far end -- asserted here on the "
+                        + "COORDINATE only. This staging aims -x, so its far end 32.0 is in the SAME "
+                        + "column as 32.4 (both 2) and the region hazard cannot bite on this row: "
+                        + "the REGION rule is exercised by theSuppressedSegmentCollapsesToAPointIn"
+                        + "ItsOwnCHUNKCOLUMN below, which aims +x");
 
         world.advanceTicks(1);
 
@@ -1095,6 +1097,59 @@ class CastExecutorTest {
 
         assertEquals(drawnSpans.get(0).to(), drawnSpans.get(1).from(),
                 "and the drawn spans join: no break at the joint between the columns");
+    }
+
+    /**
+     * <b>A SUPPRESSED SEGMENT COLLAPSES TO A POINT IN ITS OWN CHUNK COLUMN, AND THIS IS THE ROW
+     * WHERE THAT ACTUALLY MATTERS.</b>
+     *
+     * <p>{@code PaperCombatWorld.presentAlong} hops on {@code onRegion(from)} -- its javadoc's
+     * "the end the caller is already standing on". Collapsing a suppressed segment to its FAR end
+     * would schedule into a different region to draw nothing.
+     *
+     * <p><b>THE HAZARD IS DIRECTION-ASYMMETRIC, WHICH IS WHY THIS ROW EXISTS SEPARATELY.</b> A
+     * boundary coordinate belongs to the column on its POSITIVE side
+     * ({@code columnOf = floor(x / 16)}), so a segment's far end is a different column only when the
+     * ray travels {@code +x} or {@code +z}:
+     *
+     * <pre>
+     *   +x from 15.6 -> segment [15.6, 16.0], columnOf(16.0) = 1, segment column 0   HAZARD
+     *   -x from 32.4 -> segment [32.4, 32.0], columnOf(32.0) = 2, segment column 2   none
+     * </pre>
+     *
+     * <p>The sibling row above aims {@code -x}, so it discriminates on the COORDINATE but the region
+     * rule could not bite there. <b>A reason stated where it cannot bite reads identically whether
+     * the hazard exists or not</b> -- which is the same defect as the implementations that comment
+     * warns about, one layer up and inside the warning.
+     *
+     * <p>Mutation: collapse to {@code beamEnd} instead of the segment's own {@code from} -> the
+     * column assertion reddens HERE, on the case it guards, rather than only on a coordinate.
+     */
+    @Test
+    void theSuppressedSegmentCollapsesToAPointInItsOwnCHUNKCOLUMN() {
+        var world = new FakeWorld();
+        var origin = new Vec3(15.6, 0, 0);
+        var caster = new FakeWorld.Dummy(origin);
+        world.entities.add(caster);
+
+        cast(world, caster, beamRay("lapis_beam"), new Aim(origin, new Vec3(1, 0, 0)));
+
+        assertEquals(1, world.presentedAlong.size(), "the first segment ran and was suppressed");
+        FakeWorld.Beam suppressed = world.presentedAlong.get(0);
+        assertEquals(0.0, suppressed.to().subtract(suppressed.from()).length(), 1e-9,
+                "0.4 blocks of segment, entirely inside a 1.0 gap, so nothing is drawn");
+
+        // THE POSITIVE CONTROL FOR THE REGION RULE: unless the far end really is in another column,
+        // this row proves nothing that the -x sibling did not already prove.
+        assertEquals(0, ChunkTraversal.columnOf(origin.x()), "the segment starts in column 0");
+        assertEquals(1, ChunkTraversal.columnOf(16.0),
+                "CONTROL: and its far end is in column 1 -- so collapsing there WOULD cross a region "
+                        + "boundary. If this ever reads 0 the staging has stopped exercising the rule");
+
+        assertEquals(ChunkTraversal.columnOf(origin.x()),
+                ChunkTraversal.columnOf(suppressed.from().x()),
+                "THE PROPERTY: the point handed to presentAlong is in the SEGMENT'S OWN column, so "
+                        + "the region hop stays where the caller already is");
     }
 
     /**
