@@ -44,6 +44,22 @@ player would.
 `Ignite`'s provisional numbers: **fuse 20 ticks, radius 4.0, damage 6.0.** Every expectation below is
 written against those; if a row's number is wrong, check the constant before believing the row.
 
+### THE DEV BURN'S ARITHMETIC, BECAUSE TWO ROWS ARE STAGED AGAINST IT AND ONE USED TO BE IMPOSSIBLE
+
+`/rpg apply scorch 1 200` **declares no payload**, so the cap falls back to
+`Scorch.UNDECLARED_CAP = 2.0`. Against a knell that is:
+
+```
+burn   = min(5% of 360, cap 2.0) = 2.0 per second
+window = 200 ticks / 20          = 10 burns
+total  = 20 damage, over 10 seconds
+```
+
+**A DEV-SCORCHED KNELL AT FULL HEALTH CANNOT DIE OF ITS BURN.** 20 against 360. Any row that wants a
+burn *kill* has to soften the mob first, and any row that softens a mob and then scorches it is
+racing a 2/second clock. Both facts below are consequences of this one number, and neither was costed
+when the rows were first written.
+
 ---
 
 ## The rows
@@ -111,8 +127,21 @@ Three runs, one neighbour each, scorch applied by `/rpg apply scorch 1 200`:
 > three fails to ignite, the hook is on the seam and the other two are passing by accident.**
 
 ### I5 — a pack cascades, serialized in time · **SOLE WITNESS for rule 2**
-Spawn four knells in a loose cluster, all within ~3 blocks of a neighbour. `/rpg mobdamage` them all
-to under 6 so a single blast is lethal. Scorch **all four**. Kill one.
+Spawn four knells in a loose cluster, all within ~3 blocks of a neighbour.
+
+**THE ORDER IS LOAD-BEARING. DO IT IN THIS ORDER:**
+
+1. **SOFTEN** all four to under 6 (`/rpg mobdamage 355`) so a single blast is lethal.
+2. **THEN scorch** all four.
+3. **THEN kill one IMMEDIATELY.**
+
+> **THE BURN IS RACING YOUR STAGING, AND LOSING THE RACE LOOKS LIKE A PASS.** At 2/second a knell
+> sitting at 5 HP **dies to its own burn in about three seconds**. Scorch before the softening is
+> finished — or spend more than a few seconds on step 3 — and one knell dies unaided and starts the
+> wave early. **That is indistinguishable on screen from a cascade you triggered**, and it would be
+> read as a pass while witnessing nothing about the trigger.
+>
+> **If a knell dies on its own before you land the kill: respawn and redo. Do not read the result.**
 
 **Expect:** a **rolling wave** — one blast, a second, the next, a second, the next. **Four links is
 four seconds end to end**, so this is slow enough to count deliberately: four separate detonations,
@@ -149,6 +178,27 @@ beside a neighbour.
 > Without it every other row on this page is unfalsifiable: a build that ignited on every death would
 > pass I1 through I5 perfectly.
 
+### I8 — **figure** — the burn does not double-dip with the blast
+**Soften the knell to 10 first** (`/rpg mobdamage 350`), then scorch it and let it burn to death on
+its own clock — **no killing blow** — with a neighbour nearby.
+
+It dies on the **fifth burn, at about five seconds**, with half the window still in hand.
+
+**Observed:** ______________________
+
+Record what the neighbour takes and whether the death message names the applier. A burn kill is the
+one path where the scorch's own damage causes the death that triggers the blast, and it is the case
+most likely to interact with `forget`'s ordering.
+
+> **AS FIRST WRITTEN THIS ROW COULD NOT FIRE, AND THAT IS THE WORST KIND OF BROKEN ROW.** It said
+> "scorch a knell, let it burn to death" with no softening — but a full knell is **360** and the
+> dev-applied burn deals **20 in its entire window**. It cannot die. The row would sit for ten
+> seconds and produce nothing.
+>
+> **On a figure row that is invisible:** there is no expected value for the absence to contradict, so
+> a blank observation reads as "ran it, nothing notable" rather than as "this was never possible".
+> A checkbox row would at least have gone unticked.
+
 ### I9 — a mob ONE-SHOT by fire, never scorched, explodes · **SOLE WITNESS for the fire-kill clause**
 `/rpg give flint_staff`. `/rpg spawn knell`, `/rpg mobdamage 355` so it sits at 5, beside a
 neighbour. Do **not** scorch it. Kill it with one bolt.
@@ -168,9 +218,17 @@ a single tick.
 > this row would still pass — and the cascade would recruit every mob it killed. That is `I10`.
 
 ### I10 — a blast kill does NOT recruit · **SOLE WITNESS for ruling 2 under the new clause**
-Two knells at full health beside a third that is scorched and low. Kill the scorched one so its blast
-lands on both neighbours — then bring one neighbour to just under 6 first, so **the blast itself
-kills it**.
+Three knells within ~3 blocks of each other:
+
+1. **A** — leave at **full health**, then scorch it (`/rpg apply scorch 1 200`).
+2. **B** — soften to under 6 (`/rpg mobdamage 355`) and **do NOT scorch it**. The blast will kill it.
+3. **C** — leave at full health, unscorched. It just takes the 6.
+4. Kill **A** by command (`/rpg mobdamage 400`).
+
+> **A IS LEFT AT FULL HEALTH DELIBERATELY — it is the only scorched mob here, and a scorched mob that
+> is also LOW races its own burn** (2/second, so a knell at 5 dies unaided in about three seconds).
+> Full health, it cannot die to a 20-damage window, so there is no clock on your staging. **B is
+> softened but never scorched**, so it has no burn either.
 
 **Expect:** the blast kills that neighbour and **NOTHING further happens.** No second detonation, no
 wave.
@@ -185,10 +243,21 @@ wave.
 > as a room-clearing chain nobody asked for.
 
 ### I11 — scorched AND fire-killed is still ONE blast · **the two-site guard**
-`/rpg apply scorch 1 200` on a knell, then kill it **with the flint staff** beside a full-health
-neighbour. Both clauses are now true at once.
+**In this order**, beside a full-health neighbour:
+
+1. **Soften** the knell to 15 (`/rpg mobdamage 345`) — a flint bolt is **20**, so without this the
+   staff cannot kill a 360 HP knell and the row cannot fire at all.
+2. **Scorch** it (`/rpg apply scorch 1 200`).
+3. **One bolt, immediately.** Both clauses are now true at once: it was scorched *and* a fire blow
+   killed it.
 
 **Expect exactly `6`. NOT `12`.**
+
+> **THIS ROW WAS WRITTEN IMPOSSIBLE FIRST TIME, exactly like I8** — "kill it with the flint staff"
+> against a full-health knell, 20 against 360. Caught while costing I8's arithmetic, which is the
+> argument for costing the numbers of every row that stages a kill rather than only the one that was
+> reported broken. At 15 HP the burn gives you about seven seconds before it finishes the job
+> itself; land the bolt well inside that.
 
 > **The trigger deliberately lives in two places** — `onEntityDeath` for the scorched clause,
 > `BukkitCombatant` for the fire-kill clause — because their domains are disjoint: the adapter cannot
@@ -198,15 +267,6 @@ neighbour. Both clauses are now true at once.
 > read **before** the damage call: the whole death chain fires synchronously inside it, so a read
 > taken afterwards would always see `false` and every scorched mob killed by fire would blast twice.
 > `6` against `12`, one number apart — I3's shape on a new path.
-
-### I8 — **figure** — the burn does not double-dip with the blast
-Scorch a knell, let it burn to death on its own clock (no killing blow), with a neighbour nearby.
-
-**Observed:** ______________________
-
-Record what the neighbour takes and whether the death message names the applier. A burn kill is the
-one path where the scorch's own damage causes the death that triggers the blast, and it is the case
-most likely to interact with `forget`'s ordering.
 
 ---
 

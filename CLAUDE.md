@@ -199,24 +199,40 @@ The rule underneath all three: **silence is not a result.** An instrument that o
 either found nothing or done nothing, and those are the same picture.
 
 
-### THE FOUR WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
+### THE FIVE WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
 
-The first three were hit in one slice (2026-09-08, elements); the fourth arrived on 2026-09-09,
-Ignite. They are one table because the shape only becomes visible together: **each guard catches the
-previous failure and cannot see the one below it.**
+The first three were hit in one slice (2026-09-08, elements); the fourth and fifth arrived on
+2026-09-09, Ignite — **from two different mechanisms, one commit apart**, which is the evidence that
+this is a family and not a run of bad luck. They are one table because the shape only becomes visible
+together: **each guard catches the previous failure and cannot see the one below it.**
 
 | failure | what happened | what catches it |
 |---|---|---|
 | **didn't apply** | `perl -i` exited 0 and left the file byte-identical | the marker grep, **"marker present"** half |
 | **applied to PROSE, reported as applied to CODE** | the target string appeared in **both a javadoc and the code it describes**, and `perl`'s non-global `s///` replaced the *comment* — the one that came first in the file. Marker present, code untouched | the marker grep, **"original gone" half — AND ONLY THAT HALF** |
+| **THE MARKER BROKE THE EDIT** | the replacement text was `/* MUT_MARK */`, and its slashes **terminated `perl`'s `s///` early** — so the edit landed as a bare *deletion* and the marker never went in. Original gone, marker absent | the marker grep, **"marker present" half — the other one** |
 | **applied, no bite** | the edit landed and the test stayed green — the assertion matched a *duplicate* of the mutated token | **nothing mechanical** — only reading the red you expected and not getting it |
 | **applied, wrong side** | the test passed on an accident (a floating-point coincidence; an undefended victim where `dealt == amount`) rather than on the thing it guards | **nothing at all** — only designing the fixture so the two values differ |
 
-> **THE SECOND ROW IS WHY THE MARKER GREP IS TWO CHECKS AND NOT ONE.** *"Marker present"* passes
-> cleanly on a misplaced application — the marker really is in the file. Only *"original gone"*
-> notices that the code still says what it always said. **A one-directional marker grep would have
-> reported this as a verified mutation of a line that was never touched**, and the test run beneath
-> it was green for the honest reason: nothing had changed.
+> **ROWS TWO AND THREE ARE WHY THE MARKER GREP IS TWO CHECKS, AND WHY YOU NEED BOTH HALVES.** They
+> fail in opposite directions and each half catches exactly one of them:
+>
+> - *"Marker present"* passes cleanly on a **misplaced** application — the marker really is in the
+>   file. Only *"original gone"* notices the code still says what it always said.
+> - *"Original gone"* passes cleanly when **the marker itself broke the edit** — the target really is
+>   gone, replaced by nothing. Only *"marker present"* notices the edit is not the one you wrote.
+>
+> A one-directional grep reports one of these as a verified mutation, and in both cases the test run
+> beneath it is green or red for reasons that have nothing to do with your hypothesis.
+>
+> **AND A LUCKY RESULT FROM A BROKEN INSTRUMENT IS STILL NOT EVIDENCE.** In the third row's real
+> instance the accidental deletion *happened to equal* the intended mutation, so the reddening was
+> correct — and it was discarded and re-run anyway. **That is the whole discipline: a right answer
+> from an uncontrolled instrument is the same reading you would get from a broken one.** Do not keep
+> it because it looks right.
+>
+> **Practically:** never put `/`, or the delimiter you are using, inside the replacement text. Use
+> `s{...}{...}`, and prefer a marker with no punctuation at all.
 >
 > **This repo makes the shape common rather than rare.** Its javadocs quote their own constants and
 > call sites constantly — `DefenseRule.APPLIES` appeared in a comment three lines above the

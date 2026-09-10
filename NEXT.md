@@ -8164,6 +8164,37 @@ Every one is compiler-checked. **The tenth is the known trap, and it is now DISC
 exhaustiveness-checked, because its labels are type patterns over a sealed interface. Its javadoc
 already records the build failure that proves it. Do not "fix" it.
 
+### THE MARKER ITSELF CAN BREAK THE EDIT, AND A LUCKY RESULT IS STILL NOT EVIDENCE
+
+**Named 2026-09-09, Ignite, one commit after the javadoc-instead-of-code case and from a DIFFERENT
+mechanism.** The fifth member of the mutation-lies family; the table lives in `CLAUDE.md`.
+
+Mutating the shared accrual predicate, the replacement text was `/* MUT_MARK */`. **Its slashes
+terminated `perl`'s `s///` early**, so the substitution ran as `s/PATTERN//` -- a bare deletion -- and
+the marker never entered the file. The check printed:
+
+```
+marker present (need 1): 0   original gone (need 0): 0
+```
+
+**The two halves of the marker grep fail in OPPOSITE directions, and this is what proves you need
+both.** The javadoc case passes *"marker present"* and is caught only by *"original gone"*. This case
+passes *"original gone"* and is caught only by *"marker present"*. A one-directional check clears
+exactly one of them.
+
+**AND THE PART WORTH KEEPING: THE RESULT WAS RIGHT, AND IT WAS DISCARDED ANYWAY.** The mutation in
+question was *"drop the `accrual.accrues()` clause"* -- and a bare deletion of that line **is** that
+mutation. The intended rows reddened, for the intended reason. Every visible signal said pass.
+
+> **A right answer from an uncontrolled instrument is the same reading you would get from a broken
+> one.** Keeping it because it looked correct would have been the exact move this page spends four
+> other entries warning against -- and it would have set the precedent that a failed control can be
+> waived when the outcome is agreeable, which is worse than any single wrong result.
+
+**How to apply:** never put the delimiter -- or `/` at all -- inside replacement text. Use
+`s{...}{...}` with an environment variable for the payload, and prefer a marker with no punctuation.
+Then read BOTH halves of the control and re-run on either failing, whatever the test output said.
+
 ### A MUTATION CAN LAND IN THE COMMENT THAT DESCRIBES THE CODE, AND REPORT AS APPLIED
 
 **Named 2026-09-09, Ignite. The fourth member of the mutation-lies family, which lives as a table in
