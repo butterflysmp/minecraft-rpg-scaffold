@@ -152,6 +152,19 @@ class VolleyFixtureTest {
         // that is fine -- a wind-up is not a decision anyone owns. What must never happen is the
         // whole triple coinciding. Asserting the fields individually would forbid a number that is
         // not the problem and would have to be relaxed the first time it collided by chance.
+        //
+        // WHERE 20/6/2 COMES FROM, AND WHAT CHANGED UNDER IT: it is
+        // content/weapons/cursed_emerald.yml's triple. It was a number from a PLAN when this row was
+        // written and became a number from a SHIPPED FILE at 603936c. The row itself did not change
+        // meaning -- it has always asserted "Rake is not this particular triple", true before and
+        // after -- but IF THE EMERALD IS EVER RETUNED, THIS ROW KEEPS GUARDING A TRIPLE NOBODY USES
+        // and nothing here would say so. Retune the emerald, retune this literal.
+        //
+        // DO NOT "FIX" THIS BY READING THE EMERALD'S FILE. That would make the row assert that two
+        // files DIFFER -- true by coincidence rather than by decision -- and it would redden the day
+        // the emerald ships a triple that collides by chance, which is not the defect this row is
+        // for. The defect is a FIXTURE STAGED AT A WEAPON'S SETTINGS, and that is a claim about
+        // this file's intent, not about the other file's contents.
     }
 
     @Test
