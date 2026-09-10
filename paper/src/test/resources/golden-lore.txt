@@ -7,6 +7,19 @@
    "while you move." color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Exotic Magic Weapon" color=#55FFFF O=. B=. S=. U=. I=F
+-- cursed_emerald
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Cursed Volley" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Channel, then loose six" color=#AAAAAA O=. B=. S=. U=. I=F
+   "bolts down your line of sight." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["27" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.5s | Mana Cost: 40" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Nine facets, and every one of them looking back." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It asks for a moment before it answers." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
 -- ember_staff
    "Fire" color=#FF5555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -475,4 +488,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 87 renderings ===
+=== 88 renderings ===

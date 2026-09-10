@@ -1,0 +1,200 @@
+# The Cursed Emerald, ported from the old repo (BSMPMenu, cfde822). One right-click: mana paid
+# upfront, a 20-tick wind-up with an audible telegraph, then SIX RAYS TWO TICKS APART, each
+# re-aimed from the caster's live eye.
+#
+# THE FIRST SHIPPED CONSUMER OF `type: volley`. The grammar is the wrapper slice's (PR #63,
+# ab0739a) and was gated before this file was authored -- see GATE-volley.md. The plan that named
+# the blocker is PLAN-cursed-emerald.md, and every number below traces to a row in its table.
+#
+# THE RE-AIM IS NOT INCIDENTAL. cfde822's fireCursedEmeraldPulse read getEyeLocation() fresh on
+# every shot, so the player tracks a moving target across the burst. The wrapper reproduces that by
+# re-projecting the Caster per shot -- which also means a FRESH CRIT ROLL each shot (operator
+# ruling, Q1). A version that froze the aim at cast would be a different weapon sharing its
+# numbers.
+#
+# WHAT THAT COSTS, STATED BECAUSE IT IS THE WEAPON'S ONE SHARP EDGE: EffectApplier passes the
+# authored amount through enchantDamagePercent, classDamageBonus, chargeScale and critMultiplier,
+# all off the per-shot projection. SO THIS VOLLEY'S STATS ARE NOT ATOMIC -- a player who swaps
+# weapons mid-burst has shots 4-6 priced off whatever is in hand at that tick. See the Q3 note at
+# the bottom: the risk is bounded here and is NOT zero in general.
+
+id: cursed_emerald
+display_name: "Cursed Emerald"
+
+# ELEMENT IS `kinetic`, AND IT IS THE SAME CONSIDERED CHOICE lapis_staff.yml RECORDS, made the same
+# way and for the same reason. cfde822 typed this weapon DamageType.MAGIC and advertised "Magic
+# Damage" in its lore. That is a damage-source CATEGORY, not an element, and this registry holds
+# fire, kinetic, nature, undead, void, water and wither -- there is no arcane or magic among them.
+#
+# `nature` WAS THE OBVIOUS REACH -- green stone, green beam -- AND IS REFUSED. Elements are parked,
+# and `element:` is not cosmetic: it drives the damage glyph and, for a status-declaring element,
+# accrual. Adding an element is one file and costs nothing, which is exactly why adding one unasked
+# is easy and wrong.
+#
+# KINETIC DECLARES NO applies_status, SO THIS WEAPON DOES NOT SCORCH AND ITS KILLS DO NOT IGNITE.
+# That is deliberate, and it is what makes CE2 readable: kinetic's damage_symbol is "", so the six
+# numbers are BARE and crit colour is the only signal on them. Had this been fire, six gold glyphs
+# would sit beside six numbers whose only distinction is also a warm colour.
+element: kinetic
+rarity: uncommon
+class: mage
+
+# MATERIAL IS `emerald`, FROM cfde822 (ItemFactory:225), and it carries two consequences.
+#
+# 1. THE EMERALD NEVER BREAKS. An emerald has no durability, and Durability.isBroken opens with
+#    `if (maxDurability <= 0) return false` under a javadoc naming it THE STAFF-AND-STONE
+#    EXEMPTION. THIRD CRAFTABLE INDESTRUCTIBLE WEAPON, after flint_staff and lapis_staff. This is a
+#    REAL CHANGE from cfde822, where ItemRegistry.isBroken gated the cast and the weapon could
+#    break -- confirmed by the operator. Do not "fix" it by requiring durability: that would break
+#    an exemption ember_staff and ability_stone depend on. THE MATERIAL IS THE LEVER.
+#
+# 2. IT DOES NOT STACK, AND THE MATERIAL IS NOT WHY. A vanilla emerald stacks to 64; a minted
+#    Cursed Emerald does not, because WeaponItems.mint calls meta.setMaxStackSize(1) on everything
+#    it mints (347967b). See CLAUDE.md "Standing decisions" -- flint_staff.yml carries the long
+#    form of why a note here once said the opposite.
+material: emerald
+
+# AUTHORED 0, NOT OMITTED, AND THE FIRST DRAFT OF THE PLAN GOT THIS WRONG. WeaponLoader:88 is
+# getDouble("attack_damage", 0.0), so the absence resolves to exactly the value the omission meant
+# -- WHICH IS THE TRAP: it works, it is invisible, and it hides a decision behind a default. There
+# is no basic attack on this weapon; the volley is the whole thing, and that is a choice. Same rule
+# kinetic.yml states as ABSENCE IS NOT A NEUTRAL VALUE.
+attack_damage: 0
+
+flavor:
+  - "Nine facets, and every one of them looking back."
+  - "It asks for a moment before it answers."
+
+triggers:
+  right_click:
+    name: "Cursed Volley"
+    description:
+      - "Channel, then loose six"
+      - "bolts down your line of sight."
+
+    # AUTHORED 30, AND IT IS EXACTLY THE DERIVED FLOOR: windup 20 + (shots 6 - 1) x interval 2.
+    #
+    # THE WRAPPER ALREADY GUARANTEES THIS. AbilityService stamps max(authored, derived), so a
+    # re-press during the cast is refused WHETHER OR NOT THIS FIELD IS AUTHORED. The number is
+    # therefore redundant as a guard -- and it is written anyway, for two reasons that are not the
+    # original one. The plan's first draft authored 30 AS the guard, and the review was right to
+    # refuse that: two independently-computed durations staying equal is a coincidence, not a
+    # mechanism, and tuning windup_ticks would have broken it silently.
+    #
+    # 1. THE TOOLTIP RENDERS THE AUTHORED VALUE. 30 makes it read "Cooldown: 1.5s", which is true.
+    #    Authoring 0 prints NO cooldown line while the real guard is 30 ticks -- a player reading an
+    #    uncooled weapon and getting a cooled one. That gap is known, is OLDER AND LARGER than
+    #    volleys (WeaponLoreLines already approximates for attack-speed-scaled basic attacks), and
+    #    is unruled. Do not make this weapon a new instance of it.
+    # 2. AUTHORING BELOW THE FLOOR EMITS A BOOT WARNING, BY DESIGN. volley_stone authors 0
+    #    deliberately, because it is a TEST INSTRUMENT and that warning is its witness. SHIPPED
+    #    CONTENT MUST NOT CARRY A PERMANENT EXPECTED WARNING -- a warning nobody is meant to act on
+    #    is how a console stops being read.
+    #
+    # SO: IF YOU RETUNE windup_ticks, shots OR interval_ticks, RETUNE THIS IN THE SAME EDIT. The
+    # mechanism will not break -- max() keeps you safe -- but the tooltip will start lying, and
+    # authoring below the new floor will start warning at every boot. Both are silent to tests.
+    cooldown_ticks: 30
+
+    # 40 IS A PLACEHOLDER AND IS NAMED AS ONE RATHER THAN QUIETLY KEPT. It is cfde822's
+    # CURSED_EMERALD_MANA_COST, set against that repo's regen, pool and gear -- none of which came
+    # across. 40 per 30 ticks is 26.7 mana/second sustained against a 100 pool: the bar empties in
+    # under four seconds and supports two and a half casts. Per the standing rule that a tuning
+    # request against a system nobody has watched encodes a guess as a requirement, THIS GETS
+    # RE-DECIDED FROM GATE ROW CE5's OBSERVATION, not from a document.
+    cost:
+      resource: mana
+      amount: 40
+
+    # WHAT YOU HEAR THE MOMENT YOU PRESS -- the telegraph, and the entire reason a one-second
+    # commitment is fair rather than a dead second. on_cast fires ONCE per volley, at the caster,
+    # on the cast frame. It is VISUALS ONLY: AbilitySchema throws by name for any other effect type
+    # there.
+    on_cast:
+      - type: visual
+        visual_id: emerald_windup
+
+    cast:
+      type: volley
+      windup_ticks: 20
+      shots: 6
+      interval_ticks: 2
+      of:
+        type: ray
+        # RANGE 32, NOT cfde822's 132 AND NOT THE PLAN'S FIRST FIGURE OF 64. OPERATOR RULING, and
+        # it is a MEASUREMENT rather than a taste call: GATE-volley.md V3 measured that PARTICLES
+        # STOP RENDERING AT 32 BLOCKS. It is a client cap, not server config, so nothing here moves
+        # it. A 64-block beam would draw only its near half, for everyone, at every settings level
+        # -- the ray hitting a target the beam never reaches.
+        #
+        # THE RULING IS "VISIBLE REACH EQUALS REAL REACH": what you see is what it hits, no
+        # invisible tail, nothing a future reader has to be told about. The lost reach was mostly
+        # against targets beyond the distance most clients render mobs at anyway.
+        #
+        # IF THAT CAP EVER MOVES, THIS NUMBER IS THE THING TO REVISIT -- and so is V3's Q2 verdict,
+        # which is answered only under the cap.
+        range: 32
+        beam: emerald_beam
+
+    # on_hit FIRES PER SHOT, so this is six impacts and six damage numbers, not one.
+    #
+    # AND IT PLAYS ON A MISS TOO. stepRay detonates at the end of the aim when nothing is struck,
+    # so a missed volley bursts in mid-air at the end of its range -- inherited behaviour, shared by
+    # every ray weapon, and NOT changed here: altering stepRay from a content slice would silently
+    # change the Lapis Staff from a commit whose title says "emerald" (Q5, ruled).
+    #
+    # At range 32 those bursts land AT THE CAP EDGE, so they are marginally visible rather than
+    # certainly invisible -- which is a different situation from the one the plan reasoned about at
+    # 64 blocks, and is re-derived rather than carried forward. GATE row CE8 is what settles it.
+    on_hit:
+      - type: visual
+        visual_id: emerald_impact
+      - type: damage
+        amount: 27
+        element: kinetic
+
+# NO PER-SHOT CHIME, AND THIS IS A REFUSAL WITH EVIDENCE RATHER THAN A GAP. cfde822 played two
+# sounds: one at wind-up start (0.6/0.7, kept above as emerald_windup) and ONE PER SHOT (0.4/1.6).
+# The second has no home -- on_cast fires once per volley and admits visuals only, and it cannot go
+# in the beam, because presentAlong runs once per CHUNK-COLUMN SEGMENT, so a sound there would fire
+# several times per shot at a loudness depending on which way the player faced.
+#
+# The plan asked for an `on_shot:` hook to house it. GATE-volley.md V6 RAN THE ROW AND REFUSED THE
+# HOOK: eight shots are countable without reading the damage numbers, because on_hit already fires
+# per shot and the impact visual carries the count on its own. So the per-shot chime is DROPPED,
+# not deferred -- the row that would have justified it was run and said it is unnecessary.
+
+# NO craft_result HERE, AND DO NOT ADD ONE. craft_result claims a MATERIAL, and this weapon's
+# material is `emerald` -- the claim would mint a Cursed Emerald from EVERY VANILLA EMERALD ON THE
+# SERVER. Boot would refuse it anyway: ContentValidator.validateCraftResults rejects a craft_result
+# on a material with no durability. Same note flint_staff.yml and lapis_staff.yml carry.
+#
+# The recipe claims this weapon, not the other way round. See content/recipes/cursed_emerald.yml.
+
+# WHAT IS DELIBERATELY LEFT BEHIND FROM cfde822, each because a reader could mistake it for part of
+# the weapon:
+#   * target.setNoDamageTicks(0) per shot -- a workaround for vanilla's 10-tick iframes, which
+#     would have eaten 4 of the 6 shots. EffectSpec.Damage drains the custom health store and never
+#     calls entity.damage(), so there are no iframes to beat.
+#   * suppressNext/clear knockback bracketing -- no entity.damage() means no EntityKnockbackEvent is
+#     ever raised. A REMEDY THAT IS ABSENT LOOKS LIKE A PROBLEM THAT IS PRESENT; do not add a
+#     canceller for an event this path cannot fire.
+#   * The EnderCrystal branch and its 6.0f explosion -- dragonfight encounter code. Bosses are
+#     milestone 3 and there is no crystal in this repo.
+#   * GearScore.scalePower(42, level) -- no item levels here, which is why 27 had to be re-decided
+#     by the operator rather than ported.
+#   * levelDamageBonus + eye-of-enderman + armour-magic bonuses summed into a shot-1-only castBonus
+#     -- three stat systems that do not exist here, plus a first-pulse rule invented to stop them
+#     stacking six times.
+#   * BeamVisuals.handLocation and VISUAL_GAP = 1.0 -- two fixes for the caster's own beam filling
+#     their view. This repo draws from aim.origin() with no gap. RECORDED AS A KNOWN DIVERGENCE,
+#     not ported: gate row CE4 decides whether it needs a remedy at all.
+
+# Q3 IS NARROWED HERE, NOT ANSWERED, AND THE DISTINCTION MATTERS. GATE-volley.md V7 swapped weapons
+# mid-burst and saw the damage unchanged -- but THAT RESULT WAS FORCED BY THE FIXTURE: volley_stone
+# authors a fixed `amount`, captured in the walker's closure, so no swap could have moved it.
+#
+# THIS WEAPON IS THE SAME SHAPE -- `amount: 27` is authored above -- so a mid-burst swap will not
+# move ITS numbers either. That is a property of the payload, not a property of the wrapper. The
+# pricing risk lives in a weapon_damage payload or a swap to an ENCHANTED weapon, and NEITHER IS
+# TESTED. Do not read this weapon's stability as evidence that volleys are stable.

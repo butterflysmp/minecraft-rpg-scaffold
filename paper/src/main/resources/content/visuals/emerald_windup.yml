@@ -1,0 +1,27 @@
+# The Cursed Emerald's telegraph -- what you hear the instant you press right-click, a full second
+# before anything else happens. Id is the filename: emerald_windup.
+#
+# Sound only, like lapis_cast and flint_cast, but for a REASON NEITHER OF THOSE HAS. Those two
+# cover a small, aim-dependent gap between pressing and the effect resolving. This one covers a
+# DELIBERATE 20-TICK WIND-UP, and it is the entire reason the weapon's commitment cost is fair
+# rather than a dead second: press, hear the chime, and know the volley is coming.
+#
+# GATE ROW CE1 READS THIS FILE AS ITS ONLY WITNESS. "A chime, then a full second of nothing, then
+# six shots" is the row; an INSTANT first shot means windup_ticks was dropped. If this sound is
+# ever removed, CE1 stops being able to tell a dropped wind-up from a working one.
+#
+# Key verified present in net/minecraft/sounds/SoundEvents.class on the pinned 26.1.2 server jar
+# before shipping, not recalled -- the method lapis_cast.yml records:
+#   unzip -p run/versions/26.1.2/paper-26.1.2.jar net/minecraft/sounds/SoundEvents.class \
+#     | grep -a -o 'block\.amethyst[a-z_.]*' | sort -u
+# printed 12 keys including block.amethyst_block.chime. Run with a KNOWN-PRESENT key as a control
+# first (entity.breeze.shoot, which lapis_cast already ships) -- an empty grep from a bad jar path
+# looks exactly like an absent key.
+#
+# Numbers are cfde822's CursedEmeraldWeapon telegraph, unchanged: volume 0.6, pitch 0.7.
+
+steps:
+  - type: sound
+    key: block.amethyst_block.chime
+    volume: 0.6
+    pitch: 0.7

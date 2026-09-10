@@ -1,0 +1,32 @@
+# The third custom recipe. Emeralds at the corners and centre, netherite scrap on the edges,
+# exactly as the old repo had it: BSMPMenu's RecipeRegistry.registerCursedEmerald --
+# shape("ENE","NEN","ENE"), E=EMERALD, N=NETHERITE_SCRAP.
+#
+# THE ID IS THE FILENAME, AND THE FILENAME IS THE KEY. This registers as rpg:cursed_emerald and
+# stays that key across every restart because the filesystem holds it. See recipes/flint_staff.yml
+# for the full argument about why the claim points recipe -> weapon and not the reverse, and why
+# there is no `result:` field (the registered result is the minted gear's own MATERIAL, a plain
+# vanilla emerald, resolved at registration).
+#
+# THE THREE-ROW SHAPE IS LOAD-BEARING, exactly as both staves' are. A recipe that FITS a 2x2 can be
+# crafted in the player's own inventory grid, which mints nothing and hands over a plain vanilla
+# item -- a pre-existing hole this weapon is safe from BY SHAPE rather than by guard. Three rows
+# cannot fit a 2x2. The boot warns if a custom recipe fits one, so shortening this would be loud
+# rather than silent.
+#
+# THIS FILE COULD HAVE LANDED BEFORE THE WEAPON AND DELIBERATELY DID NOT. RecipeRegistrar:150-157
+# WARNS about a recipe whose `mints` cannot be resolved and then DROPS it -- so shipping it early
+# would have put a dead file and a permanent boot warning in the tree for as long as the wrapper
+# took. All five of this weapon's files landed together, after the grammar existed and had been
+# gated.
+
+mints: cursed_emerald
+
+shape:
+  - "ENE"
+  - "NEN"
+  - "ENE"
+
+ingredients:
+  E: emerald
+  N: netherite_scrap
