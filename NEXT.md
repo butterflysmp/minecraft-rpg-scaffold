@@ -1411,14 +1411,23 @@ delivers 5x gets applied on top of it, and the result is 25x.**
 >
 > **Drowning: 10% of max health, REGARDLESS of defense or max health.** → a 2-point vanilla tick
 > becomes `2 × max/20` = **exactly a tenth of max, at 100, 150, 400 or 1000.** Pinned by
-> `DamageScaleTest.theOperatorsDrowningRuleIsExactlyTrueAtEVERYMax`.
+> `DamageScaleTest.theOperatorsDrowningRuleIsExactlyTrueAtEveryPUPPETEDMax` — **renamed 2026-09-10.
+> It was `...AtEVERYMax`, and that name was a claim that did not survive checking:** the row calls
+> `puppeted(...)` only, and "every max" is false on the untagged-mob path where the denominator moves
+> with the max. `onAnUntaggedMobDrowningIsFLATBecauseTheDenominatorMovesWithTheMax` is the companion
+> row the old name used to swallow.
 
 **THE "REGARDLESS OF DEFENSE" HALF IS NOT CLOSED** — see the standing question below. `CombatantStats`
 applies `Defense.applyDefense` unconditionally, and the conversion does not touch that.
 
 > ### AND A VANILLA MOB'S MAX HEALTH IS NOT A CONSTANT, WHICH IS WHAT MAKES THE DROWNING RULE SHARP
 >
-> **Recorded 2026-09-10, by the operator, before the drowning implementation exists.** Vanilla's
+> **Recorded 2026-09-10, by the operator. Corrected the same day -- see the withdrawal below.**
+>
+> **The original said "before the drowning implementation exists", and that was wrong too:** this note
+> sits under a heading that reads *CLOSED BY THE CONVERSION*, and the rule is DELIVERED by
+> `DamageScale.toCustom` and pinned by a named test. The tense was the first sign the note had been
+> reasoned about the rule rather than about the code. Vanilla's
 > `Zombie.handleAttributes` adds a **permanent `MULTIPLY_TOTAL` modifier to `MAX_HEALTH`** with
 > probability `0.05 x local difficulty` and value `random*3+1`. So a spawn-egg zombie is 20 HP or,
 > occasionally, **anywhere in 40-100**. **Observed live at 51, 79 and 96.** Husks, drowned and zombie
@@ -1445,21 +1454,47 @@ applies `Defense.applyDefense` unconditionally, and the conversion does not touc
 > > makes scorch scale with the pool, and the cap exists to stop it running away on a boss rather than
 > > to hide the pool. So max health already reaches scorch today; what it cannot do is run away.
 >
-> **THE CONSUMER THAT WILL CARE IS DROWNING, AND THE RULE ABOVE IS UNCAPPED BY DESIGN.** *"10% of max
-> health, REGARDLESS of defense or max health"* means the **percentage** is invariant -- so the
-> **absolute** number scales with a max that is not fixed. On a leader zombie that is **9.6 a tick
-> instead of 2**, on a mob **visually identical to every other zombie**.
+> ### ~~AND THE CONSUMER THAT WILL CARE IS DROWNING~~ -- **WITHDRAWN 2026-09-10. THE BONUS CANCELS.**
 >
-> > **WHOEVER IMPLEMENTS IT WILL TEST AGAINST AN ORDINARY ZOMBIE AND SHIP.** That is the whole reason
-> > this is written down now rather than found later: the fixture everyone reaches for -- a spawn-egg
-> > zombie -- is the one where the defect is invisible, and it is invisible because 20 is both the
-> > common value and the value the rule was reasoned at. **THE GATE ROW FOR DROWNING MUST STAGE A MOB
-> > WHOSE MAX HEALTH IS NOT 20**, and must state that requirement in the row rather than in a comment
-> > above it.
-> >
-> > This is *A CONTROL THAT SUCCEEDS FOR THE WRONG REASON* arriving before the code does: at max 20
-> > the scaled tick is `2 x 20/20 = 2`, identical to the vanilla tick, so a row staged there passes
-> > whether the conversion exists or not.
+> **The two sentences struck below were false, and they are struck rather than deleted because the
+> premise above them is still true and the withdrawal is worth showing.**
+>
+> > ~~"On a leader zombie that is 9.6 a tick instead of 2."~~
+> > ~~"THE GATE ROW FOR DROWNING MUST STAGE A MOB WHOSE MAX HEALTH IS NOT 20."~~
+>
+> **`DamageScale.toCustom`'s denominator is `barIsPuppeted ? VANILLA_BAR_POINTS : vanillaMaxAttribute`
+> -- for an untagged mob it is the mob's OWN attribute, and `customMax` was SEEDED from that same
+> attribute by `MobNameplateManager.maxHealthOf`.** So a leader zombie is `96 / 96`, **k = 1**, and the
+> drowning tick stays **2**. Not 9.6. **The modifier cancels: the conversion divides by the same number
+> it multiplies by.**
+>
+> **`toCustom`'s own javadoc says this, in a table** -- *"untagged mob 16 / 16 -> k = 1 (its custom max
+> was SEEDED from that attribute)"*. It was read and not applied.
+>
+> **AND THE SECOND SENTENCE IS THE ONE THAT DOES DAMAGE.** For an untagged mob a non-20 max changes
+> **nothing**, because it cancels. That instruction would have built **a row that witnesses nothing
+> while claiming to witness the conversion** -- and it would have been caught only by someone running
+> it, seeing `2`, and not knowing whether that was the pass. **A hollow row, prescribed by a note about
+> hollow rows.**
+>
+> **WHAT IS ACTUALLY TRUE, AND IT IS SMALLER.** The rule is exact **where the denominator is fixed**:
+>
+> | case | k | drowning tick | a tenth of the pool? |
+> |---|---|---|---|
+> | puppeted bar, max 100 | `100/20` = 5 | 10 | **yes** |
+> | the Knell (content mob) | `360/20` = 18 | 36 | **yes** |
+> | untagged mob, max 96 | `96/96` = **1** | **2** | no -- about **2%** |
+>
+> For an untagged mob `k` is 1 **by construction**, so the tick is a flat 2 whatever the pool -- a
+> tenth only when the pool happens to be 20.
+>
+> **OPEN QUESTION, NOT A DEBT. THE OPERATOR RULES THIS, AND NOTHING IS OWED UNTIL HE DOES.** Both
+> readings are defensible:
+>
+> - **CORRECT AS-IS.** An untagged mob is unchanged from vanilla, which is exactly what seeding
+>   `customMax` from the attribute exists to guarantee. **`k = 1` is the invariant, not a gap.**
+> - **OR THE RULE MEANS WHAT IT SAYS** -- *"REGARDLESS of max health"* -- and a 96 HP zombie taking 2
+>   is the rule failing to apply to the one mob where it would be visible.
 
 > **These numbers chose the denominator, and were nearly the wrong tool for it.** The obvious factor
 > was `customMax / (heartCount(customMax)*2)` — the *rendered* bar — which gives 10% at max 100 and
@@ -9118,6 +9153,44 @@ noticing.
 > Recorded as a contradictory brief rather than as an execution slip, at the operator's direction and
 > for the reason above -- filing it as "the model added a bad reference" would have kept the sentence
 > and lost the lesson.
+
+### A RULE AND ITS IMPLEMENTATION AGREE ON THE CASES SOMEONE CHECKED, AND NOWHERE ELSE BY DEFAULT
+
+**Named 2026-09-10, and the worked example is a note dictated into the record and withdrawn the next
+day.** The failure: **reasoning about a conversion from the RULE it implements instead of from the
+EXPRESSION that implements it** -- and arriving at a hazard pointing the wrong way, with a confident
+number attached.
+
+The rule reads *"drowning: 10% of max health, REGARDLESS of defense or max health."* The code reads
+`vanillaAmount * customMax / denominator`. **Those two agree only where the denominator is fixed.**
+For an untagged mob the denominator is the mob's own max-health attribute and `customMax` was seeded
+from that same attribute, so `k = 1` and the vanilla number passes through untouched. Reasoning from
+the rule gave *"a 96 HP zombie takes 9.6"*; the expression gives **2**.
+
+**THE DAMAGE WAS NOT THE WRONG NUMBER. IT WAS THE INSTRUCTION THE WRONG NUMBER JUSTIFIED:** *"the gate
+row for drowning must stage a mob whose max health is not 20."* For an untagged mob a non-20 max
+changes nothing, **so that row would have witnessed nothing while claiming to witness the
+conversion** -- and it would have been caught only by someone running it, seeing 2, and not knowing
+whether that was the pass. **A hollow row, prescribed by a note whose subject was hollow rows.**
+
+**AND THE IMPLEMENTATION HAD ALREADY WRITTEN THE ANSWER DOWN.** `DamageScale.toCustom`'s javadoc
+carries a three-row table, and the middle row is *"untagged mob 16 / 16 -> k = 1 (its custom max was
+SEEDED from that attribute)"*. It was read and not applied. **The table was not missing; the habit of
+checking the expression against the rule was.**
+
+**How to apply.** When a rule is stated in one vocabulary (*percent of max*) and implemented in
+another (*a ratio of two maxima*), **do not reason in the rule's vocabulary about a case nobody has
+run.** Evaluate the expression at the case, on paper, with the real inputs -- and note that the
+tell was present here before the arithmetic was: **the note said "before the drowning implementation
+exists" while sitting under a heading reading CLOSED BY THE CONVERSION.** A tense that disagrees with
+its own section is a sign the writer is reasoning about the design and not about the code.
+
+> **AND THE TEST NAME WAS CARRYING THE SAME ERROR, INDEPENDENTLY.**
+> `theOperatorsDrowningRuleIsExactlyTrueAtEVERYMax` calls `puppeted(...)` only -- so "EVERY max" was
+> true on the puppeted path and false on the untagged-mob path, and **a reader who trusted the name
+> would have concluded exactly what the withdrawn note concluded.** Renamed to `...AtEveryPUPPETEDMax`
+> and given the companion row it used to swallow. **A test name is a claim a reader can check**, and
+> that one had been sitting unchecked next to a `mob(...)` helper it never called.
 
 ### A RULE OUTLIVES ITS PREMISE SILENTLY, BECAUSE ITS ARITHMETIC KEEPS EVALUATING
 

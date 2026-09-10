@@ -89,15 +89,48 @@ class DamageScaleTest {
     }
 
     @Test
-    void theOperatorsDrowningRuleIsExactlyTrueAtEVERYMax() {
+    void theOperatorsDrowningRuleIsExactlyTrueAtEveryPUPPETEDMax() {
         // "10% of max health REGARDLESS of how much defense or health they have" -- the only statement
         // made about non-base maximums, and the reason the denominator is 20. A display-scaled
         // denominator gives 10% at max 100 and 7.7% at max 400; this gives 10% at both.
+        //
+        // NARROWED FROM ...AtEVERYMax ON 2026-09-10. THE OLD NAME WAS A CLAIM THAT DID NOT SURVIVE
+        // CHECKING: this loop calls puppeted() only, and "every max" is true on the puppeted path and
+        // FALSE on the untagged-mob path, where the denominator MOVES WITH the max. A reader who
+        // trusted the name would conclude the rule holds for any combatant at any pool. The companion
+        // row below is the case the name used to swallow.
         for (double max : new double[] {100.0, 150.0, 400.0, 1000.0}) {
             assertEquals(0.10, puppeted(DROWN, max) / max, EPS,
                     "drowning must take exactly a tenth of the bar at max " + max);
         }
         // Mutation M7 again, from the property side: heartCount*2 -> 7.7% at 400 -> reddens.
+    }
+
+    @Test
+    void onAnUntaggedMobDrowningIsFLATBecauseTheDenominatorMovesWithTheMax() {
+        // THE CASE THE OTHER ROW'S NAME USED TO SWALLOW, and the one that makes "every max" false.
+        //
+        // An untagged mob's denominator is its OWN max-health attribute, and its customMax was SEEDED
+        // from that same attribute -- so k = 1 by construction and the vanilla number passes through
+        // unscaled. The bonus cancels: the conversion divides by the number it multiplies by.
+        //
+        // THIS MATTERS BECAUSE A VANILLA MOB'S MAX IS NOT A CONSTANT. A leader zombie carries a
+        // permanent MULTIPLY_TOTAL modifier and can sit anywhere in 40-100, so this row is written
+        // across that range rather than at 20.
+        for (double max : new double[] {20.0, 51.0, 79.0, 96.0}) {
+            assertEquals(DROWN, mob(DROWN, max, max), EPS,
+                    "an untagged mob at max " + max + " takes the raw vanilla tick, unscaled");
+        }
+        // So a 96 HP zombie takes 2 -- about 2% of its pool, not 10%.
+        assertEquals(0.02, mob(DROWN, 96.0, 96.0) / 96.0, 0.001,
+                "which is ~2% of the pool, NOT the tenth the rule names");
+
+        // WHETHER THAT IS CORRECT IS UNRULED, AND THIS ROW DELIBERATELY DOES NOT DECIDE IT. It pins
+        // what the code does TODAY so that changing it has to be a decision rather than a drift --
+        // see NEXT.md, where both readings are recorded: either k = 1 IS the invariant (an untagged
+        // mob is unchanged from vanilla, which is what seeding from the attribute exists to
+        // guarantee), or the rule means "regardless of max health" and does not reach the one mob
+        // where it would show. If that is ruled the other way, this row is the thing that reddens.
     }
 
     // --- Fail-soft, on BOTH operands --------------------------------------------------------------
