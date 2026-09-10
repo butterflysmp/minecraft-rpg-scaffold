@@ -25,22 +25,46 @@ through a pack, a death message name the right player, or an explosion fire twic
 > **So the table is per-row in SHAPE and blanket in EVIDENCE, and says so.** Upgrading any row to
 > ITEMISED needs a figure from the person who ran it. **Nothing here should be read as a figure.**
 
-### AND TWO ROWS CANNOT ACCEPT A BLANKET AT ALL — THEIR FAILURE MODE IS "LOOKS LIKE A PASS"
+### FIVE ROWS CANNOT ACCEPT A BLANKET, AND THE TEST IS BETTER THAN THE LIST
 
-This is `GATE-element-accrual.md`'s A3 lesson arriving on a new page. Two rows have an outcome that is
-**indistinguishable from success unless someone read a specific thing**:
+> **A ROW WHOSE PASS CONDITION IS THE ABSENCE OF SOMETHING CANNOT BE CONFIRMED BY A BLANKET, BECAUSE
+> ABSENCE IS ALSO WHAT A ROW THAT NEVER RAN PRODUCES.**
 
-- **I12** — its own table says *"mob 5 takes **nothing** → **STAGING FAULT**, not a defect. Re-space
-  and re-run."* A run where mob 5 was simply out of radius produces four detonations and a quiet fifth
-  mob, **which is the pass condition to anyone not checking for the fire glyph.** The row is SOLE
-  WITNESS for the depth cap *and* for the capture ordering, so a false pass here covers two
-  properties at once.
-- **I2** — the death message. A blast that credits nobody still damages, kills and chains. **The only
-  symptom is text in the chat log**, and "the gate ran green" cannot say whether it was read.
+Same family as *ABSENCE IS NOT A NEUTRAL VALUE*, which this repo has already hit twice — the
+null-element loop guard and the `DamageNumberText` multiplier. **Third instance, new setting.**
 
-**Both are OWED an itemised confirmation** — for I12, the glyph on mob 5; for I2, who the death
-message named. They are marked PASS above because that is what was reported, and flagged here because
-that report cannot discriminate.
+**Two mechanisms, and they are labelled apart because they are different failures, not five special
+cases:**
+
+- **NULL-OBSERVATION** — there is no symptom to see, so *pass* and *never ran* look identical.
+- **OFF-CHANNEL** — the symptom exists, but somewhere the operator may not have been watching.
+
+| row | mechanism | itemised confirmation needs |
+|---|---|---|
+| **I7** | **NULL-OBSERVATION** | the weapon used, **and** that a neighbour was inside 4 blocks |
+| **I6** | **NULL-OBSERVATION** | that he was standing **within 4 blocks** of the detonation point |
+| **I1 — corpse leg only** | **NULL-OBSERVATION** | that the corpse was **watched**, and what was seen over it |
+| **I2** | **OFF-CHANNEL** | who the death message named |
+| **I12** | **NULL-OBSERVATION** | the **fire glyph** on mob 5 |
+
+**I7 IS THE MOST IMPORTANT ROW ON THIS PAGE TO GET RIGHT, AND ITS BLANKET PASS CARRIES THE LEAST
+INFORMATION.** Its pass condition is *"Expect: NOTHING."* No neighbour in radius → nothing. Killed
+with the wrong weapon → nothing. Never staged → nothing. **A blanket cannot distinguish "the negative
+control held" from "the negative control was not run."**
+
+> **And it COMPOUNDS rather than sitting alone.** I7 is marked RUN THIS FIRST because every other row
+> is unfalsifiable without it — a build that ignited on every death passes I1 through I5 perfectly.
+> **So a hollow I7 does not merely lose its own coverage; it withdraws the licence from all eleven.**
+> The row that guards the page is the row whose blanket pass says least.
+
+**I1 IS SPLIT BY LEG, NOT MARKED OWED WHOLE.** Its main leg — the pause, and the neighbour taking 6 —
+is a **positive** observation, and the blanket covers it legitimately. Only the corpse leg is
+null-observation: the row already admits it cannot separate *"the exclusion worked"* from *"the corpse
+was already gone"*, and under a blanket it also cannot separate either from *"nobody looked at the
+corpse."* Marking the whole row owed would surrender coverage the blanket actually has.
+
+**All five are marked PASS above because that is what was reported.** They are flagged here because
+that report cannot discriminate — not because anything is known to be wrong.
 
 ## How to use it
 
@@ -270,9 +294,15 @@ Stand inside the radius of I1's detonation.
 mob-only and a burst is not, deliberately — see `Ignite.detonate`'s javadoc for why a cascade and an
 aimed burst are different things.
 
-### I7 — an unscorched mob killed by something NON-FIRE does not ignite · **the negative control**
+### I7 — an unscorched mob killed by something NON-FIRE does not ignite · **the negative control · RUN THIS FIRST**
 `/rpg give ironblade` (kinetic). `/rpg spawn knell`, do **not** scorch it, kill it with the ironblade
 beside a neighbour.
+
+> **RUN THIS FIRST, and the marking is not a convenience.** Every other row on this page is
+> unfalsifiable until this one has held, so running it last means eleven rows were observed without
+> the licence to believe them. **And it is null-observation** — see the owed-confirmations table
+> above — so *"I did it and nothing happened"* is indistinguishable from *"I did not do it"* unless
+> the weapon and the neighbour's distance are recorded.
 
 **Expect: NOTHING.** No visual, no damage to the neighbour.
 
