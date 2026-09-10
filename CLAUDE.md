@@ -62,6 +62,26 @@ Separately: all scheduling goes through `Scheduler` (`onEntity`, `onRegion`,
 `onRegionLater`, `onGlobal`, `async`). This exists so the project runs on Folia
 later without a rewrite. `async` must never touch the Bukkit API.
 
+## WHERE THE RULES LIVE — decided 2026-09-10, after the split happened twice
+
+**`CLAUDE.md` carries the rule in the form that changes what you do next. `NEXT.md` carries the named
+rule, its worked examples, and the history of what it cost to learn.**
+
+Two families had already split across both files — the mutation-lies table (here, examples there) and
+the control-rules pair (operational form here, named rules there). **Two occurrences is a convention
+forming by accident**, so it is stated rather than left: a reader looking for "the rules" should not
+have to know which family a rule is in before knowing where to look.
+
+**Why this way round, and the argument is about who reads what.** This file's own first line is *read
+this before writing any code*, and it is loaded every session; `NEXT.md` is nine thousand lines read
+on demand. **A rule that lives only in `NEXT.md` will not be read by the person about to break it.**
+The cost is that this file grows, and it is paid down by keeping each entry here to the operational
+core — what to DO — and leaving the persuasion, the worked example and the dated instance to
+`NEXT.md`.
+
+**Overturnable.** The opposite convention — everything in `NEXT.md`, pointers here — keeps this file
+short, and if it grows past being readable in one sitting that is the trade to revisit.
+
 ## VERIFICATION — a check that did not run looks exactly like a check that passed
 
 **Verify a check ran before believing it passed.**

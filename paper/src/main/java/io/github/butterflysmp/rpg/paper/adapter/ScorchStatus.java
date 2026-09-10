@@ -189,7 +189,18 @@ public final class ScorchStatus {
             // shape (b) in PLAN-element-content-pass.md), or an ability regaining an authored
             // duration_ticks. On that day a short application silently truncates a long burn, and
             // this line becomes Math.max(a.remaining, durationTicks) -- "extend a burn, never shorten
-            // it", the rule BukkitCombatant.java:272-273 and :288 already apply twice.
+            // it", the rule BukkitCombatant.java:235, :374 and :388 already apply three times.
+            //
+            // AND THE FOURTH IS THE LINE DIRECTLY ABOVE THIS ONE. `depth` is deepest-wins for the
+            // same reason under a different name -- a safety counter must not be lowered by a later
+            // write -- so the fix this comment predicts is already sitting adjacent, applied to a
+            // sibling field on the same object. THAT IS THE ARGUMENT FOR MAKING IT, not against:
+            // `remaining` and `depth` are now the only two fields here where a later application
+            // could destroy information, and only one of them is guarded.
+            //
+            // (Updated 2026-09-10. The line numbers above were :272-273 and :288 and had gone stale --
+            // both now point at Ignite's attribution comment and an aggro note. A citation that
+            // drifts is worse than none: it sends the next reader to confidently wrong lines.)
             //
             // Reachable today only through the dev apply command, which takes an operator-chosen
             // duration. Deferred on THAT reason -- not on "no second duration exists", which was the

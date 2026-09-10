@@ -631,6 +631,77 @@ ceiling for.
 > will never read it.** The operator recorded that they would have used this argument had the reader
 > count not been measured first -- which is why the measurement went first.
 
+#### THE IGNITE SLICE'S DEBTS, EACH VERIFIED AGAINST THE TREE RATHER THAN COPIED FORWARD
+
+**Checked 2026-09-10, one grep per line.** Two were wrong as stated and are corrected here; the rest
+held. A debt described wrongly gets dismissed on the wrong grounds, which is worse than one nobody
+wrote down.
+
+**NEW FROM THIS SLICE**
+
+- **The 28-second worst case has no gate row and cannot easily get one.** It needs four mobs that each
+  survive a blast and then die to the burn, staged so no branch outruns another. Recorded in
+  `GATE-ignite.md`'s header (verified present) -- **that header is the only place it exists.**
+- **`I12` is SOLE WITNESS for TWO properties** -- the depth cap, and that `depth` is captured on the
+  death frame before `forget`. **Neither has unit cover**, and a false pass covers both at once. Same
+  standing as the once-ness guard.
+- **`terminal()`'s two halves are ONE LINE of code.** *"Does not scorch"* and *"its kills do not
+  ignite"* are both `accruesScorch` returning false for INERT. **If that clause ever branches on depth
+  separately from the rule, `I12` silently stops covering the second half** and nothing else covers it.
+
+**STILL OPEN, CARRIED FORWARD**
+
+- **D1 RE-RUN OWED** (`GATE-element-accrual.md:24`, verified present). **An OPERATOR action, not a
+  code one** -- left alone.
+- **`EntityScorchSink` has NO test coverage, and the correction is sharper than the debt.** It is not
+  "referenced by no test": `DamageSignatureTest` names it **explicitly as OUT OF SCOPE**, with the
+  reason -- *"they live in `paper/`, and `core/` must never depend on it, so this test cannot reflect
+  over them from here. That is an architecture boundary, not a judgement that they are safe."* **The
+  remedy is written down there too:** a sibling test in `paper/src/test` with the same three rows.
+  So the debt is not "nobody noticed"; it is "someone noticed, wrote why, and named the fix".
+- **No dev command deals ELEMENTAL damage.** Verified: `RpgCommand`'s damage arms call the two-arg
+  `applyDamage(amount, sourceId)`, which carries no element. **So the accrual path has no direct
+  instrument** and every gate row reaches it through a weapon.
+- **The `FIRE_TICK` suppression names one cause of four** (`FIRE` / `FIRE_TICK` / `LAVA` /
+  `HOT_FLOOR`). **RULED LEFT ALONE** -- the ruling travels with the debt, or the next reader reopens
+  a closed question.
+- **`ScorchStatus`'s bare refresh assignment is CONTENT-SHAPED SAFE ONLY**, and **the comment had NOT
+  moved with the code** -- corrected in this commit. See the entry below.
+- **No test pins `setMaxStackSize(1)`** on any of the four minting sites (`WeaponItems`, `ArmorItems`,
+  `ShieldItems`, `ToolItems`) -- verified: five files call it, none of them a test -- despite it being
+  a standing operator decision since `347967b`.
+- **The two-AoE-fan-out player-rule split.** One skips players, the other does not; nothing says which
+  is intended. **UNDESIGNED, recorded, not actioned.**
+- **Lapis L4/L4c and S5/S7/S12 need a second account. PERMANENT, not deferred** -- "owed" reads as
+  work in progress and these are not in progress.
+
+#### A CITATION THAT DRIFTS IS WORSE THAN NONE, AND THIS ONE DRIFTED WHILE PREDICTING ITS OWN FIX
+
+**Found 2026-09-10 by checking a debt instead of trusting it.** `ScorchStatus`'s refresh comment ends
+by predicting the fix it will one day need -- *"this line becomes `Math.max(a.remaining,
+durationTicks)` -- 'extend a burn, never shorten it', the rule `BukkitCombatant.java:272-273` and
+`:288` already apply twice."*
+
+**Two things had gone wrong, in opposite directions:**
+
+1. **The line numbers were stale.** `:272-273` now points at Ignite's attribution comment and a
+   `Location` assignment; `:288` at an aggro note. The real sites are `:235`, `:374` and `:388` --
+   **three, not two.** A citation that drifts sends the next reader to confidently wrong lines, which
+   is worse than sending them nowhere.
+2. **The fix it predicts was implemented one line above it and the comment did not notice.**
+   `a.depth = Math.max(a.depth, depth)` sits directly above `a.remaining = durationTicks`. The same
+   rule, under a different name -- *a safety counter must not be lowered by a later write* -- applied
+   to a sibling field on the same object, in the same method.
+
+**That adjacency is an argument FOR making the change, not against it:** `remaining` and `depth` are
+now the only two fields here where a later application can destroy information, **and only one of them
+is guarded.** The comment now says so.
+
+> **The general shape: a comment that predicts a future change goes stale in a way a comment that
+> describes the present does not.** It has two ways to rot -- its citation can drift, and its
+> prediction can quietly come true nearby -- and neither reddens anything. **The trigger for
+> re-reading one is touching the code it points at**, which is exactly what adding `depth` did.
+
 #### THE BLAST RECRUITS, BOUNDED AT FOUR LINKS -- AND RULING 2 IS OVERTURNED, NOT CORRECTED
 
 **Ruled 2026-09-09.** Links 1-3 pass `ACCRUES` and scorch their survivors; the **fourth passes
@@ -9153,6 +9224,17 @@ noticing.
 > Recorded as a contradictory brief rather than as an execution slip, at the operator's direction and
 > for the reason above -- filing it as "the model added a bad reference" would have kept the sentence
 > and lost the lesson.
+
+### WHERE THE RULES LIVE — the convention, recorded 2026-09-10
+
+**`CLAUDE.md` carries the operational form; this file carries the named rule, the worked example and
+the dated instance.** The full argument is in `CLAUDE.md` under *WHERE THE RULES LIVE*; it is not
+repeated here, because two authorities on one convention is the problem the convention exists to fix.
+
+**It was decided because the split had happened TWICE by accident** -- the mutation-lies family (table
+there, instances here) and the control-rules pair (operational form there, named rules here). Two
+occurrences is a pattern, and an unstated convention makes a reader guess which family a rule is in
+before they know which file to open.
 
 ### A RULE AND ITS IMPLEMENTATION AGREE ON THE CASES SOMEONE CHECKED, AND NOWHERE ELSE BY DEFAULT
 
