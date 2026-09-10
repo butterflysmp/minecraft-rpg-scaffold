@@ -1128,11 +1128,16 @@ class CastExecutorTest {
     @Test
     void theSuppressedSegmentCollapsesToAPointInItsOwnCHUNKCOLUMN() {
         var world = new FakeWorld();
+        // THE FIXTURE IS DESCRIBED ONCE. Both the cast and the control below read these, so the
+        // control cannot end up describing a staging that no longer exists -- see the note at the
+        // control for the third draft this took.
         var origin = new Vec3(15.6, 0, 0);
+        var direction = new Vec3(1, 0, 0);
+        var range = 26.0;
         var caster = new FakeWorld.Dummy(origin);
         world.entities.add(caster);
 
-        cast(world, caster, beamRay("lapis_beam"), new Aim(origin, new Vec3(1, 0, 0)));
+        cast(world, caster, beamRay("lapis_beam"), new Aim(origin, direction));
 
         assertEquals(1, world.presentedAlong.size(), "the first segment ran and was suppressed");
         FakeWorld.Beam suppressed = world.presentedAlong.get(0);
@@ -1152,7 +1157,16 @@ class CastExecutorTest {
         // restaging, and it is the same out-of-reach shape as the columnOf(16.0) it was written
         // beside. Measured -- with it present, restaging this row to the -x fixture reddened THAT
         // line and the control never ran.
-        Vec3 segmentZeroFarEnd = ChunkTraversal.segmentEndpoints(origin, new Vec3(1, 0, 0), 26).get(0);
+        //
+        // AND IT READS THE FIXTURE'S OWN direction AND range, WHICH IS THE THIRD DRAFT. Draft one
+        // (columnOf(16.0)) could not see the fixture at all. Draft two read `origin` but re-derived
+        // the direction as a literal -- so editing the row's aim to -x and forgetting this line
+        // computes a +x walk from a -x fixture: get(0) is 48.0, column 3 against the origin's 2,
+        // assertNotEquals PASSES, and the row proves nothing. That is the exact failure this control
+        // exists to catch, surviving in the realistic case -- someone edits the cast and not the
+        // control -- while the coordinated case (both edited together) was the one the proof staged.
+        // A CONTROL THAT RESTATES ITS FIXTURE CAN GO STALE AGAINST IT.
+        Vec3 segmentZeroFarEnd = ChunkTraversal.segmentEndpoints(origin, direction, range).get(0);
         assertNotEquals(ChunkTraversal.columnOf(origin.x()),
                 ChunkTraversal.columnOf(segmentZeroFarEnd.x()),
                 "CONTROL: segment 0's far end must be in a DIFFERENT column from its start, or "

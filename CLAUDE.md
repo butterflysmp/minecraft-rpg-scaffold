@@ -288,9 +288,15 @@ passed when it never ran — this file's own headline defect, one level up.
 **The operational form, which generalises past these three:**
 
 - **A scripted edit** must be followed by something that must be present if it worked — `grep` for a
-  marker, or a measured line/byte delta (`before`/`after`, `git diff --numstat`). Zero-exit is not
-  evidence. For a mutation, assert **both** directions: the marker landed **and** the original is
+  marker, **AND** a measured line/byte delta (`before`/`after`, `git diff --numstat`). Zero-exit is
+  not evidence. For a mutation, assert **both** directions: the marker landed **and** the original is
   gone.
+
+  > **THOSE TWO ARE NOT ALTERNATIVES, AND THIS USED TO SAY "OR".** Measured 2026-09-10: a
+  > `perl -i -pe 's{A}g; s{B}g if $. >= L && $. <= L+35'` rewrote **forty other sites** while
+  > **both halves of the marker grep passed** — marker present at the target, original gone at the
+  > target. **The grep proves an edit LANDED and says nothing about WHERE ELSE.** Only a line/byte
+  > delta or `--numstat` sees the overreach. See the sixth row of the mutation-lies table below.
 - **A grep filter over tool output** must be proven capable of matching a failure *before* its
   silence is read as success. Run it once against a known-bad input and require the hit. A filter
   that has only ever been run against passing output has never been tested.
@@ -316,6 +322,23 @@ together: **each guard catches the previous failure and cannot see the one below
 | **THE MARKER BROKE THE EDIT** | the replacement text was `/* MUT_MARK */`, and its slashes **terminated `perl`'s `s///` early** — so the edit landed as a bare *deletion* and the marker never went in. Original gone, marker absent | the marker grep, **"marker present" half — the other one** |
 | **applied, no bite** | the edit landed and the test stayed green — the assertion matched a *duplicate* of the mutated token | **nothing mechanical** — only reading the red you expected and not getting it |
 | **applied, wrong side** | the test passed on an accident (a floating-point coincidence; an undefended victim where `dealt == amount`) rather than on the thing it guards | **nothing at all** — only designing the fixture so the two values differ |
+| **APPLIED TOO WIDELY** | a scope guard that **silently did not bind**: `perl -i -pe 's{A}g; s{B}g if $. >= L && $. <= L+35'` — **the `if` binds ONLY to the last statement in the chain**, so `s{A}` ran over the whole file | **NOTHING in the marker grep — BOTH halves pass.** Only a measured line/byte delta, or `git diff --numstat`, sees it |
+
+> **THE SIXTH ROW IS THE MIRROR IMAGE OF THE FIRST, AND ONE INSTRUMENT CANNOT COVER BOTH.**
+> *Didn't apply* is **too little**; *applied too widely* is **too much**. The marker grep sees the
+> first and is **blind** to the second, because at the target site both halves read exactly as they
+> would on a correct edit.
+>
+> **The generalisation: a scoped edit whose SCOPE silently does not apply is the same family as an
+> in-place edit that NO-OPS.** Both report success; both are invisible to the check written for the
+> other.
+>
+> **2026-09-10, the instance.** Restaging one test row rewrote `new Vec3(1, 0, 0)` across the whole
+> file — `FORWARD`, `EYE_FORWARD`, unrelated victim fixtures. **Three unrelated tests failed and the
+> intended row never reported.** It was caught **only because those failures were obviously wrong**
+> — luck of the fixture, the same *"by luck of ordering, not by design"* that caught the third
+> instrument in the table above. Restored byte-identical from a scratchpad copy and redone with an
+> editor on the specific lines.
 
 > **ROWS TWO AND THREE ARE WHY THE MARKER GREP IS TWO CHECKS, AND WHY YOU NEED BOTH HALVES.** They
 > fail in opposite directions and each half catches exactly one of them:

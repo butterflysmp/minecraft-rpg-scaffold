@@ -1,0 +1,159 @@
+# GATE — the beam origin gap
+
+**This file is the source of truth for the beam-gap boot gate's CONTENT.** It is versioned with the
+code because for every row below **these are the only checks that exist anywhere in the project.**
+The suite passes with all of them deleted — and **not one of its 1475 tests can see a single pixel.**
+
+> ### THE GATE EXISTS IN TWO DOCUMENTS, AND THE OTHER ONE LEADS
+>
+> The operator ticks through a **published HTML gate page**. That page is what gets edited during a
+> session, so **it leads and this file follows.**
+>
+> | | authoritative on |
+> |---|---|
+> | **this file** | **CONTENT** — what a row says, its staging, its expected figures, its reasoning |
+> | **the page** | **WHAT WAS ACTUALLY RUN** — ticks, observations, the order rows were taken in |
+>
+> **Update this file when the page changes, in the same session.** The page is not versioned, so a
+> divergence that outlives the session is only findable by someone reading both. `GATE-ignite.md`
+> records two instances of that drift in three days, invisible from both sides until it was.
+
+---
+
+## WHAT THIS GATE IS FOR, AND THE ONE DISTINCTION THAT ORGANISES IT
+
+`BEAM_ORIGIN_GAP` skips the first blocks of every ray weapon's beam. `GATE-cursed-emerald.md` CE4
+found the defect it addresses: the beam is hard to see through at **both** 3 and 30 blocks, which is
+evidence for a fixed **near-field** cause rather than density.
+
+> ### "DOES THE GAP EXIST" AND "DOES THE GAP HELP" ARE SEPARATE ROWS, AND A TICK ON ONE IS NOT THE OTHER
+>
+> **A slice can land with the constant plainly working and the visual no better.** That is a real
+> outcome and these rows must be able to say it. **G-pb witnesses EXISTENCE. G5a and G5b witness
+> EFFECT.** Do not let a green G-pb be read as the gap having helped.
+
+**The unit tests already pin the mechanism**, so no row here re-checks it: that the gap is measured
+from the ray origin, that it is spent once rather than per chunk plane, that a segment shorter than
+the gap is suppressed and collapses into its own chunk column, and that each volley shot recomputes
+it from that shot's own aim. **None of that is reachable from a boot gate, and none of these rows is
+evidence for it.**
+
+## THE CONSTANT IS PROVISIONAL, AND THIS FILE IS WHAT RULES IT
+
+`1.0` is `cfde822`'s number for `cfde822`'s geometry. **G5a and G5b are the authority.** Until they
+run, the number is nobody's — changing it is housekeeping rather than a decision. When they rule it,
+`CastExecutor`'s javadoc gets an **ADOPTED** line and the provisional paragraph goes, on the
+`Ignite` precedent.
+
+**There is a ceiling and nothing enforces it:** a beam shorter than the gap draws **nothing**, so at
+a gap of 3 both CE4's near staging and L0's fire at a wall, see no beam, and report *"not
+blinding"* — **true, and measuring nothing.** Keep it well under 3.
+
+---
+
+## ROWS
+
+Written before the boot, not after, and none of them is a tick-box.
+
+### G-pb — **does the gap EXIST? figure**, and it needs a wall you are touching
+
+**Stand flush against a wall and fire.** Record what you see: **beam, or no beam.**
+
+**THEN THE POSITIVE CONTROL, WHICH IS NOT OPTIONAL:** step back to **roughly two blocks** and fire
+again. **A beam MUST appear there.** Without it, *"no beam"* and *"the weapon did not fire"* are the
+same observation — and this row's whole subject is an absence.
+
+> **WHY A WALL AND NOT A MOB.** The gap is 1.0, so this row needs a hit point **under one block from
+> the eye**. **Entity collision keeps you further away than a wall does, and the distance is not
+> controllable** — a mob staging cannot reliably get inside the gap, and a row that cannot be staged
+> is worse than no row. This repo has already lost one that way.
+>
+> **NO DISTANCE FIGURE IS WRITTEN INTO THIS ROW FROM ARITHMETIC.** *Flush against a wall* is the
+> instruction; the observation is what it produces.
+>
+> **AND IF A FLUSH SHOT TURNS OUT TO BE OUTSIDE THE GAP IN PRACTICE, THAT IS A FINDING ABOUT THE
+> CONSTANT** — the eye sits back from the wall further than the gap reaches — **and it belongs in
+> this gate as a finding.** It is **not** a row to be quietly restaged at closer range until it
+> agrees. Record what happened and let it rule the constant, which is what G5a/G5b are for anyway.
+
+*The impact visual still plays at the hit point either way*, so feedback on a suppressed shot is
+partial rather than absent. Whether "no beam" reads as *"you are touching it"* or as *"the weapon
+did not fire"* is the question, and nobody has looked at it.
+
+### G5a — **the LAPIS MUZZLE, before/after. figure. THIS IS THE REAL LAPIS WITNESS**
+
+Fire at a flat wall from **~3 blocks**, on **`All` AND `Decreased`**, and judge against L0's recorded
+reading — quoted here so the runner does not have to fetch it:
+
+> **`GATE-lapis-staff.md` L0, 2026-09-05** — *"Fire while looking at a flat wall, from ~3 blocks. Is
+> there a blue blob obscuring your view AT THE MUZZLE?"* · **sole witness** for the 0.25-block first
+> sample · result: ***"a little clutter when casting on All; Decreased was much better. No need to
+> change."*** → **ACCEPTED, MEASURED IMPERFECTION**
+
+**Record BETTER / SAME / WORSE, per setting — two figures.**
+
+> **SAME ON `All` IS A FAILING RESULT**, because `All` is where the clutter was.
+>
+> **L0 IS NOT RE-RUN AS WRITTEN.** Its own expectation is absence-shaped (*"expect: no"*) and it came
+> back **not clean**, so re-running it as written would ask a yes/no question of a state already
+> known to be neither. Run it **comparatively**, which is positive and discriminating.
+>
+> **THIS IS THE BETTER OF THE TWO EFFECT WITNESSES**, and it is worth knowing why: it has a
+> **recorded pre-state on two named settings**. CE4 has a one-line impression.
+>
+> **IF G5a COMES BACK BETTER, THE L0/L2 BASELINE IS VOID.** That coupling's stated baseline is *"a
+> measured imperfection rather than a clean muzzle"*, and a future `samples_per_block` retune would
+> then be starting from somewhere new. Say so where the old baseline is stated.
+
+### G5b — **CE4's RE-RUN, at 3 and 30. figure**
+
+Fire the Cursed Emerald at both distances, on **`All` AND `Decreased`**, both recorded.
+
+> **THE PRE-STATE LACKS A SETTING, AND THAT WEAKENS THIS ROW ON PURPOSE.** The client Particles
+> setting appears **nowhere** in `GATE-cursed-emerald.md`, while `GATE-lapis-staff.md:39` makes it a
+> precondition (*"L0 through L3 are meaningless without it"*) and `PLAN-cursed-emerald.md` required
+> it for that very file. **So CE4's *"slightly hard to see at both ranges"* is a reading with half
+> its units missing**, and this re-run cannot fully compare against it.
+>
+> **Do not compare across an unknown setting and report a clean improvement.** A "better" verdict
+> here is **softer evidence than L0's**, and the row says so rather than leaving a reader to weigh
+> two figures that are not the same kind of measurement.
+
+**G5b's completion includes the back-edit.** It does not count as run until
+`GATE-cursed-emerald.md`'s **CE4 line** has been updated to point at the result. **Two files move in
+one session or they drift** — `GATE-ignite.md` records two instances in three days.
+
+### G5c — **lapis L6/L7 regression only. LABELLED NOT A GAP WITNESS**
+
+Re-run `GATE-lapis-staff.md` L6 (wall at 5 blocks) and L7 (mob at 10 blocks) and confirm they still
+pass.
+
+> **THEIR PASSING CARRIES NO INFORMATION ABOUT THE GAP, AND THE LABEL IS THE POINT OF THE ROW.**
+> Both observe the beam's **END**; the gap moves its **START**. `GATE-cursed-emerald.md` derived that
+> on paper before the fix was recommended, so re-checking them **confirms a prediction we already
+> made** — a control that succeeds for the wrong reason if anyone reads it as evidence.
+>
+> Keep it as a cheap regression check. **Do not record it as the lapis witness. G5a is.**
+
+### G5d — **the prose corrections landed AND are reasoned**
+
+Confirm each of the four, and that each records **WHY** it was wrong rather than only that it was —
+*a value-only correction cannot be audited later*:
+
+| | |
+|---|---|
+| `GATE-cursed-emerald.md:242-244` | *"takes the aim origin directly"* — it takes the **segment start**; `from == aim.origin()` only at index 0 |
+| `GATE-cursed-emerald.md` CE4 | a **pointer with no tick box and no result column** — a status line, not a row. **Both files state which is the authority**; G5b holds the row |
+| `GATE-lapis-staff.md` ~139-155 | three sentences: the first sample *"one spacing off the eye … 0.25 blocks"*, *"a soft coloured blob 0.25 blocks from the eye"*, and *"the answer is probably a start offset … NOTHING HAS BEEN BUILT FOR IT"* — **this slice is that offset, and the file predicted it** |
+| `BeamSamples` javadoc, lines 42-50 | calls the near-muzzle skip *"0.25 BLOCKS"* from the eye and *"a gate question, not a settled one"*. After this slice the first sample is one spacing past the **gap**, so the figure is wrong and the question is settled |
+
+**A row that can only be ticked from a diff is still a row**, and it is here because falsified gate
+prose is a thing this repo sweeps for and has lost to before.
+
+---
+
+## THE SLICE DOES NOT CLOSE UNTIL EVERY ROW RESOLVES
+
+…**and until `GATE-cursed-emerald.md`'s CE4 pointer has been updated to the result.** CE4 is
+currently **RE-RUN OWED**, which is a status, not a tick — it must not be marked green by this
+fix merely landing.
