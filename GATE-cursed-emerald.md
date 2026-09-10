@@ -284,7 +284,86 @@ sentence is wrong in both halves. It is not a content fix, and the density is no
 > would be prescribing a remedy before anyone has looked at the material. Ship the unauthorable
 > version; add the override when a second case actually needs one.
 >
+> > **AND THE CALL-SITE COUNT IS THE EVIDENCE, NOT THE INTUITION. MEASURED: `presentAlong` HAS
+> > EXACTLY ONE PRODUCTION CALLER.**
+> >
+> > ```
+> > CastExecutor.java:321   if (beam != null) world.presentAlong(from, hit.map(RayHit::point).orElse(to), beam);
+> > ```
+> >
+> > That is **the only line in the codebase that draws a beam.** Every other occurrence is the
+> > `CombatWorld` interface declaration, the `PaperCombatWorld` implementation, the test fake, or
+> > javadoc.
+> >
+> > **So a per-visual `skip_first_blocks:` field would pay a PERMANENT AUTHORING COST — one every
+> > future beam author must remember, failing SILENTLY when forgotten — to configure something with
+> > a single call site.** The opt-out case does not exist, *and* the thing it would opt out of has
+> > one caller. Both halves matter: the first says nobody needs the flexibility yet, the second says
+> > the flexibility buys almost nothing even if they did.
+>
 > **This is the content chat's read, not a ruling.** The feature chat owns it.
+>
+> ### WHAT THE GAP DOES TO THE LAPIS STAFF — CHECKED, NOT ASSUMED
+>
+> The fix reaches lapis **by design**, so `GATE-lapis-staff.md` was read before recommending it.
+> **NO LAPIS ROW BREAKS:**
+>
+> | row | what it observes | why a start-gap cannot touch it |
+> |---|---|---|
+> | **L6** | *"beam stops at the wall face"*, fired at **5 blocks** | observes the **END**. The gap moves the **START**. |
+> | **L7** | *"beam ends at the mob"*, fired at **10 blocks** — **sole witness** for the draw-to-hit-point rule | same |
+> | **L3** | thickness at `size: 1.2` | unaffected |
+> | **L11** | control — *"no beam"* from Solar Lance | unaffected |
+>
+> **SAY IT PRECISELY, BECAUSE TWO CLAIMS ARE BEING CONFLATED AND ONLY ONE IS TRUE: lapis's
+> APPEARANCE changes; lapis's GATE does not.** *"It touches lapis"* and *"it invalidates lapis's
+> gate"* are different statements. The first is the point of the fix. The second would be a reason
+> to hesitate, and it is false.
+>
+> ### THE GAP SIZE HAS A HARD CEILING, AND IT COMES FROM CE4 ITSELF
+>
+> **A BEAM SHORTER THAN THE GAP DRAWS NOTHING AT ALL.**
+>
+> The suggested range was 1–3 blocks. **At 3, CE4's near staging IS 3 blocks** — this row would fire
+> at a wall, see **no beam whatsoever**, and report *"not blinding"*. **True, and measuring
+> nothing.**
+>
+> **THE ROW WOULD PASS BY DRAWING ZERO PARTICLES — a control that succeeds for the wrong reason, in
+> the row whose entire job is verifying this fix.** That is this project's named failure, landing in
+> the worst possible place.
+>
+> `cfde822`'s `VISUAL_GAP = 1.0` leaves two blocks of beam at that staging. **The upper end of the
+> suggested range breaks the row that has to verify it.**
+>
+> **The constant is bounded from above by the shortest staging any gate row uses, and NOTHING
+> ENFORCES THAT RELATIONSHIP.** The two tightest, measured from the gate files:
+>
+> | staging | row | beam left at gap 1.0 | at gap 3.0 |
+> |---|---|---|---|
+> | **3 blocks** | **CE4 near** — the binding constraint | 2 blocks | **nothing** |
+> | 5 blocks | `GATE-lapis-staff.md` L6 | 4 blocks | 2 blocks |
+>
+> **Write it AT THE CONSTANT, with the number:** *must stay well under CE4's 3-block near staging,
+> or that row measures a beam that was never drawn.*
+>
+> ### AND THE GAP CREATES A NEW BEHAVIOUR THAT WANTS ITS OWN ROW
+>
+> **A point-blank shot, closer than the gap, now draws NO BEAM.** Whether that reads as *"you are
+> touching it"* or as *"the weapon did not fire"* is a question **nobody has looked at** — and the
+> impact visual still plays at the hit point either way, so the feedback is partial rather than
+> absent.
+>
+> **Add it to the gap slice's own gate rather than discovering it from a player report.**
+>
+> ### THE CONSTANT SHIPS MARKED PROVISIONAL, ON THE VOLLEY AND IGNITE PRECEDENT
+>
+> **`1.0` is `cfde822`'s number for `cfde822`'s geometry.** Ship it **marked provisional**, with
+> **CE4's re-run as what rules it** — the same discipline Ignite's four constants got, where the
+> gate ruled them and the marker came off in the housekeeping commit.
+>
+> **Do not let it ship unmarked.** A gap nobody chose deliberately is exactly the magic number that
+> `theRayRangeIs32AndTheFileSaysWHY`'s mutation exists to prevent — *a value-only assertion cannot
+> see a deleted reason*, and an unmarked inherited constant has no reason to delete.
 
 ### CE5 — **mana. figure. AND THE FIGURE IT MEASURES IS PROVISIONAL BY DECLARATION**
 
