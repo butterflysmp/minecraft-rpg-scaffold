@@ -9602,6 +9602,73 @@ so even when the reason is good** — the operator should not have to diff to le
 > from a glance at something adjacent to the answer.* **The argument was unaffected, which is exactly
 > what lets this class of error survive**: nothing downstream breaks, so nothing reddens.
 
+### A PUSH IS A FACT ABOUT THE WIRE, AND A DISAGREEMENT ABOUT ONE CAN BECOME PERMANENTLY UNRESOLVABLE
+
+**2026-09-10.** A report ended *"Recorded on `docs/cursed-emerald-gate-run` (`8101c3b`, tree
+`36d65b47`). Not pushed — say the word."* The next turn's reply asserted that the same report *"showed
+it on the wire"*. **It did not** — the quoted sentence says the opposite.
+
+**And the message that caught the error had itself skipped `git ls-remote`**, writing *"Not pushed, so
+I can't verify"* on the strength of the very report it was about to correct — **in an arrangement
+whose entire premise is that reports are not wire facts.**
+
+> **A REPORT SAYING "UNVERIFIABLE" IS STILL A REPORT, AND IT IS THE ONE MOST LIKELY TO STOP THE CHECK
+> FROM HAPPENING** — skipping feels free exactly when something claims there is nothing to check.
+
+**THE PART THAT MAKES THIS WORTH AN ENTRY IS THAT IT CANNOT BE SETTLED.** `git ls-remote` is a
+**point-in-time read**; neither party recorded one; and **a commit's presence on `origin` today says
+nothing about when it arrived.** There is no artefact, no log, and no way to manufacture one after
+the fact. Two careful parties, one turn apart, with **no evidence on either side and none
+obtainable.**
+
+**This is a different failure from every figure entry above.** Those were wrong numbers that could be
+re-measured — `./mvnw test` re-runs, `grep -c` re-counts. **This one destroys the measurement by not
+taking it**, and the window closes immediately.
+
+**How to apply:** **paste the `git ls-remote --heads origin` line for the ref, before and after the
+push.** Never write *"pushed"* or *"not pushed"* as a bare assertion. It is the same rule as
+[[report-the-file-list-from-numstat-and-what-you-touched]] — *report the command's output, not your
+belief about the command's output* — pointed at the remote instead of the working tree, and the two
+belong in the same family for that reason.
+
+**One line in a report retires the class.**
+
+### AN INVARIANT OBSERVATION ACROSS A CHANGED QUANTITY RULES OUT THAT QUANTITY — IT DOES NOT IMPLICATE WHAT ELSE WAS IN THE FRAME
+
+**Measured 2026-09-10, `GATE-cursed-emerald.md` row CE4.** The observation was *"slightly hard to
+see at **both** ranges"* — the Cursed Emerald's beam, staged at 3 blocks and at 30.
+
+**The first diagnosis read "both ranges" as ruling OUT a near-muzzle cause**, on the reasoning that a
+one-block gap cannot help a beam obstructing along its whole length. **That is inverted**, and the
+inversion is the entry.
+
+The beam starts at the **eye** and runs down the **view axis**, so particles near the eye project
+large and dead-centre while distant ones project tiny and dead-centre. **Screen coverage is dominated
+by the nearest few metres — identical at both stagings.**
+
+| hypothesis | 3 blocks | 30 blocks | predicts |
+|---|---|---|---|
+| cumulative density | 12 ppb | 120 ppb | **30 dramatically worse** |
+| near-field obstruction | same first metre | same first metre | **the same at both** ← *observed* |
+
+**Ten times the total particle count producing no change in difficulty is evidence AGAINST density
+and FOR a fixed near-field cause.** Invariance is precisely what the near-field hypothesis predicts;
+it was read as pointing at the far segment instead.
+
+**A NULL RESULT ELIMINATES. IT DOES NOT NOMINATE.** Varying X and seeing no change is strong evidence
+that X is not the cause — and **no evidence at all** about which of the unvaried things is. The error
+is to treat "not X" as "therefore Y", where Y is whatever else happened to be in view.
+
+**How to apply:** when an observation is *the same* across a deliberately varied quantity, write down
+two separate sentences — **"this rules out Q"** and **"the cause is still unidentified"** — and resist
+merging them. Then ask what *else* was held constant, because the answer is where the cause lives. In
+CE4 the constant was the first metre of beam, and it was constant *by construction* in both stagings,
+which is why it was invisible as a candidate.
+
+Related: [[the state-the-property entry above]] — the remedy chosen here (skip the first N blocks
+rather than thin the density) fixes the cause for **every** ray weapon, where thinning would have
+reduced one weapon's multiplier and left the cause for the next multi-beam weapon to rediscover.
+
 ### A FIGURE WRITTEN MID-COMMIT DESCRIBES THE TREE BEFORE THE COMMIT, AND NOTHING RE-CHECKS IT
 
 **Measured 2026-09-10, closing the volley slice.** `GATE-volley.md:5` opened with *"The suite passes

@@ -84,6 +84,27 @@ clean, or every number here is off by a multiplier and reads exactly like a brok
 
 Written before the boot, not after, and none of them is a tick-box.
 
+> ### RUN 2026-09-10, against `master` at `f1d6aba`. SIX PASS, ONE FORCED, ONE FINDING.
+>
+> **Itemised per row rather than blanket-ticked**, because these were reported individually and a
+> summary would flatten three results that are not plain passes.
+>
+> | row | verdict | |
+> |---|---|---|
+> | **CE1** | **PASS** | chime, a full second, then six shots |
+> | **CE2** | **PASS** | six numbers, countable, crits legible by colour |
+> | ~~CE3~~ | — | deleted before the run; `GATE-volley.md` V2 had answered the harder version |
+> | **CE4** | **FINDING — RE-RUN OWED** | *"slightly hard to see at BOTH ranges."* Not a pass. Not content's to fix. See below. |
+> | **CE5** | **PASS — RUN, MATCHED PREDICTION** | and **40 mana was MEASURED, NOT APPROVED** |
+> | **CE6** | **PASS** | confirmation, not discovery — V4 is the mechanism's witness |
+> | **CE7** | **UNCHANGED, AS FORCED** | real, and **not evidence about volley pricing** |
+> | **CE8** | **PASS — RUN, MATCHED PREDICTION** | |
+>
+> **CE5 and CE8 carry no written figures, by operator decision:** both matched the arithmetic this
+> file predicted in advance, and **transcribing a prediction is not an observation.** Recorded as
+> *run, matched prediction* rather than given invented numbers — the alternative is a figure that
+> looks measured and was copied.
+
 ### CE1 — the wind-up is visible as a wind-up
 
 Press right-click. Expect **a chime, then a full second of nothing, then six shots.**
@@ -96,6 +117,8 @@ able to tell a dropped wind-up from a working one.
 
 *Mechanism-wise this is V1's territory; what is new is only that THIS weapon's `on_cast` is wired
 and its sound key resolves on the pinned jar.*
+
+> #### RESULT — **PASS.** Chime, a full second of nothing, then the volley.
 
 ### CE2 — **six shots land, and the crits are countable**
 
@@ -140,6 +163,12 @@ and 54 read correctly at this cadence** — six figures, two ticks apart, at nea
 a content-tuning observation, not a legibility one, and if it comes back badly the first thing to
 thin is `emerald_impact.yml`, not the volley's timing.
 
+> #### RESULT — **PASS.** Six numbers, countable, and the crits legible by colour.
+>
+> The absorbed half came back clean too: **27 and 54 read correctly at this cadence**, so
+> `emerald_impact.yml` needs no thinning. **Note that this is a separate question from CE4** — the
+> impact bursts are not what is hard to see; the beam's near field is.
+
 ### ~~CE3 — are six numbers two ticks apart legible?~~ **DELETED, AND THE REASON IS RECORDED**
 
 **`GATE-volley.md` V2 ANSWERED THE HARDER VERSION OF THIS QUESTION.** It counted **eight numbers one
@@ -177,8 +206,164 @@ that is worth writing down as much as a yes is.*
 > entire length.
 
 **Six beams per cast at `size: 1.0`** is more than anything else in the repo puts on screen at once —
-the Lapis Staff draws one at 1.2. If the answer is "yes, blinding", `emerald_beam.yml`'s size or
-`samples_per_block` is the lever, and it is a content fix.
+the Lapis Staff draws one at 1.2. ~~If the answer is "yes, blinding", `emerald_beam.yml`'s size or
+`samples_per_block` is the lever, and it is a content fix.~~ **STRUCK — the row was run and that
+sentence is wrong in both halves. It is not a content fix, and the density is not the lever.**
+
+> ## CE4 — **RESULT: FINDING. RE-RUN OWED, NOT GREEN.**
+>
+> **Observed 2026-09-10:** *"slightly hard to see at **both** ranges"* — 3 blocks and 30.
+>
+> ### THE FIRST DIAGNOSIS WAS BACKWARDS, AND THE CORRECTION IS THE USEFUL PART
+>
+> The initial reading was that *"both ranges"* **ruled out** a near-muzzle cause, since a one-block
+> gap cannot help a beam that obstructs along its whole length. **That inference is inverted.**
+>
+> The beam starts at the **eye** and runs down the **view axis**. Particles near the eye project
+> **large and dead-centre**; particles thirty blocks out project **tiny and dead-centre**. **Screen
+> coverage is dominated by the nearest few metres — and those are identical at both stagings.**
+>
+> | hypothesis | 3 blocks | 30 blocks | predicts |
+> |---|---|---|---|
+> | cumulative density | 12 ppb | 120 ppb | **30 dramatically worse** |
+> | near-field obstruction | same first metre | same first metre | **the same at both** ← *observed* |
+>
+> **TEN TIMES THE TOTAL PARTICLE COUNT PRODUCING NO CHANGE IN DIFFICULTY IS EVIDENCE AGAINST
+> DENSITY AND FOR A FIXED NEAR-FIELD CAUSE.**
+>
+> > **THE SHAPE, WORTH MORE THAN THIS ROW: AN INVARIANT OBSERVATION ACROSS A CHANGED QUANTITY RULES
+> > OUT THAT QUANTITY AS THE CAUSE — IT DOES NOT IMPLICATE WHATEVER ELSE WAS IN THE FRAME.**
+> > Invariance was read as pointing at the far segment. Invariance is exactly what the *near-field*
+> > hypothesis predicts. The observation was doing real work and was read backwards; a null result
+> > eliminates, it does not nominate.
+>
+> ### THIS IS MECHANISM. IT DOES NOT COME BACK TO CONTENT.
+>
+> **MEASURED, not assumed:** no gap or offset concept exists anywhere in the tree — no
+> `VISUAL_GAP`, no `startOffset`, no `skipFirst` — and `CombatWorld.presentAlong(from, to,
+> visualId)` takes the aim origin directly (`CastExecutor:321`). **`emerald_beam.yml` cannot express
+> either fix.** Do not attempt this from a content slice.
+>
+> **Two candidates, both the operator's:**
+>
+> | | fix | |
+> |---|---|---|
+> | **1** | **SKIP THE FIRST N BLOCKS** (`cfde822`'s `VISUAL_GAP = 1.0`) | **RECOMMENDED.** It fixes **the cause** rather than the multiplier. Six beams pushed this over the threshold, but **the obstruction is there for every ray weapon** — the Lapis Staff draws from the eye too, at `size: 1.2`, just once. A gap fixes all of them. It also **keeps the beam honest**: the drawn line still lies along the traced ray, starting a metre out. |
+> | **2** | **DRAW FROM THE HAND** (`cfde822`'s `BeamVisuals.handLocation`) | **The cost, named before choosing:** the drawn line would no longer **be** the traced line — the beam becomes a cosmetic lie about the ray's path. Normal for a gun, but it collides with something concrete: **`GATE-volley.md` V4 and this file's CE6 both read the beam's ORIGIN as evidence of re-aim** (*"does the beam originate from where you are now or where you were?"*). Move the origin to the hand and **those rows stop witnessing what they were written to witness.** |
+>
+> **Thinning `emerald_beam.yml` reduces only the multiplier and leaves the cause for the next
+> multi-beam weapon to rediscover.** That is why the struck sentence above was wrong.
+>
+> ### WHAT MUST BE TRUE OF ANY FIX
+>
+> - **CE4 IS RE-RUN AFTERWARDS, at both 3 and 30.** The current observation **expires the moment the
+>   geometry changes.** This row is **RE-RUN OWED**, not green, and must not be ticked by the fix
+>   landing.
+> - **THE LAPIS STAFF IS RE-CHECKED**, because a gap changes it too. That is the *point* of the fix,
+>   and it is also precisely what makes this not a content slice: a content commit titled *"emerald"*
+>   must not alter another weapon's appearance.
+> - **`emerald_beam.yml`'s `size: 1.0` and `samples_per_block: 4` ARE LEFT ALONE** unless the re-run
+>   says otherwise. Per beam the emerald is already **smaller** than lapis; tuning it now would be
+>   treating a symptom of a misdiagnosis.
+>
+> **IT IS A SLICE, on the volley precedent:** sealed-schema change or core constant, loader arm if
+> authored, validator arm, core tests, and its own gate row.
+>
+> ### ONE OPINION FROM THE CONTENT SIDE, OFFERED NOT DECIDED
+>
+> The operator invited the *shape* to be argued rather than assumed. **A per-visual field
+> (`skip_first_blocks:` on the particle step) is the option to be most careful about**, for a reason
+> this repo already has a name for: **absence is not a neutral value.** Every future beam author
+> would have to remember it, and forgetting is **silent** — a new beam ships obstructing and nobody
+> learns why for a slice or two.
+>
+> A **single value applied in the beam-drawing path** cannot be forgotten and fixes every ray weapon
+> at once, which is the property that makes candidate 1 attractive in the first place. Its cost is
+> that a future beam wanting **no** gap — drawn from a turret, a fake entity, anything not at a
+> player's eye — cannot opt out. **That case does not exist yet**, so adding the field for it now
+> would be prescribing a remedy before anyone has looked at the material. Ship the unauthorable
+> version; add the override when a second case actually needs one.
+>
+> > **AND THE CALL-SITE COUNT IS THE EVIDENCE, NOT THE INTUITION. MEASURED: `presentAlong` HAS
+> > EXACTLY ONE PRODUCTION CALLER.**
+> >
+> > ```
+> > CastExecutor.java:321   if (beam != null) world.presentAlong(from, hit.map(RayHit::point).orElse(to), beam);
+> > ```
+> >
+> > That is **the only line in the codebase that draws a beam.** Every other occurrence is the
+> > `CombatWorld` interface declaration, the `PaperCombatWorld` implementation, the test fake, or
+> > javadoc.
+> >
+> > **So a per-visual `skip_first_blocks:` field would pay a PERMANENT AUTHORING COST — one every
+> > future beam author must remember, failing SILENTLY when forgotten — to configure something with
+> > a single call site.** The opt-out case does not exist, *and* the thing it would opt out of has
+> > one caller. Both halves matter: the first says nobody needs the flexibility yet, the second says
+> > the flexibility buys almost nothing even if they did.
+>
+> **This is the content chat's read, not a ruling.** The feature chat owns it.
+>
+> ### WHAT THE GAP DOES TO THE LAPIS STAFF — CHECKED, NOT ASSUMED
+>
+> The fix reaches lapis **by design**, so `GATE-lapis-staff.md` was read before recommending it.
+> **NO LAPIS ROW BREAKS:**
+>
+> | row | what it observes | why a start-gap cannot touch it |
+> |---|---|---|
+> | **L6** | *"beam stops at the wall face"*, fired at **5 blocks** | observes the **END**. The gap moves the **START**. |
+> | **L7** | *"beam ends at the mob"*, fired at **10 blocks** — **sole witness** for the draw-to-hit-point rule | same |
+> | **L3** | thickness at `size: 1.2` | unaffected |
+> | **L11** | control — *"no beam"* from Solar Lance | unaffected |
+>
+> **SAY IT PRECISELY, BECAUSE TWO CLAIMS ARE BEING CONFLATED AND ONLY ONE IS TRUE: lapis's
+> APPEARANCE changes; lapis's GATE does not.** *"It touches lapis"* and *"it invalidates lapis's
+> gate"* are different statements. The first is the point of the fix. The second would be a reason
+> to hesitate, and it is false.
+>
+> ### THE GAP SIZE HAS A HARD CEILING, AND IT COMES FROM CE4 ITSELF
+>
+> **A BEAM SHORTER THAN THE GAP DRAWS NOTHING AT ALL.**
+>
+> The suggested range was 1–3 blocks. **At 3, CE4's near staging IS 3 blocks** — this row would fire
+> at a wall, see **no beam whatsoever**, and report *"not blinding"*. **True, and measuring
+> nothing.**
+>
+> **THE ROW WOULD PASS BY DRAWING ZERO PARTICLES — a control that succeeds for the wrong reason, in
+> the row whose entire job is verifying this fix.** That is this project's named failure, landing in
+> the worst possible place.
+>
+> `cfde822`'s `VISUAL_GAP = 1.0` leaves two blocks of beam at that staging. **The upper end of the
+> suggested range breaks the row that has to verify it.**
+>
+> **The constant is bounded from above by the shortest staging any gate row uses, and NOTHING
+> ENFORCES THAT RELATIONSHIP.** The two tightest, measured from the gate files:
+>
+> | staging | row | beam left at gap 1.0 | at gap 3.0 |
+> |---|---|---|---|
+> | **3 blocks** | **CE4 near** — the binding constraint | 2 blocks | **nothing** |
+> | 5 blocks | `GATE-lapis-staff.md` L6 | 4 blocks | 2 blocks |
+>
+> **Write it AT THE CONSTANT, with the number:** *must stay well under CE4's 3-block near staging,
+> or that row measures a beam that was never drawn.*
+>
+> ### AND THE GAP CREATES A NEW BEHAVIOUR THAT WANTS ITS OWN ROW
+>
+> **A point-blank shot, closer than the gap, now draws NO BEAM.** Whether that reads as *"you are
+> touching it"* or as *"the weapon did not fire"* is a question **nobody has looked at** — and the
+> impact visual still plays at the hit point either way, so the feedback is partial rather than
+> absent.
+>
+> **Add it to the gap slice's own gate rather than discovering it from a player report.**
+>
+> ### THE CONSTANT SHIPS MARKED PROVISIONAL, ON THE VOLLEY AND IGNITE PRECEDENT
+>
+> **`1.0` is `cfde822`'s number for `cfde822`'s geometry.** Ship it **marked provisional**, with
+> **CE4's re-run as what rules it** — the same discipline Ignite's four constants got, where the
+> gate ruled them and the marker came off in the housekeeping commit.
+>
+> **Do not let it ship unmarked.** A gap nobody chose deliberately is exactly the magic number that
+> `theRayRangeIs32AndTheFileSaysWHY`'s mutation exists to prevent — *a value-only assertion cannot
+> see a deleted reason*, and an unmarked inherited constant has no reason to delete.
 
 ### CE5 — **mana. figure. AND THE FIGURE IT MEASURES IS PROVISIONAL BY DECLARATION**
 
@@ -200,6 +385,20 @@ The arithmetic to check it against: 40 mana per 30 ticks is **26.7 mana/second s
 > The observation is the input to a decision the operator has not made yet. Record what happened;
 > do not tick this as an approval.
 
+> #### RESULT — **PASS. RUN, MATCHED PREDICTION. AND 40 MANA WAS MEASURED, NOT APPROVED.**
+>
+> The run matched the arithmetic this row predicted in advance, and **no figures were transcribed,
+> by operator decision** — copying a prediction into the observation slot produces a number that
+> *looks* measured and was not, and the row would stop being able to disagree with the file.
+>
+> **THE DISTINCTION THIS ROW WAS WRITTEN TO PROTECT IS STILL LIVE, AND THE GREEN TICK IS EXACTLY
+> WHAT THREATENS IT.** `40` remains an **unruled placeholder** inherited from an economy that did
+> not come across. *A green tick beside an unruled placeholder is how a guess becomes a
+> requirement* — which is the standing rule this row was written in advance to prevent.
+>
+> **So: CE5 is green and 40 is still undecided. Those are not in tension; they are the whole point
+> of the row.**
+
 ### CE6 — track a moving target through the burst
 
 Strafe past a knell mid-volley. **Do later shots follow, and does the beam originate from where you
@@ -211,6 +410,17 @@ that **this weapon authors a volley rather than something else**, and that the r
 the emerald's own cadence and range.
 
 Record it as confirmation, not as discovery.
+
+> #### RESULT — **PASS, as confirmation.** Later shots follow, and the beam originates from where
+> the caster is now.
+>
+> **Recorded as confirming that this weapon authors a volley and re-aims at its own cadence — NOT as
+> an independent witness of re-aim.** `GATE-volley.md` V4 established that on the mechanism, on a
+> harder staging. Two green rows here and there are **one** piece of evidence about the wrapper, not
+> two.
+>
+> **AND CE4's CANDIDATE 2 WOULD BREAK THIS ROW**, which is the concrete cost named there: this row
+> reads the beam's *origin* as the evidence. Drawing from the hand leaves it testing nothing.
 
 ### CE7 — **swap weapons mid-burst. figure — AND KNOW BEFORE RUNNING IT THAT IT CANNOT MOVE**
 
@@ -237,6 +447,18 @@ tested anywhere:**
 | a volley whose payload is **`weapon_damage`** | this weapon authors `27`; nothing re-reads the weapon at shot time |
 | a swap **to an ENCHANTED weapon**, or one carrying a class bonus | the preconditions above require a clean run, so every multiplier is 1 |
 
+> #### RESULT — **"normal damage." UNCHANGED, AS FORCED — exactly as the row predicted of itself.**
+>
+> **What this DOES establish, and it is real and is this weapon's:** the burst is **not cancelled**
+> by a swap, and shots 4–6 still land.
+>
+> **What it does NOT establish: anything about volley pricing.** `amount: 27` is authored and closed
+> over in the walker; **no swap could have reached it.** The row was written in advance to say so,
+> and it came out as written — which is the definition of a result that carries no information about
+> the hypothesis.
+>
+> **Q3 STAYS NARROWED. Both untested cases above are intact.**
+
 ### CE8 — **NEW. Where does a MISSED volley burst, now that the range is 32? figure**
 
 Fire at open sky. **Write down whether you can see the impacts at all.**
@@ -253,6 +475,15 @@ re-derived here rather than carried forward with its premise swapped.
 — before it is ever a mechanism one.* Changing `stepRay`'s detonate-on-miss stays **out of a content
 slice** regardless: it is shared by every ray weapon, and altering it from a commit titled *"emerald"*
 would silently change the Lapis Staff.
+
+> #### RESULT — **PASS. RUN, MATCHED PREDICTION.**
+>
+> The bursts land at the cap edge as the re-derivation predicted, and **they do not read as noise** —
+> no thinning is called for. Q5's ruling stands on an observation at the shipped range rather than on
+> the plan's reasoning at a range that was never authored.
+>
+> **No figures transcribed, by operator decision**, for the reason CE5 records: copying a prediction
+> into an observation slot yields a number that looks measured and is not.
 
 ---
 
