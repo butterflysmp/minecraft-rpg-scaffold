@@ -138,9 +138,20 @@ is the safe direction for this row: a "whole" verdict under that handicap is str
 
 ## L0 AND L2 PULL IN OPPOSITE DIRECTIONS — the way C4 needs C5
 
-Spacing is `1 / samples_per_block`, and the first sample sits **exactly one spacing off the eye**.
-At the authored 4 per block that is 0.25 blocks, and **the figure does not depend on aim or on
-segment length** (pinned by `BeamSamplesTest.theFirstSampleIsOneSpacingOffTheStartAndTheLastIsExactlyTheEnd`).
+Spacing is `1 / samples_per_block`, and the first sample sits **exactly one spacing off ~~the eye~~
+THE DRAW START**. At the authored 4 per block that is 0.25 blocks ~~from the eye~~ **past the draw
+start**, and **the figure does not depend on aim or on segment length** (pinned by
+`BeamSamplesTest.theFirstSampleIsOneSpacingOffTheStartAndTheLastIsExactlyTheEnd`).
+
+> **CORRECTED 2026-09-10 — THE DRAW START IS NO LONGER THE EYE.** `BEAM_ORIGIN_GAP` skips the first
+> blocks of every ray weapon's beam, so the first particle now sits at **gap + 0.25** from the eye,
+> not 0.25. **The 0.25-from-the-eye figure is gone**, and with it the premise this whole section was
+> reasoning from.
+>
+> **WHY it was wrong rather than merely out of date:** the sentence was true of a beam drawn from
+> `aim.origin()`, which is what `stepRay` did until the gap landed. It was **a correct reading of a
+> mechanism that has since changed** — not a mistake when written — which is exactly the class this
+> repo sweeps for, because a reader has no way to date a sentence from its own text.
 
 So:
 
@@ -149,7 +160,17 @@ So:
 
 Judge the two together, with both figures in hand. If they genuinely conflict, the answer is
 probably a start offset rather than a density change — but that is a decision to take from two
-readings, not in advance, and nothing has been built for it.
+readings, not in advance, and ~~nothing has been built for it~~ **IT HAS NOW BEEN BUILT.**
+
+> **THIS FILE PREDICTED THE FIX, AND THE FIX LANDED 2026-09-10.** `BEAM_ORIGIN_GAP` **is** that
+> start offset. It arrived from the other direction — `GATE-cursed-emerald.md` CE4 measured the
+> muzzle clutter on a six-beam weapon and traced it to a near-field cause — but it is the same
+> remedy this section named in advance, and it now applies to **every** ray weapon including this
+> one.
+>
+> **So the conflict this section was written to arbitrate may no longer exist:** raising
+> `samples_per_block` still moves the first particle toward the camera, but the camera is now a gap
+> away. `GATE-beam-gap.md` **G5a** is what measures whether that changed anything here.
 
 Both numbers live in `content/visuals/lapis_beam.yml`. A retune is a yml edit plus
 `--refresh-content`, not a rebuild. That is why `samples_per_block` was made authorable rather
@@ -160,6 +181,15 @@ than left as a constant in Java.
 > "no": *"a little clutter when casting on All; Decreased was much better. No need to change."* At
 > the shipped density the muzzle is **already slightly cluttered on the highest particle setting**
 > — accepted, not absent.
+>
+> > **AND THIS BASELINE IS NOW PROVISIONAL, BECAUSE THE GEOMETRY UNDER IT MOVED.** *"A measured
+> > imperfection rather than a clean muzzle"* was measured on 2026-09-05 against a beam drawn **from
+> > the eye**. `BEAM_ORIGIN_GAP` (2026-09-10) starts it a gap out.
+> >
+> > **`GATE-beam-gap.md` G5a re-reads exactly this**, comparatively, on both settings — and **if it
+> > comes back BETTER, this baseline is VOID** and any future `samples_per_block` retune starts from
+> > somewhere new. Do not carry the 2026-09-05 reading forward as the current state without checking
+> > G5a's result first.
 >
 > So the coupling has bitten before anyone touched a number. A future *"it's too sparse, raise
 > `samples_per_block`"* would move the first sample **closer than 0.25 blocks from an eye that is
@@ -175,7 +205,10 @@ than left as a constant in Java.
 - **the density** — whether 4 per block reads as a line
 - **the delay** — whether the chunk-column walk is as invisible as decision A predicts, which is a
   **prediction and not a measurement** until L4/L4c produce figures
-- **the muzzle** — whether a soft coloured blob 0.25 blocks from the eye is in the way
+- **the muzzle** — whether a soft coloured blob ~~0.25 blocks from the eye~~ **one gap plus 0.25
+  blocks from the eye** is in the way *(corrected 2026-09-10 with the rest of this file's
+  0.25-from-the-eye figures — `BEAM_ORIGIN_GAP` moved the draw start off the eye; see the L0/L2
+  section above)*
 
 `VisualLoaderTest.theShippedLapisBeamCarriesThePortedNumbers` proves the file on disk asks for the
 right numbers. It cannot prove any of them looks right.

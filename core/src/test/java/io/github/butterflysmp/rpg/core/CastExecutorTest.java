@@ -914,9 +914,18 @@ class CastExecutorTest {
     // whether it is drawn at all -- plus the promise that solar_lance is unchanged.
     // ---------------------------------------------------------------------------------------
 
+    /**
+     * The range every {@link #beamRay} fires at, exposed so a row that must RE-DERIVE the walk --
+     * theSuppressedSegmentCollapsesToAPointInItsOwnCHUNKCOLUMN's control -- reads the fixture's own
+     * number instead of restating it. Inert for that control today (segment 0's far end is 16.0 for
+     * any range past 0.4), so this is naming rather than a guard; it is shared anyway because a
+     * control that restates its fixture is exactly what that row's third draft was about.
+     */
+    private static final double BEAM_RAY_RANGE = 26;
+
     /** A 26-block ray with a beam, the Lapis Staff's shape. */
     private static AbilityDefinition beamRay(String beam, EffectSpec... onHit) {
-        return ability(new CastSpec.Ray(26, beam), onHit);
+        return ability(new CastSpec.Ray(BEAM_RAY_RANGE, beam), onHit);
     }
 
     /**
@@ -1133,7 +1142,7 @@ class CastExecutorTest {
         // control for the third draft this took.
         var origin = new Vec3(15.6, 0, 0);
         var direction = new Vec3(1, 0, 0);
-        var range = 26.0;
+        var range = BEAM_RAY_RANGE;   // the fixture's own, not a restatement of it
         var caster = new FakeWorld.Dummy(origin);
         world.entities.add(caster);
 

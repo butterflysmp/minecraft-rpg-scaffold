@@ -94,7 +94,7 @@ Written before the boot, not after, and none of them is a tick-box.
 > | **CE1** | **PASS** | chime, a full second, then six shots |
 > | **CE2** | **PASS** | six numbers, countable, crits legible by colour |
 > | ~~CE3~~ | — | deleted before the run; `GATE-volley.md` V2 had answered the harder version |
-> | **CE4** | **FINDING — RE-RUN OWED** | *"slightly hard to see at BOTH ranges."* Not a pass. Not content's to fix. See below. |
+> | **CE4** | **FINDING — RE-RUN OWED, no tick box** | *"slightly hard to see at BOTH ranges."* Not a pass, and **not a row that can be ticked here** — the re-run is `GATE-beam-gap.md` **G5b**, which is the authority. See below. |
 > | **CE5** | **PASS — RUN, MATCHED PREDICTION** | and **40 mana was MEASURED, NOT APPROVED** |
 > | **CE6** | **PASS** | confirmation, not discovery — V4 is the mechanism's witness |
 > | **CE7** | **UNCHANGED, AS FORCED** | real, and **not evidence about volley pricing** |
@@ -240,9 +240,24 @@ sentence is wrong in both halves. It is not a content fix, and the density is no
 > ### THIS IS MECHANISM. IT DOES NOT COME BACK TO CONTENT.
 >
 > **MEASURED, not assumed:** no gap or offset concept exists anywhere in the tree — no
-> `VISUAL_GAP`, no `startOffset`, no `skipFirst` — and `CombatWorld.presentAlong(from, to,
-> visualId)` takes the aim origin directly (`CastExecutor:321`). **`emerald_beam.yml` cannot express
-> either fix.** Do not attempt this from a content slice.
+> `VISUAL_GAP`, no `startOffset`, no `skipFirst`. ~~and `CombatWorld.presentAlong(from, to,
+> visualId)` takes the aim origin directly (`CastExecutor:321`).~~ **`emerald_beam.yml` cannot
+> express either fix.** Do not attempt this from a content slice.
+>
+> > **STRUCK 2026-09-10 — `presentAlong` DOES NOT TAKE THE AIM ORIGIN. IT TAKES THE SEGMENT START.**
+> > `launchRay` passes `aim.origin()` as `from` for index 0 and **`aim` dies there**; `stepRay:335`
+> > passes the previous segment's `to` as the next `from`, so every later segment starts **on a
+> > chunk plane**. `aim.origin()` is not threaded through `stepRay` at all.
+> >
+> > **WHY IT WAS WRONG, WHICH IS THE PART A VALUE-ONLY CORRECTION WOULD LOSE:** the claim was
+> > checked at **one call site on its first iteration**, where it is true, and generalised to the
+> > loop. *True of the sample, generalised to the population* — the same shape as CE4's own
+> > misreading one turn earlier.
+> >
+> > The consequence is not cosmetic: it is why the fix had to **thread a gap boundary computed once
+> > from the aim**, rather than deriving one per segment. See `PLAN-beam-gap.md`.
+> >
+> > **The rest of the sentence stands** — the no-gap-concept half was separately verified.
 >
 > **Two candidates, both the operator's:**
 >
@@ -259,6 +274,19 @@ sentence is wrong in both halves. It is not a content fix, and the density is no
 > - **CE4 IS RE-RUN AFTERWARDS, at both 3 and 30.** The current observation **expires the moment the
 >   geometry changes.** This row is **RE-RUN OWED**, not green, and must not be ticked by the fix
 >   landing.
+>
+>   > ### THIS IS A POINTER, NOT A ROW. THE AUTHORITY IS `GATE-beam-gap.md` **G5b**.
+>   >
+>   > **CE4 has no tick box and no result column from here on.** It is a status line. The re-run
+>   > itself — at 3 and 30, on **`All` and `Decreased`**, carrying the caveat that this file records
+>   > **no Particles setting** for the original observation — lives in **G5b** and is recorded there.
+>   >
+>   > **A ROW THAT CAN BE TICKED IN TWO PLACES WILL BE**, and then two files carry results and
+>   > neither knows the other moved. One authority, one forwarding note.
+>   >
+>   > **Updating this line is part of G5b's own completion**, not a later housekeeping task: G5b does
+>   > not count as run until this pointer names its result. **Two files move in one session or they
+>   > drift** — `GATE-ignite.md` records two instances of exactly that in three days.
 > - **THE LAPIS STAFF IS RE-CHECKED**, because a gap changes it too. That is the *point* of the fix,
 >   and it is also precisely what makes this not a content slice: a content commit titled *"emerald"*
 >   must not alter another weapon's appearance.

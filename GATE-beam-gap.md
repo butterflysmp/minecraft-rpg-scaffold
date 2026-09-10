@@ -2,7 +2,15 @@
 
 **This file is the source of truth for the beam-gap boot gate's CONTENT.** It is versioned with the
 code because for every row below **these are the only checks that exist anywhere in the project.**
-The suite passes with all of them deleted — and **not one of its 1475 tests can see a single pixel.**
+The suite passes with all of them deleted — and **not one of its tests can see a single pixel.**
+
+> **NO SUITE TOTAL IS QUOTED IN THAT SENTENCE, AND THE FIRST DRAFT QUOTED ONE.** *"Not one of its
+> tests can see a single pixel"* is the entire claim; a number adds nothing to it and **ages out the
+> moment any test lands anywhere in the project**, with no way for a later reader to tell a live
+> figure from a stale one. This was the **third** instance on this branch, written in the commit
+> immediately after removing the other two — because those were figures about a *mutation run*, and
+> removing them felt like the rule. **It is not. ANY suite figure outside a verify report ages out
+> and cannot announce that it has**, which is exactly where `GATE-volley.md`'s `1462` lived.
 
 > ### THE GATE EXISTS IN TWO DOCUMENTS, AND THE OTHER ONE LEADS
 >
@@ -55,13 +63,40 @@ blinding"* — **true, and measuring nothing.** Keep it well under 3.
 
 Written before the boot, not after, and none of them is a tick-box.
 
-### G-pb — **does the gap EXIST? figure**, and it needs a wall you are touching
+### G-pb — **does the gap EXIST? figure.** Lapis Staff, flush against a wall
 
-**Stand flush against a wall and fire.** Record what you see: **beam, or no beam.**
+**Weapon: the LAPIS STAFF** (`/rpg give lapis_staff`), **both shots, on `All` AND `Decreased`.**
 
-**THEN THE POSITIVE CONTROL, WHICH IS NOT OPTIONAL:** step back to **roughly two blocks** and fire
-again. **A beam MUST appear there.** Without it, *"no beam"* and *"the weapon did not fire"* are the
-same observation — and this row's whole subject is an absence.
+1. **Stand flush against a wall and fire.** Record: **beam, or no beam.**
+2. **POSITIVE CONTROL, NOT OPTIONAL — SAME WEAPON, SAME SETTING:** step back to **roughly two
+   blocks** and fire again. **A beam MUST appear.**
+
+> **THE CONTROL AND THE SHOT MUST BE THE SAME WEAPON, WHICH THE FIRST DRAFT LEFT IMPLIED.** It said
+> *"fire"* then *"fire again"*. Without that stated, the control does not close the confound below.
+
+> **WHY THE LAPIS STAFF AND NOT THE CURSED EMERALD.** One beam, one line, nothing to disentangle.
+> The emerald puts **six** beams on screen per cast, and *"no beam"* from six suppressed calls is
+> not the same picture as from one. **The emerald's behaviour at point blank is worth its own
+> observation rather than being mixed into this one.**
+
+> **THE CONFOUND THIS ROW MUST NOT WALK INTO: A CORRECTLY SUPPRESSED BEAM AND THE SOLAR LANCE ARE
+> OBSERVATIONALLY IDENTICAL.** `GATE-lapis-staff.md` **L11** records *"Cast Solar Lance → impact
+> burst only. **No beam.**"* — PASS 2026-09-05. The impact visual still plays on a suppressed shot
+> (see below), so both produce *burst at the hit point, no line*, for entirely unrelated reasons —
+> and that weapon is one `/rpg give` away. **The same-weapon control is what separates them.**
+
+> **THE SETTING IS RECORDED, AND ON THE SAME TWO THE OTHER ROWS USE**, so all three are comparable.
+> This is the **nearest possible muzzle observation** — the exact class `GATE-lapis-staff.md:39`
+> makes the setting a precondition for (*"L0 through L3 are meaningless without it"*).
+> **THE FAILURE DIRECTION IS THE DANGEROUS ONE:** on `Minimal` a thin beam may not draw at all,
+> producing *"no beam"* — **the same reading as a pass.** A row whose subject is an absence must
+> name every condition that can manufacture that absence.
+
+> **WHAT THE CONTROL ACTUALLY DRAWS, so a faint line is not ambiguous.** At gap 1.0 a two-block shot
+> draws **one block of beam**: `round(1.0 × 4)` = **FOUR PARTICLES** at the authored
+> `samples_per_block`. Near-field particles render large, so this should be unambiguous — **but if
+> four reads as ambiguous in practice, the control wants a longer staging** (L6's five blocks gives
+> sixteen), **and that is a finding about this row rather than about the gap.**
 
 > **WHY A WALL AND NOT A MOB.** The gap is 1.0, so this row needs a hit point **under one block from
 > the eye**. **Entity collision keeps you further away than a wall does, and the distance is not

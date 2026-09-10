@@ -43,11 +43,30 @@ public final class BeamSamples {
      * AND MUST NOT BE DESCRIBED AS ONE.</b> That guard skips an entire TICK -- 1.4 blocks at the
      * Flint Staff's speed. This skips {@code 1/samplesPerBlock}, which at 4 per block is 0.25
      * BLOCKS, and note that the figure does not depend on segment length or on aim: the first
-     * sample is always exactly one spacing from the muzzle. A quarter of a block is inside the
-     * caster's own head, and dust at size 1.2 is a soft coloured blob rather than a spark.
-     * cfde822 drew at s = 0 -- literally AT the eye -- and nobody complained, so this may be
-     * entirely fine; but the Flint Staff's gate found a FLAME at the eye WAS a problem, and the two
-     * particles are not comparable. It is a gate question, not a settled one.
+     * sample is always exactly one spacing <b>from whatever start it is handed</b>. A quarter of a
+     * block is inside the caster's own head, and dust at size 1.2 is a soft coloured blob rather
+     * than a spark. cfde822 drew at s = 0 -- literally AT the eye -- and nobody complained, so this
+     * may be entirely fine; but the Flint Staff's gate found a FLAME at the eye WAS a problem, and
+     * the two particles are not comparable. ~~It is a gate question, not a settled one.~~
+     *
+     * <p><b>SETTLED 2026-09-10, AND THIS PARAGRAPH'S FIGURE MOVED WITH IT.</b> It read "one spacing
+     * from the MUZZLE" and called the question open. Both halves are now wrong:
+     *
+     * <ul>
+     *   <li><b>The start is no longer the muzzle.</b> {@code CastExecutor.BEAM_ORIGIN_GAP} skips
+     *       the first blocks of every ray weapon's beam, so the first sample sits at
+     *       <b>gap + 0.25</b> from the eye. This class is unchanged and correct -- it always drew
+     *       one spacing off the start it was GIVEN; what changed is what it is given.</li>
+     *   <li><b>The question was answered, and not here.</b> {@code GATE-cursed-emerald.md} CE4
+     *       measured the muzzle clutter on a six-beam weapon and traced it to a near-field cause.
+     *       The remedy was a start offset, which is what {@code GATE-lapis-staff.md}'s L0/L2 section
+     *       had predicted in advance.</li>
+     * </ul>
+     *
+     * <p><b>WHY THIS WAS WRONG RATHER THAN MERELY STALE:</b> it was a correct reading of a mechanism
+     * that has since changed, and nothing in its own text dates it. That is the class this repo
+     * sweeps for -- and it is worth noting this one lived in {@code core/} rather than in a gate
+     * file, so a sweep aimed only at gate prose would have missed it.
      *
      * <p><b>THERE IS NO PER-SEGMENT FLOOR, AND ADDING ONE WOULD UNDO THE CLASS'S PURPOSE.</b>
      * cfde822 used {@code max(2, distance * 4)} over the WHOLE LINE, where a floor of 2 is a sane
