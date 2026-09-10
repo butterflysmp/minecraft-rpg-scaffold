@@ -231,6 +231,23 @@ So:
   > after the last file lands fixes the second. Third in the family is the `27`-for-`29` plan count —
   > *a figure taken from a glance at something adjacent to the answer.* Full entries in `NEXT.md`.
 
+- **A PUSH IS A FACT ABOUT THE WIRE, AND ONLY `git ls-remote` OBSERVES IT.** *"Pushed"* and *"not
+  pushed"* in a report are **both claims**. Report the command's output, not your belief about the
+  command's output — the same rule as the `--numstat` one above, applied to the remote.
+
+  > **A REPORT SAYING "UNVERIFIABLE" IS STILL A REPORT**, and it is the one that most reliably stops
+  > the check from happening, because skipping feels free when there is said to be nothing to check.
+  >
+  > **2026-09-10.** A report said *"Not pushed — say the word"*; the next turn claimed the same
+  > report *"showed it on the wire"*. It did not. The reply that caught it had itself skipped
+  > `ls-remote`, **on the strength of the report it was about to correct.** Whether the commit was on
+  > `origin` at that moment is now **permanently unresolvable**: `ls-remote` is a point-in-time read,
+  > neither party recorded one, and a commit's existence today says nothing about when it arrived.
+  > **Two careful parties, no evidence on either side, and none obtainable.**
+  >
+  > **Practically:** paste the `git ls-remote --heads origin` line for the ref, before and after.
+  > One line in a report retires this class.
+
 
 ### EVERY FILTER AND EVERY SCRIPTED EDIT NEEDS A POSITIVE CONTROL
 

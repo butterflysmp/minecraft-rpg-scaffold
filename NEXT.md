@@ -9602,6 +9602,37 @@ so even when the reason is good** — the operator should not have to diff to le
 > from a glance at something adjacent to the answer.* **The argument was unaffected, which is exactly
 > what lets this class of error survive**: nothing downstream breaks, so nothing reddens.
 
+### A PUSH IS A FACT ABOUT THE WIRE, AND A DISAGREEMENT ABOUT ONE CAN BECOME PERMANENTLY UNRESOLVABLE
+
+**2026-09-10.** A report ended *"Recorded on `docs/cursed-emerald-gate-run` (`8101c3b`, tree
+`36d65b47`). Not pushed — say the word."* The next turn's reply asserted that the same report *"showed
+it on the wire"*. **It did not** — the quoted sentence says the opposite.
+
+**And the message that caught the error had itself skipped `git ls-remote`**, writing *"Not pushed, so
+I can't verify"* on the strength of the very report it was about to correct — **in an arrangement
+whose entire premise is that reports are not wire facts.**
+
+> **A REPORT SAYING "UNVERIFIABLE" IS STILL A REPORT, AND IT IS THE ONE MOST LIKELY TO STOP THE CHECK
+> FROM HAPPENING** — skipping feels free exactly when something claims there is nothing to check.
+
+**THE PART THAT MAKES THIS WORTH AN ENTRY IS THAT IT CANNOT BE SETTLED.** `git ls-remote` is a
+**point-in-time read**; neither party recorded one; and **a commit's presence on `origin` today says
+nothing about when it arrived.** There is no artefact, no log, and no way to manufacture one after
+the fact. Two careful parties, one turn apart, with **no evidence on either side and none
+obtainable.**
+
+**This is a different failure from every figure entry above.** Those were wrong numbers that could be
+re-measured — `./mvnw test` re-runs, `grep -c` re-counts. **This one destroys the measurement by not
+taking it**, and the window closes immediately.
+
+**How to apply:** **paste the `git ls-remote --heads origin` line for the ref, before and after the
+push.** Never write *"pushed"* or *"not pushed"* as a bare assertion. It is the same rule as
+[[report-the-file-list-from-numstat-and-what-you-touched]] — *report the command's output, not your
+belief about the command's output* — pointed at the remote instead of the working tree, and the two
+belong in the same family for that reason.
+
+**One line in a report retires the class.**
+
 ### AN INVARIANT OBSERVATION ACROSS A CHANGED QUANTITY RULES OUT THAT QUANTITY — IT DOES NOT IMPLICATE WHAT ELSE WAS IN THE FRAME
 
 **Measured 2026-09-10, `GATE-cursed-emerald.md` row CE4.** The observation was *"slightly hard to
