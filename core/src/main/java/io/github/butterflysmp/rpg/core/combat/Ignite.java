@@ -57,13 +57,27 @@ import java.util.UUID;
  * been wrong, and the distinction matters to anyone tempted to remove the cap on the grounds that
  * recruitment "was fine".
  *
- * <h2>THE NUMBERS ARE PROVISIONAL, AND THE GATE IS WHAT RULES THEM</h2>
+ * <h2>THE NUMBERS WERE PROVISIONAL. THE GATE RAN 2026-09-10, AND THEY ARE NOW ADOPTED.</h2>
  *
- * Nobody can tune what does not exist, so these are defensible STARTING values chosen from content
- * that already ships, not decisions. {@code GATE-ignite.md} is what turns them into rulings. They
- * are pinned by {@code IgniteTest} so a change to any of them has to be deliberate -- the same
- * discipline {@code EnchantState}'s provisional rule carries, and for the same reason: a provisional
- * value with nothing pinning it drifts without anyone noticing it was ever provisional.
+ * They began as defensible STARTING values chosen from content that already ships, on the argument
+ * that nobody can tune what does not exist. <b>{@code GATE-ignite.md} was named as the authority that
+ * would rule them, it ran green, and no tuning was requested -- so all four are ADOPTED:</b>
+ * {@link #RADIUS} 4.0, {@link #DAMAGE} 6.0, {@link #DELAY_TICKS} 20, {@link #MAX_CHAIN_DEPTH} 4.
+ *
+ * <p><b>THE LABEL MATTERS MORE THAN IT LOOKS, WHICH IS WHY IT IS MOVED RATHER THAN LEFT.</b> A value
+ * still marked provisional is <b>a value nobody owns</b>: the next person to read
+ * <i>"PROVISIONAL, shorter reads as a screen-clear"</i> treats {@code DELAY_TICKS} as unclaimed --
+ * when it is also the reason a four-link cascade is four seconds of FUSE, and the number the
+ * 28-second worst case is written against. <b>An adopted value changed is a DECISION; a provisional
+ * one changed is HOUSEKEEPING.</b> Moving them across is what makes the next change argue for itself.
+ *
+ * <p>This is <i>a rule outliving its premise</i> in its other form: not an arithmetic that keeps
+ * evaluating after its reason is gone, but <b>a LABEL that keeps disclaiming after the thing it
+ * disclaimed was settled.</b> The disclaimer is the part that goes stale silently -- nothing fails,
+ * and it reads as caution rather than as a stale note.
+ *
+ * <p>They remain pinned by {@code IgniteTest}, which is now pinning adopted values rather than
+ * guarding provisional ones -- the same rows, a stronger claim.
  */
 public final class Ignite {
 
@@ -101,7 +115,10 @@ public final class Ignite {
      * detonation arrive sooner after its own death, and leaves the burn window untouched. The bound
      * on the wave is the depth cap; this is the bound on one link's delay.
      *
-     * <p>PROVISIONAL. Shorter reads as a screen-clear; longer as a slow, interruptible chain.
+     * <p><b>ADOPTED 2026-09-10</b>, on the gate. Shorter reads as a screen-clear; longer as a slow,
+     * interruptible chain. <b>And it is no longer only a feel dial:</b> it is the per-link fuse the
+     * cascade-duration arithmetic is written against, so lowering it for snappiness changes a figure
+     * two other places quote.
      */
     public static final int DELAY_TICKS = 20;
 
@@ -137,7 +154,7 @@ public final class Ignite {
     /**
      * Blast radius, in blocks.
      *
-     * <p>PROVISIONAL, and chosen to sit IN FAMILY with the blasts that already ship rather than to
+     * <p><b>ADOPTED 2026-09-10</b>, on the gate. Chosen to sit IN FAMILY with the blasts that already ship rather than to
      * invent a feel: {@code solar_grenade}'s burst is 4.0, {@code rekindle}'s and
      * {@code ability_stone}'s thrown embers are 4.0, {@code ember_staff} is 3.5 and
      * {@code emberblade} is 3.0. Reusing the prevailing number means a player who has felt a grenade
@@ -148,7 +165,7 @@ public final class Ignite {
     /**
      * Blast damage, dealt once to each mob in radius.
      *
-     * <p><b>PROVISIONAL, AND THE ONE TO HOLD LOOSEST -- BUT IT IS NOT AN ARBITRARY STARTING POINT.
+     * <p><b>ADOPTED 2026-09-10 on the gate, AND STILL THE ONE TO HOLD LOOSEST -- BUT IT WAS NEVER AN ARBITRARY STARTING POINT.
      * IT WAS CHOSEN TO SIT BELOW A FULL-HEALTH VANILLA MOB'S 20.</b> That is what makes a cascade
      * something you SET UP rather than something that happens to you: the blast alone does not kill
      * a healthy zombie, so a chain only propagates through a pack something has already softened.

@@ -5,6 +5,43 @@ for several behaviours below **these rows are the only check that exists anywher
 The suite passes with any of them deleted — 1406 tests, and not one of them can see a chain roll
 through a pack, a death message name the right player, or an explosion fire twice.
 
+## GATE RUN 2026-09-10 — GREEN ON A BLANKET CONFIRMATION, AND THAT IS ALL THE EVIDENCE THERE IS
+
+**Ran against `3352af5`.** Production code is **byte-identical from `8e8731b` through `d288a1f`** —
+`git diff 8e8731b..d288a1f -- core/src/main paper/src/main` is empty — so the binary under test is
+`8e8731b`'s, and the three commits since it are records and gate text only.
+
+| row | result | evidence |
+|---|---|---|
+| I1 · I2 · I3 · I4 · I5 · I6 · I7 · I9 · I10 · I11 · I12 | **PASS** | **BLANKET** — one confirmation, *"the gate ran green"*, covering all eleven |
+| **I8** *(figure)* | **UNRUN** | **no observation was written down, and a figure row with an empty field is UNRUN, not passed** |
+
+> **THIS IS RECORDED AT THE GRANULARITY IT WAS GIVEN, AND THE GRANULARITY IS ONE SENTENCE.**
+> `GATE-vanilla-damage.md` states the rule this file is obeying: *"inflating a blanket statement into
+> a specific observation is the failure this file exists to prevent."* Eleven per-row PASS cells with
+> figures would be that inflation — **the D1 defect exactly**, which this repo has already paid for
+> once (`GATE-element-accrual.md:70`: `1233469 — "all gates green" — D1 skipped, named by him`).
+>
+> **So the table is per-row in SHAPE and blanket in EVIDENCE, and says so.** Upgrading any row to
+> ITEMISED needs a figure from the person who ran it. **Nothing here should be read as a figure.**
+
+### AND TWO ROWS CANNOT ACCEPT A BLANKET AT ALL — THEIR FAILURE MODE IS "LOOKS LIKE A PASS"
+
+This is `GATE-element-accrual.md`'s A3 lesson arriving on a new page. Two rows have an outcome that is
+**indistinguishable from success unless someone read a specific thing**:
+
+- **I12** — its own table says *"mob 5 takes **nothing** → **STAGING FAULT**, not a defect. Re-space
+  and re-run."* A run where mob 5 was simply out of radius produces four detonations and a quiet fifth
+  mob, **which is the pass condition to anyone not checking for the fire glyph.** The row is SOLE
+  WITNESS for the depth cap *and* for the capture ordering, so a false pass here covers two
+  properties at once.
+- **I2** — the death message. A blast that credits nobody still damages, kills and chains. **The only
+  symptom is text in the chat log**, and "the gate ran green" cannot say whether it was read.
+
+**Both are OWED an itemised confirmation** — for I12, the glyph on mob 5; for I2, who the death
+message named. They are marked PASS above because that is what was reported, and flagged here because
+that report cannot discriminate.
+
 ## How to use it
 
 - **NAME THE ROWS YOU ARE ABOUT TO RUN, BEFORE YOU RUN THEM.** A count against an unnamed set is not
@@ -62,8 +99,14 @@ scorch something without also damaging it, which several rows below need.
 `/rpg give flint_staff` / `emberblade` — fire weapons, for the rows that want scorch applied the way a
 player would.
 
-`Ignite`'s provisional numbers: **fuse 20 ticks, radius 4.0, damage 6.0.** Every expectation below is
-written against those; if a row's number is wrong, check the constant before believing the row.
+`Ignite`'s numbers, **ADOPTED 2026-09-10 on this gate's own run**: **fuse 20 ticks, radius 4.0,
+damage 6.0, chain depth 4.** Every expectation below is written against those; if a row's number is
+wrong, check the constant before believing the row.
+
+> **They were PROVISIONAL until this gate ran, and this file was named as the authority that would
+> rule them.** It ran green and no tuning was requested, so they are adopted — **a value still
+> labelled provisional is a value nobody owns.** Changing one now is a decision that has to argue
+> with `Ignite`'s javadoc, not housekeeping.
 
 ### THE DEV BURN'S ARITHMETIC, BECAUSE TWO ROWS ARE STAGED AGAINST IT AND ONE USED TO BE IMPOSSIBLE
 
@@ -135,7 +178,7 @@ the first so the blast finishes the second.
 
 **Expect:** the death message for the SECOND knell **names you**.
 
-> **THIS IS THE ONLY PLACE RULE 4 IS VISIBLE ON A RUNNING SERVER, AND ITS FAILURE IS SILENT.** If the
+> **THIS IS THE ONLY PLACE SAFETY RULE 4 (attribution) IS VISIBLE ON A RUNNING SERVER, AND ITS FAILURE IS SILENT.** If the
 > applier were read at detonation instead of captured at death it would be `null` — `forget` has
 > already run by then — and the blast would still damage, still kill and still chain. **It would just
 > credit nobody.** Nothing errors, nothing logs, and the only symptom is this message.
@@ -211,7 +254,7 @@ blast 3 finds nothing alive. Chain ends. Depth tops out at 3.
 > agree — **which restores the exact four-mobs-four-links ambiguity the split existed to remove.**
 > The failure the split was designed to prevent, arriving from the other side.
 
-> **THE SERIALIZATION IS THE SAFETY RULE, NOT THE AESTHETIC.** Rule 3 ("each fires exactly once,
+> **THE SERIALIZATION IS THE SAFETY RULE, NOT THE AESTHETIC.** Safety rule 3 ("each fires exactly once,
 > against current state") is nearly free *because* the chain unrolls through time. If all three land
 > on one frame, the delay is not being applied per-link and safety rule 3 stops being free.
 >

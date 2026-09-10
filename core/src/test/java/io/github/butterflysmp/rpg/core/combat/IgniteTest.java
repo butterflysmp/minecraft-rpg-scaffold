@@ -281,20 +281,33 @@ class IgniteTest {
     }
 
     @Test
-    void theProvisionalNumbersArePinnedAndDAMAGESitsBelowAVanillaMob() {
+    void theADOPTEDNumbersArePinnedAndDAMAGESitsBelowAVanillaMob() {
         assertEquals(20, Ignite.DELAY_TICKS,
-                "one second -- DELIBERATELY longer than DESIGN's half-second example, so a "
-                        + "four-link cascade takes four seconds and reads as a wave rather than an "
-                        + "event. Changed 10 -> 20 on 2026-09-09; this row is what made that a "
-                        + "decision instead of a drift");
+                "one second -- DELIBERATELY longer than DESIGN's half-second example, so a cascade "
+                        + "reads as a wave rather than an event. This bounds the FUSE, not the wave: "
+                        + "a recruited survivor burns six seconds before it detonates, so four links "
+                        + "is up to 28 seconds. Changed 10 -> 20 on 2026-09-09; this row is what "
+                        + "made that a decision instead of a drift");
         assertEquals(4.0, Ignite.RADIUS, EPS, "in family with solar_grenade's burst");
         assertEquals(6.0, Ignite.DAMAGE, EPS, "solar_grenade's burst damage");
+        assertEquals(4, Ignite.MAX_CHAIN_DEPTH,
+                "four links, and the fourth is terminal -- the bound that made recruitment safe "
+                        + "enough to rule in");
 
-        // THE INVARIANT, WHICH IS THE HALF THAT ACTUALLY MATTERS. The three values above are
-        // PROVISIONAL and the gate is what rules them, so pinning them alone would just make a
-        // tuning pass red for no reason. This is the relationship a tuning pass must not break
-        // without re-arguing it: a blast that does not kill a full-health vanilla mob is what makes
-        // a chain something you SET UP rather than something that happens to you.
+        // RENAMED FROM theProvisionalNumbersArePinned... ON 2026-09-10, WHEN THE GATE RAN AND THE
+        // VALUES WERE ADOPTED. The old name, and the comment below it, both said PROVISIONAL -- a
+        // label that keeps disclaiming after the thing it disclaimed was settled. A test name is a
+        // claim a reader can check, and that one had stopped being true.
+        //
+        // ALSO CORRECTED HERE: this row's own DELAY_TICKS message said "a four-link cascade takes
+        // four seconds", which is the sentence corrected on the constant a commit earlier. It
+        // survived in an assertion message, where nothing greps for it.
+        //
+        // THE INVARIANT, WHICH IS THE HALF THAT ACTUALLY MATTERS. The four values above are now
+        // adopted, so pinning them is a guard against drift rather than a placeholder. This is the
+        // relationship a tuning pass must not break without re-arguing it: a blast that does not
+        // kill a full-health vanilla mob is what makes a chain something you SET UP rather than
+        // something that happens to you.
         assertTrue(Ignite.DAMAGE < VANILLA_MOB_HEALTH,
                 "Ignite.DAMAGE must stay below a vanilla mob's " + VANILLA_MOB_HEALTH
                         + ": at or above it every blast is lethal to a healthy mob and one ignition "
