@@ -149,6 +149,10 @@ public final class CastExecutor {
             case CastSpec.Projectile projectile -> launch(ability, source, aim, projectile);
 
             case CastSpec.Dash dash -> dash(ability, caster, source, aim, dash);
+
+            // NOTE WHAT IS NOT PASSED: `source`, nor `aim`. A volley re-projects its caster before
+            // EVERY shot, so the cast-frame projection above reaches no shot at all -- see volley().
+            case CastSpec.Volley volley -> beginVolley(ability, caster.id(), volley);
         }
     }
 
@@ -378,6 +382,103 @@ public final class CastExecutor {
         return target.position().add(new Vec3(0, target.eyeHeight(), 0));
     }
 
+
+    /**
+     * Start a volley: fire shot 1 after the wind-up, or inline if there is none.
+     *
+     * <p>{@code windupTicks == 0} runs the first shot on the cast frame rather than a tick later,
+     * exactly as {@link #launchRay} runs its first chunk-column segment inline and for the same
+     * reason -- the scheduler cannot defer by less than a tick, so deferring a zero wind-up would
+     * quietly make it 1 and a "no wind-up" volley would be indistinguishable from a 1-tick one.
+     */
+    private void beginVolley(AbilityDefinition ability, UUID casterId, CastSpec.Volley spec) {
+        if (spec.windupTicks() == 0) {
+            volley(ability, casterId, spec, 0);
+            return;
+        }
+        world.scheduleOn(casterId, spec.windupTicks(), () -> volley(ability, casterId, spec, 0));
+    }
+
+    /**
+     * One shot of a volley, and then the clock for the next.
+     *
+     * <p><b>THE RE-READ IS THE MECHANISM, NOT AN OPTIMISATION.</b> Every other cast shape freezes
+     * its caster once, at commit, because everything it does afterwards resolves somewhere the
+     * caster's own stats cannot legally be read. A volley is the exception: it is scheduled ON the
+     * caster, so each shot runs on the caster's own thread and a fresh read is both legal and the
+     * point. Six shots off ONE projection would share one crit roll, one price and one line of
+     * sight -- six copies of a single decision rather than a burst the player steers.
+     *
+     * <p>So each shot gets a fresh aim (where they are looking NOW) and a fresh
+     * {@link io.github.butterflysmp.rpg.core.combat.Caster} (a new crit roll, and whatever weapon
+     * they are holding at that tick). <b>A volley's stats are deliberately NOT atomic:</b> a player
+     * who swaps weapons after shot 3 has shots 4 onward priced off the new one. That is a
+     * consequence of the ruling, not an oversight.
+     *
+     * <p><b>BOTH READS ANSWER THE SAME CONDITION AND ANSWER IT THE SAME WAY.</b> An unreadable aim
+     * means an unreadable caster, so it STOPS the volley -- it does NOT fall back to the cast
+     * frame's aim. A fallback there would silently disable the re-aim this whole shape exists for:
+     * the burst would fire down a line the player abandoned ten ticks ago, with no signal, and
+     * present as "sometimes it doesn't follow" -- unreproducible, and read as lag.
+     *
+     * <p><b>TRIGGER -- why {@code execute}'s cast-frame projection is inert for a volley, which is
+     * a LOADER guarantee rather than anything visible here.</b> That projection carries a crit roll
+     * and is consumed only by {@code on_cast}. The cast-frame projection's crit roll is inert
+     * BECAUSE {@code AbilitySchema.parseCastVisuals} refuses non-visual effects in {@code on_cast},
+     * and visuals read no stats. If that ever admits a {@code Damage} effect, this roll becomes live
+     * and crits independently of every shot. Recorded because a reader who checks only this class
+     * sees a value rolled and discarded, and would delete it correctly on the evidence in front of
+     * them.
+     */
+    private void volley(AbilityDefinition ability, UUID casterId, CastSpec.Volley spec, int shotIndex) {
+        Combatant self = world.combatant(casterId).orElse(null);
+        if (self == null || !self.state().alive()) return;   // gone, or dead: the volley stops
+        Aim live = world.aimOf(casterId).orElse(null);
+        if (live == null) return;                            // same condition, same answer
+
+        Caster source = Caster.of(self.state()).withPayloadDamage(
+                DamagePayload.headlineDamage(ability.onHit(), self.state().attackDamage()));
+
+        fireInner(ability, source, live, spec.of());
+
+        if (shotIndex + 1 >= spec.shots()) return;
+        world.scheduleOn(casterId, spec.intervalTicks(),
+                () -> volley(ability, casterId, spec, shotIndex + 1));
+    }
+
+    /**
+     * Dispatch one shot's inner cast. The RUNTIME half of the whitelist {@code AbilitySchema}
+     * enforces at load.
+     *
+     * <p>It is an EXHAUSTIVE pattern switch and not an {@code if} chain so that a seventh
+     * {@code CastSpec} kind cannot become repeatable by default: it will not compile until someone
+     * states an answer here. A gate says what it CAN be, never what it cannot.
+     *
+     * <p>The refusals are not tidiness. {@code dash} in particular is load-bearing:
+     * {@code paper.weapon.DashAim} resolves a dash's direction BEFORE the region hop and matches on
+     * the OUTER cast only, so a volley of dashes would reach here having silently lost its direction
+     * resolution. {@code self} and {@code melee} land at a point the caster already occupies, so
+     * repeating them is a sound with no mechanism behind it. A nested volley never reaches this --
+     * {@code CastSpec.Volley}'s compact constructor refuses it at construction.
+     *
+     * <p>Reaching a refusal here means the loader's whitelist was bypassed, which is a programming
+     * error rather than a content one -- hence a throw, where the loader gives a named, skipped file.
+     */
+    private void fireInner(AbilityDefinition ability, Caster source, Aim aim, CastSpec inner) {
+        switch (inner) {
+            case CastSpec.Ray ray -> launchRay(ability, source, aim, ray.range(), ray.beam());
+            case CastSpec.Projectile projectile -> launch(ability, source, aim, projectile);
+            case CastSpec.Self ignored -> throw new IllegalStateException(notRepeatable("self"));
+            case CastSpec.Melee ignored -> throw new IllegalStateException(notRepeatable("melee"));
+            case CastSpec.Dash ignored -> throw new IllegalStateException(notRepeatable("dash"));
+            case CastSpec.Volley ignored -> throw new IllegalStateException(notRepeatable("volley"));
+        }
+    }
+
+    private static String notRepeatable(String type) {
+        return "a volley cannot repeat cast type '" + type + "'; only ray and projectile are"
+                + " repeatable, and the loader refuses the rest by name";
+    }
     private void detonate(AbilityDefinition ability, Caster caster, Combatant target, Vec3 impact) {
         effects.applyAll(ability.onHit(), caster, target, impact);
     }

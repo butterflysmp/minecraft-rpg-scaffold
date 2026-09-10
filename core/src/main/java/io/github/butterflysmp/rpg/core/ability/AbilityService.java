@@ -168,6 +168,17 @@ public final class AbilityService {
                 ? AttackSpeed.effectiveCooldownTicks(def.cooldownTicks(), caster.attackSpeed())
                 : def.cooldownTicks();
 
+        // AND THE CAST SHAPE MAY RAISE A FLOOR UNDER THAT, WHICH IS THE IN-FLIGHT GUARD. A volley
+        // runs for windup + (shots - 1) * interval ticks; letting it be re-pressed before then
+        // overlaps two bursts on one caster. The derivation lives on CastSpec.Volley, which owns all
+        // three numbers, so it cannot drift from them -- see CastSpec.minimumCooldownTicks.
+        //
+        // LAST, after the attack-speed scaling, and that ordering is load-bearing rather than
+        // stylistic: a volley whose on_hit carried weapon_damage would be scaled by the caster's
+        // attack speed, and a fast enough caster would be scaled BELOW the floor. max() applied
+        // afterwards is what makes an under-length cooldown unrepresentable rather than unlikely.
+        cooldownTicks = Math.max(cooldownTicks, CastSpec.minimumCooldownTicks(def.cast()));
+
         // Consumed here, at call time -- not when the effects finally run. If it
         // were consumed at execution time, a player could spam-cast during the
         // hop onto the region thread.

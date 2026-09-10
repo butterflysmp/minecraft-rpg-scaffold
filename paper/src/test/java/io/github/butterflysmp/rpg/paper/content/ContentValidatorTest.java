@@ -775,4 +775,103 @@ class ContentValidatorTest {
         // What THIS row actually guards is ordering-independence of the two faults: reverse the two
         // checks, or `continue` after reporting the glyph, and the count drops to 1 here.
     }
+
+    // --- The volley arm: it RECURSES, and the cooldown floor it can raise ---
+
+    /** A volley of rays whose inner ray names {@code beam}. Cooldown authored AT the floor. */
+    private static AbilityRegistry volleyOfRaysNaming(String beam) {
+        return volleyOfRays(beam, 24);
+    }
+
+    private static AbilityRegistry volleyOfRays(String beam, int authoredCooldown) {
+        var registry = new AbilityRegistry();
+        registry.register(new AbilityDefinition("burst", "Burst", "kinetic", "none",
+                authoredCooldown, new ResourceCost("mana", 10),
+                new CastSpec.Volley(12, 5, 3, new CastSpec.Ray(64, beam)), List.of()));
+        return registry;
+    }
+
+    /**
+     * A VOLLEY'S BEAM REFERENCE IS ON ITS INNER CAST, SO THE ARM HAS TO RECURSE -- AND THIS ROW IS
+     * THE ONLY THING SEPARATING A CORRECT EMPTY ARM FROM AN INCORRECT ONE.
+     *
+     * <p><b>The hazard is that the wrong answer looks native to the file.</b> {@code checkCast}
+     * already contains THREE arms that are literally {@code -> { }}: {@code Self}, {@code Melee} and
+     * {@code Dash}, and all three are right, because none of those kinds names a visual. So
+     * {@code case CastSpec.Volley ignored -> { }} would compile, sit unremarkably beside its three
+     * neighbours, pass review by eye, and silently stop validating beams and trails for every volley
+     * ever authored. Nothing else in the project would notice: the ability still loads, still fires,
+     * and simply draws nothing.
+     *
+     * <p>A reader who knows this file has legitimate empty arms is exactly the reader who needs
+     * telling why this one is not.
+     *
+     * <p>Mutation: replace the recursion with {@code case CastSpec.Volley ignored -> { }} -> this
+     * row reddens with an empty problem list. That is the whole guard.
+     */
+    @Test
+    void aVolleyWhoseINNERRayNamesNoKnownVisualIsANamedProblem() {
+        var problems = validator(visualsWith("something_else"), statusesWith())
+                .validate(volleyOfRaysNaming("volley_beam"));
+
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("volley_beam"), problems.toString());
+        assertTrue(problems.get(0).contains("volley inner cast"),
+                "the label must say WHERE the dangling reference is, or an author with a volley and "
+                        + "a plain ray in one file cannot tell which one is broken: " + problems);
+    }
+
+    @Test
+    void aVolleyWhoseInnerRayResolvesIsSILENT() {
+        var problems = validator(visualsWith("volley_beam"), statusesWith())
+                .validate(volleyOfRaysNaming("volley_beam"));
+
+        assertTrue(problems.isEmpty(), problems.toString());
+        // THE CONTROL. Without it the row above passes just as well against an arm that reports a
+        // problem for EVERY volley, which is the opposite defect and equally silent in a diff.
+    }
+
+    @Test
+    void anAuthoredCooldownBELOWTheCastShapesFloorIsNamed() {
+        var problems = validator(visualsWith("volley_beam"), statusesWith())
+                .validate(volleyOfRays("volley_beam", 10));
+
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("10"), "it must name what the author WROTE: " + problems);
+        assertTrue(problems.get(0).contains("24"), "and what they will GET: " + problems);
+        // A VALUE THAT WAS OVERRIDDEN AND A VALUE THAT WAS NEVER READ LOOK IDENTICAL FROM THE FILE.
+        // AbilityService silently applies max(authored, derived), which is correct at runtime and
+        // mute: an author who writes 10 gets 24, tunes a field that has stopped having any effect,
+        // and concludes the cooldown is broken. Load time is what owes them the explanation.
+        //
+        // BOTH NUMBERS ASSERTED, because a message naming only one of them cannot tell the author
+        // whether their value was raised or something else entirely happened.
+    }
+
+    @Test
+    void anAuthoredCooldownEQUALToTheFloorIsNOTNamed() {
+        var problems = validator(visualsWith("volley_beam"), statusesWith())
+                .validate(volleyOfRays("volley_beam", 24));
+
+        assertTrue(problems.isEmpty(),
+                "writing the same number the derivation produces is redundant, not wrong -- and "
+                        + "warning about it would train people to ignore the message: " + problems);
+        // STRICTLY GREATER, not >=. Mutation: use >= -> this reddens. It is the discriminating twin
+        // of the row above, in the same shape as the damage_symbol pair on elements: one row for
+        // the gap, one for the deliberate value that must stay silent.
+    }
+
+    @Test
+    void aVolleyAuthoringZEROIsNamedToo() {
+        var problems = validator(visualsWith("volley_beam"), statusesWith())
+                .validate(volleyOfRays("volley_beam", 0));
+
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("24"), problems.toString());
+        // 0 IS THE HONEST WAY TO AUTHOR "the cast shape owns the guard" -- it is what the volley
+        // fixture does -- and it is still NAMED, because a reader finding 0 in a file has no way to
+        // know whether the weapon is guarded or unguarded. The message says which, and says the
+        // author may write 24 instead to make it visible. A warning, not a refusal: the ability
+        // loads and works either way.
+    }
 }

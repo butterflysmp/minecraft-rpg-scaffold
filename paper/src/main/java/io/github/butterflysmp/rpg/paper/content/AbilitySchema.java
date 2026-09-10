@@ -62,10 +62,66 @@ final class AbilitySchema {
             case "dash"       -> new CastSpec.Dash(
                     s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4),
                     parseDashDirection(s.getString("direction", "movement_else_forward")));
+            // A cast that REPEATS another cast on a clock. `of` is required and is a whitelist:
+            // see innerCast below. windup_ticks 0 means the first shot fires on the cast frame.
+            case "volley"     -> new CastSpec.Volley(
+                    s.getInt("windup_ticks", 0), s.getInt("shots", 1), s.getInt("interval_ticks", 1),
+                    innerCast(s.getConfigurationSection("of")));
             default -> throw new IllegalArgumentException("Unknown cast type: " + type);
         };
     }
 
+
+    /**
+     * The cast a volley repeats -- parsed as any other cast, then ADMITTED BY WHITELIST.
+     *
+     * <p><b>A gate says what it CAN be, never what it cannot.</b> The admission is an exhaustive
+     * pattern switch over the sealed {@code CastSpec} rather than a list of rejected strings, so a
+     * seventh kind is refused BY DEFAULT and will not compile until someone decides whether it is
+     * repeatable. The opposite shape -- naming the refusals -- admits every kind nobody has thought
+     * of yet, which is how a schema grows behaviour nobody chose.
+     *
+     * <p>{@code projectile} is admitted on day one and exercised by {@code volley_stone}, not merely
+     * asserted: a burst-fire projectile weapon is the second thing this grammar is for, and a
+     * wrapper that only knew rays would have to be widened the first time anyone wanted one.
+     *
+     * <p><b>{@code dash}'s refusal is load-bearing rather than tidy.</b> {@code paper.weapon.DashAim}
+     * resolves a dash's direction BEFORE the region hop and matches on the OUTER cast only, so a
+     * volley of dashes would lose its direction resolution silently -- it would still cast, and it
+     * would go the wrong way.
+     *
+     * <p>An absent {@code of:} THROWS rather than defaulting to {@code Self} the way
+     * {@link #parseCast} does for an absent {@code cast:}. A cast section that is missing entirely
+     * has a sensible reading; a volley of nothing does not.
+     */
+    private static CastSpec innerCast(ConfigurationSection s) {
+        if (s == null) {
+            throw new IllegalArgumentException("a volley needs an 'of:' section naming the cast it"
+                    + " repeats; a volley of nothing has no sensible reading");
+        }
+        CastSpec inner = parseCast(s);
+        switch (inner) {
+            case CastSpec.Ray ignored -> { }
+            case CastSpec.Projectile ignored -> { }
+            case CastSpec.Self ignored -> throw notRepeatable("self",
+                    "it lands where the caster already is, so repeating it is a sound with no"
+                            + " mechanism behind it");
+            case CastSpec.Melee ignored -> throw notRepeatable("melee",
+                    "it lands where the caster already is, so repeating it is a sound with no"
+                            + " mechanism behind it");
+            case CastSpec.Dash ignored -> throw notRepeatable("dash",
+                    "a dash's direction is resolved before the cast is dispatched and only for an"
+                            + " OUTER dash, so a repeated one would go the wrong way rather than fail");
+            case CastSpec.Volley ignored -> throw notRepeatable("volley",
+                    "each shot would start its own burst and the count would multiply every interval");
+        }
+        return inner;
+    }
+
+    private static IllegalArgumentException notRepeatable(String type, String why) {
+        return new IllegalArgumentException("a volley cannot repeat cast type '" + type + "': " + why
+                + ". Only 'ray' and 'projectile' are repeatable");
+    }
     private static CastSpec.DashDirection parseDashDirection(String raw) {
         return switch (raw.toLowerCase(Locale.ROOT)) {
             case "movement_else_forward" -> CastSpec.DashDirection.MOVEMENT_ELSE_FORWARD;

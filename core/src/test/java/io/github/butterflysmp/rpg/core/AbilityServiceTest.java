@@ -410,4 +410,114 @@ class AbilityServiceTest {
                 service.fireTrigger(caster.snapshot(), trigger, FORWARD),
                 "and the buff does not unlock the swing early");
     }
+
+    // --- The derived cooldown floor: a volley cannot be re-pressed while it is still firing ---
+
+    /** A volley ability authoring the cooldown it is given, so the floor's effect is isolated. */
+    private static AbilityDefinition volleyAbility(int authoredCooldown, int windup, int shots,
+                                                   int interval) {
+        return new AbilityDefinition("burst", "Burst", "kinetic", "none",
+                authoredCooldown, ResourceCost.FREE,
+                new CastSpec.Volley(windup, shots, interval, new CastSpec.Ray(30)),
+                List.of(new EffectSpec.Damage(10, "kinetic")));
+    }
+
+    @Test
+    void aVolleyAuthoringZeroIsStillGuardedUntilItsLastShotHasFIRED() {
+        var tick = new AtomicLong(0);
+        // 12 windup, 5 shots, 3 interval -> the last shot is fired at t=24.
+        //
+        // NOT 20/6/2, WHICH IS A WEAPON'S TRIPLE. This is the mechanism's test and it must not read
+        // as though the floor were derived for one particular weapon. No two of 12, 5 and 3 are
+        // equal, and none of them equals 24, so a formula that dropped or swapped a term gives a
+        // different answer rather than the same one by coincidence.
+        var def = volleyAbility(0, 12, 5, 3);
+        var service = serviceWith(def, tick::get);
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.cast(caster.snapshot(), "burst", FORWARD, Set.of("burst")));
+
+        tick.set(23);
+        assertInstanceOf(AbilityService.CastResult.OnCooldown.class,
+                service.cast(caster.snapshot(), "burst", FORWARD, Set.of("burst")),
+                "at t=23 shot 5 has not been fired yet, so a second volley would interleave with it");
+
+        tick.set(24);
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.cast(caster.snapshot(), "burst", FORWARD, Set.of("burst")),
+                "at t=24 the last shot is away and the next volley may begin");
+        // BOTH SIDES OF THE BOUNDARY, so the row is insensitive to the direction of an error.
+        // Mutation: drop the Math.max in resolve() -> the t=23 assertion reddens, because the
+        // authored 0 lets a second volley start immediately.
+    }
+
+    @Test
+    void theFloorIsDERIVEDFromTheVolleysOwnNumbersAndNotAConstant() {
+        var tick = new AtomicLong(0);
+        // The SAME shape with two more shots: 12 + 6*3 = 30, not 24.
+        var def = volleyAbility(0, 12, 7, 3);
+        var service = serviceWith(def, tick::get);
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.cast(caster.snapshot(), "burst", FORWARD, Set.of("burst")));
+
+        tick.set(24);
+        assertInstanceOf(AbilityService.CastResult.OnCooldown.class,
+                service.cast(caster.snapshot(), "burst", FORWARD, Set.of("burst")),
+                "24 was the PREVIOUS row's floor; this volley has two more shots and is still firing");
+
+        tick.set(30);
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.cast(caster.snapshot(), "burst", FORWARD, Set.of("burst")),
+                "its own floor is 30");
+        // THE PAIR IS THE POINT. The row above alone passes against a hardcoded 24; this one fails
+        // against it. Only "the floor moves with the numbers" satisfies both, which is the property
+        // the whole design exists for -- retune the wind-up or the shot count and the guard follows,
+        // rather than silently disagreeing with a number typed in a yml.
+    }
+
+    @Test
+    void anAuthoredCooldownLONGERThanTheFloorIsKEPT() {
+        var tick = new AtomicLong(0);
+        var def = volleyAbility(100, 12, 5, 3);     // authored 100, floor 24
+        var service = serviceWith(def, tick::get);
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.cast(caster.snapshot(), "burst", FORWARD, Set.of("burst")));
+
+        tick.set(30);
+        assertInstanceOf(AbilityService.CastResult.OnCooldown.class,
+                service.cast(caster.snapshot(), "burst", FORWARD, Set.of("burst")),
+                "the floor RAISES an impossible cooldown; it does not lower a deliberate one");
+
+        tick.set(100);
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.cast(caster.snapshot(), "burst", FORWARD, Set.of("burst")));
+        // Mutation: write the floor unconditionally instead of max() -> the t=30 assertion reddens,
+        // and every volley in the game silently loses its authored balance.
+    }
+
+    @Test
+    void aNONVolleyCastIsUNTOUCHEDByTheFloor() {
+        var tick = new AtomicLong(0);
+        var def = new AbilityDefinition("bolt", "Bolt", "kinetic", "none",
+                5, ResourceCost.FREE, new CastSpec.Ray(30),
+                List.of(new EffectSpec.Damage(10, "kinetic")));
+        var service = serviceWith(def, tick::get);
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.cast(caster.snapshot(), "bolt", FORWARD, Set.of("bolt")));
+        tick.set(5);
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.cast(caster.snapshot(), "bolt", FORWARD, Set.of("bolt")),
+                "a ray's floor is 0, so its authored 5 is exactly what it gets");
+        // THE CONTROL FOR EVERY ROW ABOVE. Without it, a mutation returning some fixed positive
+        // number from minimumCooldownTicks for ALL cast shapes could still satisfy the volley rows
+        // by accident, and the whole change would read as working while lengthening every cooldown
+        // in the game.
+    }
 }
