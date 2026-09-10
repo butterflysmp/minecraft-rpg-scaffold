@@ -1,9 +1,34 @@
 # GATE — Ignite
 
-**This file is the source of truth for the Ignite boot gate.** It is versioned with the code because
-for several behaviours below **these rows are the only check that exists anywhere in the project**.
-The suite passes with any of them deleted — 1406 tests, and not one of them can see a chain roll
-through a pack, a death message name the right player, or an explosion fire twice.
+**This file is the source of truth for the Ignite boot gate's CONTENT.** It is versioned with the code
+because for several behaviours below **these rows are the only check that exists anywhere in the
+project**. The suite passes with any of them deleted — 1406 tests, and not one of them can see a chain
+roll through a pack, a death message name the right player, or an explosion fire twice.
+
+> ### THE GATE EXISTS IN TWO DOCUMENTS, AND THE OTHER ONE LEADS
+>
+> The operator ticks through a **published HTML gate page**. That page is what gets edited during a
+> session, so **it leads and this file follows.** Splitting the authority rather than pretending there
+> is one:
+>
+> | | authoritative on |
+> |---|---|
+> | **this file** | **CONTENT** — what a row says, its staging, its expected figures, its reasoning |
+> | **the page** | **WHAT WAS ACTUALLY RUN** — ticks, observations, the order rows were taken in |
+>
+> **A mismatch is resolved by that split, not by a judgement call at the moment someone notices it.**
+>
+> **NEITHER DOCUMENT POINTED AT THE OTHER UNTIL NOW, WHICH IS WHY DRIFT WAS INVISIBLE FROM BOTH
+> SIDES.** It has happened twice in three days:
+>
+> - **I5** — the page said THREE detonations, this file said four. **The file's row could not pass**,
+>   and it survived a commit (`8e8731b`) before being corrected in `2db91c7`.
+> - **I7** — the page carried **RUN THIS FIRST**; this file did not. A statement **true of the gate
+>   and false of the file**, which reads as a fabrication when checked against the file alone. Added
+>   here in `0eb4625`.
+>
+> **Update this file when the page changes, in the same session.** The page is not versioned, so a
+> divergence that outlives the session is only findable by someone reading both.
 
 ## GATE RUN 2026-09-10 — GREEN ON A BLANKET CONFIRMATION, AND THAT IS ALL THE EVIDENCE THERE IS
 

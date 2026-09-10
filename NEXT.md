@@ -9225,6 +9225,42 @@ noticing.
 > for the reason above -- filing it as "the model added a bad reference" would have kept the sentence
 > and lost the lesson.
 
+### WHEN TWO ARTEFACTS DESCRIBE ONE THING AND ONLY ONE IS VERSIONED, THE UNVERSIONED ONE LEADS
+
+**Named 2026-09-10, after the Ignite gate drifted from its own page twice in three days.**
+
+The versioned artefact declares itself the source of truth. **That declaration does not change which
+one gets edited first** -- it only decides which one is *surprising* when they disagree. The
+unversioned artefact leads **because it is the one being used**: the operator ticks through a
+published HTML gate page during a session, so the page moves and the markdown lags.
+
+**Two instances, both real, both invisible from either side because neither document pointed at the
+other:**
+
+| | the page said | the file said | cost |
+|---|---|---|---|
+| **I5** | three detonations | **four** | **the file's row could not pass.** Survived `8e8731b`, corrected in `2db91c7` |
+| **I7** | **RUN THIS FIRST** | nothing | a statement **true of the gate and false of the file** |
+
+**THE SECOND ONE IS THE INTERESTING FAILURE, AND IT WAS MIS-DIAGNOSED ONCE ALREADY.** The sentence
+*"I7 is marked RUN THIS FIRST"* reached this file from the operator, was written into a commit, and
+was then caught by grepping the file -- where the only occurrence was the new line itself. **Reported
+as a fabrication.** It was not: it was **accurate about the artefact the operator uses** and false
+about the one under version control. Mis-filing a DRIFT as a FABRICATION is worse than either,
+because the two want opposite fixes -- one wants a pointer between documents, the other wants more
+care with unsourced claims.
+
+**THE FIX IS A POINTER, NOT A PROCESS.** `GATE-ignite.md`'s header now names the page and splits the
+authority: **the file is authoritative on CONTENT** (what a row says, its staging, its figures), **the
+page on WHAT WAS ACTUALLY RUN** (ticks, observations, order). A mismatch then has a rule to be
+resolved by, rather than a judgement call at the moment someone notices.
+
+**How to apply, beyond gates.** Whenever a record has a working copy someone actually operates --
+a dashboard, a ticket, a published page -- **do not resolve the split by declaring the versioned copy
+canonical and stopping there.** Ask which copy gets edited first, say so out loud in the versioned
+one, and name what each is authoritative FOR. The declaration that costs nothing is the one that
+changes nothing.
+
 ### WHERE THE RULES LIVE — the convention, recorded 2026-09-10
 
 **`CLAUDE.md` carries the operational form; this file carries the named rule, the worked example and
