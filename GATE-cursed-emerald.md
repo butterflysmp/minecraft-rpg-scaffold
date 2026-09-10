@@ -307,9 +307,22 @@ sentence is wrong in both halves. It is not a content fix, and the density is no
 > - **THE LAPIS STAFF IS RE-CHECKED**, because a gap changes it too. That is the *point* of the fix,
 >   and it is also precisely what makes this not a content slice: a content commit titled *"emerald"*
 >   must not alter another weapon's appearance.
+>
+>   > **MET 2026-09-10, DISCHARGED BY `GATE-beam-gap.md` G5a** — the lapis muzzle, before/after,
+>   > **BETTER**, answered by blanket. **G5c is NOT what discharges this**: it re-ran L6 and L7,
+>   > which observe the beam's END, and is labelled in its own file as *not a gap witness*. **G5a is
+>   > the lapis witness and the only row that can discharge this bullet.**
+>
 > - **`emerald_beam.yml`'s `size: 1.0` and `samples_per_block: 4` ARE LEFT ALONE** unless the re-run
 >   says otherwise. Per beam the emerald is already **smaller** than lapis; tuning it now would be
 >   treating a symptom of a misdiagnosis.
+>
+>   > **THE CONDITION DID NOT FIRE, 2026-09-10.** The re-run happened (G5a, G5b) and **did not say
+>   > otherwise**, so both values stand unchanged and no content file was touched by this slice.
+>   >
+>   > **THEY STAND UNMEASURED AGAINST ALTERNATIVES, NOT CONFIRMED** — the same distinction the
+>   > `ADOPTED` line makes about 1.0 itself. A blanket "much better" says the beam improved; it does
+>   > not say `size: 1.0` beat `size: 0.8`, and nobody has looked.
 >
 > **IT IS A SLICE, on the volley precedent:** sealed-schema change or core constant, loader arm if
 > authored, validator arm, core tests, and its own gate row.

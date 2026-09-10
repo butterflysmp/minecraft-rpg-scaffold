@@ -9617,11 +9617,30 @@ defect in **four different materials**:
 | **two suite figures** | *"855 run, 1 failed"*, *"1475 tests"* | a total that **ages out and cannot announce that it has** |
 | **a region rule** | *"collapsing to the far end would schedule into a different region"* | staged on a **`-x` fixture where the far end is in the SAME column** — the rule could not bite |
 | **a sweep** | *"corrected with the rest of this file's 0.25-from-the-eye figures"* | **two of six sites were still uncorrected** |
+| **a second sweep** | *"three sites needed it, not one"* — the CE4 back-edit | **the list had FIVE**; two forward-looking constraints were left reading as outstanding |
 
-**Four materials, one defect, one slice. That frequency says STRUCTURAL rather than careless** —
+**FIVE materials, one defect, one slice. That frequency says STRUCTURAL rather than careless** —
 and it is this repo's headline failure (*a check that did not run looks exactly like a check that
-passed*) wearing four hats. **The check exists; the CLAIM ABOUT ITS REACH is what is false**, which
-is why none of the four was caught by running anything.
+passed*) wearing five hats. **The check exists; the CLAIM ABOUT ITS REACH is what is false**, which
+is why none of the five was caught by running anything.
+
+> ### THE FIFTH OCCURRED INSIDE THE SWEEP THAT WROTE THIS ENTRY ABOUT THE OTHER FOUR
+>
+> That is the entry's own best evidence. **A defect that recurs while you are documenting it is
+> structural by demonstration rather than by argument.**
+>
+> The report said *"the CE4 back-edit needed **three** sites, not one"* — offered as the careful
+> version, having grepped rather than assumed. **The constraint list it lived in had five.** Two
+> forward-looking bullets — *"the Lapis Staff is re-checked"* and *"`emerald_beam.yml`'s values are
+> left alone unless the re-run says otherwise"* — were both **discharged by the boot** and both left
+> unmarked, reading as outstanding.
+>
+> **A GREP FOR A STRING CANNOT FIND A CLASS.** The class is *forward-looking constraints that are now
+> decided*; `RE-RUN OWED` is one phrasing of one of them. Grepping the phrase found the phrase.
+>
+> **PRACTICAL FORM: when a slice discharges an obligation, sweep the LIST it lives in, not the STRING
+> you happened to remember it by.** Constraint lists are the unit. A phrase is not — and a
+> phrase-grep returns a number that looks like a count of the class.
 
 > **AND THE COROLLARY, WHICH IS THE PART THAT CHANGES BEHAVIOUR: THE OVERSTATEMENT IS WHAT MADE IT
 > CATCHABLE.** Had the sweep's parenthetical said *"corrected here"* there would have been **nothing
