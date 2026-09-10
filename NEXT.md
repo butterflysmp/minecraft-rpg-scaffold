@@ -1416,6 +1416,51 @@ delivers 5x gets applied on top of it, and the result is 25x.**
 **THE "REGARDLESS OF DEFENSE" HALF IS NOT CLOSED** — see the standing question below. `CombatantStats`
 applies `Defense.applyDefense` unconditionally, and the conversion does not touch that.
 
+> ### AND A VANILLA MOB'S MAX HEALTH IS NOT A CONSTANT, WHICH IS WHAT MAKES THE DROWNING RULE SHARP
+>
+> **Recorded 2026-09-10, by the operator, before the drowning implementation exists.** Vanilla's
+> `Zombie.handleAttributes` adds a **permanent `MULTIPLY_TOTAL` modifier to `MAX_HEALTH`** with
+> probability `0.05 x local difficulty` and value `random*3+1`. So a spawn-egg zombie is 20 HP or,
+> occasionally, **anywhere in 40-100**. **Observed live at 51, 79 and 96.** Husks, drowned and zombie
+> villagers share the class. (Server internals -- the operator's reading and his measurements, not
+> something this repo can verify.)
+>
+> **WE ARE A PASS-THROUGH, AND DELIBERATELY SO.** `MobNameplateManager.maxHealthOf` reads
+> `attr.getValue()`, which *includes* modifiers, and **nothing in `paper/` writes a mob's
+> `MAX_HEALTH`** -- verified: every write is player-side (`EntityHeartBar`, `GrowthModifierItems`,
+> `ArmorItems`), and every mob-side touch is a read. <b>DO NOT "fix" this by clamping to the base
+> value.</b> The modified value is the correct one to seed from: a leader zombie really is tougher,
+> and its nameplate really should say so.
+>
+> **SCORCH IS ALREADY SAFE, AND BY ACCIDENT RATHER THAN BY DESIGN.** A leader zombie's 5% is
+> `0.05 x 96 = 4.8`/sec -- but `damagePerTick` is `min(percent, cap)`, and for an Ignite blast the cap
+> is `6 x CAP_FRACTION = 3`, so **the cap binds first.** **It absorbed a case nobody knew it was
+> covering.** Worth knowing before anyone "simplifies" it away on the grounds that the percent arm
+> never binds on shipped content.
+>
+> > **"Safe" means BOUNDED, not "unaffected", and the distinction matters for the weapon path.** With
+> > a bigger declared hit the cap rises above 4.8 and the percent arm binds instead -- a flint staff
+> > (cap 10) burns a leader zombie at `min(4.8, 10) = 4.8`/sec against an ordinary zombie's
+> > `min(1, 10) = 1`. **Nearly five times harder, and that is BY DESIGN** -- percent-of-max is what
+> > makes scorch scale with the pool, and the cap exists to stop it running away on a boss rather than
+> > to hide the pool. So max health already reaches scorch today; what it cannot do is run away.
+>
+> **THE CONSUMER THAT WILL CARE IS DROWNING, AND THE RULE ABOVE IS UNCAPPED BY DESIGN.** *"10% of max
+> health, REGARDLESS of defense or max health"* means the **percentage** is invariant -- so the
+> **absolute** number scales with a max that is not fixed. On a leader zombie that is **9.6 a tick
+> instead of 2**, on a mob **visually identical to every other zombie**.
+>
+> > **WHOEVER IMPLEMENTS IT WILL TEST AGAINST AN ORDINARY ZOMBIE AND SHIP.** That is the whole reason
+> > this is written down now rather than found later: the fixture everyone reaches for -- a spawn-egg
+> > zombie -- is the one where the defect is invisible, and it is invisible because 20 is both the
+> > common value and the value the rule was reasoned at. **THE GATE ROW FOR DROWNING MUST STAGE A MOB
+> > WHOSE MAX HEALTH IS NOT 20**, and must state that requirement in the row rather than in a comment
+> > above it.
+> >
+> > This is *A CONTROL THAT SUCCEEDS FOR THE WRONG REASON* arriving before the code does: at max 20
+> > the scaled tick is `2 x 20/20 = 2`, identical to the vanilla tick, so a row staged there passes
+> > whether the conversion exists or not.
+
 > **These numbers chose the denominator, and were nearly the wrong tool for it.** The obvious factor
 > was `customMax / (heartCount(customMax)*2)` — the *rendered* bar — which gives 10% at max 100 and
 > **7.7% at max 400**. Only the drowning wording, given **unprompted a week earlier**, revealed that
