@@ -2,7 +2,7 @@
 
 **This file is the source of truth for the Ignite boot gate.** It is versioned with the code because
 for several behaviours below **these rows are the only check that exists anywhere in the project**.
-The suite passes with any of them deleted — 1403 tests, and not one of them can see a chain roll
+The suite passes with any of them deleted — 1406 tests, and not one of them can see a chain roll
 through a pack, a death message name the right player, or an explosion fire twice.
 
 ## How to use it
@@ -40,6 +40,17 @@ nothing about a cascade. That is `I5` and `I12`.
 > **Nothing in the suite proves the death handler ever passes 4** — that needs `depth` captured before
 > `forget`, which is paper-side ordering with no unit witness, exactly like the once-ness guard.
 > `I12` is the only thing that can see it.
+
+> **AND THE GATE ITSELF ONLY EXERCISES THE FAST LINK — SAID HERE RATHER THAN LEFT ABSENT.**
+> `I5` and `I12` soften every mob so each blast is lethal, which is the **one-second** link: die,
+> fuse, detonate. **The recruited-survivor path — scorched by a blast, burns six seconds, THEN
+> detonates — is exercised only by `I10`, and only for a single link.**
+>
+> So the worst case the depth cap actually bounds, **four links at up to seven seconds each ≈ 28
+> seconds**, has no row and cannot easily get one: it needs four mobs that each survive a blast and
+> then die to the burn, staged so no branch outruns another. **An unwitnessed bound that is written
+> down reads very differently from one that is merely missing** — the first is a known gap, the second
+> is an assumption nobody knows they are making.
 
 ---
 
@@ -98,7 +109,14 @@ the FIRST only. Kill the first (`/rpg mobdamage 400`).
 second knell takes **6**.
 
 **The pause is half the row.** An explosion on the death frame means the fuse was dropped, and
-everything downstream (rule 2's serialization, rule 3 being nearly free) rests on it.
+everything downstream (**safety rule 2**'s serialization, **safety rule 3** being nearly free) rests
+on it.
+
+> **"SAFETY RULE 2" AND "DECISION 2" ARE DIFFERENT THINGS AND THIS PAGE NAMES BOTH.** The safety
+> rules are `DESIGN-status-effects.md`'s four — death-gating, serialization, fire-exactly-once,
+> attribution — and **all four are intact**. The numbered *decisions* are this slice's rulings, and
+> **decision 2 (the blast's accrual rule) was OVERTURNED** on 2026-09-09. They sit one character
+> apart, so every reference on this page is qualified.
 
 **And watch the corpse: NO damage number should appear over it.** The dead mob is excluded from its
 own blast, but a death animation and a 20-tick fuse are now the **same order of magnitude**, so
@@ -130,7 +148,7 @@ Same as I1, with the neighbour at full health. Read the neighbour's damage numbe
 **Expect exactly `6`. NOT `12`.**
 
 > **NOTHING IN THE SUITE CAN SEE THIS.** A double delivery of `EntityDeathEvent` cannot be
-> constructed in a unit test, so deleting the `forget` guard in `onEntityDeath` leaves 1403 tests
+> constructed in a unit test, so deleting the `forget` guard in `onEntityDeath` leaves 1406 tests
 > green. `6` against `12` is one number apart on a nameplate and it is the whole check.
 >
 > **Known in advance rather than discovered afterwards**, which is why this row was written as the
@@ -152,7 +170,7 @@ Three runs, one neighbour each, scorch applied by `/rpg apply scorch 200 1`:
 > whole reason Ignite hooks `EntityDeathEvent` rather than the `reachedZero` seam. **If any of the
 > three fails to ignite, the hook is on the seam and the other two are passing by accident.**
 
-### I5 — a pack cascades, serialized in time · **SOLE WITNESS for rule 2**
+### I5 — a pack cascades, serialized in time · **SOLE WITNESS for SAFETY RULE 2 (serialization)**
 **THREE** knells in a **STRAIGHT LINE, 3 BLOCKS APART.** Soften all three to under 6
 (`/rpg mobdamage 355`). **Kill the first with a fire weapon.**
 
@@ -179,13 +197,23 @@ climbs. The line is what makes the chain a chain.
 > through the fire-kill clause. The hazard is gone, and so is the row's last `/rpg apply`: one fewer
 > place for the argument-order bug to live.
 
-**Expect:** a **rolling wave** — one blast, a second, the next, a second, the next. **Four links is
-four seconds end to end**, so this is slow enough to count deliberately: four separate detonations,
-NOT a single screen-clear.
+**Expect:** a **rolling wave** — one blast, a second, the next. **THREE separate detonations across
+about three seconds**, slow enough to count deliberately, NOT a single screen-clear.
+
+```
+kill A -> detonate(1) kills B -> detonate(2) kills C -> detonate(3)
+blast 3 finds nothing alive. Chain ends. Depth tops out at 3.
+```
+
+> **THIS EXPECT BLOCK SAID FOUR UNTIL 2026-09-09, AFTER THE ROW HAD ALREADY DROPPED TO THREE MOBS.**
+> It was not re-derived when the count changed, so **the row could not pass**: an operator counting
+> three against an expected four either reds a correct build, or adds a fourth mob to make the numbers
+> agree — **which restores the exact four-mobs-four-links ambiguity the split existed to remove.**
+> The failure the split was designed to prevent, arriving from the other side.
 
 > **THE SERIALIZATION IS THE SAFETY RULE, NOT THE AESTHETIC.** Rule 3 ("each fires exactly once,
-> against current state") is nearly free *because* the chain unrolls through time. If all four land on
-> one frame, the delay is not being applied per-link and rule 3 stops being free.
+> against current state") is nearly free *because* the chain unrolls through time. If all three land
+> on one frame, the delay is not being applied per-link and safety rule 3 stops being free.
 >
 > **This is also the runaway check.** Core gets `FakeWorld`'s trip-wire for free; a real server gets
 > this row. If the wave does not terminate, stop and `/kill @e` before anything else.
@@ -265,7 +293,9 @@ the blast recruited it.
 > BELOW RATHER THAN OVERWRITTEN.** A row whose expectation flips silently is how a later reader
 > concludes the earlier reasoning was never there.
 >
-> **What it used to say — "a blast kill does NOT recruit", SOLE WITNESS for ruling 2:**
+> **What it used to say — "a blast kill does NOT recruit", SOLE WITNESS for DECISION 2 (the blast's
+> accrual rule, now OVERTURNED — NOT `DESIGN`'s safety rule 2, which is serialization and is
+> intact):**
 >
 > > *"The blast wears `element: fire` — it must, for the glyph — so 'killed by a fire hit ignites'
 > > read literally means a blast that kills an unscorched mob ignites it, and the cascade recruits
