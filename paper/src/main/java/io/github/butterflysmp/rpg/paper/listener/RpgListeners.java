@@ -2,10 +2,12 @@ package io.github.butterflysmp.rpg.paper.listener;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
-import io.github.butterflysmp.rpg.core.combat.AccrualRule;
+import io.github.butterflysmp.rpg.core.combat.HitAccrual;
 import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.DefenseRule;
+import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
+import io.github.butterflysmp.rpg.core.combat.Ignite;
 import io.github.butterflysmp.rpg.core.combat.DamageScale;
 import io.github.butterflysmp.rpg.core.combat.DamageWindow;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
@@ -23,6 +25,7 @@ import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.persistence.PersistentDataType;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
+import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
 import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.health.ArmorBarOverride;
 import io.github.butterflysmp.rpg.paper.health.AttackSpeedAttributeOverride;
@@ -69,6 +72,7 @@ import org.bukkit.event.block.CrafterCraftEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import io.papermc.paper.event.entity.EntityKnockbackEvent;
 import io.papermc.paper.event.entity.EntityMoveEvent;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
@@ -347,8 +351,88 @@ public final class RpgListeners implements Listener {
             // And its melee window, or the map grows for the lifetime of the server.
             meleeHits.forget(mob.getUniqueId());
             damageWindow.forget(mob.getUniqueId());   // and its environmental window, same reason
-            adapters.scorch().forget(mob.getUniqueId()); // and its burn, or the task outlives the mob
+            // ...and its burn, or the task outlives the mob.
+            //
+            // END TWO OF A TWO-ENDED COUPLING -- see onEntityDeath, which ALSO calls forget on this
+            // id, earlier, as Ignite's once-ness guard. THIS CALL IS NOT REDUNDANT AND MUST NOT BE
+            // DELETED AS SUCH: it covers every removal that is not a death (despawn, chunk-unload)
+            // and every death of an UNSCORCHED mob, neither of which onEntityDeath forgets. When a
+            // scorched mob dies, the death path has already forgotten it and this call is a no-op --
+            // that is expected, and ScorchStatus.forget tolerates it (pinned by
+            // ScorchStatusTest.forgettingTwiceIsANoOp).
+            adapters.scorch().forget(mob.getUniqueId());
         }
+    }
+
+    /**
+     * A mob died -- if it was scorched, it IGNITES: an explosion a short fuse later, damaging nearby
+     * mobs, credited to whoever lit the fire.
+     *
+     * <p><b>THE TRIGGER IS THE OPERATOR'S RULING: ANY MOB THAT DIES WHILE SCORCHED IGNITES.</b>
+     * Binary -- no stack count -- and the killing blow need not be a Scorched attack, which is why
+     * this hangs off {@code EntityDeathEvent} rather than the {@code reachedZero} health seam. A mob
+     * killed by {@code VOID} or {@code KILL} is PASSed by {@code VanillaDamagePolicy} and never
+     * reaches zero custom HP, so {@code MobDeathSystem} never fires for it; the event covers both
+     * paths and the seam covers one. Hooking the seam would silently skip void- and /kill-ed mobs.
+     *
+     * <h2>EVERYTHING IS CAPTURED HERE, ON THE DEATH FRAME. NOTHING IS READ AT DETONATION.</h2>
+     *
+     * The fuse outlives the scorch: {@code forget} runs below and again on removal, and the entity
+     * itself is gone before the blast lands. A blast that read {@code applier(id)} when it fired
+     * would get <b>null</b> -- and would then damage, kill, chain and <b>credit nobody</b>, with a
+     * death message the only place it ever showed. So the applier and the position are read now and
+     * handed to {@link Ignite#detonate} as values.
+     *
+     * <h2>THE forget CALL IS THE ONCE-NESS GUARD, AND IT IS DOING TWO JOBS</h2>
+     *
+     * <b>{@code EntityDeathEvent} does NOT guarantee it fires once per entity.</b> Measured from the
+     * pinned API jar rather than assumed: the event is {@code Cancellable} and carries
+     * {@code setReviveHealth}, whose own javadoc describes the health an entity revives with <i>after
+     * cancelling the event</i> -- so a cancelled death revives the same mob, which can die again and
+     * fire again. Any plugin can do that. {@code MobDeathSystem}'s {@code isDead()} guard does not
+     * transfer here either: inside a death handler the entity is dying by definition.
+     *
+     * <p>So once-ness is BUILT, not inherited -- by reading the scorch and immediately forgetting it.
+     * A second delivery finds nothing scorched and returns. That reuses state which already exists
+     * rather than adding a second map with its own lifetime to leak, which is the shape this repo has
+     * refused before ({@code MeleeHits} derives from a window stamp so that "there is nothing to
+     * expire, nothing for forget to miss").
+     *
+     * <p><b>END ONE OF A TWO-ENDED COUPLING.</b> {@code onEntityRemove} also forgets this id. Neither
+     * call is redundant -- see the note there -- and deleting this one removes the guard while
+     * leaving a suite that still passes.
+     *
+     * <h2>AND THE ORDERING THIS DEPENDS ON</h2>
+     *
+     * It works only because scorch is <b>still live when this runs</b>:
+     * {@code MobDeathSystem.setHealth(0)} fires {@code EntityDeathEvent}, and {@code onEntityRemove}
+     * rides {@code EntityRemoveFromWorldEvent}, which is strictly after. <b>If that order ever
+     * inverts, {@code isScorched} is already false on entry and Ignite fires NEVER</b> -- which is
+     * indistinguishable from "no mob happened to be scorched", so nothing would report it. That is
+     * what {@code GATE-ignite.md} exists to witness.
+     */
+    @EventHandler
+    public void onEntityDeath(EntityDeathEvent event) {
+        LivingEntity mob = event.getEntity();
+        if (mob instanceof Player) return;   // nothing in the game can scorch a player
+
+        UUID id = mob.getUniqueId();
+        if (!adapters.scorch().isScorched(id)) return;
+
+        UUID applier = adapters.scorch().applier(id);
+        // THE THIRD CAPTURE, AND IT MUST BE HERE FOR THE SAME REASON AS THE OTHER TWO. forget()
+        // below drops this entry, so a depth read at detonation returns 0 -- and 0 means "a player
+        // caused this", so EVERY LINK WOULD DETONATE AT DEPTH 1 AND THE CHAIN LIMIT WOULD NEVER
+        // ENGAGE. That failure presents as an unbounded cascade, i.e. as "the limit doesn't work",
+        // with nothing pointing back at the order of these three lines.
+        int depth = adapters.scorch().depth(id);
+        Location at = mob.getLocation();
+        adapters.scorch().forget(id);        // the guard -- see the javadoc above
+
+        // depth + 1: this mob was scorched BY a blast at `depth`, so its own ignition is the next
+        // link down. A dev application and a player's weapon both store 0, so both detonate at 1.
+        Ignite.detonate(new PaperCombatWorld(mob.getWorld(), adapters),
+                new Vec3(at.getX(), at.getY(), at.getZ()), applier, id, depth + 1);
     }
 
     /**
@@ -914,7 +998,7 @@ public final class RpgListeners implements Listener {
                 // anything else lighting it. The unit row is the only witness, which is why it
                 // exists: SweepShareTest's sibling in RpgListeners has no fixture, so the assertion
                 // lives where the decision is readable instead.
-                AccrualRule.ACCRUES);
+                HitAccrual.weapon());
     }
 
     /**

@@ -631,6 +631,307 @@ ceiling for.
 > will never read it.** The operator recorded that they would have used this argument had the reader
 > count not been measured first -- which is why the measurement went first.
 
+#### THE IGNITE SLICE'S DEBTS, EACH VERIFIED AGAINST THE TREE RATHER THAN COPIED FORWARD
+
+**Checked 2026-09-10, one grep per line.** Two were wrong as stated and are corrected here; the rest
+held. A debt described wrongly gets dismissed on the wrong grounds, which is worse than one nobody
+wrote down.
+
+**NEW FROM THIS SLICE**
+
+- **The 28-second worst case has no gate row and cannot easily get one.** It needs four mobs that each
+  survive a blast and then die to the burn, staged so no branch outruns another. Recorded in
+  `GATE-ignite.md`'s header (verified present) -- **that header is the only place it exists.**
+- **`I12` is SOLE WITNESS for TWO properties** -- the depth cap, and that `depth` is captured on the
+  death frame before `forget`. **Neither has unit cover**, and a false pass covers both at once. Same
+  standing as the once-ness guard.
+- **`terminal()`'s two halves are ONE LINE of code.** *"Does not scorch"* and *"its kills do not
+  ignite"* are both `accruesScorch` returning false for INERT. **If that clause ever branches on depth
+  separately from the rule, `I12` silently stops covering the second half** and nothing else covers it.
+
+**STILL OPEN, CARRIED FORWARD**
+
+- **D1 RE-RUN OWED** (`GATE-element-accrual.md:24`, verified present). **An OPERATOR action, not a
+  code one** -- left alone.
+- **`EntityScorchSink` has NO test coverage, and the correction is sharper than the debt.** It is not
+  "referenced by no test": `DamageSignatureTest` names it **explicitly as OUT OF SCOPE**, with the
+  reason -- *"they live in `paper/`, and `core/` must never depend on it, so this test cannot reflect
+  over them from here. That is an architecture boundary, not a judgement that they are safe."* **The
+  remedy is written down there too:** a sibling test in `paper/src/test` with the same three rows.
+  So the debt is not "nobody noticed"; it is "someone noticed, wrote why, and named the fix".
+- **No dev command deals ELEMENTAL damage.** Verified: `RpgCommand`'s damage arms call the two-arg
+  `applyDamage(amount, sourceId)`, which carries no element. **So the accrual path has no direct
+  instrument** and every gate row reaches it through a weapon.
+- **The `FIRE_TICK` suppression names one cause of four** (`FIRE` / `FIRE_TICK` / `LAVA` /
+  `HOT_FLOOR`). **RULED LEFT ALONE** -- the ruling travels with the debt, or the next reader reopens
+  a closed question.
+- **`ScorchStatus`'s bare refresh assignment is CONTENT-SHAPED SAFE ONLY**, and **the comment had NOT
+  moved with the code** -- corrected in this commit. See the entry below.
+- **No test pins `setMaxStackSize(1)`** on any of the four minting sites (`WeaponItems`, `ArmorItems`,
+  `ShieldItems`, `ToolItems`) -- verified: five files call it, none of them a test -- despite it being
+  a standing operator decision since `347967b`.
+- **The two-AoE-fan-out player-rule split.** One skips players, the other does not; nothing says which
+  is intended. **UNDESIGNED, recorded, not actioned.**
+- **Lapis L4/L4c and S5/S7/S12 need a second account. PERMANENT, not deferred** -- "owed" reads as
+  work in progress and these are not in progress.
+
+#### A CITATION THAT DRIFTS IS WORSE THAN NONE, AND THIS ONE DRIFTED WHILE PREDICTING ITS OWN FIX
+
+**Found 2026-09-10 by checking a debt instead of trusting it.** `ScorchStatus`'s refresh comment ends
+by predicting the fix it will one day need -- *"this line becomes `Math.max(a.remaining,
+durationTicks)` -- 'extend a burn, never shorten it', the rule `BukkitCombatant.java:272-273` and
+`:288` already apply twice."*
+
+**Two things had gone wrong, in opposite directions:**
+
+1. **The line numbers were stale.** `:272-273` now points at Ignite's attribution comment and a
+   `Location` assignment; `:288` at an aggro note. The real sites are `:235`, `:374` and `:388` --
+   **three, not two.** A citation that drifts sends the next reader to confidently wrong lines, which
+   is worse than sending them nowhere.
+2. **The fix it predicts was implemented one line above it and the comment did not notice.**
+   `a.depth = Math.max(a.depth, depth)` sits directly above `a.remaining = durationTicks`. The same
+   rule, under a different name -- *a safety counter must not be lowered by a later write* -- applied
+   to a sibling field on the same object, in the same method.
+
+**That adjacency is an argument FOR making the change, not against it:** `remaining` and `depth` are
+now the only two fields here where a later application can destroy information, **and only one of them
+is guarded.** The comment now says so.
+
+> **The general shape: a comment that predicts a future change goes stale in a way a comment that
+> describes the present does not.** It has two ways to rot -- its citation can drift, and its
+> prediction can quietly come true nearby -- and neither reddens anything. **The trigger for
+> re-reading one is touching the code it points at**, which is exactly what adding `depth` did.
+
+#### THE BLAST RECRUITS, BOUNDED AT FOUR LINKS -- AND RULING 2 IS OVERTURNED, NOT CORRECTED
+
+**Ruled 2026-09-09.** Links 1-3 pass `ACCRUES` and scorch their survivors; the **fourth passes
+`terminal()`** and propagates nothing. Ruling 2 -- *the ignitable set is the set you lit* -- is
+reversed.
+
+**THE OLD REASONING WAS NOT WRONG, AND THAT DISTINCTION IS THE RECORD.** It argued that recruitment's
+only terminator would be *"you run out of mobs"*, which in a spawner is a room-clearing chain nobody
+asked for. **That was correct, and it is exactly why `MAX_CHAIN_DEPTH` exists:** the operator took the
+risk deliberately and then bounded it. Overturned **by ruling with a bound supplied** -- which is a
+different thing from the argument having been mistaken, and the difference matters to anyone later
+tempted to delete the cap on the grounds that "recruitment was fine".
+
+**DEPTH, NOT A COUNT OF EXPLOSIONS.** A cascade is a TREE -- one blast can kill two mobs and both
+ignite -- so counting explosions would make "which is the fourth" depend on sibling iteration order,
+which nothing chose and no test could pin. Depth is a property of the link, so every branch is bounded
+independently.
+
+**"Propagates nothing" needed no new mechanism:** the terminal link is INERT, so it scorches nobody
+AND fails `accruesScorch`, so its kills cannot ignite either. Both halves from one value.
+
+#### DEPTH IS DEEPEST-WINS, AND "ONE RULE FOR FIVE FIELDS" WOULD HAVE DEFEATED THE CAP
+
+**The tidiest sentence in the plan was the defect.** `Active`'s other fields are newest-wins; making
+depth the fifth would let a LATER blast write a SHALLOWER depth -- and under recruitment that is
+reachable inside a single ignition, because **THE BURN WINDOW DECOUPLES DEPTH FROM ELAPSED TIME:**
+
+```
+A scorched depth 1, high HP, SURVIVES its burn and dies late -> detonates at 2.
+Meanwhile a fast branch runs 2 -> 3, scorching D at DEPTH 3.
+A's late depth-2 blast reaches D. Newest-wins drops D from 3 to 2 -> D detonates at 3, not 4.
+The frontier advances again.
+```
+
+Repeat with staggered survivors and **the link count from the original root is bounded by the mob
+population, not by 4** -- the spawner scenario the ruling was bounded to avoid, arriving by the back
+door. `Math.max` is required.
+
+**The reason is principled rather than an exception for tidiness:** `cap`, `applierId` and `element`
+are **presentation and credit** facts, where the newest applier is right. **`depth` is a SAFETY
+COUNTER, where the deepest reading is.** *"Extend, never shorten"* is already this codebase's rule at
+`BukkitCombatant`'s two `setFireTicks` sites; this is its next instance.
+
+**THE COST, NAMED:** a player re-lighting a depth-3 mob with a fire weapon no longer restarts its
+chain, because a weapon hit is depth 0 and `max` ignores it. **That is the correct trade** -- under
+newest-wins the same swing re-roots the wave AT WEAPON SPEED, and no gate row could reach it.
+
+#### FOUR LINKS IS NOT FOUR SECONDS, AND THE FIRST DRAFT SAID IT WAS
+
+`DELAY_TICKS` bounds the FUSE. It does not bound the wave. *"A depth-4 cascade is over in four
+seconds"* was true under ruling 2, when the only way into a chain was to be KILLED by a blast: same
+frame, fuse only. **Recruitment adds a second entry path with a six-second clock** -- a recruited
+survivor burns `DEFAULT_DURATION_TICKS` (120 ticks) and only detonates a second after its final burn:
+
+```
+four links x (6s burn window + 1s fuse) = UP TO 28 SECONDS
+```
+
+**And the gate only stages the fast path.** `I5` and `I12` soften every mob so each blast is lethal,
+which is the one-second case. **Nothing on the page witnesses the seven-second link.** Recorded
+because the four-second sentence is the kind a reader can check and will believe.
+
+#### `HitAccrual`: TWO FACTS AS ONE VALUE, ON REPRESENTABILITY ALONE
+
+The depth has to cross the port on the HIT -- both sites that need it (accrual on a survivor, the
+fire-kill clause on an outright kill) see only `element` and `accrual`.
+
+**Not a seventh `int` parameter**, and the reason is not diff size: `(AccrualRule, int)` lets a call
+site write `(INERT, 2)` and `(ACCRUES, 4)`, **both nonsense** -- depth 4 MEANS inert -- and neither
+fails to compile. The 5-arg default would also have to supply `0` as "no depth", **a sentinel int
+meaning absence**, which this port rejected once already when the null-element loop guard became
+`AccrualRule`.
+
+> **AND ONE ARGUMENT WAS AVAILABLE AND NOT BORROWED.** The `DamageSignatureTest` transposition hazard
+> does NOT apply: an `int` beside an enum cannot be swapped, the compiler catches it. That reasoning
+> covers `CritState` and `DefenseRule` and does not reach this. **Representability alone carries it.**
+
+Factories are named for the PROPERTY, not the mechanism -- `weapon()`, `inert()`, `chained(n)`,
+`terminal()` -- because `DefenseRule`'s javadoc in the same package says *do not rename it after a
+status*. **`terminal()` carries no depth**, because an INERT hit's depth is read by nothing ever, and
+storing one would assert a number no code path can reach.
+
+#### `/rpg apply` HAS BEEN WRITTEN BACKWARDS IN EVERY GATE ROW
+
+`/rpg apply <status> <duration> <stacks>` -- **duration first**, stacks capped at 20. Every row said
+`scorch 1 200`, which fails the `stacks` parse; the reader is then left holding `200`, so the shorter
+duration-only overload does not run either. **Nothing executed.** Seven occurrences fixed.
+
+**AND IT REACHES BACK A SLICE.** `GATE-element-accrual.md`'s D1 is staged the same way and was green
+**only** by two blanket confirmations -- itemised nowhere, no figures -- while the one confirmation
+that names it records it as **skipped**. Marked **re-run-owed** rather than un-ticked: a row deleted
+from the passed list reads as one nobody chose to run; a row marked owed reads as one that must be.
+
+> **This is "a check that did not run looks exactly like one that passed", arriving through a channel
+> the page had not covered: not a filter that failed, but a command line that was never valid.** The
+> row's arithmetic was scrutinised repeatedly. Its SYNTAX never was.
+
+#### THE TRIGGER WIDENED TO FIRE-KILLS, AND THE BLAST'S OWN ELEMENT NEARLY REVERSED RULING 2
+
+**Ruled 2026-09-09.** *"A mob killed by a fire weapon should ignite even though it hasn't had time to
+scorch yet."* Said back plainly, because it is bigger than it sounds: **every mob killed by any of
+nine shipped fire content pieces now explodes** -- `emberblade`, `ember_staff`, `flint_staff`,
+`hunters_bow`, `ability_stone`, `solar_grenade`, `solar_lance`, `rekindle`, `ember_step`. Essentially
+the whole fire kit. **This is commit 1's consequence 4 deliberately inverted:** the lethal-hit accrual
+skip was recorded as *"the only thing between 'any scorch + death ignites' and 'every fire-weapon kill
+detonates'"*, and the second one is now the design.
+
+**THE ACCRUAL GATE WAS NOT TOUCHED.** Widening `newCurrent > 0` would have reintroduced the ordering
+inversion `ElementAccrual` documents -- a `RepeatingTask` registered after the cleanup meant to cancel
+it. So **the IGNITE trigger widened and ACCRUAL did not**: no stacks granted, no `ScorchStatus` entry,
+nothing left to leak.
+
+**THE COLLISION, WHICH IS THE PART THAT MATTERS.** The blast itself carries `element: "fire"` -- it
+must, for the glyph. So *"killed by a fire hit ignites"*, read literally, means **a blast that kills an
+unscorched mob ignites it**, and the cascade recruits everything it kills. The terminator stops being
+"the set you lit" and becomes "you run out of mobs" -- **precisely the outcome ruling 2 chose `INERT`
+to prevent.** Implemented naively, this change silently reverses that decision.
+
+**The discriminator already existed and cost nothing:** the blast is `AccrualRule.INERT`, every weapon
+hit is `ACCRUES`. An INERT hit feeds neither accrual nor ignition -- **the same job, stated once** --
+and `AccrualRule` earned a third consumer with no special case, which is the test of whether the enum
+was the right shape.
+
+**ONE PREDICATE, TWO CALL SITES, AND THAT IS NOT OPTIONAL.** `ElementAccrual.accruesScorch` is the
+extracted condition; `forHit` calls it and adds the lethal gate, Ignite's clause calls it and inverts
+that gate. **The trigger living in two places is acceptable because the DOMAINS ARE DISJOINT** -- the
+adapter cannot see a `/kill` or a drowning, the listener cannot see what the killing blow was made of.
+One question with two reaches. **It would become two authorities the moment the predicate were written
+twice**, which is what the extraction prevents.
+
+> **AND THE ORDER OF TWO LINES IS THE WHOLE MECHANISM.** `BukkitCombatant` reads `isScorched` BEFORE
+> calling `stats.damage`, because that call fires the entire death chain synchronously -- seam,
+> `MobDeathSystem`, `setHealth(0)`, `EntityDeathEvent`, the listener -- and only then returns. **A read
+> taken afterwards would always see `false`**, the suppression would never fire, and every scorched mob
+> killed by fire would blast TWICE. Gate row `I11` is the only thing that can see it: 6 against 12.
+
+#### `DamageOutcome`'s KNOWN LIMITATION BIT, EXACTLY WHERE IT SAID IT WOULD
+
+**`UNTRACKED` is `(0.0, 0.0)`**, so an untracked target reads as `newCurrent <= 0` -- *dead* -- when
+there was never anything to kill. The record's own javadoc said this *"does not bite today -- the only
+consumer gates on `newCurrent > 0` and both readings agree"*, and named the trap anyway on the argument
+that **a later consumer would get silence rather than a compile error.**
+
+**Ignite's fire-kill clause is that consumer, and the two readings do not agree for it:**
+
+| consumer | question | untracked answers |
+|---|---|---|
+| accrual | *is it still STANDING?* | no -- correct |
+| ignite | *did this blow KILL it?* | **yes -- false positive** |
+
+So the clause gates on **`dealt > 0 && newCurrent <= 0`**: `dealt` is what separates *"killed it"* from
+*"there was nothing there"*. **The limitation is unchanged and still not worth an `Optional`;** what
+changed is that reading `newCurrent` alone as "died" is now wrong, and any third consumer asking about
+death rather than standing owes the same clause.
+
+**The record did its job and is now discharged.** The clause exists because that paragraph named the
+trap, not because anything failed -- which is the argument for recording a limitation instead of
+fixing it, and the first time on this page it has been paid out.
+
+#### THE FIVE IGNITE DECISIONS, AND WHY EACH WENT THE WAY IT DID
+
+**Recorded 2026-09-09 with the mechanism.** Two lines already in this file pointed at these
+decisions before they were written down anywhere -- *"the constants decision puts the blast's numbers
+in code"* and *"while ruling on whether Ignite's blast should hurt players"*. **Those were dangling
+pointers aimed forward**, the same defect the record commit spent a PR removing aimed backward. This
+is the record they point at.
+
+| # | ruled | the reason that is NOT re-derivable from the code |
+|---|---|---|
+| 1 | **Constants in `core/combat/Ignite.java`**, not more constants on `Scorch` | Ignite is a propagation engine that happens to be TRIGGERED by scorch, not more scorch. Not YAML: `ElementDefinition` already drew that line -- *"naming the STATUS and not its rate is the whole scope of this field"* -- and radius/damage/fuse are rates. One status with two tuning homes is the two-authorities problem. **And for the one mechanism DESIGN says can take the server down, "changing it is a code review" is the FEATURE**: `ignite_radius: 50` must not be a content edit |
+| 2 | **Blast is `element: "fire"` + `AccrualRule.INERT`** | It MARKS but does not RECRUIT. DESIGN's rolling wave is already INERT's wave -- *"A dies, half a second, A explodes, kills B"* -- B explodes because **B was scorched**, not because the blast scorched B. ACCRUES would add recruitment the spec never asked for, and its only terminator is running out of mobs. **The costs are asymmetric**: ship INERT and it feels small, flipping is one argument; ship ACCRUES and it clears chunks while rules 2 and 3 are all under suspicion at once |
+| 3 | **`DefenseRule.APPLIES`** -- mitigated, unlike the burn | The burn's exemption exists because it is a PERCENT-OF-MAX effect on a clock; armour blunting it would mean armour reducing a fraction of your own health. **That reason does not transfer to a flat number dealt once.** Extending the exemption because the blast is "scorch's damage" would be proximity granting it scope it never claimed |
+| 4 | **Mob-only** | A burst is aimed and immediate -- someone standing in it chose to. **A cascade is neither**: half a second after a death, from a corpse, links downstream of someone else's kill, no telegraph. And it cannot be play-tested against a second account, so a player-damaging cascade ships with no live witness at all |
+| 5 | **Per-mob applier attribution** -- *the ignition is the fire's doing, not the killing blow's* | See `DESIGN`'s rule 4, reconciled in the same commit. Per-mob is the only **total** rule: the ruling admits drowning, falling and lava, where there is no killer and a null-source fallback is how slice 1's credit came out inverted |
+
+**Decision 3 has NO LIVE WITNESS, and that is permanent rather than temporary.** Every mob is defense
+0 (`reconcileDefenseModifiers` has one production caller, on player worn gear) and decision 4 means no
+player can be caught in a blast -- so `APPLIES` and `BYPASSED` produce the same number on every target
+in the game. No gate row can separate them. **The unit row asserts the FLAG AS DELIVERED**
+(`IgniteTest.theBlastGoesTHROUGHDefenseUnlikeTheBurnItCameFrom`), which is the only thing that can see
+the seam, and the recorded reason above is the only thing defending the choice.
+
+> **AND WHAT DECISION 4 COSTS, said plainly rather than left to be found: Ignite is INCONSISTENT WITH
+> BURSTS.** A player can stand safely inside a cascade that a `solar_grenade` would have hurt them
+> with. That is defensible ONLY because the reason is written down -- in `Ignite.detonate`'s javadoc,
+> not merely here.
+
+#### TWO OF THE FIVE REVERSED THE BRIEF, ON EVIDENCE, AND ONE BRIEF CONTRADICTED ITSELF
+
+**Recorded because the pattern is now three instances and the last two are the operator's own.**
+
+The mechanism brief prescribed the fan-out in `paper/` **and**, two paragraphs later, *"FakeWorld /
+FakeTickTarget for the rows -- clocks, never run-inline stubs, or rule 2's serialization is asserted
+against a fake that cannot express it."* **`FakeWorld` is `core`-only.** Two individually correct
+constraints, jointly unsatisfiable, with nothing in either one saying so -- and separated by
+paragraphs rather than by messages, so no late-arriving constraint excuses it.
+
+The same brief also asserted rule 3's once-ness came from `EntityDeathEvent` and asked for it to be
+verified rather than assumed. **It was verified, and it is false** -- see the next entry.
+
+**The general shape is already a rule on this page** (*two individually reasonable constraints,
+jointly unsatisfiable*). What this pair adds: **it applies to briefs as readily as to code, and the
+author is not the person best placed to notice.** Both reversals were taken on measurement, and both
+are recorded rather than silently applied, so the reasoning can be overturned on its merits.
+
+#### `EntityDeathEvent` DOES NOT GUARANTEE IT FIRES ONCE -- MEASURED FROM THE JAR
+
+**Measured 2026-09-09 from `paper-api-26.1.2.build.74-stable-sources.jar`, not reasoned.** The event
+is `Cancellable` and carries `setReviveHealth`, whose javadoc describes the health an entity revives
+with *"after cancelling the event"* -- **so a cancelled death revives the same mob, which can die
+again and fire again.** Any plugin can do that. There is no once-ness guarantee at any level:
+`EntityDeathEvent`'s entire class javadoc is *"Thrown whenever a LivingEntity dies"*, and `EntityEvent`
+and `Event` say nothing either.
+
+**Still unknown and unanswerable here:** whether a SINGLE death can dispatch the event twice.
+`paper-server` is not in `~/.m2` -- only `paper-api` -- so there is no implementation to read. It is a
+gate row, not a code question.
+
+**Consequence: rule 3's once-ness is BUILT, not inherited.** `RpgListeners.onEntityDeath` reads the
+scorch and immediately forgets it, so a second delivery finds nothing scorched and returns. That
+reuses state that already exists instead of adding a second map with its own lifecycle -- the shape
+this repo has refused before, and `MeleeHits` records the reason: derive from a stamp so *"there is
+nothing to expire, nothing for forget to miss."*
+
+> **THE GUARD'S ONLY WITNESS IS A GATE ROW, AND THAT IS KNOWN IN ADVANCE FOR ONCE.** A double delivery
+> cannot be constructed in a unit test, so **nothing in the suite reddens if the guard is deleted**.
+> The row that can see it is in `GATE-ignite.md`: a scorched mob dies beside a neighbour, and the
+> neighbour takes ONE blast's damage, not two -- `6` against `12`, one number apart on a nameplate.
+> Written as the guard landed rather than discovered missing afterwards.
+
 #### OWED WHEN A BOSS FLAG EXISTS: Ignite's boss and player exclusions
 
 **Recorded 2026-09-09 with the ruling, and deliberately NOT built.** Both were raised as guards
@@ -1181,10 +1482,90 @@ delivers 5x gets applied on top of it, and the result is 25x.**
 >
 > **Drowning: 10% of max health, REGARDLESS of defense or max health.** → a 2-point vanilla tick
 > becomes `2 × max/20` = **exactly a tenth of max, at 100, 150, 400 or 1000.** Pinned by
-> `DamageScaleTest.theOperatorsDrowningRuleIsExactlyTrueAtEVERYMax`.
+> `DamageScaleTest.theOperatorsDrowningRuleIsExactlyTrueAtEveryPUPPETEDMax` — **renamed 2026-09-10.
+> It was `...AtEVERYMax`, and that name was a claim that did not survive checking:** the row calls
+> `puppeted(...)` only, and "every max" is false on the untagged-mob path where the denominator moves
+> with the max. `onAnUntaggedMobDrowningIsFLATBecauseTheDenominatorMovesWithTheMax` is the companion
+> row the old name used to swallow.
 
 **THE "REGARDLESS OF DEFENSE" HALF IS NOT CLOSED** — see the standing question below. `CombatantStats`
 applies `Defense.applyDefense` unconditionally, and the conversion does not touch that.
+
+> ### AND A VANILLA MOB'S MAX HEALTH IS NOT A CONSTANT, WHICH IS WHAT MAKES THE DROWNING RULE SHARP
+>
+> **Recorded 2026-09-10, by the operator. Corrected the same day -- see the withdrawal below.**
+>
+> **The original said "before the drowning implementation exists", and that was wrong too:** this note
+> sits under a heading that reads *CLOSED BY THE CONVERSION*, and the rule is DELIVERED by
+> `DamageScale.toCustom` and pinned by a named test. The tense was the first sign the note had been
+> reasoned about the rule rather than about the code. Vanilla's
+> `Zombie.handleAttributes` adds a **permanent `MULTIPLY_TOTAL` modifier to `MAX_HEALTH`** with
+> probability `0.05 x local difficulty` and value `random*3+1`. So a spawn-egg zombie is 20 HP or,
+> occasionally, **anywhere in 40-100**. **Observed live at 51, 79 and 96.** Husks, drowned and zombie
+> villagers share the class. (Server internals -- the operator's reading and his measurements, not
+> something this repo can verify.)
+>
+> **WE ARE A PASS-THROUGH, AND DELIBERATELY SO.** `MobNameplateManager.maxHealthOf` reads
+> `attr.getValue()`, which *includes* modifiers, and **nothing in `paper/` writes a mob's
+> `MAX_HEALTH`** -- verified: every write is player-side (`EntityHeartBar`, `GrowthModifierItems`,
+> `ArmorItems`), and every mob-side touch is a read. <b>DO NOT "fix" this by clamping to the base
+> value.</b> The modified value is the correct one to seed from: a leader zombie really is tougher,
+> and its nameplate really should say so.
+>
+> **SCORCH IS ALREADY SAFE, AND BY ACCIDENT RATHER THAN BY DESIGN.** A leader zombie's 5% is
+> `0.05 x 96 = 4.8`/sec -- but `damagePerTick` is `min(percent, cap)`, and for an Ignite blast the cap
+> is `6 x CAP_FRACTION = 3`, so **the cap binds first.** **It absorbed a case nobody knew it was
+> covering.** Worth knowing before anyone "simplifies" it away on the grounds that the percent arm
+> never binds on shipped content.
+>
+> > **"Safe" means BOUNDED, not "unaffected", and the distinction matters for the weapon path.** With
+> > a bigger declared hit the cap rises above 4.8 and the percent arm binds instead -- a flint staff
+> > (cap 10) burns a leader zombie at `min(4.8, 10) = 4.8`/sec against an ordinary zombie's
+> > `min(1, 10) = 1`. **Nearly five times harder, and that is BY DESIGN** -- percent-of-max is what
+> > makes scorch scale with the pool, and the cap exists to stop it running away on a boss rather than
+> > to hide the pool. So max health already reaches scorch today; what it cannot do is run away.
+>
+> ### ~~AND THE CONSUMER THAT WILL CARE IS DROWNING~~ -- **WITHDRAWN 2026-09-10. THE BONUS CANCELS.**
+>
+> **The two sentences struck below were false, and they are struck rather than deleted because the
+> premise above them is still true and the withdrawal is worth showing.**
+>
+> > ~~"On a leader zombie that is 9.6 a tick instead of 2."~~
+> > ~~"THE GATE ROW FOR DROWNING MUST STAGE A MOB WHOSE MAX HEALTH IS NOT 20."~~
+>
+> **`DamageScale.toCustom`'s denominator is `barIsPuppeted ? VANILLA_BAR_POINTS : vanillaMaxAttribute`
+> -- for an untagged mob it is the mob's OWN attribute, and `customMax` was SEEDED from that same
+> attribute by `MobNameplateManager.maxHealthOf`.** So a leader zombie is `96 / 96`, **k = 1**, and the
+> drowning tick stays **2**. Not 9.6. **The modifier cancels: the conversion divides by the same number
+> it multiplies by.**
+>
+> **`toCustom`'s own javadoc says this, in a table** -- *"untagged mob 16 / 16 -> k = 1 (its custom max
+> was SEEDED from that attribute)"*. It was read and not applied.
+>
+> **AND THE SECOND SENTENCE IS THE ONE THAT DOES DAMAGE.** For an untagged mob a non-20 max changes
+> **nothing**, because it cancels. That instruction would have built **a row that witnesses nothing
+> while claiming to witness the conversion** -- and it would have been caught only by someone running
+> it, seeing `2`, and not knowing whether that was the pass. **A hollow row, prescribed by a note about
+> hollow rows.**
+>
+> **WHAT IS ACTUALLY TRUE, AND IT IS SMALLER.** The rule is exact **where the denominator is fixed**:
+>
+> | case | k | drowning tick | a tenth of the pool? |
+> |---|---|---|---|
+> | puppeted bar, max 100 | `100/20` = 5 | 10 | **yes** |
+> | the Knell (content mob) | `360/20` = 18 | 36 | **yes** |
+> | untagged mob, max 96 | `96/96` = **1** | **2** | no -- about **2%** |
+>
+> For an untagged mob `k` is 1 **by construction**, so the tick is a flat 2 whatever the pool -- a
+> tenth only when the pool happens to be 20.
+>
+> **OPEN QUESTION, NOT A DEBT. THE OPERATOR RULES THIS, AND NOTHING IS OWED UNTIL HE DOES.** Both
+> readings are defensible:
+>
+> - **CORRECT AS-IS.** An untagged mob is unchanged from vanilla, which is exactly what seeding
+>   `customMax` from the attribute exists to guarantee. **`k = 1` is the invariant, not a gap.**
+> - **OR THE RULE MEANS WHAT IT SAYS** -- *"REGARDLESS of max health"* -- and a 96 HP zombie taking 2
+>   is the rule failing to apply to the one mob where it would be visible.
 
 > **These numbers chose the denominator, and were nearly the wrong tool for it.** The obvious factor
 > was `customMax / (heartCount(customMax)*2)` — the *rendered* bar — which gives 10% at max 100 and
@@ -8031,6 +8412,68 @@ Every one is compiler-checked. **The tenth is the known trap, and it is now DISC
 exhaustiveness-checked, because its labels are type patterns over a sealed interface. Its javadoc
 already records the build failure that proves it. Do not "fix" it.
 
+### THE MARKER ITSELF CAN BREAK THE EDIT, AND A LUCKY RESULT IS STILL NOT EVIDENCE
+
+**Named 2026-09-09, Ignite, one commit after the javadoc-instead-of-code case and from a DIFFERENT
+mechanism.** The fifth member of the mutation-lies family; the table lives in `CLAUDE.md`.
+
+Mutating the shared accrual predicate, the replacement text was `/* MUT_MARK */`. **Its slashes
+terminated `perl`'s `s///` early**, so the substitution ran as `s/PATTERN//` -- a bare deletion -- and
+the marker never entered the file. The check printed:
+
+```
+marker present (need 1): 0   original gone (need 0): 0
+```
+
+**The two halves of the marker grep fail in OPPOSITE directions, and this is what proves you need
+both.** The javadoc case passes *"marker present"* and is caught only by *"original gone"*. This case
+passes *"original gone"* and is caught only by *"marker present"*. A one-directional check clears
+exactly one of them.
+
+**AND THE PART WORTH KEEPING: THE RESULT WAS RIGHT, AND IT WAS DISCARDED ANYWAY.** The mutation in
+question was *"drop the `accrual.accrues()` clause"* -- and a bare deletion of that line **is** that
+mutation. The intended rows reddened, for the intended reason. Every visible signal said pass.
+
+> **A right answer from an uncontrolled instrument is the same reading you would get from a broken
+> one.** Keeping it because it looked correct would have been the exact move this page spends four
+> other entries warning against -- and it would have set the precedent that a failed control can be
+> waived when the outcome is agreeable, which is worse than any single wrong result.
+
+**How to apply:** never put the delimiter -- or `/` at all -- inside replacement text. Use
+`s{...}{...}` with an environment variable for the payload, and prefer a marker with no punctuation.
+Then read BOTH halves of the control and re-run on either failing, whatever the test output said.
+
+### A MUTATION CAN LAND IN THE COMMENT THAT DESCRIBES THE CODE, AND REPORT AS APPLIED
+
+**Named 2026-09-09, Ignite. The fourth member of the mutation-lies family, which lives as a table in
+`CLAUDE.md`** -- the row is added there; this is the worked instance.
+
+Mutating Ignite's blast from `DefenseRule.APPLIES` to `BYPASSED`, the check printed:
+
+```
+marker present (need >=1): 1   original gone (need 0): 1
+!! MUTATION DID NOT APPLY -- result meaningless
+```
+
+**`perl`'s non-global `s///` had replaced the FIRST occurrence, which was a javadoc line three above
+the call site**, and left the `applyDamage` argument untouched. The marker really was in the file.
+The test run really was green. Both facts were true and the conclusion they invited -- *"BYPASSED
+does not redden, so the defense row does not discriminate"* -- was false.
+
+**This is not "didn't apply" and it is not "applied, no bite".** The edit applied; it applied to the
+wrong *text*. And it is caught by exactly one thing: the **"original gone"** half of the marker grep.
+*"Marker present"* passes it cleanly, because the marker is present.
+
+**Why this repo will meet it again, which is the part worth keeping.** Every dense javadoc here
+quotes the constants and call sites it explains -- that is the house style and it is why the comments
+are useful. **So a mutation target appearing in BOTH a comment and the code it documents is the
+normal case, not an edge case.** `DefenseRule.APPLIES` sat in a comment reading *"DefenseRule.APPLIES,
+deliberately, and NOT the burn's BYPASSED"* immediately above the argument it described.
+
+**How to apply:** `grep -c` the exact target before mutating. If it occurs more than once, mutate a
+string unique to the code -- `CritState.NORMAL, DefenseRule.APPLIES, "fire"` rather than
+`DefenseRule.APPLIES,` -- and assert the code line specifically afterwards, not merely the marker.
+
 ### A MUTATION IS A HYPOTHESIS UNTIL YOU HAVE WATCHED IT REDDEN
 
 **A mutation-table row that predicts "this reddens test X" is a claim, not a guard.**
@@ -8782,6 +9225,91 @@ noticing.
 > for the reason above -- filing it as "the model added a bad reference" would have kept the sentence
 > and lost the lesson.
 
+### WHEN TWO ARTEFACTS DESCRIBE ONE THING AND ONLY ONE IS VERSIONED, THE UNVERSIONED ONE LEADS
+
+**Named 2026-09-10, after the Ignite gate drifted from its own page twice in three days.**
+
+The versioned artefact declares itself the source of truth. **That declaration does not change which
+one gets edited first** -- it only decides which one is *surprising* when they disagree. The
+unversioned artefact leads **because it is the one being used**: the operator ticks through a
+published HTML gate page during a session, so the page moves and the markdown lags.
+
+**Two instances, both real, both invisible from either side because neither document pointed at the
+other:**
+
+| | the page said | the file said | cost |
+|---|---|---|---|
+| **I5** | three detonations | **four** | **the file's row could not pass.** Survived `8e8731b`, corrected in `2db91c7` |
+| **I7** | **RUN THIS FIRST** | nothing | a statement **true of the gate and false of the file** |
+
+**THE SECOND ONE IS THE INTERESTING FAILURE, AND IT WAS MIS-DIAGNOSED ONCE ALREADY.** The sentence
+*"I7 is marked RUN THIS FIRST"* reached this file from the operator, was written into a commit, and
+was then caught by grepping the file -- where the only occurrence was the new line itself. **Reported
+as a fabrication.** It was not: it was **accurate about the artefact the operator uses** and false
+about the one under version control. Mis-filing a DRIFT as a FABRICATION is worse than either,
+because the two want opposite fixes -- one wants a pointer between documents, the other wants more
+care with unsourced claims.
+
+**THE FIX IS A POINTER, NOT A PROCESS.** `GATE-ignite.md`'s header now names the page and splits the
+authority: **the file is authoritative on CONTENT** (what a row says, its staging, its figures), **the
+page on WHAT WAS ACTUALLY RUN** (ticks, observations, order). A mismatch then has a rule to be
+resolved by, rather than a judgement call at the moment someone notices.
+
+**How to apply, beyond gates.** Whenever a record has a working copy someone actually operates --
+a dashboard, a ticket, a published page -- **do not resolve the split by declaring the versioned copy
+canonical and stopping there.** Ask which copy gets edited first, say so out loud in the versioned
+one, and name what each is authoritative FOR. The declaration that costs nothing is the one that
+changes nothing.
+
+### WHERE THE RULES LIVE — the convention, recorded 2026-09-10
+
+**`CLAUDE.md` carries the operational form; this file carries the named rule, the worked example and
+the dated instance.** The full argument is in `CLAUDE.md` under *WHERE THE RULES LIVE*; it is not
+repeated here, because two authorities on one convention is the problem the convention exists to fix.
+
+**It was decided because the split had happened TWICE by accident** -- the mutation-lies family (table
+there, instances here) and the control-rules pair (operational form there, named rules here). Two
+occurrences is a pattern, and an unstated convention makes a reader guess which family a rule is in
+before they know which file to open.
+
+### A RULE AND ITS IMPLEMENTATION AGREE ON THE CASES SOMEONE CHECKED, AND NOWHERE ELSE BY DEFAULT
+
+**Named 2026-09-10, and the worked example is a note dictated into the record and withdrawn the next
+day.** The failure: **reasoning about a conversion from the RULE it implements instead of from the
+EXPRESSION that implements it** -- and arriving at a hazard pointing the wrong way, with a confident
+number attached.
+
+The rule reads *"drowning: 10% of max health, REGARDLESS of defense or max health."* The code reads
+`vanillaAmount * customMax / denominator`. **Those two agree only where the denominator is fixed.**
+For an untagged mob the denominator is the mob's own max-health attribute and `customMax` was seeded
+from that same attribute, so `k = 1` and the vanilla number passes through untouched. Reasoning from
+the rule gave *"a 96 HP zombie takes 9.6"*; the expression gives **2**.
+
+**THE DAMAGE WAS NOT THE WRONG NUMBER. IT WAS THE INSTRUCTION THE WRONG NUMBER JUSTIFIED:** *"the gate
+row for drowning must stage a mob whose max health is not 20."* For an untagged mob a non-20 max
+changes nothing, **so that row would have witnessed nothing while claiming to witness the
+conversion** -- and it would have been caught only by someone running it, seeing 2, and not knowing
+whether that was the pass. **A hollow row, prescribed by a note whose subject was hollow rows.**
+
+**AND THE IMPLEMENTATION HAD ALREADY WRITTEN THE ANSWER DOWN.** `DamageScale.toCustom`'s javadoc
+carries a three-row table, and the middle row is *"untagged mob 16 / 16 -> k = 1 (its custom max was
+SEEDED from that attribute)"*. It was read and not applied. **The table was not missing; the habit of
+checking the expression against the rule was.**
+
+**How to apply.** When a rule is stated in one vocabulary (*percent of max*) and implemented in
+another (*a ratio of two maxima*), **do not reason in the rule's vocabulary about a case nobody has
+run.** Evaluate the expression at the case, on paper, with the real inputs -- and note that the
+tell was present here before the arithmetic was: **the note said "before the drowning implementation
+exists" while sitting under a heading reading CLOSED BY THE CONVERSION.** A tense that disagrees with
+its own section is a sign the writer is reasoning about the design and not about the code.
+
+> **AND THE TEST NAME WAS CARRYING THE SAME ERROR, INDEPENDENTLY.**
+> `theOperatorsDrowningRuleIsExactlyTrueAtEVERYMax` calls `puppeted(...)` only -- so "EVERY max" was
+> true on the puppeted path and false on the untagged-mob path, and **a reader who trusted the name
+> would have concluded exactly what the withdrawn note concluded.** Renamed to `...AtEveryPUPPETEDMax`
+> and given the companion row it used to swallow. **A test name is a claim a reader can check**, and
+> that one had been sitting unchecked next to a `mob(...)` helper it never called.
+
 ### A RULE OUTLIVES ITS PREMISE SILENTLY, BECAUSE ITS ARITHMETIC KEEPS EVALUATING
 
 **Named 2026-09-09, element accrual.** A rule stated as a formula does not stop working when the thing
@@ -8878,6 +9406,29 @@ both were invisible for exactly the reason they were wanted.
 **How to apply, and the remedy is not "plan less":** at the end of a slice, diff the plan's NAMED
 ARTIFACTS against what exists on the branch. Two names, one grep. It is the same counting discipline
 that gave `7 -> 7` on the lambda sites and `12` on the fire damage sites.
+
+### AND ITS PASSING TWIN: A CONTROL THAT SUCCEEDS FOR THE WRONG REASON
+
+**Named 2026-09-09, Ignite. Placed beside the entry below because the PAIR is the lesson** -- one is a
+red you talk yourself out of, the other is a green you never think to question, and the second is
+worse because nothing prompts the conversation at all.
+
+**The worked example is a gate row.** `I5` staged **four** mobs and expected **four** detonations. The
+chain limit is also four. **So the row passes whether the cap exists or not** -- a build with
+`MAX_CHAIN_DEPTH` deleted produces exactly four detonations, because it runs out of mobs at the same
+moment the cap would have stopped it. The row looked like a cascade test and was a mob-count test.
+
+**Stating the ambiguity in the row does not fix it.** That was the tempting repair -- write "this
+cannot distinguish the two" underneath and leave the staging alone. **The operator still ticks it
+green**, because the observation matches the expectation and the caveat is a paragraph nobody re-reads
+while counting explosions. The fix is to make the row unable to pass for the wrong reason: three mobs,
+so the cap is never approached, and a separate five-mob row that owns the limit.
+
+**How to apply.** For any row whose expected count coincides with a LIMIT the system enforces, ask
+what the row does when the limit is deleted. If the answer is "the same thing", the row is measuring
+the fixture, not the code -- and no wording saves it. **The tell is a number appearing twice for
+different reasons**: four mobs, four links. When two independent quantities in a row are equal, at
+least one of them is not being tested.
 
 ### A CONTROL THAT FAILS WITH A PLAUSIBLE EXPLANATION IS THE MOST DANGEROUS KIND, BECAUSE THE EXPLANATION IS WHAT STOPS YOU LOOKING
 

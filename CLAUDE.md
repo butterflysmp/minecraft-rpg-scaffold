@@ -62,6 +62,26 @@ Separately: all scheduling goes through `Scheduler` (`onEntity`, `onRegion`,
 `onRegionLater`, `onGlobal`, `async`). This exists so the project runs on Folia
 later without a rewrite. `async` must never touch the Bukkit API.
 
+## WHERE THE RULES LIVE — decided 2026-09-10, after the split happened twice
+
+**`CLAUDE.md` carries the rule in the form that changes what you do next. `NEXT.md` carries the named
+rule, its worked examples, and the history of what it cost to learn.**
+
+Two families had already split across both files — the mutation-lies table (here, examples there) and
+the control-rules pair (operational form here, named rules there). **Two occurrences is a convention
+forming by accident**, so it is stated rather than left: a reader looking for "the rules" should not
+have to know which family a rule is in before knowing where to look.
+
+**Why this way round, and the argument is about who reads what.** This file's own first line is *read
+this before writing any code*, and it is loaded every session; `NEXT.md` is nine thousand lines read
+on demand. **A rule that lives only in `NEXT.md` will not be read by the person about to break it.**
+The cost is that this file grows, and it is paid down by keeping each entry here to the operational
+core — what to DO — and leaving the persuasion, the worked example and the dated instance to
+`NEXT.md`.
+
+**Overturnable.** The opposite convention — everything in `NEXT.md`, pointers here — keeps this file
+short, and if it grows past being readable in one sitting that is the trade to revisit.
+
 ## VERIFICATION — a check that did not run looks exactly like a check that passed
 
 **Verify a check ran before believing it passed.**
@@ -77,6 +97,13 @@ than one that never ran, because you now believe you checked.
 > `dev-server.sh` before it deployed anything. The mtimes settled it: target `05:40:54`,
 > deployed `05:39:43`. Had the explanation been trusted, the mutated build would have
 > booted a second time and the restore would have been blamed for the result.
+
+> **AND THE PASSING TWIN, which has no conversation to interrupt: A CONTROL THAT SUCCEEDS FOR THE
+> WRONG REASON.** A gate row staged FOUR mobs against a chain limit of FOUR — so it passed whether the
+> limit existed or not, and no explanation was needed because nothing looked wrong. **When two
+> independent quantities in a row are equal, at least one of them is not being tested.** Ask what the
+> row does if the rule it checks is deleted; if the answer is "the same thing", it is measuring the
+> fixture. Full entry in `NEXT.md`, beside its red-side twin.
 
 This is a distinct failure from the four below, not a variant of them. Those are checks
 that never ran. This is a check that ran, fired, and got talked out of. It survives
@@ -199,16 +226,47 @@ The rule underneath all three: **silence is not a result.** An instrument that o
 either found nothing or done nothing, and those are the same picture.
 
 
-### THE THREE WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
+### THE FIVE WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
 
-All three were hit in one slice (2026-09-08, elements). They are one table because the shape only
-becomes visible together: **each guard catches the previous failure and cannot see the one below it.**
+The first three were hit in one slice (2026-09-08, elements); the fourth and fifth arrived on
+2026-09-09, Ignite — **from two different mechanisms, one commit apart**, which is the evidence that
+this is a family and not a run of bad luck. They are one table because the shape only becomes visible
+together: **each guard catches the previous failure and cannot see the one below it.**
 
 | failure | what happened | what catches it |
 |---|---|---|
-| **didn't apply** | `perl -i` exited 0 and left the file byte-identical | the **marker grep** |
+| **didn't apply** | `perl -i` exited 0 and left the file byte-identical | the marker grep, **"marker present"** half |
+| **applied to PROSE, reported as applied to CODE** | the target string appeared in **both a javadoc and the code it describes**, and `perl`'s non-global `s///` replaced the *comment* — the one that came first in the file. Marker present, code untouched | the marker grep, **"original gone" half — AND ONLY THAT HALF** |
+| **THE MARKER BROKE THE EDIT** | the replacement text was `/* MUT_MARK */`, and its slashes **terminated `perl`'s `s///` early** — so the edit landed as a bare *deletion* and the marker never went in. Original gone, marker absent | the marker grep, **"marker present" half — the other one** |
 | **applied, no bite** | the edit landed and the test stayed green — the assertion matched a *duplicate* of the mutated token | **nothing mechanical** — only reading the red you expected and not getting it |
 | **applied, wrong side** | the test passed on an accident (a floating-point coincidence; an undefended victim where `dealt == amount`) rather than on the thing it guards | **nothing at all** — only designing the fixture so the two values differ |
+
+> **ROWS TWO AND THREE ARE WHY THE MARKER GREP IS TWO CHECKS, AND WHY YOU NEED BOTH HALVES.** They
+> fail in opposite directions and each half catches exactly one of them:
+>
+> - *"Marker present"* passes cleanly on a **misplaced** application — the marker really is in the
+>   file. Only *"original gone"* notices the code still says what it always said.
+> - *"Original gone"* passes cleanly when **the marker itself broke the edit** — the target really is
+>   gone, replaced by nothing. Only *"marker present"* notices the edit is not the one you wrote.
+>
+> A one-directional grep reports one of these as a verified mutation, and in both cases the test run
+> beneath it is green or red for reasons that have nothing to do with your hypothesis.
+>
+> **AND A LUCKY RESULT FROM A BROKEN INSTRUMENT IS STILL NOT EVIDENCE.** In the third row's real
+> instance the accidental deletion *happened to equal* the intended mutation, so the reddening was
+> correct — and it was discarded and re-run anyway. **That is the whole discipline: a right answer
+> from an uncontrolled instrument is the same reading you would get from a broken one.** Do not keep
+> it because it looks right.
+>
+> **Practically:** never put `/`, or the delimiter you are using, inside the replacement text. Use
+> `s{...}{...}`, and prefer a marker with no punctuation at all.
+>
+> **This repo makes the shape common rather than rare.** Its javadocs quote their own constants and
+> call sites constantly — `DefenseRule.APPLIES` appeared in a comment three lines above the
+> `applyDamage` call it described — so **a mutation target that appears in both a comment and the
+> code it documents is the normal case here, not an edge one.** Grep the target for its occurrence
+> count before mutating, and mutate a string unique to the code (`CritState.NORMAL,
+> DefenseRule.APPLIES, "fire"`, not `DefenseRule.APPLIES,`).
 
 The marker grep proves the **edit landed**. It cannot prove the edit **reached what the assertion
 reads**. So a green run after a confirmed-applied mutation is not a pass — it means the mutation was

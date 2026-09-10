@@ -20,7 +20,8 @@ Run against `1f6c93f` unless a row says otherwise.
 
 | | |
 |---|---|
-| **Run and passed** | A1, A2, A3, A4, B1, B2, B3, C1, C2, C3, C4, D1 |
+| **Run and passed** | A1, A2, A3, A4, B1, B2, B3, C1, C2, C3, C4 |
+| **RE-RUN OWED** | **D1** — its command could not parse; see the note under the attribution table |
 | **Refused — cannot witness anything** | the six in their own section, which is the more valuable half |
 | **Open, ruled left alone** | the `FIRE_TICK` suppression covers one cause of four |
 
@@ -69,6 +70,27 @@ point of this section.
 | `1233469` | *"all gates green"* | D1 skipped, named by him |
 | `23ed254` | *"all gates passed"* | two exceptions itemised separately |
 | `1f6c93f` | *"everything passed"* | A4 — thin, but valid. A4 and A3's crit precondition both reached him in the same message as the final publish, and this came after |
+
+> ### D1 IS RE-RUN-OWED. ITS COMMAND COULD NOT PARSE.
+>
+> **Found 2026-09-09.** D1 was staged as `/rpg apply scorch 1 200`. **The argument order is
+> `<status> <duration> <stacks>`**, so that reads as duration 1 / stacks 200 — and stacks is declared
+> `IntegerArgumentType.integer(1, 20)`, so Brigadier fails the parse. The reader still has `200`
+> unconsumed, so the shorter duration-only overload does not run either. **Nothing executed.**
+>
+> **D1's green is therefore over a command that could not have run** — and it was already this file's
+> weakest evidence: itemised nowhere, no figures, and the one confirmation that *names* it says
+> **skipped**. The corrected command is `/rpg apply scorch 200 1`, which is what the row's own
+> arithmetic (a 200-tick window) was always derived from.
+>
+> **Marked re-run-owed rather than un-ticked and forgotten.** A row deleted from the "passed" list
+> reads as one nobody chose to run; a row marked owed reads as one that must be. It is left in the
+> table above with this note attached rather than silently moved, so the correction is visible to
+> anyone who read the old list.
+>
+> **This is the "a check that did not run looks exactly like one that passed" defect arriving through
+> a channel the page had not covered** — not a filter that failed, but a command line that was never
+> valid. The row's arithmetic was scrutinised repeatedly; its SYNTAX never was.
 
 ---
 
@@ -178,7 +200,7 @@ Nothing new to stage — seen in A1, A2, B1. Hit `▲20`, burn `▲10`.
 Was an open **question** in round one; a pass since `AccrualRule` landed.
 
 ### D1 — newest wins: three fields change hands in one observation
-`knell` + `/rpg apply scorch 1 200`. Two **unmarked** `2`s — that 2 is `Scorch.UNDECLARED_CAP`,
+`knell` + `/rpg apply scorch 200 1`. Two **unmarked** `2`s — that 2 is `Scorch.UNDECLARED_CAP`,
 because the command declares no payload. Then one flint bolt: `▲20`, and **every burn after reads
 `▲10`.**
 

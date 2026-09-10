@@ -141,30 +141,60 @@ public final class ElementAccrual {
                                                  String element, AccrualRule accrual,
                                                  DamageOutcome outcome,
                                                  double declaredMagnitude) {
-        // INERT: the hit HAS an element -- it draws that element's glyph -- and must not accrue.
-        // Scorch's own burn tick is the only caller today, and this is the loop guard. It is a
-        // DIFFERENT reason from the null-element early return below: that one means the hit has no
-        // element at all. Same outcome, different facts; collapsing them loses the ability to tell
-        // a burn tick apart from fall damage.
-        if (!accrual.accrues()) return Optional.empty();
+        if (!accruesScorch(elements, statuses, element, accrual)) return Optional.empty();
 
+        // THE LETHAL GATE, AND IT IS NOW THE ONLY THING SEPARATING THIS FROM IGNITE'S SECOND CLAUSE.
+        // Everything above is shared; this line is the whole difference between "accrue onto a
+        // survivor" and "ignite what this blow killed". Keeping it as one standalone statement is
+        // what lets both consumers read from one predicate instead of two copies drifting apart.
         if (outcome.newCurrent() <= 0) return Optional.empty();
 
+        return scorch(outcome, declaredMagnitude);
+    }
+
+    /**
+     * Does a hit wearing {@code element}, under {@code accrual}, accrue SCORCH? -- <b>ignoring
+     * lethality and ignoring how much landed.</b>
+     *
+     * <p><b>TWO CALL SITES, ONE PREDICATE, AND THAT IS THE POINT OF EXTRACTING IT.</b> Ignite's
+     * trigger has to ask the same question this class already answers, on the other side of the
+     * lethal gate: {@code BukkitCombatant} fires a blast when a hit KILLED an unscorched mob and
+     * this returns true. Written twice, the two copies would be two authorities on what "a fire hit"
+     * means and would drift the first time an element gained a status. Written once, they are one
+     * question with two reaches -- {@link #forHit} adds the lethal gate, Ignite's clause inverts it.
+     *
+     * <p><b>INERT is checked first and it is the loop guard.</b> The hit HAS an element -- it draws
+     * that element's glyph -- and must not accrue. Scorch's burn tick and <b>Ignite's own blast</b>
+     * are the two callers that pass it, and the blast is why this matters here: the blast wears
+     * {@code "fire"}, so without this clause a blast that killed an unscorched mob would ignite it
+     * and the cascade would recruit everything it killed. That is exactly the outcome INERT was
+     * chosen to prevent. It is a DIFFERENT reason from the null-element miss below, which means the
+     * hit has no element at all; collapsing them loses the ability to tell a burn tick from fall
+     * damage.
+     *
+     * <p>No {@code "fire"} literal appears here, deliberately: the element names its status in
+     * content and the status is matched on its TYPE. An element that gains {@code applies_status:
+     * scorch} tomorrow ignites tomorrow, with no code change.
+     */
+    public static boolean accruesScorch(ElementRegistry elements, StatusRegistry statuses,
+                                        String element, AccrualRule accrual) {
+        if (!accrual.accrues()) return false;
+
         ElementDefinition def = elements.find(element).orElse(null);
-        if (def == null || def.appliesStatus() == null) return Optional.empty();
+        if (def == null || def.appliesStatus() == null) return false;
 
         StatusDefinition status = statuses.find(def.appliesStatus()).orElse(null);
-        if (status == null) return Optional.empty();
+        if (status == null) return false;
 
         // Exhaustive over the sealed type, so a new status kind is a compile error here rather than
         // silently landing in the "accrues nothing" arm. ContentValidator.validateElements already
-        // NAMES a non-accruing status at boot, which is why this returns empty without warning.
+        // NAMES a non-accruing status at boot, which is why this returns false without warning.
         return switch (status) {
-            case StatusDefinition.Scorch ignored -> scorch(outcome, declaredMagnitude);
-            case StatusDefinition.Fire ignored -> Optional.empty();
-            case StatusDefinition.Potion ignored -> Optional.empty();
-            case StatusDefinition.Immobilize ignored -> Optional.empty();
-            case StatusDefinition.Soaked ignored -> Optional.empty();
+            case StatusDefinition.Scorch ignored -> true;
+            case StatusDefinition.Fire ignored -> false;
+            case StatusDefinition.Potion ignored -> false;
+            case StatusDefinition.Immobilize ignored -> false;
+            case StatusDefinition.Soaked ignored -> false;
         };
     }
 

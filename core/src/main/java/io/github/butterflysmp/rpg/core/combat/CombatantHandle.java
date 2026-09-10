@@ -127,24 +127,27 @@ public interface CombatantHandle {
      */
     default void applyDamage(double amount, UUID sourceId, CritState crit, DefenseRule defense,
                              String element) {
-        applyDamage(amount, sourceId, crit, defense, element, AccrualRule.ACCRUES);
+        applyDamage(amount, sourceId, crit, defense, element, HitAccrual.weapon());
     }
 
     /**
-     * As above, stating whether this hit's element may ACCRUE the status it declares.
+     * As above, stating how this hit interacts with the scorch/ignite subsystem.
      *
      * <p><b>THIS REPLACES A GUARD MADE OF ABSENCE.</b> The four-argument arity above used to be the
      * loop guard: scorch's burn tick reached the port through it, so it had no element to pass and
      * could not accrue more scorch. That javadoc has been deleted rather than left standing, because
-     * the burn now carries its element -- for the glyph -- and passes {@link AccrualRule#INERT}.
+     * the burn now carries its element -- for the glyph -- and passes {@link HitAccrual#inert()}.
      *
-     * <p>A null element and {@code INERT} are DIFFERENT FACTS with the same outcome: the first means
+     * <p>A null element and an INERT rule are DIFFERENT FACTS with the same outcome: the first means
      * the hit has no element at all (fall damage, a thorns reflect), the second that it has one and
      * must not accrue. The short arities still mean the first, correctly, for every caller they have.
-     * See {@link AccrualRule}.
+     *
+     * <p><b>The parameter carries a DEPTH as well as a rule, and it is one value rather than two
+     * arguments for a reason {@link HitAccrual} states:</b> {@code (INERT, 2)} and {@code (ACCRUES, 4)}
+     * are both nonsense that an {@code (enum, int)} pair would let a caller write and compile.
      */
     void applyDamage(double amount, UUID sourceId, CritState crit, DefenseRule defense,
-                     String element, AccrualRule accrual);
+                     String element, HitAccrual accrual);
 
     /**
      * Raise the target's health by {@code amount}, capped at its max by the implementation.

@@ -42,6 +42,22 @@ package io.github.butterflysmp.rpg.core.combat;
  * a count comes back only WITH a consumer that defines what it means.</b> That is the moment the
  * unclamped-accumulation question gets answered instead of inherited.
  *
+ * <p><b>THE HONEST SCORE FOR BUILDING AHEAD OF A SPEC, recorded because it is unusually clean.</b>
+ * {@code ScorchStatus} shipped TWO methods built for a slice-2 consumer that did not exist yet, and
+ * nothing called either of them. The ruling resolved both in the same sentence: it <b>killed</b>
+ * {@code stacks(UUID)} -- ignite reads no count -- and <b>gave {@code applier(UUID)} its first
+ * consumer</b>, since ignite credits whoever lit the fire. Both were speculative; exactly one
+ * guessed right. That is the base rate to remember the next time a method is written for a spec that
+ * has not been ruled on.
+ *
+ * <h2>SCORCH IS ONLY HALF THE FIRE KIT -- {@link Ignite} IS THE OTHER HALF</h2>
+ *
+ * The first person tuning scorch reads this file, and every scorch rate is deliberately here so they
+ * find it. <b>Ignite's numbers are NOT here</b> -- radius, damage and fuse live in {@link Ignite},
+ * because a propagation engine that happens to be TRIGGERED by scorch is a different mechanism, not
+ * more scorch constants. Read that file too, or you have tuned the burn and left the explosion it
+ * causes untouched.
+ *
  * <p><b>Consequence to know before relying on {@link #stacksFor}'s magnitude:</b> with the
  * accumulator gone, {@code ScorchStatus.apply} reads its {@code stacks} argument only as a GATE
  * ({@code stacks <= 0} means the hit bought none and applied nothing). So {@code stacksFor}'s

@@ -1,6 +1,6 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
-import io.github.butterflysmp.rpg.core.combat.AccrualRule;
+import io.github.butterflysmp.rpg.core.combat.HitAccrual;
 import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 
@@ -73,6 +73,6 @@ public final class EntityScorchSink implements ScorchSink {
         // spacing and then silence. If it never expires, this line says ACCRUES.
         BukkitCombatant.of(entity, ctx).handle()
                 .applyDamage(amount, applierId, CritState.NORMAL, DefenseRule.BYPASSED,
-                        element, AccrualRule.INERT);
+                        element, HitAccrual.inert());
     }
 }

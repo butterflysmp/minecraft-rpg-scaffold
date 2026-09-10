@@ -1,0 +1,26 @@
+# The Ignite cascade's detonation: a scorched mob that died, going off one second later.
+# The id of this visual is its filename: ignite_blast.
+#
+# WHY THIS IS NOT solar_detonation, which Ignite used to fire. That id is authored for
+# solar_grenade and already shared with emberblade and ember_staff -- so tuning the cascade's
+# bang would have re-tuned three weapons' fireballs, and tuning theirs would have re-tuned the
+# cascade. Ignite is the one effect on the fire kit a player does not aim, so it wants to read
+# as a different KIND of event, not as another fireball. A shared visual is a coupling and this
+# repo names them; this one is cut rather than documented.
+#
+# `speed` is Bukkit's `extra`, authored explicitly. The schema default is 1.0 (see
+# VisualSpec.Particles) -- NOT 0.0 -- which would fling the puffs outward like a fountain. 0.0
+# keeps the blast sitting where the mob died, which is what a detonation looks like.
+
+steps:
+  - type: particle
+    particle: EXPLOSION      # takes no data object -- checked at load, VisualLoader.particle()
+    count: 6                 # six puffs across a 4-block radius reads as a blast filling it;
+    spread: 1.2              # one large EXPLOSION_EMITTER reads as a single point instead
+    speed: 0.0
+
+  - type: sound
+    key: entity.generic.explode   # a vanilla key, not the ENTITY_GENERIC_EXPLODE constant
+    volume: 1.0
+    pitch: 0.8                    # LOWER than ember_burst's 1.0, deliberately: both use this
+                                  # key, and a cascade must not sound like a thrown ember

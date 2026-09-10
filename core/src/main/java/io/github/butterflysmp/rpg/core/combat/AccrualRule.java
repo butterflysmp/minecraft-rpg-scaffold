@@ -65,7 +65,37 @@ public enum AccrualRule {
      */
     INERT;
 
-    /** True for {@link #ACCRUES}. For the one site that branches on it. */
+    /**
+     * True for {@link #ACCRUES}.
+     *
+     * <p><b>TWO SITES BRANCH ON IT, AND BOTH ARE THE SAME ONE.</b> This javadoc said "the one site"
+     * until 2026-09-09; naming them beats a bare count, because the value of the line is telling a
+     * reader where to look.
+     *
+     * <ul>
+     *   <li>{@code ElementAccrual.accruesScorch} -- the predicate. Every other caller reaches the
+     *       rule through it.</li>
+     *   <li>{@code ElementAccrual.forHit} -- calls that predicate, then adds the lethal gate.</li>
+     * </ul>
+     *
+     * <p>So the second site is the first one wearing a different condition, which is deliberate:
+     * Ignite's trigger asks the same question on the far side of that gate, and it asks it by
+     * calling the predicate rather than by re-reading this flag. <b>If a third site ever branches on
+     * this directly rather than through {@code accruesScorch}, that is the drift the extraction
+     * exists to prevent.</b>
+     *
+     * <p><b>RE-DERIVED 2026-09-09: {@link HitAccrual} NOW SITS BETWEEN THIS ENUM AND THE PORT.</b>
+     * The damage port no longer carries this type -- it carries a {@code HitAccrual}, which wraps
+     * this rule together with an ignite-chain depth, because {@code (INERT, 2)} and
+     * {@code (ACCRUES, 4)} are both nonsense that two separate parameters would let a caller write.
+     * <b>The two branching sites above are unchanged</b>: they still receive this enum, unwrapped by
+     * the adapter via {@code HitAccrual.rule()}.
+     *
+     * <p>What that adds is a THIRD way to reach the wrong answer, and it is worth naming: a caller
+     * that reads {@code accrual.rule()} and ignores {@code accrual.depth()} has silently opted out of
+     * the chain limit. The depth is only meaningful when this is {@link #ACCRUES}, which is why the
+     * two travel as one value.
+     */
     public boolean accrues() {
         return this == ACCRUES;
     }

@@ -111,12 +111,16 @@ public final class ScorchStatus {
          *  application. SAME rule as cap and applierId -- newest wins -- so the burn is marked with
          *  whatever last fed it rather than with whatever first lit it. */
         String element;
+        /** The ignite-chain depth of the blast that scorched this mob, or 0 if no blast did.
+         *  DEEPEST wins -- NOT newest. See {@link ScorchStatus#apply}. */
+        int depth;
 
-        Active(int remaining, double cap, UUID applierId, String element) {
+        Active(int remaining, double cap, UUID applierId, String element, int depth) {
             this.remaining = remaining;
             this.cap = cap;
             this.applierId = applierId;
             this.element = element;
+            this.depth = depth;
         }
     }
 
@@ -139,7 +143,7 @@ public final class ScorchStatus {
      */
     public void apply(UUID id, RepeatingTaskTarget target, ScorchSink sink,
                       int stacks, double cap, UUID applierId, int durationTicks,
-                      String element) {
+                      String element, int depth) {
         // A hit too small to buy a stack scorches nothing -- AND DOES NOT REFRESH AN EXISTING BURN
         // either, since this returns before the refresh arm below. Correct by the letter of the
         // spec: stacks are what scorch is made of, and a hit that buys none has not applied it. But
@@ -149,6 +153,30 @@ public final class ScorchStatus {
 
         Active a = active.get(id);
         if (a != null && a.task.isRunning()) {
+            // DEEPEST WINS, AND THIS IS THE ONE FIELD THAT IS NOT NEWEST-WINS.
+            //
+            // cap, applierId and element are PRESENTATION AND CREDIT facts, where the most recent
+            // applier is the right answer. depth is a SAFETY COUNTER, where the deepest reading is --
+            // and newest-wins here would silently defeat the chain limit, because THE BURN WINDOW
+            // DECOUPLES DEPTH FROM ELAPSED TIME and a later blast is therefore not a deeper blast:
+            //
+            //   A scorched at depth 1, high HP, SURVIVES; burns out and dies at t=7 -> detonates t=8.
+            //   Meanwhile a fast branch runs 2 -> 3, scorching D at DEPTH 3 by t=4.
+            //   At t=8 A's depth-2 blast reaches D. Newest-wins drops D from 3 to 2, so D detonates
+            //   at 3 instead of 4 and the frontier advances again.
+            //
+            // Repeat that with a pack of staggered survivors and the link count from the original
+            // root is bounded by the MOB POPULATION rather than by MAX_CHAIN_DEPTH -- which is the
+            // spawner scenario the recruitment ruling was bounded to avoid, arriving by the back door.
+            //
+            // "Extend, never shorten" is already this codebase's rule for the same reason: see
+            // BukkitCombatant's two setFireTicks sites and the note on `remaining` below.
+            //
+            // THE COST, NAMED: a player re-lighting a depth-3 mob with a fire weapon no longer
+            // restarts its chain, because a weapon hit is depth 0 and max ignores it. That is the
+            // correct trade -- under newest-wins that same swing re-roots the wave AT WEAPON SPEED,
+            // and no gate row could reach it.
+            a.depth = Math.max(a.depth, depth);
             a.remaining = durationTicks;   // refresh the whole timer, and DO NOT restart the task
             // THIS ASSIGNMENT CAN SHORTEN A LIVE BURN, AND NOTHING IN THE MECHANISM STOPS IT.
             // It is safe TODAY only because every content-driven application passes the same
@@ -161,7 +189,18 @@ public final class ScorchStatus {
             // shape (b) in PLAN-element-content-pass.md), or an ability regaining an authored
             // duration_ticks. On that day a short application silently truncates a long burn, and
             // this line becomes Math.max(a.remaining, durationTicks) -- "extend a burn, never shorten
-            // it", the rule BukkitCombatant.java:272-273 and :288 already apply twice.
+            // it", the rule BukkitCombatant.java:235, :374 and :388 already apply three times.
+            //
+            // AND THE FOURTH IS THE LINE DIRECTLY ABOVE THIS ONE. `depth` is deepest-wins for the
+            // same reason under a different name -- a safety counter must not be lowered by a later
+            // write -- so the fix this comment predicts is already sitting adjacent, applied to a
+            // sibling field on the same object. THAT IS THE ARGUMENT FOR MAKING IT, not against:
+            // `remaining` and `depth` are now the only two fields here where a later application
+            // could destroy information, and only one of them is guarded.
+            //
+            // (Updated 2026-09-10. The line numbers above were :272-273 and :288 and had gone stale --
+            // both now point at Ignite's attribution comment and an aggro note. A citation that
+            // drifts is worse than none: it sends the next reader to confidently wrong lines.)
             //
             // Reachable today only through the dev apply command, which takes an operator-chosen
             // duration. Deferred on THAT reason -- not on "no second duration exists", which was the
@@ -179,7 +218,7 @@ public final class ScorchStatus {
             return;
         }
 
-        Active na = new Active(durationTicks, cap, applierId, element);
+        Active na = new Active(durationTicks, cap, applierId, element, depth);
 
         BooleanSupplier tick = () -> {
             // BURN, THEN DECREMENT -- and this ordering is COUPLED to the inline burn being gone.
@@ -226,6 +265,23 @@ public final class ScorchStatus {
      * Who currently owns {@code id}'s scorch -- the most recent applier -- or null if unscorched.
      * Slice 2's ignite credits this.
      */
+    /**
+     * The ignite-chain depth of the blast that scorched {@code id}, or 0 if no blast did.
+     *
+     * <p><b>READ ON THE DEATH FRAME, ALONGSIDE {@link #applier}, AND NEVER AT DETONATION.</b> The
+     * once-ness guard forgets this entry the instant the death handler has what it needs, so a read
+     * taken later returns 0 -- and 0 means "a player caused this", so <b>every link would detonate at
+     * depth 1 and the chain limit would never engage.</b> That failure presents as an unbounded
+     * cascade, i.e. exactly as "the limit doesn't work", with nothing pointing at the read order.
+     *
+     * <p>It has no unit witness: it is a paper-side ordering, the same class as the guard itself.
+     * {@code GATE-ignite.md}'s cap row is the only thing that can see it.
+     */
+    public int depth(UUID id) {
+        Active a = active.get(id);
+        return a != null && a.task.isRunning() ? a.depth : 0;
+    }
+
     public UUID applier(UUID id) {
         Active a = active.get(id);
         return a != null && a.task.isRunning() ? a.applierId : null;

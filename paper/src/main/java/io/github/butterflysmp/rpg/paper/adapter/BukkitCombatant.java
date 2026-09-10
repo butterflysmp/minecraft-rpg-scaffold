@@ -1,13 +1,14 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.Vec3;
-import io.github.butterflysmp.rpg.core.combat.AccrualRule;
+import io.github.butterflysmp.rpg.core.combat.HitAccrual;
 import io.github.butterflysmp.rpg.core.combat.stat.DamageOutcome;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
 import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.DefenseRule;
+import io.github.butterflysmp.rpg.core.combat.Ignite;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.Scorch;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
@@ -175,13 +176,29 @@ public final class BukkitCombatant {
          */
         @Override public void applyDamage(double amount, UUID sourceId, CritState crit,
                                           DefenseRule defense, String element,
-                                          AccrualRule accrual) {
+                                          HitAccrual accrual) {
             ctx.scheduler().onEntity(entity, () -> {
                 // Drain custom HP + fire the seam. dealerIsPlayer reuses the source's faction bit;
                 // the nameplate ignores the dealer this phase, the popup (1b) will need it.
                 Entity source = Attribution.attributableSource(
                         sourceId, entity.getWorld()::getEntity, Bukkit::isOwnedByCurrentRegion);
                 boolean dealerIsPlayer = source instanceof Player;
+
+                // READ BEFORE THE HIT, USED AFTER IT, AND THE ORDER IS THE WHOLE MECHANISM.
+                //
+                // ctx.stats().damage below fires the ENTIRE death chain synchronously -- seam ->
+                // MobDeathSystem.onChange -> setHealth(0) -> EntityDeathEvent -> RpgListeners
+                // .onEntityDeath -- and only then returns. So by the time the next line finishes,
+                // the death listener has already run, already read the scorch, and already
+                // forgotten it. Reading isScorched AFTER would always see false and this flag would
+                // never suppress anything: every scorched mob killed by fire would blast TWICE.
+                //
+                // Ignite's trigger deliberately lives in two places because the DOMAINS ARE
+                // DISJOINT, not because the question is: this adapter cannot see a /kill or a
+                // drowning, and the listener cannot see what the killing blow was made of. One
+                // question, two reaches. This flag is what keeps them from overlapping.
+                boolean wasScorched = ctx.scorch().isScorched(entity.getUniqueId());
+
                 DamageOutcome outcome = ctx.stats().damage(entity.getUniqueId(), amount, sourceId,
                         dealerIsPlayer, crit, defense, element);
 
@@ -206,7 +223,7 @@ public final class BukkitCombatant {
                 // symmetric twin of DamageOutcome, two facts in as two facts come out.
                 double declaredMagnitude = amount / crit.multiplier();
 
-                ElementAccrual.forHit(ctx.elements(), ctx.statuses(), element, accrual, outcome,
+                ElementAccrual.forHit(ctx.elements(), ctx.statuses(), element, accrual.rule(), outcome,
                                 declaredMagnitude)
                         .ifPresent(accrued -> {
                             // The vanilla flame is the same visual the explicit path sets, and this
@@ -220,8 +237,44 @@ public final class BukkitCombatant {
                                     new EntityTaskTarget(entity, ctx.scheduler()),
                                     new EntityScorchSink(entity, ctx),
                                     accrued.stacks(), accrued.cap(), sourceId,
-                                    accrued.durationTicks(), element);
+                                    accrued.durationTicks(), element, accrual.depth() + 1);
                         });
+
+                // IGNITE'S SECOND CLAUSE: a fire hit that KILLS ignites what it killed, even though
+                // the kill itself accrued nothing. The operator's rule -- "a mob killed by a fire
+                // weapon should ignite even though it hasn't had time to scorch yet."
+                //
+                // THE ACCRUAL GATE IS NOT TOUCHED, DELIBERATELY. Widening `newCurrent > 0` to let a
+                // lethal hit accrue would register a RepeatingTask AFTER the cleanup meant to cancel
+                // it -- see forHit's javadoc, the ordering inversion. So the IGNITE trigger widens
+                // and ACCRUAL does not: no stacks are granted, no ScorchStatus entry is created,
+                // nothing is left to leak. The same predicate answers both, with the lethal
+                // condition inverted rather than removed.
+                //
+                // `dealt > 0` IS NOT REDUNDANT WITH `newCurrent <= 0`, AND THIS IS THE SUBTLE ONE.
+                // DamageOutcome.UNTRACKED is (0.0, 0.0), so an UNTRACKED target reads as
+                // newCurrent <= 0 -- "dead" -- when there was never anything to kill. Accrual is
+                // immune because it asks "is it still standing" and both readings agree on "no";
+                // this clause asks "did this blow kill it", where they do NOT agree. dealt > 0 is
+                // what separates "killed it" from "there was nothing there". See DamageOutcome's
+                // KNOWN LIMITATION, which named this consumer before it existed.
+                //
+                // wasScorched: if it was already alight the listener owns this death and has
+                // already blasted. Without this the two clauses would BOTH fire and a neighbour
+                // would take 12 instead of 6.
+                if (!wasScorched
+                        && outcome.dealt() > 0 && outcome.newCurrent() <= 0
+                        && ElementAccrual.accruesScorch(ctx.elements(), ctx.statuses(), element, accrual.rule())) {
+                    // ATTRIBUTION HERE IS NOT AN EXCEPTION TO "THE IGNITION IS THE FIRE'S DOING,
+                    // NOT THE KILLING BLOW'S". A mob that was never scorched has no lighter, so
+                    // there is no competing candidate -- and in this case THE KILLING BLOW IS THE
+                    // FIRE. Crediting sourceId is that same rule reaching its only answer, not a
+                    // second rule sitting beside it.
+                    Location at = entity.getLocation();
+                    Ignite.detonate(new PaperCombatWorld(entity.getWorld(), ctx),
+                            new Vec3(at.getX(), at.getY(), at.getZ()), sourceId,
+                            entity.getUniqueId(), accrual.depth() + 1);
+                }
 
                 // Aggro-on-hit: the target turns on its attacker -- vanilla's expected default.
                 // Ability damage flashes without a vanilla hit, so it would otherwise provoke
@@ -361,7 +414,11 @@ public final class BukkitCombatant {
                                 // NO ELEMENT: a dev-applied scorch has no element behind it, so its
                                 // burn draws an unmarked number. Honest rather than tidy -- inventing
                                 // "fire" here would mark a burn nothing elemental lit.
-                                null);
+                                null,
+                                // DEPTH 0: no blast caused a dev application, so a mob scorched this
+                                // way ignites at depth 1 -- identical to a player weapon kill, which
+                                // is the same 0 arriving through HitAccrual.weapon().
+                                0);
                     }
 
                     case StatusDefinition.Potion potion -> {
