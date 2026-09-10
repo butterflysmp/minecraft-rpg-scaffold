@@ -14,9 +14,13 @@
 #
 # COUNTS ARE DELIBERATELY LOW -- 8 DUST AND 4 HAPPY_VILLAGER AGAINST lapis_impact's 16 AND 10 --
 # BECAUSE SIX OF THESE STACK IN 10 TICKS AT NEARLY ONE POINT. A per-shot burst tuned to look right
-# alone is a wall of particles when six of them land on top of each other, and CE3 has to read six
-# bare damage numbers through whatever this draws. If CE3 comes back "I could not read them", THIS
-# FILE IS THE FIRST THING TO THIN, before anything is done to the volley's timing.
+# alone is a wall of particles when six of them land on top of each other, and CE2 has to read six
+# bare damage numbers through whatever this draws. If CE2's reading half comes back "I could not
+# read them", THIS FILE IS THE FIRST THING TO THIN, before anything is done to the volley's timing.
+#
+# (That question was CE3 while this file was being written. CE3 was DELETED before the gate was
+# extracted -- GATE-volley.md V2 had already answered the harder version, eight numbers ONE tick
+# apart -- and its surviving half was folded into CE2. See GATE-cursed-emerald.md.)
 #
 # IT PLAYS ON A MISS TOO. stepRay detonates at the end of the aim when nothing is struck, so a
 # missed volley bursts in mid-air at the end of its range -- inherited behaviour, shared by every

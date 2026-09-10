@@ -294,8 +294,11 @@ wrongly:
   status-declaring element, accrual). Kinetic declares no `applies_status`, so **this weapon does
   not scorch and its kills do not ignite.** That is deliberate.
 - **Kinetic's `damage_symbol` is `""` — deliberately unmarked.** So the volley draws **six bare
-  numbers, two ticks apart, at nearly the same point.** Nothing in the repo has ever produced that
-  and nobody has looked at it. Gate row **CE3**.
+  numbers, two ticks apart, at nearly the same point.** ~~Nothing in the repo has ever produced that
+  and nobody has looked at it. Gate row **CE3**.~~ **STRUCK: `GATE-volley.md` V2 produced the harder
+  version first — eight numbers ONE tick apart, confirmed countable — so this was answered before
+  the emerald shipped. CE3 was deleted; its surviving half (do 27 and 54 read correctly at *this*
+  cadence?) is folded into gate row **CE2**.**
 - **The emerald never breaks.** No durability, so `Durability.isBroken`'s
   `if (maxDurability <= 0) return false` staff-and-stone exemption applies. `cfde822`'s version
   *could* break — `ItemRegistry.isBroken` gated the cast — so this is a real change, confirmed by
@@ -483,97 +486,35 @@ not from this document.
 
 ---
 
-## GATE ROWS — `GATE-cursed-emerald.md`
+## GATE ROWS — MOVED TO `GATE-cursed-emerald.md`
 
-Written before the boot, not after, and none of them is a tick-box.
+**The rows are no longer here.** They were drafted in this document and were extracted to their own
+file when the content shipped, for the reason that file's header states:
 
-- **CE1 — the wind-up is visible as a wind-up.** Press, and expect a chime, then **a full second of
-  nothing**, then the volley. *An instant first shot means `windup_ticks` was dropped*, and the
-  telegraph is the entire reason the weapon has a commitment cost.
-- **CE2 — six shots land, and the crits are countable.**
-  `/rpg spawn knell`, hold still, one cast. **COUNT THE DAMAGE NUMBERS, AND COUNT THE YELLOW ONES.**
-  Expect **six numbers**, each `27` (white) or `54` (yellow). The knell then reads
-  `360 − 27 × (6 + yellows)`. **Expect about one yellow per cast** — six shots at 15% averages 0.9.
+> **A plan is edited to record DECISIONS. A gate is edited to record RUNS.** Put both jobs in one
+> document and every future edit is ambiguous about which one it is doing.
 
-  **FEWER THAN SIX NUMBERS IS THE DEFECT.** The final HP figure alone cannot tell a missing shot
-  from a crit; the **count** can, and the colour explains any figure the count does not.
+There is also a lifecycle argument, and it is the one that bites here: **this plan goes stale by
+design now that its slice has shipped.** A gate living inside it would inherit that staleness with
+no signal.
 
-  *Why the first draft's version of this row was wrong, kept because the failure is instructive:*
-  it read **"expect 198"**, which is right only 38% of the time, and named `27, 54, 135` as its
-  failure vocabulary. **198's near neighbours are clean passes** — 171 is six shots with one crit,
-  and would have been filed as shots being eaten. **135 is not reachable at all** with six shots
-  (`225 / 27` is not an integer). The row was wrong in both directions at once. *A gate row that
-  names an exact figure against a 15% coin flip that cannot be disabled is not a gate row, and this
-  repo has already shipped one that did not say so.*
+**What changed in the move, so nobody diffs the two and thinks something went missing:**
 
-  **PRECONDITIONS, WHICH THE FIGURES SILENTLY ASSUME.** `EffectApplier:136-138` passes the authored
-  amount through `enchantDamagePercent`, `classDamageBonus` and `chargeScale` **before** crit. So
-  `27` and `54` hold only for **an unenchanted emerald, on a player carrying no class damage bonus
-  and no charge scaling.** Run it clean, or every number on this row is off by a multiplier and
-  reads exactly like a broken volley.
+- **CE3 was DELETED, not carried across.** It asked whether six damage numbers two ticks apart are
+  legible; `GATE-volley.md` **V2 answered the harder version** — eight numbers *one* tick apart,
+  confirmed countable — and V3 stated the inference in advance. **A row that is already answered and
+  run anyway produces a pass that credits nothing.** Its surviving half (do 27 and 54 read correctly
+  at *this* cadence?) is folded into CE2's observation. **The number CE3 is not reused**, so an old
+  reference cannot silently point at a new question.
+- **CE8 was ADDED** — where a missed volley bursts at range 32. See the Q5 note above: the plan's
+  reasoning assumed 64 and was re-derived rather than carried forward.
+- **CE4's stagings moved** from "3 blocks and 40" to "3 and 30", because 40 is now past the weapon's
+  whole reach.
+- **CE6 and CE7 gained labels saying what they do NOT prove** — CE6 is not a sole witness (V4 covers
+  the mechanism), and CE7 cannot move, because an authored `amount:` is closed over.
 
-  **WHY THIS ROW IS READABLE AT ALL: `DamageNumberText.of` renders a crit YELLOW and a normal hit
-  WHITE**, and kinetic's `damage_symbol` is `""`, so the numbers are **bare** — colour is the only
-  signal on them, with no glyph competing for the eye. **The element choice is what makes this
-  gate row work.** Had the element been fire, six gold `▲` marks would sit beside six numbers whose
-  only distinction is also a warm colour.
-
-- **CE3 — read the six damage numbers. figure — write down what you saw.**
-  **Run this as the SAME staging as CE2, one cast, two questions** — both are "read the six
-  numbers." It keeps its own row because it asks what CE2 does not: whether six numbers two ticks
-  apart at one point are **legible at all**. Do they read as six, as a blur, or as one number
-  flickering? **This row is presentation's only witness**, and the answer decides whether the volley
-  needs a stagger, an offset, or nothing.
-
-  **THE 2-TICK SPACING IS A PROPERTY OF THE STAGING, NOT OF THE WEAPON.** `stepRay` walks chunk
-  columns, so resolution scales with **distance** — a near shot can land before an earlier far one.
-  At one fixed target the premise holds. **Sweeping across near and far bodies, the numbers arrive
-  out of firing order**, and "I only saw five" gets filed as a defect when it was a reordering.
-  Run CE3 against a single stationary target, and if you sweep, say so.
-- **CE4 — does your own beam blind you?** `cfde822` solved this twice over (draw from the hand,
-  skip the first block) and neither fix came across. Fire at a wall from **3 blocks and from 30**.
-  *If the answer is "no", the two fixes were solving a problem this repo's geometry does not have,
-  and that is worth writing down as much as a yes is.*
-
-  > **THE DISTANCES MOVED WITH THE RANGE RULING.** This row read *"from 3 blocks and from 40"*, and
-  > **40 is no longer a meaningful staging** — it is past the weapon's whole reach. The near figure
-  > is what this row actually tests (your own beam filling your view is a near-muzzle problem); the
-  > far one is now 30, just inside both the range and the particle cap, so the beam is drawn along
-  > its entire length.
-- **CE5 — mana. figure.** Cast until dry from a full bar; record how many casts and how long the
-  refill takes. **This is the observation the 40 gets re-decided from.**
-- **CE6 — track a moving target through the burst.** Q1 landed as re-aim, **so this row is live and
-  not conditional.** Strafe a knell mid-volley: do later shots follow, and does the beam originate
-  from where you are now or where you were?
-- **CE7 — swap weapons mid-burst. figure.** Start a volley, switch to a different weapon before
-  shot 4. **Whatever shots 4–6 hit for is the answer to Q3 arriving as an observation.** *Under a
-  per-shot projection this cannot be checked by reading the code — the projection reads whatever
-  is in the hand at that tick. Record the numbers before anyone rules on cancellation.*
-
-  > **AND KNOW BEFORE RUNNING IT THAT THIS ROW CANNOT MOVE, SO A PASS PROVES ALMOST NOTHING.**
-  > `GATE-volley.md` V7 ran exactly this staging on `volley_stone` and got *"same damage"* — **forced
-  > by the fixture**, because an authored `amount:` is captured in the walker's closure and no swap
-  > can reach it. **This weapon authors `amount: 27`, so it is the same shape**, and a swap will not
-  > move its numbers either. *A row that could not have come out any other way is not evidence.*
-  >
-  > **Run it anyway** — it confirms the burst is not cancelled and that shots 4–6 still land — but
-  > **record it as "unchanged, as forced" rather than as Q3 answered.** The pricing risk lives in a
-  > `weapon_damage` payload or a swap to an **enchanted** weapon; neither exists here and neither is
-  > tested.
-
-- **CE8 — NEW. Where does a MISSED volley burst, now that the range is 32? figure.**
-  Fire at open sky and **write down whether you can see the impacts at all.**
-
-  **THIS ROW EXISTS BECAUSE THE NUMBER MOVED UNDER THE REASONING.** The plan's Q5 note argued from
-  `range: 64` that six mid-air bursts would be **certainly invisible** to the caster, and that was
-  the whole basis for calling the inherited miss behaviour acceptable. **At 32 the bursts land AT
-  the particle cap** — marginally visible rather than certainly invisible. That is neither the
-  plan's answer nor its opposite, and **re-deriving beats carrying the old conclusion forward with
-  its premise changed.**
-
-  *If six bursts at the cap edge read as noise, the remedy is a content one (thin `emerald_impact`)
-  before it is ever a mechanism one — and changing `stepRay`'s detonate-on-miss stays out of a
-  content slice regardless, because it is shared by every ray weapon.*
+The gate file also opens with the section this plan could not: **what `GATE-volley.md` already
+covers**, so a green emerald gate is not read as a second independent confirmation of the wrapper.
 
 ---
 
