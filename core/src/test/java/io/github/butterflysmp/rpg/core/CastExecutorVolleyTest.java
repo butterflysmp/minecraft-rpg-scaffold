@@ -373,7 +373,13 @@ class CastExecutorVolleyTest {
      * shot after the turn, and the one this row asserts on -- still carries shot one's {@code +x}
      * gap, and the assertions below redden. (Named exactly, because a re-runner who sees shot two go
      * red should not have to work out whether that is the predicted failure or a different one.)
-     * Measured: 855 run, <b>1</b> failed.
+     *
+     * <p><b>EXACTLY ONE ROW REDDENS, AND IT IS THIS ONE</b> -- which is the whole claim, and the
+     * half that stays true. <i>No suite total is quoted here on purpose:</i> a denominator does no
+     * work for a re-runner and ages out the moment any test lands. This javadoc first read "855 run,
+     * 1 failed" and was <b>false at the instant it was committed</b>, because the row that took core
+     * to 856 landed in the same commit as the sentence -- {@code GATE-volley.md}'s "1462 tests"
+     * reproduced exactly.
      */
     @Test
     void eachShotsBeamStartsOneGapAlongTHATShotsOwnAim() {

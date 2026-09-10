@@ -165,7 +165,14 @@ The last two exist because **an assertion about an assertion is not evidence.** 
 test, so it cannot be silently re-introduced"* and *"a gap hoisted out of the projection fails only
 there"* were both claims about guards **never seen fire** — the unreachable-guard shape
 `ElementLoader.damageSymbol` is recorded for. `MUTHOIST` also settles the **second** half of *"fails
-only there"*: 855 run, **1** failed.
+only there"*: **exactly one row reddened, and it was the volley row.**
+
+> **The denominator is deliberately not quoted.** This line first read *"855 run, 1 failed"* — true
+> when commit 2 measured it, **false one commit later** when the region row took core to 856. The
+> load-bearing claim is *exactly one, and which one*; a suite total ages out and cannot be told from
+> a live figure by any later reader. Its twin in `CastExecutorVolleyTest`'s javadoc was **false at
+> the instant it was committed** — the same route as `GATE-volley.md`'s `1462`. **Both routes to the
+> same wrong number, on one branch.**
 
 ### NAMED ARTIFACTS, DIFFED AGAINST THE BRANCH AT `7bf2929`
 
@@ -204,7 +211,7 @@ Found during exploration; **not in the brief**, and the kind of thing that goes 
 |---|---|---|
 | `theBeamStopsAtTheBodyItStruckRatherThanAtTheSegmentsFarEnd` | `CastExecutorTest:947` | asserts `Vec3.ZERO, beam.from(), "it starts at the muzzle"` |
 | `theBeamIsDrawnOncePerChunkSegmentOneTickApart` | `CastExecutorTest:998` | asserts `Vec3.ZERO` as `get(0).from()` |
-| `theBeamStopsAtTheWallItStruck` | `CastExecutorTest:964` | to be checked — same idiom |
+| `theBeamStopsAtTheWallItStruck` | `CastExecutorTest:964` | **CHECKED — SURVIVES UNCHANGED.** It asserts `size() == 1` and `to()`, and no `from()`; the wall at `x = 4` is outside a 1.0 gap. *Resolved, not open — an open item that was actually closed is how a list stops being read.* |
 | `aVolleyOfRaysDrawsItsBeamONCEPerShot` | `CastExecutorVolleyTest:345` | asserts `from().y() == EYE` — **survives**, a horizontal aim's gap moves `x` only |
 
 Each is updated to assert the **new** truth (start is one gap along the aim), and **the prose moves

@@ -1141,10 +1141,24 @@ class CastExecutorTest {
 
         // THE POSITIVE CONTROL FOR THE REGION RULE: unless the far end really is in another column,
         // this row proves nothing that the -x sibling did not already prove.
-        assertEquals(0, ChunkTraversal.columnOf(origin.x()), "the segment starts in column 0");
-        assertEquals(1, ChunkTraversal.columnOf(16.0),
-                "CONTROL: and its far end is in column 1 -- so collapsing there WOULD cross a region "
-                        + "boundary. If this ever reads 0 the staging has stopped exercising the rule");
+        //
+        // THE FAR END IS READ FROM THE STAGING, NOT HARDCODED, AND THE FIRST DRAFT GOT THAT WRONG.
+        // It asserted columnOf(16.0) == 1 -- two literals, which change only if CHUNK_SIZE does. It
+        // never read the fixture, so it could not detect "the staging has stopped exercising the
+        // rule", which is the failure its own message promised. A control out of reach of the thing
+        // it controls for is this file's own subject matter, one level up.
+        // A hardcoded `assertEquals(0, columnOf(origin.x()))` used to sit here and was DELETED, not
+        // kept: it restates a property of the literal 15.6, it fires BEFORE the control on any
+        // restaging, and it is the same out-of-reach shape as the columnOf(16.0) it was written
+        // beside. Measured -- with it present, restaging this row to the -x fixture reddened THAT
+        // line and the control never ran.
+        Vec3 segmentZeroFarEnd = ChunkTraversal.segmentEndpoints(origin, new Vec3(1, 0, 0), 26).get(0);
+        assertNotEquals(ChunkTraversal.columnOf(origin.x()),
+                ChunkTraversal.columnOf(segmentZeroFarEnd.x()),
+                "CONTROL: segment 0's far end must be in a DIFFERENT column from its start, or "
+                        + "collapsing there would not cross a region boundary and this row would "
+                        + "prove nothing the -x sibling did not. Read from segmentEndpoints, so it "
+                        + "fails if the fixture stops crossing a boundary");
 
         assertEquals(ChunkTraversal.columnOf(origin.x()),
                 ChunkTraversal.columnOf(suppressed.from().x()),
