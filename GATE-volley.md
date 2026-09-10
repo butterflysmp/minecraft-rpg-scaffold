@@ -71,6 +71,11 @@ shot from a crit; the **count** can, and the colour explains any figure the coun
 Kinetic's `damage_symbol` is `""`, so the numbers are **bare** — colour is the only signal on them,
 with nothing competing for the eye. The element choice is what makes this row readable.
 
+**AND BEFORE FIRING, READ BOTH TOOLTIPS AND WRITE DOWN WHAT THEY SAY ABOUT COOLDOWN.** Scatter's
+line and Rake's *absence* of one are the observation that feeds the tooltip ruling under V5 — the
+printed number is the authored one, and for Rake nothing is printed at all. This costs one glance
+and it is the only place the player-facing half of that gap is looked at.
+
 ### V3 — **figure.** Q2, THE MEASUREMENT NOBODY HAS TAKEN
 
 Rake at a wall, from **40 blocks** and again from **64**. Up to four rays in flight at once, each
@@ -114,22 +119,30 @@ control that succeeds for the wrong reason.
 is **expected, not a defect**. Scatter must produce **no** warning: its authored 40 exceeds its floor
 of 20, and a warning there would mean the floor is overwriting deliberate values.
 
-> **AND THE GOLDEN TOOLTIP DUMP TURNED UP A GAP WHILE THIS FIXTURE WAS BEING WRITTEN, RECORDED HERE
-> BECAUSE IT IS THE SAME DEFECT ONE SURFACE FURTHER OUT.** The tooltip renders the **authored**
-> `cooldown_ticks`, so Scatter shows *"Cooldown: 2.0s"* and **Rake shows no cooldown line at all** —
-> while Rake's real, enforced guard is 27 ticks. A player reading the item sees an uncooled weapon
-> and gets a cooled one.
+> **AND THE GOLDEN TOOLTIP DUMP TURNED UP A GAP — WHICH IS OLDER AND LARGER THAN A VOLLEY.** The
+> tooltip renders the **authored** `cooldown_ticks`, so Scatter shows *"Cooldown: 2.0s"* and **Rake
+> shows no cooldown line at all** — while Rake's real, enforced guard is 27 ticks. `ContentValidator`
+> tells the AUTHOR at load; nothing tells the PLAYER. That is *a value that was overridden and a
+> value that was never read look identical*, arriving at the one surface where the reader has no file
+> to check.
 >
-> `ContentValidator` tells the AUTHOR at load; nothing tells the PLAYER. That is *a value that was
-> overridden and a value that was never read look identical*, arriving at the one surface where the
-> reader has no file to check.
+> **VOLLEYS ARE THE SECOND CONSUMER OF THIS GAP, NOT A NEW BUG.** `WeaponLoreLines`' own class
+> javadoc already records that a ranged basic attack's cadence is its authored `cooldown_ticks`
+> *"through `AttackSpeed.effectiveCooldownTicks`"* — so **the tooltip has been an approximation for
+> one class of weapon since before this slice existed.** The derived floor joins attack-speed scaling
+> as a second reason the printed number is not the stamped one.
 >
-> **Not fixed in this slice, and deliberately not:** the tooltip is derived from
-> `WeaponLoreLines`, so rendering the floor there is a lore change that would move every volley
-> weapon's tooltip and belongs with a decision about what the line should SAY (*"Cooldown: 1.35s"*
-> reads as authored; *"Burst: 1.35s"* does not). **Observe it in V2** — glance at the tooltip before
-> firing and note that it is silent — and rule it afterwards. If Rake's row is ever authored at 27
-> to make the tooltip honest, V5 stops being a test and becomes a fixture reading itself.
+> **SO THE RULING IS NOT "WHAT LINE SHOULD A VOLLEY SHOW".** It is: **should the tooltip render what
+> `AbilityService` will actually stamp** — `max(authored, derived)`, and attack-speed-scaled for a
+> basic attack? A volley-shaped fix would leave the older half of the same defect standing and make
+> the remaining gap look *deliberate* to the next reader, which is exactly the reasoning
+> `ContentValidator`'s projectile-`item` arm already gives for validating both call sites or neither.
+>
+> **V2 takes the observation; the ruling is the TOOLTIP's, not this slice's.** Glance at both
+> triggers' tooltips before firing and note what each says about cooldown. Nothing is changed here:
+> rendering the stamped value is a `WeaponLoreLines` change that moves every affected weapon's
+> tooltip and needs a decision about what the line should SAY (*"Cooldown: 1.35s"* reads as authored;
+> *"Burst: 1.35s"* does not).
 
 ### V6 — **figure.** Q4, and it has TWO stagings in one row
 

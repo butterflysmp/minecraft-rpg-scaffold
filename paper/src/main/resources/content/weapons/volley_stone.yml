@@ -99,6 +99,10 @@ triggers:
     # control succeeds for the wrong reason, which is a failure this project has already paid for.
     # ContentValidator names it at boot precisely so a reader finding 0 cannot conclude the weapon
     # is unguarded. Do not "fix" the warning by writing 27.
+    # GATE-volley.md's V5 READS THIS FIELD AS ITS ONLY WITNESS. Authoring a number here -- 27, to
+    # make the tooltip honest, which is the most likely reason anyone will -- turns that row into a
+    # fixture reading itself: authored and derived would be equal, and the row would pass whether
+    # the floor existed or not. If you change it, change V5 in the same edit.
     cooldown_ticks: 0
     on_cast:
       - { type: visual, visual_id: volley_cast }

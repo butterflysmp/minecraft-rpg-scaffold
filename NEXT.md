@@ -9466,3 +9466,152 @@ and take that measurement — `od` the bytes, count the lines, print the unfilte
 cannot name such a measurement, you do not have an explanation, you have a reason to stop looking.
 And note which way the cost falls: a control that fires and is argued with is **worse** than one that
 never ran, because you now believe you checked.
+
+## THE VOLLEY SLICE — `CastSpec.Volley`, and one shape worth more than the slice
+
+Landed on `feat/castspec-volley` as three commits: the two ports (`dc0f9da`), the kind and its arms
+(`83c14be`), the fixture and its gate (`49e7fd4`). The mechanism's reasoning lives in the files —
+`CastSpec.Volley`'s javadoc, `CastExecutor.volley`'s, `AbilitySchema.innerCast`'s and
+`GATE-volley.md` — and is not restated here. **What is here is what the files cannot hold: the
+decisions, the corrections, and the shapes the slice produced.**
+
+### STATE THE PROPERTY; LET THE REMEDY BE CHOSEN AGAINST THE MATERIAL
+
+**Named 2026-09-10, from THREE instances in a single planning exchange**, which is what makes it a
+shape rather than an anecdote. Each time a property was identified correctly and an
+**implementation** was prescribed in the same breath — and each time a cheaper answer existed that
+satisfied the property exactly.
+
+| the property, correctly named | the remedy prescribed with it | what actually satisfied it |
+|---|---|---|
+| *"these two durations cannot drift apart"* | a bespoke in-flight guard, an `ActiveCasts` set, cleanup on every abort route | the derivation moved into `CastSpec.Volley`, which owns all three numbers. No new state, no lifecycle, no leak surface |
+| *"a per-shot cue is needed"* | a new `on_shot:` hook, in this slice | **observe first.** `on_hit` already fires per shot, so a partial cue exists and nobody has looked at it |
+| *"the wrapper must not absorb the weapon's decisions"* | — | correct as stated, and it is the one that carried no prescription |
+
+**A remedy prescribed at the moment a property is named is a design decision made before anyone has
+looked at the material.** The property is the durable half; it survives being satisfied a different
+way. The remedy is a guess wearing the property's authority.
+
+> **AND THE FAILURE MODE IS NOT "THE REMEDY IS WRONG".** In all three the prescribed remedy would
+> have *worked*. `ActiveCasts` closes the hole; `on_shot` provides a cue. The cost is that the
+> cheaper answer is never looked for, because the question stopped being open the moment the remedy
+> was named — and the cheaper answer here was **strictly better**, not merely smaller: a derivation
+> that cannot drift beats a guard that can leak.
+
+**How to apply:** when you can name the property, write the property down and stop. If you also have
+a remedy in mind, name it as *a* candidate rather than *the* answer, and say what would distinguish
+it from the alternatives. The two forms are one sentence apart and they lead to different slices.
+
+### A GATE NEEDS AN INSTRUMENT, AND THE INSTRUMENT IS A FIXTURE, NOT CONTENT
+
+**The fourth instance of two-individually-correct-constraints-jointly-unsatisfiable in this project,
+and the first caught BEFORE it was built rather than after.** The three constraints:
+
+1. the wrapper is mechanism, so it needs its own boot gate before it ships;
+2. content files belong to the content slice that authors them;
+3. gating the wrapper *requires* a content file that uses it.
+
+**The resolution: a content file whose only purpose is to exercise a mechanism is a TEST FIXTURE,
+and fixtures belong to whoever owns the mechanism.** It is a NEW file neither side is editing, so it
+creates no collision — which is the only thing the boundary exists to prevent.
+
+**What it must NOT be is the real weapon shipped early "just to test with."** That is the content
+slice arriving through the back door with none of its decisions made: `cursed_emerald.yml` shipped
+for the gate would have put its damage, mana, cooldown and element into master before the operator
+had ruled a single one of them.
+
+#### AND THE FIXTURE'S NUMBERS MUST BE NOBODY'S WEAPON
+
+A slice named for a weapon gets its gate staged with that weapon's numbers and quietly absorbs the
+weapon's decisions as though they were the mechanism's. **If the wrapper only ever ran at 6 shots /
+2 ticks / 20 wind-up, nothing would have shown it generalises**, and the first weapon wanting 3 at 5
+would find out at boot.
+
+So `volley_stone` carries two triggers sharing no number with each other, one deliberately **worse**
+than anything content will author (interval 1, the scheduler's floor, eight shots at 64 blocks) —
+because a fixture at the grammar's limit measures the GRAMMAR, and one at a comfortable setting
+measures a weapon. **`VolleyFixtureTest` pins all of that**, including a row that refuses the Cursed
+Emerald's exact triple, so a later edit "tidying" the two triggers into matching numbers deletes the
+property rather than only the prose about it.
+
+### REPORT THE FILE LIST FROM `--numstat`, NOT FROM MEMORY OF THE PLAN
+
+**Measured 2026-09-10, commit 3.** The report named **five** files; the commit touched **seven**.
+The two unmentioned were `ability_stone.yml` — edited to narrow a claim this slice had just
+falsified — and the golden tooltip file. Two authored fields had also moved from the reviewed plan:
+`rarity` `common` → `exotic` and `material` `amethyst_shard` → `echo_shard`.
+
+**Every one of the three was correct, and two carried their reasoning in the file. That is not the
+point.** The squash body is built from these reports, so **an edit to a shipped content file that no
+report mentions is how `master` gains a change with no record of why** — the D1 shape at small scale.
+
+**And the two lists diverge exactly when something interesting happened.** A report written from
+memory describes what you set out to do; `--numstat` describes what you did. They agree on the
+boring commits and part company on the ones worth reading — which is when the report matters most.
+
+**How to apply:** paste the file list from `git diff --numstat`, then account for every row. And when
+a fixture's authored fields differ from what was reviewed, **say so even when the reason is good** —
+the operator should not have to diff to learn what changed.
+
+### THE FIVE DECISIONS
+
+1. **Q1 — each shot re-aims AND re-rolls.** Operator's. `Caster` carries `critMultiplier` frozen at
+   cast, so re-reading the eye while keeping the projection would give six shots one shared crit
+   roll. The consequence is that **a volley's stats are not atomic**: a player who swaps weapons
+   mid-burst has the remaining shots priced off the new one. That is the ruling's cost, accepted.
+2. **The guard is a DERIVED COOLDOWN FLOOR, not an active-cast set.** See the shape above.
+3. **`on_cast` fires ONCE per volley. No new grammar.** The operator's earlier answer — *"yes, a new
+   hook is needed"* — **was a prediction, not evidence, and is corrected here at their own
+   instruction.** `cfde822` played a per-shot chime in a different game with different audio; nobody
+   has heard eight kinetic ray shots one tick apart in *this* repo. The standing rule the content
+   plan already cites for the mana figure — *a tuning request against a system nobody has watched
+   encodes a guess as a requirement* — **applies to grammar as well as to numbers**, and that is the
+   half worth writing down.
+   > **Suppressing `on_cast` for volleys was REFUSED, not deferred.** The wind-up chime *is* the
+   > telegraph, and the telegraph is what makes a 20-tick commitment fair rather than a dead second.
+   > `CastExecutor:122` already fires it once before the cast switch, so there is no simplicity to
+   > buy.
+4. **`of:` is a whitelist — `ray` and `projectile`** — admitted by an exhaustive pattern switch so a
+   seventh kind is refused by default. `dash`'s refusal is load-bearing: `DashAim` resolves direction
+   before dispatch and matches the OUTER cast only, so a repeated dash would still fire and simply go
+   the wrong way.
+5. **The fixture is PERMANENT**, not deleted with the content slice. It is the only thing that
+   exercises interval 1 and the projectile inner cast, and the emerald exercises neither.
+
+### THE OPEN DECISION THIS SLICE SURFACED AND DID NOT TAKE: WHAT THE TOOLTIP RENDERS
+
+The tooltip renders the **authored** `cooldown_ticks`. `AbilityService` stamps
+`max(authored, derived)`, and for a basic attack it stamps an attack-speed-scaled value. **So the
+printed number is not the stamped one, and volleys are the SECOND consumer of that gap, not a new
+bug** — `WeaponLoreLines`' own class javadoc already records the attack-speed half.
+
+**The question to rule is therefore not "what line should a volley show" but "should the tooltip
+render what `AbilityService` will actually stamp".** A volley-shaped fix would leave the older half
+of the same defect standing and make the remaining gap look *deliberate* to the next reader — which
+is the reasoning `ContentValidator`'s projectile-`item` arm already gives for validating both call
+sites or neither.
+
+`ContentValidator` names the override to the AUTHOR at load. **Nothing names it to the PLAYER**,
+which is the one surface where the reader has no file to check. `GATE-volley.md` V2 takes the
+observation; the ruling is the tooltip's.
+
+### A RECORDED TRIGGER, NOT A CAVEAT
+
+`CooldownTracker` keys on caster **and** ability, so the derived floor stops a caster re-pressing the
+SAME volley and nothing else. The hole is exactly *one player, mid-volley, switching to a DIFFERENT
+volley ability and casting* — **content-unreachable today**, since the fixture is the only volley in
+the tree.
+
+Per the standing ruling — *a guard with no instances is not a guard that cannot fire;
+mechanism-unreachable gets deleted, content-unreachable owes forward cover* — the trigger is written
+in `CastSpec.minimumCooldownTicks`'s own javadoc, in the form the `a.stacks` deletion used:
+
+> The day a SECOND volley ability ships, a caster can hold one volley in flight and start another,
+> because the tracker keys per ability. That is when an active-cast set keyed on the caster alone
+> becomes necessary, and not before.
+
+**And one standing coupling, stated in BOTH places because the reader of one will not have the
+other open:** `GATE-volley.md`'s V5 reads `volley_stone`'s `cooldown_ticks: 0` as its only witness.
+Authoring the floor there — 27, to make the tooltip honest, which is the likeliest reason anyone
+will — stages two independent quantities as equal and the row passes whether the floor exists or not.
+The comment lives at the field as well as in the gate.

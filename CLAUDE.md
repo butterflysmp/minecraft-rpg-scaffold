@@ -188,6 +188,13 @@ So:
 - Never `git checkout --` a file with uncommitted work to undo a mutation. Copy it to the
   scratchpad first and restore from there.
 - When you report something as verified, **say what you executed** and what it printed.
+- **Report the FILE LIST from `git diff --numstat`, not from memory of what you set out to do**, and
+  account for every row. The two diverge exactly when something interesting happened — a file you
+  edited because the change falsified something in it, a field that moved from the reviewed plan.
+  Those are the rows worth reading, and a report written from memory is precisely where they go
+  missing. **A report that reads as complete and is not is how `master` gains a change with no
+  record of why.** Say when a reviewed value changed even where the reason is good: the operator
+  should not have to diff to learn what you did. Full entry in `NEXT.md`.
 
 
 ### EVERY FILTER AND EVERY SCRIPTED EDIT NEEDS A POSITIVE CONTROL
