@@ -271,10 +271,50 @@ public final class CastExecutor {
      * the first costs a tick, which means A RAY IS NO LONGER HITSCAN in general, and its
      * cost varies with aim -- a diagonal crosses more planes than an axis-aligned shot.
      */
+    /**
+     * How far from the ray's ORIGIN the beam starts being drawn. The first blocks are skipped.
+     *
+     * <p><b>ADOPTED 2026-09-10</b>, on the gate. It began PROVISIONAL -- {@code cfde822}'s number
+     * for {@code cfde822}'s geometry -- with {@code GATE-beam-gap.md} named as the authority that
+     * would rule it. The gate ran, the operator ruled: <i>"it's much better."</i> An adopted value
+     * changed is a DECISION; a provisional one changed is HOUSEKEEPING, which is why the label
+     * moves rather than being left to disclaim something already settled.
+     *
+     * <p><b>AND THE EVIDENCE CLASS IS NAMED, BECAUSE "1.0, ADOPTED" WITH NO SOURCE IS A MAGIC
+     * NUMBER.</b> This was adopted on <b>the operator's ruling from a boot ANSWERED BY BLANKET</b>
+     * -- two sentences covering the whole gate -- <b>not on a per-setting measurement.</b> G5a's
+     * design asked for BETTER/SAME/WORSE on {@code All} and {@code Decreased} separately, and those
+     * figures were never taken. So: the direction is ruled and solid; the MAGNITUDE has never been
+     * measured against an alternative. Nobody has compared 1.0 to 0.5 or 1.5. A future retune has a
+     * ruling to argue with, not a number.
+     *
+     * <p><b>WHY IT EXISTS.</b> {@code GATE-cursed-emerald.md} CE4 measured that the Cursed Emerald's
+     * beam is hard to see through at BOTH 3 and 30 blocks. Ten times the particle count changing
+     * nothing is evidence against density and for a fixed NEAR-FIELD cause: the beam starts at the
+     * eye and runs down the view axis, so the nearest few metres dominate screen coverage and are
+     * identical at every range. This fixes that cause for EVERY ray weapon rather than one weapon's
+     * multiplier -- the Lapis Staff draws from the eye too, which is why the fix could not live in a
+     * content file.
+     *
+     * <p><b>THERE IS A CEILING ON THIS NUMBER AND NOTHING ENFORCES IT, SO IT IS WRITTEN HERE.</b>
+     * A beam shorter than the gap draws NOTHING AT ALL. The tightest gate stagings are CE4's near
+     * shot at <b>3 blocks</b> and {@code GATE-lapis-staff.md} L0's at <b>~3</b>; L6's is 5. At a gap
+     * of 3 those rows fire at a wall, see no beam whatsoever, and report "not blinding" -- <b>true,
+     * and measuring nothing.</b> The row would pass by drawing zero particles, which is a pass
+     * indistinguishable from never having run, in the rows whose whole job is verifying this
+     * constant. At 1.0 CE4's near staging still has two blocks of beam. <b>Keep it well under 3.</b>
+     */
+    private static final double BEAM_ORIGIN_GAP = 1.0;
+
     private void launchRay(AbilityDefinition ability, Caster caster, Aim aim, double range,
                            String beam) {
         List<Vec3> endpoints = ChunkTraversal.segmentEndpoints(aim.origin(), aim.direction(), range);
-        stepRay(ability, caster, beam, aim.origin(), endpoints, 0);
+        // THE GAP BOUNDARY IS COMPUTED ONCE, HERE, AND THREADED UNCHANGED. This is the whole of the
+        // origin-relative property: `aim` dies at the end of this method -- neither origin nor
+        // direction is available to stepRay -- so a gap derived per segment would be derived from a
+        // chunk plane instead of from the muzzle. Two implementations that do exactly that, and why
+        // they are wrong, are recorded at stepRay's call to presentAlong.
+        stepRay(ability, caster, beam, aim.origin(), aim.pointAt(BEAM_ORIGIN_GAP), endpoints, 0);
     }
 
     /**
@@ -287,7 +327,7 @@ public final class CastExecutor {
      * would have to be threaded through these calls.
      */
     private void stepRay(AbilityDefinition ability, Caster caster, String beam, Vec3 from,
-                         List<Vec3> endpoints, int index) {
+                         Vec3 beamStart, List<Vec3> endpoints, int index) {
         Vec3 to = endpoints.get(index);
 
         Optional<RayHit> hit = world.castRay(from, to, caster.id());
@@ -318,7 +358,72 @@ public final class CastExecutor {
         // [from, to] and a hit lands at hit.point() SOMEWHERE INSIDE that, so a beam drawn from-to
         // would carry on THROUGH the wall or the body that just stopped it. Drawn BEFORE the
         // detonation so the line reads as arriving at the burst rather than trailing out of it.
-        if (beam != null) world.presentAlong(from, hit.map(RayHit::point).orElse(to), beam);
+        // THE FIRST BEAM_ORIGIN_GAP BLOCKS ARE NOT DRAWN, AND THE GAP IS MEASURED FROM THE RAY'S
+        // ORIGIN RATHER THAN FROM THIS SEGMENT'S START. `beamStart` was computed once in launchRay
+        // and has been threaded here unchanged, which is the entire mechanism.
+        //
+        // TWO IMPLEMENTATIONS THAT LOOK EQUIVALENT AND ARE NOT. Both were considered and refused:
+        //
+        //   * Applying the gap inside presentAlong or BeamSamples.along. Those see only a segment's
+        //     own `from`/`to`, so the skip is re-applied per segment: a 30-block beam crossing two
+        //     chunk planes draws THREE holes instead of one.
+        //   * Applying it only when index == 0. The gap then silently becomes
+        //     min(GAP, distance to the first chunk plane). A caster at x = 32.4 facing -x has a
+        //     0.4-BLOCK first segment -- on an ordinary full-range shot, not a point-blank one -- so
+        //     a 1.0 gap would collapse to 0.4 by standing position.
+        //
+        // Both fail BY WHERE THE CASTER HAPPENS TO STAND, and a boot gate is one observation from
+        // one spot -- a control that succeeds for the wrong reason. Comparing against a fixed world
+        // point cannot fail that way: no segment boundary enters the comparison.
+        Vec3 beamEnd = hit.map(RayHit::point).orElse(to);
+        Vec3 alongSegment = to.subtract(from);
+        boolean gapEndsAhead = beamStart.subtract(from).dot(alongSegment) > 0;
+        Vec3 drawFrom = gapEndsAhead ? beamStart : from;
+
+        // A SEGMENT LYING ENTIRELY INSIDE THE GAP STILL CALLS presentAlong, WITH A ZERO-LENGTH SPAN.
+        // BeamSamples.along returns List.of() for it, so nothing is drawn either way -- the call is
+        // load-bearing for a TEST and for nothing else in production, which is exactly the shape of
+        // a line a later cleanup deletes as dead. Removing it removes the WITNESS, not the
+        // behaviour: FakeWorld records every call, so `presentedAlong.size()` positively witnesses
+        // that the ray fired AND reached this line, and a span length of 0 only means something once
+        // that is established. The alternative -- skipping the call -- asserts an ABSENCE, which
+        // passes just as well when the cast never resolved, when the fixture authored no beam id, or
+        // when a cost check tripped. A fixture wiring nothing passes it.
+        //
+        // aRayWithNoBeamDrawsNothing (CastExecutorTest) is this repo's own precedent, written before
+        // this slice: it pairs its empty presentedAlong with a positive assertion on `presented` "so
+        // this is not a test of a dead cast". A witness in the SAME list as the assertion cannot be
+        // deleted separately from it.
+        //
+        // THE COLLAPSE POINT IS THIS SEGMENT'S OWN `from`, NOT `beamEnd`, AND THAT IS A REGION RULE
+        // RATHER THAN A TASTE. PaperCombatWorld.presentAlong hops on ctx.scheduler().onRegion(from)
+        // -- its javadoc's "the end the caller is already standing on".
+        //
+        // THE UNIVERSAL PROPERTY, stated as the guarantee rather than as an example: `from` is
+        // ALWAYS in this segment's own column and is where the caller already stands. `beamEnd` is
+        // guaranteed NEITHER -- for a non-final segment it is `to`, which lies exactly ON a chunk
+        // plane, and a boundary coordinate belongs to the column on its POSITIVE side
+        // (columnOf = floor(x / 16)). So collapsing to beamEnd schedules into a DIFFERENT region to
+        // draw nothing, and falsifies that javadoc -- but ONLY when the ray travels +x or +z:
+        //
+        //   +x from 15.6 -> segment [15.6, 16.0], columnOf(16.0) = 1, segment column 0   HAZARD
+        //   -x from 32.4 -> segment [32.4, 32.0], columnOf(32.0) = 2, segment column 2   none
+        //
+        // THE ASYMMETRY IS STATED BECAUSE THE FIRST DRAFT OF THIS COMMENT DID NOT. It cited the +x
+        // instance under a universal that does not hold for -x/-z, and the test staged the rule on a
+        // -x fixture where it could not bite. That is the same blind spot the paragraph above warns
+        // about -- an implementation that fails BY AIM DIRECTION -- reappearing one layer up, inside
+        // the warning about it. theSuppressedSegmentCollapsesToAPointInItsOwnCHUNKCOLUMN now stages
+        // the +x case and carries a control proving its far end really is in the next column.
+        //
+        // COST, AND IT IS UNMEASURED: presentAlong schedules its region hop BEFORE BeamSamples
+        // returns empty, so every suppressed segment costs one no-op hop. For a six-shot volley
+        // fired point-blank that is six per cast. Nobody has timed it.
+        boolean anythingToDraw = beamEnd.subtract(drawFrom).dot(alongSegment) > 0;
+        if (beam != null) {
+            if (anythingToDraw) world.presentAlong(drawFrom, beamEnd, beam);
+            else world.presentAlong(from, from, beam);
+        }
 
         if (hit.isPresent()) {
             detonate(ability, caster, hit.get().combatant(), hit.get().point());
@@ -332,7 +437,9 @@ public final class CastExecutor {
             return;
         }
 
-        world.schedule(to, 1, () -> stepRay(ability, caster, beam, to, endpoints, index + 1));
+        // beamStart rides across the region hop unchanged. It is a frozen Vec3, never a handle, so
+        // it obeys the same rule as everything else threaded through this walk.
+        world.schedule(to, 1, () -> stepRay(ability, caster, beam, to, beamStart, endpoints, index + 1));
     }
 
     /**

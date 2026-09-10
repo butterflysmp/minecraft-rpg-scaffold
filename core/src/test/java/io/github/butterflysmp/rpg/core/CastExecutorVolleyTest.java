@@ -343,10 +343,76 @@ class CastExecutorVolleyTest {
         assertEquals(3, world.presentedAlong.size(), "one beam per shot, three shots");
         assertTrue(world.presentedAlong.stream().allMatch(b -> b.visualId().equals("test_beam")));
         assertEquals(EYE, world.presentedAlong.get(0).from().y(), EPS,
-                "drawn from the eye, which is where the shot was fired from");
+                "drawn from the eye's HEIGHT -- see the row below for the origin itself, which this "
+                        + "assertion cannot see");
         // The inner cast is dispatched through the SAME launchRay every standalone ray uses, so the
         // beam is not re-implemented here. This row is what says so. Mutation: draw the beam once
         // per volley instead of per shot -> the count reddens.
+    }
+
+    /**
+     * <b>EACH SHOT'S BEAM STARTS ONE GAP ALONG THAT SHOT'S OWN RE-PROJECTED AIM.</b>
+     *
+     * <p><b>This row exists because the beam-origin gap turned the row above into a control that
+     * succeeds for the wrong reason, and nothing else would have noticed.</b> That row asserts only
+     * {@code from().y()}, and the gap moves only {@code x} on a horizontal aim -- so after the gap
+     * landed it passed identically at gap 0, at gap 1.0, and under a per-segment gap. It was the
+     * volley's ONLY beam-origin witness and it had stopped witnessing the origin.
+     *
+     * <p>The message moved with it: <i>"drawn from the eye, which is where the shot was fired
+     * from"</i> is false the moment a gap exists.
+     *
+     * <p><b>AND THE FACING CHANGES MID-BURST, WHICH IS THE ONLY PLACE THE GAP MEETS THE
+     * RE-PROJECTION.</b> A volley re-projects its caster before EVERY shot, so {@code beamStart} is
+     * recomputed per shot from the NEW aim. Nothing tested that. A gap computed once for the whole
+     * volley -- the obvious optimisation, since it looks like a constant -- passes every other row
+     * in this file and fails only here.
+     *
+     * <p>Mutation: hoist the {@code aim.pointAt(BEAM_ORIGIN_GAP)} out of the per-shot projection so
+     * it is computed once per volley -> <b>SHOT TWO</b> -- {@code presentedAlong.get(1)}, the first
+     * shot after the turn, and the one this row asserts on -- still carries shot one's {@code +x}
+     * gap, and the assertions below redden. (Named exactly, because a re-runner who sees shot two go
+     * red should not have to work out whether that is the predicted failure or a different one.)
+     *
+     * <p><b>EXACTLY ONE ROW REDDENS, AND IT IS THIS ONE</b> -- which is the whole claim, and the
+     * half that stays true. <i>No suite total is quoted here on purpose:</i> a denominator does no
+     * work for a re-runner and ages out the moment any test lands. This javadoc first read "855 run,
+     * 1 failed" and was <b>false at the instant it was committed</b>, because the row that took core
+     * to 856 landed in the same commit as the sentence -- {@code GATE-volley.md}'s "1462 tests"
+     * reproduced exactly.
+     */
+    @Test
+    void eachShotsBeamStartsOneGapAlongTHATShotsOwnAim() {
+        var world = new FakeWorld();
+        var caster = casterIn(world);
+        var origin = caster.position().add(new Vec3(0, EYE, 0));
+
+        var def = new AbilityDefinition("test", "Test", "kinetic", "none", 0, ResourceCost.FREE,
+                new CastSpec.Volley(0, 3, 4, new CastSpec.Ray(10, "test_beam")),
+                List.of(new EffectSpec.Damage(10, "kinetic")));
+        cast(world, caster, def);
+
+        // Shot one, on the default +x facing.
+        assertEquals(1, world.presentedAlong.size(), "the first shot fires on the cast frame");
+        assertEquals(1.0, origin.subtract(world.presentedAlong.get(0).from()).length(), EPS,
+                "one gap from the eye, measured as a DISTANCE so it is not satisfied by an axis "
+                        + "that the gap happens not to move");
+        assertEquals(origin.x() + 1.0, world.presentedAlong.get(0).from().x(), EPS,
+                "and it is one gap along +x, the direction this shot was aimed");
+
+        // TURN THE CASTER AROUND MID-BURST. The volley re-reads its caster before every shot, so
+        // shots two and three are aimed down -x and their beams must start one gap down -x.
+        caster.facing = new Vec3(-1, 0, 0);
+        world.advanceTicks(4);
+
+        assertEquals(2, world.presentedAlong.size(), "the second shot lands four ticks later");
+        var afterTurn = world.presentedAlong.get(1);
+        assertEquals(1.0, origin.subtract(afterTurn.from()).length(), EPS,
+                "still exactly one gap from the eye -- the distance is invariant to the turn");
+        assertEquals(origin.x() - 1.0, afterTurn.from().x(), EPS,
+                "THE PROPERTY: one gap along the NEW aim. A gap computed once for the whole volley "
+                        + "would still be sitting at origin.x() + 1.0, on the aim the caster no "
+                        + "longer has");
     }
 
     @Test

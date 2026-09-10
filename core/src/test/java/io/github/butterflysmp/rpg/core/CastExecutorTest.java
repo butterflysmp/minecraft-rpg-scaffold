@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.ability.*;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.AttackCharge;
+import io.github.butterflysmp.rpg.core.combat.ChunkTraversal;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
@@ -913,9 +914,18 @@ class CastExecutorTest {
     // whether it is drawn at all -- plus the promise that solar_lance is unchanged.
     // ---------------------------------------------------------------------------------------
 
+    /**
+     * The range every {@link #beamRay} fires at, exposed so a row that must RE-DERIVE the walk --
+     * theSuppressedSegmentCollapsesToAPointInItsOwnCHUNKCOLUMN's control -- reads the fixture's own
+     * number instead of restating it. Inert for that control today (segment 0's far end is 16.0 for
+     * any range past 0.4), so this is naming rather than a guard; it is shared anyway because a
+     * control that restates its fixture is exactly what that row's third draft was about.
+     */
+    private static final double BEAM_RAY_RANGE = 26;
+
     /** A 26-block ray with a beam, the Lapis Staff's shape. */
     private static AbilityDefinition beamRay(String beam, EffectSpec... onHit) {
-        return ability(new CastSpec.Ray(26, beam), onHit);
+        return ability(new CastSpec.Ray(BEAM_RAY_RANGE, beam), onHit);
     }
 
     /**
@@ -947,7 +957,12 @@ class CastExecutorTest {
         assertEquals(1, world.presentedAlong.size(), "one beam, for the one segment that resolved");
         FakeWorld.Beam beam = world.presentedAlong.get(0);
         assertEquals("lapis_beam", beam.visualId());
-        assertEquals(Vec3.ZERO, beam.from(), "it starts at the muzzle");
+        // WAS "it starts at the muzzle", AND THAT PROSE WENT FALSE WITH THE VALUE. The beam now
+        // starts one BEAM_ORIGIN_GAP along the aim, so the near blocks are not drawn -- see the gap
+        // constant in CastExecutor for why. The end is untouched by the gap and is what this row is
+        // actually about.
+        assertEquals(new Vec3(1, 0, 0), beam.from(),
+                "it starts one gap along the aim, not at the muzzle");
         assertEquals(new Vec3(5, 0, 0), beam.to(),
                 "and STOPS at the body -- not at the segment's far end, 11 blocks further on");
     }
@@ -996,7 +1011,8 @@ class CastExecutorTest {
 
         assertEquals(1, world.presentedAlong.size(),
                 "only the first column is drawn on the cast frame -- a ray is not hitscan");
-        assertEquals(Vec3.ZERO, world.presentedAlong.get(0).from());
+        assertEquals(1.0, world.presentedAlong.get(0).from().x(), 1e-9,
+                "the beam starts ONE BEAM_ORIGIN_GAP from the RAY ORIGIN, not at the muzzle");
         assertEquals(16.0, world.presentedAlong.get(0).to().x(), 1e-9,
                 "the first segment ends ON the chunk plane, which is what confines it to one region");
 
@@ -1004,8 +1020,173 @@ class CastExecutorTest {
 
         assertEquals(2, world.presentedAlong.size(), "the second column is drawn a tick later");
         assertEquals(world.presentedAlong.get(0).to(), world.presentedAlong.get(1).from(),
-                "contiguous: segment two starts exactly where segment one ended, so no gap");
+                "contiguous: segment two starts exactly where segment one ended -- NO BREAK AT THE "
+                        + "JOINT. (Reworded from 'so no gap': after the beam-origin gap landed, that "
+                        + "phrasing reads as denying the gap is applied. It is applied -- once, at "
+                        + "the origin -- and this asserts it is not applied again here.)");
         assertEquals(26.0, world.presentedAlong.get(1).to().x(), 1e-9, "and runs to full range");
+
+        // THE ANTI-"HOLE AT EVERY PLANE" ASSERTION, and the one a per-segment gap fails. Segment two
+        // begins exactly ON the plane at 16, NOT at 17: the gap is a distance from the ray origin,
+        // so it is spent once and never re-applied at a chunk boundary.
+        assertEquals(16.0, world.presentedAlong.get(1).from().x(), 1e-9,
+                "one gap for the whole ray, not one per chunk plane -- 17.0 here would mean the "
+                        + "skip was re-derived from the segment instead of from the origin");
+    }
+
+    /**
+     * <b>THE GAP IS ORIGIN-RELATIVE EVEN WHEN THE FIRST SEGMENT IS SHORTER THAN THE GAP.</b>
+     *
+     * <p>This is the staging that fails an {@code index == 0} implementation, and it is not a
+     * point-blank shot -- it is an ordinary full-range one fired from near a chunk plane. A caster
+     * at {@code x = 32.4} facing {@code -x} has a <b>0.4-block first segment</b>
+     * ({@code ChunkTraversal} crosses {@code x = 32} almost immediately), so a 1.0 gap cannot fit
+     * inside it. Applied per segment the gap would silently become 0.4 -- shrunk by where the
+     * caster happened to stand.
+     *
+     * <p>Endpoints are {@code x = 32.0, 16.0, 6.4}: three segments, of which the first is entirely
+     * inside the gap and is <b>suppressed</b>.
+     *
+     * <p><b>THE SUPPRESSED SEGMENT STILL CALLS presentAlong, WITH A ZERO-LENGTH SPAN</b>, so this
+     * row can tell "suppressed by the gap" from "never ran" -- a positive witness rather than an
+     * absence. {@code aRayWithNoBeamDrawsNothing} below is this repo's own precedent for that shape,
+     * written before this slice: it pairs an empty list with a positive assertion so the row is not
+     * satisfied by a dead cast.
+     *
+     * <p>Mutation: apply the gap only when {@code index == 0} -> the first drawn point lands 0.4
+     * from the origin instead of 1.0 and the distance assertion reddens.
+     */
+    @Test
+    void theGapIsMeasuredFromTheORIGINEvenWhenTheFirstSegmentIsShorterThanIt() {
+        var world = new FakeWorld();
+        var origin = new Vec3(32.4, 0, 0);
+        var caster = new FakeWorld.Dummy(origin);
+        world.entities.add(caster);
+
+        cast(world, caster, beamRay("lapis_beam"), new Aim(origin, new Vec3(-1, 0, 0)));
+
+        assertEquals(1, world.presentedAlong.size(),
+                "the suppressed segment STILL CALLS presentAlong -- this size() is what proves the "
+                        + "ray fired and reached the draw site, which an empty list cannot");
+        FakeWorld.Beam suppressed = world.presentedAlong.get(0);
+        assertEquals(0.0, suppressed.to().subtract(suppressed.from()).length(), 1e-9,
+                "and it draws nothing: a zero-length span, which BeamSamples turns into no points");
+        assertEquals(origin, suppressed.from(),
+                "collapsed to the SEGMENT'S OWN from, not to its far end -- asserted here on the "
+                        + "COORDINATE only. This staging aims -x, so its far end 32.0 is in the SAME "
+                        + "column as 32.4 (both 2) and the region hazard cannot bite on this row: "
+                        + "the REGION rule is exercised by theSuppressedSegmentCollapsesToAPointIn"
+                        + "ItsOwnCHUNKCOLUMN below, which aims +x");
+
+        world.advanceTicks(1);
+
+        assertEquals(2, world.presentedAlong.size(), "the second column is drawn a tick later");
+        FakeWorld.Beam drawn = world.presentedAlong.get(1);
+        assertEquals(1.0, origin.subtract(drawn.from()).length(), 1e-9,
+                "THE PROPERTY: the first drawn point is one gap from the RAY ORIGIN, even though the "
+                        + "gap boundary fell inside the SECOND segment. A per-segment or "
+                        + "first-segment-only implementation gives 0.4 here");
+        assertEquals(31.4, drawn.from().x(), 1e-9, "which is x = 32.4 - 1.0, on the -x aim");
+
+        world.advanceTicks(1);
+        assertEquals(3, world.presentedAlong.size(),
+                "three segments in all: endpoints x = 32.0, 16.0, 6.4");
+
+        // THE CONTIGUITY FILTER, AND ITS POSITIVE CONTROL FIRST. Checking that the drawn spans join
+        // up requires dropping the degenerate entry, and A FILTER'S SILENCE IS NOT A RESULT until it
+        // has been shown capable of matching. This staging is the control: its input CONTAINS one
+        // degenerate span, so a filter that works must remove exactly one. A filter only ever run
+        // against input with nothing to reject has never been tested.
+        List<FakeWorld.Beam> drawnSpans = world.presentedAlong.stream()
+                .filter(b -> b.to().subtract(b.from()).length() > 1e-9)
+                .toList();
+        assertEquals(2, drawnSpans.size(),
+                "CONTROL: the filter must reject exactly one of the three -- 3 -> 2. If this stays 3 "
+                        + "the filter is inert and the contiguity assertion below proves nothing");
+
+        assertEquals(drawnSpans.get(0).to(), drawnSpans.get(1).from(),
+                "and the drawn spans join: no break at the joint between the columns");
+    }
+
+    /**
+     * <b>A SUPPRESSED SEGMENT COLLAPSES TO A POINT IN ITS OWN CHUNK COLUMN, AND THIS IS THE ROW
+     * WHERE THAT ACTUALLY MATTERS.</b>
+     *
+     * <p>{@code PaperCombatWorld.presentAlong} hops on {@code onRegion(from)} -- its javadoc's
+     * "the end the caller is already standing on". Collapsing a suppressed segment to its FAR end
+     * would schedule into a different region to draw nothing.
+     *
+     * <p><b>THE HAZARD IS DIRECTION-ASYMMETRIC, WHICH IS WHY THIS ROW EXISTS SEPARATELY.</b> A
+     * boundary coordinate belongs to the column on its POSITIVE side
+     * ({@code columnOf = floor(x / 16)}), so a segment's far end is a different column only when the
+     * ray travels {@code +x} or {@code +z}:
+     *
+     * <pre>
+     *   +x from 15.6 -> segment [15.6, 16.0], columnOf(16.0) = 1, segment column 0   HAZARD
+     *   -x from 32.4 -> segment [32.4, 32.0], columnOf(32.0) = 2, segment column 2   none
+     * </pre>
+     *
+     * <p>The sibling row above aims {@code -x}, so it discriminates on the COORDINATE but the region
+     * rule could not bite there. <b>A reason stated where it cannot bite reads identically whether
+     * the hazard exists or not</b> -- which is the same defect as the implementations that comment
+     * warns about, one layer up and inside the warning.
+     *
+     * <p>Mutation: collapse to {@code beamEnd} instead of the segment's own {@code from} -> the
+     * column assertion reddens HERE, on the case it guards, rather than only on a coordinate.
+     */
+    @Test
+    void theSuppressedSegmentCollapsesToAPointInItsOwnCHUNKCOLUMN() {
+        var world = new FakeWorld();
+        // THE FIXTURE IS DESCRIBED ONCE. Both the cast and the control below read these, so the
+        // control cannot end up describing a staging that no longer exists -- see the note at the
+        // control for the third draft this took.
+        var origin = new Vec3(15.6, 0, 0);
+        var direction = new Vec3(1, 0, 0);
+        var range = BEAM_RAY_RANGE;   // the fixture's own, not a restatement of it
+        var caster = new FakeWorld.Dummy(origin);
+        world.entities.add(caster);
+
+        cast(world, caster, beamRay("lapis_beam"), new Aim(origin, direction));
+
+        assertEquals(1, world.presentedAlong.size(), "the first segment ran and was suppressed");
+        FakeWorld.Beam suppressed = world.presentedAlong.get(0);
+        assertEquals(0.0, suppressed.to().subtract(suppressed.from()).length(), 1e-9,
+                "0.4 blocks of segment, entirely inside a 1.0 gap, so nothing is drawn");
+
+        // THE POSITIVE CONTROL FOR THE REGION RULE: unless the far end really is in another column,
+        // this row proves nothing that the -x sibling did not already prove.
+        //
+        // THE FAR END IS READ FROM THE STAGING, NOT HARDCODED, AND THE FIRST DRAFT GOT THAT WRONG.
+        // It asserted columnOf(16.0) == 1 -- two literals, which change only if CHUNK_SIZE does. It
+        // never read the fixture, so it could not detect "the staging has stopped exercising the
+        // rule", which is the failure its own message promised. A control out of reach of the thing
+        // it controls for is this file's own subject matter, one level up.
+        // A hardcoded `assertEquals(0, columnOf(origin.x()))` used to sit here and was DELETED, not
+        // kept: it restates a property of the literal 15.6, it fires BEFORE the control on any
+        // restaging, and it is the same out-of-reach shape as the columnOf(16.0) it was written
+        // beside. Measured -- with it present, restaging this row to the -x fixture reddened THAT
+        // line and the control never ran.
+        //
+        // AND IT READS THE FIXTURE'S OWN direction AND range, WHICH IS THE THIRD DRAFT. Draft one
+        // (columnOf(16.0)) could not see the fixture at all. Draft two read `origin` but re-derived
+        // the direction as a literal -- so editing the row's aim to -x and forgetting this line
+        // computes a +x walk from a -x fixture: get(0) is 48.0, column 3 against the origin's 2,
+        // assertNotEquals PASSES, and the row proves nothing. That is the exact failure this control
+        // exists to catch, surviving in the realistic case -- someone edits the cast and not the
+        // control -- while the coordinated case (both edited together) was the one the proof staged.
+        // A CONTROL THAT RESTATES ITS FIXTURE CAN GO STALE AGAINST IT.
+        Vec3 segmentZeroFarEnd = ChunkTraversal.segmentEndpoints(origin, direction, range).get(0);
+        assertNotEquals(ChunkTraversal.columnOf(origin.x()),
+                ChunkTraversal.columnOf(segmentZeroFarEnd.x()),
+                "CONTROL: segment 0's far end must be in a DIFFERENT column from its start, or "
+                        + "collapsing there would not cross a region boundary and this row would "
+                        + "prove nothing the -x sibling did not. Read from segmentEndpoints, so it "
+                        + "fails if the fixture stops crossing a boundary");
+
+        assertEquals(ChunkTraversal.columnOf(origin.x()),
+                ChunkTraversal.columnOf(suppressed.from().x()),
+                "THE PROPERTY: the point handed to presentAlong is in the SEGMENT'S OWN column, so "
+                        + "the region hop stays where the caller already is");
     }
 
     /**

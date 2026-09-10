@@ -94,7 +94,7 @@ Written before the boot, not after, and none of them is a tick-box.
 > | **CE1** | **PASS** | chime, a full second, then six shots |
 > | **CE2** | **PASS** | six numbers, countable, crits legible by colour |
 > | ~~CE3~~ | — | deleted before the run; `GATE-volley.md` V2 had answered the harder version |
-> | **CE4** | **FINDING — RE-RUN OWED** | *"slightly hard to see at BOTH ranges."* Not a pass. Not content's to fix. See below. |
+> | **CE4** | **FINDING — RESOLVED ELSEWHERE, no tick box** | *"slightly hard to see at BOTH ranges."* Fixed by `BEAM_ORIGIN_GAP`; **re-run recorded as `GATE-beam-gap.md` G5b — BETTER, answered by blanket.** Not a row that can be ticked here; G5b is the authority. See below. |
 > | **CE5** | **PASS — RUN, MATCHED PREDICTION** | and **40 mana was MEASURED, NOT APPROVED** |
 > | **CE6** | **PASS** | confirmation, not discovery — V4 is the mechanism's witness |
 > | **CE7** | **UNCHANGED, AS FORCED** | real, and **not evidence about volley pricing** |
@@ -210,7 +210,7 @@ the Lapis Staff draws one at 1.2. ~~If the answer is "yes, blinding", `emerald_b
 `samples_per_block` is the lever, and it is a content fix.~~ **STRUCK — the row was run and that
 sentence is wrong in both halves. It is not a content fix, and the density is not the lever.**
 
-> ## CE4 — **RESULT: FINDING. RE-RUN OWED, NOT GREEN.**
+> ## CE4 — **RESULT: FINDING. ~~RE-RUN OWED, NOT GREEN.~~ RESOLVED 2026-09-10 — see the foot of this section.**
 >
 > **Observed 2026-09-10:** *"slightly hard to see at **both** ranges"* — 3 blocks and 30.
 >
@@ -240,9 +240,24 @@ sentence is wrong in both halves. It is not a content fix, and the density is no
 > ### THIS IS MECHANISM. IT DOES NOT COME BACK TO CONTENT.
 >
 > **MEASURED, not assumed:** no gap or offset concept exists anywhere in the tree — no
-> `VISUAL_GAP`, no `startOffset`, no `skipFirst` — and `CombatWorld.presentAlong(from, to,
-> visualId)` takes the aim origin directly (`CastExecutor:321`). **`emerald_beam.yml` cannot express
-> either fix.** Do not attempt this from a content slice.
+> `VISUAL_GAP`, no `startOffset`, no `skipFirst`. ~~and `CombatWorld.presentAlong(from, to,
+> visualId)` takes the aim origin directly (`CastExecutor:321`).~~ **`emerald_beam.yml` cannot
+> express either fix.** Do not attempt this from a content slice.
+>
+> > **STRUCK 2026-09-10 — `presentAlong` DOES NOT TAKE THE AIM ORIGIN. IT TAKES THE SEGMENT START.**
+> > `launchRay` passes `aim.origin()` as `from` for index 0 and **`aim` dies there**; `stepRay:335`
+> > passes the previous segment's `to` as the next `from`, so every later segment starts **on a
+> > chunk plane**. `aim.origin()` is not threaded through `stepRay` at all.
+> >
+> > **WHY IT WAS WRONG, WHICH IS THE PART A VALUE-ONLY CORRECTION WOULD LOSE:** the claim was
+> > checked at **one call site on its first iteration**, where it is true, and generalised to the
+> > loop. *True of the sample, generalised to the population* — the same shape as CE4's own
+> > misreading one turn earlier.
+> >
+> > The consequence is not cosmetic: it is why the fix had to **thread a gap boundary computed once
+> > from the aim**, rather than deriving one per segment. See `PLAN-beam-gap.md`.
+> >
+> > **The rest of the sentence stands** — the no-gap-concept half was separately verified.
 >
 > **Two candidates, both the operator's:**
 >
@@ -258,13 +273,56 @@ sentence is wrong in both halves. It is not a content fix, and the density is no
 >
 > - **CE4 IS RE-RUN AFTERWARDS, at both 3 and 30.** The current observation **expires the moment the
 >   geometry changes.** This row is **RE-RUN OWED**, not green, and must not be ticked by the fix
->   landing.
+>   landing. — **CONSTRAINT MET 2026-09-10:** the re-run happened as G5b and the row was **not**
+>   ticked by the fix landing. It was closed by a recorded result, which is the distinction this
+>   line was written to protect.
+>
+>   > ### THIS IS A POINTER, NOT A ROW. THE AUTHORITY IS `GATE-beam-gap.md` **G5b**.
+>   >
+>   > **CE4 has no tick box and no result column from here on.** It is a status line. The re-run
+>   > itself — at 3 and 30, on **`All` and `Decreased`**, carrying the caveat that this file records
+>   > **no Particles setting** for the original observation — lives in **G5b** and is recorded there.
+>   >
+>   > **A ROW THAT CAN BE TICKED IN TWO PLACES WILL BE**, and then two files carry results and
+>   > neither knows the other moved. One authority, one forwarding note.
+>   >
+>   > **Updating this line is part of G5b's own completion**, not a later housekeeping task: G5b does
+>   > not count as run until this pointer names its result. **Two files move in one session or they
+>   > drift** — `GATE-ignite.md` records two instances of exactly that in three days.
+>   >
+>   > ---
+>   >
+>   > ### RESOLVED 2026-09-10. **CE4 IS NO LONGER RE-RUN OWED.**
+>   >
+>   > **G5b's result: BETTER — and ANSWERED BY BLANKET.** The operator ruled *"it's much better"* and
+>   > adopted `BEAM_ORIGIN_GAP` at 1.0. **The four figures G5b asked for — 3 and 30, each on `All`
+>   > and `Decreased` — were never taken**, and the gate page's database is empty.
+>   >
+>   > **SOFTER THAN THE LAPIS WITNESS, for the reason this row flagged in advance:** CE4's own
+>   > pre-state records **no Particles setting anywhere in this file**, so a re-run could not have
+>   > been compared cleanly against it even with full figures. That caveat is why G5a and not G5b is
+>   > the better evidence that the gap helped.
+>   >
+>   > **This line is still a status, not a tick.** The result lives in G5b.
 > - **THE LAPIS STAFF IS RE-CHECKED**, because a gap changes it too. That is the *point* of the fix,
 >   and it is also precisely what makes this not a content slice: a content commit titled *"emerald"*
 >   must not alter another weapon's appearance.
+>
+>   > **MET 2026-09-10, DISCHARGED BY `GATE-beam-gap.md` G5a** — the lapis muzzle, before/after,
+>   > **BETTER**, answered by blanket. **G5c is NOT what discharges this**: it re-ran L6 and L7,
+>   > which observe the beam's END, and is labelled in its own file as *not a gap witness*. **G5a is
+>   > the lapis witness and the only row that can discharge this bullet.**
+>
 > - **`emerald_beam.yml`'s `size: 1.0` and `samples_per_block: 4` ARE LEFT ALONE** unless the re-run
 >   says otherwise. Per beam the emerald is already **smaller** than lapis; tuning it now would be
 >   treating a symptom of a misdiagnosis.
+>
+>   > **THE CONDITION DID NOT FIRE, 2026-09-10.** The re-run happened (G5a, G5b) and **did not say
+>   > otherwise**, so both values stand unchanged and no content file was touched by this slice.
+>   >
+>   > **THEY STAND UNMEASURED AGAINST ALTERNATIVES, NOT CONFIRMED** — the same distinction the
+>   > `ADOPTED` line makes about 1.0 itself. A blanket "much better" says the beam improved; it does
+>   > not say `size: 1.0` beat `size: 0.8`, and nobody has looked.
 >
 > **IT IS A SLICE, on the volley precedent:** sealed-schema change or core constant, loader arm if
 > authored, validator arm, core tests, and its own gate row.

@@ -9602,6 +9602,151 @@ so even when the reason is good** — the operator should not have to diff to le
 > from a glance at something adjacent to the answer.* **The argument was unaffected, which is exactly
 > what lets this class of error survive**: nothing downstream breaks, so nothing reddens.
 
+## THE BEAM-GAP SLICE — 2026-09-10
+
+`BEAM_ORIGIN_GAP`, adopted at 1.0. What it cost to get there, in the order it was learned.
+
+### FOUR INSTANCES IN ONE SLICE OF A CLAIM ABOUT A CHECK'S COVERAGE THAT THE CHECK DOES NOT HAVE
+
+**This is the entry that matters, and the others are its instances.** One slice produced the same
+defect in **four different materials**:
+
+| | the claim | what the check could actually see |
+|---|---|---|
+| **a test control** | *"if this ever reads 0 the staging has stopped exercising the rule"* | `columnOf(16.0)` — **two literals.** It never read the fixture, so it could not detect the failure its own message promised |
+| **two suite figures** | *"855 run, 1 failed"*, *"1475 tests"* | a total that **ages out and cannot announce that it has** |
+| **a region rule** | *"collapsing to the far end would schedule into a different region"* | staged on a **`-x` fixture where the far end is in the SAME column** — the rule could not bite |
+| **a sweep** | *"corrected with the rest of this file's 0.25-from-the-eye figures"* | **two of six sites were still uncorrected** |
+| **a second sweep** | *"three sites needed it, not one"* — the CE4 back-edit | **the list had FIVE**; two forward-looking constraints were left reading as outstanding |
+
+**FIVE materials, one defect, one slice. That frequency says STRUCTURAL rather than careless** —
+and it is this repo's headline failure (*a check that did not run looks exactly like a check that
+passed*) wearing five hats. **The check exists; the CLAIM ABOUT ITS REACH is what is false**, which
+is why none of the five was caught by running anything.
+
+> ### THE FIFTH OCCURRED INSIDE THE SWEEP THAT WROTE THIS ENTRY ABOUT THE OTHER FOUR
+>
+> That is the entry's own best evidence. **A defect that recurs while you are documenting it is
+> structural by demonstration rather than by argument.**
+>
+> The report said *"the CE4 back-edit needed **three** sites, not one"* — offered as the careful
+> version, having grepped rather than assumed. **The constraint list it lived in had five.** Two
+> forward-looking bullets — *"the Lapis Staff is re-checked"* and *"`emerald_beam.yml`'s values are
+> left alone unless the re-run says otherwise"* — were both **discharged by the boot** and both left
+> unmarked, reading as outstanding.
+>
+> **A GREP FOR A STRING CANNOT FIND A CLASS.** The class is *forward-looking constraints that are now
+> decided*; `RE-RUN OWED` is one phrasing of one of them. Grepping the phrase found the phrase.
+>
+> **PRACTICAL FORM: when a slice discharges an obligation, sweep the LIST it lives in, not the STRING
+> you happened to remember it by.** Constraint lists are the unit. A phrase is not — and a
+> phrase-grep returns a number that looks like a count of the class.
+
+> **AND THE COROLLARY, WHICH IS THE PART THAT CHANGES BEHAVIOUR: THE OVERSTATEMENT IS WHAT MADE IT
+> CATCHABLE.** Had the sweep's parenthetical said *"corrected here"* there would have been **nothing
+> to falsify**, and two false sentences would have shipped unnoticed. Same for the control: a vaguer
+> message would have survived review.
+>
+> **A PRECISE CLAIM IS A CHECKABLE CLAIM.** The fix is to keep making them and make them true —
+> **never to retreat to hedged ones**, which are unfalsifiable rather than safe.
+
+### THE `presentAlong` PREMISE: CHECKED ON A LOOP'S FIRST ITERATION, GENERALISED TO THE LOOP
+
+`GATE-cursed-emerald.md` recorded, as **measured**, that `presentAlong` *"takes the aim origin
+directly"*. It takes the **segment start**. `launchRay` passes `aim.origin()` as `from` for index 0
+and **`aim` dies there**; every later segment starts on a chunk plane.
+
+**The reading was taken at one call site on its first iteration, where it is true.** *True of the
+sample, generalised to the population* — the same shape as CE4's own misdiagnosis one exchange
+earlier, and the reason the fix had to thread a boundary computed once from the aim rather than
+derive one per segment.
+
+### BOTH WRONG IMPLEMENTATIONS OF THE GAP FAIL **BY WHERE THE CASTER STANDS**
+
+- **Inside `presentAlong`/`BeamSamples.along`** — they see only a segment's own ends, so the skip is
+  re-applied per segment: **a 30-block beam crossing two planes draws three holes.**
+- **Only when `index == 0`** — the gap becomes `min(GAP, distance to the first chunk plane)`. A
+  caster at `x = 32.4` facing `-x` has a **0.4-block first segment**, on an ordinary full-range shot.
+
+**Both fail by standing position, and a boot gate is one observation from one spot.** That is the
+whole argument for pinning it in core rather than trusting the gate: the gate cannot see a defect
+that depends on where you happened to be standing.
+
+### THE REGION RULE WAS STATED WHERE IT COULD NOT BITE — INSIDE THE WARNING ABOUT AIM-DEPENDENT FAILURE
+
+The suppressed-segment collapse point must be the segment's own `from`, because
+`PaperCombatWorld.presentAlong` hops on `onRegion(from)`. The justification cited
+`columnOf(16.0) = 1` against a segment in column 0 — **true, and true only for `+x`/`+z`.** A
+boundary coordinate belongs to the column on its **positive** side, so:
+
+```
++x from 15.6 -> segment [15.6, 16.0], columnOf(16.0) = 1, segment column 0   HAZARD
+-x from 32.4 -> segment [32.4, 32.0], columnOf(32.0) = 2, segment column 2   none
+```
+
+**The test staged it on the `-x` fixture.** The assertion was sound on the coordinate; the *reason*
+was unreachable.
+
+> **AND NOTICE WHERE IT HAPPENED: the paragraph warning about implementations that fail BY AIM
+> DIRECTION gave a justification that itself held only for some aim directions.** The same blind
+> spot, one layer up, inside the warning about it.
+
+### THE CONTROL TOOK THREE DRAFTS, AND EACH SAW ONE MORE OF ITS FIXTURE
+
+1. `columnOf(16.0)` — **could not see the fixture at all.**
+2. read `origin`, re-derived the direction as a literal — **survives the realistic edit**: change the
+   row's aim and forget the control, and it computes a `+x` walk from a `-x` fixture, `get(0)` is
+   48.0, column 3 against the origin's 2, **`assertNotEquals` passes and the row proves nothing.**
+3. reads `origin`, `direction` and `range` from shared locals — **the fixture is described once.**
+
+**A CONTROL THAT RESTATES ITS FIXTURE CAN GO STALE AGAINST IT.** Draft 2 was caught only because the
+proof-of-fire mutation restaged *both* together — the **coordinated** case — while the realistic one
+is someone editing the cast and not the control.
+
+### TWO SUITE FIGURES, BOTH ROUTES, ON ONE BRANCH — AND A THIRD IN THE COMMIT THAT FIXED THEM
+
+| figure | route |
+|---|---|
+| `CastExecutorVolleyTest`'s *"855 run"* | **falsified by its own commit** — the row taking core to 856 landed in the same commit as the sentence |
+| `PLAN-beam-gap.md`'s *"855 run"* | **drifted** — true when written, false one commit later |
+| `GATE-beam-gap.md`'s *"1475 tests"* | **drifted, and written in the commit immediately after removing the other two** |
+
+**WHY THE THIRD RECURRED IS THE USEFUL PART.** The first two were figures about a **mutation run**,
+so removing them felt like the rule. **It is not.** The third was a figure about the suite, in prose,
+doing **rhetorical** rather than evidential work — which is exactly where `GATE-volley.md`'s `1462`
+lived. **ANY suite figure outside a verify report ages out and cannot announce that it has.**
+
+The fix in all three was the same and is not "write the right number": **drop the denominator.**
+*"Exactly one row reddens, and it is this one"* is the load-bearing claim and stays true forever.
+
+### THE PERL OVERREACH — THE SIXTH WAY A MUTATION LIES, AND THE MARKER GREP IS BLIND TO IT
+
+```
+perl -i -pe 's{A}g; s{B}g if $. >= L && $. <= L+35'
+```
+
+**The `if` binds only to the LAST statement in the chain.** `s{A}` ran over the whole file, rewriting
+`new Vec3(1, 0, 0)` across `FORWARD`, `EYE_FORWARD` and unrelated victim fixtures — **while both
+halves of the marker grep passed**, because at the target site a too-wide edit is indistinguishable
+from a correct one.
+
+**Three unrelated tests failed and the intended row never reported**, and it was caught **only
+because those failures were obviously wrong** — luck of the fixture.
+
+**A SCOPED EDIT WHOSE SCOPE SILENTLY DOES NOT APPLY IS THE SAME FAMILY AS AN IN-PLACE EDIT THAT
+NO-OPS.** Both report success; they are mirror images — **too little and too much** — which is why
+one instrument cannot cover both, and why `CLAUDE.md` now says marker grep **AND** measured delta
+rather than **OR**.
+
+### `PLAN-beam-gap.md` WAS REVIEWED, ACCEPTED, ACTED ON, AND NEVER COMMITTED — THIRD INSTANCE
+
+`git ls-tree --name-only <branch> | grep -i 'beam\|gap'` returned **empty** while 30 other
+`PLAN-*.md` were tracked. After `PLAN-cursed-emerald.md` and the case that rule was written for,
+**this is the third plan to be worked from while absent from git.**
+
+Caught by the same reconcile: **`--diff-filter=A` being empty proved both that nothing hid among the
+modifications AND that the plan was not added.** Both directions did work.
+
 ### A PUSH IS A FACT ABOUT THE WIRE, AND A DISAGREEMENT ABOUT ONE CAN BECOME PERMANENTLY UNRESOLVABLE
 
 **2026-09-10.** A report ended *"Recorded on `docs/cursed-emerald-gate-run` (`8101c3b`, tree
