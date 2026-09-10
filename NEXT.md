@@ -9485,7 +9485,7 @@ satisfied the property exactly.
 | the property, correctly named | the remedy prescribed with it | what actually satisfied it |
 |---|---|---|
 | *"these two durations cannot drift apart"* | a bespoke in-flight guard, an `ActiveCasts` set, cleanup on every abort route | the derivation moved into `CastSpec.Volley`, which owns all three numbers. No new state, no lifecycle, no leak surface |
-| *"a per-shot cue is needed"* | a new `on_shot:` hook, in this slice | **observe first.** `on_hit` already fires per shot, so a partial cue exists and nobody has looked at it |
+| *"a per-shot cue is needed"* | a new `on_shot:` hook, in this slice | **observe first.** `on_hit` already fires per shot, so a partial cue exists and nobody has looked at it — **→ GATE V6, 2026-09-10: IT DID. Eight shots are countable without reading the damage numbers, so `on_shot` is a hook nobody needs. The answer was a DELETION, not an addition.** |
 | *"the wrapper must not absorb the weapon's decisions"* | — | correct as stated, and it is the one that carried no prescription |
 
 **A remedy prescribed at the moment a property is named is a design decision made before anyone has
@@ -9497,6 +9497,15 @@ way. The remedy is a guess wearing the property's authority.
 > cheaper answer is never looked for, because the question stopped being open the moment the remedy
 > was named — and the cheaper answer here was **strictly better**, not merely smaller: a derivation
 > that cannot drift beats a guard that can leak.
+
+> **ROW TWO IS WHERE THE SHAPE CAN BE SEEN WORKING RATHER THAN ASSERTED, AND ITS CELL CARRIES BOTH
+> HALVES ON PURPOSE.** *"Observe first; the cue may already exist"* was the **correct remedy**, and it
+> is what this entry teaches; **GATE V6 is what choosing it produced.** Rewriting the cell to say
+> only *"closed as a deletion"* would delete the evidence that observing was right and leave a table
+> of outcomes with the method missing — struck-not-deleted, applied to a table cell.
+>
+> **And note what the outcome was: NOTHING WAS BUILT.** The cheapest possible resolution of a
+> question, reachable only by looking, and invisible to anyone who had already named a remedy.
 
 **How to apply:** when you can name the property, write the property down and stop. If you also have
 a remedy in mind, name it as *a* candidate rather than *the* answer, and say what would distinguish
@@ -9624,6 +9633,34 @@ of trusting it. Operational form in `CLAUDE.md`.
 **And note where this one was found: by the operator, reading the file.** Nothing in 1467 tests
 reads a prose figure in a markdown document, which is the same property that let the boot summary
 name the wrong class for a full slice.
+
+#### A COUNT IN A MOVING REPO IS STALE BY DEFAULT. THE QUESTION IS NEVER *"WAS IT WRONG"* BUT *"WAS IT LOAD-BEARING WHEN READ"*
+
+**This is the half that makes the entry usable, and without it the table above inflates.** The third
+mechanism — *correct when drafted, falsified by a commit that came after* — describes a **normal
+condition of any figure in a repository that is still moving**, not a defect. Filing every instance
+of it as an error pads the list and, worse, **implies that care would have prevented something care
+cannot touch.**
+
+**The same exchange produced both readings, an hour apart:**
+
+| figure | true when written | when it was read | verdict |
+|---|---|---|---|
+| *"six commits"* in the closing brief | **yes** — tip was `e5e0697`, `rev-list --count` returned **6** | after a seventh commit landed | **STALE, NOT WRONG.** Changed no argument, needed no fix. Nothing was glanced at and nothing was invented; **a true figure aged.** |
+| `1462` in `GATE-volley.md` | **yes**, of the tree that existed mid-commit | in a file whose stated premise is that its figures are checkable | **LOAD-BEARING, AND IT FAILED.** Fixed. |
+
+**So the test is the second column, not the first.** A stale count in a sentence whose point does not
+depend on it is not a finding — reporting it as a correction is itself a small error of the
+inflating kind. A stale count in a document that invites the reader to check it has broken the
+document's own contract.
+
+> **AND THE SAME DISTINCTION APPLIES TO THE BAN ON `--body`.** `--body` is banned because a quote
+> break truncates a PR body **silently**. Preparing this slice's PR, a **heredoc** broke on quoting
+> at line 102 and failed **loudly**, so the body was written to a file directly instead.
+> **The ban's own stated reason reproduced itself through a different mechanism** — and was caught
+> only because this one was loud. The ban is aimed at the right hazard and names too narrow a
+> carrier: **it is not `--body` that is dangerous, it is any shell-quoted path from prose to
+> argument.**
 
 ### THE FIVE DECISIONS
 
