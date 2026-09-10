@@ -581,4 +581,149 @@ class AbilityLoaderTest {
         assertEquals(1, embers.burst().effects().size(),
                 "damage alone -- the explicit scorch is gone, the element accrues it");
     }
+
+    // --- The volley cast, and its whitelist ---
+
+    /** Body of a volley ability; {@code of} is spliced in so each row varies one thing. */
+    private static String volleyYaml(String of) {
+        return """
+                id: burst
+                element: kinetic
+                cooldown_ticks: 0
+                cast:
+                  type: volley
+                  windup_ticks: 12
+                  shots: 5
+                  interval_ticks: 3
+                  of:
+                %s
+                on_hit:
+                  - type: damage
+                    amount: 10
+                    element: kinetic
+                """.formatted(of);
+    }
+
+    @Test
+    void loadsAVolleyAndItsInnerRay() throws IOException {
+        write("burst.yml", volleyYaml("""
+                    type: ray
+                    range: 64
+                    beam: some_beam\
+                """));
+
+        var volley = assertInstanceOf(CastSpec.Volley.class,
+                load().find("burst").orElseThrow().cast());
+
+        assertEquals(12, volley.windupTicks());
+        assertEquals(5, volley.shots());
+        assertEquals(3, volley.intervalTicks());
+        var ray = assertInstanceOf(CastSpec.Ray.class, volley.of());
+        assertEquals(64, ray.range(), 1e-9);
+        assertEquals("some_beam", ray.beam(),
+                "the inner cast is parsed by the SAME parseCast every standalone cast uses, so a "
+                        + "ray inside a volley keeps every field a ray has");
+        assertTrue(warnings.isEmpty(), warningText());
+        // ALL FOUR NUMBERS ARE DISTINCT (12, 5, 3, 64) so a parser reading two fields off one key
+        // cannot pass. Mutation: swap getInt("shots") and getInt("interval_ticks") -> reddens.
+    }
+
+    @Test
+    void loadsAVolleyOfPROJECTILES() throws IOException {
+        write("burst.yml", volleyYaml("""
+                    type: projectile
+                    speed: 1.4\
+                """));
+
+        var volley = assertInstanceOf(CastSpec.Volley.class,
+                load().find("burst").orElseThrow().cast());
+        assertInstanceOf(CastSpec.Projectile.class, volley.of());
+        assertTrue(warnings.isEmpty(), warningText());
+        // The whitelist's second member. Exercised, not asserted -- see CastExecutorVolleyTest.
+    }
+
+    @Test
+    void aVolleyWithNoOfSectionIsNamedAndSkipped() throws IOException {
+        write("aaa_burst.yml", """
+                id: burst
+                element: kinetic
+                cast:
+                  type: volley
+                  shots: 5
+                on_hit:
+                  - type: damage
+                    amount: 10
+                    element: kinetic
+                """);
+        write("solar_grenade.yml", VALID);
+
+        var registry = load();
+
+        assertTrue(registry.find("burst").isEmpty(), "the malformed file must be skipped");
+        assertEquals(1, registry.size(), "and every other ability still loads");
+        assertTrue(warningText().contains("of:"),
+                "the warning must name the missing section: " + warningText());
+        // AN ABSENT `of:` THROWS rather than defaulting the way an absent `cast:` defaults to Self.
+        // A cast section missing entirely has a sensible reading; a volley of nothing does not.
+        // Mutation: return a Self for a null section -> the file loads and this reddens.
+    }
+
+    @Test
+    void aVolleyOfADASHIsRefusedByNameAndTheReasonIsRECORDED() throws IOException {
+        write("aaa_burst.yml", volleyYaml("""
+                    type: dash
+                    distance: 12\
+                """));
+        write("solar_grenade.yml", VALID);
+
+        var registry = load();
+
+        assertTrue(registry.find("burst").isEmpty(), "the malformed file must be skipped");
+        assertEquals(1, registry.size(), "and every other ability still loads");
+        assertTrue(warningText().contains("dash"),
+                "the warning must name the cast type it refused: " + warningText());
+        assertTrue(warningText().contains("wrong way"),
+                "and WHY, because this refusal is load-bearing rather than tidy: DashAim resolves a "
+                        + "dash's direction before dispatch and matches the OUTER cast only, so a "
+                        + "repeated dash would still fire and simply go somewhere else: "
+                        + warningText());
+    }
+
+    @Test
+    void aVolleyOfAVOLLEYIsRefused() throws IOException {
+        write("aaa_burst.yml", volleyYaml("""
+                    type: volley
+                    shots: 3
+                    of:
+                      type: ray\
+                """));
+        write("solar_grenade.yml", VALID);
+
+        var registry = load();
+
+        assertTrue(registry.find("burst").isEmpty(), "the malformed file must be skipped");
+        assertEquals(1, registry.size());
+        assertTrue(warningText().contains("volley"), warningText());
+        // Refused TWICE over, deliberately: the loader's whitelist names it, and CastSpec.Volley's
+        // compact constructor makes it unconstructible even from Java. The second is what stops a
+        // future call site building the fork bomb the loader would have caught.
+    }
+
+    @Test
+    void theTWOSELFSHAPEDRefusalsAreRefusedTOO() throws IOException {
+        write("aaa_a.yml", volleyYaml("    type: self"));
+        write("aaa_b.yml", volleyYaml("""
+                    type: melee
+                    reach: 3\
+                """));
+        write("solar_grenade.yml", VALID);
+
+        assertEquals(1, load().size(),
+                "both files are skipped; only the valid ability loads");
+        assertTrue(warningText().contains("self") && warningText().contains("melee"),
+                "each refusal names its own type rather than a generic message: " + warningText());
+        // THE WHITELIST IS EXHAUSTIVE OVER THE SEALED TYPE, so these rows exist to pin that every
+        // non-admitted kind is actually refused rather than falling through. Mutation: replace the
+        // switch with `if (inner instanceof Volley) throw` -> self and melee load and this reddens.
+    }
 }

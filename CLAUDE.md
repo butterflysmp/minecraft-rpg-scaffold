@@ -188,6 +188,48 @@ So:
 - Never `git checkout --` a file with uncommitted work to undo a mutation. Copy it to the
   scratchpad first and restore from there.
 - When you report something as verified, **say what you executed** and what it printed.
+- **Report the FILE LIST from `git diff --numstat` AND from what you touched, and RECONCILE THEM.**
+  **A row in one and not the other is the interesting one.** Account for every row, in both
+  directions. The two diverge exactly when something interesting happened — a file you edited
+  because the change falsified something in it, a field that moved from the reviewed plan, a file
+  that was never in git at all. **A report that reads as complete and is not is how `master` gains a
+  change with no record of why.** Say when a reviewed value changed even where the reason is good:
+  the operator should not have to diff to learn what you did.
+
+  > **NEITHER LIST IS THE AUTHORITY, AND THE FIRST DRAFT OF THIS RULE NAMED THE WRONG ONE.** It said
+  > *report from `--numstat`, **not** from memory* — and applied literally that hides an **untracked**
+  > file, which `--numstat` cannot see **by design**. **Memory alone DRIFTS** (it reports the plan
+  > instead of the work); **`--numstat` alone has BLIND SPOTS** (untracked files, anything outside the
+  > range you diffed). **The disagreement is the signal.**
+  >
+  > Found 2026-09-10 by the rule's own second application: `PLAN-cursed-emerald.md` had been reviewed,
+  > accepted, and edited by two chats, and had **never been committed** — and the four-row `--numstat`
+  > report that omitted it read as complete. Full entry in `NEXT.md`.
+  >
+  > **Practically:** for a new or moved file use `git status --porcelain`, or
+  > `git diff --cached --numstat --diff-filter=A` after staging, so an addition cannot hide inside a
+  > list of modifications.
+
+- **ANY FIGURE QUOTING THE SUITE IS RE-READ FROM THE FINAL VERIFY RUN, AFTER THE LAST FILE LANDS** —
+  never from the run that was green when the paragraph was written. Quote the breakdown with it
+  (`853 / 17 / 597`), so the total is checkable by addition rather than on trust.
+
+  > **A FIGURE WRITTEN MID-COMMIT DESCRIBES THE TREE BEFORE THE COMMIT, AND NOTHING RE-CHECKS IT.**
+  > `GATE-volley.md` opened with *"1462 tests"*. The suite was **1467**, and the five that made the
+  > difference were `VolleyFixtureTest`'s — **shipped in the same commit as the file that undercounted
+  > them** (`49e7fd4`). It was never true of any tree, and it stays plausible forever, so no later
+  > edit exposes it.
+  >
+  > **Two routes to the same wrong number, and the remedy is not care:**
+  >
+  > | | route | when it was false |
+  > |---|---|---|
+  > | `8e8731b`'s `1403` | **fabricated** — typed fresh and simply wrong | always |
+  > | `GATE-volley.md`'s `1462` | **falsified by its own commit** — correct when drafted | from the moment it was committed |
+  >
+  > Same wrong number, same kind of file, opposite causes. Care fixes the first; only re-reading
+  > after the last file lands fixes the second. Third in the family is the `27`-for-`29` plan count —
+  > *a figure taken from a glance at something adjacent to the answer.* Full entries in `NEXT.md`.
 
 
 ### EVERY FILTER AND EVERY SCRIPTED EDIT NEEDS A POSITIVE CONTROL

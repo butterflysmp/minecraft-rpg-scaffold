@@ -78,6 +78,37 @@ public interface CombatWorld {
      */
     void schedule(Vec3 near, int delayTicks, Runnable task);
 
+    /**
+     * Defer {@code task} by at least {@code delayTicks}, on the thread that owns this COMBATANT --
+     * the entity twin of {@link #schedule}. A no-op if the combatant is not here, and if it goes
+     * before the delay elapses the task simply never runs.
+     *
+     * <p>Both exist because the two questions are different. {@link #schedule} defers work at a
+     * PLACE, which is right for a ray walking chunk columns or a fuse burning where it was lit.
+     * This defers work AT A BODY, which is the only correct choice when the task's first act is to
+     * READ that body: a location-based hop lands on whichever region owns the point you guessed,
+     * and a caster who walked out of it is then read from a thread that does not own them.
+     *
+     * <p>{@code delayTicks} must be >= 1, exactly as {@link #schedule} requires and for the same
+     * reason: the Paper adapter clamps 0 up to 1, so asking for 0 would quietly get you 1.
+     */
+    void scheduleOn(UUID combatantId, int delayTicks, Runnable task);
+
+    /**
+     * Where this combatant's eye is and which way it is LOOKING, right now. Empty if it is not here.
+     *
+     * <p>A READ, like {@link #combatantsNear} and {@link #castRay}: only legal on the thread that
+     * owns this combatant. Pair it with {@link #scheduleOn}, which is what puts you there.
+     *
+     * <p><b>It is not on {@link CombatantSnapshot}, and that is a decision.</b> A snapshot carries
+     * what stays TRUE about a combatant once frozen; a facing is the one thing a caster changes
+     * every tick, and it is read precisely because it must NOT be frozen. Putting it on the record
+     * would hand every effect that outlives its cast frame -- a projectile, a lingering area -- a
+     * stale direction that reads as current, which is the failure the snapshot/handle split exists
+     * to prevent.
+     */
+    Optional<Aim> aimOf(UUID combatantId);
+
     /** Fire-and-forget presentation hook. Particles, sounds, damage numbers. */
     void present(Vec3 at, String visualId);
 

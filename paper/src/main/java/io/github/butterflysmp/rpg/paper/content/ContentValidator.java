@@ -57,6 +57,7 @@ public final class ContentValidator {
         for (AbilityDefinition ability : abilities.all()) {
             checkElement(ability.element(), "ability '" + ability.id() + "'", problems);
             checkCast(ability.cast(), "ability '" + ability.id() + "'", problems);
+            checkCooldownFloor(ability, "ability '" + ability.id() + "'", problems);
             for (EffectSpec effect : ability.onHit()) {
                 checkEffect(effect, "ability '" + ability.id() + "'", problems);
             }
@@ -149,6 +150,7 @@ public final class ContentValidator {
             for (TriggerBinding binding : weapon.triggers()) {
                 String label = "weapon '" + weapon.id() + "' trigger '" + binding.input() + "'";
                 checkCast(binding.ability().cast(), label, problems);
+                checkCooldownFloor(binding.ability(), label, problems);
                 for (EffectSpec effect : binding.ability().onHit()) {
                     checkEffect(effect, label, problems);
                 }
@@ -424,6 +426,38 @@ public final class ContentValidator {
      * maven-compiler-plugin sees the changed dependency and recompiles the module.
      * `clean` catches nothing here that a plain build does not. Do not re-add the claim.
      */
+
+    /**
+     * Name an authored cooldown that the cast shape's own floor has raised.
+     *
+     * <p><b>THE FLOOR IS SILENT AT RUNTIME AND CORRECT TO BE; LOAD TIME IS WHAT OWES THE AUTHOR AN
+     * EXPLANATION.</b> {@code AbilityService} applies {@code max(authored, derived)}, so an author
+     * who writes {@code cooldown_ticks: 10} on a 30-tick volley gets 30 and is told nothing. They
+     * will then tune a field that has stopped having any effect and conclude the cooldown is broken.
+     * A value that was OVERRIDDEN and a value that was NEVER READ look identical from the file.
+     *
+     * <p>A warning rather than a refusal, like everything else in this class: the ability still
+     * loads and still works, and 0 is the honest way to author "the cast shape's own guard is the
+     * guard" -- which is what the volley fixture does deliberately.
+     *
+     * <p>Only reported when the floor STRICTLY exceeds the authored value. Equality means the author
+     * wrote the same number the derivation produces, which is redundant but not wrong, and warning
+     * about it would train people to ignore the message.
+     *
+     * <p><b>THIS ADDS A NON-DANGLING PROBLEM TO {@code problems}</b> -- the first of its kind in
+     * that list. The reference resolves, and the effect does not do nothing; it enforces the floor.
+     * That is why the boot summary that counts the list names no class. See the note at the
+     * {@code problems} declaration in {@code RpgPlugin.validateContent} for the argument.
+     */
+    private void checkCooldownFloor(AbilityDefinition ability, String label, List<String> problems) {
+        int floor = CastSpec.minimumCooldownTicks(ability.cast());
+        if (floor > ability.cooldownTicks()) {
+            problems.add(label + " authors cooldown_ticks " + ability.cooldownTicks()
+                    + ", but its cast shape runs for " + floor + " ticks and cannot be re-pressed"
+                    + " before then, so the effective cooldown is " + floor + ". Author " + floor
+                    + " to say so, or 0 to say the cast shape owns the guard");
+        }
+    }
     /**
      * The visual ids a CAST names, as opposed to the ones its effects name.
      *
@@ -482,6 +516,16 @@ public final class ContentValidator {
                 // reader who has no way to tell. Both fall back with a warnOnce in the adapter.
                 // Material validation is one change covering both call sites, or it is not made.
             }
+            // THIS ARM RECURSES, AND THE THREE EMPTY ONES BELOW IT ARE WHY THAT NEEDS SAYING. A
+            // volley's beam and trail references live on its INNER cast, so `case Volley ignored
+            // -> { }` would compile, read as native beside Self/Melee/Dash, and silently stop
+            // validating every volley ever authored. The only thing separating a correct empty arm
+            // from an incorrect one here is ContentValidatorTest's mutation row.
+            //
+            // A nested volley cannot arrive: CastSpec.Volley's compact constructor refuses one at
+            // construction, so this recursion is one level deep by the type, not by luck.
+            case CastSpec.Volley volley ->
+                    checkCast(volley.of(), ownerLabel + " volley inner cast", problems);
             case CastSpec.Self ignored -> { }
             case CastSpec.Melee ignored -> { }
             case CastSpec.Dash ignored -> { }

@@ -569,13 +569,30 @@ public final class RpgPlugin extends JavaPlugin {
 
     /**
      * Warns, never disables the plugin. Fail-soft: the ability still loads and still
-     * deals its damage; it just tells you which reference is dangling.
+     * deals its damage; it just names what it found. What it finds is no longer only
+     * dangling references -- see the note at {@code problems} below.
      */
     private void validateContent() {
         var validator = new ContentValidator(visuals, statuses, elements,
                 key -> Registry.MOB_EFFECT.get(key) != null,
                 key -> Registry.SOUND_EVENT.get(key) != null);
 
+        // THIS LIST IS HETEROGENEOUS, AND ITS SUMMARY MUST DESCRIBE THE COUNT AND NEVER THE KIND.
+        // Every member was a dangling reference until checkCooldownFloor added one that is not:
+        // an authored cooldown the cast shape has RAISED resolves perfectly and does the opposite
+        // of nothing. The summary at the bottom of this method used to read "dangling content
+        // reference(s) ... those effects will do nothing", and both clauses were false of that
+        // member the first time it fired.
+        //
+        // A RULE OUTLIVES ITS PREMISE SILENTLY, BECAUSE ITS ARITHMETIC KEEPS EVALUATING.
+        // problems.size() counts correctly forever; the NOUN beside it aged out the moment a
+        // member of a new class arrived, and no test reads the summary, so nothing reddened. It
+        // misled its first reader on the first boot after it shipped -- who went hunting a second,
+        // unattributed problem that did not exist.
+        //
+        // So if you are here to add a THIRD class of check: the per-problem lines above already
+        // say what each problem IS. The summary's only job is HOW MANY and THAT BOOT SURVIVED.
+        // Do not re-attach a class name to it.
         List<String> problems = validator.validate(abilities);
         // A kit naming an ability or weapon nothing defines is the most invisible dangling
         // reference of all: it reads as a deliberate gap, not a typo. Both registries are
@@ -631,8 +648,8 @@ public final class RpgPlugin extends JavaPlugin {
             getLogger().warning("Content: " + problem);
         }
         if (!problems.isEmpty()) {
-            getLogger().warning(problems.size() + " dangling content reference(s). "
-                    + "The server is still running, but those effects will do nothing.");
+            getLogger().warning(problems.size() + " content problem(s) -- see the Content: lines"
+                    + " above. The server is still running.");
         }
     }
 

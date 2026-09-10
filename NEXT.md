@@ -9466,3 +9466,261 @@ and take that measurement — `od` the bytes, count the lines, print the unfilte
 cannot name such a measurement, you do not have an explanation, you have a reason to stop looking.
 And note which way the cost falls: a control that fires and is argued with is **worse** than one that
 never ran, because you now believe you checked.
+
+## THE VOLLEY SLICE — `CastSpec.Volley`, and one shape worth more than the slice
+
+Landed on `feat/castspec-volley` as three commits: the two ports (`dc0f9da`), the kind and its arms
+(`83c14be`), the fixture and its gate (`49e7fd4`). The mechanism's reasoning lives in the files —
+`CastSpec.Volley`'s javadoc, `CastExecutor.volley`'s, `AbilitySchema.innerCast`'s and
+`GATE-volley.md` — and is not restated here. **What is here is what the files cannot hold: the
+decisions, the corrections, and the shapes the slice produced.**
+
+### STATE THE PROPERTY; LET THE REMEDY BE CHOSEN AGAINST THE MATERIAL
+
+**Named 2026-09-10, from THREE instances in a single planning exchange**, which is what makes it a
+shape rather than an anecdote. Each time a property was identified correctly and an
+**implementation** was prescribed in the same breath — and each time a cheaper answer existed that
+satisfied the property exactly.
+
+| the property, correctly named | the remedy prescribed with it | what actually satisfied it |
+|---|---|---|
+| *"these two durations cannot drift apart"* | a bespoke in-flight guard, an `ActiveCasts` set, cleanup on every abort route | the derivation moved into `CastSpec.Volley`, which owns all three numbers. No new state, no lifecycle, no leak surface |
+| *"a per-shot cue is needed"* | a new `on_shot:` hook, in this slice | **observe first.** `on_hit` already fires per shot, so a partial cue exists and nobody has looked at it — **→ GATE V6, 2026-09-10: IT DID. Eight shots are countable without reading the damage numbers, so `on_shot` is a hook nobody needs. The answer was a DELETION, not an addition.** |
+| *"the wrapper must not absorb the weapon's decisions"* | — | correct as stated, and it is the one that carried no prescription |
+
+**A remedy prescribed at the moment a property is named is a design decision made before anyone has
+looked at the material.** The property is the durable half; it survives being satisfied a different
+way. The remedy is a guess wearing the property's authority.
+
+> **AND THE FAILURE MODE IS NOT "THE REMEDY IS WRONG".** In all three the prescribed remedy would
+> have *worked*. `ActiveCasts` closes the hole; `on_shot` provides a cue. The cost is that the
+> cheaper answer is never looked for, because the question stopped being open the moment the remedy
+> was named — and the cheaper answer here was **strictly better**, not merely smaller: a derivation
+> that cannot drift beats a guard that can leak.
+
+> **ROW TWO IS WHERE THE SHAPE CAN BE SEEN WORKING RATHER THAN ASSERTED, AND ITS CELL CARRIES BOTH
+> HALVES ON PURPOSE.** *"Observe first; the cue may already exist"* was the **correct remedy**, and it
+> is what this entry teaches; **GATE V6 is what choosing it produced.** Rewriting the cell to say
+> only *"closed as a deletion"* would delete the evidence that observing was right and leave a table
+> of outcomes with the method missing — struck-not-deleted, applied to a table cell.
+>
+> **And note what the outcome was: NOTHING WAS BUILT.** The cheapest possible resolution of a
+> question, reachable only by looking, and invisible to anyone who had already named a remedy.
+
+**How to apply:** when you can name the property, write the property down and stop. If you also have
+a remedy in mind, name it as *a* candidate rather than *the* answer, and say what would distinguish
+it from the alternatives. The two forms are one sentence apart and they lead to different slices.
+
+### A GATE NEEDS AN INSTRUMENT, AND THE INSTRUMENT IS A FIXTURE, NOT CONTENT
+
+**The fourth instance of two-individually-correct-constraints-jointly-unsatisfiable in this project,
+and the first caught BEFORE it was built rather than after.** The three constraints:
+
+1. the wrapper is mechanism, so it needs its own boot gate before it ships;
+2. content files belong to the content slice that authors them;
+3. gating the wrapper *requires* a content file that uses it.
+
+**The resolution: a content file whose only purpose is to exercise a mechanism is a TEST FIXTURE,
+and fixtures belong to whoever owns the mechanism.** It is a NEW file neither side is editing, so it
+creates no collision — which is the only thing the boundary exists to prevent.
+
+**What it must NOT be is the real weapon shipped early "just to test with."** That is the content
+slice arriving through the back door with none of its decisions made: `cursed_emerald.yml` shipped
+for the gate would have put its damage, mana, cooldown and element into master before the operator
+had ruled a single one of them.
+
+#### AND THE FIXTURE'S NUMBERS MUST BE NOBODY'S WEAPON
+
+A slice named for a weapon gets its gate staged with that weapon's numbers and quietly absorbs the
+weapon's decisions as though they were the mechanism's. **If the wrapper only ever ran at 6 shots /
+2 ticks / 20 wind-up, nothing would have shown it generalises**, and the first weapon wanting 3 at 5
+would find out at boot.
+
+So `volley_stone` carries two triggers sharing no number with each other, one deliberately **worse**
+than anything content will author (interval 1, the scheduler's floor, eight shots at 64 blocks) —
+because a fixture at the grammar's limit measures the GRAMMAR, and one at a comfortable setting
+measures a weapon. **`VolleyFixtureTest` pins all of that**, including a row that refuses the Cursed
+Emerald's exact triple, so a later edit "tidying" the two triggers into matching numbers deletes the
+property rather than only the prose about it.
+
+### REPORT THE FILE LIST FROM `--numstat` **AND** FROM WHAT YOU TOUCHED, AND RECONCILE THEM
+
+**Measured 2026-09-10, commit 3.** The report named **five** files; the commit touched **seven**.
+The two unmentioned were `ability_stone.yml` — edited to narrow a claim this slice had just
+falsified — and the golden tooltip file. Two authored fields had also moved from the reviewed plan:
+`rarity` `common` → `exotic` and `material` `amethyst_shard` → `echo_shard`.
+
+**Every one of the three was correct, and two carried their reasoning in the file. That is not the
+point.** The squash body is built from these reports, so **an edit to a shipped content file that no
+report mentions is how `master` gains a change with no record of why** — the D1 shape at small scale.
+
+**And the two lists diverge exactly when something interesting happened.** A report written from
+memory describes what you set out to do; `--numstat` describes what you did. They agree on the
+boring commits and part company on the ones worth reading — which is when the report matters most.
+
+**How to apply:** paste the file list from `git diff --numstat`, then account for every row **against
+what you know you touched**. And when a fixture's authored fields differ from what was reviewed, **say
+so even when the reason is good** — the operator should not have to diff to learn what changed.
+
+> #### AMENDED 2026-09-10, BY THE RULE'S OWN SECOND APPLICATION. AS FIRST WRITTEN IT WOULD HAVE HIDDEN THE THING IT FOUND.
+>
+> The original said *"report the file list from `--numstat`, **not** from memory of what you set out
+> to do."* **Applied literally, that produces a four-row report with `PLAN-cursed-emerald.md`
+> silently absent — and the report reads as complete.** An untracked file is invisible to
+> `--numstat` **by design**; no amount of care in reading the output recovers it.
+>
+> What actually surfaced it was **reconciling the command's output against what was known to have
+> been touched** — the very faculty the first draft told you to stop using.
+>
+> **So the rule was half-right, and dangerous in the half it got wrong:**
+>
+> | source | failure mode | what it misses |
+> |---|---|---|
+> | **memory alone** | **DRIFTS** | reports the *plan* instead of the work — the original finding, commit 3: five named, seven touched |
+> | **`--numstat` alone** | **BLIND SPOTS** | untracked files, and anything outside the range you diffed |
+>
+> **NEITHER IS THE AUTHORITY. THE DISAGREEMENT IS THE SIGNAL.** A row in one and not the other is
+> the interesting one, in both directions.
+>
+> **What it cost, and it had already been paid before anyone noticed.**
+> `PLAN-cursed-emerald.md` had been **written against `66bd8f9` (2026-09-09 15:23), re-checked at
+> `24f9796` (2026-09-10 01:07), reviewed and ACCEPTED IN SHAPE by the feature chat, and edited by two
+> chats — with zero revisions in git.** `git log --all -- PLAN-cursed-emerald.md` returned empty
+> against a control that returns a commit for a tracked plan, while master already tracked **29**
+> other `PLAN-*.md`. No diff, no history, no recovery, no merge protection: the two-chats-one-file
+> collision the boundary exists to prevent, **made worse than a code collision because git was not
+> watching it.** Committed in `da337e4`.
+>
+> **The duration could only be floored, not measured** — birth time read equal to mtime, reset by the
+> session's own edit. Hence the commit-dated bound rather than a clock figure: every clause of *"at
+> least a day, across two review states, accepted in shape, edited by two chats, zero revisions"* is
+> checkable, which no exact number would have been.
+>
+> **AND THE SAME SLICE PRODUCED THE ERROR IN MINIATURE, IN THE MESSAGE PRAISING THE COUNT.** The
+> operator asserted **27** other plan files from eyeballing a listing while instructing that `grep -c`
+> be run; the count was **29**. Same defect as the `1403` and `1462` test figures — *a figure asserted
+> from a glance at something adjacent to the answer.* **The argument was unaffected, which is exactly
+> what lets this class of error survive**: nothing downstream breaks, so nothing reddens.
+
+### A FIGURE WRITTEN MID-COMMIT DESCRIBES THE TREE BEFORE THE COMMIT, AND NOTHING RE-CHECKS IT
+
+**Measured 2026-09-10, closing the volley slice.** `GATE-volley.md:5` opened with *"The suite passes
+with any of them deleted — **1462** tests"*. The suite is **1467** (853 core / 17 storage / 597
+paper, `./mvnw test`, zero failures).
+
+**The five missing are `VolleyFixtureTest`'s, and they shipped IN THE SAME COMMIT AS THE FILE THAT
+UNDERCOUNTED THEM** (`49e7fd4`). The paragraph was written while the tree still lacked them, and by
+the time the commit closed it was false. **So the figure was never true of any tree that has ever
+existed** — and nothing re-reads a prose number, so it would have stayed plausible indefinitely.
+
+**THIS IS A DIFFERENT MECHANISM FROM THE ONE ALREADY FILED, AND THE DISTINCTION IS THE POINT:**
+
+| | route | false since | what would have caught it |
+|---|---|---|---|
+| `8e8731b`'s **1403** | **FABRICATED** — typed fresh and wrong, a measurement nobody took | always | reading the run |
+| `GATE-volley.md`'s **1462** | **FALSIFIED BY ITS OWN COMMIT** — a correct reading of a tree that stopped existing | the moment it was committed | **nothing available at drafting time** |
+| the **27**-for-**29** plan count | **GLANCED** — read off something adjacent to the answer | always | `grep -c`, which was being *prescribed* in the same sentence |
+
+Same wrong number, same kind of file, three different causes. **Care fixes the first and third. It
+cannot fix the second**, because at the moment of writing the figure was right and the writer had no
+way to know what the commit would still contain.
+
+**How to apply:** **re-read every suite figure from the FINAL verify run, after the last file
+lands** — never from the run that was green when the paragraph was written. Quote the per-module
+breakdown next to the total (`853 / 17 / 597 = 1467`) so a reader can check it by addition instead
+of trusting it. Operational form in `CLAUDE.md`.
+
+**And note where this one was found: by the operator, reading the file.** Nothing in 1467 tests
+reads a prose figure in a markdown document, which is the same property that let the boot summary
+name the wrong class for a full slice.
+
+#### A COUNT IN A MOVING REPO IS STALE BY DEFAULT. THE QUESTION IS NEVER *"WAS IT WRONG"* BUT *"WAS IT LOAD-BEARING WHEN READ"*
+
+**This is the half that makes the entry usable, and without it the table above inflates.** The third
+mechanism — *correct when drafted, falsified by a commit that came after* — describes a **normal
+condition of any figure in a repository that is still moving**, not a defect. Filing every instance
+of it as an error pads the list and, worse, **implies that care would have prevented something care
+cannot touch.**
+
+**The same exchange produced both readings, an hour apart:**
+
+| figure | true when written | when it was read | verdict |
+|---|---|---|---|
+| *"six commits"* in the closing brief | **yes** — tip was `e5e0697`, `rev-list --count` returned **6** | after a seventh commit landed | **STALE, NOT WRONG.** Changed no argument, needed no fix. Nothing was glanced at and nothing was invented; **a true figure aged.** |
+| `1462` in `GATE-volley.md` | **yes**, of the tree that existed mid-commit | in a file whose stated premise is that its figures are checkable | **LOAD-BEARING, AND IT FAILED.** Fixed. |
+
+**So the test is the second column, not the first.** A stale count in a sentence whose point does not
+depend on it is not a finding — reporting it as a correction is itself a small error of the
+inflating kind. A stale count in a document that invites the reader to check it has broken the
+document's own contract.
+
+> **AND THE SAME DISTINCTION APPLIES TO THE BAN ON `--body`.** `--body` is banned because a quote
+> break truncates a PR body **silently**. Preparing this slice's PR, a **heredoc** broke on quoting
+> at line 102 and failed **loudly**, so the body was written to a file directly instead.
+> **The ban's own stated reason reproduced itself through a different mechanism** — and was caught
+> only because this one was loud. The ban is aimed at the right hazard and names too narrow a
+> carrier: **it is not `--body` that is dangerous, it is any shell-quoted path from prose to
+> argument.**
+
+### THE FIVE DECISIONS
+
+1. **Q1 — each shot re-aims AND re-rolls.** Operator's. `Caster` carries `critMultiplier` frozen at
+   cast, so re-reading the eye while keeping the projection would give six shots one shared crit
+   roll. The consequence is that **a volley's stats are not atomic**: a player who swaps weapons
+   mid-burst has the remaining shots priced off the new one. That is the ruling's cost, accepted.
+2. **The guard is a DERIVED COOLDOWN FLOOR, not an active-cast set.** See the shape above.
+3. **`on_cast` fires ONCE per volley. No new grammar.** The operator's earlier answer — *"yes, a new
+   hook is needed"* — **was a prediction, not evidence, and is corrected here at their own
+   instruction.** `cfde822` played a per-shot chime in a different game with different audio; nobody
+   has heard eight kinetic ray shots one tick apart in *this* repo. The standing rule the content
+   plan already cites for the mana figure — *a tuning request against a system nobody has watched
+   encodes a guess as a requirement* — **applies to grammar as well as to numbers**, and that is the
+   half worth writing down.
+   > **Suppressing `on_cast` for volleys was REFUSED, not deferred.** The wind-up chime *is* the
+   > telegraph, and the telegraph is what makes a 20-tick commitment fair rather than a dead second.
+   > `CastExecutor:122` already fires it once before the cast switch, so there is no simplicity to
+   > buy.
+4. **`of:` is a whitelist — `ray` and `projectile`** — admitted by an exhaustive pattern switch so a
+   seventh kind is refused by default. `dash`'s refusal is load-bearing: `DashAim` resolves direction
+   before dispatch and matches the OUTER cast only, so a repeated dash would still fire and simply go
+   the wrong way.
+5. **The fixture is PERMANENT**, not deleted with the content slice. It is the only thing that
+   exercises interval 1 and the projectile inner cast, and the emerald exercises neither.
+
+### THE OPEN DECISION THIS SLICE SURFACED AND DID NOT TAKE: WHAT THE TOOLTIP RENDERS
+
+The tooltip renders the **authored** `cooldown_ticks`. `AbilityService` stamps
+`max(authored, derived)`, and for a basic attack it stamps an attack-speed-scaled value. **So the
+printed number is not the stamped one, and volleys are the SECOND consumer of that gap, not a new
+bug** — `WeaponLoreLines`' own class javadoc already records the attack-speed half.
+
+**The question to rule is therefore not "what line should a volley show" but "should the tooltip
+render what `AbilityService` will actually stamp".** A volley-shaped fix would leave the older half
+of the same defect standing and make the remaining gap look *deliberate* to the next reader — which
+is the reasoning `ContentValidator`'s projectile-`item` arm already gives for validating both call
+sites or neither.
+
+`ContentValidator` names the override to the AUTHOR at load. **Nothing names it to the PLAYER**,
+which is the one surface where the reader has no file to check. `GATE-volley.md` V2 takes the
+observation; the ruling is the tooltip's.
+
+### A RECORDED TRIGGER, NOT A CAVEAT
+
+`CooldownTracker` keys on caster **and** ability, so the derived floor stops a caster re-pressing the
+SAME volley and nothing else. The hole is exactly *one player, mid-volley, switching to a DIFFERENT
+volley ability and casting* — **content-unreachable today**, since the fixture is the only volley in
+the tree.
+
+Per the standing ruling — *a guard with no instances is not a guard that cannot fire;
+mechanism-unreachable gets deleted, content-unreachable owes forward cover* — the trigger is written
+in `CastSpec.minimumCooldownTicks`'s own javadoc, in the form the `a.stacks` deletion used:
+
+> The day a SECOND volley ability ships, a caster can hold one volley in flight and start another,
+> because the tracker keys per ability. That is when an active-cast set keyed on the caster alone
+> becomes necessary, and not before.
+
+**And one standing coupling, stated in BOTH places because the reader of one will not have the
+other open:** `GATE-volley.md`'s V5 reads `volley_stone`'s `cooldown_ticks: 0` as its only witness.
+Authoring the floor there — 27, to make the tooltip honest, which is the likeliest reason anyone
+will — stages two independent quantities as equal and the row passes whether the floor exists or not.
+The comment lives at the field as well as in the gate.

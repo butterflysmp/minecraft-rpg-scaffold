@@ -1,0 +1,129 @@
+# The Volley Stone -- a FIXTURE for CastSpec.Volley, not a weapon. It exists so the volley
+# mechanism has something to gate against, and it is owned by the mechanism rather than by any
+# content slice.
+#
+# WHY A FIXTURE AT ALL, since three individually correct constraints collided here:
+#   1. the wrapper is mechanism, so it needs its own boot gate before it ships;
+#   2. content files belong to the content slice that authors them;
+#   3. gating the wrapper REQUIRES a content file that uses it.
+# A content file whose only purpose is to exercise a mechanism is a TEST FIXTURE, and fixtures
+# belong to whoever owns the mechanism. Shipping cursed_emerald.yml early "just to test with"
+# would be the content slice arriving through the back door with none of its decisions made --
+# its damage, mana, cooldown and element would land in master before any had been ruled.
+#
+# PERMANENT, like ability_stone and /rpg apply -- NOT a _TEMP fixture. Ships in NO kit, has NO
+# recipe file, and so is uncraftable and unreachable by a normal player. Gated only by /rpg give
+# needing rpg.command.give.
+#
+# ITS NUMBERS ARE DELIBERATELY NOT ANY WEAPON'S. If the wrapper only ever ran at one weapon's
+# 6 shots / 2 ticks / 20 wind-up, nothing would have shown it generalises, and the first weapon
+# wanting 3 shots at 5 ticks would find out at boot. The two triggers below share no number with
+# each other and none with the Cursed Emerald.
+
+id: volley_stone
+display_name: "Volley Stone"
+element: kinetic          # neutral: declares no applies_status, so nothing accrues and no glyph
+                          # competes with the damage numbers a gate row has to count
+
+# Exotic for VISIBILITY, the same spend ability_stone.yml makes and for the same reason: the name's
+# colour is the rarity tier's, so a `common` dev tool mints plain white and reads as an Ironblade in
+# a crowded hotbar. TWO dev tools now share the tier -- ability_stone's note has been narrowed to
+# say so rather than left claiming it is alone there. Neither is in any kit or loot roll, so the
+# tier is not cheapened anywhere a player can reach.
+rarity: exotic
+class: mage               # a dev tool; class is required, mage is as good as any here
+material: echo_shard      # distinct from ability_stone's amethyst_shard so the two are not
+                          # confusable in one hotbar. Verified present in the pinned 26.1.2 jar:
+                          #   unzip -p run/versions/26.1.2/paper-26.1.2.jar \
+                          #     net/minecraft/world/item/Items.class \
+                          #     | grep -a -o -E 'echo_shard|amethyst_shard' | sort -u
+                          # printed both, amethyst_shard being the control we already ship.
+
+# AUTHORED 0, NOT OMITTED. WeaponLoader:88 is getDouble("attack_damage", 0.0), so the absence would
+# resolve to exactly the value the omission meant -- which is the trap: it works, it is invisible,
+# and it hides a decision. There is no basic attack here. Both triggers are the whole instrument.
+attack_damage: 0
+
+flavor:
+  - "An instrument, not a weapon."
+  - "It measures how many of a thing you can see at once."
+
+triggers:
+  # ROW A -- GENERALITY. An inner PROJECTILE, so the whitelist's second member is EXERCISED rather
+  # than asserted: the content plan says a burst-fire projectile weapon is the second thing this
+  # grammar is for, and a wrapper proved only against rays would be widened blind the first time
+  # anyone wanted one.
+  right_click:
+    name: "Scatter"
+    description:
+      - "Three shards, half a second apart."
+    # LONGER THAN ITS FLOOR (10 + 2*5 = 20) AND DELIBERATELY SO. This trigger is the silent half of
+    # the cooldown pair: an authored cooldown above the derived floor is KEPT, not overwritten, and
+    # a boot that warns about this trigger is a defect in the floor rather than in this file.
+    cooldown_ticks: 40
+    on_cast:
+      - { type: visual, visual_id: volley_cast }
+    cast:
+      type: volley
+      windup_ticks: 10
+      shots: 3
+      interval_ticks: 5
+      of:
+        type: projectile
+        speed: 1.4
+        gravity: 0.05
+        max_lifetime_ticks: 40
+        item: flint       # a real thrown body, so three shots are three visible objects
+    on_hit:
+      - { type: damage, amount: 4, element: kinetic }
+
+  # ROW B -- DENSITY, AND IT IS DELIBERATELY WORSE THAN ANYTHING CONTENT WILL AUTHOR. interval_ticks
+  # 1 is the SCHEDULER'S FLOOR -- CastSpec.Volley refuses 0 because Paper clamps it up to 1 -- and
+  # eight shots at 64 blocks puts up to four rays in flight at once, each drawing its own beam from
+  # a muzzle that moved between them.
+  #
+  # THIS MEASURES THE GRAMMAR'S LIMIT, NOT A WEAPON'S TUNING. If eight rays one tick apart are
+  # legible, six at two ticks are safe; if they are a blur, content learns the bound BEFORE it
+  # authors against it rather than after. stepRay's recorded reasoning about the walk being
+  # imperceptible was written for ONE shot at 26 blocks and explicitly does not cover this.
+  left_click:
+    name: "Rake"
+    description:
+      - "Eight beams, one tick apart."
+      - "Deliberately too many."
+    # AUTHORED 0, AND THE BOOT WARNING IT PRODUCES IS EXPECTED -- see GATE-volley.md row V5.
+    #
+    # 0 is the honest way to say "the cast shape owns the guard", and it is the ONLY value that
+    # makes the gate row mean anything. Author 27 here (the floor) and the row stages two
+    # independent quantities that are equal, so it passes whether the floor exists or not: the
+    # control succeeds for the wrong reason, which is a failure this project has already paid for.
+    # ContentValidator names it at boot precisely so a reader finding 0 cannot conclude the weapon
+    # is unguarded. Do not "fix" the warning by writing 27.
+    # GATE-volley.md's V5 READS THIS FIELD AS ITS ONLY WITNESS. Authoring a number here -- 27, to
+    # make the tooltip honest, which is the most likely reason anyone will -- turns that row into a
+    # fixture reading itself: authored and derived would be equal, and the row would pass whether
+    # the floor existed or not. If you change it, change V5 in the same edit.
+    cooldown_ticks: 0
+    on_cast:
+      - { type: visual, visual_id: volley_cast }
+    cast:
+      type: volley
+      windup_ticks: 20
+      shots: 8
+      interval_ticks: 1
+      of:
+        type: ray
+        range: 64
+        beam: volley_beam
+    on_hit:
+      - { type: damage, amount: 4, element: kinetic }
+
+# NO cost: SECTION ON EITHER TRIGGER, and that is a fixture decision rather than an oversight. The
+# gate has to fire these repeatedly to judge legibility, and a mana bar emptying after two presses
+# would stop the measurement it exists to take. A real weapon prices its volley; this one does not,
+# because it is not one.
+#
+# NO craft_result AND NO RECIPE FILE. A recipe would put this in the Recipe Browser next to real
+# gear, and craft_result claims a MATERIAL -- every vanilla echo shard on the server would mint a
+# Volley Stone. ContentValidator.validateCraftResults would refuse it anyway (no durability), which
+# is the same note flint_staff.yml and lapis_staff.yml carry.

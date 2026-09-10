@@ -1,0 +1,30 @@
+# The Volley Stone's beam -- the line each of Rake's eight rays draws down itself. Id is the
+# filename: volley_beam.
+#
+# ITS OWN FILE, NOT lapis_beam. A shared visual is a coupling that is invisible at BOTH ends -- the
+# trap ember_burst sprang on the Flint Staff -- and this one is doubly wrong to share: the whole
+# point of gate row V3 is to judge how MANY beams read as separate, and it would be judged against a
+# colour that a real shipped weapon also uses. When the fixture goes, this file goes with it.
+#
+# THE COLOUR IS NEITHER LAPIS NOR EMERALD, DELIBERATELY. lapis_beam is [40, 90, 240] and the Cursed
+# Emerald's plan reserves [40, 220, 90]. Magenta belongs to nothing, so a gate row counting beams
+# cannot be confused by a second weapon firing nearby, and this file pre-empts no content decision.
+#
+# samples_per_block: 4 is the figure BOTH shipped beams landed on independently, and it is exact
+# rather than eyeballed: BeamVisuals.drawTrail's density parameter is documented "particles per
+# block". It is kept here so V3 measures the VOLLEY -- how many beams are legible at once -- against
+# a density that is already known-good for one beam. Changing it would confound the two questions.
+#
+# ANY DENSITY FIGURE RECORDED FOR THIS FILE MUST NAME THE CLIENT PARTICLES SETTING IT WAS JUDGED ON,
+# per lapis_beam.yml's rule: a density without a setting is a measurement missing half its units.
+# Nothing has been re-judged here yet -- 4 is inherited, not measured.
+
+steps:
+  - type: particle
+    particle: DUST
+    color: [230, 60, 230]  # Color.fromRGB(230, 60, 230) -- magenta, owned by nothing else
+    size: 1.2
+    count: 1
+    spread: 0.0
+    speed: 0.0             # inert for DUST; authored so its absence is not read as a choice
+    samples_per_block: 4
