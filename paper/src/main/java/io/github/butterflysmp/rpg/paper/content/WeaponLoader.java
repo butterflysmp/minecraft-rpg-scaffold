@@ -148,16 +148,36 @@ public final class WeaponLoader {
      * a weapon file and {@code material:} legal inside a trigger, both silently ignored -- the exact
      * failure both checks exist to prevent. A key is only meaningful at its own level.
      *
-     * <p><b>This layer matters MORE than the top level, not less.</b> {@code cooldown_ticks} lives
-     * here and IS the weapon's fire rate, so a silently-ignored one is a weapon firing at the wrong
-     * cadence with a tooltip that reads correctly -- the "silently wrong rather than visibly broken"
-     * property that justified checking weapons first, in its sharpest form.
+     * <p><b>This layer matters MORE than the top level, not less, and the worked example is worse
+     * than "the wrong cadence".</b> {@code cooldown_ticks} lives here and IS the weapon's fire rate.
+     * Misspell it and the trigger takes the {@code getInt} default of <b>0</b>, and
+     * {@code AbilityService.resolve} then raises it only to
+     * {@code CastSpec.minimumCooldownTicks(cast)} -- which is <b>0 for every cast shape except
+     * {@code Volley}</b>. Measured, by invoking it: {@code Ray}, {@code Projectile}, {@code Melee}
+     * and {@code Self} all return 0; only {@code Volley} derives one (30, for the Cursed Emerald's
+     * windup 20 + (6-1) x 2).
+     *
+     * <p>So on a HELD-FIRE QUIVER WEAPON -- a ray or a projectile, which is exactly what the Boltor
+     * is -- <b>a misspelled cooldown key means NO COOLDOWN AT ALL.</b> The magazine empties as fast
+     * as the input repeats, and every symptom of that reads as <i>"this weapon is fast"</i>, which is
+     * the stated design intent. Nothing looks wrong; there is simply no rate limit. That is the
+     * worked example this whole check exists for, and it is why the trigger layer was closed before
+     * the first quiver weapon was authored rather than after.
      *
      * <p><b>Hand-maintained, so it carries the identical stale-entry hazard</b> {@link #KNOWN_KEYS}
      * does: an entry left here after {@code parse} stops reading it warns nothing and does nothing,
      * reopening the hole one layer down. Guarded the same way and in the same test --
      * {@code WeaponLoaderTest.knownKeysAndTheKeysParseActuallyReadsAreTheSameSet} requires set
      * equality for BOTH levels, scanning {@code t.getX("...")} for this one.
+     *
+     * <p><b>THE TWO SETS ARE DISJOINT TODAY, AND THAT IS LOAD-BEARING FOR THE TEST RATHER THAN A
+     * coincidence.</b> The test separates the levels by RECEIVER ({@code s.} versus {@code t.}), and
+     * the near miss is real -- the top level has {@code display_name} where a trigger has
+     * {@code name}. While no key lives in both namespaces, a read attributed to the wrong receiver
+     * lands in the wrong set and surfaces immediately as inequality. <b>The day a key name is shared
+     * between the two levels, that discriminator gets QUIETER rather than louder</b>: a
+     * misattribution could then cancel out, with both sets still equal and one level silently
+     * unchecked for that key. Anyone adding such a key should strengthen the test first.
      */
     static final java.util.Set<String> TRIGGER_KEYS = java.util.Set.of(
             "name", "description", "cooldown_ticks", "cost", "cast", "on_hit", "on_cast");

@@ -90,6 +90,24 @@ public final class WeaponFire {
             return Optional.of(new CastResult.Broken());
         }
 
+        // THE QUIVER GATE, at the broken gate's standing and for its reasons. Before the snapshot
+        // and before weaponService.fire, so an empty or reloading weapon spends no resource and
+        // trips no cooldown; and here rather than in each caller so the packet swing and the
+        // interact handler cannot drift apart on what "empty" means.
+        //
+        // Not the double-spend race the class javadoc warns about, for the same reason durability
+        // is not: an empty quiver stays empty for the whole tick and a running reload stays running,
+        // so there is no check-then-fire window to slip through. The cooldown is what stops two
+        // shots in one tick; this only decides whether a shot may happen at all.
+        //
+        // LEFT-CLICK IS EXEMPT, because left-click is the RELOAD. Gating it here would make a weapon
+        // whose magazine is empty unable to do the one thing that refills it -- a deadlock whose
+        // only symptom is a weapon that has stopped working.
+        if (weapon.hasQuiver() && !input.equals("left_click")) {
+            Optional<CastResult> refusal = Quivers.refusalFor(player, weapon, adapters);
+            if (refusal.isPresent()) return refusal;
+        }
+
 
         // THE RETIREMENT. Vanilla's own crosshair attack now delivers the basic melee hit -- it
         // picks the victim, and RpgListeners' EntityDamageByEntityEvent rider lands the payload. So
@@ -115,6 +133,22 @@ public final class WeaponFire {
         Optional<CastResult> result = weaponService.fire(caster, weapon, input, aim);
         result.ifPresent(r -> {
             if (r instanceof CastResult.Success success) {
+                // SPEND THE ROUND, on the caster's own thread and only on a Success.
+                //
+                // HERE rather than on CastExecutor's use listener, and the reason is a measurement
+                // rather than a preference: that listener fires for BASIC ATTACKS only
+                // (DamagePayload.isBasicAttack), so a quiver weapon whose shot is a plain `damage`
+                // effect -- which quiver_stone's is, exactly as volley_stone's is -- would fire
+                // forever without ever spending a round. Durability can ride that seam because
+                // "what costs a use" is genuinely the basic-attack question; "what costs a round"
+                // is not.
+                //
+                // Only on Success, which is what makes it exact: a refused cast (cooldown, mana,
+                // empty, reloading) returns before this line, so no round is lost to a shot that
+                // never happened. Still on the player's thread -- the region hop is below.
+                if (weapon.hasQuiver() && !input.equals("left_click")) {
+                    Quivers.spendRound(player, adapters);
+                }
                 // A dash steers by WASD, not by the look-aim built above. Resolve it HERE,
                 // still on the player's thread, before the region hop -- getCurrentInput() is
                 // player state and illegal past the hop. Every other cast passes through.

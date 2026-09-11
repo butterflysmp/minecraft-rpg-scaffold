@@ -48,6 +48,7 @@ import io.github.butterflysmp.rpg.core.combat.AttackCharge;
 import io.github.butterflysmp.rpg.paper.weapon.MeleeHits;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import io.github.butterflysmp.rpg.paper.weapon.BrokenNotice;
+import io.github.butterflysmp.rpg.paper.weapon.QuiverNotice;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldBlock;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldDurability;
@@ -494,6 +495,21 @@ public final class RpgListeners implements Listener {
                         return;
                     }
 
+                    // THE QUIVER REFUSALS RIDE THE SAME BYPASS, AND FOR THE SAME REASON THE COMMENT
+                    // ABOVE GIVES. A quiver weapon's shot is bound to right_click and will usually
+                    // BE a basic attack, so firesABasicAttack below returns early and the switch is
+                    // never reached. An empty magazine that says nothing is indistinguishable from a
+                    // bug -- which is the argument BrokenNotice was written on -- so these bypass the
+                    // silence too and lean on their own throttles to survive held input.
+                    if (result instanceof CastResult.Empty) {
+                        QuiverNotice.empty(event.getPlayer(), cooldowns);
+                        return;
+                    }
+                    if (result instanceof CastResult.Reloading reloading) {
+                        QuiverNotice.reloading(event.getPlayer(), cooldowns, reloading.ticksRemaining());
+                        return;
+                    }
+
                     // A deliberate press deserves feedback, unlike the silent left-click swing --
                     // EXCEPT when the right-click IS the basic attack. The bow's shot is bound to
                     // right_click only so that binding it suppresses the vanilla draw; mechanically
@@ -525,6 +541,9 @@ public final class RpgListeners implements Listener {
                         case CastResult.Locked ignored -> { }
                         // Handled above, ahead of the basic-attack silence, so the bow reports too.
                         case CastResult.Broken ignored -> { }
+                        // Likewise -- both are handled before firesABasicAttack returns.
+                        case CastResult.Empty ignored -> { }
+                        case CastResult.Reloading ignored -> { }
                     }
                 });
     }

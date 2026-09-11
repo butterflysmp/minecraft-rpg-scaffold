@@ -58,8 +58,10 @@ public final class QuiverItems {
     /**
      * Stamp a freshly minted weapon's magazine FULL, or leave a non-quiver weapon untouched.
      *
-     * <p><b>MUST be called before {@code applyLore}</b>, because the tooltip renders the stamped
-     * count and lore built before the stamp renders the wrong number.
+     * <p><b>Called before {@code applyLore}</b> -- though NOT yet load-bearing, and saying so is the
+     * point. No lore line reads the count today: {@code WeaponLore.build} sees only the definition,
+     * and rendering a per-item count means widening its signature, which is owed rather than done.
+     * The ordering is established now because it is free now and a wrong tooltip later is not.
      *
      * <p>The enchant block's ordering note in {@code WeaponItems.remint} is the MIRROR of this case,
      * not the same trap, and the difference is what makes this call's placement load-bearing rather

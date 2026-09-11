@@ -1575,6 +1575,21 @@ public final class RpgCommand {
                 // is precisely how adding Broken forced every caller to decide what it means.
                 return 0;
             }
+            case AbilityService.CastResult.Empty ignored -> {
+                // Unreachable for Broken's reason exactly: a quiver is a WEAPON's magazine, read off
+                // the held item by WeaponFire.attempt, and /rpg cast never touches a weapon.
+                //
+                // AND THIS ARM IS THE MECHANISM WORKING, NOT CEREMONY. It was written because the
+                // compiler refused this file the moment Empty existed -- which is the whole reason
+                // both refusals live in the sealed type rather than being paper-local signals. This
+                // switch was not in the plan's list of consumers, and nobody would have thought of
+                // it; the build named it.
+                return 0;
+            }
+            case AbilityService.CastResult.Reloading ignored -> {
+                // Unreachable, same reason as Empty above.
+                return 0;
+            }
         }
     }
 

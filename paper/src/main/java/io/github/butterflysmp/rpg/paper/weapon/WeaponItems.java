@@ -138,8 +138,17 @@ public final class WeaponItems {
 
             // THE MAGAZINE, STAMPED FULL AND EXPLICITLY. A no-op for the weapons that carry none.
             //
-            // BEFORE applyLore, and that ordering is load-bearing rather than stylistic: the tooltip
-            // renders the STAMPED count, so lore built before the stamp would render the wrong number.
+            // BEFORE applyLore -- and the honest statement of why is that the ordering is NOT
+            // load-bearing yet. NO LORE LINE READS THE COUNT TODAY: WeaponLore.build sees only the
+            // DEFINITION, and rendering a per-ITEM count would mean widening its signature, which is
+            // owed rather than done (see PLAN-quiver.md). So the stamp could currently sit anywhere
+            // in this block and nothing would differ.
+            //
+            // It is placed correctly now because doing so costs nothing and the alternative costs a
+            // wrong tooltip discovered in play. An earlier draft of this comment claimed the tooltip
+            // "renders the stamped count", present tense, which was FALSE the moment it was written
+            // -- the exact shape of falsified prose this repo keeps finding, committed in the same
+            // change as the code it misdescribes.
             //
             // This is the MIRROR of the enchant-block ordering note in remint() below, not the same
             // trap -- and the difference is why this call cannot simply sit wherever the enchant
