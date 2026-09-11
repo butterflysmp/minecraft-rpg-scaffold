@@ -16,6 +16,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import java.util.ArrayList;
+import java.util.OptionalInt;
 import java.util.List;
 import java.util.Locale;
 
@@ -47,11 +48,43 @@ public final class WeaponLore {
 
     private WeaponLore() {}
 
+    /**
+     * The tooltip for a weapon with no per-item state to show -- every caller that has a definition
+     * but no item. Renders a quiver weapon's magazine as {@code --/N}, which is the honest answer
+     * when there is no item to read a count from.
+     */
     public static List<Component> build(WeaponDefinition weapon, ElementRegistry elements) {
+        return build(weapon, elements, OptionalInt.empty());
+    }
+
+    /**
+     * The tooltip, with the item's own magazine count.
+     *
+     * <p><b>{@code loaded} is the first per-ITEM value this builder has ever taken</b>, and it is the
+     * reason the signature widened. Every other line here is a function of the definition, so two
+     * copies of a weapon render identically forever; a quiver's count differs between two stacks of
+     * the same weapon and changes as one is fired.
+     *
+     * <p>It arrives as an {@link OptionalInt} rather than an {@code int} for the reason that runs
+     * through this whole feature: <b>absence is not emptiness.</b> An unstamped item renders
+     * {@code --/N}, not {@code 0/N}, so a mint path that forgot to stamp looks wrong on the tooltip
+     * instead of looking like a spent magazine.
+     */
+    public static List<Component> build(WeaponDefinition weapon, ElementRegistry elements,
+                                        OptionalInt loaded) {
         List<Component> lore = new ArrayList<>();
 
         // Element on its own line at the very top, in the ELEMENT's own colour -- not the rarity's.
         lore.add(elementLine(weapon.element(), elements));
+
+        // THE MAGAZINE, directly under the element and above the stat/ability blocks. It is the
+        // weapon's most volatile number and the one a player checks mid-fight, so it goes where the
+        // eye lands first rather than below prose. Empty string for a weapon with no quiver, which
+        // is every weapon but the fixture today.
+        String quiver = WeaponLoreLines.quiverLine(loaded, weapon.quiverSize());
+        if (!quiver.isEmpty()) {
+            lore.add(GearLore.plain(quiver, NamedTextColor.GRAY));
+        }
 
         // A basic attack is a STAT, not an ability: it gets two stat lines directly under the
         // element, with no name, no prose and no cadence. Everything else is an ability block.

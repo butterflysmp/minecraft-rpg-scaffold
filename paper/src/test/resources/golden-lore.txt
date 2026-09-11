@@ -91,6 +91,7 @@
    "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
 -- quiver_stone
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "Quiver: --/9" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Loose" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
    "One bolt, and one fewer" color=#AAAAAA O=. B=. S=. U=. I=F

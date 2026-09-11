@@ -108,6 +108,20 @@ triggers:
       # would make this a basic attack, which silences the right-click refusal path in RpgListeners
       # and scales the cooldown by the wielder's ATTACK_SPEED -- both of which would obscure the two
       # things this fixture exists to show: the refusals speaking, and the authored fire rate.
+      #
+      # *** DO NOT CHANGE THIS TO weapon_damage WITHOUT RE-CHECKING GATE-quiver.md V2. ***
+      #
+      # V2 distinguishes a correct gate ordering from a broken one BY WHICH MESSAGE PRINTS: the
+      # empty notice on a pass, "On cooldown for ..." on a fail. That second string is rendered by
+      # RpgListeners' switch, and the switch is only reached because DamagePayload.isBasicAttack is
+      # FALSE for a plain `damage` effect. Make this weapon_damage -- which is what hunters_bow does,
+      # and the obvious way to make this fixture "more realistic" -- and firesABasicAttack returns
+      # early, the switch never runs, and THE FAIL MESSAGE STOPS RENDERING.
+      #
+      # Nothing would look wrong. The row still reads correctly and a pass still shows the empty
+      # notice; the only change is that V2 can no longer fail. That is the whole hazard, and it is
+      # written at both ends -- here and in the gate -- because a one-ended note is the half read by
+      # whoever is not editing that file.
       - type: damage
         amount: 13
         element: kinetic

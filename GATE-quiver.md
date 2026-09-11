@@ -31,11 +31,24 @@ gate and G5a's per-setting figures were never taken.
 | # | verdict | staging | pass condition |
 |---|---|---|---|
 | **V1** | `FIRE` | `/rpg give quiver_stone`, fire once | **BOTH halves.** A bolt lands **and** the count goes 9 → 8. *A shot that fires without decrementing is an infinite magazine, and it looks identical to a working weapon for the first eight shots.* |
-| **V2** | `EMPTY` | fire 9, then press again **immediately** | **RECORD WHICH MESSAGE APPEARS.** **PASS** = the empty notice, *"Your quiver is empty -- left-click to reload."* **FAIL** = *"On cooldown for 0.Xs"* — the 9th shot stamped an 11-tick cooldown, so the empty check is running **after** the cooldown and `WeaponFire`'s gate ordering is wrong. |
+| **V2** | `EMPTY` | fire 9, then press again **immediately** | **RECORD WHICH MESSAGE APPEARS.** **PASS** = the empty notice, *"Your quiver is empty -- left-click to reload."* **FAIL** = *"On cooldown for 0.Xs"* — the 9th shot stamped an 11-tick cooldown, so the empty check is running **after** the cooldown and `WeaponFire`'s gate ordering is wrong. **THIS ROW'S FAIL MESSAGE RENDERS ONLY BECAUSE OF A CONTENT DECISION — see below.** |
 | **V3** | `RELOADING` | left-click, then press fire twice ~1s apart | refused, with **ticks remaining shown**, and **the number MOVES between the two presses**. *A frozen counter reads identically to a live one at a glance — "a number appeared" is not the test.* |
 | **V4** | `RELOAD_MATURED` | empty the magazine. Left-click to reload, **then RELEASE the fire button entirely.** Wait for the reload to complete. Then **one** deliberate press. | **PASS = a bolt on that press.** **FAIL = no bolt, even if the next press works.** The release is load-bearing — see below. |
 | **V5** | `UNSTAMPED` | — | **NOT STAGEABLE. See below.** |
 
+> **V2's DISCRIMINATOR DEPENDS ON A FILE V2 DOES NOT MENTION, AND THAT COUPLING IS WRITTEN AT BOTH
+> ENDS.** The row can only FAIL while `quiver_stone.yml`'s `on_hit` is a plain `type: damage`.
+> Change it to `weapon_damage` — which someone would plausibly do to make the fixture more realistic,
+> and which is exactly what `hunters_bow` does — and `DamagePayload.isBasicAttack` becomes true,
+> `firesABasicAttack` returns early, `RpgListeners`' switch is never reached, and **the FAIL message
+> stops rendering entirely.**
+>
+> **Nothing would look wrong.** The row still reads correctly, a PASS still shows the empty notice,
+> and the only thing that changed is that the failure has become unobservable. That is a rule
+> outliving its premise — the arithmetic still evaluating after the premise is gone — and the
+> counterpart note lives beside the `on_hit` in `quiver_stone.yml`, because **a one-ended note is the
+> half read by whoever is not editing that file.**
+>
 > **V4 IS THE ROW TO WRITE MOST CAREFULLY, AND IT IS NOT OBVIOUS WHY.** Mid-reload the item's stored
 > count is **0** — the reload has not refilled it yet. An empty-first implementation therefore
 > **swallows the press that finishes the reload**: the magazine refills, but that shot never
@@ -95,6 +108,17 @@ on the one row whose subject is a guard nobody can otherwise see.
 | **Q9** | start a reload, swap to another item, swap back | **resumes** — does not restart, does not complete early. *This is what the reload living on the ITEM buys, and a per-player timer would fail it* |
 | **Q10** | author a weapon file with a typo'd key — one top-level (`quivver_size`) and one inside a trigger (`cooldwon_ticks`) | boot **warns by name for each**, naming the weapon, and the trigger one names the **trigger** too. **Confirmatory**: both are already caused-not-asserted in `WeaponLoaderTest`, so this witnesses the wiring |
 | **Q11** | fire once, left-click **on the next tick** | the reload **starts at once** — the fencepost ruling witnessed in play. Core row 8 is the authority |
+| **Q12** | `/rpg give quiver_stone` and read the tooltip; fire once and read it again | **`Quiver: 9/9`**, then **`Quiver: 8/9`**. *The row this gate named before the line existed.* **If either reads `--/9`** the stamp is missing or `applyLore` ran before it — see below |
+
+> **Q12 HAS A THIRD OUTCOME THAT IS NOT A PASS OR A FAIL, AND IT IS THE INFORMATIVE ONE.**
+> `--/9` is the ABSENT rendering, and it means the item carries no count: either a mint path did not
+> stamp, or the stamp ran after `applyLore`. **It is deliberately not `0/9`** — a spent magazine and
+> an unstamped one must not read alike on a tooltip any more than they do in code, and the dashes are
+> meant to look wrong.
+>
+> **Expect to see `--/9` in one legitimate place**: `golden-lore.txt`. That harness renders from
+> DEFINITIONS with no item to read, so the absent form is the honest answer there and its presence in
+> the golden is correct. **In game it is a defect.**
 
 **Q4, Q5 and Q6 are the discriminating carry rows**: each names a **different funnel caller**, so a
 pass says *which*. One of them failing while the others pass localises the break immediately.
@@ -131,11 +155,10 @@ a decision to make about what dual-wield actually buys**, and he should make it 
 
 ## What this gate does NOT cover, named so the absence is not mistaken for an oversight
 
-- **The quiver lore line — OWED AND NOT YET BUILT.** `quiver_stone`'s tooltip currently shows **no
-  count**: `WeaponLore.build` sees only the definition. **When it lands this gate gains one row** —
-  *the tooltip shows 9/9, and 8/9 after one shot* — and that row is named here now so it cannot go
-  missing. **Do not run this gate as final until it exists**, or A1 closes with an unwitnessed
-  display.
+- ~~**The quiver lore line — OWED AND NOT YET BUILT.**~~ **LANDED. It is Q12**, which is the row this
+  section named in advance so it could not go missing. `WeaponLore.build` gained an `OptionalInt`
+  overload, `applyLore` reads the count off the meta it is building, and the ordering that was free
+  when the stamp was placed is load-bearing now. *The gate no longer has a reason to be withheld.*
 - **Anything A2 owns**: quiver size and reload time as real stats, gear or enchants moving them, the
   rounding rule's dead zone. `quiver_stone`'s numbers are authored constants today.
 - **Dual-wield, alternation, the Boltor.** Slices B and C.

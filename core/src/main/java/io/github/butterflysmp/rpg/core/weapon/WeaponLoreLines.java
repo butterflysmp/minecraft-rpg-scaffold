@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * The plain-text half of the weapon tooltip: pure String/number formatters over the content model.
@@ -68,6 +69,32 @@ public final class WeaponLoreLines {
         if (cooldownTicks > 0) parts.add("Cooldown: " + cooldownLabel(cooldownTicks));
         if (!isFree(cost)) parts.add(capitalize(cost.resourceId()) + " Cost: " + trimNumber(cost.amount()));
         return String.join(" | ", parts);
+    }
+
+    /**
+     * The magazine, as the tooltip shows it: {@code "Quiver: 8/9"}. Empty string for a weapon that
+     * carries no quiver, which the caller drops.
+     *
+     * <p><b>THE FIRST TOOLTIP LINE IN THIS FILE THAT IS PER-ITEM RATHER THAN PER-DEFINITION.</b>
+     * Every other line here is a function of the weapon's content, so two copies of the same weapon
+     * render identically forever. This one is not: two Quiver Stones in one inventory show different
+     * numbers, and the same stack changes as it is fired. That is why {@code loaded} arrives as a
+     * parameter read off the ITEM rather than off {@code weapon} -- and why the stamp has to precede
+     * {@code applyLore} at the mint, which was a free ordering until this line existed and is
+     * load-bearing now.
+     *
+     * <p><b>An ABSENT count renders "{@code Quiver: --/9}", not "{@code 0/9}".</b> Absence is not
+     * emptiness anywhere else in this feature and it is not here either: a missing stamp is a defect
+     * in a mint path, and showing it as a spent magazine would hide that behind a tooltip a player
+     * would read as ordinary. The dashes are meant to look wrong.
+     *
+     * <p>Worked: {@code (9, 9) -> "Quiver: 9/9"}; {@code (0, 9) -> "Quiver: 0/9"};
+     * {@code (absent, 9) -> "Quiver: --/9"}; {@code (anything, 0) -> ""} (no quiver).
+     */
+    public static String quiverLine(OptionalInt loaded, int capacity) {
+        if (capacity <= WeaponDefinition.NO_QUIVER) return "";
+        return "Quiver: " + (loaded.isPresent() ? String.valueOf(loaded.getAsInt()) : "--")
+                + "/" + capacity;
     }
 
     /**

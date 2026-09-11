@@ -138,17 +138,17 @@ public final class WeaponItems {
 
             // THE MAGAZINE, STAMPED FULL AND EXPLICITLY. A no-op for the weapons that carry none.
             //
-            // BEFORE applyLore -- and the honest statement of why is that the ordering is NOT
-            // load-bearing yet. NO LORE LINE READS THE COUNT TODAY: WeaponLore.build sees only the
-            // DEFINITION, and rendering a per-ITEM count would mean widening its signature, which is
-            // owed rather than done (see PLAN-quiver.md). So the stamp could currently sit anywhere
-            // in this block and nothing would differ.
+            // BEFORE applyLore, AND THAT ORDERING IS NOW LOAD-BEARING. applyLore reads this count
+            // back off the meta to render "Quiver: 9/9"; stamp after it and every freshly minted
+            // weapon shows the PREVIOUS item's count, or "--/9" on a first mint.
             //
-            // It is placed correctly now because doing so costs nothing and the alternative costs a
-            // wrong tooltip discovered in play. An earlier draft of this comment claimed the tooltip
-            // "renders the stamped count", present tense, which was FALSE the moment it was written
-            // -- the exact shape of falsified prose this repo keeps finding, committed in the same
-            // change as the code it misdescribes.
+            // THE HISTORY IS KEPT BECAUSE IT IS THE USEFUL PART. This comment first claimed the
+            // tooltip "renders the stamped count" when NO lore line read it -- false at the instant
+            // it was committed. It was then corrected to say the ordering was free and placed
+            // pre-emptively. The lore line has since landed, so the original claim is true and the
+            // correction is stale: BOTH previous versions were wrong, in opposite directions, about
+            // the same three lines of code. Which is the argument for stating a coupling rather than
+            // trusting an ordering to look deliberate.
             //
             // This is the MIRROR of the enchant-block ordering note in remint() below, not the same
             // trap -- and the difference is why this call cannot simply sit wherever the enchant
@@ -186,7 +186,11 @@ public final class WeaponItems {
      * commented, and the roster pass's mint-time roll is a write ABOVE it and nothing else.
      */
     private static void applyLore(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters) {
-        List<Component> base = WeaponLore.build(weapon, adapters.elements());
+        // THE COUNT COMES OFF THE META BEING BUILT, which is why the stamp must already have
+        // happened -- see the ordering note in mint(). At a re-mint carryInstanceData has run first,
+        // so this reads the CARRIED count and not the freshly minted full one.
+        List<Component> base = WeaponLore.build(weapon, adapters.elements(),
+                QuiverItems.loadedInMeta(meta, adapters.keys()));
         EnchantState state = EnchantItems.read(meta, adapters.keys());
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
 

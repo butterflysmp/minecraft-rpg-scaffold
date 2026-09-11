@@ -50,7 +50,20 @@ public final class QuiverItems {
      */
     public static OptionalInt loadedIn(ItemStack item, Keys keys) {
         if (item == null || !item.hasItemMeta()) return OptionalInt.empty();
-        Integer stored = item.getItemMeta().getPersistentDataContainer()
+        return loadedInMeta(item.getItemMeta(), keys);
+    }
+
+    /**
+     * The same read against a meta already in hand.
+     *
+     * <p>Exists for one caller: {@code WeaponItems.applyLore}, which is building a tooltip INSIDE an
+     * {@code editMeta} block and therefore holds the meta but no finished stack. Going through
+     * {@link #loadedIn} there would read the ORIGINAL item and miss the stamp that was written a few
+     * lines earlier in the same block -- rendering the previous count on every mint.
+     */
+    public static OptionalInt loadedInMeta(ItemMeta meta, Keys keys) {
+        if (meta == null) return OptionalInt.empty();
+        Integer stored = meta.getPersistentDataContainer()
                 .get(keys.quiverLoaded, PersistentDataType.INTEGER);
         return stored == null ? OptionalInt.empty() : OptionalInt.of(stored);
     }
@@ -58,10 +71,10 @@ public final class QuiverItems {
     /**
      * Stamp a freshly minted weapon's magazine FULL, or leave a non-quiver weapon untouched.
      *
-     * <p><b>Called before {@code applyLore}</b> -- though NOT yet load-bearing, and saying so is the
-     * point. No lore line reads the count today: {@code WeaponLore.build} sees only the definition,
-     * and rendering a per-item count means widening its signature, which is owed rather than done.
-     * The ordering is established now because it is free now and a wrong tooltip later is not.
+     * <p><b>MUST be called before {@code applyLore}.</b> That builder now reads this count back off
+     * the meta to render the "Quiver: 9/9" line, so a stamp written after it renders the PREVIOUS
+     * count -- or "--/9" on a first mint. The ordering was free when this was written and is
+     * load-bearing since the lore line landed.
      *
      * <p>The enchant block's ordering note in {@code WeaponItems.remint} is the MIRROR of this case,
      * not the same trap, and the difference is what makes this call's placement load-bearing rather

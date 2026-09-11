@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines;
 import org.junit.jupiter.api.Test;
 
+import java.util.OptionalInt;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -176,5 +177,43 @@ class WeaponLoreLinesTest {
                 new EffectSpec.Damage(3, "fire"),
                 new EffectSpec.Damage(99, "fire"));
         assertEquals(3, WeaponLoreLines.triggerDamage(onHit, 0).orElseThrow().amount());
+    }
+
+    // ---------------------------------------------------------------- the quiver line
+
+    /**
+     * THE FIRST TOOLTIP LINE IN THIS FILE THAT IS PER-ITEM RATHER THAN PER-DEFINITION.
+     *
+     * <p>Every other line here is a function of the weapon's content, so two copies of a weapon
+     * render identically forever. This one differs between two stacks of the SAME weapon and changes
+     * as one is fired -- which is why the count arrives as a parameter read off the item, and why the
+     * stamp must precede {@code applyLore} at the mint.
+     */
+    @Test
+    void theQuiverLineShowsLoadedOverCapacity() {
+        assertEquals("Quiver: 9/9", WeaponLoreLines.quiverLine(OptionalInt.of(9), 9));
+        assertEquals("Quiver: 8/9", WeaponLoreLines.quiverLine(OptionalInt.of(8), 9));
+        assertEquals("Quiver: 0/9", WeaponLoreLines.quiverLine(OptionalInt.of(0), 9),
+                "a SPENT magazine reads 0 -- it is a real count, and distinct from an absent one");
+    }
+
+    /** A weapon with no magazine renders no line at all, and the caller drops it. */
+    @Test
+    void aWeaponWithNoQuiverRendersNoQuiverLine() {
+        assertEquals("", WeaponLoreLines.quiverLine(OptionalInt.of(4), 0),
+                "capacity 0 is the 0-is-absent convention: no quiver, no line, whatever is stored");
+        assertEquals("", WeaponLoreLines.quiverLine(OptionalInt.empty(), 0));
+    }
+
+    /**
+     * ABSENCE RENDERS DASHES, NOT ZERO -- the feature's rule, carried all the way to the player.
+     *
+     * <p>An unstamped item is a defect in a mint path. Rendering it as {@code 0/9} would disguise
+     * that as a spent magazine, which is a tooltip a player reads as ordinary and nobody reports.
+     * The dashes are meant to look wrong, because something IS wrong.
+     */
+    @Test
+    void anAbsentCountRendersDashesRatherThanZero() {
+        assertEquals("Quiver: --/9", WeaponLoreLines.quiverLine(OptionalInt.empty(), 9));
     }
 }
