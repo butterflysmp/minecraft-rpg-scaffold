@@ -26,7 +26,7 @@ import java.util.OptionalLong;
  * in and out of item meta ... every line of arithmetic that lives here is a line no test can
  * reach."</i> <b>The verdict is core's; only the READ and the DELIVERY are paper's.</b>
  *
- * <h2>WHY A RECORD OF OPTIONALS RATHER THAN LOOSE PARAMETERS</h2>
+ * <h2>WHY A VALUE TYPE OF OPTIONALS RATHER THAN LOOSE PARAMETERS</h2>
  *
  * <p>The three stored values have exactly one legal shape between them, and a parameter list cannot
  * say so. {@code loaded} may be absent -- an item never stamped, which is a DEFECT and not an empty
@@ -41,15 +41,66 @@ import java.util.OptionalLong;
  * <p>{@link Quiver} keeps its primitives-only contract ({@code QuiverSignatureTest}) and knows
  * nothing about this type. The dependency runs one way: this composes {@code Quiver}, never the
  * reverse.
+ *
+ * <h2>WHY THIS IS A FINAL CLASS AND NOT A RECORD, WHICH IT WAS UNTIL THE FOURTH INSTANCE</h2>
+ *
+ * <p>A public record's canonical constructor is public -- the JLS requires it to be at least as
+ * accessible as the record, and {@code paper} needs this type public. So while this was a record, a
+ * sixth file could write
+ *
+ * <pre>{@code new QuiverState(loaded, weapon.quiverSize(), from, to)}</pre>
+ *
+ * and obtain a state whose capacity <b>ignores the stamp</b>: no {@code capacityIn}, no
+ * {@code capacityOf(}, no {@code QuiverState.from(} for the source scan to see, and no new public
+ * static method for the surface pin to see. Both guards green. And it is not hypothetical -- it is
+ * the route {@code Quivers.stateOf} itself used until the resolution moved in here.
+ *
+ * <p><b>Four times the named routes were closed and the next defect arrived through an unnamed
+ * one</b> ({@code capacityOf} -> {@code capacityIn} -> the core module -> {@code QuiverState.from}).
+ * The set of ways to obtain a capacity is not enumerable by grep; a scan can only ever list the
+ * doors somebody already thought of. So the constructor is PRIVATE and the factories are the only
+ * doors -- the same move as removing {@code reloadTicks} from {@code reloadComplete} and the capacity
+ * parameter from {@code reloadVerdict}, where a defect stopped being a rule and became a thing that
+ * cannot be expressed.
+ *
+ * <p><b>What this does not close, and must not:</b> {@code from(..., OptionalInt.empty(), authored,
+ * ...)} is still callable, and still SHOULD be -- the unstamped fallback is a real case with three
+ * real readers. A caller that passes empty where it had a stamp is passing a legitimate value
+ * wrongly, and no type can prevent that. It is boot-only, and {@code PLAN-quiver-a2.md}'s commit
+ * table carries the row.
+ *
+ * <p>The cost of the change is small and worth naming: no generated {@code equals}/{@code hashCode}/
+ * {@code toString}. Nothing used them -- verified across both modules before the conversion --
+ * because states are compared by the VERDICT they yield, never by identity.
  */
-public record QuiverState(OptionalInt loaded, int capacity, OptionalLong reloadStartedAt,
-                          OptionalLong reloadCompletesAt) {
+public final class QuiverState {
 
-    public QuiverState {
+    private final OptionalInt loaded;
+    private final int capacity;
+    private final OptionalLong reloadStartedAt;
+    private final OptionalLong reloadCompletesAt;
+
+    /**
+     * PRIVATE, AND THAT IS THE WHOLE POINT -- see the class javadoc. This was a record until the
+     * fourth instance of the same defect; a public record's canonical constructor is public, and
+     * {@code new QuiverState(loaded, weapon.quiverSize(), from, to)} fabricated a capacity that
+     * ignored the stamp while passing every guard. The factories below are now the only doors.
+     */
+    private QuiverState(OptionalInt loaded, int capacity, OptionalLong reloadStartedAt,
+                        OptionalLong reloadCompletesAt) {
         if (reloadStartedAt.isPresent() != reloadCompletesAt.isPresent()) {
             throw new IllegalArgumentException(
                     "a reload's start and deadline are two halves of one fact: both or neither");
         }
+        this.loaded = loaded;
+        this.capacity = capacity;
+        this.reloadStartedAt = reloadStartedAt;
+        this.reloadCompletesAt = reloadCompletesAt;
+    }
+
+    /** The capacity this state resolved to -- the stamp when present, the authored value otherwise. */
+    public int capacity() {
+        return capacity;
     }
 
     /**

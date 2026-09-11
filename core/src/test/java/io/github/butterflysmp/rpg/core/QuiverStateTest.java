@@ -159,10 +159,16 @@ class QuiverStateTest {
      */
     @Test
     void aReloadsStartAndDeadlineCannotBeSeparated() {
-        assertThrows(IllegalArgumentException.class, () -> new QuiverState(
-                OptionalInt.of(0), CAPACITY, OptionalLong.of(START), OptionalLong.empty()));
-        assertThrows(IllegalArgumentException.class, () -> new QuiverState(
-                OptionalInt.of(0), CAPACITY, OptionalLong.empty(), OptionalLong.of(DEADLINE)));
+        // THROUGH THE FACTORY, because the canonical constructor is now PRIVATE -- a public record's
+        // was public, and `new QuiverState(loaded, weapon.quiverSize(), from, to)` was a door that
+        // fabricated a capacity past every guard. The validation still lives in the constructor; the
+        // factory is simply the only way to reach it.
+        assertThrows(IllegalArgumentException.class, () -> QuiverState.from(
+                OptionalInt.of(0), OptionalInt.empty(), CAPACITY,
+                OptionalLong.of(START), OptionalLong.empty()));
+        assertThrows(IllegalArgumentException.class, () -> QuiverState.from(
+                OptionalInt.of(0), OptionalInt.empty(), CAPACITY,
+                OptionalLong.empty(), OptionalLong.of(DEADLINE)));
     }
 
     /**

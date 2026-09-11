@@ -350,6 +350,24 @@ A1 ran **15 commits**; largest 12 files / +573, median ~4 files / ~180 lines. A2
 | **6** | `/rpg stats` lines | ~5 | see the signature note below |
 | **7** | prose + gate | ~5 | corrections below, `GATE-quiver-a2.md` — **and the two boot-only rows below, which it must not be descoped without** |
 
+### COMMIT 1 RAN AS SIX — recorded because the split was not planned, it was forced
+
+The seam was budgeted at one commit of ~8 files. It landed as `1a`–`1f`, and **every split after the
+first was a review finding, not a decomposition I chose.** Written down so the commit-count estimate
+above is read against what actually happened rather than against itself.
+
+| # | sha | what forced it |
+|---|---|---|
+| `1a` | `270810a` | the three ordered sources; the floor's argument was false on both premises |
+| `1b` | `01a52e2` | the stamp seam — and the guard missed the defect it was written for (`MUTINLINE` arrived through `capacityIn`, not `capacityOf`) |
+| `1c` | `460443c` | `MUTSTAMPDROP` was **green**: the 4-arg `WeaponLore.build` had zero test callers |
+| `1d` | `83b83de` | `MUTSTATEDROP` green too, and `MUTAPPLYLORE2` alongside it — the class, not the instance |
+| `1e` | `336dbec` | the guard did not scan its own new front door (`QuiverState.from`) — third widening |
+| `1f` | *this* | **the pin guarded the static surface; the constructor was not on it** — fourth. Closed by making `QuiverState` a final class with a private constructor, so it is *unrepresentable* rather than scanned for. |
+
+**The shape of all four: a guard aimed at the NAME of the right thing rather than the SHAPE of the
+wrong thing.** `1f` is the first one that stops widening the list and removes the door instead.
+
 ### TWO KNOWN-GREEN MUTATIONS ON THE LIVE PATH — recorded HERE because the gate does not exist yet
 
 **`GATE-quiver-a2.md` is commit 7 and is not written.** Both of these were first promised to it by a
@@ -434,4 +452,10 @@ Traced through `manaRegenBonus`, the most recent stat:
   condition-1 defect); each stat's `boosts()` gate; and **the entanglement mutation the two
   fixtures exist for** — wire the reload scanner to the size key and assert the size row reddens
   while the reload row does not.
+- **Mutations RUN so far**, with their results, so a later reader is not left to assume:
+  `MUTINLINE` (red after the scan was widened to `capacityIn`), `MUTSTAMPDROP` (green → fixed →
+  red), `MUTSTATEDROP` (green → fixed → red), `MUTFACTORYDROP` (red), and **`MUTCTOR` — make
+  `QuiverState`'s canonical constructor public; 1 of 6 rows red, and only the constructor assertion,
+  not the static-surface one.** `MUTAPPLYLORE2` is green and stays green; it is in the boot-only
+  table above.
 - **Q7 remains owed** and is not discharged by this slice.

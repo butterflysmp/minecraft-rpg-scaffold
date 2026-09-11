@@ -260,6 +260,51 @@ class QuiversSignatureTest {
      * It calls neither {@code capacityOf} nor the key by name, so a scan for either was blind to it.
      * <b>A guard aimed at the name of the right thing rather than at the shape of the wrong thing.</b>
      * Obtaining a capacity at all now requires appearing on this list -- IN EITHER MODULE.
+     *
+     * <h2>{@code weapon.quiverSize()} IS DELIBERATELY NOT SCANNED FOR, AND HERE IS THE COST</h2>
+     *
+     * <p>It is the third source -- the authored value -- and it is a real way to obtain a capacity,
+     * so the obvious hardening is to add {@code "quiverSize()"} to the {@code contains} above.
+     * <b>Measured before deciding, not argued:</b> {@code grep -rn "quiverSize()" core/src/main/java
+     * paper/src/main/java} finds five live call sites -- {@code QuiverItems:90}, {@code :98},
+     * {@code :183}, {@code Quivers:168}, {@code WeaponLore:91} -- and <b>every one of them is already
+     * inside a file on this list.</b> Scanning for it today would change no verdict.
+     *
+     * <p><b>And the two candidate needles do not match the same files -- measured with the scan's own
+     * comment-stripping, not reasoned:</b>
+     *
+     * <table><tr><th>needle</th><th>files matched</th></tr>
+     * <tr><td>{@code "quiverSize()"}</td><td>{@code QuiverItems}, {@code Quivers}, {@code WeaponLore}
+     *     -- a SUBSET of this list; adding it changes no verdict today</td></tr>
+     * <tr><td>{@code "quiverSize"}</td><td>those three <b>plus {@code WeaponDefinition} and
+     *     {@code WeaponLoader}</b></td></tr>
+     * </table>
+     *
+     * <p>The gap between the two rows is itself the finding. {@code WeaponDefinition} names
+     * {@code quiverSize} on eight non-javadoc lines -- the record component, four validation arms, a
+     * convenience factory's parameter and argument, and {@code hasQuiver()} -- and <b>not one of them
+     * has parentheses</b>, because a record reads its own component as a field inside its body.
+     * {@code WeaponLoader} holds it as a local {@code int} for the same reason. So the paren form is
+     * narrow in precisely the way {@code capacityOf} was: <b>aimed at a name-form rather than a
+     * shape</b>, and blind to the authoring code by accident of syntax rather than by decision.
+     *
+     * <p><b>Taking the wide needle is what is declined, and this is its price.</b> Both new files
+     * AUTHOR the number; neither chooses between sources. A list whose membership no longer means
+     * "decides which capacity governs" stops being readable as the answer to that question, which is
+     * the property the five entries are for. Taking the narrow needle instead would buy a guard that
+     * is green today for a reason that has nothing to do with the rule it states.
+     *
+     * <p><b>So the cost is stated rather than the risk denied:</b> a sixth file could call
+     * {@code weapon.quiverSize()} directly, ignore the stamp, and this row would stay green. What
+     * stops that is not this scan -- it is that the stamp has <b>exactly two readers outside
+     * {@code QuiverItems} itself</b>, measured on {@code keys.quiverCapacity} across both modules:
+     * {@code Quivers:155} and {@code WeaponItems:239}, and <b>both go through
+     * {@code capacityIn}/{@code capacityInMeta}</b>, which IS the needle scanned above. So the
+     * inline-resolver shape ({@code stamped.orElse(weapon.quiverSize())}) cannot be written anywhere
+     * without landing on this list. A caller reaching for the authored value ALONE is not a second
+     * resolver; it is a caller that never asked about the item at all, and the defect that produces
+     * is {@code MUTSTATEDROP}'s -- a stamp that is not read -- which {@code QuiverStateTest} and
+     * {@code WeaponLoreTest} witness directly.
      */
     @Test
     void theCapacityIsResolvedOnlyWhereThisListSays() throws IOException {
@@ -302,7 +347,29 @@ class QuiversSignatureTest {
     }
 
     /**
-     * EVERY WAY TO OBTAIN A CAPACITY IS ON THIS LIST, AND A SIXTH CANNOT BE ADDED SILENTLY.
+     * NO PUBLIC WAY TO BUILD A {@code QuiverState} CAN APPEAR UNNOTICED.
+     *
+     * <p><b>This row was called {@code noSixthWayToObtainACapacityCanAppearUnnoticed}, and that name
+     * was false in the commit that wrote it.</b> It claimed EVERY way; it checked only the public
+     * STATIC surface. The assertion message never overstated -- it said "QuiverState's public static
+     * surface changed" -- so the name was the half that lied, and it lied about exactly the gap that
+     * existed: {@code QuiverState} was a {@code public record}, <b>whose canonical constructor is
+     * public</b>, so {@code new QuiverState(loaded, weapon.quiverSize(), from, to)} fabricated a
+     * capacity past this pin and past the source scan above. That was the route {@code Quivers.stateOf}
+     * itself used two commits ago.
+     *
+     * <p>Two ways to fix a name that overstates: shrink the name, or make it true. <b>Made true.</b>
+     * {@code QuiverState} is now a final class with a PRIVATE canonical constructor, and this row
+     * asserts that too -- so between the two assertions the name holds: a static factory and a
+     * constructor are the only ways to obtain an instance, and both are pinned. Shrinking the name
+     * instead would have left the record's door open with an honest label on the wrong door.
+     *
+     * <p><b>WITNESSED, not asserted. {@code MUTCTOR}:</b> {@code private QuiverState(} ->
+     * {@code public QuiverState( // MUTCTOR}, spliced by line number; marker present 1, original
+     * gone 0, +10 bytes (16291 -> 16301). <b>Result: 1 failure out of 6 rows -- this one, on its
+     * second assertion.</b> The first assertion stayed green, which is the point worth recording:
+     * a constructor is not a static method, so <b>the surface pin alone could not see the defect it
+     * was named after</b>. Restored from a scratchpad copy, byte-identical, markers left 0.
      *
      * <h2>Why a reflective pin and not a wider string list</h2>
      *
@@ -336,7 +403,7 @@ class QuiversSignatureTest {
      * written where it will be violated — at the surface that grows.
      */
     @Test
-    void noSixthWayToObtainACapacityCanAppearUnnoticed() {
+    void noPublicWayToBuildAQuiverStateCanAppearUnnoticed() {
         List<String> entryPoints = Arrays.stream(QuiverState.class.getDeclaredMethods())
                 .filter(m -> !m.isSynthetic() && Modifier.isPublic(m.getModifiers())
                         && Modifier.isStatic(m.getModifiers()))
@@ -351,6 +418,15 @@ class QuiversSignatureTest {
                         + "member must ALSO be added to the source scan in "
                         + "theCapacityIsResolvedOnlyWhereThisListSays, or a caller can obtain a "
                         + "capacity that ignores the stamp and no test will notice.");
+
+        // AND THE CONSTRUCTOR IS NOT ON THIS SURFACE, WHICH IS WHY QuiverState IS NO LONGER A RECORD.
+        // A public record's canonical constructor is public and would be a fifth entry point this
+        // reflection cannot report. Made private instead -- see that class's own javadoc.
+        assertTrue(Arrays.stream(QuiverState.class.getDeclaredConstructors())
+                        .noneMatch(c -> Modifier.isPublic(c.getModifiers())),
+                "QuiverState has a PUBLIC constructor. That is a way to fabricate a capacity that "
+                        + "neither this pin nor the source scan can see -- it was the defect that "
+                        + "made this class stop being a record.");
     }
 
     /**
