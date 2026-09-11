@@ -691,6 +691,69 @@ class CombatantStatsTest {
 
     // --- The element rides the seam, and damage() reports what actually landed --------------------
 
+    // --- Quiver size: the twelfth stat, in WHOLE ARROWS -------------------------------------------
+
+    @Test
+    void theQuiverSizeBonusIsZeroForEveryoneWhoOwnsNoSuchGearIncludingMobsAndTheUNTRACKED() {
+        var stats = new CombatantStats();
+        UUID player = UUID.randomUUID();
+        UUID mob = UUID.randomUUID();
+        stats.register(player, 100, true);
+        stats.bootstrapIfAbsent(mob, 200, 3.0, false);
+
+        assertEquals(0.0, stats.quiverSizeBonusValue(player), EPS,
+                "a BONUS, not a magazine -- base 0.0, because the magazine is the WEAPON's");
+        assertEquals(0.0, stats.quiverSizeBonusValue(mob), EPS, "and a mob has no gear");
+        assertEquals(0.0, stats.quiverSizeBonusValue(UUID.randomUUID()), EPS,
+                "UNTRACKED RESOLVES TO 0, AND THAT IS THE LOAD-BEARING ONE: QuiverSize.resolve adds "
+                        + "it to the authored quiver_size, so an untracked wielder gets exactly the "
+                        + "number the weapon declares -- the same answer a browser icon with no item "
+                        + "behind it needs. A throw here would force the call site to invent it.");
+        // Mutation A: base the Stat at anything but 0.0 -> the player row reddens.
+        // Mutation B: require() instead of the 0.0 default -> the untracked row throws -> reddens.
+    }
+
+    /**
+     * Converges, and is SILENT and VOID -- the shape of health regen, not of mana regen.
+     *
+     * <p>There is no boolean because there is nothing for a caller to pin: a quiver accrues nothing
+     * over time, its count is a stored integer, and the decrease-clamp happens at
+     * {@code QuiverItems.setLoaded} rather than on this path. A clamp here would be a SECOND
+     * enforcement site for one capacity, which is the defect the whole slice was reorganised to make
+     * unrepresentable.
+     */
+    @Test
+    void reconcileQuiverSizeConvergesTheBonusSilentlyAndReportsNothingBecauseNothingCanBePinned() {
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID id = UUID.randomUUID();
+        stats.register(id, 100, true);
+        int afterRegister = recorder.seen.size();
+
+        stats.reconcileQuiverSizeModifiers(id, Map.of("quiversize:CHEST", 19.0));
+        assertEquals(19.0, stats.quiverSizeBonusValue(id), EPS, "the A2 fixture's +19 arrows");
+
+        stats.reconcileQuiverSizeModifiers(id, Map.of("quiversize:CHEST", 19.0, "quiversize:LEGS", 3.0));
+        assertEquals(22.0, stats.quiverSizeBonusValue(id), EPS,
+                "two pieces SUM under their own keys -- the reconciler never sees a set");
+
+        stats.reconcileQuiverSizeModifiers(id, Map.of());
+        assertEquals(0.0, stats.quiverSizeBonusValue(id), EPS, "back to base -- no leak");
+
+        assertEquals(afterRegister, recorder.seen.size(),
+                "SILENT: no HealthChange for a quiver stat");
+        // Mutation A: drop ModifierReconciler's remove-loop -> the take-it-off row leaves 22.0.
+        // Mutation B: key both pieces the same -> the sum row reads 3.0 instead of 22.0.
+    }
+
+    /** No-op on an untracked combatant, and a return rather than a throw. */
+    @Test
+    void reconcilingQuiverSizeOnAnUntrackedCombatantIsANoOp() {
+        var stats = new CombatantStats();
+        assertDoesNotThrow(() -> stats.reconcileQuiverSizeModifiers(
+                UUID.randomUUID(), Map.of("quiversize:CHEST", 19.0)));
+    }
+
     @Test
     void damageRETURNSThePostMitigationNumberAndTheROWMUSTBEARMOURED() {
         // THE BLINDNESS TRAP, DESIGNED AROUND RATHER THAN DISCOVERED. Against an UNDEFENDED victim

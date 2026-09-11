@@ -9718,6 +9718,45 @@ REPLACEMENT: THE OVERSTATEMENT IS WHAT MAKES IT CATCHABLE.** Every row in that t
 *"it works in this case"* leaves nothing to falsify and ships. **The fix is precise claims made
 true, never hedged ones.**
 
+### THE SIXTH SHAPE: A WORD CHOSEN FOR WHAT IT CONVEYS RATHER THAN WHAT IT IS TRUE OF
+
+**Named 2026-09-11, quiver A2, on the third instance in one slice.** It belongs in the table above
+as a sixth row, and it is written out here because its tell is different from the other five: **the
+code underneath was correct every time.** Nothing was mis-implemented. A word was reached for
+because of what it would make the reader feel about the claim, and it was not true of the thing it
+named.
+
+| word | what it was applied to | why it was false |
+|---|---|---|
+| **"mechanism"** | a balance number (the reload floor) | a chosen constant is not a mechanism; there was no mechanism argument for any floor at all |
+| **"structural"** | the same balance number | nothing about the structure forced it; it was a value someone picked |
+| **"value type"** | `QuiverState` after it stopped being a `record` | a final class with no `equals`/`hashCode` has IDENTITY equality — the heading was changed from a true word (*"record"*) to a false one **in the same edit that made it false** |
+
+**The third is the sharpest, and not because it is the worst — because of what sat beside it.** The
+cost note under that heading read *"states are compared by the VERDICT they yield, never by
+identity"*, which was meant as *nobody compares two instances* and lands as *identity comparison
+does not happen here*. **After the change, identity comparison is the only kind available.** So the
+heading asserted value semantics the type did not have, and the sentence below it reassured about
+the exact hazard the change had just introduced. Both were written to convey that the conversion was
+safe. The conversion **was** safe — measured, nothing compares two states — which is precisely why
+neither sentence had to be true to survive review.
+
+> **THE OPERATIONAL FORM: for any word that CHARACTERISES rather than describes — "structural",
+> "mechanism", "value type", "invariant", "guaranteed", "unrepresentable" — name the property it
+> asserts and say where that property is enforced.** If the answer is *"it reads better"* or *"it is
+> the spirit of it"*, the word is decoration on a claim and it will be read as the claim.
+>
+> **And the specific trap that caught the third one: a word can go from true to false as a SIDE
+> EFFECT of the edit that is in front of you.** *"Record"* was accurate until the conversion; the
+> conversion is exactly when somebody rewrites the heading, and exactly when the replacement word
+> gets chosen for tone. **When a change makes a noun wrong, the candidate replacements are the
+> highest-risk words in the file.**
+
+**It is a WRITING failure with a REVIEW cost, not a code failure**, and that is why it needs naming
+separately. The five shapes above all leave something falsifiable in the tree. This one leaves code
+that works and prose that a reader has to check the implementation to disbelieve — which is the
+opposite of the reason comments exist.
+
 ### THE `presentAlong` PREMISE: CHECKED ON A LOOP'S FIRST ITERATION, GENERALISED TO THE LOOP
 
 *(An instance of the class above: an INSTANCE stated as a universal.)*

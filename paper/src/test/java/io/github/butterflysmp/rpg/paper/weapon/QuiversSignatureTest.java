@@ -371,6 +371,13 @@ class QuiversSignatureTest {
      * a constructor is not a static method, so <b>the surface pin alone could not see the defect it
      * was named after</b>. Restored from a scratchpad copy, byte-identical, markers left 0.
      *
+     * <p><b>SCOPE, because this row is named for what it watches and a reader will assume it watches
+     * the rest.</b> It covers CONSTRUCTION only -- public static methods and public constructors.
+     * The public INSTANCE surface is pinned separately by
+     * {@link #theInstanceSurfaceOfQuiverStateIsNamedToo}; between them they cover every public
+     * member declared on {@code QuiverState}, and nothing else. What neither covers is listed at
+     * that row.
+     *
      * <h2>Why a reflective pin and not a wider string list</h2>
      *
      * <p>The scan above is <b>a list of names</b>, and it has now been too narrow three times, each
@@ -429,6 +436,57 @@ class QuiversSignatureTest {
                         + "made this class stop being a record.");
     }
 
+
+    /**
+     * THE INSTANCE SURFACE, PINNED TOO -- AND THE SCOPE STATEMENT THE PAIR OWES.
+     *
+     * <p>{@link #noPublicWayToBuildAQuiverStateCanAppearUnnoticed} covers CONSTRUCTION: public
+     * static methods, and public constructors. <b>It does not cover the instance surface</b>, so
+     * until this row existed, {@code loaded()} / {@code reloadStartedAt()} / {@code reloadCompletesAt()}
+     * could come back, or {@link QuiverState#capacity} could quietly go, and neither guard would say
+     * anything. That is the same gap as the module-scan one, one level in: <b>a pin's name says what
+     * it watches, and a reader assumes it watches the rest.</b>
+     *
+     * <p><b>So, together, the two rows cover exactly:</b> public static methods, public constructors,
+     * public instance methods -- all declared on {@code QuiverState} itself. <b>They do NOT cover:</b>
+     * parameter and return TYPES (a member may change shape without either row noticing), anything
+     * non-public, the {@code Fire} and {@code Reload} enum constants (which {@code QuiverStateTest}
+     * exercises by value), and {@code Quiver} -- which has its own {@code QuiverSignatureTest}.
+     *
+     * <p>Why the instance surface is a door and not just tidiness: {@code capacity()} returns the
+     * RESOLVED value, and that is the whole point. An accessor handing back the raw stamp and the
+     * authored value separately -- {@code stampedCapacity()}, {@code authoredCapacity()} -- would let
+     * a caller redo {@link QuiverState#capacityOf}'s job outside it, which is {@code MUTINLINE}
+     * arriving through a fourth shape.
+     *
+     * <p><b>AND DECLARING {@code equals}/{@code hashCode}/{@code toString} WILL FAIL THIS ROW, ON
+     * PURPOSE.</b> {@code getDeclaredMethods} does not report inherited {@code Object} members, so
+     * they are absent from the list below -- which is exactly today's state, and the class javadoc's
+     * cost note says why (equality is identity now, and this repo has zero hand-written
+     * {@code equals}). Restoring value semantics is allowed; doing it silently is not. The author
+     * lands here, beside the note that says which fields such an {@code equals} must cover.
+     */
+    @Test
+    void theInstanceSurfaceOfQuiverStateIsNamedToo() {
+        List<String> instanceMembers = Arrays.stream(QuiverState.class.getDeclaredMethods())
+                .filter(m -> !m.isSynthetic() && Modifier.isPublic(m.getModifiers())
+                        && !Modifier.isStatic(m.getModifiers()))
+                .map(Method::getName)
+                .distinct()
+                .sorted()
+                .toList();
+
+        assertEquals(
+                List.of("capacity", "fireVerdict", "isReloading", "reloadTicksRemaining",
+                        "reloadVerdict"),
+                instanceMembers,
+                "QuiverState's public INSTANCE surface changed. capacity() returns the RESOLVED "
+                        + "value and is the only accessor anybody should need; an accessor handing "
+                        + "back the raw stamp and the authored value separately lets a caller redo "
+                        + "capacityOf's job outside it. If this failed because equals/hashCode/"
+                        + "toString were declared, read the class javadoc's cost note first -- that "
+                        + "is allowed, but it must name the fields it covers.");
+    }
     /**
      * TODAY'S PUBLIC SURFACE, named rather than counted.
      *

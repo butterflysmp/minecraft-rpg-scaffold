@@ -426,10 +426,13 @@ Traced through `manaRegenBonus`, the most recent stat:
 
 ## Prose corrections this slice owes
 
-1. **`PlayerHealthSystem.java:171` AND `:177`** — *"Eleven stats"* and *"all eleven"*. **TWO count
-   words, not one**; my earlier note named only the first. Both become thirteen. *The irony goes on
-   the record: that comment carries a note saying it was "phrased now so it cannot go stale again",
-   and it still leads with a count.*
+1. ~~**`PlayerHealthSystem.java:171` AND `:177`** — *"Eleven stats"* and *"all eleven"*; both become
+   thirteen.~~ **DISCHARGED IN COMMIT 2, AND NOT AS PLANNED.** Bumping eleven→thirteen would have
+   been the third bump of a sentence whose own parenthetical already claimed it was *"phrased now so
+   it cannot go stale again"* — and that phrasing still led with a count. **The count came out
+   instead**, replaced by a pointer to the set: *"the reconcile calls in this body ARE the list."*
+   Done a commit BEFORE the words would have gone stale rather than after: at commit 2 the loop
+   still converges eleven, because quiver size is not wired into it until commit 3.
 2. **`quiver_stone.yml`** — its header calls `quiver_size` and `reload_ticks` the values themselves.
    They become **authored bases feeding stats**. Correct it where it says constants.
 3. **`QuiverItems.stampFull`** — its javadoc says the mint stamps the capacity; it must now say
@@ -458,4 +461,11 @@ Traced through `manaRegenBonus`, the most recent stat:
   `QuiverState`'s canonical constructor public; 1 of 6 rows red, and only the constructor assertion,
   not the static-surface one.** `MUTAPPLYLORE2` is green and stays green; it is in the boot-only
   table above.
+- **Commit 2's three, all red, all with the byte delta DERIVABLE from the edit rather than quoted:**
+  `MUTQSBOOST` (`boosts` `>` → `>=`; +15 = 1 + 14; 1 of 6 red), `MUTQSFLOOR` (`arrows`
+  `Math.floor` → `Math.round`; +14 = 0 + 14; 1 of 6 red, on `2.9`, the value where floor and round
+  disagree), and `MUTQSALIAS` (`HealthState.quiverSizeBonusValue` reads `manaRegenBonus`; −1 + 14 =
+  +13; **3 red across two files**, including the entanglement row, which read `1.0` — the mana value
+  — where it expected `19.0`). That last one is the CORE half of the entanglement mutation the two
+  fixtures exist for; the item-level half still belongs to commits 3 and 5.
 - **Q7 remains owed** and is not discharged by this slice.

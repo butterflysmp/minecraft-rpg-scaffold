@@ -26,7 +26,7 @@ import java.util.OptionalLong;
  * in and out of item meta ... every line of arithmetic that lives here is a line no test can
  * reach."</i> <b>The verdict is core's; only the READ and the DELIVERY are paper's.</b>
  *
- * <h2>WHY A VALUE TYPE OF OPTIONALS RATHER THAN LOOSE PARAMETERS</h2>
+ * <h2>WHY OPTIONALS IN ONE TYPE RATHER THAN LOOSE PARAMETERS</h2>
  *
  * <p>The three stored values have exactly one legal shape between them, and a parameter list cannot
  * say so. {@code loaded} may be absent -- an item never stamped, which is a DEFECT and not an empty
@@ -69,9 +69,46 @@ import java.util.OptionalLong;
  * wrongly, and no type can prevent that. It is boot-only, and {@code PLAN-quiver-a2.md}'s commit
  * table carries the row.
  *
- * <p>The cost of the change is small and worth naming: no generated {@code equals}/{@code hashCode}/
- * {@code toString}. Nothing used them -- verified across both modules before the conversion --
- * because states are compared by the VERDICT they yield, never by identity.
+ * <h2>WHAT THE CONVERSION COST -- BOTH ITEMS, BECAUSE THE FIRST DRAFT LISTED ONE</h2>
+ *
+ * <p><b>1 &middot; Equality is now IDENTITY, and this is a WARNING and not a reassurance.</b> The
+ * generated {@code equals}/{@code hashCode}/{@code toString} are gone with the record, so
+ * {@code Object}'s are what remain:
+ *
+ * <pre>{@code assertEquals(QuiverState.loaded(9, 11), state)   // compares REFERENCES. Fails.}</pre>
+ *
+ * even when all four fields match. Measured, both modules: nothing compares two states -- no
+ * {@code Set}, no {@code Map} key, and every {@code assertEquals} touching this type compares an
+ * enum verdict or an {@code int}, never a state. So no caller is broken today. <b>The earlier
+ * wording said states "are compared by the VERDICT they yield, never by identity", which reads as
+ * an assurance that identity comparison does not happen -- when identity is now the only comparison
+ * available.</b> Nobody compares them; if somebody starts, the compiler will not say so.
+ *
+ * <p>Restoring value equality is a real option and it has a price this repo has not paid before:
+ * there are <b>zero</b> hand-written {@code equals(Object)} in {@code core} and {@code paper} main
+ * source, because value semantics here have always come from {@code record}. A hand-written one can
+ * silently omit a field; a generated one cannot. So if it is restored, the field list it covers
+ * needs pinning in the same breath -- and {@code QuiversSignatureTest}'s instance-surface pin will
+ * fail the moment {@code equals} is declared, which lands the author here.
+ *
+ * <p><b>2 &middot; Three public accessors went with it:</b> {@code loaded()},
+ * {@code reloadStartedAt()} and {@code reloadCompletesAt()}. Measured: <b>zero callers anywhere in
+ * either module</b>, so nothing broke -- and a narrower surface is an IMPROVEMENT, not a loss, since
+ * a caller holding the raw stamp and the authored value separately could re-do the resolution
+ * outside {@link #capacityOf}. It is named because a cost list that is short by one tells a
+ * reader the conversion did less than it did. {@link #capacity} is the one accessor that survives,
+ * and it returns the RESOLVED value, which is the only one anybody should be reading.
+ *
+ * <p><b>AND ONE THING THAT IS NOT A COST, BECAUSE IT WAS DRAFTED AS THE THIRD.</b> The draft said
+ * the conversion lost a canonical argument ordering, leaving {@code reloadStartedAt} and
+ * {@code reloadCompletesAt} adjacent and both {@code OptionalLong} -- the transposable-pair shape
+ * {@code DamageSignatureTest} exists to forbid, cited two sections above. <b>That hazard is
+ * unchanged.</b> The record's canonical constructor took the same four arguments in the same order,
+ * and the same four factory bodies ({@code from}, {@code loaded}, {@code reloading},
+ * {@code unstamped}) called it. Nothing about the ordering moved, so it is not a cost of this
+ * change -- it is a standing property, held by the constructor's both-or-neither check and
+ * {@code QuiverStateTest}'s deadline rows rather than by the type system. Recorded because a cost
+ * list that pads is exactly as misleading as one that is short.
  */
 public final class QuiverState {
 
@@ -242,7 +279,7 @@ public final class QuiverState {
      * restarting the timer twenty times a second -- which would push the deadline further away on
      * every packet and leave a weapon that never comes back, with nothing reporting a problem.
      *
-     * <p><b>IT TAKES NO CAPACITY, AND THAT IS THE POINT.</b> The capacity is the record's own
+     * <p><b>IT TAKES NO CAPACITY, AND THAT IS THE POINT.</b> The capacity is this class's own
      * component, resolved once by {@link #capacityOf} at the single site that builds a state. With
      * nowhere to pass a different one, <b>a verdict that disagrees with the tooltip is
      * unrepresentable</b> rather than merely forbidden -- the same move that removed

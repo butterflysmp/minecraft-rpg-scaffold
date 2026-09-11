@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.core.combat.stat;
 
 import io.github.butterflysmp.rpg.core.combat.Crit;
 import org.junit.jupiter.api.Test;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -266,5 +267,62 @@ class HealthStateTest {
         assertEquals(1.0, Crit.chance(player.critChanceValue()), EPS, "capped where it is used");
         // Mutation: clamp inside the Stat -> the cap is stated in two places and a future stat screen
         // showing "215% crit" vs "100%" depends on which one it asked -> reddens on the first row.
+    }
+
+    /**
+     * QUIVER SIZE: the whole six-accessor surface, and the SET is named rather than counted.
+     *
+     * <p>The stat is stored as a {@code double} because {@link Stat} sums doubles, and it MEANS whole
+     * arrows -- {@code QuiverSize} owns the conversion. This row stages the sum through the accessors
+     * a reconciler and a stat sheet actually use, so a member wired to the wrong {@code Stat} is
+     * visible here rather than three commits later at a boot.
+     *
+     * <p>Forces red: any of the six accessors bound to a different field; a base other than 0.0; a
+     * source key collision.
+     */
+    @Test
+    void theQuiverSizeAccessorsAllReadTheSameStatAndSumAcrossSources() {
+        var state = new HealthState(100, true);
+        assertEquals(0.0, state.quiverSizeBonusValue(), EPS, "base 0 -- the magazine is the weapon's");
+
+        assertTrue(state.setQuiverSizeModifier("quiversize:CHEST", 19.0), "equipping is a change");
+        assertTrue(state.setQuiverSizeModifier("quiversize:LEGS", 3.0));
+
+        assertEquals(22.0, state.quiverSizeBonusValue(), EPS, "19 + 3, summed under two keys");
+        assertEquals(19.0, state.quiverSizeModifierAmount("quiversize:CHEST"), EPS);
+        assertEquals(Set.of("quiversize:CHEST", "quiversize:LEGS"), state.quiverSizeModifierSources(),
+                "the SOURCES are named, not counted -- a count over an unnamed set cannot be checked");
+        assertEquals(2, state.quiverSizeModifierCount());
+
+        assertTrue(state.clearQuiverSizeModifier("quiversize:LEGS"), "a real removal reports true");
+        assertEquals(19.0, state.quiverSizeBonusValue(), EPS, "exactly the other one, no leak");
+        assertFalse(state.clearQuiverSizeModifier("quiversize:LEGS"), "removing it twice is no change");
+    }
+
+    /**
+     * QUIVER SIZE DOES NOT LEAK INTO THE OTHER ELEVEN, and the row that matters is the NEGATIVE one:
+     * mana regen holds still while quiver size moves.
+     *
+     * <p>This is the crit precedent -- <i>one item can raise how often you crit without touching how
+     * hard</i> -- applied to the twelfth stat, and it is the same observation the A2 plan buys with
+     * TWO fixtures instead of one. A stat wired to a neighbouring {@code Stat} by copy-paste passes
+     * every row that only checks its own value.
+     *
+     * <p>Forces red: {@code quiverSizeBonus} aliased to any existing field.
+     */
+    @Test
+    void movingQuiverSizeLeavesEveryOtherStatExactlyWhereItWas() {
+        var state = new HealthState(100, true);
+        state.setManaRegenModifier("manaregen:CHEST", 1.0);
+        state.setClassDamageModifier("OFF_HAND", 5.0);
+
+        state.setQuiverSizeModifier("quiversize:CHEST", 19.0);
+
+        assertEquals(19.0, state.quiverSizeBonusValue(), EPS, "the one that moved");
+        assertEquals(1.0, state.manaRegenBonusValue(), EPS, "mana regen held still");
+        assertEquals(5.0, state.classDamageValue(), EPS, "and so did class damage");
+        assertEquals(0, state.manaRegenModifierSources().stream()
+                        .filter(s -> s.startsWith("quiversize")).count(),
+                "and no quiver source landed on a neighbouring stat's set");
     }
 }

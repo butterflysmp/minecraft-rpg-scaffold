@@ -168,17 +168,22 @@ public final class PlayerHealthSystem implements HealthListener {
         EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
         UUID id = player.getUniqueId();
         RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, () -> {
-            // Eleven stats converge on the same scan: max HP from +HP items, attack damage from the
-            // held weapon's declared attack_damage (a MAIN_HAND modifier), attack speed from equipped
-            // speed sources, the class-damage bonus from equipped "+N <Class> Damage" gear
-            // MATCHING the held weapon's class, and the enchant-damage percent from the damage
-            // enchants ON the held weapon matching THAT weapon's class -- and six more below. Same
-            // leak-proof diff for every one of them, so a weapon swap/drop follows within a tick and
-            // respawn re-derives all eleven for free.
+            // EVERY STAT THIS LOOP CONVERGES IS RECONCILED BELOW -- the reconcile calls in this body
+            // ARE the list, so this sentence cannot disagree with itself. Five of them, to show the
+            // shape: max HP from +HP items, attack damage from the held weapon's declared
+            // attack_damage (a MAIN_HAND modifier), attack speed from equipped speed sources, the
+            // class-damage bonus from equipped "+N <Class> Damage" gear MATCHING the held weapon's
+            // class, and the enchant-damage percent from the damage enchants ON the held weapon
+            // matching THAT weapon's class. Same leak-proof diff for every one, so a weapon
+            // swap/drop follows within a tick and respawn re-derives them all for free.
             //
-            // (The headline count and this sentence disagreed for two slices: the number was bumped
-            // as stats were added while the prose kept saying "all five", which is the five it
-            // happens to enumerate. Phrased now so it cannot go stale again.)
+            // (THE COUNT IS GONE, AND THAT IS THE THIRD ATTEMPT AT THIS SENTENCE. It read "all five"
+            // while the set had grown; it was bumped to "Eleven stats ... all eleven" with a note
+            // saying it was "phrased now so it cannot go stale again" -- and that phrasing STILL LED
+            // WITH A COUNT. The A2 quiver slice adds two stats to this loop, which would have made
+            // both words wrong again, so the number came out one commit BEFORE it would have gone
+            // stale rather than one after. A count is a claim about a set; the set is the calls in
+            // this body; so the calls are what this sentence points at.)
             //
             // The class one is why a weapon swap needs no event of its own: the held weapon's class
             // is re-read every scan, so the same worn gear simply selects a different grant, and a
