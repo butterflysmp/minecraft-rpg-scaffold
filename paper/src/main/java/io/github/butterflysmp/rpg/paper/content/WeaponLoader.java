@@ -87,20 +87,50 @@ public final class WeaponLoader {
      * of typo had nothing looking for it.
      *
      * <p><b>THIS IS TODAY'S SET, AND IT IS HAND-MAINTAINED -- the same property
-     * {@code DamageSignatureTest} writes down about its own scope.</b> A new field added to
-     * {@link #parse} and forgotten here produces a spurious warning about a legitimate key. That is
-     * the SAFE direction of drift -- loud, visible on the next boot, and self-correcting -- rather
-     * than a real typo going unreported, so the maintenance burden fails towards noise and not
-     * towards silence.
+     * {@code DamageSignatureTest} writes down about its own scope. IT DRIFTS IN TWO DIRECTIONS AND
+     * THEY ARE NOT EQUALLY SAFE.</b>
      *
-     * <p><b>Scope, stated because the omission is otherwise indistinguishable from an oversight:</b>
-     * weapons only. Armor, shields, tools, enchants, abilities and mobs have the same hazard and no
-     * such check; a general strict-key facility across every loader is a separate pass, and this is
-     * the foothold rather than the finished job. Weapons go first because the quiver is the first
-     * field in this repository where a typo yields a weapon that is SILENTLY WRONG rather than
-     * visibly broken.
+     * <ul>
+     *   <li><b>A key ADDED to {@link #parse} and forgotten here</b> produces a spurious warning about
+     *       a legitimate key. Loud, visible on the next boot, self-correcting. <b>Safe.</b>
+     *   <li><b>A key REMOVED from {@link #parse} and left here</b> is the dangerous one: authoring it
+     *       then warns NOTHING and does NOTHING -- <b>which is exactly the defect this guard exists
+     *       to prevent, reintroduced by the guard's own staleness.</b> Every behavioural row stays
+     *       green: the typo row uses a deliberate misspelling and is unaffected, and the
+     *       legitimate-schema and shipped-file rows both assert SILENCE, which a stale entry produces.
+     *       Measured, not reasoned -- adding a bogus {@code "sweap"} entry passed all 33 rows.
+     * </ul>
+     *
+     * <p>An earlier version of this javadoc claimed the burden "fails towards noise and not towards
+     * silence", which is true of the first case and <b>false of the second</b>, in the direction that
+     * reads as reassurance. So the second is guarded rather than described:
+     * {@code WeaponLoaderTest.knownKeysAndTheKeysParseActuallyReadsAreTheSameSet} reads this file's
+     * own source and requires every entry below to appear as a real {@code s.getX("...")} read. Fields
+     * do get renamed here -- {@code remint} exists because a weapon's material can change in content
+     * -- so this is not hypothetical.
+     *
+     * <p><b>SCOPE, ON TWO AXES, stated because an omission is otherwise indistinguishable from an
+     * oversight.</b>
+     *
+     * <p><b>Axis one -- WEAPONS ONLY.</b> Armor, shields, tools, enchants, abilities and mobs have the
+     * same hazard and no such check; a general strict-key facility across every loader is a separate
+     * pass, and this is the foothold rather than the finished job. Weapons go first because the quiver
+     * is the first field in this repository where a typo yields a weapon that is SILENTLY WRONG
+     * rather than visibly broken.
+     *
+     * <p><b>Axis two -- TOP-LEVEL KEYS ONLY, and this is the sharper gap of the two.</b>
+     * {@code s.getKeys(false)} is not recursive, so <b>nothing here checks inside a {@code triggers:}
+     * block</b>: a misspelled {@code cooldwon_ticks}, {@code casst}, or {@code on_hit} is read by
+     * nobody and reported by nobody, exactly as a top-level typo was before this guard existed.
+     * <b>That is worse than the axis above, not a lesser case of it</b> -- {@code cooldown_ticks} IS a
+     * weapon's fire rate, so a silently-ignored one is precisely the "silently wrong rather than
+     * visibly broken" property given above as the reason weapons went first. The trigger-level key
+     * set is bounded and knowable ({@code name}, {@code description}, {@code cooldown_ticks},
+     * {@code cost}, {@code cast}, {@code on_hit}, {@code on_cast}), so this is a small extension
+     * rather than a hard one. <b>Owed, and deliberately not taken here</b> -- see
+     * {@code PLAN-quiver.md}.
      */
-    private static final java.util.Set<String> KNOWN_KEYS = java.util.Set.of(
+    static final java.util.Set<String> KNOWN_KEYS = java.util.Set.of(
             "id", "display_name", "element", "rarity", "class", "material",
             "attack_damage", "attack_speed", "sweep", "quiver_size", "reload_ticks",
             "flavor", "triggers", "craft_result");

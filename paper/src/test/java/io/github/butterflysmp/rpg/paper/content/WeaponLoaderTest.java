@@ -22,6 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -951,6 +954,69 @@ class WeaponLoaderTest {
         assertTrue(weapon.hasQuiver());
         assertEquals(3, weapon.quiverSize());
         assertEquals(7, weapon.reloadTicks());
+    }
+
+    /**
+     * KNOWN_KEYS AND THE KEYS {@code parse} ACTUALLY READS MUST BE THE SAME SET, BOTH WAYS.
+     *
+     * <p>The three behavioural rows around this one cannot see a STALE entry -- a key left in
+     * KNOWN_KEYS after {@code parse} stopped reading it. Authoring such a key then warns nothing and
+     * does nothing, <b>which is the exact defect this guard exists to prevent, reintroduced by the
+     * guard's own staleness.</b> Measured rather than reasoned: a bogus {@code "sweap"} entry passed
+     * all 33 rows in silence. The typo row uses a deliberate misspelling and is unaffected; the other
+     * two assert SILENCE, and a stale entry produces silence.
+     *
+     * <p>So the set is checked against the source that consumes it. <b>Matched on the READ pattern
+     * {@code s.getX("key")} rather than on the bare literal</b>, and that is load-bearing: every key
+     * also appears inside the KNOWN_KEYS declaration itself, so a plain "is this string in the file"
+     * check would be satisfied by the declaration and pass for every entry however stale -- a control
+     * that succeeds for the wrong reason.
+     *
+     * <p>{@code s.} is also what separates the two axes: top-level reads go through {@code s}, while
+     * trigger-level reads go through {@code t}, and only the former are in scope here.
+     *
+     * <p>On {@code DamageSignatureTest}'s idiom -- a condition that would otherwise be invisible at
+     * the point where it is broken, written where it WILL be seen, in a red build.
+     */
+    @Test
+    void knownKeysAndTheKeysParseActuallyReadsAreTheSameSet() throws IOException {
+        Path source = Path.of("src", "main", "java", "io", "github", "butterflysmp", "rpg",
+                "paper", "content", "WeaponLoader.java");
+        assertTrue(Files.isRegularFile(source), "source not found at " + source.toAbsolutePath());
+        String raw = Files.readString(source, StandardCharsets.UTF_8);
+
+        // COMMENTS MUST GO BEFORE ANYTHING IS MATCHED, and this is not defensive tidying -- the
+        // first version of this test FAILED because of it. KNOWN_KEYS' own javadoc explains the
+        // hazard using a worked example, `s.getInt("quivver_size", NO_QUIVER)`, and the scan
+        // dutifully reported `quivver_size` as a key the loader reads. This repository makes that
+        // shape the NORM rather than an edge case: its javadocs quote their own call sites
+        // constantly, which CLAUDE.md records as the reason a mutation target usually appears twice.
+        // A source scan that does not strip prose is reading documentation as if it were code.
+        String text = raw.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+
+        // AND THE STRIPPER NEEDS ITS OWN CONTROL, because a stripper that silently did nothing
+        // returns the whole file and every assertion below still runs -- on the unstripped text,
+        // which is the state that just failed. `{@code` appears only inside javadoc.
+        assertTrue(text.length() < raw.length(), "comment stripping removed nothing");
+        assertFalse(text.contains("{@code"), "javadoc survived the strip; the scan would read prose");
+
+        Set<String> read = new java.util.TreeSet<>();
+        Matcher m = Pattern.compile("\\bs\\.(?:get|is)\\w*\\(\"([a-z_]+)\"").matcher(text);
+        while (m.find()) read.add(m.group(1));
+
+        // A scan that discovers nothing reads exactly like a scan that found everything in order.
+        assertFalse(read.isEmpty(), "no s.getX(\"...\") reads found -- this test measured nothing");
+
+        // `id` is the one legitimate member of KNOWN_KEYS that parse never reads: it comes from the
+        // FILENAME, and every shipped file writes it redundantly, so without it every weapon warns.
+        // Exempted by name so the exemption is a decision rather than a hole.
+        Set<String> declared = new java.util.TreeSet<>(WeaponLoader.KNOWN_KEYS);
+        assertTrue(declared.remove("id"), "KNOWN_KEYS must carry 'id' -- shipped files all author it");
+
+        assertEquals(declared, read,
+                "KNOWN_KEYS and the keys parse reads have diverged. Entries here but never read are "
+                        + "STALE and silently re-open the hole this guard closes; keys read but not "
+                        + "listed warn on legitimate content.");
     }
 
     /**

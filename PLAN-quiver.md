@@ -233,11 +233,39 @@ Two further absence hazards, both measured:
   > field here where a typo yields a weapon that is *silently wrong* rather than visibly broken.
   >
   > **The known-key set is hand-maintained**, which is `DamageSignatureTest`'s "today's set" problem
-  > again. Drift fails in the SAFE direction: a new field forgotten there produces a spurious warning
-  > about a legitimate key — loud, visible on the next boot, self-correcting — never a real typo going
-  > unreported. Three rows guard it: the typo warns, the full legitimate schema is silent, and **every
-  > shipped weapon file is silent**, that last one because the first two use fixtures this test wrote
-  > and cannot say whether the check is about to cry wolf over nine real weapons.
+  > again. Four rows guard it: the typo warns, the full legitimate schema is silent, **every shipped
+  > weapon file is silent** (that one because the first two use fixtures this test wrote and cannot
+  > say whether the check is about to cry wolf over nine real weapons), and **`KNOWN_KEYS` equals the
+  > set `parse` actually reads**.
+  >
+  > > **THE FOURTH ROW EXISTS BECAUSE THE DRIFT CLAIM WAS HALF TRUE, AND THE FALSE HALF READ AS
+  > > REASSURANCE.** The javadoc said the burden *"fails towards noise and not towards silence"*.
+  > > That holds for a key ADDED to `parse` and forgotten in the set — spurious warning, loud,
+  > > self-correcting. It is **false for a key REMOVED from `parse` and left in the set**: authoring
+  > > it then warns nothing and does nothing, which is *the exact defect this guard exists to
+  > > prevent, reintroduced by the guard's own staleness*. **Measured, not argued** — a bogus
+  > > `"sweap"` entry passed all 33 rows in silence, because the typo row uses a deliberate
+  > > misspelling and the other two assert silence, which a stale entry produces.
+  > >
+  > > **And the fourth row's first version failed for a reason worth keeping.** It matched
+  > > `s.getX("…")` against the raw source and reported `quivver_size` as a key the loader reads —
+  > > picked up from `KNOWN_KEYS`' own javadoc, which uses that exact typo as its worked example.
+  > > **A source scan that does not strip prose is reading documentation as if it were code**, and
+  > > this repo makes that the norm rather than an edge case: `CLAUDE.md` records javadocs quoting
+  > > their own call sites as the reason a mutation target usually appears twice. The strip has its
+  > > own control, because a stripper that silently did nothing returns the whole file and every
+  > > assertion below then runs against the state that just failed.
+  >
+  > **SCOPE HAS TWO AXES AND THE PLAN PREVIOUSLY NAMED ONLY ONE.** Weapons only — *and* **top-level
+  > keys only**. `s.getKeys(false)` is not recursive, so **nothing checks inside a `triggers:`
+  > block**: a misspelled `cooldwon_ticks`, `casst` or `on_hit` is read by nobody and reported by
+  > nobody. **That is the sharper gap of the two, not a lesser case of it** — `cooldown_ticks` IS a
+  > weapon's fire rate, so a silently-ignored one is precisely the *"silently wrong rather than
+  > visibly broken"* property given as the reason weapons went first. The trigger-level set is
+  > bounded and knowable (`name`, `description`, `cooldown_ticks`, `cost`, `cast`, `on_hit`,
+  > `on_cast`), so it is a small extension. **OWED, and deliberately not taken in this commit** —
+  > recorded here rather than left as an absence, since an unstated omission is indistinguishable
+  > from an oversight.
 
 ### THE STANDING NO-STACK DECISION GAINS ITS SECOND AND STRONGER REASON
 
