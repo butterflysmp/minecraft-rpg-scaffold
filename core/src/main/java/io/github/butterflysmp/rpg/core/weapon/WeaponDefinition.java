@@ -31,12 +31,23 @@ public record WeaponDefinition(
         double attackDamage,
         double attackSpeed,
         double sweep,
+        int quiverSize,
+        int reloadTicks,
         List<TriggerBinding> triggers,
         List<String> flavor,
         Optional<String> craftResult
 ) implements GearDefinition {
     /** The item a weapon renders as when its content does not say otherwise: a sword. */
     public static final String DEFAULT_MATERIAL = "iron_sword";
+
+    /**
+     * A weapon with no magazine, which is every weapon shipped before the quiver existed.
+     *
+     * <p>Named rather than written as a bare 0 because it appears in every convenience constructor,
+     * where a literal would read as a capacity someone chose. The same 0-is-absent convention
+     * {@code attack_damage}, {@code attack_speed} and {@code sweep} already use on this record.
+     */
+    public static final int NO_QUIVER = 0;
 
     public WeaponDefinition {
         if (id == null || id.isBlank()) throw new IllegalArgumentException("weapon id required");
@@ -82,6 +93,32 @@ public record WeaponDefinition(
             throw new IllegalArgumentException("weapon '" + id
                     + "' declares sweep but has no vanilla-driven melee trigger, so it can never sweep");
         }
+        // THE QUIVER. quiver_size 0 means this weapon has no magazine, which is how every weapon
+        // shipped before the quiver existed simply has none -- there is no opt-in flag and no
+        // exclusion list. Negative is a content bug.
+        if (quiverSize < 0) throw new IllegalArgumentException("weapon '" + id + "' quiver_size must be >= 0, got: " + quiverSize);
+        if (reloadTicks < 0) throw new IllegalArgumentException("weapon '" + id + "' reload_ticks must be >= 0, got: " + reloadTicks);
+        // A reload with nothing to reload can never fire, and a quiver with no reload empties once
+        // and is inert forever. Both are silent no-ops on an authored mechanical axis, which is the
+        // failure the attack_speed and sweep guards above exist for -- so they are named here on
+        // exactly that precedent rather than left to be discovered in play.
+        if (reloadTicks > 0 && quiverSize == 0) {
+            throw new IllegalArgumentException("weapon '" + id
+                    + "' declares reload_ticks but no quiver_size, so it can never reload");
+        }
+        if (quiverSize > 0 && reloadTicks <= 0) {
+            throw new IllegalArgumentException("weapon '" + id
+                    + "' declares quiver_size but no reload_ticks, so its magazine could never be refilled");
+        }
+        // THE INPUT COLLISION. A quiver weapon spends left-click on its reload, so a left_click
+        // trigger on the same weapon would have two owners for one press and whichever ran first
+        // would win silently. hunters_bow.yml reserves left-click for "a future melee/special"; a
+        // quiver weapon is the case that spends it, and that has to be a refusal rather than a race.
+        if (quiverSize > 0 && bindsInput(triggers, "left_click")) {
+            throw new IllegalArgumentException("weapon '" + id
+                    + "' declares a quiver, which binds left_click to the reload, so it may not also"
+                    + " declare a left_click trigger");
+        }
         triggers = List.copyOf(triggers);
         // Optional authored prose for the tooltip -- absent is empty, never null.
         flavor = flavor == null ? List.of() : List.copyOf(flavor);
@@ -97,7 +134,23 @@ public record WeaponDefinition(
                             double attackSpeed, double sweep, List<TriggerBinding> triggers,
                             List<String> flavor) {
         this(id, displayName, element, rarity, weaponClass, material, attackDamage, attackSpeed,
-                sweep, triggers, flavor, Optional.empty());
+                sweep, NO_QUIVER, 0, triggers, flavor, Optional.empty());
+    }
+
+    /**
+     * Every shape above WITH a quiver, and without a craft-result claim.
+     *
+     * <p>A separate overload rather than widening the one above, for the reason that one exists:
+     * the canonical constructor already takes fourteen arguments and most weapons carry no magazine
+     * at all. A caller that wants a quiver says so by choosing this constructor, which reads better
+     * at the call site than two more zeroes on every weapon that has none.
+     */
+    public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
+                            WeaponClass weaponClass, String material, double attackDamage,
+                            double attackSpeed, double sweep, int quiverSize, int reloadTicks,
+                            List<TriggerBinding> triggers, List<String> flavor) {
+        this(id, displayName, element, rarity, weaponClass, material, attackDamage, attackSpeed,
+                sweep, quiverSize, reloadTicks, triggers, flavor, Optional.empty());
     }
 
     /** A sword-shaped MELEE weapon with no declared attack damage: the shape older tests use. */
@@ -142,6 +195,31 @@ public record WeaponDefinition(
             if (BasicMelee.isVanillaDriven(binding.ability())) return true;
         }
         return false;
+    }
+
+    /**
+     * Does this trigger list bind {@code input}?
+     *
+     * Static and list-taking for {@link #hasVanillaMeleeTrigger}'s reason: the compact constructor
+     * needs it before the components are assigned, so {@link #trigger(String)} cannot be called.
+     */
+    private static boolean bindsInput(List<TriggerBinding> triggers, String input) {
+        for (TriggerBinding binding : triggers) {
+            if (binding.input().equals(input)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Does this weapon carry a magazine that empties and must be reloaded?
+     *
+     * <p>The one question every quiver call site asks, so the 0-is-absent convention is read in
+     * exactly one place rather than re-expressed as {@code quiverSize() > 0} at each of them. Same
+     * job {@code SweepShare.sweeps} does for the sweep fraction, and for the same reason: a
+     * convention spelled out at N sites is a convention that will be spelled differently at one.
+     */
+    public boolean hasQuiver() {
+        return quiverSize > NO_QUIVER;
     }
 
     /** The binding fired by this input, if the weapon has one. */

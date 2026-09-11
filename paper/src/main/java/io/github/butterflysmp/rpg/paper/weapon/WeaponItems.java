@@ -136,6 +136,19 @@ public final class WeaponItems {
             // exists to prevent.
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 
+            // THE MAGAZINE, STAMPED FULL AND EXPLICITLY. A no-op for the weapons that carry none.
+            //
+            // BEFORE applyLore, and that ordering is load-bearing rather than stylistic: the tooltip
+            // renders the STAMPED count, so lore built before the stamp would render the wrong number.
+            //
+            // This is the MIRROR of the enchant-block ordering note in remint() below, not the same
+            // trap -- and the difference is why this call cannot simply sit wherever the enchant
+            // write does. Enchants are safe at mint because an empty container renders NOTHING
+            // ("which was a no-op", in that note's own words) and because applyLore runs TWICE per
+            // re-mint, so the second pass sees the carried state and corrects the first. A QUIVER
+            // INVERTS BOTH HALVES: absence renders a NUMBER, and a fresh mint has no second pass.
+            QuiverItems.stampFull(meta, weapon, keys);
+
             // Derived stats + authored flavour, plus any enchant block the item's own state calls
             // for. Purely additive; the block above is untouched.
             applyLore(meta, weapon, adapters);

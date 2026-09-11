@@ -99,6 +99,22 @@ public final class WeaponLoader {
         // sweep on a weapon with no vanilla-driven melee trigger -- the file is skipped and named,
         // like any malformed one.
         double sweep = s.getDouble("sweep", 0.0);
+        // THE QUIVER: how many rounds the magazine holds, and how long refilling it takes. Both
+        // ABSENT MEANS NO QUIVER, on the same 0-is-absent convention as the three fields above, which
+        // is what keeps this from being a migration -- every weapon already shipped simply carries no
+        // magazine on the next restart rather than being rejected by a newly required field.
+        //
+        // WeaponDefinition rejects a negative, rejects each of the pair declared without the other
+        // (a reload with nothing to reload, a magazine that could never be refilled), and rejects a
+        // quiver weapon that also declares a left_click trigger -- left-click is the reload. The file
+        // is skipped and named, like any malformed one.
+        //
+        // NOTE THE ASYMMETRY WITH EVERY FIELD ABOVE, because it is the one thing a reader will get
+        // wrong here: quiver_size is an INT, not a double. The magazine is a count of rounds, and
+        // "3.5 arrows" is not a quantity -- so the rounding rule for a PERCENTAGE modifier reaching
+        // it lives in core.weapon.Quiver.applyPercent and is not re-expressed at this boundary.
+        int quiverSize = s.getInt("quiver_size", WeaponDefinition.NO_QUIVER);
+        int reloadTicks = s.getInt("reload_ticks", 0);
         // Authored tooltip prose. Optional; absent -> empty list. MUST be a YAML list: getStringList
         // returns [] for a scalar (flavor: "one line" would vanish silently -- the "finds nothing"
         // trap). So warn, loudly and named, when someone writes it as a scalar, and don't skip the
@@ -157,7 +173,8 @@ public final class WeaponLoader {
         Optional<String> craftResult = Optional.ofNullable(s.getString("craft_result"));
 
         return new WeaponDefinition(id, displayName, element, rarity, weaponClass, material,
-                attackDamage, attackSpeed, sweep, bindings, flavor, craftResult);
+                attackDamage, attackSpeed, sweep, quiverSize, reloadTicks, bindings, flavor,
+                craftResult);
     }
 
     private static Rarity rarity(String raw) {

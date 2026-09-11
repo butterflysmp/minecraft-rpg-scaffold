@@ -137,6 +137,58 @@ public final class Keys {
      * for.
      */
     public final NamespacedKey enchantRolled;
+
+    /**
+     * How many rounds a quiver weapon currently holds (an INTEGER). Per ITEM, and the first PDC value
+     * in this repository that CHANGES IN PLAY -- every other per-item key here is written once at
+     * acquisition and then only carried.
+     *
+     * <p><b>ABSENCE IS NOT A NEUTRAL VALUE, and that is why this key is read the way it is.</b> An
+     * unstamped quiver and an empty one must never resolve alike: a default of 0 would make a
+     * forgotten stamp indistinguishable from a spent magazine, which is a weapon that silently never
+     * fires. So {@code WeaponItems.mint} stamps this FULL, explicitly, and a weapon whose definition
+     * declares a quiver but whose item carries no count is a DEFECT that warns -- never a zero that
+     * is accepted.
+     *
+     * <p>The argument is not new here. {@code volley_stone.yml} solved the same problem for
+     * {@code attack_damage: 0}, authored rather than omitted: <i>"the absence would resolve to
+     * exactly the value the omission meant -- which is the trap: it works, it is invisible, and it
+     * hides a decision."</i>
+     *
+     * <p>Carried across a re-mint by {@code GearItems.carryInstanceData} alongside wear and the
+     * enchant blob. Losing it would be a relog-to-refill exploit, exactly as losing
+     * {@link #enchantData} would be a relog-to-unlock one -- and a re-mint happens on every join.
+     */
+    public final NamespacedKey quiverLoaded;
+
+    /**
+     * The two ticks bounding a reload in progress: when it STARTED and when it COMPLETES (both LONG).
+     * Absent together when no reload is running.
+     *
+     * <p><b>On the item rather than on the player, which is what makes the reload leak-proof.</b>
+     * There is no expiry event to miss -- the player can swap the weapon away, drop it, die or log
+     * out, and the state is simply read again from whatever item is in hand. The alternative, a
+     * scheduled task or a per-player timer, has to catch every departure path, and
+     * {@code ModifierReconciler}'s javadoc already records why that shape loses: <i>"a single missed
+     * event LEAKS."</i> It also settles two-weapons-in-one-inventory for free, since cooldowns are
+     * keyed per PLAYER per {@code weaponId/input} and could not tell two quivers apart.
+     *
+     * <p><b>BOTH halves are stored, and the START is not redundant.</b> It is the bound on the
+     * restart guard: {@code Bukkit.getCurrentTick()} resets on server restart, and a deadline written
+     * against the old counter would otherwise never arrive. The guard asks {@code now < startedAt},
+     * because <b>a guard's bound must be a quantity that cannot legitimately change between the stamp
+     * and the read</b> -- and the reload DURATION, the obvious bound, is precisely what slice A2 makes
+     * movable by gear. See {@code core.weapon.Quiver.reloadComplete}, where that is measured.
+     *
+     * <p>These two ARE the {@link #classDamageBoost} discipline rather than the {@link #enchantData}
+     * one: they are two halves of one value, written and cleared together, and an item carrying one
+     * without the other is malformed rather than meaningfully half-reloaded.
+     */
+    public final NamespacedKey quiverReloadStartedAt;
+
+    /** The completion half of the pair documented on {@link #quiverReloadStartedAt}. */
+    public final NamespacedKey quiverReloadCompletesAt;
+
     /**
      * The armor-bar override: an entity-side {@code armor} modifier that cancels worn armor's
      * native contribution and refills the bar from damage reduction instead. A modifier IDENTITY,
@@ -190,6 +242,9 @@ public final class Keys {
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");
+        this.quiverLoaded = new NamespacedKey(plugin, "quiver_loaded");
+        this.quiverReloadStartedAt = new NamespacedKey(plugin, "quiver_reload_started_at");
+        this.quiverReloadCompletesAt = new NamespacedKey(plugin, "quiver_reload_completes_at");
         this.armorBarOverride = new NamespacedKey(plugin, "armor_bar_override");
         this.attackSpeedOverride = new NamespacedKey(plugin, "attack_speed_override");
     }
