@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.weapon.Quiver;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
+import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -87,6 +88,49 @@ public final class QuiverItems {
         if (!weapon.hasQuiver()) return;
         meta.getPersistentDataContainer().set(
                 keys.quiverLoaded, PersistentDataType.INTEGER, Quiver.reload(weapon.quiverSize()));
+    }
+
+    /**
+     * Set the magazine to {@code count} <b>and re-render the tooltip</b> -- the only way to change a
+     * count on an item that is already in play.
+     *
+     * <h2>WHY THE WRITE AND THE RENDER ARE ONE CALL</h2>
+     *
+     * <p><b>They were two, and the display silently stopped tracking.</b> The boot gate's V1 found it:
+     * a bolt fired, the stored count went 9 → 8, and <i>"the number doesn't change in the lore of the
+     * item"</i>. {@code spendRound} wrote the key and called {@code updateInventory}, and nothing
+     * anywhere re-ran {@code applyLore} — which executes only from {@code mint} and {@code remint}. So
+     * the tooltip carried whatever was rendered AT MINT TIME and never moved again.
+     *
+     * <p><b>THE SYMPTOM WAS "THE COUNTER ONLY UPDATES WHEN YOU RELOG", AND THAT IS WHY THREE GREEN
+     * ROWS WERE NOT EVIDENCE AGAINST IT.</b> Q4, Q5 and Q6 — relog, {@code /rpg refresh}, the enchant
+     * table — all route through {@code remint}, which DOES call {@code applyLore}. They passed because
+     * the tooltip snaps to the correct value at exactly those three moments. Three greens entirely
+     * consistent with the defect.
+     *
+     * <p><b>So the rule is structural rather than remembered:</b> a per-item value that is RENDERED
+     * must be re-rendered wherever it is WRITTEN, or the display is only ever correct at mint. Making
+     * it one call means a fourth write site cannot forget — there is no way to express the write
+     * without the render. {@link #stampFull} is the single exception and is <b>MINT-ONLY</b>, where
+     * {@code applyLore} runs immediately afterwards by construction; {@code QuiversSignatureTest}
+     * pins that {@code Quivers} calls neither it nor the raw key write.
+     *
+     * <h2>refreshLore, NOT remint -- and the reason is correctness before cost</h2>
+     *
+     * <p>{@code remint} was the call already to hand and it is the wrong one. It builds a <b>NEW
+     * ItemStack</b>, so every shot would replace the stack in the player's hand -- churning item
+     * identity mid-combat, at up to the input repeat rate, with whatever that does to cursors, menus
+     * and {@code isSimilar} comparisons. It also re-resolves the material, re-applies the attribute
+     * block, stamps the magazine FULL and then carries the old count back over it, and runs
+     * {@code applyLore} TWICE. {@link WeaponItems#refreshLore} rebuilds one list of components on the
+     * meta already in hand. The cost argument is real but secondary; the identity argument is the one
+     * that decides it.
+     */
+    public static void setLoaded(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters,
+                                 int count) {
+        meta.getPersistentDataContainer().set(
+                adapters.keys().quiverLoaded, PersistentDataType.INTEGER, count);
+        WeaponItems.refreshLore(meta, weapon, adapters);
     }
 
     /**

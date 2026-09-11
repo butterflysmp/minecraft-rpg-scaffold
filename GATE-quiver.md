@@ -1,9 +1,51 @@
 # GATE — the quiver, slice A1
 
-**DRAFT. Not run.** Written before the boot, deliberately: *a gate row written after the boot is
-worthless*, and five of these rows are the only witness the verdict mapping will ever get.
+**RUN 2026-09-11.** Branch `feat/quiver`, tip `5de5346` at the boot. `./scripts/dev-server.sh`.
 
-Branch `feat/quiver`, tip `c30d26a` at drafting. `./scripts/dev-server.sh`.
+> ## RESULT: V1 FAILED ON ITS DISPLAY HALF. EVERYTHING ELSE ANSWERED BY BLANKET.
+>
+> **The evidence class is recorded before the rows, because it changes what each tick is worth.**
+> The operator answered *"all gates are good"* — one blanket — with a single detailed observation on
+> V1. So every row below is **per-row in shape and blanket in evidence**, except V1.
+>
+> | | |
+> |---|---|
+> | **V1** | **FAIL (display half).** Bolt **YES**, count **9 → 8**, and *"the number doesn't change in the lore of the item"*. The mechanism half passes — the magazine is not infinite. The tooltip does not move. |
+> | **Q12** | **FAIL.** Not covered by the blanket: it is the same observation V1 made, staged deliberately, so with no re-render it reads `9/9` then `9/9`. Recorded as a fail rather than inherited as a pass. |
+> | **Q7**, **V2** | **UNRUN.** Both need a *value*, and "good" is not one — see below. |
+> | everything else | **blanket-green.** |
+>
+> **Q4, Q5 AND Q6 PASSING WAS CONSISTENT WITH THE DEFECT, NOT EVIDENCE AGAINST IT.** Relog,
+> `/rpg refresh` and the enchant table all route through `remint`, which *does* call `applyLore` — so
+> the tooltip snapped to the correct number at exactly those three moments. The bug presented as
+> *"the counter only updates when you relog."* **Three greens that look like the display working.**
+>
+> **THE ROW WAS RIGHT; THE REPORTING FORM NEARLY LOST IT.** Q12 was written *before the lore line
+> existed*, named in advance so it could not go missing — and it did not go missing. It was
+> **answered by a blanket that could not see it**, and what surfaced the defect was the operator's
+> one freehand note on V1. A blanket cannot distinguish a row it checked from a row it skipped; that
+> is the same defect this file's own reporting section warns about, arriving through the answer
+> rather than through the questions.
+>
+> **FIXED** in the commit that records this: `QuiverItems.setLoaded` writes the count **and**
+> re-renders in one call, so a later write site cannot express one without the other, and
+> `QuiversSignatureTest.quiversNeverWritesTheCountWithoutRenderingIt` fails the build if `Quivers`
+> reopens the raw path. **V1's display half and Q12 must be RE-RUN.**
+
+### Why Q7 and V2 are UNRUN rather than green
+
+The operator has ruled that per-row figures are not worth recording on most rows, and he is right
+about most of them — Q3/Q4/Q5/Q6 are binaries dressed as figures. **Two are not:**
+
+- **Q7, the repeat floor** — a number that exists nowhere else, and the one that decides whether
+  slice C's dual-wield halving buys anything at all. ***"Good" has nothing to be good against.***
+- **V2, which message appeared** — *"good"* cannot separate the empty notice from *"On cooldown"*,
+  and that separation **is** the row. A blanket over V2 records that something refused, which was
+  never in doubt.
+
+---
+
+## Staging
 
 > **Kill orphaned `java.exe` first.** The script dies; two JVMs do not. They hold the deployed jar,
 > `rm -f` fails with *Device or resource busy*, `set -e` aborts the deploy, and the server boots the

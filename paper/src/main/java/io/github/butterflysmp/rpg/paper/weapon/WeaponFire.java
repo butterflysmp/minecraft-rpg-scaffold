@@ -147,7 +147,7 @@ public final class WeaponFire {
                 // empty, reloading) returns before this line, so no round is lost to a shot that
                 // never happened. Still on the player's thread -- the region hop is below.
                 if (weapon.hasQuiver() && !input.equals("left_click")) {
-                    Quivers.spendRound(player, adapters);
+                    Quivers.spendRound(player, weapon, adapters);
                 }
                 // A dash steers by WASD, not by the look-aim built above. Resolve it HERE,
                 // still on the player's thread, before the region hop -- getCurrentInput() is

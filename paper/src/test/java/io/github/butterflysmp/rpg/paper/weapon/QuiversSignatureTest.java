@@ -3,12 +3,17 @@ package io.github.butterflysmp.rpg.paper.weapon;
 import io.github.butterflysmp.rpg.core.weapon.QuiverState;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -80,6 +85,57 @@ class QuiversSignatureTest {
                             + "is the half that persists them, so needing one marks the committing "
                             + "path -- it does not define it.");
         }
+    }
+
+    /**
+     * A COUNT WRITTEN IN PLAY MUST CARRY ITS OWN RENDER, AND {@code Quivers} MAY NOT WRITE ONE RAW.
+     *
+     * <p><b>This is boot row V1's display failure turned into a red build.</b> {@code spendRound}
+     * wrote the count key and called {@code updateInventory}, and nothing re-ran {@code applyLore} --
+     * which executes only from {@code mint} and {@code remint}. The stored count moved, the tooltip
+     * did not, and <b>three green rows were entirely consistent with the defect</b>: Q4, Q5 and Q6
+     * (relog, {@code /rpg refresh}, the enchant table) all route through {@code remint}, so the
+     * display snapped to the right number at exactly those three moments. The bug presented as
+     * <i>"the counter only updates when you relog."</i>
+     *
+     * <p>The fix is structural rather than remembered: {@link QuiverItems#setLoaded} writes AND
+     * renders in one call, so <b>a fourth write site cannot express the write without the render.</b>
+     * This guards the other half — that nobody reopens the raw path beside it.
+     *
+     * <p>{@link QuiverItems#stampFull} is the single legitimate raw writer and is <b>MINT-ONLY</b>,
+     * where {@code applyLore} follows by construction. A call to it from {@code Quivers} would be an
+     * in-play write with no render, which is precisely the shipped defect, so it is refused here too.
+     *
+     * <p>Reads the source rather than reflecting, because the hazard is a CALL inside a method body
+     * and no signature shows it. Comments are stripped first — this file's own javadoc names both
+     * forbidden strings, and a scan that does not strip prose reads documentation as if it were code.
+     */
+    @Test
+    void quiversNeverWritesTheCountWithoutRenderingIt() throws IOException {
+        Path source = Path.of("src", "main", "java", "io", "github", "butterflysmp", "rpg",
+                "paper", "weapon", "Quivers.java");
+        assertTrue(Files.isRegularFile(source), "source not found at " + source.toAbsolutePath());
+        String raw = Files.readString(source, StandardCharsets.UTF_8);
+        String code = raw.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+
+        // The stripper needs its own control: one that silently did nothing returns the whole file,
+        // and every assertion below would then run against prose.
+        assertTrue(code.length() < raw.length(), "comment stripping removed nothing");
+        assertFalse(code.contains("{@link"), "javadoc survived the strip; the scan would read prose");
+
+        assertFalse(code.contains("quiverLoaded"),
+                "Quivers must not touch the count key directly -- go through QuiverItems.setLoaded, "
+                        + "which writes AND re-renders. A raw write is boot row V1's defect: the "
+                        + "stored count moves and the tooltip does not.");
+        assertFalse(code.contains("stampFull"),
+                "stampFull is MINT-ONLY (applyLore follows it by construction). Calling it from "
+                        + "Quivers is an in-play write with no render -- the same defect by a "
+                        + "different door. Use setLoaded.");
+
+        // POSITIVE CONTROL: both assertions above are satisfied by an empty file, so prove the
+        // sanctioned call is actually present and this class really does write counts.
+        assertTrue(code.contains("QuiverItems.setLoaded"),
+                "Quivers writes no counts at all -- either the scan is broken or the funnel is gone");
     }
 
     /**

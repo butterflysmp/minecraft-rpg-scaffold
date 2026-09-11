@@ -89,7 +89,7 @@ public final class Quivers {
             case RELOAD_MATURED -> {
                 // The read IS the tick: the reload finished the moment anything looked. Refill and
                 // let the shot through, so the press that matures a reload is not wasted.
-                finishReload(player, held, weapon, keys);
+                finishReload(player, held, weapon, adapters);
                 yield Optional.empty();
             }
             case UNSTAMPED -> {
@@ -120,7 +120,8 @@ public final class Quivers {
                 adapters.warnOnce("weapon '" + weapon.id() + "' declares a quiver but an item in"
                         + " play carries NO count -- it was minted by a path that does not stamp"
                         + " one. Treating it as full; the defect is in that mint path, not the item.");
-                held.editMeta(meta -> QuiverItems.stampFull(meta, weapon, keys));
+                held.editMeta(meta -> QuiverItems.setLoaded(
+                        meta, weapon, adapters, Quiver.reload(weapon.quiverSize())));
                 player.getInventory().setItemInMainHand(held);
                 yield Optional.empty();
             }
@@ -151,16 +152,23 @@ public final class Quivers {
         return new QuiverState(loaded, OptionalLong.of(startedAt), OptionalLong.of(completesAt));
     }
 
-    /** Spend one round off the held weapon. Called only after a Success. */
-    public static void spendRound(Player player, AdapterContext adapters) {
+    /**
+     * Spend one round off the held weapon. Called only after a Success.
+     *
+     * <p>Takes the DEFINITION as well as the player because the write carries its own render, and
+     * rendering needs to know what the weapon IS -- see {@link QuiverItems#setLoaded}. It gained that
+     * parameter when the display half of boot row V1 failed.
+     */
+    public static void spendRound(Player player, WeaponDefinition weapon, AdapterContext adapters) {
         Keys keys = adapters.keys();
         ItemStack held = player.getInventory().getItemInMainHand();
         OptionalInt loaded = QuiverItems.loadedIn(held, keys);
         if (loaded.isEmpty()) return;   // warned about in resolveForShot; never silently invent a count
 
         int spent = Quiver.spend(loaded.getAsInt());
-        held.editMeta(meta -> meta.getPersistentDataContainer()
-                .set(keys.quiverLoaded, PersistentDataType.INTEGER, spent));
+        // WRITE AND RENDER IN ONE CALL. Writing the key alone is what shipped: the stored count
+        // moved, the tooltip did not, and it looked correct until a relog re-minted the item.
+        held.editMeta(meta -> QuiverItems.setLoaded(meta, weapon, adapters, spent));
         // Write the stack back explicitly rather than trusting the main-hand read to be a live
         // mirror, and updateInventory so the tooltip moves on this shot -- the same pair, for the
         // same reasons, as WeaponDurability.applyWearOnUse.
@@ -187,7 +195,7 @@ public final class Quivers {
         switch (stateOf(held, keys).reloadVerdict(now, weapon.quiverSize())) {
             case ALREADY_RELOADING, ALREADY_FULL -> { return false; }
             case RELOAD_MATURED -> {
-                finishReload(player, held, weapon, keys);
+                finishReload(player, held, weapon, adapters);
                 return false;
             }
             case UNSTAMPED -> {
@@ -227,9 +235,13 @@ public final class Quivers {
     }
 
     /** Stamp the magazine full and clear the reload pair. Both keys go together or neither does. */
-    private static void finishReload(Player player, ItemStack held, WeaponDefinition weapon, Keys keys) {
+    private static void finishReload(Player player, ItemStack held, WeaponDefinition weapon,
+                                     AdapterContext adapters) {
+        Keys keys = adapters.keys();
         held.editMeta(meta -> {
-            QuiverItems.stampFull(meta, weapon, keys);
+            // setLoaded, not stampFull: stampFull is MINT-ONLY, where applyLore follows by
+            // construction. This item is in play, so the write must carry its own render.
+            QuiverItems.setLoaded(meta, weapon, adapters, Quiver.reload(weapon.quiverSize()));
             meta.getPersistentDataContainer().remove(keys.quiverReloadStartedAt);
             meta.getPersistentDataContainer().remove(keys.quiverReloadCompletesAt);
         });
