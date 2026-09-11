@@ -149,14 +149,23 @@ public final class Quivers {
         // caller writing `stamped.orElse(weapon.quiverSize())` inline would be a second resolver,
         // and the moment two exist the tooltip and the refusal logic can disagree -- which is the
         // exact defect the stamp was introduced to prevent. QuiversSignatureTest fails the build if
-        // a second call to capacityOf appears anywhere in paper.
-        int capacity = QuiverState.capacityOf(QuiverItems.capacityIn(held, keys), weapon.quiverSize());
+        // a sixth resolver appears in EITHER module. Widened from paper-only in commit 1c: capacityOf
+        // is public on a CORE class, so a paper-only scan was a claim true by accident of where the
+        // code sits.
+        OptionalInt stamped = QuiverItems.capacityIn(held, keys);
         Long startedAt = read(held, keys.quiverReloadStartedAt);
         Long completesAt = read(held, keys.quiverReloadCompletesAt);
-        if (startedAt == null || completesAt == null) {
-            return new QuiverState(loaded, capacity, OptionalLong.empty(), OptionalLong.empty());
-        }
-        return new QuiverState(loaded, capacity, OptionalLong.of(startedAt), OptionalLong.of(completesAt));
+        OptionalLong from = startedAt == null ? OptionalLong.empty() : OptionalLong.of(startedAt);
+        OptionalLong to = completesAt == null ? OptionalLong.empty() : OptionalLong.of(completesAt);
+        // NO DECISION HERE. QuiverState.from resolves the capacity, so the stamp-beats-authored rule
+        // is exercised by a core row rather than by a source scan over this call site -- see that
+        // factory's javadoc for the mutation that walked through here green.
+        //
+        // WHAT IS STILL UNWITNESSED, SAID RATHER THAN LEFT: that the five values below are the REAL
+        // reads. A mutation passing OptionalInt.empty() in place of `stamped` would be green, because
+        // nothing here can be unit-tested -- stateOf needs an ItemStack. The DECISION moved to core
+        // and is covered; this ARGUMENT PASSING is boot-only, and GATE-quiver-a2 carries the row.
+        return QuiverState.from(loaded, stamped, weapon.quiverSize(), from, to);
     }
 
     /**

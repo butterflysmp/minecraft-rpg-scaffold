@@ -219,4 +219,42 @@ class QuiverStateTest {
         assertEquals(0, QuiverState.capacityOf(OptionalInt.empty(), 0),
                 "and a weapon with no quiver stays at no quiver");
     }
+
+    /**
+     * THE STAMP REACHES THE VERDICT, NOT JUST THE TOOLTIP -- and this is the worse of the two holes.
+     *
+     * <p>{@code MUTSTATEDROP} -- replacing the stamp with {@code OptionalInt.empty()} where
+     * {@code Quivers.stateOf} resolved it -- passed the ENTIRE suite. {@code stateOf} needs an
+     * {@code ItemStack}, so it has no unit test; the guard over its call site is a source scan, which
+     * proves no sixth resolver exists and <b>nothing about what the five do.</b>
+     *
+     * <p><b>The consequence, once capacity is a stat:</b> a Ranger boosted to 11 fires down to 9,
+     * presses reload, and {@link QuiverState.Reload#ALREADY_FULL} tells them the magazine is full.
+     * <b>The last two rounds are permanently unreachable</b> — while the tooltip, resolved correctly
+     * from the same stamp, reads 9/11 beside it. The tooltip right and the mechanic wrong.
+     *
+     * <p>Staged through {@link QuiverState#from}, which is where the resolution moved so that a row
+     * could reach it: 9 loaded, stamp 11, weapon declaring 9.
+     */
+    @Test
+    void aStampedCapacityAboveTheAuthoredOneLeavesRoomToReload() {
+        QuiverState boosted = QuiverState.from(OptionalInt.of(9), OptionalInt.of(11), 9,
+                OptionalLong.empty(), OptionalLong.empty());
+
+        assertEquals(11, boosted.capacity(), "the stamp, not the weapon's authored 9");
+        assertEquals(QuiverState.Reload.BEGIN, boosted.reloadVerdict(START),
+                "9 of 11 is NOT full -- reading the authored 9 here strands the last two rounds");
+        assertEquals(QuiverState.Fire.FIRE, boosted.fireVerdict(START));
+    }
+
+    /** And the fallback through the same factory, so the pair discriminates. */
+    @Test
+    void withNoStampTheFactoryFallsBackToTheAuthoredCapacity() {
+        QuiverState plain = QuiverState.from(OptionalInt.of(9), OptionalInt.empty(), 9,
+                OptionalLong.empty(), OptionalLong.empty());
+
+        assertEquals(9, plain.capacity());
+        assertEquals(QuiverState.Reload.ALREADY_FULL, plain.reloadVerdict(START),
+                "9 of an authored 9 IS full -- the fallback must not invent headroom either");
+    }
 }

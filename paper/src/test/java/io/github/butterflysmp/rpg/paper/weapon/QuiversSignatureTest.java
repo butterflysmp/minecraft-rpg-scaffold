@@ -210,6 +210,44 @@ class QuiversSignatureTest {
      *   <li>{@code WeaponLore.build} — resolves it for the tooltip.
      * </ul>
      *
+     * <h2>WHAT THIS GUARD DOES NOT DO, AND IT IS THE LARGER HALF</h2>
+     *
+     * <p><b>A GUARD OVER A SET OF CALL SITES IS NOT A TEST OF WHAT THOSE CALL SITES DO.</b> It proves
+     * no sixth resolver exists. It cannot prove the five resolve correctly, and <b>it goes green for
+     * every one of them that silently stops reading the stamp.</b> Measured, three times:
+     *
+     * <ul>
+     *   <li>{@code MUTSTAMPDROP} — {@code WeaponLore} ignores the stamp. <b>Green</b> until
+     *       {@code WeaponLoreTest} gained a row staging a stamp that DIFFERS from the authored value.
+     *   <li>{@code MUTSTATEDROP} — {@code Quivers.stateOf} ignores it, stranding a boosted Ranger's
+     *       last rounds behind {@code ALREADY_FULL}. <b>Green</b> until the resolution moved into
+     *       {@link QuiverState#from}, where a core row can reach it.
+     *   <li>{@code MUTAPPLYLORE2} — {@code WeaponItems.applyLore} passes {@code empty} while KEEPING
+     *       the {@code capacityInMeta} call, so the set is unchanged. <b>Green, and still is.</b>
+     * </ul>
+     *
+     * <p><b>The second of those was found by review, not by this guard, and the first version of the
+     * third was caught only by luck</b> — dropping the call shrank the set, so the membership check
+     * fired for a reason unrelated to the behaviour. Keeping the call makes it green again.
+     *
+     * <p><b>STATUS OF ALL FIVE, enumerated rather than counted:</b>
+     *
+     * <table><tr><th>site</th><th>role</th><th>witnessed?</th></tr>
+     * <tr><td>{@code QuiverState.capacityOf} / {@code from}</td><td>the resolution</td>
+     *     <td><b>YES</b> — {@code QuiverStateTest}, MUTFACTORYDROP red</td></tr>
+     * <tr><td>{@code WeaponLore.build}</td><td>resolves for the tooltip</td>
+     *     <td><b>YES</b> — {@code WeaponLoreTest}, MUTSTAMPDROP red</td></tr>
+     * <tr><td>{@code Quivers.stateOf}</td><td>reads five values, decides nothing</td>
+     *     <td><b>NO</b> — needs an {@code ItemStack}. Boot-only; the decision it used to make has moved.</td></tr>
+     * <tr><td>{@code WeaponItems.applyLore}</td><td>plumbs the stamp to the tooltip</td>
+     *     <td><b>NO</b> — needs an {@code ItemStack}. Boot-only.</td></tr>
+     * <tr><td>{@code QuiverItems.capacityIn}</td><td>the accessor; resolves nothing</td>
+     *     <td>n/a — there is no stamp-versus-authored decision in it</td></tr>
+     * </table>
+     *
+     * <p>The two NOs are argument-passing with no decision in them, and both are named in
+     * {@code GATE-quiver-a2} rather than left to look covered.
+     *
      * <p>A sixth is a deliberate edit to this list, which is the moment to ask whether it should
      * instead be reading the state the others already built.
      *

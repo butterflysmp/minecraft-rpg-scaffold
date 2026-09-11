@@ -93,6 +93,37 @@ public record QuiverState(OptionalInt loaded, int capacity, OptionalLong reloadS
         return stampedCapacity.orElse(authoredCapacity);
     }
 
+    /**
+     * Build a state from exactly what an item carries, resolving the capacity on the way in.
+     *
+     * <h2>WHY THE RESOLUTION LIVES IN THE FACTORY AND NOT AT THE CALL SITE</h2>
+     *
+     * <p><b>Because a resolution performed in {@code paper} cannot be tested, and one performed here
+     * can.</b> {@code Quivers.stateOf} took the five stored values and called {@link #capacityOf}
+     * itself — and a mutation replacing that call's stamp with {@code OptionalInt.empty()}
+     * ({@code MUTSTATEDROP}) passed the ENTIRE suite. {@code stateOf} needs an {@code ItemStack}, so
+     * it has no unit test and never will; the guard over its call site is a source scan, which
+     * proves no SIXTH resolver exists and nothing whatever about what the five do.
+     *
+     * <p><b>And the consequence was worse than the tooltip's.</b> This capacity feeds
+     * {@link #reloadVerdict}'s already-full comparison. Under that mutation, once capacity is a stat:
+     * a Ranger boosted to 11 fires down to 9, presses reload, and is told the magazine is FULL —
+     * <b>the last two rounds permanently unreachable</b>, with the tooltip correctly reading 9/11
+     * beside it. The tooltip right and the mechanic wrong is the same disagreement the stamp exists
+     * to prevent, arriving from the other side.
+     *
+     * <p>So the decision moved here, where {@code QuiverStateTest} can stage a stamp that differs
+     * from the authored value and observe the verdict. What remains in {@code paper} is reading five
+     * values off an item and passing them — plumbing with no decision in it, and the only part a
+     * boot must still witness.
+     */
+    public static QuiverState from(OptionalInt loaded, OptionalInt stampedCapacity,
+                                   int authoredCapacity, OptionalLong reloadStartedAt,
+                                   OptionalLong reloadCompletesAt) {
+        return new QuiverState(loaded, capacityOf(stampedCapacity, authoredCapacity),
+                reloadStartedAt, reloadCompletesAt);
+    }
+
     /** An item carrying a count and no reload -- the ordinary state of a quiver weapon. */
     public static QuiverState loaded(int rounds, int capacity) {
         return new QuiverState(OptionalInt.of(rounds), capacity, OptionalLong.empty(), OptionalLong.empty());
