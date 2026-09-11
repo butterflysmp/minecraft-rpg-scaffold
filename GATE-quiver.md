@@ -31,9 +31,9 @@ gate and G5a's per-setting figures were never taken.
 | # | verdict | staging | pass condition |
 |---|---|---|---|
 | **V1** | `FIRE` | `/rpg give quiver_stone`, fire once | **BOTH halves.** A bolt lands **and** the count goes 9 → 8. *A shot that fires without decrementing is an infinite magazine, and it looks identical to a working weapon for the first eight shots.* |
-| **V2** | `EMPTY` | fire 9, then press again | refused, the empty notice **seen** — **and NOTHING SPENT**: no cooldown tripped, no resource taken. Press again immediately: it must refuse **at once**, not wait out a cooldown. *That is what `WeaponFire`'s gate ordering exists for and it has to be observed, not assumed.* |
+| **V2** | `EMPTY` | fire 9, then press again **immediately** | **RECORD WHICH MESSAGE APPEARS.** **PASS** = the empty notice, *"Your quiver is empty -- left-click to reload."* **FAIL** = *"On cooldown for 0.Xs"* — the 9th shot stamped an 11-tick cooldown, so the empty check is running **after** the cooldown and `WeaponFire`'s gate ordering is wrong. |
 | **V3** | `RELOADING` | left-click, then press fire twice ~1s apart | refused, with **ticks remaining shown**, and **the number MOVES between the two presses**. *A frozen counter reads identically to a live one at a glance — "a number appeared" is not the test.* |
-| **V4** | `RELOAD_MATURED` | **stage deliberately:** empty the magazine, left-click, wait for the reload to finish, then press fire | **the shot FIRES.** Its pass condition is the **PRESENCE of a bolt**, not the absence of a refusal. |
+| **V4** | `RELOAD_MATURED` | empty the magazine. Left-click to reload, **then RELEASE the fire button entirely.** Wait for the reload to complete. Then **one** deliberate press. | **PASS = a bolt on that press.** **FAIL = no bolt, even if the next press works.** The release is load-bearing — see below. |
 | **V5** | `UNSTAMPED` | — | **NOT STAGEABLE. See below.** |
 
 > **V4 IS THE ROW TO WRITE MOST CAREFULLY, AND IT IS NOT OBVIOUS WHY.** Mid-reload the item's stored
@@ -43,9 +43,15 @@ gate and G5a's per-setting figures were never taken.
 > reports input lag on a crossbow. `QuiverStateTest.theShotThatMaturesAReloadIsNotDropped` pins the
 > verdict; this row is the only thing that pins the wiring around it.
 >
-> **Stage it on purpose rather than hoping to hit it**: the window is every press after the deadline,
-> so an easy staging is to empty, reload, wait two full seconds, then fire. If the first press after
-> a completed reload produces no bolt, V4 has FAILED even though the weapon works on the second.
+> **AND THE STAGING MUST RELEASE THE FIRE BUTTON, OR IT CONCEALS EXACTLY THE DEFECT IT EXISTS FOR.**
+> The fire input is **hold**-right-click. An operator who holds through the reload — the natural
+> thing to do, and what a player does — gets the swallowed press followed by a successful one **one
+> repeat-interval later**, which is on the order of a tenth of a second. **A bolt appears, the row
+> reads as a pass, and the failure is invisible.**
+>
+> So: release the button, wait out the reload, and make **exactly one** press, so there is only one
+> press to observe. *"No bolt on that press, even if the next press works"* is only a checkable
+> statement when the row guarantees a second press has not already happened.
 
 ### V5 — `UNSTAMPED` is MECHANISM-UNREACHABLE, and this gate does not pretend otherwise
 
@@ -145,4 +151,21 @@ could not have met. **A row that cannot fail is worse than a row not run**, beca
 behind.
 
 For each: **PASS / FAIL / FINDING**, and for V1, Q2 and Q7 the **number observed**, not the verdict
-alone.
+alone. **For V2, the message TEXT**, not "it refused".
+
+> **TWO ROWS WERE REWRITTEN BEFORE THIS GATE WAS EVER RUN, AND BOTH FOR THE SAME REASON: THE
+> OBSERVATION WAS A JUDGEMENT WHERE A FACT WAS AVAILABLE.**
+>
+> - **V2** asked whether a refusal came *"at once"* rather than after a cooldown. At 11 ticks that is
+>   a **0.55-second** difference judged by feel — the shape `GATE-lapis-staff.md`'s L5 already came
+>   back soft on. But a cooldown refusal and an empty refusal print **different strings**, so the row
+>   now records **which message**. Verified before the rewrite that both actually render for this
+>   weapon: `quiver_stone`'s `on_hit` is a plain `damage`, so `DamagePayload.isBasicAttack` is false
+>   and `RpgListeners`' switch is reached (`OnCooldown` prints); and `Empty` is handled at `:504`,
+>   *before* the basic-attack silence at `:525` (the empty notice prints). **A row whose discriminator
+>   does not render is a row that cannot fail.**
+> - **V4** would have been staged by an operator **holding** the fire button, which is what the
+>   weapon's input invites — and holding hides the swallowed press behind the next one.
+>
+> Both are the same defect class this gate's own header warns about, caught in the draft rather than
+> in the results: *an observation that yields a plausible reading whichever way the code behaves.*
