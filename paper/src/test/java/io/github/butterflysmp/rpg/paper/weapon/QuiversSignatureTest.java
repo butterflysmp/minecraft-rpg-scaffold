@@ -123,19 +123,63 @@ class QuiversSignatureTest {
         assertTrue(code.length() < raw.length(), "comment stripping removed nothing");
         assertFalse(code.contains("{@link"), "javadoc survived the strip; the scan would read prose");
 
-        assertFalse(code.contains("quiverLoaded"),
-                "Quivers must not touch the count key directly -- go through QuiverItems.setLoaded, "
-                        + "which writes AND re-renders. A raw write is boot row V1's defect: the "
-                        + "stored count moves and the tooltip does not.");
         assertFalse(code.contains("stampFull"),
                 "stampFull is MINT-ONLY (applyLore follows it by construction). Calling it from "
                         + "Quivers is an in-play write with no render -- the same defect by a "
                         + "different door. Use setLoaded.");
 
-        // POSITIVE CONTROL: both assertions above are satisfied by an empty file, so prove the
+        // POSITIVE CONTROL: the assertion above is satisfied by an empty file, so prove the
         // sanctioned call is actually present and this class really does write counts.
         assertTrue(code.contains("QuiverItems.setLoaded"),
                 "Quivers writes no counts at all -- either the scan is broken or the funnel is gone");
+    }
+
+    /**
+     * THE COUNT KEY IS TOUCHED IN EXACTLY TWO FILES, AND THE SCAN IS WIDER THAN ONE FILE ON PURPOSE.
+     *
+     * <p><b>The row above reads {@code Quivers.java} only, which covers today's three in-play writers
+     * and would stay green for a writer added anywhere else.</b> That boundary is not hypothetical:
+     * <b>slice A2 walks straight into it.</b> {@code DESIGN-stat-engine.md}'s rule — adopted verbatim
+     * by this slice — is that a capacity DECREASE clamps the current value. When quiver size becomes
+     * a stat, something must clamp the stored count when capacity drops, and that something will
+     * almost certainly live in the stat-reconcile path rather than in {@code Quivers}. <b>It is a
+     * write. It must re-render.</b> A one-file scan would not notice.
+     *
+     * <p>So the boundary is a GUARD rather than a note: {@code quiverLoaded} may appear under
+     * {@code paper/src/main} in {@link io.github.butterflysmp.rpg.paper.adapter.Keys} (which DECLARES
+     * it) and {@link QuiverItems} (which owns every read and write), <b>and nowhere else.</b> A2's
+     * clamp written in the wrong place reddens here, which is exactly when it is cheap to move.
+     *
+     * <p><b>The cost is a named exemption list that must grow deliberately</b>, and it is the same
+     * cost already priced for {@code WeaponLoader.KNOWN_KEYS} — with the same conclusion: <b>it fails
+     * towards NOISE.</b> A legitimate new reader reddens loudly and someone adds it on purpose;
+     * nothing goes quietly unguarded. The set is named rather than counted, so a reader can check it.
+     */
+    @Test
+    void theCountKeyIsTouchedInExactlyTwoFilesAcrossAllOfPaper() throws IOException {
+        Path main = Path.of("src", "main", "java");
+        assertTrue(Files.isDirectory(main), "paper sources not found at " + main.toAbsolutePath());
+
+        List<String> touching = new java.util.ArrayList<>();
+        int scanned = 0;
+        try (var walk = Files.walk(main)) {
+            for (Path file : walk.filter(p -> p.toString().endsWith(".java")).toList()) {
+                scanned++;
+                String code = Files.readString(file, StandardCharsets.UTF_8)
+                        .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+                if (code.contains("quiverLoaded")) touching.add(file.getFileName().toString());
+            }
+        }
+
+        // A walk that discovered nothing reads exactly like a walk that found everything in order.
+        assertTrue(scanned > 50, "only " + scanned + " files scanned -- the walk is not reaching paper");
+
+        java.util.Collections.sort(touching);
+        assertEquals(List.of("Keys.java", "QuiverItems.java"), touching,
+                "the quiver count key must be touched ONLY where it is declared (Keys) and where it "
+                        + "is owned (QuiverItems, whose setLoaded writes AND re-renders). A write "
+                        + "anywhere else is boot row V1's defect in a new location -- and A2's "
+                        + "capacity clamp is the known candidate. Add a file here only deliberately.");
     }
 
     /**

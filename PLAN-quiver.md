@@ -562,6 +562,24 @@ method nothing could call:
 is *which side effect each verdict gets* — and that is genuinely Bukkit's (refill the stack, warn,
 mint a `CastResult`), so **the boot gate is its sole witness** and `GATE-quiver.md` must say so.
 
+### FORWARD COVER FOR A2: THE CAPACITY CLAMP IS A WRITE, AND IT MUST RE-RENDER
+
+**A2 walks into the rule the boot found.** `DESIGN-stat-engine.md`'s semantics — adopted verbatim
+here — say a capacity **decrease clamps** the current value. So when quiver size becomes a stat,
+something must clamp the stored count as capacity drops, and the natural home for it is the
+stat-reconcile loop in `PlayerHealthSystem`, **not** `Quivers`.
+
+**That is a write on an item in play, so it must re-render** — boot row V1's defect, in a new
+location. The remedy is already in place and needs no judgement from whoever writes it:
+**`QuiverItems.setLoaded` is the only way to change a count**, and it renders as part of the same
+call.
+
+**Guarded, not just written down.** `QuiversSignatureTest.theCountKeyIsTouchedInExactlyTwoFilesAcrossAllOfPaper`
+asserts `quiverLoaded` appears under `paper/src/main` only in `Keys` (which declares it) and
+`QuiverItems` (which owns it). **Verified by mutation**: a clamp helper added to
+`PlayerHealthSystem` reddens it, naming the file. A2's clamp in the wrong place fails the build at
+the moment it is cheapest to move.
+
 ## The refusals — two new `CastResult` arms, not a reused `Broken()`
 
 The brief says to reuse `CastResult.Broken` + `BrokenNotice`'s 40-tick throttle rather than invent

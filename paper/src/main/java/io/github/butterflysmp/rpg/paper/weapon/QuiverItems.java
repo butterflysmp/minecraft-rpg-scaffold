@@ -125,6 +125,12 @@ public final class QuiverItems {
      * {@code applyLore} TWICE. {@link WeaponItems#refreshLore} rebuilds one list of components on the
      * meta already in hand. The cost argument is real but secondary; the identity argument is the one
      * that decides it.
+     *
+     * <p><b>AND NOTE HOW {@code remint} WOULD HAVE BEHAVED: it stamps the magazine full and then
+     * carries the old count back over it, so the tooltip would have come out CORRECT.</b> It would
+     * have worked by accident — the right number arrived through two writes that happen to cancel,
+     * not through anything that says a count must be rendered. A fix that works for a reason nobody
+     * wrote down is the kind that a later change to either write silently breaks.
      */
     public static void setLoaded(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters,
                                  int count) {
