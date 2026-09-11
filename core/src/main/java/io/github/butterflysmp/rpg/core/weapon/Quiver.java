@@ -287,10 +287,12 @@ public final class Quiver {
      * <b>legality belongs to {@code QuiverSize.resolve}, which floors at
      * {@code QuiverSize.MIN_CAPACITY}</b>, and this stays arithmetic.
      *
-     * <p><b>So if a percentage ever reaches a capacity, it passes through
-     * {@code QuiverSize.resolve}.</b> This method has no production callers today, which is the only
-     * reason the disagreement cost nothing -- and is exactly why it was worth closing before one
-     * exists rather than after.
+     * <p><b>SO A PERCENTAGE THAT EVER REACHES A CAPACITY MUST PASS THROUGH
+     * {@code QuiverSize.resolve}. That is an OBLIGATION on whoever wires the first caller, not a
+     * statement about today's tree</b> -- this method has no production callers, so nothing enforces
+     * it yet, and the test row proves the composition works rather than that it is performed. The
+     * absence of a caller is the only reason the disagreement above cost nothing, and is exactly why
+     * it was worth closing before one exists rather than after.
      */
     public static int applyPercent(int base, double percent) {
         return (int) Math.floor(base * (100.0 + percent) / 100.0);

@@ -325,4 +325,64 @@ class HealthStateTest {
                         .filter(s -> s.startsWith("quiversize")).count(),
                 "and no quiver source landed on a neighbouring stat's set");
     }
+
+    /**
+     * RELOAD TIME: the six accessors, and the SIGN CONVENTION that is unique to this stat.
+     *
+     * <p>Positive is a PENALTY -- the value is added to the weapon's authored duration, so gear that
+     * helps the player carries a negative amount. Every other stat on this class is "bigger is
+     * better". The row stages both signs summing under two keys, which is the case a copy-pasted
+     * accessor bound to a neighbouring {@code Stat} cannot produce.
+     *
+     * <p>Forces red: any of the six bound to a different field; a base other than 0.0; a sign flip
+     * or an {@code abs} sneaking into the accessor.
+     */
+    @Test
+    void theReloadTimeAccessorsAllReadTheSameStatAndCarryBOTHSigns() {
+        var state = new HealthState(100, true);
+        assertEquals(0.0, state.reloadTimeBonusValue(), EPS, "base 0 -- the duration is the weapon's");
+
+        assertTrue(state.setReloadTimeModifier("reloadtime:CHEST", 14.0), "a +14 tick PENALTY");
+        assertTrue(state.setReloadTimeModifier("reloadtime:LEGS", -5.0), "and a -5 tick HELP");
+
+        assertEquals(9.0, state.reloadTimeBonusValue(), EPS,
+                "14 + (-5) -- the two signs SUM, they do not cancel to an absolute value");
+        assertEquals(-5.0, state.reloadTimeModifierAmount("reloadtime:LEGS"), EPS,
+                "and a negative amount survives storage intact");
+        assertEquals(Set.of("reloadtime:CHEST", "reloadtime:LEGS"), state.reloadTimeModifierSources());
+        assertEquals(2, state.reloadTimeModifierCount());
+
+        assertTrue(state.clearReloadTimeModifier("reloadtime:CHEST"));
+        assertEquals(-5.0, state.reloadTimeBonusValue(), EPS, "exactly the other one, no leak");
+        assertFalse(state.clearReloadTimeModifier("reloadtime:CHEST"), "removing twice is no change");
+    }
+
+    /**
+     * THE TWO QUIVER STATS ARE INDEPENDENT, AND THIS IS THE CORE HALF OF WHAT TWO INSTRUMENTS BUY.
+     *
+     * <p>The A2 plan pays for two separate instruments -- two {@code Keys}, two command arms, two
+     * scanners -- to buy exactly one thing: <b>the ability to observe one stat holding still while
+     * the other moves.</b> This is that observation at the {@code Stat} level, where it is cheap and
+     * where a copy-paste between two accessors written minutes apart is most likely.
+     *
+     * <p>Forces red: {@code reloadTimeBonus} aliased to {@code quiverSizeBonus} or vice versa. Note
+     * the values 19 and 14 are different, so an alias cannot pass by coincidence.
+     */
+    @Test
+    void movingReloadTimeLeavesQuiverSizeExactlyWhereItWasAndViceVersa() {
+        var state = new HealthState(100, true);
+        state.setQuiverSizeModifier("quiversize:CHEST", 19.0);
+
+        state.setReloadTimeModifier("reloadtime:CHEST", 14.0);
+        assertEquals(14.0, state.reloadTimeBonusValue(), EPS, "the one that moved");
+        assertEquals(19.0, state.quiverSizeBonusValue(), EPS, "quiver size held still");
+
+        state.clearReloadTimeModifier("reloadtime:CHEST");
+        assertEquals(0.0, state.reloadTimeBonusValue(), EPS);
+        assertEquals(19.0, state.quiverSizeBonusValue(), EPS,
+                "and removing one leaves the other untouched -- the negative observation the pair "
+                        + "of instruments exists to make");
+        assertEquals(Set.of("quiversize:CHEST"), state.quiverSizeModifierSources());
+        assertEquals(Set.of(), state.reloadTimeModifierSources());
+    }
 }

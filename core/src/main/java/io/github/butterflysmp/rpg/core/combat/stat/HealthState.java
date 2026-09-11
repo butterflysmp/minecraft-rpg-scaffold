@@ -183,6 +183,28 @@ public final class HealthState {
     private final Stat quiverSizeBonus = new Stat(0.0);
 
     /**
+     * The RELOAD-TIME bonus this combatant's gear grants, in WHOLE TICKS. Base 0.0 -- the entire
+     * value is gear-contributed, like {@link #quiverSizeBonus} beside it.
+     *
+     * <p><b>Positive means SLOWER.</b> The stat is added to the weapon's authored duration, so a
+     * bonus of +14 is a fourteen-tick penalty and gear that helps the player carries a NEGATIVE
+     * amount. That is the opposite sign convention from every other stat on this class, and it is
+     * the reason {@code ReloadTime.ticks} does not inherit the "flooring rounds against the player"
+     * phrase its siblings use -- the same {@code Math.floor} lands on the opposite side here.
+     *
+     * <p><b>No floor, and that is a ruling rather than an omission.</b> A resolved 0 is an instant
+     * reload and a fully reachable state -- {@code Quiver.reloadCompletesAt} stamps a deadline equal
+     * to its start and {@code reloadComplete} is true on the same tick. Compare
+     * {@link #quiverSizeBonus}, where a resolved 0 leaves an item refused on both inputs with no
+     * recovery. Same standard, different answers. The balance question stays priced on Q7.
+     *
+     * <p>Like its neighbour, <b>this stat's effect is stamped onto an item</b> -- the reload deadline
+     * is committed when the reload BEGINS and never recomputed, so gear equipped mid-reload does not
+     * retroactively lengthen or shorten a timer already running. See {@link #reloadTimeTarget}.
+     */
+    private final Stat reloadTimeBonus = new Stat(0.0);
+
+    /**
      * Frozen faction — see the constructor. <b>It now has a SECOND reader asking a DIFFERENT
      * question.</b>
      *
@@ -602,6 +624,45 @@ public final class HealthState {
         return quiverSizeBonus.modifierCount();
     }
 
+    // --- Reload time: a THIRTEENTH Stat, ticks added to a weapon's reload. POSITIVE = SLOWER -----
+
+    /**
+     * The resolved reload-time bonus in whole ticks: {@code 0.0 + Sum(modifiers)}.
+     *
+     * <p>0 for a combatant with no such gear, and 0 is the correct neutral: {@code ReloadTime.resolve}
+     * adds it to the weapon's authored {@code reload_ticks}, so a player wearing nothing reloads at
+     * exactly the speed the weapon declares.
+     *
+     * <p><b>Positive is a PENALTY</b> -- see the field. Nothing about this accessor enforces a sign;
+     * the content pipeline is increase-only via {@code ReloadTime.boosts}, and the only instrument
+     * A2 ships adds ticks, so a reduction has no in-game source yet.
+     */
+    public double reloadTimeBonusValue() {
+        return reloadTimeBonus.value();
+    }
+
+    /** Set (or replace) the reload-time modifier from {@code source}; true if the value changed. */
+    public boolean setReloadTimeModifier(String source, double amount) {
+        return reloadTimeBonus.putModifier(source, amount);
+    }
+
+    /** Remove {@code source}'s reload-time modifier; true if one was actually removed. */
+    public boolean clearReloadTimeModifier(String source) {
+        return reloadTimeBonus.removeModifier(source);
+    }
+
+    public double reloadTimeModifierAmount(String source) {
+        return reloadTimeBonus.amountOf(source);
+    }
+
+    public Set<String> reloadTimeModifierSources() {
+        return reloadTimeBonus.sources();
+    }
+
+    public int reloadTimeModifierCount() {
+        return reloadTimeBonus.modifierCount();
+    }
+
     // --- Crit: a seventh and eighth Stat. Chance is a PROBABILITY, damage is a BONUS ------------
 
     /**
@@ -865,6 +926,35 @@ public final class HealthState {
                 return quiverSizeBonus.putModifier(source, amount);
             }
             @Override public boolean clearModifier(String source) { return quiverSizeBonus.removeModifier(source); }
+        };
+    }
+
+    /**
+     * The reload-time modifier surface. <b>No transition, for the same reason as
+     * {@link #quiverSizeTarget} and one of its own.</b>
+     *
+     * <p>Like quiver size, the value this stat governs does not live on this object -- it is a pair
+     * of longs in an {@code ItemStack}'s PDC, which {@code core} cannot reach.
+     *
+     * <p><b>And unlike quiver size, a change here cannot affect anything already in flight, by
+     * construction.</b> {@code Quiver.reloadCompletesAt} stamps the deadline when a reload BEGINS and
+     * nothing recomputes it from the live duration, so equipping reload gear mid-reload does not
+     * retroactively lengthen or shorten a timer already running. That is not a new call:
+     * {@code AbilityService.resolve} settled the identical question for cooldowns, and A1 made it
+     * structural here by removing {@code reloadTicks} from {@code Quiver.reloadComplete} entirely --
+     * with nowhere to pass a live duration, the free-instant-reload defect became unrepresentable
+     * rather than guarded against.
+     *
+     * <p>So there is no reading to pin and no clamp to apply: {@code reconcileReloadTimeModifiers}
+     * returns void and is silent.
+     */
+    ModifierTarget reloadTimeTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return reloadTimeBonus.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return reloadTimeBonus.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) { return reloadTimeBonus.removeModifier(source); }
         };
     }
 

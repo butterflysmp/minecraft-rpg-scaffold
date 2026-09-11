@@ -69,8 +69,14 @@ import io.github.butterflysmp.rpg.core.weapon.QuiverState;
  *
  * <p><b>{@code applyPercent} and this class now agree about whether 0 is legal.</b> That one answers
  * "what does this percentage evaluate to", which is arithmetic and has no opinion; this one answers
- * "what capacity governs", which is the decision. A percentage that ever reaches a capacity passes
- * through {@link #resolve}, and its javadoc says so at that end too.
+ * "what capacity governs", which is the decision.
+ *
+ * <p><b>A percentage that ever reaches a capacity MUST PASS THROUGH {@link #resolve}. That is an
+ * OBLIGATION ON A FUTURE AUTHOR, not a description of today's tree</b> -- and the word matters here
+ * more than it usually would. {@code applyPercent} has no production callers, so nothing forces the
+ * composition; {@code QuiverSizeTest}'s row proves the composition WORKS, not that every caller
+ * performs it. <b>This commit exists because the previous version of this same paragraph was
+ * phrased as a fact and believed as one.</b> Its javadoc carries the obligation at that end too.
  *
  * <h2>WHY {@link #boosts} STILL EXISTS, GIVEN THE FLOOR</h2>
  *
@@ -91,10 +97,22 @@ public final class QuiverSize {
      * The smallest capacity an item may resolve to. See the class javadoc: at 0 a quiver weapon is
      * refused on fire AND on reload, with no third input and no way back.
      *
-     * <p><b>Unlike {@code Quiver.MIN_RELOAD_TICKS}, this is not a named placeholder at the no-op
-     * value.</b> That one sits at 1 because no mechanism argument exists for any reload floor, so it
-     * marks the decision rather than making one. This one is the value the mechanism produces: 0 is
-     * the broken state, so 1 is the smallest working one.
+     * <p><b>THE RELOAD DURATION GETS NO SUCH FLOOR, AND THAT ASYMMETRY IS THE POINT OF THE
+     * STANDARD.</b> The test is <i>is there a resolved value at which the mechanic has no reachable
+     * state</i> -- not <i>did the other one get a 1</i>. Measured for reload:
+     * {@code Quiver.reloadCompletesAt} is {@code now + Math.max(reloadTicks, 0)}, so at a resolved 0
+     * the deadline equals the start, {@code reloadComplete} returns true on that same tick, and the
+     * reload stamps, matures and clears. <b>Nothing is unreachable and nothing is lost</b>, so there
+     * is no mechanism argument for a reload floor and none is written. The balance question -- what
+     * duration still BRAKES -- stays where it already sits, priced on Q7, which is unrun.
+     *
+     * <p><b>Two earlier drafts of this file cited a {@code Quiver.MIN_RELOAD_TICKS} that HAS NEVER
+     * EXISTED</b>, as the contrast case for this constant. {@code Quiver} has no fields at all and
+     * {@code QuiverSignatureTest} pins exactly that, so it could not have held one. It was ruled in
+     * {@code PLAN-quiver-a2.md}, retracted twice there, never written -- and then referred to in two
+     * javadocs as though it were in the tree. Same shape as the two boot rows once promised to a
+     * {@code GATE-quiver-a2.md} that did not exist: <b>a citation is a claim that a thing is there,
+     * and it is as checkable as any other.</b> Recorded rather than quietly deleted.
      */
     public static final int MIN_CAPACITY = 1;
 

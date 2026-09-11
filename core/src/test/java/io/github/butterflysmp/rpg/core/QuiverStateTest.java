@@ -286,9 +286,16 @@ class QuiverStateTest {
      *
      * <p>The point: capacity 0 is not a very small quiver, it is <b>an item with no reachable
      * state</b>. Fire is refused as empty; reload is refused as already full; there is no third
-     * input, so there is no way out. That is a MECHANISM argument for a floor of at least 1 -- as
-     * opposed to {@code Quiver.MIN_RELOAD_TICKS}, which is a named placeholder at the no-op value
-     * because no such argument exists for any reload floor.
+     * input, so there is no way out. That is a MECHANISM argument for a floor of at least 1.
+     *
+     * <p><b>The contrast this paragraph used to draw was with a constant that does not exist.</b> It
+     * read "as opposed to {@code Quiver.MIN_RELOAD_TICKS}, which is a named placeholder at the no-op
+     * value" -- {@code Quiver} has no fields at all, and {@code QuiverSignatureTest} pins exactly
+     * that. The real contrast is with the reload duration itself, and it survives the correction:
+     * {@code Quiver.reloadCompletesAt} is {@code now + Math.max(reloadTicks, 0)}, so a resolved 0
+     * stamps a deadline equal to its start and matures on the same tick. <b>No value of the reload
+     * duration leaves the mechanic without a reachable state, so reload gets no floor at all</b> --
+     * which is the same standard applied, not a weaker one.
      */
     @Test
     void aCapacityOfZeroWouldBeARefusalOnBothInputs() {

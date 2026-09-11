@@ -573,6 +573,33 @@ public final class CombatantStats {
         ModifierReconciler.reconcile(state.quiverSizeTarget(), desired);
     }
 
+    /**
+     * The resolved RELOAD-TIME BONUS this combatant's gear grants, in whole ticks, or {@code 0.0} if
+     * untracked.
+     *
+     * <p><b>Positive means SLOWER</b>: {@code ReloadTime.resolve} adds it to the weapon's authored
+     * {@code reload_ticks}. Returning 0.0 rather than throwing makes the untracked case the authored
+     * duration, which is the right answer for the same reason {@link #quiverSizeBonusValue} gives.
+     */
+    public double reloadTimeBonusValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.reloadTimeBonusValue();
+    }
+
+    /**
+     * Converge {@code id}'s RELOAD-TIME modifiers to exactly {@code desired}. Same leak-proof diff.
+     *
+     * <p><b>VOID and SILENT</b>, like {@link #reconcileQuiverSizeModifiers}. There is nothing to pin
+     * because a running reload's deadline was stamped when it began and is never recomputed -- so
+     * unlike mana regen, a change to this rate cannot re-price anything already elapsed. A1 made that
+     * structural by removing the duration from {@code Quiver.reloadComplete}'s parameters.
+     */
+    public void reconcileReloadTimeModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.reloadTimeTarget(), desired);
+    }
+
     /** Drop {@code id}'s state. O(1), safe for an unknown id. Call on logout and on mob removal. */
     public void clear(UUID id) {
         states.remove(id);

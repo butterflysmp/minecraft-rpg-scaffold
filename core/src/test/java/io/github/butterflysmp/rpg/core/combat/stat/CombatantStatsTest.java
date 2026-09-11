@@ -754,6 +754,66 @@ class CombatantStatsTest {
                 UUID.randomUUID(), Map.of("quiversize:CHEST", 19.0)));
     }
 
+    // --- Reload time: the thirteenth stat, ticks. POSITIVE = SLOWER ------------------------------
+
+    @Test
+    void theReloadTimeBonusIsZeroForEveryoneWhoOwnsNoSuchGearIncludingMobsAndTheUNTRACKED() {
+        var stats = new CombatantStats();
+        UUID player = UUID.randomUUID();
+        UUID mob = UUID.randomUUID();
+        stats.register(player, 100, true);
+        stats.bootstrapIfAbsent(mob, 200, 3.0, false);
+
+        assertEquals(0.0, stats.reloadTimeBonusValue(player), EPS,
+                "a BONUS in ticks, not a duration -- base 0.0, because the duration is the WEAPON's");
+        assertEquals(0.0, stats.reloadTimeBonusValue(mob), EPS, "and a mob has no gear");
+        assertEquals(0.0, stats.reloadTimeBonusValue(UUID.randomUUID()), EPS,
+                "untracked resolves to 0, so ReloadTime.resolve returns exactly the authored "
+                        + "duration rather than the call site having to invent it");
+    }
+
+    /**
+     * Converges, VOID and SILENT -- and for a reason the quiver-size one does not have.
+     *
+     * <p>There is nothing for a caller to pin because a running reload's deadline was stamped when it
+     * BEGAN and is never recomputed from the live duration. A1 made that structural by removing the
+     * duration from {@code Quiver.reloadComplete}'s parameters entirely, so gear equipped mid-reload
+     * cannot re-price a timer already running -- the free-instant-reload defect is unrepresentable
+     * rather than guarded against.
+     */
+    @Test
+    void reconcileReloadTimeConvergesSilentlyAndBothSignsSurviveTheRoundTrip() {
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID id = UUID.randomUUID();
+        stats.register(id, 100, true);
+        int afterRegister = recorder.seen.size();
+
+        stats.reconcileReloadTimeModifiers(id, Map.of("reloadtime:CHEST", 14.0));
+        assertEquals(14.0, stats.reloadTimeBonusValue(id), EPS, "the A2 instrument's +14 PENALTY");
+
+        stats.reconcileReloadTimeModifiers(id,
+                Map.of("reloadtime:CHEST", 14.0, "reloadtime:LEGS", -5.0));
+        assertEquals(9.0, stats.reloadTimeBonusValue(id), EPS,
+                "a penalty and a help SUM under their own keys -- 14 + (-5), not 19 and not 5");
+
+        stats.reconcileReloadTimeModifiers(id, Map.of());
+        assertEquals(0.0, stats.reloadTimeBonusValue(id), EPS, "back to base -- no leak");
+
+        assertEquals(afterRegister, recorder.seen.size(),
+                "SILENT: no HealthChange for a reload stat");
+        // Mutation A: drop ModifierReconciler's remove-loop -> the take-it-off row leaves 9.0.
+        // Mutation B: an abs() anywhere on this path -> the mixed-sign row reads 19.0.
+    }
+
+    /** No-op on an untracked combatant, and a return rather than a throw. */
+    @Test
+    void reconcilingReloadTimeOnAnUntrackedCombatantIsANoOp() {
+        var stats = new CombatantStats();
+        assertDoesNotThrow(() -> stats.reconcileReloadTimeModifiers(
+                UUID.randomUUID(), Map.of("reloadtime:CHEST", 14.0)));
+    }
+
     @Test
     void damageRETURNSThePostMitigationNumberAndTheROWMUSTBEARMOURED() {
         // THE BLINDNESS TRAP, DESIGNED AROUND RATHER THAN DISCOVERED. Against an UNDEFENDED victim

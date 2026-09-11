@@ -267,69 +267,54 @@ first reduction item to ship would find out in play.
 > `WeaponDefinition` already refuses `quiverSize > 0 && reloadTicks <= 0`, so an authored zero is
 > impossible. **The hole opens the moment a MODIFIER can reduce the value** — which is commit 5.
 
-**RULED — `Quiver.MIN_RELOAD_TICKS = 1`, structural, NOT a balance number.**
+**~~RULED — `Quiver.MIN_RELOAD_TICKS = 1`, structural, NOT a balance number.~~ RETRACTED A THIRD
+TIME IN COMMIT 4, AND THIS TIME BY DELETION. THERE IS NO RELOAD FLOOR.**
 
-> **THIS REPLACES A RULING OF 10 WHOSE ARGUMENT WAS FALSE ON BOTH PREMISES, and the retraction is
-> kept because the failure mode is the interesting part: a balance number was wearing a mechanism
-> argument.** The first version read *"below ~10 ticks the reload is shorter than the fire cooldown
-> of every quiver weapon — `quiver_stone` 11, Boltor 14 — so it is invisible: you could not have
-> fired during it anyway."*
+> **THE THIRD RETRACTION IS DIFFERENT IN KIND AND THAT IS WHY IT ENDS THE SEQUENCE.** The first two
+> replaced one justification with another and kept the constant. This one applies the standard that
+> `QuiverSize.MIN_CAPACITY` established — **is there a resolved value at which the mechanic has no
+> reachable state** — and takes the answer it gets:
 >
-> **Premise 1 was contradicted by line 15 of this same file.** *"Slice C's **7-tick** dual cooldown
-> is priced on an unmeasured floor"* — and four more citations say the same. The quantity that
-> matters is not a *declared* cooldown but **the shortest interval a player can achieve, which is
-> 7.** At 7 a 10-tick floor is not invisible; it is three ticks of felt brake. The argument did not
-> merely fail to support 10 — **it pointed the other way.**
+> | resolved value | measured behaviour | floor |
+> |---|---|---|
+> | capacity 0 | `fireVerdict` EMPTY, `reloadVerdict` ALREADY_FULL. Both inputs refused, no third input, no recovery. | **1** |
+> | reload 0 | `reloadCompletesAt` is `now + Math.max(ticks, 0)`, so the deadline equals the start and `reloadComplete` is true on that tick. Stamps, matures, clears. | **none** |
 >
-> **Premise 2 was false outright: a reload does not overlap the cooldown.** Measured — `beginReload`
-> ← `tryReloadHeldWeapon` ← `WeaponSwingListener:104`, **one path, the left-click swing**, and
-> `case EMPTY` starts nothing, so there is no auto-reload. **The reload begins when the player
-> chooses to swing.** In the ordinary pattern — fire until refused, then reload — **every tick of
-> the reload is additive and felt, whatever the cooldown is.** The premise was true of one play
-> pattern and stated as a property of the mechanism.
+> Applying a standard symmetrically means being willing to conclude that reload has no floor, rather
+> than looking for a fourth argument for the number the previous drafts wanted. The placeholder is
+> deleted, not re-justified, and the balance question stays exactly where it already sits.
+
+> **AND THE CONSTANT WAS NEVER IN THE CODE, WHILE TWO JAVADOCS CITED IT AS IF IT WERE.** Measured:
+> `grep -rn MIN_RELOAD_TICKS` finds it in this plan and in two javadoc paragraphs written in commits
+> 2 and 3 — and nowhere else. **`Quiver` has no fields at all, and `QuiverSignatureTest` pins exactly
+> that**, so it could never have held one.
 >
-> **With "invisible" gone there is no mechanism argument left for any number above 1**, and picking
-> one anyway would be a balance call disguised as a derivation — which the slice that is supposed to
-> rule the final value would inherit by reading rather than re-deriving.
+> **A citation is a claim that a thing is there, and it is as checkable as any other claim.** This is
+> the same shape as the two boot rows once promised to a `GATE-quiver-a2.md` that did not exist — and
+> that instance was already recorded on this branch before these two were written. Both javadocs are
+> corrected in commit 4 rather than quietly deleted, and `ReloadTime`'s class javadoc carries the
+> whole sequence so the next reader meets a history instead of an absence.
 
-> **AND THE REPLACEMENT DID IT AGAIN, WHICH IS THE MORE USEFUL HALF.** The first version of this
-> paragraph said *"1 is the minimum that keeps the mechanic representable — exactly
-> `Durability.MIN_USES`'s argument."* **That analogy is false.** Measured against
-> `Quiver.reloadComplete`'s `if (now >= completesAt) return true;` — at `reloadTicks` 0,
-> `completesAt == startedAt == now`, so the reload matures on the same tick. The state stamps,
-> matures and clears; the restart guard is unaffected. **A zero-tick reload is FULLY
-> REPRESENTABLE.** `MIN_USES` prevents a *different and irreversible* state — the item destroyed
-> rather than inert — which is why that floor is structural. **A reload floor prevents no state at
-> all.**
->
-> **So the genre repeated: 10 was a balance number wearing a MECHANISM argument; 1 was a balance
-> number wearing a STRUCTURAL one.** The number got smaller and more honest and the justification
-> did not change kind. That is worth more than the constant, and it is why both retractions stay.
-
-**What the floor actually is: A NAMED PLACEHOLDER AT THE NO-OP VALUE.** There is **no mechanism
-argument for any floor, including this one.** `MIN_RELOAD_TICKS = 1` is a documented hook where the
-balance slice finds the question — chosen because it **changes nothing a player can observe** and
-because it **matches the authored floor `WeaponDefinition:109` already enforces.**
-
-The thinnest true statement, and it is deliberately thin: at 0 the `RELOADING` state is never
-observable for a single tick; at 1 it is observable for one. **That difference is invisible at 20
-tps.**
-
-**AND IT RESOLVES THE TWO-FLOOR PROBLEM BY BEING THE SAME NUMBER.** `WeaponDefinition:109` already
-refuses `quiverSize > 0 && reloadTicks <= 0`, so the **authored** floor is 1. A resolved floor of 10
-would have meant an author could ship `reload_ticks: 3` — below the minimum the resolver enforces —
-**two literals that can drift apart, which is the defect the capacity javadoc quotes `ResourceCost`
-for three paragraphs earlier.** At 1 they are one number enforced at two layers, and the constant
-says so.
+**What the floor was, across three drafts: THE SAME BALANCE NUMBER IN THREE COSTUMES.** 10 wore a
+MECHANISM argument; 1 wore a STRUCTURAL one; "a named hook at the no-op value" wore PROCEDURE. The
+number got smaller and the justification never changed kind, which is worth more than the constant
+and is why all three retractions stay on the record.
 
 **The balance floor is still owed, and the chain is named so the next reader sees a chain rather
 than a constant:** *what reload duration still brakes* depends on the shortest achievable fire
 interval, which is **7**, which is priced on **Q7 — unrun**. The first slice that ships
 reload-reduction gear rules it, because that is the first time anyone can feel it.
 
-**And the downward direction is covered in CORE, since no fixture can cover it** — a row that
-resolves a reload below the floor and asserts the floor holds, plus the mutation that removes the
-floor. That is the **only** witness this slice will have for the direction gear actually moves.
+**And the downward direction is covered in CORE, since no instrument can cover it — LANDED, and the
+row asserts the opposite of what this line first predicted.** It said *"a row that resolves a reload
+below the floor and asserts the floor holds, plus the mutation that removes the floor."* There is no
+floor, so the row is `ReloadTimeTest.theResolvedDurationGoesDownFreelyAndZeroIsAnInstantReload`: it
+resolves downward, asserts 0 and −6 pass through untouched, and then measures that a 0-tick reload
+stamps a deadline equal to its start and completes on that tick. **The mutation is its mirror —
+`MUTRTCLAMP` ADDS a floor and the row reddens** (`expected 0 but was 1`), so *"we decided not to
+have a floor"* is enforced by a test rather than asserted in prose. That is the **only** witness
+this slice has for the direction gear actually moves.
+
 
 ---
 
@@ -345,7 +330,7 @@ A1 ran **15 commits**; largest 12 files / +573, median ~4 files / ~180 lines. A2
 | **1** | **the stamp seam — NO stats** | ~8 | 4th PDC key; `QuiverState.capacity`; `reloadVerdict` loses its param; `setLoaded` stamps capacity and clamps; tooltip reads the stamp. **Behaviour-identical** — capacity is still authored, so the golden must not move. That is the commit's own verification. |
 | **2** | quiver size, core half | ~6 | `core/combat/QuiverSize.java` (`NONE`/`boosts`/`contribution`), `HealthState` (**8 members**), `CombatantStats` (**2**), tests |
 | **3** | quiver size, paper half | **13** | `Keys` pair, `QuiverSizeModifierItems` (PERMANENT, no `_TEMP`), reconcile line, `/rpg quiversize`, and `resolveCapacity` switches to the stat. **13 files, not ~7**, because the operator's commit-2 finding rode with it: `QuiverSize.MIN_CAPACITY`, and `Quiver.applyPercent` made to agree with it about whether 0 is a legal capacity. |
-| **4** | reload time, core half | ~5 | same shape; base is the authored duration |
+| **4** | reload time, core half | **11** | `core/combat/ReloadTime.java`, `HealthState` (**8 members**), `CombatantStats` (**2**), the downward-direction row. **No `MIN_RELOAD_TICKS`** — third retraction, by deletion. Two riders from commit 3's review: the import-static ban paired with the qualified needles, and "must pass through" as an obligation. |
 | **5** | reload time, paper half | ~7 | same shape — **and `beginReload` reads the stat**, the second and last supply site |
 | **6** | `/rpg stats` lines | ~5 | see the signature note below |
 | **7** | prose + gate | ~5 | corrections below, `GATE-quiver-a2.md` — **and the two boot-only rows below, which it must not be descoped without** |
@@ -492,4 +477,13 @@ Traced through `manaRegenBonus`, the most recent stat:
   removed `Math.max(MIN_CAPACITY, ` (23) + `)` (1) = −24, added ` // MUTQSMINCAP` (15) ⇒ **−9**;
   **2 of 8 red** — the floor row read `−11`, the applyPercent-composition row read `0`). It is the
   first mutation in this slice whose RED VALUES are the two numbers the finding was about.
+- **Commit 4's three, all red, all derivable:** `MUTRTCLAMP` (a floor added to `ReloadTime.resolve`;
+  `Math.max(1, ` 12 + `)` 1 + marker 14 ⇒ **+27**; 1 of 7 red — **this is what makes "no floor" a
+  tested decision rather than prose**), `MUTRTROUND` (`ticks` floor → round; **+14**; 1 of 7 red on
+  `−2.1`, this stat's live direction), and **`MUTSTATICIMPORT` — the positive control for the new
+  import-static needle**: a static import of `QuiverSize.resolve` into `WeaponFire` plus an
+  unqualified call. Measured in the mutated file: `QuiverSize.resolve(` occurs **zero** times, so
+  the qualified needle was blind exactly as predicted, and the row still went red with
+  `WeaponFire.java` in the actual list. **A new filter that has only seen passing input has never
+  been tested**, which is this repo's own rule applied to a filter it just wrote.
 - **Q7 remains owed** and is not discharged by this slice.

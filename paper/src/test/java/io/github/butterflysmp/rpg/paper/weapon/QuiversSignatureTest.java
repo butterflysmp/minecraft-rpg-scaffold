@@ -277,6 +277,14 @@ class QuiversSignatureTest {
      * "decides which capacity governs" stops answering that question -- the same dilution argument
      * that keeps {@code weapon.quiverSize()} off the needle set below.
      *
+     * <p><b>THE import-static BAN HAS A POSITIVE CONTROL, BECAUSE A NEW FILTER THAT HAS ONLY EVER
+     * SEEN PASSING INPUT HAS NEVER BEEN TESTED.</b> {@code MUTSTATICIMPORT}, run: add
+     * {@code import static ...QuiverSize.resolve;} to {@code WeaponFire} and call
+     * {@code resolve(weapon.quiverSize(), 0.0)} unqualified. Measured in the mutated file:
+     * {@code QuiverSize.resolve(} occurs <b>ZERO</b> times, so the qualified needle was blind to it
+     * exactly as predicted -- and the row still went red, {@code WeaponFire.java} appearing in the
+     * actual list. <b>The catch came entirely from the new needle.</b> Restored byte-identical.
+     *
      * <p>A SEVENTH FILE is a deliberate edit to this list, which is the moment to ask whether it should
      * instead be reading the state the others already built.
      *
@@ -353,9 +361,25 @@ class QuiversSignatureTest {
                             .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
                     // BOTH the accessor and the resolver, because scanning for capacityOf alone
                     // MISSED the defect this guard exists for -- measured, see the javadoc.
+                    //
+                    // AND THE LAST TWO NEEDLES ARE QUALIFIED, SO THEY ARE PAIRED WITH AN
+                    // import-static BAN. "capacityIn" and "capacityOf(" are bare names and match
+                    // however the call is spelled; "QuiverState.from(" and "QuiverSize.resolve("
+                    // require the class, and `import static ...QuiverSize.resolve;` then
+                    // `resolve(weapon.quiverSize(), bonus)` would obtain a capacity matching
+                    // NEITHER. Measured: paper/src/main uses import static today (CraftingMenu 5,
+                    // EnchantMenu 4), so this is a live idiom in the module this walks.
+                    //
+                    // The ban is one needle per class, not a broader scan: a file that static-imports
+                    // either class LANDS ON THIS LIST and fails the membership assertion, which puts
+                    // its author here, beside the reason.
                     if (code.contains("capacityIn") || code.contains("capacityOf(")
                             || code.contains("QuiverState.from(")
-                            || code.contains("QuiverSize.resolve(")) {
+                            || code.contains("QuiverSize.resolve(")
+                            || code.contains("import static "
+                                    + "io.github.butterflysmp.rpg.core.weapon.QuiverState.")
+                            || code.contains("import static "
+                                    + "io.github.butterflysmp.rpg.core.combat.QuiverSize.")) {
                         resolvers.add(file.getFileName().toString());
                     }
                 }
