@@ -32,6 +32,56 @@
 > `QuiversSignatureTest.quiversNeverWritesTheCountWithoutRenderingIt` fails the build if `Quivers`
 > reopens the raw path. **V1's display half and Q12 must be RE-RUN.**
 
+---
+
+## RE-RUN, 2026-09-11 — against `2b6bc02`, after the `setLoaded` fix
+
+**Evidence class again first, because it is the same class and it is what decides Q7.** The
+operator answered *"all gates green"* — one blanket, no freehand note this time.
+
+| # | | |
+|---|---|---|
+| **V1** (display half) | **PASS** | answered by blanket. The `setLoaded` funnel holds: the count and the tooltip move together. |
+| **Q12** | **PASS** | answered by blanket. `9/9` → `8/9`. |
+| **V2** | **PASS** | answered by blanket. |
+| **Q7** | **UNRUN** | **NOT green. See below — this is the one that must not be inherited from the blanket.** |
+
+### Q7 IS UNRUN, AND A BLANKET CANNOT MAKE IT GREEN
+
+**Every other row on this gate is a binary: something happened or it did not, and "green" is a
+complete answer.** Q7 is not. It produces a **repeat interval in ticks** — a number that exists
+nowhere else in this project, has never been measured, and has **no expected value for "green" to
+be measured against.** A blanket over Q7 records that the row was not obviously broken, which was
+never the question.
+
+> **AND THE CONSEQUENCE IS ALREADY LOAD-BEARING FOR A SLICE THAT IS NOT WRITTEN YET.**
+> **Slice C's 7-tick dual-wield cooldown is priced on this unmeasured floor.** If vanilla's
+> held-use repeat is slower than 7 ticks, the dual halving buys **nothing**: the weapon fires at the
+> repeat rate while the tooltip advertises 2×, and it reads as a balance opinion rather than a bug.
+> 14 ticks single is almost certainly clear; **7 is close enough to matter.**
+
+**CARRIED FORWARD AS OWED.** It is not discharged by A2, which touches neither the input path nor
+the cooldown. The method is unchanged and is written out above: set `cooldown_ticks` to **1** and
+`quiver_size` to **60** so the cooldown cannot be the limiter, hold right-click for a **timed
+10-second window**, **count the shots**, divide — and run it on a **cancelled binding**, because
+that is the configuration that ships. **Record the raw count and the window, not only the derived
+interval:** the division is recomputable, a remembered *"about five a second"* is not.
+
+### V5 remains the only row this gate cannot stage
+
+Unchanged and restated so the blanket does not appear to cover it: `UNSTAMPED`'s **verdict** is
+covered by `QuiverStateTest.anUnstampedQuiverIsADefectAndNotAnEmptyMagazine`; its **side effect**
+— warn, stamp, write back — is witnessed by **nothing**, because staging it needs an item
+production cannot make.
+
+---
+
+## Status
+
+**A1 is closed apart from Q7.** Four of the five verdict rows and every carry row have passed;
+the one number this gate was asked to produce has not been produced. **A2 begins on that footing**
+— see `PLAN-quiver-a2.md`, which carries Q7 forward rather than absorbing it.
+
 ### Why Q7 and V2 are UNRUN rather than green
 
 The operator has ruled that per-row figures are not worth recording on most rows, and he is right
