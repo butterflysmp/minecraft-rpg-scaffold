@@ -125,15 +125,42 @@ public final class WeaponLoader {
      * <b>That is worse than the axis above, not a lesser case of it</b> -- {@code cooldown_ticks} IS a
      * weapon's fire rate, so a silently-ignored one is precisely the "silently wrong rather than
      * visibly broken" property given above as the reason weapons went first. The trigger-level key
-     * set is bounded and knowable ({@code name}, {@code description}, {@code cooldown_ticks},
-     * {@code cost}, {@code cast}, {@code on_hit}, {@code on_cast}), so this is a small extension
-     * rather than a hard one. <b>Owed, and deliberately not taken here</b> -- see
-     * {@code PLAN-quiver.md}.
+     * set is bounded and knowable, so it is checked too -- see {@link #TRIGGER_KEYS}.
+     *
+     * <p><b>What remains unchecked is everything BELOW a trigger</b>: the fields inside
+     * {@code cast:}, and the entries of {@code on_hit:} / {@code on_cast:} / {@code cost:}. Those are
+     * parsed by {@code AbilitySchema} against a grammar SHARED with abilities, so extending the check
+     * there covers both content kinds at once -- which is the separate pass named above, not this
+     * one. <b>The boundary is two levels deep, and it is drawn here rather than left to be
+     * inferred.</b>
      */
     static final java.util.Set<String> KNOWN_KEYS = java.util.Set.of(
             "id", "display_name", "element", "rarity", "class", "material",
             "attack_damage", "attack_speed", "sweep", "quiver_size", "reload_ticks",
             "flavor", "triggers", "craft_result");
+
+    /**
+     * Every key a single {@code triggers:} entry may author -- a SEPARATE namespace from
+     * {@link #KNOWN_KEYS}, deliberately.
+     *
+     * <p><b>Merging the two would be the obvious simplification and it would be wrong.</b> One
+     * combined set accepts every key at every level: {@code cast:} would become legal at the top of
+     * a weapon file and {@code material:} legal inside a trigger, both silently ignored -- the exact
+     * failure both checks exist to prevent. A key is only meaningful at its own level.
+     *
+     * <p><b>This layer matters MORE than the top level, not less.</b> {@code cooldown_ticks} lives
+     * here and IS the weapon's fire rate, so a silently-ignored one is a weapon firing at the wrong
+     * cadence with a tooltip that reads correctly -- the "silently wrong rather than visibly broken"
+     * property that justified checking weapons first, in its sharpest form.
+     *
+     * <p><b>Hand-maintained, so it carries the identical stale-entry hazard</b> {@link #KNOWN_KEYS}
+     * does: an entry left here after {@code parse} stops reading it warns nothing and does nothing,
+     * reopening the hole one layer down. Guarded the same way and in the same test --
+     * {@code WeaponLoaderTest.knownKeysAndTheKeysParseActuallyReadsAreTheSameSet} requires set
+     * equality for BOTH levels, scanning {@code t.getX("...")} for this one.
+     */
+    static final java.util.Set<String> TRIGGER_KEYS = java.util.Set.of(
+            "name", "description", "cooldown_ticks", "cost", "cast", "on_hit", "on_cast");
 
     private WeaponDefinition parse(String id, ConfigurationSection s) {
         // WARN, never skip. An unknown key is a typo in a file whose other fields are fine, and
@@ -210,6 +237,17 @@ public final class WeaponLoader {
             if (t == null) {
                 throw new IllegalArgumentException(
                         "trigger '" + input + "' in weapon '" + id + "' must be a section");
+            }
+            // The same check one layer down, and the layer that matters more: cooldown_ticks lives
+            // HERE and IS the weapon's fire rate, so a misspelling of it produces a weapon that
+            // fires at the wrong cadence while looking entirely correct. Warn, never skip, for the
+            // reason the top-level check gives.
+            for (String key : t.getKeys(false)) {
+                if (!TRIGGER_KEYS.contains(key)) {
+                    log.warning("weapon '" + id + "' trigger '" + input + "' has unknown key '" + key
+                            + "'; it is read by nothing and will be ignored. Check the spelling"
+                            + " against the trigger schema.");
+                }
             }
             // A trigger IS an ability body plus an input. Identity fields come from the
             // weapon; cast/cost/cooldown/effects parse through the shared AbilitySchema.

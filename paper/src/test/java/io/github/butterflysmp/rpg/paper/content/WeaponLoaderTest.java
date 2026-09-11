@@ -937,10 +937,19 @@ class WeaponLoaderTest {
                   - "Every key, spelled correctly."
                 triggers:
                   right_click:
+                    name: "Shot"
+                    description:
+                      - "Every trigger key, spelled correctly."
                     cooldown_ticks: 14
+                    cost:
+                      resource: mana
+                      amount: 10
                     cast:
                       type: ray
                       range: 30
+                    on_cast:
+                      - type: visual
+                        visual_id: lapis_cast
                     on_hit:
                       - type: damage
                         amount: 4
@@ -949,11 +958,51 @@ class WeaponLoaderTest {
 
         WeaponRegistry registry = load();
 
+        // The trigger block authors all SEVEN of TRIGGER_KEYS, so this is the positive control for
+        // both levels at once -- a check that warned about every key would fail here, at either
+        // depth.
         assertTrue(warnings.isEmpty(), "the legitimate schema must be silent: " + warningText());
         WeaponDefinition weapon = registry.find("full").orElseThrow();
         assertTrue(weapon.hasQuiver());
         assertEquals(3, weapon.quiverSize());
         assertEquals(7, weapon.reloadTicks());
+    }
+
+    /**
+     * A MISSPELLED KEY INSIDE A TRIGGER, WHICH IS THE LAYER THAT MATTERS MORE.
+     *
+     * <p>{@code s.getKeys(false)} is not recursive, so the top-level check cannot see this at all.
+     * And the key at risk is the worst one in the schema: <b>{@code cooldown_ticks} IS the weapon's
+     * fire rate.</b> Misspell it and the weapon fires at the default cadence with a tooltip that
+     * reads correctly and nothing anywhere reporting a problem -- "silently wrong rather than
+     * visibly broken" in its sharpest form.
+     *
+     * <p>This is why the check was extended BEFORE {@code quiver_stone.yml} is authored rather than
+     * after. That file is a brand-new hand-written trigger block whose whole job is to yield the
+     * held-right-click repeat-rate measurement; a silently-ignored key in it would still be a valid
+     * weapon, just one measuring a different configuration than it claims to -- a control succeeding
+     * for the wrong reason, on the single artifact whose number slice C depends on.
+     *
+     * <p>The warning must name the TRIGGER as well as the weapon, or a file with several triggers
+     * sends the reader hunting.
+     */
+    @Test
+    void aMisspelledKeyInsideATriggerWarnsAndNamesTheTrigger() throws IOException {
+        write("crossbow.yml", VALID
+                .replace("id: ironblade", "id: crossbow")
+                .replace("    cooldown_ticks: 10", "    cooldwon_ticks: 10"));
+
+        WeaponRegistry registry = load();
+
+        assertTrue(warningText().contains("cooldwon_ticks"), warningText());
+        assertTrue(warningText().contains("left_click"),
+                "the warning must name the TRIGGER, not just the weapon: " + warningText());
+        assertTrue(warningText().contains("crossbow"), warningText());
+        // And the consequence, which is the whole reason this is worth a warning: the weapon loads
+        // and fires, at a cadence nobody chose.
+        assertEquals(0, registry.find("crossbow").orElseThrow()
+                        .trigger("left_click").orElseThrow().ability().cooldownTicks(),
+                "the misspelling silently left the fire rate at the default");
     }
 
     /**
@@ -1000,23 +1049,40 @@ class WeaponLoaderTest {
         assertTrue(text.length() < raw.length(), "comment stripping removed nothing");
         assertFalse(text.contains("{@code"), "javadoc survived the strip; the scan would read prose");
 
-        Set<String> read = new java.util.TreeSet<>();
-        Matcher m = Pattern.compile("\\bs\\.(?:get|is)\\w*\\(\"([a-z_]+)\"").matcher(text);
-        while (m.find()) read.add(m.group(1));
+        // TWO LEVELS, TWO NAMESPACES, TWO SCANS. The receiver is the discriminator and it is the
+        // only one available: top-level reads go through `s`, trigger-level reads through `t`, and
+        // both happen in this one file. Merging the sets would make `cast:` legal at the top level
+        // and `material:` legal inside a trigger, so they are checked apart.
+        Set<String> readTopLevel = keysReadVia("s", text);
+        Set<String> readTrigger = keysReadVia("t", text);
 
         // A scan that discovers nothing reads exactly like a scan that found everything in order.
-        assertFalse(read.isEmpty(), "no s.getX(\"...\") reads found -- this test measured nothing");
+        assertFalse(readTopLevel.isEmpty(), "no s.getX(\"...\") reads found -- measured nothing");
+        assertFalse(readTrigger.isEmpty(), "no t.getX(\"...\") reads found -- measured nothing");
 
         // `id` is the one legitimate member of KNOWN_KEYS that parse never reads: it comes from the
         // FILENAME, and every shipped file writes it redundantly, so without it every weapon warns.
-        // Exempted by name so the exemption is a decision rather than a hole.
-        Set<String> declared = new java.util.TreeSet<>(WeaponLoader.KNOWN_KEYS);
-        assertTrue(declared.remove("id"), "KNOWN_KEYS must carry 'id' -- shipped files all author it");
+        // Exempted by name so the exemption is a decision rather than a hole. TRIGGER_KEYS needs no
+        // such exemption -- a trigger's input is the section NAME, not a key inside it.
+        Set<String> declaredTopLevel = new java.util.TreeSet<>(WeaponLoader.KNOWN_KEYS);
+        assertTrue(declaredTopLevel.remove("id"), "KNOWN_KEYS must carry 'id' -- files all author it");
 
-        assertEquals(declared, read,
-                "KNOWN_KEYS and the keys parse reads have diverged. Entries here but never read are "
-                        + "STALE and silently re-open the hole this guard closes; keys read but not "
-                        + "listed warn on legitimate content.");
+        assertEquals(declaredTopLevel, readTopLevel,
+                "KNOWN_KEYS and the top-level keys parse reads have diverged. Entries here but never "
+                        + "read are STALE and silently re-open the hole this guard closes; keys read "
+                        + "but not listed warn on legitimate content.");
+        assertEquals(new java.util.TreeSet<>(WeaponLoader.TRIGGER_KEYS), readTrigger,
+                "TRIGGER_KEYS and the trigger keys parse reads have diverged -- the same hazard as "
+                        + "above, one layer down, where cooldown_ticks lives.");
+    }
+
+    /** Keys read off {@code receiver} in already-comment-stripped source. */
+    private static Set<String> keysReadVia(String receiver, String strippedSource) {
+        Set<String> found = new java.util.TreeSet<>();
+        Matcher m = Pattern.compile("\\b" + receiver + "\\.(?:get|is)\\w*\\(\"([a-z_]+)\"")
+                .matcher(strippedSource);
+        while (m.find()) found.add(m.group(1));
+        return found;
     }
 
     /**

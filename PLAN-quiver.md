@@ -256,16 +256,29 @@ Two further absence hazards, both measured:
   > > own control, because a stripper that silently did nothing returns the whole file and every
   > > assertion below then runs against the state that just failed.
   >
-  > **SCOPE HAS TWO AXES AND THE PLAN PREVIOUSLY NAMED ONLY ONE.** Weapons only — *and* **top-level
-  > keys only**. `s.getKeys(false)` is not recursive, so **nothing checks inside a `triggers:`
-  > block**: a misspelled `cooldwon_ticks`, `casst` or `on_hit` is read by nobody and reported by
-  > nobody. **That is the sharper gap of the two, not a lesser case of it** — `cooldown_ticks` IS a
-  > weapon's fire rate, so a silently-ignored one is precisely the *"silently wrong rather than
-  > visibly broken"* property given as the reason weapons went first. The trigger-level set is
-  > bounded and knowable (`name`, `description`, `cooldown_ticks`, `cost`, `cast`, `on_hit`,
-  > `on_cast`), so it is a small extension. **OWED, and deliberately not taken in this commit** —
-  > recorded here rather than left as an absence, since an unstated omission is indistinguishable
-  > from an oversight.
+  > **SCOPE HAS TWO AXES AND THE PLAN PREVIOUSLY NAMED ONLY ONE.** Weapons only — *and* originally
+  > **top-level keys only**, because `s.getKeys(false)` is not recursive. **The second axis is now
+  > closed: trigger blocks are checked too**, against a separate `TRIGGER_KEYS` set of seven —
+  > **`name`, `description`, `cooldown_ticks`, `cost`, `cast`, `on_hit`, `on_cast`** (the set named,
+  > not just counted).
+  >
+  > **TAKEN BEFORE `quiver_stone.yml` IS AUTHORED, AND THE ORDER IS THE WHOLE ARGUMENT.** That file
+  > is a brand-new hand-written trigger block, and it is the **instrument** that measures the
+  > held-right-click repeat floor. A fixture with a silently-ignored key in its trigger is *still a
+  > valid weapon* — it just measures a different configuration than it claims to, yields a plausible
+  > number, and looks entirely correct. **A control succeeding for the wrong reason, on the single
+  > artifact whose number slice C's dual-wield cooldown is chosen against.** Guarding afterwards
+  > would check the file only if someone re-ran the boot against it.
+  >
+  > The two sets are **deliberately not merged**: one combined set would make `cast:` legal at the
+  > top level and `material:` legal inside a trigger, both silently ignored — the exact failure both
+  > checks prevent. `MUTMERGE` reddens five rows.
+  >
+  > **The remaining boundary, named because an unstated depth reads as an oversight rather than a
+  > line:** everything *below* a trigger is still unchecked — the fields inside `cast:`, and the
+  > entries of `on_hit:` / `on_cast:` / `cost:`. Those parse through `AbilitySchema` against a
+  > grammar **shared with abilities**, so extending the check there covers both content kinds at
+  > once, which is the separate loader pass rather than this one.
 
 ### THE STANDING NO-STACK DECISION GAINS ITS SECOND AND STRONGER REASON
 
