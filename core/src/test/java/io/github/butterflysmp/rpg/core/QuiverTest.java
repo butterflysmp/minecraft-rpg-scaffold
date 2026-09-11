@@ -296,7 +296,16 @@ class QuiverTest {
         // The debuff side: over-delivers, by the same mechanism and in the player's disfavour.
         assertEquals(7, Quiver.applyPercent(8, -10), "7.2 -> 7: 0.8 claimed, a whole round taken");
         assertEquals(6, Quiver.applyPercent(8, -25), "exactly 6, no rounding to reach it");
-        assertEquals(0, Quiver.applyPercent(8, -100), "a total debuff empties it and stops there");
+        // 0 IS THE ARITHMETIC ANSWER, AND THIS METHOD HAS NO OPINION ABOUT WHETHER IT IS LEGAL.
+        // The comment here used to read "a total debuff empties it and stops there", which reads as
+        // APPROVAL -- while QuiverSize argues, from a measured mechanism, that a resolved capacity of
+        // 0 is a permanently dead item (refused on fire AND on reload, no third input, no recovery).
+        // Two files in one feature disagreeing about whether 0 is a legal capacity. Closed by one
+        // enforcement site rather than two opinions: legality is QuiverSize.resolve's, this is
+        // arithmetic, and a percentage that ever reaches a capacity passes through resolve. The
+        // composition is witnessed by QuiverSizeTest
+        // .aTotalPercentageDebuffEvaluatesToZeroAndSTILLRESOLVESToAWorkingCapacity.
+        assertEquals(0, Quiver.applyPercent(8, -100), "the arithmetic answer; legality is resolve's");
 
         // AND THE DEBUFF CASE THAT ACTUALLY DISCRIMINATES THE MODE. The five above are all values
         // where floor and Math.round AGREE, so a mutation to round leaves every one of them green --

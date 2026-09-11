@@ -121,7 +121,7 @@ public final class Quivers {
                         + " play carries NO count -- it was minted by a path that does not stamp"
                         + " one. Treating it as full; the defect is in that mint path, not the item.");
                 held.editMeta(meta -> QuiverItems.setFull(
-                        meta, weapon, adapters));
+                        meta, weapon, adapters, player.getUniqueId()));
                 player.getInventory().setItemInMainHand(held);
                 yield Optional.empty();
             }
@@ -184,7 +184,7 @@ public final class Quivers {
         int spent = Quiver.spend(loaded.getAsInt());
         // WRITE AND RENDER IN ONE CALL. Writing the key alone is what shipped: the stored count
         // moved, the tooltip did not, and it looked correct until a relog re-minted the item.
-        held.editMeta(meta -> QuiverItems.setLoaded(meta, weapon, adapters, spent));
+        held.editMeta(meta -> QuiverItems.setLoaded(meta, weapon, adapters, player.getUniqueId(), spent));
         // Write the stack back explicitly rather than trusting the main-hand read to be a live
         // mirror, and updateInventory so the tooltip moves on this shot -- the same pair, for the
         // same reasons, as WeaponDurability.applyWearOnUse.
@@ -257,7 +257,7 @@ public final class Quivers {
         held.editMeta(meta -> {
             // setLoaded, not stampFull: stampFull is MINT-ONLY, where applyLore follows by
             // construction. This item is in play, so the write must carry its own render.
-            QuiverItems.setFull(meta, weapon, adapters);
+            QuiverItems.setFull(meta, weapon, adapters, player.getUniqueId());
             meta.getPersistentDataContainer().remove(keys.quiverReloadStartedAt);
             meta.getPersistentDataContainer().remove(keys.quiverReloadCompletesAt);
         });

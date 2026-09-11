@@ -230,13 +230,22 @@ class QuiversSignatureTest {
      * third was caught only by luck</b> — dropping the call shrank the set, so the membership check
      * fired for a reason unrelated to the behaviour. Keeping the call makes it green again.
      *
-     * <p><b>STATUS OF ALL FIVE, enumerated rather than counted:</b>
+     * <p><b>STATUS OF ALL SEVEN SITES, enumerated rather than counted -- they live in the SIX files
+     * the assertion names, because {@code QuiverItems} holds two of them ({@code resolveCapacity} and
+     * {@code capacityIn}). Sites and files are different quantities and both are named here so the
+     * two numbers cannot read as a contradiction:</b>
      *
      * <table><tr><th>site</th><th>role</th><th>witnessed?</th></tr>
      * <tr><td>{@code QuiverState.capacityOf} / {@code from}</td><td>the resolution</td>
      *     <td><b>YES</b> — {@code QuiverStateTest}, MUTFACTORYDROP red</td></tr>
+     * <tr><td>{@code QuiverSize.resolve}</td><td>stat + authored, and the {@code MIN_CAPACITY} floor</td>
+     *     <td><b>YES</b> — {@code QuiverSizeTest}, MUTQSFLOOR and MUTQSMINCAP red</td></tr>
      * <tr><td>{@code WeaponLore.build}</td><td>resolves for the tooltip</td>
      *     <td><b>YES</b> — {@code WeaponLoreTest}, MUTSTAMPDROP red</td></tr>
+     * <tr><td>{@code QuiverItems.resolveCapacity}</td><td>the READ: plumbs the wielder's stat into
+     *     {@code QuiverSize.resolve}</td>
+     *     <td><b>NO</b> — needs an {@code ItemStack} at every caller. Boot-only; the arithmetic it
+     *     used to hold now lives in core.</td></tr>
      * <tr><td>{@code Quivers.stateOf}</td><td>reads five values, decides nothing</td>
      *     <td><b>NO</b> — needs an {@code ItemStack}. Boot-only; the decision it used to make has moved.</td></tr>
      * <tr><td>{@code WeaponItems.applyLore}</td><td>plumbs the stamp to the tooltip</td>
@@ -245,12 +254,30 @@ class QuiversSignatureTest {
      *     <td>n/a — there is no stamp-versus-authored decision in it</td></tr>
      * </table>
      *
-     * <p>The two NOs are argument-passing with no decision in them. Both are recorded in
-     * {@code PLAN-quiver-a2.md}'s COMMIT TABLE -- a document that exists -- rather than promised to
-     * {@code GATE-quiver-a2.md}, which is commit 7 and is not written. A promise to a file that does
-     * not exist is how the ContentValidator arm was named in four places and then was not there.
+     * <h3>{@code RpgCommand} JOINED THIS LIST IN COMMIT 3, DELIBERATELY, AND IT IS THE ONLY ENTRY
+     * THAT NEVER WRITES</h3>
      *
-     * <p>A sixth is a deliberate edit to this list, which is the moment to ask whether it should
+     * <p>{@code /rpg quiversize} prints the capacity the wielder will pack at, which is the
+     * discipline every dev instrument here follows -- <i>a gate should read what to expect before it
+     * starts watching.</i> To print it, it obtains one. <b>That is a new door, opened by the same
+     * commit that declares it</b>, which is the shape commits 1b through 1f were spent learning: the
+     * guard that does not scan its own new front door.
+     *
+     * <p>It is not a SECOND resolver, and the distinction is the reason it is allowed rather than
+     * refactored away: it calls {@code QuiverSize.resolve} -- the same expression the write path
+     * calls -- rather than re-deriving {@code authored + bonus} inline. A cap or a curve added to
+     * {@code resolve} reaches the command's message for free. Writing
+     * {@code weapon.quiverSize() + amount} there instead would have been the defect, and would have
+     * been invisible to this scan.
+     *
+     * <p><b>The needle is {@code "QuiverSize.resolve("} and NOT {@code "QuiverSize."}</b>, measured:
+     * the wide form also matches {@code QuiverSizeModifierItems}, whose {@code boosts} /
+     * {@code contribution} / {@code arrows} calls obtain a BONUS, not a capacity. Including it would
+     * put a file on this list that never resolves one, and a list whose membership stops meaning
+     * "decides which capacity governs" stops answering that question -- the same dilution argument
+     * that keeps {@code weapon.quiverSize()} off the needle set below.
+     *
+     * <p>A SEVENTH FILE is a deliberate edit to this list, which is the moment to ask whether it should
      * instead be reading the state the others already built.
      *
      * <p><b>IT SCANS FOR THE ACCESSOR AS WELL AS THE RESOLVER, AND THE FIRST VERSION DID NOT —
@@ -327,7 +354,8 @@ class QuiversSignatureTest {
                     // BOTH the accessor and the resolver, because scanning for capacityOf alone
                     // MISSED the defect this guard exists for -- measured, see the javadoc.
                     if (code.contains("capacityIn") || code.contains("capacityOf(")
-                            || code.contains("QuiverState.from(")) {
+                            || code.contains("QuiverState.from(")
+                            || code.contains("QuiverSize.resolve(")) {
                         resolvers.add(file.getFileName().toString());
                     }
                 }
@@ -337,10 +365,10 @@ class QuiversSignatureTest {
 
         java.util.Collections.sort(resolvers);
         assertEquals(
-                List.of("QuiverItems.java", "QuiverState.java", "Quivers.java", "WeaponItems.java",
-                        "WeaponLore.java"),
+                List.of("QuiverItems.java", "QuiverState.java", "Quivers.java", "RpgCommand.java",
+                        "WeaponItems.java", "WeaponLore.java"),
                 resolvers,
-                "a capacity may only be OBTAINED in these FIVE files, across core AND paper. Reading "
+                "a capacity may only be OBTAINED in these SIX files, across core AND paper. Reading "
                         + "QuiverItems.capacityIn anywhere else and resolving it inline -- "
                         + "stamped.orElse(weapon.quiverSize()) -- is a second resolver, and two "
                         + "resolvers is how the tooltip and the refusal logic come to disagree.");

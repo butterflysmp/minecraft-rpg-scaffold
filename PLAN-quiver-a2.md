@@ -344,7 +344,7 @@ A1 ran **15 commits**; largest 12 files / +573, median ~4 files / ~180 lines. A2
 | **0** | the boot record | 1 | `GATE-quiver.md`: V1/Q12/V2 blanket-green, **Q7 UNRUN** |
 | **1** | **the stamp seam — NO stats** | ~8 | 4th PDC key; `QuiverState.capacity`; `reloadVerdict` loses its param; `setLoaded` stamps capacity and clamps; tooltip reads the stamp. **Behaviour-identical** — capacity is still authored, so the golden must not move. That is the commit's own verification. |
 | **2** | quiver size, core half | ~6 | `core/combat/QuiverSize.java` (`NONE`/`boosts`/`contribution`), `HealthState` (**8 members**), `CombatantStats` (**2**), tests |
-| **3** | quiver size, paper half | ~7 | `Keys` pair, `QuiverSizeModifierItems`, reconcile line, dev command, fixture — **and `setLoaded` switches to reading the stat** |
+| **3** | quiver size, paper half | **13** | `Keys` pair, `QuiverSizeModifierItems` (PERMANENT, no `_TEMP`), reconcile line, `/rpg quiversize`, and `resolveCapacity` switches to the stat. **13 files, not ~7**, because the operator's commit-2 finding rode with it: `QuiverSize.MIN_CAPACITY`, and `Quiver.applyPercent` made to agree with it about whether 0 is a legal capacity. |
 | **4** | reload time, core half | ~5 | same shape; base is the authored duration |
 | **5** | reload time, paper half | ~7 | same shape — **and `beginReload` reads the stat**, the second and last supply site |
 | **6** | `/rpg stats` lines | ~5 | see the signature note below |
@@ -380,10 +380,30 @@ exists now, and descoping commit 7 cannot silently discharge them.
 |---|---|---|
 | replace the stamp with `empty` in `Quivers.stateOf`'s five-value read | `Quivers.java` | **GREEN and will stay green.** The decision moved to `QuiverState.from` and is covered; what remains is argument-passing. |
 | `MUTAPPLYLORE2` — pass `empty` while keeping the `capacityInMeta` call | `WeaponItems.applyLore` | **GREEN and will stay green.** This is the live in-game tooltip path. |
+| `MUTSTATREAD` — `QuiverItems.resolveCapacity` returns `weapon.quiverSize()` again, ignoring the stat | `QuiverItems.java` | **GREEN and will stay green.** Added in commit 3. Needs an `ItemStack`; the arithmetic it delegates to is covered in core by `MUTQSMINCAP`/`MUTQSFLOOR`, but *that it delegates at all* is boot-only. |
+| `MUTSCANKEY` — `QuiverSizeModifierItems.desiredModifiers` reads a neighbouring boost key | `QuiverSizeModifierItems.java` | **GREEN and will stay green.** Added in commit 3. Needs a live `Player`. This is the item-level half of the entanglement mutation the two instruments exist for; its other half arrives with the reload scanner in commit 5. |
 
-**Both need an `ItemStack` and therefore have no unit test.** Each needs a boot row: *equip a
-capacity modifier, reload, and read the tooltip* covers the second; *fire to the authored capacity
-and press reload* covers the first — it must say **BEGIN**, not "full".
+**ALL FOUR need an `ItemStack` or a `Player` and therefore have no unit test.** Each needs a boot
+row: *equip a capacity modifier, reload, and read the tooltip* covers `MUTAPPLYLORE2`; *fire to the
+authored capacity and press reload* covers the `stateOf` one — it must say **BEGIN**, not "full".
+
+**The two added in commit 3 share ONE boot row, and it is the slice's headline row:**
+
+> `/rpg give quiver_stone`, read **`Quiver: 9/9`**. `/rpg quiversize` — it prints
+> `+19 arrows: 9 -> 28 rounds once packed`. **Read the tooltip again: still `9/9`.** Fire ONCE.
+> Now it must read **`8/28`**.
+
+That single sequence discriminates three ways at once, which is why it is worth staging exactly:
+
+| reading after the shot | what it means |
+|---|---|
+| **`8/28`** | correct — the stat reached the write and the stamp carries it |
+| `8/9` | `MUTSTATREAD`: `resolveCapacity` ignored the stat |
+| `9/28` or `9/9` | the write never happened, or the render did not follow it (boot row V1's defect) |
+
+And the **`9/9` before the shot is a required observation, not a formality** — it is the only thing
+that witnesses the endorsed consequence *capacity is as of your last shot or reload*. A row that
+equipped and fired in one motion could not tell that design from a reconcile-loop clamp.
 
 > **AND THE PRICE IS A STANDING PROJECT DECISION, WHICH IS THE REUSABLE HALF.** `new ItemStack(...)`
 > throws *"No RegistryAccess implementation found"* without a server and the parent pom's only test
@@ -468,4 +488,8 @@ Traced through `manaRegenBonus`, the most recent stat:
   +13; **3 red across two files**, including the entanglement row, which read `1.0` — the mana value
   — where it expected `19.0`). That last one is the CORE half of the entanglement mutation the two
   fixtures exist for; the item-level half still belongs to commits 3 and 5.
+- **Commit 3's one, red, delta derivable:** `MUTQSMINCAP` (drop the `Math.max` from `resolve`;
+  removed `Math.max(MIN_CAPACITY, ` (23) + `)` (1) = −24, added ` // MUTQSMINCAP` (15) ⇒ **−9**;
+  **2 of 8 red** — the floor row read `−11`, the applyPercent-composition row read `0`). It is the
+  first mutation in this slice whose RED VALUES are the two numbers the finding was about.
 - **Q7 remains owed** and is not discharged by this slice.

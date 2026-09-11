@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core.combat;
 
+import io.github.butterflysmp.rpg.core.weapon.Quiver;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,12 +45,18 @@ class QuiverSizeTest {
     private static final int FIXTURE_BONUS = 19;
 
     /**
-     * Zero declares nothing, and so does a NEGATIVE -- which is the whole reason no floor exists.
+     * Zero declares nothing, and so does a NEGATIVE. <b>That makes the CONTENT PIPELINE
+     * increase-only; it does NOT make the resolved capacity safe</b>, which is what this row's
+     * first version claimed.
      *
-     * <p>Every stat helper in this repository gates on strictly {@code >}, so a reducing amount never
-     * becomes a modifier at all. {@code QuiverSize}'s javadoc records what must land in the same
-     * commit as the first reducing modifier: a floor, argued from
-     * {@code QuiverStateTest.aCapacityOfZeroWouldBeARefusalOnBothInputs} rather than from feel.
+     * <p>{@link QuiverSize#resolve} never consults this filter -- it is applied at the scanner
+     * ({@code QuiverSizeModifierItems.desiredModifiers}), and the arithmetic is public core API that
+     * anything may call with anything. What covers the API is {@link QuiverSize#MIN_CAPACITY}; see
+     * {@link #theResolvedCapacityNeverFallsBelowOneHoweverFarTheBonusGoesDown}.
+     *
+     * <p>Both are kept because they answer different questions: this one decides whether an item
+     * DECLARES a modifier (a 0-valued fixture must write no source rather than a no-op one every
+     * scan), the floor decides what a resolved capacity may BE.
      *
      * <p>Forces red: {@code boosts} relaxed to {@code >=}, or to {@code != NONE}.
      */
@@ -141,5 +148,67 @@ class QuiverSizeTest {
         assertEquals(29.0, summed, 0.0, "19 + 3 + 7, summed as doubles, is exact");
         assertEquals(29, QuiverSize.arrows(summed));
         assertEquals(AUTHORED + 29, QuiverSize.resolve(AUTHORED, summed));
+    }
+
+    /**
+     * THE RESOLVED CAPACITY NEVER FALLS BELOW ONE, HOWEVER FAR THE BONUS GOES DOWN -- and this row
+     * exists because the previous commit argued it could not happen and was wrong.
+     *
+     * <p>That argument was <i>"every stat helper is increase-only, so there is no way down."</i>
+     * {@link QuiverSize#boosts} is what makes that true of the SCANNER, and {@code resolve} does not
+     * consult it: {@code resolve(9, -5.0)} returned <b>4</b> at the commit that wrote the sentence.
+     * The API was the way down all along.
+     *
+     * <p><b>The floor is not a clamp at the authored base, and the row asserts the difference.</b>
+     * Refusing to go below 9 would silently discard the reduction; {@code MIN_CAPACITY} honours it as
+     * far as it can legally go and stops at the last value the item still works at. {@code -20} on a
+     * base of 9 is {@code 1}, not {@code 9} and not {@code -11} -- three outcomes, three different
+     * numbers, so no two of them can be confused.
+     *
+     * <p>Why 1 and not 0: {@code QuiverStateTest.aCapacityOfZeroWouldBeARefusalOnBothInputs} measures
+     * that at capacity 0 a quiver is refused on fire AND on reload, with no third input and no
+     * recovery. A mechanism, not a balance number.
+     *
+     * <p>Forces red: dropping the {@code Math.max}; flooring at 0; clamping at
+     * {@code authoredCapacity} instead.
+     */
+    @Test
+    void theResolvedCapacityNeverFallsBelowOneHoweverFarTheBonusGoesDown() {
+        assertEquals(QuiverSize.MIN_CAPACITY, QuiverSize.resolve(AUTHORED, -20.0),
+                "a reduction is honoured as far as it can go and stops at the last working value -- "
+                        + "NOT clamped back to the authored 9, which would discard it silently");
+        assertEquals(1, QuiverSize.resolve(AUTHORED, -1000.0), "and no further, however large");
+        assertEquals(1, QuiverSize.resolve(1, -1.0), "an authored 1 reduced by 1 stays at 1, not 0");
+
+        assertEquals(4, QuiverSize.resolve(AUTHORED, -5.0),
+                "ABOVE the floor the reduction passes through untouched -- the floor must not become "
+                        + "a clamp that swallows every reduction. 9 - 5 = 4, which is what this "
+                        + "expression returned BEFORE the floor existed, so the floor changed only "
+                        + "the cases it was written for.");
+    }
+
+    /**
+     * AND THE SIBLING HELPER AGREES ABOUT WHETHER 0 IS LEGAL, WHICH IT DID NOT BEFORE.
+     *
+     * <p>{@code Quiver.applyPercent(8, -100)} is {@code 0} and stays {@code 0} -- it answers "what
+     * does this percentage evaluate to", which is arithmetic with no opinion about legality. This
+     * class answers "what capacity governs". The two disagreed only because {@code QuiverTest}'s row
+     * called {@code 0} a total debuff that "stops there", which reads as approval of an outcome
+     * {@code QuiverSize} calls a permanently dead item.
+     *
+     * <p>The resolution is one enforcement site, not two opinions: <b>a percentage that ever reaches
+     * a capacity passes through {@link QuiverSize#resolve}</b>, and this row is that composition.
+     *
+     * <p>Forces red: a floor added to {@code applyPercent} (the first assertion), or removed from
+     * {@code resolve} (the second).
+     */
+    @Test
+    void aTotalPercentageDebuffEvaluatesToZeroAndSTILLRESOLVESToAWorkingCapacity() {
+        int arithmetic = Quiver.applyPercent(8, -100);
+        assertEquals(0, arithmetic, "the arithmetic answer is unchanged and has no opinion");
+
+        assertEquals(QuiverSize.MIN_CAPACITY, QuiverSize.resolve(arithmetic, 0.0),
+                "but routed through resolve it is a working capacity, because resolve is the one "
+                        + "place a number becomes a capacity");
     }
 }

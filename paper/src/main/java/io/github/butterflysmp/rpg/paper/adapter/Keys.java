@@ -88,6 +88,20 @@ public final class Keys {
     public final NamespacedKey manaRegenBoost;
 
     /**
+     * Marks the quiver_size_boost dev instrument and stores its +arrows bonus (a DOUBLE) in the PDC.
+     *
+     * <p><b>NO {@code _temp} SUFFIX, and that is a decision rather than an omission.</b> Every
+     * fixture above it is scaffolding that a real enchant retires. A2 ships no quiver enchant, so
+     * after this slice this item is THE ONLY THING THAT CAN MOVE QUIVER SIZE -- deleting it removes
+     * the ability to re-gate the stat at all. Owning it is more honest than adding a third entry to
+     * a removal debt nobody discharges. Same call, same reasoning, as {@code quiver_stone} in A1.
+     *
+     * <p>A DOUBLE, matching every other boost key, even though the stat means whole arrows:
+     * {@code Stat} sums doubles, and {@code QuiverSize.arrows} owns the single conversion back.
+     */
+    public final NamespacedKey quiverSizeBoost;
+
+    /**
      * Marks the class_damage_boost_TEMP dev item and stores its bonus (a DOUBLE) in the item's PDC.
      * Paired with {@link #classDamageBoostClass} -- this is the first fixture needing TWO values,
      * because a class-typed grant is meaningless without the class it grants to. An item carrying
@@ -253,6 +267,7 @@ public final class Keys {
         this.critDamageBoost = new NamespacedKey(plugin, "crit_damage_boost_temp");
         this.healthRegenBoost = new NamespacedKey(plugin, "health_regen_boost_temp");
         this.manaRegenBoost = new NamespacedKey(plugin, "mana_regen_boost_temp");
+        this.quiverSizeBoost = new NamespacedKey(plugin, "quiver_size_boost");
         this.classDamageBoost = new NamespacedKey(plugin, "class_damage_boost_temp");
         this.classDamageBoostClass = new NamespacedKey(plugin, "class_damage_boost_temp_class");
         this.mobId = new NamespacedKey(plugin, "mob_id");

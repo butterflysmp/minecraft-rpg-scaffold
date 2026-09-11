@@ -16,6 +16,7 @@ import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.HealthRegen;
 import io.github.butterflysmp.rpg.core.combat.HitDamage;
 import io.github.butterflysmp.rpg.core.combat.ManaRegen;
+import io.github.butterflysmp.rpg.core.combat.QuiverSize;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
@@ -46,6 +47,7 @@ import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.health.CritModifierItems;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenModifierItems;
 import io.github.butterflysmp.rpg.paper.health.ManaRegenModifierItems;
+import io.github.butterflysmp.rpg.paper.health.QuiverSizeModifierItems;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheet;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
@@ -429,6 +431,23 @@ public final class RpgCommand {
                         .executes(ctx -> manaRegenBoost(ctx, adapters, resources, null))
                         .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 100.0))
                                 .executes(ctx -> manaRegenBoost(ctx, adapters, resources,
+                                        DoubleArgumentType.getDouble(ctx, "bonus")))))
+                // Mint a quiver_size_boost. NOT a _TEMP: A2 ships no quiver enchant, so after this
+                // slice this instrument is the ONLY thing that can move quiver size, and deleting it
+                // would remove the ability to re-gate the stat. See QuiverSizeModifierItems.
+                //
+                // The boot row it exists for: hold quiver_stone, read "Quiver: 9/9", pick this up,
+                // FIRE ONCE -- the tooltip must read 8/28, not 8/9 and not 9/28. Capacity re-resolves
+                // at a WRITE, so the shot is what re-packs it; equipping alone changes nothing, which
+                // is the endorsed "capacity is as of your last shot or reload".
+                //
+                // The upper bound is 200 rather than 100 so the resolved value can be driven past
+                // every authored capacity in content/ if a later row wants that.
+                .then(Commands.literal("quiversize")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> quiverSizeBoost(ctx, adapters, weapons, null))
+                        .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 200.0))
+                                .executes(ctx -> quiverSizeBoost(ctx, adapters, weapons,
                                         DoubleArgumentType.getDouble(ctx, "bonus")))))
                 // Mint a class_damage_boost_TEMP. The class-damage stat bases at 0 and no content
                 // grants it yet, so without this the feature is invisible at boot: hold a MATCHING
@@ -838,6 +857,48 @@ public final class RpgCommand {
         player.sendMessage(Component.text(
                 String.format("Gave mana_regen_boost_TEMP (+%.2f/s -> %.2f mana/s once held, from %.2f). "
                                 + "Hold it and cast.", amount, currentPerSecond + amount, currentPerSecond),
+                NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /**
+     * Mint a quiver_size_boost.
+     *
+     * <p>Prints the RESOLVED capacity the wielder will pack at, not the bonus -- the discipline
+     * {@code critBoost}, {@code healthRegenBoost} and {@link #manaRegenBoost} follow, because a gate
+     * should read what to expect before it starts watching. The number comes from
+     * {@code QuiverSize.resolve} against the held weapon's authored magazine, so the message composes
+     * base and bonus through THE SAME EXPRESSION the write path uses and cannot drift from it.
+     *
+     * <p><b>It says "once packed", not "once held", and that is the whole feel of the stat.</b> The
+     * capacity on an item re-resolves only at a WRITE -- a shot or a reload -- so picking this up
+     * changes nothing until the player fires. Saying "once held" here would advertise a behaviour
+     * the code deliberately does not have, and a gate row timed against it would read as a bug.
+     *
+     * <p>Holding no quiver weapon is not an error: the instrument is still given, and the message
+     * says the bonus alone rather than inventing a base to add it to.
+     */
+    private static int quiverSizeBoost(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                                       WeaponRegistry weapons, Double bonus) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        double amount = bonus == null ? QuiverSizeModifierItems.DEFAULT_BOOST : bonus;
+        player.getInventory().addItem(QuiverSizeModifierItems.mint(adapters.keys(), amount));
+
+        String outcome = WeaponItems.heldWeaponId(player, adapters.keys())
+                .flatMap(weapons::find)
+                .filter(WeaponDefinition::hasQuiver)
+                .map(weapon -> String.format("%d -> %d rounds once packed",
+                        weapon.quiverSize(),
+                        QuiverSize.resolve(weapon.quiverSize(),
+                                adapters.stats().quiverSizeBonusValue(player.getUniqueId()) + amount)))
+                .orElse("no quiver weapon held -- hold one and fire to see it");
+
+        player.sendMessage(Component.text(
+                String.format("Gave quiver_size_boost (+%d arrows: %s). Capacity re-resolves at your "
+                        + "next SHOT or RELOAD, not on pickup.", (int) amount, outcome),
                 NamedTextColor.GREEN));
         return 1;
     }

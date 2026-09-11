@@ -21,27 +21,64 @@ import io.github.butterflysmp.rpg.core.weapon.QuiverState;
  * tested, but it is the rule for a percentage REACHING an integer stat, not this stat's design.
  * Flat summands are also what {@code classDamage} uses, for the same reason.
  *
- * <h2>WHY THERE IS NO FLOOR, AND WHAT MUST LAND WITH ONE IF A REDUCING MODIFIER EVER SHIPS</h2>
+ * <h2>ZERO IS NOT A LEGAL RESOLVED CAPACITY, BY ANY ROUTE</h2>
  *
- * <p>{@link #boosts} is strictly {@code >}, matching {@link ManaRegen}, {@link HealthRegen},
- * {@code Growth}, {@code ManaBank}, {@code Protection} and {@code Bulwark} -- <b>every stat helper
- * in this repository is increase-only</b>, so a negative amount never becomes a modifier at all.
- * {@code WeaponDefinition} already rejects {@code quiver_size < 0} and requires {@code > 0} for a
- * quiver weapon, so {@link #resolve}'s output cannot fall below the authored base. <b>There is no
- * floor because there is no way down.</b>
+ * <p>{@link #MIN_CAPACITY} is enforced in {@link #resolve}, and the argument is a mechanism rather
+ * than a balance number. {@code QuiverStateTest.aCapacityOfZeroWouldBeARefusalOnBothInputs}
+ * measures it: at {@code loaded 0, capacity 0}, {@link QuiverState#fireVerdict} is {@code EMPTY} and
+ * {@link QuiverState#reloadVerdict} is {@code ALREADY_FULL}. <b>Both inputs refused, no third input,
+ * no recovery.</b> Capacity 0 does not make a very small quiver, it makes a permanently dead item --
+ * which is why this is enforced rather than documented.
  *
- * <p>An unreachable guard is worse than an absent one -- it looks load-bearing, it is never
- * exercised by anything but a test asserting it exists, and this repository records the case
- * ({@code ContentValidator.validateElements}'s status arm) as a dead catch with a green suite around it.
- * So the floor is not written today.
+ * <p><b>THE FLOOR IS NOT A CLAMP AT THE AUTHORED BASE, AND THE DIFFERENCE IS THE WHOLE POINT.</b>
+ * Refusing to go below {@code authoredCapacity} would silently discard a reduction -- a defect in
+ * its own right, and one this repository already names. {@code MIN_CAPACITY} honours a reduction as
+ * far as a reduction can legally go and stops at the last value the item still works at:
+ * {@code resolve(9, -20)} is <b>1</b>, not 9 and not -11.
  *
- * <p><b>But the argument FOR one is a mechanism and not a feel, so it is recorded rather than
- * rediscovered.</b> A capacity of 0 does not make a very small quiver, it makes a PERMANENTLY DEAD
- * weapon, and {@code QuiverStateTest} witnesses it directly: at {@code loaded 0, capacity 0},
- * {@link QuiverState#fireVerdict} is {@code EMPTY} and {@link QuiverState#reloadVerdict} is
- * {@code ALREADY_FULL} -- refused on both inputs, with no third input and no recovery path. So the
- * day a reducing modifier is wanted, <b>a floor of at least 1 lands in the same commit</b>, and it
- * is a mechanism argument (an item with no reachable state) rather than a balance number.
+ * <h3>Why this is written now rather than promised, and the previous version of this section was
+ * wrong</h3>
+ *
+ * <p>It read: <i>"every stat helper in this repository is increase-only, so a negative amount never
+ * becomes a modifier at all ... there is no floor because there is no way down."</i> <b>That claim
+ * was wider than what was true, in two independent ways.</b>
+ *
+ * <ol>
+ *   <li><b>Its support was a filter with no call sites.</b> {@link #boosts} is what makes the content
+ *       pipeline increase-only, and at the commit that wrote the sentence its only callers were test
+ *       rows -- the scanner that applies it did not exist yet. A guard with no instances is not a
+ *       guard that cannot fire, and by exactly the same token <b>a filter with no call sites is not a
+ *       filter that is being applied.</b> The dead-guard principle was invoked in one direction only.
+ *   <li><b>{@link #resolve} never consulted it, and still does not.</b> The filter sits at the
+ *       scanner; the arithmetic is public core API. {@code resolve(9, -5.0)} returned 4. <b>The API
+ *       was the way down</b>; only the content pipeline was not.
+ * </ol>
+ *
+ * <p>The file already knew this two paragraphs apart -- {@link #arrows} reasons correctly about
+ * "a value that arrived from somewhere other than {@code contribution}", and
+ * {@code QuiverSizeTest} has a row asserting {@code arrows(-2.1) == -3}. The code was right; the
+ * sentence above it was not.
+ *
+ * <p><b>And the trigger was named wrong too.</b> It said a floor lands "the day a reducing modifier
+ * is wanted". The hazard is <b>the resolved capacity reaching 0 by ANY route</b>, and the feature
+ * already ships one that involves no reducing modifier: {@code Quiver.applyPercent(8, -100)} is
+ * {@code 0}, with a green test row. {@link Quiver#applyPercent} has no production callers today, so
+ * nothing is broken -- but wiring it would be such a route, and the old trigger would not have
+ * fired. Stating the condition in terms of the resolved capacity rather than the authoring shape is
+ * what makes it cover routes nobody has thought of.
+ *
+ * <p><b>{@code applyPercent} and this class now agree about whether 0 is legal.</b> That one answers
+ * "what does this percentage evaluate to", which is arithmetic and has no opinion; this one answers
+ * "what capacity governs", which is the decision. A percentage that ever reaches a capacity passes
+ * through {@link #resolve}, and its javadoc says so at that end too.
+ *
+ * <h2>WHY {@link #boosts} STILL EXISTS, GIVEN THE FLOOR</h2>
+ *
+ * <p>They answer different questions and neither subsumes the other. {@code boosts} decides whether
+ * an item DECLARES a modifier at all -- a 0-valued fixture must write no source rather than a no-op
+ * one every scan. {@code MIN_CAPACITY} decides what a resolved capacity may be once the modifiers
+ * are summed. Keeping the filter is what stops the reconciler churning; keeping the floor is what
+ * stops an item becoming unusable. Its caller is {@code QuiverSizeModifierItems.desiredModifiers}.
  */
 public final class QuiverSize {
 
@@ -49,6 +86,17 @@ public final class QuiverSize {
 
     /** No bonus. The {@code 0-is-absent} convention of every stat helper beside this one. */
     public static final int NONE = 0;
+
+    /**
+     * The smallest capacity an item may resolve to. See the class javadoc: at 0 a quiver weapon is
+     * refused on fire AND on reload, with no third input and no way back.
+     *
+     * <p><b>Unlike {@code Quiver.MIN_RELOAD_TICKS}, this is not a named placeholder at the no-op
+     * value.</b> That one sits at 1 because no mechanism argument exists for any reload floor, so it
+     * marks the decision rather than making one. This one is the value the mechanism produces: 0 is
+     * the broken state, so 1 is the smallest working one.
+     */
+    public static final int MIN_CAPACITY = 1;
 
     /** Does this bonus grant anything at all? Strictly {@code >}, so 0 declares nothing. */
     public static boolean boosts(int bonusArrows) {
@@ -67,30 +115,40 @@ public final class QuiverSize {
     }
 
     /**
-     * The resolved capacity: a weapon's authored magazine plus whatever the wielder's gear adds.
+     * The resolved capacity: a weapon's authored magazine plus whatever the wielder's gear adds,
+     * never below {@link #MIN_CAPACITY}.
      *
      * <p><b>THIS ADDITION IS IN {@code core} ON PURPOSE.</b> Its natural home looks like
      * {@code QuiverItems.resolveCapacity}, which is the single site that reads the stat -- and that
      * file needs an {@code ItemStack}, so a decision placed there is permanently boot-only. This
-     * slice has already paid that twice. The decision is one line; the READ stays in {@code paper}.
+     * slice has already paid that twice. The decision is two lines; the READ stays in {@code paper}.
+     *
+     * <p><b>This is the only place a bonus becomes a capacity</b>, which is why the floor lives here
+     * and not at the call site: a floor at the call site would be a rule the next call site does not
+     * inherit, and this slice exists because two enforcement sites for one capacity is how a tooltip
+     * and a refusal come to disagree.
      *
      * @param authoredCapacity the weapon's own {@code quiver_size}, already validated {@code > 0}
      * @param bonusStatValue   {@code HealthState}'s summed modifiers, in arrows
      */
     public static int resolve(int authoredCapacity, double bonusStatValue) {
-        return authoredCapacity + arrows(bonusStatValue);
+        return Math.max(MIN_CAPACITY, authoredCapacity + arrows(bonusStatValue));
     }
 
     /**
      * The one conversion from the {@code double} a {@code Stat} sums to whole arrows. FLOOR.
      *
-     * <p><b>Exact for everything this path can produce, and the floor is for everything else.</b>
-     * {@link #contribution} takes an {@code int}, so every modifier is integral and a sum of
-     * integral {@code double}s is exact far below {@code 2^53} -- flooring such a value returns it
-     * unchanged. The rule therefore only bites on a value that arrived from somewhere other than
-     * {@link #contribution}, and there it matches {@link Quiver#applyPercent}: <b>flooring rounds
-     * against the player</b>, for buffs and debuffs alike, so no rounding rule has to be chosen
-     * twice in one weapon.
+     * <p><b>Exact for everything the content pipeline can produce, and the floor is for everything
+     * else.</b> {@link #contribution} takes an {@code int}, so every modifier arriving that way is
+     * integral and a sum of integral {@code double}s is exact far below {@code 2^53} -- flooring
+     * such a value returns it unchanged. The rule therefore only bites on a value that reached here
+     * some other way, and there it matches {@link Quiver#applyPercent}: <b>flooring rounds against
+     * the player</b>, for buffs and debuffs alike, so no rounding rule has to be chosen twice in one
+     * weapon.
+     *
+     * <p><b>This returns a raw count and is NOT where legality is decided</b> -- {@code arrows(-2.1)}
+     * is {@code -3}, and that is correct for what this method is. {@link #resolve} is what turns a
+     * bonus into a capacity, and the floor is there.
      */
     public static int arrows(double bonusStatValue) {
         return (int) Math.floor(bonusStatValue);

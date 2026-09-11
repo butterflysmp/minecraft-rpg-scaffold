@@ -273,6 +273,24 @@ public final class Quiver {
      * tooltip renders what is STAMPED, never what was authored) or a floor on the modifier, and
      * <b>neither is decided here.</b> Escalated in {@code PLAN-quiver.md} rather than closed by the
      * choice of rounding mode.
+     *
+     * <h2>AND IT DOES NOT DECIDE WHETHER ITS OWN ANSWER IS A LEGAL CAPACITY</h2>
+     *
+     * <p>{@code applyPercent(8, -100)} is {@code 0}. That is the correct arithmetic answer and this
+     * method has no opinion about it -- but {@code QuiverSize} measures, from
+     * {@code QuiverStateTest.aCapacityOfZeroWouldBeARefusalOnBothInputs}, that a resolved capacity of
+     * 0 is a PERMANENTLY DEAD item: refused on fire, refused on reload, no third input, no recovery.
+     *
+     * <p><b>For one commit the two files disagreed about the same quantity.</b> The test row here
+     * called 0 "a total debuff that empties it and stops there", which reads as approval of the
+     * outcome the other file calls broken. Closed by ONE enforcement site rather than two opinions:
+     * <b>legality belongs to {@code QuiverSize.resolve}, which floors at
+     * {@code QuiverSize.MIN_CAPACITY}</b>, and this stays arithmetic.
+     *
+     * <p><b>So if a percentage ever reaches a capacity, it passes through
+     * {@code QuiverSize.resolve}.</b> This method has no production callers today, which is the only
+     * reason the disagreement cost nothing -- and is exactly why it was worth closing before one
+     * exists rather than after.
      */
     public static int applyPercent(int base, double percent) {
         return (int) Math.floor(base * (100.0 + percent) / 100.0);

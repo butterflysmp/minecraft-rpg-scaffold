@@ -268,20 +268,27 @@ class QuiverStateTest {
      * A CAPACITY OF ZERO WOULD BE A REFUSAL ON BOTH INPUTS -- the mechanism argument for a floor,
      * witnessed rather than asserted.
      *
-     * <p>Nothing can produce this state today: {@code WeaponDefinition} requires
-     * {@code quiver_size > 0} for a quiver weapon, and {@code QuiverSize.boosts} is strictly
-     * {@code >}, so no gear can reduce it. <b>This row exists to price a change nobody has made
-     * yet</b>, and it is staged by CAUSING the condition rather than by asserting a guard exists --
-     * which is the only way to test a case shipped content cannot reach.
+     * <p><b>THIS ROW IS LOAD-BEARING NOW, NOT SPECULATIVE, AND THE FIRST VERSION OF THIS PARAGRAPH
+     * SAID OTHERWISE.</b> It read: <i>"nothing can produce this state today ...
+     * {@code QuiverSize.boosts} is strictly {@code >}, so no gear can reduce it."</i> That was
+     * support from a filter with no production call sites -- and {@code QuiverSize.resolve} never
+     * consulted it anyway, so {@code resolve(9, -5.0)} was {@code 4}. The API was the way down.
+     *
+     * <p>What this row measures is now the ARGUMENT FOR AN ENFORCED FLOOR:
+     * {@code QuiverSize.MIN_CAPACITY}, applied in {@code resolve}, which cites this test by name.
+     * The condition is stated on the RESOLVED CAPACITY rather than on which authoring shape produced
+     * it -- because {@code Quiver.applyPercent(8, -100)} is a green, tested route to 0 that involves
+     * no reducing modifier at all, and a trigger phrased as "the day a reducing modifier ships"
+     * would not have fired for it.
+     *
+     * <p>Staged by CAUSING the condition rather than by asserting a guard exists, which is the only
+     * way to test a case shipped content cannot reach.
      *
      * <p>The point: capacity 0 is not a very small quiver, it is <b>an item with no reachable
      * state</b>. Fire is refused as empty; reload is refused as already full; there is no third
      * input, so there is no way out. That is a MECHANISM argument for a floor of at least 1 -- as
      * opposed to {@code Quiver.MIN_RELOAD_TICKS}, which is a named placeholder at the no-op value
      * because no such argument exists for any reload floor.
-     *
-     * <p>So the day a reducing modifier ships, the floor ships with it, and this row is the reason
-     * already written down. See {@code QuiverSize}'s class javadoc, which cites this test by name.
      */
     @Test
     void aCapacityOfZeroWouldBeARefusalOnBothInputs() {

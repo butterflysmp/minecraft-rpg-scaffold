@@ -265,6 +265,24 @@ public final class PlayerHealthSystem implements HealthListener {
             // that already passed. Eager versus lazy is the axis; having a current is not.
             stats.reconcileHealthRegenModifiers(id, HealthRegenModifierItems.desiredModifiers(player, keys));
 
+            // QUIVER SIZE: whole arrows added to the held weapon's authored magazine. SILENT and
+            // VOID, like health regen -- but for a different reason, and the difference is worth
+            // one line because the usual one does not apply.
+            //
+            // Mana regen returns boolean because the pool accrues LAZILY, so a rate change re-prices
+            // elapsed ticks and the caller must pin. A quiver accrues nothing: its count is a stored
+            // integer that changes only when something writes it. And the DECREASE-CLAMP is not here
+            // either -- it is at QuiverItems.setLoaded, which holds the new capacity and the count in
+            // one call with Quiver.clamp between them. A clamp on this path would be a second
+            // enforcement site for one capacity, which is the defect the whole quiver slice was
+            // reorganised to make unrepresentable, and it would be an in-play write with no render,
+            // which is boot row V1's defect in a new location.
+            //
+            // So capacity is as of the wielder's last shot or reload, which is the ENDORSED
+            // consequence rather than a gap: you pack your quiver, and what you packed is what you
+            // carry.
+            stats.reconcileQuiverSizeModifiers(id, QuiverSizeModifierItems.desiredModifiers(player, keys));
+
             DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player, keys, enchants);
             stats.reconcileDefenseModifiers(id, worn.defense());
             ArmorBarOverride.apply(player, keys, stats.defenseValue(id), worn.nativeArmor());

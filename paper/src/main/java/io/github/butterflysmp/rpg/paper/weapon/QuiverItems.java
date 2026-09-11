@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.combat.QuiverSize;
 import io.github.butterflysmp.rpg.core.weapon.Quiver;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -10,6 +11,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.OptionalInt;
+import java.util.UUID;
 
 /**
  * The Bukkit half of the quiver: reading a stack's magazine and writing it back.
@@ -141,8 +143,8 @@ public final class QuiverItems {
      * wrote down is the kind that a later change to either write silently breaks.
      */
     public static void setLoaded(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters,
-                                 int count) {
-        int capacity = resolveCapacity(weapon, adapters);
+                                 UUID wielder, int count) {
+        int capacity = resolveCapacity(weapon, adapters, wielder);
 
         // AND THE CLAMP IS HERE, WHICH IS WHY NO RECONCILE-LOOP CLAMP IS NEEDED. Capacity cannot
         // change except at a write, and at that write this method holds both numbers -- so
@@ -167,20 +169,35 @@ public final class QuiverItems {
      * authored reads that commit 3 would have had to find and convert</b>, which is exactly the
      * shape that made "two call sites" false the first time it was claimed.
      */
-    public static void setFull(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters) {
-        setLoaded(meta, weapon, adapters, resolveCapacity(weapon, adapters));
+    public static void setFull(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters,
+                                UUID wielder) {
+        setLoaded(meta, weapon, adapters, wielder, resolveCapacity(weapon, adapters, wielder));
     }
 
     /**
      * THE ONE PLACE THE WIELDER'S CAPACITY IS RESOLVED FOR A WRITE.
      *
-     * <p>Authored today. <b>Commit 3 swaps this one expression for the stat read and nothing else in
-     * the codebase changes</b> — which is what the A1/A2 split was bought with, and what "two call
-     * sites" will finally mean once it is true by construction rather than asserted. Everything that
-     * READS a capacity reads the stamp this produces, never the stat.
+     * <p><b>The claim held.</b> Commit 1e's javadoc said commit 3 would swap this one expression for
+     * the stat read and nothing else in the codebase would change. It swapped one expression --
+     * {@code weapon.quiverSize()} became {@code QuiverSize.resolve(weapon.quiverSize(), ...)} -- and
+     * what else changed was a PARAMETER, not another resolver: this method, {@link #setLoaded} and
+     * {@link #setFull} now take the wielder, because a stat belongs to somebody. Everything that
+     * READS a capacity still reads the stamp this produces, never the stat.
+     *
+     * <p><b>Why a {@code UUID} and not a {@code Player}:</b> it is all {@code CombatantStats} wants,
+     * it cannot be dereferenced for anything else by accident, and it does not tempt a later edit
+     * into reading equipment here -- which would be a second scanner competing with the reconcile
+     * loop's. The arithmetic is {@code core}'s and is unit-tested there; this method is the READ.
+     *
+     * <p><b>An untracked wielder resolves to the authored capacity</b>, because
+     * {@code CombatantStats.quiverSizeBonusValue} returns {@code 0.0} rather than throwing and
+     * {@code QuiverSize.resolve(authored, 0.0)} is exactly {@code authored}. That is the right answer
+     * and not a fallback: a weapon nobody is tracked for holds what it declares.
      */
-    private static int resolveCapacity(WeaponDefinition weapon, AdapterContext adapters) {
-        return weapon.quiverSize();
+    private static int resolveCapacity(WeaponDefinition weapon, AdapterContext adapters,
+                                       UUID wielder) {
+        return QuiverSize.resolve(weapon.quiverSize(),
+                adapters.stats().quiverSizeBonusValue(wielder));
     }
 
     /**
