@@ -123,7 +123,7 @@ already records: *"Two literals cannot drift apart if there is only one."*
 
 **Made structural rather than promised:**
 
-- `QuiverState` gains a `capacity` component, read from the stamp by `Quivers.stateOf`.
+- `QuiverState` gains a `capacity` component; **`QuiverState.from` resolves it** and `Quivers.stateOf` merely reads five values and passes them. *(An earlier draft said `stateOf` resolved it — true for one commit, until the decision moved into core so a row could reach it.)*
 - **`reloadVerdict(long now, int capacity)` LOSES its capacity parameter.** With nowhere to pass a
   different value, a divergent capacity is **unrepresentable** — the same move that removed
   `reloadTicks` from `reloadComplete` and made A1's free-instant-reload defect impossible.
@@ -348,7 +348,37 @@ A1 ran **15 commits**; largest 12 files / +573, median ~4 files / ~180 lines. A2
 | **4** | reload time, core half | ~5 | same shape; base is the authored duration |
 | **5** | reload time, paper half | ~7 | same shape — **and `beginReload` reads the stat**, the second and last supply site |
 | **6** | `/rpg stats` lines | ~5 | see the signature note below |
-| **7** | prose + gate | ~5 | corrections below, `GATE-quiver-a2.md` |
+| **7** | prose + gate | ~5 | corrections below, `GATE-quiver-a2.md` — **and the two boot-only rows below, which it must not be descoped without** |
+
+### TWO KNOWN-GREEN MUTATIONS ON THE LIVE PATH — recorded HERE because the gate does not exist yet
+
+**`GATE-quiver-a2.md` is commit 7 and is not written.** Both of these were first promised to it by a
+javadoc — *"named in GATE-quiver-a2 rather than left to look covered"* — which pointed at a file
+that does not exist. **This branch already has that precedent**: the `ContentValidator` arm was
+named in advance in four places and then was not there. So they live in the commit table, which
+exists now, and descoping commit 7 cannot silently discharge them.
+
+| mutation | site | status |
+|---|---|---|
+| replace the stamp with `empty` in `Quivers.stateOf`'s five-value read | `Quivers.java` | **GREEN and will stay green.** The decision moved to `QuiverState.from` and is covered; what remains is argument-passing. |
+| `MUTAPPLYLORE2` — pass `empty` while keeping the `capacityInMeta` call | `WeaponItems.applyLore` | **GREEN and will stay green.** This is the live in-game tooltip path. |
+
+**Both need an `ItemStack` and therefore have no unit test.** Each needs a boot row: *equip a
+capacity modifier, reload, and read the tooltip* covers the second; *fire to the authored capacity
+and press reload* covers the first — it must say **BEGIN**, not "full".
+
+> **AND THE PRICE IS A STANDING PROJECT DECISION, WHICH IS THE REUSABLE HALF.** `new ItemStack(...)`
+> throws *"No RegistryAccess implementation found"* without a server and the parent pom's only test
+> dependency is `junit-jupiter` — recorded independently at `WeaponItemsTest:14`,
+> `GoldenLoreTest:39` and `GridClickIntentTest:16`. That is a **choice the project has already
+> made**, not a property of the universe, and it prices every future placement decision:
+>
+> **ANY DECISION PLACED IN `paper` IS PERMANENTLY BOOT-ONLY.**
+>
+> So *"does this need to be a decision in `paper`?"* is a design question with a **known price**,
+> not a matter of taste. It was answered correctly twice in this chain — the verdict moving to
+> `QuiverState`, then the capacity resolution moving to `QuiverState.from` — both times without
+> naming the rule. Named now.
 
 **Commit 1 is the seam that makes the "two call sites" claim true**, and it is separately
 verifiable precisely because it changes no behaviour.

@@ -245,8 +245,10 @@ class QuiversSignatureTest {
      *     <td>n/a — there is no stamp-versus-authored decision in it</td></tr>
      * </table>
      *
-     * <p>The two NOs are argument-passing with no decision in them, and both are named in
-     * {@code GATE-quiver-a2} rather than left to look covered.
+     * <p>The two NOs are argument-passing with no decision in them. Both are recorded in
+     * {@code PLAN-quiver-a2.md}'s COMMIT TABLE -- a document that exists -- rather than promised to
+     * {@code GATE-quiver-a2.md}, which is commit 7 and is not written. A promise to a file that does
+     * not exist is how the ContentValidator arm was named in four places and then was not there.
      *
      * <p>A sixth is a deliberate edit to this list, which is the moment to ask whether it should
      * instead be reading the state the others already built.
@@ -279,7 +281,8 @@ class QuiversSignatureTest {
                             .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
                     // BOTH the accessor and the resolver, because scanning for capacityOf alone
                     // MISSED the defect this guard exists for -- measured, see the javadoc.
-                    if (code.contains("capacityIn") || code.contains("capacityOf(")) {
+                    if (code.contains("capacityIn") || code.contains("capacityOf(")
+                            || code.contains("QuiverState.from(")) {
                         resolvers.add(file.getFileName().toString());
                     }
                 }
@@ -296,6 +299,58 @@ class QuiversSignatureTest {
                         + "QuiverItems.capacityIn anywhere else and resolving it inline -- "
                         + "stamped.orElse(weapon.quiverSize()) -- is a second resolver, and two "
                         + "resolvers is how the tooltip and the refusal logic come to disagree.");
+    }
+
+    /**
+     * EVERY WAY TO OBTAIN A CAPACITY IS ON THIS LIST, AND A SIXTH CANNOT BE ADDED SILENTLY.
+     *
+     * <h2>Why a reflective pin and not a wider string list</h2>
+     *
+     * <p>The scan above is <b>a list of names</b>, and it has now been too narrow three times, each
+     * time for the same reason and each time widened afterwards:
+     *
+     * <ol>
+     *   <li>it named {@code capacityOf}; {@code MUTINLINE} arrived through {@code capacityIn}.
+     *   <li>it scanned {@code paper}; {@code capacityOf} is public in <b>core</b>.
+     *   <li>{@link QuiverState#from} was added as a new way to obtain a capacity — <b>in the same
+     *       commit whose javadoc said "a guard aimed at the NAME of the right thing rather than the
+     *       SHAPE of the wrong one"</b> — and the list was not widened. A sixth file could write
+     *       {@code QuiverState.from(loaded, OptionalInt.empty(), weapon.quiverSize(), a, b)} and
+     *       obtain a state whose capacity ignores the stamp, containing neither scanned string.
+     *       That is {@code MUTSTATEDROP} relocated one file over.
+     * </ol>
+     *
+     * <p><b>Widening the list a fourth time fixes today and leaves the mechanism that failed three
+     * times in place</b> — the mechanism being that somebody has to REMEMBER. Instance 3 is the proof
+     * that remembering fails even with the rule freshly written three paragraphs above.
+     *
+     * <p>So this row does not try to be a better list. <b>It makes the list impossible to leave
+     * stale in silence</b>: {@code QuiverState}'s public static surface is pinned, so adding a sixth
+     * entry point <b>fails the build</b>, and the author lands here — beside the scan, with this
+     * javadoc explaining what else must move. The guard cannot enumerate every future name; it can
+     * refuse to let one appear unnoticed.
+     *
+     * <p>Same idiom as {@link #theCommittingSurfaceHasNotQuietlyGrown} and
+     * {@code DamageSignatureTest}, and the same argument: <b>a safety that holds on a condition
+     * nobody wrote down where it would be violated is not a safety.</b> Here the condition is
+     * written where it will be violated — at the surface that grows.
+     */
+    @Test
+    void noSixthWayToObtainACapacityCanAppearUnnoticed() {
+        List<String> entryPoints = Arrays.stream(QuiverState.class.getDeclaredMethods())
+                .filter(m -> !m.isSynthetic() && Modifier.isPublic(m.getModifiers())
+                        && Modifier.isStatic(m.getModifiers()))
+                .map(Method::getName)
+                .distinct()
+                .sorted()
+                .toList();
+
+        assertEquals(List.of("capacityOf", "from", "loaded", "reloading", "unstamped"), entryPoints,
+                "QuiverState's public static surface changed. Every one of these yields a capacity -- "
+                        + "capacityOf resolves one, the rest build a state carrying one -- so a new "
+                        + "member must ALSO be added to the source scan in "
+                        + "theCapacityIsResolvedOnlyWhereThisListSays, or a caller can obtain a "
+                        + "capacity that ignores the stamp and no test will notice.");
     }
 
     /**
