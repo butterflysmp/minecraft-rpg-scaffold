@@ -401,7 +401,35 @@ LEAKS … Reconcile does not care HOW an item left."* Lazy evaluation has no eve
 > **ONE EDGE THE LAZY FORM INTRODUCES, AND IT MUST BE GUARDED.** `Bukkit.getCurrentTick()` **resets
 > on server restart**, so a reload spanning a restart leaves a `completesAt` in a future that never
 > arrives — a permanently dead weapon, with a tooltip that reads correctly. **Guard: if
-> `completesAt - now > reloadTicks`, the clock has moved backwards; treat the reload as complete.**
+> `now < startedAt`, the clock has moved backwards; treat the reload as complete.**
+>
+> > **CORRECTED AFTER COMMIT 1 REVIEW — THE FIRST FORM OF THIS GUARD WAS A FREE INSTANT RELOAD.**
+> > It read `completesAt - now > reloadTicks`, which is sound only while `reloadTicks` cannot move
+> > between the stamp and the read — and `reloadTicks` **is the quantity A2 exists to make movable.**
+> > Executed against that version: stamped at 100 with a 60-tick reload, then read at 105 with the
+> > stat dropped to 20, it returned **complete** and reported **0 ticks remaining**. Equipping
+> > reload-speed gear mid-reload was free ammunition, and it looked like the item working well.
+> >
+> > **THE PROPERTY, which the next guard written here inherits: a guard's bound must be a quantity
+> > that CANNOT LEGITIMATELY CHANGE between the stamp and the read.** So the item stamps
+> > `startedAt` alongside `completesAt` — same instant, same clock — and the live duration does not
+> > enter the method at all. **The defect is unrepresentable rather than guarded against**, the same
+> > move the fencepost makes by giving `reloadCompletesAt` no cooldown parameter.
+> >
+> > **No test could have caught it**, because every clock row passed the same `reloadTicks` for the
+> > stamp and the read: the fixture held fixed the one condition under which the guard was correct,
+> > so the suite was green for a reason unrelated to the guard being right. The row that now varies
+> > it is `shorteningTheReloadDurationMidFlightDoesNotFinishItEarly`, and `MUTBOUND` reintroduces the
+> > old form and reddens it.
+> >
+> > **And the committed deadline is STAMPED, never re-derived from the live stat**, so an in-flight
+> > reload keeps the length it was committed at. Existing ruling, not a new one —
+> > `AbilityService.resolve`: *"the swing you have already committed to keeps the cadence it was
+> > committed at."*
+> >
+> > **Residual, named rather than left to be found:** a restart landing *inside* `[startedAt,
+> > completesAt)` is indistinguishable from an ordinary reload and is not caught. The cost is bounded
+> > by one reload duration; the unbounded case — a weapon stranded forever — is what the guard takes.
 > This is the same family as `Durability.wear`'s `long` widening, whose javadoc says the quiet part:
 > *"a huge wear would silently become a FULL REPAIR … a debuff looping around into the strongest
 > possible buff."* Both are a counter trusted past the range it is valid over.
@@ -559,9 +587,15 @@ guard 1 for A2's confinement.
 4. **Capacity-change semantics** — increase leaves the count unchanged (headroom), decrease clamps.
    The `DESIGN-stat-engine.md` rule, exercised now so A2 inherits it proven.
 5. **`25 +16% → 29`**, the named floating-point case, with its expected value.
-6. **The backwards-clock guard** — `completesAt - now > reloadTicks` reads as complete. Driven by a
-   `LongSupplier` that jumps backwards, on the `MeleeHits`/`DamageWindow` injection seam, so this is
-   a core row and needs no server.
+6. **The backwards-clock guard** — `now < startedAt` reads as complete. Driven by a `LongSupplier`
+   that jumps backwards, on the `MeleeHits`/`DamageWindow` injection seam, so this is a core row and
+   needs no server. **Paired with a row that VARIES the reload duration between the stamp and the
+   read** — without it the fixture cannot produce the failure at all, which is how the first version
+   of this guard shipped with a green suite.
+6b. **The floor rule in BOTH directions** — a positive modifier never delivers more than it claims,
+   a negative one never delivers less. **At least one debuff case with a fractional part ≥ 0.5**
+   (`8 −5% = 7.6`), or the debuff half is asserted at values where floor and `round` agree and
+   therefore guards nothing — measured, not assumed.
 7. **`QuiverSignatureTest`** — guard 2.
 8. **The fencepost** — a reload started while the fire cooldown is still running **begins
    immediately**. The ruling above, pinned so it cannot drift into the gated branch by a later edit.
@@ -577,7 +611,9 @@ never `git checkout --`. Markers carry no punctuation and no `/`.
 | `reload()` → `capacity - 1` | row 2 |
 | remove the `clamp` in the carry | row 3 |
 | `floor` expression → `base*(1+p/100)` | row 5 only, at 25 — **and NOT at 8**, which is the point |
-| drop the backwards-clock guard | row 6 |
+| drop the backwards-clock guard (`MUTNOGUARD`) | row 6's restart half |
+| **bound the guard by the live duration again (`MUTBOUND`)** | **row 6's mid-flight half — the defect, reintroduced** |
+| `floor` → `Math.round` (`MUTROUND`) | rows 6b and the dead-zone row |
 | delete the stamp in `WeaponItems.mint` | the mint test, and nothing else |
 
 **Before mutating, `grep -c` the target string.** This repo's javadocs quote their own constants

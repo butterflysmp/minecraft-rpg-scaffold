@@ -111,7 +111,17 @@ public final class Quiver {
         return clamp(capacity, capacity);
     }
 
-    /** The tick a reload started now will finish on. */
+    /**
+     * The tick a reload started now will finish on.
+     *
+     * <p><b>The deadline is STAMPED, never recomputed from the live reload duration on each read</b>
+     * -- so a reload already under way keeps the length it was committed at, even once A2 makes that
+     * duration a stat that gear can move. That is not a new decision: {@code AbilityService.resolve}
+     * settled the identical question for cooldowns, and its words carry over unchanged --
+     * <i>"gaining or losing attack speed mid-cooldown does not retroactively lengthen or shorten a
+     * timer already running. Deliberate: the swing you have already committed to keeps the cadence it
+     * was committed at."</i>
+     */
     public static long reloadCompletesAt(long now, int reloadTicks) {
         return now + Math.max(reloadTicks, 0);
     }
@@ -144,12 +154,52 @@ public final class Quiver {
      * shape: a counter trusted past the range over which it is valid, turning silently into its own
      * opposite.
      *
-     * <p>Worked, at {@code reloadTicks = 7}: {@code (100, 105) -> false} (5 left);
-     * {@code (100, 100) -> true}; {@code (100, 99) -> true}; {@code (5, 900) -> true} (restart).
+     * <h2>THE BOUND IS THE STAMPED START, AND IT USED TO BE THE LIVE RELOAD DURATION</h2>
+     *
+     * <p><b>That was a defect, and it was a free instant reload waiting for slice A2.</b> The first
+     * version asked {@code remaining > reloadTicks}, which is sound only while {@code reloadTicks}
+     * cannot move between the stamp and the read -- and {@code reloadTicks} is precisely the quantity
+     * A2 exists to make movable. Executed against that version:
+     *
+     * <pre>
+     *   stamped at tick 100 with reloadTicks 60   -&gt;  deadline 160
+     *   at now = 105 the player equips reload-speed gear, so the stat now reads 20
+     *   remaining = 55;  55 &gt; 20  -&gt;  reads COMPLETE, and ticksRemaining reports 0
+     * </pre>
+     *
+     * <p>The quiver refills on the spot. <b>Equipping a reload-speed item DURING a reload would be
+     * free ammunition, and it would look exactly like the item working well.</b> Same family as
+     * {@link Durability#wear}'s overflow -- <i>"a debuff looping around into the strongest possible
+     * buff"</i> -- with the sign reversed: here a BUFF loops around into free ammunition.
+     *
+     * <p><b>THE PROPERTY, stated so the next guard written here inherits it: a guard's bound must be
+     * a quantity that CANNOT LEGITIMATELY CHANGE between the stamp and the read.</b> So the bound is
+     * now {@code startedAt}, written at the same instant and from the same clock as
+     * {@code completesAt}. The live duration does not appear in this method at all -- <b>the defect
+     * is unrepresentable rather than guarded against</b>, which is the same move the fencepost makes
+     * by giving {@link #reloadCompletesAt} no cooldown parameter for a gate to be threaded through.
+     *
+     * <p><b>Why no test could have caught the old form:</b> every row passed the SAME
+     * {@code reloadTicks} for the stamp and the read, so the fixture held fixed the one condition
+     * under which the guard was correct. The suite was green for a reason unrelated to the guard
+     * being right. {@code QuiverTest} now varies the duration between stamp and read explicitly.
+     *
+     * <h2>What this still cannot see, said rather than left to be discovered</h2>
+     *
+     * <p>A restart whose new tick counter happens to land INSIDE {@code [startedAt, completesAt)} is
+     * indistinguishable from an ordinary reload in progress, and this reports "not finished" for it.
+     * <b>The cost is bounded by one reload duration</b> and then it completes normally, so it is a
+     * brief wrong answer rather than a stuck weapon. The unbounded case -- the one that strands a
+     * weapon forever -- is a counter that restarts BELOW the stamp, and that is exactly what is
+     * caught.
+     *
+     * <p>Worked: {@code (105, 100, 160) -> false} (55 left, whatever the stat now says);
+     * {@code (160, 100, 160) -> true}; {@code (161, 100, 160) -> true};
+     * {@code (5, 895, 902) -> true} (the counter restarted below the stamp).
      */
-    public static boolean reloadComplete(long now, long completesAt, int reloadTicks) {
-        long remaining = completesAt - now;
-        return remaining <= 0 || remaining > Math.max(reloadTicks, 0);
+    public static boolean reloadComplete(long now, long startedAt, long completesAt) {
+        if (now >= completesAt) return true;   // finished, the ordinary way
+        return now < startedAt;                // the clock moved out from under the stamp
     }
 
     /**
@@ -159,8 +209,8 @@ public final class Quiver {
      * a nonsense countdown while the gate above it says the reload is done -- one source of truth for
      * the two questions, rather than two comparisons that can disagree.
      */
-    public static long reloadTicksRemaining(long now, long completesAt, int reloadTicks) {
-        return reloadComplete(now, completesAt, reloadTicks) ? 0L : completesAt - now;
+    public static long reloadTicksRemaining(long now, long startedAt, long completesAt) {
+        return reloadComplete(now, startedAt, completesAt) ? 0L : completesAt - now;
     }
 
     /**
@@ -168,10 +218,17 @@ public final class Quiver {
      *
      * <h2>Why floor</h2>
      *
-     * <p>It is the only mode in which a modifier never delivers MORE than it claims. {@code ceil}
-     * makes "+1%" worth a whole round; {@code Math.round} puts a threshold at half a round, so on a
-     * base of 8 a "+6.25%" silently becomes +1. Floor only ever UNDER-delivers -- and an
-     * under-delivery can be named on a tooltip, where a silent inflation cannot be.
+     * <p><b>FLOOR ROUNDS AGAINST THE PLAYER IN BOTH DIRECTIONS, AND THAT IS THE CHOICE.</b> A
+     * POSITIVE modifier never delivers more than it claims; a NEGATIVE one never delivers less. It
+     * is deliberately stated in both directions, because the obvious one-line justification --
+     * <i>"a modifier never delivers more than it claims"</i> -- is true of buffs only and <b>false of
+     * debuffs</b>: at a base of 8, {@code -10%} is {@code floor(7.2) = 7}, so the penalty delivered
+     * is a whole round where 0.8 was claimed. Executed, not reasoned.
+     *
+     * <p>The virtue kept is CONSISTENCY and a bias that is always in the same direction, never an
+     * unmixed promise to the player. {@code ceil} makes "+1%" worth a whole round; {@code Math.round}
+     * puts a threshold at half a round, so on a base of 8 a "+6.25%" silently becomes +1. Floor's
+     * error is at least always nameable on a tooltip -- a silent inflation is not.
      *
      * <h2>THE MODE IS THE EASY HALF. THE DEFECT LIVES IN THE EXPRESSION.</h2>
      *

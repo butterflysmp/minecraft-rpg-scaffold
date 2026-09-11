@@ -132,14 +132,49 @@ class QuiverTest {
         long deadline = Quiver.reloadCompletesAt(start, RELOAD_TICKS);
         assertEquals(107L, deadline);
 
-        assertFalse(Quiver.reloadComplete(start, deadline, RELOAD_TICKS), "at the start, not done");
-        assertFalse(Quiver.reloadComplete(106L, deadline, RELOAD_TICKS), "one tick short, not done");
-        assertTrue(Quiver.reloadComplete(107L, deadline, RELOAD_TICKS), "on the deadline, done");
-        assertTrue(Quiver.reloadComplete(108L, deadline, RELOAD_TICKS), "past it, done");
+        assertFalse(Quiver.reloadComplete(start, start, deadline), "at the start, not done");
+        assertFalse(Quiver.reloadComplete(106L, start, deadline), "one tick short, not done");
+        assertTrue(Quiver.reloadComplete(107L, start, deadline), "on the deadline, done");
+        assertTrue(Quiver.reloadComplete(108L, start, deadline), "past it, done");
 
-        assertEquals(7L, Quiver.reloadTicksRemaining(start, deadline, RELOAD_TICKS));
-        assertEquals(1L, Quiver.reloadTicksRemaining(106L, deadline, RELOAD_TICKS));
-        assertEquals(0L, Quiver.reloadTicksRemaining(107L, deadline, RELOAD_TICKS));
+        assertEquals(7L, Quiver.reloadTicksRemaining(start, start, deadline));
+        assertEquals(1L, Quiver.reloadTicksRemaining(106L, start, deadline));
+        assertEquals(0L, Quiver.reloadTicksRemaining(107L, start, deadline));
+    }
+
+    /**
+     * SHORTENING THE RELOAD MID-FLIGHT MUST NOT COMPLETE IT EARLY.
+     *
+     * <p>THE ROW THE OLD FIXTURE COULD NOT WRITE. {@link Quiver#reloadComplete} first bounded its
+     * anomaly check by the live reload duration, which is sound only while that duration cannot move
+     * between the stamp and the read -- and it is precisely what slice A2 makes movable. Executed
+     * against that version: stamped at 100 with a 60-tick reload, then read at 105 with the stat
+     * dropped to 20, it returned <b>complete</b> and reported <b>0 ticks remaining</b>. Equipping
+     * reload-speed gear during a reload was free ammunition, and it looked like the item working.
+     *
+     * <p><b>Every clock row passed the SAME duration for the stamp and the read</b>, so the fixture
+     * held fixed the one condition under which the guard was correct and the suite was green for a
+     * reason unrelated to the guard being right. This row varies it: the deadline is committed from a
+     * 60-tick duration and then read while the stat says 20.
+     *
+     * <p>The committed reload keeps the length it was committed at, on
+     * {@code AbilityService.resolve}'s existing ruling for cooldowns -- <i>"the swing you have
+     * already committed to keeps the cadence it was committed at."</i>
+     */
+    @Test
+    void shorteningTheReloadDurationMidFlightDoesNotFinishItEarly() {
+        long startedAt = 100L;
+        long deadline = Quiver.reloadCompletesAt(startedAt, 60);
+        assertEquals(160L, deadline);
+
+        // Tick 105: the player equips reload-speed gear. Whatever the stat now reads, the committed
+        // reload is untouched -- and the live duration cannot reach this method to be compared against.
+        assertFalse(Quiver.reloadComplete(105L, startedAt, deadline),
+                "55 ticks still to run; a shrunk reload stat must not read as a finished reload");
+        assertEquals(55L, Quiver.reloadTicksRemaining(105L, startedAt, deadline));
+
+        // And lengthening it mid-flight is the same story from the other side.
+        assertFalse(Quiver.reloadComplete(105L, startedAt, deadline));
     }
 
     /**
@@ -156,16 +191,24 @@ class QuiverTest {
      */
     @Test
     void aDeadlineFurtherAwayThanTheReloadItselfMeansTheClockRestarted() {
-        // Stamped at tick 895 on the old clock: deadline 902. The server restarts; now is 5.
-        // Remaining would read 897 ticks -- 128 times the reload's own length.
-        assertTrue(Quiver.reloadComplete(5L, 902L, RELOAD_TICKS),
-                "remaining > reloadTicks is proof the clock is not the one that set the deadline");
-        assertEquals(0L, Quiver.reloadTicksRemaining(5L, 902L, RELOAD_TICKS),
+        // Stamped at tick 895 on the old clock: deadline 902. The server restarts; now is 5, which
+        // is BELOW the stamped start -- a reload cannot legitimately be read before it began.
+        assertTrue(Quiver.reloadComplete(5L, 895L, 902L),
+                "now < startedAt is proof the counter is not the one that wrote the stamp");
+        assertEquals(0L, Quiver.reloadTicksRemaining(5L, 895L, 902L),
                 "and the countdown agrees with the gate -- one source of truth, not two comparisons");
 
-        // The boundary: exactly reloadTicks remaining is a LEGITIMATE just-started reload.
-        assertFalse(Quiver.reloadComplete(100L, 107L, RELOAD_TICKS),
-                "exactly reloadTicks out is the normal start, and must NOT be read as a restart");
+        // The boundary: standing exactly ON the stamped start is the normal first read of a reload.
+        assertFalse(Quiver.reloadComplete(100L, 100L, 107L),
+                "now == startedAt is the ordinary start, and must NOT be read as a restart");
+
+        // THE RESIDUAL, PINNED AS A KNOWN LIMIT RATHER THAN LEFT TO BE FOUND. A counter that
+        // restarts INSIDE the window is indistinguishable from an ordinary reload in progress, and
+        // is deliberately not caught: the cost is bounded by one reload duration and then the
+        // weapon reloads normally. The unbounded case -- a weapon stranded forever -- is the one
+        // above, and that is the one the guard exists for.
+        assertFalse(Quiver.reloadComplete(898L, 895L, 902L),
+                "a restart landing mid-window reads as ordinary; bounded wrongness, by design");
     }
 
     /**
@@ -187,6 +230,23 @@ class QuiverTest {
         assertEquals(107L, Quiver.reloadCompletesAt(100L, RELOAD_TICKS));
         assertEquals(7L, Quiver.reloadCompletesAt(0L, RELOAD_TICKS),
                 "the same duration from any starting tick -- nothing else enters it");
+    }
+
+    /**
+     * The deadline is STAMPED, not recomputed per read -- so a committed reload keeps its length.
+     *
+     * <p>The other half of the mid-flight rule above, and the reason the deadline is stored rather
+     * than derived from the live stat each time it is read. Existing ruling, not a new one:
+     * {@code AbilityService.resolve} decided it for cooldowns and the words carry over --
+     * <i>"gaining or losing attack speed mid-cooldown does not retroactively lengthen or shorten a
+     * timer already running."</i>
+     */
+    @Test
+    void theCommittedDeadlineDoesNotMoveWhenTheReloadDurationDoes() {
+        assertEquals(160L, Quiver.reloadCompletesAt(100L, 60), "committed at 60 ticks");
+        // A later stamp with a different duration produces a different deadline -- which is correct,
+        // and is exactly why the OLD deadline must not be re-derived from the NEW duration.
+        assertEquals(120L, Quiver.reloadCompletesAt(100L, 20), "a LATER reload commits at 20");
     }
 
     // ---------------------------------------------------------------- the percentage rule
@@ -212,11 +272,39 @@ class QuiverTest {
         // and leaves every row below green, which is the whole reason the three are here.
     }
 
+    /**
+     * FLOOR ROUNDS AGAINST THE PLAYER IN BOTH DIRECTIONS, AND THAT IS THE CHOICE.
+     *
+     * <p>This row was first written as <i>"a modifier never delivers more than it claims"</i>, which
+     * is <b>true of buffs and false of debuffs</b> -- and the name of a test is the durable record,
+     * so the next reader would have taken the over-broad form as the rule. Measured: at a base of 8,
+     * {@code -10%} is {@code floor(7.2) = 7}, so the penalty DELIVERED is a whole round where 0.8 was
+     * claimed. The debuff over-delivers by exactly the amount the buff under-delivers.
+     *
+     * <p>What is actually true, and is what the mode was chosen for: <b>a positive modifier never
+     * delivers more than it claims, and a negative one never delivers less.</b> The bias is always in
+     * the same direction, which is consistency rather than generosity, and it is asserted from both
+     * sides here so the claim cannot quietly widen again.
+     */
     @Test
-    void aPercentageRoundsDownSoAModifierNeverDeliversMoreThanItClaims() {
-        assertEquals(9, Quiver.applyPercent(8, 15), "9.2 -> 9");
+    void flooringRoundsAgainstThePlayerForBuffsAndDebuffsAlike() {
+        // The buff side: under-delivers.
+        assertEquals(9, Quiver.applyPercent(8, 15), "9.2 -> 9, claiming 1.2 and granting 1");
         assertEquals(10, Quiver.applyPercent(8, 25), "exactly 10, no rounding to reach it");
         assertEquals(8, Quiver.applyPercent(8, 0), "the identity, which must not drift");
+
+        // The debuff side: over-delivers, by the same mechanism and in the player's disfavour.
+        assertEquals(7, Quiver.applyPercent(8, -10), "7.2 -> 7: 0.8 claimed, a whole round taken");
+        assertEquals(6, Quiver.applyPercent(8, -25), "exactly 6, no rounding to reach it");
+        assertEquals(0, Quiver.applyPercent(8, -100), "a total debuff empties it and stops there");
+
+        // AND THE DEBUFF CASE THAT ACTUALLY DISCRIMINATES THE MODE. The five above are all values
+        // where floor and Math.round AGREE, so a mutation to round leaves every one of them green --
+        // measured, not assumed: MUTROUND reddened only the dead-zone row below. A row that cannot
+        // fail is worth nothing however green, so the debuff half needs a fractional part >= 0.5.
+        // -5% of 8 is 7.6: floor takes a WHOLE round for a 0.4-round claim; round would take none.
+        assertEquals(7, Quiver.applyPercent(8, -5),
+                "7.6 -> 7 under floor, 8 under round -- this is the assertion that pins the MODE");
     }
 
     /**
