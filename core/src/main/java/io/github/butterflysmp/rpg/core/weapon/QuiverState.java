@@ -42,7 +42,7 @@ import java.util.OptionalLong;
  * nothing about this type. The dependency runs one way: this composes {@code Quiver}, never the
  * reverse.
  */
-public record QuiverState(OptionalInt loaded, OptionalLong reloadStartedAt,
+public record QuiverState(OptionalInt loaded, int capacity, OptionalLong reloadStartedAt,
                           OptionalLong reloadCompletesAt) {
 
     public QuiverState {
@@ -94,19 +94,19 @@ public record QuiverState(OptionalInt loaded, OptionalLong reloadStartedAt,
     }
 
     /** An item carrying a count and no reload -- the ordinary state of a quiver weapon. */
-    public static QuiverState loaded(int rounds) {
-        return new QuiverState(OptionalInt.of(rounds), OptionalLong.empty(), OptionalLong.empty());
+    public static QuiverState loaded(int rounds, int capacity) {
+        return new QuiverState(OptionalInt.of(rounds), capacity, OptionalLong.empty(), OptionalLong.empty());
     }
 
     /** An item mid-reload, carrying whatever count it had when the reload began. */
-    public static QuiverState reloading(int rounds, long startedAt, long completesAt) {
-        return new QuiverState(OptionalInt.of(rounds), OptionalLong.of(startedAt),
+    public static QuiverState reloading(int rounds, int capacity, long startedAt, long completesAt) {
+        return new QuiverState(OptionalInt.of(rounds), capacity, OptionalLong.of(startedAt),
                 OptionalLong.of(completesAt));
     }
 
     /** An item that carries no count at all: never stamped. A defect, not an empty magazine. */
-    public static QuiverState unstamped() {
-        return new QuiverState(OptionalInt.empty(), OptionalLong.empty(), OptionalLong.empty());
+    public static QuiverState unstamped(int capacity) {
+        return new QuiverState(OptionalInt.empty(), capacity, OptionalLong.empty(), OptionalLong.empty());
     }
 
     /** Whether a reload is recorded AND still running at {@code now}. */
@@ -160,10 +160,14 @@ public record QuiverState(OptionalInt loaded, OptionalLong reloadStartedAt,
      * restarting the timer twenty times a second -- which would push the deadline further away on
      * every packet and leave a weapon that never comes back, with nothing reporting a problem.
      *
-     * @param capacity the wielder's resolved capacity -- a PARAMETER, on {@link Quiver}'s rule, so
-     *                 A2 can move it without reopening this class.
+     * <p><b>IT TAKES NO CAPACITY, AND THAT IS THE POINT.</b> The capacity is the record's own
+     * component, resolved once by {@link #capacityOf} at the single site that builds a state. With
+     * nowhere to pass a different one, <b>a verdict that disagrees with the tooltip is
+     * unrepresentable</b> rather than merely forbidden -- the same move that removed
+     * {@code reloadTicks} from {@link Quiver#reloadComplete} and made A1's free-instant-reload
+     * defect impossible to express.
      */
-    public Reload reloadVerdict(long now, int capacity) {
+    public Reload reloadVerdict(long now) {
         if (loaded.isEmpty()) return Reload.UNSTAMPED;
         if (reloadStartedAt.isPresent()) {
             return isReloading(now) ? Reload.ALREADY_RELOADING : Reload.RELOAD_MATURED;

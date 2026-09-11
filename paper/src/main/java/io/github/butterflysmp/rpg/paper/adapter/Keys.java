@@ -162,6 +162,23 @@ public final class Keys {
     public final NamespacedKey quiverLoaded;
 
     /**
+     * The capacity this item was last PACKED at (an INTEGER), stamped beside the count.
+     *
+     * <p><b>The stamp is what ENFORCES, not merely what renders.</b> Once capacity is a stat, the
+     * tooltip and the refusal logic must read the same number or the tooltip lies by a new
+     * mechanism -- {@code ResourceCost} records the shape: <i>"two literals cannot drift apart if
+     * there is only one."</i> So this key is read by the verdict AND by the lore line, and the
+     * wielder's live stat is read <b>only at a write</b>.
+     *
+     * <p><b>ABSENCE HERE IS NOT A DEFECT, unlike {@link #quiverLoaded}.</b> A count has no item-free
+     * meaning, so its absence means a mint path failed. A capacity has one -- the weapon's own. A
+     * definitions-only renderer, a recipe-browser icon, and an item minted before this key existed
+     * all resolve to the authored value through {@code QuiverState.capacityOf}, which is the single
+     * place that ordering lives.
+     */
+    public final NamespacedKey quiverCapacity;
+
+    /**
      * The two ticks bounding a reload in progress: when it STARTED and when it COMPLETES (both LONG).
      * Absent together when no reload is running.
      *
@@ -243,6 +260,7 @@ public final class Keys {
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");
         this.quiverLoaded = new NamespacedKey(plugin, "quiver_loaded");
+        this.quiverCapacity = new NamespacedKey(plugin, "quiver_capacity");
         this.quiverReloadStartedAt = new NamespacedKey(plugin, "quiver_reload_started_at");
         this.quiverReloadCompletesAt = new NamespacedKey(plugin, "quiver_reload_completes_at");
         this.armorBarOverride = new NamespacedKey(plugin, "armor_bar_override");

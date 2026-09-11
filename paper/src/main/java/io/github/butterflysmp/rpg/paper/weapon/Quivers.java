@@ -76,7 +76,7 @@ public final class Quivers {
         Keys keys = adapters.keys();
         ItemStack held = player.getInventory().getItemInMainHand();
         long now = Bukkit.getCurrentTick();
-        QuiverState state = stateOf(held, keys);
+        QuiverState state = stateOf(held, keys, weapon);
 
         // READ, DECIDE, DELIVER -- and the DECIDE is not here. The ordering of these cases is the
         // real content of this method, and every one of them is now a core row with a mutation
@@ -120,8 +120,8 @@ public final class Quivers {
                 adapters.warnOnce("weapon '" + weapon.id() + "' declares a quiver but an item in"
                         + " play carries NO count -- it was minted by a path that does not stamp"
                         + " one. Treating it as full; the defect is in that mint path, not the item.");
-                held.editMeta(meta -> QuiverItems.setLoaded(
-                        meta, weapon, adapters, Quiver.reload(weapon.quiverSize())));
+                held.editMeta(meta -> QuiverItems.setFull(
+                        meta, weapon, adapters));
                 player.getInventory().setItemInMainHand(held);
                 yield Optional.empty();
             }
@@ -142,14 +142,21 @@ public final class Quivers {
      * outright, so a partially-written item surfaces as a thrown exception here rather than as a
      * weapon that behaves oddly.
      */
-    public static QuiverState stateOf(ItemStack held, Keys keys) {
+    public static QuiverState stateOf(ItemStack held, Keys keys, WeaponDefinition weapon) {
         OptionalInt loaded = QuiverItems.loadedIn(held, keys);
+        // THE SINGLE SITE THAT RESOLVES A CAPACITY FOR READING, and the reason it is one site rather
+        // than a convention. QuiverState.capacityOf owns the stamp-then-authored ordering; a second
+        // caller writing `stamped.orElse(weapon.quiverSize())` inline would be a second resolver,
+        // and the moment two exist the tooltip and the refusal logic can disagree -- which is the
+        // exact defect the stamp was introduced to prevent. QuiversSignatureTest fails the build if
+        // a second call to capacityOf appears anywhere in paper.
+        int capacity = QuiverState.capacityOf(QuiverItems.capacityIn(held, keys), weapon.quiverSize());
         Long startedAt = read(held, keys.quiverReloadStartedAt);
         Long completesAt = read(held, keys.quiverReloadCompletesAt);
         if (startedAt == null || completesAt == null) {
-            return new QuiverState(loaded, OptionalLong.empty(), OptionalLong.empty());
+            return new QuiverState(loaded, capacity, OptionalLong.empty(), OptionalLong.empty());
         }
-        return new QuiverState(loaded, OptionalLong.of(startedAt), OptionalLong.of(completesAt));
+        return new QuiverState(loaded, capacity, OptionalLong.of(startedAt), OptionalLong.of(completesAt));
     }
 
     /**
@@ -192,7 +199,7 @@ public final class Quivers {
         // ALREADY_RELOADING is the held-input case -- ~20 arm-swing packets a second, every one of
         // which would otherwise push the deadline another reload_ticks away and leave a weapon that
         // never comes back. ALREADY_FULL spares a habitual press three dead seconds.
-        switch (stateOf(held, keys).reloadVerdict(now, weapon.quiverSize())) {
+        switch (stateOf(held, keys, weapon).reloadVerdict(now)) {
             case ALREADY_RELOADING, ALREADY_FULL -> { return false; }
             case RELOAD_MATURED -> {
                 finishReload(player, held, weapon, adapters);
@@ -241,7 +248,7 @@ public final class Quivers {
         held.editMeta(meta -> {
             // setLoaded, not stampFull: stampFull is MINT-ONLY, where applyLore follows by
             // construction. This item is in play, so the write must carry its own render.
-            QuiverItems.setLoaded(meta, weapon, adapters, Quiver.reload(weapon.quiverSize()));
+            QuiverItems.setFull(meta, weapon, adapters);
             meta.getPersistentDataContainer().remove(keys.quiverReloadStartedAt);
             meta.getPersistentDataContainer().remove(keys.quiverReloadCompletesAt);
         });

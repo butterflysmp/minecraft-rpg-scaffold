@@ -88,6 +88,14 @@ public final class QuiverItems {
         if (!weapon.hasQuiver()) return;
         meta.getPersistentDataContainer().set(
                 keys.quiverLoaded, PersistentDataType.INTEGER, Quiver.reload(weapon.quiverSize()));
+        // THE CAPACITY IS STAMPED BESIDE THE COUNT, AND AT MINT IT IS THE AUTHORED ONE. Mint has no
+        // player -- several mint paths are previews and icons that describe a WEAPON rather than a
+        // held item -- and authored is the right answer for all of them. It is also correct for a
+        // wielder whose gear resolves more: DESIGN-stat-engine's ruled semantics make a capacity
+        // increase HEADROOM, so a fresh quiver full to its authored size is exactly a count sitting
+        // below capacity with room to reload into. No player needed, and no compromise.
+        meta.getPersistentDataContainer().set(
+                keys.quiverCapacity, PersistentDataType.INTEGER, weapon.quiverSize());
     }
 
     /**
@@ -134,9 +142,65 @@ public final class QuiverItems {
      */
     public static void setLoaded(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters,
                                  int count) {
+        int capacity = resolveCapacity(weapon, adapters);
+
+        // AND THE CLAMP IS HERE, WHICH IS WHY NO RECONCILE-LOOP CLAMP IS NEEDED. Capacity cannot
+        // change except at a write, and at that write this method holds both numbers -- so
+        // DESIGN-stat-engine's ruled decrease-clamps semantics are one call, on the value that just
+        // resolved. A clamp in the stat-reconcile loop would be an in-play write with no render,
+        // which is boot row V1's defect in a new location.
+        int stored = Quiver.clamp(count, capacity);
+
         meta.getPersistentDataContainer().set(
-                adapters.keys().quiverLoaded, PersistentDataType.INTEGER, count);
+                adapters.keys().quiverLoaded, PersistentDataType.INTEGER, stored);
+        meta.getPersistentDataContainer().set(
+                adapters.keys().quiverCapacity, PersistentDataType.INTEGER, capacity);
         WeaponItems.refreshLore(meta, weapon, adapters);
+    }
+
+    /**
+     * Refill this item to a full magazine at the wielder's CURRENT capacity, and re-render.
+     *
+     * <p>The reload's completion and the unstamped repair both want "as many rounds as this wielder
+     * can hold", and neither should have to know how that number is reached. Before this existed
+     * both computed {@code Quiver.reload(weapon.quiverSize())} at the call site — <b>two more
+     * authored reads that commit 3 would have had to find and convert</b>, which is exactly the
+     * shape that made "two call sites" false the first time it was claimed.
+     */
+    public static void setFull(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters) {
+        setLoaded(meta, weapon, adapters, resolveCapacity(weapon, adapters));
+    }
+
+    /**
+     * THE ONE PLACE THE WIELDER'S CAPACITY IS RESOLVED FOR A WRITE.
+     *
+     * <p>Authored today. <b>Commit 3 swaps this one expression for the stat read and nothing else in
+     * the codebase changes</b> — which is what the A1/A2 split was bought with, and what "two call
+     * sites" will finally mean once it is true by construction rather than asserted. Everything that
+     * READS a capacity reads the stamp this produces, never the stat.
+     */
+    private static int resolveCapacity(WeaponDefinition weapon, AdapterContext adapters) {
+        return weapon.quiverSize();
+    }
+
+    /**
+     * The capacity this stack was last packed at, or empty when it carries no stamp.
+     *
+     * <p>Empty is <b>not</b> a defect here, unlike an absent count -- see {@code Keys.quiverCapacity}.
+     * Resolve it through {@code QuiverState.capacityOf}, which is the single place the
+     * stamp-then-authored ordering lives; do not write {@code orElse(weapon.quiverSize())} inline.
+     */
+    public static OptionalInt capacityInMeta(ItemMeta meta, Keys keys) {
+        if (meta == null) return OptionalInt.empty();
+        Integer stored = meta.getPersistentDataContainer()
+                .get(keys.quiverCapacity, PersistentDataType.INTEGER);
+        return stored == null ? OptionalInt.empty() : OptionalInt.of(stored);
+    }
+
+    /** {@link #capacityInMeta} against a whole stack. */
+    public static OptionalInt capacityIn(ItemStack item, Keys keys) {
+        if (item == null || !item.hasItemMeta()) return OptionalInt.empty();
+        return capacityInMeta(item.getItemMeta(), keys);
     }
 
     /**
@@ -159,6 +223,13 @@ public final class QuiverItems {
 
         Integer loaded = source.get(keys.quiverLoaded, PersistentDataType.INTEGER);
         if (loaded != null) target.set(keys.quiverLoaded, PersistentDataType.INTEGER, loaded);
+
+        // THE CAPACITY MOVES INDEPENDENTLY OF THE COUNT, and that is deliberate: an item minted
+        // before this key existed carries a count and no capacity, and must keep doing so rather
+        // than being handed a fabricated one. QuiverState.capacityOf resolves that absence to the
+        // authored value on read, which is the migration path.
+        Integer capacity = source.get(keys.quiverCapacity, PersistentDataType.INTEGER);
+        if (capacity != null) target.set(keys.quiverCapacity, PersistentDataType.INTEGER, capacity);
 
         Long startedAt = source.get(keys.quiverReloadStartedAt, PersistentDataType.LONG);
         Long completesAt = source.get(keys.quiverReloadCompletesAt, PersistentDataType.LONG);

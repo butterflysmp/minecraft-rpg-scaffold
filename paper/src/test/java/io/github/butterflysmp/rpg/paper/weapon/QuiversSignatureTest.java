@@ -167,7 +167,9 @@ class QuiversSignatureTest {
                 scanned++;
                 String code = Files.readString(file, StandardCharsets.UTF_8)
                         .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
-                if (code.contains("quiverLoaded")) touching.add(file.getFileName().toString());
+                if (code.contains("quiverLoaded") || code.contains("quiverCapacity")) {
+                    touching.add(file.getFileName().toString());
+                }
             }
         }
 
@@ -180,6 +182,67 @@ class QuiversSignatureTest {
                         + "is owned (QuiverItems, whose setLoaded writes AND re-renders). A write "
                         + "anywhere else is boot row V1's defect in a new location -- and A2's "
                         + "capacity clamp is the known candidate. Add a file here only deliberately.");
+    }
+
+    /**
+     * THE CAPACITY IS RESOLVED IN A NAMED SET OF PLACES, BECAUSE "EXACTLY ONE PLACE" HAD NO
+     * INSTRUMENT.
+     *
+     * <p>{@code QuiverState.capacityOf}'s javadoc claims it is <i>"the WHOLE of the ordering"</i> and
+     * that the fallback therefore <i>"happens in exactly one place rather than once per reader."</i>
+     * <b>In commit 1a that was true only because there were no readers at all.</b> There are now two,
+     * and nothing stopped a third from writing {@code stamped.orElse(weapon.quiverSize())} inline —
+     * at which point the sentence is false and no test changes colour.
+     *
+     * <p><b>And the defect that inline reader WOULD BE is the exact one the stamp exists to
+     * prevent:</b> a tooltip rendering the stamp while the refusal logic resolves the holder live.
+     * Two resolvers is how they come to disagree.
+     *
+     * <p>So the readers are pinned as a NAMED SET rather than a count — a count over an unnamed set
+     * cannot be checked by the reader, which is the rule these reports are held to:
+     *
+     * <ul>
+     *   <li>{@code QuiverItems} — where the accessor is DEFINED; it matches its own scan, the way
+     *       {@code KNOWN_KEYS} must carry {@code id}.
+     *   <li>{@code Quivers.stateOf} — the verdict path, which both refusal and enforcement read.
+     *   <li>{@code WeaponItems.applyLore} — reads the stamp off the meta it is building.
+     *   <li>{@code WeaponLore.build} — resolves it for the tooltip.
+     * </ul>
+     *
+     * <p>A fifth is a deliberate edit to this list, which is the moment to ask whether it should
+     * instead be reading the state the others already built.
+     *
+     * <p><b>IT SCANS FOR THE ACCESSOR AS WELL AS THE RESOLVER, AND THE FIRST VERSION DID NOT —
+     * WHICH IS WHY IT MISSED THE DEFECT IT WAS WRITTEN FOR.</b> Measured: a mutation adding
+     * {@code QuiverItems.capacityIn(held, keys).orElse(weapon.quiverSize())} to {@code WeaponFire}
+     * — the inline third resolver, exactly the case in the paragraphs above — came back **green**.
+     * It calls neither {@code capacityOf} nor the key by name, so a scan for either was blind to it.
+     * <b>A guard aimed at the name of the right thing rather than at the shape of the wrong thing.</b>
+     * Obtaining a capacity at all now requires appearing on this list.
+     */
+    @Test
+    void theCapacityIsResolvedOnlyWhereThisListSays() throws IOException {
+        Path main = Path.of("src", "main", "java");
+        List<String> resolvers = new java.util.ArrayList<>();
+        try (var walk = Files.walk(main)) {
+            for (Path file : walk.filter(p -> p.toString().endsWith(".java")).toList()) {
+                String code = Files.readString(file, StandardCharsets.UTF_8)
+                        .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+                // BOTH the accessor and the resolver, because scanning for capacityOf alone MISSED
+                // the defect this guard exists for -- measured, see the javadoc.
+                if (code.contains("capacityIn") || code.contains("capacityOf(")) {
+                    resolvers.add(file.getFileName().toString());
+                }
+            }
+        }
+        java.util.Collections.sort(resolvers);
+        assertEquals(
+                List.of("QuiverItems.java", "Quivers.java", "WeaponItems.java", "WeaponLore.java"),
+                resolvers,
+                "a capacity may only be OBTAINED in these three files. Reading QuiverItems.capacityIn "
+                        + "anywhere else and resolving it inline -- stamped.orElse(weapon.quiverSize()) "
+                        + "-- is a second resolver, and two resolvers is how the tooltip and the "
+                        + "refusal logic come to disagree.");
     }
 
     /**

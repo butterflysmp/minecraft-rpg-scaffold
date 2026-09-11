@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.ability.BasicMelee;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
+import io.github.butterflysmp.rpg.core.weapon.QuiverState;
 import io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines;
 import io.github.butterflysmp.rpg.paper.content.ElementDefinition;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
@@ -54,7 +55,7 @@ public final class WeaponLore {
      * when there is no item to read a count from.
      */
     public static List<Component> build(WeaponDefinition weapon, ElementRegistry elements) {
-        return build(weapon, elements, OptionalInt.empty());
+        return build(weapon, elements, OptionalInt.empty(), OptionalInt.empty());
     }
 
     /**
@@ -71,7 +72,7 @@ public final class WeaponLore {
      * instead of looking like a spent magazine.
      */
     public static List<Component> build(WeaponDefinition weapon, ElementRegistry elements,
-                                        OptionalInt loaded) {
+                                        OptionalInt loaded, OptionalInt stampedCapacity) {
         List<Component> lore = new ArrayList<>();
 
         // Element on its own line at the very top, in the ELEMENT's own colour -- not the rarity's.
@@ -81,7 +82,13 @@ public final class WeaponLore {
         // weapon's most volatile number and the one a player checks mid-fight, so it goes where the
         // eye lands first rather than below prose. Empty string for a weapon with no quiver, which
         // is every weapon but the fixture today.
-        String quiver = WeaponLoreLines.quiverLine(loaded, weapon.quiverSize());
+        // THE DENOMINATOR IS THE STAMP, NOT THE DEFINITION -- resolved through QuiverState.capacityOf
+        // so the tooltip and the refusal logic read the SAME number. A tooltip on the stamp while the
+        // refusal resolved the holder live would lie by a new mechanism. With no item (a
+        // definitions-only renderer, a browser icon) the stamp is absent and capacityOf returns the
+        // authored value, which is why golden-lore.txt is byte-identical across this change.
+        String quiver = WeaponLoreLines.quiverLine(
+                loaded, QuiverState.capacityOf(stampedCapacity, weapon.quiverSize()));
         if (!quiver.isEmpty()) {
             lore.add(GearLore.plain(quiver, NamedTextColor.GRAY));
         }

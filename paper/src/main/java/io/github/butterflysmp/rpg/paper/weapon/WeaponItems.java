@@ -235,7 +235,8 @@ public final class WeaponItems {
         // happened -- see the ordering note in mint(). At a re-mint carryInstanceData has run first,
         // so this reads the CARRIED count and not the freshly minted full one.
         List<Component> base = WeaponLore.build(weapon, adapters.elements(),
-                QuiverItems.loadedInMeta(meta, adapters.keys()));
+                QuiverItems.loadedInMeta(meta, adapters.keys()),
+                QuiverItems.capacityInMeta(meta, adapters.keys()));
         EnchantState state = EnchantItems.read(meta, adapters.keys());
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
 

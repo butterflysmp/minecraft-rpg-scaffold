@@ -267,16 +267,47 @@ first reduction item to ship would find out in play.
 > `WeaponDefinition` already refuses `quiverSize > 0 && reloadTicks <= 0`, so an authored zero is
 > impossible. **The hole opens the moment a MODIFIER can reduce the value** — which is commit 5.
 
-**RULED — `Quiver.MIN_RELOAD_TICKS = 10` (half a second), PROVISIONAL on the Ignite idiom**, with
-the relationship written at the constant the way `BEAM_ORIGIN_GAP`'s ceiling is:
+**RULED — `Quiver.MIN_RELOAD_TICKS = 1`, structural, NOT a balance number.**
 
-- **The argument is mechanism, not balance.** Below ~10 ticks the reload is **shorter than the fire
-  cooldown of every quiver weapon that exists or is planned** — `quiver_stone` is 11, the Boltor is
-  14 — so it is *invisible*: you could not have fired during it anyway. Under that point the brake
-  exists only on paper, and the quiver has become the cooldown weapon it was chosen instead of.
-- **PROVISIONAL, with the authority named**: the first slice that ships reload-reduction gear rules
-  the final number, because that is the first time anyone can feel it. A provisional value nobody
-  owns is the `Ignite` defect; this one names its owner.
+> **THIS REPLACES A RULING OF 10 WHOSE ARGUMENT WAS FALSE ON BOTH PREMISES, and the retraction is
+> kept because the failure mode is the interesting part: a balance number was wearing a mechanism
+> argument.** The first version read *"below ~10 ticks the reload is shorter than the fire cooldown
+> of every quiver weapon — `quiver_stone` 11, Boltor 14 — so it is invisible: you could not have
+> fired during it anyway."*
+>
+> **Premise 1 was contradicted by line 15 of this same file.** *"Slice C's **7-tick** dual cooldown
+> is priced on an unmeasured floor"* — and four more citations say the same. The quantity that
+> matters is not a *declared* cooldown but **the shortest interval a player can achieve, which is
+> 7.** At 7 a 10-tick floor is not invisible; it is three ticks of felt brake. The argument did not
+> merely fail to support 10 — **it pointed the other way.**
+>
+> **Premise 2 was false outright: a reload does not overlap the cooldown.** Measured — `beginReload`
+> ← `tryReloadHeldWeapon` ← `WeaponSwingListener:104`, **one path, the left-click swing**, and
+> `case EMPTY` starts nothing, so there is no auto-reload. **The reload begins when the player
+> chooses to swing.** In the ordinary pattern — fire until refused, then reload — **every tick of
+> the reload is additive and felt, whatever the cooldown is.** The premise was true of one play
+> pattern and stated as a property of the mechanism.
+>
+> **With "invisible" gone there is no mechanism argument left for any number above 1**, and picking
+> one anyway would be a balance call disguised as a derivation — which the slice that is supposed to
+> rule the final value would inherit by reading rather than re-deriving.
+
+**What the floor is for, structurally:** `reloadCompletesAt` is `now + Math.max(reloadTicks, 0)`, so
+a resolved **0 is an instant reload** and deletes the brake the slice is about. **1 is the minimum
+that keeps the mechanic representable** — exactly `Durability.MIN_USES`'s argument, where the floor
+exists so a weapon is *inert rather than gone*.
+
+**AND IT RESOLVES THE TWO-FLOOR PROBLEM BY BEING THE SAME NUMBER.** `WeaponDefinition:109` already
+refuses `quiverSize > 0 && reloadTicks <= 0`, so the **authored** floor is 1. A resolved floor of 10
+would have meant an author could ship `reload_ticks: 3` — below the minimum the resolver enforces —
+**two literals that can drift apart, which is the defect the capacity javadoc quotes `ResourceCost`
+for three paragraphs earlier.** At 1 they are one number enforced at two layers, and the constant
+says so.
+
+**The balance floor is still owed, and the chain is named so the next reader sees a chain rather
+than a constant:** *what reload duration still brakes* depends on the shortest achievable fire
+interval, which is **7**, which is priced on **Q7 — unrun**. The first slice that ships
+reload-reduction gear rules it, because that is the first time anyone can feel it.
 
 **And the downward direction is covered in CORE, since no fixture can cover it** — a row that
 resolves a reload below the floor and asserts the floor holds, plus the mutation that removes the

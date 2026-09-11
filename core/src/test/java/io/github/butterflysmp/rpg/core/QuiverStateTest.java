@@ -42,12 +42,12 @@ class QuiverStateTest {
 
     @Test
     void aLoadedQuiverFires() {
-        assertEquals(QuiverState.Fire.FIRE, QuiverState.loaded(2).fireVerdict(START));
+        assertEquals(QuiverState.Fire.FIRE, QuiverState.loaded(2, CAPACITY).fireVerdict(START));
     }
 
     @Test
     void aSpentQuiverIsEmpty() {
-        assertEquals(QuiverState.Fire.EMPTY, QuiverState.loaded(0).fireVerdict(START));
+        assertEquals(QuiverState.Fire.EMPTY, QuiverState.loaded(0, CAPACITY).fireVerdict(START));
     }
 
     /**
@@ -60,9 +60,9 @@ class QuiverStateTest {
      */
     @Test
     void anUnstampedQuiverIsADefectAndNotAnEmptyMagazine() {
-        assertEquals(QuiverState.Fire.UNSTAMPED, QuiverState.unstamped().fireVerdict(START));
+        assertEquals(QuiverState.Fire.UNSTAMPED, QuiverState.unstamped(CAPACITY).fireVerdict(START));
         assertEquals(QuiverState.Reload.UNSTAMPED,
-                QuiverState.unstamped().reloadVerdict(START, CAPACITY));
+                QuiverState.unstamped(CAPACITY).reloadVerdict(START));
     }
 
     // ---------------------------------------------------------------- the four orderings
@@ -76,7 +76,7 @@ class QuiverStateTest {
      */
     @Test
     void aRunningReloadBeatsEmptyEvenThoughTheCountIsZero() {
-        QuiverState mid = QuiverState.reloading(0, START, DEADLINE);
+        QuiverState mid = QuiverState.reloading(0, CAPACITY, START, DEADLINE);
 
         assertEquals(QuiverState.Fire.RELOADING, mid.fireVerdict(START + 1));
         assertTrue(mid.isReloading(START + 1));
@@ -97,7 +97,7 @@ class QuiverStateTest {
      */
     @Test
     void theShotThatMaturesAReloadIsNotDropped() {
-        QuiverState mid = QuiverState.reloading(0, START, DEADLINE);
+        QuiverState mid = QuiverState.reloading(0, CAPACITY, START, DEADLINE);
 
         assertFalse(mid.isReloading(DEADLINE), "on the deadline the reload is done");
         assertEquals(QuiverState.Fire.RELOAD_MATURED, mid.fireVerdict(DEADLINE),
@@ -114,11 +114,11 @@ class QuiverStateTest {
      */
     @Test
     void pressingReloadDuringAReloadDoesNotRestartIt() {
-        QuiverState mid = QuiverState.reloading(0, START, DEADLINE);
+        QuiverState mid = QuiverState.reloading(0, CAPACITY, START, DEADLINE);
 
-        assertEquals(QuiverState.Reload.ALREADY_RELOADING, mid.reloadVerdict(START + 1, CAPACITY));
-        assertEquals(QuiverState.Reload.ALREADY_RELOADING, mid.reloadVerdict(DEADLINE - 1, CAPACITY));
-        assertEquals(QuiverState.Reload.RELOAD_MATURED, mid.reloadVerdict(DEADLINE, CAPACITY),
+        assertEquals(QuiverState.Reload.ALREADY_RELOADING, mid.reloadVerdict(START + 1));
+        assertEquals(QuiverState.Reload.ALREADY_RELOADING, mid.reloadVerdict(DEADLINE - 1));
+        assertEquals(QuiverState.Reload.RELOAD_MATURED, mid.reloadVerdict(DEADLINE),
                 "once it matures the press refills rather than starting a second one");
     }
 
@@ -126,12 +126,12 @@ class QuiverStateTest {
     @Test
     void reloadingAFullMagazineIsRefused() {
         assertEquals(QuiverState.Reload.ALREADY_FULL,
-                QuiverState.loaded(CAPACITY).reloadVerdict(START, CAPACITY));
+                QuiverState.loaded(CAPACITY, CAPACITY).reloadVerdict(START));
         assertEquals(QuiverState.Reload.BEGIN,
-                QuiverState.loaded(CAPACITY - 1).reloadVerdict(START, CAPACITY),
+                QuiverState.loaded(CAPACITY - 1, CAPACITY).reloadVerdict(START),
                 "one round short IS worth reloading");
         assertEquals(QuiverState.Reload.BEGIN,
-                QuiverState.loaded(0).reloadVerdict(START, CAPACITY));
+                QuiverState.loaded(0, CAPACITY).reloadVerdict(START));
     }
 
     /**
@@ -144,7 +144,7 @@ class QuiverStateTest {
     @Test
     void aCountAboveCapacityStillCountsAsFull() {
         assertEquals(QuiverState.Reload.ALREADY_FULL,
-                QuiverState.loaded(CAPACITY + 6).reloadVerdict(START, CAPACITY));
+                QuiverState.loaded(CAPACITY + 6, CAPACITY).reloadVerdict(START));
     }
 
     // ---------------------------------------------------------------- the shape itself
@@ -160,9 +160,9 @@ class QuiverStateTest {
     @Test
     void aReloadsStartAndDeadlineCannotBeSeparated() {
         assertThrows(IllegalArgumentException.class, () -> new QuiverState(
-                OptionalInt.of(0), OptionalLong.of(START), OptionalLong.empty()));
+                OptionalInt.of(0), CAPACITY, OptionalLong.of(START), OptionalLong.empty()));
         assertThrows(IllegalArgumentException.class, () -> new QuiverState(
-                OptionalInt.of(0), OptionalLong.empty(), OptionalLong.of(DEADLINE)));
+                OptionalInt.of(0), CAPACITY, OptionalLong.empty(), OptionalLong.of(DEADLINE)));
     }
 
     /**
@@ -175,7 +175,7 @@ class QuiverStateTest {
      */
     @Test
     void aRestartedClockMaturesTheReloadRatherThanStrandingTheWeapon() {
-        QuiverState mid = QuiverState.reloading(0, 895L, 902L);
+        QuiverState mid = QuiverState.reloading(0, CAPACITY, 895L, 902L);
 
         assertEquals(QuiverState.Fire.RELOAD_MATURED, mid.fireVerdict(5L));
         assertEquals(0L, mid.reloadTicksRemaining(5L));
