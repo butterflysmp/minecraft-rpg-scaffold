@@ -138,17 +138,27 @@ public final class WeaponItems {
 
             // THE MAGAZINE, STAMPED FULL AND EXPLICITLY. A no-op for the weapons that carry none.
             //
-            // BEFORE applyLore, AND THAT ORDERING IS NOW LOAD-BEARING. applyLore reads this count
-            // back off the meta to render "Quiver: 9/9"; stamp after it and every freshly minted
-            // weapon shows the PREVIOUS item's count, or "--/9" on a first mint.
+            // BEFORE applyLore, AND THE RULE IS THE MECHANISM, NOT TODAY'S CONSEQUENCE OF IT:
             //
-            // THE HISTORY IS KEPT BECAUSE IT IS THE USEFUL PART. This comment first claimed the
-            // tooltip "renders the stamped count" when NO lore line read it -- false at the instant
-            // it was committed. It was then corrected to say the ordering was free and placed
-            // pre-emptively. The lore line has since landed, so the original claim is true and the
-            // correction is stale: BOTH previous versions were wrong, in opposite directions, about
-            // the same three lines of code. Which is the argument for stating a coupling rather than
-            // trusting an ordering to look deliberate.
+            //     applyLore renders whatever the meta HOLDS WHEN IT RUNS, so anything it must
+            //     render has to be written before it.
+            //
+            // That is true whether or not a quiver line exists, and stays true when the next
+            // per-item field arrives. Stated that way on purpose -- see below.
+            //
+            // THE HISTORY IS KEPT BECAUSE IT IS THE EVIDENCE. This comment has been wrong TWICE, in
+            // OPPOSITE directions, about these same three lines:
+            //
+            //   v1  "the tooltip renders the STAMPED count"  -- false when it was written; no lore
+            //                                                   line read the count yet
+            //   v2  "the ordering is free"                   -- false the moment the lore line
+            //                                                   landed, one commit later
+            //
+            // BOTH described the ordering's CONSEQUENCE IN THE TREE AS IT THEN STOOD, and a
+            // consequence goes stale when the code around it moves. The mechanism above would have
+            // needed no correction in any of the three states. That is the transferable lesson, and
+            // it generalises past comments -- see NEXT.md on claims asserted wider than what was
+            // checked.
             //
             // This is the MIRROR of the enchant-block ordering note in remint() below, not the same
             // trap -- and the difference is why this call cannot simply sit wherever the enchant

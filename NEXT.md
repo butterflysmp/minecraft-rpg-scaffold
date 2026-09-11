@@ -9678,7 +9678,49 @@ is why none of the five was caught by running anything.
 > **A PRECISE CLAIM IS A CHECKABLE CLAIM.** The fix is to keep making them and make them true —
 > **never to retreat to hedged ones**, which are unfalsifiable rather than safe.
 
+### THE CLASS ABOVE ALL OF THESE: A CLAIM ASSERTED WIDER THAN THE THING IT IS ABOUT
+
+**Named 2026-09-11, from the quiver slice, and the entries above and below are folded INTO it rather
+than sitting beside it.** *"A claim about a check's reach that the check does not have"* is one
+shape of this, not a sibling of it.
+
+**NEARLY EVERY CORRECTION IN THE QUIVER SLICE WAS A SCOPE ERROR IN A CLAIM, NOT A WRONG FACT.** The
+facts were almost always right. What was wrong was how widely they were asserted. Five shapes, all
+measured in one slice:
+
+| shape | instance | how wide it actually was |
+|---|---|---|
+| an **INSTANCE** stated as a universal | *"for any non-final segment, `columnOf(16.0)` is 1"* | true for `+x`, false for `-x` |
+| **ONE DIRECTION** stated as both | *"the drift fails towards noise, not silence"* | true for keys ADDED, false for keys REMOVED |
+| a **PROXY** stated as the mechanism | *"needing a `Player` is what makes a method look like it may write"* | the write is `editMeta`; the `Player` only PERSISTS it |
+| a **CURRENT CONSEQUENCE** as a standing fact | *"the ordering is free"* | true until the lore line landed, one commit later |
+| a **COUNT over an unnamed set** | *"five content guards"*, *"three sites"*, *"the rest of this file's figures"* | unknowable — a count is a claim about a set, and the set was never named |
+
+**The fourth is the sharpest because it went wrong TWICE, in OPPOSITE directions, about the same
+three lines of code** — `WeaponItems.mint`'s stamp ordering. v1 said the tooltip *"renders the
+stamped count"* when nothing read it; v2 corrected that to *"the ordering is free"*, which the very
+next commit falsified. **Both described the CONSEQUENCE in the tree as it then stood, and a
+consequence goes stale when the code around it moves.** The mechanism —
+*"`applyLore` renders whatever the meta holds when it runs, so anything it must render has to be
+written before it"* — is true in all three states and would never have needed correcting.
+
+> **THE OPERATIONAL FORM, and it covers all five: BEFORE WRITING A CLAIM, SAY WHAT WOULD MAKE IT
+> FALSE.** If the answer is *"a case I have not staged"*, *"the other direction"*, *"a different
+> mechanism"*, or *"a later commit"* — the claim is wider than what was checked. **Narrow it, or
+> check the rest.**
+>
+> For a comment specifically: **state the MECHANISM, not its consequence in today's tree.** A
+> mechanism survives the code moving around it; a consequence is a snapshot that nothing re-checks.
+
+**AND THE COROLLARY FROM THE ENTRY ABOVE APPLIES UNCHANGED, WHICH IS WHY THIS IS A FOLD AND NOT A
+REPLACEMENT: THE OVERSTATEMENT IS WHAT MAKES IT CATCHABLE.** Every row in that table was found
+*because* it was stated precisely enough to be wrong. A claim narrowed to *"corrected here"* or
+*"it works in this case"* leaves nothing to falsify and ships. **The fix is precise claims made
+true, never hedged ones.**
+
 ### THE `presentAlong` PREMISE: CHECKED ON A LOOP'S FIRST ITERATION, GENERALISED TO THE LOOP
+
+*(An instance of the class above: an INSTANCE stated as a universal.)*
 
 `GATE-cursed-emerald.md` recorded, as **measured**, that `presentAlong` *"takes the aim origin
 directly"*. It takes the **segment start**. `launchRay` passes `aim.origin()` as `from` for index 0
