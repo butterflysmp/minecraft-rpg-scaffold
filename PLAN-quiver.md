@@ -103,13 +103,13 @@ past *"keep changes small enough that I can read them"* — holds, and holds har
 | in | out |
 |---|---|
 | `core/.../weapon/Quiver.java` — the arithmetic, capacity and reload ticks as **parameters** | any `Stat`, `HealthState` field, `CombatantStats` method, `Keys` boost pair, `*ModifierItems` scanner — **all A2** |
-| two PDC keys: the count, and the reload completion tick | the Boltor, `CastSpec.Ray` wiring, dual-wield, alternation |
-| `quiver_size:` / `reload_ticks:` on `WeaponDefinition` + `WeaponLoader` + a validator arm | a quiver enchant (`EnchantEffect` constant) |
+| THREE PDC keys: the count, and the reload's start and completion ticks (the start is the restart guard's bound -- see the correction below; an earlier draft said two) | the Boltor, `CastSpec.Ray` wiring, dual-wield, alternation |
+| `quiver_size:` / `reload_ticks:` on `WeaponDefinition` + `WeaponLoader` + **an unknown-key guard in `WeaponLoader`** (NOT `ContentValidator` -- see below) | a quiver enchant (`EnchantEffect` constant) |
 | the stamp in `WeaponItems.mint`, the carry in `GearItems.carryInstanceData` | `/rpg stats` sheet line |
 | the left-click reload | the held-right-click **fix** (A1 only *measures* the floor) |
 | two new `CastResult` arms and their notices | |
 | `quiver_stone.yml` | |
-| the owed mint test (below) | |
+| ~~the owed mint test~~ -- **NOT PAYABLE, see the corrections section** | |
 
 ---
 
@@ -213,13 +213,31 @@ re-deriving the argument.
 
 Two further absence hazards, both measured:
 
-- **Unknown YAML keys are silently ignored.** `WeaponLoader.parse` (`:74-161`) has no strict-key
-  validation anywhere — a typo'd `quivver_size:` loads clean and the weapon fires forever. **A
-  `ContentValidator` arm is owed**, and per `CLAUDE.md` it must be tested by *causing* the
-  condition (authoring the bad file, running the real walk, reading the warning text), never by
-  asserting the arm exists.
-- **`ContentValidator` has no stat arms at all today** — it validates visual/status/element
-  cross-references only. This is the first.
+- **Unknown YAML keys were silently ignored.** A typo'd `quivver_size:` loaded clean and produced a
+  crossbow with no magazine. **LANDED as an unknown-key warning in `WeaponLoader.parse`**, tested by
+  *causing* the condition — a real file with a real typo, through the real `loadAll`, warning read
+  back by its text.
+
+  > **IT IS NOT IN `ContentValidator`, AND THE FIRST DRAFT OF THIS PLAN SAID IT WOULD BE — TWICE,
+  > plus in two gate rows.** That was the wrong home, and the reason is worth keeping: **every guard
+  > in `WeaponDefinition` validates a value that WAS READ, and a misspelled key is never read at
+  > all.** `s.getInt("quivver_size", NO_QUIVER)` returns the default and nothing downstream can
+  > observe that anything was wrong. So this cannot be a value check at any layer — **it has to be a
+  > KEY check, and the only place that can see the authored keys is the loader**, which holds the
+  > `ConfigurationSection`. `ContentValidator` runs after parsing, on resolved objects, where the
+  > typo has already vanished.
+  >
+  > **Scope, so the omission is not mistaken for an oversight: weapons only.** Armor, shields, tools,
+  > enchants, abilities and mobs have the identical hazard and no such check. A general strict-key
+  > facility across every loader is a separate pass; weapons go first because the quiver is the first
+  > field here where a typo yields a weapon that is *silently wrong* rather than visibly broken.
+  >
+  > **The known-key set is hand-maintained**, which is `DamageSignatureTest`'s "today's set" problem
+  > again. Drift fails in the SAFE direction: a new field forgotten there produces a spurious warning
+  > about a legitimate key — loud, visible on the next boot, self-correcting — never a real typo going
+  > unreported. Three rows guard it: the typo warns, the full legitimate schema is silent, and **every
+  > shipped weapon file is silent**, that last one because the first two use fixtures this test wrote
+  > and cannot say whether the check is about to cry wolf over nine real weapons.
 
 ### THE STANDING NO-STACK DECISION GAINS ITS SECOND AND STRONGER REASON
 
@@ -628,7 +646,7 @@ Kill orphaned `java.exe` first; the script dies, two JVMs do not, and they hold 
 
 | # | check | expected |
 |---|---|---|
-| Q1 | boot log | clean load, **zero skipped content**, and the new validator arm silent |
+| Q1 | boot log | clean load, **zero skipped content**, and **no unknown-key warning from any shipped weapon** — the `WeaponLoader` guard staying quiet on real content, which `everyShippedWeaponFileIsSilentUnderTheUnknownKeyCheck` already pins in unit form |
 | Q2 | `/rpg give quiver_stone`, fire and **count** | shot N lands; shot N+1 refused, refusal **seen** |
 | Q3 | left-click mid-magazine | reload starts; firing refused for the authored window; then full |
 | Q4 | **fire once, then relog** | the count is **exactly what it was** — the `carryInstanceData` row |
@@ -637,12 +655,24 @@ Kill orphaned `java.exe` first; the script dies, two JVMs do not, and they hold 
 | Q7 | **the repeat-floor count** | the measurement above, with the number recorded |
 | Q8 | two `quiver_stone`s, one spent | **two halves, and only one is new.** *They do not stack* re-witnesses `setMaxStackSize(1)`, which this slice now also unit-tests; *the spent one stays spent* is **the new witness** — per-item state, not per-weapon-id. A pass must name which half it saw |
 | Q9 | start a reload, swap away, swap back | resumes; does not restart, does not complete early |
-| Q10 | author a file with a typo'd quiver key | boot **warns by name** — the validator arm, caused not asserted |
+| Q10 | author a file with a typo'd quiver key | boot **warns by name** — `WeaponLoader`'s unknown-key guard. **Downgraded to confirmatory**: it is already caused-not-asserted in `WeaponLoaderTest` against the real `loadAll`, so this row witnesses the wiring rather than the rule |
 | Q11 | fire once, left-click on the next tick | the reload **starts at once** — the fencepost ruling, witnessed in play. Core row 8 is the authority; this confirms the wiring kept it |
 
 **Q4, Q5 and Q6 are the discriminating rows**: they are the only checks that the carry landed, and
-each names a different funnel caller, so a pass says *which*. **Q10 is the only row that fails if the
-validator arm was written but is unreachable.**
+each names a different funnel caller, so a pass says *which*.
+
+> **THIS SENTENCE USED TO READ "Q10 is the only row that fails if the validator arm was written but
+> is unreachable", AND IT WAS WRONG IN THE WORSE DIRECTION.** The arm had not been written at all —
+> `git diff --numstat origin/master origin/feat/quiver -- '*ContentValidator*'` returned zero rows —
+> so **Q10 was a row that could not pass**, for a reason that sentence did not contemplate. Caught in
+> review, not by me.
+>
+> **The rule that catches this was quoted in this very plan, one section above the guard that went
+> missing:** *"THE PLAN ITEMS THAT SILENTLY FAIL TO LAND ARE THE GUARDS. Not a random sample —
+> selection. A missing feature is reported by the person who wanted it; a missing guard produces no
+> symptom at all."* Its remedy is the named-artifact diff, and **not running it is what let this
+> through.** It has now been run over every artifact this plan names, mechanically rather than from
+> recollection, and the table is in the commit report.
 
 > **Q8's stack half is kept even though a unit test now covers it, and the precedent is why.**
 > `GATE-lapis-staff.md` L10/L10b: the in-game stack action is what exposed a comment that had been
@@ -654,8 +684,17 @@ validator arm was written but is unreachable.**
 ## Prose corrections owed
 
 1. **`CLAUDE.md`, Standing decisions** — the no-stack rule gains its second and stronger reason.
-2. **`NEXT.md:1797-1804`** — the owed mint test is **paid** by this slice; mark it so, rather than
-   leaving a closed item open. *An open item that was actually closed is how a list stops being read.*
+2. **`NEXT.md:1797-1804`** — **the owed mint test is NOT payable as phrased, and this plan scoped it
+   into A1 wrongly.** The debt asks for *"a mint test per gear kind"*, and `new ItemStack(...)` throws
+   *"No RegistryAccess implementation found"* without a running server with no MockBukkit in the
+   project — `WeaponItemsTest`'s own class javadoc records this and tests the DECISION instead of a
+   constructed item. So `setMaxStackSize(1)` cannot be witnessed by any unit test in this module.
+
+   **Rewrite the debt beside the debt**, not only in a commit report: either re-phrase it as
+   something payable (a decision-level assertion, or a source-level check) or mark it
+   **operator-gate-only**, with gate row Q8 named as its sole witness. *A debt phrased as impossible
+   is a debt that gets skipped forever and re-read as outstanding* — and it has already survived one
+   slice that way. **Not marked paid here.**
 3. **`PlayerHealthSystem.java:171`** — *"Eleven stats converge on the same scan"* becomes thirteen.
    **A2's correction, not A1's**, named here so it is not missed. Note the irony on the record: that
    comment carries a 2026-era note saying it was *"phrased now so it cannot go stale again"*, and it

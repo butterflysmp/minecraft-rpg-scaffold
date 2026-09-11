@@ -71,7 +71,51 @@ public final class WeaponLoader {
         return name.substring(0, name.length() - ".yml".length());
     }
 
+    /**
+     * Every key a weapon file may author, which is every key {@link #parse} reads, plus {@code id}.
+     *
+     * <p><b>{@code id} is in the set and is NOT read.</b> The id comes from the filename
+     * ({@code ironblade.yml -> ironblade}); every shipped file also writes {@code id:} redundantly,
+     * and without it here the loader would warn about all of them.
+     *
+     * <h2>Why an unknown key is worth warning about at all</h2>
+     *
+     * <p>Because it is read by NOBODY, a misspelled key cannot be caught by any of the value guards
+     * in {@code WeaponDefinition}: {@code s.getInt("quivver_size", NO_QUIVER)} returns the default,
+     * the weapon loads perfectly cleanly, and the only symptom is a crossbow that turns out to have
+     * no magazine. Every other guard in this pipeline validates a value that WAS read, so this class
+     * of typo had nothing looking for it.
+     *
+     * <p><b>THIS IS TODAY'S SET, AND IT IS HAND-MAINTAINED -- the same property
+     * {@code DamageSignatureTest} writes down about its own scope.</b> A new field added to
+     * {@link #parse} and forgotten here produces a spurious warning about a legitimate key. That is
+     * the SAFE direction of drift -- loud, visible on the next boot, and self-correcting -- rather
+     * than a real typo going unreported, so the maintenance burden fails towards noise and not
+     * towards silence.
+     *
+     * <p><b>Scope, stated because the omission is otherwise indistinguishable from an oversight:</b>
+     * weapons only. Armor, shields, tools, enchants, abilities and mobs have the same hazard and no
+     * such check; a general strict-key facility across every loader is a separate pass, and this is
+     * the foothold rather than the finished job. Weapons go first because the quiver is the first
+     * field in this repository where a typo yields a weapon that is SILENTLY WRONG rather than
+     * visibly broken.
+     */
+    private static final java.util.Set<String> KNOWN_KEYS = java.util.Set.of(
+            "id", "display_name", "element", "rarity", "class", "material",
+            "attack_damage", "attack_speed", "sweep", "quiver_size", "reload_ticks",
+            "flavor", "triggers", "craft_result");
+
     private WeaponDefinition parse(String id, ConfigurationSection s) {
+        // WARN, never skip. An unknown key is a typo in a file whose other fields are fine, and
+        // refusing the whole weapon over one misspelling would be a worse trade than loading it and
+        // saying so -- the same call the scalar-`flavor:` warning below makes.
+        for (String key : s.getKeys(false)) {
+            if (!KNOWN_KEYS.contains(key)) {
+                log.warning("weapon '" + id + "' has unknown key '" + key + "'; it is read by nothing"
+                        + " and will be ignored. Check the spelling against the weapon schema.");
+            }
+        }
+
         String displayName = s.getString("display_name", id);
         String element = s.getString("element", "kinetic");
         Rarity rarity = rarity(s.getString("rarity", "common"));

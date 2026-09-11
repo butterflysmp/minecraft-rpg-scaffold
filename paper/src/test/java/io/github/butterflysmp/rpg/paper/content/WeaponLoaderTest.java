@@ -876,4 +876,110 @@ class WeaponLoaderTest {
         return DamagePayload.isBasicAttack(registry.find(weaponId).orElseThrow()
                 .trigger("right_click").orElseThrow().ability().onHit());
     }
+
+    // ------------------------------------------------------------------ the unknown-key warning
+
+    /**
+     * A MISSPELLED KEY IS READ BY NOBODY, SO NO VALUE GUARD CAN SEE IT.
+     *
+     * <p>This is the hole the quiver opened and the reason the check exists. Every other guard in
+     * this pipeline validates a value that WAS read -- {@code WeaponDefinition} refuses a negative
+     * quiver, a reload with nothing to reload, a magazine that can never be refilled. None of them
+     * can fire here: {@code s.getInt("quivver_size", NO_QUIVER)} simply returns the default, the file
+     * loads perfectly cleanly, and the only symptom is a crossbow that turns out to have no magazine
+     * at all.
+     *
+     * <p>CAUSES the condition rather than asserting the arm exists: a real file with a real typo,
+     * through the real {@code loadAll}, with the warning read back by its text. The weapon is also
+     * asserted to LOAD and to have no quiver, because the warning alone would not prove the
+     * fail-soft half -- a check that skipped the file would be worse than the typo.
+     */
+    @Test
+    void aMisspelledKeyWarnsByNameAndTheWeaponStillLoads() throws IOException {
+        write("crossbow.yml", VALID.replace("id: ironblade", "id: crossbow\nquivver_size: 8"));
+
+        WeaponRegistry registry = load();
+
+        assertTrue(warningText().contains("quivver_size"), warningText());
+        assertTrue(warningText().contains("crossbow"), "the warning must NAME the file: " + warningText());
+        WeaponDefinition weapon = registry.find("crossbow").orElseThrow();
+        assertFalse(weapon.hasQuiver(), "and the consequence: the typo silently produced no magazine");
+    }
+
+    /**
+     * THE POSITIVE CONTROL, and without it the row above proves much less than it looks.
+     *
+     * <p>A check that warned about EVERY key would pass the typo test just as convincingly. So a
+     * weapon authoring the full legitimate schema -- every key {@code parse} reads, plus the
+     * redundant {@code id} -- must draw no warning at all. This is also what catches a key present in
+     * {@code parse} but missing from {@code KNOWN_KEYS}, which is the hand-maintained set's one real
+     * failure mode.
+     */
+    @Test
+    void aWeaponAuthoringTheWholeSchemaDrawsNoUnknownKeyWarning() throws IOException {
+        write("full.yml", """
+                id: full
+                display_name: "Full"
+                element: kinetic
+                rarity: common
+                class: ranger
+                material: crossbow
+                attack_damage: 0
+                attack_speed: 0
+                sweep: 0
+                quiver_size: 3
+                reload_ticks: 7
+                craft_result: diamond
+                flavor:
+                  - "Every key, spelled correctly."
+                triggers:
+                  right_click:
+                    cooldown_ticks: 14
+                    cast:
+                      type: ray
+                      range: 30
+                    on_hit:
+                      - type: damage
+                        amount: 4
+                        element: kinetic
+                """);
+
+        WeaponRegistry registry = load();
+
+        assertTrue(warnings.isEmpty(), "the legitimate schema must be silent: " + warningText());
+        WeaponDefinition weapon = registry.find("full").orElseThrow();
+        assertTrue(weapon.hasQuiver());
+        assertEquals(3, weapon.quiverSize());
+        assertEquals(7, weapon.reloadTicks());
+    }
+
+    /**
+     * AND THE SHIPPED FILES THEMSELVES MUST BE SILENT, which neither row above can establish.
+     *
+     * <p>Both of those use fixtures written by this test, so they prove the check behaves on inputs
+     * it was designed against. They cannot tell anyone whether the check is about to warn on every
+     * boot about nine real weapons -- and a guard that cries wolf on legitimate content is one that
+     * gets muted, then removed. The real files are the population; the fixtures are the sample.
+     */
+    @Test
+    void everyShippedWeaponFileIsSilentUnderTheUnknownKeyCheck() throws IOException {
+        Path shipped = Path.of("src", "main", "resources", "content", "weapons");
+        assertTrue(Files.isDirectory(shipped), "shipped weapons not found at " + shipped.toAbsolutePath());
+
+        int copied = 0;
+        try (var files = Files.list(shipped)) {
+            for (Path file : files.toList()) {
+                if (!file.toString().endsWith(".yml")) continue;
+                Files.copy(file, dir.resolve(file.getFileName().toString()));
+                copied++;
+            }
+        }
+        // A scan that discovers nothing must fail loudly rather than pass quietly.
+        assertTrue(copied > 0, "no shipped weapon files were copied -- this test measured nothing");
+
+        WeaponRegistry registry = load();
+
+        assertEquals(copied, registry.size(), "every shipped weapon must load, or the silence below is free");
+        assertTrue(warnings.isEmpty(), "shipped content must not warn: " + warningText());
+    }
 }

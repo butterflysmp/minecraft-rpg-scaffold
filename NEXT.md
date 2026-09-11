@@ -1802,6 +1802,34 @@ either direction."* Ten days later a gate row stacked two staves and watched the
 > nine days with a green suite: nothing could have reddened. **OWED: a mint test per gear kind.**
 > Not added here — this is a merge, and the change should be readable — but it is the cheap half of
 > this finding and it belongs in the next slice that touches `weapon/`.
+>
+> > **2026-09-10 — THE DEBT ABOVE IS NOT PAYABLE AS PHRASED, AND IT SURVIVED A SLICE BY BEING
+> > IMPOSSIBLE RATHER THAN BY BEING FORGOTTEN.** The quiver slice (`PLAN-quiver.md`, A1) touches
+> > `weapon/`, scoped this in on the strength of the sentence above, and then could not pay it.
+> >
+> > **`new ItemStack(...)` throws `"No RegistryAccess implementation found"` without a running
+> > server, and this project has no MockBukkit.** `WeaponItemsTest`'s own class javadoc records
+> > exactly that and is written to test the DECISION — which attribute the suppressor targets — in
+> > place of a constructed item. **So `setMaxStackSize(1)` cannot be witnessed by any unit test in
+> > this repository**, in any module, for any gear kind. *"A mint test per gear kind"* asks
+> > `core`/`paper` for something neither can do.
+> >
+> > **This is the hazard of a debt written as an instruction rather than as a question.** It reads
+> > as cheap and outstanding forever, so every slice that touches `weapon/` inherits it, fails to
+> > pay it, and either stays silent or re-records it. The cheap half of the finding was never cheap;
+> > it was unavailable.
+> >
+> > **RE-PHRASED, and this is the payable form:**
+> >
+> > - **The cap's only witness is the boot gate.** `GATE-lapis-staff.md` L10b already is that
+> >   witness — two staves that refuse to merge — and `PLAN-quiver.md`'s Q8 is the second, on a
+> >   weapon where per-item state makes the cap load-bearing rather than merely tidy.
+> > - **If a unit-level guard is wanted, it must be a SOURCE-level or reflective one** — asserting
+> >   the four mint bodies call it — not an item-level one. That is a different and uglier test, and
+> >   whether it earns its place is an open question rather than an owed task.
+> >
+> > **Marked OPERATOR-GATE-ONLY.** Not outstanding work. A future reader who wants it back should
+> > re-open it as the question above, not as the instruction that could never be followed.
 
 **And L10's second half was never a test.** "They merge" could not have been met by working code —
 Rule 4's *impossible row*, arrived at the same way the comment was: written from the material. The
