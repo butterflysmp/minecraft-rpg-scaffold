@@ -111,6 +111,7 @@ public final class Quiver {
         return clamp(capacity, capacity);
     }
 
+
     /**
      * The tick a reload started now will finish on.
      *

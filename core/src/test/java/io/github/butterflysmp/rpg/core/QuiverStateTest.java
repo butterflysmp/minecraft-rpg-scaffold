@@ -180,4 +180,43 @@ class QuiverStateTest {
         assertEquals(QuiverState.Fire.RELOAD_MATURED, mid.fireVerdict(5L));
         assertEquals(0L, mid.reloadTicksRemaining(5L));
     }
+
+    // ---------------------------------------------------------------- the capacity's three sources
+
+    /**
+     * THE STAMP WINS OVER THE AUTHORED VALUE, BECAUSE THE STAMP IS WHAT GOVERNED WHEN IT WAS PACKED.
+     *
+     * <p>Once capacity is a stat, a boosted wielder genuinely fires more than the weapon declares.
+     * {@code capacityOf} is the single place the stamp beats the definition, so the tooltip and the
+     * refusal logic cannot disagree — a tooltip rendering the stamp while the refusal resolved the
+     * holder live would lie by a new mechanism.
+     */
+    @Test
+    void aStampedCapacityBeatsTheAuthoredOne() {
+        assertEquals(11, QuiverState.capacityOf(OptionalInt.of(11), 9),
+                "gear resolved 11 when this was last packed; the weapon still declares 9");
+        assertEquals(9, QuiverState.capacityOf(OptionalInt.of(9), 9));
+        assertEquals(2, QuiverState.capacityOf(OptionalInt.of(2), 9),
+                "a REDUCED capacity is stamped and obeyed too -- the stamp is not a maximum");
+    }
+
+    /**
+     * AN ABSENT CAPACITY FALLS BACK TO AUTHORED, AND IS NOT A DEFECT -- unlike an absent COUNT.
+     *
+     * <p>The asymmetry is the point. A count has no item-free meaning, so its absence means a mint
+     * path failed and {@link QuiverState.Fire#UNSTAMPED} reports it. A capacity has a perfectly good
+     * item-free answer: the weapon's own.
+     *
+     * <p>Three real readers depend on this and none of them is a bug: {@code GoldenLoreTest} renders
+     * from definitions with no item at all, a recipe-browser icon previews a weapon rather than a
+     * held one, and an item minted before this stamp existed carries no capacity — so this doubles
+     * as the migration path.
+     */
+    @Test
+    void anAbsentCapacityFallsBackToTheAuthoredValue() {
+        assertEquals(9, QuiverState.capacityOf(OptionalInt.empty(), 9),
+                "no item to read: the weapon's own number is the true answer, not a defect");
+        assertEquals(0, QuiverState.capacityOf(OptionalInt.empty(), 0),
+                "and a weapon with no quiver stays at no quiver");
+    }
 }

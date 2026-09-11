@@ -52,6 +52,47 @@ public record QuiverState(OptionalInt loaded, OptionalLong reloadStartedAt,
         }
     }
 
+    /**
+     * The capacity that actually governs, given what an item carries and what its weapon declares.
+     *
+     * <h2>THE THREE SOURCES ARE ORDERED, NOT COMPETING</h2>
+     *
+     * <p>Once capacity is a stat the number has three origins, answering three different questions.
+     * <b>This method is the whole of the ordering between the last two</b>, so the fallback happens
+     * in exactly one place rather than once per reader:
+     *
+     * <ul>
+     *   <li><b>the stat</b> — <i>what does this wielder resolve?</i> Read <b>only at a write</b>, by
+     *       {@code QuiverItems.setLoaded}, and never here.
+     *   <li><b>the stamp</b> — <i>what does this item hold, and what does it enforce?</i> Everywhere
+     *       else: the tooltip AND the refusal logic. That single readership is the point — a tooltip
+     *       rendering the stamp while the refusal resolved the holder LIVE would lie by a new
+     *       mechanism, which is the defect {@code ResourceCost} records as <i>"two literals cannot
+     *       drift apart if there is only one."</i>
+     *   <li><b>the authored value</b> — <i>what does this weapon hold when there is NO ITEM at
+     *       all?</i> The fallback below.
+     * </ul>
+     *
+     * <p><b>AN UNSTAMPED CAPACITY IS NOT A DEFECT, UNLIKE AN UNSTAMPED COUNT</b>, and the asymmetry
+     * is deliberate. A count has no item-free meaning, so its absence means a mint path failed and
+     * {@link Fire#UNSTAMPED} reports it. A capacity has a perfectly good item-free answer: the
+     * weapon's own. A definitions-only renderer has no item to read — {@code GoldenLoreTest}, a
+     * recipe-browser icon and a craft preview all describe a WEAPON rather than a held item — and the
+     * authored number is true for all three. It is also what an item minted before this stamp existed
+     * carries, so this doubles as the migration path.
+     *
+     * <p><b>It lives here and not on {@link Quiver} because {@code QuiverSignatureTest} refused it
+     * there</b>, and the guard was right: {@code Quiver} is primitives-only arithmetic that must
+     * never learn a capacity, and an {@code OptionalInt} argument is composition. That is the
+     * distinction between the two classes, enforced rather than remembered.
+     *
+     * <p>Worked: {@code (of(11), 9) -> 11} (gear resolved 11 when it was last packed);
+     * {@code (of(9), 9) -> 9}; {@code (empty, 9) -> 9} (no item, or an item from before the stamp).
+     */
+    public static int capacityOf(OptionalInt stampedCapacity, int authoredCapacity) {
+        return stampedCapacity.orElse(authoredCapacity);
+    }
+
     /** An item carrying a count and no reload -- the ordinary state of a quiver weapon. */
     public static QuiverState loaded(int rounds) {
         return new QuiverState(OptionalInt.of(rounds), OptionalLong.empty(), OptionalLong.empty());

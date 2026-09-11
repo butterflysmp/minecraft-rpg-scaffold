@@ -250,6 +250,38 @@ All four numbers are distinct and none is authored anywhere.
 **Say in each fixture's header that the checked quantity is the OBSERVED value**, since that is the
 one a gate row can confuse.
 
+### THE FIXTURE MOVES RELOAD ONLY UPWARD — so the direction gear will move it is never exercised
+
+**The adding fixture is right and this is its cost, stated rather than discovered.** In game,
+reload gear will **reduce** the number — that is what a player wants from it — and **A2 ships no
+instrument that moves it down.** The fixture cannot, and the proof above says none can exist at
+base 34.
+
+**And there is no floor.** `Quiver.reloadCompletesAt` is `now + Math.max(reloadTicks, 0)`, so a
+resolved reload of **0 is legal and means an instant reload** — which deletes the brake the whole
+slice is about. `Math.max(reloadTicks, 0)` is **a ruling made by omission**, and nothing in A2 as
+first planned would have noticed: the fixture cannot reach it, no core row asks for it, and the
+first reduction item to ship would find out in play.
+
+> **NOT REACHABLE TODAY, AND THAT IS WHY IT BELONGS TO COMMIT 4 RATHER THAN NOW.**
+> `WeaponDefinition` already refuses `quiverSize > 0 && reloadTicks <= 0`, so an authored zero is
+> impossible. **The hole opens the moment a MODIFIER can reduce the value** — which is commit 5.
+
+**RULED — `Quiver.MIN_RELOAD_TICKS = 10` (half a second), PROVISIONAL on the Ignite idiom**, with
+the relationship written at the constant the way `BEAM_ORIGIN_GAP`'s ceiling is:
+
+- **The argument is mechanism, not balance.** Below ~10 ticks the reload is **shorter than the fire
+  cooldown of every quiver weapon that exists or is planned** — `quiver_stone` is 11, the Boltor is
+  14 — so it is *invisible*: you could not have fired during it anyway. Under that point the brake
+  exists only on paper, and the quiver has become the cooldown weapon it was chosen instead of.
+- **PROVISIONAL, with the authority named**: the first slice that ships reload-reduction gear rules
+  the final number, because that is the first time anyone can feel it. A provisional value nobody
+  owns is the `Ignite` defect; this one names its owner.
+
+**And the downward direction is covered in CORE, since no fixture can cover it** — a row that
+resolves a reload below the floor and asserts the floor holds, plus the mutation that removes the
+floor. That is the **only** witness this slice will have for the direction gear actually moves.
+
 ---
 
 ## COMMIT SPLIT — measured against A1's own shape

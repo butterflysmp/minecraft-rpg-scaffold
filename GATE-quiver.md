@@ -12,8 +12,31 @@
 > |---|---|
 > | **V1** | **FAIL (display half).** Bolt **YES**, count **9 → 8**, and *"the number doesn't change in the lore of the item"*. The mechanism half passes — the magazine is not infinite. The tooltip does not move. |
 > | **Q12** | **FAIL.** Not covered by the blanket: it is the same observation V1 made, staged deliberately, so with no re-render it reads `9/9` then `9/9`. Recorded as a fail rather than inherited as a pass. |
-> | **Q7**, **V2** | **UNRUN.** Both need a *value*, and "good" is not one — see below. |
+> | **Q7** | **UNRUN.** It has **no green state** — see the re-run section. |
+> | **V2** | **UNRUN on this pass**, and **not for Q7's reason.** See the correction below. |
 > | everything else | **blanket-green.** |
+>
+> > **CORRECTED — THESE TWO WERE GROUPED AND THEY ARE NOT THE SAME THING.** This row first read
+> > *"Q7, V2 — UNRUN. Both need a value, and 'good' is not one."* **That is true of Q7 and false of
+> > V2**, and the difference is the entire reason Q7 is worth a second boot:
+> >
+> > - **Q7 has NO green state.** It produces a number with no expected value, so *"green"* cannot
+> >   select an outcome — there is nothing for it to be green *against*.
+> > - **V2 has EXACTLY ONE green state, and the row defines it**: PASS = the empty notice. *"Green"*
+> >   selects it unambiguously. Its text was requested so an operator could not substitute *"it
+> >   refused"* — a description that does not discriminate — for a fact. **A verdict against a stated
+> >   pass condition is not that substitution.** V2 is marked unrun on the FIRST pass only because
+> >   that blanket predated the row's text requirement, not because it lacks a green state. It is
+> >   **PASS** on the re-run.
+> >
+> > **A record that gives the wrong reason stops being usable.** The next reader would conclude V2
+> > has no green state either — which is false — and Q7's genuine singularity would stop looking
+> > singular.
+> >
+> > **AND THE WIDER POINT, because it is an over-correction and not a slip.** Most rows here are
+> > binaries, and *"green"* is a complete answer to them. **If every blanket-answered row becomes
+> > UNRUN, the record wastes the operator's time and the one row that genuinely needs a number gets
+> > lost among sixteen that do not.**
 >
 > **Q4, Q5 AND Q6 PASSING WAS CONSISTENT WITH THE DEFECT, NOT EVIDENCE AGAINST IT.** Relog,
 > `/rpg refresh` and the enchant table all route through `remint`, which *does* call `applyLore` — so
