@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -400,5 +401,65 @@ class WeaponLoreTest {
         assertEquals(textLines(base), textLines(applied));
         // Mutation: always insert the blank separator -> every plain weapon grows a leading empty
         // line -> reddens.
+    }
+
+    // ------------------------------------------------------------------ the quiver line's denominator
+
+    /** A ranger weapon with a magazine: authored capacity 9, so the stamp has something to differ from. */
+    private static WeaponDefinition quiverWeapon() {
+        AbilityDefinition shot = new AbilityDefinition(
+                "quiver_stone/right_click", "Loose", "kinetic", "none",
+                11, ResourceCost.FREE, new CastSpec.Ray(23),
+                List.of(new EffectSpec.Damage(13.0, "kinetic")), List.of());
+        return new WeaponDefinition("quiver_stone", "Quiver Stone", "kinetic", Rarity.EXOTIC,
+                WeaponClass.RANGER, "crossbow", 0.0, 0.0, SweepShare.NONE, 9, 34,
+                List.of(new TriggerBinding("right_click", shot)), List.of());
+    }
+
+    /**
+     * THE STAMPED CAPACITY REACHES THE RENDERED LINE, AND NOTHING ELSE IN THE SUITE PROVES IT.
+     *
+     * <p><b>This row exists because a mutation came back green that should not have.</b>
+     * {@code MUTSTAMPDROP} replaced {@code capacityOf(stampedCapacity, …)} with
+     * {@code capacityOf(OptionalInt.empty(), …)} — making the tooltip ignore the stamp forever — and
+     * the ENTIRE suite passed: golden, {@code WeaponLoreTest}, {@code QuiverStateTest} and the
+     * resolver guard alike.
+     *
+     * <p><b>The reason is that every other caller passes an EMPTY stamp.</b> {@code GoldenLoreTest}
+     * and every pre-existing row here use the 2-arg overload, which supplies
+     * {@code OptionalInt.empty()}; the 4-arg form had <b>no test caller at all</b>. So the golden's
+     * byte-identity — offered as commit 1b's proof — licenses exactly one thing: <i>the definitions
+     * path did not move.</i> That is worth having and it is <b>not</b> evidence the seam works,
+     * because the seam is the path the golden does not walk. A control that succeeds for the wrong
+     * reason.
+     *
+     * <p>The discriminating staging is a stamp that DIFFERS from the authored value: 11 against a
+     * weapon declaring 9. Under the mutation this renders {@code 8/9}.
+     */
+    @Test
+    void aStampedCapacityDifferentFromTheAuthoredOneReachesTheTooltip() {
+        List<String> lines = textLines(WeaponLore.build(quiverWeapon(), elementsWithFire(),
+                OptionalInt.of(8), OptionalInt.of(11)));
+
+        assertTrue(lines.contains("Quiver: 8/11"),
+                () -> "the STAMP must be the denominator, not the weapon's authored 9; got " + lines);
+        assertFalse(lines.contains("Quiver: 8/9"),
+                () -> "rendering the authored capacity means gear is invisible to its owner; got " + lines);
+    }
+
+    /**
+     * And the fallback, pinned beside it so the PAIR discriminates.
+     *
+     * <p>Alone this row is what the golden already covers. Beside the row above it is what makes
+     * "the stamp wins when present, the definition answers when absent" a checkable statement rather
+     * than two facts that happen to hold.
+     */
+    @Test
+    void anAbsentStampFallsBackToTheAuthoredCapacityOnTheTooltip() {
+        List<String> lines = textLines(WeaponLore.build(quiverWeapon(), elementsWithFire(),
+                OptionalInt.of(8), OptionalInt.empty()));
+
+        assertTrue(lines.contains("Quiver: 8/9"),
+                () -> "no item to read, so the weapon's own number is the true answer; got " + lines);
     }
 }

@@ -202,6 +202,7 @@ class QuiversSignatureTest {
      * cannot be checked by the reader, which is the rule these reports are held to:
      *
      * <ul>
+     *   <li>{@code QuiverState} (core) — where {@code capacityOf} is DEFINED.
      *   <li>{@code QuiverItems} — where the accessor is DEFINED; it matches its own scan, the way
      *       {@code KNOWN_KEYS} must carry {@code id}.
      *   <li>{@code Quivers.stateOf} — the verdict path, which both refusal and enforcement read.
@@ -209,7 +210,7 @@ class QuiversSignatureTest {
      *   <li>{@code WeaponLore.build} — resolves it for the tooltip.
      * </ul>
      *
-     * <p>A fifth is a deliberate edit to this list, which is the moment to ask whether it should
+     * <p>A sixth is a deliberate edit to this list, which is the moment to ask whether it should
      * instead be reading the state the others already built.
      *
      * <p><b>IT SCANS FOR THE ACCESSOR AS WELL AS THE RESOLVER, AND THE FIRST VERSION DID NOT —
@@ -218,31 +219,45 @@ class QuiversSignatureTest {
      * — the inline third resolver, exactly the case in the paragraphs above — came back **green**.
      * It calls neither {@code capacityOf} nor the key by name, so a scan for either was blind to it.
      * <b>A guard aimed at the name of the right thing rather than at the shape of the wrong thing.</b>
-     * Obtaining a capacity at all now requires appearing on this list.
+     * Obtaining a capacity at all now requires appearing on this list -- IN EITHER MODULE.
      */
     @Test
     void theCapacityIsResolvedOnlyWhereThisListSays() throws IOException {
-        Path main = Path.of("src", "main", "java");
+        // BOTH MODULES. Scanning only paper/ would have been a claim true by accident of where the
+        // code currently sits: capacityOf is PUBLIC ON A CORE CLASS, and WeaponLoreLines.quiverLine
+        // is in core and is the natural place for a later commit to move the resolution into -- at
+        // which point the tooltip's resolver would leave a paper-only guard's sight entirely and the
+        // list would still read as four files. That is A1's one-file-scope finding recurring one
+        // module over.
         List<String> resolvers = new java.util.ArrayList<>();
-        try (var walk = Files.walk(main)) {
-            for (Path file : walk.filter(p -> p.toString().endsWith(".java")).toList()) {
-                String code = Files.readString(file, StandardCharsets.UTF_8)
-                        .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
-                // BOTH the accessor and the resolver, because scanning for capacityOf alone MISSED
-                // the defect this guard exists for -- measured, see the javadoc.
-                if (code.contains("capacityIn") || code.contains("capacityOf(")) {
-                    resolvers.add(file.getFileName().toString());
+        int scanned = 0;
+        for (Path root : List.of(Path.of("src", "main", "java"),
+                                 Path.of("..", "core", "src", "main", "java"))) {
+            assertTrue(Files.isDirectory(root), "source root not found: " + root.toAbsolutePath());
+            try (var walk = Files.walk(root)) {
+                for (Path file : walk.filter(p -> p.toString().endsWith(".java")).toList()) {
+                    scanned++;
+                    String code = Files.readString(file, StandardCharsets.UTF_8)
+                            .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+                    // BOTH the accessor and the resolver, because scanning for capacityOf alone
+                    // MISSED the defect this guard exists for -- measured, see the javadoc.
+                    if (code.contains("capacityIn") || code.contains("capacityOf(")) {
+                        resolvers.add(file.getFileName().toString());
+                    }
                 }
             }
         }
+        assertTrue(scanned > 100, "only " + scanned + " files scanned across both modules");
+
         java.util.Collections.sort(resolvers);
         assertEquals(
-                List.of("QuiverItems.java", "Quivers.java", "WeaponItems.java", "WeaponLore.java"),
+                List.of("QuiverItems.java", "QuiverState.java", "Quivers.java", "WeaponItems.java",
+                        "WeaponLore.java"),
                 resolvers,
-                "a capacity may only be OBTAINED in these three files. Reading QuiverItems.capacityIn "
-                        + "anywhere else and resolving it inline -- stamped.orElse(weapon.quiverSize()) "
-                        + "-- is a second resolver, and two resolvers is how the tooltip and the "
-                        + "refusal logic come to disagree.");
+                "a capacity may only be OBTAINED in these FIVE files, across core AND paper. Reading "
+                        + "QuiverItems.capacityIn anywhere else and resolving it inline -- "
+                        + "stamped.orElse(weapon.quiverSize()) -- is a second resolver, and two "
+                        + "resolvers is how the tooltip and the refusal logic come to disagree.");
     }
 
     /**

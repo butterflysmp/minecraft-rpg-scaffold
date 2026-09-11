@@ -292,10 +292,28 @@ first reduction item to ship would find out in play.
 > one anyway would be a balance call disguised as a derivation — which the slice that is supposed to
 > rule the final value would inherit by reading rather than re-deriving.
 
-**What the floor is for, structurally:** `reloadCompletesAt` is `now + Math.max(reloadTicks, 0)`, so
-a resolved **0 is an instant reload** and deletes the brake the slice is about. **1 is the minimum
-that keeps the mechanic representable** — exactly `Durability.MIN_USES`'s argument, where the floor
-exists so a weapon is *inert rather than gone*.
+> **AND THE REPLACEMENT DID IT AGAIN, WHICH IS THE MORE USEFUL HALF.** The first version of this
+> paragraph said *"1 is the minimum that keeps the mechanic representable — exactly
+> `Durability.MIN_USES`'s argument."* **That analogy is false.** Measured against
+> `Quiver.reloadComplete`'s `if (now >= completesAt) return true;` — at `reloadTicks` 0,
+> `completesAt == startedAt == now`, so the reload matures on the same tick. The state stamps,
+> matures and clears; the restart guard is unaffected. **A zero-tick reload is FULLY
+> REPRESENTABLE.** `MIN_USES` prevents a *different and irreversible* state — the item destroyed
+> rather than inert — which is why that floor is structural. **A reload floor prevents no state at
+> all.**
+>
+> **So the genre repeated: 10 was a balance number wearing a MECHANISM argument; 1 was a balance
+> number wearing a STRUCTURAL one.** The number got smaller and more honest and the justification
+> did not change kind. That is worth more than the constant, and it is why both retractions stay.
+
+**What the floor actually is: A NAMED PLACEHOLDER AT THE NO-OP VALUE.** There is **no mechanism
+argument for any floor, including this one.** `MIN_RELOAD_TICKS = 1` is a documented hook where the
+balance slice finds the question — chosen because it **changes nothing a player can observe** and
+because it **matches the authored floor `WeaponDefinition:109` already enforces.**
+
+The thinnest true statement, and it is deliberately thin: at 0 the `RELOADING` state is never
+observable for a single tick; at 1 it is observable for one. **That difference is invisible at 20
+tps.**
 
 **AND IT RESOLVES THE TWO-FLOOR PROBLEM BY BEING THE SAME NUMBER.** `WeaponDefinition:109` already
 refuses `quiverSize > 0 && reloadTicks <= 0`, so the **authored** floor is 1. A resolved floor of 10
