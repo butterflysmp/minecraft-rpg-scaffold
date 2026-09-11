@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <h2>WHY THIS FILE EXISTS AT ALL, WHICH IS THE USEFUL PART</h2>
  *
  * <p>Every row here was previously unreachable by any test. The composition lived in
- * {@code paper}'s {@code Quivers.refusalFor}, which takes a {@code Player}, and this project has no
+ * {@code paper}'s {@code Quivers.resolveForShot} (then named {@code refusalFor}), which takes a {@code Player}, and this project has no
  * MockBukkit and cannot construct an {@code ItemStack} without a running server. The ARITHMETIC was
  * unit-tested from the first commit; the DECISIONS built on it were not.
  *

@@ -537,7 +537,7 @@ well, and is worth writing down so A2 does not pay for it out of habit.
 
 The plan argued the `Durability` split and then broke it. `Quiver` (the arithmetic) went to core and
 earned rows and mutations; the **composition** of those primitives into an answer — *may this weapon
-fire?* — landed in `paper`'s `Quivers.refusalFor`, which takes a `Player` and therefore **can never
+fire?* — landed in `paper`'s `Quivers.resolveForShot` (then named `refusalFor`), which takes a `Player` and therefore **can never
 be unit-tested here**. The decision of the whole slice sat in the one layer no test can reach.
 
 > **THE TELL WAS A SUITE TOTAL THAT DID NOT MOVE.** Commit 3 added **303 lines of production code in

@@ -29,7 +29,7 @@ import java.util.OptionalLong;
  *
  * <h2>THE RELOAD IS EVALUATED ON READ, NOT SCHEDULED</h2>
  *
- * <p>No task is queued when a reload starts. {@link #refusalFor} asks the item whether its deadline
+ * <p>No task is queued when a reload starts. {@link #resolveForShot} asks the item whether its deadline
  * has passed and completes it in place if so. <b>That is what makes the reload leak-proof</b>: a
  * scheduled task needs an expiry event, and an expiry event can be missed -- the player swaps the
  * weapon away, drops it, dies, logs out. {@code ModifierReconciler}'s javadoc makes the identical
@@ -45,14 +45,34 @@ public final class Quivers {
     private Quivers() {}
 
     /**
-     * Why this weapon may not fire right now, or empty if it may.
+     * Take a shot's turn at the quiver: settle any matured reload, repair a missing count, and
+     * report why the weapon may not fire -- or empty if it may.
      *
-     * <p>Completes a finished reload as a side effect, which is the whole lazy-evaluation design: the
-     * read IS the tick. A caller that gets {@code Optional.empty()} back has a loaded weapon, and the
-     * item has already been updated if a reload matured on this call.
+     * <h2>THIS WRITES. IT IS NOT A QUESTION, AND ITS FIRST NAME SAID IT WAS.</h2>
+     *
+     * <p>It was called {@code refusalFor}, which reads as a query, and <b>two of its five arms answer
+     * it by mutating the player's item</b>: a matured reload refills the magazine, and an unstamped
+     * item is stamped full and written back. That is inherent to lazy integration and the lazy design
+     * is right -- <i>the read IS the commit point</i>, which is exactly why there is no expiry event
+     * to miss. The hazard was never the behaviour; it was a name that invited a speculative caller.
+     *
+     * <p><b>The reachable misuse, named because it is one piece of work away.</b> A HUD or a tooltip
+     * asking <i>"can this weapon fire right now?"</i> every tick -- and {@code PLAN-action-bar-hud.md}
+     * exists, and the quiver lore line is owed -- would reach for the obvious-looking method and
+     * silently finish reloads and stamp items as a side effect of RENDERING. Nothing in the signature
+     * would have warned them, and the bug would present as reloads completing early, which looks like
+     * the timer working rather than like a read doing a write.
+     *
+     * <p><b>So the two questions are now two methods.</b> A caller that wants to ASK calls
+     * {@link #stateOf} and reads {@link QuiverState#fireVerdict} -- pure, no writes, no player
+     * needed. A caller that is actually taking a shot calls this. The split is the repo's own
+     * {@code CombatantSnapshot} / {@code CombatantHandle} distinction one layer down: a value you may
+     * read versus a thing that acts.
+     *
+     * @param player MUST be the owner of this thread -- this reads and writes their main hand.
      */
-    public static Optional<CastResult> refusalFor(Player player, WeaponDefinition weapon,
-                                                  AdapterContext adapters) {
+    public static Optional<CastResult> resolveForShot(Player player, WeaponDefinition weapon,
+                                                      AdapterContext adapters) {
         Keys keys = adapters.keys();
         ItemStack held = player.getInventory().getItemInMainHand();
         long now = Bukkit.getCurrentTick();
@@ -89,11 +109,18 @@ public final class Quivers {
     /**
      * The three stored values as the one core type that knows what they mean together.
      *
-     * <p>This is the whole of the READ half. The reload pair is taken together or not at all --
-     * {@link QuiverState} refuses a half-reload outright, so a partially-written item surfaces as a
-     * thrown exception here rather than as a weapon that behaves oddly.
+     * <p><b>PURE. Reads an item, writes nothing, and needs no {@code Player}.</b> This is the method
+     * a HUD, a tooltip or anything else that wants to ASK about a quiver should call -- then read
+     * {@link QuiverState#fireVerdict}, {@link QuiverState#loaded} or
+     * {@link QuiverState#reloadTicksRemaining} off the result. It is public for exactly that reason:
+     * the safe way to ask has to be the obvious one, or {@link #resolveForShot} will be reached for
+     * instead and will quietly commit reloads as a side effect of rendering.
+     *
+     * <p>The reload pair is taken together or not at all -- {@link QuiverState} refuses a half-reload
+     * outright, so a partially-written item surfaces as a thrown exception here rather than as a
+     * weapon that behaves oddly.
      */
-    private static QuiverState stateOf(ItemStack held, Keys keys) {
+    public static QuiverState stateOf(ItemStack held, Keys keys) {
         OptionalInt loaded = QuiverItems.loadedIn(held, keys);
         Long startedAt = read(held, keys.quiverReloadStartedAt);
         Long completesAt = read(held, keys.quiverReloadCompletesAt);
@@ -108,7 +135,7 @@ public final class Quivers {
         Keys keys = adapters.keys();
         ItemStack held = player.getInventory().getItemInMainHand();
         OptionalInt loaded = QuiverItems.loadedIn(held, keys);
-        if (loaded.isEmpty()) return;   // warned about in refusalFor; never silently invent a count
+        if (loaded.isEmpty()) return;   // warned about in resolveForShot; never silently invent a count
 
         int spent = Quiver.spend(loaded.getAsInt());
         held.editMeta(meta -> meta.getPersistentDataContainer()
@@ -132,7 +159,7 @@ public final class Quivers {
         ItemStack held = player.getInventory().getItemInMainHand();
         long now = Bukkit.getCurrentTick();
 
-        // Same split as refusalFor: the verdict is core's, and each arm below is a core row.
+        // Same split as resolveForShot: the verdict is core's, and each arm below is a core row.
         // ALREADY_RELOADING is the held-input case -- ~20 arm-swing packets a second, every one of
         // which would otherwise push the deadline another reload_ticks away and leave a weapon that
         // never comes back. ALREADY_FULL spares a habitual press three dead seconds.

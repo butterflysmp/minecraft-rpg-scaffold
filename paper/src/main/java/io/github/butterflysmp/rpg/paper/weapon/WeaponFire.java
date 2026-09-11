@@ -104,7 +104,7 @@ public final class WeaponFire {
         // whose magazine is empty unable to do the one thing that refills it -- a deadlock whose
         // only symptom is a weapon that has stopped working.
         if (weapon.hasQuiver() && !input.equals("left_click")) {
-            Optional<CastResult> refusal = Quivers.refusalFor(player, weapon, adapters);
+            Optional<CastResult> refusal = Quivers.resolveForShot(player, weapon, adapters);
             if (refusal.isPresent()) return refusal;
         }
 

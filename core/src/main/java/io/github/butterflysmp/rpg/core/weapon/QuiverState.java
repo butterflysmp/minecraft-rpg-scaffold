@@ -11,7 +11,7 @@ import java.util.OptionalLong;
  *
  * <p>{@link Quiver} holds the arithmetic and was unit-tested from the start. The COMPOSITION of that
  * arithmetic into an answer -- <i>may this weapon fire right now?</i> -- first landed in
- * {@code paper}'s {@code Quivers.refusalFor}, which takes a {@code Player} and therefore <b>can
+ * {@code paper}'s {@code Quivers.resolveForShot} (then named {@code refusalFor}), which takes a {@code Player} and therefore <b>can
  * never be unit-tested in this project</b>: {@code new ItemStack(...)} throws without a running
  * server and there is no MockBukkit. The decision of the whole slice sat in the one layer no test
  * can reach.
