@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.weapon.Quiver;
+import io.github.butterflysmp.rpg.core.weapon.QuiverState;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -13,6 +14,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 /**
  * The quiver's live state on a held weapon: whether it may fire, spending a round, starting and
@@ -54,37 +56,51 @@ public final class Quivers {
         Keys keys = adapters.keys();
         ItemStack held = player.getInventory().getItemInMainHand();
         long now = Bukkit.getCurrentTick();
+        QuiverState state = stateOf(held, keys);
 
+        // READ, DECIDE, DELIVER -- and the DECIDE is not here. The ordering of these cases is the
+        // real content of this method, and every one of them is now a core row with a mutation
+        // behind it (QuiverStateTest): a running reload beats empty, a MATURED reload fires rather
+        // than dropping the press, an unstamped item is a defect and not an empty magazine.
+        return switch (state.fireVerdict(now)) {
+            case FIRE -> Optional.empty();
+            case EMPTY -> Optional.of(new CastResult.Empty());
+            case RELOADING -> Optional.of(new CastResult.Reloading(state.reloadTicksRemaining(now)));
+            case RELOAD_MATURED -> {
+                // The read IS the tick: the reload finished the moment anything looked. Refill and
+                // let the shot through, so the press that matures a reload is not wasted.
+                finishReload(player, held, weapon, keys);
+                yield Optional.empty();
+            }
+            case UNSTAMPED -> {
+                // A mint path failed to stamp a count. Refusing to fire would hide that behind a
+                // message that reads perfectly reasonable; repairing it loudly leaves the weapon
+                // usable and the defect visible. warnOnce because this runs on every shot.
+                adapters.warnOnce("weapon '" + weapon.id() + "' declares a quiver but an item in"
+                        + " play carries NO count -- it was minted by a path that does not stamp"
+                        + " one. Treating it as full; the defect is in that mint path, not the item.");
+                held.editMeta(meta -> QuiverItems.stampFull(meta, weapon, keys));
+                player.getInventory().setItemInMainHand(held);
+                yield Optional.empty();
+            }
+        };
+    }
+
+    /**
+     * The three stored values as the one core type that knows what they mean together.
+     *
+     * <p>This is the whole of the READ half. The reload pair is taken together or not at all --
+     * {@link QuiverState} refuses a half-reload outright, so a partially-written item surfaces as a
+     * thrown exception here rather than as a weapon that behaves oddly.
+     */
+    private static QuiverState stateOf(ItemStack held, Keys keys) {
+        OptionalInt loaded = QuiverItems.loadedIn(held, keys);
         Long startedAt = read(held, keys.quiverReloadStartedAt);
         Long completesAt = read(held, keys.quiverReloadCompletesAt);
-        if (startedAt != null && completesAt != null) {
-            if (!Quiver.reloadComplete(now, startedAt, completesAt)) {
-                return Optional.of(new CastResult.Reloading(
-                        Quiver.reloadTicksRemaining(now, startedAt, completesAt)));
-            }
-            finishReload(player, held, weapon, keys);
-            return Optional.empty();   // it matured on this very read, so the shot goes through
+        if (startedAt == null || completesAt == null) {
+            return new QuiverState(loaded, OptionalLong.empty(), OptionalLong.empty());
         }
-
-        OptionalInt loaded = QuiverItems.loadedIn(held, keys);
-        if (loaded.isEmpty()) {
-            // ABSENCE IS NOT EMPTINESS, and conflating them is the trap this whole design is built
-            // around. A weapon whose definition declares a quiver but whose item carries no count
-            // was never stamped -- a defect in a mint path, not a spent magazine. Refusing to fire
-            // would hide it behind a message that reads perfectly reasonable; stamping it full says
-            // so loudly and leaves the weapon usable.
-            adapters.warnOnce("weapon '" + weapon.id() + "' in "
-                    + player.getName() + "'s hand declares a quiver but carries NO count -- it was"
-                    + " minted by a path that does not stamp one. Treating it as full; this is a"
-                    + " defect in that mint path, not in the item.");
-            held.editMeta(meta -> QuiverItems.stampFull(meta, weapon, keys));
-            player.getInventory().setItemInMainHand(held);
-            return Optional.empty();
-        }
-
-        return Quiver.isEmpty(loaded.getAsInt())
-                ? Optional.of(new CastResult.Empty())
-                : Optional.empty();
+        return new QuiverState(loaded, OptionalLong.of(startedAt), OptionalLong.of(completesAt));
     }
 
     /** Spend one round off the held weapon. Called only after a Success. */
@@ -116,21 +132,23 @@ public final class Quivers {
         ItemStack held = player.getInventory().getItemInMainHand();
         long now = Bukkit.getCurrentTick();
 
-        // Already reloading: the held-input case, and the one that must NOT restart the timer. A
-        // player holding left-click would otherwise reload forever, each packet pushing the deadline
-        // another reload_ticks away -- a weapon that never comes back, with no error anywhere.
-        Long startedAt = read(held, keys.quiverReloadStartedAt);
-        Long completesAt = read(held, keys.quiverReloadCompletesAt);
-        if (startedAt != null && completesAt != null) {
-            if (!Quiver.reloadComplete(now, startedAt, completesAt)) return false;
-            finishReload(player, held, weapon, keys);
-            return false;
+        // Same split as refusalFor: the verdict is core's, and each arm below is a core row.
+        // ALREADY_RELOADING is the held-input case -- ~20 arm-swing packets a second, every one of
+        // which would otherwise push the deadline another reload_ticks away and leave a weapon that
+        // never comes back. ALREADY_FULL spares a habitual press three dead seconds.
+        switch (stateOf(held, keys).reloadVerdict(now, weapon.quiverSize())) {
+            case ALREADY_RELOADING, ALREADY_FULL -> { return false; }
+            case RELOAD_MATURED -> {
+                finishReload(player, held, weapon, keys);
+                return false;
+            }
+            case UNSTAMPED -> {
+                // Repaired on the firing path, which every quiver weapon reaches first; reloading a
+                // never-stamped item is not the place to invent a count.
+                return false;
+            }
+            case BEGIN -> { /* fall through to the write below */ }
         }
-
-        // Already full: nothing to do, and saying so is better than a 3-second dead weapon for a
-        // player who pressed reload out of habit.
-        OptionalInt loaded = QuiverItems.loadedIn(held, keys);
-        if (loaded.isPresent() && loaded.getAsInt() >= weapon.quiverSize()) return false;
 
         held.editMeta(meta -> {
             meta.getPersistentDataContainer().set(keys.quiverReloadStartedAt,

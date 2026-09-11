@@ -533,6 +533,35 @@ well, and is worth writing down so A2 does not pay for it out of habit.
 
 ---
 
+## THE VERDICT IS CORE'S — a correction, and the signal that exposed it
+
+The plan argued the `Durability` split and then broke it. `Quiver` (the arithmetic) went to core and
+earned rows and mutations; the **composition** of those primitives into an answer — *may this weapon
+fire?* — landed in `paper`'s `Quivers.refusalFor`, which takes a `Player` and therefore **can never
+be unit-tested here**. The decision of the whole slice sat in the one layer no test can reach.
+
+> **THE TELL WAS A SUITE TOTAL THAT DID NOT MOVE.** Commit 3 added **303 lines of production code in
+> two new classes and zero test rows**, and `882 / 17 / 607 = 1506` was re-read after the last file
+> landed and quoted as routine. **Re-reading the figure is the rule; noticing when it has not moved
+> is what the rule is for.** An unchanged total after two new classes is the loudest line in a
+> report, and it was written as though it were the quietest.
+
+`QuiverState` (core) now holds the verdicts, and `Quivers` is read-and-translate. **The four
+orderings are core rows with mutations behind them**, where before they were expressed only in a
+method nothing could call:
+
+| ordering | why it matters | mutation |
+|---|---|---|
+| a **running** reload beats `EMPTY` | mid-reload the stored count is 0; "empty — left-click to reload" during a reload is wrong | `MUTORDER` |
+| a **matured** reload beats `EMPTY` | else the press that finishes a reload is **dropped** and feels like input lag | `MUTORDER`, `MUTMATURE` |
+| `UNSTAMPED` ≠ `EMPTY` | a forgotten stamp becomes a weapon that silently never fires | `MUTABSENT` |
+| reload on a full magazine is refused (`>=`, not `==`) | reachable once A2 moves capacity: a count above capacity would offer a reload that only reduces it | `MUTFULL` |
+
+**What stays in `Quivers` is read-and-translate only**: resolve three PDC values into a
+`QuiverState`, switch on the verdict, write the item, send the notice. The one judgement left there
+is *which side effect each verdict gets* — and that is genuinely Bukkit's (refill the stack, warn,
+mint a `CastResult`), so **the boot gate is its sole witness** and `GATE-quiver.md` must say so.
+
 ## The refusals — two new `CastResult` arms, not a reused `Broken()`
 
 The brief says to reuse `CastResult.Broken` + `BrokenNotice`'s 40-tick throttle rather than invent
