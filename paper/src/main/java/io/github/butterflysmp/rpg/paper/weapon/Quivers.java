@@ -96,6 +96,27 @@ public final class Quivers {
                 // A mint path failed to stamp a count. Refusing to fire would hide that behind a
                 // message that reads perfectly reasonable; repairing it loudly leaves the weapon
                 // usable and the defect visible. warnOnce because this runs on every shot.
+                //
+                // *** NO SHIPPED PATH REACHES THIS ARM, AND IT IS KEPT ANYWAY. ***
+                //
+                // Since the carry landed, EVERY mint and re-mint routes through WeaponItems.mint
+                // (which stamps) or GearItems.carryInstanceData (which carries) -- so production
+                // cannot currently produce an item that reaches here. This repo's rule is that a
+                // guard with no instances is DELETED if mechanism-unreachable and owes FORWARD
+                // COVER if it is guarding something that does not exist yet. This owes forward
+                // cover, and here it is.
+                //
+                // WHAT WOULD REACH IT: a fifth mint path added later that builds a weapon ItemStack
+                // without going through mint() -- the exact mistake the two-funnel design makes hard
+                // and does not make impossible. That is the whole reason absence and emptiness are
+                // kept apart: without this arm such a path yields a weapon that silently never
+                // fires, and the symptom is indistinguishable from a spent magazine.
+                //
+                // ITS ONLY EXERCISE IS QuiverStateTest.anUnstampedQuiverIsADefectAndNotAnEmptyMagazine,
+                // which covers the VERDICT. The side effect below -- warn, stamp, write back -- is
+                // witnessed by NOTHING, because staging it needs an item production cannot make.
+                // GATE-quiver.md says so rather than carrying a row nobody can run. Do not read the
+                // green suite around this block as coverage of it.
                 adapters.warnOnce("weapon '" + weapon.id() + "' declares a quiver but an item in"
                         + " play carries NO count -- it was minted by a path that does not stamp"
                         + " one. Treating it as full; the defect is in that mint path, not the item.");

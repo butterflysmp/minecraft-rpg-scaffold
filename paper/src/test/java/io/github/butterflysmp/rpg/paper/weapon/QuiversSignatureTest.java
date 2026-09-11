@@ -59,10 +59,26 @@ class QuiversSignatureTest {
         assertEquals(QuiverState.class, stateOf.getReturnType(),
                 "it must hand back the core value type, so the asking happens in core and not here");
 
+        // "TAKES NO Player" IS A PROXY FOR PURITY, AND IT IS DOCUMENTED AS ONE RATHER THAN AS THE
+        // RULE -- because this sentence is what a future reader reasons from when deciding whether
+        // some NEW method qualifies, and the obvious reading of it is wrong.
+        //
+        // THE ACTUAL MECHANISM: writes in this class are `held.editMeta(...)` on an ItemStack --
+        // the UNSTAMPED arm does exactly that -- followed by setItemInMainHand to persist the copy
+        // back. Bukkit's getItemInMainHand hands out a COPY, so editing the meta alone changes
+        // nothing the player can see; THE PLAYER IS THE HALF THAT PERSISTS. So a Player is not what
+        // ENABLES a write, it is what makes a write STICK.
+        //
+        // The proxy holds because of that copy semantics, not because Player is the write capability.
+        // A method taking only an ItemStack could still call editMeta and mutate a caller's stack --
+        // so a future addition must be judged on whether it edits meta at all, and this check is the
+        // cheap mechanical half, not the definition.
         for (Class<?> parameter : stateOf.getParameterTypes()) {
             assertTrue(!parameter.getName().endsWith(".Player"),
-                    "stateOf must not take a Player: needing one is what makes a method look like it "
-                            + "may write, and is how resolveForShot got reached for instead");
+                    "stateOf must not take a Player. That is a PROXY for purity (see the comment "
+                            + "above): writes here are editMeta + setItemInMainHand, and the Player "
+                            + "is the half that persists them, so needing one marks the committing "
+                            + "path -- it does not define it.");
         }
     }
 
