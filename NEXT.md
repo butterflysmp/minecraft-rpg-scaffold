@@ -9568,14 +9568,35 @@ git grep -n 'content/weapons' -- '*/src/test/*.java'
 
 #### (a) TESTS THAT WOULD FAIL, versus TESTS THAT MERELY MENTION
 
-| weapon | WOULD FAIL | merely mention | blanket said |
-|---|---|---|---|
-| `hunters_bow` | **3** — `WeaponLoaderTest`, `WeaponLoreTest`, `GoldenLoreTest` | 14 | 17 |
-| `ironblade` | **3** — `WeaponLoaderTest`, `WeaponLoreTest`, `GoldenLoreTest` | 11 | 14 |
-| `quiver_stone` | **1** — `GoldenLoreTest` | 8 | 9 |
+**CORRECTED 2026-09-12: the failure counts are 4 / 4 / 2, not 3 / 3 / 1.** The first draft of this
+table put `golden-lore.txt` in **neither** column — excluded from the failure count because it is data
+rather than a test, and excluded from "merely mention" by a parenthetical. **A file that must change
+before the suite is green is a file the deletion breaks**, whatever its extension. The corrected
+figure counts it, and the accounting below separates it so the two kinds stay distinguishable.
 
-*(the "merely mention" column excludes `golden-lore.txt`, which is a resource and is counted in (c);
-17 = 3 + 14 counts `golden-lore.txt` inside the 17, so 17 − 2 java failures − 1 resource = 14.)*
+| weapon | MUST CHANGE OR FAIL | merely mention | blanket said |
+|---|---|---|---|
+| `hunters_bow` | **4** | 14 | 17 |
+| `ironblade` | **4** | 11 | 14 |
+| `quiver_stone` | **2** | 8 | 9 |
+
+**Broken out, because the four are three different kinds of thing:**
+
+| | `hunters_bow` | `ironblade` | `quiver_stone` |
+|---|---|---|---|
+| fails, and **names** the weapon | `WeaponLoaderTest`, `WeaponLoreTest` | `WeaponLoaderTest`, `WeaponLoreTest` | — |
+| fails, **naming nothing** | `GoldenLoreTest` | `GoldenLoreTest` | `GoldenLoreTest` |
+| **data that must be regenerated** | `golden-lore.txt` | `golden-lore.txt` | `golden-lore.txt` |
+| **total** | **4** | **4** | **2** |
+
+**Reconciles against the blanket by addition.** The blanket counts files *mentioning* the weapon, so
+it contains the naming failures and `golden-lore.txt`, and does **not** contain `GoldenLoreTest`:
+
+```
+hunters_bow    17 = 2 naming failures + 1 golden-lore.txt + 14 mention-only
+ironblade      14 = 2 naming failures + 1 golden-lore.txt + 11 mention-only
+quiver_stone    9 = 0 naming failures + 1 golden-lore.txt +  8 mention-only
+```
 
 > **THE BLANKET UNDERCOUNTS BREAKAGE, AND THE FILE IT MISSES IS THE ONE CERTAIN TO BREAK.**
 > **`GoldenLoreTest` never names any of the three weapons.** It loads the whole directory, so it is
