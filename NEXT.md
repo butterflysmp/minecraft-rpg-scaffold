@@ -9531,6 +9531,139 @@ told to rewrite and did not.
 expect. When you have just changed an input, *unmodified* is the alarming answer, and it is precisely
 the one that looks like nothing happened.
 
+### MEASURED 2026-09-12 — WHAT DELETING `hunters_bow`, `ironblade` OR `quiver_stone` ACTUALLY COSTS
+
+**A MEASUREMENT, NOT A PLAN, AND THE DELETION IS NOT STARTED.** Taken at `6173a8a`
+(`origin/feat/boltor`; local `HEAD` byte-identical, tree clean). Recorded before anything is removed
+so the decision is made on a shape rather than on a blanket.
+
+**THE BLANKET IT REPLACES, REPRODUCED FIRST so the two are comparable.** File counts of *mentions*:
+
+```
+hunters_bow   docs 11  java(main) 11  test 17  content 5
+ironblade     docs 18  java(main)  6  test 14  content 7
+quiver_stone  docs  8  java(main)  9  test  9  content 3
+```
+
+**None of those are breakage.** Separating dependency from mention changes the picture completely.
+
+#### THE STRUCTURAL FACT THAT DOES MOST OF THE WORK
+
+**`core/src/test/resources` DOES NOT EXIST.** `core` is pure Java with zero dependencies, so **no
+`core` test can load content at all** — every weapon id in a `core` test is a hand-built fixture or a
+comment. Verified: the only two `core` test files matching `content/weapons` match it *in prose*
+(`RefreshVerdictTest:98`, `WeaponQuiverDefinitionTest:24`).
+
+So **only three test files can break**, because only three read `content/weapons/`:
+
+```
+git grep -n 'content/weapons' -- '*/src/test/*.java'
+
+  WeaponLoaderTest   :670 ironblade.yml   :776 hunters_bow.yml
+                     :860 "/content/weapons/" + id   over {hunters_bow, emberblade, ember_staff}
+  WeaponLoreTest     :282 copyBundled over {ironblade, emberblade, hunters_bow, ember_staff,
+                                            ability_stone}
+  GoldenLoreTest     :132 loadAll(content/weapons) — ALL weapons, compared to golden-lore.txt
+```
+
+#### (a) TESTS THAT WOULD FAIL, versus TESTS THAT MERELY MENTION
+
+| weapon | WOULD FAIL | merely mention | blanket said |
+|---|---|---|---|
+| `hunters_bow` | **3** — `WeaponLoaderTest`, `WeaponLoreTest`, `GoldenLoreTest` | 14 | 17 |
+| `ironblade` | **3** — `WeaponLoaderTest`, `WeaponLoreTest`, `GoldenLoreTest` | 11 | 14 |
+| `quiver_stone` | **1** — `GoldenLoreTest` | 8 | 9 |
+
+*(the "merely mention" column excludes `golden-lore.txt`, which is a resource and is counted in (c);
+17 = 3 + 14 counts `golden-lore.txt` inside the 17, so 17 − 2 java failures − 1 resource = 14.)*
+
+> **THE BLANKET UNDERCOUNTS BREAKAGE, AND THE FILE IT MISSES IS THE ONE CERTAIN TO BREAK.**
+> **`GoldenLoreTest` never names any of the three weapons.** It loads the whole directory, so it is
+> invisible to a mention grep and it fails for **every** weapon deleted. A file can break without
+> mentioning the thing that broke it, and that is precisely the file a `git grep -l` survey cannot
+> see.
+
+> **`quiver_stone` HAS NINE TEST-FILE MENTIONS AND ZERO TESTS THAT WOULD FAIL** beyond the golden.
+> `WeaponLoaderTest` mentions it only in a comment; `WeaponLoreTest:411-414` builds its own
+> `new WeaponDefinition("quiver_stone", …)` rather than loading the file; `QuiverSizeTest`,
+> `ReloadTimeTest` and `FireCadenceTest` are `core` and cannot load anything. **The weapon with the
+> most alarming-looking coupling to the quiver machinery is the one whose file nothing reads.**
+
+#### (b) JAVA MAIN — WHAT GOES STALE RATHER THAN BREAKS
+
+**Every mention in `main` is a comment except ONE**, across all three weapons and all 26 file-mentions:
+
+```
+hunters_bow  11 files: BasicMelee, CastExecutor, CastSpec, FireCadence, WeaponDefinition,
+                       RpgCommand*, AbilitySchema, WeaponLoader, RpgListeners, BrokenNotice,
+                       WeaponItems
+ironblade     6 files: AttackSpeedAttribute, BukkitCombatant, ContentValidator, WeaponLoader,
+                       RpgListeners, WeaponFire
+quiver_stone  9 files: FireCadence, QuiverSize, Keys, RpgCommand, WeaponLoader,
+                       QuiverSizeModifierItems, ReloadTimeModifierItems, WeaponFire, WeaponLore
+```
+
+These become **javadocs citing a weapon that does not exist** — the quieter and more durable defect,
+since nothing fails and nothing is listed. **Not fixed here.**
+
+> **THE ONE EXCEPTION IS NOT A COMMENT AND IS NOT MERELY STALE — IT IS USER-FACING AND BECOMES
+> ACTIVELY WRONG.** `RpgCommand.java:1147`, inside `verdictLine`'s `COOLDOWN_LIMITED` arm:
+>
+> ```
+> "NOTE: a magazine or damaged durability gates too -- take this on hunters_bow to isolate the
+>  cooldown."
+> ```
+>
+> **The instrument would print, to an operator at a booted server, an instruction to go take a
+> reading on a weapon that no longer exists.** It is the only line in `main` that changes behaviour
+> rather than accuracy, and it is the same caution that `GATE-boltor.md` row 1 had to reconcile.
+
+#### (c) `golden-lore.txt` — ATTRIBUTION, AND HOW IT WAS ATTRIBUTED
+
+**Method, stated because the number is meaningless without it:** the file is sectioned, each item
+introduced by a `-- <id>` header. **Each header owns every line from itself up to (not including) the
+next `-- ` header or `=== ` section marker, header line included.** 516 lines total; the `WEAPONS`
+section is lines 1–134.
+
+```
+hunters_bow    lines  72- 80   =  9
+ironblade      lines  81- 90   = 10
+quiver_stone   lines 103-116   = 14
+```
+
+**Any deletion forces a regenerate** — the golden is by construction a record of what shipped, and
+`GoldenLoreTest` renders the live directory against it. **And the regenerate is the step this repo
+has already watched fail silently**: a run that exits without writing looks exactly like a correct
+one. Check the artefact.
+
+#### THE COST THAT IS NOT A LINE COUNT, AND IT MUST BE PAID BEFORE DELETION RATHER THAN DISCOVERED
+
+**The input-quantisation model rests on three measured points and TWO ARE IN THE DELETION SET.**
+
+```
+fire interval = ceil(effective_cooldown / 4) x 4
+
+  11 -> 12   quiver_stone   2026-09-12, GATE-q7.md
+  15 -> 16   hunters_bow    2026-09-12, GATE-q7.md
+  16 -> 16   boltor         2026-09-12, GATE-boltor.md row 1 — the ONLY point that fixes `>=`
+```
+
+Delete `hunters_bow` and `quiver_stone` and a model **the whole slice is priced on** has one
+surviving instance — measured on the one weapon that **cannot by itself distinguish the rule from a
+coincidence at 16.**
+
+**The readings do not stop being true.** A measurement is a fact about the system, not about the
+fixture. But the RECORD must say so, or the next reader finds three citations to two weapons that do
+not exist and cannot tell a preserved measurement from a stale one. **Before either weapon is
+removed, restate all three readings in one place**, each carrying the weapon it was taken on, the
+date, and the note that the weapon was subsequently deleted.
+
+#### OPEN — BEN'S TO RULE, NOT MINE
+
+**Is `quiver_stone` in the deletion set?** It is a fixture rather than a weapon a player holds, it
+anchors 14 lines of the golden, and it is one of the two surviving quantisation points. Nothing
+moves until that is ruled.
+
 ### COUNT THE AXES BEFORE COUNTING THE MUTATIONS — THE SEVENTH WAY A MUTATION LIES
 
 **Named 2026-09-12, the elapsed figure. Also in `CLAUDE.md` as the table's seventh row; here with the
