@@ -9531,6 +9531,43 @@ told to rewrite and did not.
 expect. When you have just changed an input, *unmodified* is the alarming answer, and it is precisely
 the one that looks like nothing happened.
 
+### DORMANT FINDINGS — REAL, UNREACHABLE TODAY, WITH INSTANCE COUNTS MEASURED RATHER THAN ASSERTED
+
+**A guard with no instances is not a guard that cannot fire.** Each entry states the count, how it was
+measured, and where its account lives. **Dormant is not absent**, and the distinction is the whole
+reason this register exists: an unreachable defect attracts no symptom, so nothing but a written note
+will carry it to the slice that makes it reachable.
+
+| finding | instances | measured by | account |
+|---|---|---|---|
+| ranged attack-speed **dead zone** | **0** shipped, **1** dev fixture | `effectiveCooldownTicks` call sites; `attack_speed` across `armor/ tools/ enchants/ shields/` | `boltor.yml` at `attack_speed`, and `HeldFireQuantisationPinTest` row 3 |
+| **`quiver_size: 1`** defeats the `COOLDOWN-LIMITED` discharge | **0** | `git grep` for `quiver_size` in `content/weapons/` — only `boltor` 8 and `quiver_stone` 9 | `RpgCommand.verdictLine`'s javadoc |
+
+#### `quiver_size: 1` DEFEATS THE `COOLDOWN-LIMITED` DISCHARGE CONDITION
+
+`/rpg firerate` discharges its magazine/durability caution on **`FIRES mean == min`**. That is sound
+**because such a gate normally interposes on SOME intervals and not others**, stretching the ones it
+touches.
+
+**With a magazine of exactly 1, every shot is followed by a reload, so the gate interposes on EVERY
+interval.** The sample is perfectly regular, `mean == min`, and **the caution discharges itself on a
+sample that is reload-limited rather than cooldown-limited** — exactly the confound it exists to
+catch. `quiver_size: 2` is safe: intervals alternate, `mean > min`, `INCONCLUSIVE`, the correct
+branch. **Only 1 is invisible.**
+
+> **SECOND CASE IN ONE SLICE OF BLINDNESS THROUGH UNIFORMITY RATHER THAN MAGNITUDE.** The first was
+> `INPUT_FLOOR_TICKS` `4 -> 2`, where all three measured cooldowns already landed on the mutated grid.
+> **Both are the value a plausible design produces** — a heavy single-shot weapon; a halved input
+> grid — **and both are invisible to a test that looks at variance.** A variance test sees a gate that
+> fires *sometimes*; it is blind to one that fires *always*, because always is indistinguishable from
+> never by that measure.
+
+> **FOUND AFTER THE RECORD IT BELONGED IN WAS ALREADY WRITTEN, WHICH IS WHY IT NEARLY WASN'T RECORDED
+> AT ALL.** It surfaced during merge review, after the PR body was finalised, so it could not reach
+> the squash — and with the branch deleted the squash body is the only account of that work. **For
+> about an hour this finding existed solely in a chat transcript**, which is not greppable by whoever
+> next edits that string, does not survive the session, and cannot fail.
+
 ### THE THREE QUANTISATION READINGS, RESTATED IN ONE PLACE WHILE THEIR FIXTURES STILL EXIST
 
 **ALL THREE FIXTURES ARE IN THE DELETION SET.** The model below is what the Boltor slice is priced on,
