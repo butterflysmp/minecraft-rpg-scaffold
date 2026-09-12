@@ -633,9 +633,17 @@ public final class HealthState {
      * adds it to the weapon's authored {@code reload_ticks}, so a player wearing nothing reloads at
      * exactly the speed the weapon declares.
      *
-     * <p><b>Positive is a PENALTY</b> -- see the field. Nothing about this accessor enforces a sign;
-     * the content pipeline is increase-only via {@code ReloadTime.boosts}, and the only instrument
-     * A2 ships adds ticks, so a reduction has no in-game source yet.
+     * <p><b>Positive is a PENALTY</b> -- see the field. Nothing about this accessor enforces a sign,
+     * and nothing downstream does either: {@code ReloadTime.declares} gates on {@code != NONE}, so
+     * <b>both directions reach this stat</b>.
+     *
+     * <p><b>This paragraph previously read "the content pipeline is increase-only via
+     * ReloadTime.boosts" -- a statement of a DEFECT written as a design property.</b> That gate was
+     * {@code > NONE}, copied from a stat whose sign is the other way up, and it would have made a
+     * reload-speed item declare nothing and do nothing, silently, on every scan. Caught in review
+     * before the scanner shipped; the operator ruled that the Ranger has reload gear in both
+     * directions, and the helper was renamed off {@code boosts} because that verb was naming the
+     * wrong thing too.
      */
     public double reloadTimeBonusValue() {
         return reloadTimeBonus.value();

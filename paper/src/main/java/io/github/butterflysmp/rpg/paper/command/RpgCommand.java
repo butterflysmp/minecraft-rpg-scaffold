@@ -17,6 +17,7 @@ import io.github.butterflysmp.rpg.core.combat.HealthRegen;
 import io.github.butterflysmp.rpg.core.combat.HitDamage;
 import io.github.butterflysmp.rpg.core.combat.ManaRegen;
 import io.github.butterflysmp.rpg.core.combat.QuiverSize;
+import io.github.butterflysmp.rpg.core.combat.ReloadTime;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
@@ -48,6 +49,7 @@ import io.github.butterflysmp.rpg.paper.health.CritModifierItems;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenModifierItems;
 import io.github.butterflysmp.rpg.paper.health.ManaRegenModifierItems;
 import io.github.butterflysmp.rpg.paper.health.QuiverSizeModifierItems;
+import io.github.butterflysmp.rpg.paper.health.ReloadTimeModifierItems;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheet;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
@@ -448,6 +450,25 @@ public final class RpgCommand {
                         .executes(ctx -> quiverSizeBoost(ctx, adapters, weapons, null))
                         .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 200.0))
                                 .executes(ctx -> quiverSizeBoost(ctx, adapters, weapons,
+                                        DoubleArgumentType.getDouble(ctx, "bonus")))))
+                // Mint a reload_time_boost. NOT a _TEMP, same reason as quiversize.
+                //
+                // THE RANGE IS SIGNED, AND THAT IS THE POINT. Positive ticks mean a SLOWER reload,
+                // so reload-SPEED gear carries a negative -- ruled by the operator, and the reason
+                // ReloadTime.declares gates on != NONE instead of the > NONE every sibling uses.
+                // A bound of 0.0 here would have made the useful direction undrivable from the one
+                // instrument that exists.
+                //
+                // The DEFAULT adds (+14 -> 48) because no reducing default is collision-free at base
+                // 34: every candidate lands on an authored number, and the only survivor (-17)
+                // resolves to 17, the bonus itself. A negative must therefore be typed by hand, and
+                // the row that does it has to read the resolved value rather than assume it -- which
+                // the message below prints.
+                .then(Commands.literal("reloadtime")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> reloadTimeBoost(ctx, adapters, weapons, null))
+                        .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(-200.0, 200.0))
+                                .executes(ctx -> reloadTimeBoost(ctx, adapters, weapons,
                                         DoubleArgumentType.getDouble(ctx, "bonus")))))
                 // Mint a class_damage_boost_TEMP. The class-damage stat bases at 0 and no content
                 // grants it yet, so without this the feature is invisible at boot: hold a MATCHING
@@ -899,6 +920,54 @@ public final class RpgCommand {
         player.sendMessage(Component.text(
                 String.format("Gave quiver_size_boost (+%d arrows: %s). Capacity re-resolves at your "
                         + "next SHOT or RELOAD, not on pickup.", (int) amount, outcome),
+                NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /**
+     * Mint a reload_time_boost.
+     *
+     * <p>Prints the RESOLVED duration in ticks AND seconds, because a reload is a thing you time and
+     * 48 ticks is not a number anyone feels. Composed through {@code ReloadTime.resolve} -- the same
+     * expression {@code Quivers.beginReload} uses -- so the message cannot drift from what the write
+     * actually stamps.
+     *
+     * <p><b>It says "on your next reload", because the deadline is stamped at BEGIN and never
+     * recomputed.</b> Equipping this mid-reload does not lengthen the timer already running, and a
+     * gate row timed against the opposite belief would read as a bug.
+     *
+     * <p><b>A NEGATIVE IS A REAL AND EXPECTED INPUT</b> -- that is what reload-speed gear is. The
+     * message says SLOWER or FASTER rather than leaving a signed number to be read, since the sign
+     * convention here is the opposite of every other stat's.
+     */
+    private static int reloadTimeBoost(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                                       WeaponRegistry weapons, Double bonus) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        double amount = bonus == null ? ReloadTimeModifierItems.DEFAULT_BOOST : bonus;
+        player.getInventory().addItem(ReloadTimeModifierItems.mint(adapters.keys(), amount));
+
+        String outcome = WeaponItems.heldWeaponId(player, adapters.keys())
+                .flatMap(weapons::find)
+                .filter(WeaponDefinition::hasQuiver)
+                .map(weapon -> {
+                    int resolved = ReloadTime.resolve(weapon.reloadTicks(),
+                            adapters.stats().reloadTimeBonusValue(player.getUniqueId()) + amount);
+                    return String.format("%d -> %d ticks (%.2fs -> %.2fs)",
+                            weapon.reloadTicks(), resolved,
+                            weapon.reloadTicks() / 20.0, Math.max(resolved, 0) / 20.0);
+                })
+                .orElse("no quiver weapon held -- hold one and reload to see it");
+
+        player.sendMessage(Component.text(
+                String.format("Gave reload_time_boost (%+d ticks, %s: %s). Takes effect on your NEXT "
+                                + "reload, not on one already running.",
+                        ReloadTime.ticks(amount),
+                        ReloadTime.ticks(amount) > 0 ? "SLOWER"
+                                : ReloadTime.ticks(amount) < 0 ? "FASTER" : "no change",
+                        outcome),
                 NamedTextColor.GREEN));
         return 1;
     }

@@ -69,9 +69,42 @@ public final class ReloadTime {
     /** No bonus. The {@code 0-is-absent} convention every stat helper here shares. */
     public static final int NONE = 0;
 
-    /** Does this bonus change anything at all? Strictly {@code >}, so 0 declares nothing. */
-    public static boolean boosts(int bonusTicks) {
-        return bonusTicks > NONE;
+    /**
+     * Does this amount declare a modifier at all? <b>{@code != NONE}, and it is NOT called
+     * {@code boosts}.</b>
+     *
+     * <p>Every other stat helper in this package gates on {@code > NONE} and is called
+     * {@code boosts}. <b>Copying that here was a defect, caught in review before the scanner that
+     * would have shipped it.</b> This stat's sign is INVERTED -- positive means slower -- so
+     * {@code > NONE} does not mean "increase-only" the way it does for {@link QuiverSize}. It means:
+     *
+     * <pre>{@code
+     * QuiverSize:  > NONE  ->  content cannot make a quiver SMALLER.   A coherent content ruling.
+     * ReloadTime:  > NONE  ->  content can only make a reload SLOWER.  NO RELOAD-SPEED GEAR AT ALL.
+     * }</pre>
+     *
+     * <p>A reload item that helps the player carries a NEGATIVE amount, so {@code boosts(-5)} would
+     * have been {@code false} and <b>the item would have declared nothing and done nothing, silently,
+     * on every scan.</b> Meanwhile {@link #resolve}'s own javadoc calls the downward direction the
+     * real one, and {@code ReloadTimeTest} has the only row in the slice that covers it -- the
+     * arithmetic was built and witnessed for a direction the gate forbade.
+     *
+     * <p><b>The javadoc also asked a different question than the body answered.</b> It read <i>"does
+     * this bonus change anything at all?"</i> -- which is {@code != NONE} -- above a body that said
+     * {@code > NONE}. For {@link QuiverSize} the two coincide in effect; for an inverted stat they
+     * diverge on its primary direction. The question was right and the body was the copy.
+     *
+     * <p><b>RULED by the operator: the Ranger has reload-speed gear, in both directions.</b> The
+     * consequence accepted with it: with no reload floor, a large enough reduction resolves to 0 --
+     * an instant reload. That is the balance question already priced on Q7, not a new one.
+     *
+     * <p><b>{@link QuiverSize#boosts} keeps {@code > NONE} AND its name, deliberately</b>, and this
+     * paragraph exists so nobody unifies them for consistency. Two sibling helpers with different
+     * gates look like an oversight and are not: there, increase-only is a real content ruling and
+     * "boosts" is the true verb; here neither is.
+     */
+    public static boolean declares(int bonusTicks) {
+        return bonusTicks != NONE;
     }
 
     /**
@@ -96,13 +129,16 @@ public final class ReloadTime {
      * like the single site in {@code paper} that reads the stat, and a decision placed there is
      * permanently boot-only.
      *
-     * <p><b>AND THE DIRECTION THIS ARITHMETIC WILL ACTUALLY BE USED IN IS THE ONE NO INSTRUMENT CAN
-     * STAGE.</b> In play, reload gear REDUCES the number -- that is what a player wants from it --
-     * and A2 ships no instrument that moves it down, because at base 34 every collision-free
-     * reducing value lands on an authored number or on the bonus itself. So the downward direction
-     * has exactly one witness in this whole slice, and it is
+     * <p><b>AND THE DIRECTION THIS ARITHMETIC WILL ACTUALLY BE USED IN IS THE ONE NO <i>DEFAULT</i>
+     * CAN STAGE.</b> In play, reload gear REDUCES the number -- that is what a player wants from it,
+     * and {@link #declares} permits it. What A2 cannot supply is a reducing DEFAULT: at base 34
+     * every collision-free reducing value lands on an authored number or on the bonus itself, so the
+     * instrument's default adds (+14 -> 48) and {@code /rpg reloadtime <negative>} is how a
+     * human-driven boot row drives the other way, reading the collision caveat at that command.
+     *
+     * <p>So the downward direction has exactly one UNATTENDED witness in this slice, and it is
      * {@code ReloadTimeTest.theResolvedDurationGoesDownFreelyAndZeroIsAnInstantReload}. Do not delete
-     * it as redundant with the upward rows; nothing else covers that half.
+     * it as redundant with the upward rows; nothing else covers that half without a person driving it.
      *
      * @param authoredTicks  the weapon's own {@code reload_ticks}, already validated {@code > 0}
      * @param bonusStatValue {@code HealthState}'s summed modifiers, in ticks

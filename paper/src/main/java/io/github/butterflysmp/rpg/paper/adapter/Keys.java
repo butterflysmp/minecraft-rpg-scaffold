@@ -102,6 +102,23 @@ public final class Keys {
     public final NamespacedKey quiverSizeBoost;
 
     /**
+     * Marks the reload_time_boost dev instrument and stores its tick bonus (a DOUBLE) in the PDC.
+     *
+     * <p>PERMANENT, like {@link #quiverSizeBoost} and for the same reason: A2 ships no quiver
+     * enchant, so after this slice this is the only thing that can move reload time.
+     *
+     * <p><b>A SEPARATE KEY FROM {@link #quiverSizeBoost}, AND THE PAIR IS WHAT THE SLICE PAID FOR.</b>
+     * One item carrying both bonuses has no staging in which one stat moves and the other does not,
+     * so no gate row could make the negative observation. Two keys, two command arms and two scanners
+     * is the price of being able to watch one stat hold still.
+     *
+     * <p><b>The value may be NEGATIVE</b>, unlike every other boost key here: positive ticks mean a
+     * SLOWER reload, so reload-speed gear carries a reduction. {@code ReloadTime.declares} gates on
+     * {@code != NONE} rather than {@code > NONE} for exactly that reason.
+     */
+    public final NamespacedKey reloadTimeBoost;
+
+    /**
      * Marks the class_damage_boost_TEMP dev item and stores its bonus (a DOUBLE) in the item's PDC.
      * Paired with {@link #classDamageBoostClass} -- this is the first fixture needing TWO values,
      * because a class-typed grant is meaningless without the class it grants to. An item carrying
@@ -268,6 +285,7 @@ public final class Keys {
         this.healthRegenBoost = new NamespacedKey(plugin, "health_regen_boost_temp");
         this.manaRegenBoost = new NamespacedKey(plugin, "mana_regen_boost_temp");
         this.quiverSizeBoost = new NamespacedKey(plugin, "quiver_size_boost");
+        this.reloadTimeBoost = new NamespacedKey(plugin, "reload_time_boost");
         this.classDamageBoost = new NamespacedKey(plugin, "class_damage_boost_temp");
         this.classDamageBoostClass = new NamespacedKey(plugin, "class_damage_boost_temp_class");
         this.mobId = new NamespacedKey(plugin, "mob_id");

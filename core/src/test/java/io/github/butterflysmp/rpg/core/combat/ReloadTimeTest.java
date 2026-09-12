@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * collision-free reducing value lands on an authored number or on the bonus itself. So this class is
  * the whole of the slice's coverage for the direction the feature will actually be used in.
  *
- * <p>Each row names what it forces red. <b>Two were RUN</b>, spliced by line number, marker grepped
+ * <p>Each row names what it forces red. <b>Three were RUN</b>, spliced by line number, marker grepped
  * both directions, byte delta recomputed from the edit:
  *
  * <table><tr><th>mutation</th><th>edit</th><th>bytes</th><th>result</th></tr>
@@ -33,9 +33,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *     <td>+14 = 0 + 14</td>
  *     <td><b>1 of 7 red</b> on {@code -2.1}, which is this stat's LIVE direction -- a row staged
  *     only on positives would have stayed green</td></tr>
+ * <tr><td>{@code MUTGATE}</td><td>{@code declares}: {@code != NONE} -> {@code > NONE}, i.e. the
+ *     sibling's gate, which is what this file shipped with for one commit</td>
+ *     <td>+10 = -1 + 11</td>
+ *     <td><b>2 red, in BOTH modules</b>: this class's gate row and
+ *     {@code ReloadTimeModifierItemsTest.aReducingInstrumentDECLARESAModifierRatherThanBeingSilentlyDropped}.
+ *     The scanner and the helper are guarded independently, so reverting either one is caught.</td></tr>
  * </table>
  *
- * <p>Both restored from a scratchpad copy, byte-identical by {@code cmp}, {@code markers left: 0}.
+ * <p>All three restored from scratchpad copies, byte-identical by {@code cmp}, {@code markers left: 0}.
  */
 class ReloadTimeTest {
 
@@ -48,15 +54,35 @@ class ReloadTimeTest {
     /** An arbitrary tick to start a reload on -- the arithmetic is relative, the value is not. */
     private static final long NOW = 1_000L;
 
+    /**
+     * ZERO DECLARES NOTHING; A NEGATIVE DECLARES A REDUCTION. <b>The opposite of what this row
+     * asserted when it was written, and the reason is the whole of the {@code declares} rename.</b>
+     *
+     * <p>It read {@code assertFalse(boosts(-1), "a reducing amount must not become a modifier")} --
+     * copied verbatim from {@code QuiverSizeTest}, where it is correct. This stat's sign is
+     * inverted, so that gate forbade <b>reload-speed gear entirely</b>: an item carrying −5 would
+     * declare nothing and do nothing, silently, every scan, while this class's own downward row
+     * proved the arithmetic beneath it worked. <b>Ruled by the operator: both directions.</b>
+     *
+     * <p>Forces red: {@code declares} narrowed back to {@code > NONE} -- which is precisely the
+     * change a later reader makes to bring it into line with its five siblings, so the row asserts
+     * the negative case first and by name.
+     */
     @Test
-    void zeroDeclaresNothingAndSoDoesANegative() {
-        assertFalse(ReloadTime.boosts(ReloadTime.NONE), "0 ticks is not a modifier");
-        assertFalse(ReloadTime.boosts(-1), "a reducing amount must not become a modifier");
-        assertTrue(ReloadTime.boosts(1), "one tick is the smallest bonus that means anything");
-        assertTrue(ReloadTime.boosts(INSTRUMENT_BONUS));
-        // Forces red: boosts relaxed to >= or to != NONE.
-        // AND THE SAME NARROW CLAIM AS QuiverSize: this makes the CONTENT PIPELINE increase-only.
-        // resolve does not consult it, deliberately -- see theResolvedDurationGoesDownFreely...
+    void zeroDeclaresNothingButANEGATIVEDeclaresAReduction() {
+        assertTrue(ReloadTime.declares(-5),
+                "A RELOAD-SPEED ITEM CARRIES A NEGATIVE. Gating on > NONE would drop it silently, "
+                        + "which is what > NONE did here until review caught it.");
+        assertTrue(ReloadTime.declares(-1), "one tick faster is a real modifier");
+        assertTrue(ReloadTime.declares(1), "and one tick slower is too");
+        assertTrue(ReloadTime.declares(INSTRUMENT_BONUS));
+        assertFalse(ReloadTime.declares(ReloadTime.NONE),
+                "only 0 declares nothing -- a no-op source written every scan is churn");
+
+        assertFalse(QuiverSize.boosts(-5),
+                "AND THE SIBLING IS DELIBERATELY THE OTHER WAY: for quiver size, increase-only is a "
+                        + "real content ruling -- content cannot make a quiver smaller. The two "
+                        + "helpers differ because their SIGNS differ, not by oversight.");
     }
 
     @Test

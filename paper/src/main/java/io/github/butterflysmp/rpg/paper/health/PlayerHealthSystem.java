@@ -283,6 +283,17 @@ public final class PlayerHealthSystem implements HealthListener {
             // carry.
             stats.reconcileQuiverSizeModifiers(id, QuiverSizeModifierItems.desiredModifiers(player, keys));
 
+            // RELOAD TIME: ticks added to the held weapon's authored reload. Silent and void, same
+            // as the line above, and for one extra reason of its own -- a running reload's deadline
+            // was STAMPED when it began and is never recomputed, so a change here cannot re-price a
+            // timer already in flight. A1 made that structural by removing the duration from
+            // Quiver.reloadComplete's parameters entirely.
+            //
+            // SEPARATE FROM THE LINE ABOVE, NOT MERGED INTO IT. Two scanners against two targets is
+            // what buys the ability to watch one stat hold still while the other moves; merging them
+            // would delete the only staging in which that observation exists.
+            stats.reconcileReloadTimeModifiers(id, ReloadTimeModifierItems.desiredModifiers(player, keys));
+
             DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player, keys, enchants);
             stats.reconcileDefenseModifiers(id, worn.defense());
             ArmorBarOverride.apply(player, keys, stats.defenseValue(id), worn.nativeArmor());

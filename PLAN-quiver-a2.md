@@ -17,7 +17,7 @@ cooldown is priced on an unmeasured floor.** Carried forward as owed.
 
 ---
 
-## TWO CONSEQUENCES FLAGGED FOR ENDORSEMENT, NOT BURIED
+## THREE CONSEQUENCES FLAGGED FOR ENDORSEMENT, NOT BURIED
 
 **1 · YOU PACK YOUR QUIVER, AND WHAT YOU PACKED IS WHAT YOU CARRY.** Because the stamp enforces
 (below), equipping capacity gear does not change what you can hold until the next **quiver write**.
@@ -35,6 +35,36 @@ whole-arrow modifiers** on the `classDamage` precedent (*"a SUMMAND in points, s
 `quiver_stone`'s 9 rounds **one arrow is 11%** and any percentage under that delivers zero — a
 tooltip advertising a buff that grants nothing. `Quiver.applyPercent` still ships and stays tested:
 it is the rule for a percentage *reaching* an integer stat, not the quiver's own modifier design.
+
+**3 · THE RANGER HAS RELOAD-SPEED GEAR, IN BOTH DIRECTIONS — RULED IN COMMIT 5, BECAUSE THE CODE HAD
+QUIETLY DECIDED THE OPPOSITE.**
+
+`ReloadTime.boosts` was written as `> NONE`, copied from `QuiverSize.boosts` for its SHAPE. The two
+stats have opposite signs, so the same gate means opposite things:
+
+| stat | `> NONE` means | verdict |
+|---|---|---|
+| quiver size | content cannot make a quiver **smaller** | a coherent content ruling |
+| reload time | content can only make a reload **slower** | **there can be no reload-speed gear at all** |
+
+A reload-speed item carries a **negative**, so `boosts(-5)` was `false` and the item would have
+declared no modifier and done nothing — **silently, on every scan** — while `ReloadTime`'s own
+javadoc called the downward direction *"what a player wants from it"* and `ReloadTimeTest` carried
+the slice's only row covering it. The arithmetic was built and witnessed for a direction the gate
+forbade. **The javadoc also asked `!= NONE` above a body that said `> NONE`.**
+
+**Caught in review one commit before the scanner that would have shipped it.** Fixed by renaming to
+`ReloadTime.declares` and gating on `!= NONE`; `QuiverSize.boosts` keeps both its gate and its name,
+and each file now says why the other differs so nobody unifies them for consistency.
+
+> **The consequence accepted with the ruling:** with no reload floor, a large enough reduction
+> resolves to 0 — an instant reload. That is the balance question **already priced on Q7**, not a new
+> one, and it is the same question the third floor retraction left where it sits.
+
+> **What this was, exactly: the sixth shape committed in CODE rather than in a phrase.** The same
+> commit refused that failure explicitly for the rounding justification three methods lower — *"NOT
+> in the phrase those two use to justify it … carried across because it is the house rule, not
+> because it is true of the thing it is attached to"* — and did not look up the page at `boosts`.
 
 ---
 
@@ -331,7 +361,7 @@ A1 ran **15 commits**; largest 12 files / +573, median ~4 files / ~180 lines. A2
 | **2** | quiver size, core half | ~6 | `core/combat/QuiverSize.java` (`NONE`/`boosts`/`contribution`), `HealthState` (**8 members**), `CombatantStats` (**2**), tests |
 | **3** | quiver size, paper half | **13** | `Keys` pair, `QuiverSizeModifierItems` (PERMANENT, no `_TEMP`), reconcile line, `/rpg quiversize`, and `resolveCapacity` switches to the stat. **13 files, not ~7**, because the operator's commit-2 finding rode with it: `QuiverSize.MIN_CAPACITY`, and `Quiver.applyPercent` made to agree with it about whether 0 is a legal capacity. |
 | **4** | reload time, core half | **11** | `core/combat/ReloadTime.java`, `HealthState` (**8 members**), `CombatantStats` (**2**), the downward-direction row. **No `MIN_RELOAD_TICKS`** — third retraction, by deletion. Two riders from commit 3's review: the import-static ban paired with the qualified needles, and "must pass through" as an obligation. |
-| **5** | reload time, paper half | ~7 | same shape — **and `beginReload` reads the stat**, the second and last supply site |
+| **5** | reload time, paper half | **12** | `Keys` pair, `ReloadTimeModifierItems`, reconcile line, `/rpg reloadtime` (**signed range**), and `beginReload` reads the stat — the second and last supply site, measured: `grep -rn "reloadTicks()"` finds exactly one call across both modules. **Plus the blocking ruling below**, which renamed `ReloadTime.boosts` to `declares` and re-gated it. |
 | **6** | `/rpg stats` lines | ~5 | see the signature note below |
 | **7** | prose + gate | ~5 | corrections below, `GATE-quiver-a2.md` — **and the two boot-only rows below, which it must not be descoped without** |
 
@@ -367,6 +397,7 @@ exists now, and descoping commit 7 cannot silently discharge them.
 | `MUTAPPLYLORE2` — pass `empty` while keeping the `capacityInMeta` call | `WeaponItems.applyLore` | **GREEN and will stay green.** This is the live in-game tooltip path. |
 | `MUTSTATREAD` — `QuiverItems.resolveCapacity` returns `weapon.quiverSize()` again, ignoring the stat | `QuiverItems.java` | **GREEN and will stay green.** Added in commit 3. Needs an `ItemStack`; the arithmetic it delegates to is covered in core by `MUTQSMINCAP`/`MUTQSFLOOR`, but *that it delegates at all* is boot-only. |
 | `MUTSCANKEY` — `QuiverSizeModifierItems.desiredModifiers` reads a neighbouring boost key | `QuiverSizeModifierItems.java` | **GREEN and will stay green.** Added in commit 3. Needs a live `Player`. This is the item-level half of the entanglement mutation the two instruments exist for; its other half arrives with the reload scanner in commit 5. |
+| `MUTSCANKEY2` — `ReloadTimeModifierItems.desiredModifiers` reads `keys.quiverSizeBoost` | `ReloadTimeModifierItems.java` | **GREEN and will stay green.** Added in commit 5. Needs a live `Player`. **This completes the entanglement pair**: with both scanners present, the boot row can now hold one instrument and watch the OTHER stat fail to move. The unit-testable half — that the two source prefixes and the two default numbers are disjoint — is covered by `ReloadTimeModifierItemsTest`. |
 
 **ALL FOUR need an `ItemStack` or a `Player` and therefore have no unit test.** Each needs a boot
 row: *equip a capacity modifier, reload, and read the tooltip* covers `MUTAPPLYLORE2`; *fire to the
@@ -389,6 +420,29 @@ That single sequence discriminates three ways at once, which is why it is worth 
 And the **`9/9` before the shot is a required observation, not a formality** — it is the only thing
 that witnesses the endorsed consequence *capacity is as of your last shot or reload*. A row that
 equipped and fired in one motion could not tell that design from a reconcile-loop clamp.
+
+**COMMIT 5 ADDS THE ENTANGLEMENT ROW, WHICH IS THE ONE THE TWO INSTRUMENTS WERE BOUGHT FOR:**
+
+> Hold `quiver_stone`. `/rpg quiversize` AND `/rpg reloadtime`, then fire once and reload once.
+> Tooltip must read a capacity of **28** and the reload must take **48 ticks (2.4s)**.
+> **Then drop ONE instrument and repeat.** The stat it carried returns to its authored value and
+> **the other does not move.**
+
+| what moves when one instrument is dropped | what it means |
+|---|---|
+| only that stat | correct — the scanners are independent |
+| both | `MUTSCANKEY`/`MUTSCANKEY2`: one scanner is reading the other's key |
+| neither | the reconcile loop is not running, or the prefix collided and each wipes the other |
+
+**That last row is why the two SOURCE prefixes are asserted disjoint in a unit test** — the scanners
+walk the same slots on the same player and a shared prefix would make each wipe the other's sources
+on alternate ticks, which presents as "the stat does nothing" rather than as a crossed wire.
+
+**AND THE DOWNWARD RELOAD ROW MUST BE DRIVEN BY HAND**, because no default can be collision-free at
+base 34: `/rpg reloadtime -14` resolves to **20**, which IS an authored number elsewhere in
+`content/`. A row reading 20 must therefore confirm it against the weapon it is holding rather than
+against the set — the one place in this slice where the sweep does not protect the observation, and
+it is stated at the command as well.
 
 > **AND THE PRICE IS A STANDING PROJECT DECISION, WHICH IS THE REUSABLE HALF.** `new ItemStack(...)`
 > throws *"No RegistryAccess implementation found"* without a server and the parent pom's only test
@@ -486,4 +540,10 @@ Traced through `manaRegenBonus`, the most recent stat:
   the qualified needle was blind exactly as predicted, and the row still went red with
   `WeaponFire.java` in the actual list. **A new filter that has only seen passing input has never
   been tested**, which is this repo's own rule applied to a filter it just wrote.
+- **Commit 5's one, red in BOTH modules, delta derivable:** `MUTGATE` (`ReloadTime.declares`
+  `!= NONE` → `> NONE`, i.e. the gate this file shipped with for one commit; `!=`→`>` is −1, marker
+  ` // MUTGATE` is 11 ⇒ **+10**). **2 red across two modules** — `ReloadTimeTest`'s gate row and
+  `ReloadTimeModifierItemsTest`'s, so the helper and the scanner are guarded independently and
+  reverting either is caught. It is the mutation that turns "reload-speed gear exists" from a ruling
+  into a tested one.
 - **Q7 remains owed** and is not discharged by this slice.

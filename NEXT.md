@@ -9752,10 +9752,48 @@ neither sentence had to be true to survive review.
 > gets chosen for tone. **When a change makes a noun wrong, the candidate replacements are the
 > highest-risk words in the file.**
 
-**It is a WRITING failure with a REVIEW cost, not a code failure**, and that is why it needs naming
-separately. The five shapes above all leave something falsifiable in the tree. This one leaves code
-that works and prose that a reader has to check the implementation to disbelieve — which is the
-opposite of the reason comments exist.
+**IT WAS FIRST NAMED AS A WRITING FAILURE WITH A REVIEW COST, AND THE NEXT INSTANCE WAS IN CODE.**
+The five shapes above all leave something falsifiable in the tree. This one leaves code that works
+and prose a reader must check the implementation to disbelieve — and, as the entry below shows, it
+is not confined to prose at all.
+
+> **AND THEN IT HAPPENED IN CODE, WHICH RETIRES THE "WRITING FAILURE" FRAMING ABOVE.** Two days
+> later, quiver A2 commit 4: `ReloadTime.boosts` was written as `return bonusTicks > NONE;` —
+> **copied from `QuiverSize.boosts` for its SHAPE, not its MEANING**, which is the identical error
+> one level down.
+>
+> The two stats' signs are opposite. For quiver size, `> NONE` means *content cannot make a quiver
+> smaller* — a coherent ruling. For reload time, where **positive means slower**, it means *content
+> can only make a reload slower*: **a reload-speed item carries a negative, so `boosts(-5)` is false
+> and the item declares nothing and does nothing, silently, on every scan.** The feature was
+> foreclosed by a copied comparison operator.
+>
+> **Three things made it invisible and all three are the pattern:**
+>
+> - The method's own javadoc asked *"does this bonus change anything at all?"* — which is
+>   `!= NONE` — **above a body that said `> NONE`.** For the stat it was copied from the two coincide
+>   in effect; for an inverted stat they diverge on its primary direction. *The question was right
+>   and the body was the copy.*
+> - `resolve`'s javadoc, **in the same file**, called the downward direction *"what a player wants
+>   from it"*, and the test class carried the slice's only row covering it. **The arithmetic was
+>   built and witnessed for a direction the gate forbade.**
+> - The stat's `HealthState` javadoc recorded *"the content pipeline is increase-only via
+>   ReloadTime.boosts"* — **the defect written down as a design property.**
+>
+> **The sharpest part: the same commit refused this exact failure, explicitly, three methods lower on
+> the same page.** `ticks`'s javadoc says the house phrase *"flooring rounds against the player"* is
+> false here and must not be carried across — *"a phrase carried across because it is the house rule,
+> not because it is true of the thing it is attached to."* That reasoning applies unchanged to
+> `> NONE`, and `boosts` is **above it on the page**.
+>
+> **So the rule generalises past prose: a SHAPE copied from a sibling is a claim that the sibling's
+> MEANING holds here.** Caught in review one commit before the scanner would have shipped it; fixed
+> by renaming to `declares` and gating on `!= NONE`, with each sibling now stating why the other
+> differs. `MUTGATE` reddens in both modules, so it is a tested decision rather than a comment.
+>
+> **The cheap check, and it is one question:** when you copy a helper, ask what its comparison, its
+> default, or its sign is FOR — and whether that reason exists here. If the answer is "it's what the
+> others do", you have copied a shape.
 
 ### THE `presentAlong` PREMISE: CHECKED ON A LOOP'S FIRST ITERATION, GENERALISED TO THE LOOP
 

@@ -116,7 +116,21 @@ public final class QuiverSize {
      */
     public static final int MIN_CAPACITY = 1;
 
-    /** Does this bonus grant anything at all? Strictly {@code >}, so 0 declares nothing. */
+    /**
+     * Does this bonus grant anything at all? Strictly {@code >}, so 0 declares nothing -- <b>and a
+     * NEGATIVE declares nothing either, which for THIS stat is a content ruling rather than an
+     * accident.</b>
+     *
+     * <p>Increase-only here means <i>content cannot make a quiver smaller</i>. That is coherent, and
+     * {@code boosts} is the true verb for it.
+     *
+     * <p><b>{@link ReloadTime} deliberately does NOT match this, and the difference is not an
+     * oversight to tidy away.</b> Its sign is inverted -- positive means slower -- so {@code > NONE}
+     * there would mean <i>content can only make a reload SLOWER</i>, foreclosing reload-speed gear
+     * entirely. It gates on {@code != NONE} and is called {@code declares}. That helper's javadoc
+     * carries the full argument; this note exists so a reader who meets the two together does not
+     * unify them.
+     */
     public static boolean boosts(int bonusArrows) {
         return bonusArrows > NONE;
     }

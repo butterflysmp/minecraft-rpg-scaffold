@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
+import io.github.butterflysmp.rpg.core.combat.ReloadTime;
 import io.github.butterflysmp.rpg.core.weapon.Quiver;
 import io.github.butterflysmp.rpg.core.weapon.QuiverState;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
@@ -222,11 +223,24 @@ public final class Quivers {
             case BEGIN -> { /* fall through to the write below */ }
         }
 
+        // THE SECOND AND LAST SUPPLY SITE, and the claim is measured rather than asserted:
+        // `grep -rn "reloadTicks()" core/src/main/java paper/src/main/java` finds exactly this one
+        // call across both modules. The first supply site is QuiverItems.resolveCapacity. Everything
+        // else that needs either number reads a STAMP.
+        //
+        // AND THE DURATION IS RESOLVED HERE, AT THE BEGIN, THEN NEVER AGAIN. The deadline below is
+        // stamped from it and no read recomputes it, so gear equipped mid-reload cannot lengthen or
+        // shorten a timer already running. A1 made that unrepresentable rather than guarded by
+        // removing reloadTicks from Quiver.reloadComplete's parameters; this line is the one place
+        // the live duration is allowed to matter.
+        int reloadTicks = ReloadTime.resolve(weapon.reloadTicks(),
+                adapters.stats().reloadTimeBonusValue(player.getUniqueId()));
+
         held.editMeta(meta -> {
             meta.getPersistentDataContainer().set(keys.quiverReloadStartedAt,
                     PersistentDataType.LONG, now);
             meta.getPersistentDataContainer().set(keys.quiverReloadCompletesAt,
-                    PersistentDataType.LONG, Quiver.reloadCompletesAt(now, weapon.reloadTicks()));
+                    PersistentDataType.LONG, Quiver.reloadCompletesAt(now, reloadTicks));
         });
         player.getInventory().setItemInMainHand(held);
         player.updateInventory();
