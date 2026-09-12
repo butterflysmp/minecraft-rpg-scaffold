@@ -1,7 +1,38 @@
 # GATE — the quiver, slice A2: quiver size and reload time as real stats
 
-**Status: NOT RUN.** Written at commit 7, before any boot, so the rows are staged from the design
-rather than from what a run happened to show.
+**Status: RUN, 2026-09-12 — ALL SEVEN ROWS PASS.** Written at commit 7, before any boot, so the rows
+were staged from the design rather than from what a run happened to show — **and the run came back
+green against rows written that way.** That pairing is what the provenance sentence was protecting,
+and this is the moment it pays off: nothing below was fitted to an observation.
+
+> **PER-ROW IN SHAPE, BLANKET IN EVIDENCE, AND THIS DOCUMENT SAYS WHICH.** The report was one
+> sentence — *"all gates green"* — not seven readings. A blanket over rows with stated pass
+> conditions answers each of them unambiguously, which is why every row below carries PASS. It does
+> **not** attest them separately.
+>
+> **So two readings this document names as the ones a hurried run skips were not individually
+> reported: R1's middle observation and R7's first.** That is recorded here rather than left for a
+> later reader to discover, because the weight of the evidence is part of the record.
+>
+> **No reading has been written into a result column.** The pass conditions are in the rows already;
+> the result is *green, by blanket*. Inventing `28/28` as though it had been reported would turn a
+> blanket into seven fabricated observations, which is the failure this paragraph exists to prevent.
+
+| row | | |
+|---|---|---|
+| **R1** | **PASS** | by blanket. Its middle observation — *still `9/9` with the instrument held* — was not separately attested. |
+| **R2** | **PASS** | by blanket. |
+| **R3** | **PASS** | by blanket. |
+| **R4** | **PASS** | by blanket. |
+| **R5** | **PASS** | by blanket. |
+| **R6** | **PASS** | by blanket. |
+| **R7** | **PASS** | by blanket. Its first reading — the one that separates the two tooltip mutations — was not separately attested. |
+| **Q7** | **UNRUN** | **Not covered, and cannot be. See below — it is outside the table by construction.** |
+
+**With those rows green, the four mutations below are witnessed.** They were green in the suite and
+reddenable only on a server; a booted world has now answered them.
+
+---
 
 **Branch `feat/quiver`. Fixture `quiver_stone` (`quiver_size: 9`, `reload_ticks: 34`). Instruments
 `/rpg quiversize` (+19 → **28**) and `/rpg reloadtime` (+14 → **48**), both DEV-gated, both
@@ -232,11 +263,23 @@ Reporting it as green would mean nothing; reporting it as run without the number
   retractions. The balance question was left exactly here.
 
 **So A2 hands Q7 forward untouched.** It is not in the table above, because putting it there would
-let a blanket *"the gate ran green"* cover a row that cannot be green.
+let a blanket *"the gate ran green"* cover a row that cannot be green — **and A2's run WAS a
+blanket**, which is exactly the case that construction was for.
+
+> **A2 IS THE SECOND SLICE TO HAND Q7 ON, AND THE NEXT PLAN SHOULD INHERIT THE COUNT.** A1 carried
+> it forward unrun; A2 carried it forward unrun. **A thing owed twice is a different fact from a
+> thing owed once** — it is no longer "not got to yet", it is a measurement two slices have found a
+> reason to defer, and the reason has been the same both times: nothing in either slice needed it,
+> while two things outside both are priced on it.
+>
+> Slice B's plan opens with it, as a count and not as a mention: **owed since A1, deferred twice.**
 
 ---
 
 ## WHAT THIS GATE IS THE SOLE WITNESS FOR
+
+**All four are now witnessed, by the run recorded at the head of this file** — by blanket, not by
+four separate observations.
 
 - **`MUTSTATREAD`, `MUTAPPLYLORE2`, `MUTSCANKEY`, `MUTSCANKEY2`** — all four green in the suite,
   all four only reddenable here.
