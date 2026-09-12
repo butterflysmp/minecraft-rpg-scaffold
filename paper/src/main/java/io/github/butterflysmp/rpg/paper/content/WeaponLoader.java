@@ -210,11 +210,23 @@ public final class WeaponLoader {
      * WITHOUT RE-CHECKING GATE-quiver.md V2"</i>. Make that change and the weapon begins printing
      * "1.8" while firing at 12t ("1.7").
      *
-     * <p><b>ONE BOUNDARY IS UNMEASURED AND IS NOT MODELLED PAST.</b> Neither weapon read had a
-     * cooldown that is an exact multiple of 4, so whether a cooldown of exactly <b>12 fires at 12 or
-     * at 16</b> is unknown -- it is the difference between {@code >=} and {@code >} in
-     * {@code CooldownTracker.isReady}. {@code /rpg firerate} answers it in one hold on a weapon
-     * authored at 12 or 16. Owed, and named as owed.
+     * <p><b>THE BOUNDARY IS MEASURED. 2026-09-12, {@code GATE-boltor.md} row 1: a cooldown of
+     * exactly 16 FIRES AT 16.</b> The comparison in {@code CooldownTracker.isReady} is {@code >=},
+     * and that is now a reading rather than a source-reading: the Boltor read
+     * {@code FIRES count 8, mean 16.00, min 16}, where {@code >} would have given 20.
+     *
+     * <p><b>So the rule above is complete and has no unmeasured case left:</b>
+     *
+     * <pre>
+     * fire interval = ceil(effective_cooldown / 4) x 4
+     *
+     *   11 -> 12   quiver_stone   measured
+     *   15 -> 16   hunters_bow    measured
+     *   16 -> 16   boltor         measured -- the only cooldown that could distinguish >= from >
+     * </pre>
+     *
+     * <p>A cooldown already on the grid fires on its own tick. {@code hunters_bow} could never have
+     * answered this: 15 quantises to 16 under <b>both</b> comparisons.
      *
      * <p>So on a HELD-FIRE QUIVER WEAPON -- a ray or a projectile, which is exactly what the Boltor
      * is -- <b>a misspelled cooldown key means NO COOLDOWN AT ALL.</b> The magazine empties as fast

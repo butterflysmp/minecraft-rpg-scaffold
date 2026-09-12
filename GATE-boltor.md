@@ -1,9 +1,15 @@
 # GATE — the Boltor: the `>=` / `>` boundary, and the beam density at 96 blocks
 
-**Status: NOT RUN.** **Every row below was written before any boot, and no reading has been taken.**
-No figure in this file is an observation; the expected values are pre-recorded predictions, recorded
-so that a later reading can disagree with them. When the row is run, the reading is written *beside*
-the prediction and the prediction is not edited.
+**Status: ROW 1 RUN 2026-09-12 — `min 16`, the comparison is `>=`. ROW 2 NOT RUN.**
+
+**Both rows were written before any boot, and row 1's prediction was exact before the fact.** That
+provenance is the point of this file and it is unchanged by the reading: every expected value here
+was recorded so that a later reading could disagree with it. **Row 1's reading is written BESIDE its
+prediction and the prediction is NOT edited** — a prediction revised after the fact proves nothing,
+and this one needed no revision.
+
+**Row 2 carries no observation at all.** Its figures are still pre-recorded predictions, and nothing
+in this file has changed `samples_per_block`, `size` or `BEAM_ORIGIN_GAP`.
 
 **This gate carries TWO rows, and both are BOOT-ONLY.** It shipped with one — `PLAN-boltor.md:225`,
 *"the boundary row and only that"* — and the density row was added afterwards, deliberately, **before
@@ -79,6 +85,70 @@ periodic on the same grid. The Boltor should do the same. **A mean between 16 an
 `hunters_bow` signature and means the input stream was not periodic — it is not a `>` reading**, and
 the `min` is what settles it.
 
+### THE READING — RUN 2026-09-12. `min 16`. THE COMPARISON IS `>=`.
+
+**Verbatim, `boltor`, `right_click`:**
+
+```
+INPUTS  count 31  window 120t  mean 4.00t   min 4t
+FIRES   count 8   window 112t  mean 16.00t  min 16t
+COOLDOWN-LIMITED
+Sample cleared.
+```
+
+**The prediction above is not edited, and it was EXACT before the fact** — `count 8, mean 16.00,
+min 16`, zero variance, the `quiver_stone` signature, every field. The record should show that it
+was exact in advance rather than adjusted afterwards, which is the only reason the two are printed
+one under the other.
+
+**`CooldownTracker.isReady`'s `>=` is now MEASURED, not assumed.** Under `>` the interval would have
+been 20. Q7's model is confirmed on its one untested point, and all three readings taken to date fit
+it:
+
+```
+fire interval = ceil(effective_cooldown / 4) x 4
+
+   11 -> 12   quiver_stone    measured
+   15 -> 16   hunters_bow     measured
+   16 -> 16   boltor          measured HERE — the only one that could distinguish >= from >
+```
+
+**NOTHING BELOW WAS RE-DERIVED.** The cycle figures were priced in advance on the `>=` branch in
+`PLAN-boltor.md` and they stand exactly as written: **cycle 172t / 8.60s, sustained 0.9302 sh/s,
+17.67 DPS at 19, burst 27.14.** No number moved, and none was recomputed to fit the reading.
+
+#### THE INSTRUMENT'S CAUTION, RECONCILED — IT DOES NOT APPLY TO THIS ROW
+
+The readout printed, as it does on every `COOLDOWN-LIMITED` verdict:
+
+> *NOTE: a magazine or damaged durability gates too — take this on `hunters_bow` to isolate the
+> cooldown.*
+
+**True in general, inapplicable here, and recorded as discharged so it cannot reopen this row later.**
+Three reasons, and the third is the one that matters:
+
+1. **The magazine bounds the COUNT, not the SPACING.** `quiver_size: 8` truncated the sample at 8
+   fires. It did not set the 16-tick interval.
+2. **A gate interposing would appear as a STRETCHED interval.** Seven intervals summing to 112 with
+   `mean 16.00` and `min 16` means **every interval was exactly 16.** None was stretched, so no gate
+   fired inside the window.
+3. **THE SUGGESTED REMEDY IS NOT MERELY UNNECESSARY, IT IS WRONG FOR THIS ROW.** `hunters_bow` at
+   cooldown 15 quantises to 16 under **both** comparisons, so it **cannot discriminate `>=` from `>`
+   at all.** A cooldown of exactly 16 is the only one in the project that can — which is why this row
+   was written against the Boltor and not against the instrument weapon.
+
+#### OBSERVED IN PASSING — NOT ROWS, AND NOT PREDICTED
+
+Neither was this row's question and neither was named before the run. **A figure that arrives free is
+still a figure that was not predicted**, so they are recorded as observations rather than as results.
+
+- **The 4-tick input floor reproduces on a second weapon.** 30 intervals, all exactly 4
+  (`INPUTS count 31, window 120t, mean 4.00, min 4`). Q7's central finding, re-measured independently
+  of the reading it came from.
+- **The quiver gate and the cooldown are both visible in one sample and do not interact.**
+  `quiver_size: 8` gated at exactly 8 fires, and the 60-tick reload had not completed at `t = 120`:
+  inputs at 116 and 120 produced no fire. Two gates, one window, no interference.
+
 ---
 
 ## WHAT THIS ROW DECIDES
@@ -102,6 +172,16 @@ Separately, and true on **either** branch: `20.0/15` and `20.0/16` both format t
 `golden-lore.txt:15` and `:76` are byte-identical and **the tooltip cannot distinguish a 15-tick
 weapon from a 16-tick one.** The wider defect behind that — the formula never sees the quantisation at
 all — is recorded at `WeaponLoader`'s `cooldown_ticks` section, not here.
+
+> **ANSWERED BY THE READING: THE TOOLTIP DOES NOT LIE ON THIS WEAPON.** `min 16` puts the Boltor on
+> the `>=` branch, delivering **1.25/s**, and `"1.3"` is the correct rounding of it. The 30%
+> overstatement was the other branch and did not occur.
+>
+> **This settles the Boltor and settles nothing else.** The formula still divides the AUTHORED
+> cooldown and still cannot see the quantisation — it is right here **by construction** only because
+> 16 is on the 4-tick grid. The wider defect stands exactly as recorded in commit A: 18 of 37
+> authorable values print a rate the weapon does not deliver. **A weapon that happens to be honest is
+> not a formula that is.**
 
 ### 2. EVERY CYCLE FIGURE IN `PLAN-boltor.md`
 

@@ -169,24 +169,38 @@ triggers:
     #
     # THE SOURCE PREDICTS 16: CooldownTracker.isReady is `currentTick >= ready` and trigger stamps
     # `now + cooldownTicks`. That model is 2-for-2 on the measured points (11 -> 12, 15 -> 16).
-    # IT IS STILL A PREDICTION. Those two points could not distinguish this case, and Q7 exists
-    # precisely because a 15-tick cooldown did not produce a 15-tick rate. Read the source, then
-    # MEASURE it: GATE-boltor.md's first row is that reading and only that.
+    # IT WAS A PREDICTION AND IT IS NOW A MEASUREMENT. The two sentences above used to end "IT IS
+    # STILL A PREDICTION ... read the source, then MEASURE it", and that was correct when written:
+    # neither measured point could distinguish this case, and Q7 exists precisely because a 15-tick
+    # cooldown did not produce a 15-tick rate.
     #
-    # NOTHING DOWNSTREAM IS PRICED ON 16 UNTIL THAT ROW CONFIRMS IT. If it reads 20, the grid is
-    # strictly-greater, the honest multiples shift by one, and this number is re-ruled.
+    # READ 2026-09-12, GATE-boltor.md row 1: FIRES count 8, mean 16.00, min 16. THE COMPARISON IS
+    # `>=` AND THIS WEAPON FIRES AT 16. Under `>` it would have read 20. The prediction was exact
+    # before the fact and was not edited afterwards; the reading is recorded beside it in the gate.
+    #
+    # SO THE DOWNSTREAM FIGURES ARE CONFIRMED RATHER THAN RE-DERIVED. This paragraph used to say
+    # "nothing downstream is priced on 16 until that row confirms it". It confirmed it: cycle
+    # 172t / 8.60s, sustained 0.9302 sh/s, 17.67 DPS at 19, burst 27.14 -- all priced in advance on
+    # the >= branch in PLAN-boltor.md, none of them recomputed to fit the reading, none of them
+    # moved. 16 is not re-ruled.
     #
     # THE TOOLTIP ALREADY SHOWS A NUMBER ON THIS BRANCH, AND IT CANNOT SHOW BOTH.
     # WeaponLoreLines.rangedAttackSpeedLabel is String.format("%.1f", 20.0 / cooldownTicks), so this
     # weapon renders "Attack Speed: 1.3". Executed, not predicted -- Java's %.1f rounds HALF_UP where
     # C's printf rounds half-to-even, and 20.0 / 16 is exactly 1.25.
     #
-    #   authored 16 -> tooltip "1.3"    delivers 1.25/s if >=, 1.00/s if >
+    #   authored 16 -> tooltip "1.3"    delivers 1.25/s   MEASURED, so "1.3" is TRUE here
     #   authored 15 -> tooltip "1.3"    hunters_bow, delivering 1.25/s (measured)
     #
-    # So THE TOOLTIP CANNOT TELL A 15-TICK WEAPON FROM A 16-TICK ONE, and on the `>` branch it would
-    # overstate this weapon by 30%. A falsified number shown to a player is the class this project
-    # treats as worst, so it is recorded here rather than left for whoever first times it.
+    # So THE TOOLTIP CANNOT TELL A 15-TICK WEAPON FROM A 16-TICK ONE. The 30% overstatement was the
+    # `>` branch and DID NOT OCCUR -- the reading put this weapon on `>=`.
+    #
+    # AND THAT SETTLES THIS WEAPON AND NOTHING ELSE. The tooltip is right here BY CONSTRUCTION, only
+    # because 16 sits on the 4-tick grid; the formula still divides the AUTHORED cooldown and still
+    # cannot see the quantisation, so 18 of the 37 authorable values 4..40 print a rate the weapon
+    # does not deliver (WeaponLoader's cooldown_ticks section). A WEAPON THAT HAPPENS TO BE HONEST IS
+    # NOT A FORMULA THAT IS. A falsified number shown to a player is the class this project treats as
+    # worst, which is why the wider defect stays recorded even though this weapon escaped it.
     #
     # AND THE ATTACK-SPEED STAT IS LARGELY INERT ON THIS WEAPON, on either branch. Effective cooldown
     # is round(16 / speed), then quantised up to the next input (the >= branch shown):
