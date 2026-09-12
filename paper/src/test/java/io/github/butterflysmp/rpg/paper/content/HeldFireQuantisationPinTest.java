@@ -94,6 +94,23 @@ import static org.junit.jupiter.api.Assertions.fail;
  * no fixture mutation can reach them. The fixture axis is also the half <i>designed</i> to go red on
  * deletion day, so evidence there covers the part that is scheduled to be deleted.
  *
+ * <h2>AND THE MATRIX HAS TWO ASYMMETRIES THAT FAIL IN OPPOSITE DIRECTIONS. THEY ARE A PAIR.</h2>
+ *
+ * <table>
+ *   <tr><th></th><th>unique kills</th><th>what a pruner concludes</th><th>what is true</th></tr>
+ *   <tr><td><b>row 3</b></td><td>{@code MUT-GRID}</td>
+ *       <td>"a balance consequence, and it says it asserts no opinion"</td>
+ *       <td><b>the sole guard of {@code INPUT_FLOOR_TICKS}</b></td></tr>
+ *   <tr><td><b>row 1</b></td><td><b>NONE</b></td>
+ *       <td>"no unique kills, therefore redundant"</td>
+ *       <td><b>the only record of the three readings</b></td></tr>
+ * </table>
+ *
+ * <p><b>Row 3 is a guard nobody would name as one. Row 1 is a record that reads as a redundant
+ * guard.</b> Both are invisible to the framing people use when they prune tests. Each row carries the
+ * warning in its own javadoc as well as here, <b>because the person deleting a row is reading the
+ * row, not the class header.</b>
+ *
  * <h2>AND {@code INPUT_FLOOR_TICKS} IS GUARDED BY EXACTLY ONE ROW, WHICH IS NOT THE ROW NAMED AFTER
  * IT</h2>
  *
@@ -167,6 +184,25 @@ class HeldFireQuantisationPinTest {
      * would have read 20. It is also the only one consistent with <i>"the interval is just the
      * authored cooldown"</i>, which the other two refute — <b>so all three rows are load-bearing and
      * none is redundant.</b>
+     *
+     * <h2>LOAD-BEARING FOR THE READINGS. IT HAS NO UNIQUE MUTATION KILL, BY DESIGN, AND THAT IS NOT
+     * EVIDENCE IT CAN GO.</h2>
+     *
+     * <p><b>Every mutation that reddens this row also reddens {@link
+     * #theAttackSpeedDeadZoneOnTheBoltorRunsToOnePointTwoEight}.</b> A mutation-coverage sweep will
+     * therefore report this row as contributing nothing unique and mark it removable. <b>It is the
+     * row holding the three measured readings</b> — the provenance, the half that cannot be re-derived
+     * once the fixtures are deleted, and the entire reason this file exists.
+     *
+     * <p><b>MUTATION COVERAGE MEASURES GUARDING. THIS ROW EXISTS TO RECORD.</b> The question to ask
+     * before deleting it is <i>what is lost if it goes</i>, not <i>what does it catch</i>. A coverage
+     * metric cannot see provenance, so a row whose job is to make a measurement executable will
+     * always look redundant to it — <b>and will look most redundant exactly when its fixtures are
+     * about to disappear</b>, which is the moment it is most needed.
+     *
+     * <p>It is the exact inverse of the row above it: <b>row 3 is a guard nobody would name as one;
+     * this row is a record that reads as a redundant guard.</b> Both are invisible to the framing
+     * people use when pruning tests, and they fail in opposite directions.
      */
     @Test
     void theModelReproducesEveryMeasuredPoint() {

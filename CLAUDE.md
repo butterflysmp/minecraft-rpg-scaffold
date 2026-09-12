@@ -181,6 +181,25 @@ So:
   > When an in-place edit no-ops, do not retry it with a cleverer pattern. Splice by line
   > number (`head`/`sed -n`/`tail` into the file) and re-grep. Retrying an edit that
   > reports success while doing nothing is how the same failure survives three attempts.
+- **A WRONG DIAGNOSIS OF A BLIND SPOT IS WORSE THAN THE BLIND SPOT.** The blind spot is silent; the
+  diagnosis is **silent AND believed.** A wrong assertion goes red — **wrong advice about the next
+  guard sends the next person to a value that passes while guarding nothing, and they leave
+  satisfied.**
+
+  > **COMPUTE THE CLASS, DO NOT CHARACTERISE IT.** *"The values that are blind"* is a set **with a
+  > definition**, and a description that happens to fit the three examples in front of you **is not
+  > that definition.**
+  >
+  > **2026-09-12.** Having found that all three measured cooldowns were blind to a `4 → 2` grid
+  > mutation, the replacement guard was described as *"any cooldown that is not a multiple of 2"* —
+  > plausible, and **wrong**: `11` and `15` are odd and blind. Computed, the grids disagree exactly
+  > when the authored value is **≡ 1 or 2 (mod 4)**, and the three points are `≡ 3, 3, 0` — *which is
+  > why they are blind*, a fact the characterisation missed entirely. **Anyone following the wrong
+  > advice would have added a green test that guarded nothing.**
+  >
+  > **Practically:** enumerate the set over a range and read off the rule. Three examples are not a
+  > class, and the cheapest way to find that out is a loop.
+
 - Before believing a **test guards** something, **break the thing and watch it fail.**
   A test that cannot fail is worth nothing, however green.
 
@@ -588,6 +607,29 @@ halves, and no amount of care with `perl` reaches the second.
 > row is now the only thing holding that behaviour, and say so in that row's own javadoc.** A test
 > that quietly became load-bearing for something outside its name is deleted by the next person
 > tidying up.
+
+> **AND THE INVERSE, WHICH THE SAME MATRIX EXPOSED: MUTATION COVERAGE MEASURES GUARDING. SOME ROWS
+> EXIST TO RECORD.** **A row with no unique kill is not thereby removable.** The question is **what
+> is lost if it goes**, not what it catches.
+>
+> **A coverage metric cannot see provenance.** So a row whose job is to make a measurement executable
+> will always look redundant to it — and **will look most redundant exactly when its fixtures are
+> about to disappear**, which is the moment it is most needed.
+>
+> **2026-09-12, same file, opposite failure.** In `HeldFireQuantisationPinTest`, **every mutation that
+> reddens row 1 also reddens row 3**, so row 1 has *no unique kill at all* and a sweep would mark it
+> removable. Row 1 is the row holding the three measured readings — the provenance, and the half that
+> cannot be re-derived once the fixtures are deleted.
+>
+> ```
+> row 3   sole killer MUT-GRID   reads as "a balance consequence"     IS the only guard of a constant
+> row 1   NO unique killer       reads as "redundant, prune it"       IS the only record of a reading
+> ```
+>
+> **The two are a pair and they fail in opposite directions: a guard nobody would name as one, and a
+> record that reads as a redundant guard.** Both are invisible to the framing people use when pruning
+> tests. **Mark each in its own row**, not only in the class header — the person deleting a row is
+> reading the row.
 
 > **ROWS TWO AND THREE ARE WHY THE MARKER GREP IS TWO CHECKS, AND WHY YOU NEED BOTH HALVES.** They
 > fail in opposite directions and each half catches exactly one of them:
