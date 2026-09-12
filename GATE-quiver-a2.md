@@ -1,6 +1,10 @@
 # GATE — the quiver, slice A2: quiver size and reload time as real stats
+Both are properties of the ROWS rather than of the code, and both are the kind of defect that makes a
+gate report look clean while proving less than it claims.
 
-**Status: NOT RUN.** Written at commit 7, before any boot, so the rows are staged from the design
+### 1 · NO ROW PASSES BY SOMETHING BEING ABSENT
+
+Checked deliberately, because it is the easiest way to write a row that cannot fail.
 rather than from what a run happened to show.
 
 **Branch `feat/quiver`. Fixture `quiver_stone` (`quiver_size: 9`, `reload_ticks: 34`). Instruments
@@ -23,12 +27,18 @@ pom's only test dependency is `junit-jupiter`), not an accident, and it prices e
 | mutation | what it breaks | the row that catches it |
 |---|---|---|
 | **`MUTSTATREAD`** | `QuiverItems.resolveCapacity` returns `weapon.quiverSize()` again, ignoring the stat | **R1** |
-| **`MUTAPPLYLORE2`** | `WeaponItems.applyLore` passes `empty` for the stamp while still calling `capacityInMeta` | **R1**, final reading |
+| **`MUTAPPLYLORE2`** | `WeaponItems.applyLore` passes `empty` for the stamp while still calling `capacityInMeta` | **R7**, first reading |
 | **`MUTSCANKEY`** | `QuiverSizeModifierItems` reads the reload key | **R3** |
 | **`MUTSCANKEY2`** | `ReloadTimeModifierItems` reads the quiver key | **R3** |
 
-**They are the point of this gate.** A run that reports "the quiver works" without R1's middle
-observation and R3's drop step has not touched any of them.
+**They are the point of this gate.** A run that reports "the quiver works" without **R7's first
+reading**, **R1's middle observation** and **R3's drop step** has not touched any of them.
+
+> **`MUTSTATREAD` AND `MUTAPPLYLORE2` LOOK IDENTICAL ON MOST SCREENS, AND ONLY ONE STAGING SEPARATES
+> THEM.** Both leave a tooltip denominator of `9` where `28` belongs, so R1 catches either and names
+> neither. **R7's first reading is where the NUMERATOR moves too** — `28/28` correct, `9/9` for
+> `MUTSTATREAD`, `28/9` for `MUTAPPLYLORE2`, and that last is a numerator above its denominator,
+> which no correct state in this project can produce.
 
 ---
 
@@ -59,7 +69,7 @@ different; so are 34, 14 and 48; and none of the six appears anywhere in `conten
 | **R4** | with only `/rpg reloadtime` held, empty the magazine and left-click to reload. **Watch it.** | The weapon is dead **visibly longer than bare** — 2.40s against 1.70s — and `/rpg stats` reads `Reload 48t (2.40s)` while it is held. |
 | **R5** | `/rpg reloadtime -14`. Read the command's own line. Then reload. | The command prints **`34 -> 20 ticks (1.70s -> 1.00s), FASTER`**, and the reload that follows is **visibly quicker than bare**. |
 | **R6** | `/rpg stats` bare-handed, then again holding `quiver_stone` with both instruments. | Bare-handed: **exactly eight stat lines, the last being `Crit Damage`**. Holding: **exactly ten**, the last two being **`⚔ Quiver       28`** and **`  Reload       48t (2.40s)`**. |
-| **R7** | hold the quiver instrument, left-click to reload — the tooltip reads **`28/28`**. **Drop the instrument.** Read the tooltip. Then fire **once**. | Still **`28/28`** while dropped and unfired. After the shot: **`9/9`**. |
+| **R7** | hold the quiver instrument, left-click to reload. **Read the tooltip — this is a pass condition, not a setup step.** **Drop the instrument.** Read it again. Then fire **once**. | **THREE readings, all named.** (1) **`Quiver: 28/28`** — see the table below; this is the reading that separates the two tooltip mutations. (2) still **`28/28`** while dropped and unfired. (3) after the shot, **`Quiver: 9/9`**. |
 
 ---
 
@@ -74,17 +84,31 @@ with a different failure mode.
 That behaviour is **endorsed, not tolerated**: *you pack your quiver, and what you packed is what you
 carry.* If it reads `9/28` at step (2), the capacity is being resolved somewhere it should not be.
 
-**Reading (3) discriminates four ways:**
+**Reading (3) discriminates three ways, and the THIRD is deliberately not split further:**
 
 | reading | meaning |
 |---|---|
 | **`8/28`** | correct |
-| `8/9` | **`MUTSTATREAD`** — the write happened, the stat did not reach it |
-| `8/28` on the stored value but `8/9` on screen | **`MUTAPPLYLORE2`** — the stamp is right and the tooltip is not reading it |
+| `8/9` | **`MUTSTATREAD` OR `MUTAPPLYLORE2`** — this row cannot tell them apart. **R7's first reading can.** |
 | `9/28` or `9/9` | the write never happened, or the render did not follow it — **boot row V1's defect**, in a new location |
 
-The third line is why the pass condition is what the **tooltip** says. There is no in-game way to
-read the PDC directly, so the rendered denominator is the only witness `MUTAPPLYLORE2` has.
+> **AND THE MIDDLE LINE USED TO CLAIM FOUR WAYS, ON AN OBSERVATION NOBODY CAN TAKE.** It read
+> *"`8/28` on the stored value but `8/9` on screen"* — and the paragraph that followed it said why
+> that cannot be done: **there is no in-game way to read the PDC directly.** Worked through,
+> the two mutations are identical on screen here:
+>
+> ```
+> MUTSTATREAD     stamp 9,  loaded 8 -> capacityOf(of(9), 9)  = 9  ->  8/9
+> MUTAPPLYLORE2   stamp 28, loaded 8 -> capacityOf(empty, 9)  = 9  ->  8/9
+> ```
+>
+> `/rpg stats` does not rescue it either: the sheet resolves LIVE through `QuiverSize.resolve`, so it
+> reads `28` under both. The row was sending an operator to look for an instrument that does not
+> exist, which is a worse failure than an un-failable row — **it makes the row un-runnable, and an
+> un-runnable row gets guessed or skipped.**
+
+So the rendered denominator is the only witness either mutation has anywhere, and **separating them
+needs a staging where the NUMERATOR differs too.** That is R7.
 
 ### R3 — THE DROP IS THE TEST, NOT THE EQUIP
 
@@ -123,6 +147,26 @@ and the direction word. A collision on `20` alone cannot produce that triple.
 
 ### R7 — THE DECREASE CLAMPS AT THE WRITE, WHICH IS THE HALF NOTHING ELSE WITNESSES
 
+#### Reading (1) — `28/28` — IS THE MOST DIAGNOSTIC OBSERVATION IN A2, AND IT WAS WRITTEN AS STAGING
+
+It sat in the staging column with no alternatives named. It is the only place in the gate where the
+NUMERATOR moves with the stamp as well as the denominator, which is exactly what separates the two
+tooltip mutations R1 has to lump together:
+
+| reading | meaning |
+|---|---|
+| **`28/28`** | correct |
+| `9/9` | **`MUTSTATREAD`** — `resolveCapacity` ignored the stat, so the reload filled to the AUTHORED 9 and stamped 9 |
+| `28/9` | **`MUTAPPLYLORE2`** — the stamp is 28 and the magazine really holds 28; the tooltip is rendering the authored fallback instead of the stamp |
+
+**`28/9` is a numerator above its denominator, and no correct state in this project can produce
+one.** `WeaponLoreLines.quiverLine` renders `loaded` verbatim against `capacity` with no clamp
+(`:118-122`, checked), and `setLoaded` clamps the count to the SAME capacity it stamps — so the two
+can only disagree if the render is reading a different number from the write. That is
+`MUTAPPLYLORE2` and nothing else.
+
+#### Reading (3) — after the shot
+
 `DESIGN-stat-engine.md`'s ruled semantics: **increase is headroom, decrease clamps.** A2 honours the
 decrease at `QuiverItems.setLoaded`, which holds the new capacity and the count in one call with
 `Quiver.clamp` between them — deliberately **not** in the reconcile loop, because a clamp there would
@@ -139,7 +183,12 @@ numbers:
 
 ---
 
-## NO ROW PASSES BY SOMETHING BEING ABSENT
+## TWO CHECKS ON THE ROWS THEMSELVES
+
+Both are properties of the ROWS rather than of the code, and both are the kind of defect that leaves
+a gate report looking clean while proving less than it claims.
+
+### 1 · NO ROW PASSES BY SOMETHING BEING ABSENT
 
 Checked deliberately, because it is the easiest way to write a row that cannot fail.
 
@@ -150,6 +199,23 @@ Checked deliberately, because it is the easiest way to write a row that cannot f
 - **R3's failure modes are all POSITIVE readings** of the wrong number, including the "neither moves"
   case, which is stated as *both stats read their authored values* rather than as an absence.
 - **R2 asserts `8/28` three times**, not *"nothing was lost"*.
+
+### 2 · EVERY READING A ROW NAMES MUST BE ONE A PERSON AT A KEYBOARD CAN ACTUALLY TAKE
+
+**Added after this document's own first review, which found a row failing it.** R1's table cited
+*"`8/28` on the stored value but `8/9` on screen"* — a PDC read, which no in-game surface offers, in
+a section that said so two paragraphs later.
+
+**It fails differently from an absence-shaped condition, which is why it needs its own check.** An
+absence-shaped row is UN-FAILABLE: it passes whether the rule exists or not. An unobservable row is
+**UN-RUNNABLE**: the operator reaches it, has no instrument, and resolves that by guessing or by
+skipping — and a skipped row reports the same as a passed one in any summary.
+
+**The test, at writing time:** for each named reading, say which surface shows it. Every reading in
+this gate now answers with one of exactly four: **the item tooltip**, **`/rpg stats`**, **a command's
+own confirmation line**, or **the clock** (R4 and R5's "visibly longer/quicker"). A reading that
+answers with none of those is not a pass condition yet.
+
 
 ---
 
