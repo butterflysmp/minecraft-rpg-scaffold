@@ -1152,7 +1152,10 @@ public final class RpgCommand {
                     + "FIGURE FIRST -- it is ELAPSED time, not HELD time, and it cuts one way "
                     + "only: a handful of ticks DISQUALIFIES this reading, because no repeat had "
                     + "the chance to arrive; a large figure does NOT prove a hold, it only fails "
-                    + "to disqualify one.";
+                    + "to disqualify one. HOW SMALL IS SMALL: there is no fixed threshold and none "
+                    + "is needed -- compare this figure against the hold you believe you just "
+                    + "performed. Ten seconds intended and 20t reported means the button was not "
+                    + "held, whatever the arm says.";
             case INSTRUMENT_FAULT -> "INSTRUMENT FAULT -- more fires than inputs, which is "
                     + "impossible: a gate cannot fire more often than it is asked to. Do not read "
                     + "these numbers as a measurement.";

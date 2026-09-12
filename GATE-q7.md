@@ -63,6 +63,14 @@ one. Necessary, not sufficient. Verified by mutation rather than asserted: measu
 event instead of the last reddens 1 of 12 rows; measuring it to the last event instead of to now
 reddens 3 of 12.
 
+**HOW SMALL IS SMALL — THERE IS NO ABSOLUTE THRESHOLD AND THE ROW DOES NOT NEED ONE.** The check is
+**self-referential: compare the figure against the hold you believe you just performed.** Ten seconds
+intended and `20t` reported means the button was not held, and no fixed cut-off is required to say
+so. A threshold would in fact be worse — it would have to be guessed, it would go stale against any
+change in input handling, and it would invite a reading to be accepted because it cleared a number
+rather than because the operator knows what he did. The readout carries this clause too, since that
+is where the comparison actually gets made.
+
 ---
 **Status: NOT RUN.** The instrument exists; the reading does not. **Only the operator can take it.**
 
