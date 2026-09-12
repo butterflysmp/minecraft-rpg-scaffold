@@ -1,10 +1,6 @@
 # GATE — the quiver, slice A2: quiver size and reload time as real stats
-Both are properties of the ROWS rather than of the code, and both are the kind of defect that makes a
-gate report look clean while proving less than it claims.
 
-### 1 · NO ROW PASSES BY SOMETHING BEING ABSENT
-
-Checked deliberately, because it is the easiest way to write a row that cannot fail.
+**Status: NOT RUN.** Written at commit 7, before any boot, so the rows are staged from the design
 rather than from what a run happened to show.
 
 **Branch `feat/quiver`. Fixture `quiver_stone` (`quiver_size: 9`, `reload_ticks: 34`). Instruments
