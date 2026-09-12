@@ -285,6 +285,21 @@ So:
   The wire SHA, the tree SHA, the blob SHA and `--numstat` all answer *did what I think landed,
   land?* — and every one of them reconciles perfectly around a splice that ate the wrong lines.
 
+  > **AND A HASH MUST SAY WHAT IT HASHED.** Working tree or blob, and with which line endings. **An
+  > integrity figure whose subject is unstated cannot be reproduced by a second party, which is the
+  > only thing an integrity figure is for.**
+  >
+  > **2026-09-12.** A report proved a mutated file restored by quoting `md5sum` of the **working
+  > tree**. The reader compared it against the **blob** at `origin` and got a different value — with
+  > no discrepancy in the content, because **the file is mixed CRLF/LF**. So in a report *about a
+  > line-ending defect*, the integrity figure offered as proof was the one figure that defect makes
+  > uncheckable from the remote.
+  >
+  > **Practically: prefer the absence.** The proof was already in the same report — the file was
+  > **not listed by `git diff --numstat`**, and *a file absent from the diff is byte-identical by
+  > construction*. **Cite the absence, not the hash**: it needs no subject, no encoding, and no
+  > second party's trust.
+
   > **2026-09-11, `443c086`.** A `head`/`tail` splice into `GATE-quiver-a2.md` deleted its two
   > opening lines — **`**Status: NOT RUN.**` and the sentence recording that the rows were written
   > before any boot** — and pasted a later section's heading into the masthead in their place. The
@@ -309,6 +324,16 @@ So:
   > commit was a new member of the set being counted. The page said *fourteen*, then *nine shown*
   > and *six not shown*, two clauses apart. **Adding a row and fixing the count in the same edit
   > changes the set the count is over.**
+  >
+  > **AND A RANGE IS EXCLUSIVE AT ITS BASE, WHICH IS WHERE THE OFF-BY-ONE LIVES.** State a commit
+  > count as `git rev-list --count A..B`, or as the number of lines in the log you are about to
+  > paste — **never as a number you formed by looking at the range.** `A..B` excludes `A`.
+  >
+  > **2026-09-12, measured across four reports: two were wrong, both by exactly +1.** The two that
+  > were right were the two counted off the accompanying table; the two that were wrong were formed
+  > from the range. **A repeated +1 is a mechanism, not a slip** — and in both failures the prose
+  > number disagreed with the table printed directly beneath it, so *adding the parts up* would have
+  > caught it with no command at all. Same family as *eight shots span seven intervals*.
 
 - **AN EXIT STATUS PROVES A PROCESS ENDED, NEVER THAT IT DID ITS WORK. CHECK THE ARTEFACT, NOT THE
   INVOCATION.** When a command's job is to WRITE something — regenerate a golden file, emit a report,
@@ -539,6 +564,30 @@ halves, and no amount of care with `perl` reaches the second.
 > names two quantities and a relation between them, one splice cannot certify all of it. This is the
 > neighbour of *a control that succeeds for the wrong reason* and is **not** that: this control
 > succeeds for the **right** reason, over too small a set.
+
+> **AND THE COROLLARY OF THE SEVENTH ROW: A ROW CAN BE THE ONLY GUARD OF SOMETHING IT DOES NOT
+> MENTION.** Counting axes tells you how many mutations to run. This tells you how to read the
+> results. **Coverage is a property of what a mutation KILLS, not of what a test is NAMED AFTER** —
+> so the map from row to guarantee has to be measured, and it is routinely not what the names suggest.
+>
+> **2026-09-12, `HeldFireQuantisationPinTest`.** Four mutations over three rows:
+>
+> ```
+> MUT-COOLDOWN  fixture re-authored     -> row 2 only
+> MUT-DELETE    fixture removed         -> row 2 only      two mutations, ONE axis
+> MUT-CEIL      ceil -> floor           -> rows 1 and 3
+> MUT-GRID      INPUT_FLOOR_TICKS 4->2  -> ROW 3 ONLY
+> ```
+>
+> **The constant's sole guard is the row documented as a balance consequence that "asserts no
+> opinion".** Rows 1 and 2 are blind to it: a 4-grid and a 2-grid disagree only where the authored
+> value is ≡ 1 or 2 (mod 4), and all three measured points are ≡ 3 or 0. **Rule the balance question
+> and the mechanism loses its protection, with nothing going red.**
+>
+> **Practically:** when a mutation kills fewer rows than you expected, do not move on — **ask which
+> row is now the only thing holding that behaviour, and say so in that row's own javadoc.** A test
+> that quietly became load-bearing for something outside its name is deleted by the next person
+> tidying up.
 
 > **ROWS TWO AND THREE ARE WHY THE MARKER GREP IS TWO CHECKS, AND WHY YOU NEED BOTH HALVES.** They
 > fail in opposite directions and each half catches exactly one of them:
