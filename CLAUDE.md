@@ -643,6 +643,25 @@ the opposite because the material suggests it.**
   > day it landed. It shipped in one PR and was copied into `lapis_staff.yml` in the next. Only a
   > gate row that physically stacked two staves caught it.
 
+- **NEW CONTENT CITES THE BOLTOR, NOT `hunters_bow`, `ironblade` OR `quiver_stone`.** Those three are
+  **in a deletion set** (ruled 2026-09-12, parked on *enough shipped weapons to replace them* — see
+  `NEXT.md`). Every citation of one written between now and then is a comment that will point at a
+  file that does not exist.
+
+  **When a dev weapon is genuinely the only precedent, cite it AND MARK the citation** as standing on
+  a weapon in the deletion set, so the eventual sweep finds it by **grepping for the marker** instead
+  of re-deriving the reference graph.
+
+  > **THE PLAN HAS A LOOP IN IT AND THIS IS THE FREE HALF OF THE FIX.** The precondition for deleting
+  > the dev weapons is **more real weapons** — and new weapons are also **what adds references to the
+  > dev weapons**, because the dev weapons are the precedents new prose derives from. `boltor.yml`,
+  > the newest weapon in the project, **cites all three.** So every weapon authored between now and
+  > the deletion raises the deletion's cost.
+  >
+  > It compounds quietly because it is **staleness, not breakage**: nothing fails, nothing is listed,
+  > and the bill arrives later as a sweep nobody scoped. Measured at `2a3fb68`: **every mention of
+  > these three in `main` is a comment except one**, so the deletion's real cost is prose, not code.
+
 ## Upgrade procedure
 
 Do **not** bump `paper.version` alone. Order of operations:
