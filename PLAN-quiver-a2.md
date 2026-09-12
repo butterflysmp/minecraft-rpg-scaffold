@@ -361,9 +361,9 @@ A1 ran **15 commits**; largest 12 files / +573, median ~4 files / ~180 lines. A2
 | **2** | quiver size, core half | ~6 | `core/combat/QuiverSize.java` (`NONE`/`boosts`/`contribution`), `HealthState` (**8 members**), `CombatantStats` (**2**), tests |
 | **3** | quiver size, paper half | **13** | `Keys` pair, `QuiverSizeModifierItems` (PERMANENT, no `_TEMP`), reconcile line, `/rpg quiversize`, and `resolveCapacity` switches to the stat. **13 files, not ~7**, because the operator's commit-2 finding rode with it: `QuiverSize.MIN_CAPACITY`, and `Quiver.applyPercent` made to agree with it about whether 0 is a legal capacity. |
 | **4** | reload time, core half | **11** | `core/combat/ReloadTime.java`, `HealthState` (**8 members**), `CombatantStats` (**2**), the downward-direction row. **No `MIN_RELOAD_TICKS`** — third retraction, by deletion. Two riders from commit 3's review: the import-static ban paired with the qualified needles, and "must pass through" as an obligation. |
-| **5** | reload time, paper half | **12** | `Keys` pair, `ReloadTimeModifierItems`, reconcile line, `/rpg reloadtime` (**signed range**), and `beginReload` reads the stat — **the last SUPPLY site**, which is the claim that survives. This row first said *"the second and last supply site, measured: `grep -rn "reloadTicks()"` finds exactly one call across both modules"*; that count was **falsified by commit 5's own new code**, sixty lines away in the `/rpg reloadtime` block. Four in main, six unscoped. Corrected in commit 6 to SUPPLY (drives behaviour, one site) versus READOUT (shows a number, composes through `ReloadTime.resolve`), and guarded as a named set by `theReloadDurationIsSuppliedOnlyWhereThisListSays`. **Plus the blocking ruling above**, which renamed `ReloadTime.boosts` to `declares` and re-gated it. |
+| **5** | reload time, paper half | **12** | `Keys` pair, `ReloadTimeModifierItems`, reconcile line, `/rpg reloadtime` (**signed range**), and `beginReload` reads the stat — **the last SUPPLY site**, which is the claim that survives. This row first said *"the second and last supply site, measured: `grep -rn "reloadTicks()"` finds exactly one call across both modules"*; that count was **falsified by commit 5's own new code**, sixty lines away in the `/rpg reloadtime` block. Four in main, six unscoped. Corrected in commit 6 to SUPPLY (drives behaviour, one site) versus READOUT (shows a number, composes through `ReloadTime.resolve`), and guarded as a named set by `theAuthoredReloadDurationIsReadOnlyWhereThisListSays`. **Plus the blocking ruling above**, which renamed `ReloadTime.boosts` to `declares` and re-gated it. |
 | **6** | `/rpg stats`, and the parameter object | **8** | `StatsSheetValues` + builder, two labels, two formatters, two sheet lines, the reload-supply guard, and the two riders from commit 5's review. |
-| **7** | prose + gate | ~5 | corrections below, `GATE-quiver-a2.md` — **and the two boot-only rows below, which it must not be descoped without** |
+| **7** | prose + gate | **7** | The three remaining prose corrections, `GATE-quiver-a2.md`, and the capacity twin of commit 6's supply guard — added because commit 3 declined that needle on reasoning commit 6 refuted. |
 
 ### COMMIT 1 RAN AS SIX — recorded because the split was not planned, it was forced
 
@@ -507,13 +507,23 @@ Traced through `manaRegenBonus`, the most recent stat:
    instead**, replaced by a pointer to the set: *"the reconcile calls in this body ARE the list."*
    Done a commit BEFORE the words would have gone stale rather than after: at commit 2 the loop
    still converges eleven, because quiver size is not wired into it until commit 3.
-2. **`quiver_stone.yml`** — its header calls `quiver_size` and `reload_ticks` the values themselves.
-   They become **authored bases feeding stats**. Correct it where it says constants.
-3. **`QuiverItems.stampFull`** — its javadoc says the mint stamps the capacity; it must now say
-   **authored** capacity, and why that is the headroom rule rather than a compromise.
-4. **`WeaponLoreLines.java:30-33`** — the *"same number"* rule gains the quiver as its stated
-   exception, with the deeper-principle argument. **Do not delete the rule**; it still governs
-   attack damage and attack speed.
+2. ~~**`quiver_stone.yml`** — its header calls `quiver_size` and `reload_ticks` the values
+   themselves.~~ **DISCHARGED IN COMMIT 7.** The magazine block now says they are **authored bases**,
+   that the game uses `QuiverSize.resolve` / `ReloadTime.resolve` against them, and that a gate row
+   must read what is on SCREEN rather than what is on the line — plus the re-check that **28 and 48
+   are as free of the swept set as 9 and 34**, which a sweep of the bonus alone would have missed.
+3. ~~**`QuiverItems.stampFull`** — its javadoc says the mint stamps the capacity.~~ **DISCHARGED IN
+   COMMIT 7.** The body already carried the authored-capacity argument; the JAVADOC did not, and a
+   reader of the signature never sees the body. It now states that mint stamps the AUTHORED capacity,
+   that no mint path has a player (icons and previews describe a weapon), and that this is the
+   headroom rule rather than a compromise — a fresh quiver full to its authored size IS a count below
+   capacity with room to reload into.
+4. ~~**`WeaponLoreLines.java:30-33`** — the *"same number"* rule gains the quiver as its stated
+   exception.~~ **DISCHARGED IN COMMIT 7, and the rule is NOT deleted** — it still governs attack
+   damage and attack speed, which are the lines it was written for. The exception carries the
+   deeper-principle argument (*"each formatter reads the number that actually governs"*), the note
+   that the tooltip still does not cross the item-to-holder axis at render time, the transfer case
+   (`8/28` in an unboosted hand), and the unstamped fallback for icons, previews and the golden.
 
 ---
 
@@ -566,6 +576,14 @@ Traced through `manaRegenBonus`, the most recent stat:
   the absent-versus-zero decision enforced rather than described) and `MUTSHEETCLAMP`
   (`Math.max(ticks, 0)` → `ticks` in the display; −13 + 17 ⇒ **+4**; 1 red, reading `-6t (-0.30s)`
   — a duration no mechanic ever uses).
+- **Commit 7 adds a guard rather than a mutation, and the reason is a refuted argument:** commit 3
+  measured the `"quiverSize()"` needle and DECLINED it because *"adding it changes no verdict
+  today."* **That is the wrong test for a guard** — a guard's value is the file nobody has written
+  yet — and the reload twin proved it by catching `StatsSheetValues` on its FIRST run, a file that
+  did not exist when the needle was designed. The same file had the same collision on the capacity
+  side and was fixed only because its sibling tripped. `theAuthoredQuiverSizeIsReadOnlyWhereThisListSays`
+  removes that luck: `{QuiverItems, Quivers, RpgCommand, WeaponLore}`, roles named, a proper subset
+  of the resolver row's six and kept separate from it so neither list loses its question.
 - **AND THE RELOAD-SUPPLY GUARD FOUND SOMETHING ON ITS FIRST RUN**, which is its own positive
   control: `StatsSheetValues` had accessors named `quiverSize()` and `reloadTicks()` — the same names
   `WeaponDefinition` uses for the AUTHORED values, while these return the RESOLVED ones. Renamed to

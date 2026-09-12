@@ -240,7 +240,7 @@ public final class Quivers {
         // it, gets four, and stops believing the comments that are right.
         //
         // The membership is guarded rather than counted:
-        // QuiversSignatureTest.theReloadDurationIsSuppliedOnlyWhereThisListSays names the files and
+        // QuiversSignatureTest.theAuthoredReloadDurationIsReadOnlyWhereThisListSays names the files and
         // their roles, so a new one is a deliberate edit.
         //
         // AND THE DURATION IS RESOLVED HERE, AT THE BEGIN, THEN NEVER AGAIN. The deadline below is

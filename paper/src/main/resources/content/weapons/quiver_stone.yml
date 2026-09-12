@@ -72,9 +72,22 @@ attack_damage: 0
 
 # THE MAGAZINE. Nine rounds and a reload just under two seconds.
 #
+# THESE TWO ARE AUTHORED BASES, NOT THE VALUES THE GAME USES. A2 made both of them STATS: the
+# capacity a wielder packs at is QuiverSize.resolve(quiver_size, their gear), and the duration a
+# reload takes is ReloadTime.resolve(reload_ticks, their gear). What is written here is the number a
+# player with no such gear gets -- and the number a recipe-browser icon or a craft preview shows,
+# since neither has a wielder to resolve against.
+#
+# So a gate row must read what is ON SCREEN rather than what is on this line. With the A2 instruments
+# held, this weapon packs 28 and reloads in 48 ticks; the tooltip's denominator and /rpg stats both
+# show the RESOLVED value, never these.
+#
 # reload_ticks is 34 rather than the operator's ruled 3s (60) for the same reason quiver_size is not
 # 8: 60 is authored by emberblade, and a fixture sharing a number with a shipped weapon is a row
 # that cannot tell them apart. The BOLTOR gets 3s; this measures the mechanism, not the balance.
+#
+# AND THE RESOLVED VALUES WERE RE-CHECKED AGAINST THE SWEEP ABOVE -- 28 and 48 are as free of it as
+# 9 and 34 are, which is the half a sweep of the BONUS alone would have missed.
 quiver_size: 9
 reload_ticks: 34
 

@@ -32,6 +32,30 @@ import java.util.OptionalInt;
  * that is what makes it mint-time safe and non-drifting. A boosted player and an unboosted one
  * reading the same sword must see the same number.
  *
+ * <p><b>THE QUIVER LINE IS THE ONE STATED EXCEPTION, AND THE RULE ABOVE IS NOT DELETED.</b> It still
+ * governs attack damage and attack speed, which are the lines it was written for. A quiver's
+ * denominator is different: once capacity is a stat, a player with +19 genuinely fires 28, so
+ * rendering the authored 9 would satisfy the surface rule while being <b>permanently wrong</b>
+ * rather than merely stale.
+ *
+ * <p>The deciding argument is this file's own closing sentence, four paragraphs down: <i>"each
+ * formatter reads THE NUMBER THAT ACTUALLY GOVERNS its own weapon, so neither line can drift from
+ * what the weapon really does."</i> Static-ness is the MECHANISM by which non-drifting is achieved
+ * for attack damage -- there the definition IS what governs. For a quiver it is not, and the deeper
+ * principle points the other way.
+ *
+ * <p><b>And the tooltip still does not cross the item-to-holder axis at render time.</b> It reads a
+ * number off the ITEM's own PDC, exactly as the count already does; no {@code Player} is needed to
+ * render it, and everyone looking at that item sees the same number. What is new is that an item's
+ * stored value now derives from whoever last WROTE it -- so a weapon packed by a boosted player and
+ * dropped reads {@code 8/28} in an unboosted player's hand until their next shot or reload. That is
+ * named at {@code QuiverItems.setLoaded} and endorsed in {@code PLAN-quiver-a2.md}; it is the price
+ * of the stamp being what ENFORCES, which is what stops the tooltip and the refusal disagreeing.
+ *
+ * <p>With no item at all -- a recipe-browser icon, a craft preview, the definitions-only golden
+ * harness -- there is no stamp and the AUTHORED capacity is what renders, which is the true answer
+ * for all three.
+ *
  * That base now comes from TWO sources, because the two kinds of basic attack no longer share a
  * cadence. A vanilla-driven melee hit is paced by the vanilla attack-speed attribute, authored
  * directly as {@code attack_speed:}; a ranged basic attack is still paced by its trigger's

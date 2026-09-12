@@ -85,6 +85,18 @@ public final class QuiverItems {
      * that note's own words, <i>"which was a no-op"</i> -- and because {@code applyLore} runs TWICE
      * per re-mint, so the second pass sees the carried state and corrects the first. <b>A quiver
      * inverts both halves: absence renders a NUMBER, and a fresh mint has no second pass.</b>
+     *
+     * <p><b>IT STAMPS THE AUTHORED CAPACITY, NOT A RESOLVED ONE, AND THAT IS THE RULE RATHER THAN A
+     * COMPROMISE.</b> Mint takes no {@code Player} -- several mint paths are recipe-browser icons and
+     * craft previews that describe a WEAPON rather than a held item, and the authored number is the
+     * true answer for every one of them.
+     *
+     * <p>It is also correct for a wielder whose gear resolves MORE. {@code DESIGN-stat-engine.md}'s
+     * ruled semantics make a capacity increase HEADROOM, so a fresh quiver full to its authored size
+     * is exactly a count sitting below capacity with room to reload into -- which is the intended
+     * state, reached without a player and without a second rule. The resolved capacity arrives at the
+     * wielder's first WRITE, through {@link #setLoaded}. See the body for the same argument beside
+     * the line that does it.
      */
     public static void stampFull(ItemMeta meta, WeaponDefinition weapon, Keys keys) {
         if (!weapon.hasQuiver()) return;

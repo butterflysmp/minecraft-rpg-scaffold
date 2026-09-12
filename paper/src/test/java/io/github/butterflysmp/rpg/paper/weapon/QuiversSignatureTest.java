@@ -568,7 +568,7 @@ class QuiversSignatureTest {
     }
 
     /**
-     * THE RELOAD DURATION IS SUPPLIED ONLY WHERE THIS LIST SAYS -- and it is a list because a COUNT
+     * THE AUTHORED RELOAD DURATION IS READ ONLY WHERE THIS LIST SAYS -- and it is a list because a COUNT
      * of it was false within one commit of being written.
      *
      * <p>{@code Quivers.beginReload} carried the comment <i>"grep -rn "reloadTicks()" ... finds
@@ -607,7 +607,7 @@ class QuiversSignatureTest {
      * walk past it the way it did the qualified capacity needles.
      */
     @Test
-    void theReloadDurationIsSuppliedOnlyWhereThisListSays() throws IOException {
+    void theAuthoredReloadDurationIsReadOnlyWhereThisListSays() throws IOException {
         List<String> readers = new java.util.ArrayList<>();
         int scanned = 0;
         for (Path root : List.of(Path.of("src", "main", "java"),
@@ -634,5 +634,91 @@ class QuiversSignatureTest {
                         + "ask is which of the two it is, because a supply site that does not go "
                         + "through ReloadTime.resolve is a second source of truth and a readout that "
                         + "does not is a number that will drift from the weapon.");
+    }
+
+    /**
+     * THE AUTHORED QUIVER SIZE IS READ ONLY WHERE THIS LIST SAYS -- the twin of the row above, and
+     * <b>it exists because commit 3 measured this exact needle and DECLINED it on reasoning commit 6
+     * refuted.</b>
+     *
+     * <h2>The reasoning, and why it was wrong</h2>
+     *
+     * <p>Commit 3 wrote: <i>"{@code "quiverSize()"} matches QuiverItems, Quivers, WeaponLore -- a
+     * SUBSET of this list; adding it changes no verdict today."</i> The measurement was correct and
+     * is correct still. <b>The conclusion drawn from it was the error.</b>
+     *
+     * <p><b>"It changes no verdict today" is the wrong test for a guard.</b> A guard's whole value is
+     * the file nobody has written yet. This repository already carries the inverted form of that
+     * principle, in {@code QuiverSize}'s javadoc: <i>"a filter with no call sites is not a filter that
+     * is being applied."</i> Pointed the other way it reads: <b>a guard with nothing to catch today is
+     * not a guard that will have nothing to catch.</b>
+     *
+     * <h2>And there is a worked example, one commit later, in the same file</h2>
+     *
+     * <p>The reload twin -- built on the same needle shape -- <b>caught {@code StatsSheetValues} on
+     * its first run</b>, a file that did not exist when the needle was designed. It had accessors
+     * named {@code quiverSize()} and {@code reloadTicks()}, both returning RESOLVED values under the
+     * names {@code WeaponDefinition} uses for AUTHORED ones.
+     *
+     * <p><b>The same file had the same collision on BOTH sides, and only one of them was caught by a
+     * guard.</b> The capacity half was fixed because its sibling tripped -- which is luck, and this
+     * row is the removal of that luck.
+     *
+     * <h2>SUPPLY versus READOUT, measured at this tip</h2>
+     *
+     * <table><tr><th>file</th><th>role</th><th>sites</th></tr>
+     * <tr><td>{@code QuiverItems}</td><td><b>SUPPLY</b></td>
+     *     <td>{@code stampFull} stamps the AUTHORED capacity at MINT (deliberately -- the headroom
+     *     rule), and {@code resolveCapacity} is the one resolution for a write.</td></tr>
+     * <tr><td>{@code Quivers}</td><td><b>SUPPLY</b></td>
+     *     <td>{@code stateOf} passes it as {@code QuiverState.from}'s unstamped fallback, which
+     *     drives a verdict.</td></tr>
+     * <tr><td>{@code WeaponLore}</td><td><b>READOUT</b></td>
+     *     <td>the tooltip's unstamped fallback -- what a definitions-only harness renders.</td></tr>
+     * <tr><td>{@code RpgCommand}</td><td><b>READOUT</b></td>
+     *     <td>the stats sheet's gather and {@code /rpg quiversize}'s message, both composing through
+     *     {@code QuiverSize.resolve} rather than re-deriving.</td></tr>
+     * </table>
+     *
+     * <p><b>A SECOND ROW RATHER THAN A WIDENING OF {@link #theCapacityIsResolvedOnlyWhereThisListSays},
+     * and the dilution argument from commit 3 is what decides it.</b> That row answers <i>who decides
+     * which capacity governs</i>; this one answers <i>who touches the authored number at all</i>.
+     * Folding the needle in would have mixed the two and left the first list unable to answer its own
+     * question -- which was the true half of commit 3's reasoning, and it survives.
+     *
+     * <p>Its four files are a proper SUBSET of that row's six, today. That is expected and is not a
+     * reason to merge them: subsets diverge exactly when somebody adds the file this row exists for.
+     */
+    @Test
+    void theAuthoredQuiverSizeIsReadOnlyWhereThisListSays() throws IOException {
+        List<String> readers = new java.util.ArrayList<>();
+        int scanned = 0;
+        for (Path root : List.of(Path.of("src", "main", "java"),
+                                 Path.of("..", "core", "src", "main", "java"))) {
+            assertTrue(Files.isDirectory(root), "source root not found: " + root.toAbsolutePath());
+            try (var walk = Files.walk(root)) {
+                for (Path file : walk.filter(p -> p.toString().endsWith(".java")).toList()) {
+                    scanned++;
+                    String raw = Files.readString(file, StandardCharsets.UTF_8);
+                    String code = raw.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+                    if (code.contains("quiverSize()")) {
+                        readers.add(file.getFileName().toString());
+                    }
+                }
+            }
+        }
+        assertTrue(scanned > 100, "only " + scanned + " files scanned across both modules");
+
+        java.util.Collections.sort(readers);
+        assertEquals(
+                List.of("QuiverItems.java", "Quivers.java", "RpgCommand.java", "WeaponLore.java"),
+                readers,
+                "the AUTHORED quiver size may only be read in these FOUR files. QuiverItems and "
+                        + "Quivers SUPPLY it (a mint stamp, a write's resolution, an unstamped "
+                        + "fallback that drives a verdict); WeaponLore and RpgCommand READ IT OUT. A "
+                        + "fifth file is a deliberate edit, and the question to ask is which half it "
+                        + "is in -- a supply site that does not go through QuiverSize.resolve is a "
+                        + "second source of truth, and a readout that does not is a number that will "
+                        + "drift from the weapon.");
     }
 }
