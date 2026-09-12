@@ -9531,6 +9531,37 @@ told to rewrite and did not.
 expect. When you have just changed an input, *unmodified* is the alarming answer, and it is precisely
 the one that looks like nothing happened.
 
+### AN ESTIMATE PLACED BESIDE MEASUREMENTS BECOMES ONE
+
+**Named 2026-09-12, the Boltor. Also in `CLAUDE.md`; here with the reason.**
+
+The general shape: **a figure carries no mark saying how it was obtained**, so the only signal a
+reader has is the company it keeps. Put a guess in a column of measurements and the column vouches
+for it. This is not a claim about carelessness — the guess can be made carefully and still be a
+guess, and nothing downstream can tell.
+
+**The instance.** A held-changes table gave five files and their line deltas. Four were read from
+`git diff --numstat`. The fifth, `PLAN-boltor.md +23`, was eyeballed off the edit; `git add` then
+measured **+21**. The table marked no difference between them, and the report around it described
+all five in one sentence as though one command had produced them.
+
+**The asymmetry is the whole finding.** Credibility flows from the measured rows to the estimate and
+never the other way. **Alone, `+23` would have been read as approximate** — beside four `--numstat`
+figures it read as the fifth output of the same command. So the defence is not "be more careful with
+estimates", it is **do not seat them next to measurements without a mark**.
+
+**The counter-example is in the same session and is why this is a rule rather than an apology.** The
+citation-drift finding quoted three measured counts (132 / 117 / 8) and then explicitly declined to
+estimate how many citations were already stale, on the stated grounds that such an estimate would be
+indistinguishable from the three above it. It named a probe instead. That is the same judgement
+applied one decision later, and it cost nothing.
+
+**How to apply:** if a number is going next to measured numbers, run the command — it is almost always
+one command. If you genuinely cannot, mark it in the cell (`~20 (est.)`), not in prose underneath,
+because a reader scanning a table does not read the prose. And when a figure does turn out wrong,
+**say which kind of error it was**: fabricated, or correct-when-written and falsified since. Those
+have different remedies, and `+23` was the first kind.
+
 ### OPEN FINDING — EVERY `File.java:NNN` CITATION IS A MEASUREMENT TAKEN ONCE AND NEVER RE-TAKEN
 
 **Found 2026-09-12, the Boltor. NAMED, NOT FIXED — deliberately. The case is written here so that

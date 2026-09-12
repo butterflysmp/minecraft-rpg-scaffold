@@ -300,6 +300,28 @@ So:
   > and decide *before* running it which answer you expect. When you have just changed an input,
   > ***unmodified* is the alarming answer**, and it is the one that looks like nothing went wrong.
 
+- **AN ESTIMATE PLACED BESIDE MEASUREMENTS BECOMES ONE. PROXIMITY LAUNDERS IT.** A number you
+  eyeballed, printed in a column of numbers you measured, is indistinguishable from them and inherits
+  their authority. Either measure it too, or mark it as an estimate *in the same cell*.
+
+  > **2026-09-12.** A held-changes table listed five files with their line deltas. Four came from
+  > `git diff --numstat`. The fifth — `PLAN-boltor.md +23` — was eyeballed off the edit and never
+  > measured; staging reported **`+21`**. **Nothing in the table marked which was which**, and it
+  > surfaced only because the file was later committed and the real number printed itself.
+  >
+  > **The laundering runs one way and that is what makes it worth a rule.** The four measured rows
+  > lent the fifth their credibility; the fifth did not visibly borrow anything. **Alone, the same
+  > number would have been read as the guess it was.**
+  >
+  > **The correct handling is in the same session, one decision later**, and is the reason this is
+  > stated as a rule rather than an apology: an open finding quoted three measured counts and then
+  > **declined to estimate** what fraction were already stale, *because an estimate there would have
+  > been indistinguishable from the three above it.* **Naming a probe someone can run beats supplying
+  > a number nobody can check.**
+  >
+  > **Practically:** if a number is going next to measured numbers, run the command. If you cannot,
+  > label it where it sits — `~20 (est.)` — never in a footnote the eye skips.
+
 - **PROSE REACHING A COMMAND GOES THROUGH A FILE, NEVER THROUGH QUOTING.** `git commit -F <file>`,
   `gh pr create --body-file`, `gh pr merge --body-file`, a written file for anything else. Never
   `-m`, never `--body`, never a heredoc.
