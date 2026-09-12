@@ -82,6 +82,28 @@ core — what to DO — and leaving the persuasion, the worked example and the d
 **Overturnable.** The opposite convention — everything in `NEXT.md`, pointers here — keeps this file
 short, and if it grows past being readable in one sitting that is the trade to revisit.
 
+### AND THE GENERAL FORM, BECAUSE TWO HOMES IS NOT ONLY A `CLAUDE.md`/`NEXT.md` PROBLEM
+
+**WHEN ONE RULE MUST APPEAR TWICE, ONE COPY IS THE POINTER AND ONE IS THE ACCOUNT, AND EACH SAYS
+WHICH IT IS.**
+
+- **The pointer carries the form that changes what you do, and nothing else.**
+- **The account carries the mechanism, the measurements and the consequences.**
+
+**TWO ACCOUNTS DRIFT INTO DISAGREEMENT AND NEITHER IS THEN TRUSTWORTHY** — a reader who finds two
+explanations of one rule has no way to tell which was updated. **And a pointer that has grown a second
+explanation has become an account: cut it back.**
+
+**Two tests it must pass, and they are the reason the split works:**
+
+- **The pointer must be obeyable without opening the account.** *"Author multiples of 4; multiples of
+  8 if it may ever be dual-wielded"* can be followed by someone who never reads the mechanism. **A
+  pointer that needs its account to be useful is a broken copy, not a pointer.**
+- **The pointer names a SECTION, never a line.** `WeaponLoader`'s `cooldown_ticks` section, not
+  `WeaponLoader.java:175`. A line citation is falsified by any insertion above it, silently and
+  invisibly to every test — this repo carries an open finding measuring that blast radius at ~140
+  sites, produced by exactly the other choice.
+
 ## VERIFICATION — a check that did not run looks exactly like a check that passed
 
 **Verify a check ran before believing it passed.**
@@ -332,6 +354,26 @@ So:
   >
   > **Practically:** if a number is going next to measured numbers, run the command. If you cannot,
   > label it where it sits — `~20 (est.)` — never in a footnote the eye skips.
+
+- **AND ITS SIBLING ON THE OTHER AXIS: DESCENT LAUNDERS. A NUMBER DERIVED FROM A PLACEHOLDER BECOMES
+  A PRECEDENT.** Proximity launders across a *page*; descent launders across *time*. **Nobody
+  re-decides an inherited figure** — they derive the next one from it.
+
+  > **THE REASON IT IS INVISIBLE: EVERY INDIVIDUAL STEP IS HONEST.** Each generation is one defensible
+  > derivation from the last, so **no step is the one where the error entered.** Auditing any single
+  > link finds nothing wrong. The arbitrariness is in the root, and the root is usually gone by the
+  > time anyone asks.
+  >
+  > **2026-09-12.** The Boltor's `attack_damage` was first anchored on `ironblade` — **a dev weapon,
+  > not balanced meaningfully.** The operator ruled `19` **outright** instead, and the stated reason
+  > was not "wrong anchor" but that **a comparison had been used as a source.** Had `19` been derived,
+  > it would have become the Ranger tier's reference point, and `ironblade`'s arbitrariness would have
+  > **outlived `ironblade`** — which is now scheduled for deletion.
+  >
+  > **Practically:** when you reach for a precedent, ask **what the precedent was itself derived
+  > from**, and stop at the first number nobody ruled. **Never derive a new weapon's numbers from a
+  > dev weapon's**; parity with a placeholder is parity with nothing. If a figure must be inherited,
+  > say whose ruling it descends from, so the chain can be walked back.
 
 - **A MEASUREMENT TAKEN FOR A LATER DECISION MUST CARRY THE REVISION IT WAS TAKEN AT AND THE EVENT
   THAT INVALIDATES IT.** **Age is not visible on a number.** The figure that is right today and
