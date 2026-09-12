@@ -1144,7 +1144,13 @@ public final class RpgCommand {
                     + "IS the limiter. That interval is Q7's answer.";
             case COOLDOWN_LIMITED -> "COOLDOWN-LIMITED -- fires slower. Q7's answer is still the "
                     + "INPUT number; the gap is slice C's. NOTE: a magazine or damaged durability "
-                    + "gates too -- take this on hunters_bow to isolate the cooldown.";
+                    + "gates too -- BUT CHECK THIS SAMPLE BEFORE RE-TAKING IT. A gate that "
+                    + "interposed shows as a STRETCHED interval, so if FIRES mean equals FIRES min "
+                    + "then every interval was identical, nothing interposed, and this caution is "
+                    + "discharged. If mean exceeds min the sample is INCONCLUSIVE rather than "
+                    + "gated: an irregular input stream prints the same signature. To isolate the "
+                    + "cooldown deliberately, re-take on a weapon with NO MAGAZINE and full "
+                    + "durability.";
             case NO_REPEAT -> "NO REPEAT -- one input and nothing after it, " + elapsed(in)
                     + " between that input and this command. The client is not re-sending on this "
                     + "material. NOT an instrument fault: held-repeat does not work here, and "
