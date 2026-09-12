@@ -333,6 +333,26 @@ So:
   > **Practically:** if a number is going next to measured numbers, run the command. If you cannot,
   > label it where it sits — `~20 (est.)` — never in a footnote the eye skips.
 
+- **A MEASUREMENT OUTLIVES ITS FIXTURE, BUT ONLY IF THE RECORD SAYS THE FIXTURE IS GONE.** Deleting
+  the thing a reading was taken on does not falsify the reading — it makes the reading
+  **unverifiable, and indistinguishable from a stale one.** Restate the reading before removing its
+  instrument, or lose it.
+
+  > **2026-09-12.** The input-quantisation model — `fire interval = ceil(effective / 4) x 4` — rests
+  > on three measured points: `11 -> 12` on `quiver_stone`, `15 -> 16` on `hunters_bow`, `16 -> 16`
+  > on the Boltor. **Two of the three sit on weapons in a pending deletion set**, and the survivor is
+  > the one that cannot by itself distinguish the rule from a coincidence at 16.
+  >
+  > **The asymmetry is what makes this worth a rule.** A deleted fixture leaves the reading TRUE and
+  > UNCHECKABLE. Nothing fails, no test reddens, no grep lists it — the next reader simply finds
+  > citations to weapons that do not exist and **has no way to tell a preserved measurement from an
+  > abandoned one.** That is the same picture as a stale figure, arrived at by an honest route.
+  >
+  > **Practically:** before deleting anything a reading was taken on, restate every reading in one
+  > place, each carrying **the fixture it was taken on, the date, and the note that the fixture was
+  > subsequently deleted.** The third field is the one that does the work; without it the first two
+  > read as an oversight.
+
 - **PROSE REACHING A COMMAND GOES THROUGH A FILE, NEVER THROUGH QUOTING.** `git commit -F <file>`,
   `gh pr create --body-file`, `gh pr merge --body-file`, a written file for anything else. Never
   `-m`, never `--body`, never a heredoc.
