@@ -9531,6 +9531,68 @@ told to rewrite and did not.
 expect. When you have just changed an input, *unmodified* is the alarming answer, and it is precisely
 the one that looks like nothing happened.
 
+### THE THREE QUANTISATION READINGS, RESTATED IN ONE PLACE WHILE THEIR FIXTURES STILL EXIST
+
+**ALL THREE FIXTURES ARE IN THE DELETION SET.** The model below is what the Boltor slice is priced on,
+and after the deletion **only the third reading's weapon survives** — on the one cooldown that, alone,
+**cannot distinguish the rule from a coincidence at 16.**
+
+**Written NOW rather than on deletion day, and that ordering is the whole point.** Every figure here
+was **checked against the live content file** at `7cb6d2c` before being written down — `quiver_stone`
+11, `hunters_bow` 15, `boltor` 16, each read out of `content/weapons/` rather than copied from the
+gate. **A restatement written after the instrument is gone cannot be verified by anyone, including
+its author.**
+
+```
+THE MODEL:   fire interval = ceil(effective_cooldown / 4) x 4
+```
+
+| | `quiver_stone` | `hunters_bow` | `boltor` |
+|---|---|---|---|
+| **authored** | `cooldown_ticks: 11` | `cooldown_ticks: 15` | `cooldown_ticks: 16` |
+| **material** | crossbow, magazine 9 | bow, no magazine | crossbow, magazine 8 |
+| **predicts** | `ceil(11/4)x4 = 12` | `ceil(15/4)x4 = 16` | `ceil(16/4)x4 = 16` |
+| **measured** | `min 12`, mean `12.00` | `min 16`, mean `19.43` | `min 16`, mean `16.00` |
+| **verdict** | `COOLDOWN-LIMITED` | `COOLDOWN-LIMITED` | `COOLDOWN-LIMITED` |
+| **date** | 2026-09-12 | 2026-09-12 | 2026-09-12 |
+| **readout** | `GATE-q7.md` | `GATE-q7.md` | `GATE-boltor.md` row 1 |
+| **fixture status** | **IN THE DELETION SET** | **IN THE DELETION SET** | ships |
+
+**The readouts, verbatim, because a table is a summary and the summary is what rots first:**
+
+```
+hunters_bow  (material: bow, cooldown 15, no magazine)          GATE-q7.md
+  INPUTS  count 56  window 276t  mean 5.02t   min 4t
+  FIRES   count 15  window 272t  mean 19.43t  min 16t   COOLDOWN-LIMITED
+
+quiver_stone (material: crossbow, cooldown 11, magazine 9)      GATE-q7.md
+  INPUTS  count 30  window 116t  mean 4.00t   min 4t
+  FIRES   count  9  window  96t  mean 12.00t  min 12t   COOLDOWN-LIMITED
+
+boltor       (material: crossbow, cooldown 16, magazine 8)      GATE-boltor.md row 1
+  INPUTS  count 31  window 120t  mean 4.00t   min 4t
+  FIRES   count  8  window 112t  mean 16.00t  min 16t   COOLDOWN-LIMITED
+```
+
+> **WHAT IS LOST ON DELETION DAY, AND IT IS NOT THE CONCLUSION.** The readings stay true — a
+> measurement is a fact about the system, not about the fixture. What goes is the ability to **check**
+> them: nobody can re-run `/rpg firerate` on a weapon that does not exist, and the two deleted rows
+> become numbers whose provenance is a file nobody can open.
+>
+> **The survivor is the weakest of the three for this purpose.** `16 -> 16` is the only point that
+> fixes `>=` over `>`, and it is *also* the only point consistent with "the interval is just the
+> authored cooldown" — a rule that the other two refute and it cannot. **Delete both and the model
+> keeps its conclusion and loses the evidence that distinguishes it from the trivial one.**
+>
+> **So on the day the fixtures go, the note that must be added here is one line per row: the weapon
+> was deleted, and on what date.** Without that third field these read as citations to files someone
+> forgot to update.
+
+**Also recorded at the key** — `WeaponLoader`'s `cooldown_ticks` section carries the same three-point
+table, because that is where an author meets the rule. This entry is the one that survives the gates.
+
+---
+
 ### MEASURED 2026-09-12 — WHAT DELETING `hunters_bow`, `ironblade` OR `quiver_stone` ACTUALLY COSTS
 
 **A MEASUREMENT, NOT A PLAN, AND THE DELETION IS NOT STARTED.** Recorded before anything is removed
