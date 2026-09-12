@@ -224,8 +224,35 @@ third, at that.
 | **1** | `boltor.yml` + `boltor_beam.yml`, fully ruled | all six numbers, the reversal note, wears-and-empties, no `left_click`; the beam, because a 96-block ray must not tune the Lapis Staff's appearance |
 | **2** | `GATE-boltor.md` | **the boundary row and only that** — see below |
 | **3** | the elapsed figure | Q7's owed control: ticks between the single input and the command, on the `NO_REPEAT` arm only — **not** by changing `window` |
-| **4** | `tuning:` marking | if ruled: the key, the boot inventory, `dev` on the two, `balanced` on the Boltor |
+| **4** | ~~`tuning:` marking~~ | **DROPPED by operator ruling, 2026-09-12. See below.** |
 | **5** | prose + the density row | `cursed_emerald` cross-reference, the carry-forward corrections |
+
+### COMMIT 4 IS DROPPED — OPERATOR RULING, 2026-09-12
+
+> *"We don't need to mark Items as dev or balanced. The dev weapons will soon be deleted anyways."*
+>
+> *"the /kit was a dev feature added before /rpg give was a command. same situation with the dev
+> weapons, this is soon to be deleted."*
+
+**WHAT IT OVERTURNED, STATED PLAINLY RATHER THAN SOFTENED.** Commit 4 existed to put *"this weapon is
+not balanced"* into the data — a `tuning:` key, `dev` on `ironblade` and `hunters_bow`, `balanced` on
+the Boltor. It was scoped **because the Boltor's damage had been anchored on `ironblade` without
+asking**, and the marking scheme was the guard proposed to stop that recurring.
+
+**THE RULING IS A BETTER FIX THAN THE GUARD, AND THE REASON GENERALISES.** The guard's whole purpose
+was to distinguish two sets — balanced weapons and dev weapons — and **one of those sets is about to
+be empty.** A marking scheme for a set that is about to be empty is **a rule that would have outlived
+its premise on the day it shipped**: every future reader would have maintained a key whose only
+values were `balanced` and a category with no members.
+
+**This is the same shape as the `/kit` ruling given beside it** — a dev affordance added before the
+real route existed (`/rpg give`), kept out of habit after it did. The answer to "how do we mark the
+placeholders" turned out to be "stop having placeholders".
+
+**NOT STARTED, AND DELIBERATELY.** The deletion is unscoped and larger than it looks: `KitRegistry`,
+`KitLoader` and their tests go with the two kit files, and `mage_fire.yml` goes at the same time as
+`ranger_fire.yml` — **the Mage loses its starting kit too, which nobody has ruled.** The measured
+impact is recorded in `NEXT.md` rather than acted on.
 
 **`range` is unvalidated — `CastSpec.Ray` has no compact constructor and `ContentValidator` checks
 only `beam`.** Negative, zero and NaN are all representable. Worth a guard, but it is **not** this

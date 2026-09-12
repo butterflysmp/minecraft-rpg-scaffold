@@ -319,6 +319,31 @@ triggers:
 # the WEAPON and not its acquisition; ranger_fire.yml still ships hunters_bow. Owed to the content
 # pass, and named here so the absence is not read as an oversight.
 #
+# SUPERSEDED IN PART, 2026-09-12, BY AN OPERATOR RULING -- AND THE CLAUSE IS KEPT RATHER THAN EDITED
+# TO MATCH, BECAUSE IT IS STILL THE REASON THIS WEAPON HAS NO ACQUISITION TODAY. What changed is the
+# REMEDY, not the situation.
+#
+#   "the /kit was a dev feature added before /rpg give was a command. same situation with the dev
+#    weapons, this is soon to be deleted."
+#
+# KITS ARE BEING REMOVED. So "no kit" stops being a GAP and becomes the NORMAL STATE: after the
+# deletion there are no kits for any weapon to be in, and /rpg give is the sole route to every weapon
+# in the project rather than a stopgap for this one. The sentence above reads as though the Boltor
+# were missing something its peers have. It will not be missing anything, because its peers will not
+# have it either.
+#
+# SO THE OWED ITEM NARROWS TO ONE THING: A RECIPE. Not "a recipe or a kit grant" -- a recipe, and
+# only a recipe, is what acquisition means once kits are gone. That is still owed to the content
+# pass.
+#
+# AND ONE CLAUSE ABOVE ACQUIRES AN EXPIRY: "ranger_fire.yml still ships hunters_bow" is true today
+# and is exactly what the deletion removes. It is left standing because it is true at the time of
+# writing and because a reader tracing why the Ranger has a starting bow needs it; when
+# ranger_fire.yml goes, this paragraph is the marker saying where to look. THE DELETION IS NOT
+# STARTED HERE and is not scoped: KitRegistry, KitLoader and their tests go with the kit files, and
+# mage_fire.yml goes at the same time, so the Mage loses its starting kit too -- which nobody has
+# ruled. Measured impact is in NEXT.md.
+#
 # THE MAIN-HAND GUARD APPLIES TODAY. WeaponFire reads getItemInMainHand, so a Boltor held ONLY in the
 # off-hand does not fire at all. Two repos reached that guard independently. Slice C states which
 # behaviour ships; this file records the current one so slice B does not decide it by omission.
