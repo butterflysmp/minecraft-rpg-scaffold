@@ -273,6 +273,11 @@ blanket**, which is exactly the case that construction was for.
 > while two things outside both are priced on it.
 >
 > Slice B's plan opens with it, as a count and not as a mention: **owed since A1, deferred twice.**
+>
+> **AND IT IS NO LONGER UN-RUNNABLE: `GATE-q7.md` carries the row, and `/rpg firerate` is its
+> instrument.** Both deferrals happened because nobody had built the thing that measures it — the
+> recipe asked an operator to count shots by hand. That is struck; the counter counts. The reading
+> is still the operator's to take.
 
 ---
 

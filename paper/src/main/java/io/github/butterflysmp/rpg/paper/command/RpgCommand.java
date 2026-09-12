@@ -15,6 +15,10 @@ import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.HealthRegen;
 import io.github.butterflysmp.rpg.core.combat.HitDamage;
+import io.github.butterflysmp.rpg.core.ability.AttackSpeed;
+import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
+import io.github.butterflysmp.rpg.core.combat.FireCadence;
+import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.combat.ManaRegen;
 import io.github.butterflysmp.rpg.core.combat.QuiverSize;
 import io.github.butterflysmp.rpg.core.combat.ReloadTime;
@@ -87,6 +91,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import java.util.Locale;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalLong;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -105,6 +113,13 @@ public final class RpgCommand {
 
     private RpgCommand() {}
 
+    /**
+     * The input Q7 is about. Lives HERE and not in {@code WeaponFire}, because {@code FireCadence}
+     * is keyed by input and the funnel therefore needs no magic string -- the literal belongs where
+     * the question is being asked.
+     */
+    private static final String RIGHT_CLICK = "right_click";
+
     /** How far /rpg apply's aim-ray reaches for a mob. Named, and within the 20-30 block ask. */
     private static final double TARGET_RANGE = 25.0;
     /** Hitbox inflation for the aim-ray -- a forgiving crosshair, since this is a dev tool. */
@@ -122,7 +137,8 @@ public final class RpgCommand {
                                                                ToolRegistry tools,
                                                                MobRegistry mobs,
                                                                MobNameplateManager nameplates,
-                                                               ResourcePool resources) {
+                                                               ResourcePool resources,
+                                                               FireCadence fireCadence) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
                         // requires() gates the whole branch: an unpermitted sender
@@ -471,6 +487,17 @@ public final class RpgCommand {
                         .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(-200.0, 200.0))
                                 .executes(ctx -> reloadTimeBoost(ctx, adapters, weapons,
                                         DoubleArgumentType.getDouble(ctx, "bonus")))))
+                // Q7'S INSTRUMENT. Read the held-right-click cadence and CLEAR the sample.
+                //
+                // No argument: the input is right_click because that is the question Q7 asks, and
+                // keeping the string here rather than in WeaponFire is deliberate -- the recorder is
+                // keyed by input so the funnel needs no magic string, and the literal lives where
+                // the question is being asked.
+                //
+                // PRINT AND CLEAR, so a second run cannot silently report the first run's numbers.
+                .then(Commands.literal("firerate")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> fireRate(ctx, weapons, fireCadence)))
                 // Mint a class_damage_boost_TEMP. The class-damage stat bases at 0 and no content
                 // grants it yet, so without this the feature is invisible at boot: hold a MATCHING
                 // weapon and every direct damage effect gains the bonus (the staff's literal bolt
@@ -989,6 +1016,124 @@ public final class RpgCommand {
                         outcome),
                 NamedTextColor.GREEN));
         return 1;
+    }
+
+    /**
+     * Q7'S READING: how often a held right-click ARRIVES, and how often it becomes a shot.
+     *
+     * <p><b>Two counters, because one number cannot say which of two mechanisms produced it.</b> A
+     * fires-only reading is {@code min(input rate, cooldown)} -- 15 on {@code hunters_bow} is
+     * indistinguishable between <i>the input floor is 15</i> and <i>the cooldown is 15 and the floor
+     * is lower</i>, two different facts with different consequences for slice C's 7-tick halving.
+     *
+     * <p><b>Eight figures, because the row demands them.</b> {@code GATE-quiver.md}'s Q7 text:
+     * <i>"Record the raw count and the window, not only the derived interval: the division is
+     * recomputable, a remembered 'about five a second' is not."</i> So count, window, mean and
+     * MINIMUM for each kind -- the minimum being the FLOOR the row is named for, and the mean the
+     * sustained rate; they answer different questions and are printed separately.
+     *
+     * <p><b>An empty sample says so in words.</b> This is the one command where a plausible zero
+     * would be believed: {@code min 0t} reads as an infinitely fast weapon rather than as a
+     * measurement that never happened.
+     *
+     * <p><b>The verdict is PRINTED, never left to be inferred</b> -- {@code /rpg reloadtime}'s
+     * discipline, which prints SLOWER or FASTER rather than leaving a sign to be read.
+     */
+    private static int fireRate(CommandContext<CommandSourceStack> ctx, WeaponRegistry weapons,
+                                FireCadence cadence) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        UUID id = player.getUniqueId();
+        Optional<FireCadence.Sample> inputs = cadence.sample(id, RIGHT_CLICK, FireCadence.Kind.INPUT);
+
+        // ABSENCE IN WORDS, NOT AS A ZERO ROW. Run twice and the second call has nothing; printing
+        // figures for a measurement that did not happen is the failure this branch exists for.
+        if (inputs.isEmpty()) {
+            player.sendMessage(Component.text(
+                    "No fire-cadence sample. Hold right-click on a weapon that binds it, release, "
+                            + "then run this again.", NamedTextColor.YELLOW));
+            return 0;
+        }
+        FireCadence.Sample in = inputs.get();
+        FireCadence.Sample fire = cadence.sample(id, RIGHT_CLICK, FireCadence.Kind.FIRE)
+                .orElse(new FireCadence.Sample(0, 0L, OptionalDouble.empty(), OptionalLong.empty(),
+                        in.weaponId(), false));
+
+        player.sendMessage(Component.text("Fire cadence -- " + in.weaponId() + ", right_click",
+                NamedTextColor.GOLD));
+        player.sendMessage(Component.text("  INPUTS  " + line(in), NamedTextColor.GREEN));
+        player.sendMessage(Component.text("  FIRES   " + line(fire), NamedTextColor.GREEN));
+
+        // A SAMPLE SPANNING TWO WEAPONS IS NOT A READING. "Two weapons disagreeing about the input
+        // floor is a finding" cannot BE a finding if one sample silently averages both.
+        if (in.mixedWeapons() || fire.mixedWeapons()) {
+            player.sendMessage(Component.text(
+                    "  MIXED -- the weapon changed mid-sample. Retake it on one weapon.",
+                    NamedTextColor.RED));
+        } else {
+            weapons.find(in.weaponId())
+                    .flatMap(w -> w.trigger(RIGHT_CLICK).map(b -> cooldownLine(w, b)))
+                    .ifPresent(text -> player.sendMessage(Component.text("  " + text, NamedTextColor.GRAY)));
+            player.sendMessage(Component.text("  " + verdictLine(in, fire), NamedTextColor.AQUA));
+        }
+
+        cadence.clear(id);
+        player.sendMessage(Component.text("Sample cleared.", NamedTextColor.GRAY));
+        return 1;
+    }
+
+    /** One kind's four figures. Absent intervals print as words, never as {@code 0}. */
+    private static String line(FireCadence.Sample s) {
+        String mean = s.meanIntervalTicks().isPresent()
+                ? String.format(Locale.ROOT, "%.2ft", s.meanIntervalTicks().getAsDouble())
+                : "--";
+        String min = s.minIntervalTicks().isPresent()
+                ? s.minIntervalTicks().getAsLong() + "t"
+                : "--";
+        String tail = s.count() <= 1 ? "   (one event is a timestamp, not a cadence)" : "";
+        return String.format(Locale.ROOT, "count %-4d window %-6s mean %-8s min %-6s%s",
+                s.count(), s.windowTicks() + "t", mean, min, tail);
+    }
+
+    /**
+     * The weapon's cooldown, AUTHORED and EFFECTIVE.
+     *
+     * <p>They differ exactly when the trigger is a basic attack: {@code AbilityService:203-209}
+     * scales it by the caster's attack speed for a {@code weapon_damage} on_hit, and uses the
+     * authored number verbatim otherwise. {@code hunters_bow} is the first case and
+     * {@code quiver_stone} the second, so printing one figure would look wrong on one of them.
+     *
+     * <p>Composed through {@code AttackSpeed.effectiveCooldownTicks} -- the same core function the
+     * gate path uses, not a second expression of the rule.
+     */
+    private static String cooldownLine(WeaponDefinition weapon, TriggerBinding binding) {
+        int authored = binding.ability().cooldownTicks();
+        boolean basic = DamagePayload.isBasicAttack(binding.ability().onHit());
+        if (!basic) {
+            return "cooldown_ticks " + authored + " authored, " + authored
+                    + " effective (not a basic attack -- attack speed does not scale it)";
+        }
+        return "cooldown_ticks " + authored + " authored; a basic attack, so attack speed scales it "
+                + "(at 1.0x: " + AttackSpeed.effectiveCooldownTicks(authored, 1.0) + ")";
+    }
+
+    /** The verdict word, and what it means for Q7. Four arms, each a different FACT. */
+    private static String verdictLine(FireCadence.Sample in, FireCadence.Sample fire) {
+        return switch (FireCadence.verdict(in, fire)) {
+            case INPUT_LIMITED -> "INPUT-LIMITED -- every input became a fire, so the input repeat "
+                    + "IS the limiter. That interval is Q7's answer.";
+            case COOLDOWN_LIMITED -> "COOLDOWN-LIMITED -- fires slower. Q7's answer is still the "
+                    + "INPUT number; the gap is slice C's. NOTE: a magazine or damaged durability "
+                    + "gates too -- take this on hunters_bow to isolate the cooldown.";
+            case NO_REPEAT -> "NO REPEAT -- one input and nothing after it. The client is not "
+                    + "re-sending on this material. NOT an instrument fault: held-repeat does not "
+                    + "work here, and slice B's ruling 1 needs re-ruling before it proceeds.";
+            case INSTRUMENT_FAULT -> "INSTRUMENT FAULT -- more fires than inputs, which is "
+                    + "impossible: a gate cannot fire more often than it is asked to. Do not read "
+                    + "these numbers as a measurement.";
+        };
     }
 
     /**

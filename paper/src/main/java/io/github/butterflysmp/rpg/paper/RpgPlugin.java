@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.kit.KitRegistry;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
+import io.github.butterflysmp.rpg.core.combat.FireCadence;
 import io.github.butterflysmp.rpg.core.combat.ManaRegen;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
@@ -154,6 +155,7 @@ public final class RpgPlugin extends JavaPlugin {
     private RecipeRegistry recipes;
     private CraftResultIndex craftResults;
     private CooldownTracker cooldowns;
+    private FireCadence fireCadence;
     private ResourcePool resources;
     private CombatantStats stats;
     private PlayerHealthSystem healthSystem;
@@ -428,6 +430,11 @@ public final class RpgPlugin extends JavaPlugin {
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
+
+        // Q7's INSTRUMENT. Same tick source and same shape as the tracker above -- core takes a
+        // supplier so the arithmetic is unit-tested with a fake clock; this is the only place the
+        // real clock is bound. It records on every weapon fire attempt and is read by /rpg firerate.
+        this.fireCadence = new FireCadence(Bukkit::getCurrentTick);
         // THE PER-PLAYER CEILING: the base pool plus whatever Mana Bank the player is wearing.
         //
         // Scoped to DEFAULT_RESOURCE deliberately. The pool is keyed by (owner, resourceId) and
@@ -483,7 +490,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         // The one and only registerEvents call. Keep it that way.
         getServer().getPluginManager().registerEvents(
-                new RpgListeners(cooldowns, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
+                new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                         healthSystem, nameplates, statsBar, healthRegen,
                         this, recipes), this);
 
@@ -498,7 +505,7 @@ public final class RpgPlugin extends JavaPlugin {
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new ExampleTelegraphListener(scheduler));
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new WeaponSwingListener(adapters, weapons, weaponService, cooldowns));
+                .registerListener(new WeaponSwingListener(adapters, weapons, weaponService, cooldowns, fireCadence));
         // Suppress vanilla's own crit particles, so a burst means OUR roll. Pure cancel on the
         // Netty thread -- no hop, no Bukkit. See the class for why a packet is justified here and
         // why it cannot eat our own spawnParticle burst.
@@ -507,7 +514,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources),
+                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence),
                         "RPG commands"));
     }
 
