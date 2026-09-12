@@ -208,10 +208,41 @@ triggers:
     #   1.0x -> 16 -> 16     1.2x  -> 13 -> 16     1.4x -> 11 -> 12
     #   1.1x -> 15 -> 16     1.25x -> 13 -> 16     2.0x ->  8 ->  8
     #
-    # Everything below 1.3x buys NOTHING, and on the `>` branch 1.3x buys nothing either. This is
-    # hunters_bow's finding arriving on a balanced weapon. NO SHIPPED GEAR GRANTS ATTACK SPEED
-    # today -- grepped across armor/ and enchants/ -- so the table is reachable in principle and
-    # unreachable in practice, which is exactly when a trap gets built with nobody noticing.
+    # THE DEAD ZONE IS s <= 1.28, NOT "below 1.3x" -- swept in Java over s = 1.00..3.00 rather than
+    # read off the table above, which is why the threshold moved. round(16/s) must reach 12 before
+    # the interval moves at all, and 16/12.5 = 1.28:
+    #
+    #   s <= 1.28   -> effective 13..16 -> fires 16t (1.25/s)   NOTHING BOUGHT, at any price
+    #   s >= 1.29   -> effective 12     -> fires 12t (1.67/s)   +33% in ONE step
+    #   s >= 1.89   -> effective 8      -> fires  8t (2.50/s)   (exact crossing s > 16/8.5 = 1.8824)
+    #
+    # So every ranged attack-speed buff below about +29% buys this weapon NOTHING, and the first one
+    # that does anything gives +33% at once. hunters_bow at 15 breaks at +21% (15/12.5 = 1.20), so
+    # THE BOLTOR'S DEAD ZONE IS THE WIDER OF THE TWO. The honest cooldowns for attack-speed response
+    # and the honest cooldowns for dual-wield halving are NOT the same set; that tension is slice C's.
+    #
+    # THE INSTANCE COUNT IS ONE, AND IT IS A DEV FIXTURE. The previous sentence here said "NO SHIPPED
+    # GEAR GRANTS ATTACK SPEED today -- grepped across armor/ and enchants/". True, and INCOMPLETE:
+    # its grep scope could not have found the one source that exists, which is not gear and not in
+    # content/ at all. Swept again, and the scope is named so the figure is reproducible:
+    #
+    #   grep -rn "effectiveCooldownTicks" core paper --include=*.java     -> ONE production call,
+    #                                                   AbilityService:197, on caster.attackSpeed()
+    #   grep -rn "reconcileAttackSpeedModifiers|attackSpeedTarget" ...    -> ONE production caller,
+    #                                                   PlayerHealthSystem:206
+    #   that caller's only feed: AttackSpeedModifierItems.desiredModifiers -> the
+    #                            attack_speed_boost_TEMP dev item (/rpg attackspeed, bonus 0.0-20.0)
+    #   grep -rn "attack_speed" content/armor content/tools content/enchants content/shields -> NONE
+    #
+    # SHIPPED CONTENT: ZERO. DEV FIXTURES: ONE. So the finding is DORMANT, NOT ABSENT -- and the
+    # distinction is the point: a guard with no instances is not a guard that cannot fire. The one
+    # source is slot-keyed and neither class- nor weapon-gated, so a TEMP clock in the off-hand
+    # already reaches this table today; its own DEFAULT_BOOST of +1.0 resolves to s = 2.0 and lands
+    # on the 8t row, clean past the dead zone. The dead zone is reachable now by authoring any bonus
+    # in 0.0..0.28, which the command permits.
+    #
+    # This is hunters_bow's finding arriving on a balanced weapon, and it is BEN'S TO RULE. Nothing
+    # here is a fix: no number is changed by the commit that recorded it.
     #
     # There is no weapon-level `attack_speed:` key here. That key writes the VANILLA attribute and
     # paces a MELEE basic; this basic attack is ranged and is paced by the cooldown below, through
