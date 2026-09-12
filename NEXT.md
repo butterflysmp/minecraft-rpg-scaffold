@@ -9533,9 +9533,74 @@ the one that looks like nothing happened.
 
 ### MEASURED 2026-09-12 — WHAT DELETING `hunters_bow`, `ironblade` OR `quiver_stone` ACTUALLY COSTS
 
-**A MEASUREMENT, NOT A PLAN, AND THE DELETION IS NOT STARTED.** Taken at `6173a8a`
-(`origin/feat/boltor`; local `HEAD` byte-identical, tree clean). Recorded before anything is removed
+**A MEASUREMENT, NOT A PLAN, AND THE DELETION IS NOT STARTED.** Recorded before anything is removed
 so the decision is made on a shape rather than on a blanket.
+
+> ## TAKEN AT `2a3fb68`. INVALIDATED BY: THE NEXT WEAPON THAT SHIPS.
+>
+> **This measurement was taken for a decision that happens days later against a different tree**, so
+> it carries the revision it was taken at and the event that invalidates it. **Age is not visible on
+> a number.** Re-verify the durable half cheaply; **re-measure the perishable half before using it.**
+>
+> **DURABLE — structural, re-verify rather than re-measure:**
+>
+> - **`core/src/test/resources` does not exist**, so no `core` test can load content. *This is why
+>   the mention-to-failure ratio is what it is*, and it holds until someone adds that directory.
+> - **`GoldenLoreTest` loads the whole directory and names nothing.** It fails for every weapon
+>   deleted, and it **STRENGTHENS as weapons are added** — the one figure here that improves with age.
+>
+> **PERISHABLE — a fact about `2a3fb68` and nothing else:**
+>
+> - **every per-weapon file count** (the blanket, the 4 / 4 / 2, the mention-only columns)
+> - **the golden attribution, `9 / 10 / 14` of `134`.** The denominator is a line count over a
+>   directory that is **about to grow**: it is wrong the moment the next weapon ships, and the
+>   numerators move with any re-render.
+
+---
+
+## PARKED SLICE — THE DEV-WEAPON AND `/kit` DELETIONS, WITH THEIR TRIGGERS
+
+**Operator ruling, 2026-09-12: `quiver_stone` IS in the deletion set, and nothing is deleted yet.**
+
+> *"we're not going to be deleting anything in this session. The deleting of the dev weapons needs
+> more real weapons before it can happen. The deleting of `/kit` and it's related code requires the
+> build system to be implemented which is still a few days away."*
+
+**Parked with a stated trigger, not filed as backlog** — a parked thing with a trigger gets picked up
+and a backlog item rots. Two separate slices, two separate preconditions, and they do **not** unblock
+together:
+
+| slice | what goes | blocked on |
+|---|---|---|
+| **DEV WEAPON DELETION** | `hunters_bow`, `ironblade`, `quiver_stone` | **enough shipped weapons to replace them. NOT A DATE** — a condition on content that does not yet exist |
+| **`/kit` DELETION** | 2 kit files, `KitLoader`, `KitRegistry`, their tests | **the build system.** Days, per the operator |
+
+> **`mage_fire.yml` GOES WITH `ranger_fire.yml`, AND NOBODY HAS RULED THAT.** The `/kit` deletion is
+> described as removing a dev affordance, but the Mage loses its starting kit at the same moment. It
+> is written here because it is the part of that slice **nobody asked for and nobody refused** — the
+> kind of consequence that gets discovered during the deletion rather than before it.
+
+### THE LOOP IN THE PLAN, AND THE PROPHYLACTIC IS FREE
+
+**The precondition for deleting the dev weapons is MORE REAL WEAPONS — and new weapons are also what
+adds references to the dev weapons**, because the dev weapons are the precedents new prose derives
+from. `boltor.yml`, the newest weapon in the project, cites **all three**.
+
+**So every weapon authored between now and the deletion raises the deletion's cost.** This is comment
+staleness rather than breakage, which is exactly why it compounds quietly: nothing fails, nothing is
+listed, and the bill arrives as a sweep nobody scoped.
+
+**THE AUTHORING RULE, effective now:**
+
+- **New content cites the BOLTOR, not `hunters_bow`, `ironblade` or `quiver_stone`.**
+- **When a dev weapon is genuinely the only precedent, cite it AND MARK the citation** as standing on
+  a weapon in the deletion set — so the eventual sweep finds it by **grepping for the marker** rather
+  than by re-deriving the reference graph.
+
+Also in `CLAUDE.md`, because the rule binds whoever is authoring; **and it belongs in front of the
+content chat**, which writes the files where it actually bites.
+
+---
 
 **THE BLANKET IT REPLACES, REPRODUCED FIRST so the two are comparable.** File counts of *mentions*:
 
