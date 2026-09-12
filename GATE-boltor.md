@@ -154,10 +154,44 @@ Judged from the muzzle alone this row measures a third of what is drawn — **an
 because it is the one nearest the eye and therefore densest on screen. A beam that looks solid from
 behind the trigger is exactly what a too-low density looks like from there.
 
-> **SO THE ROW NEEDS A SECOND CLIENT, AND IF THERE IS NOT ONE IT IS A PARTIAL READING THAT MUST SAY
-> SO.** Two accounts, or a second person: one shoots, one stands at the target. **A single-observer
-> reading is not this row** — it is a near-third reading, and recording it as the density verdict
-> would settle a question it did not ask. Write `NEAR THIRD ONLY` on it and leave the row open.
+> **SO THE ROW NEEDS A SECOND VANTAGE POINT. `NEAR THIRD ONLY` IS THE LAST RESORT, NOT THE FIRST** —
+> a row left open for want of a second account is how Q7 sat unread for two slices.
+
+### TRY THIS FIRST — IT COSTS ONE COMMAND AND IT SETTLES ITSELF
+
+```
+fire at the 96-block sightline, then IMMEDIATELY /tp to the far end and look back
+```
+
+**Works → a full reading from one client. Fails → the second vantage is genuinely required, and
+`NEAR THIRD ONLY` becomes a MEASURED fallback rather than an assumed one.** The difference between
+*"we need two clients"* and *"we tried one and it cannot be done"* is one command.
+
+> **PREDICTED FROM THE MECHANISM, NOT MEASURED — so the attempt is still worth making, and this is
+> what it is testing.** A particle packet reaches only the clients in range **at the moment it is
+> sent**. Teleporting afterwards cannot receive a packet that was never sent to you, so *particle
+> lifetime is not the variable* — **reception is**.
+>
+> **But the beam is not drawn instantaneously.** `presentAlong` hops the region scheduler once per
+> **chunk-column segment**, so a 96-block shot draws over **5–6 ticks axis-aligned, 9–11 at 45°**.
+> That is the window, and it is the whole question:
+>
+> - **A typed `/tp` almost certainly misses it.** Seconds to type against a 5–6 tick draw.
+> - **A tp issued INSIDE the window would catch the later segments** — the ones nobody renders. So
+>   if the plain attempt fails, the variant worth one more try is the same teleport **on a keybind or
+>   a macro**, fired immediately after the shot, or a repeating command block.
+>
+> **If both fail, that is a finding about the instrument and not a missing account**, and it should be
+> written down as one: *the far two-thirds of a 96-block beam cannot be observed by the player who
+> fired it, at any timing.*
+
+**TWO ACCOUNTS ON ONE MACHINE IS THE ORDINARY ANSWER, NOT THE HARD CASE.** A dev box running a local
+Paper server can hold a second client; one shoots, one stands at the target. That is the route that
+certainly works, and the attempts above exist only because they are cheaper to try than to arrange.
+
+**A single-observer reading, if it comes to that, is not this row** — it is a near-third reading, and
+recording it as the density verdict settles a question it did not ask. Write `NEAR THIRD ONLY` on it,
+say which attempts were made, and leave the row open.
 
 ### THE THREE NUMBERS ARE JUDGED SEPARATELY, BECAUSE THEY FAIL DIFFERENTLY
 
