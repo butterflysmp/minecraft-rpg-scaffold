@@ -132,15 +132,25 @@ public final class WeaponLoreLines {
     }
 
     /**
-     * A RANGED basic attack's rate as ATTACKS PER SECOND: 15 ticks between shots -> "1.3". Vanilla
+     * A RANGED basic attack's rate as ATTACKS PER SECOND: 16 ticks between shots -> "1.3". Vanilla
      * Minecraft states attack speed this way on its own item tooltips, so a player already knows
      * that higher is better -- which is why this is not just {@link #cooldownLabel} reused. An
      * ability's cadence still reads as a cooldown in seconds, where lower is better.
      *
-     * Derived from the trigger's cooldown because for a ranged basic attack that IS the cadence:
-     * the shot is gated by {@code CooldownTracker}, scaled by {@code AttackSpeed
-     * .effectiveCooldownTicks}. Deriving it rather than authoring a second number is what stops the
-     * two disagreeing the first time someone edits one and forgets the other.
+     * Derived from the trigger's cooldown because that is what gates the shot: it is scaled by
+     * {@code AttackSpeed.effectiveCooldownTicks} and checked by {@code CooldownTracker}. Deriving it
+     * rather than authoring a second number is what stops the two disagreeing the first time someone
+     * edits one and forgets the other.
+     *
+     * BUT THE AUTHORED COOLDOWN IS NOT THE DELIVERED INTERVAL UNDER HELD FIRE, SO THIS NUMBER CAN BE
+     * FALSE. A held right-click delivers an input only every 4 ticks (Q7, {@code GATE-q7.md}), so the
+     * real interval is the cooldown rounded UP to the next multiple of 4 -- and this method does not
+     * round. Executed across authored 4..40, 18 of 37 values print a rate the weapon does not
+     * deliver; authored 5 prints "4.0" against a delivered 2.5/s. The digit is true by construction
+     * only when the cooldown is on the 4-tick grid, which both shipped callers happen to satisfy or
+     * to miss harmlessly. This sentence used to read "for a ranged basic attack that IS the cadence"
+     * and was falsified by that measurement. The full account, and why it is not fixed here, is at
+     * {@code WeaponLoader}'s {@code cooldown_ticks} section.
      *
      * A non-positive cooldown yields "" and the caller drops the line: no shipped ranged basic
      * attack has one, and the guard is what stops a zero-cooldown weapon_damage trigger dividing by

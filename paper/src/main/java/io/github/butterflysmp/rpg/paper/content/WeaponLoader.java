@@ -182,6 +182,34 @@ public final class WeaponLoader {
      * project treats as worst</b>, and it is recorded here rather than left for the first person who
      * times it.
      *
+     * <p><b>AND THE TOOLTIP REPORTS THE AUTHORED RATE, NOT THE DELIVERED ONE.</b>
+     * {@code WeaponLoreLines.rangedAttackSpeedLabel} is {@code String.format("%.1f", 20.0 /
+     * cooldownTicks)} over the AUTHORED cooldown, so it never sees the quantisation above. Executed
+     * across authored 4..40: <b>18 of those 37 values print a rate the weapon does not deliver</b>,
+     * and the error is worst exactly where a fast weapon lives -- authored <b>5 prints "4.0" while
+     * delivering 8t = 2.5/s, a 60% overstatement</b>; 9 prints "2.2" against 12t = "1.7".
+     *
+     * <p><b>It is right on both weapons that ship it today, and on one of them BY COINCIDENCE.</b>
+     * The Boltor's 16 is on the grid, so "1.3" is true by construction. {@code hunters_bow}'s 15
+     * computes 20/15 = 1.333 -> "1.3" while delivering 16t = 1.25/s -> "1.3": <b>the same digit for
+     * two different reasons</b>. So the identical line the two render in {@code golden-lore.txt} is
+     * not evidence the formula is sound -- it is the one case where being wrong and being right
+     * print the same character.
+     *
+     * <p><b>Which makes the multiples-of-4 rule above ALSO the tooltip-honesty rule.</b> The printed
+     * digit is true by construction exactly on the 4-tick grid, and true by rounding luck everywhere
+     * else. The property the line should hold is <b>the rate the weapon ACHIEVES, not the rate its
+     * authored cooldown implies</b>. <b>NOT FIXED HERE</b>: it is a shipped-content correctness
+     * issue wider than any one weapon and the remedy is the operator's. It is named at the key
+     * because this is where the quantisation that falsifies it is documented.
+     *
+     * <p>The nearest edit that would surface it is one someone has already been warned they might
+     * make, for an unrelated reason. {@code quiver_stone} is authored at <b>11</b> and renders no
+     * Attack Speed line only because its {@code on_hit} is a literal {@code damage} payload rather
+     * than {@code weapon_damage}; its file carries a loud <i>"DO NOT CHANGE THIS TO weapon_damage
+     * WITHOUT RE-CHECKING GATE-quiver.md V2"</i>. Make that change and the weapon begins printing
+     * "1.8" while firing at 12t ("1.7").
+     *
      * <p><b>ONE BOUNDARY IS UNMEASURED AND IS NOT MODELLED PAST.</b> Neither weapon read had a
      * cooldown that is an exact multiple of 4, so whether a cooldown of exactly <b>12 fires at 12 or
      * at 16</b> is unknown -- it is the difference between {@code >=} and {@code >} in
