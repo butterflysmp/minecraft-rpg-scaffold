@@ -1,0 +1,69 @@
+# The Boltor's beam: the line itself, drawn down each chunk-column segment as the ray walks it.
+# Id is the filename: boltor_beam.
+#
+# ITS OWN FILE, NOT lapis_beam -- volley_beam's rule, and the Boltor has a second reason on top of
+# it. A shared visual is a coupling invisible at BOTH ends (the trap ember_burst sprang on the Flint
+# Staff), and quiver_stone currently borrows lapis_beam precisely because it is a fixture that will
+# one day be deleted. THE SECOND REASON IS THE ONE THAT MATTERS HERE: this is the longest beam in
+# the project by half again, and its density is an OPEN QUESTION. Tuning it must not move the Lapis
+# Staff, which has a settled appearance nobody is asking about.
+#
+# THE COLOUR IS OWNED BY NOTHING ELSE, checked against the three shipped beams: lapis_beam is
+# [40, 90, 240] (saturated deep blue), volley_beam [230, 60, 230] (magenta), emerald_beam
+# [40, 220, 90] (green). This is a pale steel white with a blue cast -- far lighter and far less
+# saturated than lapis, so the Ranger's bolt is not read as the Mage's staff at a glance. It also
+# suits the element: the Boltor is KINETIC, and kinetic is the one element deliberately carrying no
+# damage_symbol, because it is what a hit wears when it wears nothing.
+#
+# ================== THE DENSITY IS INHERITED, NOT MEASURED, AND THIS IS ITS LOAD TEST ==================
+#
+# samples_per_block: 4 is the figure BOTH shipped beams landed on independently, and it is exact
+# rather than eyeballed -- BeamVisuals.drawTrail's density parameter is documented "particles per
+# block". It is kept here so the density row measures THIS BEAM'S LENGTH against a density already
+# known-good at 26 and 32 blocks. Changing it in the same commit that triples the length would
+# confound the two questions.
+#
+# WHAT THAT INHERITANCE ACTUALLY COSTS AT 96, WRITTEN DOWN SO THE ROW HAS SOMETHING TO CHECK:
+#
+#   lapis_beam    26 blocks    ~104 points per shot
+#   emerald_beam  32 blocks    ~128 points per shot
+#   THIS          96 blocks    ~380 points per shot     (95 drawn x 4; CastExecutor.BEAM_ORIGIN_GAP
+#                                                        skips the first 1.0 block, so the first
+#                                                        sample sits at 1.25 from the eye)
+#
+# AND THEY OVERLAP. The Boltor fires every 16 ticks against a 5-10 tick flight, so up to TWO beams
+# are drawn at once -- roughly 760 points in the air. That is the largest particle load any weapon
+# in this project has asked for, and NOBODY HAS LOOKED AT IT YET.
+#
+# ANY DENSITY FIGURE RECORDED FOR THIS FILE MUST NAME THE CLIENT PARTICLES SETTING IT WAS JUDGED ON,
+# per lapis_beam.yml's rule: a density without a setting is a measurement missing half its units.
+# That rule bites harder here than anywhere it has been stated before. A DENSITY-BASED VISUAL
+# DEGRADES WORSE THAN A COUNT-BASED ONE -- a line thinned by the client's setting stops being a line
+# and becomes a trail of unrelated specks -- and this is the longest line in the game, so it has the
+# most length over which to come apart. Nothing here has been judged yet; 4 is inherited.
+#
+# AND THE ROW THAT JUDGES IT NEEDS AN OBSERVER AT DISTANCE, NOT ONLY THE SHOOTER. The 32-block
+# client particle cap (GATE-volley V3) means the shooter renders roughly the first third of this
+# beam and the target renders roughly the last third. Judged from the muzzle alone, the row measures
+# a third of what is drawn -- and, worse, it measures the third that is nearest the eye and
+# therefore densest on screen. See weapons/boltor.yml, at `range`.
+#
+# SIZE 1.2, WHICH IS lapis_beam's SINGLE-BEAM FIGURE RATHER THAN emerald_beam's 1.0. Emerald went
+# slimmer because SIX of its beams overlap within one cast; two overlapping across shots is a
+# different quantity and does not obviously call for the same remedy. This is the value most likely
+# to move once the density row is read, and it is flagged as such rather than presented as settled.
+#
+# PARTICLE-ONLY, NO SOUND STEP, AND THAT IS ENFORCED RATHER THAN CONVENTIONAL: ContentValidator
+# refuses a sound inside a beam, because presentAlong runs once per CHUNK-COLUMN SEGMENT -- so a
+# sound here would play one to three times per shot depending on which way the player was facing,
+# and at 96 blocks that count is higher still.
+
+steps:
+  - type: particle
+    particle: DUST
+    color: [200, 215, 235]   # pale steel; owned by nothing else in content/visuals/
+    size: 1.2
+    count: 1                 # per SAMPLE POINT, not per beam -- ~380 of them down a 96-block shot
+    spread: 0.0
+    speed: 0.0               # inert for DUST; authored so its absence is not read as a choice
+    samples_per_block: 4

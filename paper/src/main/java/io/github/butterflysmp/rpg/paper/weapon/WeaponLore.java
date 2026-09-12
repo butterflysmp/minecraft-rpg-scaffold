@@ -81,7 +81,14 @@ public final class WeaponLore {
         // THE MAGAZINE, directly under the element and above the stat/ability blocks. It is the
         // weapon's most volatile number and the one a player checks mid-fight, so it goes where the
         // eye lands first rather than below prose. Empty string for a weapon with no quiver, which
-        // is every weapon but the fixture today.
+        // is every weapon but quiver_stone (the fixture) and boltor (the first shipped one).
+        //
+        // NOTE THE BOLTOR IS THE FIRST WEAPON TO REACH THIS LINE **AND** THE STAT BLOCK BELOW. Its
+        // shot is a weapon_damage basic attack, so it renders a quiver line AND a "Ranged Damage" /
+        // "Attack Speed" pair; quiver_stone carries a literal damage payload and renders an ability
+        // block instead. The quiver line is keyed on CAPACITY alone and sits above the trigger loop,
+        // so the two are independent by construction rather than by luck -- but this is the first
+        // weapon on which that independence is exercised at all.
         // THE DENOMINATOR IS THE STAMP, NOT THE DEFINITION -- resolved through QuiverState.capacityOf
         // so the tooltip and the refusal logic read the SAME number. A tooltip on the stamp while the
         // refusal resolved the holder live would lie by a new mechanism. With no item (a

@@ -1,0 +1,279 @@
+# THE BOLTOR -- the Ranger's identity weapon, and the first weapon in this project whose damage is a
+# BALANCED number rather than a placeholder.
+#
+# Slice B ships it SINGLE-WIELD. Dual-wield, alternation and the off-hand ruling are slice C's and
+# are stated there rather than falling out of this file by omission -- see the MAIN-HAND note at the
+# bottom, which is a live constraint today and not a forward reference.
+#
+# ================== EVERY NUMBER HERE WAS RULED BY THE OPERATOR ==================
+#
+#   quiver_size    8     cooldown_ticks  16     reload_ticks  60
+#   attack_damage  19    range           96     pierce        none
+#
+# NOTHING IN THAT SET IS DERIVED. Each is recorded at its key with the reason it was ruled, and
+# where a consequence follows from a number it is written as a consequence rather than as a
+# justification. That distinction is load-bearing for the damage -- see attack_damage.
+#
+# ================== THE SECOND REVERSAL ON THIS WEAPON, AND BOTH ARE WRITTEN ==================
+#
+# The Boltor is a RAY. The old repo moved this weapon OFF hitscan deliberately, to keep the bolt
+# "a real, dodgeable arrow", and that reversal was itself a decision with reasons. The operator is
+# now reversing it back, knowingly. BOTH reversals are recorded here, because a second reversal that
+# deletes the first leaves the next reader with one decision and no idea it was ever contested.
+#
+# NOT CARRIED from the old implementation, and each was checked rather than assumed absent: the
+# arrow entity, its velocity, ammo-type mirroring, tipped arrows, and arrow pickup. The magazine
+# replaces all five -- ammunition is the quiver, not the inventory.
+#
+# THE I-FRAME APPARATUS IS ALSO NOT PORTED, AND THAT WAS CHECKED RATHER THAN DROPPED. Custom HP
+# drains through stats().damage(...) and the vanilla hit is cosmetic, so vanilla invulnerability
+# frames cannot swallow a bolt. The note is carried because the next reader will otherwise
+# re-derive it from the old repo's architecture and re-add machinery this one does not need.
+
+id: boltor
+display_name: "Boltor"
+
+# KINETIC, and that is a decision rather than a default. An element that declares applies_status
+# would accrue once per bolt at roughly a shot a second, which is a balance number nobody has ruled
+# and which the magazine already prices. The Ranger's identity in this project is CADENCE -- eight
+# shots and a reload -- not an element, and kinetic is what a hit wears when it wears nothing.
+element: kinetic
+
+# NOT RULED. The six numbers above were; this was not, and it is flagged rather than presented as
+# part of the set.
+#
+# `rare` rather than `epic` because EPIC IS UNUSED IN SHIPPED CONTENT, and introducing a tier for
+# one weapon sets a precedent nothing else is ready for. `rare` has precedent. The Boltor is also
+# meant to be the baseline the next class prices against, and a baseline sitting two tiers up reads
+# as an outlier. Re-rule it freely; nothing else in this file depends on it.
+rarity: rare
+
+# The quiver is the Ranger's brake, and this is the first SHIPPED weapon to carry one --
+# quiver_stone is a fixture. It also means Power (enchants/power.yml, effect: damage, class: ranger)
+# can reach this weapon's attack_damage; see the note there.
+class: ranger
+
+# CROSSBOW, and quiver_stone was built on this material FOR THIS WEAPON. Q7's held-input reading was
+# taken on a crossbow that binds right_click and therefore cancels vanilla exactly as this file
+# does, which is the whole reason that reading transfers here rather than being a fact about a
+# fixture. Verified present in the pinned 26.1.2 jar -- the check is recorded in quiver_stone.yml.
+#
+# A CROSSBOW HAS VANILLA DURABILITY, SO THIS WEAPON WEARS AS WELL AS EMPTIES. Two independent
+# per-item counters decrement per shot, and BOTH route to a notice, so one press can meet either of
+# two different refusals.
+#
+# WHICH ONE WINS IS DECIDED BY CODE ORDER AND IS NOT A BOOT QUESTION. WeaponFire.attempt checks the
+# broken gate BEFORE the quiver gate, and RpgListeners handles CastResult.Broken before
+# CastResult.Empty. So a BROKEN Boltor says it is broken even with an empty magazine, and only an
+# intact one ever reports an empty one. That is the right way round: durability is the condition a
+# player fixes at an anvil, the magazine is the one they fix by holding left-click.
+material: crossbow
+
+# ================== 19: THE PROJECT'S FIRST BALANCED DAMAGE NUMBER ==================
+#
+# RULED OUTRIGHT BY THE OPERATOR. It is NOT parity with any existing weapon, and this file must not
+# be read as claiming it is.
+#
+# THE REASON THAT SENTENCE IS HERE RATHER THAN OMITTED: both weapons an author would reach for as an
+# anchor are DEV WEAPONS. `ironblade` ("The first weapon. A plain sword.") and `hunters_bow` are
+# both placeholders by the operator's ruling, and NOTHING IN EITHER FILE SAYS SO -- ironblade's
+# attack_damage: 8 even carries a comment describing it as a source of truth for the tooltip, which
+# reads as authority rather than as scaffolding. Anchoring on either is anchoring on a placeholder,
+# and the mistake is available to anyone who greps for a comparable number. It was made during this
+# slice's own planning, which is why it is written at the point of use.
+#
+# SO: 19 IS THE ANCHOR, and it is the first number in content/ allowed to be one. The next class
+# prices against THIS, not against a stone or a starter sword.
+#
+# IT IS A REAL STAT, NOT A LITERAL. The weapon contributes it as a MAIN_HAND modifier on the
+# wielder's ATTACK_DAMAGE and the weapon_damage on_hit below reads it back, which is what a future
+# "+N Ranged Damage" modifier has to grip. A literal buried in the effect would give it nothing to
+# hold.
+#
+# AND IT IS THE FIRST RANGER BASE WHERE POWER'S THREE LEVELS ARE LEGIBLE. The damage popup rounds
+# with Math.round (DamageNumberText), so on this weapon Power reads:
+#
+#   plain 19    I 19.95 -> "20"    II 20.90 -> "21"    III 21.85 -> "22"
+#
+# Four distinguishable values. On hunters_bow (6) the same curve reads 6 / 6 / 7 / 7 and level I is
+# invisible -- power.yml records exactly that, and says the boot gate therefore uses the bow for the
+# CLASS-MISMATCH step because it cannot use it for the level step. THIS WEAPON CAN SERVE THE LEVEL
+# STEP. Executed, not estimated: the bow figures were reproduced from the same expression and match
+# power.yml's published 6 / 7 / 7, which is why the Boltor's are trusted.
+#
+# power.yml is NOT edited by this commit. Its sentences are all still true of the bow; what changed
+# is that the Ranger now has a second weapon, and moving a boot-gate step is a gate decision rather
+# than a content one.
+attack_damage: 19
+
+# ================== THE MAGAZINE ==================
+#
+# BOTH ARE AUTHORED BASES, NOT THE VALUES THE GAME USES. A2 made both of them STATS: the capacity a
+# wielder packs at is QuiverSize.resolve(quiver_size, their gear) and the duration a reload takes is
+# ReloadTime.resolve(reload_ticks, their gear). What is written here is what a player with no such
+# gear gets -- and what a craft preview or a recipe-browser icon shows, since neither has a wielder
+# to resolve against. A gate row must read what is ON SCREEN, never this line.
+#
+# 8 is the operator's original brief, and it is DELIBERATELY NOT quiver_stone's 9. The fixture was
+# moved off 8 so a gate row staging "fires N then refuses" can tell the stat from the constant; two
+# equal quantities in one row means at least one of them is measuring the fixture.
+quiver_size: 8
+
+# 60 ticks, 3.00s. Ruled. The reload is UNGATED by the shot cooldown -- ruled in A1 -- so a player
+# may begin reloading the instant the eighth bolt leaves, rather than waiting out a cooldown that
+# has nothing left to gate. Any cycle figure computed for this weapon must use that branch;
+# PLAN-boltor.md records a published figure that collides with the branch A1 refused, and why.
+#
+# NOT ON THE TOOLTIP. WeaponLore renders a quiver line and NO RELOAD LINE AT ALL, so this number
+# reaches a player only as the wait itself. Said here so nobody claims the tooltip shows it.
+#
+# AND THE QUIVER LINE HAS TWO RENDERINGS, WHICH IS WORTH KNOWING BEFORE A GATE ROW READS ONE.
+# The numerator is the ITEM's stamp, so an item in hand reads "Quiver: 8/8" while a renderer with no
+# item -- a craft preview, a browser icon, golden-lore.txt -- reads "Quiver: --/8". ABSENCE IS NOT
+# EMPTINESS: an unstamped item shows "--", never "0", so a mint path that forgot to stamp looks
+# wrong rather than looking like a spent magazine. golden-lore.txt records the second form.
+reload_ticks: 60
+
+flavor:
+  - "Eight bolts, then three seconds"
+  - "of being a person holding a crossbow."
+
+triggers:
+  # THE ONLY TRIGGER. left_click is absent BY REFUSAL, not by choice: WeaponDefinition rejects a
+  # weapon that declares both a quiver and a left_click trigger, because a quiver spends left-click
+  # on its reload and two owners for one press would race silently. Authoring one here would be a
+  # named, skipped file at boot rather than a subtle bug, which is the point of the refusal.
+  right_click:
+    # NO name/description, and their absence is deliberate. A weapon_damage trigger IS the basic
+    # attack, so WeaponLore renders it as a STAT BLOCK ("Ranged Damage: 19" / "Attack Speed: ...")
+    # rather than an ability section, and prose authored here would never be read by anyone. The
+    # flavor block above is where this weapon's words live.
+
+    # ================= 16: RULED, AND THE ONE RESIDUE CLASS NOBODY HAS MEASURED =================
+    #
+    # WHY A MULTIPLE OF 8 RATHER THAN OF 4. Held fire quantises an authored cooldown up to the next
+    # 4-tick input (Q7; see WeaponLoader's cooldown_ticks section), so only multiples of 4 are honest
+    # singly -- but a dual-wield halving has to land on a multiple of 4 TOO, or it buys less than it
+    # claims: 12 -> 6 delivers 8, a 1.5x not a 2x; 20 -> 10 delivers 12, a 1.67x. Only multiples of 8
+    # survive halving intact. 8 itself was rejected for headroom: a dual cooldown of 4 sits ON the
+    # input floor, where attack speed becomes inert entirely.
+    #
+    # *** AND 16 IS A MULTIPLE OF 4, WHICH IS THE ONE CASE NEITHER Q7 READING COVERED. ***
+    #
+    # Both measured cooldowns (11, 15) resolved by rounding UP to a strictly larger input, so the
+    # boundary never arose. Here it does:
+    #
+    #     inputs at t = 0, 4, 8, 12, 16 ...    fire at 0, cooldown 16 expires at t = 16
+    #       elapsed >= cooldown  ->  fires at 16   (interval 16t, 1.25 shots/s)
+    #       elapsed >  cooldown  ->  16 is missed, next input at 20  ->  fires at 20 (1.00 shots/s)
+    #
+    # THE SOURCE PREDICTS 16: CooldownTracker.isReady is `currentTick >= ready` and trigger stamps
+    # `now + cooldownTicks`. That model is 2-for-2 on the measured points (11 -> 12, 15 -> 16).
+    # IT IS STILL A PREDICTION. Those two points could not distinguish this case, and Q7 exists
+    # precisely because a 15-tick cooldown did not produce a 15-tick rate. Read the source, then
+    # MEASURE it: GATE-boltor.md's first row is that reading and only that.
+    #
+    # NOTHING DOWNSTREAM IS PRICED ON 16 UNTIL THAT ROW CONFIRMS IT. If it reads 20, the grid is
+    # strictly-greater, the honest multiples shift by one, and this number is re-ruled.
+    #
+    # THE TOOLTIP ALREADY SHOWS A NUMBER ON THIS BRANCH, AND IT CANNOT SHOW BOTH.
+    # WeaponLoreLines.rangedAttackSpeedLabel is String.format("%.1f", 20.0 / cooldownTicks), so this
+    # weapon renders "Attack Speed: 1.3". Executed, not predicted -- Java's %.1f rounds HALF_UP where
+    # C's printf rounds half-to-even, and 20.0 / 16 is exactly 1.25.
+    #
+    #   authored 16 -> tooltip "1.3"    delivers 1.25/s if >=, 1.00/s if >
+    #   authored 15 -> tooltip "1.3"    hunters_bow, delivering 1.25/s (measured)
+    #
+    # So THE TOOLTIP CANNOT TELL A 15-TICK WEAPON FROM A 16-TICK ONE, and on the `>` branch it would
+    # overstate this weapon by 30%. A falsified number shown to a player is the class this project
+    # treats as worst, so it is recorded here rather than left for whoever first times it.
+    #
+    # AND THE ATTACK-SPEED STAT IS LARGELY INERT ON THIS WEAPON, on either branch. Effective cooldown
+    # is round(16 / speed), then quantised up to the next input (the >= branch shown):
+    #
+    #   1.0x -> 16 -> 16     1.2x  -> 13 -> 16     1.4x -> 11 -> 12
+    #   1.1x -> 15 -> 16     1.25x -> 13 -> 16     2.0x ->  8 ->  8
+    #
+    # Everything below 1.3x buys NOTHING, and on the `>` branch 1.3x buys nothing either. This is
+    # hunters_bow's finding arriving on a balanced weapon. NO SHIPPED GEAR GRANTS ATTACK SPEED
+    # today -- grepped across armor/ and enchants/ -- so the table is reachable in principle and
+    # unreachable in practice, which is exactly when a trap gets built with nobody noticing.
+    #
+    # There is no weapon-level `attack_speed:` key here. That key writes the VANILLA attribute and
+    # paces a MELEE basic; this basic attack is ranged and is paced by the cooldown below, through
+    # CooldownTracker. WeaponLore branches on the same predicate (BasicMelee.isVanillaDriven), so the
+    # displayed cadence and the real one cannot diverge.
+    cooldown_ticks: 16
+    cast:
+      type: ray
+      # 96 -- RULED, and the longest range in this project by half again. The authored set is
+      # 23, 26, 30, 32, 64, and only volley_stone's 64 exceeds the 32-block client particle cap at
+      # all, as a deliberate grammar-limit fixture.
+      #
+      # THIS DOES NOT CONTRADICT THE cursed_emerald RULING, AND THE DISTINCTION IS THE WHOLE POINT.
+      # That weapon was ruled DOWN from 64 to 32 on "VISIBLE REACH EQUALS REAL REACH", with the harm
+      # named as "the ray hitting a target the beam never reaches". THE HARM DOES NOT OCCUR AT 96:
+      # particles are emitted SERVER-SIDE along the whole ray, and what the 32-block cap limits is
+      # each CLIENT's render distance. The shooter renders the first ~32 blocks and THE TARGET
+      # RENDERS THE LAST ~32 -- so the beam does reach them. What no single observer sees is the
+      # middle third.
+      #
+      # An earlier carry-forward flattened this into "a ray past 32 blocks draws only its near
+      # half", which is a shooter-relative observation stated as a property of the ray. It is
+      # corrected here, and it has a direct consequence for the gate: THE BEAM-DENSITY ROW NEEDS AN
+      # OBSERVER AT DISTANCE. Staged from the muzzle alone, that row measures a third of what is
+      # drawn.
+      #
+      # FLIGHT TIME IS A FEATURE HERE, NOT A LIMITATION. Segment 0 runs inline and every later
+      # chunk column costs a tick, so at 96 blocks: vertical 0 ticks (still hitscan), axis-aligned
+      # 5-6, 45 degrees 8-10 -- 0.25 to 0.50s from click to damage, AIM-DEPENDENT.
+      #
+      # A CONSEQUENCE: BOLTS OVERLAP IN FLIGHT, 16 ticks between shots against a 5-10 tick walk, so
+      # up to two are in the air at once. Nothing in the schema warns about this, and
+      # CastSpec.minimumCooldownTicks returns 0 for a Ray -- there is no in-flight guard to trip.
+      #
+      # RANGE IS UNVALIDATED, AND THIS SLICE DOES NOT ADD THE GUARD. CastSpec.Ray has no compact
+      # constructor and ContentValidator checks only `beam`, so negative, zero and NaN are all
+      # representable and all silent. Named as owed rather than fixed here: adding a validator inside
+      # a content commit is how a guard lands with no test that ever makes it fire.
+      range: 96
+      beam: boltor_beam
+    on_hit:
+      # weapon_damage, NOT a literal -- the opposite of quiver_stone's choice, and deliberate on both
+      # sides.
+      #
+      # quiver_stone.yml carries a loud "DO NOT CHANGE THIS TO weapon_damage" warning. IT IS ABOUT
+      # THE FIXTURE, NOT ABOUT THIS KEY. Its argument is that making the FIXTURE a basic attack would
+      # silence the "On cooldown for ..." string that GATE-quiver row V2 uses to tell a correct gate
+      # ordering from a broken one. That is a fact about what V2 measures, and V2 is staged on
+      # quiver_stone, which this commit leaves alone.
+      #
+      # THE SILENCE IS REAL, AND IT WAS CHECKED HERE RATHER THAN ASSUMED HARMLESS.
+      # RpgListeners:529 returns early for a basic attack, so this weapon will NEVER print
+      # "On cooldown for ...". For a weapon fired by HOLDING a button that is correct behaviour
+      # rather than a loss: chatting once per gated press is the spam WeaponSwingListener.onSwing
+      # already refuses to produce.
+      #
+      # AND THE REFUSALS THAT MATTER SURVIVE IT, WHICH IS THE PART THAT HAD TO BE VERIFIED.
+      # Broken (:497), Empty (:508) and Reloading (:512) are all handled BEFORE that early return and
+      # bypass the silence deliberately -- the code's own comment says a quiver weapon's shot "will
+      # usually BE a basic attack", so the bypass was written for exactly this weapon. An empty
+      # Boltor says so; a broken one says so; only the cooldown is quiet.
+      - type: weapon_damage
+        element: kinetic
+
+# ================ NOT AUTHORED BY THIS COMMIT, AND SAID SO RATHER THAN LEFT BLANK ================
+#
+# NO PIERCE -- AND NO PIERCE NEEDS NO CODE. stepRay returns unconditionally on the first body it
+# finds, and its javadoc already names the already-hit-id set that pierce WOULD require. That set
+# stays unwritten. Damage is therefore priced PER TARGET by the operator's ruling, and 19 is what one
+# body takes.
+#
+# NO RECIPE AND NO KIT. The Boltor is in neither content/recipes/ nor content/kits/, so it is
+# reachable only through /rpg give and its rpg.command.give permission. That is this commit authoring
+# the WEAPON and not its acquisition; ranger_fire.yml still ships hunters_bow. Owed to the content
+# pass, and named here so the absence is not read as an oversight.
+#
+# THE MAIN-HAND GUARD APPLIES TODAY. WeaponFire reads getItemInMainHand, so a Boltor held ONLY in the
+# off-hand does not fire at all. Two repos reached that guard independently. Slice C states which
+# behaviour ships; this file records the current one so slice B does not decide it by omission.
