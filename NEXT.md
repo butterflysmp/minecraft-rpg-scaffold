@@ -9495,6 +9495,42 @@ cannot name such a measurement, you do not have an explanation, you have a reaso
 And note which way the cost falls: a control that fires and is argued with is **worse** than one that
 never ran, because you now believe you checked.
 
+### AN EXIT STATUS PROVES A PROCESS ENDED, NEVER THAT IT DID ITS WORK
+
+**Named 2026-09-12, the Boltor. Also in `CLAUDE.md`; here with the reason.**
+
+The general shape: **every instrument in this family reports on a PROCESS, and the thing under test is
+an ARTEFACT.** An exit code says a process reached its end. A printed line says a process produced
+output. Neither says that the file the process existed to write is now different from what it was.
+
+**The instance.** Slice B commit 1 added a weapon, which necessarily moves `golden-lore.txt` — the one
+expected golden change in the slice, named in advance at `PLAN-boltor.md:275`. The regenerate was run.
+It did not fail. It wrote nothing. `git status --porcelain` on the path showed the file unmodified, and
+that is the only thing that caught it; the invocation was indistinguishable from a successful one.
+
+**Why the suite could not catch it.** A golden that was never regenerated still matches the code it was
+last generated from. The failure is invisible to the test whose entire job is to compare the two,
+because the comparison is between two things that both failed to move. It surfaces later, in someone
+else's diff, as a golden that disagrees with content which shipped commits ago — at which point the
+commit that actually broke it is no longer the obvious suspect.
+
+**Three members, differing by where the lie sits:**
+
+| rule | the file | the figures over it |
+|---|---|---|
+| `Zero-exit is not evidence` (scripted edits) | unchanged, or changed somewhere else | not computed |
+| `AN INTEGRITY FIGURE PROVES WHICH BYTES` | changed, wrongly | correct, and reconcile |
+| this one | **unchanged** | **correct, reconcile, and describe stale content** |
+
+The third is the quietest of the three because every downstream check is honest. The blob hash is
+right, `--numstat` is right, the suite is green — all of them computed over a file that a command was
+told to rewrite and did not.
+
+**How to apply:** after any command whose purpose is to produce or update a file, read the FILE —
+`git status --porcelain <path>`, an mtime, a byte count — and decide before you run it which answer you
+expect. When you have just changed an input, *unmodified* is the alarming answer, and it is precisely
+the one that looks like nothing happened.
+
 ## THE VOLLEY SLICE — `CastSpec.Volley`, and one shape worth more than the slice
 
 Landed on `feat/castspec-volley` as three commits: the two ports (`dc0f9da`), the kind and its arms

@@ -277,6 +277,29 @@ So:
   > and *six not shown*, two clauses apart. **Adding a row and fixing the count in the same edit
   > changes the set the count is over.**
 
+- **AN EXIT STATUS PROVES A PROCESS ENDED, NEVER THAT IT DID ITS WORK. CHECK THE ARTEFACT, NOT THE
+  INVOCATION.** When a command's job is to WRITE something — regenerate a golden file, emit a report,
+  produce a jar — the thing to read is the file it was told to write, not the status it returned.
+
+  > **2026-09-12.** A `golden-lore.txt` regenerate ran, did not fail, and **wrote nothing.** It was
+  > caught by `git status` on the FILE, which showed the path unmodified in a commit that had just
+  > added a weapon — a commit in which the golden could not possibly be unchanged. Nothing about the
+  > invocation said so.
+  >
+  > **This is the third member of a family already on this page twice, and the three differ by where
+  > the lie sits.** *Zero-exit is not evidence* below is this sentence scoped to a scripted EDIT.
+  > **AN INTEGRITY FIGURE PROVES WHICH BYTES** above is it one layer in, where the file did change and
+  > changed wrongly. This is the outermost case: **the file did not change at all — so every figure
+  > computed over it is correct, reconciles perfectly, and is about the old content.**
+  >
+  > **The asymmetry that makes it quiet: a golden that was never regenerated still matches the code it
+  > was last generated from.** The suite comparing them is green because both failed to move. A silent
+  > no-op and a correct run are the same picture until someone else's diff.
+  >
+  > **Practically:** after any command whose output is a file, run `git status --porcelain <path>` —
+  > and decide *before* running it which answer you expect. When you have just changed an input,
+  > ***unmodified* is the alarming answer**, and it is the one that looks like nothing went wrong.
+
 - **PROSE REACHING A COMMAND GOES THROUGH A FILE, NEVER THROUGH QUOTING.** `git commit -F <file>`,
   `gh pr create --body-file`, `gh pr merge --body-file`, a written file for anything else. Never
   `-m`, never `--body`, never a heredoc.
