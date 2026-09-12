@@ -1,12 +1,20 @@
-# GATE — the Boltor, the `>=` / `>` boundary at a cooldown on the 4-tick grid
+# GATE — the Boltor: the `>=` / `>` boundary, and the beam density at 96 blocks
 
 **Status: NOT RUN.** **Every row below was written before any boot, and no reading has been taken.**
 No figure in this file is an observation; the expected values are pre-recorded predictions, recorded
 so that a later reading can disagree with them. When the row is run, the reading is written *beside*
 the prediction and the prediction is not edited.
 
-**This gate carries ONE row.** `PLAN-boltor.md:225` — *"the boundary row and only that"*. The
-beam-density row, the elapsed figure and the `tuning:` marking are commits 3–5 and are not here.
+**This gate carries TWO rows, and both are BOOT-ONLY.** It shipped with one — `PLAN-boltor.md:225`,
+*"the boundary row and only that"* — and the density row was added afterwards, deliberately, **before
+either had been run**: the operator's time at a booted server is the scarce resource here, and two
+boot-only rows written separately cost two trips. **Row 2 does not depend on row 1's reading**, so
+nothing is contaminated by staging them together.
+
+The elapsed figure landed in commit 3 (`GATE-q7.md` carries it) and the `tuning:` marking is
+unwritten and unruled. **The boundary-dependent PROSE of commit 5 is deliberately still unwritten**,
+because if row 1 reads 20 the tooltip overstates by 30% and that is a different paragraph — a row is
+*written*, a conclusion is *taken*.
 
 ---
 
@@ -119,6 +127,75 @@ Boltor's own 16 would be re-ruled to 15.
 
 ---
 
+---
+
+## ROW 2 — THE BEAM DENSITY AT 96 BLOCKS
+
+**Nothing about this beam's appearance has ever been judged. `samples_per_block: 4` and `size: 1.2`
+are INHERITED from beams half its length, and `BEAM_ORIGIN_GAP` was adopted at `1.0` on a
+blanket-answered ruling and never compared against anything.** This is the longest line in the game
+and the largest particle load any weapon has asked for.
+
+| | |
+|---|---|
+| **weapon** | `boltor`, `range: 96`, visual `boltor_beam` |
+| **do** | fire single shots at a clear sightline of 96+ blocks, then fire a held burst so two beams overlap in flight |
+| **read** | is it a LINE or a trail of unrelated specks — **at the muzzle AND at the far end** |
+| **record** | the client **Particles** setting it was judged on, and the verdict on each of the three numbers separately |
+
+### THE STAGING REQUIREMENT THAT MAKES THIS ROW HARD, STATED BEFORE IT IS ATTEMPTED
+
+**ONE OBSERVER CANNOT TAKE THIS ROW.** The client particle cap is ~32 blocks (`GATE-volley` V3), and
+it is a cap on the distance from *the viewer* to the particle — not a property of the ray. So the
+shooter renders roughly the **first third** of a 96-block beam and someone standing at the impact
+point renders the **last third**. **Nobody renders the middle third at all.**
+
+Judged from the muzzle alone this row measures a third of what is drawn — **and the wrong third**,
+because it is the one nearest the eye and therefore densest on screen. A beam that looks solid from
+behind the trigger is exactly what a too-low density looks like from there.
+
+> **SO THE ROW NEEDS A SECOND CLIENT, AND IF THERE IS NOT ONE IT IS A PARTIAL READING THAT MUST SAY
+> SO.** Two accounts, or a second person: one shoots, one stands at the target. **A single-observer
+> reading is not this row** — it is a near-third reading, and recording it as the density verdict
+> would settle a question it did not ask. Write `NEAR THIRD ONLY` on it and leave the row open.
+
+### THE THREE NUMBERS ARE JUDGED SEPARATELY, BECAUSE THEY FAIL DIFFERENTLY
+
+| number | today | what a bad reading looks like |
+|---|---|---|
+| `samples_per_block` | **4** | the line comes apart into specks — worse the further along it you look, and worse again on a reduced Particles setting |
+| `size` | **1.2** | solid enough near, but two overlapping beams read as one fat smear rather than two bolts |
+| `BEAM_ORIGIN_GAP` | **1.0** | the beam starts visibly detached from the weapon, or starts so close it occludes the crosshair |
+
+**`BEAM_ORIGIN_GAP` IS THE ONE WITH NO ALTERNATIVE EVER TRIED.** It is a `core` constant shared by
+every beam in the project, so a change to it moves the Lapis Staff and the Cursed Emerald too —
+**which is the reason to judge it on the weapon that stresses it and to change it nowhere in this
+slice.** If it reads wrong, that is a finding, not an edit.
+
+### PRE-RECORDED, SO THE READING HAS SOMETHING TO DISAGREE WITH
+
+```
+lapis_beam     26 blocks   ~104 points per shot   settled, nobody is asking
+emerald_beam   32 blocks   ~128 points per shot   went to size 1.0 for SIX overlapping beams
+boltor_beam    96 blocks   ~380 points per shot   95 drawn x 4, the first 1.0 block skipped
+               two in air  ~760 points            16t between shots against a 5-10 tick flight
+```
+
+**Expectation, written in advance: `4` holds at the muzzle and comes apart at the far end**, because
+angular density falls with distance while `samples_per_block` is constant in WORLD space. If the far
+observer reports a solid line, that prediction is wrong and the inheritance was better than it looked.
+
+### AND THE SETTING IS HALF THE UNITS
+
+`lapis_beam.yml`'s rule: **a density recorded without the client Particles setting it was judged on is
+a measurement missing half its units.** It bites hardest here. A density-based visual degrades worse
+than a count-based one — a thinned line stops being a line and becomes unrelated specks — and this is
+the longest line in the game, so it has the most length over which to come apart. **Judge it on
+`All`, then again on `Decreased`**, and record both; shipping a beam that only works on `All` is a
+decision, not an accident, and it should be made knowingly.
+
+---
+
 ## AFTER THE READING
 
 - Write the reading beside the prediction above. **Do not edit the prediction.**
@@ -126,3 +203,9 @@ Boltor's own 16 would be re-ruled to 15.
   `WeaponLoader`'s `cooldown_ticks` section, whose *"ONE BOUNDARY IS UNMEASURED"* paragraph is
   discharged by this row either way.
 - Report the recomputed sustained and burst figures to the operator, per §2.
+- **Row 2: change nothing in the same commit that records it.** `samples_per_block`, `size` and
+  `BEAM_ORIGIN_GAP` are three separate questions and the last one is a shared `core` constant; a
+  reading that moves a number in the act of taking it cannot be checked afterwards. Record the
+  verdict, then tune in a commit that says what it is tuning against.
+- **A single-observer row 2 is recorded as `NEAR THIRD ONLY` and stays open.** It is not a failure to
+  take half of it; it is a failure to call half of it the answer.
