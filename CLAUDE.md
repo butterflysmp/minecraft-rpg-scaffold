@@ -229,6 +229,29 @@ So:
   > So, for any guard whose failure path has never been observed: **feed it the bad input on
   > purpose.** A `catch` around a library call especially — leniency is a library's default
   > far more often than anyone assumes, and it is never stated where you are looking.
+- **TWO WAYS TO MANUFACTURE A FALSE ABSENCE, AND BOTH END IN "IT ISN'T THERE".** A search that
+  returns nothing and an instrument that is wrong both produce the same sentence, and it is a
+  *finding* — so it gets reported, acted on, and is much harder to retract than a wrong positive.
+
+  > **A GREP FOR YOUR OWN VOCABULARY IS NOT A SEARCH OF THE DOCUMENT.** You match the word **you**
+  > would have written; the author wrote theirs. **Search by content — a number, an identifier, a
+  > quoted figure — and treat a null result on a word you chose as NO RESULT AT ALL**, not as
+  > evidence of absence.
+  >
+  > **2026-09-12, twice in one session.** A squash body was grepped for *"fencepost"*, returned
+  > nothing, and was nearly reported as missing the defect. The defect is there, under *"Two commit
+  > counts were wrong, both by exactly +1"* — the author's words, not the searcher's. The checkable
+  > form was available and cheap: grep for `+1`, or for the SHA.
+  >
+  > **AND AN INSTRUMENT THAT MISREPORTS THE CHECKABLE FACTS IS NOT EVIDENCE ABOUT THE UNCHECKABLE
+  > ONES — not even negative evidence.** Same day: a PR page read twice, both times claiming the PR
+  > open and the branch present, **both refuted by `ls-remote`.** An instrument wrong about what you
+  > *can* verify tells you nothing about what you cannot. **Say "unverified" and name the
+  > instrument**, rather than converting its silence into a finding.
+  >
+  > **Practically:** before reporting an absence, ask *what would this look like if it were present
+  > and my search were wrong?* If the answer is "identical", the search is not done.
+
 - Anything that **discovers** rather than asserts — a scan, a glob, a registry walk —
   must **fail loudly when it discovers nothing.** Finding zero items is a defect, not a
   quiet no-op. `getResource("content/")` on a shaded jar returns a non-null URL whose
