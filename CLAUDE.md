@@ -382,12 +382,17 @@ The rule underneath all three: **silence is not a result.** An instrument that o
 either found nothing or done nothing, and those are the same picture.
 
 
-### THE FIVE WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
+### THE SEVEN WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
 
 The first three were hit in one slice (2026-09-08, elements); the fourth and fifth arrived on
 2026-09-09, Ignite — **from two different mechanisms, one commit apart**, which is the evidence that
-this is a family and not a run of bad luck. They are one table because the shape only becomes visible
-together: **each guard catches the previous failure and cannot see the one below it.**
+this is a family and not a run of bad luck. The sixth followed on 2026-09-10 and the seventh on
+2026-09-12. They are one table because the shape only becomes visible together: **each guard catches
+the previous failure and cannot see the one below it.**
+
+**Rows one to six are BROKEN EDITS — the mutation did not do what was written. The seventh is not:
+there the edit is perfect and the CONCLUSION drawn from it is too broad.** So the table has two
+halves, and no amount of care with `perl` reaches the second.
 
 | failure | what happened | what catches it |
 |---|---|---|
@@ -397,6 +402,7 @@ together: **each guard catches the previous failure and cannot see the one below
 | **applied, no bite** | the edit landed and the test stayed green — the assertion matched a *duplicate* of the mutated token | **nothing mechanical** — only reading the red you expected and not getting it |
 | **applied, wrong side** | the test passed on an accident (a floating-point coincidence; an undefended victim where `dealt == amount`) rather than on the thing it guards | **nothing at all** — only designing the fixture so the two values differ |
 | **APPLIED TOO WIDELY** | a scope guard that **silently did not bind**: `perl -i -pe 's{A}g; s{B}g if $. >= L && $. <= L+35'` — **the `if` binds ONLY to the last statement in the chain**, so `s{A}` ran over the whole file | **NOTHING in the marker grep — BOTH halves pass.** Only a measured line/byte delta, or `git diff --numstat`, sees it |
+| **APPLIED, BIT, AND CERTIFIED ONE AXIS OF TWO** | the expression had **more than one degree of freedom** and the mutation moved one. `now - lastTick` names two: *which endpoint* (first/last) and *which reference* (now/last event). One splice reddened rows and proved only its own axis | **nothing mechanical, and the RED makes it worse** — only counting the axes in the expression before counting the mutations |
 
 > **THE SIXTH ROW IS THE MIRROR IMAGE OF THE FIRST, AND ONE INSTRUMENT CANNOT COVER BOTH.**
 > *Didn't apply* is **too little**; *applied too widely* is **too much**. The marker grep sees the
@@ -413,6 +419,31 @@ together: **each guard catches the previous failure and cannot see the one below
 > — luck of the fixture, the same *"by luck of ordering, not by design"* that caught the third
 > instrument in the table above. Restored byte-identical from a scratchpad copy and redone with an
 > editor on the specific lines.
+
+> **THE SEVENTH ROW IS THE ONLY ONE WHERE THE MUTATION WORKED PERFECTLY, AND THAT IS WHAT MAKES IT
+> HARD TO SEE.** Rows one to six are broken edits. Here the edit applies, is scoped correctly, bites,
+> and reddens exactly the row written for it. **It is a partial test wearing a complete one's
+> colour** — and it is the most convincing kind, because a red result reads as proof and the report
+> carries a number.
+>
+> **THE GENERAL FORM: A MUTATION MOVES ONE AXIS OF AN EXPRESSION THAT HAS MORE THAN ONE.**
+>
+> ```
+> sinceLastEventTicks = currentTick - running.lastTick     TWO degrees of freedom:
+>   which endpoint    first vs last        <- one splice moves this
+>   which reference   now   vs last event  <- and says nothing about this
+> ```
+>
+> **2026-09-12, the elapsed figure.** `MUTELAPSED` (last → first) reddened **1 of 12**. Reported
+> alone it would have read as a verified mutation. `MUTSWAP` (now → last event) then reddened **3 of
+> 12** — and **two of those three rows are invisible to `MUTELAPSED` by construction**, because they
+> stage a single event, where `firstTick == lastTick` and the two implementations are numerically
+> identical. One splice could not have reached them at any fixture.
+>
+> **THE TELL, AND IT COSTS NOTHING: COUNT THE AXES BEFORE COUNTING THE MUTATIONS.** If the expression
+> names two quantities and a relation between them, one splice cannot certify all of it. This is the
+> neighbour of *a control that succeeds for the wrong reason* and is **not** that: this control
+> succeeds for the **right** reason, over too small a set.
 
 > **ROWS TWO AND THREE ARE WHY THE MARKER GREP IS TWO CHECKS, AND WHY YOU NEED BOTH HALVES.** They
 > fail in opposite directions and each half catches exactly one of them:

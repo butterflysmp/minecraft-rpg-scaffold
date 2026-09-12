@@ -9531,6 +9531,50 @@ told to rewrite and did not.
 expect. When you have just changed an input, *unmodified* is the alarming answer, and it is precisely
 the one that looks like nothing happened.
 
+### COUNT THE AXES BEFORE COUNTING THE MUTATIONS — THE SEVENTH WAY A MUTATION LIES
+
+**Named 2026-09-12, the elapsed figure. Also in `CLAUDE.md` as the table's seventh row; here with the
+reason and the arithmetic.**
+
+**The first six ways a mutation lies are all BROKEN EDITS** — it did not apply, it hit a comment, the
+marker terminated the regex, it applied but did not bite, it bit for the wrong reason, it applied too
+widely. Every one is a defect in the *edit*, and the remedies are mechanical: grep both halves,
+measure the delta, splice by line number.
+
+**The seventh is not a broken edit.** The mutation applies, is correctly scoped, bites, and reddens
+exactly the row written for it. Nothing is wrong with it. **What is too broad is the CONCLUSION**, and
+no care taken with the edit reaches that.
+
+**The mechanism: an expression with more than one degree of freedom, and a splice that moves one.**
+
+```
+sinceLastEventTicks = currentTick - running.lastTick
+
+  axis 1  which ENDPOINT    running.firstTick  vs  running.lastTick
+  axis 2  which REFERENCE   currentTick        vs  running.lastTick
+```
+
+**The arithmetic that makes it concrete.** `MUTELAPSED` moves axis 1 and reddens **1 of 12**.
+`MUTSWAP` moves axis 2 and reddens **3 of 12**. The interesting number is not 1 or 3 — it is that
+**two of MUTSWAP's three rows CANNOT be reddened by MUTELAPSED at any fixture**, because they stage a
+single event, and with one event `firstTick == lastTick` makes the two implementations numerically
+identical. The axes are genuinely independent; one splice was never going to reach both.
+
+**Why it is convincing, which is the dangerous part.** A red result reads as proof. The report says
+*"mutation applied, marker grepped both directions, 1 of 12 red"* — every clause true, every
+instrument honest — and the reader concludes the expression is guarded when half of it is not. **It is
+a partial test wearing a complete one's colour.**
+
+**Its neighbour, and it is NOT the same thing.** *A control that succeeds for the wrong reason* is a
+control whose red means something other than what you think. This control's red means exactly what you
+think; it simply covers less than you think. **Right reason, too small a set** — which is why it needs
+its own row rather than a sentence added to that one.
+
+**How to apply:** before running a mutation, **read the expression and count the quantities it names
+and the relations between them.** One splice certifies one axis. If you find two, plan two mutations
+and say which axis each one moved; if a second mutation seems redundant, check whether your fixtures
+can even distinguish it — that is the question, not whether the first one went red.
+
 ### AN ESTIMATE PLACED BESIDE MEASUREMENTS BECOMES ONE
 
 **Named 2026-09-12, the Boltor. Also in `CLAUDE.md`; here with the reason.**
