@@ -9531,6 +9531,84 @@ told to rewrite and did not.
 expect. When you have just changed an input, *unmodified* is the alarming answer, and it is precisely
 the one that looks like nothing happened.
 
+### OPEN FINDING — EVERY `File.java:NNN` CITATION IS A MEASUREMENT TAKEN ONCE AND NEVER RE-TAKEN
+
+**Found 2026-09-12, the Boltor. NAMED, NOT FIXED — deliberately. The case is written here so that
+whoever eventually decides it is worth fixing does not have to rediscover it.**
+
+**The mechanism is `CLAUDE.md`'s stale-commit-count rule, with line numbers where that one had
+counts** — *"adding a row and fixing the count in the same edit changes the set the count is over"*;
+here, inserting a row changes what every citation reaching across it points at. It is NOT the
+exit-status entry immediately above, whose mechanism is a process reporting success without writing;
+the two are neighbours in this file by date, not by shape. A citation of the
+form `WeaponLoader.java:161` is a claim about a file *other than the one it is written in*. It is
+falsified by **any insertion above its target, made by anyone, at any later time** — and the document
+holding the citation is not touched, not rebuilt, and not tested when that happens. **The citing
+document can sit untouched for months while its citations quietly stop being true.**
+
+**THE FAILURE IS MISDIRECTION, NOT ABSENCE, WHICH IS WHY IT IS WORTH RECORDING.** A stale line number
+does not 404. It points at a **different real line**, which the reader opens, reads, and finds
+plausible — the cited file is the right file and the neighbourhood is roughly right. There is no
+symptom. Compare a stale *quote*, which a reader can grep for and fail to find: a stale *number*
+always resolves.
+
+**BLAST RADIUS — AND THE COMMAND COMES WITH IT, BECAUSE A FIGURE MEASURING UNVERIFIABLE THINGS BY AN
+UNSTATED METHOD IS UNVERIFIABLE IN THE SAME WAY.** Measured at `51b005e`. Re-run it and compare; the
+project's own rule is to record the raw count and the window, not only the derived number.
+
+```
+P='[A-Za-z0-9_/.-]+\.(java|md|yml|txt):[0-9]+'
+git grep -oh -E "$P" 51b005e -- '*.md'             | wc -l    # 132   occurrences
+git grep -oh -E "$P" 51b005e -- '*.md'   | sort -u | wc -l    # 117   distinct
+git grep -oh -E "$P" 51b005e -- '*.java' '*.yml'   | wc -l    #   8   in code comments
+```
+
+**THIS ENTRY COUNTS OCCURRENCES, NOT DISTINCT: 132 + 8 = 140 SITES.** Every occurrence is a separate
+place a reader can be misdirected, so deduplicating undercounts the exposure — two mentions of
+`PLAN-quiver.md:817` are two chances to be wrong. **The two definitions are 13% apart in root markdown
+alone, so a later count that does not say which it took cannot be compared with this one.**
+
+That is not hypothetical. **The first independent re-count of this figure disagreed with it, and the
+disagreement was entirely definitional** — `PLAN-quiver.md` reads **34 by occurrence and 31 by
+distinct**, and the two counts had silently used different definitions while agreeing on the pattern.
+Part of the residue was never reconciled at all. **A blast-radius figure whose own re-measurement
+cannot be reproduced is the finding happening to its own evidence.**
+
+```
+occurrences by document, same rev:
+34  PLAN-quiver.md     15  PLAN-quiver-a2.md    7  GATE-boltor.md    5  PLAN-boltor.md
+29  NEXT.md             6  PLAN-mobdamage-nameplate-fix.md            and others
+```
+
+`GATE-boltor.md` is the fourth densest and was **committed the same day this was found**, which is the
+measure of how fast the surface grows: the convention is load-bearing and in active use, not legacy.
+
+**HOW MANY ARE ALREADY WRONG IS UNKNOWN AND IS NOT ESTIMATED HERE.** An estimate quoted beside the
+three measured figures above would be indistinguishable from them, which is its own recorded defect.
+The cheap probe available to whoever takes this on: for each
+citation, compare the cited file's last-modified commit against the commit that last touched the
+citing line — where the cited file moved afterwards, the number is suspect. That bounds the problem
+without opening all 140.
+
+**THE INSTANCES, BOTH SELF-INFLICTED WITHIN MINUTES.** Inserting a 21-line blockquote into
+`PLAN-boltor.md` shifted every line below it, falsifying three citations written earlier in the same
+session — `GATE-boltor.md`'s `:204` and `RpgCommand.java:496`, and `NEXT.md`'s `:254`, the last of
+which had already been committed to prose as the evidence for the entry above. All three were caught
+only by re-reading the files after the last edit landed.
+
+**WHY IT IS NOT FIXED, AND BOTH OBVIOUS REMEDIES ARE NAMED SO THEY ARE NOT RE-PROPOSED AS NEW:**
+
+- **A sweep** is a one-time correction applied to a *continuous* process. It would be true on the day
+  it ran and would begin decaying with the next insertion. It fixes the instances and not the class.
+- **An anchor scheme** — citing a quoted sentence or a stable symbol name instead of a number — is the
+  actual remedy, because a quote *can* be verified by grep and fails loudly when it stops matching.
+  It costs a convention change across 140 existing sites and every future one, which is a real
+  decision rather than a tidy-up, and it is the operator's to make.
+
+**Until then, the operational half is one line, and it is the only part that binds today:** when you
+insert into a file, the citations *into* that file are now suspect — re-read them from the file after
+the last edit lands, not from what you wrote earlier in the session.
+
 ## THE VOLLEY SLICE — `CastSpec.Volley`, and one shape worth more than the slice
 
 Landed on `feat/castspec-volley` as three commits: the two ports (`dc0f9da`), the kind and its arms
