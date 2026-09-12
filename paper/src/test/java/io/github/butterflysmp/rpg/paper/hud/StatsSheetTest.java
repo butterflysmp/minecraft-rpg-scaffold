@@ -5,6 +5,8 @@ import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.HealthRegen;
 import io.github.butterflysmp.rpg.core.combat.HitDamage;
 import io.github.butterflysmp.rpg.core.combat.ManaRegen;
+import io.github.butterflysmp.rpg.core.combat.StatsSheetLines;
+import io.github.butterflysmp.rpg.core.combat.StatsSheetValues;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -39,11 +41,39 @@ class StatsSheetTest {
     }
 
     /** A bare-handed level-one player: base everything, no gear. */
+    /**
+     * A bare-handed level-one player: base everything, no gear, NO QUIVER WEAPON HELD.
+     *
+     * <p>Named through {@link StatsSheetValues.Builder} rather than passed positionally. The old form
+     * was eight adjacent {@code double}s and this commit would have made it ten -- see
+     * {@code StatsSheetValues} for why a record alone would not have fixed that.
+     */
     private static List<Component> baseSheet() {
-        return StatsSheet.build(100, HealthRegen.BASE_PER_SECOND,
-                100, ManaRegen.perSecond(MANA_PER_TICK),
-                0, HitDamage.hitBase(0, 0, 0),
-                Crit.BASE_CHANCE, Crit.BASE_DAMAGE);
+        return StatsSheet.build(StatsSheetValues.builder()
+                .maxHealth(100)
+                .healthRegenPerSecond(HealthRegen.BASE_PER_SECOND)
+                .maxMana(100)
+                .manaRegenPerSecond(ManaRegen.perSecond(MANA_PER_TICK))
+                .defense(0)
+                .damage(HitDamage.hitBase(0, 0, 0))
+                .critChance(Crit.BASE_CHANCE)
+                .critDamageBonus(Crit.BASE_DAMAGE)
+                .build());
+    }
+
+    /** The same player holding {@code quiver_stone} with both A2 instruments: 28 rounds, 48 ticks. */
+    private static List<Component> quiverSheet() {
+        return StatsSheet.build(StatsSheetValues.builder()
+                .maxHealth(100)
+                .healthRegenPerSecond(HealthRegen.BASE_PER_SECOND)
+                .maxMana(100)
+                .manaRegenPerSecond(ManaRegen.perSecond(MANA_PER_TICK))
+                .defense(0)
+                .damage(HitDamage.hitBase(0, 0, 0))
+                .critChance(Crit.BASE_CHANCE)
+                .critDamageBonus(Crit.BASE_DAMAGE)
+                .quiver(28, 48)
+                .build());
     }
 
     @Test
@@ -116,9 +146,16 @@ class StatsSheetTest {
     @Test
     void theDamageLineIsTheCOMPOSEDHitAndNotTheRawAttackValue() {
         // 8-damage weapon, Sharpness III (+15%), +5 class gear -- the composition's own witness.
-        List<Component> sheet = StatsSheet.build(100, HealthRegen.BASE_PER_SECOND,
-                100, ManaRegen.perSecond(MANA_PER_TICK), 0,
-                HitDamage.hitBase(8, 15, 5), Crit.BASE_CHANCE, Crit.BASE_DAMAGE);
+        List<Component> sheet = StatsSheet.build(StatsSheetValues.builder()
+                .maxHealth(100)
+                .healthRegenPerSecond(HealthRegen.BASE_PER_SECOND)
+                .maxMana(100)
+                .manaRegenPerSecond(ManaRegen.perSecond(MANA_PER_TICK))
+                .defense(0)
+                .damage(HitDamage.hitBase(8, 15, 5))
+                .critChance(Crit.BASE_CHANCE)
+                .critDamageBonus(Crit.BASE_DAMAGE)
+                .build());
 
         assertEquals("⚔ Damage       14.20", plain(sheet.get(6)),
                 "8 * 1.15 + 5 = 14.2, the same number a full-charge non-crit swing deals");
@@ -135,13 +172,20 @@ class StatsSheetTest {
     void noTwoLinesRENDERIdenticallyEvenWhenTheirNUMBERSCollide() {
         // Eight near-identical lines is where a copy-pasted label or colour hides. Force the numbers
         // to collide so ONLY the labels and colours can tell the lines apart.
-        List<Component> sheet = StatsSheet.build(1, 1, 1, 1, 1, 1, 1, 1);
+        // TEN now, not eight, and the quiver pair is included ON PURPOSE: it is the newest pair and
+        // therefore the likeliest to carry a copy-pasted label. Its two numbers collide with the rest
+        // at 1, which is exactly the staging this row wants.
+        List<Component> sheet = StatsSheet.build(StatsSheetValues.builder()
+                .maxHealth(1).healthRegenPerSecond(1).maxMana(1).manaRegenPerSecond(1)
+                .defense(1).damage(1).critChance(1).critDamageBonus(1)
+                .quiver(1, 1)
+                .build());
         Set<String> rendered = new HashSet<>();
         for (int i = 1; i < sheet.size(); i++) {
             assertTrue(rendered.add(plain(sheet.get(i))),
                     "two lines render identically: " + plain(sheet.get(i)));
         }
-        assertEquals(8, rendered.size());
+        assertEquals(10, rendered.size(), "eight always plus the quiver pair");
         // Mutation: reuse MAX_HEALTH_LABEL for max mana -> two identical renders -> reddens.
     }
 
@@ -149,5 +193,52 @@ class StatsSheetTest {
     private static NamedTextColor valueColor(Component line) {
         List<Component> children = line.children();
         return (NamedTextColor) children.get(children.size() - 1).color();
+    }
+
+    /**
+     * THE QUIVER PAIR IS ABSENT WITHOUT A QUIVER WEAPON, AND PRESENT WITH ONE.
+     *
+     * <p>Both halves asserted, because "absent" is the half that a default-zero would satisfy while
+     * being wrong: a sheet reading {@code "Quiver 0"} tells a player holding a sword that their
+     * magazine is empty. Every other line on this sheet is a fact about the player and needs no such
+     * condition.
+     *
+     * <p>Forces red: a zero default instead of an absent one (the bare-handed row grows to ten);
+     * dropping the {@code hasQuiver} branch (the holding row shrinks to eight).
+     */
+    @Test
+    void theQuiverPairIsABSENTBareHandedAndPRESENTWhenAQuiverWeaponIsHeld() {
+        assertEquals(9, baseSheet().size(), "header plus EIGHT -- no quiver lines invented");
+        for (Component line : baseSheet()) {
+            assertFalse(plain(line).contains(StatsSheetLines.QUIVER_SIZE_LABEL.trim()),
+                    "nothing on a bare-handed sheet may mention a quiver");
+        }
+
+        List<Component> held = quiverSheet();
+        assertEquals(11, held.size(), "header plus eight plus the pair");
+        assertEquals("⚔ Quiver       28", plain(held.get(9)),
+                "the RESOLVED capacity -- 9 authored plus the instrument's 19");
+        assertEquals("  Reload       48t (2.40s)", plain(held.get(10)),
+                "the RESOLVED duration in BOTH units, indented under the capacity like every "
+                        + "second-of-pair line");
+    }
+
+    /**
+     * THE RELOAD LINE SHOWS BOTH UNITS, AND CLAMPS A NEGATIVE FOR DISPLAY ONLY.
+     *
+     * <p>{@code ReloadTime.resolve} deliberately has no floor, so a large enough reduction resolves
+     * below zero -- and {@code Quiver.reloadCompletesAt}'s {@code Math.max} is what actually governs,
+     * making the real behaviour an instant reload. Printing {@code "-6t"} would show a number no
+     * mechanic ever uses.
+     *
+     * <p>Forces red: dropping the display clamp; printing one unit instead of two.
+     */
+    @Test
+    void aNegativeResolvedReloadRENDERSAsZeroBecauseThatIsWhatTheWeaponWillDo() {
+        assertEquals("0t (0.00s)", StatsSheetLines.reloadTime(-6),
+                "an instant reload, which is what reloadCompletesAt's Math.max produces");
+        assertEquals("0t (0.00s)", StatsSheetLines.reloadTime(0));
+        assertEquals("34t (1.70s)", StatsSheetLines.reloadTime(34), "quiver_stone's authored base");
+        assertEquals("48t (2.40s)", StatsSheetLines.reloadTime(48), "and with the instrument");
     }
 }

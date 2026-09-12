@@ -88,6 +88,37 @@ public final class Keys {
     public final NamespacedKey manaRegenBoost;
 
     /**
+     * Marks the quiver_size_boost dev instrument and stores its +arrows bonus (a DOUBLE) in the PDC.
+     *
+     * <p><b>NO {@code _temp} SUFFIX, and that is a decision rather than an omission.</b> Every
+     * fixture above it is scaffolding that a real enchant retires. A2 ships no quiver enchant, so
+     * after this slice this item is THE ONLY THING THAT CAN MOVE QUIVER SIZE -- deleting it removes
+     * the ability to re-gate the stat at all. Owning it is more honest than adding a third entry to
+     * a removal debt nobody discharges. Same call, same reasoning, as {@code quiver_stone} in A1.
+     *
+     * <p>A DOUBLE, matching every other boost key, even though the stat means whole arrows:
+     * {@code Stat} sums doubles, and {@code QuiverSize.arrows} owns the single conversion back.
+     */
+    public final NamespacedKey quiverSizeBoost;
+
+    /**
+     * Marks the reload_time_boost dev instrument and stores its tick bonus (a DOUBLE) in the PDC.
+     *
+     * <p>PERMANENT, like {@link #quiverSizeBoost} and for the same reason: A2 ships no quiver
+     * enchant, so after this slice this is the only thing that can move reload time.
+     *
+     * <p><b>A SEPARATE KEY FROM {@link #quiverSizeBoost}, AND THE PAIR IS WHAT THE SLICE PAID FOR.</b>
+     * One item carrying both bonuses has no staging in which one stat moves and the other does not,
+     * so no gate row could make the negative observation. Two keys, two command arms and two scanners
+     * is the price of being able to watch one stat hold still.
+     *
+     * <p><b>The value may be NEGATIVE</b>, unlike every other boost key here: positive ticks mean a
+     * SLOWER reload, so reload-speed gear carries a reduction. {@code ReloadTime.declares} gates on
+     * {@code != NONE} rather than {@code > NONE} for exactly that reason.
+     */
+    public final NamespacedKey reloadTimeBoost;
+
+    /**
      * Marks the class_damage_boost_TEMP dev item and stores its bonus (a DOUBLE) in the item's PDC.
      * Paired with {@link #classDamageBoostClass} -- this is the first fixture needing TWO values,
      * because a class-typed grant is meaningless without the class it grants to. An item carrying
@@ -137,6 +168,75 @@ public final class Keys {
      * for.
      */
     public final NamespacedKey enchantRolled;
+
+    /**
+     * How many rounds a quiver weapon currently holds (an INTEGER). Per ITEM, and the first PDC value
+     * in this repository that CHANGES IN PLAY -- every other per-item key here is written once at
+     * acquisition and then only carried.
+     *
+     * <p><b>ABSENCE IS NOT A NEUTRAL VALUE, and that is why this key is read the way it is.</b> An
+     * unstamped quiver and an empty one must never resolve alike: a default of 0 would make a
+     * forgotten stamp indistinguishable from a spent magazine, which is a weapon that silently never
+     * fires. So {@code WeaponItems.mint} stamps this FULL, explicitly, and a weapon whose definition
+     * declares a quiver but whose item carries no count is a DEFECT that warns -- never a zero that
+     * is accepted.
+     *
+     * <p>The argument is not new here. {@code volley_stone.yml} solved the same problem for
+     * {@code attack_damage: 0}, authored rather than omitted: <i>"the absence would resolve to
+     * exactly the value the omission meant -- which is the trap: it works, it is invisible, and it
+     * hides a decision."</i>
+     *
+     * <p>Carried across a re-mint by {@code GearItems.carryInstanceData} alongside wear and the
+     * enchant blob. Losing it would be a relog-to-refill exploit, exactly as losing
+     * {@link #enchantData} would be a relog-to-unlock one -- and a re-mint happens on every join.
+     */
+    public final NamespacedKey quiverLoaded;
+
+    /**
+     * The capacity this item was last PACKED at (an INTEGER), stamped beside the count.
+     *
+     * <p><b>The stamp is what ENFORCES, not merely what renders.</b> Once capacity is a stat, the
+     * tooltip and the refusal logic must read the same number or the tooltip lies by a new
+     * mechanism -- {@code ResourceCost} records the shape: <i>"two literals cannot drift apart if
+     * there is only one."</i> So this key is read by the verdict AND by the lore line, and the
+     * wielder's live stat is read <b>only at a write</b>.
+     *
+     * <p><b>ABSENCE HERE IS NOT A DEFECT, unlike {@link #quiverLoaded}.</b> A count has no item-free
+     * meaning, so its absence means a mint path failed. A capacity has one -- the weapon's own. A
+     * definitions-only renderer, a recipe-browser icon, and an item minted before this key existed
+     * all resolve to the authored value through {@code QuiverState.capacityOf}, which is the single
+     * place that ordering lives.
+     */
+    public final NamespacedKey quiverCapacity;
+
+    /**
+     * The two ticks bounding a reload in progress: when it STARTED and when it COMPLETES (both LONG).
+     * Absent together when no reload is running.
+     *
+     * <p><b>On the item rather than on the player, which is what makes the reload leak-proof.</b>
+     * There is no expiry event to miss -- the player can swap the weapon away, drop it, die or log
+     * out, and the state is simply read again from whatever item is in hand. The alternative, a
+     * scheduled task or a per-player timer, has to catch every departure path, and
+     * {@code ModifierReconciler}'s javadoc already records why that shape loses: <i>"a single missed
+     * event LEAKS."</i> It also settles two-weapons-in-one-inventory for free, since cooldowns are
+     * keyed per PLAYER per {@code weaponId/input} and could not tell two quivers apart.
+     *
+     * <p><b>BOTH halves are stored, and the START is not redundant.</b> It is the bound on the
+     * restart guard: {@code Bukkit.getCurrentTick()} resets on server restart, and a deadline written
+     * against the old counter would otherwise never arrive. The guard asks {@code now < startedAt},
+     * because <b>a guard's bound must be a quantity that cannot legitimately change between the stamp
+     * and the read</b> -- and the reload DURATION, the obvious bound, is precisely what slice A2 makes
+     * movable by gear. See {@code core.weapon.Quiver.reloadComplete}, where that is measured.
+     *
+     * <p>These two ARE the {@link #classDamageBoost} discipline rather than the {@link #enchantData}
+     * one: they are two halves of one value, written and cleared together, and an item carrying one
+     * without the other is malformed rather than meaningfully half-reloaded.
+     */
+    public final NamespacedKey quiverReloadStartedAt;
+
+    /** The completion half of the pair documented on {@link #quiverReloadStartedAt}. */
+    public final NamespacedKey quiverReloadCompletesAt;
+
     /**
      * The armor-bar override: an entity-side {@code armor} modifier that cancels worn armor's
      * native contribution and refills the bar from damage reduction instead. A modifier IDENTITY,
@@ -184,12 +284,18 @@ public final class Keys {
         this.critDamageBoost = new NamespacedKey(plugin, "crit_damage_boost_temp");
         this.healthRegenBoost = new NamespacedKey(plugin, "health_regen_boost_temp");
         this.manaRegenBoost = new NamespacedKey(plugin, "mana_regen_boost_temp");
+        this.quiverSizeBoost = new NamespacedKey(plugin, "quiver_size_boost");
+        this.reloadTimeBoost = new NamespacedKey(plugin, "reload_time_boost");
         this.classDamageBoost = new NamespacedKey(plugin, "class_damage_boost_temp");
         this.classDamageBoostClass = new NamespacedKey(plugin, "class_damage_boost_temp_class");
         this.mobId = new NamespacedKey(plugin, "mob_id");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");
+        this.quiverLoaded = new NamespacedKey(plugin, "quiver_loaded");
+        this.quiverCapacity = new NamespacedKey(plugin, "quiver_capacity");
+        this.quiverReloadStartedAt = new NamespacedKey(plugin, "quiver_reload_started_at");
+        this.quiverReloadCompletesAt = new NamespacedKey(plugin, "quiver_reload_completes_at");
         this.armorBarOverride = new NamespacedKey(plugin, "armor_bar_override");
         this.attackSpeedOverride = new NamespacedKey(plugin, "attack_speed_override");
     }

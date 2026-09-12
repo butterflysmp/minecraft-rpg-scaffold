@@ -532,6 +532,74 @@ public final class CombatantStats {
         return ModifierReconciler.reconcile(state.manaRegenTarget(), desired);
     }
 
+    /**
+     * The resolved QUIVER-SIZE BONUS this combatant's gear grants, in whole arrows, or {@code 0.0}
+     * if untracked.
+     *
+     * <p>A bonus, not the whole magazine: {@code QuiverSize.resolve} adds it to the weapon's authored
+     * {@code quiver_size}. <b>Returning 0.0 rather than throwing is what makes the untracked case the
+     * authored capacity</b> -- which is the right answer, and the same answer a recipe-browser icon
+     * with no item behind it gets. A {@code tracks()} guard at the call site would have to invent
+     * that number a second time.
+     *
+     * <p>{@code double}, not {@code int}, for the reason {@link HealthState#quiverSizeBonusValue}
+     * gives: {@code QuiverSize.arrows} owns the single conversion, at the single site that resolves
+     * a capacity.
+     */
+    public double quiverSizeBonusValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.quiverSizeBonusValue();
+    }
+
+    /**
+     * Converge {@code id}'s QUIVER-SIZE modifiers to exactly {@code desired}. Same leak-proof diff as
+     * the others.
+     *
+     * <p><b>VOID and SILENT, like {@link #reconcileHealthRegenModifiers} and unlike
+     * {@link #reconcileManaRegenModifiers}</b> -- and the reason is worth stating, because the usual
+     * one does not apply. Mana regen returns boolean because the pool accrues LAZILY and a rate
+     * change re-prices elapsed ticks, so the caller must pin a reading. A quiver accrues nothing: its
+     * count is a stored integer that changes only when something writes it.
+     *
+     * <p><b>The decrease-clamp lives at the item, not here.</b> {@code QuiverItems.setLoaded} holds
+     * the new capacity and the count in one call with {@code Quiver.clamp} between them, so a player
+     * whose capacity falls is clamped at their next shot or reload. Adding a clamp on this path would
+     * be a second enforcement site for the same rule, and this slice exists because two sites for one
+     * capacity is how a tooltip and a refusal come to disagree.
+     */
+    public void reconcileQuiverSizeModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.quiverSizeTarget(), desired);
+    }
+
+    /**
+     * The resolved RELOAD-TIME BONUS this combatant's gear grants, in whole ticks, or {@code 0.0} if
+     * untracked.
+     *
+     * <p><b>Positive means SLOWER</b>: {@code ReloadTime.resolve} adds it to the weapon's authored
+     * {@code reload_ticks}. Returning 0.0 rather than throwing makes the untracked case the authored
+     * duration, which is the right answer for the same reason {@link #quiverSizeBonusValue} gives.
+     */
+    public double reloadTimeBonusValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.reloadTimeBonusValue();
+    }
+
+    /**
+     * Converge {@code id}'s RELOAD-TIME modifiers to exactly {@code desired}. Same leak-proof diff.
+     *
+     * <p><b>VOID and SILENT</b>, like {@link #reconcileQuiverSizeModifiers}. There is nothing to pin
+     * because a running reload's deadline was stamped when it began and is never recomputed -- so
+     * unlike mana regen, a change to this rate cannot re-price anything already elapsed. A1 made that
+     * structural by removing the duration from {@code Quiver.reloadComplete}'s parameters.
+     */
+    public void reconcileReloadTimeModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.reloadTimeTarget(), desired);
+    }
+
     /** Drop {@code id}'s state. O(1), safe for an unknown id. Call on logout and on mob removal. */
     public void clear(UUID id) {
         states.remove(id);

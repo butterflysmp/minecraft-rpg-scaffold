@@ -1802,6 +1802,34 @@ either direction."* Ten days later a gate row stacked two staves and watched the
 > nine days with a green suite: nothing could have reddened. **OWED: a mint test per gear kind.**
 > Not added here — this is a merge, and the change should be readable — but it is the cheap half of
 > this finding and it belongs in the next slice that touches `weapon/`.
+>
+> > **2026-09-10 — THE DEBT ABOVE IS NOT PAYABLE AS PHRASED, AND IT SURVIVED A SLICE BY BEING
+> > IMPOSSIBLE RATHER THAN BY BEING FORGOTTEN.** The quiver slice (`PLAN-quiver.md`, A1) touches
+> > `weapon/`, scoped this in on the strength of the sentence above, and then could not pay it.
+> >
+> > **`new ItemStack(...)` throws `"No RegistryAccess implementation found"` without a running
+> > server, and this project has no MockBukkit.** `WeaponItemsTest`'s own class javadoc records
+> > exactly that and is written to test the DECISION — which attribute the suppressor targets — in
+> > place of a constructed item. **So `setMaxStackSize(1)` cannot be witnessed by any unit test in
+> > this repository**, in any module, for any gear kind. *"A mint test per gear kind"* asks
+> > `core`/`paper` for something neither can do.
+> >
+> > **This is the hazard of a debt written as an instruction rather than as a question.** It reads
+> > as cheap and outstanding forever, so every slice that touches `weapon/` inherits it, fails to
+> > pay it, and either stays silent or re-records it. The cheap half of the finding was never cheap;
+> > it was unavailable.
+> >
+> > **RE-PHRASED, and this is the payable form:**
+> >
+> > - **The cap's only witness is the boot gate.** `GATE-lapis-staff.md` L10b already is that
+> >   witness — two staves that refuse to merge — and `PLAN-quiver.md`'s Q8 is the second, on a
+> >   weapon where per-item state makes the cap load-bearing rather than merely tidy.
+> > - **If a unit-level guard is wanted, it must be a SOURCE-level or reflective one** — asserting
+> >   the four mint bodies call it — not an item-level one. That is a different and uglier test, and
+> >   whether it earns its place is an open question rather than an owed task.
+> >
+> > **Marked OPERATOR-GATE-ONLY.** Not outstanding work. A future reader who wants it back should
+> > re-open it as the question above, not as the instruction that could never be followed.
 
 **And L10's second half was never a test.** "They merge" could not have been met by working code —
 Rule 4's *impossible row*, arrived at the same way the comment was: written from the material. The
@@ -9650,7 +9678,126 @@ is why none of the five was caught by running anything.
 > **A PRECISE CLAIM IS A CHECKABLE CLAIM.** The fix is to keep making them and make them true —
 > **never to retreat to hedged ones**, which are unfalsifiable rather than safe.
 
+### THE CLASS ABOVE ALL OF THESE: A CLAIM ASSERTED WIDER THAN THE THING IT IS ABOUT
+
+**Named 2026-09-11, from the quiver slice, and the entries above and below are folded INTO it rather
+than sitting beside it.** *"A claim about a check's reach that the check does not have"* is one
+shape of this, not a sibling of it.
+
+**NEARLY EVERY CORRECTION IN THE QUIVER SLICE WAS A SCOPE ERROR IN A CLAIM, NOT A WRONG FACT.** The
+facts were almost always right. What was wrong was how widely they were asserted. Five shapes, all
+measured in one slice:
+
+| shape | instance | how wide it actually was |
+|---|---|---|
+| an **INSTANCE** stated as a universal | *"for any non-final segment, `columnOf(16.0)` is 1"* | true for `+x`, false for `-x` |
+| **ONE DIRECTION** stated as both | *"the drift fails towards noise, not silence"* | true for keys ADDED, false for keys REMOVED |
+| a **PROXY** stated as the mechanism | *"needing a `Player` is what makes a method look like it may write"* | the write is `editMeta`; the `Player` only PERSISTS it |
+| a **CURRENT CONSEQUENCE** as a standing fact | *"the ordering is free"* | true until the lore line landed, one commit later |
+| a **COUNT over an unnamed set** | *"five content guards"*, *"three sites"*, *"the rest of this file's figures"* | unknowable — a count is a claim about a set, and the set was never named |
+
+**The fourth is the sharpest because it went wrong TWICE, in OPPOSITE directions, about the same
+three lines of code** — `WeaponItems.mint`'s stamp ordering. v1 said the tooltip *"renders the
+stamped count"* when nothing read it; v2 corrected that to *"the ordering is free"*, which the very
+next commit falsified. **Both described the CONSEQUENCE in the tree as it then stood, and a
+consequence goes stale when the code around it moves.** The mechanism —
+*"`applyLore` renders whatever the meta holds when it runs, so anything it must render has to be
+written before it"* — is true in all three states and would never have needed correcting.
+
+> **THE OPERATIONAL FORM, and it covers all five: BEFORE WRITING A CLAIM, SAY WHAT WOULD MAKE IT
+> FALSE.** If the answer is *"a case I have not staged"*, *"the other direction"*, *"a different
+> mechanism"*, or *"a later commit"* — the claim is wider than what was checked. **Narrow it, or
+> check the rest.**
+>
+> For a comment specifically: **state the MECHANISM, not its consequence in today's tree.** A
+> mechanism survives the code moving around it; a consequence is a snapshot that nothing re-checks.
+
+**AND THE COROLLARY FROM THE ENTRY ABOVE APPLIES UNCHANGED, WHICH IS WHY THIS IS A FOLD AND NOT A
+REPLACEMENT: THE OVERSTATEMENT IS WHAT MAKES IT CATCHABLE.** Every row in that table was found
+*because* it was stated precisely enough to be wrong. A claim narrowed to *"corrected here"* or
+*"it works in this case"* leaves nothing to falsify and ships. **The fix is precise claims made
+true, never hedged ones.**
+
+### THE SIXTH SHAPE: A WORD CHOSEN FOR WHAT IT CONVEYS RATHER THAN WHAT IT IS TRUE OF
+
+**Named 2026-09-11, quiver A2, on the third instance in one slice.** It belongs in the table above
+as a sixth row, and it is written out here because its tell is different from the other five: **the
+code underneath was correct every time.** Nothing was mis-implemented. A word was reached for
+because of what it would make the reader feel about the claim, and it was not true of the thing it
+named.
+
+| word | what it was applied to | why it was false |
+|---|---|---|
+| **"mechanism"** | a balance number (the reload floor) | a chosen constant is not a mechanism; there was no mechanism argument for any floor at all |
+| **"structural"** | the same balance number | nothing about the structure forced it; it was a value someone picked |
+| **"value type"** | `QuiverState` after it stopped being a `record` | a final class with no `equals`/`hashCode` has IDENTITY equality — the heading was changed from a true word (*"record"*) to a false one **in the same edit that made it false** |
+
+**The third is the sharpest, and not because it is the worst — because of what sat beside it.** The
+cost note under that heading read *"states are compared by the VERDICT they yield, never by
+identity"*, which was meant as *nobody compares two instances* and lands as *identity comparison
+does not happen here*. **After the change, identity comparison is the only kind available.** So the
+heading asserted value semantics the type did not have, and the sentence below it reassured about
+the exact hazard the change had just introduced. Both were written to convey that the conversion was
+safe. The conversion **was** safe — measured, nothing compares two states — which is precisely why
+neither sentence had to be true to survive review.
+
+> **THE OPERATIONAL FORM: for any word that CHARACTERISES rather than describes — "structural",
+> "mechanism", "value type", "invariant", "guaranteed", "unrepresentable" — name the property it
+> asserts and say where that property is enforced.** If the answer is *"it reads better"* or *"it is
+> the spirit of it"*, the word is decoration on a claim and it will be read as the claim.
+>
+> **And the specific trap that caught the third one: a word can go from true to false as a SIDE
+> EFFECT of the edit that is in front of you.** *"Record"* was accurate until the conversion; the
+> conversion is exactly when somebody rewrites the heading, and exactly when the replacement word
+> gets chosen for tone. **When a change makes a noun wrong, the candidate replacements are the
+> highest-risk words in the file.**
+
+**IT WAS FIRST NAMED AS A WRITING FAILURE WITH A REVIEW COST, AND THE NEXT INSTANCE WAS IN CODE.**
+The five shapes above all leave something falsifiable in the tree. This one leaves code that works
+and prose a reader must check the implementation to disbelieve — and, as the entry below shows, it
+is not confined to prose at all.
+
+> **AND THEN IT HAPPENED IN CODE, WHICH RETIRES THE "WRITING FAILURE" FRAMING ABOVE.** Two days
+> later, quiver A2 commit 4: `ReloadTime.boosts` was written as `return bonusTicks > NONE;` —
+> **copied from `QuiverSize.boosts` for its SHAPE, not its MEANING**, which is the identical error
+> one level down.
+>
+> The two stats' signs are opposite. For quiver size, `> NONE` means *content cannot make a quiver
+> smaller* — a coherent ruling. For reload time, where **positive means slower**, it means *content
+> can only make a reload slower*: **a reload-speed item carries a negative, so `boosts(-5)` is false
+> and the item declares nothing and does nothing, silently, on every scan.** The feature was
+> foreclosed by a copied comparison operator.
+>
+> **Three things made it invisible and all three are the pattern:**
+>
+> - The method's own javadoc asked *"does this bonus change anything at all?"* — which is
+>   `!= NONE` — **above a body that said `> NONE`.** For the stat it was copied from the two coincide
+>   in effect; for an inverted stat they diverge on its primary direction. *The question was right
+>   and the body was the copy.*
+> - `resolve`'s javadoc, **in the same file**, called the downward direction *"what a player wants
+>   from it"*, and the test class carried the slice's only row covering it. **The arithmetic was
+>   built and witnessed for a direction the gate forbade.**
+> - The stat's `HealthState` javadoc recorded *"the content pipeline is increase-only via
+>   ReloadTime.boosts"* — **the defect written down as a design property.**
+>
+> **The sharpest part: the same commit refused this exact failure, explicitly, three methods lower on
+> the same page.** `ticks`'s javadoc says the house phrase *"flooring rounds against the player"* is
+> false here and must not be carried across — *"a phrase carried across because it is the house rule,
+> not because it is true of the thing it is attached to."* That reasoning applies unchanged to
+> `> NONE`, and `boosts` is **above it on the page**.
+>
+> **So the rule generalises past prose: a SHAPE copied from a sibling is a claim that the sibling's
+> MEANING holds here.** Caught in review one commit before the scanner would have shipped it; fixed
+> by renaming to `declares` and gating on `!= NONE`, with each sibling now stating why the other
+> differs. `MUTGATE` reddens in both modules, so it is a tested decision rather than a comment.
+>
+> **The cheap check, and it is one question:** when you copy a helper, ask what its comparison, its
+> default, or its sign is FOR — and whether that reason exists here. If the answer is "it's what the
+> others do", you have copied a shape.
+
 ### THE `presentAlong` PREMISE: CHECKED ON A LOOP'S FIRST ITERATION, GENERALISED TO THE LOOP
+
+*(An instance of the class above: an INSTANCE stated as a universal.)*
 
 `GATE-cursed-emerald.md` recorded, as **measured**, that `presentAlong` *"takes the aim origin
 directly"*. It takes the **segment start**. `launchRay` passes `aim.origin()` as `from` for index 0

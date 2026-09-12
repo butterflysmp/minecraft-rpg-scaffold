@@ -1,0 +1,724 @@
+package io.github.butterflysmp.rpg.paper.weapon;
+
+import io.github.butterflysmp.rpg.core.weapon.QuiverState;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * The safe way to ASK about a quiver must stay reachable, or callers go back to the one that WRITES.
+ *
+ * <h2>Why this exists rather than a comment</h2>
+ *
+ * <p>{@link Quivers#resolveForShot} commits: a matured reload refills the magazine, an unstamped item
+ * is stamped and written back. That is correct -- the lazy design has no expiry event to miss
+ * precisely because the read IS the commit point. But it was first called {@code refusalFor}, which
+ * reads as a question, and <b>the next two pieces of work both want to ask that question</b>: the
+ * quiver lore line, and the action-bar HUD. Either one calling the obvious-looking method would
+ * silently finish reloads as a side effect of RENDERING, and the bug would present as reloads
+ * completing early -- which looks like the timer working, not like a read doing a write.
+ *
+ * <p>{@link Quivers#stateOf} is the answer: pure, no {@code Player}, returns a {@link QuiverState} a
+ * caller can interrogate freely. <b>The split only protects anything while that method is public and
+ * obvious.</b> Made private in a tidy-up -- it was private until this commit -- and every caller is
+ * pushed straight back onto the committing path, with nothing red.
+ *
+ * <p>So the condition is written where it will be seen, in a red build, on
+ * {@code DamageSignatureTest}'s idiom and with its argument: <b>a safety that holds on a condition
+ * nobody wrote down where it would be violated is not a safety.</b>
+ *
+ * <h2>What it does NOT claim</h2>
+ *
+ * <p>It cannot check that {@code stateOf} is pure, or that {@code resolveForShot}'s name is a good
+ * one. Purity and naming are not reflectable. What is checkable is that the pure entry point still
+ * EXISTS and is still PUBLIC, and that the committing surface has not quietly grown a new member
+ * whose name invites the same mistake -- both of which are the mechanical half of the decision.
+ */
+class QuiversSignatureTest {
+
+    @Test
+    void thePureWayToAskAboutAQuiverIsPublicAndTakesNoPlayer() {
+        Method stateOf = Arrays.stream(Quivers.class.getDeclaredMethods())
+                .filter(m -> m.getName().equals("stateOf"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "Quivers.stateOf is GONE. It is the only side-effect-free way to ask about a "
+                                + "quiver; without it a HUD or tooltip reaches for resolveForShot and "
+                                + "commits reloads while rendering."));
+
+        assertTrue(Modifier.isPublic(stateOf.getModifiers()),
+                "stateOf must stay PUBLIC -- made private, every caller is pushed back onto the "
+                        + "committing path and nothing goes red");
+        assertTrue(Modifier.isStatic(stateOf.getModifiers()));
+        assertEquals(QuiverState.class, stateOf.getReturnType(),
+                "it must hand back the core value type, so the asking happens in core and not here");
+
+        // "TAKES NO Player" IS A PROXY FOR PURITY, AND IT IS DOCUMENTED AS ONE RATHER THAN AS THE
+        // RULE -- because this sentence is what a future reader reasons from when deciding whether
+        // some NEW method qualifies, and the obvious reading of it is wrong.
+        //
+        // THE ACTUAL MECHANISM: writes in this class are `held.editMeta(...)` on an ItemStack --
+        // the UNSTAMPED arm does exactly that -- followed by setItemInMainHand to persist the copy
+        // back. Bukkit's getItemInMainHand hands out a COPY, so editing the meta alone changes
+        // nothing the player can see; THE PLAYER IS THE HALF THAT PERSISTS. So a Player is not what
+        // ENABLES a write, it is what makes a write STICK.
+        //
+        // The proxy holds because of that copy semantics, not because Player is the write capability.
+        // A method taking only an ItemStack could still call editMeta and mutate a caller's stack --
+        // so a future addition must be judged on whether it edits meta at all, and this check is the
+        // cheap mechanical half, not the definition.
+        for (Class<?> parameter : stateOf.getParameterTypes()) {
+            assertTrue(!parameter.getName().endsWith(".Player"),
+                    "stateOf must not take a Player. That is a PROXY for purity (see the comment "
+                            + "above): writes here are editMeta + setItemInMainHand, and the Player "
+                            + "is the half that persists them, so needing one marks the committing "
+                            + "path -- it does not define it.");
+        }
+    }
+
+    /**
+     * A COUNT WRITTEN IN PLAY MUST CARRY ITS OWN RENDER, AND {@code Quivers} MAY NOT WRITE ONE RAW.
+     *
+     * <p><b>This is boot row V1's display failure turned into a red build.</b> {@code spendRound}
+     * wrote the count key and called {@code updateInventory}, and nothing re-ran {@code applyLore} --
+     * which executes only from {@code mint} and {@code remint}. The stored count moved, the tooltip
+     * did not, and <b>three green rows were entirely consistent with the defect</b>: Q4, Q5 and Q6
+     * (relog, {@code /rpg refresh}, the enchant table) all route through {@code remint}, so the
+     * display snapped to the right number at exactly those three moments. The bug presented as
+     * <i>"the counter only updates when you relog."</i>
+     *
+     * <p>The fix is structural rather than remembered: {@link QuiverItems#setLoaded} writes AND
+     * renders in one call, so <b>a fourth write site cannot express the write without the render.</b>
+     * This guards the other half — that nobody reopens the raw path beside it.
+     *
+     * <p>{@link QuiverItems#stampFull} is the single legitimate raw writer and is <b>MINT-ONLY</b>,
+     * where {@code applyLore} follows by construction. A call to it from {@code Quivers} would be an
+     * in-play write with no render, which is precisely the shipped defect, so it is refused here too.
+     *
+     * <p>Reads the source rather than reflecting, because the hazard is a CALL inside a method body
+     * and no signature shows it. Comments are stripped first — this file's own javadoc names both
+     * forbidden strings, and a scan that does not strip prose reads documentation as if it were code.
+     */
+    @Test
+    void quiversNeverWritesTheCountWithoutRenderingIt() throws IOException {
+        Path source = Path.of("src", "main", "java", "io", "github", "butterflysmp", "rpg",
+                "paper", "weapon", "Quivers.java");
+        assertTrue(Files.isRegularFile(source), "source not found at " + source.toAbsolutePath());
+        String raw = Files.readString(source, StandardCharsets.UTF_8);
+        String code = raw.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+
+        // The stripper needs its own control: one that silently did nothing returns the whole file,
+        // and every assertion below would then run against prose.
+        assertTrue(code.length() < raw.length(), "comment stripping removed nothing");
+        assertFalse(code.contains("{@link"), "javadoc survived the strip; the scan would read prose");
+
+        assertFalse(code.contains("stampFull"),
+                "stampFull is MINT-ONLY (applyLore follows it by construction). Calling it from "
+                        + "Quivers is an in-play write with no render -- the same defect by a "
+                        + "different door. Use setLoaded.");
+
+        // POSITIVE CONTROL: the assertion above is satisfied by an empty file, so prove the
+        // sanctioned call is actually present and this class really does write counts.
+        assertTrue(code.contains("QuiverItems.setLoaded"),
+                "Quivers writes no counts at all -- either the scan is broken or the funnel is gone");
+    }
+
+    /**
+     * THE COUNT KEY IS TOUCHED IN EXACTLY TWO FILES, AND THE SCAN IS WIDER THAN ONE FILE ON PURPOSE.
+     *
+     * <p><b>The row above reads {@code Quivers.java} only, which covers today's three in-play writers
+     * and would stay green for a writer added anywhere else.</b> That boundary is not hypothetical:
+     * <b>slice A2 walks straight into it.</b> {@code DESIGN-stat-engine.md}'s rule — adopted verbatim
+     * by this slice — is that a capacity DECREASE clamps the current value. When quiver size becomes
+     * a stat, something must clamp the stored count when capacity drops, and that something will
+     * almost certainly live in the stat-reconcile path rather than in {@code Quivers}. <b>It is a
+     * write. It must re-render.</b> A one-file scan would not notice.
+     *
+     * <p>So the boundary is a GUARD rather than a note: {@code quiverLoaded} may appear under
+     * {@code paper/src/main} in {@link io.github.butterflysmp.rpg.paper.adapter.Keys} (which DECLARES
+     * it) and {@link QuiverItems} (which owns every read and write), <b>and nowhere else.</b> A2's
+     * clamp written in the wrong place reddens here, which is exactly when it is cheap to move.
+     *
+     * <p><b>The cost is a named exemption list that must grow deliberately</b>, and it is the same
+     * cost already priced for {@code WeaponLoader.KNOWN_KEYS} — with the same conclusion: <b>it fails
+     * towards NOISE.</b> A legitimate new reader reddens loudly and someone adds it on purpose;
+     * nothing goes quietly unguarded. The set is named rather than counted, so a reader can check it.
+     */
+    @Test
+    void theCountKeyIsTouchedInExactlyTwoFilesAcrossAllOfPaper() throws IOException {
+        Path main = Path.of("src", "main", "java");
+        assertTrue(Files.isDirectory(main), "paper sources not found at " + main.toAbsolutePath());
+
+        List<String> touching = new java.util.ArrayList<>();
+        int scanned = 0;
+        try (var walk = Files.walk(main)) {
+            for (Path file : walk.filter(p -> p.toString().endsWith(".java")).toList()) {
+                scanned++;
+                String code = Files.readString(file, StandardCharsets.UTF_8)
+                        .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+                if (code.contains("quiverLoaded") || code.contains("quiverCapacity")) {
+                    touching.add(file.getFileName().toString());
+                }
+            }
+        }
+
+        // A walk that discovered nothing reads exactly like a walk that found everything in order.
+        assertTrue(scanned > 50, "only " + scanned + " files scanned -- the walk is not reaching paper");
+
+        java.util.Collections.sort(touching);
+        assertEquals(List.of("Keys.java", "QuiverItems.java"), touching,
+                "the quiver count key must be touched ONLY where it is declared (Keys) and where it "
+                        + "is owned (QuiverItems, whose setLoaded writes AND re-renders). A write "
+                        + "anywhere else is boot row V1's defect in a new location -- and A2's "
+                        + "capacity clamp is the known candidate. Add a file here only deliberately.");
+    }
+
+    /**
+     * THE CAPACITY IS RESOLVED IN A NAMED SET OF PLACES, BECAUSE "EXACTLY ONE PLACE" HAD NO
+     * INSTRUMENT.
+     *
+     * <p>{@code QuiverState.capacityOf}'s javadoc claims it is <i>"the WHOLE of the ordering"</i> and
+     * that the fallback therefore <i>"happens in exactly one place rather than once per reader."</i>
+     * <b>In commit 1a that was true only because there were no readers at all.</b> There are now two,
+     * and nothing stopped a third from writing {@code stamped.orElse(weapon.quiverSize())} inline —
+     * at which point the sentence is false and no test changes colour.
+     *
+     * <p><b>And the defect that inline reader WOULD BE is the exact one the stamp exists to
+     * prevent:</b> a tooltip rendering the stamp while the refusal logic resolves the holder live.
+     * Two resolvers is how they come to disagree.
+     *
+     * <p>So the readers are pinned as a NAMED SET rather than a count — a count over an unnamed set
+     * cannot be checked by the reader, which is the rule these reports are held to:
+     *
+     * <ul>
+     *   <li>{@code QuiverState} (core) — where {@code capacityOf} is DEFINED.
+     *   <li>{@code QuiverItems} — where the accessor is DEFINED; it matches its own scan, the way
+     *       {@code KNOWN_KEYS} must carry {@code id}.
+     *   <li>{@code Quivers.stateOf} — the verdict path, which both refusal and enforcement read.
+     *   <li>{@code WeaponItems.applyLore} — reads the stamp off the meta it is building.
+     *   <li>{@code WeaponLore.build} — resolves it for the tooltip.
+     * </ul>
+     *
+     * <h2>WHAT THIS GUARD DOES NOT DO, AND IT IS THE LARGER HALF</h2>
+     *
+     * <p><b>A GUARD OVER A SET OF CALL SITES IS NOT A TEST OF WHAT THOSE CALL SITES DO.</b> It proves
+     * no sixth resolver exists. It cannot prove the five resolve correctly, and <b>it goes green for
+     * every one of them that silently stops reading the stamp.</b> Measured, three times:
+     *
+     * <ul>
+     *   <li>{@code MUTSTAMPDROP} — {@code WeaponLore} ignores the stamp. <b>Green</b> until
+     *       {@code WeaponLoreTest} gained a row staging a stamp that DIFFERS from the authored value.
+     *   <li>{@code MUTSTATEDROP} — {@code Quivers.stateOf} ignores it, stranding a boosted Ranger's
+     *       last rounds behind {@code ALREADY_FULL}. <b>Green</b> until the resolution moved into
+     *       {@link QuiverState#from}, where a core row can reach it.
+     *   <li>{@code MUTAPPLYLORE2} — {@code WeaponItems.applyLore} passes {@code empty} while KEEPING
+     *       the {@code capacityInMeta} call, so the set is unchanged. <b>Green, and still is.</b>
+     * </ul>
+     *
+     * <p><b>The second of those was found by review, not by this guard, and the first version of the
+     * third was caught only by luck</b> — dropping the call shrank the set, so the membership check
+     * fired for a reason unrelated to the behaviour. Keeping the call makes it green again.
+     *
+     * <p><b>STATUS OF ALL SEVEN SITES, enumerated rather than counted -- they live in the SIX files
+     * the assertion names, because {@code QuiverItems} holds two of them ({@code resolveCapacity} and
+     * {@code capacityIn}). Sites and files are different quantities and both are named here so the
+     * two numbers cannot read as a contradiction:</b>
+     *
+     * <table><tr><th>site</th><th>role</th><th>witnessed?</th></tr>
+     * <tr><td>{@code QuiverState.capacityOf} / {@code from}</td><td>the resolution</td>
+     *     <td><b>YES</b> — {@code QuiverStateTest}, MUTFACTORYDROP red</td></tr>
+     * <tr><td>{@code QuiverSize.resolve}</td><td>stat + authored, and the {@code MIN_CAPACITY} floor</td>
+     *     <td><b>YES</b> — {@code QuiverSizeTest}, MUTQSFLOOR and MUTQSMINCAP red</td></tr>
+     * <tr><td>{@code WeaponLore.build}</td><td>resolves for the tooltip</td>
+     *     <td><b>YES</b> — {@code WeaponLoreTest}, MUTSTAMPDROP red</td></tr>
+     * <tr><td>{@code QuiverItems.resolveCapacity}</td><td>the READ: plumbs the wielder's stat into
+     *     {@code QuiverSize.resolve}</td>
+     *     <td><b>NO</b> — needs an {@code ItemStack} at every caller. Boot-only; the arithmetic it
+     *     used to hold now lives in core.</td></tr>
+     * <tr><td>{@code Quivers.stateOf}</td><td>reads five values, decides nothing</td>
+     *     <td><b>NO</b> — needs an {@code ItemStack}. Boot-only; the decision it used to make has moved.</td></tr>
+     * <tr><td>{@code WeaponItems.applyLore}</td><td>plumbs the stamp to the tooltip</td>
+     *     <td><b>NO</b> — needs an {@code ItemStack}. Boot-only.</td></tr>
+     * <tr><td>{@code QuiverItems.capacityIn}</td><td>the accessor; resolves nothing</td>
+     *     <td>n/a — there is no stamp-versus-authored decision in it</td></tr>
+     * </table>
+     *
+     * <h3>{@code RpgCommand} JOINED THIS LIST IN COMMIT 3, DELIBERATELY, AND IT IS THE ONLY ENTRY
+     * THAT NEVER WRITES</h3>
+     *
+     * <p>{@code /rpg quiversize} prints the capacity the wielder will pack at, which is the
+     * discipline every dev instrument here follows -- <i>a gate should read what to expect before it
+     * starts watching.</i> To print it, it obtains one. <b>That is a new door, opened by the same
+     * commit that declares it</b>, which is the shape commits 1b through 1f were spent learning: the
+     * guard that does not scan its own new front door.
+     *
+     * <p>It is not a SECOND resolver, and the distinction is the reason it is allowed rather than
+     * refactored away: it calls {@code QuiverSize.resolve} -- the same expression the write path
+     * calls -- rather than re-deriving {@code authored + bonus} inline. A cap or a curve added to
+     * {@code resolve} reaches the command's message for free. Writing
+     * {@code weapon.quiverSize() + amount} there instead would have been the defect, and would have
+     * been invisible to this scan.
+     *
+     * <p><b>The needle is {@code "QuiverSize.resolve("} and NOT {@code "QuiverSize."}</b>, measured:
+     * the wide form also matches {@code QuiverSizeModifierItems}, whose {@code boosts} /
+     * {@code contribution} / {@code arrows} calls obtain a BONUS, not a capacity. Including it would
+     * put a file on this list that never resolves one, and a list whose membership stops meaning
+     * "decides which capacity governs" stops answering that question -- the same dilution argument
+     * that keeps {@code weapon.quiverSize()} off the needle set below.
+     *
+     * <p><b>THE import-static BAN HAS A POSITIVE CONTROL, BECAUSE A NEW FILTER THAT HAS ONLY EVER
+     * SEEN PASSING INPUT HAS NEVER BEEN TESTED.</b> {@code MUTSTATICIMPORT}, run: add
+     * {@code import static ...QuiverSize.resolve;} to {@code WeaponFire} and call
+     * {@code resolve(weapon.quiverSize(), 0.0)} unqualified. Measured in the mutated file:
+     * {@code QuiverSize.resolve(} occurs <b>ZERO</b> times, so the qualified needle was blind to it
+     * exactly as predicted -- and the row still went red, {@code WeaponFire.java} appearing in the
+     * actual list. <b>The catch came entirely from the new needle.</b> Restored byte-identical.
+     *
+     * <p>A SEVENTH FILE is a deliberate edit to this list, which is the moment to ask whether it should
+     * instead be reading the state the others already built.
+     *
+     * <p><b>IT SCANS FOR THE ACCESSOR AS WELL AS THE RESOLVER, AND THE FIRST VERSION DID NOT —
+     * WHICH IS WHY IT MISSED THE DEFECT IT WAS WRITTEN FOR.</b> Measured: a mutation adding
+     * {@code QuiverItems.capacityIn(held, keys).orElse(weapon.quiverSize())} to {@code WeaponFire}
+     * — the inline third resolver, exactly the case in the paragraphs above — came back **green**.
+     * It calls neither {@code capacityOf} nor the key by name, so a scan for either was blind to it.
+     * <b>A guard aimed at the name of the right thing rather than at the shape of the wrong thing.</b>
+     * Obtaining a capacity at all now requires appearing on this list -- IN EITHER MODULE.
+     *
+     * <h2>{@code weapon.quiverSize()} IS DELIBERATELY NOT SCANNED FOR, AND HERE IS THE COST</h2>
+     *
+     * <p>It is the third source -- the authored value -- and it is a real way to obtain a capacity,
+     * so the obvious hardening is to add {@code "quiverSize()"} to the {@code contains} above.
+     * <b>Measured before deciding, not argued:</b> {@code grep -rn "quiverSize()" core/src/main/java
+     * paper/src/main/java} finds five live call sites -- {@code QuiverItems:90}, {@code :98},
+     * {@code :183}, {@code Quivers:168}, {@code WeaponLore:91} -- and <b>every one of them is already
+     * inside a file on this list.</b> Scanning for it today would change no verdict.
+     *
+     * <p><b>And the two candidate needles do not match the same files -- measured with the scan's own
+     * comment-stripping, not reasoned:</b>
+     *
+     * <table><tr><th>needle</th><th>files matched</th></tr>
+     * <tr><td>{@code "quiverSize()"}</td><td>{@code QuiverItems}, {@code Quivers}, {@code WeaponLore}
+     *     -- a SUBSET of this list; adding it changes no verdict today</td></tr>
+     * <tr><td>{@code "quiverSize"}</td><td>those three <b>plus {@code WeaponDefinition} and
+     *     {@code WeaponLoader}</b></td></tr>
+     * </table>
+     *
+     * <p>The gap between the two rows is itself the finding. {@code WeaponDefinition} names
+     * {@code quiverSize} on eight non-javadoc lines -- the record component, four validation arms, a
+     * convenience factory's parameter and argument, and {@code hasQuiver()} -- and <b>not one of them
+     * has parentheses</b>, because a record reads its own component as a field inside its body.
+     * {@code WeaponLoader} holds it as a local {@code int} for the same reason. So the paren form is
+     * narrow in precisely the way {@code capacityOf} was: <b>aimed at a name-form rather than a
+     * shape</b>, and blind to the authoring code by accident of syntax rather than by decision.
+     *
+     * <p><b>Taking the wide needle is what is declined, and this is its price.</b> Both new files
+     * AUTHOR the number; neither chooses between sources. A list whose membership no longer means
+     * "decides which capacity governs" stops being readable as the answer to that question, which is
+     * the property the five entries are for. Taking the narrow needle instead would buy a guard that
+     * is green today for a reason that has nothing to do with the rule it states.
+     *
+     * <p><b>So the cost is stated rather than the risk denied:</b> a sixth file could call
+     * {@code weapon.quiverSize()} directly, ignore the stamp, and this row would stay green. What
+     * stops that is not this scan -- it is that the stamp has <b>exactly two readers outside
+     * {@code QuiverItems} itself</b>, measured on {@code keys.quiverCapacity} across both modules:
+     * {@code Quivers:155} and {@code WeaponItems:239}, and <b>both go through
+     * {@code capacityIn}/{@code capacityInMeta}</b>, which IS the needle scanned above. So the
+     * inline-resolver shape ({@code stamped.orElse(weapon.quiverSize())}) cannot be written anywhere
+     * without landing on this list. A caller reaching for the authored value ALONE is not a second
+     * resolver; it is a caller that never asked about the item at all, and the defect that produces
+     * is {@code MUTSTATEDROP}'s -- a stamp that is not read -- which {@code QuiverStateTest} and
+     * {@code WeaponLoreTest} witness directly.
+     */
+    @Test
+    void theCapacityIsResolvedOnlyWhereThisListSays() throws IOException {
+        // BOTH MODULES. Scanning only paper/ would have been a claim true by accident of where the
+        // code currently sits: capacityOf is PUBLIC ON A CORE CLASS, and WeaponLoreLines.quiverLine
+        // is in core and is the natural place for a later commit to move the resolution into -- at
+        // which point the tooltip's resolver would leave a paper-only guard's sight entirely and the
+        // list would still read as four files. That is A1's one-file-scope finding recurring one
+        // module over.
+        List<String> resolvers = new java.util.ArrayList<>();
+        int scanned = 0;
+        for (Path root : List.of(Path.of("src", "main", "java"),
+                                 Path.of("..", "core", "src", "main", "java"))) {
+            assertTrue(Files.isDirectory(root), "source root not found: " + root.toAbsolutePath());
+            try (var walk = Files.walk(root)) {
+                for (Path file : walk.filter(p -> p.toString().endsWith(".java")).toList()) {
+                    scanned++;
+                    String code = Files.readString(file, StandardCharsets.UTF_8)
+                            .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+                    // BOTH the accessor and the resolver, because scanning for capacityOf alone
+                    // MISSED the defect this guard exists for -- measured, see the javadoc.
+                    //
+                    // AND THE LAST TWO NEEDLES ARE QUALIFIED, SO THEY ARE PAIRED WITH AN
+                    // import-static BAN. "capacityIn" and "capacityOf(" are bare names and match
+                    // however the call is spelled; "QuiverState.from(" and "QuiverSize.resolve("
+                    // require the class, and `import static ...QuiverSize.resolve;` then
+                    // `resolve(weapon.quiverSize(), bonus)` would obtain a capacity matching
+                    // NEITHER. Measured: paper/src/main uses import static today (CraftingMenu 5,
+                    // EnchantMenu 4), so this is a live idiom in the module this walks.
+                    //
+                    // The ban is one needle per class, not a broader scan: a file that static-imports
+                    // either class LANDS ON THIS LIST and fails the membership assertion, which puts
+                    // its author here, beside the reason.
+                    if (code.contains("capacityIn") || code.contains("capacityOf(")
+                            || code.contains("QuiverState.from(")
+                            || code.contains("QuiverSize.resolve(")
+                            || code.contains("import static "
+                                    + "io.github.butterflysmp.rpg.core.weapon.QuiverState.")
+                            || code.contains("import static "
+                                    + "io.github.butterflysmp.rpg.core.combat.QuiverSize.")) {
+                        resolvers.add(file.getFileName().toString());
+                    }
+                }
+            }
+        }
+        assertTrue(scanned > 100, "only " + scanned + " files scanned across both modules");
+
+        java.util.Collections.sort(resolvers);
+        assertEquals(
+                List.of("QuiverItems.java", "QuiverState.java", "Quivers.java", "RpgCommand.java",
+                        "WeaponItems.java", "WeaponLore.java"),
+                resolvers,
+                "a capacity may only be OBTAINED in these SIX files, across core AND paper. Reading "
+                        + "QuiverItems.capacityIn anywhere else and resolving it inline -- "
+                        + "stamped.orElse(weapon.quiverSize()) -- is a second resolver, and two "
+                        + "resolvers is how the tooltip and the refusal logic come to disagree.");
+    }
+
+    /**
+     * NO PUBLIC WAY TO BUILD A {@code QuiverState} CAN APPEAR UNNOTICED.
+     *
+     * <p><b>This row was called {@code noSixthWayToObtainACapacityCanAppearUnnoticed}, and that name
+     * was false in the commit that wrote it.</b> It claimed EVERY way; it checked only the public
+     * STATIC surface. The assertion message never overstated -- it said "QuiverState's public static
+     * surface changed" -- so the name was the half that lied, and it lied about exactly the gap that
+     * existed: {@code QuiverState} was a {@code public record}, <b>whose canonical constructor is
+     * public</b>, so {@code new QuiverState(loaded, weapon.quiverSize(), from, to)} fabricated a
+     * capacity past this pin and past the source scan above. That was the route {@code Quivers.stateOf}
+     * itself used two commits ago.
+     *
+     * <p>Two ways to fix a name that overstates: shrink the name, or make it true. <b>Made true.</b>
+     * {@code QuiverState} is now a final class with a PRIVATE canonical constructor, and this row
+     * asserts that too -- so between the two assertions the name holds: a static factory and a
+     * constructor are the only ways to obtain an instance, and both are pinned. Shrinking the name
+     * instead would have left the record's door open with an honest label on the wrong door.
+     *
+     * <p><b>WITNESSED, not asserted. {@code MUTCTOR}:</b> {@code private QuiverState(} ->
+     * {@code public QuiverState( // MUTCTOR}, spliced by line number; marker present 1, original
+     * gone 0, +10 bytes (16291 -> 16301). <b>Result: 1 failure out of 6 rows -- this one, on its
+     * second assertion.</b> The first assertion stayed green, which is the point worth recording:
+     * a constructor is not a static method, so <b>the surface pin alone could not see the defect it
+     * was named after</b>. Restored from a scratchpad copy, byte-identical, markers left 0.
+     *
+     * <p><b>SCOPE, because this row is named for what it watches and a reader will assume it watches
+     * the rest.</b> It covers CONSTRUCTION only -- public static methods and public constructors.
+     * The public INSTANCE surface is pinned separately by
+     * {@link #theInstanceSurfaceOfQuiverStateIsNamedToo}; between them they cover every public
+     * member declared on {@code QuiverState}, and nothing else. What neither covers is listed at
+     * that row.
+     *
+     * <h2>Why a reflective pin and not a wider string list</h2>
+     *
+     * <p>The scan above is <b>a list of names</b>, and it has now been too narrow three times, each
+     * time for the same reason and each time widened afterwards:
+     *
+     * <ol>
+     *   <li>it named {@code capacityOf}; {@code MUTINLINE} arrived through {@code capacityIn}.
+     *   <li>it scanned {@code paper}; {@code capacityOf} is public in <b>core</b>.
+     *   <li>{@link QuiverState#from} was added as a new way to obtain a capacity — <b>in the same
+     *       commit whose javadoc said "a guard aimed at the NAME of the right thing rather than the
+     *       SHAPE of the wrong one"</b> — and the list was not widened. A sixth file could write
+     *       {@code QuiverState.from(loaded, OptionalInt.empty(), weapon.quiverSize(), a, b)} and
+     *       obtain a state whose capacity ignores the stamp, containing neither scanned string.
+     *       That is {@code MUTSTATEDROP} relocated one file over.
+     * </ol>
+     *
+     * <p><b>Widening the list a fourth time fixes today and leaves the mechanism that failed three
+     * times in place</b> — the mechanism being that somebody has to REMEMBER. Instance 3 is the proof
+     * that remembering fails even with the rule freshly written three paragraphs above.
+     *
+     * <p>So this row does not try to be a better list. <b>It makes the list impossible to leave
+     * stale in silence</b>: {@code QuiverState}'s public static surface is pinned, so adding a sixth
+     * entry point <b>fails the build</b>, and the author lands here — beside the scan, with this
+     * javadoc explaining what else must move. The guard cannot enumerate every future name; it can
+     * refuse to let one appear unnoticed.
+     *
+     * <p>Same idiom as {@link #theCommittingSurfaceHasNotQuietlyGrown} and
+     * {@code DamageSignatureTest}, and the same argument: <b>a safety that holds on a condition
+     * nobody wrote down where it would be violated is not a safety.</b> Here the condition is
+     * written where it will be violated — at the surface that grows.
+     */
+    @Test
+    void noPublicWayToBuildAQuiverStateCanAppearUnnoticed() {
+        List<String> entryPoints = Arrays.stream(QuiverState.class.getDeclaredMethods())
+                .filter(m -> !m.isSynthetic() && Modifier.isPublic(m.getModifiers())
+                        && Modifier.isStatic(m.getModifiers()))
+                .map(Method::getName)
+                .distinct()
+                .sorted()
+                .toList();
+
+        assertEquals(List.of("capacityOf", "from", "loaded", "reloading", "unstamped"), entryPoints,
+                "QuiverState's public static surface changed. Every one of these yields a capacity -- "
+                        + "capacityOf resolves one, the rest build a state carrying one -- so a new "
+                        + "member must ALSO be added to the source scan in "
+                        + "theCapacityIsResolvedOnlyWhereThisListSays, or a caller can obtain a "
+                        + "capacity that ignores the stamp and no test will notice.");
+
+        // AND THE CONSTRUCTOR IS NOT ON THIS SURFACE, WHICH IS WHY QuiverState IS NO LONGER A RECORD.
+        // A public record's canonical constructor is public and would be a fifth entry point this
+        // reflection cannot report. Made private instead -- see that class's own javadoc.
+        assertTrue(Arrays.stream(QuiverState.class.getDeclaredConstructors())
+                        .noneMatch(c -> Modifier.isPublic(c.getModifiers())),
+                "QuiverState has a PUBLIC constructor. That is a way to fabricate a capacity that "
+                        + "neither this pin nor the source scan can see -- it was the defect that "
+                        + "made this class stop being a record.");
+    }
+
+
+    /**
+     * THE INSTANCE SURFACE, PINNED TOO -- AND THE SCOPE STATEMENT THE PAIR OWES.
+     *
+     * <p>{@link #noPublicWayToBuildAQuiverStateCanAppearUnnoticed} covers CONSTRUCTION: public
+     * static methods, and public constructors. <b>It does not cover the instance surface</b>, so
+     * until this row existed, {@code loaded()} / {@code reloadStartedAt()} / {@code reloadCompletesAt()}
+     * could come back, or {@link QuiverState#capacity} could quietly go, and neither guard would say
+     * anything. That is the same gap as the module-scan one, one level in: <b>a pin's name says what
+     * it watches, and a reader assumes it watches the rest.</b>
+     *
+     * <p><b>So, together, the two rows cover exactly:</b> public static methods, public constructors,
+     * public instance methods -- all declared on {@code QuiverState} itself. <b>They do NOT cover:</b>
+     * parameter and return TYPES (a member may change shape without either row noticing), anything
+     * non-public, the {@code Fire} and {@code Reload} enum constants (which {@code QuiverStateTest}
+     * exercises by value), and {@code Quiver} -- which has its own {@code QuiverSignatureTest}.
+     *
+     * <p>Why the instance surface is a door and not just tidiness: {@code capacity()} returns the
+     * RESOLVED value, and that is the whole point. An accessor handing back the raw stamp and the
+     * authored value separately -- {@code stampedCapacity()}, {@code authoredCapacity()} -- would let
+     * a caller redo {@link QuiverState#capacityOf}'s job outside it, which is {@code MUTINLINE}
+     * arriving through a fourth shape.
+     *
+     * <p><b>AND DECLARING {@code equals}/{@code hashCode}/{@code toString} WILL FAIL THIS ROW, ON
+     * PURPOSE.</b> {@code getDeclaredMethods} does not report inherited {@code Object} members, so
+     * they are absent from the list below -- which is exactly today's state, and the class javadoc's
+     * cost note says why (equality is identity now, and this repo has zero hand-written
+     * {@code equals}). Restoring value semantics is allowed; doing it silently is not. The author
+     * lands here, beside the note that says which fields such an {@code equals} must cover.
+     */
+    @Test
+    void theInstanceSurfaceOfQuiverStateIsNamedToo() {
+        List<String> instanceMembers = Arrays.stream(QuiverState.class.getDeclaredMethods())
+                .filter(m -> !m.isSynthetic() && Modifier.isPublic(m.getModifiers())
+                        && !Modifier.isStatic(m.getModifiers()))
+                .map(Method::getName)
+                .distinct()
+                .sorted()
+                .toList();
+
+        assertEquals(
+                List.of("capacity", "fireVerdict", "isReloading", "reloadTicksRemaining",
+                        "reloadVerdict"),
+                instanceMembers,
+                "QuiverState's public INSTANCE surface changed. capacity() returns the RESOLVED "
+                        + "value and is the only accessor anybody should need; an accessor handing "
+                        + "back the raw stamp and the authored value separately lets a caller redo "
+                        + "capacityOf's job outside it. If this failed because equals/hashCode/"
+                        + "toString were declared, read the class javadoc's cost note first -- that "
+                        + "is allowed, but it must name the fields it covers.");
+    }
+    /**
+     * TODAY'S PUBLIC SURFACE, named rather than counted.
+     *
+     * <p>Three of these four WRITE ({@code resolveForShot}, {@code spendRound}, {@code beginReload},
+     * {@code tryReloadHeldWeapon} -- all but {@code stateOf}), and every one is verb-named so it
+     * cannot be mistaken for a query. A new member added here is a deliberate edit to this list,
+     * which is the moment to ask whether its name says what it does.
+     *
+     * <p>Pinned as a SET rather than a count, because a count over an unnamed set cannot be checked
+     * by the reader -- which is the same rule this slice's reports are held to.
+     */
+    @Test
+    void theCommittingSurfaceHasNotQuietlyGrown() {
+        List<String> publicMethods = Arrays.stream(Quivers.class.getDeclaredMethods())
+                .filter(m -> !m.isSynthetic() && Modifier.isPublic(m.getModifiers()))
+                .map(Method::getName)
+                .distinct()
+                .sorted()
+                .toList();
+
+        assertEquals(
+                List.of("beginReload", "resolveForShot", "spendRound", "stateOf", "tryReloadHeldWeapon"),
+                publicMethods,
+                "Quivers' public surface changed. Every member but stateOf commits, so a new one "
+                        + "needs a verb name that says so -- and a new PURE one belongs beside "
+                        + "stateOf in the javadoc that points callers at it.");
+    }
+
+    /**
+     * THE AUTHORED RELOAD DURATION IS READ ONLY WHERE THIS LIST SAYS -- and it is a list because a COUNT
+     * of it was false within one commit of being written.
+     *
+     * <p>{@code Quivers.beginReload} carried the comment <i>"grep -rn "reloadTicks()" ... finds
+     * exactly this one"</i>. True when drafted; <b>the same commit wrote its refutation sixty lines
+     * away</b> in the {@code /rpg reloadtime} block. Measured at that tip: four hits in main source,
+     * six unscoped. {@code PLAN-quiver-a2.md} repeated the count and was wrong the same way.
+     *
+     * <p>That is A1's <i>"two call sites"</i> error from the other side, and the rule drawn from it
+     * then applies now: <b>name the set, do not count an unnamed one.</b> A grep quoted with its
+     * command is the most trustworthy-looking form a count can take, which is exactly why a stale one
+     * costs more -- the next reader runs it, gets a different number, and stops believing the
+     * comments that are right.
+     *
+     * <h2>SUPPLY versus READOUT, which is the distinction that survives the next line being added</h2>
+     *
+     * <table><tr><th>file</th><th>role</th></tr>
+     * <tr><td>{@code Quivers}</td><td><b>SUPPLY</b> -- reads the authored duration to DRIVE
+     *     BEHAVIOUR. Exactly one site: {@code beginReload} resolves it and stamps the deadline.</td></tr>
+     * <tr><td>{@code RpgCommand}</td><td><b>READOUT</b> -- reads it to show somebody a number, and
+     *     prints the RESOLVED value beside the authored one every time, through
+     *     {@code ReloadTime.resolve} rather than re-deriving {@code authored + bonus}.</td></tr>
+     * </table>
+     *
+     * <p><b>A readout cannot quietly become a second source of truth</b> as long as it composes
+     * through the same resolver, which is why {@code RpgCommand} is a listed member rather than an
+     * exemption -- the same call the capacity scan makes about the same file.
+     *
+     * <p><b>This row is what makes commit 6 safe to write at all:</b> the stats sheet added a THIRD
+     * readout in the same commit that corrected the count, so any fresh number would have been stale
+     * on arrival for the third time. A named set absorbs it.
+     *
+     * <p>Scope, on {@link #theCapacityIsResolvedOnlyWhereThisListSays}'s pattern: MAIN source of both
+     * modules. Test sources are excluded deliberately -- {@code WeaponQuiverDefinitionTest} and
+     * {@code WeaponLoaderTest} both read {@code reloadTicks()} to assert a loaded value, which is
+     * neither supply nor readout. The needle is the bare accessor name, so a static import cannot
+     * walk past it the way it did the qualified capacity needles.
+     */
+    @Test
+    void theAuthoredReloadDurationIsReadOnlyWhereThisListSays() throws IOException {
+        List<String> readers = new java.util.ArrayList<>();
+        int scanned = 0;
+        for (Path root : List.of(Path.of("src", "main", "java"),
+                                 Path.of("..", "core", "src", "main", "java"))) {
+            assertTrue(Files.isDirectory(root), "source root not found: " + root.toAbsolutePath());
+            try (var walk = Files.walk(root)) {
+                for (Path file : walk.filter(p -> p.toString().endsWith(".java")).toList()) {
+                    scanned++;
+                    String raw = Files.readString(file, StandardCharsets.UTF_8);
+                    String code = raw.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+                    if (code.contains("reloadTicks()")) {
+                        readers.add(file.getFileName().toString());
+                    }
+                }
+            }
+        }
+        assertTrue(scanned > 100, "only " + scanned + " files scanned across both modules");
+
+        java.util.Collections.sort(readers);
+        assertEquals(List.of("Quivers.java", "RpgCommand.java"), readers,
+                "the authored reload duration may only be read in these TWO files: Quivers SUPPLIES "
+                        + "it (beginReload resolves and stamps), RpgCommand READS IT OUT beside the "
+                        + "resolved value. A third file is a deliberate edit -- and the question to "
+                        + "ask is which of the two it is, because a supply site that does not go "
+                        + "through ReloadTime.resolve is a second source of truth and a readout that "
+                        + "does not is a number that will drift from the weapon.");
+    }
+
+    /**
+     * THE AUTHORED QUIVER SIZE IS READ ONLY WHERE THIS LIST SAYS -- the twin of the row above, and
+     * <b>it exists because commit 3 measured this exact needle and DECLINED it on reasoning commit 6
+     * refuted.</b>
+     *
+     * <h2>The reasoning, and why it was wrong</h2>
+     *
+     * <p>Commit 3 wrote: <i>"{@code "quiverSize()"} matches QuiverItems, Quivers, WeaponLore -- a
+     * SUBSET of this list; adding it changes no verdict today."</i> The measurement was correct and
+     * is correct still. <b>The conclusion drawn from it was the error.</b>
+     *
+     * <p><b>"It changes no verdict today" is the wrong test for a guard.</b> A guard's whole value is
+     * the file nobody has written yet. This repository already carries the inverted form of that
+     * principle, in {@code QuiverSize}'s javadoc: <i>"a filter with no call sites is not a filter that
+     * is being applied."</i> Pointed the other way it reads: <b>a guard with nothing to catch today is
+     * not a guard that will have nothing to catch.</b>
+     *
+     * <h2>And there is a worked example, one commit later, in the same file</h2>
+     *
+     * <p>The reload twin -- built on the same needle shape -- <b>caught {@code StatsSheetValues} on
+     * its first run</b>, a file that did not exist when the needle was designed. It had accessors
+     * named {@code quiverSize()} and {@code reloadTicks()}, both returning RESOLVED values under the
+     * names {@code WeaponDefinition} uses for AUTHORED ones.
+     *
+     * <p><b>The same file had the same collision on BOTH sides, and only one of them was caught by a
+     * guard.</b> The capacity half was fixed because its sibling tripped -- which is luck, and this
+     * row is the removal of that luck.
+     *
+     * <h2>SUPPLY versus READOUT, measured at this tip</h2>
+     *
+     * <table><tr><th>file</th><th>role</th><th>sites</th></tr>
+     * <tr><td>{@code QuiverItems}</td><td><b>SUPPLY</b></td>
+     *     <td>{@code stampFull} stamps the AUTHORED capacity at MINT (deliberately -- the headroom
+     *     rule), and {@code resolveCapacity} is the one resolution for a write.</td></tr>
+     * <tr><td>{@code Quivers}</td><td><b>SUPPLY</b></td>
+     *     <td>{@code stateOf} passes it as {@code QuiverState.from}'s unstamped fallback, which
+     *     drives a verdict.</td></tr>
+     * <tr><td>{@code WeaponLore}</td><td><b>READOUT</b></td>
+     *     <td>the tooltip's unstamped fallback -- what a definitions-only harness renders.</td></tr>
+     * <tr><td>{@code RpgCommand}</td><td><b>READOUT</b></td>
+     *     <td>the stats sheet's gather and {@code /rpg quiversize}'s message, both composing through
+     *     {@code QuiverSize.resolve} rather than re-deriving.</td></tr>
+     * </table>
+     *
+     * <p><b>A SECOND ROW RATHER THAN A WIDENING OF {@link #theCapacityIsResolvedOnlyWhereThisListSays},
+     * and the dilution argument from commit 3 is what decides it.</b> That row answers <i>who decides
+     * which capacity governs</i>; this one answers <i>who touches the authored number at all</i>.
+     * Folding the needle in would have mixed the two and left the first list unable to answer its own
+     * question -- which was the true half of commit 3's reasoning, and it survives.
+     *
+     * <p>Its four files are a proper SUBSET of that row's six, today. That is expected and is not a
+     * reason to merge them: subsets diverge exactly when somebody adds the file this row exists for.
+     */
+    @Test
+    void theAuthoredQuiverSizeIsReadOnlyWhereThisListSays() throws IOException {
+        List<String> readers = new java.util.ArrayList<>();
+        int scanned = 0;
+        for (Path root : List.of(Path.of("src", "main", "java"),
+                                 Path.of("..", "core", "src", "main", "java"))) {
+            assertTrue(Files.isDirectory(root), "source root not found: " + root.toAbsolutePath());
+            try (var walk = Files.walk(root)) {
+                for (Path file : walk.filter(p -> p.toString().endsWith(".java")).toList()) {
+                    scanned++;
+                    String raw = Files.readString(file, StandardCharsets.UTF_8);
+                    String code = raw.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+                    if (code.contains("quiverSize()")) {
+                        readers.add(file.getFileName().toString());
+                    }
+                }
+            }
+        }
+        assertTrue(scanned > 100, "only " + scanned + " files scanned across both modules");
+
+        java.util.Collections.sort(readers);
+        assertEquals(
+                List.of("QuiverItems.java", "Quivers.java", "RpgCommand.java", "WeaponLore.java"),
+                readers,
+                "the AUTHORED quiver size may only be read in these FOUR files. QuiverItems and "
+                        + "Quivers SUPPLY it (a mint stamp, a write's resolution, an unstamped "
+                        + "fallback that drives a verdict); WeaponLore and RpgCommand READ IT OUT. A "
+                        + "fifth file is a deliberate edit, and the question to ask is which half it "
+                        + "is in -- a supply site that does not go through QuiverSize.resolve is a "
+                        + "second source of truth, and a readout that does not is a number that will "
+                        + "drift from the weapon.");
+    }
+}

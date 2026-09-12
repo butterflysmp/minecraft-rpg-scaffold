@@ -16,6 +16,9 @@ import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.HealthRegen;
 import io.github.butterflysmp.rpg.core.combat.HitDamage;
 import io.github.butterflysmp.rpg.core.combat.ManaRegen;
+import io.github.butterflysmp.rpg.core.combat.QuiverSize;
+import io.github.butterflysmp.rpg.core.combat.ReloadTime;
+import io.github.butterflysmp.rpg.core.combat.StatsSheetValues;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
@@ -46,6 +49,8 @@ import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.health.CritModifierItems;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenModifierItems;
 import io.github.butterflysmp.rpg.paper.health.ManaRegenModifierItems;
+import io.github.butterflysmp.rpg.paper.health.QuiverSizeModifierItems;
+import io.github.butterflysmp.rpg.paper.health.ReloadTimeModifierItems;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheet;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
@@ -416,7 +421,7 @@ public final class RpgCommand {
                 // sum, across eight lines. A <player> argument needs a region hop first.
                 .then(Commands.literal("stats")
                         .requires(source -> source.getSender().hasPermission(Permissions.STATS))
-                        .executes(ctx -> stats(ctx, adapters, resources)))
+                        .executes(ctx -> stats(ctx, adapters, weapons, resources)))
                 // Mint a mana_regen_boost_TEMP. Same reason as the health-regen fixture: no content
                 // grants mana regen yet, so without this the reconcile surface is provable only by
                 // unit test. Hold it and a bare bar fills in ~50s instead of 100; drop it and the rate
@@ -429,6 +434,42 @@ public final class RpgCommand {
                         .executes(ctx -> manaRegenBoost(ctx, adapters, resources, null))
                         .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 100.0))
                                 .executes(ctx -> manaRegenBoost(ctx, adapters, resources,
+                                        DoubleArgumentType.getDouble(ctx, "bonus")))))
+                // Mint a quiver_size_boost. NOT a _TEMP: A2 ships no quiver enchant, so after this
+                // slice this instrument is the ONLY thing that can move quiver size, and deleting it
+                // would remove the ability to re-gate the stat. See QuiverSizeModifierItems.
+                //
+                // The boot row it exists for: hold quiver_stone, read "Quiver: 9/9", pick this up,
+                // FIRE ONCE -- the tooltip must read 8/28, not 8/9 and not 9/28. Capacity re-resolves
+                // at a WRITE, so the shot is what re-packs it; equipping alone changes nothing, which
+                // is the endorsed "capacity is as of your last shot or reload".
+                //
+                // The upper bound is 200 rather than 100 so the resolved value can be driven past
+                // every authored capacity in content/ if a later row wants that.
+                .then(Commands.literal("quiversize")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> quiverSizeBoost(ctx, adapters, weapons, null))
+                        .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 200.0))
+                                .executes(ctx -> quiverSizeBoost(ctx, adapters, weapons,
+                                        DoubleArgumentType.getDouble(ctx, "bonus")))))
+                // Mint a reload_time_boost. NOT a _TEMP, same reason as quiversize.
+                //
+                // THE RANGE IS SIGNED, AND THAT IS THE POINT. Positive ticks mean a SLOWER reload,
+                // so reload-SPEED gear carries a negative -- ruled by the operator, and the reason
+                // ReloadTime.declares gates on != NONE instead of the > NONE every sibling uses.
+                // A bound of 0.0 here would have made the useful direction undrivable from the one
+                // instrument that exists.
+                //
+                // The DEFAULT adds (+14 -> 48) because no reducing default is collision-free at base
+                // 34: every candidate lands on an authored number, and the only survivor (-17)
+                // resolves to 17, the bonus itself. A negative must therefore be typed by hand, and
+                // the row that does it has to read the resolved value rather than assume it -- which
+                // the message below prints.
+                .then(Commands.literal("reloadtime")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> reloadTimeBoost(ctx, adapters, weapons, null))
+                        .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(-200.0, 200.0))
+                                .executes(ctx -> reloadTimeBoost(ctx, adapters, weapons,
                                         DoubleArgumentType.getDouble(ctx, "bonus")))))
                 // Mint a class_damage_boost_TEMP. The class-damage stat bases at 0 and no content
                 // grants it yet, so without this the feature is invisible at boot: hold a MATCHING
@@ -784,6 +825,7 @@ public final class RpgCommand {
      * and {@code max} throw for an untracked id rather than returning 0.
      */
     private static int stats(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                             WeaponRegistry weapons,
                              ResourcePool resources) {
         if (!(ctx.getSource().getExecutor() instanceof Player player)) {
             ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
@@ -802,17 +844,34 @@ public final class RpgCommand {
         double damage = HitDamage.hitBase(stats.attackValue(id),
                 stats.enchantDamagePercentValue(id), stats.classDamageValue(id));
 
-        StatsSheet.build(
-                stats.max(id),
-                stats.healthRegenValue(id),                       // already per second
-                resources.max(id, ResourceCost.DEFAULT_RESOURCE),
-                ManaRegen.perSecond(                              // per TICK out of the pool
-                        resources.regen(id, ResourceCost.DEFAULT_RESOURCE)),
-                stats.defenseValue(id),
-                damage,
-                stats.critChanceValue(id),
-                stats.critDamageValue(id))
-                .forEach(player::sendMessage);
+        // THE QUIVER PAIR IS CONDITIONAL, AND THE CONDITION IS WHAT IS IN YOUR HAND. Every other
+        // line is a fact about the player; a capacity is a fact about a weapon. Absent rather than
+        // zero, because "Quiver 0" reads as a broken magazine rather than as "you are holding a
+        // sword".
+        //
+        // Both numbers go through the SAME resolvers the write paths use -- QuiverSize.resolve and
+        // ReloadTime.resolve -- rather than being re-derived as authored+bonus here. That is the
+        // difference between a readout and a second source of truth, and it is why this file is on
+        // the capacity guard's list rather than excluded from it.
+        StatsSheetValues.Builder values = StatsSheetValues.builder()
+                .maxHealth(stats.max(id))
+                .healthRegenPerSecond(stats.healthRegenValue(id))     // stored per second
+                .maxMana(resources.max(id, ResourceCost.DEFAULT_RESOURCE))
+                .manaRegenPerSecond(ManaRegen.perSecond(              // per TICK out of the pool
+                        resources.regen(id, ResourceCost.DEFAULT_RESOURCE)))
+                .defense(stats.defenseValue(id))
+                .damage(damage)
+                .critChance(stats.critChanceValue(id))
+                .critDamageBonus(stats.critDamageValue(id));
+
+        WeaponItems.heldWeaponId(player, adapters.keys())
+                .flatMap(weapons::find)
+                .filter(WeaponDefinition::hasQuiver)
+                .ifPresent(weapon -> values.quiver(
+                        QuiverSize.resolve(weapon.quiverSize(), stats.quiverSizeBonusValue(id)),
+                        ReloadTime.resolve(weapon.reloadTicks(), stats.reloadTimeBonusValue(id))));
+
+        StatsSheet.build(values.build()).forEach(player::sendMessage);
         return 1;
     }
 
@@ -838,6 +897,96 @@ public final class RpgCommand {
         player.sendMessage(Component.text(
                 String.format("Gave mana_regen_boost_TEMP (+%.2f/s -> %.2f mana/s once held, from %.2f). "
                                 + "Hold it and cast.", amount, currentPerSecond + amount, currentPerSecond),
+                NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /**
+     * Mint a quiver_size_boost.
+     *
+     * <p>Prints the RESOLVED capacity the wielder will pack at, not the bonus -- the discipline
+     * {@code critBoost}, {@code healthRegenBoost} and {@link #manaRegenBoost} follow, because a gate
+     * should read what to expect before it starts watching. The number comes from
+     * {@code QuiverSize.resolve} against the held weapon's authored magazine, so the message composes
+     * base and bonus through THE SAME EXPRESSION the write path uses and cannot drift from it.
+     *
+     * <p><b>It says "once packed", not "once held", and that is the whole feel of the stat.</b> The
+     * capacity on an item re-resolves only at a WRITE -- a shot or a reload -- so picking this up
+     * changes nothing until the player fires. Saying "once held" here would advertise a behaviour
+     * the code deliberately does not have, and a gate row timed against it would read as a bug.
+     *
+     * <p>Holding no quiver weapon is not an error: the instrument is still given, and the message
+     * says the bonus alone rather than inventing a base to add it to.
+     */
+    private static int quiverSizeBoost(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                                       WeaponRegistry weapons, Double bonus) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        double amount = bonus == null ? QuiverSizeModifierItems.DEFAULT_BOOST : bonus;
+        player.getInventory().addItem(QuiverSizeModifierItems.mint(adapters.keys(), amount));
+
+        String outcome = WeaponItems.heldWeaponId(player, adapters.keys())
+                .flatMap(weapons::find)
+                .filter(WeaponDefinition::hasQuiver)
+                .map(weapon -> String.format("%d -> %d rounds once packed",
+                        weapon.quiverSize(),
+                        QuiverSize.resolve(weapon.quiverSize(),
+                                adapters.stats().quiverSizeBonusValue(player.getUniqueId()) + amount)))
+                .orElse("no quiver weapon held -- hold one and fire to see it");
+
+        player.sendMessage(Component.text(
+                String.format("Gave quiver_size_boost (+%d arrows: %s). Capacity re-resolves at your "
+                        + "next SHOT or RELOAD, not on pickup.", (int) amount, outcome),
+                NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /**
+     * Mint a reload_time_boost.
+     *
+     * <p>Prints the RESOLVED duration in ticks AND seconds, because a reload is a thing you time and
+     * 48 ticks is not a number anyone feels. Composed through {@code ReloadTime.resolve} -- the same
+     * expression {@code Quivers.beginReload} uses -- so the message cannot drift from what the write
+     * actually stamps.
+     *
+     * <p><b>It says "on your next reload", because the deadline is stamped at BEGIN and never
+     * recomputed.</b> Equipping this mid-reload does not lengthen the timer already running, and a
+     * gate row timed against the opposite belief would read as a bug.
+     *
+     * <p><b>A NEGATIVE IS A REAL AND EXPECTED INPUT</b> -- that is what reload-speed gear is. The
+     * message says SLOWER or FASTER rather than leaving a signed number to be read, since the sign
+     * convention here is the opposite of every other stat's.
+     */
+    private static int reloadTimeBoost(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                                       WeaponRegistry weapons, Double bonus) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        double amount = bonus == null ? ReloadTimeModifierItems.DEFAULT_BOOST : bonus;
+        player.getInventory().addItem(ReloadTimeModifierItems.mint(adapters.keys(), amount));
+
+        String outcome = WeaponItems.heldWeaponId(player, adapters.keys())
+                .flatMap(weapons::find)
+                .filter(WeaponDefinition::hasQuiver)
+                .map(weapon -> {
+                    int resolved = ReloadTime.resolve(weapon.reloadTicks(),
+                            adapters.stats().reloadTimeBonusValue(player.getUniqueId()) + amount);
+                    return String.format("%d -> %d ticks (%.2fs -> %.2fs)",
+                            weapon.reloadTicks(), resolved,
+                            weapon.reloadTicks() / 20.0, Math.max(resolved, 0) / 20.0);
+                })
+                .orElse("no quiver weapon held -- hold one and reload to see it");
+
+        player.sendMessage(Component.text(
+                String.format("Gave reload_time_boost (%+d ticks, %s: %s). Takes effect on your NEXT "
+                                + "reload, not on one already running.",
+                        ReloadTime.ticks(amount),
+                        ReloadTime.ticks(amount) > 0 ? "SLOWER"
+                                : ReloadTime.ticks(amount) < 0 ? "FASTER" : "no change",
+                        outcome),
                 NamedTextColor.GREEN));
         return 1;
     }
@@ -1573,6 +1722,21 @@ public final class RpgCommand {
                 // and Broken is minted only by WeaponFire.attempt off a held item's durability. The
                 // arm exists because CastResult is sealed and this switch has no default -- which
                 // is precisely how adding Broken forced every caller to decide what it means.
+                return 0;
+            }
+            case AbilityService.CastResult.Empty ignored -> {
+                // Unreachable for Broken's reason exactly: a quiver is a WEAPON's magazine, read off
+                // the held item by WeaponFire.attempt, and /rpg cast never touches a weapon.
+                //
+                // AND THIS ARM IS THE MECHANISM WORKING, NOT CEREMONY. It was written because the
+                // compiler refused this file the moment Empty existed -- which is the whole reason
+                // both refusals live in the sealed type rather than being paper-local signals. This
+                // switch was not in the plan's list of consumers, and nobody would have thought of
+                // it; the build named it.
+                return 0;
+            }
+            case AbilityService.CastResult.Reloading ignored -> {
+                // Unreachable, same reason as Empty above.
                 return 0;
             }
         }

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * The plain-text half of the weapon tooltip: pure String/number formatters over the content model.
@@ -30,6 +31,30 @@ import java.util.Optional;
  * the holder's resolved attack-speed stat. Lore describes the weapon, not whoever is holding it --
  * that is what makes it mint-time safe and non-drifting. A boosted player and an unboosted one
  * reading the same sword must see the same number.
+ *
+ * <p><b>THE QUIVER LINE IS THE ONE STATED EXCEPTION, AND THE RULE ABOVE IS NOT DELETED.</b> It still
+ * governs attack damage and attack speed, which are the lines it was written for. A quiver's
+ * denominator is different: once capacity is a stat, a player with +19 genuinely fires 28, so
+ * rendering the authored 9 would satisfy the surface rule while being <b>permanently wrong</b>
+ * rather than merely stale.
+ *
+ * <p>The deciding argument is this file's own closing sentence, four paragraphs down: <i>"each
+ * formatter reads THE NUMBER THAT ACTUALLY GOVERNS its own weapon, so neither line can drift from
+ * what the weapon really does."</i> Static-ness is the MECHANISM by which non-drifting is achieved
+ * for attack damage -- there the definition IS what governs. For a quiver it is not, and the deeper
+ * principle points the other way.
+ *
+ * <p><b>And the tooltip still does not cross the item-to-holder axis at render time.</b> It reads a
+ * number off the ITEM's own PDC, exactly as the count already does; no {@code Player} is needed to
+ * render it, and everyone looking at that item sees the same number. What is new is that an item's
+ * stored value now derives from whoever last WROTE it -- so a weapon packed by a boosted player and
+ * dropped reads {@code 8/28} in an unboosted player's hand until their next shot or reload. That is
+ * named at {@code QuiverItems.setLoaded} and endorsed in {@code PLAN-quiver-a2.md}; it is the price
+ * of the stamp being what ENFORCES, which is what stops the tooltip and the refusal disagreeing.
+ *
+ * <p>With no item at all -- a recipe-browser icon, a craft preview, the definitions-only golden
+ * harness -- there is no stamp and the AUTHORED capacity is what renders, which is the true answer
+ * for all three.
  *
  * That base now comes from TWO sources, because the two kinds of basic attack no longer share a
  * cadence. A vanilla-driven melee hit is paced by the vanilla attack-speed attribute, authored
@@ -68,6 +93,32 @@ public final class WeaponLoreLines {
         if (cooldownTicks > 0) parts.add("Cooldown: " + cooldownLabel(cooldownTicks));
         if (!isFree(cost)) parts.add(capitalize(cost.resourceId()) + " Cost: " + trimNumber(cost.amount()));
         return String.join(" | ", parts);
+    }
+
+    /**
+     * The magazine, as the tooltip shows it: {@code "Quiver: 8/9"}. Empty string for a weapon that
+     * carries no quiver, which the caller drops.
+     *
+     * <p><b>THE FIRST TOOLTIP LINE IN THIS FILE THAT IS PER-ITEM RATHER THAN PER-DEFINITION.</b>
+     * Every other line here is a function of the weapon's content, so two copies of the same weapon
+     * render identically forever. This one is not: two Quiver Stones in one inventory show different
+     * numbers, and the same stack changes as it is fired. That is why {@code loaded} arrives as a
+     * parameter read off the ITEM rather than off {@code weapon} -- and why the stamp has to precede
+     * {@code applyLore} at the mint, which was a free ordering until this line existed and is
+     * load-bearing now.
+     *
+     * <p><b>An ABSENT count renders "{@code Quiver: --/9}", not "{@code 0/9}".</b> Absence is not
+     * emptiness anywhere else in this feature and it is not here either: a missing stamp is a defect
+     * in a mint path, and showing it as a spent magazine would hide that behind a tooltip a player
+     * would read as ordinary. The dashes are meant to look wrong.
+     *
+     * <p>Worked: {@code (9, 9) -> "Quiver: 9/9"}; {@code (0, 9) -> "Quiver: 0/9"};
+     * {@code (absent, 9) -> "Quiver: --/9"}; {@code (anything, 0) -> ""} (no quiver).
+     */
+    public static String quiverLine(OptionalInt loaded, int capacity) {
+        if (capacity <= WeaponDefinition.NO_QUIVER) return "";
+        return "Quiver: " + (loaded.isPresent() ? String.valueOf(loaded.getAsInt()) : "--")
+                + "/" + capacity;
     }
 
     /**

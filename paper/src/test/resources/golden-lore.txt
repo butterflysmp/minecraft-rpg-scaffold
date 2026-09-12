@@ -89,6 +89,20 @@
    "It does not travel. It arrives." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- quiver_stone
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "Quiver: --/9" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Loose" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "One bolt, and one fewer" color=#AAAAAA O=. B=. S=. U=. I=F
+   "than you had a moment ago." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["13" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.6s" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "An instrument, not a weapon." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It measures how long you spend not shooting." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Exotic Ranged Weapon" color=#55FFFF O=. B=. S=. U=. I=F
 -- volley_stone
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -488,4 +502,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 88 renderings ===
+=== 89 renderings ===

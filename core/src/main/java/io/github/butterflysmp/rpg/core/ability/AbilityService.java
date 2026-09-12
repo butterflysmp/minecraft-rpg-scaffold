@@ -98,6 +98,35 @@ public final class AbilityService {
          * caller can forget to render is a weapon that silently does nothing.
          */
         record Broken() implements CastResult {}
+
+        /**
+         * The weapon binds this trigger and works, but its quiver is EMPTY -- reload it.
+         *
+         * <p>A separate arm rather than a reuse of {@link Broken}, and the difference is not
+         * cosmetic. {@code Broken} means "worn to its floor and inert until repaired", and
+         * {@code BrokenNotice} says <i>"Your weapon is broken -- repair it before using it."</i> A
+         * full-durability Boltor with an empty magazine is neither broken nor repairable, and
+         * shipping that string for this state would be a falsified line shown to a player -- who,
+         * unlike a developer reading a stale comment, has no way to check it. The MECHANISM is
+         * reused (minted in paper, throttled notice, same sealed type); the message is not.
+         *
+         * <p>Minted where {@link Broken} is -- {@code WeaponFire.attempt}, after the binding
+         * resolves and BEFORE any cooldown or resource is touched -- so an empty weapon spends
+         * nothing and trips no cooldown. Same reason, too: deciding it needs the held item's own
+         * data, and core cannot read an ItemStack.
+         */
+        record Empty() implements CastResult {}
+
+        /**
+         * The weapon is mid-reload and cannot fire yet. {@code ticksRemaining} is what the notice
+         * counts down.
+         *
+         * <p>Carries its remaining time for {@link OnCooldown}'s reason: a refusal a player can see
+         * the end of is a different experience from one that just says no. Read from the item's own
+         * stamped deadline rather than from a timer, so it survives a weapon swap, a relog, and a
+         * server restart -- see {@code core.weapon.Quiver.reloadComplete}.
+         */
+        record Reloading(long ticksRemaining) implements CastResult {}
     }
 
     /**

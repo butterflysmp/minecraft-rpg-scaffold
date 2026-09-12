@@ -168,17 +168,22 @@ public final class PlayerHealthSystem implements HealthListener {
         EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
         UUID id = player.getUniqueId();
         RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, () -> {
-            // Eleven stats converge on the same scan: max HP from +HP items, attack damage from the
-            // held weapon's declared attack_damage (a MAIN_HAND modifier), attack speed from equipped
-            // speed sources, the class-damage bonus from equipped "+N <Class> Damage" gear
-            // MATCHING the held weapon's class, and the enchant-damage percent from the damage
-            // enchants ON the held weapon matching THAT weapon's class -- and six more below. Same
-            // leak-proof diff for every one of them, so a weapon swap/drop follows within a tick and
-            // respawn re-derives all eleven for free.
+            // EVERY STAT THIS LOOP CONVERGES IS RECONCILED BELOW -- the reconcile calls in this body
+            // ARE the list, so this sentence cannot disagree with itself. Five of them, to show the
+            // shape: max HP from +HP items, attack damage from the held weapon's declared
+            // attack_damage (a MAIN_HAND modifier), attack speed from equipped speed sources, the
+            // class-damage bonus from equipped "+N <Class> Damage" gear MATCHING the held weapon's
+            // class, and the enchant-damage percent from the damage enchants ON the held weapon
+            // matching THAT weapon's class. Same leak-proof diff for every one, so a weapon
+            // swap/drop follows within a tick and respawn re-derives them all for free.
             //
-            // (The headline count and this sentence disagreed for two slices: the number was bumped
-            // as stats were added while the prose kept saying "all five", which is the five it
-            // happens to enumerate. Phrased now so it cannot go stale again.)
+            // (THE COUNT IS GONE, AND THAT IS THE THIRD ATTEMPT AT THIS SENTENCE. It read "all five"
+            // while the set had grown; it was bumped to "Eleven stats ... all eleven" with a note
+            // saying it was "phrased now so it cannot go stale again" -- and that phrasing STILL LED
+            // WITH A COUNT. The A2 quiver slice adds two stats to this loop, which would have made
+            // both words wrong again, so the number came out one commit BEFORE it would have gone
+            // stale rather than one after. A count is a claim about a set; the set is the calls in
+            // this body; so the calls are what this sentence points at.)
             //
             // The class one is why a weapon swap needs no event of its own: the held weapon's class
             // is re-read every scan, so the same worn gear simply selects a different grant, and a
@@ -259,6 +264,35 @@ public final class PlayerHealthSystem implements HealthListener {
             // (amount + elapsed * rate, evaluated on read), so changing its rate re-prices ticks
             // that already passed. Eager versus lazy is the axis; having a current is not.
             stats.reconcileHealthRegenModifiers(id, HealthRegenModifierItems.desiredModifiers(player, keys));
+
+            // QUIVER SIZE: whole arrows added to the held weapon's authored magazine. SILENT and
+            // VOID, like health regen -- but for a different reason, and the difference is worth
+            // one line because the usual one does not apply.
+            //
+            // Mana regen returns boolean because the pool accrues LAZILY, so a rate change re-prices
+            // elapsed ticks and the caller must pin. A quiver accrues nothing: its count is a stored
+            // integer that changes only when something writes it. And the DECREASE-CLAMP is not here
+            // either -- it is at QuiverItems.setLoaded, which holds the new capacity and the count in
+            // one call with Quiver.clamp between them. A clamp on this path would be a second
+            // enforcement site for one capacity, which is the defect the whole quiver slice was
+            // reorganised to make unrepresentable, and it would be an in-play write with no render,
+            // which is boot row V1's defect in a new location.
+            //
+            // So capacity is as of the wielder's last shot or reload, which is the ENDORSED
+            // consequence rather than a gap: you pack your quiver, and what you packed is what you
+            // carry.
+            stats.reconcileQuiverSizeModifiers(id, QuiverSizeModifierItems.desiredModifiers(player, keys));
+
+            // RELOAD TIME: ticks added to the held weapon's authored reload. Silent and void, same
+            // as the line above, and for one extra reason of its own -- a running reload's deadline
+            // was STAMPED when it began and is never recomputed, so a change here cannot re-price a
+            // timer already in flight. A1 made that structural by removing the duration from
+            // Quiver.reloadComplete's parameters entirely.
+            //
+            // SEPARATE FROM THE LINE ABOVE, NOT MERGED INTO IT. Two scanners against two targets is
+            // what buys the ability to watch one stat hold still while the other moves; merging them
+            // would delete the only staging in which that observation exists.
+            stats.reconcileReloadTimeModifiers(id, ReloadTimeModifierItems.desiredModifiers(player, keys));
 
             DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player, keys, enchants);
             stats.reconcileDefenseModifiers(id, worn.defense());

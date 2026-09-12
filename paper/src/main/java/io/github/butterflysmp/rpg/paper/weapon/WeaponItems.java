@@ -136,6 +136,52 @@ public final class WeaponItems {
             // exists to prevent.
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 
+            // THE MAGAZINE, STAMPED FULL AND EXPLICITLY. A no-op for the weapons that carry none.
+            //
+            // BEFORE applyLore, AND THE RULE IS THE MECHANISM, NOT TODAY'S CONSEQUENCE OF IT:
+            //
+            //     applyLore renders whatever the meta HOLDS WHEN IT RUNS, so anything it must
+            //     render has to be written before it.
+            //
+            // That is true whether or not a quiver line exists, and stays true when the next
+            // per-item field arrives. Stated that way on purpose -- see below.
+            //
+            // AND IT NEEDS A SECOND HALF, WHICH THE BOOT FOUND BY THE ONLY MEANS AVAILABLE. The rule
+            // above is about ORDER WITHIN A RENDER. It is silent on the case where THE RENDER NEVER
+            // RUNS AGAIN -- and applyLore executes only from mint() and remint(), so a value written
+            // while the item is in play was correct on the tooltip exactly once, at mint. Boot row V1:
+            // the bolt fired, the stored count went 9 -> 8, and "the number doesn't change in the
+            // lore of the item".
+            //
+            //     A per-item value that is RENDERED must be RE-RENDERED wherever it is WRITTEN.
+            //
+            // Both halves were needed the moment the lore line landed, and the first one alone reads
+            // as complete -- which is why it is extended here rather than replaced. QuiverItems
+            // .setLoaded makes the second half structural: write and render are one call, so a later
+            // write site cannot express one without the other.
+            //
+            // THE HISTORY IS KEPT BECAUSE IT IS THE EVIDENCE. This comment has been wrong TWICE, in
+            // OPPOSITE directions, about these same three lines:
+            //
+            //   v1  "the tooltip renders the STAMPED count"  -- false when it was written; no lore
+            //                                                   line read the count yet
+            //   v2  "the ordering is free"                   -- false the moment the lore line
+            //                                                   landed, one commit later
+            //
+            // BOTH described the ordering's CONSEQUENCE IN THE TREE AS IT THEN STOOD, and a
+            // consequence goes stale when the code around it moves. The mechanism above would have
+            // needed no correction in any of the three states. That is the transferable lesson, and
+            // it generalises past comments -- see NEXT.md on claims asserted wider than what was
+            // checked.
+            //
+            // This is the MIRROR of the enchant-block ordering note in remint() below, not the same
+            // trap -- and the difference is why this call cannot simply sit wherever the enchant
+            // write does. Enchants are safe at mint because an empty container renders NOTHING
+            // ("which was a no-op", in that note's own words) and because applyLore runs TWICE per
+            // re-mint, so the second pass sees the carried state and corrects the first. A QUIVER
+            // INVERTS BOTH HALVES: absence renders a NUMBER, and a fresh mint has no second pass.
+            QuiverItems.stampFull(meta, weapon, keys);
+
             // Derived stats + authored flavour, plus any enchant block the item's own state calls
             // for. Purely additive; the block above is untouched.
             applyLore(meta, weapon, adapters);
@@ -163,8 +209,34 @@ public final class WeaponItems {
      * returns the base list untouched. So this call is live and exercised from day one rather than
      * commented, and the roster pass's mint-time roll is a write ABOVE it and nothing else.
      */
+    /**
+     * Re-render a weapon's tooltip onto meta that is already in play, without rebuilding the item.
+     *
+     * <p>The narrow, public door onto {@link #applyLore}, opened for {@link QuiverItems#setLoaded}:
+     * a per-item value that is RENDERED has to be re-rendered wherever it is WRITTEN, or the display
+     * is only ever correct at mint. That was the boot gate's V1 failure — the stored count moved and
+     * the tooltip did not.
+     *
+     * <p><b>Deliberately NOT {@code remint}</b>, which was the call already to hand. {@code remint}
+     * returns a NEW {@code ItemStack}; this mutates the meta you already hold. Replacing the held
+     * stack on every shot would churn item identity mid-combat at up to the input repeat rate. See
+     * {@link QuiverItems#setLoaded} for the full argument.
+     *
+     * <p>Renders DISPLAY only — lore and glint, both pure functions of the definition plus what the
+     * meta already carries. It stamps nothing, rolls nothing, and touches no attribute, so calling it
+     * on a live item cannot change what that item IS.
+     */
+    public static void refreshLore(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters) {
+        applyLore(meta, weapon, adapters);
+    }
+
     private static void applyLore(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters) {
-        List<Component> base = WeaponLore.build(weapon, adapters.elements());
+        // THE COUNT COMES OFF THE META BEING BUILT, which is why the stamp must already have
+        // happened -- see the ordering note in mint(). At a re-mint carryInstanceData has run first,
+        // so this reads the CARRIED count and not the freshly minted full one.
+        List<Component> base = WeaponLore.build(weapon, adapters.elements(),
+                QuiverItems.loadedInMeta(meta, adapters.keys()),
+                QuiverItems.capacityInMeta(meta, adapters.keys()));
         EnchantState state = EnchantItems.read(meta, adapters.keys());
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
 

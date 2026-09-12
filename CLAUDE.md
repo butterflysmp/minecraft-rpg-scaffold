@@ -248,6 +248,35 @@ So:
   > **Practically:** paste the `git ls-remote --heads origin` line for the ref, before and after.
   > One line in a report retires this class.
 
+- **AN INTEGRITY FIGURE PROVES WHICH BYTES, NEVER THAT THEY ARE THE RIGHT ONES. READ THE DIFF.**
+  The wire SHA, the tree SHA, the blob SHA and `--numstat` all answer *did what I think landed,
+  land?* — and every one of them reconciles perfectly around a splice that ate the wrong lines.
+
+  > **2026-09-11, `443c086`.** A `head`/`tail` splice into `GATE-quiver-a2.md` deleted its two
+  > opening lines — **`**Status: NOT RUN.**` and the sentence recording that the rows were written
+  > before any boot** — and pasted a later section's heading into the masthead in their place. The
+  > commit reported `+77 −11` and every figure in the report agreed with every other: wire matched
+  > local, tree matched, **blob hash matched**, and the deletion of the status line was simply one
+  > of the eleven. *The eleven were correct.*
+  >
+  > **The field lost was the one the whole document exists to carry** — a gate that cannot say
+  > whether it has been run, and cannot say its rows were not back-fitted to a run. It was found by
+  > the operator OPENING THE FILE, which is the only thing that would have.
+  >
+  > **The tell that is available and was skipped: a splice's own output.** `head -n N ... ; cat >> ;
+  > tail -n +M` is two line numbers, and a line number is stale the moment any earlier edit in the
+  > same session shifts the file. After any splice, **print the region** — `sed -n '1,12p'` on the
+  > head, or `git diff` on the hunk — before believing the marker grep or the byte delta. Both of
+  > those were run here and both passed.
+  >
+  > **When a figure is given alongside its parts, add the parts up.** The offline case of the rule
+  > above, and the cheapest: it needs no command at all.
+  >
+  > **2026-09-12.** The correction to a stale commit count was itself stale, because the correcting
+  > commit was a new member of the set being counted. The page said *fourteen*, then *nine shown*
+  > and *six not shown*, two clauses apart. **Adding a row and fixing the count in the same edit
+  > changes the set the count is over.**
+
 - **PROSE REACHING A COMMAND GOES THROUGH A FILE, NEVER THROUGH QUOTING.** `git commit -F <file>`,
   `gh pr create --body-file`, `gh pr merge --body-file`, a written file for anything else. Never
   `-m`, never `--body`, never a heredoc.

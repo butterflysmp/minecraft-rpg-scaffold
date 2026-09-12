@@ -183,14 +183,25 @@ public final class GearItems {
     }
 
     /**
-     * The three things a re-mint carries forward, in the order all three kinds carried them: the id
-     * tag, then wear, then the enchant container. Everything NOT copied here is DISPLAY and is
-     * rebuilt from current content.
+     * The FOUR things a re-mint carries forward, in the order all three kinds carried them: the id
+     * tag, then wear, then the enchant container, then the quiver. Everything NOT copied here is
+     * DISPLAY and is rebuilt from current content.
+     *
+     * <p><b>This method is the whole carry.</b> Every re-mint in the plugin reaches it -- the join
+     * refresh, {@code /rpg refresh}, {@code /rpg enchant} and every enchant-table click, through the
+     * four per-kind {@code remint} bodies -- so a new piece of instance data is one line here and no
+     * change anywhere else. It is equally the single place a new piece can be FORGOTTEN, and the
+     * failure is silent: the value simply resets on the player's next login.
+     *
+     * <p>The quiver joined for that reason. Losing a magazine here would be a relog-to-refill
+     * exploit, exactly as losing the enchant blob would be a relog-to-unlock one, and
+     * {@link #carryWear} already records the same hazard for durability in the same words.
      */
     public static void carryInstanceData(ItemMeta from, ItemMeta to, NamespacedKey idKey,
                                          Keys keys, Material material) {
         carryTag(from, to, idKey);
         carryWear(from, to, material);
         carryEnchants(from, to, keys);
+        QuiverItems.carry(from, to, keys);
     }
 }

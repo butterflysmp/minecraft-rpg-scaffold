@@ -22,6 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -875,5 +878,240 @@ class WeaponLoaderTest {
     private static boolean isBasicAttackOnRightClick(WeaponRegistry registry, String weaponId) {
         return DamagePayload.isBasicAttack(registry.find(weaponId).orElseThrow()
                 .trigger("right_click").orElseThrow().ability().onHit());
+    }
+
+    // ------------------------------------------------------------------ the unknown-key warning
+
+    /**
+     * A MISSPELLED KEY IS READ BY NOBODY, SO NO VALUE GUARD CAN SEE IT.
+     *
+     * <p>This is the hole the quiver opened and the reason the check exists. Every other guard in
+     * this pipeline validates a value that WAS read -- {@code WeaponDefinition} refuses a negative
+     * quiver, a reload with nothing to reload, a magazine that can never be refilled. None of them
+     * can fire here: {@code s.getInt("quivver_size", NO_QUIVER)} simply returns the default, the file
+     * loads perfectly cleanly, and the only symptom is a crossbow that turns out to have no magazine
+     * at all.
+     *
+     * <p>CAUSES the condition rather than asserting the arm exists: a real file with a real typo,
+     * through the real {@code loadAll}, with the warning read back by its text. The weapon is also
+     * asserted to LOAD and to have no quiver, because the warning alone would not prove the
+     * fail-soft half -- a check that skipped the file would be worse than the typo.
+     */
+    @Test
+    void aMisspelledKeyWarnsByNameAndTheWeaponStillLoads() throws IOException {
+        write("crossbow.yml", VALID.replace("id: ironblade", "id: crossbow\nquivver_size: 8"));
+
+        WeaponRegistry registry = load();
+
+        assertTrue(warningText().contains("quivver_size"), warningText());
+        assertTrue(warningText().contains("crossbow"), "the warning must NAME the file: " + warningText());
+        WeaponDefinition weapon = registry.find("crossbow").orElseThrow();
+        assertFalse(weapon.hasQuiver(), "and the consequence: the typo silently produced no magazine");
+    }
+
+    /**
+     * THE POSITIVE CONTROL, and without it the row above proves much less than it looks.
+     *
+     * <p>A check that warned about EVERY key would pass the typo test just as convincingly. So a
+     * weapon authoring the full legitimate schema -- every key {@code parse} reads, plus the
+     * redundant {@code id} -- must draw no warning at all. This is also what catches a key present in
+     * {@code parse} but missing from {@code KNOWN_KEYS}, which is the hand-maintained set's one real
+     * failure mode.
+     */
+    @Test
+    void aWeaponAuthoringTheWholeSchemaDrawsNoUnknownKeyWarning() throws IOException {
+        write("full.yml", """
+                id: full
+                display_name: "Full"
+                element: kinetic
+                rarity: common
+                class: ranger
+                material: crossbow
+                attack_damage: 0
+                attack_speed: 0
+                sweep: 0
+                quiver_size: 3
+                reload_ticks: 7
+                craft_result: diamond
+                flavor:
+                  - "Every key, spelled correctly."
+                triggers:
+                  right_click:
+                    name: "Shot"
+                    description:
+                      - "Every trigger key, spelled correctly."
+                    cooldown_ticks: 14
+                    cost:
+                      resource: mana
+                      amount: 10
+                    cast:
+                      type: ray
+                      range: 30
+                    on_cast:
+                      - type: visual
+                        visual_id: lapis_cast
+                    on_hit:
+                      - type: damage
+                        amount: 4
+                        element: kinetic
+                """);
+
+        WeaponRegistry registry = load();
+
+        // The trigger block authors all SEVEN of TRIGGER_KEYS, so this is the positive control for
+        // both levels at once -- a check that warned about every key would fail here, at either
+        // depth.
+        assertTrue(warnings.isEmpty(), "the legitimate schema must be silent: " + warningText());
+        WeaponDefinition weapon = registry.find("full").orElseThrow();
+        assertTrue(weapon.hasQuiver());
+        assertEquals(3, weapon.quiverSize());
+        assertEquals(7, weapon.reloadTicks());
+    }
+
+    /**
+     * A MISSPELLED KEY INSIDE A TRIGGER, WHICH IS THE LAYER THAT MATTERS MORE.
+     *
+     * <p>{@code s.getKeys(false)} is not recursive, so the top-level check cannot see this at all.
+     * And the key at risk is the worst one in the schema: <b>{@code cooldown_ticks} IS the weapon's
+     * fire rate.</b> Misspell it and the weapon fires at the default cadence with a tooltip that
+     * reads correctly and nothing anywhere reporting a problem -- "silently wrong rather than
+     * visibly broken" in its sharpest form.
+     *
+     * <p>This is why the check was extended BEFORE {@code quiver_stone.yml} is authored rather than
+     * after. That file is a brand-new hand-written trigger block whose whole job is to yield the
+     * held-right-click repeat-rate measurement; a silently-ignored key in it would still be a valid
+     * weapon, just one measuring a different configuration than it claims to -- a control succeeding
+     * for the wrong reason, on the single artifact whose number slice C depends on.
+     *
+     * <p>The warning must name the TRIGGER as well as the weapon, or a file with several triggers
+     * sends the reader hunting.
+     */
+    @Test
+    void aMisspelledKeyInsideATriggerWarnsAndNamesTheTrigger() throws IOException {
+        write("crossbow.yml", VALID
+                .replace("id: ironblade", "id: crossbow")
+                .replace("    cooldown_ticks: 10", "    cooldwon_ticks: 10"));
+
+        WeaponRegistry registry = load();
+
+        assertTrue(warningText().contains("cooldwon_ticks"), warningText());
+        assertTrue(warningText().contains("left_click"),
+                "the warning must name the TRIGGER, not just the weapon: " + warningText());
+        assertTrue(warningText().contains("crossbow"), warningText());
+        // And the consequence, which is the whole reason this is worth a warning: the weapon loads
+        // and fires, at a cadence nobody chose.
+        assertEquals(0, registry.find("crossbow").orElseThrow()
+                        .trigger("left_click").orElseThrow().ability().cooldownTicks(),
+                "the misspelling silently left the fire rate at the default");
+    }
+
+    /**
+     * KNOWN_KEYS AND THE KEYS {@code parse} ACTUALLY READS MUST BE THE SAME SET, BOTH WAYS.
+     *
+     * <p>The three behavioural rows around this one cannot see a STALE entry -- a key left in
+     * KNOWN_KEYS after {@code parse} stopped reading it. Authoring such a key then warns nothing and
+     * does nothing, <b>which is the exact defect this guard exists to prevent, reintroduced by the
+     * guard's own staleness.</b> Measured rather than reasoned: a bogus {@code "sweap"} entry passed
+     * all 33 rows in silence. The typo row uses a deliberate misspelling and is unaffected; the other
+     * two assert SILENCE, and a stale entry produces silence.
+     *
+     * <p>So the set is checked against the source that consumes it. <b>Matched on the READ pattern
+     * {@code s.getX("key")} rather than on the bare literal</b>, and that is load-bearing: every key
+     * also appears inside the KNOWN_KEYS declaration itself, so a plain "is this string in the file"
+     * check would be satisfied by the declaration and pass for every entry however stale -- a control
+     * that succeeds for the wrong reason.
+     *
+     * <p>{@code s.} is also what separates the two axes: top-level reads go through {@code s}, while
+     * trigger-level reads go through {@code t}, and only the former are in scope here.
+     *
+     * <p>On {@code DamageSignatureTest}'s idiom -- a condition that would otherwise be invisible at
+     * the point where it is broken, written where it WILL be seen, in a red build.
+     */
+    @Test
+    void knownKeysAndTheKeysParseActuallyReadsAreTheSameSet() throws IOException {
+        Path source = Path.of("src", "main", "java", "io", "github", "butterflysmp", "rpg",
+                "paper", "content", "WeaponLoader.java");
+        assertTrue(Files.isRegularFile(source), "source not found at " + source.toAbsolutePath());
+        String raw = Files.readString(source, StandardCharsets.UTF_8);
+
+        // COMMENTS MUST GO BEFORE ANYTHING IS MATCHED, and this is not defensive tidying -- the
+        // first version of this test FAILED because of it. KNOWN_KEYS' own javadoc explains the
+        // hazard using a worked example, `s.getInt("quivver_size", NO_QUIVER)`, and the scan
+        // dutifully reported `quivver_size` as a key the loader reads. This repository makes that
+        // shape the NORM rather than an edge case: its javadocs quote their own call sites
+        // constantly, which CLAUDE.md records as the reason a mutation target usually appears twice.
+        // A source scan that does not strip prose is reading documentation as if it were code.
+        String text = raw.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+
+        // AND THE STRIPPER NEEDS ITS OWN CONTROL, because a stripper that silently did nothing
+        // returns the whole file and every assertion below still runs -- on the unstripped text,
+        // which is the state that just failed. `{@code` appears only inside javadoc.
+        assertTrue(text.length() < raw.length(), "comment stripping removed nothing");
+        assertFalse(text.contains("{@code"), "javadoc survived the strip; the scan would read prose");
+
+        // TWO LEVELS, TWO NAMESPACES, TWO SCANS. The receiver is the discriminator and it is the
+        // only one available: top-level reads go through `s`, trigger-level reads through `t`, and
+        // both happen in this one file. Merging the sets would make `cast:` legal at the top level
+        // and `material:` legal inside a trigger, so they are checked apart.
+        Set<String> readTopLevel = keysReadVia("s", text);
+        Set<String> readTrigger = keysReadVia("t", text);
+
+        // A scan that discovers nothing reads exactly like a scan that found everything in order.
+        assertFalse(readTopLevel.isEmpty(), "no s.getX(\"...\") reads found -- measured nothing");
+        assertFalse(readTrigger.isEmpty(), "no t.getX(\"...\") reads found -- measured nothing");
+
+        // `id` is the one legitimate member of KNOWN_KEYS that parse never reads: it comes from the
+        // FILENAME, and every shipped file writes it redundantly, so without it every weapon warns.
+        // Exempted by name so the exemption is a decision rather than a hole. TRIGGER_KEYS needs no
+        // such exemption -- a trigger's input is the section NAME, not a key inside it.
+        Set<String> declaredTopLevel = new java.util.TreeSet<>(WeaponLoader.KNOWN_KEYS);
+        assertTrue(declaredTopLevel.remove("id"), "KNOWN_KEYS must carry 'id' -- files all author it");
+
+        assertEquals(declaredTopLevel, readTopLevel,
+                "KNOWN_KEYS and the top-level keys parse reads have diverged. Entries here but never "
+                        + "read are STALE and silently re-open the hole this guard closes; keys read "
+                        + "but not listed warn on legitimate content.");
+        assertEquals(new java.util.TreeSet<>(WeaponLoader.TRIGGER_KEYS), readTrigger,
+                "TRIGGER_KEYS and the trigger keys parse reads have diverged -- the same hazard as "
+                        + "above, one layer down, where cooldown_ticks lives.");
+    }
+
+    /** Keys read off {@code receiver} in already-comment-stripped source. */
+    private static Set<String> keysReadVia(String receiver, String strippedSource) {
+        Set<String> found = new java.util.TreeSet<>();
+        Matcher m = Pattern.compile("\\b" + receiver + "\\.(?:get|is)\\w*\\(\"([a-z_]+)\"")
+                .matcher(strippedSource);
+        while (m.find()) found.add(m.group(1));
+        return found;
+    }
+
+    /**
+     * AND THE SHIPPED FILES THEMSELVES MUST BE SILENT, which neither row above can establish.
+     *
+     * <p>Both of those use fixtures written by this test, so they prove the check behaves on inputs
+     * it was designed against. They cannot tell anyone whether the check is about to warn on every
+     * boot about nine real weapons -- and a guard that cries wolf on legitimate content is one that
+     * gets muted, then removed. The real files are the population; the fixtures are the sample.
+     */
+    @Test
+    void everyShippedWeaponFileIsSilentUnderTheUnknownKeyCheck() throws IOException {
+        Path shipped = Path.of("src", "main", "resources", "content", "weapons");
+        assertTrue(Files.isDirectory(shipped), "shipped weapons not found at " + shipped.toAbsolutePath());
+
+        int copied = 0;
+        try (var files = Files.list(shipped)) {
+            for (Path file : files.toList()) {
+                if (!file.toString().endsWith(".yml")) continue;
+                Files.copy(file, dir.resolve(file.getFileName().toString()));
+                copied++;
+            }
+        }
+        // A scan that discovers nothing must fail loudly rather than pass quietly.
+        assertTrue(copied > 0, "no shipped weapon files were copied -- this test measured nothing");
+
+        WeaponRegistry registry = load();
+
+        assertEquals(copied, registry.size(), "every shipped weapon must load, or the silence below is free");
+        assertTrue(warnings.isEmpty(), "shipped content must not warn: " + warningText());
     }
 }

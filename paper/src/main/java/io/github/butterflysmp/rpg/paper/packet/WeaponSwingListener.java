@@ -12,6 +12,8 @@ import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.weapon.BrokenNotice;
+import io.github.butterflysmp.rpg.paper.weapon.QuiverNotice;
+import io.github.butterflysmp.rpg.paper.weapon.Quivers;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import org.bukkit.entity.Player;
 
@@ -91,8 +93,45 @@ public final class WeaponSwingListener extends PacketListenerBase {
      * which is what preserves the swing-silence above.
      */
     private void onSwing(Player player) {
+        // THE RELOAD, AND IT IS TRIED BEFORE THE SWING. Left-click is the reload input for a quiver
+        // weapon, and WeaponDefinition refuses a weapon that declares both a quiver and a left_click
+        // trigger, so these two can never both apply to one item.
+        //
+        // beginReload returns true only on a REAL TRANSITION, which is what makes it safe on this
+        // path: the ANIMATION packet arrives roughly once per tick while the button is held, so an
+        // unconditional start would push the deadline another reload_ticks away twenty times a
+        // second and the weapon would never come back -- with nothing anywhere reporting a problem.
+        if (Quivers.tryReloadHeldWeapon(player, weapons, adapters)) {
+            QuiverNotice.reloadStarted(player, cooldowns);
+            return;
+        }
+
         WeaponFire.attempt(player, "left_click", weapons, weaponService, adapters, cooldowns)
-                .filter(CastResult.Broken.class::isInstance)
-                .ifPresent(broken -> BrokenNotice.notify(player, cooldowns));
+                .ifPresent(result -> {
+                    // THE COMPILER DID NOT HELP HERE, AND THE JAVADOC ABOVE PREDICTED THAT EXACTLY.
+                    // Adding Empty and Reloading to the sealed CastResult broke the two exhaustive
+                    // switches (RpgListeners, RpgCommand) and this file compiled CLEAN -- an ignored
+                    // Optional is not a switch. Left-click is the input that RELOADS, so a refusal
+                    // dropped here is dropped on the one input a quiver player presses when the
+                    // weapon has stopped firing.
+                    //
+                    // Written as an exhaustive switch rather than another .filter() chain so the
+                    // NEXT arm added to CastResult breaks this file too, instead of silently
+                    // widening the set of outcomes that vanish on left-click.
+                    switch (result) {
+                        case CastResult.Broken ignored -> BrokenNotice.notify(player, cooldowns);
+                        case CastResult.Empty ignored -> QuiverNotice.empty(player, cooldowns);
+                        case CastResult.Reloading reloading ->
+                                QuiverNotice.reloading(player, cooldowns, reloading.ticksRemaining());
+                        // Every other outcome stays silent, which is what preserves the
+                        // swing-silence the javadoc above describes: a swing that lands nothing
+                        // because you are mid-cooldown or out of mana does not deserve chat spam.
+                        case CastResult.Success ignored -> { }
+                        case CastResult.OnCooldown ignored -> { }
+                        case CastResult.InsufficientResource ignored -> { }
+                        case CastResult.UnknownAbility ignored -> { }
+                        case CastResult.Locked ignored -> { }
+                    }
+                });
     }
 }
