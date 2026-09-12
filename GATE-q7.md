@@ -16,7 +16,7 @@ The reason both times was the same: **nobody had built the thing that measures i
 
 | | staging | what to record |
 |---|---|---|
-| **Q7** | `/rpg give hunters_bow`. **Hold right-click for about ten seconds**, release, then `/rpg firerate`. | **Every figure the command prints**, verbatim — both lines and the verdict. Then repeat on `quiver_stone`. |
+| **Q7** | `/rpg give hunters_bow`. **Hold right-click for about ten seconds** — genuinely held, not tapped; the instrument cannot tell the difference and one arm depends on it — release, then `/rpg firerate`. | **Every figure the command prints**, verbatim — both lines and the verdict. Then repeat on `quiver_stone`. |
 
 **`hunters_bow` FIRST, and the order is load-bearing.** Three gates can hold fires below inputs, in
 `WeaponFire.attempt`'s own order: **durability** (`Broken`, `:90`), **the magazine**
@@ -49,7 +49,7 @@ the fire count stops for a reason that is not the cooldown.
 |---|---|
 | **INPUT-LIMITED** | inputs == fires. Nothing gated. **That interval IS Q7's answer.** |
 | **COOLDOWN-LIMITED** | fewer fires than inputs. **Q7's answer is still the INPUT number**; the gap is what slice C needs before pricing a halving. |
-| **NO REPEAT** | one input, then nothing, while the button was held. **The client is not re-sending on this material.** Not an instrument fault — see below. |
+| **NO REPEAT** | one input, then nothing, while the button was held. **The client is not re-sending on this material.** Not an instrument fault — but **this arm has no control on this build**, see below before acting on it. |
 | **INSTRUMENT FAULT** | more fires than inputs. **Impossible**; a gate cannot fire more often than it is asked to. These words, not a verdict. |
 
 **`INSTRUMENT FAULT` is the control**, and it is why two counters are worth more than one: an
@@ -57,10 +57,39 @@ instrument with no reading that would indict it cannot tell you when it is broke
 is priced on trusting one number nobody has ever taken.
 
 **`NO REPEAT` IS A READING, AND IT IS THE MOST CONSEQUENTIAL ONE.** An item with a use action may
-latch into a use state rather than repeat, and the Boltor's material is exactly such an item. If
-that is what comes back, **held-repeat does not work on that material and slice B's ruling 1 is
+latch into a use state rather than repeat, and the Boltor's material is exactly such an item. If that
+is what comes back, **held-repeat does not work on that material and slice B's ruling 1 is
 unimplementable as stated** — it needs re-ruling before the slice proceeds. It is a named outcome on
 the readout rather than a surprise in prose.
+
+### AND IT IS THE ONE ARM WITH NO CONTROL — WRITTEN DOWN BEFORE THE READING EXISTS
+
+**`NO REPEAT` fires on `count == 1`, and `count == 1` is also what a single TAP produces.** The
+instrument cannot see the button; it sees events. *"Held ten seconds and it never repeated"* and
+*"clicked once and ran the command"* are **the same reading**, and nothing currently printed
+separates them.
+
+Every other arm has a control. `INSTRUMENT FAULT` is itself the control for the pair; `MIXED` guards
+the two-weapon case; an absent sample says so in words. **This one has none — and it is the arm that
+re-rules the slice.**
+
+> **THE RULE, AND IT IS RECORDED NOW SO IT CANNOT LOOK LIKE A RESPONSE TO AN INCONVENIENT RESULT:**
+>
+> **If this reading comes back `NO REPEAT`, it is NOT ACTED ON until it has been retaken on a build
+> that carries the elapsed figure.** Nobody re-rules ruling 1 on a reading that cannot rule out a
+> mis-take.
+>
+> **If it comes back `INPUT-LIMITED` or `COOLDOWN-LIMITED`, the elapsed figure would have changed
+> nothing**, the reading stands, and the gap is closed in the next commit regardless.
+>
+> **The missing figure:** ticks elapsed between the single input and the command, printed on that arm
+> only. A ten-second hold that produced one event shows ~200t; a tap-then-command shows a handful. It
+> does not *prove* a hold — someone can tap and wait — but it makes the mis-take visible, and lets
+> this row state its staging as a **checkable condition** rather than an instruction nobody can
+> verify was followed.
+>
+> **It must NOT be implemented by changing `window`.** `window` is first event to last, and
+> `MUTWINDOW` exists to keep it that way. This is a separate figure on one arm.
 
 ---
 

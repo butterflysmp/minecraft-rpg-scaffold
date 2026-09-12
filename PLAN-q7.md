@@ -264,6 +264,14 @@ that. Seven parameters of seven distinct types cannot transpose.
 
 ## WHAT HAPPENS AFTER THIS COMMIT
 
+**OWED TO THE NEXT COMMIT, FOUND IN REVIEW OF THIS ONE: `NO_REPEAT` HAS NO CONTROL.** It fires on
+`count == 1`, and a single TAP produces `count == 1` — so *"held ten seconds and it never repeated"*
+and *"clicked once and ran the command"* are the same reading, and it is the arm that would re-rule
+ruling 1. The fix is **ticks elapsed between the single input and the command, printed on that arm
+only** — NOT a change to `window`, which is first-event-to-last and which `MUTWINDOW` exists to keep
+that way. `GATE-q7.md` carries the rule: a `NO_REPEAT` reading is not acted on until retaken on a
+build that carries the figure.
+
 **Stop.** The operator takes the reading — I cannot, and `GATE-q7.md` says so. Slice B's plan
 follows the number, with `attack_damage`, `reload_ticks` and `cooldown_ticks` proposed against a
 measured rate rather than an estimate.
