@@ -61,6 +61,16 @@ public final class StatsSheetLines {
     public static final String CRIT_CHANCE_LABEL = "Crit Chance";
     public static final String CRIT_DAMAGE_LABEL = "Crit Damage";
 
+    /**
+     * The quiver pair, shown ONLY when a quiver weapon is held -- see {@code StatsSheetValues}.
+     *
+     * <p>"Quiver" rather than "Quiver Size" and "Reload" rather than "Reload Time": both must fit
+     * {@link #LABEL_WIDTH}, and the shorter forms read as the thing rather than as the stat's
+     * engineering name, which is what every other label on this sheet does too.
+     */
+    public static final String QUIVER_SIZE_LABEL = "Quiver";
+    public static final String RELOAD_TIME_LABEL = "Reload";
+
     /** Width the labels are padded to, so the value column starts in one place. */
     static final int LABEL_WIDTH = 13;
 
@@ -131,6 +141,37 @@ public final class StatsSheetLines {
      */
     public static String critDamage(double bonus) {
         return two(1.0 + bonus) + "x";
+    }
+
+    /** A resolved quiver capacity, in whole rounds: {@code 28 -> "28"}. */
+    public static String quiverSize(int rounds) {
+        return Integer.toString(rounds);
+    }
+
+    /** Ticks per second: the whole of this class's one unit conversion, named rather than a bare 20. */
+    private static final double TICKS_PER_SECOND = 20.0;
+
+    /**
+     * A resolved reload duration: {@code 48 -> "48t (2.40s)"}.
+     *
+     * <p><b>BOTH UNITS, and that is a decision this sheet does not make anywhere else.</b> Every
+     * other line picks one unit, and the regen lines pick the PLAYER's ({@code /5s}) over the
+     * storage unit. Reload gets both because its two readers want different ones: a player counts
+     * seconds, and the stat is authored, stamped and modified in TICKS -- so a sheet that printed
+     * only seconds could not be compared against {@code reload_ticks: 34} in a yml, and one that
+     * printed only ticks would tell a player nothing they can feel.
+     *
+     * <p>It matches {@code /rpg reloadtime}'s readout deliberately, so a dev reading the command and
+     * then the sheet sees one quantity in one form rather than two presentations of it.
+     *
+     * <p><b>A negative duration is clamped to 0 for DISPLAY only.</b> {@code ReloadTime.resolve}
+     * deliberately has no floor and {@code Quiver.reloadCompletesAt}'s {@code Math.max} is what
+     * actually governs -- so {@code "-6t"} would be a number no mechanic ever uses. Showing
+     * {@code "0t (0.00s)"} is what the weapon will really do: an instant reload.
+     */
+    public static String reloadTime(int ticks) {
+        int shown = Math.max(ticks, 0);
+        return shown + "t (" + two(shown / TICKS_PER_SECOND) + "s)";
     }
 
     /** Two decimals, {@code Locale.ROOT} so a comma-decimal locale cannot change what ships. */

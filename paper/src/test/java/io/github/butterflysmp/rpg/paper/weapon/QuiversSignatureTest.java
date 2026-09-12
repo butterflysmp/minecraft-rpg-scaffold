@@ -566,4 +566,73 @@ class QuiversSignatureTest {
                         + "needs a verb name that says so -- and a new PURE one belongs beside "
                         + "stateOf in the javadoc that points callers at it.");
     }
+
+    /**
+     * THE RELOAD DURATION IS SUPPLIED ONLY WHERE THIS LIST SAYS -- and it is a list because a COUNT
+     * of it was false within one commit of being written.
+     *
+     * <p>{@code Quivers.beginReload} carried the comment <i>"grep -rn "reloadTicks()" ... finds
+     * exactly this one"</i>. True when drafted; <b>the same commit wrote its refutation sixty lines
+     * away</b> in the {@code /rpg reloadtime} block. Measured at that tip: four hits in main source,
+     * six unscoped. {@code PLAN-quiver-a2.md} repeated the count and was wrong the same way.
+     *
+     * <p>That is A1's <i>"two call sites"</i> error from the other side, and the rule drawn from it
+     * then applies now: <b>name the set, do not count an unnamed one.</b> A grep quoted with its
+     * command is the most trustworthy-looking form a count can take, which is exactly why a stale one
+     * costs more -- the next reader runs it, gets a different number, and stops believing the
+     * comments that are right.
+     *
+     * <h2>SUPPLY versus READOUT, which is the distinction that survives the next line being added</h2>
+     *
+     * <table><tr><th>file</th><th>role</th></tr>
+     * <tr><td>{@code Quivers}</td><td><b>SUPPLY</b> -- reads the authored duration to DRIVE
+     *     BEHAVIOUR. Exactly one site: {@code beginReload} resolves it and stamps the deadline.</td></tr>
+     * <tr><td>{@code RpgCommand}</td><td><b>READOUT</b> -- reads it to show somebody a number, and
+     *     prints the RESOLVED value beside the authored one every time, through
+     *     {@code ReloadTime.resolve} rather than re-deriving {@code authored + bonus}.</td></tr>
+     * </table>
+     *
+     * <p><b>A readout cannot quietly become a second source of truth</b> as long as it composes
+     * through the same resolver, which is why {@code RpgCommand} is a listed member rather than an
+     * exemption -- the same call the capacity scan makes about the same file.
+     *
+     * <p><b>This row is what makes commit 6 safe to write at all:</b> the stats sheet added a THIRD
+     * readout in the same commit that corrected the count, so any fresh number would have been stale
+     * on arrival for the third time. A named set absorbs it.
+     *
+     * <p>Scope, on {@link #theCapacityIsResolvedOnlyWhereThisListSays}'s pattern: MAIN source of both
+     * modules. Test sources are excluded deliberately -- {@code WeaponQuiverDefinitionTest} and
+     * {@code WeaponLoaderTest} both read {@code reloadTicks()} to assert a loaded value, which is
+     * neither supply nor readout. The needle is the bare accessor name, so a static import cannot
+     * walk past it the way it did the qualified capacity needles.
+     */
+    @Test
+    void theReloadDurationIsSuppliedOnlyWhereThisListSays() throws IOException {
+        List<String> readers = new java.util.ArrayList<>();
+        int scanned = 0;
+        for (Path root : List.of(Path.of("src", "main", "java"),
+                                 Path.of("..", "core", "src", "main", "java"))) {
+            assertTrue(Files.isDirectory(root), "source root not found: " + root.toAbsolutePath());
+            try (var walk = Files.walk(root)) {
+                for (Path file : walk.filter(p -> p.toString().endsWith(".java")).toList()) {
+                    scanned++;
+                    String raw = Files.readString(file, StandardCharsets.UTF_8);
+                    String code = raw.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+                    if (code.contains("reloadTicks()")) {
+                        readers.add(file.getFileName().toString());
+                    }
+                }
+            }
+        }
+        assertTrue(scanned > 100, "only " + scanned + " files scanned across both modules");
+
+        java.util.Collections.sort(readers);
+        assertEquals(List.of("Quivers.java", "RpgCommand.java"), readers,
+                "the authored reload duration may only be read in these TWO files: Quivers SUPPLIES "
+                        + "it (beginReload resolves and stamps), RpgCommand READS IT OUT beside the "
+                        + "resolved value. A third file is a deliberate edit -- and the question to "
+                        + "ask is which of the two it is, because a supply site that does not go "
+                        + "through ReloadTime.resolve is a second source of truth and a readout that "
+                        + "does not is a number that will drift from the weapon.");
+    }
 }

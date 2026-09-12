@@ -18,6 +18,7 @@ import io.github.butterflysmp.rpg.core.combat.HitDamage;
 import io.github.butterflysmp.rpg.core.combat.ManaRegen;
 import io.github.butterflysmp.rpg.core.combat.QuiverSize;
 import io.github.butterflysmp.rpg.core.combat.ReloadTime;
+import io.github.butterflysmp.rpg.core.combat.StatsSheetValues;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
@@ -420,7 +421,7 @@ public final class RpgCommand {
                 // sum, across eight lines. A <player> argument needs a region hop first.
                 .then(Commands.literal("stats")
                         .requires(source -> source.getSender().hasPermission(Permissions.STATS))
-                        .executes(ctx -> stats(ctx, adapters, resources)))
+                        .executes(ctx -> stats(ctx, adapters, weapons, resources)))
                 // Mint a mana_regen_boost_TEMP. Same reason as the health-regen fixture: no content
                 // grants mana regen yet, so without this the reconcile surface is provable only by
                 // unit test. Hold it and a bare bar fills in ~50s instead of 100; drop it and the rate
@@ -824,6 +825,7 @@ public final class RpgCommand {
      * and {@code max} throw for an untracked id rather than returning 0.
      */
     private static int stats(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                             WeaponRegistry weapons,
                              ResourcePool resources) {
         if (!(ctx.getSource().getExecutor() instanceof Player player)) {
             ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
@@ -842,17 +844,34 @@ public final class RpgCommand {
         double damage = HitDamage.hitBase(stats.attackValue(id),
                 stats.enchantDamagePercentValue(id), stats.classDamageValue(id));
 
-        StatsSheet.build(
-                stats.max(id),
-                stats.healthRegenValue(id),                       // already per second
-                resources.max(id, ResourceCost.DEFAULT_RESOURCE),
-                ManaRegen.perSecond(                              // per TICK out of the pool
-                        resources.regen(id, ResourceCost.DEFAULT_RESOURCE)),
-                stats.defenseValue(id),
-                damage,
-                stats.critChanceValue(id),
-                stats.critDamageValue(id))
-                .forEach(player::sendMessage);
+        // THE QUIVER PAIR IS CONDITIONAL, AND THE CONDITION IS WHAT IS IN YOUR HAND. Every other
+        // line is a fact about the player; a capacity is a fact about a weapon. Absent rather than
+        // zero, because "Quiver 0" reads as a broken magazine rather than as "you are holding a
+        // sword".
+        //
+        // Both numbers go through the SAME resolvers the write paths use -- QuiverSize.resolve and
+        // ReloadTime.resolve -- rather than being re-derived as authored+bonus here. That is the
+        // difference between a readout and a second source of truth, and it is why this file is on
+        // the capacity guard's list rather than excluded from it.
+        StatsSheetValues.Builder values = StatsSheetValues.builder()
+                .maxHealth(stats.max(id))
+                .healthRegenPerSecond(stats.healthRegenValue(id))     // stored per second
+                .maxMana(resources.max(id, ResourceCost.DEFAULT_RESOURCE))
+                .manaRegenPerSecond(ManaRegen.perSecond(              // per TICK out of the pool
+                        resources.regen(id, ResourceCost.DEFAULT_RESOURCE)))
+                .defense(stats.defenseValue(id))
+                .damage(damage)
+                .critChance(stats.critChanceValue(id))
+                .critDamageBonus(stats.critDamageValue(id));
+
+        WeaponItems.heldWeaponId(player, adapters.keys())
+                .flatMap(weapons::find)
+                .filter(WeaponDefinition::hasQuiver)
+                .ifPresent(weapon -> values.quiver(
+                        QuiverSize.resolve(weapon.quiverSize(), stats.quiverSizeBonusValue(id)),
+                        ReloadTime.resolve(weapon.reloadTicks(), stats.reloadTimeBonusValue(id))));
+
+        StatsSheet.build(values.build()).forEach(player::sendMessage);
         return 1;
     }
 

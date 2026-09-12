@@ -361,8 +361,8 @@ A1 ran **15 commits**; largest 12 files / +573, median ~4 files / ~180 lines. A2
 | **2** | quiver size, core half | ~6 | `core/combat/QuiverSize.java` (`NONE`/`boosts`/`contribution`), `HealthState` (**8 members**), `CombatantStats` (**2**), tests |
 | **3** | quiver size, paper half | **13** | `Keys` pair, `QuiverSizeModifierItems` (PERMANENT, no `_TEMP`), reconcile line, `/rpg quiversize`, and `resolveCapacity` switches to the stat. **13 files, not ~7**, because the operator's commit-2 finding rode with it: `QuiverSize.MIN_CAPACITY`, and `Quiver.applyPercent` made to agree with it about whether 0 is a legal capacity. |
 | **4** | reload time, core half | **11** | `core/combat/ReloadTime.java`, `HealthState` (**8 members**), `CombatantStats` (**2**), the downward-direction row. **No `MIN_RELOAD_TICKS`** — third retraction, by deletion. Two riders from commit 3's review: the import-static ban paired with the qualified needles, and "must pass through" as an obligation. |
-| **5** | reload time, paper half | **12** | `Keys` pair, `ReloadTimeModifierItems`, reconcile line, `/rpg reloadtime` (**signed range**), and `beginReload` reads the stat — the second and last supply site, measured: `grep -rn "reloadTicks()"` finds exactly one call across both modules. **Plus the blocking ruling below**, which renamed `ReloadTime.boosts` to `declares` and re-gated it. |
-| **6** | `/rpg stats` lines | ~5 | see the signature note below |
+| **5** | reload time, paper half | **12** | `Keys` pair, `ReloadTimeModifierItems`, reconcile line, `/rpg reloadtime` (**signed range**), and `beginReload` reads the stat — **the last SUPPLY site**, which is the claim that survives. This row first said *"the second and last supply site, measured: `grep -rn "reloadTicks()"` finds exactly one call across both modules"*; that count was **falsified by commit 5's own new code**, sixty lines away in the `/rpg reloadtime` block. Four in main, six unscoped. Corrected in commit 6 to SUPPLY (drives behaviour, one site) versus READOUT (shows a number, composes through `ReloadTime.resolve`), and guarded as a named set by `theReloadDurationIsSuppliedOnlyWhereThisListSays`. **Plus the blocking ruling above**, which renamed `ReloadTime.boosts` to `declares` and re-gated it. |
+| **6** | `/rpg stats`, and the parameter object | **8** | `StatsSheetValues` + builder, two labels, two formatters, two sheet lines, the reload-supply guard, and the two riders from commit 5's review. |
 | **7** | prose + gate | ~5 | corrections below, `GATE-quiver-a2.md` — **and the two boot-only rows below, which it must not be descoped without** |
 
 ### COMMIT 1 RAN AS SIX — recorded because the split was not planned, it was forced
@@ -438,11 +438,26 @@ equipped and fired in one motion could not tell that design from a reconcile-loo
 walk the same slots on the same player and a shared prefix would make each wipe the other's sources
 on alternate ticks, which presents as "the stat does nothing" rather than as a crossed wire.
 
-**AND THE DOWNWARD RELOAD ROW MUST BE DRIVEN BY HAND**, because no default can be collision-free at
-base 34: `/rpg reloadtime -14` resolves to **20**, which IS an authored number elsewhere in
-`content/`. A row reading 20 must therefore confirm it against the weapon it is holding rather than
-against the set — the one place in this slice where the sweep does not protect the observation, and
-it is stated at the command as well.
+**AND THE DOWNWARD RELOAD ROW MUST BE DRIVEN BY HAND**, because no default is collision-free at base
+34: `/rpg reloadtime -14` resolves to **20**, which IS authored elsewhere in `content/`.
+
+> **THE COLLISION IS REAL AND IT IS ALREADY DISCHARGED — corrected upward rather than deleted,
+> because the reasoning is worth keeping.** The first version of this paragraph called it *"the one
+> place in this slice where the sweep does not protect the observation."* **That is true of the
+> resolved number ALONE, and the row does not observe the resolved number alone.**
+>
+> The sweep exists to protect an observation that is a BARE NUMBER. This readout is not one:
+> `/rpg reloadtime` prints the authored value, the resolved value, both in seconds, and the word
+> SLOWER or FASTER — `34 -> 20 ticks (1.70s -> 1.00s), FASTER`. A collision on 20 alone cannot
+> produce that triple, so it cannot reach the row. **The thing that discharges it was built
+> deliberately, one commit earlier, for a different reason**: the command prints both units and the
+> direction word rather than leaving a sign to be read, because this stat's sign is inverted.
+>
+> The same now holds on the stats sheet, which renders `48t (2.40s)` — both units, one line.
+> **So the rule generalises: a readout that carries its own base and delta is immune to a sweep
+> collision on its result.** The sweep still governs every bare number a gate row reads, which is why
+> the instrument DEFAULTS stay swept.
+
 
 > **AND THE PRICE IS A STANDING PROJECT DECISION, WHICH IS THE REUSABLE HALF.** `new ItemStack(...)`
 > throws *"No RegistryAccess implementation found"* without a server and the parent pom's only test
@@ -546,4 +561,14 @@ Traced through `manaRegenBonus`, the most recent stat:
   `ReloadTimeModifierItemsTest`'s, so the helper and the scanner are guarded independently and
   reverting either is caught. It is the mutation that turns "reload-speed gear exists" from a ruling
   into a tested one.
+- **Commit 6's two, both red, both derivable:** `MUTSHEETCOND` (`if (v.hasQuiver())` → `if (true)`;
+  −9 + 16 ⇒ **+7**; **6 errors** — every bare-handed row throws `NoSuchElementException`, which is
+  the absent-versus-zero decision enforced rather than described) and `MUTSHEETCLAMP`
+  (`Math.max(ticks, 0)` → `ticks` in the display; −13 + 17 ⇒ **+4**; 1 red, reading `-6t (-0.30s)`
+  — a duration no mechanic ever uses).
+- **AND THE RELOAD-SUPPLY GUARD FOUND SOMETHING ON ITS FIRST RUN**, which is its own positive
+  control: `StatsSheetValues` had accessors named `quiverSize()` and `reloadTicks()` — the same names
+  `WeaponDefinition` uses for the AUTHORED values, while these return the RESOLVED ones. Renamed to
+  `resolvedQuiverSize()` / `resolvedReloadTicks()`. The collision was real for a reader, not only for
+  a scan.
 - **Q7 remains owed** and is not discharged by this slice.

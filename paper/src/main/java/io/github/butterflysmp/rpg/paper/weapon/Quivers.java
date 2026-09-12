@@ -223,10 +223,25 @@ public final class Quivers {
             case BEGIN -> { /* fall through to the write below */ }
         }
 
-        // THE SECOND AND LAST SUPPLY SITE, and the claim is measured rather than asserted:
-        // `grep -rn "reloadTicks()" core/src/main/java paper/src/main/java` finds exactly this one
-        // call across both modules. The first supply site is QuiverItems.resolveCapacity. Everything
-        // else that needs either number reads a STAMP.
+        // THE LAST SUPPLY SITE -- and "supply" is the word, not "the only reader", because the two
+        // are different claims and the second one is false.
+        //
+        // SUPPLY means: reads the weapon's authored reload TO DRIVE BEHAVIOUR. There is exactly one,
+        // and it is this line. READOUT means: reads it to show somebody a number. RpgCommand has
+        // three, and every one prints the RESOLVED value beside the authored one, so a readout
+        // cannot silently become a second source of truth.
+        //
+        // THE DISTINCTION IS WRITTEN THIS WAY BECAUSE THE COUNT WAS NOT. This comment first said
+        // `grep -rn "reloadTicks()" ... finds exactly this one` -- true when drafted, and THE SAME
+        // COMMIT WROTE ITS REFUTATION sixty lines away in the /rpg reloadtime block. It now finds
+        // four in main source, six unscoped. That is A1's "two call sites" error from the other
+        // side: a grep quoted with its command is the most trustworthy-looking form a count can
+        // take, which is why a stale one costs more than a vague sentence -- the next reader runs
+        // it, gets four, and stops believing the comments that are right.
+        //
+        // The membership is guarded rather than counted:
+        // QuiversSignatureTest.theReloadDurationIsSuppliedOnlyWhereThisListSays names the files and
+        // their roles, so a new one is a deliberate edit.
         //
         // AND THE DURATION IS RESOLVED HERE, AT THE BEGIN, THEN NEVER AGAIN. The deadline below is
         // stamped from it and no read recomputes it, so gear equipped mid-reload cannot lengthen or
