@@ -268,6 +268,14 @@ So:
   > same session shifts the file. After any splice, **print the region** — `sed -n '1,12p'` on the
   > head, or `git diff` on the hunk — before believing the marker grep or the byte delta. Both of
   > those were run here and both passed.
+  >
+  > **When a figure is given alongside its parts, add the parts up.** The offline case of the rule
+  > above, and the cheapest: it needs no command at all.
+  >
+  > **2026-09-12.** The correction to a stale commit count was itself stale, because the correcting
+  > commit was a new member of the set being counted. The page said *fourteen*, then *nine shown*
+  > and *six not shown*, two clauses apart. **Adding a row and fixing the count in the same edit
+  > changes the set the count is over.**
 
 - **PROSE REACHING A COMMAND GOES THROUGH A FILE, NEVER THROUGH QUOTING.** `git commit -F <file>`,
   `gh pr create --body-file`, `gh pr merge --body-file`, a written file for anything else. Never
