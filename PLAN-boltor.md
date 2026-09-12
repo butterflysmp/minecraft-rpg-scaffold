@@ -32,6 +32,27 @@ IMPLY IT IS.** `ironblade` and `hunters_bow` are both dev weapons; parity with e
 a placeholder. 19 is ruled outright, and it becomes **the anchor the next class prices against** —
 which the weapon file says, because otherwise the next slice repeats this in reverse.
 
+> **THE FIGURES BESIDE A RULING CAN MOVE WITHOUT THE RULING MOVING, AND THIS IS THE PARAGRAPH THAT
+> SAYS WHY.** Because 19 was ruled outright rather than by comparison, **no figure quoted near it was
+> ever its basis** — so nothing that moves those figures can overturn it. That held for the corrected
+> `16.17 -> 17.67` sustained, and it holds for `GATE-boltor.md`'s boundary row, which moves them
+> again:
+>
+> ```
+>   >=   fires 16t  ->  cycle 172t / 8.60s   ->  sustained 17.67   burst 27.14
+>   >    fires 20t  ->  cycle 200t / 10.00s  ->  sustained 15.20   burst 21.71
+> ```
+>
+> **14% and 20% apart — so falsifying the figures and reopening the ruling are not the same claim.**
+> 19 was ruled on feel about an OUTCOME, and on the `>` branch that outcome is a fifth weaker than
+> the numbers now sitting beside it in this file. **The reading therefore does not reopen 19, and is
+> REPORTED TO THE OPERATOR when it lands so he can rule holding the real number.** That is the
+> difference between a ruling that is robust and one nobody checked back on.
+>
+> Recorded here rather than only in the gate for the same reason as the two hitscan reversals: the
+> superseded figure stays visible with its relation stated, or a later reader watches sustained fall
+> from `17.67` to `15.20` and concludes the ruling drifted with it.
+
 **`19`, `152` and `96` are authored nowhere else in `content/`** — verified by grep over the whole
 tree. The Boltor's set `{8, 16, 19, 60, 96}` is pairwise distinct, so any bare gate reading of one
 of them is unambiguous *within this weapon*. Note this is **not** the fixture collision sweep:
