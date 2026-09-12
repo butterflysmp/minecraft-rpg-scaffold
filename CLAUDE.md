@@ -662,6 +662,21 @@ the opposite because the material suggests it.**
   > and the bill arrives later as a sweep nobody scoped. Measured at `2a3fb68`: **every mention of
   > these three in `main` is a comment except one**, so the deletion's real cost is prose, not code.
 
+  **TWO THINGS TO KNOW ABOUT THE BOLTOR, SINCE IT IS NOW THE REFERENCE POINT:**
+
+  - **Its numbers are RULED, not derived** — `quiver_size 8`, `cooldown_ticks 16`, `range 96`,
+    `reload_ticks 60`, `attack_damage 19`. **`19` was ruled outright BECAUSE deriving it from
+    `ironblade` was wrong**: `ironblade` is a dev weapon and is not balanced meaningfully.
+    **So: never derive a new weapon's numbers from a dev weapon's.** Parity with a placeholder is
+    parity with nothing, and it propagates — the derived number then becomes the next weapon's
+    precedent and the placeholder's arbitrariness outlives the placeholder.
+  - **`16` is on the 4-tick input grid, deliberately.** A held right-click delivers an input only
+    every 4 ticks, so a weapon's real fire interval is its authored cooldown **rounded UP to the next
+    multiple of 4** — author `13` or `14` and you have authored `16`, **and the tooltip will not say
+    so.** Author **multiples of 4**; **multiples of 8** for anything that may ever be dual-wielded,
+    since only those halve cleanly. The mechanism, the measurements and the tooltip consequence are
+    at `WeaponLoader`'s `cooldown_ticks` section — **this is the pointer, that is the account.**
+
 ## Upgrade procedure
 
 Do **not** bump `paper.version` alone. Order of operations:
