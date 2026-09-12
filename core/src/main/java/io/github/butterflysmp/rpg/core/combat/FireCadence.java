@@ -120,17 +120,47 @@ public final class FireCadence {
      * and nothing. Both interval figures are therefore {@code Optional}, so a caller cannot print a
      * {@code 0} that looks like an answer.
      *
+     * <h2>{@code sinceLastEventTicks} IS THE ONLY FIELD MEASURED TO <i>NOW</i>, AND THAT IS WHY IT
+     * IS A SEPARATE FIELD RATHER THAN A CHANGE TO {@code windowTicks}</h2>
+     *
+     * <p>{@code windowTicks} is first event to last and must stay that way — {@code MUTWINDOW} in
+     * {@code FireCadenceTest} exists to keep it there, and measured {@code 400} where {@code 8}
+     * belonged when it was made to run to the current tick. <b>Folding the elapsed figure into the
+     * window would swallow the dead time into the cadence.</b> So the two sit side by side with
+     * opposite endpoints, deliberately.
+     *
+     * <p><b>WHAT IT CAN AND CANNOT ESTABLISH, BECAUSE THE ASYMMETRY IS THE WHOLE POINT.</b> It exists
+     * for {@link Verdict#NO_REPEAT}, the one arm with no control: the instrument cannot see the
+     * button, only events, so <i>"held ten seconds and it never repeated"</i> and <i>"clicked once
+     * and ran the command"</i> are otherwise the same reading. This figure separates them in ONE
+     * direction. It is elapsed time, not held time — the operator may have released the button and
+     * waited — so:
+     *
+     * <ul>
+     *   <li><b>A small figure DISQUALIFIES the reading.</b> A handful of ticks means no repeat ever
+     *       had the chance to arrive, and {@code NO_REPEAT} says nothing about the material.</li>
+     *   <li><b>A large figure does NOT validate it.</b> ~200t is consistent with a ten-second hold
+     *       and equally with a tap followed by a pause.</li>
+     * </ul>
+     *
+     * <p>So it is a <b>necessary-not-sufficient</b> condition, and it makes the mis-take VISIBLE
+     * rather than proving the take was good. That is what lets {@code GATE-q7.md}'s staging rule be
+     * a checkable condition instead of an instruction nobody can verify was followed.
+     *
      * @param count            events recorded
      * @param windowTicks      FIRST counted event to LAST — never "now minus first", which would
      *                         include the dead time before the operator started holding
      * @param meanIntervalTicks {@code windowTicks / (count - 1)}; the SUSTAINED rate
      * @param minIntervalTicks  the smallest gap observed; <b>the FLOOR</b>, which is what Q7 is named
      *                          for and what prices slice C's halving
+     * @param sinceLastEventTicks LAST counted event to <b>now</b> — the reading moment. Absent only
+     *                          on a synthetic zero-count sample, where there is no last event
      * @param weaponId          the weapon the sample was taken on
      * @param mixedWeapons      true if the weapon changed mid-sample — <b>then it is not a reading</b>
      */
     public record Sample(int count, long windowTicks, OptionalDouble meanIntervalTicks,
-                         OptionalLong minIntervalTicks, String weaponId, boolean mixedWeapons) {
+                         OptionalLong minIntervalTicks, OptionalLong sinceLastEventTicks,
+                         String weaponId, boolean mixedWeapons) {
 
         /** Gaps between consecutive events: one fewer than the events themselves. */
         public int intervals() {
@@ -198,12 +228,16 @@ public final class FireCadence {
 
         long window = running.lastTick - running.firstTick;
         boolean hasInterval = running.count > 1;
+        // TO THE LAST EVENT for the window, TO NOW for the elapsed figure. Two endpoints, one
+        // expression each, so neither can be quietly rewritten into the other.
+        long sinceLast = currentTick.getAsLong() - running.lastTick;
         return Optional.of(new Sample(
                 running.count,
                 window,
                 hasInterval ? OptionalDouble.of((double) window / (running.count - 1))
                             : OptionalDouble.empty(),
                 hasInterval ? OptionalLong.of(running.minInterval) : OptionalLong.empty(),
+                OptionalLong.of(sinceLast),
                 running.weaponId,
                 running.mixedWeapons));
     }

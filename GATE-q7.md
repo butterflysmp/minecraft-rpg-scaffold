@@ -45,8 +45,23 @@ in the commit history rather than asserted here.
 **30 inputs on a `material: crossbow`.** Held-repeat works there, so **slice B's ruling 1 is
 implementable as stated** and the arm with no control never fired.
 
-**The elapsed figure is still owed**, and it is owed regardless of this reading: the gap it closes is
-in the instrument, not in the result.
+**~~The elapsed figure is still owed~~ — DISCHARGED, and the gate's own rule said it would be.** The
+staging rule below promised that on an `INPUT-LIMITED` or `COOLDOWN-LIMITED` reading *"the elapsed
+figure would have changed nothing, the reading stands, and the gap is closed in the next commit
+regardless."* That is this commit. The reading stands unchanged; the instrument no longer has the
+blind spot.
+
+`FireCadence.Sample` now carries `sinceLastEventTicks` — LAST event to **now** — and
+`/rpg firerate` prints it **on the `NO REPEAT` arm only**. `windowTicks` was not touched: it is still
+first-event-to-last, which `MUTWINDOW` defends. The two endpoints sit side by side as separate
+expressions so neither can be quietly rewritten into the other.
+
+**AND IT CUTS ONE WAY, WHICH THE READOUT SAYS OUT LOUD.** It is elapsed time, not held time. A
+handful of ticks **disqualifies** a `NO REPEAT` reading, because no repeat had the chance to arrive;
+a large figure does **not** prove a hold — someone can tap and wait — it only fails to disqualify
+one. Necessary, not sufficient. Verified by mutation rather than asserted: measuring it to the first
+event instead of the last reddens 1 of 12 rows; measuring it to the last event instead of to now
+reddens 3 of 12.
 
 ---
 **Status: NOT RUN.** The instrument exists; the reading does not. **Only the operator can take it.**
@@ -222,6 +237,17 @@ re-rules the slice.**
 >
 > **It must NOT be implemented by changing `window`.** `window` is first event to last, and
 > `MUTWINDOW` exists to keep it that way. This is a separate figure on one arm.
+
+**DISCHARGED — and the blockquote above is left exactly as it was written.** Not one word of it is
+edited, because it was recorded *before* the reading precisely so that it could not later look like a
+response to the result; rewriting it now would spend the only thing it was built to prove. The
+discharge is recorded beside the reading instead, at the top of this file.
+
+Every clause of it was met: a separate figure (`Sample.sinceLastEventTicks`), on one arm only (the
+`NO REPEAT` branch of `verdictLine`), and `window` untouched — still `lastTick - firstTick`, still
+guarded by `MUTWINDOW`. The reading that was actually taken came back `COOLDOWN-LIMITED`, which is
+the branch this rule said the figure would not have changed, so **nothing is retaken and nothing is
+re-ruled.**
 
 ---
 

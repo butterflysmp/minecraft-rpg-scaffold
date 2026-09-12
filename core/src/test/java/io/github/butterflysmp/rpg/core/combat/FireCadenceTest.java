@@ -267,7 +267,83 @@ class FireCadenceTest {
     /** A sample with only its count set -- the verdict reads nothing else, deliberately. */
     private static FireCadence.Sample countOnly(int count) {
         return new FireCadence.Sample(count, 0L, java.util.OptionalDouble.empty(),
-                java.util.OptionalLong.empty(), BOW, false);
+                java.util.OptionalLong.empty(), java.util.OptionalLong.empty(), BOW, false);
+    }
+
+    /**
+     * THE ELAPSED FIGURE RUNS TO NOW WHILE THE WINDOW RUNS TO THE LAST EVENT, AND ONE STAGING
+     * PRODUCES BOTH NUMBERS.
+     *
+     * <p>This is the control {@code NO_REPEAT} did not have. The instrument cannot see the button,
+     * only events, so <i>"held ten seconds and it never repeated"</i> and <i>"clicked once and ran
+     * the command"</i> were the same reading. <b>The row stages the SECOND of those</b> -- one input,
+     * then a long wait -- because that is the mis-take the figure exists to expose.
+     *
+     * <p><b>THE TWO QUANTITIES ARE DELIBERATELY UNEQUAL AND NEITHER EQUALS THE OTHER'S ENDPOINT.</b>
+     * One event at 100 read at 340 gives window {@code 0} and elapsed {@code 240}. Staging them
+     * equal -- the trap this project records as a control that passes for the wrong reason -- would
+     * let a window/elapsed swap survive, since both readings would be the same number.
+     *
+     * <p>Forces red: measuring the elapsed figure to the last event (reads 0); measuring the window
+     * to {@code currentTick} (reads 240, which is {@code MUTWINDOW}); swapping the two.
+     */
+    @Test
+    void theElapsedFigureRunsToTheReadingWhileTheWindowStillStopsAtTheLastEvent() {
+        input(100);
+
+        at(340);   // one input, then the operator waits -- the mis-take NO_REPEAT could not see
+
+        FireCadence.Sample s = inputs();
+        assertEquals(1, s.count(), "one input is the NO_REPEAT staging");
+        assertEquals(0L, s.windowTicks(), "the window is still first-to-last and spans nothing");
+        assertEquals(240L, s.sinceLastEventTicks().orElseThrow(),
+                "but the elapsed figure runs to the reading: 340 - 100");
+        assertTrue(s.meanIntervalTicks().isEmpty(), "and it is not an interval");
+        assertTrue(s.minIntervalTicks().isEmpty());
+    }
+
+    /**
+     * A SMALL ELAPSED FIGURE IS THE WHOLE POINT: IT DISQUALIFIES THE READING RATHER THAN REPORTING
+     * ONE.
+     *
+     * <p>Tap once, run the command immediately. {@code NO_REPEAT} looks identical to a ten-second
+     * hold, and the elapsed figure is what separates them -- <b>in one direction only.</b> A handful
+     * of ticks means no repeat had the chance to arrive; a large figure would NOT prove a hold,
+     * because the operator can tap and wait, which is the row above.
+     *
+     * <p>Forces red: defaulting the figure, or clamping it to a minimum.
+     */
+    @Test
+    void aTapAndAnImmediateCommandReportsAHandfulOfTicksAndNotAHold() {
+        input(100);
+
+        at(103);   // three ticks later, at the keyboard
+
+        assertEquals(3L, inputs().sinceLastEventTicks().orElseThrow(),
+                "three ticks -- a repeat at the measured 4t floor could not yet have arrived, so "
+                        + "this reading says nothing about the material");
+    }
+
+    /**
+     * IT TRACKS THE LAST EVENT, NOT THE FIRST, SO A REAL SAMPLE'S ELAPSED FIGURE IS SHORT.
+     *
+     * <p>On a sample that DID repeat, the figure is the gap since the final input -- not the age of
+     * the sample. A first-event implementation would read 240 here and look like a long hold on a
+     * reading that was taken promptly.
+     *
+     * <p>Forces red: subtracting {@code firstTick} instead of {@code lastTick}.
+     */
+    @Test
+    void theElapsedFigureIsSinceTheLastEventAndNotSinceTheFirst() {
+        input(100);
+        input(104);
+        input(108);
+
+        at(340);
+
+        FireCadence.Sample s = inputs();
+        assertEquals(232L, s.sinceLastEventTicks().orElseThrow(), "340 - 108, not 340 - 100");
+        assertEquals(8L, s.windowTicks(), "and the window is untouched by it");
     }
 
     /** Absent samples never reach the verdict: the caller has both or prints neither. */

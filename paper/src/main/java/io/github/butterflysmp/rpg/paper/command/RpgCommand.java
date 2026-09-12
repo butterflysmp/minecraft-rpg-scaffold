@@ -1058,8 +1058,10 @@ public final class RpgCommand {
         }
         FireCadence.Sample in = inputs.get();
         FireCadence.Sample fire = cadence.sample(id, RIGHT_CLICK, FireCadence.Kind.FIRE)
+                // No elapsed figure on a synthetic sample: there is no last event to measure from,
+                // and an absent OptionalLong is how this instrument says so everywhere else.
                 .orElse(new FireCadence.Sample(0, 0L, OptionalDouble.empty(), OptionalLong.empty(),
-                        in.weaponId(), false));
+                        OptionalLong.empty(), in.weaponId(), false));
 
         player.sendMessage(Component.text("Fire cadence -- " + in.weaponId() + ", right_click",
                 NamedTextColor.GOLD));
@@ -1119,6 +1121,22 @@ public final class RpgCommand {
                 + "(at 1.0x: " + AttackSpeed.effectiveCooldownTicks(authored, 1.0) + ")";
     }
 
+    /**
+     * The elapsed figure in words, for the one arm that prints it.
+     *
+     * <p><b>Rendered ONLY inside {@code NO_REPEAT}</b>, not on the sample lines, because it is the
+     * control for that arm and nothing else. Putting it on every line would make it look like part
+     * of the cadence, which is exactly the confusion {@code windowTicks} is defended against.
+     *
+     * <p>Absence is words, not a zero -- the same rule the empty-sample branch follows. A
+     * {@code 0t} here would read as "taken instantly", which is a claim, where absence is not.
+     */
+    private static String elapsed(FireCadence.Sample in) {
+        return in.sinceLastEventTicks().isPresent()
+                ? in.sinceLastEventTicks().getAsLong() + "t elapsed"
+                : "no elapsed figure";
+    }
+
     /** The verdict word, and what it means for Q7. Four arms, each a different FACT. */
     private static String verdictLine(FireCadence.Sample in, FireCadence.Sample fire) {
         return switch (FireCadence.verdict(in, fire)) {
@@ -1127,9 +1145,14 @@ public final class RpgCommand {
             case COOLDOWN_LIMITED -> "COOLDOWN-LIMITED -- fires slower. Q7's answer is still the "
                     + "INPUT number; the gap is slice C's. NOTE: a magazine or damaged durability "
                     + "gates too -- take this on hunters_bow to isolate the cooldown.";
-            case NO_REPEAT -> "NO REPEAT -- one input and nothing after it. The client is not "
-                    + "re-sending on this material. NOT an instrument fault: held-repeat does not "
-                    + "work here, and slice B's ruling 1 needs re-ruling before it proceeds.";
+            case NO_REPEAT -> "NO REPEAT -- one input and nothing after it, " + elapsed(in)
+                    + " between that input and this command. The client is not re-sending on this "
+                    + "material. NOT an instrument fault: held-repeat does not work here, and "
+                    + "slice B's ruling 1 needs re-ruling before it proceeds. READ THE ELAPSED "
+                    + "FIGURE FIRST -- it is ELAPSED time, not HELD time, and it cuts one way "
+                    + "only: a handful of ticks DISQUALIFIES this reading, because no repeat had "
+                    + "the chance to arrive; a large figure does NOT prove a hold, it only fails "
+                    + "to disqualify one.";
             case INSTRUMENT_FAULT -> "INSTRUMENT FAULT -- more fires than inputs, which is "
                     + "impossible: a gate cannot fire more often than it is asked to. Do not read "
                     + "these numbers as a measurement.";
