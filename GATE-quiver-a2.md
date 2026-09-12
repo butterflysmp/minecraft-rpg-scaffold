@@ -278,6 +278,9 @@ blanket**, which is exactly the case that construction was for.
 > instrument.** Both deferrals happened because nobody had built the thing that measures it — the
 > recipe asked an operator to count shots by hand. That is struck; the counter counts. The reading
 > is still the operator's to take.
+>
+> **DISCHARGED 2026-09-12.** `GATE-q7.md` carries the reading: **the input floor is 4 ticks**, on two
+> weapons and two materials. A2 was the second slice to hand it on and the last.
 
 ---
 

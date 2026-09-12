@@ -7,9 +7,18 @@
 # vanilla draw, with no new mechanism. A left-click shot would leave the right-click draw
 # firing real vanilla arrows. Left-click stays free for a future melee/special.
 #
-# Click-to-shoot, cooldown-gated -- no draw-and-charge. Fire rate IS the cooldown, so it
-# composes with fire-rate buffs -- and since the shot is now a weapon_damage basic attack,
+# Click-to-shoot, cooldown-gated -- no draw-and-charge. Fire rate is the cooldown ON A SINGLE PRESS,
+# so it composes with fire-rate buffs -- and since the shot is now a weapon_damage basic attack,
 # the caster's ATTACK_SPEED stat scales that cooldown for free (AbilityService.resolve).
+#
+# BUT UNDER A HELD BUTTON IT IS NOT 15, AND THIS WEAPON IS WHERE THAT WAS MEASURED. A held
+# right-click delivers an input only every 4 ticks (Q7, GATE-q7.md), and a fire needs an input AND an
+# expired cooldown -- so the interval is the cooldown rounded UP to the next input:
+# ceil(15/4) x 4 = 16, and 16 is exactly what was measured here.
+#
+# SO THE ATTACK_SPEED SENTENCE ABOVE IS TRUE AND HALF THE BUFFS BUY NOTHING: at 1.1x the effective
+# cooldown is 14 and the weapon still fires at 16; at 1.2x it is 13 and STILL 16. Only 1.3x reaches
+# 12. The stat sheet moves and the weapon does not, which is worth knowing before anyone tunes this.
 #
 # material: bow is the first non-sword weapon -- the reason WeaponDefinition gained a
 # material field. Reuses the shipped solar_detonation visual on impact, so no new file.
@@ -33,7 +42,8 @@ flavor:
 
 triggers:
   # Free shot -- the Ranger economy: the bow carries the damage, mana stays free for
-  # utility. cooldown_ticks is the fire rate: ~0.75s between shots.
+  # utility. cooldown_ticks 15 is the SINGLE-PRESS fire rate, ~0.75s. Held, it fires at 16t (0.80s)
+  # -- see the header: the cooldown rounds up to the next 4-tick input. MEASURED, not derived.
   right_click:
     # No name/description: a weapon_damage trigger IS the basic attack, and the tooltip renders it
     # as a stat block ("Ranged Damage: 6" / "Attack Speed: 1.3"), not an ability section, so prose

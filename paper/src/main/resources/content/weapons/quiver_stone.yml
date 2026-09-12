@@ -104,10 +104,22 @@ triggers:
     description:
       - "One bolt, and one fewer"
       - "than you had a moment ago."
-    # THE FIRE RATE. Deliberately short, because this trigger's job is to let the held-input repeat
-    # interval become the limiter if the repeat is slower than this -- which is exactly the number
-    # the gate is trying to find. If the observed interval exceeds 11 ticks, the repeat rate IS the
-    # measurement, and the Boltor's 14-single / 7-dual numbers have to be judged against it.
+    # THE FIRE RATE. Deliberately short, because this trigger's job was to let the held-input repeat
+    # interval become the limiter if the repeat was slower than this -- which is exactly the number
+    # the gate was trying to find.
+    #
+    # IT HAS BEEN FOUND, AND ON THIS WEAPON. Q7, 2026-09-12, GATE-q7.md: the held input arrives every
+    # 4 ticks, faster than 11, so the cooldown IS the limiter here. But the two do not compose the
+    # way this comment assumed -- a fire needs an input AND an expired cooldown, so the interval is
+    # the cooldown rounded UP to the next input:
+    #
+    #     ceil(11 / 4) x 4 = 12       measured on this weapon: min 12, mean 12.00, ZERO VARIANCE
+    #
+    # SO THIS WEAPON FIRES AT 12, NOT 11, AND 9 THROUGH 12 WOULD ALL PRODUCE 12. The number below is
+    # not the number delivered, and that is a property of held fire rather than of this fixture --
+    # see WeaponLoader's cooldown_ticks section, where an author will meet it.
+    #
+    # The Boltor's 14-single / 7-dual now have their measurement: 14 fires at 16, 7 fires at 8.
     cooldown_ticks: 11
     cast:
       # A RAY, like the Boltor and unlike either other fixture -- so the thing being measured is the

@@ -149,13 +149,44 @@ public final class WeaponLoader {
      * failure both checks exist to prevent. A key is only meaningful at its own level.
      *
      * <p><b>This layer matters MORE than the top level, not less, and the worked example is worse
-     * than "the wrong cadence".</b> {@code cooldown_ticks} lives here and IS the weapon's fire rate.
+     * than "the wrong cadence".</b> {@code cooldown_ticks} lives here and is the weapon's fire rate
+     * under SINGLE presses -- under HELD fire it is a LOWER BOUND that quantises, see below.
      * Misspell it and the trigger takes the {@code getInt} default of <b>0</b>, and
      * {@code AbilityService.resolve} then raises it only to
      * {@code CastSpec.minimumCooldownTicks(cast)} -- which is <b>0 for every cast shape except
      * {@code Volley}</b>. Measured, by invoking it: {@code Ray}, {@code Projectile}, {@code Melee}
      * and {@code Self} all return 0; only {@code Volley} derives one (30, for the Cursed Emerald's
      * windup 20 + (6-1) x 2).
+     *
+     * <h2>UNDER HELD FIRE, {@code cooldown_ticks} HAS 4-TICK GRANULARITY. MEASURED 2026-09-12.</h2>
+     *
+     * <p><b>An authored {@code cooldown_ticks} is NOT the weapon's fire interval.</b> A fire needs an
+     * input AND an expired cooldown, and a held right-click delivers an input only every <b>4
+     * ticks</b> -- Q7's answer, measured on two weapons and two materials, {@code GATE-q7.md}. So the
+     * real interval is the cooldown <b>rounded UP to the next input</b>:
+     *
+     * <pre>
+     * ceil(11 / 4) x 4 = 12      quiver_stone measured min 12   EXACT
+     * ceil(15 / 4) x 4 = 16      hunters_bow  measured min 16   EXACT
+     * </pre>
+     *
+     * <p><b>So 9, 10, 11 and 12 all produce 12.</b> An author who writes 11 has written 12, and
+     * nothing in the schema says so -- which is why it is said here, at the key. Choose a fire rate
+     * in multiples of 4 or accept that the number authored is not the number delivered.
+     *
+     * <p><b>AND THE SAME QUANTISATION SWALLOWS ATTACK SPEED, WHICH REACHES A SHIPPED STAT.</b>
+     * {@code AttackSpeed.effectiveCooldownTicks} divides and rounds, and the result is then rounded
+     * up to the next input. On {@code hunters_bow} (authored 15): <b>1.1x and 1.2x both still fire
+     * at 16</b>; only 1.3x reaches 12. A player equipping a +10% attack-speed piece sees the stat
+     * sheet move and the weapon not move. <b>A falsified number shown to a player is the class this
+     * project treats as worst</b>, and it is recorded here rather than left for the first person who
+     * times it.
+     *
+     * <p><b>ONE BOUNDARY IS UNMEASURED AND IS NOT MODELLED PAST.</b> Neither weapon read had a
+     * cooldown that is an exact multiple of 4, so whether a cooldown of exactly <b>12 fires at 12 or
+     * at 16</b> is unknown -- it is the difference between {@code >=} and {@code >} in
+     * {@code CooldownTracker.isReady}. {@code /rpg firerate} answers it in one hold on a weapon
+     * authored at 12 or 16. Owed, and named as owed.
      *
      * <p>So on a HELD-FIRE QUIVER WEAPON -- a ray or a projectile, which is exactly what the Boltor
      * is -- <b>a misspelled cooldown key means NO COOLDOWN AT ALL.</b> The magazine empties as fast

@@ -1,5 +1,54 @@
 # GATE — Q7, the held-right-click repeat interval
 
+**Status: RUN, 2026-09-12. Q7 IS DISCHARGED after two slices.**
+
+> ## THE ANSWER: THE INPUT FLOOR IS **4 TICKS**, AND IT IS WEAPON-INDEPENDENT.
+>
+> **`min 4t` on both weapons, on two materials.** That is Q7's number, and the second reading is what
+> makes it a fact about the input rather than about a weapon.
+
+### THE TWO READINGS, VERBATIM
+
+```
+hunters_bow  (material: bow, cooldown 15, no magazine)
+  INPUTS  count 56  window 276t  mean 5.02t  min 4t
+  FIRES   count 15  window 272t  mean 19.43t min 16t   COOLDOWN-LIMITED
+
+quiver_stone (material: crossbow, cooldown 11, magazine 9)
+  INPUTS  count 30  window 116t  mean 4.00t  min 4t
+  FIRES   count 9   window 96t   mean 12.00t min 12t   COOLDOWN-LIMITED
+```
+
+**ALL FOUR MEANS RECOMPUTED FROM THE RAW FIGURES — which is why the row demanded them:**
+
+| | window / gaps | = | printed |
+|---|---|---|---|
+| bow inputs | 276 / 55 | 5.0182 | **5.02** |
+| bow fires | 272 / 14 | 19.4286 | **19.43** |
+| stone inputs | 116 / 29 | 4.0000 | **4.00** |
+| stone fires | 96 / 8 | 12.0000 | **12.00** |
+
+**The instrument is not being believed; it is being checked.** A remembered *"about five a second"*
+could not have been.
+
+### THE PRE-RECORDED EXPECTATION WAS WRITTEN FIRST AND IT MATCHED
+
+`PLAN-q7.md` recorded, **before the reading existed** and marked as outside knowledge, that the floor
+was expected near **4t** from `startUseItem`'s `rightClickDelay`. **It agrees.**
+
+That does not prove the mechanism — a prior can be right for the wrong reason — but **a prior
+recorded in advance and met is worth more than one fitted afterwards**, and the ordering is checkable
+in the commit history rather than asserted here.
+
+### `NO REPEAT` DID NOT OCCUR, ON THE BOLTOR'S OWN MATERIAL
+
+**30 inputs on a `material: crossbow`.** Held-repeat works there, so **slice B's ruling 1 is
+implementable as stated** and the arm with no control never fired.
+
+**The elapsed figure is still owed**, and it is owed regardless of this reading: the gap it closes is
+in the instrument, not in the result.
+
+---
 **Status: NOT RUN.** The instrument exists; the reading does not. **Only the operator can take it.**
 
 **ONE ROW, AND THAT IS THE POINT.** Q7's entire failure history is being absorbed into a blanket
@@ -9,6 +58,89 @@ project, so "green" cannot select an outcome. **A gate with one row cannot be bl
 
 **Owed since A1 (`GATE-quiver.md`), deferred twice** — A1 carried it forward, A2 carried it forward.
 The reason both times was the same: **nobody had built the thing that measures it.**
+
+---
+
+## THE FINDING NOBODY WAS LOOKING FOR: AN AUTHORED `cooldown_ticks` IS NOT THE FIRE INTERVAL
+
+**Both weapons fire slower than they are authored to, and the gap is not noise.**
+
+**THE MODEL THAT FITS BOTH MINIMA EXACTLY.** A fire needs an input AND an expired cooldown, and
+inputs only arrive every 4 ticks — so the real interval is **the cooldown rounded UP to the next
+input**:
+
+```
+ceil(11 / 4) x 4 = 12      quiver_stone measured min 12   EXACT
+ceil(15 / 4) x 4 = 16      hunters_bow  measured min 16   EXACT
+```
+
+`quiver_stone`'s entire sample is `mean 12.00, min 12` — **zero variance**, because its inputs were
+perfectly periodic at `4.00t`. The bow's mean sits at 19.43 between 16 and 20 because its input
+stream was not periodic; see the open finding below.
+
+### WHAT THIS MEANS FOR ANYONE AUTHORING A FIRE RATE
+
+- **`cooldown_ticks` has 4-TICK GRANULARITY under held fire.** Authoring **9, 10, 11 or 12 all
+  produce 12.** An author who writes 11 has written 12, and nothing in the schema says so.
+- **The Boltor at `cooldown_ticks: 14` would fire at 16**, not 14 — every DPS figure derived from 14
+  is about **14% high**.
+- **ATTACK SPEED IS QUANTISED TOO, AND THIS REACHES A SHIPPED STAT.** `effectiveCooldownTicks`
+  divides and rounds, and the result is then rounded up to the next input. On `hunters_bow`:
+
+  | attack speed | effective | fires at |
+  |---|---|---|
+  | 1.0x | 15 | **16** |
+  | 1.1x | 14 | **16** |
+  | 1.2x | 13 | **16** |
+  | 1.3x | 12 | **12** |
+  | 2.0x | 8 | **8** |
+
+  **+10% and +20% attack speed buy NOTHING on that weapon.** The stat sheet moves, the tooltip
+  moves, the weapon does not. That is a falsified number shown to a player, which is the class this
+  project treats as worst.
+
+### AND IT ANSWERS Q7'S ORIGINAL QUESTION IN THE DIRECTION NOBODY EXPECTED
+
+`GATE-quiver.md` asked: *"If vanilla's held-use repeat is slower than 7 ticks, the dual halving buys
+nothing."* **The repeat is 4t — FASTER than 7 — so the halving is not nullified.**
+
+Slice C's 7-tick dual cooldown fires at **8**, its single-wield 14 at **16**: `16 -> 8` is a **real
+2x**. But **7 and 8 are the same weapon**, so authoring 7 buys nothing over authoring 8.
+
+**Two slices deferred a number that turned out to UNBLOCK the thing it was threatening.**
+
+---
+
+## THE MODEL HAS ONE UNTESTED BOUNDARY — MEASURE IT, DO NOT MODEL PAST IT
+
+**Neither weapon has a cooldown that is an exact multiple of 4**, so whether a cooldown of exactly
+**12 fires at 12 or at 16 is unmeasured.** That is the difference between `>=` and `>` in the
+cooldown check, and it decides whether an author who writes 12 gets 12.
+
+**The instrument already exists.** A weapon at `cooldown_ticks: 12` or `16` answers it in one hold.
+**Owed, and named here rather than modelled.**
+
+---
+
+## OPEN FINDING: THE TWO MEANS DISAGREE AND THE CAUSE IS NOT ISOLATED
+
+**The FLOOR agrees — 4t on both. The SUSTAINED MEAN does not: 5.02t on the bow, 4.00t on the stone.**
+
+At a clean 4t the bow's 276-tick window would hold **69 intervals; 55 arrived — 80%.** On the stone,
+29 expected and **29 delivered**, perfect.
+
+**Two variables differ between the samples and NEITHER is controlled:**
+
+| candidate | |
+|---|---|
+| **the MATERIAL** | `bow` has a draw animation, `crossbow` a load — different use states |
+| **the SAMPLE LENGTH** | 276t against 116t; a longer hold has more opportunity to drop inputs |
+
+**Neither is chosen.** This is exactly the *"two weapons disagreeing is a finding"* case the row was
+built to surface — arriving in the mean rather than in the floor, which is why both figures are
+printed and neither is derived from the other.
+
+**It does not disturb Q7's answer**: the floor is the minimum, and the minimum agreed.
 
 ---
 
