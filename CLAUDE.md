@@ -333,6 +333,28 @@ So:
   > **Practically:** if a number is going next to measured numbers, run the command. If you cannot,
   > label it where it sits — `~20 (est.)` — never in a footnote the eye skips.
 
+- **A MEASUREMENT TAKEN FOR A LATER DECISION MUST CARRY THE REVISION IT WAS TAKEN AT AND THE EVENT
+  THAT INVALIDATES IT.** **Age is not visible on a number.** The figure that is right today and
+  quietly wrong on the day it is used is **indistinguishable from the figure that was always wrong —
+  and it is read with more confidence, because someone measured it.**
+
+  > **Split the measurement by how it ages, because the halves need different treatment.**
+  > **DURABLE** facts are structural and are re-verified in one command; **PERISHABLE** facts are
+  > true of one tree and must be **re-measured** before use. A perishable figure with no stated
+  > expiry becomes a durable one by sitting still.
+  >
+  > **2026-09-12.** A deletion-impact measurement was taken at `2a3fb68` for a decision due days
+  > later, against a tree that will have gained weapons by then. Its golden-file attribution —
+  > `9 / 10 / 14` of `134` — has a **denominator that is a line count over a directory about to
+  > grow**: wrong the moment the next weapon ships, and wrong silently. Its structural half (`core`
+  > has no test resources, so no `core` test can load content) holds until someone adds a directory.
+  > **Same entry, same day, two completely different shelf lives.**
+  >
+  > **Practically:** head the section with the revision and the invalidating condition, in those
+  > words, and sort every figure under **DURABLE** or **PERISHABLE** before anyone has to guess. The
+  > invalidator is usually an *event*, not a date — "the next weapon that ships" is checkable;
+  > "probably stale by next week" is not.
+
 - **A MEASUREMENT OUTLIVES ITS FIXTURE, BUT ONLY IF THE RECORD SAYS THE FIXTURE IS GONE.** Deleting
   the thing a reading was taken on does not falsify the reading — it makes the reading
   **unverifiable, and indistinguishable from a stale one.** Restate the reading before removing its
