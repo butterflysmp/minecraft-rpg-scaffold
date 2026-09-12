@@ -71,6 +71,53 @@ import static org.junit.jupiter.api.Assertions.fail;
  * weapons without being told that two of three measurements just became unverifiable.</b> The
  * remedy on that day is in the failure message and in {@code NEXT.md}: restate the reading, note the
  * fixture is gone, then drop the row from this pin.
+ *
+ * <h2>MUTATION EVIDENCE — WHICH ROW GUARDS WHAT, MEASURED RATHER THAN ASSUMED</h2>
+ *
+ * <p>Each mutation was applied with both marker-grep halves checked and restored afterwards.
+ * <b>Read the columns, not the row count: two mutations both killing one row is single coverage
+ * counted twice.</b>
+ *
+ * <table>
+ *   <tr><th>mutation</th><th>axis</th><th>rows red</th></tr>
+ *   <tr><td>{@code MUT-COOLDOWN} — re-author {@code quiver_stone} 11 → 12</td><td>fixture</td>
+ *       <td><b>2</b> only</td></tr>
+ *   <tr><td>{@code MUT-DELETE} — remove {@code hunters_bow.yml}</td><td>fixture</td>
+ *       <td><b>2</b> only</td></tr>
+ *   <tr><td>{@code MUT-CEIL} — {@code ceil} → {@code floor} in the composition</td><td>composition</td>
+ *       <td><b>1 and 3</b></td></tr>
+ *   <tr><td>{@code MUT-GRID} — {@code INPUT_FLOOR_TICKS} 4 → 2</td><td>the measured constant</td>
+ *       <td><b>3 ONLY</b></td></tr>
+ * </table>
+ *
+ * <p><b>THE FIRST TWO MUTATIONS COVER ONE AXIS BETWEEN THEM</b> — rows 1 and 3 never load content, so
+ * no fixture mutation can reach them. The fixture axis is also the half <i>designed</i> to go red on
+ * deletion day, so evidence there covers the part that is scheduled to be deleted.
+ *
+ * <h2>AND {@code INPUT_FLOOR_TICKS} IS GUARDED BY EXACTLY ONE ROW, WHICH IS NOT THE ROW NAMED AFTER
+ * IT</h2>
+ *
+ * <p><b>{@code 4 → 2} is the unique blind mutation for rows 1 and 2, and it is the one a plausible
+ * edit would produce.</b> Every measured point is blind to a 2-tick grid — and the reason is exact:
+ * a 4-grid and a 2-grid disagree only when the authored value is <b>≡ 1 or 2 (mod 4)</b>, and
+ * <b>11, 15 and 16 are ≡ 3, 3 and 0.</b> Not one of the three can see the difference:
+ *
+ * <pre>
+ * 11 -> ceil(11/4)x4 = 12   and   ceil(11/2)x2 = 12
+ * 15 -> ceil(15/4)x4 = 16   and   ceil(15/2)x2 = 16
+ * 16 -> ceil(16/4)x4 = 16   and   ceil(16/2)x2 = 16
+ * </pre>
+ *
+ * <p>{@code 4 → 8}, {@code 4 → 3} and {@code 4 → 1} are all caught by row 1. <b>Only {@code 2}
+ * survives it</b> — and it is killed solely by {@link
+ * #theAttackSpeedDeadZoneOnTheBoltorRunsToOnePointTwoEight}, via {@code (16, 1.20)}: effective 13,
+ * which is 16 on a 4-grid and 14 on a 2-grid.
+ *
+ * <p><b>So a guard lives in the row nobody thinks is the guard.</b> That row is documented as a
+ * balance consequence that <i>"asserts no opinion"</i> — and if the dead zone is later ruled,
+ * softened, or lifted out pending a ruling, <b>the grid constant silently loses its only protection
+ * while rows 1 and 2 stay green.</b> The row is marked LOAD-BEARING at its own javadoc so that
+ * removing it is visibly a decision about the mechanism rather than about balance.
  */
 class HeldFireQuantisationPinTest {
 
@@ -180,6 +227,35 @@ class HeldFireQuantisationPinTest {
      * <p>Recorded as an open balance finding in {@code boltor.yml}; pinned here so the arithmetic
      * behind it cannot drift unnoticed. <b>It is Ben's to rule and this test asserts no opinion about
      * whether the dead zone is acceptable</b> — only that it is where it is measured to be.
+     *
+     * <h2>LOAD-BEARING FOR {@code INPUT_FLOOR_TICKS}. DO NOT REMOVE THIS ROW WITH THE DEAD-ZONE
+     * RULING.</h2>
+     *
+     * <p><b>This row is the ONLY guard of the 4-tick grid constant</b>, and that is not what it is
+     * named after. Measured by mutation: {@code INPUT_FLOOR_TICKS} 4 → 2 leaves
+     * {@link #theModelReproducesEveryMeasuredPoint} and {@link
+     * #everyPinnedFixtureStillCarriesTheCooldownItsReadingWasTakenAt} <b>green</b>, because all three
+     * measured points already land on a 2-tick grid. It reddens <b>here</b>, on {@code (16, 1.20)} —
+     * effective 13, which quantises to 16 on a 4-grid and 14 on a 2-grid.
+     *
+     * <p><b>So if the dead zone is ruled on, softened, or lifted out pending a ruling, the grid
+     * constant loses its only protection and nothing goes red.</b> Whoever removes this row is making
+     * a decision about the MECHANISM, not about balance, and must replace the guard first.
+     *
+     * <p><b>The cheapest replacement, and the condition is NOT "an odd cooldown" — that was checked
+     * and it is wrong.</b> A 4-grid and a 2-grid disagree exactly when the authored value is
+     * <b>≡ 1 or 2 (mod 4)</b>:
+     *
+     * <pre>
+     *  9 -> 12 / 10   13 -> 16 / 14   17 -> 20 / 18     DISTINGUISH   (n mod 4 = 1 or 2)
+     * 10 -> 12 / 10   14 -> 16 / 14   18 -> 20 / 18
+     * 11 -> 12 / 12   15 -> 16 / 16   16 -> 16 / 16     blind         (n mod 4 = 3 or 0)
+     * </pre>
+     *
+     * <b>All three measured points are ≡ 3 or 0, which is precisely why they are blind</b> — 11 and
+     * 15 are odd and still blind, so "pick an odd cooldown" would send the next person to another
+     * blind value. One assertion at {@code AttackSpeed.BASE} on any cooldown ≡ 1 or 2 (mod 4)
+     * restores the guard.
      */
     @Test
     void theAttackSpeedDeadZoneOnTheBoltorRunsToOnePointTwoEight() {
