@@ -149,13 +149,97 @@ public final class WeaponLoader {
      * failure both checks exist to prevent. A key is only meaningful at its own level.
      *
      * <p><b>This layer matters MORE than the top level, not less, and the worked example is worse
-     * than "the wrong cadence".</b> {@code cooldown_ticks} lives here and IS the weapon's fire rate.
+     * than "the wrong cadence".</b> {@code cooldown_ticks} lives here and is the weapon's fire rate
+     * under SINGLE presses -- under HELD fire it is a LOWER BOUND that quantises, see below.
      * Misspell it and the trigger takes the {@code getInt} default of <b>0</b>, and
      * {@code AbilityService.resolve} then raises it only to
      * {@code CastSpec.minimumCooldownTicks(cast)} -- which is <b>0 for every cast shape except
      * {@code Volley}</b>. Measured, by invoking it: {@code Ray}, {@code Projectile}, {@code Melee}
      * and {@code Self} all return 0; only {@code Volley} derives one (30, for the Cursed Emerald's
      * windup 20 + (6-1) x 2).
+     *
+     * <h2>UNDER HELD FIRE, {@code cooldown_ticks} HAS 4-TICK GRANULARITY. MEASURED 2026-09-12.</h2>
+     *
+     * <p><b>An authored {@code cooldown_ticks} is NOT the weapon's fire interval.</b> A fire needs an
+     * input AND an expired cooldown, and a held right-click delivers an input only every <b>4
+     * ticks</b> -- Q7's answer, measured on two weapons and two materials, {@code GATE-q7.md}. So the
+     * real interval is the cooldown <b>rounded UP to the next input</b>:
+     *
+     * <pre>
+     * ceil(11 / 4) x 4 = 12      quiver_stone measured min 12   EXACT
+     * ceil(15 / 4) x 4 = 16      hunters_bow  measured min 16   EXACT
+     * </pre>
+     *
+     * <p><b>So 9, 10, 11 and 12 all produce 12.</b> An author who writes 11 has written 12, and
+     * nothing in the schema says so -- which is why it is said here, at the key. Choose a fire rate
+     * in multiples of 4 or accept that the number authored is not the number delivered.
+     *
+     * <p><b>AND THE SAME QUANTISATION SWALLOWS ATTACK SPEED, WHICH REACHES A SHIPPED STAT.</b>
+     * {@code AttackSpeed.effectiveCooldownTicks} divides and rounds, and the result is then rounded
+     * up to the next input. On {@code hunters_bow} (authored 15): <b>1.1x and 1.2x both still fire
+     * at 16</b>; only 1.3x reaches 12. A player equipping a +10% attack-speed piece sees the stat
+     * sheet move and the weapon not move. <b>A falsified number shown to a player is the class this
+     * project treats as worst</b>, and it is recorded here rather than left for the first person who
+     * times it.
+     *
+     * <p><b>AND THE TOOLTIP REPORTS THE AUTHORED RATE, NOT THE DELIVERED ONE.</b>
+     * {@code WeaponLoreLines.rangedAttackSpeedLabel} is {@code String.format("%.1f", 20.0 /
+     * cooldownTicks)} over the AUTHORED cooldown, so it never sees the quantisation above. Executed
+     * across authored 4..40: <b>18 of those 37 values print a rate the weapon does not deliver</b>,
+     * and the error is worst exactly where a fast weapon lives -- authored <b>5 prints "4.0" while
+     * delivering 8t = 2.5/s, a 60% overstatement</b>; 9 prints "2.2" against 12t = "1.7".
+     *
+     * <p><b>It is right on both weapons that ship it today, and on one of them BY COINCIDENCE.</b>
+     * The Boltor's 16 is on the grid, so "1.3" is true by construction. {@code hunters_bow}'s 15
+     * computes 20/15 = 1.333 -> "1.3" while delivering 16t = 1.25/s -> "1.3": <b>the same digit for
+     * two different reasons</b>. So the identical line the two render in {@code golden-lore.txt} is
+     * not evidence the formula is sound -- it is the one case where being wrong and being right
+     * print the same character.
+     *
+     * <p><b>Which makes the multiples-of-4 rule above ALSO the tooltip-honesty rule.</b> The printed
+     * digit is true by construction exactly on the 4-tick grid, and true by rounding luck everywhere
+     * else. The property the line should hold is <b>the rate the weapon ACHIEVES, not the rate its
+     * authored cooldown implies</b>. <b>NOT FIXED HERE</b>: it is a shipped-content correctness
+     * issue wider than any one weapon and the remedy is the operator's. It is named at the key
+     * because this is where the quantisation that falsifies it is documented.
+     *
+     * <p>The nearest edit that would surface it is one someone has already been warned they might
+     * make, for an unrelated reason. {@code quiver_stone} is authored at <b>11</b> and renders no
+     * Attack Speed line only because its {@code on_hit} is a literal {@code damage} payload rather
+     * than {@code weapon_damage}; its file carries a loud <i>"DO NOT CHANGE THIS TO weapon_damage
+     * WITHOUT RE-CHECKING GATE-quiver.md V2"</i>. Make that change and the weapon begins printing
+     * "1.8" while firing at 12t ("1.7").
+     *
+     * <p><b>THE BOUNDARY IS MEASURED. 2026-09-12, {@code GATE-boltor.md} row 1: a cooldown of
+     * exactly 16 FIRES AT 16.</b> The comparison in {@code CooldownTracker.isReady} is {@code >=},
+     * and that is now a reading rather than a source-reading: the Boltor read
+     * {@code FIRES count 8, mean 16.00, min 16}, where {@code >} would have given 20.
+     *
+     * <p><b>So the rule above is complete and has no unmeasured case left:</b>
+     *
+     * <pre>
+     * fire interval = ceil(effective_cooldown / 4) x 4
+     *
+     *   11 -> 12   quiver_stone   measured   PRESERVED READING -- fixture in the deletion set
+     *   15 -> 16   hunters_bow    measured   PRESERVED READING -- fixture in the deletion set
+     *   16 -> 16   boltor         measured -- the only cooldown that could distinguish >= from >
+     * </pre>
+     *
+     * <p><b>DO NOT STRIP THE TWO ROWS MARKED {@code PRESERVED READING} DURING A DELETION SWEEP.</b>
+     * They name weapons that are scheduled for removal, so a sweep for <i>"references to weapons that
+     * no longer exist"</i> will meet them — and they are <b>not</b> references, they are
+     * <b>measurements taken on those weapons</b>. Deleting them does not falsify the model; it makes
+     * the model unverifiable, which is worse, because nothing then distinguishes it from a rule
+     * somebody guessed.
+     *
+     * <p><b>This paragraph is the ACCOUNT.</b> The pointer is in {@code CLAUDE.md}; the numbers are
+     * pinned executably in {@code HeldFireQuantisationPinTest}, which fails loudly if a fixture is
+     * deleted or re-authored and carries the restatement instruction in its failure message. <b>A
+     * sweep that edits this javadoc will not be caught by that test</b> — the two protect different
+     * things, which is why this warning is here rather than delegated to it.
+     *
+     * <p>A cooldown already on the grid fires on its own tick. {@code hunters_bow} could never have
+     * answered this: 15 quantises to 16 under <b>both</b> comparisons.
      *
      * <p>So on a HELD-FIRE QUIVER WEAPON -- a ray or a projectile, which is exactly what the Boltor
      * is -- <b>a misspelled cooldown key means NO COOLDOWN AT ALL.</b> The magazine empties as fast

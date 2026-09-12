@@ -7,6 +7,7 @@ import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
+import io.github.butterflysmp.rpg.core.combat.FireCadence;
 import io.github.butterflysmp.rpg.core.combat.Ignite;
 import io.github.butterflysmp.rpg.core.combat.DamageScale;
 import io.github.butterflysmp.rpg.core.combat.DamageWindow;
@@ -124,6 +125,7 @@ public final class RpgListeners implements Listener {
     private static final double VANILLA_LIVE_FLOOR = 1.0;
 
     private final CooldownTracker cooldowns;
+    private final FireCadence fireCadence;
     private final ResourcePool resources;
     private final ProfileService profiles;
     private final WeaponRegistry weapons;
@@ -186,7 +188,8 @@ public final class RpgListeners implements Listener {
      */
     private final Map<Material, BiFunction<Player, Block, Menu>> hijackedBlocks;
 
-    public RpgListeners(CooldownTracker cooldowns, ResourcePool resources, ProfileService profiles,
+    public RpgListeners(CooldownTracker cooldowns, FireCadence fireCadence,
+                        ResourcePool resources, ProfileService profiles,
                         WeaponRegistry weapons, ShieldRegistry shields, ArmorRegistry armor,
                         ToolRegistry tools,
                         WeaponService weaponService,
@@ -197,6 +200,7 @@ public final class RpgListeners implements Listener {
         this.plugin = plugin;
         this.recipes = recipes;
         this.cooldowns = cooldowns;
+        this.fireCadence = fireCadence;
         this.resources = resources;
         this.profiles = profiles;
         this.weapons = weapons;
@@ -478,7 +482,7 @@ public final class RpgListeners implements Listener {
         }
 
         WeaponFire.attempt(event.getPlayer(), "right_click", weapons, weaponService, adapters,
-                        cooldowns)
+                        cooldowns, fireCadence)
                 .ifPresent(result -> {
                     // Present == this weapon binds right_click. Suppress the vanilla interaction
                     // whether the special fired or was refused -- the player pressed the special.

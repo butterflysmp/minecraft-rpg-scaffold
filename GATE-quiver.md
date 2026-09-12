@@ -90,6 +90,19 @@ the cooldown. The method is unchanged and is written out above: set `cooldown_ti
 that is the configuration that ships. **Record the raw count and the window, not only the derived
 interval:** the division is recomputable, a remembered *"about five a second"* is not.
 
+> **DISCHARGED 2026-09-12, TWO SLICES LATER — and the method above is struck.** `GATE-q7.md` carries
+> the reading. **The input floor is 4 ticks**, measured on two weapons and two materials, by an
+> instrument (`/rpg firerate`) rather than by counting shots by hand — which is why it had been
+> deferred twice: the recipe ABOVE was un-runnable, and an un-runnable row gets deferred.
+>
+> **The answer went the direction this section feared it would not.** It reads above: *"If vanilla's
+> held-use repeat is slower than 7 ticks, the dual halving buys nothing."* **4t is faster than 7, so
+> slice C is cleared rather than blocked.**
+>
+> **And the reading found something nobody was looking for:** a fire needs an input AND an expired
+> cooldown, so an authored `cooldown_ticks` is **rounded up to the next 4-tick input** —
+> `ceil(11/4)x4 = 12` and `ceil(15/4)x4 = 16`, both measured exactly. The Boltor's 14 fires at 16.
+
 ### V5 remains the only row this gate cannot stage
 
 Unchanged and restated so the blanket does not appear to cover it: `UNSTAMPED`'s **verdict** is

@@ -8,6 +8,7 @@ import com.github.retrooper.packetevents.protocol.player.InteractionHand;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientAnimation;
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
+import io.github.butterflysmp.rpg.core.combat.FireCadence;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -43,14 +44,17 @@ public final class WeaponSwingListener extends PacketListenerBase {
     private final WeaponRegistry weapons;
     private final WeaponService weaponService;
     private final CooldownTracker cooldowns;
+    private final FireCadence fireCadence;
 
     public WeaponSwingListener(AdapterContext adapters, WeaponRegistry weapons,
-                               WeaponService weaponService, CooldownTracker cooldowns) {
+                               WeaponService weaponService, CooldownTracker cooldowns,
+                               FireCadence fireCadence) {
         super(adapters.scheduler(), PacketListenerPriority.NORMAL);
         this.adapters = adapters;
         this.weapons = weapons;
         this.weaponService = weaponService;
         this.cooldowns = cooldowns;
+        this.fireCadence = fireCadence;
     }
 
     @Override
@@ -106,7 +110,8 @@ public final class WeaponSwingListener extends PacketListenerBase {
             return;
         }
 
-        WeaponFire.attempt(player, "left_click", weapons, weaponService, adapters, cooldowns)
+        WeaponFire.attempt(player, "left_click", weapons, weaponService, adapters, cooldowns,
+                        fireCadence)
                 .ifPresent(result -> {
                     // THE COMPILER DID NOT HELP HERE, AND THE JAVADOC ABOVE PREDICTED THAT EXACTLY.
                     // Adding Empty and Reloading to the sealed CastResult broke the two exhaustive

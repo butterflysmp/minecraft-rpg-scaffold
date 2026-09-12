@@ -10,6 +10,7 @@ import io.github.butterflysmp.rpg.core.ability.CastExecutor;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
+import io.github.butterflysmp.rpg.core.combat.FireCadence;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
@@ -68,7 +69,8 @@ public final class WeaponFire {
                                                WeaponRegistry weapons,
                                                WeaponService weaponService,
                                                AdapterContext adapters,
-                                               CooldownTracker cooldowns) {
+                                               CooldownTracker cooldowns,
+                                               FireCadence cadence) {
         Optional<WeaponDefinition> held = WeaponItems.heldWeaponId(player, adapters.keys())
                 .flatMap(weapons::find);
         if (held.isEmpty()) return Optional.empty();
@@ -81,6 +83,32 @@ public final class WeaponFire {
         // what keeps the broken gate from widening the set of inputs this weapon consumes.
         Optional<TriggerBinding> binding = weapon.trigger(input);
         if (binding.isEmpty()) return Optional.empty();
+
+        // Q7's INPUT COUNTER. The click arrived and this weapon binds it -- BEFORE the broken gate,
+        // the quiver gate and the cooldown, so no gate can hide it. Counting here is what makes the
+        // reading possible without editing a content file: a magazine cannot limit an input either,
+        // which is why BOTH of Q7's original fixture edits are struck rather than only the cooldown
+        // one. See FireCadence.
+        //
+        // ONE CLAUSE OF THAT STRUCK RECIPE SURVIVES AND THIS LINE IS WHERE IT IS SATISFIED: the
+        // reading must be taken on a CANCELLED BINDING, because that is the configuration that
+        // ships. RpgListeners:485 cancels vanilla exactly when attempt returns PRESENT.
+        //
+        // AND THE EXCEPTION LIST IS PROVABLY COMPLETE RATHER THAN SURVEYED. After this line the
+        // paths are: broken -> present, quiver refusal -> present, isVanillaDriven -> EMPTY, then
+        // `return result`. And result CANNOT be empty here -- WeaponService.fire is
+        // `weapon.trigger(input).map(...)` and the line above has already proven trigger(input)
+        // present. So isVanillaDriven is the ONLY empty-returning path after this counter, by
+        // construction; there cannot be a second.
+        //
+        // THAT EXCEPTION CANNOT BE REACHED BY THE WEAPON Q7 IS ABOUT, AND THE REASON IS THE CAST
+        // SHAPE, NOT THE INPUT. BasicMelee.isVanillaDriven is
+        // `isBasicAttack(onHit) && cast instanceof CastSpec.Melee` -- the input is NOT in the
+        // predicate, so nothing stops a weapon binding right_click to a Melee cast and reaching it.
+        // A RANGED weapon cannot, because its cast is Ray or Projectile and never Melee. That
+        // reason stays true if someone later binds a melee ability to right_click; "it is a
+        // left-click concern" would not.
+        cadence.record(player.getUniqueId(), input, FireCadence.Kind.INPUT, weapon.id());
 
         // THE BROKEN GATE, for both entry points at once -- the packet swing and the interact
         // handler both arrive here. Before the snapshot and before weaponService.fire, so a broken
@@ -133,6 +161,11 @@ public final class WeaponFire {
         Optional<CastResult> result = weaponService.fire(caster, weapon, input, aim);
         result.ifPresent(r -> {
             if (r instanceof CastResult.Success success) {
+                // Q7's FIRE COUNTER, the other half of the pair. Reached only on a real Success --
+                // every refusal has already returned -- so inputs minus fires is exactly what the
+                // gates took. A single number could not say WHICH gate, which is why there are two.
+                cadence.record(player.getUniqueId(), input, FireCadence.Kind.FIRE, weapon.id());
+
                 // SPEND THE ROUND, on the caster's own thread and only on a Success.
                 //
                 // HERE rather than on CastExecutor's use listener, and the reason is a measurement

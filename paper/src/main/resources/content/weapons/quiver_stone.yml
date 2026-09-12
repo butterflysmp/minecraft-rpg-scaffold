@@ -7,8 +7,18 @@
 # needing rpg.command.give. The argument is volley_stone's, unchanged: gating a mechanism REQUIRES
 # a content file that uses it, and a content file whose only purpose is to exercise a mechanism is
 # a test fixture. Shipping the Boltor early "just to test with" would be the content slice arriving
-# through the back door with none of its decisions made -- its damage in particular is UNRULED, and
-# GATE-boltor.md (slice B) is the authority that will rule it.
+# through the back door with none of its decisions made -- its damage in particular was UNRULED.
+#
+# THAT HELD, AND THE BOLTOR HAS NOW ARRIVED THE OTHER WAY. weapons/boltor.yml ships with all six of
+# its numbers ruled by the operator before a line was authored, damage included (19). This file
+# stays: it is still the fixture the mechanism gates against, and it still measures rather than
+# balances.
+#
+# ONE CLAUSE ABOVE WAS WRONG AND IS CORRECTED RATHER THAN QUIETLY DROPPED: it named GATE-boltor.md
+# as "the authority that will rule it". A GATE IS NOT AN AUTHORITY OVER A BALANCE NUMBER. It reads
+# what shipped and reports it; the operator rules. GATE-boltor.md's first row is a MEASUREMENT --
+# the 4-tick boundary at a cooldown of exactly 16 -- and it never had the standing this sentence
+# gave it.
 #
 # ITS NUMBERS ARE DELIBERATELY NOBODY ELSE'S, and the set they were checked against is named rather
 # than merely claimed. Swept: every file in content/weapons/ (ability_stone, cursed_emerald,
@@ -104,10 +114,31 @@ triggers:
     description:
       - "One bolt, and one fewer"
       - "than you had a moment ago."
-    # THE FIRE RATE. Deliberately short, because this trigger's job is to let the held-input repeat
-    # interval become the limiter if the repeat is slower than this -- which is exactly the number
-    # the gate is trying to find. If the observed interval exceeds 11 ticks, the repeat rate IS the
-    # measurement, and the Boltor's 14-single / 7-dual numbers have to be judged against it.
+    # THE FIRE RATE. Deliberately short, because this trigger's job was to let the held-input repeat
+    # interval become the limiter if the repeat was slower than this -- which is exactly the number
+    # the gate was trying to find.
+    #
+    # IT HAS BEEN FOUND, AND ON THIS WEAPON. Q7, 2026-09-12, GATE-q7.md: the held input arrives every
+    # 4 ticks, faster than 11, so the cooldown IS the limiter here. But the two do not compose the
+    # way this comment assumed -- a fire needs an input AND an expired cooldown, so the interval is
+    # the cooldown rounded UP to the next input:
+    #
+    #     ceil(11 / 4) x 4 = 12       measured on this weapon: min 12, mean 12.00, ZERO VARIANCE
+    #
+    # SO THIS WEAPON FIRES AT 12, NOT 11, AND 9 THROUGH 12 WOULD ALL PRODUCE 12. The number below is
+    # not the number delivered, and that is a property of held fire rather than of this fixture --
+    # see WeaponLoader's cooldown_ticks section, where an author will meet it.
+    #
+    # THE BOLTOR'S 14-single / 7-dual WERE NEVER AUTHORED, AND THIS LINE PREDICTED THE WRONG WEAPON.
+    # It read "14 fires at 16, 7 fires at 8" -- arithmetic that is still correct, about numbers the
+    # operator then did not rule. The Boltor ships at cooldown_ticks 16, chosen because only
+    # multiples of 8 survive a dual halving intact (14 -> 7 delivers 8, a 1.75x not a 2x).
+    #
+    # AND 16 LANDS ON THE ONE CASE THIS READING COULD NOT COVER. Both measured cooldowns (11 here,
+    # 15 on the bow) rounded up to a STRICTLY LARGER input, so the >= / > boundary never arose. At
+    # an exact multiple of 4 it does: 16 fires at 16 if the check is >=, at 20 if it is >.
+    # GATE-boltor.md's first row is that reading, and nothing downstream is priced on 16 until it
+    # is taken.
     cooldown_ticks: 11
     cast:
       # A RAY, like the Boltor and unlike either other fixture -- so the thing being measured is the

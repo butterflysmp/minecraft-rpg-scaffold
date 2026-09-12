@@ -82,6 +82,28 @@ core — what to DO — and leaving the persuasion, the worked example and the d
 **Overturnable.** The opposite convention — everything in `NEXT.md`, pointers here — keeps this file
 short, and if it grows past being readable in one sitting that is the trade to revisit.
 
+### AND THE GENERAL FORM, BECAUSE TWO HOMES IS NOT ONLY A `CLAUDE.md`/`NEXT.md` PROBLEM
+
+**WHEN ONE RULE MUST APPEAR TWICE, ONE COPY IS THE POINTER AND ONE IS THE ACCOUNT, AND EACH SAYS
+WHICH IT IS.**
+
+- **The pointer carries the form that changes what you do, and nothing else.**
+- **The account carries the mechanism, the measurements and the consequences.**
+
+**TWO ACCOUNTS DRIFT INTO DISAGREEMENT AND NEITHER IS THEN TRUSTWORTHY** — a reader who finds two
+explanations of one rule has no way to tell which was updated. **And a pointer that has grown a second
+explanation has become an account: cut it back.**
+
+**Two tests it must pass, and they are the reason the split works:**
+
+- **The pointer must be obeyable without opening the account.** *"Author multiples of 4; multiples of
+  8 if it may ever be dual-wielded"* can be followed by someone who never reads the mechanism. **A
+  pointer that needs its account to be useful is a broken copy, not a pointer.**
+- **The pointer names a SECTION, never a line.** `WeaponLoader`'s `cooldown_ticks` section, not
+  `WeaponLoader.java:175`. A line citation is falsified by any insertion above it, silently and
+  invisibly to every test — this repo carries an open finding measuring that blast radius at ~140
+  sites, produced by exactly the other choice.
+
 ## VERIFICATION — a check that did not run looks exactly like a check that passed
 
 **Verify a check ran before believing it passed.**
@@ -104,6 +126,17 @@ than one that never ran, because you now believe you checked.
 > independent quantities in a row are equal, at least one of them is not being tested.** Ask what the
 > row does if the rule it checks is deleted; if the answer is "the same thing", it is measuring the
 > fixture. Full entry in `NEXT.md`, beside its red-side twin.
+>
+> **AND IT APPLIES TO EXPECTED VALUES, NOT ONLY TO FIXTURE INPUTS — WHICH IS THE COLLISION SWEEP,
+> POINTED AT TEST DATA.** `content/`'s numbers are swept so a bare gate reading is unambiguous;
+> **a test row's expected values need the same property, and for the same reason.** Two expected
+> values that collide cannot detect a **transposition** between them — swap the two quantities in the
+> code and the row still passes, because both readings are the same number.
+>
+> **2026-09-12, the elapsed figure.** One event at tick 100, read at 340, gives `window 0` against
+> `elapsed 240`. Staged at a tick where they happened to agree, the row would have survived a
+> window/elapsed swap — **and that swap is precisely what `MUTSWAP` was written to catch.** Choose the
+> staging so no two quantities the row reads are equal, then a transposition has nowhere to hide.
 
 This is a distinct failure from the four below, not a variant of them. Those are checks
 that never ran. This is a check that ran, fired, and got talked out of. It survives
@@ -148,6 +181,25 @@ So:
   > When an in-place edit no-ops, do not retry it with a cleverer pattern. Splice by line
   > number (`head`/`sed -n`/`tail` into the file) and re-grep. Retrying an edit that
   > reports success while doing nothing is how the same failure survives three attempts.
+- **A WRONG DIAGNOSIS OF A BLIND SPOT IS WORSE THAN THE BLIND SPOT.** The blind spot is silent; the
+  diagnosis is **silent AND believed.** A wrong assertion goes red — **wrong advice about the next
+  guard sends the next person to a value that passes while guarding nothing, and they leave
+  satisfied.**
+
+  > **COMPUTE THE CLASS, DO NOT CHARACTERISE IT.** *"The values that are blind"* is a set **with a
+  > definition**, and a description that happens to fit the three examples in front of you **is not
+  > that definition.**
+  >
+  > **2026-09-12.** Having found that all three measured cooldowns were blind to a `4 → 2` grid
+  > mutation, the replacement guard was described as *"any cooldown that is not a multiple of 2"* —
+  > plausible, and **wrong**: `11` and `15` are odd and blind. Computed, the grids disagree exactly
+  > when the authored value is **≡ 1 or 2 (mod 4)**, and the three points are `≡ 3, 3, 0` — *which is
+  > why they are blind*, a fact the characterisation missed entirely. **Anyone following the wrong
+  > advice would have added a green test that guarded nothing.**
+  >
+  > **Practically:** enumerate the set over a range and read off the rule. Three examples are not a
+  > class, and the cheapest way to find that out is a loop.
+
 - Before believing a **test guards** something, **break the thing and watch it fail.**
   A test that cannot fail is worth nothing, however green.
 
@@ -252,6 +304,21 @@ So:
   The wire SHA, the tree SHA, the blob SHA and `--numstat` all answer *did what I think landed,
   land?* — and every one of them reconciles perfectly around a splice that ate the wrong lines.
 
+  > **AND A HASH MUST SAY WHAT IT HASHED.** Working tree or blob, and with which line endings. **An
+  > integrity figure whose subject is unstated cannot be reproduced by a second party, which is the
+  > only thing an integrity figure is for.**
+  >
+  > **2026-09-12.** A report proved a mutated file restored by quoting `md5sum` of the **working
+  > tree**. The reader compared it against the **blob** at `origin` and got a different value — with
+  > no discrepancy in the content, because **the file is mixed CRLF/LF**. So in a report *about a
+  > line-ending defect*, the integrity figure offered as proof was the one figure that defect makes
+  > uncheckable from the remote.
+  >
+  > **Practically: prefer the absence.** The proof was already in the same report — the file was
+  > **not listed by `git diff --numstat`**, and *a file absent from the diff is byte-identical by
+  > construction*. **Cite the absence, not the hash**: it needs no subject, no encoding, and no
+  > second party's trust.
+
   > **2026-09-11, `443c086`.** A `head`/`tail` splice into `GATE-quiver-a2.md` deleted its two
   > opening lines — **`**Status: NOT RUN.**` and the sentence recording that the rows were written
   > before any boot** — and pasted a later section's heading into the masthead in their place. The
@@ -276,6 +343,123 @@ So:
   > commit was a new member of the set being counted. The page said *fourteen*, then *nine shown*
   > and *six not shown*, two clauses apart. **Adding a row and fixing the count in the same edit
   > changes the set the count is over.**
+  >
+  > **AND A RANGE IS EXCLUSIVE AT ITS BASE, WHICH IS WHERE THE OFF-BY-ONE LIVES.** State a commit
+  > count as `git rev-list --count A..B`, or as the number of lines in the log you are about to
+  > paste — **never as a number you formed by looking at the range.** `A..B` excludes `A`.
+  >
+  > **2026-09-12, measured across four reports: two were wrong, both by exactly +1.** The two that
+  > were right were the two counted off the accompanying table; the two that were wrong were formed
+  > from the range. **A repeated +1 is a mechanism, not a slip** — and in both failures the prose
+  > number disagreed with the table printed directly beneath it, so *adding the parts up* would have
+  > caught it with no command at all. Same family as *eight shots span seven intervals*.
+
+- **AN EXIT STATUS PROVES A PROCESS ENDED, NEVER THAT IT DID ITS WORK. CHECK THE ARTEFACT, NOT THE
+  INVOCATION.** When a command's job is to WRITE something — regenerate a golden file, emit a report,
+  produce a jar — the thing to read is the file it was told to write, not the status it returned.
+
+  > **2026-09-12.** A `golden-lore.txt` regenerate ran, did not fail, and **wrote nothing.** It was
+  > caught by `git status` on the FILE, which showed the path unmodified in a commit that had just
+  > added a weapon — a commit in which the golden could not possibly be unchanged. Nothing about the
+  > invocation said so.
+  >
+  > **This is the third member of a family already on this page twice, and the three differ by where
+  > the lie sits.** *Zero-exit is not evidence* below is this sentence scoped to a scripted EDIT.
+  > **AN INTEGRITY FIGURE PROVES WHICH BYTES** above is it one layer in, where the file did change and
+  > changed wrongly. This is the outermost case: **the file did not change at all — so every figure
+  > computed over it is correct, reconciles perfectly, and is about the old content.**
+  >
+  > **The asymmetry that makes it quiet: a golden that was never regenerated still matches the code it
+  > was last generated from.** The suite comparing them is green because both failed to move. A silent
+  > no-op and a correct run are the same picture until someone else's diff.
+  >
+  > **Practically:** after any command whose output is a file, run `git status --porcelain <path>` —
+  > and decide *before* running it which answer you expect. When you have just changed an input,
+  > ***unmodified* is the alarming answer**, and it is the one that looks like nothing went wrong.
+
+- **AN ESTIMATE PLACED BESIDE MEASUREMENTS BECOMES ONE. PROXIMITY LAUNDERS IT.** A number you
+  eyeballed, printed in a column of numbers you measured, is indistinguishable from them and inherits
+  their authority. Either measure it too, or mark it as an estimate *in the same cell*.
+
+  > **2026-09-12.** A held-changes table listed five files with their line deltas. Four came from
+  > `git diff --numstat`. The fifth — `PLAN-boltor.md +23` — was eyeballed off the edit and never
+  > measured; staging reported **`+21`**. **Nothing in the table marked which was which**, and it
+  > surfaced only because the file was later committed and the real number printed itself.
+  >
+  > **The laundering runs one way and that is what makes it worth a rule.** The four measured rows
+  > lent the fifth their credibility; the fifth did not visibly borrow anything. **Alone, the same
+  > number would have been read as the guess it was.**
+  >
+  > **The correct handling is in the same session, one decision later**, and is the reason this is
+  > stated as a rule rather than an apology: an open finding quoted three measured counts and then
+  > **declined to estimate** what fraction were already stale, *because an estimate there would have
+  > been indistinguishable from the three above it.* **Naming a probe someone can run beats supplying
+  > a number nobody can check.**
+  >
+  > **Practically:** if a number is going next to measured numbers, run the command. If you cannot,
+  > label it where it sits — `~20 (est.)` — never in a footnote the eye skips.
+
+- **AND ITS SIBLING ON THE OTHER AXIS: DESCENT LAUNDERS. A NUMBER DERIVED FROM A PLACEHOLDER BECOMES
+  A PRECEDENT.** Proximity launders across a *page*; descent launders across *time*. **Nobody
+  re-decides an inherited figure** — they derive the next one from it.
+
+  > **THE REASON IT IS INVISIBLE: EVERY INDIVIDUAL STEP IS HONEST.** Each generation is one defensible
+  > derivation from the last, so **no step is the one where the error entered.** Auditing any single
+  > link finds nothing wrong. The arbitrariness is in the root, and the root is usually gone by the
+  > time anyone asks.
+  >
+  > **2026-09-12.** The Boltor's `attack_damage` was first anchored on `ironblade` — **a dev weapon,
+  > not balanced meaningfully.** The operator ruled `19` **outright** instead, and the stated reason
+  > was not "wrong anchor" but that **a comparison had been used as a source.** Had `19` been derived,
+  > it would have become the Ranger tier's reference point, and `ironblade`'s arbitrariness would have
+  > **outlived `ironblade`** — which is now scheduled for deletion.
+  >
+  > **Practically:** when you reach for a precedent, ask **what the precedent was itself derived
+  > from**, and stop at the first number nobody ruled. **Never derive a new weapon's numbers from a
+  > dev weapon's**; parity with a placeholder is parity with nothing. If a figure must be inherited,
+  > say whose ruling it descends from, so the chain can be walked back.
+
+- **A MEASUREMENT TAKEN FOR A LATER DECISION MUST CARRY THE REVISION IT WAS TAKEN AT AND THE EVENT
+  THAT INVALIDATES IT.** **Age is not visible on a number.** The figure that is right today and
+  quietly wrong on the day it is used is **indistinguishable from the figure that was always wrong —
+  and it is read with more confidence, because someone measured it.**
+
+  > **Split the measurement by how it ages, because the halves need different treatment.**
+  > **DURABLE** facts are structural and are re-verified in one command; **PERISHABLE** facts are
+  > true of one tree and must be **re-measured** before use. A perishable figure with no stated
+  > expiry becomes a durable one by sitting still.
+  >
+  > **2026-09-12.** A deletion-impact measurement was taken at `2a3fb68` for a decision due days
+  > later, against a tree that will have gained weapons by then. Its golden-file attribution —
+  > `9 / 10 / 14` of `134` — has a **denominator that is a line count over a directory about to
+  > grow**: wrong the moment the next weapon ships, and wrong silently. Its structural half (`core`
+  > has no test resources, so no `core` test can load content) holds until someone adds a directory.
+  > **Same entry, same day, two completely different shelf lives.**
+  >
+  > **Practically:** head the section with the revision and the invalidating condition, in those
+  > words, and sort every figure under **DURABLE** or **PERISHABLE** before anyone has to guess. The
+  > invalidator is usually an *event*, not a date — "the next weapon that ships" is checkable;
+  > "probably stale by next week" is not.
+
+- **A MEASUREMENT OUTLIVES ITS FIXTURE, BUT ONLY IF THE RECORD SAYS THE FIXTURE IS GONE.** Deleting
+  the thing a reading was taken on does not falsify the reading — it makes the reading
+  **unverifiable, and indistinguishable from a stale one.** Restate the reading before removing its
+  instrument, or lose it.
+
+  > **2026-09-12.** The input-quantisation model — `fire interval = ceil(effective / 4) x 4` — rests
+  > on three measured points: `11 -> 12` on `quiver_stone`, `15 -> 16` on `hunters_bow`, `16 -> 16`
+  > on the Boltor. **Two of the three sit on weapons in a pending deletion set**, and the survivor is
+  > the one that cannot by itself distinguish the rule from a coincidence at 16.
+  >
+  > **The asymmetry is what makes this worth a rule.** A deleted fixture leaves the reading TRUE and
+  > UNCHECKABLE. Nothing fails, no test reddens, no grep lists it — the next reader simply finds
+  > citations to weapons that do not exist and **has no way to tell a preserved measurement from an
+  > abandoned one.** That is the same picture as a stale figure, arrived at by an honest route.
+  >
+  > **Practically:** before deleting anything a reading was taken on, restate every reading in one
+  > place, each carrying **the fixture it was taken on, the date, and the note that the fixture was
+  > subsequently deleted.** The third field is the one that does the work; without it the first two
+  > read as an oversight.
 
 - **PROSE REACHING A COMMAND GOES THROUGH A FILE, NEVER THROUGH QUOTING.** `git commit -F <file>`,
   `gh pr create --body-file`, `gh pr merge --body-file`, a written file for anything else. Never
@@ -337,12 +521,17 @@ The rule underneath all three: **silence is not a result.** An instrument that o
 either found nothing or done nothing, and those are the same picture.
 
 
-### THE FIVE WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
+### THE SEVEN WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
 
 The first three were hit in one slice (2026-09-08, elements); the fourth and fifth arrived on
 2026-09-09, Ignite — **from two different mechanisms, one commit apart**, which is the evidence that
-this is a family and not a run of bad luck. They are one table because the shape only becomes visible
-together: **each guard catches the previous failure and cannot see the one below it.**
+this is a family and not a run of bad luck. The sixth followed on 2026-09-10 and the seventh on
+2026-09-12. They are one table because the shape only becomes visible together: **each guard catches
+the previous failure and cannot see the one below it.**
+
+**Rows one to six are BROKEN EDITS — the mutation did not do what was written. The seventh is not:
+there the edit is perfect and the CONCLUSION drawn from it is too broad.** So the table has two
+halves, and no amount of care with `perl` reaches the second.
 
 | failure | what happened | what catches it |
 |---|---|---|
@@ -352,6 +541,7 @@ together: **each guard catches the previous failure and cannot see the one below
 | **applied, no bite** | the edit landed and the test stayed green — the assertion matched a *duplicate* of the mutated token | **nothing mechanical** — only reading the red you expected and not getting it |
 | **applied, wrong side** | the test passed on an accident (a floating-point coincidence; an undefended victim where `dealt == amount`) rather than on the thing it guards | **nothing at all** — only designing the fixture so the two values differ |
 | **APPLIED TOO WIDELY** | a scope guard that **silently did not bind**: `perl -i -pe 's{A}g; s{B}g if $. >= L && $. <= L+35'` — **the `if` binds ONLY to the last statement in the chain**, so `s{A}` ran over the whole file | **NOTHING in the marker grep — BOTH halves pass.** Only a measured line/byte delta, or `git diff --numstat`, sees it |
+| **APPLIED, BIT, AND CERTIFIED ONE AXIS OF TWO** | the expression had **more than one degree of freedom** and the mutation moved one. `now - lastTick` names two: *which endpoint* (first/last) and *which reference* (now/last event). One splice reddened rows and proved only its own axis | **nothing mechanical, and the RED makes it worse** — only counting the axes in the expression before counting the mutations |
 
 > **THE SIXTH ROW IS THE MIRROR IMAGE OF THE FIRST, AND ONE INSTRUMENT CANNOT COVER BOTH.**
 > *Didn't apply* is **too little**; *applied too widely* is **too much**. The marker grep sees the
@@ -368,6 +558,78 @@ together: **each guard catches the previous failure and cannot see the one below
 > — luck of the fixture, the same *"by luck of ordering, not by design"* that caught the third
 > instrument in the table above. Restored byte-identical from a scratchpad copy and redone with an
 > editor on the specific lines.
+
+> **THE SEVENTH ROW IS THE ONLY ONE WHERE THE MUTATION WORKED PERFECTLY, AND THAT IS WHAT MAKES IT
+> HARD TO SEE.** Rows one to six are broken edits. Here the edit applies, is scoped correctly, bites,
+> and reddens exactly the row written for it. **It is a partial test wearing a complete one's
+> colour** — and it is the most convincing kind, because a red result reads as proof and the report
+> carries a number.
+>
+> **THE GENERAL FORM: A MUTATION MOVES ONE AXIS OF AN EXPRESSION THAT HAS MORE THAN ONE.**
+>
+> ```
+> sinceLastEventTicks = currentTick - running.lastTick     TWO degrees of freedom:
+>   which endpoint    first vs last        <- one splice moves this
+>   which reference   now   vs last event  <- and says nothing about this
+> ```
+>
+> **2026-09-12, the elapsed figure.** `MUTELAPSED` (last → first) reddened **1 of 12**. Reported
+> alone it would have read as a verified mutation. `MUTSWAP` (now → last event) then reddened **3 of
+> 12** — and **two of those three rows are invisible to `MUTELAPSED` by construction**, because they
+> stage a single event, where `firstTick == lastTick` and the two implementations are numerically
+> identical. One splice could not have reached them at any fixture.
+>
+> **THE TELL, AND IT COSTS NOTHING: COUNT THE AXES BEFORE COUNTING THE MUTATIONS.** If the expression
+> names two quantities and a relation between them, one splice cannot certify all of it. This is the
+> neighbour of *a control that succeeds for the wrong reason* and is **not** that: this control
+> succeeds for the **right** reason, over too small a set.
+
+> **AND THE COROLLARY OF THE SEVENTH ROW: A ROW CAN BE THE ONLY GUARD OF SOMETHING IT DOES NOT
+> MENTION.** Counting axes tells you how many mutations to run. This tells you how to read the
+> results. **Coverage is a property of what a mutation KILLS, not of what a test is NAMED AFTER** —
+> so the map from row to guarantee has to be measured, and it is routinely not what the names suggest.
+>
+> **2026-09-12, `HeldFireQuantisationPinTest`.** Four mutations over three rows:
+>
+> ```
+> MUT-COOLDOWN  fixture re-authored     -> row 2 only
+> MUT-DELETE    fixture removed         -> row 2 only      two mutations, ONE axis
+> MUT-CEIL      ceil -> floor           -> rows 1 and 3
+> MUT-GRID      INPUT_FLOOR_TICKS 4->2  -> ROW 3 ONLY
+> ```
+>
+> **The constant's sole guard is the row documented as a balance consequence that "asserts no
+> opinion".** Rows 1 and 2 are blind to it: a 4-grid and a 2-grid disagree only where the authored
+> value is ≡ 1 or 2 (mod 4), and all three measured points are ≡ 3 or 0. **Rule the balance question
+> and the mechanism loses its protection, with nothing going red.**
+>
+> **Practically:** when a mutation kills fewer rows than you expected, do not move on — **ask which
+> row is now the only thing holding that behaviour, and say so in that row's own javadoc.** A test
+> that quietly became load-bearing for something outside its name is deleted by the next person
+> tidying up.
+
+> **AND THE INVERSE, WHICH THE SAME MATRIX EXPOSED: MUTATION COVERAGE MEASURES GUARDING. SOME ROWS
+> EXIST TO RECORD.** **A row with no unique kill is not thereby removable.** The question is **what
+> is lost if it goes**, not what it catches.
+>
+> **A coverage metric cannot see provenance.** So a row whose job is to make a measurement executable
+> will always look redundant to it — and **will look most redundant exactly when its fixtures are
+> about to disappear**, which is the moment it is most needed.
+>
+> **2026-09-12, same file, opposite failure.** In `HeldFireQuantisationPinTest`, **every mutation that
+> reddens row 1 also reddens row 3**, so row 1 has *no unique kill at all* and a sweep would mark it
+> removable. Row 1 is the row holding the three measured readings — the provenance, and the half that
+> cannot be re-derived once the fixtures are deleted.
+>
+> ```
+> row 3   sole killer MUT-GRID   reads as "a balance consequence"     IS the only guard of a constant
+> row 1   NO unique killer       reads as "redundant, prune it"       IS the only record of a reading
+> ```
+>
+> **The two are a pair and they fail in opposite directions: a guard nobody would name as one, and a
+> record that reads as a redundant guard.** Both are invisible to the framing people use when pruning
+> tests. **Mark each in its own row**, not only in the class header — the person deleting a row is
+> reading the row.
 
 > **ROWS TWO AND THREE ARE WHY THE MARKER GREP IS TWO CHECKS, AND WHY YOU NEED BOTH HALVES.** They
 > fail in opposite directions and each half catches exactly one of them:
@@ -513,6 +775,40 @@ the opposite because the material suggests it.**
   > from the material, written **nine days after** `347967b` capped the mint at 1, and wrong on the
   > day it landed. It shipped in one PR and was copied into `lapis_staff.yml` in the next. Only a
   > gate row that physically stacked two staves caught it.
+
+- **NEW CONTENT CITES THE BOLTOR, NOT `hunters_bow`, `ironblade` OR `quiver_stone`.** Those three are
+  **in a deletion set** (ruled 2026-09-12, parked on *enough shipped weapons to replace them* — see
+  `NEXT.md`). Every citation of one written between now and then is a comment that will point at a
+  file that does not exist.
+
+  **When a dev weapon is genuinely the only precedent, cite it AND MARK the citation** as standing on
+  a weapon in the deletion set, so the eventual sweep finds it by **grepping for the marker** instead
+  of re-deriving the reference graph.
+
+  > **THE PLAN HAS A LOOP IN IT AND THIS IS THE FREE HALF OF THE FIX.** The precondition for deleting
+  > the dev weapons is **more real weapons** — and new weapons are also **what adds references to the
+  > dev weapons**, because the dev weapons are the precedents new prose derives from. `boltor.yml`,
+  > the newest weapon in the project, **cites all three.** So every weapon authored between now and
+  > the deletion raises the deletion's cost.
+  >
+  > It compounds quietly because it is **staleness, not breakage**: nothing fails, nothing is listed,
+  > and the bill arrives later as a sweep nobody scoped. Measured at `2a3fb68`: **every mention of
+  > these three in `main` is a comment except one**, so the deletion's real cost is prose, not code.
+
+  **TWO THINGS TO KNOW ABOUT THE BOLTOR, SINCE IT IS NOW THE REFERENCE POINT:**
+
+  - **Its numbers are RULED, not derived** — `quiver_size 8`, `cooldown_ticks 16`, `range 96`,
+    `reload_ticks 60`, `attack_damage 19`. **`19` was ruled outright BECAUSE deriving it from
+    `ironblade` was wrong**: `ironblade` is a dev weapon and is not balanced meaningfully.
+    **So: never derive a new weapon's numbers from a dev weapon's.** Parity with a placeholder is
+    parity with nothing, and it propagates — the derived number then becomes the next weapon's
+    precedent and the placeholder's arbitrariness outlives the placeholder.
+  - **`16` is on the 4-tick input grid, deliberately.** A held right-click delivers an input only
+    every 4 ticks, so a weapon's real fire interval is its authored cooldown **rounded UP to the next
+    multiple of 4** — author `13` or `14` and you have authored `16`, **and the tooltip will not say
+    so.** Author **multiples of 4**; **multiples of 8** for anything that may ever be dual-wielded,
+    since only those halve cleanly. The mechanism, the measurements and the tooltip consequence are
+    at `WeaponLoader`'s `cooldown_ticks` section — **this is the pointer, that is the account.**
 
 ## Upgrade procedure
 

@@ -7,6 +7,17 @@
    "while you move." color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Exotic Magic Weapon" color=#55FFFF O=. B=. S=. U=. I=F
+-- boltor
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["19" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.3" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Eight bolts, then three seconds" color=#AAAAAA O=. B=. S=. U=. I=T
+   "of being a person holding a crossbow." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Ranged Weapon" color=#5555FF O=. B=. S=. U=. I=F
 -- cursed_emerald
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -502,4 +513,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 89 renderings ===
+=== 90 renderings ===

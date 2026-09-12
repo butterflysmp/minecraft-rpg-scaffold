@@ -9495,6 +9495,476 @@ cannot name such a measurement, you do not have an explanation, you have a reaso
 And note which way the cost falls: a control that fires and is argued with is **worse** than one that
 never ran, because you now believe you checked.
 
+### AN EXIT STATUS PROVES A PROCESS ENDED, NEVER THAT IT DID ITS WORK
+
+**Named 2026-09-12, the Boltor. Also in `CLAUDE.md`; here with the reason.**
+
+The general shape: **every instrument in this family reports on a PROCESS, and the thing under test is
+an ARTEFACT.** An exit code says a process reached its end. A printed line says a process produced
+output. Neither says that the file the process existed to write is now different from what it was.
+
+**The instance.** Slice B commit 1 added a weapon, which necessarily moves `golden-lore.txt` — the one
+expected golden change in the slice, named in advance at `PLAN-boltor.md:275`. The regenerate was run.
+It did not fail. It wrote nothing. `git status --porcelain` on the path showed the file unmodified, and
+that is the only thing that caught it; the invocation was indistinguishable from a successful one.
+
+**Why the suite could not catch it.** A golden that was never regenerated still matches the code it was
+last generated from. The failure is invisible to the test whose entire job is to compare the two,
+because the comparison is between two things that both failed to move. It surfaces later, in someone
+else's diff, as a golden that disagrees with content which shipped commits ago — at which point the
+commit that actually broke it is no longer the obvious suspect.
+
+**Three members, differing by where the lie sits:**
+
+| rule | the file | the figures over it |
+|---|---|---|
+| `Zero-exit is not evidence` (scripted edits) | unchanged, or changed somewhere else | not computed |
+| `AN INTEGRITY FIGURE PROVES WHICH BYTES` | changed, wrongly | correct, and reconcile |
+| this one | **unchanged** | **correct, reconcile, and describe stale content** |
+
+The third is the quietest of the three because every downstream check is honest. The blob hash is
+right, `--numstat` is right, the suite is green — all of them computed over a file that a command was
+told to rewrite and did not.
+
+**How to apply:** after any command whose purpose is to produce or update a file, read the FILE —
+`git status --porcelain <path>`, an mtime, a byte count — and decide before you run it which answer you
+expect. When you have just changed an input, *unmodified* is the alarming answer, and it is precisely
+the one that looks like nothing happened.
+
+### THE THREE QUANTISATION READINGS, RESTATED IN ONE PLACE WHILE THEIR FIXTURES STILL EXIST
+
+**ALL THREE FIXTURES ARE IN THE DELETION SET.** The model below is what the Boltor slice is priced on,
+and after the deletion **only the third reading's weapon survives** — on the one cooldown that, alone,
+**cannot distinguish the rule from a coincidence at 16.**
+
+**Written NOW rather than on deletion day, and that ordering is the whole point.** Every figure here
+was **checked against the live content file** at `7cb6d2c` before being written down — `quiver_stone`
+11, `hunters_bow` 15, `boltor` 16, each read out of `content/weapons/` rather than copied from the
+gate. **A restatement written after the instrument is gone cannot be verified by anyone, including
+its author.**
+
+```
+THE MODEL:   fire interval = ceil(effective_cooldown / 4) x 4
+```
+
+| | `quiver_stone` | `hunters_bow` | `boltor` |
+|---|---|---|---|
+| **authored** | `cooldown_ticks: 11` | `cooldown_ticks: 15` | `cooldown_ticks: 16` |
+| **material** | crossbow, magazine 9 | bow, no magazine | crossbow, magazine 8 |
+| **predicts** | `ceil(11/4)x4 = 12` | `ceil(15/4)x4 = 16` | `ceil(16/4)x4 = 16` |
+| **measured** | `min 12`, mean `12.00` | `min 16`, mean `19.43` | `min 16`, mean `16.00` |
+| **verdict** | `COOLDOWN-LIMITED` | `COOLDOWN-LIMITED` | `COOLDOWN-LIMITED` |
+| **date** | 2026-09-12 | 2026-09-12 | 2026-09-12 |
+| **readout** | `GATE-q7.md` | `GATE-q7.md` | `GATE-boltor.md` row 1 |
+| **fixture status** | **IN THE DELETION SET** | **IN THE DELETION SET** | ships |
+
+**The readouts, verbatim, because a table is a summary and the summary is what rots first:**
+
+```
+hunters_bow  (material: bow, cooldown 15, no magazine)          GATE-q7.md
+  INPUTS  count 56  window 276t  mean 5.02t   min 4t
+  FIRES   count 15  window 272t  mean 19.43t  min 16t   COOLDOWN-LIMITED
+
+quiver_stone (material: crossbow, cooldown 11, magazine 9)      GATE-q7.md
+  INPUTS  count 30  window 116t  mean 4.00t   min 4t
+  FIRES   count  9  window  96t  mean 12.00t  min 12t   COOLDOWN-LIMITED
+
+boltor       (material: crossbow, cooldown 16, magazine 8)      GATE-boltor.md row 1
+  INPUTS  count 31  window 120t  mean 4.00t   min 4t
+  FIRES   count  8  window 112t  mean 16.00t  min 16t   COOLDOWN-LIMITED
+```
+
+> **WHAT IS LOST ON DELETION DAY, AND IT IS NOT THE CONCLUSION.** The readings stay true — a
+> measurement is a fact about the system, not about the fixture. What goes is the ability to **check**
+> them: nobody can re-run `/rpg firerate` on a weapon that does not exist, and the two deleted rows
+> become numbers whose provenance is a file nobody can open.
+>
+> **The survivor is the weakest of the three for this purpose.** `16 -> 16` is the only point that
+> fixes `>=` over `>`, and it is *also* the only point consistent with "the interval is just the
+> authored cooldown" — a rule that the other two refute and it cannot. **Delete both and the model
+> keeps its conclusion and loses the evidence that distinguishes it from the trivial one.**
+>
+> **So on the day the fixtures go, the note that must be added here is one line per row: the weapon
+> was deleted, and on what date.** Without that third field these read as citations to files someone
+> forgot to update.
+
+**Also recorded at the key** — `WeaponLoader`'s `cooldown_ticks` section carries the same three-point
+table, because that is where an author meets the rule. This entry is the one that survives the gates.
+
+---
+
+### MEASURED 2026-09-12 — WHAT DELETING `hunters_bow`, `ironblade` OR `quiver_stone` ACTUALLY COSTS
+
+**A MEASUREMENT, NOT A PLAN, AND THE DELETION IS NOT STARTED.** Recorded before anything is removed
+so the decision is made on a shape rather than on a blanket.
+
+> ## TAKEN AT `2a3fb68`. INVALIDATED BY: THE NEXT WEAPON THAT SHIPS.
+>
+> **This measurement was taken for a decision that happens days later against a different tree**, so
+> it carries the revision it was taken at and the event that invalidates it. **Age is not visible on
+> a number.** Re-verify the durable half cheaply; **re-measure the perishable half before using it.**
+>
+> **DURABLE — structural, re-verify rather than re-measure:**
+>
+> - **`core/src/test/resources` does not exist**, so no `core` test can load content. *This is why
+>   the mention-to-failure ratio is what it is*, and it holds until someone adds that directory.
+> - **`GoldenLoreTest` loads the whole directory and names nothing.** It fails for every weapon
+>   deleted, and it **STRENGTHENS as weapons are added** — the one figure here that improves with age.
+>
+> **PERISHABLE — a fact about `2a3fb68` and nothing else:**
+>
+> - **every per-weapon file count** (the blanket, the 4 / 4 / 2, the mention-only columns)
+> - **the golden attribution, `9 / 10 / 14` of `134`.** The denominator is a line count over a
+>   directory that is **about to grow**: it is wrong the moment the next weapon ships, and the
+>   numerators move with any re-render.
+
+---
+
+## PARKED SLICE — THE DEV-WEAPON AND `/kit` DELETIONS, WITH THEIR TRIGGERS
+
+**Operator ruling, 2026-09-12: `quiver_stone` IS in the deletion set, and nothing is deleted yet.**
+
+> *"we're not going to be deleting anything in this session. The deleting of the dev weapons needs
+> more real weapons before it can happen. The deleting of `/kit` and it's related code requires the
+> build system to be implemented which is still a few days away."*
+
+**Parked with a stated trigger, not filed as backlog** — a parked thing with a trigger gets picked up
+and a backlog item rots. Two separate slices, two separate preconditions, and they do **not** unblock
+together:
+
+| slice | what goes | blocked on |
+|---|---|---|
+| **DEV WEAPON DELETION** | `hunters_bow`, `ironblade`, `quiver_stone` | **enough shipped weapons to replace them. NOT A DATE** — a condition on content that does not yet exist |
+| **`/kit` DELETION** | 2 kit files, `KitLoader`, `KitRegistry`, their tests | **the build system.** Days, per the operator |
+
+> **`mage_fire.yml` GOES WITH `ranger_fire.yml`, AND NOBODY HAS RULED THAT.** The `/kit` deletion is
+> described as removing a dev affordance, but the Mage loses its starting kit at the same moment. It
+> is written here because it is the part of that slice **nobody asked for and nobody refused** — the
+> kind of consequence that gets discovered during the deletion rather than before it.
+
+### THE LOOP IN THE PLAN, AND THE PROPHYLACTIC IS FREE
+
+**The precondition for deleting the dev weapons is MORE REAL WEAPONS — and new weapons are also what
+adds references to the dev weapons**, because the dev weapons are the precedents new prose derives
+from. `boltor.yml`, the newest weapon in the project, cites **all three**.
+
+**So every weapon authored between now and the deletion raises the deletion's cost.** This is comment
+staleness rather than breakage, which is exactly why it compounds quietly: nothing fails, nothing is
+listed, and the bill arrives as a sweep nobody scoped.
+
+**THE AUTHORING RULE, effective now:**
+
+- **New content cites the BOLTOR, not `hunters_bow`, `ironblade` or `quiver_stone`.**
+- **When a dev weapon is genuinely the only precedent, cite it AND MARK the citation** as standing on
+  a weapon in the deletion set — so the eventual sweep finds it by **grepping for the marker** rather
+  than by re-deriving the reference graph.
+
+Also in `CLAUDE.md`, because the rule binds whoever is authoring; **and it belongs in front of the
+content chat**, which writes the files where it actually bites.
+
+---
+
+**THE BLANKET IT REPLACES, REPRODUCED FIRST so the two are comparable.** File counts of *mentions*:
+
+```
+hunters_bow   docs 11  java(main) 11  test 17  content 5
+ironblade     docs 18  java(main)  6  test 14  content 7
+quiver_stone  docs  8  java(main)  9  test  9  content 3
+```
+
+**None of those are breakage.** Separating dependency from mention changes the picture completely.
+
+#### THE STRUCTURAL FACT THAT DOES MOST OF THE WORK
+
+**`core/src/test/resources` DOES NOT EXIST.** `core` is pure Java with zero dependencies, so **no
+`core` test can load content at all** — every weapon id in a `core` test is a hand-built fixture or a
+comment. Verified: the only two `core` test files matching `content/weapons` match it *in prose*
+(`RefreshVerdictTest:98`, `WeaponQuiverDefinitionTest:24`).
+
+So **only three test files can break**, because only three read `content/weapons/`:
+
+```
+git grep -n 'content/weapons' -- '*/src/test/*.java'
+
+  WeaponLoaderTest   :670 ironblade.yml   :776 hunters_bow.yml
+                     :860 "/content/weapons/" + id   over {hunters_bow, emberblade, ember_staff}
+  WeaponLoreTest     :282 copyBundled over {ironblade, emberblade, hunters_bow, ember_staff,
+                                            ability_stone}
+  GoldenLoreTest     :132 loadAll(content/weapons) — ALL weapons, compared to golden-lore.txt
+```
+
+#### (a) TESTS THAT WOULD FAIL, versus TESTS THAT MERELY MENTION
+
+**CORRECTED 2026-09-12: the failure counts are 4 / 4 / 2, not 3 / 3 / 1.** The first draft of this
+table put `golden-lore.txt` in **neither** column — excluded from the failure count because it is data
+rather than a test, and excluded from "merely mention" by a parenthetical. **A file that must change
+before the suite is green is a file the deletion breaks**, whatever its extension. The corrected
+figure counts it, and the accounting below separates it so the two kinds stay distinguishable.
+
+| weapon | MUST CHANGE OR FAIL | merely mention | blanket said |
+|---|---|---|---|
+| `hunters_bow` | **4** | 14 | 17 |
+| `ironblade` | **4** | 11 | 14 |
+| `quiver_stone` | **2** | 8 | 9 |
+
+**Broken out, because the four are three different kinds of thing:**
+
+| | `hunters_bow` | `ironblade` | `quiver_stone` |
+|---|---|---|---|
+| fails, and **names** the weapon | `WeaponLoaderTest`, `WeaponLoreTest` | `WeaponLoaderTest`, `WeaponLoreTest` | — |
+| fails, **naming nothing** | `GoldenLoreTest` | `GoldenLoreTest` | `GoldenLoreTest` |
+| **data that must be regenerated** | `golden-lore.txt` | `golden-lore.txt` | `golden-lore.txt` |
+| **total** | **4** | **4** | **2** |
+
+**Reconciles against the blanket by addition.** The blanket counts files *mentioning* the weapon, so
+it contains the naming failures and `golden-lore.txt`, and does **not** contain `GoldenLoreTest`:
+
+```
+hunters_bow    17 = 2 naming failures + 1 golden-lore.txt + 14 mention-only
+ironblade      14 = 2 naming failures + 1 golden-lore.txt + 11 mention-only
+quiver_stone    9 = 0 naming failures + 1 golden-lore.txt +  8 mention-only
+```
+
+> **THE BLANKET UNDERCOUNTS BREAKAGE, AND THE FILE IT MISSES IS THE ONE CERTAIN TO BREAK.**
+> **`GoldenLoreTest` never names any of the three weapons.** It loads the whole directory, so it is
+> invisible to a mention grep and it fails for **every** weapon deleted. A file can break without
+> mentioning the thing that broke it, and that is precisely the file a `git grep -l` survey cannot
+> see.
+
+> **`quiver_stone` HAS NINE TEST-FILE MENTIONS AND ZERO TESTS THAT WOULD FAIL** beyond the golden.
+> `WeaponLoaderTest` mentions it only in a comment; `WeaponLoreTest:411-414` builds its own
+> `new WeaponDefinition("quiver_stone", …)` rather than loading the file; `QuiverSizeTest`,
+> `ReloadTimeTest` and `FireCadenceTest` are `core` and cannot load anything. **The weapon with the
+> most alarming-looking coupling to the quiver machinery is the one whose file nothing reads.**
+
+#### (b) JAVA MAIN — WHAT GOES STALE RATHER THAN BREAKS
+
+**Every mention in `main` is a comment except ONE**, across all three weapons and all 26 file-mentions:
+
+```
+hunters_bow  11 files: BasicMelee, CastExecutor, CastSpec, FireCadence, WeaponDefinition,
+                       RpgCommand*, AbilitySchema, WeaponLoader, RpgListeners, BrokenNotice,
+                       WeaponItems
+ironblade     6 files: AttackSpeedAttribute, BukkitCombatant, ContentValidator, WeaponLoader,
+                       RpgListeners, WeaponFire
+quiver_stone  9 files: FireCadence, QuiverSize, Keys, RpgCommand, WeaponLoader,
+                       QuiverSizeModifierItems, ReloadTimeModifierItems, WeaponFire, WeaponLore
+```
+
+These become **javadocs citing a weapon that does not exist** — the quieter and more durable defect,
+since nothing fails and nothing is listed. **Not fixed here.**
+
+> **THE ONE EXCEPTION IS NOT A COMMENT AND IS NOT MERELY STALE — IT IS USER-FACING AND BECOMES
+> ACTIVELY WRONG.** `RpgCommand.java:1147`, inside `verdictLine`'s `COOLDOWN_LIMITED` arm:
+>
+> ```
+> "NOTE: a magazine or damaged durability gates too -- take this on hunters_bow to isolate the
+>  cooldown."
+> ```
+>
+> **The instrument would print, to an operator at a booted server, an instruction to go take a
+> reading on a weapon that no longer exists.** It is the only line in `main` that changes behaviour
+> rather than accuracy, and it is the same caution that `GATE-boltor.md` row 1 had to reconcile.
+
+#### (c) `golden-lore.txt` — ATTRIBUTION, AND HOW IT WAS ATTRIBUTED
+
+**Method, stated because the number is meaningless without it:** the file is sectioned, each item
+introduced by a `-- <id>` header. **Each header owns every line from itself up to (not including) the
+next `-- ` header or `=== ` section marker, header line included.** 516 lines total; the `WEAPONS`
+section is lines 1–134.
+
+```
+hunters_bow    lines  72- 80   =  9
+ironblade      lines  81- 90   = 10
+quiver_stone   lines 103-116   = 14
+```
+
+**Any deletion forces a regenerate** — the golden is by construction a record of what shipped, and
+`GoldenLoreTest` renders the live directory against it. **And the regenerate is the step this repo
+has already watched fail silently**: a run that exits without writing looks exactly like a correct
+one. Check the artefact.
+
+#### THE COST THAT IS NOT A LINE COUNT, AND IT MUST BE PAID BEFORE DELETION RATHER THAN DISCOVERED
+
+**The input-quantisation model rests on three measured points and TWO ARE IN THE DELETION SET.**
+
+```
+fire interval = ceil(effective_cooldown / 4) x 4
+
+  11 -> 12   quiver_stone   2026-09-12, GATE-q7.md
+  15 -> 16   hunters_bow    2026-09-12, GATE-q7.md
+  16 -> 16   boltor         2026-09-12, GATE-boltor.md row 1 — the ONLY point that fixes `>=`
+```
+
+Delete `hunters_bow` and `quiver_stone` and a model **the whole slice is priced on** has one
+surviving instance — measured on the one weapon that **cannot by itself distinguish the rule from a
+coincidence at 16.**
+
+**The readings do not stop being true.** A measurement is a fact about the system, not about the
+fixture. But the RECORD must say so, or the next reader finds three citations to two weapons that do
+not exist and cannot tell a preserved measurement from a stale one. **Before either weapon is
+removed, restate all three readings in one place**, each carrying the weapon it was taken on, the
+date, and the note that the weapon was subsequently deleted.
+
+#### OPEN — BEN'S TO RULE, NOT MINE
+
+**Is `quiver_stone` in the deletion set?** It is a fixture rather than a weapon a player holds, it
+anchors 14 lines of the golden, and it is one of the two surviving quantisation points. Nothing
+moves until that is ruled.
+
+### COUNT THE AXES BEFORE COUNTING THE MUTATIONS — THE SEVENTH WAY A MUTATION LIES
+
+**Named 2026-09-12, the elapsed figure. Also in `CLAUDE.md` as the table's seventh row; here with the
+reason and the arithmetic.**
+
+**The first six ways a mutation lies are all BROKEN EDITS** — it did not apply, it hit a comment, the
+marker terminated the regex, it applied but did not bite, it bit for the wrong reason, it applied too
+widely. Every one is a defect in the *edit*, and the remedies are mechanical: grep both halves,
+measure the delta, splice by line number.
+
+**The seventh is not a broken edit.** The mutation applies, is correctly scoped, bites, and reddens
+exactly the row written for it. Nothing is wrong with it. **What is too broad is the CONCLUSION**, and
+no care taken with the edit reaches that.
+
+**The mechanism: an expression with more than one degree of freedom, and a splice that moves one.**
+
+```
+sinceLastEventTicks = currentTick - running.lastTick
+
+  axis 1  which ENDPOINT    running.firstTick  vs  running.lastTick
+  axis 2  which REFERENCE   currentTick        vs  running.lastTick
+```
+
+**The arithmetic that makes it concrete.** `MUTELAPSED` moves axis 1 and reddens **1 of 12**.
+`MUTSWAP` moves axis 2 and reddens **3 of 12**. The interesting number is not 1 or 3 — it is that
+**two of MUTSWAP's three rows CANNOT be reddened by MUTELAPSED at any fixture**, because they stage a
+single event, and with one event `firstTick == lastTick` makes the two implementations numerically
+identical. The axes are genuinely independent; one splice was never going to reach both.
+
+**Why it is convincing, which is the dangerous part.** A red result reads as proof. The report says
+*"mutation applied, marker grepped both directions, 1 of 12 red"* — every clause true, every
+instrument honest — and the reader concludes the expression is guarded when half of it is not. **It is
+a partial test wearing a complete one's colour.**
+
+**Its neighbour, and it is NOT the same thing.** *A control that succeeds for the wrong reason* is a
+control whose red means something other than what you think. This control's red means exactly what you
+think; it simply covers less than you think. **Right reason, too small a set** — which is why it needs
+its own row rather than a sentence added to that one.
+
+**How to apply:** before running a mutation, **read the expression and count the quantities it names
+and the relations between them.** One splice certifies one axis. If you find two, plan two mutations
+and say which axis each one moved; if a second mutation seems redundant, check whether your fixtures
+can even distinguish it — that is the question, not whether the first one went red.
+
+### AN ESTIMATE PLACED BESIDE MEASUREMENTS BECOMES ONE
+
+**Named 2026-09-12, the Boltor. Also in `CLAUDE.md`; here with the reason.**
+
+The general shape: **a figure carries no mark saying how it was obtained**, so the only signal a
+reader has is the company it keeps. Put a guess in a column of measurements and the column vouches
+for it. This is not a claim about carelessness — the guess can be made carefully and still be a
+guess, and nothing downstream can tell.
+
+**The instance.** A held-changes table gave five files and their line deltas. Four were read from
+`git diff --numstat`. The fifth, `PLAN-boltor.md +23`, was eyeballed off the edit; `git add` then
+measured **+21**. The table marked no difference between them, and the report around it described
+all five in one sentence as though one command had produced them.
+
+**The asymmetry is the whole finding.** Credibility flows from the measured rows to the estimate and
+never the other way. **Alone, `+23` would have been read as approximate** — beside four `--numstat`
+figures it read as the fifth output of the same command. So the defence is not "be more careful with
+estimates", it is **do not seat them next to measurements without a mark**.
+
+**The counter-example is in the same session and is why this is a rule rather than an apology.** The
+citation-drift finding quoted three measured counts (132 / 117 / 8) and then explicitly declined to
+estimate how many citations were already stale, on the stated grounds that such an estimate would be
+indistinguishable from the three above it. It named a probe instead. That is the same judgement
+applied one decision later, and it cost nothing.
+
+**How to apply:** if a number is going next to measured numbers, run the command — it is almost always
+one command. If you genuinely cannot, mark it in the cell (`~20 (est.)`), not in prose underneath,
+because a reader scanning a table does not read the prose. And when a figure does turn out wrong,
+**say which kind of error it was**: fabricated, or correct-when-written and falsified since. Those
+have different remedies, and `+23` was the first kind.
+
+### OPEN FINDING — EVERY `File.java:NNN` CITATION IS A MEASUREMENT TAKEN ONCE AND NEVER RE-TAKEN
+
+**Found 2026-09-12, the Boltor. NAMED, NOT FIXED — deliberately. The case is written here so that
+whoever eventually decides it is worth fixing does not have to rediscover it.**
+
+**The mechanism is `CLAUDE.md`'s stale-commit-count rule, with line numbers where that one had
+counts** — *"adding a row and fixing the count in the same edit changes the set the count is over"*;
+here, inserting a row changes what every citation reaching across it points at. It is NOT the
+exit-status entry immediately above, whose mechanism is a process reporting success without writing;
+the two are neighbours in this file by date, not by shape. A citation of the
+form `WeaponLoader.java:161` is a claim about a file *other than the one it is written in*. It is
+falsified by **any insertion above its target, made by anyone, at any later time** — and the document
+holding the citation is not touched, not rebuilt, and not tested when that happens. **The citing
+document can sit untouched for months while its citations quietly stop being true.**
+
+**THE FAILURE IS MISDIRECTION, NOT ABSENCE, WHICH IS WHY IT IS WORTH RECORDING.** A stale line number
+does not 404. It points at a **different real line**, which the reader opens, reads, and finds
+plausible — the cited file is the right file and the neighbourhood is roughly right. There is no
+symptom. Compare a stale *quote*, which a reader can grep for and fail to find: a stale *number*
+always resolves.
+
+**BLAST RADIUS — AND THE COMMAND COMES WITH IT, BECAUSE A FIGURE MEASURING UNVERIFIABLE THINGS BY AN
+UNSTATED METHOD IS UNVERIFIABLE IN THE SAME WAY.** Measured at `51b005e`. Re-run it and compare; the
+project's own rule is to record the raw count and the window, not only the derived number.
+
+```
+P='[A-Za-z0-9_/.-]+\.(java|md|yml|txt):[0-9]+'
+git grep -oh -E "$P" 51b005e -- '*.md'             | wc -l    # 132   occurrences
+git grep -oh -E "$P" 51b005e -- '*.md'   | sort -u | wc -l    # 117   distinct
+git grep -oh -E "$P" 51b005e -- '*.java' '*.yml'   | wc -l    #   8   in code comments
+```
+
+**THIS ENTRY COUNTS OCCURRENCES, NOT DISTINCT: 132 + 8 = 140 SITES.** Every occurrence is a separate
+place a reader can be misdirected, so deduplicating undercounts the exposure — two mentions of
+`PLAN-quiver.md:817` are two chances to be wrong. **The two definitions are 13% apart in root markdown
+alone, so a later count that does not say which it took cannot be compared with this one.**
+
+That is not hypothetical. **The first independent re-count of this figure disagreed with it, and the
+disagreement was entirely definitional** — `PLAN-quiver.md` reads **34 by occurrence and 31 by
+distinct**, and the two counts had silently used different definitions while agreeing on the pattern.
+Part of the residue was never reconciled at all. **A blast-radius figure whose own re-measurement
+cannot be reproduced is the finding happening to its own evidence.**
+
+```
+occurrences by document, same rev:
+34  PLAN-quiver.md     15  PLAN-quiver-a2.md    7  GATE-boltor.md    5  PLAN-boltor.md
+29  NEXT.md             6  PLAN-mobdamage-nameplate-fix.md            and others
+```
+
+`GATE-boltor.md` is the fourth densest and was **committed the same day this was found**, which is the
+measure of how fast the surface grows: the convention is load-bearing and in active use, not legacy.
+
+**HOW MANY ARE ALREADY WRONG IS UNKNOWN AND IS NOT ESTIMATED HERE.** An estimate quoted beside the
+three measured figures above would be indistinguishable from them, which is its own recorded defect.
+The cheap probe available to whoever takes this on: for each
+citation, compare the cited file's last-modified commit against the commit that last touched the
+citing line — where the cited file moved afterwards, the number is suspect. That bounds the problem
+without opening all 140.
+
+**THE INSTANCES, BOTH SELF-INFLICTED WITHIN MINUTES.** Inserting a 21-line blockquote into
+`PLAN-boltor.md` shifted every line below it, falsifying three citations written earlier in the same
+session — `GATE-boltor.md`'s `:204` and `RpgCommand.java:496`, and `NEXT.md`'s `:254`, the last of
+which had already been committed to prose as the evidence for the entry above. All three were caught
+only by re-reading the files after the last edit landed.
+
+**WHY IT IS NOT FIXED, AND BOTH OBVIOUS REMEDIES ARE NAMED SO THEY ARE NOT RE-PROPOSED AS NEW:**
+
+- **A sweep** is a one-time correction applied to a *continuous* process. It would be true on the day
+  it ran and would begin decaying with the next insertion. It fixes the instances and not the class.
+- **An anchor scheme** — citing a quoted sentence or a stable symbol name instead of a number — is the
+  actual remedy, because a quote *can* be verified by grep and fails loudly when it stops matching.
+  It costs a convention change across 140 existing sites and every future one, which is a real
+  decision rather than a tidy-up, and it is the operator's to make.
+
+**Until then, the operational half is one line, and it is the only part that binds today:** when you
+insert into a file, the citations *into* that file are now suspect — re-read them from the file after
+the last edit lands, not from what you wrote earlier in the session.
+
 ## THE VOLLEY SLICE — `CastSpec.Volley`, and one shape worth more than the slice
 
 Landed on `feat/castspec-volley` as three commits: the two ports (`dc0f9da`), the kind and its arms

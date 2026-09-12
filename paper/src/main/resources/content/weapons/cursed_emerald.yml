@@ -133,6 +133,28 @@ triggers:
         #
         # IF THAT CAP EVER MOVES, THIS NUMBER IS THE THING TO REVISIT -- and so is V3's Q2 verdict,
         # which is answered only under the cap.
+        #
+        # ===== THE BOLTOR SHIPS range: 96 AND DOES NOT OVERTURN THIS RULING. CROSS-REFERENCE. =====
+        #
+        # A reader who finds a 96-block ray in content/weapons/boltor.yml will read it as an
+        # oversight against this paragraph. It is not, and the distinction is worth having here
+        # rather than only there, because THIS is the file that states the ruling.
+        #
+        # THE CAP IS ON EACH CLIENT'S RENDER DISTANCE, NOT ON THE RAY. Particles are emitted
+        # server-side along the WHOLE ray. So on a 96-block shot the shooter renders roughly the
+        # first third and a target at the far end renders roughly the last third -- THE BEAM DOES
+        # REACH THEM. What no single observer sees is the MIDDLE third.
+        #
+        # SO THE RULING'S HARM -- "the ray hitting a target the beam never reaches" -- DOES NOT
+        # OCCUR AT 96. The target sees the beam arrive. That harm is what this number was ruled
+        # against, and it is still the right ruling for a SIX-BEAM volley, where every beam is
+        # judged from the caster's own position and the middle thirds are never seen by anyone.
+        #
+        # AN EARLIER CARRY-FORWARD FLATTENED THIS INTO "a ray past 32 blocks draws only its near
+        # half", which is a SHOOTER-RELATIVE OBSERVATION STATED AS A PROPERTY OF THE RAY. The
+        # operator caught it. It is corrected here and in boltor.yml; the density consequence --
+        # that judging such a beam needs an observer at distance -- is GATE-boltor.md row 2, which
+        # is NOT RUN.
         range: 32
         beam: emerald_beam
 
