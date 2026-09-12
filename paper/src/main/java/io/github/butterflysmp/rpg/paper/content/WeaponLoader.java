@@ -220,10 +220,23 @@ public final class WeaponLoader {
      * <pre>
      * fire interval = ceil(effective_cooldown / 4) x 4
      *
-     *   11 -> 12   quiver_stone   measured
-     *   15 -> 16   hunters_bow    measured
+     *   11 -> 12   quiver_stone   measured   PRESERVED READING -- fixture in the deletion set
+     *   15 -> 16   hunters_bow    measured   PRESERVED READING -- fixture in the deletion set
      *   16 -> 16   boltor         measured -- the only cooldown that could distinguish >= from >
      * </pre>
+     *
+     * <p><b>DO NOT STRIP THE TWO ROWS MARKED {@code PRESERVED READING} DURING A DELETION SWEEP.</b>
+     * They name weapons that are scheduled for removal, so a sweep for <i>"references to weapons that
+     * no longer exist"</i> will meet them — and they are <b>not</b> references, they are
+     * <b>measurements taken on those weapons</b>. Deleting them does not falsify the model; it makes
+     * the model unverifiable, which is worse, because nothing then distinguishes it from a rule
+     * somebody guessed.
+     *
+     * <p><b>This paragraph is the ACCOUNT.</b> The pointer is in {@code CLAUDE.md}; the numbers are
+     * pinned executably in {@code HeldFireQuantisationPinTest}, which fails loudly if a fixture is
+     * deleted or re-authored and carries the restatement instruction in its failure message. <b>A
+     * sweep that edits this javadoc will not be caught by that test</b> — the two protect different
+     * things, which is why this warning is here rather than delegated to it.
      *
      * <p>A cooldown already on the grid fires on its own tick. {@code hunters_bow} could never have
      * answered this: 15 quantises to 16 under <b>both</b> comparisons.
