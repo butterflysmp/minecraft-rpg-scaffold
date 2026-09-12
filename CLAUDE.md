@@ -104,6 +104,17 @@ than one that never ran, because you now believe you checked.
 > independent quantities in a row are equal, at least one of them is not being tested.** Ask what the
 > row does if the rule it checks is deleted; if the answer is "the same thing", it is measuring the
 > fixture. Full entry in `NEXT.md`, beside its red-side twin.
+>
+> **AND IT APPLIES TO EXPECTED VALUES, NOT ONLY TO FIXTURE INPUTS — WHICH IS THE COLLISION SWEEP,
+> POINTED AT TEST DATA.** `content/`'s numbers are swept so a bare gate reading is unambiguous;
+> **a test row's expected values need the same property, and for the same reason.** Two expected
+> values that collide cannot detect a **transposition** between them — swap the two quantities in the
+> code and the row still passes, because both readings are the same number.
+>
+> **2026-09-12, the elapsed figure.** One event at tick 100, read at 340, gives `window 0` against
+> `elapsed 240`. Staged at a tick where they happened to agree, the row would have survived a
+> window/elapsed swap — **and that swap is precisely what `MUTSWAP` was written to catch.** Choose the
+> staging so no two quantities the row reads are equal, then a transposition has nowhere to hide.
 
 This is a distinct failure from the four below, not a variant of them. Those are checks
 that never ran. This is a check that ran, fired, and got talked out of. It survives
