@@ -14,10 +14,16 @@ package io.github.butterflysmp.rpg.core.weapon;
  *   maxDurability (the material's)     capacity   (a PARAMETER)
  *   damage counts UP to a floor        loaded counts DOWN to zero
  *   wear(current, amount, max)         spend(loaded)
- *   repair(current, amount)            reload(capacity)
+ *   repair(current, amount)            reload(loaded, rounds, capacity)
  *   isBroken(current, max)             isEmpty(loaded)
  *   clamp(proposed, max)               clamp(proposed, capacity)
  * </pre>
+ *
+ * <p><b>The repair/reload row got CLOSER in Slice E, not further away.</b> It read
+ * {@code reload(capacity)} while a reload was always total, and the correspondence was the weakest in
+ * the table -- {@code repair} took a current and an amount; {@code reload} took neither. Now
+ * {@code current <-> loaded} and {@code amount <-> rounds} line up exactly, and both clamp against a
+ * maximum the caller supplies. Arrows made the two mechanisms the same shape.
  *
  * <h2>CAPACITY AND RELOAD TICKS ARE PARAMETERS, AND THIS CLASS MUST NEVER LEARN THEIR VALUES</h2>
  *

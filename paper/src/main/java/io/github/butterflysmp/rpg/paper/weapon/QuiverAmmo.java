@@ -1,6 +1,8 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.weapon.CollectPlan;
+import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import io.github.butterflysmp.rpg.paper.menu.CraftMatrixScreen;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -47,8 +49,20 @@ import java.util.List;
  * so exact matching already excludes both; this paragraph exists so nobody "improves" it later.
  *
  * <p>Gear is skipped as well, by the same rule the crafting walk applies — <i>a minted item is never
- * a material</i>. Belt and braces today, since no minted item is a plain arrow, and it is the rule
- * that stays true on the day one is.
+ * a material</i>. {@link #sources} calls {@code CraftMatrixScreen.isGear}, which is the same call
+ * {@code RecipeProbe.groups} makes, so this is the FOURTH surface of that chain rather than a fourth
+ * opinion about what gear is.
+ *
+ * <p><b>IT IS IMPLEMENTED, NOT ASSERTED, AND THE FIRST DRAFT OF THIS PARAGRAPH WAS THE OTHER WAY
+ * ROUND.</b> It claimed the guard held while {@code sources} tested only the material — so on the day
+ * a minted item IS a plain {@code ARROW}, the walk would have counted it and the debit taken it. The
+ * prose said <i>"it is the rule that stays true on the day one is"</i>; that was exactly the day it
+ * would have failed.
+ *
+ * <p>Worth naming because of WHERE it sat: one paragraph below the spectral trap, which is guarded
+ * three ways — exact material, a named {@code INSTRUMENT_MATERIAL} something can read, and a row that
+ * reddens under {@code MUT-AMMO}. <b>A guard written NEXT TO a real one is the likeliest to be
+ * believed</b>, because the adjacency does the convincing.
  *
  * <h2>THE ONLY {@code GameMode} READ IN THE PROJECT</h2>
  *
@@ -114,7 +128,7 @@ public final class QuiverAmmo {
      * conservative one. A throw would convert a wrong assumption into a crash; consuming costs a
      * spectator nothing <b>precisely because they cannot reach it</b> — so the safe answer is free.
      */
-    public static Supply supply(Player player, int needed) {
+    public static Supply supply(Player player, Keys keys, int needed) {
         if (needed <= 0) return new Supply(0, List.of());
 
         boolean consumes = switch (player.getGameMode()) {
@@ -123,7 +137,8 @@ public final class QuiverAmmo {
         };
         if (!consumes) return new Supply(needed, List.of());
 
-        List<CollectPlan.Draw> draws = CollectPlan.plan(sources(player.getInventory()), 0, needed);
+        List<CollectPlan.Draw> draws =
+                CollectPlan.plan(sources(player.getInventory(), keys), 0, needed);
         return new Supply(CollectPlan.total(draws), draws);
     }
 
@@ -161,12 +176,21 @@ public final class QuiverAmmo {
      * are out of scope: those slots are addressed by different indices, and a draw planned against
      * one would debit the wrong slot. The same choice {@code RecipeProbe} and {@code MenuSafety} make.
      */
-    private static List<CollectPlan.Source> sources(PlayerInventory inventory) {
+    private static List<CollectPlan.Source> sources(PlayerInventory inventory, Keys keys) {
         List<CollectPlan.Source> sources = new ArrayList<>();
         ItemStack[] contents = inventory.getStorageContents();
         for (int slot = 0; slot < contents.length; slot++) {
             ItemStack item = contents[slot];
             if (item == null || item.getType() != AMMO || item.getAmount() <= 0) continue;
+            // THE INVARIANT, and it is the same CALL RecipeProbe.groups makes rather than a second
+            // opinion about what gear is: a minted item is never a material -- not counted, and
+            // therefore never planned and never debited.
+            //
+            // UNREACHABLE TODAY and implemented anyway: no minted item is Material.ARROW, so nothing
+            // in shipped content gets here. It is the line that must already exist on the day one
+            // does, because the alternative is a player's minted item being eaten as ammunition --
+            // and nothing would report it.
+            if (CraftMatrixScreen.isGear(item, keys)) continue;
             sources.add(new CollectPlan.Source(CollectPlan.TIER_INVENTORY, slot, item.getAmount()));
         }
         return sources;

@@ -207,17 +207,13 @@ public final class Quivers {
         ItemStack held = player.getInventory().getItemInMainHand();
         long now = Bukkit.getCurrentTick();
 
-        // Same split as resolveForShot: the verdict is core's, and each arm below is a core row.
-        // ALREADY_RELOADING is the held-input case -- ~20 arm-swing packets a second, every one of
-        // which would otherwise push the deadline another reload_ticks away and leave a weapon that
-        // never comes back. ALREADY_FULL spares a habitual press three dead seconds.
         // SLICE E: WHAT THE RELOAD WOULD COST, AND WHAT THE PLAYER CAN PAY -- both read BEFORE the
         // verdict, because the ammo rung needs the second one.
         //
         // The DECISION is core's and takes an int; the READ is here. That is the same split
         // QuiverSize.resolve's javadoc argues for, and it is why no ItemStack goes near core.
         QuiverState state = stateOf(held, keys, weapon);
-        QuiverAmmo.Supply supply = QuiverAmmo.supply(player, state.roundsNeeded());
+        QuiverAmmo.Supply supply = QuiverAmmo.supply(player, keys, state.roundsNeeded());
 
         // Same split as resolveForShot: the verdict is core's, and each arm below is a core row.
         // ALREADY_RELOADING is the held-input case -- ~20 arm-swing packets a second, every one of

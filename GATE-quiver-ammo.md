@@ -188,6 +188,19 @@ Fire dry, reload.
 > enlarged. `QuiverAmmoTest` guards the constants; **this row guards the walk**, which no unit test
 > reaches.
 
+> **THIS ROW DOES NOT REACH THE GEAR GUARD, AND THAT IS WORTH SAYING RATHER THAN LEAVING.** A spectral
+> arrow is excluded by the **material** check before `isGear` is ever consulted, so this row would pass
+> identically with the gear guard deleted.
+>
+> **The gear guard is implemented and is UNREACHABLE TODAY**: `sources()` calls
+> `CraftMatrixScreen.isGear`, the same call `RecipeProbe.groups` makes, and **no minted item is
+> `Material.ARROW`**, so nothing in shipped content can trip it. It exists because it must already be
+> there on the day one is — the alternative is a player's minted item being eaten as ammunition with
+> nothing reporting it.
+>
+> **Nothing stages it, and nothing can until such an item exists.** Listed below rather than left for
+> someone to assume this row covered it.
+
 ---
 
 ## WHAT THIS GATE DOES NOT COVER
@@ -198,3 +211,13 @@ Fire dry, reload.
   removing a quiver-size modifier mid-reload. Core row covers the arithmetic; no boot row stages it.
 - **A pre-Slice-E item** carrying the two old stamps and no pending key. `finishReload` adds zero
   rounds and clears the reload. Not staged: producing one requires a build from before this slice.
+- **THE GEAR GUARD** — `sources()` skipping a minted item via `CraftMatrixScreen.isGear`. **Implemented
+  and unreachable**: no minted item is `Material.ARROW`, so no content can trip it and row 6 does not
+  reach it (a spectral arrow is refused on material first). **Its trigger is the day something is
+  minted as a plain arrow**, and that is the day this row becomes stageable.
+- **`consume()` re-reads each slot's TYPE but not its AMOUNT**, so a slot that SHRANK between the plan
+  and the take is not skipped — `left` goes negative and the stack is cleared. **This is
+  byte-for-byte `InventoryCraft.debit`**, the pattern this slice was told to follow, and the window is
+  theoretical inside one synchronous tick with no scheduler hop. **Inherited knowingly and not changed
+  here**: altering a copied pattern in the slice that copies it is how a relocation stops being
+  provable. If it is ever fixed, it should be fixed in both places at once.
