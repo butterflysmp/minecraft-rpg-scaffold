@@ -294,10 +294,18 @@ public final class PlayerHealthSystem implements HealthListener {
             // walks ALL slots on BARE slot names, so an instrument and an enchanted weapon in the
             // SAME HAND would otherwise collide on "HAND" and Stat.putModifier would keep only one.
             // One slot makes that collision one /rpg give away, not hypothetical.
-            Map<String, Double> desiredQuiver =
-                    new HashMap<>(QuiverSizeModifierItems.desiredModifiers(player, keys));
-            desiredQuiver.putAll(ExpandedQuiverModifierItems.desiredModifiers(player, keys, enchants));
-            stats.reconcileQuiverSizeModifiers(id, desiredQuiver);
+            // A NAMED TWO-ARGUMENT MERGE, NOT AN INLINE putAll, AND THE DIFFERENCE IS MEASURED.
+            // This was inline -- new HashMap<>(a) then putAll(b), exactly as the max-health pair
+            // above still is -- until 2026-09-13, when the mutation that DELETES the putAll was run
+            // and reddened NOTHING across the whole suite. This method needs a live Player, so no
+            // unit test reaches it; the core row that models the defect asserts against Stat, not
+            // against this line. The trap was documented and not guarded.
+            //
+            // mergedSources takes both maps, so dropping a source now means dropping an argument,
+            // and that does not compile. See its javadoc.
+            stats.reconcileQuiverSizeModifiers(id, ExpandedQuiverModifierItems.mergedSources(
+                    QuiverSizeModifierItems.desiredModifiers(player, keys),
+                    ExpandedQuiverModifierItems.desiredModifiers(player, keys, enchants)));
 
             // RELOAD TIME: ticks added to the held weapon's authored reload. Silent and void, same
             // as the line above, and for one extra reason of its own -- a running reload's deadline

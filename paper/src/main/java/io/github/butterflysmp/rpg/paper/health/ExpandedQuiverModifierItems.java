@@ -107,4 +107,45 @@ public final class ExpandedQuiverModifierItems {
         }
         return desired;
     }
+
+    /**
+     * Both quiver-size sources as ONE map, for the single {@code reconcileQuiverSizeModifiers} call.
+     *
+     * <h2>THIS EXISTS TO MAKE DROPPING A SOURCE A COMPILE ERROR, AND IT WAS WRITTEN BECAUSE THE
+     * MUTATION PROVED THE ALTERNATIVE WAS UNGUARDED</h2>
+     *
+     * <p>The merge began life inline in {@code PlayerHealthSystem} -- a {@code new HashMap<>(a)} then
+     * {@code putAll(b)}, exactly as the max-health pair still does. <b>Measured 2026-09-13: deleting
+     * that {@code putAll} reddened NOTHING across the whole suite.</b> {@code PlayerHealthSystem}
+     * needs a live {@code Player}, so no unit test reaches its scan loop, and the core row that models
+     * the defect asserts against {@code Stat} directly rather than against this wiring. The assertion
+     * DOCUMENTED the trap and did not GUARD it.
+     *
+     * <p>A two-argument function fixes that structurally rather than by adding a test that cannot
+     * exist: <b>you cannot drop a source without dropping an argument, and dropping an argument does
+     * not compile.</b> What remains reachable -- someone editing this body to ignore one map -- is
+     * what {@code ExpandedQuiverModifierItemsTest} guards, and that test CAN exist because this takes
+     * plain maps and no {@code Player}.
+     *
+     * <p><b>The max-health pair above it is still inline and still unguarded by the same measurement.</b>
+     * Not changed here: that is a second edit to a second stat, and it is recorded rather than
+     * bundled into a slice about quivers.
+     *
+     * <h2>ORDER MATTERS, AND IT IS THE ENCHANT THAT WINS</h2>
+     *
+     * <p>{@code putAll} is put-or-REPLACE, so on a key collision the enchant's value survives. <b>That
+     * ordering should never decide anything</b>, because {@link #SOURCE_PREFIX} makes the two key
+     * spaces disjoint by construction -- and if it ever does decide something, the prefix has been
+     * broken and the test above catches that first. The order is fixed here so the behaviour is not
+     * accidental, not because either answer is correct.
+     *
+     * @param instrumentSources {@link QuiverSizeModifierItems#desiredModifiers}, keyed bare
+     * @param enchantSources    {@link #desiredModifiers}, keyed with {@link #SOURCE_PREFIX}
+     */
+    public static Map<String, Double> mergedSources(Map<String, Double> instrumentSources,
+                                                    Map<String, Double> enchantSources) {
+        Map<String, Double> merged = new HashMap<>(instrumentSources);
+        merged.putAll(enchantSources);
+        return merged;
+    }
 }

@@ -382,6 +382,17 @@ So:
   pushed"* in a report are **both claims**. Report the command's output, not your belief about the
   command's output — the same rule as the `--numstat` one above, applied to the remote.
 
+  > **A WIRE LINE IS GENERATED, NEVER WRITTEN.** State it from `ls-remote`'s output **in the same
+  > breath you run it**, the way a commit count is stated from `rev-list --count`. **A wire claim
+  > composed from memory is stale BY CONSTRUCTION, because the only thing that changes it is the act
+  > you are reporting.**
+  >
+  > **2026-09-13.** A report ended *"Nothing committed, nothing pushed — the wire is still
+  > `5167c5d`."* It was true when written. The next instruction was *"get this on git"*, and the push
+  > falsified it — **the same mechanism as `GATE-volley.md`'s `1462`**, a figure correct when drafted
+  > and falsified by its own commit. The class is not carelessness; it is **a claim whose subject is
+  > the action being taken**.
+
   > **A REPORT SAYING "UNVERIFIABLE" IS STILL A REPORT**, and it is the one that most reliably stops
   > the check from happening, because skipping feels free when there is said to be nothing to check.
   >
@@ -448,6 +459,25 @@ So:
   > from the range. **A repeated +1 is a mechanism, not a slip** — and in both failures the prose
   > number disagreed with the table printed directly beneath it, so *adding the parts up* would have
   > caught it with no command at all. Same family as *eight shots span seven intervals*.
+
+- **A CONTROL CARRIED PAST ITS PRECONDITION STOPS BEING A CONTROL WITHOUT STOPPING BEING QUOTED.**
+  A proof holds under conditions. **When the conditions lapse the proof becomes a habit, and a habit
+  reads exactly like a proof** — same words, same confidence, no warning.
+
+  > **2026-09-13.** One report proved nothing had been eaten by a splice with *"**0 deletions**
+  > across all three files, so no splice ate anything."* Sound: a pure append cannot delete. **The
+  > next change stopped being an append** — a recorded count in a heading had to go from THREE to
+  > FOUR, and **a count in a heading cannot be raised by appending** — and the framing carried
+  > forward unremarked. The `−5` was clean, but *"zero deletions"* had quietly become a sentence
+  > about nothing.
+  >
+  > **The precondition failed SILENTLY, which is the whole difficulty.** Nothing announces that a
+  > proof's premise has lapsed; the proof just keeps being available to quote.
+  >
+  > **Practically: state the precondition WITH the control, in one breath** — *"a pure append, so
+  > zero deletions proves nothing was eaten"* — so the day it is not an append, the sentence is
+  > visibly wrong instead of quietly empty. **And when there ARE deletions, read them**: `git diff
+  > --cached | grep "^-"` costs nothing and answers the question the count no longer can.
 
 - **AN EXIT STATUS PROVES A PROCESS ENDED, NEVER THAT IT DID ITS WORK. CHECK THE ARTEFACT, NOT THE
   INVOCATION.** When a command's job is to WRITE something — regenerate a golden file, emit a report,
@@ -1037,27 +1067,46 @@ the opposite because the material suggests it.**
     > 1.6-second shot. **Clean halving, attack-speed headroom and a fast weapon are jointly
     > unsatisfiable.** Full argument in `PLAN-locust.md`.
 
-### A PERCENTAGE NEEDS A QUANTITY TO MULTIPLY — NAME IT, AND CHECK IT, BEFORE AUTHORING A CURVE
+### NAME THE QUANTITY, AND NAME THE SET OF THINGS THAT HAVE IT
 
-**Before writing any `value_by_level` in percent: name the quantity the percentage multiplies, and
-confirm it is NON-ZERO and CONTINUOUS at the values it will actually meet.** If it is quantised,
-floored, or absent, **author a FLAT value instead** — or park the feature.
+**Before writing any `value_by_level`: name the quantity the curve moves, and answer BOTH halves.**
+
+1. **ARITHMETIC — is the quantity non-zero and continuous at the values it will meet?** If it is
+   quantised, floored, or absent, **author a FLAT value instead** — or park the feature.
+2. **ELIGIBILITY — does every piece of gear this can ROLL ON actually possess that quantity?** If
+   some do not, **the gate is wrong, and no curve fixes it.**
+
+> **THE TWO HALVES ARE ONE RULE, NOT TWO, AND THAT IS THE WHOLE POINT.** An enchant can be
+> **arithmetically honest and still grant zero**, because the weapon it landed on does not possess
+> the thing it modifies. **Passing the first half reads as passing** — the number is real, the
+> multiplicand is real, and the player still receives nothing.
+>
+> **THE SAME ENCHANT FAILED BOTH HALVES**, which is why they cannot be separate rules: Expanded
+> Quiver failed the arithmetic half (a percentage of an integer magazine floors to nothing) and was
+> ruled FLAT — **and then failed the eligibility half anyway**, because `hunters_bow` is
+> `class: ranger` and authors no `quiver_size`. Fixing the first did not touch the second.
 
 **The failure is not a weak enchant. It is a tooltip that advertises a number while the player
 receives ZERO**, and nothing goes red, because a curve that resolves correctly and lands on nothing
 is indistinguishable from one that works.
 
-Three enchants proposed in one slice (2026-09-13) failed this from three independent directions —
-which is why it is stated as a rule rather than three notes:
+Three enchants proposed in one slice (2026-09-13) produced **four** failures of this rule, across both
+halves — which is why it is stated as a rule rather than four notes:
 
-| proposed | the quantity | how it fails |
-|---|---|---|
-| **Rapid Fire** | a **QUANTISED** cooldown | the 4-tick input grid swallows anything under **+28%** |
-| **Expanded Quiver** | an **INTEGER** magazine | `QuiverSize.arrows` floors — one arrow is 11% at 9 rounds, so every tier below that grants nothing |
-| **Punch** | a knockback base that **DOES NOT EXIST** *on the weapons it was aimed at* | `applyDamage` never calls `entity.damage()`, so a **ray** hit raises no `EntityKnockbackEvent` and its base push is `0.0` |
+| proposed | half | the quantity | how it fails |
+|---|---|---|---|
+| **Rapid Fire** | arithmetic | a **QUANTISED** cooldown | the 4-tick input grid swallows anything under **+28%** |
+| **Expanded Quiver** | arithmetic | an **INTEGER** magazine | `QuiverSize.arrows` floors — one arrow is 11% at 9 rounds, so every tier below that grants nothing |
+| **Punch** | **eligibility** | a knockback base that **DOES NOT EXIST** on a ray | `applyDamage` never calls `entity.damage()`, so a ray hit raises no `EntityKnockbackEvent`; base push `0.0` |
+| **Expanded Quiver**, *again* | **eligibility** | a magazine the weapon **does not have** | `hunters_bow` is `class: ranger` with no `quiver_size`, so the enchant rolls on and renders `+2 Quiver Arrows` for nothing |
 
-**Quantised, floored, absent — three different mechanisms, one question catches all three**, and it
-is cheaper than any of the three investigations that found them separately.
+**Quantised, floored, absent, unpossessed — four different mechanisms, one question catches all
+four**, and it is cheaper than any of the four investigations that found them separately.
+
+> **THE FOURTH ROW IS WHY THE RULE HAS TWO HALVES.** It was found only after the arithmetic half had
+> already "passed" the enchant and a flat value had been ruled. **`+2 arrows` is `+2 arrows`** — the
+> arithmetic test cannot see it. It arrived through the **ROLL TABLE** instead, which is a door the
+> one-half version of this rule does not watch.
 
 > **AND PUNCH IS THE ONE THAT SURVIVED, WHICH IS THE HALF OF THIS RULE WORTH KNOWING.** Operator
 > ruling, 2026-09-13: *"Other ranged weapons will have knockback, the instant hitting ranged weapons

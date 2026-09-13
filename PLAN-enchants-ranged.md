@@ -1,8 +1,19 @@
 # PLAN — Slice D: Expanded Quiver (Punch designed and parked)
 
-**Status: NOT IMPLEMENTED. No Java written, no test written, no mutation owed.** This document is
-the investigation and the design. Every claim below that is a fact about this tree names the file it
-was read from; every claim that is a ruling says whose. **Nothing here has been booted.**
+**Status: EXPANDED QUIVER SHIPPED 2026-09-13 on `feat/expanded-quiver`. PUNCH DESIGNED AND PARKED.
+Four mutations run, all four guarded — two of them only after this plan's own forecast was measured
+and found wrong. Nothing has been BOOTED.** This document is the investigation, the design, and now
+the result. Every claim that is a fact about this tree names the file it was read from; every claim
+that is a ruling says whose.
+
+> **THIS MASTHEAD SAID `NOT IMPLEMENTED. No Java written, no test written, no mutation owed.` UNTIL
+> THE SLICE WAS ALREADY COMMITTED AND ON THE WIRE.** §5 was updated with the shipped result and the
+> masthead was not, so the document carried **two answers** and the stale one came first.
+>
+> > **A CORRECTION THAT DOES NOT DELETE WHAT IT CORRECTS LEAVES TWO ANSWERS IN ONE DOCUMENT, AND THE
+> > READER TAKES WHICHEVER THEY REACH FIRST.** Correcting a claim means **removing** it, not
+> > preceding it with a better one. A status line is the worst case: it is read first and it is the
+> > line least likely to be re-read while editing a section four screens down.
 
 > ## SLICE D SHIPS EXPANDED QUIVER ONLY
 >
@@ -552,7 +563,10 @@ exist.
 
 > ## SHIPPED 2026-09-13. THIS SECTION IS NOW A RESULT, NOT A FORECAST.
 >
-> **Final verify run, re-read after the last file landed: `942 / 17 / 633` = 1592, zero failures.**
+> **Final verify run, re-read after the last file landed: `942 / 17 / 638` = 1597, zero failures.**
+> (It was `942 / 17 / 633` = 1592 at the first commit; the five new
+> `ExpandedQuiverModifierItemsTest` rows are the difference, and `1592` is left standing **only**
+> where it names the suite the two failed mutations were run against.)
 > Core gained 5 rows (`ExpandedQuiverTest`), paper 3 (`ExpandedQuiverContentInvariantTest`);
 > baseline was `937 / 17 / 630` = 1584.
 >
@@ -585,10 +599,51 @@ exist.
 > the positive control was entangled with the thing it controls for. It stayed green, which is what
 > says the discovery guard and the invariant are independent.
 
-**The forecast below was written before any Java existed. `MUT-SIGN`, `MUT-MERGE` and `MUT-PREFIX`
-are guarded by `ExpandedQuiverTest`'s rows and each names its mutation in-line, but only `MUTEXEMPT`
-has actually been RUN.** The other three are asserted-and-green, which is not the same thing, and
-saying so is the whole of this page's discipline.
+> ### ALL FOUR NOW RUN — AND TWO OF THEM WERE GUARDING NOTHING
+>
+> **The previous revision of this section said `MUT-SIGN`, `MUT-MERGE` and `MUT-PREFIX` were
+> "asserted and green, which is not verified". That was the right thing to say and it understated
+> the problem: two of the three were guarding NOTHING AT ALL.**
+>
+> | mutation | target | before | after the fix |
+> |---|---|---|---|
+> | `MUTEXEMPT` | exemption list | **2/3 red** | — |
+> | `MUTSIGN` | `QuiverSize.boosts` `>` → `!=` | **2 red** (mine + `QuiverSizeTest`) | — |
+> | `MUTMERGE` | delete the `putAll` | **0 failures of 1592** | **2/5 red** |
+> | `MUTPREFIX` | alias prefix to `quiversize:` | **0 failures of 1592** | **2/5 red** |
+>
+> **THE TWO THAT FAILED ARE THE TWO THE TARGET FILE PREDICTED BEFORE THE SLICE BEGAN.**
+> `QuiverSizeModifierItems` wrote both traps down under *"It reconciles alone, for now"*, and
+> `PlayerHealthSystem:198` documents the key collision for max health. **Both were understood, both
+> were written about at length, and neither was caught by anything.**
+>
+> > **THE MUTATION YOU RUN FIRST IS THE ONE YOU THOUGHT OF LAST.** `MUTEXEMPT` was invented during
+> > this slice and was run immediately. `SIGN`, `MERGE` and `PREFIX` were predicted by the target
+> > file *before the slice started* — and **a guard written against a KNOWN trap is the one most
+> > likely to be asserted and trusted, because the trap is already understood.** Understanding is not
+> > evidence.
+>
+> **WHY THE ASSERTIONS MISSED, AND IT IS THE SAME CAUSE TWICE.** `ExpandedQuiverTest` models both
+> defects against `Stat` **directly**, with the key strings written as **literals**. So it never
+> reads `SOURCE_PREFIX` and never reaches `PlayerHealthSystem`. It **documented** the traps
+> faithfully and **guarded** neither. A test that reproduces a defect is not the same as a test that
+> is wired to the code that could cause it.
+>
+> **THE FIXES ARE STRUCTURAL WHERE THEY CAN BE:**
+>
+> - **`MUT-MERGE`** — the inline `new HashMap<>(a)` + `putAll(b)` was extracted into
+>   `ExpandedQuiverModifierItems.mergedSources(a, b)`. **Dropping a source now means dropping an
+>   argument, which does not compile**, and the remaining reachable mutation — editing that body —
+>   reddens `ExpandedQuiverModifierItemsTest`. A unit test can exist here only because the function
+>   takes plain maps and no `Player`.
+> - **`MUT-PREFIX`** — new rows read the **actual constants** of both scanners, and also refuse
+>   either being a *prefix of* the other, which mere inequality does not catch.
+>
+> **AND ONE THING IS RECORDED RATHER THAN FIXED: the max-health pair is still inline and is unguarded
+> by the same measurement.** `PlayerHealthSystem` merges `HealthModifierItems` and
+> `GrowthModifierItems` with exactly the `putAll` shape this slice just proved reddens nothing. That
+> is a second edit to a second stat, and bundling it into a quiver slice is how a change stops being
+> reviewable.
 
 When Expanded Quiver lands, the mutation set is knowable in advance and **the axis count matters**:
 

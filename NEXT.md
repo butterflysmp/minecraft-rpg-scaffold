@@ -10869,5 +10869,58 @@ the shared `ability.onHit()`, and **no golden moves.**
 `PLAN-enchants-ranged.md` §4 — kept deliberately rather than deleted when Slice D narrowed to
 Expanded Quiver. §4.1 carries the trace proving a ray's base push is `0.0`; §4.3 records that this
 ruling is shape **(b)** of three offered, and why (b)'s recorded objection — *it reintroduces
-per-weapon data* — does not survive the ruling: **under the ruling a ray declaring no knockback is
-correct and says so, so the field's ABSENCE carries information rather than being an oversight.**
+per-weapon data* — does not survive the ruling: **`type: ray` is itself the declaration.** Hitscan
+does not push, and the weapon says `ray` in its own file, so the omission is legible **from a field
+that is present** rather than from one that is missing.
+
+> **THIS PARAGRAPH ASSERTED THE REFUTED CLAIM UNTIL 2026-09-13, THREE SCREENS BELOW THE SECTION THAT
+> REFUTES IT.** It read *"the field's ABSENCE carries information rather than being an oversight"* —
+> corrected above under *THE GATE KEYS ON THE CAST SHAPE*, and left standing here, in the same file,
+> in the closing paragraph.
+>
+> **That is the two-answers defect committed by the very edit that fixed it.** The correction was
+> added as a new section instead of the old claim being removed, and a grep for the claim's own words
+> would have found both copies in one command. **Correcting a claim means removing it; adding a
+> better answer beside it leaves the reader to pick.**
+
+### OPEN FINDING — THE MAX-HEALTH MERGE IS UNGUARDED, MEASURED BY A MUTATION ON ITS TWIN
+
+**Found 2026-09-13, during the Expanded Quiver slice, on a DIFFERENT stat. Recorded rather than
+fixed, because it is a second edit to a second stat and bundling it into a quiver slice is how a
+change stops being reviewable.**
+
+`PlayerHealthSystem` merges two max-health sources exactly the way the quiver pair did:
+
+```java
+Map<String, Double> desiredMax = new HashMap<>(HealthModifierItems.desiredModifiers(player, keys));
+desiredMax.putAll(GrowthModifierItems.desiredModifiers(player, keys, enchants));
+stats.reconcileMaxModifiers(id, desiredMax);
+```
+
+**MEASURED ON THE QUIVER TWIN: deleting the equivalent `putAll` reddened NOTHING across the whole
+1592-row suite.** `PlayerHealthSystem` needs a live `Player`, so no unit test reaches its scan loop.
+`GrowthTest` models the defect against `Stat` directly, with the key strings written as **literals**
+— so it never reads `GrowthModifierItems.SOURCE_PREFIX` and never reaches this wiring.
+
+**The comment at `PlayerHealthSystem:193` is emphatic and correct** — *"TWO SOURCES, ONE RECONCILE
+CALL, and that is not a tidiness preference"* — and **nothing enforces it.** That is the shape the
+whole slice was about: a trap that is understood, written about at length, and caught by nothing.
+
+**The quiver side was fixed structurally and the same fix applies here unchanged:**
+
+- Extract the merge into a **two-argument function** taking both maps. Dropping a source then means
+  dropping an argument, **which does not compile.**
+- Add rows reading the **actual** `SOURCE_PREFIX` constants of both scanners — and refusing either
+  being a *prefix of* the other, which mere inequality does not catch.
+
+See `ExpandedQuiverModifierItems.mergedSources` and `ExpandedQuiverModifierItemsTest` for the worked
+version. Both were written only after the mutation proved the assertion-only approach guarded
+nothing.
+
+> **NOT URGENT AND NOT COSMETIC.** Nothing is broken today — the merge is correct as written. What is
+> missing is anything that would notice if it stopped being correct, and the failure mode is a player
+> silently holding half the max health their gear justifies, forever.
+
+**TRIGGER: the next time anything touches the max-health reconcile block, or the next enchant that
+adds a THIRD source to any reconciled stat** — a third source is when the inline shape stops being
+two lines and starts being a place to lose one.
