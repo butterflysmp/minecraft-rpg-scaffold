@@ -978,10 +978,18 @@ the opposite because the material suggests it.**
     **So: never derive a new weapon's numbers from a dev weapon's.** Parity with a placeholder is
     parity with nothing, and it propagates — the derived number then becomes the next weapon's
     precedent and the placeholder's arbitrariness outlives the placeholder.
-  - **`16` is on the 4-tick input grid, deliberately.** A held right-click delivers an input only
-    every 4 ticks, so a weapon's real fire interval is its authored cooldown **rounded UP to the next
+  - **`16` is on the 4-tick input grid, deliberately.** A held right-click's inputs are quantised onto
+    a 4-tick grid, so a weapon's real fire interval is its authored cooldown **rounded UP to the next
     multiple of 4** — author `13` or `14` and you have authored `16`, **and the tooltip will not say
-    so.** **Author multiples of 4.** The mechanism, the measurements and the tooltip consequence are
+    so.** **Author multiples of 4.**
+
+    > **THIS SAID "delivers an input only every 4 ticks" UNTIL 2026-09-13, AND THAT PERIOD CLAIM IS
+    > FALSE.** `GATE-locust.md` row 1 read `INPUTS min 3t`, twice. **Holding right-click does not
+    > produce a periodic stream at all** — operator's ruling, a property of the vanilla client.
+    > **The grid survives and every prediction it makes survives with it**; what died is the sentence
+    > explaining *why* there is a grid. Do not restore *every*, and do not change the 4 — the
+    > arithmetic is confirmed at four measured points and the mechanism was never what the arithmetic
+    > rested on. The mechanism, the measurements and the tooltip consequence are
     at `WeaponLoader`'s `cooldown_ticks` section — **this is the pointer, that is the account.**
 
     > **THE "MULTIPLES OF 8 IF IT MAY EVER BE DUAL-WIELDED" CLAUSE IS WITHDRAWN, 2026-09-13 — AND IT
