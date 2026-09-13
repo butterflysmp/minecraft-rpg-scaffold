@@ -229,6 +229,29 @@ So:
   > So, for any guard whose failure path has never been observed: **feed it the bad input on
   > purpose.** A `catch` around a library call especially — leniency is a library's default
   > far more often than anyone assumes, and it is never stated where you are looking.
+- **TWO WAYS TO MANUFACTURE A FALSE ABSENCE, AND BOTH END IN "IT ISN'T THERE".** A search that
+  returns nothing and an instrument that is wrong both produce the same sentence, and it is a
+  *finding* — so it gets reported, acted on, and is much harder to retract than a wrong positive.
+
+  > **A GREP FOR YOUR OWN VOCABULARY IS NOT A SEARCH OF THE DOCUMENT.** You match the word **you**
+  > would have written; the author wrote theirs. **Search by content — a number, an identifier, a
+  > quoted figure — and treat a null result on a word you chose as NO RESULT AT ALL**, not as
+  > evidence of absence.
+  >
+  > **2026-09-12, twice in one session.** A squash body was grepped for *"fencepost"*, returned
+  > nothing, and was nearly reported as missing the defect. The defect is there, under *"Two commit
+  > counts were wrong, both by exactly +1"* — the author's words, not the searcher's. The checkable
+  > form was available and cheap: grep for `+1`, or for the SHA.
+  >
+  > **AND AN INSTRUMENT THAT MISREPORTS THE CHECKABLE FACTS IS NOT EVIDENCE ABOUT THE UNCHECKABLE
+  > ONES — not even negative evidence.** Same day: a PR page read twice, both times claiming the PR
+  > open and the branch present, **both refuted by `ls-remote`.** An instrument wrong about what you
+  > *can* verify tells you nothing about what you cannot. **Say "unverified" and name the
+  > instrument**, rather than converting its silence into a finding.
+  >
+  > **Practically:** before reporting an absence, ask *what would this look like if it were present
+  > and my search were wrong?* If the answer is "identical", the search is not done.
+
 - Anything that **discovers** rather than asserts — a scan, a glob, a registry walk —
   must **fail loudly when it discovers nothing.** Finding zero items is a defect, not a
   quiet no-op. `getResource("content/")` on a shaded jar returns a non-null URL whose
@@ -460,6 +483,26 @@ So:
   > place, each carrying **the fixture it was taken on, the date, and the note that the fixture was
   > subsequently deleted.** The third field is the one that does the work; without it the first two
   > read as an oversight.
+
+- **A FINDING THAT LIVES ONLY IN THE CONVERSATION IS NOT RECORDED.** A chat transcript is **not
+  greppable by the person who will next touch the file**, does not survive the session, and **cannot
+  fail.** If a finding is worth stating, it is worth a commit.
+
+  > **AND THE MOMENT IT IS MOST LIKELY TO BE LOST IS EXACTLY THE MOMENT IT WAS FOUND** — after the
+  > record it belonged in was already written. That is not bad luck; it is **selection**. Review is
+  > when findings surface, and review happens *after* the document. So the findings most likely to go
+  > unrecorded are systematically the ones produced by the process meant to catch them.
+  >
+  > **2026-09-12.** The `quiver_size: 1` blind value was found during merge review, after the PR body
+  > was finalised. It could not reach the squash; the branch was then deleted, making that body the
+  > only account of the work. **For about an hour the finding existed solely in a chat transcript**,
+  > and it was recorded only because someone grepped `master` for it and noticed it was nowhere.
+  >
+  > **Practically:** when a finding arrives too late for the commit it belonged in, **it gets its own
+  > commit — now, not "next time that file is touched".** A follow-up commit costs minutes; the same
+  > note in a transcript costs the next person the whole rediscovery. And when the branch is already
+  > merged, the follow-up is on a new branch, which is cheaper than it sounds and is what this rule
+  > is for.
 
 - **PROSE REACHING A COMMAND GOES THROUGH A FILE, NEVER THROUGH QUOTING.** `git commit -F <file>`,
   `gh pr create --body-file`, `gh pr merge --body-file`, a written file for anything else. Never

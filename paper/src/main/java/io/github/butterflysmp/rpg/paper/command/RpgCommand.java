@@ -1137,7 +1137,33 @@ public final class RpgCommand {
                 : "no elapsed figure";
     }
 
-    /** The verdict word, and what it means for Q7. Four arms, each a different FACT. */
+    /**
+     * The verdict word, and what it means for Q7. Four arms, each a different FACT.
+     *
+     * <h2>THE {@code COOLDOWN-LIMITED} DISCHARGE CONDITION ASSUMES A NON-UNIFORM GATE, AND ONE
+     * AUTHORED VALUE DEFEATS IT — {@code quiver_size: 1}</h2>
+     *
+     * <p>The caution discharges on {@code FIRES mean == min}, which is sound <b>because a magazine or
+     * a durability gate normally interposes on SOME intervals and not others</b>, stretching the ones
+     * it touches. <b>With a magazine of exactly 1, every shot is followed by a reload, so the gate
+     * interposes on EVERY interval.</b> The sample is then perfectly regular, {@code mean == min}, and
+     * <b>the caution discharges itself on a sample that is reload-limited rather than
+     * cooldown-limited</b> — precisely the confound it exists to catch.
+     *
+     * <p>{@code quiver_size: 2} is safe: intervals alternate, {@code mean > min}, and the readout
+     * lands on {@code INCONCLUSIVE}, which is the correct branch. <b>Only 1 is invisible.</b>
+     *
+     * <p><b>INSTANCES: ZERO.</b> Measured — only {@code boltor} (8) and {@code quiver_stone} (9)
+     * carry {@code quiver_size} at all. <b>DORMANT, NOT ABSENT:</b> a guard with no instances is not
+     * a guard that cannot fire, and a heavy single-shot weapon is a design a later slice may well
+     * produce. Registered with the other dormant findings in {@code NEXT.md}.
+     *
+     * <p><b>It is the second case in one slice of BLINDNESS THROUGH UNIFORMITY rather than
+     * magnitude</b> — the first was {@code INPUT_FLOOR_TICKS} {@code 4 -> 2} in
+     * {@code HeldFireQuantisationPinTest}, where every measured point already landed on the mutated
+     * grid. Both are values a plausible design produces; <b>both are invisible to a test that looks
+     * at variance.</b>
+     */
     private static String verdictLine(FireCadence.Sample in, FireCadence.Sample fire) {
         return switch (FireCadence.verdict(in, fire)) {
             case INPUT_LIMITED -> "INPUT-LIMITED -- every input became a fire, so the input repeat "
@@ -1145,9 +1171,10 @@ public final class RpgCommand {
             case COOLDOWN_LIMITED -> "COOLDOWN-LIMITED -- fires slower. Q7's answer is still the "
                     + "INPUT number; the gap is slice C's. NOTE: a magazine or damaged durability "
                     + "gates too -- BUT CHECK THIS SAMPLE BEFORE RE-TAKING IT. A gate that "
-                    + "interposed shows as a STRETCHED interval, so if FIRES mean equals FIRES min "
-                    + "then every interval was identical, nothing interposed, and this caution is "
-                    + "discharged. If mean exceeds min the sample is INCONCLUSIVE rather than "
+                    + "interposed on SOME intervals shows as a STRETCHED interval, so if FIRES mean "
+                    + "equals FIRES min then every interval was identical, nothing interposed on "
+                    + "some-but-not-all, and this caution is discharged. A gate on EVERY interval is "
+                    + "invisible to that test. If mean exceeds min the sample is INCONCLUSIVE rather than "
                     + "gated: an irregular input stream prints the same signature. To isolate the "
                     + "cooldown deliberately, re-take on a weapon with NO MAGAZINE and full "
                     + "durability.";
