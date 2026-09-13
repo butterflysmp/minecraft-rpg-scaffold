@@ -314,12 +314,40 @@ omission**, which is how three behaviours get chosen by whichever comparison som
 | `SURVIVAL` | **yes** | the ruled default; rulings 1–5 apply in full |
 | `CREATIVE` | **no** | ruled — skips the check, reloads to full |
 | `ADVENTURE` | **yes** | a play mode with a restricted inventory, not a build mode. A player in adventure is *playing*, and ruling 4's *"running dry is a planning failure"* is a statement about play |
-| `SPECTATOR` | **not reachable** | a spectator cannot use an item at all, so no reload can begin. **Named rather than omitted**, and the arm should say *unreachable* rather than silently sharing survival's branch — an arm that cannot fire is this project's recorded defect, and it must be labelled as one where it sits |
+| `SPECTATOR` | **yes — behaves as survival** | **believed unreachable, and it consumes anyway.** See below: the unreachability is a derivation, not a measurement, so the arm states a safe behaviour rather than relying on never firing |
 
 > **`ADVENTURE` AND `SPECTATOR` ARE NOT RULED — THEY ARE DERIVED ABOVE, AND THAT IS A DIFFERENT
 > THING.** The operator named `CREATIVE`. The reasoning for the other two is mine and is
 > overturnable; it is written here so the derivation is visible rather than buried in a comparison
 > operator.
+
+#### AN ARM DOCUMENTED AS UNREACHABLE MUST STILL BE SAFE IF REACHED
+
+**`SPECTATOR`'s unreachability is a DERIVATION about what a spectator can do with an item. It is not
+a measurement**, and this project's own rule is that *a guard with no instances is not a guard that
+cannot fire.*
+
+> **SO THE ARM SAYS WHAT HAPPENS IF IT FIRES, AND THE ANSWER IS THE CONSERVATIVE ONE: IT CONSUMES,
+> EXACTLY AS SURVIVAL DOES.** Not a throw, and not a silent share of survival's branch — a named arm
+> whose behaviour is stated.
+
+**The asymmetry is what decides it, and it runs entirely one way:**
+
+| if the derivation is WRONG and a spectator reaches it | arm throws | arm consumes |
+|---|---|---|
+| outcome | **a crash**, from an assumption nobody verified | a reload that costs arrows |
+| who is harmed | the player, and the server log | **nobody — a spectator has no arrows to lose and no weapon to fire** |
+
+**An unreachable arm that throws converts a wrong assumption into a crash.** One that consumes costs
+a spectator nothing **precisely because they cannot reach it anyway** — so the conservative answer is
+free, and it is free *because* of the same unreachability that tempted the throw.
+
+> **This is the identical reasoning the `ADVENTURE` derivation uses** — *a player in adventure is
+> playing, so ruling 4 applies* — and stating them the same way is what makes the pair legible as one
+> decision with two applications rather than two independent guesses.
+
+**Both remain marked as MINE rather than the operator's**, which is what keeps them cheap to
+overturn, and is the right default for a branch where the operator ruled exactly one arm of four.
 
 #### AND IT ADDS A GATE ROW, BECAUSE NO TEST CAN REACH IT
 
