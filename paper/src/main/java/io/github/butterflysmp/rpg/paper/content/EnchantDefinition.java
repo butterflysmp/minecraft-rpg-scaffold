@@ -128,10 +128,17 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                  MAX_HEALTH,
                  MAX_MANA   -> Gate.ARMOR_ONLY;
             case DURABILITY -> Gate.UNIVERSAL_ONLY;
+            // A MAGAZINE is the thing this effect modifies, and only ranger weapons author one.
+            // NOT MAIN_HAND_ONLY, though it is read off the main hand exactly as DAMAGE is: that
+            // gate admits `class: universal`, which is right for damage (every weapon deals some)
+            // and is the dangerous typo here -- a universal quiver enchant would enter every sword's
+            // roll pool and sell an XP unlock that does nothing. Same refusal ARMOR_ONLY and
+            // SHIELD_ONLY make, for the same reason.
+            case QUIVER_SIZE -> Gate.RANGER_ONLY;
         };
         boolean curved = switch (effect) {
-            case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA -> true;
-            case DURABILITY                                               -> false;
+            case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE -> true;
+            case DURABILITY                                                            -> false;
         };
 
         // The two rules are shared rather than copied per arm: three effects now hold the same curve
@@ -145,7 +152,7 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
     }
 
     /** Which gates an effect's mechanism can actually be read through. See {@link #requireGate}. */
-    private enum Gate { UNIVERSAL_ONLY, SHIELD_ONLY, ARMOR_ONLY, MAIN_HAND_ONLY }
+    private enum Gate { UNIVERSAL_ONLY, SHIELD_ONLY, ARMOR_ONLY, MAIN_HAND_ONLY, RANGER_ONLY }
 
     /**
      * A file may not claim a control it does not have -- the rule the durability arm has enforced
@@ -230,6 +237,27 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                         : "must name a fighting class or universal -- the damage gate reads the"
                                 + " weapon in your main hand, so class: "
                                 + gearClass.name().toLowerCase() + " could never fire";
+            }
+            case RANGER_ONLY -> {
+                // Narrower than MAIN_HAND_ONLY by exactly one value: `universal` is REFUSED. The
+                // quiver-size scan reads the main hand, but the stat it moves is a MAGAZINE, and a
+                // weapon with no magazine resolves nothing -- so a universal one would roll onto
+                // every sword in the game and grant nothing there.
+                //
+                // Stated as what the gate CAN be rather than what it cannot, which is the lesson
+                // MAIN_HAND_ONLY records above: `ANY_BUT_SHIELD` became a latent bug the moment
+                // ARMOR existed, through the door the check did not name.
+                //
+                // NOT A TAXONOMY CLAIM. If a MAGE weapon ever authors a quiver_size this becomes a
+                // two-value check and nothing else moves -- the same note SHIELD_ONLY carries about
+                // an off-hand parry dagger. What it is not is an invitation to open it without a
+                // weapon that needs it.
+                yield gearClass == GearClass.RANGER ? null
+                        : "must be class: ranger -- it resolves a MAGAZINE, and only ranger weapons"
+                                + " author quiver_size"
+                                + (gearClass == null
+                                        ? " (universal would put it in every weapon's pool, inert)"
+                                        : ", was class: " + gearClass.name().toLowerCase());
             }
         };
 

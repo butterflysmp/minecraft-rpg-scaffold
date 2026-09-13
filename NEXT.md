@@ -10699,3 +10699,175 @@ other open:** `GATE-volley.md`'s V5 reads `volley_stone`'s `cooldown_ticks: 0` a
 Authoring the floor there — 27, to make the tooltip honest, which is the likeliest reason anyone
 will — stages two independent quantities as equal and the row passes whether the floor exists or not.
 The comment lives at the field as well as in the gate.
+
+## PARKED — PUNCH, DESIGN COMPLETE, WAITING ON A WEAPON THAT CAN TAKE IT
+
+**Operator ruling, 2026-09-13, completing the fragment that resolved it:**
+
+> *"Other ranged weapons will have knockback, the instant hitting ranged weapons don't."*
+
+**This is PARKED, NOT ABANDONED, and the distinction is the whole point of the entry.** The design is
+**finished** — numbers, gate, authoring rule and `on_hit` shape are all below. What is missing is a
+weapon. **Recorded in full so the weapon that fires the trigger inherits a finished design rather
+than a conversation.**
+
+> ### TRIGGER: THE FIRST RANGER-CLASS WEAPON WITH `type: projectile`.
+
+An **event**, not a date, and checkable in one command:
+
+```bash
+grep -l "^class: ranger" content/weapons/*.yml | xargs grep -l "type: projectile"
+```
+
+Today that returns `hunters_bow.yml` alone — **which is in the dev-weapon deletion set**, so after
+that deletion it returns nothing. **The trigger is a weapon that does not exist yet.**
+
+### WHY IT IS PARKED, AND IT IS TESTABILITY RATHER THAN DOUBT
+
+**MEASURED 2026-09-13, both independently verified:**
+
+- **No weapon in content authors knockback.** `grep -rn "type: knockback" content/` returns exactly
+  two hits, both abilities: `ember_step.yml:29` and `void_slash.yml:40`.
+- **Every ranger weapon is a `ray`** — `boltor`, `locust`, `quiver_stone` — **except `hunters_bow`,
+  which is `projectile` AND in the deletion set.**
+
+So Punch has **one** candidate weapon today, on a weapon that is leaving and that would need
+knockback authored onto it first, and **zero** after the deletion.
+
+> **YOU CANNOT BOOT-TEST AN ENCHANT NO WEAPON CAN TAKE.** Shipping it means shipping untestable
+> behaviour **that will be believed to work**, and the first person able to test it will be meeting a
+> bug whose author is gone.
+
+**AND AN ENCHANT IS NOT A GUARD, SO THE STANDING RULING DOES NOT COVER IT.** *A guard with no
+instances sits inert* and costs nothing. **An enchant with no eligible weapon either clutters a roll
+table or is invisible — and NEITHER state announces itself.** That asymmetry is why this is parked
+rather than shipped-and-dormant.
+
+### THE DESIGN, COMPLETE
+
+**NUMBERS — RULED, and they ship exactly as first ruled: `+20% / +40% / +60%` knockback.**
+
+**Punch is the only one of Slice D's three proposed enchants that needed no renumbering.** Rapid Fire
+was parked and Expanded Quiver went flat; **Punch's curve never moved, because the fix was not a
+different curve — it was the operator NAMING THE QUANTITY the percentage multiplies.** See
+`CLAUDE.md`'s *"A PERCENTAGE NEEDS A QUANTITY TO MULTIPLY"*.
+
+**THE AUTHORING RULE** — the pointer is in `CLAUDE.md`; this is the account.
+
+A travelling ranged weapon authors knockback; an instant-hitting one does not. `type: projectile`
+lands with impact and declares an `EffectSpec.Knockback` in its `on_hit`; `type: ray` is hitscan and
+declares none.
+
+```yaml
+on_hit:
+  - type: weapon_damage
+    element: kinetic
+  - type: knockback
+    strength: 0.4
+```
+
+**NO NEW SCHEMA.** `EffectSpec.Knockback(double)`, `AbilitySchema`'s `case "knockback"`,
+`EffectApplier` and `CombatantHandle.applyKnockback` all already exist.
+
+**THE CODE DOES NOT IMPLY THIS RULE, WHICH IS WHY IT IS WRITTEN DOWN.** Neither cast shape produces
+knockback on its own: `CastExecutor.detonate` is the single on-hit site and **every** shape routes
+through the custom health store, so nothing calls `entity.damage()` and no `EntityKnockbackEvent` is
+raised. **Both shapes look identical in the engine.** `lapis_staff.yml:96-108` records the same
+mechanism from the other side — *"A REMEDY THAT IS ABSENT LOOKS LIKE A PROBLEM THAT IS PRESENT"* —
+and `cursed_emerald.yml:225` independently.
+
+**So Punch doing nothing on a Boltor is CORRECT, not a gap.** A ray is meant to have no push.
+
+**SCOPE — the obvious sweep is wrong.** Three shipped weapons are `type: projectile` and author no
+knockback: `ember_staff` and `flint_staff` (mage), `emberblade` (melee). The ruling is about
+**ranged** weapons, so **these are OUTSIDE the rule, not in violation of it.** Do not add knockback to
+a staff on the strength of this entry. Whether a travelling MAGE weapon should push is a separate
+question **nobody has ruled**.
+
+**THE ROLL GATE — the part that keeps the tooltip honest.**
+
+> **PUNCH MUST NOT ROLL ON A WEAPON THAT AUTHORS NO KNOCKBACK.**
+
+Otherwise a player enchants a Boltor, the tooltip reads *"+40% knockback"*, and nothing happens —
+**the dishonesty Slice D eliminated three times, arriving a fourth time through the ROLL TABLE
+instead of the arithmetic.**
+
+
+#### THE GATE KEYS ON THE CAST SHAPE, NOT ON THE PRESENCE OF THE EFFECT
+
+**CORRECTED 2026-09-13, one turn after this entry was written, and the first draft was wrong in a way
+that matters.** It said Punch may not roll on *a weapon that authors no knockback*, and justified it
+with the claim that **a ray's ABSENT knockback "carries information".**
+
+**The project had already ruled the opposite, in writing.** `kinetic.yml:10-15`, under the heading
+**PRESENT AND EMPTY**:
+
+```
+""       a decision. Accepted silently -- an unflavoured hit draws a bare number.
+absent   a GAP. ContentValidator names it.
+```
+
+with the rule *ABSENCE IS NOT A NEUTRAL VALUE*, which `Scorch.UNDECLARED_CAP` states for a third
+field. **Making absence load-bearing would put two conventions for "deliberately nothing" into
+content, unmarked** — the `> NONE` / `!= NONE` hazard in the content layer, and that one cost a
+silently abolished feature.
+
+**AND A PRESENCE-KEYED GATE HAS A CONCRETE FAILURE, NOT ONLY AN INCONSISTENCY.** It cannot
+distinguish:
+
+| weapon | knockback | truth | presence-keyed gate |
+|---|---|---|---|
+| a `ray` that correctly declares none | absent | **correct by design** | refuses Punch — right |
+| a `projectile` whose author **forgot** | absent | **a GAP** | refuses Punch — **silently wrong** |
+
+For the ray it is right. **For the projectile, Punch is quietly unrollable and nothing says why** —
+the enchant is missing from a weapon that should have it, and no one finds out.
+
+**SO THE GATE KEYS ON THE CAST SHAPE, which is declared, checkable, and already in the file:**
+
+```
+type: ray                     knockback MUST BE ABSENT.   Present is a finding.
+type: projectile + ranged     knockback MUST BE PRESENT.  Absent is a GAP, and
+                              ContentValidator names it -- exactly as it names a
+                              missing damage_symbol.
+```
+
+Eligibility becomes **derivable** from the cast shape; the absence stops being load-bearing; and a
+forgotten knockback is caught **at boot** rather than by a player who cannot enchant their bow.
+
+> **AN AUTHORING RULE CAN CONVERT AN ABSENCE FROM A GAP INTO A STATEMENT — BUT ONLY IF SOMETHING
+> CHECKS THE RULE.** Unchecked it converts nothing: **a correct absence and a forgotten one are the
+> same bytes**, and the rule exists only in the head of whoever remembers it.
+
+**This is the part that would have been MISSING when the trigger fired**, which is why it is folded
+in now. It costs nothing today and it is not recoverable later: the weapon that fires the trigger is
+exactly the weapon whose forgotten field this catches.
+
+**Precedent, already shipped, for the derivable half:** `WeaponDefinition.hasQuiver()` does this job
+for the quiver — a named sentinel (`NO_QUIVER = 0`) and a predicate, with **no reliance on a field
+being absent**. Five call sites filter on it. Expanded Quiver's own roll gate reuses it rather than
+inventing a rule, and Punch's should be shaped the same way.
+
+### THE ONE PIECE DELIBERATELY NOT DESIGNED, AND WHY THAT IS NOT AN OMISSION
+
+**WHERE the authored `strength` meets the wielder's enchant level.** `EffectApplier` dispatches the
+`Knockback` and holds the caster; the enchant sits on the item. **That seam is now the ONLY remaining
+implementation question** — the roll-eligibility check above was undesigned when this entry was first
+written and is designed now, keyed on the cast shape.
+
+**Left open ON PURPOSE.** Both answers depend on the weapon that fires the trigger — whether it is
+the only Punch-eligible weapon or one of several, and where roll eligibility is decided by then.
+**Inventing a seam against a weapon that does not exist would produce a design that reads as settled
+and was never tested against anything**, which is the failure this whole entry is parked to avoid.
+
+**Punch does NOT append an effect to `on_hit`; it SCALES one already declared there.** So the
+`isBasicAttack` question is retired rather than answered: the list does not change, nothing mutates
+the shared `ability.onHit()`, and **no golden moves.**
+
+### FULL DESIGN AND THE TRACE THAT PRODUCED IT
+
+`PLAN-enchants-ranged.md` §4 — kept deliberately rather than deleted when Slice D narrowed to
+Expanded Quiver. §4.1 carries the trace proving a ray's base push is `0.0`; §4.3 records that this
+ruling is shape **(b)** of three offered, and why (b)'s recorded objection — *it reintroduces
+per-weapon data* — does not survive the ruling: **under the ruling a ray declaring no knockback is
+correct and says so, so the field's ABSENCE carries information rather than being an oversight.**

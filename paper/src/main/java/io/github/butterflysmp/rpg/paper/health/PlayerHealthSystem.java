@@ -281,7 +281,23 @@ public final class PlayerHealthSystem implements HealthListener {
             // So capacity is as of the wielder's last shot or reload, which is the ENDORSED
             // consequence rather than a gap: you pack your quiver, and what you packed is what you
             // carry.
-            stats.reconcileQuiverSizeModifiers(id, QuiverSizeModifierItems.desiredModifiers(player, keys));
+            //
+            // TWO SOURCES, ONE RECONCILE CALL -- and it is the same rule the max-health pair above
+            // states, arriving at the stat this file's own comment predicted it would. The quiver
+            // gained a second source when Expanded Quiver landed: the PDC instrument
+            // (QuiverSizeModifierItems, all slots) and the enchant (ExpandedQuiverModifierItems,
+            // main hand only). ModifierReconciler.reconcile removes every applied source ABSENT
+            // from the map it is handed, so reconciling the two separately would have each wipe the
+            // other's -- the magazine would hold whichever ran last, silently and forever.
+            //
+            // The enchant's keys are namespaced ("expandedquiver:HAND") because the instrument scan
+            // walks ALL slots on BARE slot names, so an instrument and an enchanted weapon in the
+            // SAME HAND would otherwise collide on "HAND" and Stat.putModifier would keep only one.
+            // One slot makes that collision one /rpg give away, not hypothetical.
+            Map<String, Double> desiredQuiver =
+                    new HashMap<>(QuiverSizeModifierItems.desiredModifiers(player, keys));
+            desiredQuiver.putAll(ExpandedQuiverModifierItems.desiredModifiers(player, keys, enchants));
+            stats.reconcileQuiverSizeModifiers(id, desiredQuiver);
 
             // RELOAD TIME: ticks added to the held weapon's authored reload. Silent and void, same
             // as the line above, and for one extra reason of its own -- a running reload's deadline
