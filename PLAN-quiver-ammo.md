@@ -3,9 +3,25 @@
 **Status: NOT IMPLEMENTED. No Java written, no test written, no mutation owed, nothing booted.**
 This document is the investigation and the design.
 
+> ## THE THREE FORWARD REFERENCES ARE NOW RESOLVED — SLICE D MERGED 2026-09-13
+>
+> **Slice D merged as squash `2b41c62`, and this branch was rebased onto it.** All three citations
+> below now point at things that **are** in this branch's base; verified by opening the file and
+> grepping the other two. **The note is updated rather than left standing**, because a resolved
+> dependency described as unresolved is the same two-answers defect as an unresolved one described as
+> safe.
+>
+> **The rebase was clean and the predicted conflict did NOT occur.** `CLAUDE.md` and `NEXT.md` were
+> expected to overlap; they did not, because this slice's rulings were recorded **in this plan**
+> rather than in those two files. **Measured: zero overlapping paths** — Slice D's squash touches 13
+> files, this branch touches one, and the intersection is empty.
+>
+> <details><summary>What the note said before the merge, kept because the reasoning outlives the
+> instance</summary>
+>
 > **THREE FORWARD REFERENCES, NAMED HERE SO THEY DO NOT READ AS ERRORS.** This branch is cut from
-> `master`, and **Slice D (Expanded Quiver) has not merged yet.** So three citations below point at
-> things that are **not in this branch's base**:
+> `master`, and **Slice D (Expanded Quiver) had not merged yet.** So three citations below pointed at
+> things that were **not in this branch's base**:
 >
 > - **§6.3** cites `ExpandedQuiverContentInvariantTest` — ships with Slice D.
 > - **§8** cites Slice D's `MUT-MERGE` / `MUT-PREFIX` result — the measurement that two assertions
@@ -43,6 +59,12 @@ This document is the investigation and the design.
 > **So: do not read the marking above as a guarantee.** It tells a reader what the order should be.
 > It does not make it happen, and if the order is ever inverted the marking is what explains the
 > dangling names rather than what prevented them.
+>
+> </details>
+>
+> **THE ORDER HELD, AND IT HELD BECAUSE OF THE SCHEDULE RATHER THAN BECAUSE OF THE MARKING** — which
+> is exactly what the collapsed note predicted. Slice D was ready and this was blocked on a ruling.
+> **Nothing enforced it, and the outcome is not evidence that anything did.**
 
 > ## THIS IS NOT A CONTENT SLICE, AND IT IS NOT ABOUT THE DRAGON'S PLUME
 >
