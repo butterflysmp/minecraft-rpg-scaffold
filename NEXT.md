@@ -10883,11 +10883,51 @@ that is present** rather than from one that is missing.
 > would have found both copies in one command. **Correcting a claim means removing it; adding a
 > better answer beside it leaves the reader to pick.**
 
-### OPEN FINDING — THE MAX-HEALTH MERGE IS UNGUARDED, MEASURED BY A MUTATION ON ITS TWIN
+### OPEN FINDING — **THE INLINE TWO-MAP MERGE IS A KNOWN-HOLLOW GUARD**, and the max-health pair is the surviving instance
 
-**Found 2026-09-13, during the Expanded Quiver slice, on a DIFFERENT stat. Recorded rather than
-fixed, because it is a second edit to a second stat and bundling it into a quiver slice is how a
-change stops being reviewable.**
+**Found 2026-09-13, during the Expanded Quiver slice. Recorded rather than fixed, because it is a
+second edit to a second stat and bundling it into a quiver slice is how a change stops being
+reviewable.**
+
+> ## THE FINDING IS ABOUT THE SHAPE, NOT ABOUT MAX HEALTH — AND THE FIRST DRAFT OF THIS ENTRY GOT
+> THAT WRONG
+>
+> **`MUTMERGE` did not discover something about Expanded Quiver. It discovered something about
+> INLINE TWO-MAP MERGES IN A METHOD NO TEST CAN REACH.**
+>
+> > **A DEFECT PROVED IN ONE INSTANCE IS PROVED IN EVERY INSTANCE SHARING ITS SHAPE.** Fixing the
+> > instance you were looking at and leaving its twin is how a finding becomes a local repair.
+>
+> **THE SHAPE, stated so a future instance is recognisable before it is written:**
+>
+> ```
+> Map<String, Double> desired = new HashMap<>(scanA(player, ...));
+> desired.putAll(scanB(player, ...));            <- deleting THIS line reddens nothing
+> stats.reconcileXModifiers(id, desired);
+> ```
+>
+> **Three properties together make it unguardable, and it needs all three:**
+>
+> 1. the merge is **inline** in a method that needs a live `Player`, so **no unit test reaches it**;
+> 2. the test that models the defect asserts against **`Stat` directly**, with the source keys as
+>    **literals**, so it never reads the real constants and never touches this wiring;
+> 3. the trap is **documented in a nearby paragraph**, which is what makes everyone believe it is
+>    covered. *(See the rule this slice produced: a guard written against a KNOWN trap is the
+>    likeliest to be hollow.)*
+>
+> **BOTH SITES, listed so whoever converts this does not re-derive which are affected:**
+>
+> | site | sources | status |
+> |---|---|---|
+> | `PlayerHealthSystem`, **max health** | `HealthModifierItems` + `GrowthModifierItems` | **STILL INLINE — the surviving instance** |
+> | `PlayerHealthSystem`, **quiver size** | `QuiverSizeModifierItems` + `ExpandedQuiverModifierItems` | **CONVERTED** to `ExpandedQuiverModifierItems.mergedSources(a, b)` |
+>
+> **They are two lines apart in the same method.** The converted one carries a comment saying the
+> other is still inline, so the two do not silently diverge.
+>
+> **This is now a KNOWN-HOLLOW guard rather than an untested one**, and the difference is the whole
+> reason for this entry: nobody needs to re-run `MUTMERGE` against max health to learn the answer. It
+> is proved.
 
 `PlayerHealthSystem` merges two max-health sources exactly the way the quiver pair did:
 
