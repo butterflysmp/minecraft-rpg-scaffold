@@ -9540,8 +9540,61 @@ will carry it to the slice that makes it reachable.
 
 | finding | instances | measured by | account |
 |---|---|---|---|
-| ranged attack-speed **dead zone** | **0** shipped, **1** dev fixture | `effectiveCooldownTicks` call sites; `attack_speed` across `armor/ tools/ enchants/ shields/` | `boltor.yml` at `attack_speed`, and `HeldFireQuantisationPinTest` row 3 |
+| ranged attack-speed **dead zone** | **0** shipped, **1** dev fixture — **TRIGGER NAMED, see below** | `effectiveCooldownTicks` call sites; `attack_speed` across `armor/ tools/ enchants/ shields/` | `boltor.yml` at `attack_speed`, `locust.yml` at `cooldown_ticks`, and `HeldFireQuantisationPinTest` row 3 |
 | **`quiver_size: 1`** defeats the `COOLDOWN-LIMITED` discharge | **0** | `git grep` for `quiver_size` in `content/weapons/` — only `boltor` 8 and `quiver_stone` 9 | `RpgCommand.verdictLine`'s javadoc |
+
+#### THE DEAD ZONE'S TRIGGER, NAMED 2026-09-13: THE FIRST RATE-OF-FIRE ENCHANTMENT AUTHORED
+
+**This is the entry the "parked with a named trigger" discipline was built for, and the roadmap is
+about to fire it.** The operator's requirement 3 names enchantments that *"increase rate of fire"*.
+
+**THE TRIGGER IS THE ENCHANT COUNT, NOT THE INSTANCE COUNT, AND THE DISTINCTION IS THE ROW ABOVE.**
+That row reads `0 shipped, 1 dev fixture` — it is **not** zero, and was corrected to say so when the
+original grep scope proved unable to see the `attack_speed_boost_TEMP` item. What **is** measured at
+zero, separately, is the enchant column:
+
+```
+grep -rn "attack_speed" content/armor content/tools content/enchants content/shields   ->  NONE
+```
+
+**So: the moment any enchant authors `attack_speed`, this finding is live in shipped content.**
+
+**WHY IT MATTERS MORE NOW THAN WHEN IT WAS FILED — A SECOND WEAPON, WITH A WIDER ZONE.** The delivered
+interval moves only at whole 4-tick grid steps, and reaches a target `m` when `s > n / (m + 0.5)`:
+
+```
+  locust, cooldown 12    12 -> 8   at s > 12/8.5  = 1.4118    NOTHING at or below +41.18%, then +50%
+  boltor, cooldown 16    16 -> 12  at s > 16/12.5 = 1.2800    NOTHING at or below +28.00%, then +33%
+```
+
+**A FASTER WEAPON HAS A WIDER RELATIVE DEAD ZONE**, because one grid step is a larger fraction of a
+smaller cooldown. **So ordinary tiers — +5%, +10%, +15% — are worth EXACTLY ZERO on both**, while the
+tooltip would print a higher attack speed: a number shown to a player that the weapon does not
+deliver, the class this project treats as worst.
+
+> **THE PROPERTY, AND THE REMEDY IS THE OPERATOR'S TO RULE AGAINST THE MATERIAL: A RATE-OF-FIRE
+> ENCHANTMENT MUST MOVE THE DELIVERED INTERVAL, AND ON A QUANTISED WEAPON ONLY WHOLE GRID STEPS DO. A
+> tier that cannot move it is not a weak tier, it is an INERT one.**
+>
+> The obvious shape is **subtractive rather than multiplicative** — a tier removing 4 ticks always
+> moves exactly one step, `16 -> 12 -> 8`, and never lies. **But that is a different mechanism from
+> `AttackSpeed.effectiveCooldownTicks` and it is a design decision, not a fix.** No enchantment was
+> authored in the Locust slice and no remedy was chosen.
+
+#### DEFERRED IDEA — THE ALTERNATING MUZZLE VISUAL. REFUSED AS SCOPE, KEPT AS AN IDEA.
+
+**Operator, 2026-09-13, refusing it for the Locust slice: *"No"* — and, in the same breath,
+*"although it's a good idea for the future."***
+
+Recorded here **because a refused-with-praise idea is the kind that evaporates**: it is not in a plan,
+not in a gate, and not a defect anything will trip over. The slice that refused it shipped a weapon
+with a single beam and no new mechanism at all.
+
+**What it was:** the two-item design would have alternated the firing barrel shot to shot, so the
+muzzle flash and beam origin visibly switched sides. **It has no subject today** — the dual-wield
+design was refused, and `locust` is a single item — so this is an idea awaiting a weapon, not a
+parked task with a trigger. Filed with the dormant register rather than as backlog so it sits beside
+the other things this project knows and is not acting on.
 
 #### `quiver_size: 1` DEFEATS THE `COOLDOWN-LIMITED` DISCHARGE CONDITION
 
