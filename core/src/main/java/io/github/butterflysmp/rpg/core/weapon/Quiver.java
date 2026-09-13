@@ -14,10 +14,16 @@ package io.github.butterflysmp.rpg.core.weapon;
  *   maxDurability (the material's)     capacity   (a PARAMETER)
  *   damage counts UP to a floor        loaded counts DOWN to zero
  *   wear(current, amount, max)         spend(loaded)
- *   repair(current, amount)            reload(capacity)
+ *   repair(current, amount)            reload(loaded, rounds, capacity)
  *   isBroken(current, max)             isEmpty(loaded)
  *   clamp(proposed, max)               clamp(proposed, capacity)
  * </pre>
+ *
+ * <p><b>The repair/reload row got CLOSER in Slice E, not further away.</b> It read
+ * {@code reload(capacity)} while a reload was always total, and the correspondence was the weakest in
+ * the table -- {@code repair} took a current and an amount; {@code reload} took neither. Now
+ * {@code current <-> loaded} and {@code amount <-> rounds} line up exactly, and both clamp against a
+ * maximum the caller supplies. Arrows made the two mechanisms the same shape.
  *
  * <h2>CAPACITY AND RELOAD TICKS ARE PARAMETERS, AND THIS CLASS MUST NEVER LEARN THEIR VALUES</h2>
  *
@@ -100,15 +106,55 @@ public final class Quiver {
     }
 
     /**
-     * A completed reload: the quiver comes back exactly full.
+     * How many rounds a reload would have to supply to fill this quiver. Never negative.
      *
-     * <p>Routed through {@link #clamp} rather than returning {@code capacity} raw, so a negative or
-     * absurd authored capacity cannot be written onto an item by the one path that sets the count to
-     * its maximum. Same discipline as {@link Durability#wear} delegating its floor to
-     * {@code Durability.clamp}: the bound lives in exactly one place.
+     * <p><b>This is the number of ARROWS a reload COSTS</b>, and it is separate from {@link #reload}
+     * because the two are needed at different moments: this at the START, to decide what to take
+     * from the player, and {@code reload} at MATURITY, to decide what to write onto the item. Slice E
+     * put a whole reload duration between them.
+     *
+     * <p>Floored at zero rather than returning a negative, because an over-full quiver -- reachable
+     * when a capacity modifier is removed mid-reload -- must cost NOTHING rather than refunding
+     * arrows. A negative here would flow into {@code Math.min(needed, available)} and silently invert
+     * the debit.
      */
-    public static int reload(int capacity) {
-        return clamp(capacity, capacity);
+    public static int roundsNeeded(int loaded, int capacity) {
+        return Math.max(0, clamp(capacity, capacity) - Math.max(loaded, 0));
+    }
+
+    /**
+     * A completed reload: the rounds that were PAID FOR are added to what was already there.
+     *
+     * <h2>THIS TOOK A SIGNATURE CHANGE RATHER THAN AN OVERLOAD, DELIBERATELY</h2>
+     *
+     * <p>It was {@code reload(int capacity)} -- {@code clamp(capacity, capacity)} -- because a reload
+     * was always TOTAL and therefore needed neither the current count nor an arrow supply. Slice E's
+     * ruling 5 made reloads PARTIAL, so both are needed and neither could be defaulted.
+     *
+     * <p><b>An overload would have let a missed call site keep compiling and silently reload to
+     * full</b>, which is the pre-slice behaviour wearing the new API's name. Changing the signature
+     * makes every caller a compile error -- there is exactly one in production
+     * ({@code QuiverItems.stampFull}) plus three test rows, and the small number is not the argument.
+     * <b>The argument is that this is PUBLIC CORE SURFACE</b>: {@link QuiverSize}'s javadoc records
+     * {@code resolve(9, -5.0)} returning 4 through exactly such a path, while everyone believed the
+     * content pipeline was the only way in.
+     *
+     * <p>Routed through {@link #clamp} rather than returning a raw sum, so a negative or absurd
+     * capacity cannot be written onto an item by the one path that raises the count. Same discipline
+     * as {@link Durability#wear} delegating its floor to {@code Durability.clamp}: the bound lives in
+     * exactly one place.
+     *
+     * <p><b>A FULL reload is not a special case, it is {@code rounds == capacity} from empty</b> --
+     * which is what the mint path passes, and why no second method survives for it.
+     *
+     * @param loaded   what the quiver held when the reload began
+     * @param rounds   how many rounds were PAID FOR at the start. Not what the player holds NOW: by
+     *                 the time this is called the inventory has moved on, which is the whole reason
+     *                 the count is persisted on the item rather than re-derived.
+     * @param capacity the resolved capacity to clamp against
+     */
+    public static int reload(int loaded, int rounds, int capacity) {
+        return clamp(Math.max(loaded, 0) + Math.max(rounds, 0), capacity);
     }
 
     /**

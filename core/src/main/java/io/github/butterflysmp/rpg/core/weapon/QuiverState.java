@@ -272,6 +272,25 @@ public final class QuiverState {
     }
 
     /**
+     * How many rounds a reload of this quiver would have to supply — <b>the arrows it would cost.</b>
+     *
+     * <p>A method here rather than a {@code loaded()} accessor plus arithmetic at the call site, and
+     * that is deliberate: the record conversion REMOVED {@code loaded()} on purpose, and this class's
+     * javadoc records that the narrower surface is an improvement because <i>a caller holding the raw
+     * stamp and the authored value separately could re-do the resolution outside
+     * {@link #capacityOf}</i>. Re-adding the accessor to let {@code paper} do the subtraction would
+     * walk straight back through that door.
+     *
+     * <p><b>Zero when unstamped</b>, which is the only honest answer: an item with no count has no
+     * gap to fill, and {@link #reloadVerdict} refuses it on the {@link Reload#UNSTAMPED} rung before
+     * the ammo rung is ever reached. A non-zero answer here would make the caller buy arrows for a
+     * reload that is about to be refused.
+     */
+    public int roundsNeeded() {
+        return loaded.isEmpty() ? 0 : Quiver.roundsNeeded(loaded.getAsInt(), capacity);
+    }
+
+    /**
      * What pressing reload should do.
      *
      * <p>{@code ALREADY_FULL} is what stops a player who pressed reload out of habit from paying
@@ -285,15 +304,39 @@ public final class QuiverState {
      * unrepresentable</b> rather than merely forbidden -- the same move that removed
      * {@code reloadTicks} from {@link Quiver#reloadComplete} and made A1's free-instant-reload
      * defect impossible to express.
+     *
+     * <h2>WHERE THE AMMO RUNG SITS, AND THE POSITION IS THE WHOLE DECISION</h2>
+     *
+     * <p><b>AFTER the full/not-full test</b>, so a FULL magazine with no arrows still says
+     * {@link Reload#ALREADY_FULL} -- it is full, and nothing was going to be spent.
+     * <b>BEFORE {@link Reload#BEGIN}</b>, so a 7/8 magazine with no arrows is refused rather than
+     * starting a reload that would load nothing.
+     *
+     * <p>Above the full test, "already full" would become unreachable for anyone out of arrows and a
+     * player at 8/8 would be told to go and find ammo. Below {@code BEGIN} it would never be
+     * consulted at all. <b>There is exactly one position that is right, and this is it</b> --
+     * measured, not asserted: {@code MUT-ORDER} moves the rung above the full test and reddens
+     * {@code QuiverAmmoTest.aFULLMagazineWithNoArrowsIsSTILLAlreadyFull}.
+     *
+     * <p><b>A running reload never re-examines the ammo</b>, because the
+     * {@code reloadStartedAt} rung is consulted first. Ruling 3 took the arrows at the START, so a
+     * player who runs dry mid-reload keeps the reload they paid for.
+     *
+     * @param now            the current tick
+     * @param roundsAvailable how many rounds the player can actually supply, as decided by
+     *                       {@code QuiverAmmo.supply} -- the READ is {@code paper}'s and the DECISION
+     *                       is this method's. <b>In creative this is whatever the reload needs</b>,
+     *                       so the rung is satisfied and this method never learns that creative
+     *                       exists.
      */
-    public Reload reloadVerdict(long now) {
+    public Reload reloadVerdict(long now, int roundsAvailable) {
         if (loaded.isEmpty()) return Reload.UNSTAMPED;
         if (reloadStartedAt.isPresent()) {
             return isReloading(now) ? Reload.ALREADY_RELOADING : Reload.RELOAD_MATURED;
         }
-        return loaded.getAsInt() >= Quiver.clamp(capacity, capacity)
-                ? Reload.ALREADY_FULL
-                : Reload.BEGIN;
+        if (loaded.getAsInt() >= Quiver.clamp(capacity, capacity)) return Reload.ALREADY_FULL;
+        if (roundsAvailable <= 0) return Reload.NO_AMMO;
+        return Reload.BEGIN;
     }
 
     /** Why a shot may or may not happen. */
@@ -323,6 +366,17 @@ public final class QuiverState {
         RELOAD_MATURED,
         /** The magazine is already full; do nothing. */
         ALREADY_FULL,
+        /**
+         * There is ROOM but no ARROWS. Distinct from {@link #ALREADY_FULL}, and the distinction is
+         * the player-facing point of this constant rather than an internal nicety.
+         *
+         * <p><b>A refusal that reuses another refusal's message is a bug report waiting to be
+         * filed.</b> "Already full" on a weapon showing 7/8 is exactly the kind of thing a player
+         * screenshots -- so this has its own text and its own throttle key in {@code QuiverNotice},
+         * never a reuse of the empty-magazine one. Two refusals sharing a throttle silence each
+         * other, which only shows up when a player hits both in one fight.
+         */
+        NO_AMMO,
         /** No count at all. The caller warns and repairs, as for {@link Fire#UNSTAMPED}. */
         UNSTAMPED
     }

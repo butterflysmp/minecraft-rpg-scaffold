@@ -105,7 +105,7 @@ public final class WeaponSwingListener extends PacketListenerBase {
         // path: the ANIMATION packet arrives roughly once per tick while the button is held, so an
         // unconditional start would push the deadline another reload_ticks away twenty times a
         // second and the weapon would never come back -- with nothing anywhere reporting a problem.
-        if (Quivers.tryReloadHeldWeapon(player, weapons, adapters)) {
+        if (Quivers.tryReloadHeldWeapon(player, weapons, adapters, cooldowns)) {
             QuiverNotice.reloadStarted(player, cooldowns);
             return;
         }

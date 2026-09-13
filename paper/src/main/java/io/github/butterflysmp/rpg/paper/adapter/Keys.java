@@ -238,6 +238,36 @@ public final class Keys {
     public final NamespacedKey quiverReloadCompletesAt;
 
     /**
+     * How many rounds the RUNNING reload will deliver when it matures (an INTEGER). Written with the
+     * two stamps above, removed with them, and meaningless without them.
+     *
+     * <h2>A VALUE THAT WAS DERIVABLE BECAME STORAGE, AND THE RULE IS WORTH THE KEY</h2>
+     *
+     * <p>Before Slice E a matured reload refilled to CAPACITY, which is derivable from the weapon and
+     * the wielder's gear -- so nothing needed storing. Rulings 3 and 5 together broke that: <b>the
+     * amount is decided at the START, from an inventory read at the start, and the refill happens at
+     * MATURITY, when the inventory has moved on.</b>
+     *
+     * <p><b>A VALUE THAT WAS DERIVABLE BECOMES STORAGE THE MOMENT ITS INPUTS CAN CHANGE BETWEEN THE
+     * DECISION AND THE USE.</b> "Refill to capacity" needed no memory because capacity cannot move
+     * mid-reload. An arrow count can -- the player spends them, drops them, or dies.
+     *
+     * <p>The two rejected alternatives, both of which look simpler and are wrong:
+     *
+     * <ul>
+     *   <li><b>Re-read the inventory at maturity.</b> Refills by an amount the player never paid for,
+     *       and contradicts ruling 3 -- the arrows were already taken.
+     *   <li><b>Re-derive from capacity.</b> Silently restores the all-or-nothing reload that ruling 5
+     *       refused, and does it invisibly: the tooltip would be right and the mechanic wrong.
+     * </ul>
+     *
+     * <p><b>ABSENCE IS NOT A DEFECT HERE</b>, unlike {@link #quiverLoaded}: an item with no running
+     * reload carries no pending count, which is the normal resting state. It is read only on the
+     * maturity path, where the two stamps have already established that a reload was running.
+     */
+    public final NamespacedKey quiverReloadPending;
+
+    /**
      * The armor-bar override: an entity-side {@code armor} modifier that cancels worn armor's
      * native contribution and refills the bar from damage reduction instead. A modifier IDENTITY,
      * like {@link #meleeSuppressor} and unlike the PDC keys around it -- and the first such key that
@@ -296,6 +326,7 @@ public final class Keys {
         this.quiverCapacity = new NamespacedKey(plugin, "quiver_capacity");
         this.quiverReloadStartedAt = new NamespacedKey(plugin, "quiver_reload_started_at");
         this.quiverReloadCompletesAt = new NamespacedKey(plugin, "quiver_reload_completes_at");
+        this.quiverReloadPending = new NamespacedKey(plugin, "quiver_reload_pending");
         this.armorBarOverride = new NamespacedKey(plugin, "armor_bar_override");
         this.attackSpeedOverride = new NamespacedKey(plugin, "attack_speed_override");
     }

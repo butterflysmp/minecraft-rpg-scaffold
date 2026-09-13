@@ -529,8 +529,18 @@ class QuiversSignatureTest {
                 .toList();
 
         assertEquals(
+                // roundsNeeded() joined in Slice E, and it is ALLOWED under this row's own rule --
+                // which is worth stating here, because the failure message asks the question and the
+                // answer belongs beside the set rather than in a commit nobody will find.
+                //
+                // The rule is that no accessor may hand back the RAW STAMP and the AUTHORED VALUE
+                // separately, because a caller holding both can redo capacityOf's resolution outside
+                // it. roundsNeeded() returns a single computed int -- the GAP between the resolved
+                // capacity and the count -- and exposes neither input. It exists precisely so paper
+                // does NOT need loaded() back to do the subtraction itself, which would have walked
+                // straight through the door this row guards.
                 List.of("capacity", "fireVerdict", "isReloading", "reloadTicksRemaining",
-                        "reloadVerdict"),
+                        "reloadVerdict", "roundsNeeded"),
                 instanceMembers,
                 "QuiverState's public INSTANCE surface changed. capacity() returns the RESOLVED "
                         + "value and is the only accessor anybody should need; an accessor handing "

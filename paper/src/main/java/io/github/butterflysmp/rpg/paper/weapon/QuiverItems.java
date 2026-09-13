@@ -101,7 +101,14 @@ public final class QuiverItems {
     public static void stampFull(ItemMeta meta, WeaponDefinition weapon, Keys keys) {
         if (!weapon.hasQuiver()) return;
         meta.getPersistentDataContainer().set(
-                keys.quiverLoaded, PersistentDataType.INTEGER, Quiver.reload(weapon.quiverSize()));
+                // A FULL reload is not a special case: it is `rounds == capacity` from empty, which
+                // is why Slice E's signature change left no second method for "full". Mint is the one
+                // caller that genuinely wants the whole magazine -- and it is RIGHT that it does, per
+                // the settled ruling: the first magazine is the one the weapon was built with, every
+                // later one costs arrows. Minting empty would also make every menu icon and recipe
+                // preview read "Quiver: 0/N", since mint serves those too.
+                keys.quiverLoaded, PersistentDataType.INTEGER,
+                Quiver.reload(0, weapon.quiverSize(), weapon.quiverSize()));
         // THE CAPACITY IS STAMPED BESIDE THE COUNT, AND AT MINT IT IS THE AUTHORED ONE. Mint has no
         // player -- several mint paths are previews and icons that describe a WEAPON rather than a
         // held item -- and authored is the right answer for all of them. It is also correct for a
@@ -184,6 +191,27 @@ public final class QuiverItems {
     public static void setFull(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters,
                                 UUID wielder) {
         setLoaded(meta, weapon, adapters, wielder, resolveCapacity(weapon, adapters, wielder));
+    }
+
+    /**
+     * A matured reload: add the rounds that were PAID FOR to what the magazine already held.
+     *
+     * <p>Slice E's replacement for {@link #setFull} on the maturity path — reloads are PARTIAL now,
+     * so "full" is no longer the right answer unless the player paid for a full magazine.
+     *
+     * <p><b>It lives here rather than at the caller because this is where the capacity already is.</b>
+     * {@link #resolveCapacity} is private and stays private: its javadoc calls it <i>the one place the
+     * wielder's capacity is resolved for a write</i>, and handing the resolved number out to
+     * {@code Quivers} so it could do the arithmetic would make that sentence false. The decision
+     * ({@link Quiver#reload}) is core's, the resolution is this file's, and neither moves.
+     *
+     * @param loaded what the magazine held when the reload began
+     * @param rounds what was paid for at the start — see {@code Keys.quiverReloadPending}
+     */
+    public static void addRounds(ItemMeta meta, WeaponDefinition weapon, AdapterContext adapters,
+                                 UUID wielder, int loaded, int rounds) {
+        setLoaded(meta, weapon, adapters, wielder,
+                Quiver.reload(loaded, rounds, resolveCapacity(weapon, adapters, wielder)));
     }
 
     /**

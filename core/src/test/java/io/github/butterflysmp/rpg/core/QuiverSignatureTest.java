@@ -119,8 +119,16 @@ class QuiverSignatureTest {
                 .sorted()
                 .toList();
         assertEquals(
+                // roundsNeeded joined the surface in Slice E (arrows load quivers). It is what a
+                // reload COSTS, and it is separate from reload() because the two are needed a whole
+                // reload duration apart -- this at the START to decide what to take from the player,
+                // reload() at MATURITY to decide what to write. Both take primitives, so the rule
+                // above still holds.
+                //
+                // THIS ASSERTION IS WHY THAT ADDITION WAS A DELIBERATE EDIT: the set is NAMED, so a
+                // new public method cannot arrive unnoticed. It fired on the first run.
                 List.of("applyPercent", "clamp", "isEmpty", "reload", "reloadComplete",
-                        "reloadCompletesAt", "reloadTicksRemaining", "spend"),
+                        "reloadCompletesAt", "reloadTicksRemaining", "roundsNeeded", "spend"),
                 publicMethods,
                 "the scanned set, named rather than counted -- a count against an unnamed set is not "
                         + "an answer, and an empty scan would otherwise pass both rows above");

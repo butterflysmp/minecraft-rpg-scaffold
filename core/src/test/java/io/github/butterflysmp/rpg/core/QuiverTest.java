@@ -45,7 +45,7 @@ class QuiverTest {
      */
     @Test
     void aQuiverFiresExactlyItsCapacityAndTheCountIsWhatIsAsserted() {
-        int loaded = Quiver.reload(CAPACITY);
+        int loaded = Quiver.reload(0, CAPACITY, CAPACITY);
         int fired = 0;
         while (!Quiver.isEmpty(loaded)) {
             loaded = Quiver.spend(loaded);
@@ -89,14 +89,14 @@ class QuiverTest {
 
     @Test
     void aReloadRestoresExactlyTheCapacity() {
-        assertEquals(CAPACITY, Quiver.reload(CAPACITY), "not capacity + 1, not the pre-spend count");
+        assertEquals(CAPACITY, Quiver.reload(0, CAPACITY, CAPACITY), "not capacity + 1, not the pre-spend count");
     }
 
     @Test
     void aReloadRoutesThroughTheClampSoAnAbsurdCapacityCannotBeWritten() {
         // The one path that sets a count to its maximum is also the one most likely to be handed a
         // nonsense maximum from content. Delegating the bound means it cannot skip it.
-        assertEquals(0, Quiver.reload(-5));
+        assertEquals(0, Quiver.reload(0, -5, -5));
     }
 
     // ---------------------------------------------------------------- the clamp, and capacity change

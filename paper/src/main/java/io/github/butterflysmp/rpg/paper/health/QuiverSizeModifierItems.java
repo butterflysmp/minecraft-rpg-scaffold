@@ -82,9 +82,24 @@ public final class QuiverSizeModifierItems {
     /** +19 arrows on {@code quiver_stone}'s authored 9, resolving to 28. All three numbers differ. */
     public static final double DEFAULT_BOOST = 19.0;
 
+    /**
+     * The material this instrument is minted as.
+     *
+     * <p><b>A NAMED CONSTANT SINCE SLICE E, AND THE REASON IS THAT SOMETHING NOW READS IT.</b> Arrows
+     * load quivers, and the ammo is {@code QuiverAmmo.AMMO} — plain {@link Material#ARROW}. This item
+     * is a SPECTRAL arrow, so a reload must never consume it: <b>a family match would eat the
+     * instrument that enlarges the magazine</b>, in the hands of the exact person testing quiver
+     * changes.
+     *
+     * <p>Inline it was a fact nothing could check. Named, {@code QuiverAmmoTest} asserts the two
+     * differ — so changing either to collide with the other reddens, instead of being discovered by a
+     * player whose gear vanished into their own quiver.
+     */
+    public static final Material INSTRUMENT_MATERIAL = Material.SPECTRAL_ARROW;
+
     /** Mint a quiver_size_boost granting {@code amount} arrows while held or worn. */
     public static ItemStack mint(Keys keys, double amount) {
-        ItemStack item = new ItemStack(Material.SPECTRAL_ARROW);
+        ItemStack item = new ItemStack(INSTRUMENT_MATERIAL);
         item.editMeta(meta -> {
             meta.displayName(MiniMessage.miniMessage()
                     .deserialize("<green>Quiver Size <gray>(+" + (int) amount + " arrows)")

@@ -37,6 +37,23 @@ public final class QuiverNotice {
     private static final String EMPTY_KEY = "__quiver_empty_notice";
     private static final String RELOADING_KEY = "__quiver_reloading_notice";
 
+    /**
+     * ITS OWN KEY, and this is not tidiness.
+     *
+     * <p>{@link #noAmmo} and {@link #empty} are DIFFERENT refusals with different remedies — "the
+     * magazine is spent, reload" versus "there is room but you have no arrows" — and a player can hit
+     * both inside one fight: fire dry, get {@link #empty}, press reload, get this.
+     *
+     * <p><b>Sharing {@link #EMPTY_KEY} would make the second one silent</b>, and the player would see
+     * "left-click to reload", do exactly that, and be told nothing at all. The bug would appear only
+     * in the one sequence that matters and would look like the reload key not working.
+     *
+     * <p>Contrast {@link #RELOADING_KEY}, which IS shared between {@link #reloadStarted} and
+     * {@link #reloading} — deliberately, because those two are one event seen from two sides. The
+     * test is whether the two messages answer the same question, not whether they are adjacent.
+     */
+    private static final String NO_AMMO_KEY = "__quiver_no_ammo_notice";
+
     /** {@code BrokenNotice}'s window, deliberately: held fire quiet, still responsive. */
     private static final int THROTTLE_TICKS = 40;
 
@@ -53,6 +70,25 @@ public final class QuiverNotice {
         // Past the throttle check so message and sound are one notification and cannot drift apart,
         // exactly as BrokenNotice pairs them. Player#playSound, not World#playSound: the holder
         // hears it, nobody else does.
+        player.playSound(player.getLocation(), EMPTY_SOUND, SOUND_VOLUME, SOUND_PITCH);
+    }
+
+    /**
+     * There is ROOM in the magazine but no arrows to put in it. Ruling 4: no arrows, no fire.
+     *
+     * <p><b>Its own words, never "already full" and never the empty-magazine line.</b> A refusal that
+     * reuses another refusal's message is a bug report waiting to be filed — "already full" on a
+     * weapon reading 7/8 is exactly the kind of thing a player screenshots, and "your quiver is empty,
+     * left-click to reload" is worse, because the player has just done that.
+     *
+     * <p>Names the remedy, like its siblings: a refusal with no remedy reads as a bug. And it names
+     * the item exactly, because <b>plain arrows only</b> — a player holding a stack of spectral arrows
+     * and being told "you need arrows" would reasonably think the feature was broken.
+     */
+    public static void noAmmo(Player player, CooldownTracker cooldowns) {
+        if (!throttled(player, cooldowns, NO_AMMO_KEY)) return;
+        player.sendMessage(Component.text(
+                "You have no arrows -- plain Arrows load a quiver.", NamedTextColor.GRAY));
         player.playSound(player.getLocation(), EMPTY_SOUND, SOUND_VOLUME, SOUND_PITCH);
     }
 
