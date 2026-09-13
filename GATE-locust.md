@@ -159,6 +159,31 @@ stays open.**
   blanket-answered ruling and never compared against `0.5` or `1.5`. **If it reads wrong, that is a
   finding, not an edit** — changing it moves every beam in the game.
 
+> ### DO NOT READ `emerald 1.0`, `boltor 1.2` AND THIS BEAM AS A SERIES
+>
+> **The three `size` values are not points on a gradient, and a row told to look for one does not come
+> back empty — it comes back WRONG.**
+>
+> **THE QUANTITIES ARE INCOMMENSURABLE.** `emerald_beam` went slimmer because **six beams overlap
+> within one cast** — that is **SPATIAL** overlap, six lines occupying neighbouring space
+> simultaneously. What this beam has is **TEMPORAL**: one line, redrawn every 12 ticks, with the
+> previous shot's particles still in the air. **Thinning is a plausible remedy for the first and has
+> no obvious bearing on the second**, because nothing here is competing for space with anything.
+>
+> **A READER LOOKING FOR A GRADIENT CAN ALWAYS FIT ONE TO THREE POINTS.** `1.0` at six-overlapping,
+> `1.2` at two, and a denser weapon after that arranges itself into a trend on sight, and the trend
+> would recommend a number. **Three numbers always admit a fit; that is a fact about three numbers,
+> not about beams.**
+>
+> **RECORDED AS WITHDRAWN AFTER BEING RAISED, RATHER THAN NEVER MADE.** This was proposed as a finding
+> during review of `PLAN-locust.md` — that `1.2` sits at the light end of a gradient — and retracted
+> by its author on noticing the spatial/temporal split. **A retracted finding is worth more in the
+> record than one never written down**, because the pattern is genuinely visible and the next person
+> to notice it needs to find the reason it was dropped rather than rediscovering it as new.
+>
+> **So judge `size` against what this beam does at 96 blocks and 633 points/s, and against nothing
+> else.**
+
 **Judge on `All`, then again on `Decreased`, and record both.** A density-based visual degrades worse
 than a count-based one, and this is the longest line in the game, so it has the most length over which
 to come apart.
