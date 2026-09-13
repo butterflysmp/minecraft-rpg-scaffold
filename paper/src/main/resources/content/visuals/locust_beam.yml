@@ -1,0 +1,101 @@
+# The Locust's beam: the line itself, drawn down each chunk-column segment as the ray walks it.
+# Id is the filename: locust_beam.
+#
+# ITS OWN FILE, FORKED FROM boltor_beam RATHER THAN SHARED, AND THE FORK IS A RULING RATHER THAN A
+# PREFERENCE. The plan for this weapon originally reused boltor_beam -- the refused alternating-muzzle
+# visual had been the only reason to fork -- and the operator then ruled a colour: "make the beam
+# color more dark green color to resemble nature." A shared visual cannot carry two colours, so the
+# ruling forks the file.
+#
+# It is also volley_beam's standing rule: a shared visual is a coupling invisible at BOTH ends, which
+# is the trap ember_burst sprang on the Flint Staff. Tuning this must not move the Boltor.
+#
+# ================== THE COLOUR IS PROVISIONAL, BY RULING, AND THIS SAYS WHAT DISCHARGES IT ==================
+#
+# [45, 120, 55] was proposed and ruled -- WITH ITS CONDITION ATTACHED. It is authored here so the
+# weapon ships with a colour rather than a placeholder, and it is NOT settled.
+#
+#   WHY PROVISIONAL: COLOUR IS THE ONE PROPERTY NO TEST IN THIS PROJECT CAN CHECK. A wrong damage
+#   number reddens a test; a wrong cooldown reddens a pin; golden-lore.txt pins every tooltip
+#   character. NOTHING anywhere in the suite renders a particle. The only instrument for this value
+#   is a person looking at it on a client.
+#
+#   WHAT DISCHARGES IT: GATE-locust.md row 2, a reading on a booted client, at distance, with the
+#   client Particles setting recorded. Until that row is read this number has been JUDGED IN A FILE
+#   AND NOWHERE ELSE.
+#
+# The precedent for authoring a value that invites its own re-ruling is boltor.yml's rarity block,
+# which said "re-rule it freely; nothing else in this file depends on it" -- and was re-ruled two days
+# later, which is the evidence that the form works rather than being a hedge.
+#
+# ================== THE COLOUR HAD TO SEPARATE FROM A GREEN THAT ALREADY SHIPS ==================
+#
+# boltor_beam's rule is that the colour is owned by nothing else, CHECKED against the shipped beams.
+# The check matters more here than it did there, because one of them is already green:
+#
+#   lapis_beam    [ 40,  90, 240]   saturated deep blue
+#   volley_beam   [230,  60, 230]   magenta
+#   emerald_beam  [ 40, 220,  90]   GREEN -- bright, and the one this has to separate from
+#   boltor_beam   [200, 215, 235]   pale steel
+#   THIS          [ 45, 120,  55]   forest green -- dark
+#
+# emerald_beam went BRIGHT green. Dark is what the ruling asked for and it is also what separates the
+# two: the dominant channel is 120 against 220, which is where the daylight between them is.
+#
+#   AND IT IS THE FIRST DARK BEAM IN THE PROJECT, WHICH IS A REASON THE READING MATTERS RATHER THAN A
+#   REASON TO CHANGE IT. Every beam above is high-luminance. This one is not, it is on the longest
+#   line in the game, at the heaviest particle load, over an unjudged density -- and the documented
+#   failure mode of a thin density, "stops being a line and becomes a trail of unrelated specks",
+#   RECOVERS FAR WORSE DARK THAN PALE. A pale speck against terrain still reads; a dark one does not.
+#   Nothing here is changed on that basis: it is the argument for reading row 2 before settling.
+#
+# ================== THE DENSITY FIGURES ARE INHERITED AND UNJUDGED ==================
+#
+# samples_per_block, size and the origin gap below are NOT A SECOND OPINION. THEY ARE THE SAME
+# UNJUDGED FIGURES, copied from boltor_beam.yml, which says of itself: "nothing here has been judged
+# yet; 4 is inherited."
+#
+#   A NUMBER THAT HAS BEEN COPIED ONCE LOOKS MORE SETTLED THAN THE NUMBER IT WAS COPIED FROM. Two
+#   files agreeing reads as corroboration; it is one arbitrary choice written down twice. So the
+#   inheritance is stated in the file rather than left to be inferred from the values matching.
+#
+# GATE-boltor.md ROW 2 IS OPEN AND NOW HAS A SIBLING. That row judges boltor_beam; GATE-locust.md row
+# 3 judges this one, and a verdict on one DOES NOT TRANSFER to the other -- different colour, and a
+# third more particles per second. Judging one beam and believing both are settled is the specific
+# mistake the two rows exist to prevent.
+#
+# ================== WHAT THE LOAD ACTUALLY IS, DERIVED FOR THIS WEAPON ==================
+#
+# boltor_beam's overlap paragraph is weapon-specific arithmetic -- "the Boltor fires every 16 ticks
+# against a 5-10 tick flight" -- and it stays true of the Boltor. It is NOT copied here. The Locust
+# fires every 12 against the same flight, so it gets its own figures:
+#
+#   per shot     (96 - 1.0) x 4 = ~380 points        IDENTICAL to the Boltor: same length, same density
+#
+#   sustained    Boltor   380 x (20/16) = 475 points/s
+#                THIS     380 x (20/12) = 633 points/s     +33.3%, exactly the cooldown ratio 16/12
+#
+#   in flight    Boltor   gap 16t against a 5-10t walk  ->  margin 6t
+#                THIS     gap 12t against a 5-10t walk  ->  margin 2t
+#
+# SO THE PER-SHOT LOAD IS UNCHANGED AND THE SUSTAINED LOAD IS A THIRD HIGHER. This weapon, not the
+# Boltor, is now the largest particle load in the project -- and GATE-boltor row 2's "nobody has looked
+# at it yet" applies to it more strongly than to the weapon that row was written about.
+#
+# ANY DENSITY FIGURE RECORDED FOR THIS FILE MUST NAME THE CLIENT PARTICLES SETTING IT WAS JUDGED ON,
+# per lapis_beam.yml's rule: a density without a setting is a measurement missing half its units.
+#
+# PARTICLE-ONLY, NO SOUND STEP, AND THAT IS ENFORCED RATHER THAN CONVENTIONAL: ContentValidator refuses
+# a sound inside a beam, because presentAlong runs once per CHUNK-COLUMN SEGMENT -- so a sound here
+# would play one to three times per shot depending on which way the player was facing, and at 96 blocks
+# that count is higher still.
+
+steps:
+  - type: particle
+    particle: DUST
+    color: [45, 120, 55]     # forest green; PROVISIONAL by ruling -- discharged by GATE-locust.md row 2
+    size: 1.2                # INHERITED from boltor_beam, unjudged
+    count: 1                 # per SAMPLE POINT, not per beam -- ~380 of them down a 96-block shot
+    spread: 0.0
+    speed: 0.0               # inert for DUST; authored so its absence is not read as a choice
+    samples_per_block: 4     # INHERITED from boltor_beam, unjudged

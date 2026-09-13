@@ -201,9 +201,19 @@ put in front of the operator when it lands so he can rule holding the real numbe
 ### 3. THE AUTHORING RULE FOR EVERY WEAPON AFTER THIS ONE
 
 If it reads **16**, the honest cooldowns are the multiples of 4, and the multiples of 8 for anything
-that will ever be dual-wielded (`boltor.yml:154`). If it reads **20**, **the grid is strictly-greater
-and every one of those shifts by one** — the honest values become multiples-of-4-minus-one, and the
-Boltor's own 16 would be re-ruled to 15.
+that will ever be dual-wielded (`boltor.yml`, the `cooldown_ticks` block). If it reads **20**, **the
+grid is strictly-greater and every one of those shifts by one** — the honest values become
+multiples-of-4-minus-one, and the Boltor's own 16 would be re-ruled to 15.
+
+> **IT READ 16, AND HALF OF THAT RULE HAS SINCE BEEN WITHDRAWN — 2026-09-13.** The **multiples of 4**
+> half stands and is now the whole rule. The **multiples of 8** half was withdrawn when the operator
+> refused the dual-wield design: nothing halves, so it has no subject. `locust` ships at **12**, which
+> is not a multiple of 8 and is correct. **The Boltor's 16 is not re-ruled** — see `boltor.yml`'s
+> `cooldown_ticks` block and `CLAUDE.md` under *Standing decisions*.
+>
+> **The citation above was `boltor.yml:154` and is now the block name.** It was falsified by the very
+> commit that added this note, which inserted a rarity supersession higher up the same file — the
+> line-citation failure `CLAUDE.md` names, caught here by its own rule.
 
 ---
 
@@ -215,6 +225,25 @@ Boltor's own 16 would be re-ruled to 15.
 are INHERITED from beams half its length, and `BEAM_ORIGIN_GAP` was adopted at `1.0` on a
 blanket-answered ruling and never compared against anything.** This is the longest line in the game
 and the largest particle load any weapon has asked for.
+
+> ### THIS ROW NOW HAS A SIBLING, AND ITS LAST SENTENCE IS NO LONGER TRUE OF THIS WEAPON
+>
+> **`GATE-locust.md` row 3 asks the same question of `locust_beam`, and a verdict here DOES NOT
+> TRANSFER THERE.** That beam is a different file with a different colour (`[45, 120, 55]`, the first
+> dark beam in the project) and **a third more particles per second**:
+>
+> ```
+>   per shot     (96 - 1.0) x 4 = ~380 points     IDENTICAL -- same length, same inherited density
+>   sustained    boltor  380 x (20/16) = 475 points/s
+>                locust  380 x (20/12) = 633 points/s     +33.3%, exactly the cooldown ratio 16/12
+> ```
+>
+> **So "the largest particle load any weapon has asked for" is now the Locust, not the Boltor.** The
+> sentence above is left standing because it was true when written and is the reason this row exists;
+> this note is what makes it checkable.
+>
+> **Judging one beam and believing both are settled is the specific mistake these two rows exist to
+> prevent** — which is why the sibling lives in its own gate rather than being folded in here.
 
 | | |
 |---|---|

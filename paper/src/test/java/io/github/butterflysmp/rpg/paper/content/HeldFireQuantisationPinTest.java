@@ -22,8 +22,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  * <p>One rule, three homes, each saying which it is — {@code CLAUDE.md}'s rule on two homes:
  *
  * <ul>
- *   <li><b>POINTER</b> — {@code CLAUDE.md}: <i>author multiples of 4; multiples of 8 if it may ever
- *       be dual-wielded.</i> The form that changes what you do.</li>
+ *   <li><b>POINTER</b> — {@code CLAUDE.md}: <i>author multiples of 4.</i> The form that changes what
+ *       you do. <b>It used to add "multiples of 8 if it may ever be dual-wielded"; that clause was
+ *       withdrawn 2026-09-13</b> when the dual-wield design was refused, so nothing halves and the
+ *       rule has no subject. The quote is updated here because a stale copy of a pointer is the
+ *       duplicate-account failure this list exists to prevent.</li>
  *   <li><b>ACCOUNT</b> — {@code WeaponLoader}'s {@code cooldown_ticks} section: the mechanism, the
  *       measurements, the tooltip consequence. <b>Do not duplicate it here.</b></li>
  *   <li><b>PIN</b> — this file: the numbers, executable, in a place a citation sweep will not

@@ -245,8 +245,29 @@ provenance-mixing that file exists to prevent.
 > `Reading("locust", 12, <measured min>, "<readout>", false)` and state in its javadoc that it adds a
 > **`>=` point and not an `INPUT_FLOOR_TICKS` point**.
 
-**No gate file in this slice.** With no new mechanism there is nothing to boot-measure beyond that
-cadence confirmation, and that row belongs to the pin, not to a gate.
+> ### ~~No gate file in this slice.~~ **REVERSED — `GATE-locust.md` SHIPS IN COMMIT 2.**
+>
+> This said: *"With no new mechanism there is nothing to boot-measure beyond that cadence
+> confirmation, and that row belongs to the pin, not to a gate."* **That was argued against in review,
+> the argument was right, and it was then dropped and the plan approved without it** — by both
+> parties. It is recorded rather than quietly fixed, because **a correction that is made and then lost
+> is worse than one never made: everyone believes the question was settled.**
+>
+> **The colour ruling forced it.** There are now **three** unread Locust questions, not one:
+>
+> | | prediction | why it cannot live in a file |
+> |---|---|---|
+> | cadence at 12 | `FIRES min 12`, zero variance | the pin's `READINGS` are boot measurements |
+> | beam colour | `[45, 120, 55]`, **provisional by ruling** | no test in the project renders a particle |
+> | beam density | 633 points/s, heavier than `GATE-boltor` row 2's subject | inherited and unjudged |
+>
+> **One gate, one boot, three rows** — and the colour and density rows are read in the same look, by
+> the same observer, at distance. **Three loose flags across three files get judged one at a time and
+> forgotten two at a time.**
+>
+> **Not folded into `GATE-boltor.md` row 2**, because the Locust's beam is a different file with a
+> different colour and a 33% heavier load, so a verdict there does not transfer. That row gains a note
+> naming the sibling.
 
 ---
 

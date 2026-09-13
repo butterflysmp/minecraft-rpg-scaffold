@@ -96,9 +96,17 @@ explanation has become an account: cut it back.**
 
 **Two tests it must pass, and they are the reason the split works:**
 
-- **The pointer must be obeyable without opening the account.** *"Author multiples of 4; multiples of
-  8 if it may ever be dual-wielded"* can be followed by someone who never reads the mechanism. **A
-  pointer that needs its account to be useful is a broken copy, not a pointer.**
+- **The pointer must be obeyable without opening the account.** *"Author multiples of 4"* can be
+  followed by someone who never reads the mechanism. **A pointer that needs its account to be useful
+  is a broken copy, not a pointer.**
+
+  > **THIS EXAMPLE USED TO READ *"multiples of 4; multiples of 8 if it may ever be dual-wielded"*, and
+  > the second half was withdrawn on 2026-09-13** when the dual-wield design was refused — see the
+  > rule itself under *Standing decisions*. **The quote is updated rather than left standing, because
+  > an example that quotes a rule verbatim goes stale exactly when the rule moves** — and a worked
+  > example of a *well-formed pointer* that misquotes its own pointer is the failure it is teaching
+  > against. The example's point is untouched: the surviving half is still obeyable without the
+  > account, which is the property being demonstrated.
 - **The pointer names a SECTION, never a line.** `WeaponLoader`'s `cooldown_ticks` section, not
   `WeaponLoader.java:175`. A line citation is falsified by any insertion above it, silently and
   invisibly to every test — this repo carries an open finding measuring that blast radius at ~140
@@ -849,9 +857,26 @@ the opposite because the material suggests it.**
   - **`16` is on the 4-tick input grid, deliberately.** A held right-click delivers an input only
     every 4 ticks, so a weapon's real fire interval is its authored cooldown **rounded UP to the next
     multiple of 4** — author `13` or `14` and you have authored `16`, **and the tooltip will not say
-    so.** Author **multiples of 4**; **multiples of 8** for anything that may ever be dual-wielded,
-    since only those halve cleanly. The mechanism, the measurements and the tooltip consequence are
+    so.** **Author multiples of 4.** The mechanism, the measurements and the tooltip consequence are
     at `WeaponLoader`'s `cooldown_ticks` section — **this is the pointer, that is the account.**
+
+    > **THE "MULTIPLES OF 8 IF IT MAY EVER BE DUAL-WIELDED" CLAUSE IS WITHDRAWN, 2026-09-13 — AND IT
+    > IS WITHDRAWN FOR WANT OF A SUBJECT, NOT BECAUSE IT WAS WRONG.** The operator ruled that the
+    > second Ranger weapon is a single item: *"it's not going to be Dual wielded."* **Nothing halves
+    > any more**, so a rule about surviving halving has nothing to apply to. The `locust` ships at
+    > **12** — not a multiple of 8, and correct.
+    >
+    > **`16` IS NOT RE-RULED, AND THE RECORD MUST STILL EXPLAIN WHY 16 AND NOT 12.** The clause was
+    > one of the Boltor's reasons and its other reasons stand — the account at `WeaponLoader`'s
+    > `cooldown_ticks` section, and the derivation in `boltor.yml`'s `cooldown_ticks` block, which
+    > carries the same withdrawal note.
+    >
+    > **AND THE CLAUSE WAS UNSATISFIABLE ANYWAY, WHICH IS WHY THIS IS A WITHDRAWAL AND NOT A PAUSE.**
+    > Halving moves a weapon onto a smaller cooldown, and **the attack-speed dead zone widens as the
+    > cooldown shrinks** — `8 -> 4` is inert entirely, `16 -> 8` dead to +77.8%, `32 -> 16` to +28.0%.
+    > To buy a *dual* dead zone as narrow as the Boltor's *single* +28% you must author **32**, a
+    > 1.6-second shot. **Clean halving, attack-speed headroom and a fast weapon are jointly
+    > unsatisfiable.** Full argument in `PLAN-locust.md`.
 
 ## Upgrade procedure
 
