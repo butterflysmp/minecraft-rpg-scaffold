@@ -9724,8 +9724,64 @@ together:
 
 | slice | what goes | blocked on |
 |---|---|---|
-| **DEV WEAPON DELETION** | `hunters_bow`, `ironblade`, `quiver_stone` | **enough shipped weapons to replace them. NOT A DATE** — a condition on content that does not yet exist |
+| **DEV WEAPON DELETION** | `hunters_bow`, `ironblade`, `quiver_stone` | **enough shipped weapons to replace them. NOT A DATE** — a condition on content that does not yet exist. **AND ONE READING IS OWED FIRST — see below.** |
 | **`/kit` DELETION** | 2 kit files, `KitLoader`, `KitRegistry`, their tests | **the build system.** Days, per the operator |
+
+### OWED BEFORE THE DEV WEAPONS GO: ONE READING, AND IT CANNOT BE TAKEN AFTERWARDS
+
+**Added 2026-09-13, out of `GATE-locust.md` row 1.** Not work now, and it does not block the deletion's
+own trigger — but it must not be discovered **on** deletion day, because the instrument is what is
+being deleted.
+
+**THE MODEL'S MECHANISM IS REFUTED AND ITS ARITHMETIC IS NOT, WHICH LEAVES IT UNTESTED RATHER THAN
+CONFIRMED.** `fire interval = ceil(effective / 4) x 4` was *derived* from inputs landing on multiples
+of 4. `GATE-locust.md` row 1 read `INPUTS min 3t`, twice — **so there is no 4-tick grid**, and the
+model survives only as an empirical fit.
+
+> **A MODEL WHOSE MECHANISM IS REFUTED BUT WHOSE PREDICTIONS STILL FIT IS NOT CONFIRMED, IT IS
+> UNTESTED.** It keeps working for a reason now known to be false, and the cases that would separate
+> the two are exactly the ones nobody has run.
+
+**AND ONLY TWO OF THE FOUR MEASURED POINTS CAN TEST IT AT ALL — BOTH IN THE DELETION SET.** A cooldown
+is a hard floor (`isReady` is `>=`), so when the authored value is already a multiple of 4 the
+prediction *equals the cooldown*, and the observed `min` is what **any** input model produces:
+
+| weapon | authored | predicted | read | input stream | fixture | tests the grid? |
+|---|---|---|---|---|---|---|
+| `quiver_stone` | 11 | 12 | 12 | `min 4`, cleanest in the record | **DELETION SET** | **YES** — prediction sits 1 above the cooldown |
+| `hunters_bow` | 15 | 16 | 16 | `min 4` | **DELETION SET** | **YES** — prediction sits 1 above the cooldown |
+| `boltor` | 16 | 16 | 16 | `min 4` | ships | **NO** — prediction == cooldown |
+| `locust` | 12 | 12 | 12 | **`min 3`** | ships | **NO** — prediction == cooldown |
+
+**So after the deletion the grid has ZERO informative points, not one.** And the cruellest row is the
+last: **the only sample that ever contained the falsifying condition was taken on the one cooldown
+that cannot detect it.**
+
+**THE CASE THAT SEPARATES MECHANISM FROM FIT:**
+
+```
+cooldown 11, inputs at t, t+4, t+8, t+11   (intervals 4, 4, 3)
+  at t+11:  11 >= 11  ->  FIRES.  Interval 11.
+  ceil(11/4) x 4 predicts 12.     FALSIFIED.
+```
+
+`hunters_bow` at 15 is a second instrument by the same argument — an input at exactly `t+15` gives 15
+against a predicted 16.
+
+**THE ROW, AND IT IS ONE MAGAZINE.** On `quiver_stone` (and again on `hunters_bow` if it is cheap):
+`/rpg firerate` to clear, hold right-click for a full magazine, read **`INPUTS min` alongside
+`FIRES min`**. The operator's ruling makes this easy rather than hard — **a jittery stream is the
+default and a clean one is the rare case**, so an ordinary held burst *is* the experiment.
+
+| reading | verdict |
+|---|---|
+| `FIRES min 12`, `INPUTS min 4` | the stream was clean — **inconclusive, re-take** |
+| `FIRES min 12`, `INPUTS min 3` | the model survives the refutation of its own mechanism. **Strong.** |
+| `FIRES min 11`, `INPUTS min 3` | **`ceil(n/4) x 4` IS FALSIFIED AS STATED** — the quantisation account needs rewriting before the fixture that proved it is deleted |
+
+**Do not delete `quiver_stone` or `hunters_bow` without this reading or an explicit ruling to drop
+it.** `HeldFireQuantisationPinTest` already fails loudly when either fixture disappears; this entry is
+what tells whoever meets that failure why re-taking the reading is not optional.
 
 > **`mage_fire.yml` GOES WITH `ranger_fire.yml`, AND NOBODY HAS RULED THAT.** The `/kit` deletion is
 > described as removing a dev affordance, but the Mage loses its starting kit at the same moment. It
