@@ -10699,3 +10699,268 @@ other open:** `GATE-volley.md`'s V5 reads `volley_stone`'s `cooldown_ticks: 0` a
 Authoring the floor there — 27, to make the tooltip honest, which is the likeliest reason anyone
 will — stages two independent quantities as equal and the row passes whether the floor exists or not.
 The comment lives at the field as well as in the gate.
+
+## PARKED — PUNCH, DESIGN COMPLETE, WAITING ON A WEAPON THAT CAN TAKE IT
+
+**Operator ruling, 2026-09-13, completing the fragment that resolved it:**
+
+> *"Other ranged weapons will have knockback, the instant hitting ranged weapons don't."*
+
+**This is PARKED, NOT ABANDONED, and the distinction is the whole point of the entry.** The design is
+**finished** — numbers, gate, authoring rule and `on_hit` shape are all below. What is missing is a
+weapon. **Recorded in full so the weapon that fires the trigger inherits a finished design rather
+than a conversation.**
+
+> ### TRIGGER: THE FIRST RANGER-CLASS WEAPON WITH `type: projectile`.
+
+An **event**, not a date, and checkable in one command:
+
+```bash
+grep -l "^class: ranger" content/weapons/*.yml | xargs grep -l "type: projectile"
+```
+
+Today that returns `hunters_bow.yml` alone — **which is in the dev-weapon deletion set**, so after
+that deletion it returns nothing. **The trigger is a weapon that does not exist yet.**
+
+### WHY IT IS PARKED, AND IT IS TESTABILITY RATHER THAN DOUBT
+
+**MEASURED 2026-09-13, both independently verified:**
+
+- **No weapon in content authors knockback.** `grep -rn "type: knockback" content/` returns exactly
+  two hits, both abilities: `ember_step.yml:29` and `void_slash.yml:40`.
+- **Every ranger weapon is a `ray`** — `boltor`, `locust`, `quiver_stone` — **except `hunters_bow`,
+  which is `projectile` AND in the deletion set.**
+
+So Punch has **one** candidate weapon today, on a weapon that is leaving and that would need
+knockback authored onto it first, and **zero** after the deletion.
+
+> **YOU CANNOT BOOT-TEST AN ENCHANT NO WEAPON CAN TAKE.** Shipping it means shipping untestable
+> behaviour **that will be believed to work**, and the first person able to test it will be meeting a
+> bug whose author is gone.
+
+**AND AN ENCHANT IS NOT A GUARD, SO THE STANDING RULING DOES NOT COVER IT.** *A guard with no
+instances sits inert* and costs nothing. **An enchant with no eligible weapon either clutters a roll
+table or is invisible — and NEITHER state announces itself.** That asymmetry is why this is parked
+rather than shipped-and-dormant.
+
+### THE DESIGN, COMPLETE
+
+**NUMBERS — RULED, and they ship exactly as first ruled: `+20% / +40% / +60%` knockback.**
+
+**Punch is the only one of Slice D's three proposed enchants that needed no renumbering.** Rapid Fire
+was parked and Expanded Quiver went flat; **Punch's curve never moved, because the fix was not a
+different curve — it was the operator NAMING THE QUANTITY the percentage multiplies.** See
+`CLAUDE.md`'s *"A PERCENTAGE NEEDS A QUANTITY TO MULTIPLY"*.
+
+**THE AUTHORING RULE** — the pointer is in `CLAUDE.md`; this is the account.
+
+A travelling ranged weapon authors knockback; an instant-hitting one does not. `type: projectile`
+lands with impact and declares an `EffectSpec.Knockback` in its `on_hit`; `type: ray` is hitscan and
+declares none.
+
+```yaml
+on_hit:
+  - type: weapon_damage
+    element: kinetic
+  - type: knockback
+    strength: 0.4
+```
+
+**NO NEW SCHEMA.** `EffectSpec.Knockback(double)`, `AbilitySchema`'s `case "knockback"`,
+`EffectApplier` and `CombatantHandle.applyKnockback` all already exist.
+
+**THE CODE DOES NOT IMPLY THIS RULE, WHICH IS WHY IT IS WRITTEN DOWN.** Neither cast shape produces
+knockback on its own: `CastExecutor.detonate` is the single on-hit site and **every** shape routes
+through the custom health store, so nothing calls `entity.damage()` and no `EntityKnockbackEvent` is
+raised. **Both shapes look identical in the engine.** `lapis_staff.yml:96-108` records the same
+mechanism from the other side — *"A REMEDY THAT IS ABSENT LOOKS LIKE A PROBLEM THAT IS PRESENT"* —
+and `cursed_emerald.yml:225` independently.
+
+**So Punch doing nothing on a Boltor is CORRECT, not a gap.** A ray is meant to have no push.
+
+**SCOPE — the obvious sweep is wrong.** Three shipped weapons are `type: projectile` and author no
+knockback: `ember_staff` and `flint_staff` (mage), `emberblade` (melee). The ruling is about
+**ranged** weapons, so **these are OUTSIDE the rule, not in violation of it.** Do not add knockback to
+a staff on the strength of this entry. Whether a travelling MAGE weapon should push is a separate
+question **nobody has ruled**.
+
+**THE ROLL GATE — the part that keeps the tooltip honest.**
+
+> **PUNCH MUST NOT ROLL ON A WEAPON THAT AUTHORS NO KNOCKBACK.**
+
+Otherwise a player enchants a Boltor, the tooltip reads *"+40% knockback"*, and nothing happens —
+**the dishonesty Slice D eliminated three times, arriving a fourth time through the ROLL TABLE
+instead of the arithmetic.**
+
+
+#### THE GATE KEYS ON THE CAST SHAPE, NOT ON THE PRESENCE OF THE EFFECT
+
+**CORRECTED 2026-09-13, one turn after this entry was written, and the first draft was wrong in a way
+that matters.** It said Punch may not roll on *a weapon that authors no knockback*, and justified it
+with the claim that **a ray's ABSENT knockback "carries information".**
+
+**The project had already ruled the opposite, in writing.** `kinetic.yml:10-15`, under the heading
+**PRESENT AND EMPTY**:
+
+```
+""       a decision. Accepted silently -- an unflavoured hit draws a bare number.
+absent   a GAP. ContentValidator names it.
+```
+
+with the rule *ABSENCE IS NOT A NEUTRAL VALUE*, which `Scorch.UNDECLARED_CAP` states for a third
+field. **Making absence load-bearing would put two conventions for "deliberately nothing" into
+content, unmarked** — the `> NONE` / `!= NONE` hazard in the content layer, and that one cost a
+silently abolished feature.
+
+**AND A PRESENCE-KEYED GATE HAS A CONCRETE FAILURE, NOT ONLY AN INCONSISTENCY.** It cannot
+distinguish:
+
+| weapon | knockback | truth | presence-keyed gate |
+|---|---|---|---|
+| a `ray` that correctly declares none | absent | **correct by design** | refuses Punch — right |
+| a `projectile` whose author **forgot** | absent | **a GAP** | refuses Punch — **silently wrong** |
+
+For the ray it is right. **For the projectile, Punch is quietly unrollable and nothing says why** —
+the enchant is missing from a weapon that should have it, and no one finds out.
+
+**SO THE GATE KEYS ON THE CAST SHAPE, which is declared, checkable, and already in the file:**
+
+```
+type: ray                     knockback MUST BE ABSENT.   Present is a finding.
+type: projectile + ranged     knockback MUST BE PRESENT.  Absent is a GAP, and
+                              ContentValidator names it -- exactly as it names a
+                              missing damage_symbol.
+```
+
+Eligibility becomes **derivable** from the cast shape; the absence stops being load-bearing; and a
+forgotten knockback is caught **at boot** rather than by a player who cannot enchant their bow.
+
+> **AN AUTHORING RULE CAN CONVERT AN ABSENCE FROM A GAP INTO A STATEMENT — BUT ONLY IF SOMETHING
+> CHECKS THE RULE.** Unchecked it converts nothing: **a correct absence and a forgotten one are the
+> same bytes**, and the rule exists only in the head of whoever remembers it.
+
+**This is the part that would have been MISSING when the trigger fired**, which is why it is folded
+in now. It costs nothing today and it is not recoverable later: the weapon that fires the trigger is
+exactly the weapon whose forgotten field this catches.
+
+**Precedent, already shipped, for the derivable half:** `WeaponDefinition.hasQuiver()` does this job
+for the quiver — a named sentinel (`NO_QUIVER = 0`) and a predicate, with **no reliance on a field
+being absent**. Five call sites filter on it. Expanded Quiver's own roll gate reuses it rather than
+inventing a rule, and Punch's should be shaped the same way.
+
+### THE ONE PIECE DELIBERATELY NOT DESIGNED, AND WHY THAT IS NOT AN OMISSION
+
+**WHERE the authored `strength` meets the wielder's enchant level.** `EffectApplier` dispatches the
+`Knockback` and holds the caster; the enchant sits on the item. **That seam is now the ONLY remaining
+implementation question** — the roll-eligibility check above was undesigned when this entry was first
+written and is designed now, keyed on the cast shape.
+
+**Left open ON PURPOSE.** Both answers depend on the weapon that fires the trigger — whether it is
+the only Punch-eligible weapon or one of several, and where roll eligibility is decided by then.
+**Inventing a seam against a weapon that does not exist would produce a design that reads as settled
+and was never tested against anything**, which is the failure this whole entry is parked to avoid.
+
+**Punch does NOT append an effect to `on_hit`; it SCALES one already declared there.** So the
+`isBasicAttack` question is retired rather than answered: the list does not change, nothing mutates
+the shared `ability.onHit()`, and **no golden moves.**
+
+### FULL DESIGN AND THE TRACE THAT PRODUCED IT
+
+`PLAN-enchants-ranged.md` §4 — kept deliberately rather than deleted when Slice D narrowed to
+Expanded Quiver. §4.1 carries the trace proving a ray's base push is `0.0`; §4.3 records that this
+ruling is shape **(b)** of three offered, and why (b)'s recorded objection — *it reintroduces
+per-weapon data* — does not survive the ruling: **`type: ray` is itself the declaration.** Hitscan
+does not push, and the weapon says `ray` in its own file, so the omission is legible **from a field
+that is present** rather than from one that is missing.
+
+> **THIS PARAGRAPH ASSERTED THE REFUTED CLAIM UNTIL 2026-09-13, THREE SCREENS BELOW THE SECTION THAT
+> REFUTES IT.** It read *"the field's ABSENCE carries information rather than being an oversight"* —
+> corrected above under *THE GATE KEYS ON THE CAST SHAPE*, and left standing here, in the same file,
+> in the closing paragraph.
+>
+> **That is the two-answers defect committed by the very edit that fixed it.** The correction was
+> added as a new section instead of the old claim being removed, and a grep for the claim's own words
+> would have found both copies in one command. **Correcting a claim means removing it; adding a
+> better answer beside it leaves the reader to pick.**
+
+### OPEN FINDING — **THE INLINE TWO-MAP MERGE IS A KNOWN-HOLLOW GUARD**, and the max-health pair is the surviving instance
+
+**Found 2026-09-13, during the Expanded Quiver slice. Recorded rather than fixed, because it is a
+second edit to a second stat and bundling it into a quiver slice is how a change stops being
+reviewable.**
+
+> ## THE FINDING IS ABOUT THE SHAPE, NOT ABOUT MAX HEALTH — AND THE FIRST DRAFT OF THIS ENTRY GOT
+> THAT WRONG
+>
+> **`MUTMERGE` did not discover something about Expanded Quiver. It discovered something about
+> INLINE TWO-MAP MERGES IN A METHOD NO TEST CAN REACH.**
+>
+> > **A DEFECT PROVED IN ONE INSTANCE IS PROVED IN EVERY INSTANCE SHARING ITS SHAPE.** Fixing the
+> > instance you were looking at and leaving its twin is how a finding becomes a local repair.
+>
+> **THE SHAPE, stated so a future instance is recognisable before it is written:**
+>
+> ```
+> Map<String, Double> desired = new HashMap<>(scanA(player, ...));
+> desired.putAll(scanB(player, ...));            <- deleting THIS line reddens nothing
+> stats.reconcileXModifiers(id, desired);
+> ```
+>
+> **Three properties together make it unguardable, and it needs all three:**
+>
+> 1. the merge is **inline** in a method that needs a live `Player`, so **no unit test reaches it**;
+> 2. the test that models the defect asserts against **`Stat` directly**, with the source keys as
+>    **literals**, so it never reads the real constants and never touches this wiring;
+> 3. the trap is **documented in a nearby paragraph**, which is what makes everyone believe it is
+>    covered. *(See the rule this slice produced: a guard written against a KNOWN trap is the
+>    likeliest to be hollow.)*
+>
+> **BOTH SITES, listed so whoever converts this does not re-derive which are affected:**
+>
+> | site | sources | status |
+> |---|---|---|
+> | `PlayerHealthSystem`, **max health** | `HealthModifierItems` + `GrowthModifierItems` | **STILL INLINE — the surviving instance** |
+> | `PlayerHealthSystem`, **quiver size** | `QuiverSizeModifierItems` + `ExpandedQuiverModifierItems` | **CONVERTED** to `ExpandedQuiverModifierItems.mergedSources(a, b)` |
+>
+> **They are two lines apart in the same method.** The converted one carries a comment saying the
+> other is still inline, so the two do not silently diverge.
+>
+> **This is now a KNOWN-HOLLOW guard rather than an untested one**, and the difference is the whole
+> reason for this entry: nobody needs to re-run `MUTMERGE` against max health to learn the answer. It
+> is proved.
+
+`PlayerHealthSystem` merges two max-health sources exactly the way the quiver pair did:
+
+```java
+Map<String, Double> desiredMax = new HashMap<>(HealthModifierItems.desiredModifiers(player, keys));
+desiredMax.putAll(GrowthModifierItems.desiredModifiers(player, keys, enchants));
+stats.reconcileMaxModifiers(id, desiredMax);
+```
+
+**MEASURED ON THE QUIVER TWIN: deleting the equivalent `putAll` reddened NOTHING across the whole
+1592-row suite.** `PlayerHealthSystem` needs a live `Player`, so no unit test reaches its scan loop.
+`GrowthTest` models the defect against `Stat` directly, with the key strings written as **literals**
+— so it never reads `GrowthModifierItems.SOURCE_PREFIX` and never reaches this wiring.
+
+**The comment at `PlayerHealthSystem:193` is emphatic and correct** — *"TWO SOURCES, ONE RECONCILE
+CALL, and that is not a tidiness preference"* — and **nothing enforces it.** That is the shape the
+whole slice was about: a trap that is understood, written about at length, and caught by nothing.
+
+**The quiver side was fixed structurally and the same fix applies here unchanged:**
+
+- Extract the merge into a **two-argument function** taking both maps. Dropping a source then means
+  dropping an argument, **which does not compile.**
+- Add rows reading the **actual** `SOURCE_PREFIX` constants of both scanners — and refusing either
+  being a *prefix of* the other, which mere inequality does not catch.
+
+See `ExpandedQuiverModifierItems.mergedSources` and `ExpandedQuiverModifierItemsTest` for the worked
+version. Both were written only after the mutation proved the assertion-only approach guarded
+nothing.
+
+> **NOT URGENT AND NOT COSMETIC.** Nothing is broken today — the merge is correct as written. What is
+> missing is anything that would notice if it stopped being correct, and the failure mode is a player
+> silently holding half the max health their gear justifies, forever.
+
+**TRIGGER: the next time anything touches the max-health reconcile block, or the next enchant that
+adds a THIRD source to any reconciled stat** — a third source is when the inline shape stops being
+two lines and starts being a place to lose one.

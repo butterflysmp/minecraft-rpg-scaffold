@@ -166,6 +166,25 @@ public final class EnchantEffectLine {
                 double points = EnchantCurve.valueAt(definition.valueByLevel(), level);
                 yield String.format("+%.0f Max Mana", points);
             }
+            case QUIVER_SIZE -> {
+                if (definition.gearClass() != heldClass) {
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
+                }
+                // WHOLE ARROWS, AND THE UNIT IS SAID OUT LOUD. Every arm above renders a percentage
+                // or a points figure; this is the only one whose number is a COUNT OF THINGS, and a
+                // bare "+2" beside "+15% damage" would read as another percentage.
+                //
+                // "Quiver" is the word the item already uses -- WeaponLoreLines renders the magazine
+                // as a Quiver line on the weapon itself -- so the enchant that modifies that stat
+                // must not call it something else, the same rule the BLOCK_DR arm follows for
+                // "Damage Reduction".
+                //
+                // SINGULAR AT ONE. "+1 Arrows" is the kind of thing nobody notices in review and
+                // every player notices immediately.
+                int arrows = (int) EnchantCurve.valueAt(definition.valueByLevel(), level);
+                yield "+" + arrows + " Quiver " + (arrows == 1 ? "Arrow" : "Arrows");
+            }
         };
     }
 }

@@ -151,11 +151,25 @@ public final class BukkitCombatant {
          *
          * <p>Flash is ABILITY-PATH ONLY here, and gated so it never overlaps melee. A weapon swing
          * fires a vanilla event that flashes the mob (see {@code RpgListeners}' player-melee handler,
-         * which tokens it and cancels its knockback); that event sets vanilla i-frames as a side
+         * which TOKENS it and LETS ITS KNOCKBACK THROUGH); that event sets vanilla i-frames as a side
          * effect, and it runs BEFORE this deferred call. So when {@code noDamageTicks > 0} a vanilla
          * event just flashed this target -- skip the manual flash, no double. When it is 0 (an
          * ability, which fires no vanilla event) play the hurt animation ourselves. Do NOT reset
          * i-frames here: that reset is exactly what would defeat the gate.
+         *
+         * <p><b>THAT PARENTHESIS SAID "cancels its knockback" UNTIL 2026-09-13, AND IT DESCRIBED A
+         * DESIGN THAT HAD ALREADY BEEN REPLACED.</b> {@code RpgListeners.onCombatKnockback} RETURNS
+         * EARLY -- it does not cancel -- for the hit that claimed the {@code MeleeHits} window, and
+         * that handler's own javadoc records the supersession: the older <i>"always cancel vanilla
+         * KB, then apply the declared one"</i> left melee pushing nothing at all, because no shipped
+         * weapon declares a knockback. <b>Vanilla owns melee knockback now</b>, gated to the hit that
+         * earned it.
+         *
+         * <p>Corrected rather than deleted because the flash gate's argument is UNAFFECTED -- the
+         * event is tokened either way, and tokening is what sets the i-frames this gate reads. Only
+         * the knockback clause was false, and it was false in the direction that matters: melee is
+         * the ONLY path in the game that produces a push, and the comment said it was the one path
+         * that did not.
          *
          * <p><b>This paragraph was a STORY until 2026-08-28, and is now true.</b> While the melee
          * suppressor brought a held weapon's vanilla attack damage to a flat 0, vanilla skipped its

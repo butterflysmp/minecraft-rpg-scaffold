@@ -104,7 +104,37 @@ public enum EnchantEffect {
      * that already existed; this effect's first version had to build the per-player ceiling,
      * {@code ResourcePool.MaxResolver}, and the max-change transition that goes with it.
      */
-    MAX_MANA;
+    MAX_MANA,
+
+    /**
+     * Whole arrows added to the MAGAZINE of the ranged weapon it sits on. The mechanism is
+     * {@link io.github.butterflysmp.rpg.core.combat.QuiverSize}.
+     *
+     * <p><b>THE FIRST EFFECT WHOSE MECHANISM WAS ALREADY IN THE TREE.</b> Every constant above named
+     * a class written for it; this one names {@code QuiverSize}, which has shipped since the A2
+     * quiver slice with {@code boosts}, {@code contribution}, {@code arrows} and {@code resolve}
+     * already written and tested. Nothing in {@code core} was added for this effect -- only the name
+     * that binds content to it. That is this enum's own rule arriving from the other direction:
+     * <i>adding a constant means adding a mechanism</i> held while there was one mechanism per
+     * enchant, and here an existing mechanism gained its first enchant.
+     *
+     * <p><b>FLAT ARROWS, NOT A PERCENTAGE, AND THE NUMBER IS WHY.</b> One arrow is 11% at a 9-round
+     * magazine and 12.5% at the Boltor's 8, so any percentage tier below that floors to nothing and
+     * the tooltip would advertise a buff the player does not receive. {@code QuiverSize}'s class
+     * javadoc is the account; {@code expanded_quiver.yml} carries the pointer where the question
+     * gets asked.
+     *
+     * <p><b>Distinct from {@link #MAX_HEALTH} and {@link #DEFENSE} on this enum's standing rule:</b>
+     * they share the shape of their content -- a flat {@code value_by_level} in points -- and none
+     * of their arithmetic or their destination. Those two sum into a stat read at the moment of use;
+     * this one resolves a CAPACITY that a per-item magazine is then clamped against, and it is read
+     * off the MAIN HAND rather than the worn pieces.
+     *
+     * <p><b>Its direction is POSITIVE</b> -- more arrows is better -- so its gate is
+     * {@code QuiverSize.boosts}, which is {@code > NONE}. {@code ReloadTime} in the same family is
+     * inverted and gates on {@code != NONE}; see that class, and do not unify them.
+     */
+    QUIVER_SIZE;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides

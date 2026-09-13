@@ -1,0 +1,47 @@
+# The Ranger magazine enchant, and the first enchant to bind a mechanism that was ALREADY IN THE
+# TREE. `effect: quiver_size` names core/combat/QuiverSize.java, which has shipped since the A2
+# quiver slice with boosts, contribution, arrows and resolve already written and tested. Nothing in
+# core was added for this enchant -- only the name that binds content to it, and the scanner that
+# feeds it.
+#
+# FLAT ARROWS, NOT A PERCENTAGE.
+#
+# One arrow is 11% at a 9-round magazine and 12.5% at the Boltor's 8, so ANY PERCENTAGE TIER BELOW
+# THAT GRANTS NOTHING -- QuiverSize.arrows floors, so the tooltip would advertise a number and the
+# player would receive ZERO. Not a weak buff: zero. Changing the rounding mode does not rescue it
+# and would put two rounding modes in one weapon.
+#
+# QuiverSize's class javadoc is the ACCOUNT; ReloadTime records why the MODE and not the phrase is
+# the house rule. This comment is the POINTER, and it is here because the question has now been
+# asked twice by two different people, neither of whom was standing where the answer was filed.
+#
+# WHAT THE NUMBERS DO. Whole arrows added to the held weapon's authored magazine, resolved by
+# QuiverSize.resolve. Across the live range:
+#
+#   Boltor  (quiver_size 8)    8 -> 9, 10, 11     +12.5% / +25%   / +37.5%
+#   Locust  (quiver_size 12)  12 -> 13, 14, 15    +8.3%  / +16.7% / +25%
+#
+# Nearly uniform in effect across both weapons, which is the argument for the shape. A flat +N loses
+# relevance as magazines grow -- +3 on a 40-round weapon is 7.5%, real but not worth a slot. THE
+# TRIGGER for revisiting: the first weapon shipped with quiver_size materially above 20. Not a date.
+# Quiver.applyPercent exists and is tested if that day comes, carrying the recorded obligation that
+# any percentage reaching a capacity must pass through resolve.
+#
+# `class: universal` WOULD BE THE DANGEROUS TYPO, and the loader refuses it -- Gate.RANGER_ONLY,
+# which is MAIN_HAND_ONLY minus that one value. A universal quiver enchant would enter EVERY sword's
+# roll pool and sell an XP unlock that does nothing, because the scan resolves a MAGAZINE and a
+# sword has none. The gate is not a taxonomy claim: if a mage weapon ever authors a quiver_size it
+# becomes a two-value check and nothing else moves.
+#
+# THE DIRECTION IS POSITIVE -- more arrows is better -- so the gate is QuiverSize.boosts, `> NONE`.
+# ReloadTime in the same family is INVERTED and gates on `!= NONE`, because for it positive means
+# slower. Slice A2 shipped that confusion once by copying the wrong operator between two files that
+# look identical. Do not unify them.
+display_name: "Expanded Quiver"
+# Cosmetic, and it DEFAULTS to enchanted_book when absent, so it is never a reason a working enchant
+# fails to load. Do not make it required.
+icon: spectral_arrow
+max_level: 3
+effect: quiver_size
+class: ranger
+value_by_level: [1, 2, 3]

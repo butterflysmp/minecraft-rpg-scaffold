@@ -237,10 +237,15 @@ So:
   > So, for any guard whose failure path has never been observed: **feed it the bad input on
   > purpose.** A `catch` around a library call especially — leniency is a library's default
   > far more often than anyone assumes, and it is never stated where you are looking.
-- **THREE WAYS TO MANUFACTURE A FALSE ABSENCE, AND ALL THREE END IN "IT ISN'T THERE".** A search that
-  returns nothing, an instrument that is wrong, and **a pattern that cannot match the text it is
-  looking for** all produce the same sentence, and it is a *finding* — so it gets reported, acted on,
-  and is much harder to retract than a wrong positive.
+- **FOUR WAYS TO MANUFACTURE A FALSE ABSENCE, AND ALL FOUR END IN "IT ISN'T THERE".** A search that
+  returns nothing, an instrument that is wrong, **a pattern that cannot match the text it is looking
+  for**, and **a tool that normalises away the very thing being tested for** all produce the same
+  sentence, and it is a *finding* — so it gets reported, acted on, and is much harder to retract than
+  a wrong positive.
+
+  > **THE FIRST THREE ARE FACTS ABOUT THE DOCUMENT; THE FOURTH IS A FACT ABOUT THE INSTRUMENT.** That
+  > split is why the fourth is filed here rather than left as another search tip: the first three are
+  > fixed by searching better, and **the fourth cannot be.**
 
   > **A GREP FOR YOUR OWN VOCABULARY IS NOT A SEARCH OF THE DOCUMENT.** You match the word **you**
   > would have written; the author wrote theirs. **Search by content — a number, an identifier, a
@@ -272,8 +277,30 @@ So:
   > **Practically: search ONE TOKEN, never a phrase.** `dual-wield` found all four sites. A
   > hyphenated word, an identifier, a number — anything that cannot be broken in half.
   >
-  > **Practically, for all three:** before reporting an absence, ask *what would this look like if it
+  > **AND THE FOURTH, WHICH IS NOT A FACT ABOUT THE DOCUMENT AT ALL: THE TOOL NORMALISES THE THING
+  > YOU ARE LOOKING FOR.** The first three are properties of the text — your word, the author's word,
+  > a line wrap. **This one is a property of the INSTRUMENT, and no amount of better searching fixes
+  > it.** The pattern is right, the text is right, and the tool silently removes the difference before
+  > it ever compares.
+  >
+  > **2026-09-13.** `grep -c -v $'\r$'` over a CRLF `NEXT.md` reported **every line as lacking CRLF**
+  > — `sed` and `grep` in Git Bash **strip CR before matching**, so a `\r$` test can never match on
+  > any file. `cat -A` through a `sed` pipe lied the same way, printing `$` where the raw bytes held
+  > `^M$`. **Two independent text tools, same normalisation, same false absence.**
+  >
+  > **THE RULE: WHEN THE THING YOU ARE TESTING FOR IS SOMETHING A TOOL IS ENTITLED TO NORMALISE, THE
+  > TEST MUST GO THROUGH SOMETHING THAT CANNOT NORMALISE IT.** Line endings, trailing whitespace,
+  > unicode form, case — all of these are things a text tool may quietly canonicalise, and all of
+  > them are therefore invisible to a text tool.
+  >
+  > **Practically:** count bytes, not lines. `tr -cd '\r' | wc -c` against the line count settles
+  > CRLF — **and it is right because `tr` cannot normalise, not because it is more thorough.** The
+  > same reasoning picks the instrument for the others: `cmp`/`od -c` for whitespace, `git diff
+  > --numstat` for a change you were told did not happen.
+
+  > **Practically, for all four:** before reporting an absence, ask *what would this look like if it
   > were present and my search were wrong?* If the answer is "identical", the search is not done.
+  > **For the fourth, add: is what I am testing for something this tool is allowed to throw away?**
 
 - **AND THE INVERSE, WHICH IS WORSE: A FALSE PRESENCE. PROSE THAT NAMES A KEY IS INDISTINGUISHABLE
   FROM THE KEY.** The three above are false *absences*. This is a match that should not have
@@ -355,6 +382,17 @@ So:
   pushed"* in a report are **both claims**. Report the command's output, not your belief about the
   command's output — the same rule as the `--numstat` one above, applied to the remote.
 
+  > **A WIRE LINE IS GENERATED, NEVER WRITTEN.** State it from `ls-remote`'s output **in the same
+  > breath you run it**, the way a commit count is stated from `rev-list --count`. **A wire claim
+  > composed from memory is stale BY CONSTRUCTION, because the only thing that changes it is the act
+  > you are reporting.**
+  >
+  > **2026-09-13.** A report ended *"Nothing committed, nothing pushed — the wire is still
+  > `5167c5d`."* It was true when written. The next instruction was *"get this on git"*, and the push
+  > falsified it — **the same mechanism as `GATE-volley.md`'s `1462`**, a figure correct when drafted
+  > and falsified by its own commit. The class is not carelessness; it is **a claim whose subject is
+  > the action being taken**.
+
   > **A REPORT SAYING "UNVERIFIABLE" IS STILL A REPORT**, and it is the one that most reliably stops
   > the check from happening, because skipping feels free when there is said to be nothing to check.
   >
@@ -421,6 +459,25 @@ So:
   > from the range. **A repeated +1 is a mechanism, not a slip** — and in both failures the prose
   > number disagreed with the table printed directly beneath it, so *adding the parts up* would have
   > caught it with no command at all. Same family as *eight shots span seven intervals*.
+
+- **A CONTROL CARRIED PAST ITS PRECONDITION STOPS BEING A CONTROL WITHOUT STOPPING BEING QUOTED.**
+  A proof holds under conditions. **When the conditions lapse the proof becomes a habit, and a habit
+  reads exactly like a proof** — same words, same confidence, no warning.
+
+  > **2026-09-13.** One report proved nothing had been eaten by a splice with *"**0 deletions**
+  > across all three files, so no splice ate anything."* Sound: a pure append cannot delete. **The
+  > next change stopped being an append** — a recorded count in a heading had to go from THREE to
+  > FOUR, and **a count in a heading cannot be raised by appending** — and the framing carried
+  > forward unremarked. The `−5` was clean, but *"zero deletions"* had quietly become a sentence
+  > about nothing.
+  >
+  > **The precondition failed SILENTLY, which is the whole difficulty.** Nothing announces that a
+  > proof's premise has lapsed; the proof just keeps being available to quote.
+  >
+  > **Practically: state the precondition WITH the control, in one breath** — *"a pure append, so
+  > zero deletions proves nothing was eaten"* — so the day it is not an append, the sentence is
+  > visibly wrong instead of quietly empty. **And when there ARE deletions, read them**: `git diff
+  > --cached | grep "^-"` costs nothing and answers the question the count no longer can.
 
 - **AN EXIT STATUS PROVES A PROCESS ENDED, NEVER THAT IT DID ITS WORK. CHECK THE ARTEFACT, NOT THE
   INVOCATION.** When a command's job is to WRITE something — regenerate a golden file, emit a report,
@@ -1009,6 +1066,128 @@ the opposite because the material suggests it.**
     > To buy a *dual* dead zone as narrow as the Boltor's *single* +28% you must author **32**, a
     > 1.6-second shot. **Clean halving, attack-speed headroom and a fast weapon are jointly
     > unsatisfiable.** Full argument in `PLAN-locust.md`.
+
+### NAME THE QUANTITY, AND NAME THE SET OF THINGS THAT HAVE IT
+
+**Before writing any `value_by_level`: name the quantity the curve moves, and answer BOTH halves.**
+
+1. **ARITHMETIC — is the quantity non-zero and continuous at the values it will meet?** If it is
+   quantised, floored, or absent, **author a FLAT value instead** — or park the feature.
+2. **ELIGIBILITY — does every piece of gear this can ROLL ON actually possess that quantity?** If
+   some do not, **the gate is wrong, and no curve fixes it.**
+
+> **THE TWO HALVES ARE ONE RULE, NOT TWO, AND THAT IS THE WHOLE POINT.** An enchant can be
+> **arithmetically honest and still grant zero**, because the weapon it landed on does not possess
+> the thing it modifies. **Passing the first half reads as passing** — the number is real, the
+> multiplicand is real, and the player still receives nothing.
+>
+> **THE SAME ENCHANT FAILED BOTH HALVES**, which is why they cannot be separate rules: Expanded
+> Quiver failed the arithmetic half (a percentage of an integer magazine floors to nothing) and was
+> ruled FLAT — **and then failed the eligibility half anyway**, because `hunters_bow` is
+> `class: ranger` and authors no `quiver_size`. Fixing the first did not touch the second.
+
+**The failure is not a weak enchant. It is a tooltip that advertises a number while the player
+receives ZERO**, and nothing goes red, because a curve that resolves correctly and lands on nothing
+is indistinguishable from one that works.
+
+Three enchants proposed in one slice (2026-09-13) produced **four** failures of this rule, across both
+halves — which is why it is stated as a rule rather than four notes:
+
+| proposed | half | the quantity | how it fails |
+|---|---|---|---|
+| **Rapid Fire** | arithmetic | a **QUANTISED** cooldown | the 4-tick input grid swallows anything under **+28%** |
+| **Expanded Quiver** | arithmetic | an **INTEGER** magazine | `QuiverSize.arrows` floors — one arrow is 11% at 9 rounds, so every tier below that grants nothing |
+| **Punch** | **eligibility** | a knockback base that **DOES NOT EXIST** on a ray | `applyDamage` never calls `entity.damage()`, so a ray hit raises no `EntityKnockbackEvent`; base push `0.0` |
+| **Expanded Quiver**, *again* | **eligibility** | a magazine the weapon **does not have** | `hunters_bow` is `class: ranger` with no `quiver_size`, so the enchant rolls on and renders `+2 Quiver Arrows` for nothing |
+
+**Quantised, floored, absent, unpossessed — four different mechanisms, one question catches all
+four**, and it is cheaper than any of the four investigations that found them separately.
+
+> **THE FOURTH ROW IS WHY THE RULE HAS TWO HALVES.** It was found only after the arithmetic half had
+> already "passed" the enchant and a flat value had been ruled. **`+2 arrows` is `+2 arrows`** — the
+> arithmetic test cannot see it. It arrived through the **ROLL TABLE** instead, which is a door the
+> one-half version of this rule does not watch.
+
+> **AND PUNCH IS THE ONE THAT SURVIVED, WHICH IS THE HALF OF THIS RULE WORTH KNOWING.** Operator
+> ruling, 2026-09-13: *"Other ranged weapons will have knockback, the instant hitting ranged weapons
+> don't."* A **travelling** weapon authors an `EffectSpec.Knockback` in its `on_hit`, and +20/40/60%
+> of an authored `strength` is a real percentage of a real value. **Punch's numbers shipped as first
+> ruled — the only one of the three that needed no renumbering at all.**
+>
+> **THE FIX WAS NOT A DIFFERENT CURVE. IT WAS NAMING THE QUANTITY.** The other two were repaired by
+> changing the arithmetic — park it, or go flat. This one was repaired by **supplying the missing
+> multiplicand**, and the curve never moved. So the rule's instruction is *name the quantity and
+> check it*, in that order, and **not** *"prefer flat"*: two of three failures did need flat, and
+> reading the rule as a preference for flat would have renumbered a curve that was correct.
+>
+> **The check is the same either way, and that is the point** — you cannot tell which of the two
+> outcomes you are in until you have named the quantity and gone and looked at it.
+
+> **THE THIRD ONE IS THE REASON THIS IS A CHECK AND NOT A REMINDER TO BE CAREFUL.** *Is this
+> continuous?* is a question about a number you can see. *Does this base exist at all?* is a question
+> about a call you have to go and read — and the plausible answer was the wrong one, because
+> `VanillaDamagePolicy` says knockback rides the vanilla event and the ability path raises no vanilla
+> event for that sentence to be about.
+
+**Practically: write down the quantity's actual authored values before the curve.** The live
+magazine spread is `8` and `12`; the live knockback base on a ray is `0.0`. Both took one grep and
+one trace, and both were available before any design.
+
+Full account, all three instances, and the Punch base trace: `PLAN-enchants-ranged.md`.
+
+### A TRAVELLING RANGED WEAPON AUTHORS KNOCKBACK; AN INSTANT-HITTING ONE DOES NOT
+
+**Operator ruling, 2026-09-13.** A `type: projectile` ranged weapon **lands with impact** and declares
+an `EffectSpec.Knockback` in its `on_hit`. A `type: ray` ranged weapon is **hitscan** and declares
+none.
+
+```yaml
+on_hit:
+  - type: weapon_damage
+    element: kinetic
+  - type: knockback          # travelling weapons only
+    strength: 0.4
+```
+
+**No new schema.** `EffectSpec.Knockback(double)`, `EffectApplier` and
+`CombatantHandle.applyKnockback` all already exist; `AbilitySchema` already parses `type: knockback`.
+
+**THIS IS A CONTENT RULE, AND THE CODE DOES NOT IMPLY IT — WHICH IS THE ONLY REASON IT NEEDS WRITING
+DOWN.** Neither cast shape produces knockback on its own: `CastExecutor.detonate` is the single
+on-hit site and **every** shape routes through the custom health store, so nothing calls
+`entity.damage()` and no `EntityKnockbackEvent` is ever raised. **You cannot read this rule off the
+engine — both shapes look identical there.** It is a decision about what content declares.
+
+**This is why Punch does nothing on a Boltor, and that is CORRECT rather than a gap.** A ray is
+meant to have no push.
+
+> **SCOPE, STATED BECAUSE THE OBVIOUS SWEEP IS WRONG.** The ruling is about **ranged** weapons.
+> Measured 2026-09-13: three shipped weapons are `type: projectile` and author no knockback —
+> `ember_staff` and `flint_staff` (mage) and `emberblade` (melee). **This rule does not reach them.**
+> Do not "fix" them, and do not cite this rule at a staff.
+>
+> **AND THEY ARE UNRULED, NOT EXCLUDED — THE TWO ARE ONE KEYSTROKE APART AND ONLY ONE IS TRUE.**
+> Nobody has decided that a travelling MAGE weapon should not push. **The question was never put.**
+>
+> > **AN UNRULED CASE MUST BE RECORDED AS UNRULED, NOT AS EXCLUDED.** *"Excluded"* says a decision
+> > was taken and closes the question; *"unruled"* says it is still open and invites it. **Writing
+> > the first when the second is true silently converts an omission into a ruling nobody made** —
+> > and the next person to look finds a settled-looking answer with no author.
+
+**THE ROLL GATE, AND IT IS WHAT KEEPS THE TOOLTIP HONEST:**
+
+> **PUNCH MUST NOT ROLL ON A WEAPON THAT AUTHORS NO KNOCKBACK.** Otherwise a player enchants a
+> Boltor, the tooltip reads *"+40% knockback"*, and nothing happens — **the exact dishonesty the rule
+> above eliminated three times, arriving a fourth time through the ROLL TABLE instead of the
+> arithmetic.**
+>
+> It is **mechanically checkable**: the weapon's `on_hit` list either contains a `Knockback` or it
+> does not. That is a loader / roll-eligibility check, **not a review obligation** — and it is the
+> whole difference between *inert by design, visible in the content* and *inert in a way only a
+> player discovers*.
+
+**Punch is PARKED, design complete** — no weapon can take it today. Trigger and full design in
+`NEXT.md`; the design itself in `PLAN-enchants-ranged.md` §4.
 
 ## Upgrade procedure
 
