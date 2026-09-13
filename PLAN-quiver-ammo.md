@@ -20,6 +20,29 @@ This document is the investigation and the design.
 >
 > **A citation is a claim that a thing is there, and it is as checkable as any other.** These three
 > become true on merge; until then they are marked rather than silently wrong.
+>
+> ### BUT THE MARKING MAKES THE ORDER LEGIBLE, NOT REQUIRED — AND THAT IS THE PART TO KNOW
+>
+> > **A FORWARD REFERENCE IS A DEPENDENCY WITH NO ENFORCEMENT.**
+>
+> **Nothing in git prevents this branch merging first.** There is no hook, no check, no failing
+> build. If it does merge first, `master` carries citations to artifacts that **do not exist**, and
+> **NOTHING FAILS** — no test reddens, no validator warns, no grep lists them. The reader who follows
+> one finds a name and no file.
+>
+> **That is the same class as the `File.java:NNN` citation defect this repository already tracks as
+> an open finding, arriving through MERGE ORDER instead of through insertion.** The existing one is
+> caused by a line number going stale when text is added above it; this one is caused by a commit
+> landing in an order nobody enforced. Same symptom, same silence, different door.
+>
+> **THE PRACTICAL RISK TODAY IS NEAR ZERO, and that is a fact about the schedule rather than about
+> the safeguard:** Slice D is ready for its PR and Slice E is blocked on the creative-mode ruling, so
+> the natural order already holds. **Recorded anyway, because "the risk is currently zero" and "the
+> order is enforced" are different sentences, and only the first one is true.**
+>
+> **So: do not read the marking above as a guarantee.** It tells a reader what the order should be.
+> It does not make it happen, and if the order is ever inverted the marking is what explains the
+> dangling names rather than what prevented them.
 
 > ## THIS IS NOT A CONTENT SLICE, AND IT IS NOT ABOUT THE DRAGON'S PLUME
 >
@@ -249,32 +272,66 @@ minted item is `Material.ARROW`), and it is the rule that keeps being true when 
 
 ## 6. UNRULED — **three, each investigated, none decided here**
 
-### 6.1 CREATIVE MODE — **OPEN, operator's call**
+### 6.1 CREATIVE MODE — **RULED: CREATIVE DOES NOT CONSUME ARROWS**
 
-Vanilla bows do not consume arrows in creative. Ruling 4 says a weapon with no arrows is dead and
-says nothing about creative.
+> **Operator, 2026-09-13: *"creative mode shouldn't consume arrows."***
 
-**No recommendation offered** — the brief says put it to the operator and not to choose. **But the
-measurement that informs it has been taken rather than left as an instruction:**
+> **THIS IS THE FIRST `GameMode` BRANCH IN THE PROJECT.** Measured at **zero** across both modules,
+> main and test, against a positive control. **So it sets the precedent every later consumable will
+> cite — mana potions, repair kits, ammo of any other kind — and it must be written TO BE CITED
+> rather than written for this slice.**
 
-> **THIS PROJECT HAS NEVER BRANCHED ON `GameMode`. Not once, in either module, in main or test
-> source.** `grep -rn "GameMode" core/src paper/src storage/src` returns **0**, against a positive
-> control confirming the pattern matches when the text is present.
->
-> **So there is no house convention to be consistent with, and whichever way this is ruled, it is the
-> FIRST one.** That is the fact worth having in front of the decision: a creative-mode exemption here
-> would not be *following* how the project treats creative — it would be *establishing* it, and every
-> later consumable (mana potions, repair kits, ammo of any other kind) would cite it.
+#### THE RULING REMOVES THE DEBIT. IT MUST ALSO REMOVE THE REFUSAL, AND THOSE ARE DIFFERENT EDITS
 
-**Two consequences, either of which may be decisive, and both are the operator's to weigh:**
+**Taken literally, *"shouldn't consume"* only deletes the debit** — which would leave a creative
+player with an empty inventory **refused by the no-ammo verdict for having no arrows, while
+consuming none.** Refused for lacking a thing they were never going to spend.
 
-- **Exempting creative** means `Quivers.beginReload` gains the project's first `GameMode` read, and
-  the gate rows must be run in **survival** or they measure nothing.
-- **Not exempting** means a creative-mode builder testing a weapon needs arrows in hand, which makes
-  the boot gate simpler and is consistent with ruling 4's *"running dry is a planning failure"* —
-  but diverges from vanilla bows, which every player's intuition is calibrated on.
+> **RULED READING: creative SKIPS THE AMMO CHECK ENTIRELY AND RELOADS TO FULL, regardless of
+> inventory.** Not *passes it trivially with a count of zero* — **skips it.**
 
-### 6.2 `/rpg give` — **OPEN, but the finding constrains it hard**
+The two differ exactly where it matters, and the plan states which so the gap is not filled by
+whoever meets it first:
+
+| creative, 0 arrows, 7/8 Boltor | verdict | result |
+|---|---|---|
+| **skip the check** ← **RULED** | `BEGIN` | reloads to **8/8**, inventory untouched |
+| pass it trivially | no-ammo refusal | **refused**, and nothing consumed — the incoherent one |
+| debit-only removal | `BEGIN`, loads **1** | partial magazine from arrows that do not exist |
+
+#### A GAME-MODE BRANCH IS A BRANCH OVER A SET, NOT A BOOLEAN
+
+**There are FOUR modes and the ruling names one.** `!= CREATIVE` would decide the other three **by
+omission**, which is how three behaviours get chosen by whichever comparison someone reached for.
+
+> **ENUMERATE ALL FOUR IN THE ARM AND SAY WHAT EACH DOES.** A switch over `GameMode` with no default,
+> so a fifth mode in a future Paper release is a **compile error** — the same discipline
+> `VanillaDamagePolicy.forCause` applies over its thirty-three `DamageCause` constants, and for the
+> identical reason: *the length IS the guard.*
+
+| mode | arrows consumed? | reasoning |
+|---|---|---|
+| `SURVIVAL` | **yes** | the ruled default; rulings 1–5 apply in full |
+| `CREATIVE` | **no** | ruled — skips the check, reloads to full |
+| `ADVENTURE` | **yes** | a play mode with a restricted inventory, not a build mode. A player in adventure is *playing*, and ruling 4's *"running dry is a planning failure"* is a statement about play |
+| `SPECTATOR` | **not reachable** | a spectator cannot use an item at all, so no reload can begin. **Named rather than omitted**, and the arm should say *unreachable* rather than silently sharing survival's branch — an arm that cannot fire is this project's recorded defect, and it must be labelled as one where it sits |
+
+> **`ADVENTURE` AND `SPECTATOR` ARE NOT RULED — THEY ARE DERIVED ABOVE, AND THAT IS A DIFFERENT
+> THING.** The operator named `CREATIVE`. The reasoning for the other two is mine and is
+> overturnable; it is written here so the derivation is visible rather than buried in a comparison
+> operator.
+
+#### AND IT ADDS A GATE ROW, BECAUSE NO TEST CAN REACH IT
+
+**`GameMode` is a `Player` property and `core` cannot see it.** So creative is now a behaviour with
+**no unit test able to reach it at all** — the split this project makes everywhere puts the decision
+in `core` on primitives, and *which mode the player is in* cannot cross that line without an
+`ItemStack`-shaped violation.
+
+**Row 4 below is therefore the ONLY thing that will ever exercise this arm.** Say so in the arm's own
+javadoc, per the standing rule for a guard whose only exercise is one test.
+
+### 6.2 `/rpg give` — **SETTLED: MINT STAYS FULL** (recommendation taken 2026-09-13; no longer blocking)
 
 **MEASURED: every minted quiver weapon arrives FULL today.** `WeaponItems.java:183` calls
 `QuiverItems.stampFull(meta, weapon, keys)` at mint, which writes `Quiver.reload(weapon.quiverSize())`.
@@ -290,7 +347,12 @@ If they arrive empty, **nothing can be tested until a player has arrows**, which
 icons regress, which is not.
 
 **Recommend: mint stays FULL.** The first magazine is the one the weapon was built with; every
-subsequent one costs arrows. Still the operator's to take.
+subsequent one costs arrows.
+
+> **TAKEN AS RECOMMENDED, 2026-09-13**, on the operator's instruction to adopt it unless overruled.
+> **This is an adopted recommendation, not a ruling**, and the distinction is worth keeping: the
+> reasoning above is mine, so overturning it costs nothing and needs no re-derivation of why the
+> icons matter.
 
 ### 6.3 `quiver_stone` — **REPORTED, NOT EXEMPTED**
 
@@ -325,6 +387,7 @@ rows below use the **Boltor** anyway.
 | **1** | **PARTIAL LOAD.** 7 arrows, empty Boltor | `Quiver: 7/8` **and 0 arrows left**. Read the **tooltip AND the inventory** — one without the other cannot tell a partial load from a full one that failed to debit |
 | **2** | **NO-AMMO REFUSAL.** 0 arrows, 7/8 loaded | the **new** notice, **NOT** "already full", and **no timestamps stamped** |
 | **3** | **THE INTERRUPT COST.** Begin a reload, swap weapons before it matures | **arrows GONE, magazine unchanged** |
+| **4** | **CREATIVE.** In creative with an **empty inventory**, reload a spent Boltor | **full magazine, and NO inventory change** |
 
 > ### ROW 3 IS THE ONE TO WRITE MOST CAREFULLY
 >
@@ -338,6 +401,15 @@ rows below use the **Boltor** anyway.
 
 **Row 2's "no timestamps stamped" is the half most likely to be dropped**, and it is the half that
 distinguishes *refused* from *started and instantly finished*. Read the PDC, not just the message.
+
+> **ROW 4 IS THE ONLY THING THAT WILL EVER EXERCISE THE CREATIVE ARM.** `GameMode` is a `Player`
+> property, `core` cannot see it, and no unit test in this project holds a `Player` — so there is no
+> other route, now or later. **An empty inventory is load-bearing in the staging**: with arrows
+> present, a creative reload to full is indistinguishable from a survival one that debited correctly,
+> and the row would pass whether the arm existed or not.
+>
+> **Its second half — NO INVENTORY CHANGE — is the half that can fail on its own**, and it is what
+> separates *skipped the check* from *debited something*. Read the inventory, not just the tooltip.
 
 ---
 
@@ -372,8 +444,10 @@ certify both.
 
 ## 9. ORDER
 
-1. **Answer the three unruled items in §6** — only 6.1 (creative) genuinely blocks, and it blocks
-   only the debit, not the design.
+1. ~~Answer the three unruled items in §6.~~ **DONE, 2026-09-13 — ALL THREE CLOSED. Nothing blocks
+   implementation.** 6.1 **ruled** (creative skips the check entirely); 6.2 **adopted as
+   recommended** (mint stays full); 6.3 **answered by measurement** (no test reloads `quiver_stone`,
+   so no exemption needed).
 2. **`core` first**: `Quiver.reload`'s new signature, the new `Reload` verdict, and the ladder
    insertion — with `QuiverStateTest` rows written **before** the paper wiring.
 3. **The fifth key**, and `finishReload` reading it at both sites.
