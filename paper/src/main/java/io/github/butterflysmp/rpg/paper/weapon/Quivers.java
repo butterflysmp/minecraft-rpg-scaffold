@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
+import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ReloadTime;
 import io.github.butterflysmp.rpg.core.weapon.Quiver;
 import io.github.butterflysmp.rpg.core.weapon.QuiverState;
@@ -200,7 +201,8 @@ public final class Quivers {
      *         rather than on every one of the ~20 left-click packets a held button produces each
      *         second.
      */
-    public static boolean beginReload(Player player, WeaponDefinition weapon, AdapterContext adapters) {
+    public static boolean beginReload(Player player, WeaponDefinition weapon, AdapterContext adapters,
+                                      CooldownTracker cooldowns) {
         Keys keys = adapters.keys();
         ItemStack held = player.getInventory().getItemInMainHand();
         long now = Bukkit.getCurrentTick();
@@ -209,7 +211,19 @@ public final class Quivers {
         // ALREADY_RELOADING is the held-input case -- ~20 arm-swing packets a second, every one of
         // which would otherwise push the deadline another reload_ticks away and leave a weapon that
         // never comes back. ALREADY_FULL spares a habitual press three dead seconds.
-        switch (stateOf(held, keys, weapon).reloadVerdict(now)) {
+        // SLICE E: WHAT THE RELOAD WOULD COST, AND WHAT THE PLAYER CAN PAY -- both read BEFORE the
+        // verdict, because the ammo rung needs the second one.
+        //
+        // The DECISION is core's and takes an int; the READ is here. That is the same split
+        // QuiverSize.resolve's javadoc argues for, and it is why no ItemStack goes near core.
+        QuiverState state = stateOf(held, keys, weapon);
+        QuiverAmmo.Supply supply = QuiverAmmo.supply(player, state.roundsNeeded());
+
+        // Same split as resolveForShot: the verdict is core's, and each arm below is a core row.
+        // ALREADY_RELOADING is the held-input case -- ~20 arm-swing packets a second, every one of
+        // which would otherwise push the deadline another reload_ticks away and leave a weapon that
+        // never comes back. ALREADY_FULL spares a habitual press three dead seconds.
+        switch (state.reloadVerdict(now, supply.rounds())) {
             case ALREADY_RELOADING, ALREADY_FULL -> { return false; }
             case RELOAD_MATURED -> {
                 finishReload(player, held, weapon, adapters);
@@ -218,6 +232,14 @@ public final class Quivers {
             case UNSTAMPED -> {
                 // Repaired on the firing path, which every quiver weapon reaches first; reloading a
                 // never-stamped item is not the place to invent a count.
+                return false;
+            }
+            case NO_AMMO -> {
+                // ROOM BUT NO ARROWS -- ruling 4. Its OWN notice, never the empty-magazine one:
+                // "already full" or "out of ammo" on a weapon reading 7/8 is the kind of thing a
+                // player screenshots. QuiverNotice keys it separately so two refusals cannot silence
+                // each other through one throttle.
+                QuiverNotice.noAmmo(player, cooldowns);
                 return false;
             }
             case BEGIN -> { /* fall through to the write below */ }
@@ -251,11 +273,28 @@ public final class Quivers {
         int reloadTicks = ReloadTime.resolve(weapon.reloadTicks(),
                 adapters.stats().reloadTimeBonusValue(player.getUniqueId()));
 
+        // RULING 3: THE ARROWS ARE TAKEN AT THE START, NOT AT MATURITY. An interrupted reload costs
+        // them -- deliberate, unusual, and indistinguishable from a bug unless the record says it was
+        // chosen, so GATE-quiver-ammo.md row 3 predicts it in writing.
+        //
+        // TAKEN HERE, past every refusal arm above, because beginReload "returns true only on a REAL
+        // TRANSITION" and that property is what makes it safe to call from the swing path -- roughly
+        // twenty arm-swing packets a second. A debit above the switch would charge the player on
+        // every one of them.
+        //
+        // A no-op in creative: supply() returns no draws there, so no second mode check is needed.
+        QuiverAmmo.consume(player, supply.draws());
+
         held.editMeta(meta -> {
             meta.getPersistentDataContainer().set(keys.quiverReloadStartedAt,
                     PersistentDataType.LONG, now);
             meta.getPersistentDataContainer().set(keys.quiverReloadCompletesAt,
                     PersistentDataType.LONG, Quiver.reloadCompletesAt(now, reloadTicks));
+            // THE PENDING COUNT, written with the two stamps and removed with them. It exists because
+            // the amount was decided HERE, from an inventory that will have moved on by the time the
+            // reload matures -- see Keys.quiverReloadPending for why re-deriving is wrong twice over.
+            meta.getPersistentDataContainer().set(keys.quiverReloadPending,
+                    PersistentDataType.INTEGER, supply.rounds());
         });
         player.getInventory().setItemInMainHand(held);
         player.updateInventory();
@@ -271,27 +310,83 @@ public final class Quivers {
      * @return true only on a real transition -- a reload that actually began.
      */
     public static boolean tryReloadHeldWeapon(Player player, WeaponRegistry weapons,
-                                              AdapterContext adapters) {
+                                              AdapterContext adapters, CooldownTracker cooldowns) {
         return WeaponItems.heldWeaponId(player, adapters.keys())
                 .flatMap(weapons::find)
                 .filter(WeaponDefinition::hasQuiver)
-                .map(weapon -> beginReload(player, weapon, adapters))
+                .map(weapon -> beginReload(player, weapon, adapters, cooldowns))
                 .orElse(false);
     }
 
-    /** Stamp the magazine full and clear the reload pair. Both keys go together or neither does. */
+    /**
+     * Add the rounds that were PAID FOR and clear the reload trio. All three keys go together or none
+     * does.
+     *
+     * <h2>THE ONE FUNCTION BOTH MATURITY PATHS SHARE, AND THAT IS LOAD-BEARING</h2>
+     *
+     * <p>{@code RELOAD_MATURED} exists on BOTH verdict ladders and reaches here from both: the reload
+     * path ({@code beginReload}) and the FIRE path, which exists so <i>the press that matures a
+     * reload is not wasted</i> — the read refills the item and the shot goes through on the same tick.
+     *
+     * <p><b>Both refill by the STORED pending amount, and they cannot drift because there is one
+     * function.</b> If this is ever split into two, that is the defect: a slice could fix the partial
+     * refill on one path and leave the other reloading to capacity, and the difference would show up
+     * only when a player happens to mature a reload by shooting rather than by pressing reload.
+     *
+     * <h2>Why it reads the key rather than recomputing</h2>
+     *
+     * <p>The amount was decided a whole reload duration ago, from an inventory that has since moved
+     * on. Re-reading it would refill by arrows the player never paid for; re-deriving from capacity
+     * would silently restore the all-or-nothing reload ruling 5 refused. See
+     * {@code Keys.quiverReloadPending}.
+     *
+     * <p><b>A missing pending count yields zero rounds</b>, not a full magazine: an item stamped by a
+     * build before Slice E has the two timestamps and no third key, and the conservative answer there
+     * is to add nothing rather than to grant a free magazine. The reload still CLEARS, so the weapon
+     * is usable again immediately and the player can simply reload once more — paying for it.
+     *
+     * <h2>*** THE ARGUMENT PASSING BELOW IS UNWITNESSED, AND IT WAS MEASURED RATHER THAN ASSUMED ***</h2>
+     *
+     * <p><b>{@code MUT-PENDING} was RUN: replacing the stored count with the resolved capacity here —
+     * the exact defect this whole slice exists to prevent — reddened NOTHING across all 1612 rows.</b>
+     *
+     * <p>The ARITHMETIC is guarded: {@code MUT-RELOAD} on {@link Quiver#reload} reddens two core rows.
+     * What nothing can reach is whether THIS method hands it the right numbers, because it needs a
+     * {@code Player} and an {@code ItemMeta} and no unit test in this project has either. Same shape
+     * as {@code stateOf}'s own note — <i>"a mutation passing OptionalInt.empty() in place of
+     * {@code stamped} would be green, because nothing here can be unit-tested"</i> — and the same
+     * remedy: the gate carries the row, and the green suite around this block is NOT coverage of it.
+     *
+     * <p><b>{@code GATE-quiver-ammo.md} row 1 is what catches it</b>, and it catches it precisely: a
+     * partial load of 7 into an 8-round Boltor reads {@code 7/8} when this is right and {@code 8/8}
+     * when it is wrong. Do not weaken that row, and do not read the suite total as protection here.
+     */
     private static void finishReload(Player player, ItemStack held, WeaponDefinition weapon,
                                      AdapterContext adapters) {
         Keys keys = adapters.keys();
+        int pending = pendingRounds(held, keys);
+        int loaded = QuiverItems.loadedIn(held, keys).orElse(0);
         held.editMeta(meta -> {
             // setLoaded, not stampFull: stampFull is MINT-ONLY, where applyLore follows by
             // construction. This item is in play, so the write must carry its own render.
-            QuiverItems.setFull(meta, weapon, adapters, player.getUniqueId());
+            //
+            // Quiver.reload does the clamp, so the resolved capacity bound lives in one place even
+            // though this method now supplies three numbers instead of one.
+            QuiverItems.addRounds(meta, weapon, adapters, player.getUniqueId(), loaded, pending);
             meta.getPersistentDataContainer().remove(keys.quiverReloadStartedAt);
             meta.getPersistentDataContainer().remove(keys.quiverReloadCompletesAt);
+            meta.getPersistentDataContainer().remove(keys.quiverReloadPending);
         });
         player.getInventory().setItemInMainHand(held);
         player.updateInventory();
+    }
+
+    /** The rounds a running reload will deliver, or 0 if the item carries no pending count. */
+    private static int pendingRounds(ItemStack item, Keys keys) {
+        if (item == null || !item.hasItemMeta()) return 0;
+        Integer stored = item.getItemMeta().getPersistentDataContainer()
+                .get(keys.quiverReloadPending, PersistentDataType.INTEGER);
+        return stored == null ? 0 : stored;
     }
 
     private static Long read(ItemStack item, org.bukkit.NamespacedKey key) {

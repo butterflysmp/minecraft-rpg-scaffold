@@ -34,6 +34,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class QuiverStateTest {
 
     private static final int CAPACITY = 3;
+
+    /**
+     * Enough arrows that the ammo rung never fires, so every row below still measures the rung it was
+     * written for.
+     *
+     * <h2>THIS IS A DELIBERATE NON-CHANGE, AND THE ALTERNATIVE WAS TO SILENTLY RE-AIM ELEVEN ROWS</h2>
+     *
+     * <p>Slice E gave {@code reloadVerdict} a second parameter, which made all eleven call sites in
+     * this file a compile error -- the point of changing the signature rather than overloading it.
+     * Each was written before ammo existed and asserts something about a DIFFERENT rung: unstamped,
+     * already-reloading, matured, already-full, the boosted-capacity cases.
+     *
+     * <p><b>Passing a value that cannot trip the new rung is what keeps those assertions about what
+     * they were about.</b> Passing {@code 0} would have quietly converted several of them into
+     * no-ammo rows that happen to still pass, which is a worse outcome than a red build: the file
+     * would look unchanged and measure something else.
+     *
+     * <p>The no-ammo rung has its own rows, in {@code QuiverAmmoTest}, staged deliberately.
+     */
+    private static final int PLENTY = 64;
     private static final int RELOAD_TICKS = 7;
     private static final long START = 100L;
     private static final long DEADLINE = START + RELOAD_TICKS;   // 107
@@ -62,7 +82,7 @@ class QuiverStateTest {
     void anUnstampedQuiverIsADefectAndNotAnEmptyMagazine() {
         assertEquals(QuiverState.Fire.UNSTAMPED, QuiverState.unstamped(CAPACITY).fireVerdict(START));
         assertEquals(QuiverState.Reload.UNSTAMPED,
-                QuiverState.unstamped(CAPACITY).reloadVerdict(START));
+                QuiverState.unstamped(CAPACITY).reloadVerdict(START, PLENTY));
     }
 
     // ---------------------------------------------------------------- the four orderings
@@ -116,9 +136,9 @@ class QuiverStateTest {
     void pressingReloadDuringAReloadDoesNotRestartIt() {
         QuiverState mid = QuiverState.reloading(0, CAPACITY, START, DEADLINE);
 
-        assertEquals(QuiverState.Reload.ALREADY_RELOADING, mid.reloadVerdict(START + 1));
-        assertEquals(QuiverState.Reload.ALREADY_RELOADING, mid.reloadVerdict(DEADLINE - 1));
-        assertEquals(QuiverState.Reload.RELOAD_MATURED, mid.reloadVerdict(DEADLINE),
+        assertEquals(QuiverState.Reload.ALREADY_RELOADING, mid.reloadVerdict(START + 1, PLENTY));
+        assertEquals(QuiverState.Reload.ALREADY_RELOADING, mid.reloadVerdict(DEADLINE - 1, PLENTY));
+        assertEquals(QuiverState.Reload.RELOAD_MATURED, mid.reloadVerdict(DEADLINE, PLENTY),
                 "once it matures the press refills rather than starting a second one");
     }
 
@@ -126,12 +146,12 @@ class QuiverStateTest {
     @Test
     void reloadingAFullMagazineIsRefused() {
         assertEquals(QuiverState.Reload.ALREADY_FULL,
-                QuiverState.loaded(CAPACITY, CAPACITY).reloadVerdict(START));
+                QuiverState.loaded(CAPACITY, CAPACITY).reloadVerdict(START, PLENTY));
         assertEquals(QuiverState.Reload.BEGIN,
-                QuiverState.loaded(CAPACITY - 1, CAPACITY).reloadVerdict(START),
+                QuiverState.loaded(CAPACITY - 1, CAPACITY).reloadVerdict(START, PLENTY),
                 "one round short IS worth reloading");
         assertEquals(QuiverState.Reload.BEGIN,
-                QuiverState.loaded(0, CAPACITY).reloadVerdict(START));
+                QuiverState.loaded(0, CAPACITY).reloadVerdict(START, PLENTY));
     }
 
     /**
@@ -144,7 +164,7 @@ class QuiverStateTest {
     @Test
     void aCountAboveCapacityStillCountsAsFull() {
         assertEquals(QuiverState.Reload.ALREADY_FULL,
-                QuiverState.loaded(CAPACITY + 6, CAPACITY).reloadVerdict(START));
+                QuiverState.loaded(CAPACITY + 6, CAPACITY).reloadVerdict(START, PLENTY));
     }
 
     // ---------------------------------------------------------------- the shape itself
@@ -248,7 +268,7 @@ class QuiverStateTest {
                 OptionalLong.empty(), OptionalLong.empty());
 
         assertEquals(11, boosted.capacity(), "the stamp, not the weapon's authored 9");
-        assertEquals(QuiverState.Reload.BEGIN, boosted.reloadVerdict(START),
+        assertEquals(QuiverState.Reload.BEGIN, boosted.reloadVerdict(START, PLENTY),
                 "9 of 11 is NOT full -- reading the authored 9 here strands the last two rounds");
         assertEquals(QuiverState.Fire.FIRE, boosted.fireVerdict(START));
     }
@@ -260,7 +280,7 @@ class QuiverStateTest {
                 OptionalLong.empty(), OptionalLong.empty());
 
         assertEquals(9, plain.capacity());
-        assertEquals(QuiverState.Reload.ALREADY_FULL, plain.reloadVerdict(START),
+        assertEquals(QuiverState.Reload.ALREADY_FULL, plain.reloadVerdict(START, PLENTY),
                 "9 of an authored 9 IS full -- the fallback must not invent headroom either");
     }
 
@@ -303,7 +323,7 @@ class QuiverStateTest {
 
         assertEquals(QuiverState.Fire.EMPTY, dead.fireVerdict(START),
                 "firing a 0-capacity quiver is refused as empty");
-        assertEquals(QuiverState.Reload.ALREADY_FULL, dead.reloadVerdict(START),
+        assertEquals(QuiverState.Reload.ALREADY_FULL, dead.reloadVerdict(START, PLENTY),
                 "and reloading it is refused as already full -- 0 of 0 IS full. Both inputs "
                         + "refused, no third input, no recovery: the item is permanently dead.");
     }
