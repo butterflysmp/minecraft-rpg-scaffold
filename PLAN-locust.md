@@ -46,8 +46,14 @@ The operator's rulings, in order:
 
 > *"One note, the Boltor should be Uncommon as well."*
 
-**Name ruled: `locust` / "Locust".** The ruling does three things at once, and this slice is the
-three together:
+> *"You know what, lets make it rare. And while we're at it, let's make it a little bit more unique.
+> Give it the Nature element instead of Kinetic, and make the beam color more dark green color to
+> resemble nature."*
+
+> *"Keep 96"*
+
+**Name ruled: `locust` / "Locust".** The rulings do **four** things at once, and this slice is the
+four together:
 
 1. **It authors a weapon** — 26 damage, 12 quiver, 3s reload, 12-tick RoF.
 2. **It withdraws a standing rule.** *"multiples of 8 for anything that may ever be dual-wielded"*
@@ -58,6 +64,10 @@ three together:
    enchantments that *"increase rate of fire"*. On a quantised weapon a percentage rate buff is
    **inert** until it crosses a whole grid step, and the Locust's dead zone is the **wider** of the
    two.
+4. **It discharges a recorded refusal, and unparks an element.** `nature` is refused by name in
+   `cursed_emerald.yml` on the grounds that *"elements are parked"* and adding one **unasked** is
+   wrong. There is now a ruling, so the refusal's **condition is met rather than its judgement
+   reversed** — and the Locust becomes the **first weapon in the project to carry a third element**.
 
 **Scope: content only.** No dispatch change, no hand parameter, no `CooldownTracker` change,
 `RpgListeners.onRightClick` byte-identical. The alternating-barrel visual is refused and recorded as
@@ -74,26 +84,110 @@ a future idea. **No new mechanism at all.**
 | `reload_ticks` | **60** (3.00s) | 60 | operator |
 | `cooldown_ticks` | **12** | 16 | operator |
 | `id` / `display_name` | **`locust` / "Locust"** | — | operator |
-| `rarity` | **`uncommon`** | **`uncommon`** — was `rare` | operator, both; the Boltor **re-ruled 2026-09-13** |
+| `rarity` | **`rare`** | **`uncommon`** — was `rare` | operator, both; **each re-ruled 2026-09-13, in opposite directions** |
+| `element` | **`nature`** | `kinetic` | operator |
+| `range` | **96** | 96 | operator — *"Keep 96"* |
+| beam | **`locust_beam`, forked, dark green** | `boltor_beam` | operator |
 
-**Not ruled — authored with the choice flagged at its own key**, the pattern `boltor.yml` uses for
-its own `rarity` and `element`: `element: kinetic`, `material: crossbow`, `class: ranger`,
-`range: 96`, `beam: boltor_beam`, pierce none. Each says in the file that it is a choice and invites
-re-ruling.
+**Not ruled — authored with the choice flagged at its own key**, the pattern `boltor.yml` uses:
+`material: crossbow`, `class: ranger`, pierce none. **That list is now three items, not six.**
+`rarity`, `element`, `range` and the beam have all been ruled since the first draft, and each moves
+out of the flagged set into the table above rather than keeping a stale "choice, re-rule freely"
+note beside a number the operator has since ruled.
 
-### THE RARITY INVERSION IS RESOLVED BY LOWERING THE BOLTOR
+### THE RARITY INVERSION NOW RESOLVES THE RIGHT WAY ROUND, AND IT TOOK BOTH RULINGS
 
-The first draft flagged that `uncommon` would sit **below** the Boltor's `rare` on a weapon stronger
-on every axis, with the tooltip footer saying so out loud. **The operator answered it by lowering the
-Boltor**, not by raising the Locust. The flag is recorded here as *answered*, so the ruling keeps its
-question attached.
+The first draft flagged that the Locust's `uncommon` would sit **below** the Boltor's `rare` on a
+weapon stronger on every axis, with the tooltip footer saying so out loud. **Two separate rulings
+answered it, and neither reverses the other:**
 
-**`rare` is not orphaned by this.** Measured: `grep -l "^rarity: rare" content/weapons/*.yml` returns
-**three** today (`boltor`, `ember_staff`, `emberblade`); after the ruling it is **two**. Stated so
-nobody has to re-open whether the tier survives.
+```
+  draft        Boltor  rare      19 dmg        Locust  uncommon   26 dmg     INVERTED
+  ruling 1     Boltor  uncommon  19 dmg                                      levelled
+  ruling 2                                     Locust  rare       26 dmg     ORDERED
+```
+
+**The Boltor's move to `uncommon` is NOT reversed by the Locust's move to `rare`.** They were ruled
+separately, they compose, and the result is the ordering the flag asked for: the stronger weapon now
+sits a tier above the weaker one instead of a tier below it.
+
+**`rare` is not orphaned, and it does not shrink either.** Measured:
+`grep -l "^rarity: rare" content/weapons/*.yml` returns **three** today (`boltor`, `ember_staff`,
+`emberblade`). The Boltor leaves and the Locust arrives, so the tier stays at **three** —
+`ember_staff`, `emberblade`, `locust`. The first draft said it would fall to two; that was true of
+ruling 1 alone and **is falsified by ruling 2**, which is why the count is restated rather than left
+standing.
 
 Two consequences, and the second is the one no count can see: `boltor.yml`'s rarity block becomes a
 **second** supersession, and the golden becomes a **mixed** diff. Both are carried below.
+
+---
+
+## THE ELEMENT: `nature`, AND THE FLAG IT DISCHARGES
+
+**Ruled by the operator.** The Locust is the **first weapon in this project to reach a third
+element**, and that is a precedent worth naming rather than a detail. Measured across all eleven
+shipped weapons: `kinetic` (7) and `fire` (4), with `nature`, `undead`, `void`, `water` and `wither`
+registered and unused.
+
+### THE FLAG IS DISCHARGED, NOT DROPPED
+
+The first draft flagged `element: kinetic` with *"applies_status would accrue at 1.67/s, unruled"* —
+the worry being that a fast weapon carrying a status-declaring element buys an accrual rate nobody
+has ruled. **Measured, and the worry does not arise:**
+
+```
+  content/elements/nature.yml, in full -- two lines, no applies_status:
+      display_name:  "<green>Nature</green>"
+      damage_symbol: "<green>✿</green>"
+
+  grep -n "^applies_status" content/elements/*.yml   ->  fire.yml ONLY
+```
+
+**So nature accrues nothing, and the accrual worry is answered rather than inherited.** Said
+explicitly, because **a flag that vanishes reads as an oversight and a flag that is discharged reads
+as an answer.**
+
+> **AND ONE OF MY OWN MEASUREMENTS WAS WRONG FIRST TIME, BY THE MECHANISM THIS FILE ALREADY WARNS
+> ABOUT.** `grep -l "applies_status" content/elements/*.yml` returns **`fire.yml` AND `kinetic.yml`**
+> — because `kinetic.yml`'s *comment* reads *"It declares no applies_status."* **A grep for a key
+> matched the prose denying the key.** Anchoring at line start (`^applies_status`) is what separated
+> them. Same family as the line-wrap false absence in the masthead: **the search matched text that
+> was not the fact.**
+
+### THE RECORDED REFUSAL IS DISCHARGED ON ITS OWN TERMS — IT IS NOT OVERTURNED
+
+`cursed_emerald.yml`'s element block refuses exactly this element:
+
+> *"`nature` WAS THE OBVIOUS REACH -- green stone, green beam -- AND IS REFUSED. Elements are parked,
+> and `element:` is not cosmetic: it drives the damage glyph and, for a status-declaring element,
+> accrual. Adding an element is one file and costs nothing, which is exactly why adding one **unasked**
+> is easy and wrong."*
+
+**The operative word is UNASKED. That paragraph refused an element added without a ruling; there is
+now a ruling.** The refusal's *condition was met*, not its judgement reversed.
+
+> **A RECORDED REFUSAL THAT NAMES ITS CONDITION IS DISCHARGED WHEN THE CONDITION IS MET, NOT
+> OVERTURNED. Read what a refusal actually refused before recording a reversal** — *"not without a
+> ruling"* and *"not ever"* look identical from a distance and they age in opposite directions.
+
+**And the supersession is narrower than it first looks, which is the part to get right.** That
+paragraph contains **two** claims and only one of them moves:
+
+| claim | status |
+|---|---|
+| *"Elements are parked"* | **DISCHARGED** — `nature` is unparked by ruling, and ships on the Locust |
+| *"this weapon is kinetic, because kinetic's `damage_symbol` is `""` so CE2's six numbers stay BARE"* | **UNTOUCHED** — a readability argument about the Cursed Emerald's own six-number burst, independent of parking |
+
+**So `cursed_emerald` stays `kinetic`, for its own still-valid reason.** The note added in commit 2
+says the parking premise is discharged and the weapon's own choice is unchanged — not that the
+refusal was wrong.
+
+**`lapis_staff.yml` was checked and needs NO change.** Its element paragraph refuses `void` *for the
+Lapis Staff*, on a colour/flavour-mismatch argument, and restates the same general *"adding one
+unasked is easy and wrong"* principle. **That principle is not falsified by an element added when
+asked** — it is the principle this ruling satisfies. Checked and reported rather than silently
+omitted, so the absence is not read as a miss.
 
 ---
 
@@ -299,6 +393,13 @@ Two state it as a **live authoring rule** and gain a superseded note, re-ruling 
   **16 stands, for its other reasons, and the record must still explain why 16 and not 12.**
 - `GATE-boltor.md` — `### 3. THE AUTHORING RULE FOR EVERY WEAPON AFTER THIS ONE`.
 
+One is superseded by the **element** ruling:
+
+- `cursed_emerald.yml` — the element block. Its *"Elements are parked"* premise is **discharged**;
+  its *"this weapon is kinetic so CE2's six numbers stay bare"* judgement is **untouched**, and the
+  weapon does not change. `lapis_staff.yml` was checked and needs nothing — its principle is
+  satisfied, not falsified, by an element added **when asked**.
+
 One more is superseded by the **rarity** ruling rather than the halving one:
 
 - `boltor.yml` — the `rarity:` block. Its recorded justification (*epic is unused; `rare` has
@@ -326,8 +427,8 @@ a quiver weapon — left-click is the reload.
 ```yaml
 id: locust
 display_name: "Locust"
-element: kinetic          # choice, flagged — applies_status would accrue at 1.67/s, unruled
-rarity: uncommon          # RULED. The Boltor is re-ruled to uncommon in the same commit.
+element: nature           # RULED. Accrues nothing -- nature declares no applies_status.
+rarity: rare              # RULED. The Boltor goes to uncommon in the same commit; see the ordering.
 class: ranger
 material: crossbow        # wears AND empties; Broken is checked before Empty
 attack_damage: 26         # a real MAIN_HAND stat, read back by weapon_damage
@@ -337,18 +438,74 @@ flavor: [ ... ]           # must NOT quote a resolvable stat — see below
 triggers:
   right_click:            # the only trigger
     cooldown_ticks: 12
-    cast: { type: ray, range: 96, beam: boltor_beam }
-    on_hit: [ { type: weapon_damage, element: kinetic } ]
+    cast: { type: ray, range: 96, beam: locust_beam }
+    on_hit: [ { type: weapon_damage, element: nature } ]
 ```
+
+> **`element:` APPEARS TWICE AND BOTH MUST MOVE.** Measured: **9 of the 11** shipped weapons carry
+> `element:` at top level **and** again indented inside `on_hit` — the Boltor's second one is in the
+> `weapon_damage` entry under its `right_click` trigger. Found with
+> `grep -cE "^[[:space:]]+element:"`, which is the check to re-run rather than a line to revisit.
+> **A mismatched pair is exactly the split-subject defect this project keeps finding**, and nothing
+> in the schema cross-checks the two.
 
 - **`weapon_damage`, not a literal** — so a future "+N Ranged Damage" modifier has something to grip,
   and so `WeaponLore` renders a stat block rather than an ability section.
-- **`beam: boltor_beam` is REUSED, not forked.** The refused visual was the only reason to fork it.
-  Noted in the file as **shared**, so nobody tunes `boltor_beam` believing it moves one weapon.
 - **`flavor` must not quote `quiver_size`.** `boltor.yml`'s *"Eight bolts, then three seconds"* names
   a number `QuiverSize.resolve` can change per wielder. **A falsified comment misleads a reader who
   can check it; a falsified flavour line misleads a player who cannot.** The Locust's flavour names
   no resolvable stat, and says why it diverges from the Boltor's.
+
+### `locust_beam.yml` — FORKED, AND THE INHERITED FIGURES SAY SO IN THOSE WORDS
+
+The beam forks by ruling: *"make the beam color more dark green color to resemble nature."* It lives
+at `content/visuals/locust_beam.yml`, id from filename, and `ContentValidator` resolves
+`cast.beam` against the visual registry — a name that does not load is a named problem at boot.
+`VolleyFixtureTest` asserts `visuals.all().size() >= 14`; there are **20** today, so a 21st is safe.
+
+**THE COLOUR MUST SEPARATE FROM `emerald_beam`, NOT ONLY FROM `boltor_beam`.** The convention is
+stated in `boltor_beam.yml` — *"the colour is owned by nothing else, checked against the three
+shipped beams"* — and the check matters here because **one shipped beam is already green:**
+
+```
+  lapis_beam    [ 40,  90, 240]   saturated deep blue
+  volley_beam   [230,  60, 230]   magenta
+  emerald_beam  [ 40, 220,  90]   GREEN  <- the one to separate from
+  boltor_beam   [200, 215, 235]   pale steel
+```
+
+A **dark** green is what the ruling asks for and is also what separates it: `emerald_beam` is a
+bright mid-green, so the dominant channel is where the daylight is. The authored value is a choice
+inside the ruling — flagged at the key, re-rulable, and it must be **judged on a client**, since
+colour is the one property no unit test can check.
+
+> ### THE DENSITY FIGURES ARE INHERITED AND UNJUDGED, AND THE FILE MUST SAY SO IN THOSE WORDS
+>
+> `samples_per_block`, `size` and the origin gap are **not a second opinion. They are the same
+> unjudged figures**, copied from a file that says of itself *"nothing here has been judged yet; 4 is
+> inherited."* **A number that has been copied once looks more settled than the number it was copied
+> from**, which is the descent-launders failure this repo already records.
+>
+> **`GATE-boltor.md` row 2 is OPEN and now covers TWO files.** Row 2 must say so, or the day it is
+> read someone judges one beam and believes both are settled.
+
+**AND THE OVERLAP PARAGRAPH IS NOT COPIED — IT IS WEAPON-SPECIFIC ARITHMETIC.** `boltor_beam.yml`
+says *"the Boltor fires every 16 ticks against a 5-10 tick flight"*, which stays true of the Boltor.
+The Locust fires every 12 against the same flight, so it gets **its own figures**, derived here:
+
+```
+  per shot     (96 - 1.0) x 4 = 380 points        IDENTICAL -- same length, same inherited density
+
+  sustained    Boltor  380 x (20/16) = 475 points/s
+               Locust  380 x (20/12) = 633 points/s        +33.3%, exactly the cooldown ratio 16/12
+
+  in flight    Boltor  gap 16t vs 5-10t walk  ->  margin 6t
+               Locust  gap 12t vs 5-10t walk  ->  margin 2t
+```
+
+**The per-shot load is unchanged; the sustained load is a third higher.** So the Locust — not the
+Boltor — is now the project's heaviest particle load, and row 2's *"nobody has looked at it yet"*
+applies to it more strongly than to the weapon the row was written for.
 
 **Power reads cleanly on 26.** `enchants/power.yml` is `class: ranger`, so it reaches this weapon.
 `DamageNumberText` rounds with `Math.round`: plain **26**, I `27.3 -> "27"`, II `28.6 -> "29"`,
@@ -362,7 +519,7 @@ III `29.9 -> "30"` — four distinguishable values, as on the Boltor (19/20/21/2
 | # | commit | what |
 |---|---|---|
 | **1** | `PLAN-locust.md` | this file |
-| **2** | the weapon, the rule, **and the Boltor's rarity** | `locust.yml`, both `CLAUDE.md` rule sections, the pin's POINTER quote, `boltor.yml`'s two superseded notes, `GATE-boltor.md`, `golden-lore.txt`. **One commit by requirement** — the counterexample and the correction must not be separable, **and the Boltor's rarity is the same golden regeneration; splitting it would mean regenerating twice** |
+| **2** | the weapon, the rule, **and the Boltor's rarity** | `locust.yml`, **`visuals/locust_beam.yml`**, both `CLAUDE.md` rule sections, the pin's POINTER quote, `boltor.yml`'s two superseded notes, **`cursed_emerald.yml`'s parking supersession**, `GATE-boltor.md` (`### 3.` **and row 2's two-file scope**), `golden-lore.txt`. **One commit by requirement** — the counterexample and the correction must not be separable, **and the Boltor's rarity is the same golden regeneration; splitting it would mean regenerating twice** |
 | **3** | the records | `NEXT.md`: the dead-zone trigger, the deferred muzzle-visual idea. `CLAUDE.md`: the **line-wrap** false-absence cause, and the two figure/prose seam rules below |
 
 ---
@@ -402,6 +559,33 @@ A weapon adds **one `-- ` block and one item**, so the count movement is **`69 -
 >
 > `#55FF55` is **measured from the golden itself** — `grep -o '"Uncommon Ranged Weapon" color=#[0-9A-F]*'`
 > over the current file — not assumed from the palette.
+
+### THE NEW `locust` BLOCK DIFFERS IN TWO LINES, NOT THREE — AND THE THIRD WAS PREDICTED
+
+Measured against the existing golden rather than predicted, which is what caught it:
+
+```
+  1  element line   "Nature" color=#55FF55        (today the Boltor renders "Kinetic" color=#FFFFFF)
+  2  footer         "Rare Ranged Weapon" color=#5555FF
+```
+
+> **THE DAMAGE GLYPH NEVER REACHES THE TOOLTIP, SO THERE IS NO THIRD LINE.** It was expected that
+> nature's `damage_symbol` would mark the Locust's damage lines. **It does not:**
+>
+> ```
+>   grep -n "▲" golden-lore.txt                       ->  NO HITS, anywhere in the file
+>   emberblade (fire) renders   "Melee Damage: " ["7" color=#FF5555]      -- a BARE number
+> ```
+>
+> **Fire weapons already ship a `damage_symbol` and their tooltips carry no glyph.** `damage_symbol`
+> is consumed by `DamageNumberText` — **floating combat text, not lore** — so it cannot appear in a
+> `WeaponLore` dump. The rendering shape was observable on a shipped fire weapon, and reading it beat
+> reasoning about it.
+
+**`#55FF55` for `<green>` is DERIVED, not read off the golden** — no shipped weapon renders `nature`
+yet. It is MiniMessage's named-colour table, corroborated twice inside this same file:
+`<red>` -> `#FF5555` on fire, `<white>` -> `#FFFFFF` on kinetic. **The regeneration confirms or
+refutes it**, and that is the check.
 >
 > **If the Boltor footer failed to regenerate, `69 -> 70` and `90 -> 91` would both still be exactly
 > right and the check would pass.** Adding a row and changing a row are different events, and only
@@ -423,8 +607,10 @@ A weapon adds **one `-- ` block and one item**, so the count movement is **`69 -
 
 - `WeaponLoaderTest` copies every shipped `.yml` and requires **zero** unknown-key warnings: a free
   strictness check on the new file.
-- `ScorchContentInvariantTest.KNOWN_FIRE_DAMAGE_SITES = 12` is **untouched because the Locust is
-  kinetic**. An indented `element: fire` anywhere in it would have bumped the constant.
+- `ScorchContentInvariantTest.KNOWN_FIRE_DAMAGE_SITES = 12` is **untouched, and the element ruling
+  does not change that.** Its scan matches `element: fire` specifically, not "any element", so the
+  Locust's two `element: nature` lines are invisible to it. The conclusion survived the ruling; the
+  reason it survived did not, and the reason is what a later reader checks.
 - `WeaponLoreTest`'s `assertEquals(3, ...)` is scoped to its own 5-id `@TempDir` list, not to shipped
   content.
 - `VolleyFixtureTest`'s `>= 7` is a lower bound.
@@ -470,6 +656,21 @@ sentence about the figure, and each alone reads as a one-off.
 
 ---
 
+## OPEN FOR THE OPERATOR — THE ONE PLAYER-VISIBLE SURPRISE, AND IT IS NOT IN THE TOOLTIP
+
+**Every damage number the Locust deals will draw a green flower beside it.** `nature`'s
+`damage_symbol` is `"<green>✿</green>"`; `kinetic`'s is `""`, which is why the Boltor's hits are
+bare. This follows **from the element**, not from anything authored in `locust.yml`.
+
+**It is a COMBAT-TEXT change, not a tooltip one** — which is why the golden shows only two moved
+lines and why no test in the suite will show it. **It is visible only on a booted server**, and it is
+put in front of the operator for that reason.
+
+> **DO NOT AUTHOR A WORKAROUND.** If the element is wanted without the glyph, that is a different and
+> larger question — **the symbol belongs to the element, not to the weapon**, so suppressing it for
+> one weapon would mean either a new per-weapon override key or editing `nature.yml` for every future
+> nature weapon. Neither is this slice's to decide.
+
 ## OUT OF SCOPE
 
 - **The alternating muzzle visual — REFUSED**, and recorded in `NEXT.md` as a deferred idea rather
@@ -480,4 +681,7 @@ sentence about the figure, and each alone reads as a one-off.
   deletion set.
 - **Re-ruling the Boltor's `cooldown_ticks: 16`.** Its *rarity* is re-ruled here by the operator and
   that is in scope; the halving derivation that produced 16 is superseded without 16 moving.
-- The other weapons' rarities. `ember_staff` and `emberblade` keep `rare`; the tier survives at two.
+- The other weapons' rarities. `ember_staff` and `emberblade` keep `rare`, and the Locust joins them
+  as the Boltor leaves, so the tier stays at **three**.
+- **`cursed_emerald`'s own element.** Its parking premise is discharged; the weapon stays `kinetic`
+  for its own separate, still-valid reason.
