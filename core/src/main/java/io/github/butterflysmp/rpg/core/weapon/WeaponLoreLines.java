@@ -143,9 +143,11 @@ public final class WeaponLoreLines {
      * edits one and forgets the other.
      *
      * BUT THE AUTHORED COOLDOWN IS NOT THE DELIVERED INTERVAL UNDER HELD FIRE, SO THIS NUMBER CAN BE
-     * FALSE. A held right-click delivers an input only every 4 ticks (Q7, {@code GATE-q7.md}), so the
-     * real interval is the cooldown rounded UP to the next multiple of 4 -- and this method does not
-     * round. Executed across authored 4..40, 18 of 37 values print a rate the weapon does not
+     * FALSE. A held right-click's inputs are quantised onto a 4-tick grid (Q7, {@code GATE-q7.md}), so
+     * the real interval is the cooldown rounded UP to the next multiple of 4 -- and this method does
+     * not round. (This said "delivers an input only every 4 ticks" until 2026-09-13, when
+     * {@code GATE-locust.md} row 1 read {@code INPUTS min 3t} twice: the stream is not periodic, the
+     * grid and its arithmetic are unaffected.) Executed across authored 4..40, 18 of 37 values print a rate the weapon does not
      * deliver; authored 5 prints "4.0" against a delivered 2.5/s. The digit is true by construction
      * only when the cooldown is on the 4-tick grid, which both shipped callers happen to satisfy or
      * to miss harmlessly. This sentence used to read "for a ranged basic attack that IS the cadence"

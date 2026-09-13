@@ -46,7 +46,32 @@ element: kinetic
 # one weapon sets a precedent nothing else is ready for. `rare` has precedent. The Boltor is also
 # meant to be the baseline the next class prices against, and a baseline sitting two tiers up reads
 # as an outlier. Re-rule it freely; nothing else in this file depends on it.
-rarity: rare
+#
+# *** RE-RULED 2026-09-13: `uncommon`. THE INVITATION ABOVE WAS TAKEN UP. ***
+#
+# Operator: "One note, the Boltor should be Uncommon as well." The paragraph above is KEPT rather than
+# edited to match, because it is the reasoning the ruling answered, and a superseded argument that
+# vanishes leaves the next reader unable to tell a decision from a default.
+#
+# WHAT PROMPTED IT. The Locust (26 damage against this weapon's 19, +105% per magazine) was drafted at
+# `uncommon`, which would have put the STRONGER weapon a tier BELOW this one, with the tooltip footer
+# saying so out loud. The operator resolved the inversion in two rulings taken two messages apart, and
+# THEY COMPOSE RATHER THAN CONFLICT:
+#
+#   before      boltor rare (19)        locust uncommon (26)     INVERTED -- stronger sits lower
+#   ruling 1    boltor UNCOMMON         .                        levelled
+#   ruling 2    .                       locust RARE              ORDERED -- stronger sits higher
+#
+# SO THIS WEAPON'S MOVE TO `uncommon` IS NOT REVERSED BY THE LOCUST'S MOVE TO `rare`. Both stand.
+#
+# THE `rare` TIER DOES NOT SHRINK. It held boltor, ember_staff and emberblade; this weapon leaves and
+# the Locust arrives, so it stays at THREE. A note written after ruling 1 predicted it would fall to
+# two -- true of that ruling alone, and falsified by ruling 2.
+#
+# AND THE ORIGINAL ARGUMENT IS NOT REFUTED, ONLY OUTRANKED. "epic is unused" is still true, and this
+# weapon is still the baseline the next class prices against. What changed is that a second Ranger
+# weapon now exists to be ordered against, which is information the paragraph above did not have.
+rarity: uncommon
 
 # The quiver is the Ranger's brake, and this is the first SHIPPED weapon to carry one --
 # quiver_stone is a fixture. It also means Power (enchants/power.yml, effect: damage, class: ranger)
@@ -157,6 +182,35 @@ triggers:
     # claims: 12 -> 6 delivers 8, a 1.5x not a 2x; 20 -> 10 delivers 12, a 1.67x. Only multiples of 8
     # survive halving intact. 8 itself was rejected for headroom: a dual cooldown of 4 sits ON the
     # input floor, where attack speed becomes inert entirely.
+    #
+    # *** THE HALVING CONSTRAINT WAS WITHDRAWN 2026-09-13. 16 IS NOT RE-RULED. ***
+    #
+    # The operator refused the two-item design the paragraph above was written for: "it's not going to
+    # be Dual wielded". NOTHING HALVES ANY MORE, so a constraint about surviving halving has no
+    # subject. The clause is gone from CLAUDE.md's pointer; the reasoning stays here because it is why
+    # this weapon is 16 and not 12, and deleting it would leave 16 looking arbitrary.
+    #
+    # 16 STANDS ON ITS OTHER REASONS: it is on the 4-tick grid, so the tooltip is honest by
+    # construction, and it is the residue class that MEASURED the >= boundary (GATE-boltor.md row 1).
+    # Neither depended on halving.
+    #
+    # AND THE CONSTRAINT WAS UNSATISFIABLE ANYWAY, WHICH IS WHY THIS IS A WITHDRAWAL RATHER THAN A
+    # PAUSE. Halving moves a weapon onto a smaller cooldown, and the attack-speed dead zone WIDENS as
+    # the cooldown shrinks -- the paragraph above already saw this at 8 -> 4 and read it as a special
+    # case of the floor. It is not a special case; it is the trend:
+    #
+    #    8 -> 4    attack speed inert entirely (4 is the floor)
+    #   16 -> 8    dual dead zone +77.8%
+    #   24 -> 12   dual dead zone +41.2%
+    #   32 -> 16   dual dead zone +28.0%   <- as narrow as THIS weapon's single-wield zone
+    #
+    # To buy a DUAL dead zone as narrow as this weapon's SINGLE-wield +28%, you would have to author
+    # 32 -- a 1.6-second shot, which is not a rapid-fire weapon. Clean halving, attack-speed headroom
+    # and a fast weapon are JOINTLY UNSATISFIABLE. The tension this file already names two paragraphs
+    # below ("the honest cooldowns for attack-speed response and the honest cooldowns for dual-wield
+    # halving are NOT the same set") had no solution, and the refusal is what resolved it.
+    #
+    # The second Ranger weapon is `locust`, single-wield, at cooldown 12. See PLAN-locust.md.
     #
     # *** AND 16 IS A MULTIPLE OF 4, WHICH IS THE ONE CASE NEITHER Q7 READING COVERED. ***
     #

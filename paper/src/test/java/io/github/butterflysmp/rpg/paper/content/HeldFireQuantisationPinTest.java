@@ -22,8 +22,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  * <p>One rule, three homes, each saying which it is — {@code CLAUDE.md}'s rule on two homes:
  *
  * <ul>
- *   <li><b>POINTER</b> — {@code CLAUDE.md}: <i>author multiples of 4; multiples of 8 if it may ever
- *       be dual-wielded.</i> The form that changes what you do.</li>
+ *   <li><b>POINTER</b> — {@code CLAUDE.md}: <i>author multiples of 4.</i> The form that changes what
+ *       you do. <b>It used to add "multiples of 8 if it may ever be dual-wielded"; that clause was
+ *       withdrawn 2026-09-13</b> when the dual-wield design was refused, so nothing halves and the
+ *       rule has no subject. The quote is updated here because a stale copy of a pointer is the
+ *       duplicate-account failure this list exists to prevent.</li>
  *   <li><b>ACCOUNT</b> — {@code WeaponLoader}'s {@code cooldown_ticks} section: the mechanism, the
  *       measurements, the tooltip consequence. <b>Do not duplicate it here.</b></li>
  *   <li><b>PIN</b> — this file: the numbers, executable, in a place a citation sweep will not
@@ -141,9 +144,22 @@ class HeldFireQuantisationPinTest {
     private static final Logger LOG = Logger.getLogger(HeldFireQuantisationPinTest.class.getName());
 
     /**
-     * MEASURED, NOT DERIVED. A held right-click delivers an input every 4 ticks — {@code GATE-q7.md},
-     * two weapons, two materials, minimum 4 on both. A unit test cannot observe this; the constant is
+     * MEASURED, NOT DERIVED. The grid a held right-click's inputs are quantised onto —
+     * {@code GATE-q7.md}, two weapons, two materials. A unit test cannot observe this; the constant is
      * transcribed from the reading and this sentence is the provenance.
+     *
+     * <p><b>THIS USED TO SAY "delivers an input every 4 ticks ... minimum 4 on both", AND THE
+     * MINIMUM CLAIM IS FALSE. Measured 2026-09-13, {@code GATE-locust.md} row 1, twice:
+     * {@code INPUTS min 3t}.</b> Every earlier reading had read {@code min 4}; two Locust samples read
+     * {@code min 3}. <b>Holding right-click does not produce a periodic stream at all</b> — ruled by
+     * the operator as a property of the vanilla client, not measured here.
+     *
+     * <p><b>THE CONSTANT IS UNCHANGED AND SO IS EVERY PREDICTION IT MAKES.</b> {@code ceil(12/4)x4 = 12}
+     * and the Locust delivered a minimum of 12, twice; all four measured points still fit. <b>What was
+     * refuted is the MECHANISM the constant was explained by — "inputs arrive on a 4-tick grid" — not
+     * the arithmetic built on it.</b> A model can keep being right after its explanation stops being,
+     * and the two must not be conflated: do not "fix" this constant on the strength of {@code min 3},
+     * and do not restore the word <i>every</i> to the sentence above.
      */
     private static final int INPUT_FLOOR_TICKS = 4;
 
@@ -160,11 +176,29 @@ class HeldFireQuantisationPinTest {
     private record Reading(String weaponId, int authored, int measuredMin, String readout,
                            boolean inDeletionSet) {}
 
-    /** The three points the model rests on. Restated in {@code NEXT.md} in prose; pinned here. */
+    /**
+     * The four points the model rests on. Restated in {@code NEXT.md} in prose; pinned here.
+     *
+     * <p><b>{@code locust} added 2026-09-13, and it is the SECOND point that discriminates {@code >=}
+     * from {@code >}</b> — an exact multiple of 4, so under {@code >} it would have fired at 16. Two
+     * of the four fixtures are in the deletion set and the Boltor was the only survivor that could
+     * answer that question; now there are two.
+     *
+     * <p><b>IT IS NOT A SECOND {@code INPUT_FLOOR_TICKS} POINT, AND MUST NOT BE CITED AS ONE.</b>
+     * {@code 12 mod 4 == 0} is in the blind class for the grid-size question — {@code ceil(12/2)x2 = 12}
+     * too — so {@link #theAttackSpeedDeadZoneOnTheBoltorRunsToOnePointTwoEight} remains that constant's
+     * sole guard.
+     *
+     * <p><b>ITS READING WAS NOISY AND THAT DOES NOT WEAKEN IT.</b> Both Locust samples read
+     * {@code FIRES mean} well above {@code min} (14.55 and 13.45 against 12) on a non-periodic input
+     * stream. <b>This record holds the measured MINIMUM</b>, which was 12 in both — the quantity the
+     * model predicts and the one the mean cannot move.
+     */
     private static final List<Reading> READINGS = List.of(
             new Reading("quiver_stone", 11, 12, "GATE-q7.md", true),
             new Reading("hunters_bow", 15, 16, "GATE-q7.md", true),
-            new Reading("boltor", 16, 16, "GATE-boltor.md row 1", false));
+            new Reading("boltor", 16, 16, "GATE-boltor.md row 1", false),
+            new Reading("locust", 12, 12, "GATE-locust.md row 1", false));
 
     /** The model. One expression, so it cannot drift from the sentence that states it. */
     private static int deliveredIntervalTicks(int authoredCooldown, double attackSpeed) {

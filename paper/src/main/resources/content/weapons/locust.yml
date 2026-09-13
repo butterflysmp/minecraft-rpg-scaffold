@@ -1,0 +1,270 @@
+# THE LOCUST -- the Ranger's second weapon, and the first in this project to carry a THIRD ELEMENT.
+#
+# It replaces a design that was refused. Slice C was scoped as a two-item dual-wielded "Dual Boltor";
+# the operator refused both the second item and the alternating-muzzle visual that went with it, and
+# ruled a single weapon instead. PLAN-locust.md carries the refusal and the argument; what matters
+# here is that NOTHING IN THIS FILE IS A HALF OF ANYTHING. There is no off-hand, no alternation and
+# no halved cooldown, and no number below was chosen to survive being divided by two.
+#
+# ================== EVERY NUMBER HERE WAS RULED BY THE OPERATOR ==================
+#
+#   attack_damage 26    quiver_size 12    reload_ticks 60    cooldown_ticks 12
+#   range 96            rarity rare       element nature     beam locust_beam (colour PROVISIONAL)
+#
+# NOT RULED, and flagged at their own keys rather than presented as part of the set: `material`,
+# `class`, and the absence of pierce.
+#
+# ================== ITS FIGURES ARE DERIVED, AND THE BOLTOR'S ARE MEASURED ==================
+#
+# Twelve shots span ELEVEN intervals -- 11 x 12 = 132t firing, + 60t reload = 192t = 9.60s. The
+# fencepost is written out because this project has already paid for it twice on this weapon family:
+#
+#   sustained   12 / 9.60s      = 1.2500 sh/s   x26 = 32.50 DPS
+#   burst       12 x 26 / 6.60s = 47.2727 DPS
+#   magazine    12 x 26         = 312
+#
+# Against the Boltor's MEASURED 172t / 8.60s, 0.9302 sh/s, 17.6744 DPS, 27.1429 burst, 152 per
+# magazine (GATE-boltor.md row 1): sustained +84%, burst +74%, and PER MAGAZINE +105%.
+#
+# THE PER-MAGAZINE FIGURE IS THE ONLY ONE THAT CROSSES 2x, and it is the one a player feels in an
+# engagement nobody reloads through. Reported to the operator as the headline rather than the DPS.
+
+id: locust
+display_name: "Locust"
+
+# ================== NATURE: RULED, AND THE FIRST THIRD ELEMENT IN THE PROJECT ==================
+#
+# RULED BY THE OPERATOR: "Give it the Nature element instead of Kinetic". Measured across all eleven
+# shipped weapons before this one: kinetic 7, fire 4, and nature/undead/void/water/wither registered
+# and unused. THIS IS THE FIRST WEAPON TO REACH A THIRD ELEMENT, which is why it is written up rather
+# than set.
+#
+# IT ACCRUES NOTHING, AND THAT WAS MEASURED RATHER THAN ASSUMED. nature.yml is two lines and declares
+# no applies_status; `grep -n "^applies_status" content/elements/*.yml` returns fire.yml ALONE. So the
+# worry a fast weapon raises -- an element that accrues a status at 1.67 shots/s is a rate nobody has
+# ruled -- DOES NOT ARISE HERE. That is a discharged concern, not an overlooked one.
+#
+#   AND THE GREP THAT ANSWERS IT HAS A TRAP IN IT. `grep -l "applies_status" content/elements/*.yml`
+#   returns fire.yml AND kinetic.yml -- because kinetic.yml's COMMENT says "It declares no
+#   applies_status". A substring match found the prose DENYING the key and reported it as the key.
+#   Anchor it (^applies_status) or you are searching the commentary rather than the content.
+#
+# WHAT IT DOES DO IS DRAW A GLYPH, AND THAT IS PLAYER-VISIBLE. nature's damage_symbol is
+# "<green>✿</green>", where kinetic's is "" -- so every damage number this weapon deals draws a green
+# flower beside it, and the Boltor's stay bare. THIS IS COMBAT TEXT, NOT THE TOOLTIP: damage_symbol is
+# consumed by DamageNumberText and never reaches lore, which is why golden-lore.txt shows no glyph for
+# any fire weapon either. It is visible only on a booted server, and it follows from the ELEMENT
+# rather than from anything authored in this file. Put in front of the operator on that basis.
+element: nature
+
+# ================== THE RECORDED REFUSAL THIS DISCHARGES ==================
+#
+# cursed_emerald.yml refuses `nature` BY NAME -- "green stone, green beam -- AND IS REFUSED. Elements
+# are parked ... adding one UNASKED is easy and wrong." There is now a ruling, so the CONDITION that
+# refusal named was met; its judgement was not reversed. The distinction is load-bearing:
+#
+#   "not without a ruling"  and  "not ever"  look identical from a distance, and they age in
+#   opposite directions. Read what a refusal actually refused before recording a reversal.
+#
+# cursed_emerald KEEPS kinetic, and its own reason for that is untouched -- kinetic's empty
+# damage_symbol is what keeps CE2's six damage numbers bare and readable, an argument about that
+# weapon's burst which has nothing to do with parking. Its file is amended to say the parking premise
+# is discharged and its own choice stands. lapis_staff.yml was checked and needed nothing: it refuses
+# `void` for itself on a colour/flavour mismatch and states the same "unasked" principle, which this
+# ruling SATISFIES rather than falsifies.
+
+# RARE. RULED, AND IT IS HALF OF A PAIR OF RULINGS TAKEN TWO MESSAGES APART.
+#
+# The Boltor went to `uncommon` first, and this weapon to `rare` second. They were separate rulings,
+# they COMPOSE, and neither reverses the other:
+#
+#   before      Boltor rare (19 dmg)      Locust uncommon (26 dmg)     INVERTED -- stronger, lower
+#   ruling 1    Boltor uncommon           .                            levelled
+#   ruling 2    .                         Locust rare                  ORDERED -- stronger, higher
+#
+# So the stronger weapon now sits a tier ABOVE the weaker one, which is what the inversion flag asked
+# for. THE TIER DOES NOT SHRINK: `rare` held boltor, ember_staff and emberblade; the Boltor leaves and
+# this weapon arrives, so it stays at three. An earlier note predicting it would fall to two was true
+# of ruling 1 alone and is falsified by ruling 2.
+rarity: rare
+
+# NOT RULED. The Ranger, because the quiver is the Ranger's brake and this is the class's second
+# weapon. It also means Power (enchants/power.yml, effect: damage, class: ranger) reaches this
+# weapon's attack_damage.
+#
+# AND 26 IS A BASE ON WHICH POWER'S THREE LEVELS ARE ALL LEGIBLE, which is not automatic. The damage
+# popup rounds with Math.round (DamageNumberText):
+#
+#   plain 26    I 27.3 -> "27"    II 28.6 -> "29"    III 29.9 -> "30"
+#
+# Four distinguishable values, as on the Boltor (19/20/21/22). On hunters_bow (6) the same curve reads
+# 6/6/7/7 and level I is invisible.
+class: ranger
+
+# NOT RULED. CROSSBOW, the same material the Boltor and quiver_stone use, and the reason is that Q7's
+# held-input reading was taken on a crossbow that binds right_click and therefore cancels vanilla
+# exactly as this file does. That is what makes the 4-tick input floor transfer to this weapon rather
+# than being a fact about some other one.
+#
+# A CROSSBOW HAS VANILLA DURABILITY, SO THIS WEAPON WEARS AS WELL AS EMPTIES -- two independent
+# per-item counters decrementing per shot, both routing to a notice. Which one wins is decided by CODE
+# ORDER and is not a boot question: WeaponFire.attempt checks the broken gate BEFORE the quiver gate,
+# and RpgListeners handles CastResult.Broken before CastResult.Empty. A broken Locust says it is
+# broken even with an empty magazine.
+material: crossbow
+
+# ================== 26: RULED OUTRIGHT ==================
+#
+# NOT parity with any existing weapon, and this file must not be read as claiming it is. The Boltor's
+# 19 is the project's anchor and the number a Ranger weapon is priced against -- but 26 was ruled, not
+# derived from it, and the distinction matters because a DERIVED number becomes the next weapon's
+# precedent and carries its ancestor's arbitrariness forward.
+#
+# IT IS A REAL STAT, NOT A LITERAL. The weapon contributes it as a MAIN_HAND modifier on the wielder's
+# ATTACK_DAMAGE and the weapon_damage on_hit below reads it back, which is what a future
+# "+N Ranged Damage" modifier has to grip. A literal buried in the effect would give it nothing.
+attack_damage: 26
+
+# ================== THE MAGAZINE ==================
+#
+# BOTH ARE AUTHORED BASES, NOT THE VALUES THE GAME USES. The capacity a wielder packs at is
+# QuiverSize.resolve(quiver_size, their gear) and the duration a reload takes is
+# ReloadTime.resolve(reload_ticks, their gear). What is written here is what a player with no such gear
+# gets, and what a craft preview or recipe icon shows, since neither has a wielder to resolve against.
+# A GATE ROW MUST READ WHAT IS ON SCREEN, NEVER THIS LINE.
+#
+# 12 IS DELIBERATELY NOT THE BOLTOR'S 8 OR quiver_stone's 9, and the separation is not cosmetic: two
+# equal quantities in one gate row means at least one of them is measuring the fixture rather than the
+# stat.
+quiver_size: 12
+
+# 60 ticks, 3.00s -- RULED, and identical to the Boltor's. The reload is UNGATED by the shot cooldown
+# (ruled in A1), so a player may begin reloading the instant the twelfth bolt leaves. Every cycle
+# figure at the top of this file uses that branch.
+#
+# NOT ON THE TOOLTIP. WeaponLore renders a quiver line and NO RELOAD LINE AT ALL, so this number
+# reaches a player only as the wait itself.
+reload_ticks: 60
+
+# THE FLAVOUR NAMES NO NUMBER, AND THAT IS A DEPARTURE FROM boltor.yml ON PURPOSE.
+#
+# The Boltor's "Eight bolts, then three seconds" quotes its quiver_size -- which QuiverSize.resolve
+# can change for a wielder carrying the right gear, at which point the line is false to the player
+# reading it. A FALSIFIED COMMENT MISLEADS A READER WHO CAN CHECK IT; A FALSIFIED FLAVOUR LINE
+# MISLEADS A PLAYER WHO CANNOT. This one names nothing a stat can move.
+flavor:
+  - "A swarm keeps no count"
+  - "and asks nothing of the season."
+
+triggers:
+  # THE ONLY TRIGGER. left_click is absent BY REFUSAL, not by choice: WeaponDefinition rejects a
+  # weapon that declares both a quiver and a left_click trigger, because a quiver spends left-click on
+  # its reload and two owners for one press would race silently.
+  right_click:
+    # NO name/description, deliberately. A weapon_damage trigger IS the basic attack, so WeaponLore
+    # renders it as a STAT BLOCK rather than an ability section and prose here would never be read.
+
+    # ================== 12: RULED, ON THE GRID, AND A SECOND LIVE INSTRUMENT ==================
+    #
+    # ON THE 4-TICK INPUT GRID. ceil(12/4) x 4 = 12, so there is no quantisation penalty and the
+    # Attack Speed tooltip is honest BY CONSTRUCTION: rangedAttackSpeedLabel is
+    # String.format("%.1f", 20.0/12) = "1.7", and the weapon delivers 1.6667/s, which is "1.7".
+    #
+    # IT IS THE PROJECT'S SECOND LIVE INSTRUMENT FOR THE >= BOUNDARY. An exact multiple of 4
+    # discriminates >= from > -- under > the input at t=12 is missed and the weapon fires at 16. The
+    # Boltor's 16 was the only weapon that could answer that question, and both other cooldowns ever
+    # measured (11, 15) are in the deletion set. This weapon is not, so after the deletion the
+    # boundary rests on TWO shipping weapons instead of one.
+    #
+    #   AND NOT ON THE GRID-SIZE QUESTION. 12 mod 4 = 0, which HeldFireQuantisationPinTest's own
+    #   table puts in the BLIND class: ceil(12/2) x 2 = 12 as well, so a 4-grid and a 2-grid agree
+    #   here. This adds a >= point and NOT an INPUT_FLOOR_TICKS point. Do not let it be cited as one.
+    #
+    # THE CADENCE IS PREDICTED AND NOT YET MEASURED. GATE-locust.md row 1 predicts FIRES min 12,
+    # mean 12.00, zero variance -- the quiver_stone signature -- and that row is NOT RUN. No pin row
+    # is added to HeldFireQuantisationPinTest until it is: those READINGS are boot measurements, and a
+    # predicted value in a table headed MEASURED, NOT DERIVED is the provenance-mixing that file
+    # exists to prevent.
+    #
+    # ================== AND THE ATTACK-SPEED DEAD ZONE IS WIDER HERE THAN ON THE BOLTOR ==================
+    #
+    # Effective cooldown is round(12 / speed), then quantised up to the next input. The delivered
+    # interval reaches a target step m when round(n/s) <= m, i.e. s > n / (m + 0.5):
+    #
+    #   12 -> 8   at  s > 12/8.5 = 1.4118      +41.18%, and the step itself is +50%
+    #    8 -> 4   at  s > 12/4.5 = 2.6667      +166.7%; 4 is the input floor, so this is the last step
+    #
+    # SO EVERY ATTACK-SPEED BONUS UP TO +41% BUYS THIS WEAPON NOTHING, and the first one that does
+    # anything buys 50% at once. The Boltor's dead zone is +28% (16/12.5 = 1.28), so THIS WEAPON'S IS
+    # THE WIDER OF THE TWO -- a faster weapon has a wider relative dead zone, because one 4-tick grid
+    # step is a larger fraction of a smaller cooldown.
+    #
+    # THIS REACHES THE ENCHANTMENTS THE OPERATOR HAS SAID HE IS PLANNING. A rate-of-fire enchant at
+    # +5%, +10% or +15% is worth EXACTLY ZERO on both weapons, while the tooltip would print a higher
+    # attack speed -- a number shown to a player that the weapon does not deliver, which is the class
+    # this project treats as worst.
+    #
+    #   THE PROPERTY, AND THE REMEDY IS THE OPERATOR'S: a rate-of-fire enchantment must move the
+    #   DELIVERED interval, and on a quantised weapon only whole grid steps do. A tier that cannot
+    #   move it is not a weak tier, it is an INERT one. The obvious shape is subtractive rather than
+    #   multiplicative -- a tier removing 4 ticks always moves exactly one step -- but that is a
+    #   different mechanism from AttackSpeed.effectiveCooldownTicks and it is a design decision. NO
+    #   ENCHANTMENT IS AUTHORED HERE AND NO REMEDY IS CHOSEN.
+    #
+    # Registered with the dormant findings in NEXT.md, whose count for this finding is 0 shipped and
+    # 1 dev fixture -- the attack_speed_boost_TEMP item, which is slot-keyed and reaches this table
+    # today. The ENCHANT column is the one measured at zero, and it is the one with a trigger on it.
+    cooldown_ticks: 12
+    cast:
+      type: ray
+      # 96 -- RULED, and confirmed by the operator against this weapon specifically ("Keep 96"). It is
+      # the Boltor's range and the longest in the project; the authored set otherwise is 23, 26, 30,
+      # 32, 64.
+      #
+      # THE cursed_emerald RULING IS NOT CONTRADICTED, and the distinction is the same one boltor.yml
+      # records. That weapon was ruled DOWN from 64 to 32 on "VISIBLE REACH EQUALS REAL REACH", with
+      # the harm named as the ray hitting a target the beam never reaches. THE HARM DOES NOT OCCUR AT
+      # 96: particles are emitted SERVER-SIDE along the whole ray, and the 32-block cap limits each
+      # CLIENT's render distance -- so the shooter renders the first ~32 blocks and THE TARGET RENDERS
+      # THE LAST ~32. What no single observer sees is the middle third, which is why GATE-locust.md
+      # row 3 requires an observer at distance.
+      #
+      # FLIGHT TIME IS A FEATURE, AND IT IS AIM-DEPENDENT. Segment 0 runs inline and every later chunk
+      # column costs a tick: at 96 blocks, vertical 0 ticks (still hitscan), axis-aligned 5-6, 45
+      # degrees 8-10 -- 0.25 to 0.50s from click to damage.
+      #
+      # RANGE IS UNVALIDATED, AND THIS SLICE DOES NOT ADD THE GUARD. CastSpec.Ray has no compact
+      # constructor and ContentValidator checks only `beam`, so negative, zero and NaN are all
+      # representable and all silent. Named as owed rather than fixed here, exactly as boltor.yml
+      # names it: adding a validator inside a content commit is how a guard lands with no test that
+      # ever makes it fire.
+      range: 96
+      # ITS OWN BEAM, FORKED FROM boltor_beam RATHER THAN SHARED. The colour ruling is what forks it;
+      # see locust_beam.yml, where the density figures are marked INHERITED AND UNJUDGED and the
+      # colour is marked PROVISIONAL.
+      beam: locust_beam
+    on_hit:
+      # weapon_damage, NOT a literal -- so attack_damage above is a stat a modifier can grip.
+      #
+      # NOTE THE ELEMENT IS AUTHORED TWICE IN THIS FILE: once at top level, once here. That is the
+      # shipped convention -- 9 of the 11 weapons preceding this one do the same -- and NOTHING IN THE
+      # SCHEMA CROSS-CHECKS THE PAIR. A file whose two elements disagree loads cleanly and is wrong in
+      # a way no test sees, so they are changed together or not at all.
+      - type: weapon_damage
+        element: nature
+
+# ================ NOT AUTHORED BY THIS COMMIT, AND SAID SO RATHER THAN LEFT BLANK ================
+#
+# NO PIERCE -- AND NO PIERCE NEEDS NO CODE. stepRay returns unconditionally on the first body it
+# finds, and its javadoc already names the already-hit-id set that pierce WOULD require. That set
+# stays unwritten, so damage is priced PER TARGET and 26 is what one body takes.
+#
+# NO RECIPE AND NO KIT. Reachable only through /rpg give and its rpg.command.give permission. Kits are
+# being removed (operator, 2026-09-12), so "no kit" is the normal state rather than a gap -- what is
+# owed to the content pass is A RECIPE, and only a recipe.
+#
+# NO DUAL-WIELD, AND THAT IS THE POINT OF THE WEAPON RATHER THAN AN OMISSION. WeaponFire reads
+# getItemInMainHand, so a Locust held only in the off-hand does not fire at all -- the same main-hand
+# guard the Boltor documents. The two-item design that would have needed an off-hand ruling was
+# refused; see PLAN-locust.md for the argument, which is that clean halving, attack-speed headroom and
+# a fast weapon are jointly unsatisfiable.

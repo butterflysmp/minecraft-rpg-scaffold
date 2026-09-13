@@ -9540,8 +9540,61 @@ will carry it to the slice that makes it reachable.
 
 | finding | instances | measured by | account |
 |---|---|---|---|
-| ranged attack-speed **dead zone** | **0** shipped, **1** dev fixture | `effectiveCooldownTicks` call sites; `attack_speed` across `armor/ tools/ enchants/ shields/` | `boltor.yml` at `attack_speed`, and `HeldFireQuantisationPinTest` row 3 |
+| ranged attack-speed **dead zone** | **0** shipped, **1** dev fixture — **TRIGGER NAMED, see below** | `effectiveCooldownTicks` call sites; `attack_speed` across `armor/ tools/ enchants/ shields/` | `boltor.yml` at `attack_speed`, `locust.yml` at `cooldown_ticks`, and `HeldFireQuantisationPinTest` row 3 |
 | **`quiver_size: 1`** defeats the `COOLDOWN-LIMITED` discharge | **0** | `git grep` for `quiver_size` in `content/weapons/` — only `boltor` 8 and `quiver_stone` 9 | `RpgCommand.verdictLine`'s javadoc |
+
+#### THE DEAD ZONE'S TRIGGER, NAMED 2026-09-13: THE FIRST RATE-OF-FIRE ENCHANTMENT AUTHORED
+
+**This is the entry the "parked with a named trigger" discipline was built for, and the roadmap is
+about to fire it.** The operator's requirement 3 names enchantments that *"increase rate of fire"*.
+
+**THE TRIGGER IS THE ENCHANT COUNT, NOT THE INSTANCE COUNT, AND THE DISTINCTION IS THE ROW ABOVE.**
+That row reads `0 shipped, 1 dev fixture` — it is **not** zero, and was corrected to say so when the
+original grep scope proved unable to see the `attack_speed_boost_TEMP` item. What **is** measured at
+zero, separately, is the enchant column:
+
+```
+grep -rn "attack_speed" content/armor content/tools content/enchants content/shields   ->  NONE
+```
+
+**So: the moment any enchant authors `attack_speed`, this finding is live in shipped content.**
+
+**WHY IT MATTERS MORE NOW THAN WHEN IT WAS FILED — A SECOND WEAPON, WITH A WIDER ZONE.** The delivered
+interval moves only at whole 4-tick grid steps, and reaches a target `m` when `s > n / (m + 0.5)`:
+
+```
+  locust, cooldown 12    12 -> 8   at s > 12/8.5  = 1.4118    NOTHING at or below +41.18%, then +50%
+  boltor, cooldown 16    16 -> 12  at s > 16/12.5 = 1.2800    NOTHING at or below +28.00%, then +33%
+```
+
+**A FASTER WEAPON HAS A WIDER RELATIVE DEAD ZONE**, because one grid step is a larger fraction of a
+smaller cooldown. **So ordinary tiers — +5%, +10%, +15% — are worth EXACTLY ZERO on both**, while the
+tooltip would print a higher attack speed: a number shown to a player that the weapon does not
+deliver, the class this project treats as worst.
+
+> **THE PROPERTY, AND THE REMEDY IS THE OPERATOR'S TO RULE AGAINST THE MATERIAL: A RATE-OF-FIRE
+> ENCHANTMENT MUST MOVE THE DELIVERED INTERVAL, AND ON A QUANTISED WEAPON ONLY WHOLE GRID STEPS DO. A
+> tier that cannot move it is not a weak tier, it is an INERT one.**
+>
+> The obvious shape is **subtractive rather than multiplicative** — a tier removing 4 ticks always
+> moves exactly one step, `16 -> 12 -> 8`, and never lies. **But that is a different mechanism from
+> `AttackSpeed.effectiveCooldownTicks` and it is a design decision, not a fix.** No enchantment was
+> authored in the Locust slice and no remedy was chosen.
+
+#### DEFERRED IDEA — THE ALTERNATING MUZZLE VISUAL. REFUSED AS SCOPE, KEPT AS AN IDEA.
+
+**Operator, 2026-09-13, refusing it for the Locust slice: *"No"* — and, in the same breath,
+*"although it's a good idea for the future."***
+
+Recorded here **because a refused-with-praise idea is the kind that evaporates**: it is not in a plan,
+not in a gate, and not a defect anything will trip over. The slice that refused it shipped a weapon
+with a single beam and no new mechanism at all.
+
+**What it was:** the two-item design would have alternated the firing barrel shot to shot, so the
+muzzle flash and beam origin visibly switched sides. **It has no subject today** — the dual-wield
+design was refused, and `locust` is a single item — so this is an idea awaiting a weapon, not a
+parked task with a trigger. Filed with the dormant register rather than as backlog so it sits beside
+the other things this project knows and is not acting on.
 
 #### `quiver_size: 1` DEFEATS THE `COOLDOWN-LIMITED` DISCHARGE CONDITION
 
@@ -9671,8 +9724,64 @@ together:
 
 | slice | what goes | blocked on |
 |---|---|---|
-| **DEV WEAPON DELETION** | `hunters_bow`, `ironblade`, `quiver_stone` | **enough shipped weapons to replace them. NOT A DATE** — a condition on content that does not yet exist |
+| **DEV WEAPON DELETION** | `hunters_bow`, `ironblade`, `quiver_stone` | **enough shipped weapons to replace them. NOT A DATE** — a condition on content that does not yet exist. **AND ONE READING IS OWED FIRST — see below.** |
 | **`/kit` DELETION** | 2 kit files, `KitLoader`, `KitRegistry`, their tests | **the build system.** Days, per the operator |
+
+### OWED BEFORE THE DEV WEAPONS GO: ONE READING, AND IT CANNOT BE TAKEN AFTERWARDS
+
+**Added 2026-09-13, out of `GATE-locust.md` row 1.** Not work now, and it does not block the deletion's
+own trigger — but it must not be discovered **on** deletion day, because the instrument is what is
+being deleted.
+
+**THE MODEL'S MECHANISM IS REFUTED AND ITS ARITHMETIC IS NOT, WHICH LEAVES IT UNTESTED RATHER THAN
+CONFIRMED.** `fire interval = ceil(effective / 4) x 4` was *derived* from inputs landing on multiples
+of 4. `GATE-locust.md` row 1 read `INPUTS min 3t`, twice — **so there is no 4-tick grid**, and the
+model survives only as an empirical fit.
+
+> **A MODEL WHOSE MECHANISM IS REFUTED BUT WHOSE PREDICTIONS STILL FIT IS NOT CONFIRMED, IT IS
+> UNTESTED.** It keeps working for a reason now known to be false, and the cases that would separate
+> the two are exactly the ones nobody has run.
+
+**AND ONLY TWO OF THE FOUR MEASURED POINTS CAN TEST IT AT ALL — BOTH IN THE DELETION SET.** A cooldown
+is a hard floor (`isReady` is `>=`), so when the authored value is already a multiple of 4 the
+prediction *equals the cooldown*, and the observed `min` is what **any** input model produces:
+
+| weapon | authored | predicted | read | input stream | fixture | tests the grid? |
+|---|---|---|---|---|---|---|
+| `quiver_stone` | 11 | 12 | 12 | `min 4`, cleanest in the record | **DELETION SET** | **YES** — prediction sits 1 above the cooldown |
+| `hunters_bow` | 15 | 16 | 16 | `min 4` | **DELETION SET** | **YES** — prediction sits 1 above the cooldown |
+| `boltor` | 16 | 16 | 16 | `min 4` | ships | **NO** — prediction == cooldown |
+| `locust` | 12 | 12 | 12 | **`min 3`** | ships | **NO** — prediction == cooldown |
+
+**So after the deletion the grid has ZERO informative points, not one.** And the cruellest row is the
+last: **the only sample that ever contained the falsifying condition was taken on the one cooldown
+that cannot detect it.**
+
+**THE CASE THAT SEPARATES MECHANISM FROM FIT:**
+
+```
+cooldown 11, inputs at t, t+4, t+8, t+11   (intervals 4, 4, 3)
+  at t+11:  11 >= 11  ->  FIRES.  Interval 11.
+  ceil(11/4) x 4 predicts 12.     FALSIFIED.
+```
+
+`hunters_bow` at 15 is a second instrument by the same argument — an input at exactly `t+15` gives 15
+against a predicted 16.
+
+**THE ROW, AND IT IS ONE MAGAZINE.** On `quiver_stone` (and again on `hunters_bow` if it is cheap):
+`/rpg firerate` to clear, hold right-click for a full magazine, read **`INPUTS min` alongside
+`FIRES min`**. The operator's ruling makes this easy rather than hard — **a jittery stream is the
+default and a clean one is the rare case**, so an ordinary held burst *is* the experiment.
+
+| reading | verdict |
+|---|---|
+| `FIRES min 12`, `INPUTS min 4` | the stream was clean — **inconclusive, re-take** |
+| `FIRES min 12`, `INPUTS min 3` | the model survives the refutation of its own mechanism. **Strong.** |
+| `FIRES min 11`, `INPUTS min 3` | **`ceil(n/4) x 4` IS FALSIFIED AS STATED** — the quantisation account needs rewriting before the fixture that proved it is deleted |
+
+**Do not delete `quiver_stone` or `hunters_bow` without this reading or an explicit ruling to drop
+it.** `HeldFireQuantisationPinTest` already fails loudly when either fixture disappears; this entry is
+what tells whoever meets that failure why re-taking the reading is not optional.
 
 > **`mage_fire.yml` GOES WITH `ranger_fire.yml`, AND NOBODY HAS RULED THAT.** The `/kit` deletion is
 > described as removing a dev affordance, but the Mage loses its starting kit at the same moment. It

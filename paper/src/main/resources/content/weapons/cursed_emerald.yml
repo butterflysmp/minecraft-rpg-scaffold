@@ -31,6 +31,30 @@ display_name: "Cursed Emerald"
 # accrual. Adding an element is one file and costs nothing, which is exactly why adding one unasked
 # is easy and wrong.
 #
+# *** "ELEMENTS ARE PARKED" IS DISCHARGED, 2026-09-13. THIS WEAPON DOES NOT CHANGE. ***
+#
+# The operator ruled `nature` onto a new Ranger weapon: "Give it the Nature element instead of
+# Kinetic". So nature is unparked and ships on `locust` -- the first weapon in the project to carry a
+# third element.
+#
+# READ WHAT THE PARAGRAPH ABOVE ACTUALLY REFUSED, BECAUSE IT IS NARROWER THAN IT LOOKS. Its operative
+# word is UNASKED. It refused an element added WITHOUT A RULING; there is now a ruling, so its
+# CONDITION WAS MET AND ITS JUDGEMENT WAS NOT REVERSED.
+#
+#   A RECORDED REFUSAL THAT NAMES ITS CONDITION IS DISCHARGED WHEN THE CONDITION IS MET, NOT
+#   OVERTURNED. "Not without a ruling" and "not ever" look identical from a distance and they age in
+#   opposite directions. This one said the first and would have been misread as the second.
+#
+# AND ONLY ONE OF THE TWO CLAIMS ABOVE MOVES:
+#
+#   "Elements are parked"                              DISCHARGED -- nature ships on locust
+#   "this weapon is kinetic, so CE2's six numbers       UNTOUCHED -- a readability argument about
+#    stay BARE" (the paragraph below)                   THIS weapon's burst, independent of parking
+#
+# SO THIS WEAPON STAYS `kinetic`, FOR THE REASON IN THE NEXT PARAGRAPH RATHER THAN FOR WANT OF AN
+# ALTERNATIVE. Nothing here is edited to match the ruling, because the ruling was about a different
+# weapon and this file's own choice was never the thing being reconsidered.
+#
 # KINETIC DECLARES NO applies_status, SO THIS WEAPON DOES NOT SCORCH AND ITS KILLS DO NOT IGNITE.
 # That is deliberate, and it is what makes CE2 readable: kinetic's damage_symbol is "", so the six
 # numbers are BARE and crit colour is the only signal on them. Had this been fire, six gold glyphs

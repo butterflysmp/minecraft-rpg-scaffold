@@ -12,8 +12,13 @@
 # the caster's ATTACK_SPEED stat scales that cooldown for free (AbilityService.resolve).
 #
 # BUT UNDER A HELD BUTTON IT IS NOT 15, AND THIS WEAPON IS WHERE THAT WAS MEASURED. A held
-# right-click delivers an input only every 4 ticks (Q7, GATE-q7.md), and a fire needs an input AND an
-# expired cooldown -- so the interval is the cooldown rounded UP to the next input:
+# right-click's inputs are quantised onto a 4-tick grid (Q7, GATE-q7.md), and a fire needs an input
+# AND an expired cooldown -- so the interval is the cooldown rounded UP to the next input:
+#
+# (This read "delivers an input only every 4 ticks" until 2026-09-13. GATE-locust.md row 1 read
+#  INPUTS min 3t, twice -- holding right-click is not periodic, which the operator ruled is a client
+#  property. The grid, the arithmetic, and this weapon's measured 16 are all unaffected. Edited even
+#  though this file is in the deletion set, because the sentence was FALSE rather than merely stale.)
 # ceil(15/4) x 4 = 16, and 16 is exactly what was measured here.
 #
 # SO THE ATTACK_SPEED SENTENCE ABOVE IS TRUE AND HALF THE BUFFS BUY NOTHING: at 1.1x the effective

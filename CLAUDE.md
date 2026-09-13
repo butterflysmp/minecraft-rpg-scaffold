@@ -96,9 +96,17 @@ explanation has become an account: cut it back.**
 
 **Two tests it must pass, and they are the reason the split works:**
 
-- **The pointer must be obeyable without opening the account.** *"Author multiples of 4; multiples of
-  8 if it may ever be dual-wielded"* can be followed by someone who never reads the mechanism. **A
-  pointer that needs its account to be useful is a broken copy, not a pointer.**
+- **The pointer must be obeyable without opening the account.** *"Author multiples of 4"* can be
+  followed by someone who never reads the mechanism. **A pointer that needs its account to be useful
+  is a broken copy, not a pointer.**
+
+  > **THIS EXAMPLE USED TO READ *"multiples of 4; multiples of 8 if it may ever be dual-wielded"*, and
+  > the second half was withdrawn on 2026-09-13** when the dual-wield design was refused — see the
+  > rule itself under *Standing decisions*. **The quote is updated rather than left standing, because
+  > an example that quotes a rule verbatim goes stale exactly when the rule moves** — and a worked
+  > example of a *well-formed pointer* that misquotes its own pointer is the failure it is teaching
+  > against. The example's point is untouched: the surviving half is still obeyable without the
+  > account, which is the property being demonstrated.
 - **The pointer names a SECTION, never a line.** `WeaponLoader`'s `cooldown_ticks` section, not
   `WeaponLoader.java:175`. A line citation is falsified by any insertion above it, silently and
   invisibly to every test — this repo carries an open finding measuring that blast radius at ~140
@@ -229,9 +237,10 @@ So:
   > So, for any guard whose failure path has never been observed: **feed it the bad input on
   > purpose.** A `catch` around a library call especially — leniency is a library's default
   > far more often than anyone assumes, and it is never stated where you are looking.
-- **TWO WAYS TO MANUFACTURE A FALSE ABSENCE, AND BOTH END IN "IT ISN'T THERE".** A search that
-  returns nothing and an instrument that is wrong both produce the same sentence, and it is a
-  *finding* — so it gets reported, acted on, and is much harder to retract than a wrong positive.
+- **THREE WAYS TO MANUFACTURE A FALSE ABSENCE, AND ALL THREE END IN "IT ISN'T THERE".** A search that
+  returns nothing, an instrument that is wrong, and **a pattern that cannot match the text it is
+  looking for** all produce the same sentence, and it is a *finding* — so it gets reported, acted on,
+  and is much harder to retract than a wrong positive.
 
   > **A GREP FOR YOUR OWN VOCABULARY IS NOT A SEARCH OF THE DOCUMENT.** You match the word **you**
   > would have written; the author wrote theirs. **Search by content — a number, an identifier, a
@@ -249,8 +258,44 @@ So:
   > *can* verify tells you nothing about what you cannot. **Say "unverified" and name the
   > instrument**, rather than converting its silence into a finding.
   >
-  > **Practically:** before reporting an absence, ask *what would this look like if it were present
-  > and my search were wrong?* If the answer is "identical", the search is not done.
+  > **AND THE THIRD: A MULTI-WORD PATTERN CANNOT MATCH ACROSS A LINE WRAP.** `grep` is line-based, so
+  > a phrase broken by a newline is invisible to a pattern containing it — **and prose files wrap at
+  > 100 columns, so the longer and more distinctive your search phrase, the likelier it is split.**
+  > The pattern is right, the text is there, and the tool is working perfectly.
+  >
+  > **2026-09-13.** `git grep "multiples of 8"` over `CLAUDE.md` found the rule and **neither of the
+  > two places that quote it** — this file's own worked example breaks after *"multiples of"*, and
+  > `HeldFireQuantisationPinTest`'s javadoc after *"if it may ever"*. **A citation sweep run on that
+  > phrase would have updated the rule and left both copies stale**, which is the exact failure the
+  > two-homes convention exists to prevent.
+  >
+  > **Practically: search ONE TOKEN, never a phrase.** `dual-wield` found all four sites. A
+  > hyphenated word, an identifier, a number — anything that cannot be broken in half.
+  >
+  > **Practically, for all three:** before reporting an absence, ask *what would this look like if it
+  > were present and my search were wrong?* If the answer is "identical", the search is not done.
+
+- **AND THE INVERSE, WHICH IS WORSE: A FALSE PRESENCE. PROSE THAT NAMES A KEY IS INDISTINGUISHABLE
+  FROM THE KEY.** The three above are false *absences*. This is a match that should not have
+  happened, and the asymmetry is the whole reason it is filed separately:
+
+  > **A FALSE ABSENCE PROMPTS A SECOND LOOK. A FALSE PRESENCE READS AS CONFIRMATION, AND NOBODY
+  > RE-CHECKS A CONFIRMATION.** "It isn't there" is a claim you feel obliged to defend; "there it is"
+  > closes the question.
+  >
+  > **And the base rate runs the wrong way.** **A document that EXPLAINS why a key is absent contains
+  > that key more often than a document that simply has it** — the explanation has to name the thing
+  > it is denying, usually more than once.
+  >
+  > **2026-09-13.** `grep -l "applies_status" content/elements/*.yml` returned `fire.yml` **and
+  > `kinetic.yml`** — because `kinetic.yml`'s comment reads *"It declares no applies_status."* The
+  > substring match found **the prose denying the key** and reported it as the key. Two shipped weapon
+  > files assert the opposite in their own comments, which is what prompted the re-check;
+  > `grep -n "^applies_status"` returns `fire.yml` alone.
+  >
+  > **Practically: anchor the match to the syntax, not the word.** `^key:` for YAML at column 0,
+  > `^\s+key:` for nested. An unanchored grep searches the commentary as well as the content, and in
+  > this repo the commentary outweighs the content by an order of magnitude.
 
 - Anything that **discovers** rather than asserts — a scan, a glob, a registry walk —
   must **fail loudly when it discovers nothing.** Finding zero items is a defect, not a
@@ -400,6 +445,32 @@ So:
   > and decide *before* running it which answer you expect. When you have just changed an input,
   > ***unmodified* is the alarming answer**, and it is the one that looks like nothing went wrong.
 
+  > **A SECOND ROUTE TO THE SAME EMPTY GOLDEN, 2026-09-13 — AND THIS ONE FAILS WITH THE RIGHT EXIT
+  > CODE.** The regenerating run is *designed* to throw, so **exit 1 is the success signal**. That
+  > makes it indistinguishable from a run that never reached the module at all.
+  >
+  > **The cause, named exactly, because the wrong form is the one you will reach for:**
+  > `-DfailIfNoSpecifiedTests=false` **is not a property surefire reads.** The name is
+  > **`-Dsurefire.failIfNoSpecifiedTests=false`**. The wrong name silently does nothing, so
+  > `-Dtest=GoldenLoreTest -am` aborts in `rpg-core` with *"No tests matching pattern"* — and
+  > **`rpg-paper` is SKIPPED, so the module that writes the golden never runs.** Exit 1, no golden, and
+  > the procedure itself supplies the plausible explanation for the 1.
+  >
+  > **The whole regenerate line, correct:**
+  > `./mvnw -pl paper -am test -Dtest=GoldenLoreTest -Dsurefire.failIfNoSpecifiedTests=false -Dgolden.regenerate=true`
+  >
+  > **Read `REGENERATED` in the output AND `git status` on the file. Neither alone is enough here** —
+  > the status is the artefact check, and the log line is what distinguishes "ran and wrote" from
+  > "never ran".
+
+  > **AND `-pl paper` WITHOUT `-am` COMPILES AGAINST WHATEVER WAS LAST INSTALLED.** Measured
+  > 2026-09-13: the installed `rpg-core` jar was **five days stale** and predated `AccrualRule`, so a
+  > paper-only build failed at the *imports* of six test files nobody had touched. **It reads as a
+  > real break in unrelated code**, and the instinct is to go looking at those files.
+  >
+  > **The tell is that the failures are in files your change never went near, at import lines.** The
+  > fix is `-am` (or a full-reactor `./mvnw test`), not an investigation.
+
 - **AN ESTIMATE PLACED BESIDE MEASUREMENTS BECOMES ONE. PROXIMITY LAUNDERS IT.** A number you
   eyeballed, printed in a column of numbers you measured, is indistinguishable from them and inherits
   their authority. Either measure it too, or mark it as an estimate *in the same cell*.
@@ -521,6 +592,67 @@ So:
   >
   > Two occurrences is a convention forming by accident, so it is stated rather than left.
 
+
+### A PREDICTION THAT SEVERAL OUTCOMES SATISFY IS NOT A CONTROL, IT IS A RANGE
+
+**Predict the COUNTS, because counts are what the tool reports.** A shape stated in words gets checked
+by eye against a figure stated in numbers, and the eye passes it.
+
+> **2026-09-13.** A golden regeneration was predicted, in advance and in writing, as *"one ADDITION
+> plus one MODIFICATION"* — the control existing because **a count cannot see a substitution**, and a
+> rarity change had turned an addition-only diff into a mixed one. It reported **`13 / 2`**. The tick
+> went in.
+>
+> **A modification costs one deletion and one insertion, so ONE modification yields ONE deletion. Two
+> were reported.** The decomposition: 11 lines of new block, 1 new footer, **1 new `=== 91 renderings
+> ===` tail** — against 2 deletions, the old footer and the old tail. **The golden was right; the
+> control was loose enough that one modification and two both satisfied it**, and the reported figure
+> distinguished them and was never used.
+>
+> **Practically:** write the expected `insertions / deletions` before running, then compare numbers to
+> numbers. If you cannot predict the counts, you do not yet understand the change well enough to be
+> checking it.
+
+> **AND THE TRAP UNDERNEATH IT: A LINE THAT CARRIES A COUNT IS ITSELF A LINE.** The renderings tail was
+> tracked all through the plan as *a number that moves* — `90 -> 91`, quoted in three places — and
+> **forgotten as text that changes.** It was the second modified line, and the reason the prediction
+> was one short.
+>
+> **Anything self-describing is both, and predictions about it have to be made twice**: a total, a
+> version string, a generated-on stamp, a `=== N items ===` footer. Once as the value, once as the
+> diff hunk.
+>
+> Same family as *eight shots span seven intervals* and the `A..B` commit counts — **the thing being
+> counted and the thing doing the counting are not the same thing**, and it is always the second that
+> gets dropped.
+
+### TWO RULES FROM ONE REVIEW, AT THE SEAM BETWEEN A FIGURE AND THE SENTENCE ABOUT IT
+
+**Filed together because they fail in opposite directions and either alone reads as a one-off.** Both
+were produced by the same document revision on 2026-09-13.
+
+- **A REVISION REGRESSES WHAT IT WAS NOT REVISING.** A draft stated a value correctly at
+  `s > 12/4.5 = 2.6667`. The next draft, whose attention was on a table one section away, rewrote that
+  **untouched** sentence into `s > 12/0.5, unreachable` — **wrong in the value and wrong in the
+  conclusion, from a draft that had the right number and a sweep that had printed it.**
+
+  > **Diff a revision against the draft it replaced, not only against the defect list.** The defect
+  > list says what was wrong; it never says what was right and got touched anyway. **Prefer targeted
+  > edits to rewrites**, for exactly this reason.
+
+- **A GENERAL FORM MUST REPRODUCE THE WORKED VALUES IT SITS ABOVE.** The same revision generalised a
+  verified closed form to `s > n/(m - 0.5)`. It is `m + 0.5`; the sign inverted while **pattern-
+  matching the `3.5`** in the one-step form `n/(n - 3.5)` instead of rederiving
+  `round(n/s) <= m  iff  n/s < m + 0.5`. It ran ~13% high at every step — **which does not read as an
+  error, it reads as a weapon having more headroom than it has.**
+
+  > **THE TELL WAS TOTAL, AND THAT IS THE DIAGNOSTIC.** The stated form disagreed with **every** row
+  > printed beneath it. **A formula that is merely mis-stated usually matches somewhere by luck; one
+  > that matches nowhere was never checked against its own data.** Substituting one row back costs
+  > nothing.
+  >
+  > **And the values are not the portable artefact — the formula is.** The rows describe two weapons;
+  > the formula is what the next author reaches for when pricing the third.
 
 ### EVERY FILTER AND EVERY SCRIPTED EDIT NEEDS A POSITIVE CONTROL
 
@@ -846,12 +978,37 @@ the opposite because the material suggests it.**
     **So: never derive a new weapon's numbers from a dev weapon's.** Parity with a placeholder is
     parity with nothing, and it propagates — the derived number then becomes the next weapon's
     precedent and the placeholder's arbitrariness outlives the placeholder.
-  - **`16` is on the 4-tick input grid, deliberately.** A held right-click delivers an input only
-    every 4 ticks, so a weapon's real fire interval is its authored cooldown **rounded UP to the next
+  - **`16` is on the 4-tick input grid, deliberately.** A held right-click's inputs are quantised onto
+    a 4-tick grid, so a weapon's real fire interval is its authored cooldown **rounded UP to the next
     multiple of 4** — author `13` or `14` and you have authored `16`, **and the tooltip will not say
-    so.** Author **multiples of 4**; **multiples of 8** for anything that may ever be dual-wielded,
-    since only those halve cleanly. The mechanism, the measurements and the tooltip consequence are
+    so.** **Author multiples of 4.**
+
+    > **THIS SAID "delivers an input only every 4 ticks" UNTIL 2026-09-13, AND THAT PERIOD CLAIM IS
+    > FALSE.** `GATE-locust.md` row 1 read `INPUTS min 3t`, twice. **Holding right-click does not
+    > produce a periodic stream at all** — operator's ruling, a property of the vanilla client.
+    > **The grid survives and every prediction it makes survives with it**; what died is the sentence
+    > explaining *why* there is a grid. Do not restore *every*, and do not change the 4 — the
+    > arithmetic is confirmed at four measured points and the mechanism was never what the arithmetic
+    > rested on. The mechanism, the measurements and the tooltip consequence are
     at `WeaponLoader`'s `cooldown_ticks` section — **this is the pointer, that is the account.**
+
+    > **THE "MULTIPLES OF 8 IF IT MAY EVER BE DUAL-WIELDED" CLAUSE IS WITHDRAWN, 2026-09-13 — AND IT
+    > IS WITHDRAWN FOR WANT OF A SUBJECT, NOT BECAUSE IT WAS WRONG.** The operator ruled that the
+    > second Ranger weapon is a single item: *"it's not going to be Dual wielded."* **Nothing halves
+    > any more**, so a rule about surviving halving has nothing to apply to. The `locust` ships at
+    > **12** — not a multiple of 8, and correct.
+    >
+    > **`16` IS NOT RE-RULED, AND THE RECORD MUST STILL EXPLAIN WHY 16 AND NOT 12.** The clause was
+    > one of the Boltor's reasons and its other reasons stand — the account at `WeaponLoader`'s
+    > `cooldown_ticks` section, and the derivation in `boltor.yml`'s `cooldown_ticks` block, which
+    > carries the same withdrawal note.
+    >
+    > **AND THE CLAUSE WAS UNSATISFIABLE ANYWAY, WHICH IS WHY THIS IS A WITHDRAWAL AND NOT A PAUSE.**
+    > Halving moves a weapon onto a smaller cooldown, and **the attack-speed dead zone widens as the
+    > cooldown shrinks** — `8 -> 4` is inert entirely, `16 -> 8` dead to +77.8%, `32 -> 16` to +28.0%.
+    > To buy a *dual* dead zone as narrow as the Boltor's *single* +28% you must author **32**, a
+    > 1.6-second shot. **Clean halving, attack-speed headroom and a fast weapon are jointly
+    > unsatisfiable.** Full argument in `PLAN-locust.md`.
 
 ## Upgrade procedure
 
