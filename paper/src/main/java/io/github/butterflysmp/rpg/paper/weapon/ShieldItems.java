@@ -143,6 +143,25 @@ public final class ShieldItems {
      *
      * <p>This answers "which shield is RAISED", not "was the block valid". Validity is vanilla's
      * call, read off the damage event; see {@link ShieldBlock}.
+     *
+     * <h2>SOMETHING NOW WRITES THE FIELD THIS READS, AND IT IS SAID HERE AS WELL AS THERE</h2>
+     *
+     * <p>{@code hasActiveItem()} and {@code getActiveItemHand()} are the platform's held-use state.
+     * Until slice H1 everything in this project only READ it; {@code PlumeDraw} now WRITES it,
+     * calling {@code clearActiveItem()} on the release of a drawn Dragon's Plume to stop vanilla
+     * firing an arrow and consuming one from the player's bag.
+     *
+     * <p><b>They cannot overlap, and the reason is that the field is SINGULAR.</b> A player has one
+     * active item: if a Plume is being drawn, no shield is raised in that state, and the clear runs
+     * only when the RELEASED item is one of our bows. So this method can never observe a clear
+     * {@code PlumeDraw} caused -- and if it somehow did, the honest answer is the one it already
+     * gives, since nothing is being used.
+     *
+     * <p><b>That is a claim about the platform's state machine, and THIS IS THE LAYER THAT HAS
+     * ALREADY BEEN WRONG ONCE HERE:</b> {@link ShieldBlock} records {@code isBlocking()} as
+     * direction-blind, boot-witnessed at 107 and 160 degrees off the victim's facing. So H1 carries
+     * a negative boot row -- eat, raise a shield, fire an ordinary bow, and confirm none of them
+     * broke -- rather than resting on the paragraph above.
      */
     public static Optional<EquipmentSlot> shieldHand(LivingEntity entity, Keys keys) {
         EntityEquipment equipment = entity.getEquipment();
