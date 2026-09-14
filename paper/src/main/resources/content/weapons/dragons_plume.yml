@@ -1,0 +1,181 @@
+# THE DRAGON'S PLUME -- the Ranger's third weapon, and the first in this project whose INPUT IS NOT
+# A CLICK.
+#
+# ================== FIRST PASS. IT AUTHORS ONLY WHAT THE BOOT NEEDS. ==================
+#
+# Slice H1 -- the draw, the charge tracker, the rising tick and a release that fires NOTHING -- is
+# merged and CANNOT BE TESTED without this file: its gate is a bow-material weapon of ours that binds
+# no right_click, and hunters_bow binds one. This file is the blocker, and unblocking the boot is the
+# whole reason it exists yet.
+#
+# SO THE RELEASE IS DELIBERATELY ABSENT. No speed, no gravity, no max_lifetime_ticks, no homing
+# block, no cast of any kind. Those numbers are RULED -- reach ~300 blocks (R11), gravity like a
+# normal arrow (R12) -- but slice H2 has not decided how the release reaches a cast spec, and
+# authoring under a binding that may not exist is authoring a guess that gets rewritten.
+#
+# ================== EVERY NUMBER HERE WAS RULED BY THE OPERATOR ==================
+#
+#   attack_damage 48   quiver_size 25   reload_ticks 90   cooldown_ticks 0
+#   legendary          void             ranger            material bow
+#
+# NOTHING below is a proposal. PLAN-dragons-plume.md carries the derivations and the arithmetic each
+# was ruled against; this file carries the values and the consequences a reader of THIS file needs.
+
+id: dragons_plume
+display_name: "Dragon's Plume"
+
+# ================== THE PROJECT'S FIRST LEGENDARY ==================
+#
+# Measured before authoring: `grep -n "^rarity:" content/weapons/*.yml` returns common x2, uncommon
+# x4, rare x3, exotic x3 and LEGENDARY x0. So this weapon is the first thing to render that tier's
+# colour on a client at all -- which is a reason to look at the tooltip on the boot rather than a
+# reason to change anything here.
+rarity: legendary
+
+# VOID, AND IT DRAWS A GLYPH ON EVERY DAMAGE NUMBER. void.yml is two lines and its damage_symbol is
+# "<dark_purple>✧</dark_purple>", so once H2 fires, a five-arrow release puts FIVE purple-sparkled
+# numbers up at once. It accrues nothing: the anchored sweep
+# `grep -n "^applies_status" content/elements/*.yml` returns fire.yml ALONE, so the worry a
+# five-projectile burst would otherwise raise -- a status accruing five times in one frame -- does
+# not arise. That is a discharged concern, not an overlooked one.
+element: void
+
+# The Ranger's third weapon. The quiver is the class's brake, and Power (enchants/power.yml,
+# effect: damage, class: ranger) reaches this weapon's attack_damage once a payload reads it.
+class: ranger
+
+# BOW, AND THE ENTIRE WEAPON RESTS ON THIS ONE WORD. R1 keeps the VANILLA DRAW as the input device:
+# the animation, the charge state and a real release event all come from vanilla's bow, and slice H1
+# reads them. A different material would have no draw to read.
+material: bow
+
+# ================== 48: RULED, AND THE SPIKE WAS CHOSEN RATHER THAN OVERLOOKED ==================
+#
+# Per ARROW. Five arrows at full charge is 240 DAMAGE IN ONE INSTANT, and the ruling was taken with
+# that consequence in front of the operator -- against the 104 the Locust lands in its first two
+# seconds. A number that reads modest as a rate reads extreme as a spike, and this weapon is all
+# spike: the release lands in a single frame and then costs a full draw plus four seconds.
+#
+#   IT RENDERS NOWHERE ON THE TOOLTIP YET, AND THAT IS NOT A DEFECT IN THIS FILE. WeaponLore's stat
+#   block is gated on DamagePayload.isBasicAttack -- a weapon_damage on_hit -- and the draw binding
+#   below authors no on_hit at all. So the "Ranged Damage: 48" line appears when H2 authors the
+#   payload, not before. The MODIFIER is unaffected: WeaponItems.mint derives the wielder's
+#   ATTACK_DAMAGE attribute from this value regardless of triggers, so the stat is real today and
+#   only the tooltip line waits.
+attack_damage: 48
+
+# ================== THE MAGAZINE ==================
+#
+# 25 rounds, ONE PER ARROW -- so five arrows is five rounds and 25 is five maximum-charge releases.
+# An empty quiver does nothing: the weapon is dead until reloaded, ruled previously.
+#
+# AN AUTHORED BASE, NOT THE VALUE THE GAME USES. The capacity a wielder packs at is
+# QuiverSize.resolve(quiver_size, their gear); what is written here is what a player with no such
+# gear gets, and what a craft preview shows. A GATE ROW MUST READ WHAT IS ON SCREEN, NEVER THIS LINE.
+#
+# 25 is deliberately unlike every other magazine in the project -- 8, 9 and 12 -- so a gate row
+# reading a capacity cannot be measuring the fixture by coincidence.
+quiver_size: 25
+
+# 90 TICKS, 4.5s -- RULED, and it is the only thing in the weapon that prices spam.
+#
+# 3.60 ticks per round, deliberately just UNDER quiver_stone's 3.78: the Plume is emphatically NOT
+# the cheapest ammunition in the project. At the 60 first proposed it would have been 2.40, cheapest
+# by 36%.
+#
+#   *** THIS NUMBER IS LOAD-BEARING AND IT IS NOT A COMFORT SETTING. *** With cooldown_ticks at 0
+#   (R7, below), the reload is the ENTIRE tap tax -- a tap-spammer meets it far sooner per unit of
+#   damage dealt. MEASURED in PLAN-dragons-plume.md 7.2: below about 71 ticks the tap retakes the
+#   lead over the charge, and the whole balance of the weapon inverts. Lowering this re-opens that
+#   section.
+#
+# NOT ON THE TOOLTIP. WeaponLore renders a quiver line and NO RELOAD LINE AT ALL, so this number
+# reaches a player only as the wait itself.
+reload_ticks: 90
+
+# THE FLAVOUR NAMES NO NUMBER AND NOTHING A STAT CAN MOVE, which is locust.yml's rule rather than
+# boltor.yml's. "Eight bolts, then three seconds" quotes a quiver_size that QuiverSize.resolve can
+# change for a wielder carrying the right gear, at which point the line is false to the player
+# reading it. A FALSIFIED COMMENT MISLEADS A READER WHO CAN CHECK IT; A FALSIFIED FLAVOUR LINE
+# MISLEADS A PLAYER WHO CANNOT.
+#
+# Both halves below are permanently true of the ruled design: the charge, and the sight gate.
+flavor:
+  - "Patience is the only string it answers to;"
+  - "what it cannot see, it lets pass."
+
+# ================== THE OFF-HAND ARROW IS NOT IN THE FLAVOUR, AND THAT IS A DECISION ==================
+#
+# THE PLUME WILL NOT DRAW WITHOUT A PLAIN ARROW SOMEWHERE ON THE PLAYER. That is vanilla, measured
+# out of the pinned server jar: BowItem.use returns FAIL when getProjectile finds nothing, so the bow
+# never pulls back and no release event is delivered. The Plume's ammunition is its own 25-round
+# quiver, so a player can be FULLY LOADED AND UNABLE TO DRAW -- and a reload leaves them in exactly
+# that state, because reloading is what consumes their loose arrows.
+#
+# R5: the player carries ONE ARROW IN THE OFF-HAND, where no reload can take it -- vanilla checks the
+# off-hand first while QuiverAmmo.sources walks getStorageContents(), which excludes it. Recorded as a
+# KNOWN WORKAROUND WITH NO TRIGGER: a better solution is wanted and nobody has designed one.
+#
+#   IT IS NOT A FLAVOUR LINE, FOR THE REASON THE FLAVOUR BLOCK ABOVE GIVES. This file will outlive the
+#   workaround. emberblade.yml shipped "Swing to cut; loose to burn", which became false the day melee
+#   started accruing scorch, and nothing but a person reading it would ever have said so. A mechanical
+#   instruction that is TEMPORARY BY DESIGN is the worst possible candidate for permanent italic text.
+#
+#   THE SURFACE IT BELONGS ON IS A NOTICE, on the failed draw, in QuiverNotice's form -- which says
+#   what to DO because "a refusal with no remedy reads as a bug". It is detectable: H1's tick is
+#   scheduled one tick after the interact and finds hasActiveItem() false when the draw never started.
+#   That is H1/H2 code rather than content, so it is named here and not authored here.
+#
+#   NOTHING IN THE GAME TEACHES THIS TODAY. A legendary bow that silently refuses to draw is
+#   indistinguishable from a broken item, and the person it happens to first is whoever boots this.
+
+triggers:
+  # ================== `draw`: THE PROJECT'S FIRST NON-CLICK INPUT ==================
+  #
+  # NOT A WORKAROUND AGAINST THE SCHEMA -- the designed extension point, and TriggerBinding's own
+  # javadoc says so: "A List<TriggerBinding> rather than a fixed two-key map keeps the input set
+  # open: a third input, or a right-click added later, needs no schema change." The input is a free
+  # String, not an enum.
+  #
+  # NO CORE CHANGE WAS NEEDED AND THE INVARIANT IS NOT RELAXED. WeaponDefinition still refuses a
+  # weapon with no triggers -- "a weapon is a container of triggers" -- and the Plume simply acquires
+  # the trigger it actually has. Its input was never a click; the model already had room to say so.
+  #
+  # WHY NOT THE OTHER TWO, MEASURED BY CONSTRUCTION RATHER THAN ASSUMED:
+  #
+  #   left_click    REFUSED: "weapon 'dragons_plume' declares a quiver, which binds left_click to
+  #                 the reload, so it may not also declare a left_click trigger"
+  #   right_click   LOADS, AND DEFEATS THE WEAPON: RpgListeners cancels the vanilla interaction for
+  #                 any weapon that binds it, so BowItem.use never runs, the draw never starts, and
+  #                 PlumeDraw's gate excludes such a weapon by name.
+  #
+  # THE NAME IS THE GESTURE, which is the convention left_click and right_click already follow --
+  # named for what the PLAYER DOES, not for when the code runs. Dispatch happens at RELEASE; if
+  # `release` reads better on the tooltip that is a one-word change and the operator's to make.
+  draw:
+    # ================== 0: RULED (R7), AND AUTHORED EXPLICITLY FOR THAT REASON ==================
+    #
+    # "Fast shooting arrows is fine." THE TAP IS GATED BY BEING A WORSE SHOT, NOT BY A TIMER: a
+    # partial draw fires one arrow, with NO homing, at 12 damage (R4'), and the reload above is what
+    # prices spamming it.
+    #
+    # *** A 0 LEFT IMPLICIT IS EXACTLY WHAT SOMEBODY LATER "FIXES". *** PLAN-dragons-plume.md 7.2
+    # wrote the condition before the ruling existed: "if the draw is meant to be the only gate, the
+    # answer is 0 and it should be authored as a RULING -- not left at 0 by omission, because the
+    # headline finding is exactly the consequence somebody would later fix." Fixing it would break
+    # the balance the weapon rests on.
+    cooldown_ticks: 0
+
+    # ================== THE BINDING IS EMPTY, AND AT H1 THAT IS HONEST ==================
+    #
+    # No cast, no on_hit, no cost. AT THE H1 BOOT THIS WEAPON GENUINELY FIRES NOTHING -- the bow
+    # ticks its charge, plays its rising sound, and looses nothing at all, which is the entire point
+    # of splitting H1 from H2: every high-risk unknown is in the input layer, and a bow that only
+    # ticks answers all of them without four candidate causes for every symptom.
+    #
+    # SO THE TOOLTIP WILL SHOW AN INPUT LINE WITH NOTHING UNDER IT. That is the weapon being
+    # described accurately, not a half-written file.
+    #
+    # *** DO NOT "COMPLETE" THIS. *** H2 fills the cast and the on_hit under THIS SAME BINDING --
+    # the projectile, F/F2's homing block, and the weapon_damage payload that makes attack_damage
+    # render. Anything authored here before H2 decides how the release reaches a cast is a guess.

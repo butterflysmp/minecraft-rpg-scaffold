@@ -61,14 +61,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ExpandedQuiverContentInvariantTest {
 
     /**
-     * Ranger weapons in shipped content: {@code boltor}, {@code locust}, {@code quiver_stone},
-     * {@code hunters_bow}. <b>Asserted rather than logged</b>, so a regex that stops matching the
-     * schema reddens instead of reporting a clean verdict over an empty set.
+     * Ranger weapons in shipped content: {@code boltor}, {@code dragons_plume}, {@code locust},
+     * {@code quiver_stone}, {@code hunters_bow}. <b>Asserted rather than logged</b>, so a regex that
+     * stops matching the schema reddens instead of reporting a clean verdict over an empty set.
      *
      * <p>Expected to CHANGE, and in both directions -- the dev-weapon deletion removes two of these.
      * Update it with the content; do not relax it to a lower bound.
+     *
+     * <p><b>4 -> 5 when {@code dragons_plume.yml} landed, and this row is what noticed.</b> It is a
+     * deliberate edit to a named count rather than a relaxation: the Plume is a REAL ranger weapon
+     * that authors {@code quiver_size: 25}, so
+     * {@link #everyRangerWeaponAuthorsAMagazineOrIsAnExemptDevWeapon} passes on it unchanged and
+     * Expanded Quiver rolling onto it grants ACTUAL arrows -- the opposite of {@code hunters_bow},
+     * which is exempt by name precisely because it has no magazine for the enchant to enlarge.
      */
-    private static final int KNOWN_RANGER_WEAPONS = 4;
+    private static final int KNOWN_RANGER_WEAPONS = 5;
 
     /**
      * THE ONE EXEMPTION, AND IT IS A DEV WEAPON IN THE DELETION SET.
