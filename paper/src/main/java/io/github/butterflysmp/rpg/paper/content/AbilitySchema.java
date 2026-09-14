@@ -56,9 +56,14 @@ final class AbilitySchema {
             // Not validated against a real Material here -- the adapter warns once and falls back,
             // exactly as it does for throw_embers' `item`. Validating one and not the other would
             // make the remaining gap look deliberate.
+            // `homing` is OPTIONAL and absent means null -- a bolt that flies where it was aimed,
+            // which is every projectile this repo shipped before the Dragon's Plume. Unlike `trail`
+            // and `item` it is a SECTION rather than a scalar, and unlike them it has no partial
+            // form: see parseHoming.
             case "projectile" -> new CastSpec.Projectile(
                     s.getDouble("speed", 1.0), s.getDouble("gravity", 0.03),
-                    s.getInt("max_lifetime_ticks", 100), s.getString("trail"), s.getString("item"));
+                    s.getInt("max_lifetime_ticks", 100), s.getString("trail"), s.getString("item"),
+                    parseHoming(s.getConfigurationSection("homing")));
             case "dash"       -> new CastSpec.Dash(
                     s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4),
                     parseDashDirection(s.getString("direction", "movement_else_forward")));
@@ -116,6 +121,57 @@ final class AbilitySchema {
                     "each shot would start its own burst and the count would multiply every interval");
         }
         return inner;
+    }
+
+    /**
+     * A projectile's {@code homing:} block -- the Dragon's Plume's chase, and the first thing in
+     * this grammar to map onto {@link CastSpec.Homing}.
+     *
+     * <p><b>ABSENT MEANS NULL, AND THAT IS WHAT MAKES THIS NOT A CHANGE TO ANY SHIPPED WEAPON.</b>
+     * {@code hunters_bow}, {@code ember_staff}, {@code flint_staff}, {@code emberblade} and
+     * {@code volley_stone}'s inner projectile all author no such block, get null, and behave
+     * byte-identically to before this line existed. Slice F built the core shape and the flight's
+     * homing branch; <b>until now nothing could put a number into it from a file</b>, so
+     * {@code CastSpec.Homing} existed and was unreachable from content.
+     *
+     * <h2>ALL THREE KEYS ARE REQUIRED, AND THAT IS THE RECORD'S OWN RULE RATHER THAN A CHOICE MADE
+     * HERE</h2>
+     *
+     * <p>{@code CastSpec.Homing}'s javadoc states it: <i>"the record deliberately holds no
+     * defaults: a caller states all three or authors no homing."</i> The numbers are
+     * {@code PLAN-dragons-plume.md} §5's, carried <b>INHERITED AND UNJUDGED</b> from another game
+     * with a gate row each -- and <b>a default would be a fourth number nobody ruled</b>, arriving
+     * silently in any file that omitted a key. That is exactly the descent-launders shape
+     * {@code CLAUDE.md} records: a placeholder becomes a precedent because nobody re-decides an
+     * inherited figure.
+     *
+     * <p><b>So a partial block is a NAMED, SKIPPED FILE and never a half-homing bolt.</b> The
+     * loader's {@code catch(RuntimeException)} turns the throw into exactly that, which is this
+     * grammar's contract for every malformed field.
+     *
+     * <p><b>THE VALUES ARE JUDGED IN {@code core}, NOT HERE</b>, and the split is deliberate: this
+     * asks whether the three keys are PRESENT, a question about a file; {@link CastSpec.Homing}'s
+     * compact constructor asks whether the numbers MEAN anything, a question a unit test reaches
+     * without a server. Both throws land in the same {@code catch} and read the same to an operator.
+     */
+    private static CastSpec.Homing parseHoming(ConfigurationSection s) {
+        if (s == null) return null;
+        return new CastSpec.Homing(reqDouble(s, "lerp"), reqDouble(s, "activation_blocks"),
+                reqDouble(s, "search_radius"));
+    }
+
+    /**
+     * A double that has no sensible default -- present or the file is named and skipped.
+     *
+     * <p>{@link #req} for a String, and the same fail-loud contract. {@code isSet} rather than a
+     * sentinel return: {@code getDouble} answers {@code 0.0} for both an absent key and an authored
+     * {@code 0}, and those are different files.
+     */
+    private static double reqDouble(ConfigurationSection s, String path) {
+        if (!s.isSet(path)) {
+            throw new IllegalArgumentException("Missing required field: " + s.getName() + "." + path);
+        }
+        return s.getDouble(path);
     }
 
     private static IllegalArgumentException notRepeatable(String type, String why) {

@@ -1,19 +1,66 @@
 # GATE — the Dragon's Plume's draw (slice H1)
 
-**Status: FOUR ROWS READ, ONE OPEN AND RESTAGED, ONE MOVED.** Every row was written **before any
-boot**.
+**Status: FOUR ROWS READ, ONE OPEN, ONE MOVED.** Every row was written **before any boot**.
 
 ```
 H-1    READ, SUPERSEDED   on a pling the weapon no longer uses -- now H-1b's positive control
-H-1b   OPEN, RESTAGED     tests POSITION, not count -- and it now has an instrument
+H-1b   OPEN               tests POSITION, not count -- and its instrument has been DELETED
 H-2    MOVED              -> GATE-plume-release.md; it could never have been run here
 H-3    PASS               arrow YES, log YES -- the boot's headline result
 H-4    RUN, INCOMPLETE    no desync observed, COARSER than the row asked for; residue rides with H-1b
 H-5    PASS               all five normal -- the gate-too-wide risk is closed
 ```
 
+> ## THE SOUND IS RULED — `block.note_block.hat` — AND H-1b IS STILL OPEN
+>
+> **Ben heard it and it suits the weapon.** Ruled 2026-09-14, on feel, which is the only instrument
+> there has ever been for the material.
+>
+> **THAT SETTLES THE MATERIAL AND IT DOES NOT DISCHARGE H-1b.** The row's question is R13's
+> property — **can a player tell HOW CHARGED THEY ARE**, which is naming a POSITION on the ladder by
+> ear, having possibly started listening late. **A feel judgement does not establish that.** No
+> position trial has been run on any candidate: this page's trial section carries **no hat trials at
+> all**, and H-1's preserved reading is about COUNTING, on a pling.
+>
+> **So what H-1b now owes is narrower and sharper than it was: the position reading ON THE RULED
+> KEY.** It is one key instead of eight, and it is the one that ships.
+>
+> > **DO NOT MARK THE ROW PASSED BECAUSE THE QUESTION THAT PROMPTED IT WAS SETTLED.** That is a
+> > verdict standing in for a measurement, and it is the failure **this page has already recorded
+> > three times** — a finding communicated and never written down, a row surviving a review because
+> > the file was believed, a header saying ONE ROW READ while three had been. **A ruling about the
+> > sound is not a reading about the ladder.**
+>
+> **AND THE INSTRUMENT WENT IN THE SAME COMMIT.** `/rpg drawsound` was born with a deletion trigger
+> naming this exact day, written in three places. It was honoured as written — see the instrument
+> section below, which now records what that costs the row.
+>
+> **H-4's residue stays open too, and still rides on the same draw.**
+
+> ## AND THE LADDER IS THREE STEPS NOW — R1′ — SO H-1b IS A MATERIALLY EASIER QUESTION
+>
+> **R1′ amends the charge to 1 / 3 / 5 arrows: three steps, three sounds, two seconds past full
+> draw.** The sound ruling is untouched — Ben ruled the timbre, not the ladder.
+>
+> **THE HARDEST PART OF R13 WAS TELLING FIVE STEPS APART BY EAR. IT IS NOW THREE, TWICE AS FAR
+> APART** — a ratio of `1.5811` per step against `1.2574`, about eight semitones instead of four.
+>
+> > **SO A PASS MEANS LESS THAN IT WOULD HAVE, AND THE ROW SAYS SO RATHER THAN QUIETLY GETTING
+> > EASIER.** A row whose difficulty drops between drafting and running, with no note, produces a
+> > green cell that the next reader weighs against the question as originally written. **The question
+> > this row now answers is "can a listener place one of THREE widely spaced steps", and that is not
+> > the question it was written for.**
+> >
+> > **It is still the right row to run** — R13's property is unchanged and three steps is what ships.
+> > What changed is how much a pass is evidence of.
+>
+> **The staging is otherwise untouched: the listener names WHICH STEP, never how many they heard.**
+> Three trials, each entered at a different drawer-chosen step. **With three steps there are only
+> three entry points**, so "a different step each time" now means all of them.
+
 > **H-1b AND H-4's RESIDUE ARE ONE SITTING, AND EACH ROW SAYS SO.** Same weapon, same full draw,
-> same five seconds — **only the eyes move.** H-1b asks what the EAR can place; H-4's residue asks
+> **same three seconds** (R1′ — it was five) — **only the eyes move.** H-1b asks what the EAR can
+> place; H-4's residue asks
 > what the HAND does at release. Running them separately costs a second boot and buys nothing, and
 > **a row that only one of the two rows mentions is a row that gets run alone**, which is how H-4
 > came back coarser than it was written.
@@ -30,8 +77,8 @@ which is a weaker provenance and is marked as one rather than smoothed over.
 > in `d4af575` with a `draw` binding and no `right_click`, **so the gate is satisfiable and every row
 > below can be run.**
 >
-> **What was never blocked:** H1's arithmetic is `core` and is guarded by `DrawChargeTest` (8 rows),
-> which needs no server at all. What waited here was only what a server can answer.
+> **What was never blocked:** H1's arithmetic is `core` and is guarded by `DrawChargeTest` (12 rows
+> since R1′), which needs no server at all. What waited here was only what a server can answer.
 
 ---
 
@@ -46,7 +93,7 @@ are H2's, deliberately, and none of them can confuse a symptom here.
 | row | staging | what to record | OBSERVED — and BY WHAT ROUTE |
 |---|---|---|---|
 | **H-1** | ~~Hold a full draw for **five seconds** with a full magazine.~~ **SUPERSEDED BY H-1b — the instrument changed.** | **READ ONCE, ON A `pling`, AND THE READING IS PRESERVED BELOW** rather than overwritten. See the block under this table. | **READ.** Five ticks sounded; a listener who could not see the screen called the count correctly. **Route: the operator, in conversation** — recorded here 2026-09-14, **boot date unknown**. Now the **positive control** for H-1b's fallback. |
-| **H-1b** | **NOT RUN — AND RESTAGED, BECAUSE THE OLD STAGING COULD BE PASSED WITHOUT ANSWERING R13.** Two people, one sitting, one full magazine. The listener **faces away from the screen and is brought in LATE**: the drawer starts the draw, waits a step or two of their own choosing, and only then says *"listening"*. **The listener's job is to name WHICH STEP the next tick is — "that was the third of five" — never how many they heard.** At least three trials per sound, each starting at a **different, drawer-chosen** step; the listener is never told the entry point. **Sweep the sounds live with `/rpg drawsound <key>`** — `block.note_block.basedrum` first, because it is the ruled one, then the click candidates listed below. **This rides in the same sitting as H-4's residue — see that row; do not run either alone.** | **CAN A LISTENER PLACE A TICK WITHOUT COUNTING FROM THE START?** Record, per trial: **the step the drawer entered on, the step the listener called, and the true step.** A count is not a pass and must not be written into this cell — **counting is what H-1 already measured on the pling, and it is exactly the thing R13 does not ask.** Five steps, each a ratio of **1.2574** above the last. **And the fifth step is a separate question**: a kick at pitch 2.0 is half as long and may stop reading as a kick (see `DrawCharge`). **IF NOTHING SOUNDS AT ALL, DO NOT CONCLUDE THE TRACKER FAILED — run the fallback step below before recording anything.** **AND IF EVERY CANDIDATE FAILS THE POSITION TEST, THAT IS NOT A ROW FAILURE — it is a finding about R13 and it goes to Ben**, because the ruling assumes a rising tick can be placed by ear and this row would have measured that it cannot. | **OPEN. The only unread row on this page.** |
+| **H-1b** | **NOT RUN. ONE KEY NOW, NOT EIGHT — `block.note_block.hat`, the ruled one, which is what ships.** Two people, one sitting, one full magazine. The listener **faces away from the screen and is brought in LATE**: the drawer starts the draw, waits a step or two of their own choosing, and only then says *"listening"*. **The listener's job is to name WHICH STEP the next tick is — "that was the second of three" — never how many they heard.** **Three trials, each starting at a different drawer-chosen step — with three steps that is ALL OF THEM**; the listener is never told the entry point. **THE SWEEP IS GONE WITH ITS INSTRUMENT: `/rpg drawsound` was deleted when the sound was ruled**, so changing the key now costs an edit, a rebuild, a redeploy and a boot — which is why this row tests the ruled key and no other. **This rides in the same sitting as H-4's residue — see that row; do not run either alone.** | **CAN A LISTENER PLACE A TICK WITHOUT COUNTING FROM THE START?** Record, per trial: **the step the drawer entered on, the step the listener called, and the true step.** A count is not a pass and must not be written into this cell — **counting is what H-1 already measured on the pling, and it is exactly the thing R13 does not ask.** **THREE steps now (R1′), each a ratio of `1.5811` above the last — about eight semitones, where five steps were four.** **And the TOP step is a separate question**: pitch is a playback rate, so any note-block percussion at 2.0 is half as long and brighter — **whether a hat at 2.0 still reads as a hat is unmeasured** (see `DrawCharge`), **and R1′ makes a player meet it on every full release rather than only on the patient ones.** **IF NOTHING SOUNDS AT ALL, DO NOT CONCLUDE THE TRACKER FAILED — run the fallback step below before recording anything.** **AND IF THE RULED KEY FAILS THE POSITION TEST, THAT IS NOT A ROW FAILURE — it is a finding about R13 and it goes to Ben**, because the ruling assumes a rising tick can be placed by ear and this row would have measured that it cannot. | **OPEN. The only unread row on this page.** **THE RULING DID NOT CLOSE IT** — the key is settled on FEEL; this row is the POSITION reading, and no hat trial exists. **AND R1′ MADE IT EASIER — see the note above the table; a pass now means less than it would have.** |
 | **H-2** | **MOVED TO `GATE-plume-release.md` — THE CAP IS UNOBSERVABLE IN PRINCIPLE AT H1.** Not "hard to stage": there is no staging. | See the block below for the arithmetic, and the release gate for the row itself. **Do not spend an evening looking for a clever staging; the reason is structural.** | **n/a — moved, not skipped.** |
 | **H-3** | **THE ARROW — and this row proves a MECHANISM, not an absence.** One arrow in the off-hand, nothing else in the bag. Draw, hold past full charge, release. | **Is the arrow still there?** It survives only if `clearActiveItem()` inside `PlayerStopUsingItemEvent` made `LivingEntity.releaseUsingItem`'s re-read at offset 72 yield EMPTY, so `BowItem.releaseUsing` — and therefore `draw()`, and therefore `useAmmo` — never ran. **If the arrow is gone, that specific chain is what failed**, and the server log will say so: the `EntityShootBowEvent` guard fires loudly precisely here. | **PASS — arrow YES, log YES.** The arrow survived the release and the loud guard did not fire. **Route: this page's own store**, 2026-09-14T04:42:16Z — the only row here whose reading arrived through the instrument rather than through a conversation. **THE BOOT'S HEADLINE RESULT; see the discharge below.** |
 | **H-4** | **THE VISUAL DESYNC.** Draw, hold to five, release — and **watch the first-person hand and a second player's view of you**. Repeat while moving, and while looking up. | **Does the client keep animating a draw it no longer has?** The server clears the active item mid-release; nothing guarantees the client agrees. **Write this row's answer in words, not a verdict** — "the bow snapped back instantly" and "the arm stayed pulled for about a second" are different findings and both are passes for the mechanism. **No amount of bytecode reading could have predicted this row**, which is why it is here. | **RUN — no desync observed, AT A GRANULARITY THAT CANNOT SEPARATE THE TWO SHAPES THIS ROW EXISTS TO SEPARATE.** Operator, verbatim: *"H4 is fine everything looks normal"*. **Route: conversation.** A verdict about the mechanism, **not** the description in words the row asked for — see below. **NOT fully answered. THE RESIDUE IS ONE MORE DRAW, WATCHING THE HAND, AND IT RIDES IN H-1b's SITTING** — same weapon, same five-second draw, only the eyes move. Named in H-1b's staging as well, so neither row can be run alone. |
@@ -87,63 +134,81 @@ reddened; somebody would simply have found that food no longer worked.
 > opposite: it is the only evidence that the gate on the item is the right width. H-3 proves the
 > clear happens; **H-5 proves it happens to nothing else.**
 
-## THE INSTRUMENT — `/rpg drawsound`, AND THE DAY IT GETS DELETED
+## THE INSTRUMENT — `/rpg drawsound`, DELETED 2026-09-14 ON ITS OWN TRIGGER
 
-**H-1b is a question about a sound, and until now the only way to change the sound was to edit a
-constant, rebuild, redeploy and reboot.** That is a per-candidate cost of minutes on a question with
-**eight** candidates, which is how a sweep silently turns into "we tried the first one and it seemed
-fine".
-
-```
-/rpg drawsound                 -- print the live key and the candidate list
-/rpg drawsound <key>           -- set it, for this server run only
-```
-
-**It is the project's existing shape, not a new one.** `/rpg quiversize`, `/rpg reloadtime` and
-`/rpg firerate` all exist for the same reason: a question needed an instrument, and an instrument
-that requires a rebuild does not get used.
-
-**THE CANDIDATES, ALL EIGHT MEASURED PRESENT IN THE PINNED JAR:**
+**It existed, it was never used for the row it was built for, and it went anyway.** The trigger said
+*the charge tick's sound is ruled, and on that day this subcommand and `PlumeDraw`'s mutable
+`tickSound` field are deleted IN THE SAME COMMIT that authors the ruling* — written in three places
+before it was needed: the field's javadoc, the subcommand's own comment, and this section. **Ben
+ruled `block.note_block.hat` and the trigger was honoured as written.**
 
 ```
-block.note_block.basedrum   THE RULED TICK -- the incumbent, and what H-1b tests first
-block.note_block.snare      the recorded alternative, should the kick not carry
-block.note_block.hat        a drier, shorter drum
-ui.button.click             ) the click candidates: R13 asks whether a player can place
-block.lever.click           ) a step, and a click's ATTACK is sharper than a kick's --
-block.comparator.click      ) a pitched click may place where a pitched kick does not
+/rpg drawsound                 -- print the live key and the candidate list      GONE
+/rpg drawsound <key>           -- set it, for this server run only               GONE
+```
+
+> **WHY IT WENT WHILE H-1b IS STILL OPEN, WHICH IS THE OBVIOUS OBJECTION AND WAS ANSWERED RATHER
+> THAN OVERLOOKED.** The trigger is *the sound is ruled*, not *the row is read*, and those came apart
+> — the ruling arrived on feel before any position trial. **Following the trigger as written costs
+> this row its sweep. Re-reading the trigger to mean something more convenient costs the project the
+> trigger.** An instrument that outlives its trigger is the thing this project keeps finding: the dev
+> weapons and `/kit` are both still parked, years of "we will delete it later" each. **If the sound
+> reopens, re-adding this is a small slice** — a literal, a suggester and one mutable field.
+
+**WHAT IT COSTS THE ROW, STATED PLAINLY BECAUSE A DELETION'S BILL ARRIVES LATER.** Changing the key
+is back to an edit, a rebuild, a redeploy and a boot — **exactly the per-candidate cost this command
+was built to remove**, and the reason H-1b now tests one key rather than sweeping eight. The
+fallback below pays that cost too.
+
+### THE MEASUREMENT SURVIVES THE INSTRUMENT, AND THIS IS WHERE IT IS RESTATED
+
+**All eight candidate ids were MEASURED PRESENT in the pinned jar** — extracted from `SoundEvents`'
+1808 registered ids, not guessed from field names. **That reading was taken on a fixture that no
+longer exists** (the command's suggester list), so it is restated here rather than left to be
+recovered from a deleted file:
+
+```
+block.note_block.hat        *** THE RULED TICK, 2026-09-14, on feel ***
+block.note_block.basedrum   the kick -- ruled, shipped, and superseded by the hat
+block.note_block.snare      the kick ruling's recorded alternative; never auditioned
+ui.button.click             ) the click candidates, never auditioned: R13 asks whether a
+block.lever.click           ) player can PLACE a step, and a click's ATTACK is sharper --
+block.comparator.click      ) a pitched click may place where a pitched drum does not
 block.stone_button.click_on )
 block.note_block.pling      THE POSITIVE CONTROL -- H-1's demonstrably-audible sound, and
                             NOT a position candidate; see the fallback below
 ```
 
-**IT REFUSES A KEY IT CANNOT RESOLVE, AND THAT IS A DECISION.** The command looks the key up in
-`Registry.SOUND_EVENT` and, on a miss, prints the refusal and **leaves the live sound alone**. The
-alternative — accept anything and let `playSound` swallow it — would hand H-1b a fourth cause of
-silence at exactly the moment it is trying to tell three apart. **An instrument that can be put into
-a state it cannot report is not an instrument.**
+> **ONE PROPERTY OF THE RULED KEY WAS RECORDED BEFORE THE LISTEN AND IS NOT THE REASON FOR THE
+> RULING.** The deleted list described the hat as *the note-block family's own click, and the only
+> candidate designed to be pitched across the full range*. **Written while the list was assembled,
+> before anyone heard it.** It is kept because it is a fact about the sound and it bears on the fifth
+> step — **and it is not evidence for the ruling, which was given as "it suits the weapon".**
+> Retrofitting that note as the rationale would be putting an argument in Ben's mouth.
 
-> ### THE DELETION TRIGGER, WRITTEN DOWN BEFORE IT IS NEEDED
+> **AND THE ARGUMENT THAT CHOSE THE KICK IS WITHDRAWN RATHER THAN RETARGETED.** *A snare's sharper
+> transient is easier to COUNT; a kick carries the rise more legibly and so tells you WHICH STEP you
+> are on* — that argument selected **a different key from the one now ruled**, so it does not become
+> an argument for the hat by having survived it. **Same shape as `c64c181`**, where the tick became a
+> kick and the SEMITONE argument that had chosen the ladder was withdrawn rather than reworded — *the
+> argument that chose the ladder does not survive with it*.
 >
-> **WHEN THE TICK SOUND IS RULED — that is, when H-1b comes back and Ben names the key — this
-> subcommand and `PlumeDraw`'s mutable `tickSound` field BOTH GO, and the ruled key becomes a
-> constant again.**
->
-> **It is written here and in the field's own javadoc**, because a dev lever with no stated end
-> outlives its question and becomes a thing nobody dares remove. The field is mutable **only** to
-> serve this gate row; the moment the row closes, mutability is a liability with no reader.
+> **THE LADDER ITSELF HAS NOW SURVIVED TWO MATERIAL CHANGES AND HAS NOT MOVED**, which is the best
+> evidence there is that it is about RATIOS rather than about the sound it is played on. Recorded at
+> `DrawCharge`'s pitch section, which is the account; this is the pointer.
 
 ## H-1b's FALLBACK STEP — A SILENT KEY AND A BROKEN TRACKER LOOK IDENTICAL
 
 **Silence has two causes and they are not close in kind**, and **one of the two has since been
 closed by measurement rather than by argument.**
 
-### THE ID STRING IS NOW MEASURED, AND THE TYPO BRANCH SHRANK — IT DID NOT VANISH
+### THE ID STRING IS MEASURED, AND THE TYPO BRANCH SHRANK — IT DID NOT VANISH
 
 **This section used to read that only half the key was verified**: `SoundEvents` declares the FIELD
 `NOTE_BLOCK_BASEDRUM`, and the ID STRING `block.note_block.basedrum` was **inferred** from the
 field-name convention, corroborated by two siblings known to play. **That inference is now
-unnecessary.**
+unnecessary — and the measurement covers the newly ruled key too**, because it swept all eight at
+once rather than only the incumbent.
 
 > **MEASURED 2026-09-14** against the pinned `run/versions/26.1.2/paper-26.1.2.jar`: `SoundEvents`
 > disassembles to **1808 id strings**, and all eight ids this gate cares about are among them —
@@ -160,34 +225,43 @@ unnecessary.**
 
 | cause of silence | status now |
 |---|---|
-| the DEFAULT key is misspelled | **closed by measurement** — the id is in the jar's own table |
-| a key typed at the console is misspelled | **closed by construction** — `/rpg drawsound` resolves through `Registry.SOUND_EVENT` and **REFUSES** a key it cannot find, leaving the live sound untouched |
+| the SHIPPED key is misspelled | **closed by measurement** — `block.note_block.hat` is in the jar's own table, swept with the other seven |
+| a key typed at the console is misspelled | **UNREACHABLE — there is no console any more.** It was *closed by construction* while `/rpg drawsound` refused an unresolvable key through `Registry.SOUND_EVENT`; with the command deleted, no key can be typed at all. **The cause is gone, not guarded** |
 | the key resolves and is still inaudible | **OPEN** — resolution is not audibility; category, volume, distance and a resource pack all sit downstream of it |
 | the tracker or the draw never ran | **OPEN, and it is the finding** |
 
-**Two of four closed is why the fallback stays.** The branch was never only about typos — **it
-separates a sound problem from an architecture problem**, and the architecture half is the half that
-matters. Deleting a discriminator because one of its causes was eliminated leaves the remaining
-causes sharing one observation again, which is the situation it was written to end.
+**Two of four are not live, which is why the fallback stays.** The branch was never only about typos
+— **it separates a sound problem from an architecture problem**, and the architecture half is the
+half that matters. Deleting a discriminator because some of its causes were eliminated leaves the
+remaining causes sharing one observation again, which is the situation it was written to end.
 
-### THE FALLBACK, AS IT IS NOW RUN — NO REBUILD
+> **THE SECOND ROW IS WHY *CLOSED* AND *UNREACHABLE* ARE WRITTEN AS DIFFERENT WORDS HERE.** *Closed
+> by construction* names a guard doing work; **the guard went with the command.** A reader who finds
+> the old wording standing would believe a refusal path protects them, and there is no longer any
+> path to protect. Same reason the arms of a validator get marked when no shipped content reaches
+> them.
 
-> **If nothing sounds, type `/rpg drawsound block.note_block.pling` and draw once.**
+### THE FALLBACK — AND IT COSTS A REBUILD AGAIN
+
+> **If nothing sounds, put `block.note_block.pling` in `PlumeDraw.TICK_SOUND`, rebuild, redeploy,
+> and draw once.**
 >
 > ```
-> pling sounds, the other does not  ->  A SOUND PROBLEM. The key resolves but does not carry; try
->                                       the next candidate. Not a defect in the draw.
-> neither sounds                    ->  the tracker or the draw failed, and THAT is the real finding.
+> pling sounds, the hat does not  ->  A SOUND PROBLEM. The key resolves but does not carry.
+>                                     Not a defect in the draw.
+> neither sounds                  ->  the tracker or the draw failed, and THAT is the real finding.
 > ```
 
-**It used to cost an edit, a rebuild and a reboot. It now costs one line at the console**, which is
-the whole reason the command exists — and the reason the sound sweep and the position test can
-happen in one sitting instead of one per build.
+**It cost one line at a console for exactly as long as `/rpg drawsound` existed, and it is back to an
+edit, a rebuild, a redeploy and a boot.** That is the bill for honouring the deletion trigger, and it
+is written here rather than discovered by whoever runs the row. **It is still worth running: a
+rebuild is minutes, and the alternative is recording a finding about the tracker that is really a
+finding about a sound.**
 
-**AND IT IS H-1's SUPERSEDED READING THAT MAKES THIS POSSIBLE.** The pling is not a guess at a
+**AND IT IS H-1's SUPERSEDED READING THAT MAKES IT POSSIBLE AT ALL.** The pling is not a guess at a
 control: it **demonstrably played**, recorded 2026-09-14. **A superseded row that still carries its
-reading has become a POSITIVE CONTROL for the instrument** — which is the second reason not to have
-overwritten its cell, and one nobody had in mind when the reading was preserved.
+reading has become a POSITIVE CONTROL** — which is the second reason not to have overwritten its
+cell, and one nobody had in mind when the reading was preserved.
 
 > **THE PLING IS A CONTROL FOR AUDIBILITY AND FOR NOTHING ELSE.** H-1 measured that a listener could
 > COUNT five plings. **It did not measure that anyone could place one**, and H-1b must not be allowed
@@ -270,12 +344,24 @@ project's own recorded failure — *a finding that lives only in the conversatio
 **A boot happened, on `block.note_block.pling`, and it read:** five ticks sounded, and a listener who
 could not see the screen called the count correctly. **The mechanism worked.**
 
-**THE INSTRUMENT IS ONE OF THOSE CONDITIONS, SO THE PASS DOES NOT CARRY ACROSS THE SWAP.** The tick
-is now a `basedrum`, ruled after that listen — *"the piano doesn't suit it, try snare or kick."* A
-drum is a different kind of sound, not a different setting of the same one: it is noise rather than a
-tone, and it changes what the top of the ladder even is. **So H-1b is NOT RUN, and it is a new row
-rather than a fresh figure written into H-1's cell.** Overwriting the cell would have destroyed the
-only evidence this mechanism has ever produced.
+> **THE FIVE IS PART OF THE READING AND IS NOT A TYPO: R1′ MAKES IT UNREPRODUCIBLE.** That boot ran
+> the one-arrow-per-second ladder, where a full draw sounded five times over four seconds. **A full
+> draw now sounds THREE times over two.** The reading is preserved exactly as taken — a measurement
+> outlives the configuration it was taken on, provided the record says the configuration is gone.
+
+**THE INSTRUMENT IS ONE OF THOSE CONDITIONS, SO THE PASS DOES NOT CARRY ACROSS THE SWAP — AND THERE
+HAVE NOW BEEN TWO SWAPS.** The tick became a `basedrum` after that listen — *"the piano doesn't suit
+it, try snare or kick"* — and is now a `hat`, ruled 2026-09-14 on feel. **A drum is a different kind
+of sound from a tone, not a different setting of the same one:** it is noise rather than pitch, and
+it changes what the top of the ladder even is. **So H-1b is NOT RUN, and it is a new row rather than
+a fresh figure written into H-1's cell.** Overwriting the cell would have destroyed the only evidence
+this mechanism has ever produced.
+
+> **AND THE SECOND SWAP SCOPES THE ROW AGAIN RATHER THAN THE READING.** H-1b was written against the
+> kick; it is now run against the hat. **Nothing about the row's question moved** — a position test
+> is a position test — but **the key under test did**, and a trial recorded on one key is not a
+> reading about another. **There are no kick trials either**, so nothing is lost by the move; what
+> would have been lost is a hat row quietly inheriting a kick row's staging without saying so.
 
 > **AND THE SECOND SCOPE, FOUND WHEN H-1b WAS RESTAGED: THIS READING IS ABOUT COUNTING, AND R13 IS
 > NOT.** *"Called the count correctly"* says a listener who heard the whole draw could total the
@@ -316,12 +402,18 @@ only evidence this mechanism has ever produced.
   holds the one row that had to leave this page.
 - **The homing constants.** `PLAN-dragons-plume.md` §5 carries them `INHERITED AND UNJUDGED` with
   rows P1-P4, and nothing here touches them.
-- **The pitch ceiling, and the instrument change widened it.** `2.0` is outside knowledge this
-  machine cannot measure — the pinned API documents no range and the packet carries a raw float.
-  **That half is unchanged.** What changed is how the top of the ladder can FAIL: a pling at 2.0 was
-  simply a high note, while **a kick at 2.0 is half as long and may stop reading as a kick at all**.
-  So H-1b asks two things of the fifth step — is it audible, and is it still the same sound — and
-  either answer is **a reading, not a failure**.
+- **The pitch ceiling, and moving off a tone widened it.** `2.0` is outside knowledge this machine
+  cannot measure — the pinned API documents no range and the packet carries a raw float. **That half
+  is unchanged by either swap.** What changed when the tick stopped being a tone is how the top of
+  the ladder can FAIL: pitch is a **playback rate**, so any note-block percussion at 2.0 is **half as
+  long and brighter**, where a pling at 2.0 was simply a high note. So H-1b asks two things of the
+  fifth step — is it audible, and is it still the same sound — and either answer is **a reading, not
+  a failure**.
+
+  > **WHAT THE HAT DID TO THAT RISK IS UNMEASURED, AND IS NOT ESTIMATED HERE.** A hat is the driest
+  > and shortest of the three, so it has less body to lose than a kick had — **but nobody has
+  > listened to one at 2.0**, and a plausible sentence about which way it went would sit in a section
+  > of measured ones and be read as another. H-1b's fifth-step question is unchanged and still owed.
 
 ## WHAT WAS READ OUT OF THE JAR, AND THE ONE THING ONLY A SERVER COULD SAY
 
@@ -333,10 +425,15 @@ gone before that event object exists, and cancelling it can never keep the arrow
 `iconst_0; ireturn`, which `AirItem` does not override.
 
 **AND, ADDED 2026-09-14: the sound ids.** `SoundEvents` disassembles to **1808** id strings, and all
-eight of this gate's candidates are among them — so `block.note_block.basedrum` is **MEASURED, no
-longer inferred from its field name**. The same read confirmed `Registry.SOUND_EVENT` exposes a
-`@Nullable get(NamespacedKey)`, which is what lets `/rpg drawsound` **refuse** an unresolvable key
-rather than print a disclaimer. See the fallback section for what this closed and what it did not.
+eight of this gate's candidates are among them — so **`block.note_block.hat`, the key that now
+ships, is MEASURED PRESENT** rather than inferred from a field name, and so was the `basedrum` it
+replaced. **The sweep covered all eight at once, which is why the ruling needed no second read.**
+
+> **THE SAME READ ALSO CONFIRMED `Registry.SOUND_EVENT` EXPOSES A `@Nullable get(NamespacedKey)`,
+> AND THAT HALF NOW HAS NO CONSUMER.** It is what let `/rpg drawsound` **refuse** an unresolvable key
+> rather than print a disclaimer; the command was deleted on its trigger the same day the sound was
+> ruled. **The fact about the platform stands and is kept for whoever re-adds the command** — the
+> measurement outlives the instrument, provided the record says the instrument is gone.
 
 **~~NOT MEASURED, AND IT IS THIS GATE'S JOB:~~ — DISCHARGED BY H-3, 2026-09-14T04:42:16Z.** The one
 thing this gate existed to answer was whether `clearActiveItem()` **called from inside that handler**

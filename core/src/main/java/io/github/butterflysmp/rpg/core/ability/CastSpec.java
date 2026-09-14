@@ -114,20 +114,74 @@ public sealed interface CastSpec {
      * same {@code 10} is a strictly smaller search everywhere except along the axes, and
      * <b>a number carried across a shape change is not the same number.</b>
      *
-     * <h2>NO VALIDATION HERE, DELIBERATELY, AND WHERE IT BELONGS INSTEAD</h2>
+     * <h2>THE VALIDATION THIS RECORD OWED IS NOW HERE, BECAUSE THE CASE BECAME REACHABLE</h2>
      *
-     * <p>A compact constructor refusing {@code lerp <= 0} or {@code searchRadius <= 0} would be
-     * <b>unreachable today</b>: no content authors a homing block, because the YAML key does not
-     * exist yet -- this slice is core only. A guard whose triggering case cannot occur is exercised
-     * solely by a test that asserts the guard is present, which is the dead-catch shape {@code
-     * CLAUDE.md} records.
+     * <p>This section used to say the guard was <b>unreachable</b> -- <i>"no content authors a
+     * homing block, because the YAML key does not exist yet"</i> -- and that it was OWED at the
+     * schema slice. <b>That slice is this one.</b> {@code AbilitySchema} now reads a
+     * {@code homing:} block, so every value below is authorable by anyone editing a yml, and the
+     * compact constructor is no longer a dead catch.
      *
-     * <p><b>It is OWED at the schema slice</b>, where {@code AbilitySchema} first reads a
-     * {@code homing:} block and a bad value becomes authorable -- with a test that CAUSES the
-     * condition rather than one that asserts the arm exists. Named here rather than fixed, exactly
-     * as {@code boltor.yml} names {@code range} validation as owed.
+     * <p><b>NO BUNDLED CONTENT REACHES ANY OF THESE ARMS, AND IT IS SAID HERE SO THE NEXT READER
+     * DOES NOT ASSUME PRODUCTION COVERS THEM.</b> Shipped weapons either author no homing block at
+     * all or author three sane numbers. <b>The only exercise these arms get is
+     * {@code CastSpecHomingTest}, which CAUSES each condition</b> rather than asserting the arm
+     * exists -- and {@code AbilityLoaderTest} which causes them through a real YAML walk and reads
+     * the named, skipped file back out of the log.
+     *
+     * <h2>WHAT IS REFUSED, AND WHY EACH ONE IS SILENT RATHER THAN LOUD</h2>
+     *
+     * <p><b>Every one of these produces a homing block that resolves perfectly and homes at
+     * nothing</b>, which is the failure mode {@code CLAUDE.md} names: a tooltip -- or here, a
+     * content file -- advertising a mechanism the player never receives, with nothing going red.
+     *
+     * <pre>
+     * lerp             must be in (0, 1]
+     *                    &lt;= 0   no turn at all, and NEGATIVE steers AWAY from the target
+     *                    &gt;  1   blends PAST the target direction and mirrors; it oscillates
+     *
+     * activationBlocks must be &gt;= 0
+     *                    &lt;  0   MEASURED IN {@code ProjectileFlight.steer}: the gate is
+     *                           {@code distanceSquared(spawn) < activation * activation}, so the
+     *                           SIGN IS SQUARED AWAY and -15 behaves exactly like +15. A number
+     *                           that silently means its own opposite is worth refusing at the door.
+     *
+     * searchRadius     must be &gt; 0
+     *                    &lt;= 0   {@code combatantsNear} finds nothing, forever
+     * </pre>
+     *
+     * <p><b>The tests are written as positive assertions, which also refuses NaN for free</b> --
+     * every comparison against NaN is false, so {@code lerp: nan} fails {@code lerp > 0} and is
+     * named rather than flying a bolt whose direction is undefined.
+     *
+     * <p><b>The loader's half is PRESENCE, not range</b>, and the two halves are deliberately in
+     * different places: {@code AbilitySchema} requires all three keys because this record
+     * <i>holds no defaults</i> (above), and this constructor judges the values because a value rule
+     * belongs where a unit test reaches it without a server.
      */
-    record Homing(double lerp, double activationBlocks, double searchRadius) {}
+    record Homing(double lerp, double activationBlocks, double searchRadius) {
+
+        public Homing {
+            if (!(lerp > 0 && lerp <= 1)) {
+                throw new IllegalArgumentException("homing lerp must be in (0, 1] -- got " + lerp
+                        + ". At or below zero the bolt never turns (and a negative one turns AWAY"
+                        + " from its target); above one it blends past the target direction and"
+                        + " oscillates. Either way the homing block resolves and does nothing.");
+            }
+            if (!(activationBlocks >= 0)) {
+                throw new IllegalArgumentException("homing activation_blocks must be >= 0 -- got "
+                        + activationBlocks + ". ProjectileFlight.steer compares"
+                        + " distanceSquared(spawn) against activation * activation, so a NEGATIVE"
+                        + " activation is squared into its own positive twin and silently behaves"
+                        + " like " + Math.abs(activationBlocks) + ".");
+            }
+            if (!(searchRadius > 0)) {
+                throw new IllegalArgumentException("homing search_radius must be > 0 -- got "
+                        + searchRadius + ". combatantsNear on a radius at or below zero finds"
+                        + " nothing, forever, so the bolt never acquires a target.");
+            }
+        }
+    }
 
     /**
      * Which way a dash sends the caster. The concrete direction VECTOR is still resolved

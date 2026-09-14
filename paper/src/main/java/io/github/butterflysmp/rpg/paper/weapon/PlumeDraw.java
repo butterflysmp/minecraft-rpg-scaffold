@@ -104,60 +104,59 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class PlumeDraw {
 
     /**
-     * RULED, AFTER A LISTEN -- which is the only instrument there is for this.
+     * THE CHARGE TICK'S SOUND -- RULED, AFTER A LISTEN, WHICH IS THE ONLY INSTRUMENT THERE IS.
      *
-     * <p>It shipped as {@code block.note_block.pling} on the reasoning that a clean pitched tone is
-     * the right shape for a ratio ladder. <b>The operator heard it and ruled otherwise:</b> <i>"the
-     * piano doesn't suit it, try snare or kick."</i> The kick it is.
+     * <p><b>{@code block.note_block.hat}, ruled 2026-09-14: Ben heard it and it suits the weapon.</b>
+     * It is the third key this tick has worn. It shipped as {@code block.note_block.pling} on the
+     * reasoning that a clean pitched tone is the right shape for a ratio ladder -- withdrawn on a
+     * listen, <i>"the piano doesn't suit it, try snare or kick"</i> -- and then as
+     * {@code block.note_block.basedrum}, the kick, which this replaces.
      *
-     * <p><b>THE ALTERNATIVE IS ONE LINE AWAY AND IS RECORDED RATHER THAN DISCARDED:</b>
-     * {@code block.note_block.snare}. <b>Overturnable after a listen</b>, and the argument for the
-     * kick is worth having written down because it is about what R13 actually asks:
+     * <h2>THE RULING IS ON FEEL, AND IT DOES NOT DISCHARGE R13</h2>
      *
-     * <p>R13's test is whether a player can tell <b>HOW MANY ARROWS THEY HOLD</b> -- which is knowing
-     * your POSITION on the ladder, not counting events. A snare has the sharper transient and is
-     * easier to count as discrete hits; <b>a kick carries the rise more legibly, so it tells you
-     * WHICH STEP you are on if you lost count or started listening late.</b> Position is the
-     * ruling's actual subject.
+     * <p>R13's property is that a player can tell <b>HOW CHARGED THEY ARE</b> -- knowing your
+     * POSITION on the ladder, nameable by ear, having possibly started listening late. <b>A feel
+     * judgement does not establish that</b>, and no position trial has been run on any candidate:
+     * {@code GATE-plume-draw.md}'s <b>H-1b is still OPEN</b>, and what it now owes is the position
+     * reading <b>on this key</b>.
+     *
+     * <p><b>Do not read the ruling as the row.</b> A verdict standing in for a measurement is a
+     * failure that gate page has already recorded three times.
+     *
+     * <h2>THE ARGUMENT THAT CHOSE THE KICK IS WITHDRAWN, NOT RETARGETED AT THE HAT</h2>
+     *
+     * <p>The kick was argued for: <i>a snare's sharper transient is easier to COUNT, a kick carries
+     * the rise more legibly and so tells you WHICH STEP you are on.</i> That argument selected a
+     * different key from the one now ruled, so <b>it is withdrawn rather than rewritten to land on
+     * the hat.</b> Ben's stated reason is that it suits the weapon; manufacturing a mechanism for a
+     * feel judgement would be putting an argument in his mouth, and a rationale nobody gave reads a
+     * month later exactly like one somebody did.
+     *
+     * <p><b>ONE RECORDED PROPERTY OF THIS KEY PREDATES THE RULING, AND IT IS NOT THE REASON FOR
+     * IT.</b> The deleted {@code /rpg drawsound} candidate list described the hat as <i>the
+     * note-block family's own click, and the only candidate designed to be pitched across the full
+     * range</i> -- written while the list was being assembled, before any listen. It is kept because
+     * it is a fact about the sound and it bears on the fifth step (see {@link DrawCharge}'s ceiling
+     * note). <b>It is not evidence for the ruling, and it did not produce it.</b>
      *
      * <p>The precedent for choosing a note-block sound and proving it by ear is
      * {@code BrokenNotice}'s {@code block.note_block.bass}.
+     *
+     * <h2>A CONSTANT AGAIN, AND THE INSTRUMENT IS GONE</h2>
+     *
+     * <p>This was a mutable instance field for exactly as long as the sweep needed one.
+     * {@code /rpg drawsound} was born with a written deletion trigger -- <i>the charge tick's sound
+     * is ruled</i> -- naming the same commit as the ruling, in three places. <b>It was honoured as
+     * written: the field, its two accessors and the subcommand all went with this line.</b>
+     *
+     * <p><b>The cost is real and is recorded rather than glossed:</b> re-auditioning a key now costs
+     * an edit, a rebuild, a redeploy and a boot again, which is exactly the cost the command existed
+     * to remove. <b>If the sound reopens, re-adding it is a small slice.</b> An instrument that
+     * outlives its trigger is the thing this project keeps finding.
      */
-    public static final String DEFAULT_TICK_SOUND = "block.note_block.basedrum";
+    public static final String TICK_SOUND = "block.note_block.hat";
 
-    /**
-     * The key actually in force, which {@code /rpg drawsound} can move for the session.
-     *
-     * <h2>BORN WITH A DELETION TRIGGER, BECAUSE DEV INSTRUMENTS HERE OUTLIVE THEIR PURPOSE</h2>
-     *
-     * <p>The dev weapons and {@code /kit} are both still parked, so this one states its own end
-     * condition rather than waiting to be noticed:
-     *
-     * <p><b>TRIGGER: the charge tick's sound is ruled. On that day this field, its accessors and
-     * {@code /rpg drawsound} are deleted IN THE SAME COMMIT that authors the ruling</b> — not in a
-     * follow-up, because a follow-up is what turns an instrument into furniture.
-     *
-     * <p><b>Why the knob exists at all:</b> three candidates cost three build-deploy-boot cycles and
-     * three relays, one candidate each. One argument turns that into one boot and as many candidates
-     * as an ear wants. It is the same argument {@code /rpg quiversize}, {@code /rpg reloadtime} and
-     * {@code /rpg firerate} were each built on, and it is smaller than any of them.
-     *
-     * <p>An INSTANCE field on a listener-owned object rather than a static: the same object the
-     * command mutates is the one the tick reads, hoisted in {@code RpgPlugin} and handed to both,
-     * exactly as {@code FireCadence} already is.
-     */
-    private String tickSound = DEFAULT_TICK_SOUND;
     private static final float TICK_VOLUME = 0.7f;
-
-    /** The key the charge tick is playing right now. */
-    public String tickSound() {
-        return tickSound;
-    }
-
-    /** Point the charge tick at a different key for this session. {@code /rpg drawsound} only. */
-    public void tickSound(String key) {
-        this.tickSound = key;
-    }
 
     /** The material whose vanilla draw this reads. Content authors it as {@code material: bow}. */
     private static final String DRAW_MATERIAL = "bow";
@@ -166,13 +165,19 @@ public final class PlumeDraw {
     private final AdapterContext adapters;
 
     /**
-     * How many arrows each drawing player has been TOLD they have.
+     * Which STEP each drawing player has been TOLD they are on.
      *
-     * <p>Not the count itself: the count is a pure function of the time held and the live magazine,
+     * <p>Not the step itself: the step is a pure function of the time held and the live magazine,
      * recomputed every tick, which is what makes R3's cap apply <b>as it climbs</b> rather than once
      * at the end -- and what lets a reload completing mid-draw raise the cap and resume the ticks.
-     * This map remembers only what has already been ANNOUNCED, so a sound plays once per arrow
+     * This map remembers only what has already been ANNOUNCED, so a sound plays once per step
      * gained rather than once per tick.
+     *
+     * <p><b>STEPS, NOT ARROWS, SINCE R1's AMENDMENT -- and while a step was one arrow this map held
+     * both at once without anyone choosing.</b> Under 1/3/5 they are different numbers and only one
+     * of them is what the ladder is indexed by: three sounds, at
+     * {@link DrawCharge#pitchFor(int) pitchFor(1..3)}. Holding arrows here and converting at the
+     * sound would have played five ticks on a three-rung ladder.
      *
      * <p>An INSTANCE field on a listener-owned object, never a static: player state in a static map
      * is the singleton this project refuses.
@@ -239,14 +244,14 @@ public final class PlumeDraw {
             return;
         }
 
-        int ready = DrawCharge.capped(DrawCharge.arrowsFor(player.getActiveItemUsedTime()),
+        int ready = DrawCharge.affordableStep(DrawCharge.stepsFor(player.getActiveItemUsedTime()),
                 cap(held, weapon.get(), player));
 
         int alreadyTold = announced.getOrDefault(id, 0);
-        // ONE SOUND PER ARROW GAINED, not per tick, and the loop covers a tick that crosses two
+        // ONE SOUND PER STEP GAINED, not per tick, and the loop covers a tick that crosses two
         // thresholds at once -- which a lagging server can produce.
         for (int n = alreadyTold + 1; n <= ready; n++) {
-            player.playSound(player.getLocation(), tickSound, TICK_VOLUME, DrawCharge.pitchFor(n));
+            player.playSound(player.getLocation(), TICK_SOUND, TICK_VOLUME, DrawCharge.pitchFor(n));
         }
         announced.put(id, ready);
 
@@ -278,7 +283,8 @@ public final class PlumeDraw {
 
         // THE TWO MEASURES, CHECKED AGAINST EACH OTHER ONCE. The tracker is authoritative -- it is
         // the one carrying R3's cap -- and this only ever REPORTS. See DrawCharge.disagreement for
-        // why the comparison is one-directional.
+        // why the comparison is one-directional, and why it is in STEPS: the tracker's own unit is
+        // the step, so comparing arrows would check the conversion as much as the quantity.
         DrawCharge.disagreement(tracker, ticksHeldFor)
                 .ifPresent(complaint -> adapters.log().warning("[plume] " + complaint));
 

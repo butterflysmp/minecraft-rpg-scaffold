@@ -70,7 +70,6 @@ import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import io.github.butterflysmp.rpg.paper.weapon.ArmorItems;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
 import io.github.butterflysmp.rpg.paper.weapon.ToolItems;
-import io.github.butterflysmp.rpg.paper.weapon.PlumeDraw;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearRefresher;
@@ -139,8 +138,7 @@ public final class RpgCommand {
                                                                MobRegistry mobs,
                                                                MobNameplateManager nameplates,
                                                                ResourcePool resources,
-                                                               FireCadence fireCadence,
-                                                               PlumeDraw plumeDraw) {
+                                                               FireCadence fireCadence) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
                         // requires() gates the whole branch: an unpermitted sender
@@ -489,32 +487,12 @@ public final class RpgCommand {
                         .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(-200.0, 200.0))
                                 .executes(ctx -> reloadTimeBoost(ctx, adapters, weapons,
                                         DoubleArgumentType.getDouble(ctx, "bonus")))))
-                // H-1b'S INSTRUMENT. Point the Plume's charge tick at a different sound key for
-                // this session, or print the one in force.
+                // /rpg drawsound WAS HERE AND WAS DELETED ON ITS OWN TRIGGER, 2026-09-14, in the
+                // same commit that ruled block.note_block.hat -- which is what the trigger said, in
+                // three places. PlumeDraw.TICK_SOUND is a constant again.
                 //
-                // WHY IT EXISTS: three candidates cost three build-deploy-boot cycles and three
-                // relays, one candidate each. One argument turns that into one boot and as many
-                // candidates as an ear wants.
-                //
-                // *** IT IS BORN WITH A DELETION TRIGGER, AND THE TRIGGER LIVES AT THE FIELD ***
-                // PlumeDraw.tickSound: when the sound is RULED, this subcommand and that field are
-                // deleted in the SAME COMMIT that authors the ruling. Dev instruments in this
-                // project outlive their purpose -- the dev weapons and /kit are both still parked --
-                // so this one states its own end rather than waiting to be noticed.
-                //
-                // THE SUGGESTIONS ARE MEASURED, NOT GUESSED. Every one was checked against the
-                // 1808 sound ids in SoundEvents on the pinned jar; see drawSound's javadoc for why
-                // block.note_block.pling is in the list despite being withdrawn as the tick.
-                .then(Commands.literal("drawsound")
-                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
-                        .executes(ctx -> drawSound(ctx, plumeDraw, null))
-                        .then(Commands.argument("key", StringArgumentType.string())
-                                .suggests((ctx, builder) -> {
-                                    for (String key : DRAW_SOUND_CANDIDATES) builder.suggest(key);
-                                    return builder.buildFuture();
-                                })
-                                .executes(ctx -> drawSound(ctx, plumeDraw,
-                                        StringArgumentType.getString(ctx, "key")))))
+                // The account, the measured eight-candidate list and the cost of not having it any
+                // more are in GATE-plume-draw.md. This is the pointer.
                 // Q7'S INSTRUMENT. Read the held-right-click cadence and CLEAR the sample.
                 //
                 // No argument: the input is right_click because that is the question Q7 asks, and
@@ -953,81 +931,6 @@ public final class RpgCommand {
                 String.format("Gave mana_regen_boost_TEMP (+%.2f/s -> %.2f mana/s once held, from %.2f). "
                                 + "Hold it and cast.", amount, currentPerSecond + amount, currentPerSecond),
                 NamedTextColor.GREEN));
-        return 1;
-    }
-
-    /**
-     * The candidates worth auditioning for the Plume's charge tick, and <b>EVERY ONE WAS CHECKED
-     * AGAINST THE PINNED JAR</b> — extracted from {@code SoundEvents}' 1808 registered ids, not
-     * guessed from field names. A suggester offering a key that does not resolve would hand someone
-     * a silent boot, which is the exact cost this command exists to remove.
-     *
-     * <p>The list walks the same axis the search has been walking — <b>pling, then kick, then
-     * click</b> — where each step buys a sharper ATTACK and loses PITCH READ. Those are different
-     * properties, and only one of them is what R13 ruled:
-     *
-     * <pre>
-     * a sharp transient makes events easy to COUNT     "that was four ticks"
-     * audible pitch makes position easy to KNOW        "I am holding four"
-     * </pre>
-     *
-     * <p><b>{@code block.note_block.pling} STAYS IN THE LIST THOUGH IT WAS WITHDRAWN AS THE TICK.</b>
-     * It is the POSITIVE CONTROL: the one key demonstrably observed to play (H-1's superseded
-     * reading), so a silent candidate separates from a broken tracker in a single draw.
-     *
-     * <p>{@code block.note_block.hat} is the note-block family's own click, and the only candidate
-     * <b>designed to be pitched across the full range</b> — which is the property a click is most
-     * likely to lack.
-     */
-    private static final List<String> DRAW_SOUND_CANDIDATES = List.of(
-            "block.note_block.basedrum",     // the ruled tick, and the default
-            "block.note_block.snare",        // the ruling's own recorded alternative
-            "block.note_block.hat",          // designed to be pitched; the click that keeps a ladder
-            "ui.button.click",               // flattest, most readout-like
-            "block.lever.click",             // mechanical, diegetic
-            "block.comparator.click",        // sharper, shorter
-            "block.stone_button.click_on",   // harder edge
-            "block.note_block.pling");       // THE POSITIVE CONTROL -- known to play
-
-    /**
-     * Set the charge tick's sound for this session, or print the one in force.
-     *
-     * <h2>IT REFUSES A KEY THAT DOES NOT RESOLVE, RATHER THAN SETTING IT WITH A WARNING</h2>
-     *
-     * <p>The platform CAN be asked: {@code Registry.SOUND_EVENT} is a real registry in the pinned
-     * API, so a key either resolves or it does not and this command never has to print
-     * <i>"UNVERIFIED"</i>.
-     *
-     * <p><b>Given that, refusing beats warning.</b> A key that does not resolve is never a
-     * candidate — it is a typo — and accepting one guarantees the next draw is silent for a reason
-     * that has nothing to do with the weapon. <b>That is the two-causes-one-observation problem this
-     * command was built to remove</b>, so it must not reintroduce it at the moment of setting.
-     * Refusing leaves the previous key in force, so the next draw is still worth taking.
-     */
-    private static int drawSound(CommandContext<CommandSourceStack> ctx, PlumeDraw plumeDraw, String key) {
-        var sender = ctx.getSource().getSender();
-
-        if (key == null) {
-            sender.sendMessage(Component.text("Draw tick: ", NamedTextColor.GRAY)
-                    .append(Component.text(plumeDraw.tickSound(), NamedTextColor.WHITE)));
-            return 1;
-        }
-
-        NamespacedKey parsed = NamespacedKey.fromString(key);
-        if (parsed == null || Registry.SOUND_EVENT.get(parsed) == null) {
-            sender.sendMessage(Component.text("No such sound: ", NamedTextColor.RED)
-                    .append(Component.text(key, NamedTextColor.WHITE))
-                    .append(Component.text(" -- NOT set. It would play nothing, and a silent tick is"
-                            + " indistinguishable from a broken tracker. Still on "
-                            + plumeDraw.tickSound() + ".", NamedTextColor.RED)));
-            return 0;
-        }
-
-        plumeDraw.tickSound(key);
-        sender.sendMessage(Component.text("Draw tick set to ", NamedTextColor.GREEN)
-                .append(Component.text(key, NamedTextColor.WHITE))
-                .append(Component.text(" -- resolves against the server's sound registry.",
-                        NamedTextColor.GREEN)));
         return 1;
     }
 

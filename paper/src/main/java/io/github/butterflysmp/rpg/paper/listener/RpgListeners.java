@@ -168,10 +168,17 @@ public final class RpgListeners implements Listener {
      * The Dragon's Plume's draw: the charge tracker, its rising tick, and the release that suppresses
      * vanilla's shot. Slice H1 -- it FIRES NOTHING, deliberately; see {@link PlumeDraw}.
      *
-     * <p><b>INJECTED RATHER THAN BUILT HERE, AND IT STOPPED BEING LISTENER-SCOPED THE DAY
-     * {@code /rpg drawsound} EXISTED.</b> The command mutates the tick's sound key and this class
-     * reads it, so the two must hold the SAME instance -- hoisted in {@code RpgPlugin} and handed to
-     * both, exactly as {@code FireCadence} already is for {@code /rpg firerate}.
+     * <p><b>LISTENER-SCOPED AGAIN, AND IT WAS HOISTED FOR EXACTLY ONE READER THAT NO LONGER
+     * EXISTS.</b> It moved to {@code RpgPlugin} the day {@code /rpg drawsound} was written, because
+     * the command mutated the tick's sound key and this class read it, so the two had to hold the
+     * SAME instance. <b>That command was deleted on its own trigger when the sound was ruled</b>
+     * ({@link PlumeDraw#TICK_SOUND}), leaving one holder -- so it is built here, beside
+     * {@link #meleeHits} and {@code damageWindow}, for their reason: the events it bridges are all
+     * on this class and nothing else in the plugin has a use for it.
+     *
+     * <p>Assigned in the CONSTRUCTOR rather than as a field initialiser, for {@code hijackedBlocks}'
+     * reason: it closes over {@code weapons} and {@code adapters}, which a field initialiser would
+     * read before the constructor body assigns them.
      */
     private final PlumeDraw plumeDraw;
 
@@ -210,8 +217,7 @@ public final class RpgListeners implements Listener {
                         AdapterContext adapters,
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
                         StatsBarSystem statsBar, HealthRegenSystem healthRegen,
-                        Plugin plugin, RecipeRegistry recipes,
-                        PlumeDraw plumeDraw) {
+                        Plugin plugin, RecipeRegistry recipes) {
         this.plugin = plugin;
         this.recipes = recipes;
         this.cooldowns = cooldowns;
@@ -224,7 +230,7 @@ public final class RpgListeners implements Listener {
         this.tools = tools;
         this.weaponService = weaponService;
         this.adapters = adapters;
-        this.plumeDraw = plumeDraw;
+        this.plumeDraw = new PlumeDraw(weapons, adapters);
         this.recipeCatalogue = new RecipeCatalogue(adapters);
         this.healthSystem = healthSystem;
         this.nameplates = nameplates;

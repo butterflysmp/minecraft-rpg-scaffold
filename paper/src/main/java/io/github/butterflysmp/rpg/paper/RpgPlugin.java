@@ -62,7 +62,6 @@ import io.github.butterflysmp.rpg.paper.packet.WeaponSwingListener;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.scheduler.PaperScheduler;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
-import io.github.butterflysmp.rpg.paper.weapon.PlumeDraw;
 import io.github.butterflysmp.rpg.storage.FilePlayerRepository;
 import io.github.butterflysmp.rpg.storage.PlayerRepository;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
@@ -157,7 +156,6 @@ public final class RpgPlugin extends JavaPlugin {
     private CraftResultIndex craftResults;
     private CooldownTracker cooldowns;
     private FireCadence fireCadence;
-    private PlumeDraw plumeDraw;
     private ResourcePool resources;
     private CombatantStats stats;
     private PlayerHealthSystem healthSystem;
@@ -438,12 +436,15 @@ public final class RpgPlugin extends JavaPlugin {
         // real clock is bound. It records on every weapon fire attempt and is read by /rpg firerate.
         this.fireCadence = new FireCadence(Bukkit::getCurrentTick);
 
-        // THE PLUME'S DRAW STATE, HOISTED HERE RATHER THAN BUILT INSIDE THE LISTENER,
-        // because TWO things hold it: RpgListeners, which drives the draw, and
-        // /rpg drawsound, which retunes the tick sound live. Construct it in the
-        // listener and the command retunes a copy nobody can hear -- the same reason
-        // fireCadence is hoisted above rather than owned by its one writer.
-        this.plumeDraw = new PlumeDraw(weapons, adapters);
+        // THE PLUME'S DRAW STATE WAS HOISTED HERE AND HAS GONE BACK TO THE LISTENER.
+        //
+        // It was hoisted for exactly one reason: /rpg drawsound retuned the tick's sound key and
+        // RpgListeners read it, so the two had to hold the SAME instance. That command was deleted
+        // on its own trigger when the sound was ruled, leaving ONE holder -- so the object is
+        // listener-scoped again, built in RpgListeners beside meleeHits and damageWindow.
+        //
+        // Left hoisted it would have kept a justification naming a command that no longer exists,
+        // which is the falsified-comment defect this project treats as worse than no comment.
 
         // THE PER-PLAYER CEILING: the base pool plus whatever Mana Bank the player is wearing.
         //
@@ -502,7 +503,7 @@ public final class RpgPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                         healthSystem, nameplates, statsBar, healthRegen,
-                        this, recipes, plumeDraw), this);
+                        this, recipes), this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
         // paper-plugin.yml. We do NOT call PacketEvents.setAPI() or .load()
@@ -524,7 +525,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, plumeDraw),
+                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence),
                         "RPG commands"));
     }
 
