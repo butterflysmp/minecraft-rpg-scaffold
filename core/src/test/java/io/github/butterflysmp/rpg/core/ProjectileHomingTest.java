@@ -49,7 +49,19 @@ import static org.junit.jupiter.api.Assertions.*;
  * MUT-STRAY      targetless bolt flies flat             -> 2 rows   stray UNIQUE, speed
  * MUT-DRIVE      the steer applied to the DRIVEN vector -> 1 row    driven body   UNIQUE
  * MUT-RENORM     scaled by the LAUNCH speed             -> 2 rows   speed UNIQUE, retarget
+ *
+ * F2, the sight gate:
+ * MUT-SIGHT       the sight check removed               -> 3 rows   all three sight rows
+ * MUT-SIGHT-ORDER the check moved AFTER the comparison  -> 1 row    nearest-visible  UNIQUE
+ * MUT-SIGHT-FROM  traced from the caster, not the bolt  -> 1 row    trace origin     UNIQUE
  * </pre>
+ *
+ * <p><b>{@code MUT-SIGHT-ORDER} PASSED ON ITS FIRST STAGING AND THE FIXTURE WAS MOVED, NOT THE
+ * CODE.</b> With the blind mob nearer only at the moment of activation, the bolt flew PAST it, the
+ * visible mob became the nearest a few ticks later, and the mutated loop picked it up after all --
+ * <i>the defect healed itself before the row could see it</i>. The blind mob now sits closer to the
+ * flight LINE, so it is nearer at every point of the path rather than at one moment of it. Same
+ * hollowness {@code MUT-ACTIVATE} exposed in slice F, arriving through TIME instead of geometry.
  *
  * <p><b>{@code MUT-RENORM} IS NOT ON THE SLICE'S OWN LIST, AND IT IS WHY THE SPEED ROW EARNS ITS
  * KEEP.</b> The renormalisation decision is a SECOND AXIS of the same expression -- one splice moves
@@ -331,6 +343,114 @@ class ProjectileHomingTest {
             assertEquals(traced.x(), driven.get(i).x(), 1e-9, "tick " + i + " x");
             assertEquals(traced.y(), driven.get(i).y(), 1e-9, "tick " + i + " y");
             assertEquals(traced.z(), driven.get(i).z(), 1e-9, "tick " + i + " z");
+        }
+    }
+
+    // ======================================================================== THE SIGHT GATE, F2
+
+    /**
+     * A BOLT MUST BE ABLE TO SEE WHAT IT CHASES -- ruled, and behind a wall the bolt simply flies
+     * on.
+     *
+     * <p>The comparison is against a REAL plain flight rather than against numbers: with the only
+     * mob invisible, a bolt with a homing block must trace <b>exactly</b> the path of a bolt with
+     * none. Not close -- identical, because §3.3's targetless case is what an unsightable mob falls
+     * back to.
+     */
+    @Test
+    void aBoltDoesNotChaseAMobItCannotSee() {
+        var plainWorld = new FakeWorld();
+        plainWorld.entities.add(mobAt(new Vec3(30, 0, 5)));
+        List<Vec3> plain = flyAndRecord(plainWorld, new FakeWorld.Dummy(Vec3.ZERO), null);
+
+        var blindWorld = new FakeWorld();
+        blindWorld.entities.add(mobAt(new Vec3(30, 0, 5)));
+        blindWorld.sightBlocked = (from, to) -> true;          // a wall in front of everything
+        List<Vec3> blind = flyAndRecord(blindWorld, new FakeWorld.Dummy(Vec3.ZERO), HOMING);
+
+        assertEquals(plain, blind,
+                "a mob the bolt cannot see is not a candidate, so the bolt flies on ballistically"
+                        + " -- the path must be the plain one, tick for tick");
+        assertFalse(blindWorld.sightCheckFrom.isEmpty(),
+                "and the gate must actually have been consulted -- an empty trace list means the"
+                        + " paths matched because nothing ever looked, which is the same picture");
+    }
+
+    /**
+     * THE NEAREST *VISIBLE* MOB IS TAKEN, NEVER THE NEAREST ONE THEN CHECKED.
+     *
+     * <p>The staging is the player row's, for the same reason and with the same two halves: <b>the
+     * invisible mob is NEARER and registered FIRST</b>. A fixture where the wrong answer loses on
+     * distance proves nothing.
+     *
+     * <p>The two failures are different and the row separates them by SIGN. Take the nearest and
+     * then discard it for being blind, and the bolt chases <b>nothing</b> -- it flies straight and
+     * ends at {@code z = 0}. Ignore sight altogether and it chases the hidden mob at <b>-z</b>. The
+     * correct answer is the visible mob at <b>+z</b>.
+     *
+     * <h2>THE HIDDEN MOB MUST STAY NEARER, AND THE FIRST STAGING FAILED ON EXACTLY THAT</h2>
+     *
+     * <p>Staged with the hidden mob at {@code (18, -2)} and the visible one at {@code (20, 2)},
+     * this row <b>passed under {@code MUT-SIGHT-ORDER}</b>. The hidden mob was nearer at the moment
+     * the bolt activated -- and then the bolt flew PAST it, the visible mob became the nearest a few
+     * ticks later, and the mutated loop picked it up and chased it after all. <b>The defect healed
+     * itself before the row could see it.</b>
+     *
+     * <p>So both mobs now sit at the same {@code x} with the hidden one CLOSER TO THE FLIGHT LINE
+     * ({@code |z| = 2} against {@code 3}), which makes it nearer at every point on the bolt's path
+     * rather than at one moment of it. <b>The mutation was re-run against the new staging and the
+     * row went red.</b>
+     *
+     * <p><i>It is the same hollowness {@code MUT-ACTIVATE} exposed in slice F, arriving through TIME
+     * instead of through geometry: a fixture where the wrong answer stops being wrong proves nothing
+     * either.</i>
+     */
+    @Test
+    void theNearestVISIBLEMobIsTakenRatherThanTheNearestOneThenChecked() {
+        var world = new FakeWorld();
+        world.entities.add(mobAt(new Vec3(30, 0, -2)));        // NEARER at every point, blind, first
+        world.entities.add(mobAt(new Vec3(30, 0, 3)));         // further off the line, in plain view
+        world.sightBlocked = (from, to) -> to.z() < 0;         // the wall stands in front of -z only
+
+        List<Vec3> path = flyAndRecord(world, new FakeWorld.Dummy(Vec3.ZERO), HOMING);
+
+        double finalZ = path.get(path.size() - 1).z();
+        assertTrue(finalZ > 0,
+                "the bolt must take the nearest VISIBLE mob at +z. z = 0 means it took the blind"
+                        + " nearest and then discarded it, chasing nothing while a valid target"
+                        + " stood in range; z < 0 means it ignored sight entirely. It ended at z="
+                        + finalZ);
+    }
+
+    /**
+     * THE TRACE STARTS AT THE BOLT, NOT AT THE CASTER -- and the row asserts the ORIGIN the
+     * instrument was handed rather than only the outcome.
+     *
+     * <p>{@code CastExecutor}'s melee sweep traces from the shooter's eye because it picks targets
+     * at the moment of the cast. <b>A bolt is somewhere else entirely by tick 40</b>, and tracing
+     * from the eye would make it refuse a mob it is staring straight at because a wall stands
+     * between that mob and the player who fired.
+     *
+     * <p>So: every recorded trace origin must be a point on the bolt's own path, and none may be
+     * the launch origin -- which is the caster's eye, and which the bolt leaves on tick one. This
+     * is the same move that made the driven-body row able to see its mutation: <b>assert what the
+     * instrument was handed, not just what came back.</b>
+     */
+    @Test
+    void theSightTraceStartsAtTheBoltAndNeverAtTheCaster() {
+        var world = new FakeWorld();
+        world.entities.add(mobAt(new Vec3(30, 0, 5)));
+
+        List<Vec3> path = flyAndRecord(world, new FakeWorld.Dummy(Vec3.ZERO), HOMING);
+
+        assertFalse(world.sightCheckFrom.isEmpty(), "the gate must have been consulted at all");
+        for (Vec3 origin : world.sightCheckFrom) {
+            assertNotEquals(Vec3.ZERO, origin,
+                    "no sight trace may start at the launch origin -- that is the CASTER'S eye,"
+                            + " and the bolt left it on tick one");
+            assertTrue(path.contains(origin),
+                    "every trace must start at a position the bolt actually occupied; " + origin
+                            + " is not on its path");
         }
     }
 
