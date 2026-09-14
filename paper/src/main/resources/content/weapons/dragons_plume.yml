@@ -187,8 +187,21 @@ flavor:
 #   scheduled one tick after the interact and finds hasActiveItem() false when the draw never started.
 #   That is H1/H2 code rather than content, so it is named here and not authored here.
 #
-#   NOTHING IN THE GAME TEACHES THIS TODAY. A legendary bow that silently refuses to draw is
-#   indistinguishable from a broken item, and the person it happens to first is whoever boots this.
+#   *** THE GAME NOW TEACHES IT. THIS IS THE GAP CLOSING, AND THE OLD SENTENCE IS REPLACED. ***
+#
+#   This used to read: "NOTHING IN THE GAME TEACHES THIS TODAY. A legendary bow that silently
+#   refuses to draw is indistinguishable from a broken item." That was true when it was written and
+#   became false in slice b3. PlumeNotice.noArrow fires from H1's scheduled tick when the draw never
+#   started -- "This bow needs a plain Arrow in your off-hand to draw -- a reload cannot take it."
+#
+#   THE GAP WAS RECORDED AS OPEN RATHER THAN ABSORBED, WHICH IS WHY IT GOT CLOSED. A content file
+#   stating a true thing about a missing surface is what makes the surface get built; the same note
+#   written as "this is fine" would still be here.
+#
+#   AND THE NOTICE CARRIES R5'S OWN DELETION TRIGGER, in its javadoc rather than in a plan: the day
+#   the off-hand requirement is replaced, that method and its throttle key go in the same commit. A
+#   surface explaining a workaround stops being true exactly when the workaround dies, and that is
+#   the moment nobody is looking at it. If this comment outlives the workaround, it is wrong too.
 
 triggers:
   # ================== `draw`: THE PROJECT'S FIRST NON-CLICK INPUT ==================

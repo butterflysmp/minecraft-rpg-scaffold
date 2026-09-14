@@ -264,7 +264,7 @@ public final class PlumeDraw {
     public void onDrawStarted(Player player) {
         if (drawWeapon(player.getInventory().getItemInMainHand()).isEmpty()) return;
         announced.remove(player.getUniqueId());
-        adapters.scheduler().onEntityLater(player, () -> tick(player), 1);
+        adapters.scheduler().onEntityLater(player, () -> tick(player, 0), 1);
     }
 
     /**
@@ -273,11 +273,42 @@ public final class PlumeDraw {
      * <p>Stops -- and forgets the player -- the moment the draw is over, which is any of: gone
      * offline, no longer using an item, or no longer holding a draw weapon. There is no separate
      * "cancel" path, because every way a draw can end is one of those three.
+     *
+     * <h2>{@code ticksWatched} SEPARATES "NEVER STARTED" FROM "JUST ENDED", AND THEY LOOK IDENTICAL</h2>
+     *
+     * <p><b>{@code hasActiveItem()} is false for both</b>, and they want opposite treatment: a draw
+     * that ENDED is the ordinary way every release finishes and must be silent, while a draw that
+     * NEVER STARTED is R5 -- vanilla refused the bow for want of an arrow, and the refusal is
+     * completely silent because {@code BowItem.use} returned FAIL and no event was ever raised.
+     *
+     * <p><b>The first scheduled tick is the whole discriminator.</b> {@link #onDrawStarted} runs on
+     * the interact, one tick BEFORE the draw can possibly be visible; so if the very next tick still
+     * sees no active item, the draw did not begin. Any later tick seeing the same thing is watching
+     * a draw end.
+     *
+     * <p><b>WHY THIS COUNT IS NOT IN {@code core}, said rather than left</b> -- the standing rule is
+     * that decisions live in {@code core}, and this one does not. {@code ticksWatched} is a property
+     * of THIS SCHEDULING LOOP: core has no notion of "the first tick after an interact", and a
+     * predicate over a number only paper can produce would be a core function with a paper-shaped
+     * hole in it. <b>What IS in core is the decision the release makes</b> -- {@code DrawRelease},
+     * whose {@code Reason} carries {@code NO_ROUNDS} precisely so this class does not decide it.
+     *
+     * @param ticksWatched how many ticks this watch has already run. ZERO on the first, which is the
+     *                     only tick at which an absent draw means R5 rather than a finished one.
      */
-    private void tick(Player player) {
+    private void tick(Player player, int ticksWatched) {
         UUID id = player.getUniqueId();
         if (!player.isOnline() || !player.hasActiveItem()) {
             announced.remove(id);
+            // R5, AND ONLY ON THE FIRST TICK. The player right-clicked a Plume and the bow did not
+            // move: vanilla refused it for want of a plain arrow. Nothing else in the game says so.
+            //
+            // Gated on isOnline too -- a player who logged out between the interact and this tick
+            // has not been refused anything, and sendMessage to an offline player is a write to
+            // nobody that still stamps the throttle.
+            if (ticksWatched == 0 && player.isOnline()) {
+                PlumeNotice.noArrow(player, cooldowns);
+            }
             return;
         }
         ItemStack held = player.getInventory().getItemInMainHand();
@@ -298,7 +329,7 @@ public final class PlumeDraw {
         }
         announced.put(id, ready);
 
-        adapters.scheduler().onEntityLater(player, () -> tick(player), 1);
+        adapters.scheduler().onEntityLater(player, () -> tick(player, ticksWatched + 1), 1);
     }
 
     /**
@@ -387,16 +418,29 @@ public final class PlumeDraw {
     /**
      * Turn the decision into shots. The whole of {@code paper}'s part in the release.
      *
-     * <p><b>{@code Nothing} IS SILENT HERE, AND ITS TWO REASONS ARE NOT THE SAME SILENCE.</b>
-     * {@code BELOW_VANILLA_FLOOR} is silent by design -- nothing happened and nothing should be
-     * said. {@code NO_ROUNDS} owes the player a sentence, and <b>that notice is b3's, not this
-     * commit's</b>: the reason is carried so the notice has something to switch on, and until it
-     * exists an empty magazine is as silent as a twitch. Named rather than left, because a switch
-     * arm that does nothing reads as a decision when it is an unfinished one.
+     * <p><b>{@code Nothing}'s TWO REASONS ARE NOT THE SAME SILENCE, AND ONLY ONE OF THEM IS ONE.</b>
+     *
+     * <pre>
+     * BELOW_VANILLA_FLOOR   SILENT, by design. A twitch vanilla would not have fired either.
+     * NO_ROUNDS             {@link PlumeNotice#noRounds} -- the charge was earned and unpayable.
+     * </pre>
+     *
+     * <p><b>The silence is the half that is easy to get wrong</b>, and it is why
+     * {@code DrawRelease.decide} checks the floor FIRST: a sub-floor twitch on an empty magazine
+     * must not become a lecture about ammunition for an input the player may not know they made.
+     *
+     * <p><b>THIS ARM WAS DELIBERATELY EMPTY IN b2b AND IS NOW FILLED</b> -- the {@code Reason} was
+     * carried before the notice existed, and this class's previous javadoc said so rather than
+     * letting an unfinished arm read as a decision. R5's notice is NOT here: it fires from
+     * {@link #tick}, because there is no release to switch on when the bow never moved.
      */
     private void fire(Player player, WeaponDefinition weapon, DrawRelease release) {
         switch (release) {
-            case DrawRelease.Nothing ignored -> { }
+            case DrawRelease.Nothing nothing -> {
+                if (nothing.reason() == DrawRelease.Reason.NO_ROUNDS) {
+                    PlumeNotice.noRounds(player, cooldowns);
+                }
+            }
 
             // ONE arrow, straight down the aim, on the TAP binding -- a different shot, not a
             // scaled one. offsetsFor(1) is {0}, so it takes the same fanned path with a fan of one
