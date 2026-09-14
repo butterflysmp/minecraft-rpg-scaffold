@@ -1,10 +1,51 @@
 # GATE — Slice E: arrows load quivers
 
-## **Status: NOT RUN.**
+## **Status: RUN 2026-09-13. All six rows PASS.**
 
-**Every prediction below was written BEFORE any boot**, and before the plugin was built or deployed.
-Nothing in this file has been observed. When it is run, the observed column is filled in beside the
-prediction — never over it.
+**Every prediction below was written BEFORE the boot**, and before the plugin was built or deployed.
+Verdicts read from the gate page's own store at `2026-09-13T22:09:43Z` — `b1`–`b6`, all PASS.
+
+---
+
+## ⚠ READ THIS BEFORE THE TABLE: WHAT THIS RECORD DOES **NOT** CONTAIN
+
+**Two things about this record are weaker than six PASS rows look.** They are here, above the table,
+because a reader must meet them before the verdicts rather than find them in a footnote.
+
+### (i) NO OBSERVED FIGURES WERE CAPTURED. NOT ONE READING.
+
+Every row below carries a bare verdict. **No magazine count, no arrow count, no message text was
+written down.** So every observed cell reads **"PASS — figure not captured"**, never a number.
+
+> **NO NUMBER IN AN OBSERVED CELL HAS BEEN RECONSTRUCTED, BY ANYONE.** A figure inferred after the
+> fact from what the code *should* have produced is not an observation — it is the prediction wearing
+> the observation's clothes, and it would make this table self-confirming.
+
+**A PASS WITH NO READING IS A VERDICT, NOT A MEASUREMENT**, and this file holds verdicts.
+
+**The cause, in one line so it is fixable rather than repeated:** the tick-through made the verdict
+one click and the reading a typing job — **on a gate whose whole doctrine is that the observed column
+is filled in beside the prediction.** That is a defect in the instrument, not in the operator.
+
+### (ii) THE JAR-FRESHNESS CONTROL HAS NO ENTRY AT ALL
+
+The setup section below requires confirming the running jar contains `QuiverAmmo` before believing any
+row. **No such entry was recorded.**
+
+**The honest reconciliation, both halves:**
+
+- **The freshness conclusion still stands — but it stands on THE ROWS, not on the control.** A stale
+  jar has no `QuiverAmmo`, so reloads would not consume at all: **row 1 would have read `8/8` with
+  seven arrows still in the bag**, and **row 2's notice would not exist**. Those rows are
+  self-discriminating.
+- **That is LUCK IN HOW THE ROWS WERE WRITTEN, NOT EVIDENCE THAT THE CONTROL WAS TAKEN.** The control
+  was specified, it was not performed, and nothing here should be read as saying it passed.
+
+> **A control that was not run is not a control that passed, however sound the inference that replaces
+> it.** The inference is recorded because it is true; the control is recorded as missing because it
+> is.
+
+---
 
 > **TWO SHIPPED WEAPONS CHANGE BEHAVIOUR AND NEITHER WEAPON FILE IS TOUCHED.** `boltor`
 > (`quiver_size: 8`) and `locust` (`12`) become arrow-dependent through the mechanic alone. A reader
@@ -66,9 +107,9 @@ gate reports a pass it did not earn.
 
 | | prediction | observed |
 |---|---|---|
-| tooltip after the reload matures | **`Quiver: 7/8`** | |
-| arrows left in inventory | **0** | |
-| under `MUT-PENDING` this would read | `8/8` | |
+| tooltip after the reload matures | **`Quiver: 7/8`** | PASS -- figure not captured |
+| arrows left in inventory | **0** | PASS -- figure not captured |
+| under `MUT-PENDING` this would read | `8/8` | *(counterfactual -- not an observation)* |
 
 > **READ THE TOOLTIP *AND* THE INVENTORY. Either alone is a weaker row than it looks.**
 > The tooltip alone cannot distinguish a correct partial load from a full load that failed to debit;
@@ -86,12 +127,12 @@ gate reports a pass it did not earn.
 
 | | prediction | observed |
 |---|---|---|
-| message | the **new** notice — *"You have no arrows -- plain Arrows load a quiver."* | |
-| message is **NOT** | *"already full"*, nor *"Your quiver is empty -- left-click to reload."* | |
-| tooltip | unchanged at **`7/8`** | |
-| **`quiver_reload_started_at` on the item** | **ABSENT** | |
-| **`quiver_reload_completes_at`** | **ABSENT** | |
-| **`quiver_reload_pending`** | **ABSENT** | |
+| message | the **new** notice — *"You have no arrows -- plain Arrows load a quiver."* | PASS -- figure not captured |
+| message is **NOT** | *"already full"*, nor *"Your quiver is empty -- left-click to reload."* | PASS -- figure not captured |
+| tooltip | unchanged at **`7/8`** | PASS -- figure not captured |
+| **`quiver_reload_started_at` on the item** | **ABSENT** | PASS -- figure not captured |
+| **`quiver_reload_completes_at`** | **ABSENT** | PASS -- figure not captured |
+| **`quiver_reload_pending`** | **ABSENT** | PASS -- figure not captured |
 
 > **THE THREE PDC ROWS ARE THE HALF MOST LIKELY TO BE DROPPED, AND THEY ARE THE HALF THAT MATTERS.**
 > The message distinguishes the refusal from the wrong refusal. **Only the absent stamps distinguish
@@ -112,9 +153,9 @@ then **swap to another weapon before it matures** (`reload_ticks: 60` = 3 second
 
 | | prediction | observed |
 |---|---|---|
-| arrows in inventory, immediately after the swap | **0 — GONE** | |
-| Boltor's tooltip | **unchanged at `0/8`** | |
-| after swapping back and waiting | still `0/8`; a new reload needs new arrows | |
+| arrows in inventory, immediately after the swap | **0 — GONE** | PASS -- figure not captured |
+| Boltor's tooltip | **unchanged at `0/8`** | PASS -- figure not captured |
+| after swapping back and waiting | still `0/8`; a new reload needs new arrows | PASS -- figure not captured |
 
 > ### THIS IS DELIBERATE, IT IS UNUSUAL, AND IT IS INDISTINGUISHABLE FROM A BUG UNLESS THE RECORD
 > ### SAYS IT WAS CHOSEN.
@@ -136,9 +177,9 @@ gone" cannot be read as "the magazine took them".
 
 | | prediction | observed |
 |---|---|---|
-| tooltip after maturity | **`8/8` — a FULL magazine** | |
-| inventory | **UNCHANGED — no arrows added, none removed** | |
-| no-ammo notice | **NOT shown** | |
+| tooltip after maturity | **`8/8` — a FULL magazine** | PASS -- figure not captured |
+| inventory | **UNCHANGED — no arrows added, none removed** | PASS -- figure not captured |
+| no-ammo notice | **NOT shown** | PASS -- figure not captured |
 
 > **THE EMPTY INVENTORY IS LOAD-BEARING.** With arrows present, a creative reload to full is
 > **indistinguishable** from a survival one that debited correctly — the row would pass whether the
@@ -161,9 +202,9 @@ and no unit test holds a `Player`. The paper unit test pins only that four modes
 
 | | prediction | observed |
 |---|---|---|
-| arrows consumed | **3, ONCE** | |
-| arrows consumed if `beginReload` stopped being a real-transition gate | ~60, twenty times a second | |
-| the reload completes | **yes** — the deadline is not pushed back by held input | |
+| arrows consumed | **3, ONCE** | PASS -- figure not captured |
+| arrows consumed if `beginReload` stopped being a real-transition gate | ~60, twenty times a second | *(counterfactual -- not an observation)* |
+| the reload completes | **yes** — the deadline is not pushed back by held input | PASS -- figure not captured |
 
 > `beginReload` *"returns true only on a REAL TRANSITION"*, and Slice E put an **inventory debit**
 > behind that property. It was safe before because the only cost was a PDC write; it now costs the
@@ -181,8 +222,8 @@ Fire dry, reload.
 
 | | prediction | observed |
 |---|---|---|
-| reload | **REFUSED** — the no-ammo notice | |
-| the instrument | **still in the inventory, untouched** | |
+| reload | **REFUSED** — the no-ammo notice | PASS -- figure not captured |
+| the instrument | **still in the inventory, untouched** | PASS -- figure not captured |
 
 > A family match would consume the item that ENLARGES the magazine, to fill the magazine it
 > enlarged. `QuiverAmmoTest` guards the constants; **this row guards the walk**, which no unit test

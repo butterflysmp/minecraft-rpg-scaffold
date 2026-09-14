@@ -430,7 +430,10 @@ rows below use the **Boltor** anyway.
 
 ## 7. GATE ROWS — **this slice needs a boot**
 
-`GATE-quiver-ammo.md`, **Status: NOT RUN**, predictions written **before** any boot. At minimum:
+`GATE-quiver-ammo.md` — **RUN 2026-09-13, all six rows PASS**, predictions written **before** the
+boot. **Read that file's two caveats before its table**: no observed figures were captured (every
+observed cell reads *"PASS — figure not captured"*), and the jar-freshness control has no entry at
+all. The rows below are the predictions as written. At minimum:
 
 | # | row | prediction |
 |---|---|---|
