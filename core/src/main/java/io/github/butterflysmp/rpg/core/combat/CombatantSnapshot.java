@@ -91,4 +91,22 @@ public record CombatantSnapshot(UUID id, Vec3 position, double eyeHeight, boolea
                             + " -- 0.0 is not a neutral default here, it traces sight to the feet");
         }
     }
+
+    /**
+     * The point on this combatant a sight line traces TO: its eye, not its feet.
+     *
+     * <p>{@link #position()} is the entity's feet, so a ray ending there hugs the floor for its
+     * whole final stretch and any lip, slab or step in between reads as a wall. Vanilla's own
+     * {@code LivingEntity.hasLineOfSight} traces eye to the TARGET'S eye; this is that point.
+     *
+     * <p><b>IT LIVES HERE BECAUSE IT NOW HAS TWO CALLERS IN TWO PACKAGES, AND A SECOND OPINION
+     * ABOUT IT WOULD BE A DISAGREEMENT ABOUT WHETHER THE SAME MOB IS VISIBLE.</b> It was a private
+     * helper in {@code CastExecutor} while the melee sweep was the only thing that traced sight;
+     * {@code ProjectileFlight}'s homing gate is the second, and {@code core.combat} cannot see
+     * into {@code core.ability}. <b>Moved rather than copied</b> -- one definition, on the type
+     * that already knows its own eye height, reachable from both.
+     */
+    public Vec3 sightPoint() {
+        return position.add(new Vec3(0, eyeHeight, 0));
+    }
 }

@@ -496,7 +496,7 @@ public final class CastExecutor {
 
             double distanceSquared = toCandidate.lengthSquared();
             if (distanceSquared >= nearestDistanceSquared) continue;
-            if (!world.lineOfSightClear(aim.origin(), sightPoint(candidate.state()))) continue;
+            if (!world.lineOfSightClear(aim.origin(), candidate.state().sightPoint())) continue;
 
             nearestDistanceSquared = distanceSquared;
             nearest = candidate;
@@ -504,16 +504,10 @@ public final class CastExecutor {
         return nearest;
     }
 
-    /**
-     * The point on a combatant a sight line traces TO: its eye, not its feet.
-     *
-     * position() is the entity's feet, so a ray ending there hugs the floor for its whole
-     * final stretch and any lip, slab or step in between reads as a wall. Vanilla's own
-     * LivingEntity.hasLineOfSight traces eye to the TARGET'S eye; this is that point.
-     */
-    private static Vec3 sightPoint(CombatantSnapshot target) {
-        return target.position().add(new Vec3(0, target.eyeHeight(), 0));
-    }
+    // sightPoint MOVED to CombatantSnapshot.sightPoint(), where ProjectileFlight's homing sight
+    // gate can reach it too -- core.combat cannot see into core.ability. One definition, because a
+    // second opinion about WHERE ON A TARGET you sight to is a disagreement between the sweep and
+    // the bolt about whether the same mob is visible.
 
 
     /**

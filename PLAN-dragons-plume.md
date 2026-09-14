@@ -620,7 +620,7 @@ letting a gate discover it:**
   `hunters_bow` the equivalent is `2.5 × 60 = 150` blocks.
 
 **WHAT DISCHARGES THEM:** a booted reading, per row, in a `GATE-dragons-plume.md` written **before the
-boot** and not after. **The full row set, P0-P8, is drafted in §8**; these five constants are
+boot** and not after. **The full row set, P0-P9, is drafted in §8**; these five constants are
 P1-P4, and **the lifespan is no longer one of them — R11 ruled it** (§7.4).
 
 ---
@@ -642,6 +642,19 @@ flight as well as five chains.
 three, fired **instantly and repeatedly**; ours is five, fired **once per charge** — so peak
 concurrency rises and duty cycle falls. **Neither number is measured here.** What is measured is the
 per-tick work list above; a figure for it belongs to the gate, not to this paragraph.
+
+> **AND SLICE F2 ADDED A SECOND PER-TICK COST: A SIGHT TRACE.** Ben ruled that a bolt must be able
+> to see what it chases, so each chain now also calls `lineOfSightClear` — **from the bolt, not from
+> the caster** — before it will take a target.
+>
+> **It is bounded by candidates, not by candidates × ticks, and the bound is loose.** The trace runs
+> only for a candidate that has already beaten the running nearest, which is `CastExecutor`'s own
+> ordering: cheap distance bound first, trace second, assignment last. **Worst case is one trace per
+> candidate per tick** — when candidates arrive in decreasing distance order — and the typical case
+> is far fewer. Measured in the unit fixtures: **6 to 8 traces across a whole 9-to-13-tick flight**
+> with two mobs in range.
+>
+> **Five bolts multiply it, like everything else in this section.** A number, not a worry.
 
 > **THE ONE LOAD QUESTION WORTH ASKING BEFORE ANY CODE:** `combatantsNear` **per arrow per tick** is
 > the only new cost in that list, and at five arrows × 120 ticks it is **600 queries per release** in
@@ -965,6 +978,8 @@ arrive with their discharge conditions attached rather than acquiring them after
 | **P7** | **THE TAP INTERVAL, AND THE ONLY PLACE THE HOMING QUESTION CAN BE ANSWERED.** `/rpg give` the weapon, then **tap right-click as fast as you can for ten seconds** — genuinely tapping, not holding, since the instrument cannot tell the difference and the whole row depends on it. Then `/rpg firerate`. **Then do it again at a moving mob**, tapping, and then charged. | **`INPUTS count, window, mean and min`, verbatim.** The `min` is `T`'s real floor. **Record it even if it is 4** — a measured 4 for discrete clicks is a different fact from Q7's measured 4 for a held repeat, and only this row can tell them apart (§7.2). **And say, in words, how many of the un-homing taps MISSED** — §7.2 leaves the homing advantage deliberately unquantified, and a person shooting at a moving target is the only instrument there is. |
 
 | **P8** | **THE TARGETLESS ARROW — §3.3, and it is the common case.** Fire **at nothing**, flat, over open ground: charged, and then a single tap. Then fire at nothing **at roughly 45°**. | **Where the arrow lands, in blocks**, for each. §3.3 computes **22.5 flat** and **129 at 45°** at `gravity 0.05` — **a reading far from those means the flight model in this plan is wrong**, and every reach claim built on it with it. **Also: does it visibly ARC, or does it look flat?** R12's whole content is that it drops like an arrow. |
+
+| **P9** | **THE SIGHT GATE — the visible half, which no unit test can show.** Stand a mob **behind a wall** and fire at it from beyond the 15-block activation distance. Then have it **step out** from behind the wall while a second bolt is in flight. | **Whether the bolt flies PAST** instead of burying itself in the masonry — and whether the second one **picks the mob up when it comes into view**, which is what "re-chosen every tick" buys. **Also: does flying past read as the weapon being broken?** A homing arrow that declines to home is the one case where correct behaviour and a bug look alike to a player. |
 
 > **P5's second half is the one that earns the ruling.** *"Reads the magazine live"* and *"reads it
 > once at full charge"* are **indistinguishable** on a quiver that does not change mid-hold — so a row

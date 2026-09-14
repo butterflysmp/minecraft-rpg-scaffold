@@ -240,10 +240,27 @@ public final class ProjectileFlight {
      * this weapon's arrows accelerate. <b>The alternative is written down so the choice can be
      * reversed with one line</b> if it reads wrong on a boot.
      *
-     * <p>It does NOT run away. Gravity adds {@code (0,-g,0)} to a roughly horizontal velocity, so
-     * the magnitude grows by about {@code g^2/(2s)} per tick -- at {@code s = 2.5, g = 0.05} that is
-     * {@code 0.0005}, about {@code +0.06} over a whole 120-tick leash. What it DOES preserve is real
-     * speed a bolt has built up in a long fall, which the launch-speed form would throw away.
+     * <p>It does NOT run away, and the figure was CORRECTED after the slice landed -- the first
+     * version quoted a closed form as though it described this loop.
+     *
+     * <pre>
+     * closed form, g^2/(2s) per tick    0.0005 x 120  =  +0.06   +2.4% of launch speed
+     * simulated, THIS loop              2.5 -> 2.6209 =  +0.12   +4.8% of launch speed
+     * </pre>
+     *
+     * <p><b>The closed form is a LOWER BOUND that assumes the velocity is FULLY re-aimed each
+     * tick.</b> This loop re-aims {@code lerp} of the way -- 65% -- so a residual vertical
+     * component persists and the growth roughly doubles. Simulated at {@code lerp = 1.0} the loop
+     * gives {@code +0.0593}, which is the closed form, confirming what the discrepancy is.
+     * Counter-intuitively a WEAKER lerp grows faster still ({@code 0.35} gives {@code +0.26}),
+     * because the residual survives longer.
+     *
+     * <p><b>The conclusion is unaffected, which is what the figure was there to establish:</b>
+     * neither number runs away. It is corrected because <b>a closed form sitting above a worked
+     * conclusion gets read as measured</b>, and this one was not a measurement of this code.
+     *
+     * <p>What the decision DOES preserve is real speed a bolt has built up in a long fall, which
+     * the launch-speed form would throw away.
      */
     private static Vec3 steer(CombatWorld world, Caster caster, Vec3 spawn, Vec3 from,
                               Vec3 velocity, Seek seek) {
@@ -284,11 +301,47 @@ public final class ProjectileFlight {
      * already existed, and it is a SPHERE where the inherited constant described a box
      * (see {@code CastSpec.Homing}).
      *
-     * <p><b>LINE OF SIGHT IS NOT CONSULTED, AND THAT IS UNRULED RATHER THAN EXCLUDED.</b> A bolt
-     * will turn toward a mob through a wall and then bury itself in the wall, because {@code
-     * castRay} stops at the block. Nobody has decided whether a chase should require sight; the
-     * question was never put, and {@code lineOfSightClear} is a port method that already exists if
-     * the answer is yes.
+     * <h2>A BOLT MUST BE ABLE TO SEE WHAT IT CHASES -- RULED, AND IT WAS AN OPEN QUESTION</h2>
+     *
+     * <p>This paragraph used to say sight was <b>unruled rather than excluded</b>, and that a bolt
+     * would turn toward a mob through a wall and bury itself in the wall. <b>The question was put
+     * and the answer is yes:</b> a mob the bolt cannot see is not a candidate. Behind a wall the
+     * bolt <b>flies on ballistically</b> -- §3.3's targetless case, unchanged -- and <b>picks the
+     * target up if it steps into view</b>, which costs nothing extra because the target is
+     * re-chosen every tick anyway.
+     *
+     * <p><b>What it chose against:</b> chasing regardless of sight, which is what the inherited
+     * algorithm did. That version is cheaper -- no trace at all -- and it produces a bolt that
+     * commits to a mob it cannot reach and dies in the masonry between them.
+     *
+     * <h2>THE TRACE IS FROM THE BOLT, NOT FROM THE CASTER, AND THAT IS THE WHOLE DIFFERENCE</h2>
+     *
+     * <p>{@code CastExecutor}'s melee sweep traces from {@code aim.origin()} -- the shooter's eye --
+     * because it picks its target <b>at the moment of the cast</b>, when the swinger is the one who
+     * has to see. <b>A bolt is somewhere else entirely by tick 40, and it is the BOLT that has to
+     * see the target.</b> Tracing from the eye would make a bolt refuse a mob it is twenty blocks
+     * from and staring straight at, because a wall stands between that mob and the player who fired
+     * it. So the origin here is {@code from}, the bolt's own position this tick.
+     *
+     * <h2>BLOCKS ONLY, INHERITED AND STATED RATHER THAN ABSORBED</h2>
+     *
+     * <p>{@link CombatWorld#lineOfSightClear} is block-only by its own contract: entities never
+     * occlude. {@code CastExecutor} records the consequence for the sweep -- <i>"a mob behind
+     * another mob is still fair game"</i> -- and <b>the same rule holds here, deliberately.</b> A
+     * bolt that refused to chase the second zombie in a queue would be worse than one that does,
+     * and the alternative is not reachable through this port anyway.
+     *
+     * <h2>AND THE CHECK GATES THE ASSIGNMENT, EXACTLY AS THE PLAYER SKIP DOES</h2>
+     *
+     * <p><b>The answer is the nearest VISIBLE mob, never the nearest-then-checked.</b> A sight test
+     * applied after {@code best} was taken would let one mob behind a wall block the bolt from
+     * chasing a perfectly visible one three blocks further out: the loop takes the invisible
+     * nearest, discards it, and chases nothing while a valid target stands in range.
+     *
+     * <p>The ordering is {@code CastExecutor}'s: <b>the cheap distance bound first, the trace
+     * second, the assignment last</b>. That is not only tidiness -- it means a trace runs ONLY for
+     * a candidate that would otherwise win, so the per-tick cost is bounded by the number of
+     * candidates and is usually well below it.
      */
     private static Combatant nearestMob(CombatWorld world, Caster caster, Vec3 from, double radius) {
         Combatant best = null;
@@ -297,10 +350,13 @@ public final class ProjectileFlight {
             if (candidate.id().equals(caster.id())) continue;
             if (candidate.state().player()) continue;            // R2, and it gates what follows
             double distanceSquared = candidate.state().position().distanceSquared(from);
-            if (distanceSquared < bestDistanceSquared) {
-                bestDistanceSquared = distanceSquared;
-                best = candidate;
-            }
+            if (distanceSquared >= bestDistanceSquared) continue;
+            // FROM THE BOLT. Never from the caster -- see above. And BEFORE the assignment, so the
+            // result is the nearest VISIBLE mob rather than the nearest one, checked.
+            if (!world.lineOfSightClear(from, candidate.state().sightPoint())) continue;
+
+            bestDistanceSquared = distanceSquared;
+            best = candidate;
         }
         return best;
     }
