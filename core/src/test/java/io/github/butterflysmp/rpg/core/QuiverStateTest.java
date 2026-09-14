@@ -373,8 +373,8 @@ class QuiverStateTest {
      * <p>Reachable in the window after a capacity modifier comes off and before the next write
      * re-clamps the stamp: {@code loaded} 11 against a capacity that now resolves to 8.
      *
-     * <p><b>MEASURED: SUCH A MAGAZINE PAYS FOR NINE.</b> {@code Quivers.spendRound} is
-     * {@code Quiver.spend(11) = 10} handed to {@code QuiverItems.setLoaded}, which clamps the value
+     * <p><b>MEASURED: SUCH A MAGAZINE PAYS FOR NINE.</b> {@code Quivers.spendRounds} is
+     * {@code Quiver.spend(11, 1) = 10} handed to {@code QuiverItems.setLoaded}, which clamps the value
      * it WRITES -- {@code Quiver.clamp(10, 8) = 8}. One over-full shot, then a magazine of eight.
      *
      * <pre>
@@ -390,7 +390,7 @@ class QuiverStateTest {
      *
      * <p><b>AND THE PAYOUT OF NINE IS ITSELF UNGUARDED.</b> {@code Quiver.clamp} and
      * {@code Quiver.spend} each have rows; their COMPOSITION has none, and it lives in paper --
-     * {@code spendRound} plus {@code setLoaded}. Recorded as a second unguarded edge on
+     * {@code spendRounds} plus {@code setLoaded}. Recorded as a second unguarded edge on
      * {@code GATE-expanded-quiver.md} row A-5, whose own trigger is the first shipped item granting
      * quiver size outside the dev instrument.
      */

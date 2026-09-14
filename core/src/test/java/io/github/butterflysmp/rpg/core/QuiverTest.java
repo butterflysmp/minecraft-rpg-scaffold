@@ -48,7 +48,7 @@ class QuiverTest {
         int loaded = Quiver.reload(0, CAPACITY, CAPACITY);
         int fired = 0;
         while (!Quiver.isEmpty(loaded)) {
-            loaded = Quiver.spend(loaded);
+            loaded = Quiver.spend(loaded, 1);
             fired++;
             if (fired > 100) break;   // a non-terminating spend is a bug, not a hang
         }
@@ -66,7 +66,7 @@ class QuiverTest {
     @Test
     void theLastRoundInTheMagazineStillFires() {
         assertFalse(Quiver.isEmpty(1), "one round left is not empty -- the round is there to be spent");
-        assertEquals(0, Quiver.spend(1), "and spending it empties the quiver exactly");
+        assertEquals(0, Quiver.spend(1, 1), "and spending it empties the quiver exactly");
     }
 
     /** THE BOUNDARY'S UPPER HALF: round N+1 does not. */
@@ -75,14 +75,62 @@ class QuiverTest {
         assertTrue(Quiver.isEmpty(0));
         // The floor, so a caller that misses the gate no-ops instead of corrupting the item. The
         // refusal a player SEES is minted in paper, where the held item can be read.
-        assertEquals(0, Quiver.spend(0), "a spend past empty may never drive the count negative");
+        assertEquals(0, Quiver.spend(0, 1), "a spend past empty may never drive the count negative");
     }
 
     /** A malformed negative count must read as empty, not fire forever. */
     @Test
     void aNegativeCountReadsAsEmptyRatherThanFiring() {
         assertTrue(Quiver.isEmpty(-1), "<= 0, not == 0 -- Durability.isBroken's precedent");
-        assertEquals(0, Quiver.spend(-4));
+        assertEquals(0, Quiver.spend(-4, 1));
+    }
+
+    /**
+     * A MULTI-ROUND SPEND, WHICH THE DRAGON'S PLUME'S RELEASE IS: up to five arrows for one press.
+     *
+     * <p>{@code spend} took only a count until slice H, because every weapon in the project spent
+     * exactly one round per shot. <b>The values here are deliberately unequal to each other and to
+     * the fixture's capacity</b> -- 12 spending 5, not 5 spending 5 -- so a row cannot pass by two
+     * quantities coinciding.
+     */
+    @Test
+    void aReleaseSpendsAsManyRoundsAsItFiresArrows() {
+        assertEquals(7, Quiver.spend(12, 5), "five arrows leave a twelve-round magazine holding seven");
+        assertEquals(2, Quiver.spend(5, 3), "and three leave five holding two");
+        assertEquals(11, Quiver.spend(12, 1),
+                "while ONE is still one -- every other weapon in the project takes this path");
+    }
+
+    /**
+     * THE FLOOR AT {@code rounds > loaded}, WHICH IS THE NEW HALF OF AN OLD RULE.
+     *
+     * <p>The single-round floor has always been here ({@code spend(0) -> 0}); this is the same
+     * flooring reached a different way, and it is reachable in play: R3a caps a release to the step
+     * the magazine can pay for IN FULL, but the cap is computed from a read and the spend happens
+     * after it. <b>A missed gate must be a no-op rather than a negative count on an item.</b>
+     */
+    @Test
+    void spendingMoreRoundsThanAreLoadedFloorsAtEmptyRatherThanGoingNegative() {
+        assertEquals(0, Quiver.spend(3, 5), "three rounds cannot pay for five, and do not owe two");
+        assertEquals(0, Quiver.spend(5, 5), "and an exact spend empties it precisely");
+    }
+
+    /**
+     * A NEGATIVE SPEND IS A NO-OP, NOT A REFUND.
+     *
+     * <p>{@link Quiver#reload} floors its {@code rounds} for the mirror of this reason. <b>A spend
+     * that ADDED arrows would be free ammunition reachable from any caller that computed a count
+     * wrongly</b> -- and it would look exactly like the weapon working.
+     *
+     * <p>Zero is asserted beside it because the two are different mistakes: a caller passing 0 has
+     * computed a release of nothing, and a caller passing -2 has computed one backwards.
+     */
+    @Test
+    void aNegativeOrZeroSpendLeavesTheMagazineAlone() {
+        assertEquals(3, Quiver.spend(3, 0), "a release of no arrows costs no rounds");
+        assertEquals(3, Quiver.spend(3, -2),
+                "and a negative one does NOT hand two back -- Quiver.reload floors for the mirror "
+                        + "of this reason");
     }
 
     // ---------------------------------------------------------------- reloading

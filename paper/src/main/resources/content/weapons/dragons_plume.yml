@@ -76,12 +76,15 @@ material: bow
 # seconds. A number that reads modest as a rate reads extreme as a spike, and this weapon is all
 # spike: the release lands in a single frame and then costs a full draw plus two seconds.
 #
-#   IT RENDERS NOWHERE ON THE TOOLTIP YET, AND THAT IS NOT A DEFECT IN THIS FILE. WeaponLore's stat
-#   block is gated on DamagePayload.isBasicAttack -- a weapon_damage on_hit -- and the draw binding
-#   below authors no on_hit at all. So the "Ranged Damage: 48" line appears when H2 authors the
-#   payload, not before. The MODIFIER is unaffected: WeaponItems.mint derives the wielder's
-#   ATTACK_DAMAGE attribute from this value regardless of triggers, so the stat is real today and
-#   only the tooltip line waits.
+#   IT NOW RENDERS, AND THE COMMENT THAT SAID IT DID NOT IS REPLACED RATHER THAN LEFT. This used to
+#   read: "IT RENDERS NOWHERE ON THE TOOLTIP YET... the 'Ranged Damage: 48' line appears when H2
+#   authors the payload, not before." H2 has authored it -- `draw:` below carries a weapon_damage
+#   on_hit, which is exactly what WeaponLore's stat block is gated on -- so the line is on the
+#   tooltip and the old sentence became false in the same commit that authored the payload.
+#
+#   THE MODIFIER WAS NEVER WAITING, WHICH IS THE HALF THAT DID NOT CHANGE: WeaponItems.mint derives
+#   the wielder's ATTACK_DAMAGE attribute from this value regardless of triggers, so the stat has
+#   been real since the file shipped and only the tooltip line was ever missing.
 attack_damage: 48
 
 # ================== THE MAGAZINE ==================
@@ -211,29 +214,145 @@ triggers:
   # named for what the PLAYER DOES, not for when the code runs. Dispatch happens at RELEASE; if
   # `release` reads better on the tooltip that is a one-word change and the operator's to make.
   draw:
+    # ================== NO cooldown_ticks HERE, AND ITS ABSENCE IS THE DECISION ==================
+    #
+    # R7's `cooldown_ticks: 0` LIVED ON THIS BINDING AND HAS MOVED TO `tap:` BELOW. It was always a
+    # ruling about the TAP -- PLAN-dragons-plume.md 7.2 is entirely an account of this field pricing
+    # tapping and nothing else -- and until slice b2b there was only one binding to put it on.
+    #
+    # COOLDOWNS KEY ON (player, weaponId, input), so with two bindings the field can finally sit on
+    # the shot it governs. That makes "this timer prices the tap" STRUCTURAL rather than an
+    # arithmetic coincidence of the two shots sharing one key.
+    #
+    #   CONSEQUENCE ON THE TOOLTIP, PREDICTED BEFORE THE GOLDEN WAS REGENERATED AND CONFIRMED BY IT:
+    #   WeaponLoreLines.rangedAttackSpeedLabel returns "" at or below zero, so THIS WEAPON RENDERS NO
+    #   "Attack Speed" LINE, where boltor and locust both do. That is correct rather than a
+    #   regression: a charged release's cadence is a three-second HOLD, not a cooldown, and 20/0 is
+    #   not a rate. A number there would be a lie the tooltip tells.
+    #
+    # DO NOT ADD A cooldown_ticks BACK HERE. A timer on the charged release would price the shot the
+    # draw already prices, and 7.2's whole finding is that the draw is the gate.
+
+    # ================== THE CHARGED SHOT: 1, 3 OR 5 ARROWS THAT SEEK ==================
+    #
+    # R11 ruled the reach at ~300 blocks: speed 2.5 over max_lifetime_ticks 120. R12 ruled the arrow
+    # drops like a normal one -- gravity 0.05, which is hunters_bow's value and the only BOW
+    # precedent in the project; the 0.03 figures belong to staves.
+    cast:
+      type: projectile
+      speed: 2.5
+      gravity: 0.05
+      max_lifetime_ticks: 120
+
+      # THE BODY IS NOT RULED. *** FLAGGED RATHER THAN QUIETLY CHOSEN. ***
+      #
+      # Nothing rules what a Plume arrow LOOKS like. It is authored because ProjectileFlight spawns a
+      # marker only for a bolt with a rendered body, so without it the arrows are invisible and gate
+      # rows P1-P4, P8 and P9 -- every one of which says "watch where the arrow goes" -- cannot be
+      # read at all. PLAN-dragons-plume.md 6 already assumes one: "each arrow carries a marker
+      # entity (spawnMarker), so five arrows is five entities in flight".
+      #
+      # So `arrow` is the obvious material and NOT a ruling. If the operator wants something else it
+      # is a one-word change and this comment is where to look.
+      item: arrow
+
+      # ================== THE HOMING FIGURES ARE INHERITED AND UNJUDGED ==================
+      #
+      # A DIFFERENT GAME'S NUMBERS, tuned against an INSTANT FAN OF THREE. R1' makes this a charged
+      # weapon firing up to five. NOTHING CARRIES OVER AUTOMATICALLY -- marked exactly as
+      # locust_beam.yml marks its own provisional density, and for its stated reason: "a number that
+      # has been copied once looks more settled than the number it was copied from."
+      #
+      # They are AUTHORED RATHER THAN BAKED precisely so a boot row can move one without a rebuild.
+      #
+      #   AND THE SEARCH RADIUS CROSSED A SHAPE CHANGE THE NUMBER DOES NOT SHOW. The old repo's
+      #   search was getNearbyEntities(10, 10, 10) -- a 20x20x20 BOX, whose corner is
+      #   sqrt(3) x 10 = 17.32 blocks out. CombatWorld.combatantsNear is a SPHERE. The same 10 is a
+      #   strictly SMALLER search everywhere except along the axes, so do not report P3 as "the old
+      #   radius held".
+      homing:
+        lerp: 0.65               # INHERITED, unjudged -- discharged by PLAN row P1
+        activation_blocks: 15    # INHERITED, unjudged -- discharged by P2
+        search_radius: 10        # INHERITED, unjudged, and a SPHERE not a box -- discharged by P3
+
+    # weapon_damage, NOT a literal -- so attack_damage above is a stat a modifier can grip, and so
+    # Power (enchants/power.yml, effect: damage, class: ranger) reaches this shot.
+    #
+    # THIS IS THE LINE THAT MAKES "Ranged Damage: 48" RENDER. WeaponLore's stat block is gated on
+    # DamagePayload.isBasicAttack, which is exactly this effect type -- see the attack_damage comment
+    # above, which said the line "appears when H2 authors the payload, not before". This is that.
+    on_hit:
+      - type: weapon_damage
+        element: void
+
+  # ================== `tap`: R4', AND IT IS A DIFFERENT SHOT RATHER THAN A SMALLER ONE ==================
+  #
+  # A partial draw -- released after vanilla's 3-tick floor but before full charge. One arrow, NO
+  # seeking, a quarter of the damage. DrawRelease.decide picks between this binding and `draw:` and
+  # PlumeDraw dispatches the input by name; neither is reachable from a click.
+  #
+  # R4' OVERTURNED R4, WHICH GAVE THE TAP HOMING. The homing-versus-no-homing question was put to Ben
+  # when R4 was made and he chose homing; he has since chosen the option he previously declined and
+  # added a damage cut. A silently rewritten ruling reads as one nobody ever questioned.
+  #
+  # THE BINDING NAME IS NOT AUTHORED, so the tooltip renders the WEAPON's display name beside the
+  # input: "Dragon's Plume  Tap". quiver_stone names its shot "Loose"; this one is unnamed because
+  # nobody has ruled a name, and inventing one here would be a design decision wearing a comment's
+  # clothes. A `name:` key is all it takes if the operator wants one.
+  tap:
     # ================== 0: RULED (R7), AND AUTHORED EXPLICITLY FOR THAT REASON ==================
     #
-    # "Fast shooting arrows is fine." THE TAP IS GATED BY BEING A WORSE SHOT, NOT BY A TIMER: a
-    # partial draw fires one arrow, with NO homing, at 12 damage (R4'), and the reload above is what
-    # prices spamming it.
+    # "Fast shooting arrows is fine." THE TAP IS GATED BY BEING A WORSE SHOT, NOT BY A TIMER: one
+    # arrow, no homing, 12 damage, and the 90-tick reload above is what prices spamming it.
     #
     # *** A 0 LEFT IMPLICIT IS EXACTLY WHAT SOMEBODY LATER "FIXES". *** PLAN-dragons-plume.md 7.2
     # wrote the condition before the ruling existed: "if the draw is meant to be the only gate, the
     # answer is 0 and it should be authored as a RULING -- not left at 0 by omission, because the
     # headline finding is exactly the consequence somebody would later fix." Fixing it would break
     # the balance the weapon rests on.
+    #
+    # IT RENDERS NOTHING. cadenceLine drops a free, instant trigger, so there is no "Cooldown:" line
+    # on the tooltip -- the 0 is a ruling for a reader of this file, not a line for a player.
     cooldown_ticks: 0
 
-    # ================== THE BINDING IS EMPTY, AND AT H1 THAT IS HONEST ==================
+    # THE SAME FLIGHT AS THE CHARGED SHOT, AND THAT IS A DERIVATION RATHER THAN A RULING.
     #
-    # No cast, no on_hit, no cost. AT THE H1 BOOT THIS WEAPON GENUINELY FIRES NOTHING -- the bow
-    # ticks its charge, plays its rising sound, and looses nothing at all, which is the entire point
-    # of splitting H1 from H2: every high-risk unknown is in the input layer, and a bow that only
-    # ticks answers all of them without four candidate causes for every symptom.
+    # R11 and R12 rule the reach and the drop for THE WEAPON; nothing rules the tap separately. Same
+    # flight minus the seeking is the derivation, and it is labelled one so nobody later cites it as
+    # a decision Ben made. If the tap should fly differently, that is an open question and not a
+    # discrepancy with this file.
+    cast:
+      type: projectile
+      speed: 2.5
+      gravity: 0.05
+      max_lifetime_ticks: 120
+      item: arrow
+
+      # NO homing BLOCK, AND ITS ABSENCE IS THE RULING RATHER THAN AN OMISSION.
+      #
+      # R4' is "one arrow, WITH NO HOMING, at 12 damage". An absent homing block is exactly how the
+      # schema says that: AbilitySchema maps a missing section to null, and a null Seek makes
+      # ProjectileFlight.steer return the velocity untouched on its first line. The bolt flies where
+      # it was aimed, like every projectile in the project before this weapon.
+      #
+      # DO NOT "COMPLETE" THIS BY COPYING THE BLOCK FROM `draw:` ABOVE. The two casts are deliberately
+      # not the same shot, and the difference between them is the entire content of R4'.
+
+    # ================== 12: A LITERAL, AND THAT IS WHY THIS BINDING EXISTS AT ALL ==================
     #
-    # SO THE TOOLTIP WILL SHOW AN INPUT LINE WITH NOTHING UNDER IT. That is the weapon being
-    # described accurately, not a half-written file.
+    # *** WHY 12 IS A LITERAL AND 48 IS NOT. *** weapon_damage reads the wielder's ATTACK_DAMAGE
+    # attribute, which is this weapon's attack_damage -- 48. A LITERAL IS THE ONLY WAY TO SAY A
+    # NUMBER THAT IS NOT THE WEAPON'S, and R4' rules the tap at a quarter of the charged arrow.
     #
-    # *** DO NOT "COMPLETE" THIS. *** H2 fills the cast and the on_hit under THIS SAME BINDING --
-    # the projectile, F/F2's homing block, and the weapon_damage payload that makes attack_damage
-    # render. Anything authored here before H2 decides how the release reaches a cast is a guess.
+    # THAT IS THE REASON THERE ARE TWO BINDINGS RATHER THAN ONE. The tap is not a scaled charged
+    # release: different damage, no seeking, different shot. Neither half of that is expressible
+    # under one binding -- attack_damage is weapon-level, and the homing block lives on the cast.
+    #
+    #   CONSEQUENCE ON THE TOOLTIP: this renders "Void Damage: 12", ELEMENT-typed rather than
+    #   class-typed, because a literal reads no stat -- so no "+N Ranged Damage" modifier can reach
+    #   it, and claiming otherwise would be a lie the tooltip tells. WeaponLore's own comment says
+    #   exactly this about the ability path.
+    on_hit:
+      - type: damage
+        amount: 12
+        element: void

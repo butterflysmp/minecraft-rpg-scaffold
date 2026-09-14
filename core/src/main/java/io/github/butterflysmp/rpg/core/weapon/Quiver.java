@@ -13,7 +13,7 @@ package io.github.butterflysmp.rpg.core.weapon;
  *   ----------------------------       ----------------------------
  *   maxDurability (the material's)     capacity   (a PARAMETER)
  *   damage counts UP to a floor        loaded counts DOWN to zero
- *   wear(current, amount, max)         spend(loaded)
+ *   wear(current, amount, max)         spend(loaded, rounds)
  *   repair(current, amount)            reload(loaded, rounds, capacity)
  *   isBroken(current, max)             isEmpty(loaded)
  *   clamp(proposed, max)               clamp(proposed, capacity)
@@ -24,6 +24,13 @@ package io.github.butterflysmp.rpg.core.weapon;
  * the table -- {@code repair} took a current and an amount; {@code reload} took neither. Now
  * {@code current <-> loaded} and {@code amount <-> rounds} line up exactly, and both clamp against a
  * maximum the caller supplies. Arrows made the two mechanisms the same shape.
+ *
+ * <p><b>And the wear/spend row did the same thing in slice H, by the same route.</b> It read
+ * {@code spend(loaded)} while every weapon spent exactly one round per shot, which left it the
+ * weakest row once reload was fixed. The Dragon's Plume fires up to five arrows for one press, so
+ * {@code amount <-> rounds} lines up here too. <b>Twice now a weapon that does something new has
+ * pulled these two classes closer together rather than further apart</b>, which is the evidence that
+ * the analogy in this table is structural and not decorative.
  *
  * <h2>CAPACITY AND RELOAD TICKS ARE PARAMETERS, AND THIS CLASS MUST NEVER LEARN THEIR VALUES</h2>
  *
@@ -90,7 +97,7 @@ public final class Quiver {
     }
 
     /**
-     * Spend one round, floored at zero so a spend can never drive the count negative.
+     * Spend {@code rounds} rounds, floored at zero so a spend can never drive the count negative.
      *
      * <p>Takes no capacity: spending only ever moves the count DOWN, so no ceiling can be exceeded --
      * the mirror of {@link Durability#repair}, which takes no maximum for the same reason.
@@ -99,10 +106,47 @@ public final class Quiver {
      * a no-op rather than a corruption; it is not the gate. The refusal a player sees is minted in
      * {@code paper}, where the held item can actually be read.
      *
-     * <p>Worked: {@code 3 -> 2}; {@code 1 -> 0}; {@code 0 -> 0}; {@code -4 -> 0}.
+     * <h2>THIS TOOK A SIGNATURE CHANGE RATHER THAN AN OVERLOAD, ON {@link #reload}'S PRECEDENT AND
+     * FOR ITS STATED REASON</h2>
+     *
+     * <p>It was {@code spend(int loaded)} -- {@code loaded - 1} -- because every weapon in the
+     * project spent exactly one round per shot. <b>The Dragon's Plume's release fires up to five
+     * arrows for one press</b>, and a five-arrow release costs five rounds.
+     *
+     * <p><b>An overload would have let a missed call site keep compiling and silently spend ONE</b>,
+     * which is the pre-slice behaviour wearing the new API's name -- {@code reload}'s javadoc makes
+     * exactly this argument two methods down, and it carries over unchanged. Changing the signature
+     * makes every caller a compile error: there is exactly one in production
+     * ({@code Quivers.spendRounds}, itself reached only from {@code WeaponFire}) plus four test rows.
+     * <b>The small number is not the argument. The argument is that this is PUBLIC CORE SURFACE</b>,
+     * and {@link QuiverSize}'s javadoc records {@code resolve(9, -5.0)} returning 4 through exactly
+     * such a path while everyone believed the content pipeline was the only way in.
+     *
+     * <p><b>AND THE ALTERNATIVE WAS WORSE THAN AN OVERLOAD: doing the subtraction in {@code paper}.</b>
+     * A {@code loaded - n} written inside {@code Quivers} or the release dispatch gives the magazine
+     * arithmetic a SECOND HOME -- one in {@code core} doing {@code -1}, one in {@code paper} doing
+     * {@code -n}, and nothing making them agree. The whole point of this class is that the decisions
+     * are here and only the item I/O is out there.
+     *
+     * <p><b>The correspondence with {@link Durability} got CLOSER, exactly as {@code reload}'s did in
+     * Slice E.</b> It read {@code wear(current, amount, max)} against {@code spend(loaded)} -- the
+     * weakest row in the table after the reload one was fixed. Now {@code current <-> loaded} and
+     * {@code amount <-> rounds} line up, and the only remaining difference is the maximum, which a
+     * downward move genuinely does not need.
+     *
+     * <p><b>A NEGATIVE {@code rounds} IS A NO-OP, NOT A REFUND.</b> Floored for {@link #reload}'s
+     * reason with the sign reversed: a spend that ADDED arrows would be free ammunition reachable
+     * from any caller that computed a count wrongly, and it would look like the weapon working.
+     *
+     * <p>Worked: {@code (3, 1) -> 2}; {@code (1, 1) -> 0}; {@code (0, 1) -> 0}; {@code (-4, 1) -> 0}
+     * -- and for the count: {@code (5, 5) -> 0}; {@code (3, 5) -> 0} (the floor at
+     * {@code rounds > loaded}); {@code (3, 0) -> 3}; {@code (3, -2) -> 3}.
+     *
+     * @param rounds how many rounds this one press costs -- ONE for every weapon that fires a single
+     *               shot, and the arrow count for a fanned release
      */
-    public static int spend(int loaded) {
-        return Math.max(loaded - 1, 0);
+    public static int spend(int loaded, int rounds) {
+        return Math.max(loaded - Math.max(rounds, 0), 0);
     }
 
     /**
