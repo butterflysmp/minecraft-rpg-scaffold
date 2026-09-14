@@ -62,6 +62,7 @@ import io.github.butterflysmp.rpg.paper.packet.WeaponSwingListener;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.scheduler.PaperScheduler;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
+import io.github.butterflysmp.rpg.paper.weapon.PlumeDraw;
 import io.github.butterflysmp.rpg.storage.FilePlayerRepository;
 import io.github.butterflysmp.rpg.storage.PlayerRepository;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
@@ -156,6 +157,7 @@ public final class RpgPlugin extends JavaPlugin {
     private CraftResultIndex craftResults;
     private CooldownTracker cooldowns;
     private FireCadence fireCadence;
+    private PlumeDraw plumeDraw;
     private ResourcePool resources;
     private CombatantStats stats;
     private PlayerHealthSystem healthSystem;
@@ -435,6 +437,14 @@ public final class RpgPlugin extends JavaPlugin {
         // supplier so the arithmetic is unit-tested with a fake clock; this is the only place the
         // real clock is bound. It records on every weapon fire attempt and is read by /rpg firerate.
         this.fireCadence = new FireCadence(Bukkit::getCurrentTick);
+
+        // THE PLUME'S DRAW STATE, HOISTED HERE RATHER THAN BUILT INSIDE THE LISTENER,
+        // because TWO things hold it: RpgListeners, which drives the draw, and
+        // /rpg drawsound, which retunes the tick sound live. Construct it in the
+        // listener and the command retunes a copy nobody can hear -- the same reason
+        // fireCadence is hoisted above rather than owned by its one writer.
+        this.plumeDraw = new PlumeDraw(weapons, adapters);
+
         // THE PER-PLAYER CEILING: the base pool plus whatever Mana Bank the player is wearing.
         //
         // Scoped to DEFAULT_RESOURCE deliberately. The pool is keyed by (owner, resourceId) and
@@ -492,7 +502,7 @@ public final class RpgPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                         healthSystem, nameplates, statsBar, healthRegen,
-                        this, recipes), this);
+                        this, recipes, plumeDraw), this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
         // paper-plugin.yml. We do NOT call PacketEvents.setAPI() or .load()
@@ -514,7 +524,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence),
+                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, plumeDraw),
                         "RPG commands"));
     }
 
