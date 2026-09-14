@@ -1,12 +1,19 @@
 # PLAN — The Dragon's Plume
 
-**Status: NOT IMPLEMENTED. No Java written, no content file authored, no test written, nothing
-booted.** This document is the investigation, the rulings and the design.
+**Status: PARTLY BUILT.** This document is the investigation, the rulings and the design — **it is no
+longer ahead of the code, and saying so is the point of this line.** Landed since it was written:
+**F** (homing in `core`), **F2** (the sight gate), **G** (`roundsRemaining`), **H1** (the draw, the
+tracker and the tick — it fires nothing by design), and **`dragons_plume.yml`**, a first pass
+authoring only what H1's boot needs. **H2 — the release — is not built.**
 
-**EVERY NUMBER A PLAYER EXPERIENCES IS NOW RULED** — thirteen rulings, one of them an overturn, each
-named where it lands (§2, and the closed sections of §7). **Two things that are not numbers remain
-open:** the charge **sound key**, which P6 decides by ear, and §5's **homing constants**, which stay
-`INHERITED AND UNJUDGED` with a gate row each.
+**AND ONE ROW HAS BEEN READ.** `GATE-plume-draw.md` H-1 carries a real observation, taken on a
+`pling` the weapon no longer uses; the rest is still prediction. A plan that keeps claiming *nothing
+booted* after a boot is the same falsified-account defect it warns about elsewhere.
+
+**EVERY NUMBER A PLAYER EXPERIENCES IS RULED** — thirteen rulings, one of them an overturn, each named
+where it lands (§2, and the closed sections of §7) — **and so is the charge sound** (R13's material,
+§7.6). **What remains open is not a number:** §5's **homing constants**, which stay `INHERITED AND
+UNJUDGED` with a gate row each.
 
 ---
 
@@ -349,8 +356,14 @@ operator's call, not a detail.**
 
 - **R13 · THE FIVE STEPS MUST BE TELLABLE APART BY EAR.** A player holding the draw must be able to
   **release on the count they wanted without looking at anything**, so the pitch mapping is authored
-  for **SEPARATION, not subtlety** — the geometric row in §7.6, even to an ear at ~4 semitones a step,
-  rather than the linear one whose top step is **40% smaller** than its bottom one.
+  for **SEPARATION, not subtlety** — the geometric row in §7.6, every step the same RATIO, rather
+  than the linear one whose top step is **40% smaller** than its bottom one.
+
+  > **AND R13's SOUND IS NOW RULED TOO: `block.note_block.basedrum`**, after a listen —
+  > *"the piano doesn't suit it, try snare or kick."* `block.note_block.snare` is recorded beside it
+  > as the one-line alternative. **The kick because R13's subject is POSITION, not counting:** a
+  > snare's sharper transient is easier to count as discrete hits, while a kick carries the rise more
+  > legibly and so tells you *which step you are on* if you lost count or started listening late.
 
   > **AND P6 GAINS A SECOND HALF THAT ITS FIRST CANNOT ANSWER.** Not only *is the top of the range
   > still pleasant*, but **can a person NAME THE COUNT WITHOUT LOOKING.** That is the ruling's actual
@@ -931,10 +944,22 @@ the count they wanted without looking at anything* — so the mapping is authore
 not for subtlety**. That legibility is the whole mitigation for the one thing this weapon gave up
 (§2.1: its charge is the first duration in the project no stat can move).
 
-**The material.** Sounds are authored as **strings** and played **privately to the holder** — the
-form `QuiverNotice` uses (`"block.dispenser.fail"`, `"item.crossbow.loading_start"`). Candidates for
-Ben's ear rather than mine: `block.note_block.pling`, `item.crossbow.loading_middle`,
-`entity.experience_orb.pickup`.
+**The material — RULED, after a listen, which is the only instrument there is for it.** Sounds are
+authored as **strings** and played **privately to the holder** — the form `QuiverNotice` uses
+(`"block.dispenser.fail"`, `"item.crossbow.loading_start"`).
+
+```
+RULED        block.note_block.basedrum    the kick
+ALTERNATIVE  block.note_block.snare       one line away, overturnable after a listen
+SHIPPED AND WITHDRAWN
+             block.note_block.pling       "the piano doesn't suit it, try snare or kick"
+```
+
+**The kick over the snare, and the reason is R13's own subject.** The ruling asks whether a player can
+tell **how many arrows they hold** — which is knowing your **POSITION** on the ladder, not counting
+events. A snare has the sharper transient and is easier to count as discrete hits; **a kick carries
+the rise more legibly, so it tells you WHICH STEP you are on if you lost count or started listening
+late.**
 
 **THE MAPPING R13 SELECTS, AND THE ARITHMETIC THAT SELECTS IT.** Pitch in Minecraft is a **playback
 rate**, so what an ear hears as a *step* is the **ratio** between two pitches, not the difference.
@@ -942,24 +967,40 @@ A mapping with even *differences* therefore has **shrinking steps**, and it shri
 counts matter most — at four and five, when the player is deciding whether to let go.
 
 ```
-                 1      2      3      4      5      steps, in semitones (12 log2 of the ratio)
-linear      1.00   1.25   1.50   1.75   2.00        3.86   3.16   2.67   2.31     <- top step is 40% smaller
-RULED       0.80   1.00   1.26   1.59   2.00        3.86   4.00   4.03   3.97     <- even, ~a major third each
+                 1      2      3      4      5      each step, as a RATIO
+linear      1.00   1.25   1.50   1.75   2.00        1.250  1.200  1.167  1.143   <- the step shrinks
+RULED       0.80   1.00   1.26   1.59   2.00        1.257  1.257  1.257  1.257   <- even
 ```
 
 **The ruled row is geometric — `pitch = 0.8 × r^(n-1)` with `r = (2.0/0.8)^(1/4) = 1.2574`** — which
 is *"authored for separation"* stated as a number rather than as an intention: **every step is the
 same size to an ear**, and it is the largest even step the assumed span allows.
 
-**THE 2.0 CEILING REMAINS OUTSIDE KNOWLEDGE THIS MACHINE CANNOT MEASURE.** Checked and not found:
-`World#playSound`'s javadoc in the pinned API documents **no range** for `pitch`, and
-`ClientboundSoundPacket` carries a **raw float** — so any cap is the client's. **Do not restate it as
-a fact of the platform.** If it is wrong the mapping still works; it simply stops short of the top.
+> **THE LADDER SURVIVED THE INSTRUMENT CHANGE; THE ARGUMENT THAT CHOSE IT DID NOT, AND THAT IS WORTH
+> ONE LINE SO NOBODY RE-DERIVES IT.** This table used to read in **semitones** and called each step a
+> major third. **The RATIO half survives** — equal ratios are still probably equal perceptual steps,
+> so the ladder stands unchanged. **The INTERVAL half does not: a note-block drum is NOISE, not a
+> tone.** Shifting its playback rate makes it shorter and brighter; there is no interval to hear.
+> A sentence about semitones is a sentence about an instrument this weapon no longer uses.
 
-> **THE SOUND KEY ITSELF IS NOT A NUMBER AND IS NOT RULED HERE.** Candidates go to **P6**, which is a
-> person listening — and R13 gives that row a **second half** that its first half cannot answer: not
-> only *is the top of the range still pleasant*, but **can a person NAME THE COUNT WITHOUT LOOKING.**
-> Those are different questions, and only the second one is the ruling's test.
+**THE 2.0 CEILING REMAINS OUTSIDE KNOWLEDGE THIS MACHINE CANNOT MEASURE — AND THE INSTRUMENT CHANGE
+WIDENED WHAT IS UNKNOWN ABOUT IT.** Checked and not found: `World#playSound`'s javadoc in the pinned
+API documents **no range** for `pitch`, and `ClientboundSoundPacket` carries a **raw float** — so any
+cap is the client's. **Do not restate it as a fact of the platform.**
+
+**That half is unchanged. What changed is how the top can FAIL.** A pling at 2.0 was simply a high
+note; **a kick at 2.0 is half as long and may stop reading as a kick at all.** So the fifth step now
+raises two questions rather than one — *is it audible* and *is it still the same sound* — and a
+person listening is the only instrument for either.
+
+> **THE SOUND KEY IS NOW RULED** — `block.note_block.basedrum`, above — **so what remains for a
+> listener is the LADDER rather than the material.** R13's test is the half that a pleasant sound can
+> still fail: not *is the top of the range nice*, but **can a person NAME THE COUNT WITHOUT
+> LOOKING** — and, more sharply, name it **having started listening late**, since the ruling's
+> subject is position rather than counting.
+>
+> **The reading that ruled the material was taken on the pling and does not carry across the swap.**
+> It is preserved in `GATE-plume-draw.md` under H-1, with H-1b as the drum's own row.
 
 ## 8. THE GATE ROWS, DRAFTED BEFORE THE BOOT
 
@@ -1001,8 +1042,9 @@ arrive with their discharge conditions attached rather than acquiring them after
   speed 2.5 (with R11)     R11   the pitch mapping         R13
   ```
 
-  **What is NOT ruled is not a number:** the **sound key** itself (P6 is a person listening), and
-  the **homing constants** of §5, which stay `INHERITED AND UNJUDGED` with a gate row each.
+  **The sound key joined them** — `block.note_block.basedrum`, ruled after a listen (§7.6), which is
+  the only instrument there was for it. **What is NOT ruled is not a number:** the **homing
+  constants** of §5, which stay `INHERITED AND UNJUDGED` with a gate row each.
 - **It does not rule the Endermen or the summons exclusions.** R2 carries them as candidates; they need
   a distinction `core` does not currently have — `CombatantSnapshot` knows `player` and nothing else —
   so ruling them in costs either a port extension or a `paper`-side predicate. **Named, not chosen.**

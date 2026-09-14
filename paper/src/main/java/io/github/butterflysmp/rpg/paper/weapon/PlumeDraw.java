@@ -104,11 +104,26 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class PlumeDraw {
 
     /**
-     * PROVISIONAL, AND UNRULED. R13 ruled the pitch LADDER; the sound KEY is not a number and P6
-     * decides it by ear. A clean pitched tone is the right shape for a ratio ladder -- many vanilla
-     * sounds do not pitch cleanly -- which is why this one is here rather than a bowstring creak.
+     * RULED, AFTER A LISTEN -- which is the only instrument there is for this.
+     *
+     * <p>It shipped as {@code block.note_block.pling} on the reasoning that a clean pitched tone is
+     * the right shape for a ratio ladder. <b>The operator heard it and ruled otherwise:</b> <i>"the
+     * piano doesn't suit it, try snare or kick."</i> The kick it is.
+     *
+     * <p><b>THE ALTERNATIVE IS ONE LINE AWAY AND IS RECORDED RATHER THAN DISCARDED:</b>
+     * {@code block.note_block.snare}. <b>Overturnable after a listen</b>, and the argument for the
+     * kick is worth having written down because it is about what R13 actually asks:
+     *
+     * <p>R13's test is whether a player can tell <b>HOW MANY ARROWS THEY HOLD</b> -- which is knowing
+     * your POSITION on the ladder, not counting events. A snare has the sharper transient and is
+     * easier to count as discrete hits; <b>a kick carries the rise more legibly, so it tells you
+     * WHICH STEP you are on if you lost count or started listening late.</b> Position is the
+     * ruling's actual subject.
+     *
+     * <p>The precedent for choosing a note-block sound and proving it by ear is
+     * {@code BrokenNotice}'s {@code block.note_block.bass}.
      */
-    private static final String TICK_SOUND = "block.note_block.pling";
+    private static final String TICK_SOUND = "block.note_block.basedrum";
     private static final float TICK_VOLUME = 0.7f;
 
     /** The material whose vanilla draw this reads. Content authors it as {@code material: bow}. */

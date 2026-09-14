@@ -1,20 +1,19 @@
 # GATE — the Dragon's Plume's draw (slice H1)
 
-**Status: NOT RUN.** Every row below was written **before any boot**, and no figure in this file is
-an observation. A row that later carries a reading will say so in its own cell.
+**Status: ONE ROW READ, THE REST NOT RUN.** Every row was written **before any boot**. **Exactly one
+figure in this file is an observation** — H-1's, taken on a `pling` that the weapon no longer uses,
+preserved under the table and superseded by H-1b. Everything else is still a prediction, and a row
+that later carries a reading says so in its own cell.
 
-> ## AND IT CANNOT BE RUN YET — THE BLOCKER IS NAMED RATHER THAN WORKED AROUND
+> ## THE BLOCKER IS GONE — `dragons_plume.yml` LANDED
 >
-> **H1's gate is: one of our weapons, `material: bow`, binding no `right_click`.** The only bow in
-> the project is `hunters_bow`, which **binds `right_click`** — so `RpgListeners` cancels its vanilla
-> interaction, `BowItem.use` never runs, the draw never starts, and there is nothing for H1 to read.
+> **These rows waited on content.** H1's gate is a weapon of ours with `material: bow` binding no
+> `right_click`, and the only bow shipped was `hunters_bow`, which binds one. The Plume's file merged
+> in `d4af575` with a `draw` binding and no `right_click`, **so the gate is satisfiable and every row
+> below can be run.**
 >
-> **The first weapon that matches the gate is the Dragon's Plume itself**, whose content file is the
-> content chat's seat. **So these rows wait on `dragons_plume.yml`** — the same state `GATE-locust.md`
-> row 1 sat in, and the reason its verdict column stayed empty.
->
-> **What is NOT blocked:** H1's arithmetic is `core` and is guarded by `DrawChargeTest` (8 rows),
-> which needs no server at all. What waits here is only what a server can answer.
+> **What was never blocked:** H1's arithmetic is `core` and is guarded by `DrawChargeTest` (8 rows),
+> which needs no server at all. What waited here was only what a server can answer.
 
 ---
 
@@ -28,11 +27,35 @@ are H2's, deliberately, and none of them can confuse a symptom here.
 
 | row | staging | what to record |
 |---|---|---|
-| **H-1** | Hold a full draw for **five seconds** with a full magazine. | **How many ticks sound, and whether the rise is tellable apart BY EAR** — have a second person, not watching the screen, call the count. Five expected, at ~4 semitones a step (R13). **The second half is the ruling's actual test**; a sound can be pleasant and still fail it. |
+| **H-1** | ~~Hold a full draw for **five seconds** with a full magazine.~~ **SUPERSEDED BY H-1b — the instrument changed.** | **READ ONCE, ON A `pling`, AND THE READING IS PRESERVED BELOW** rather than overwritten. See the block under this table. |
+| **H-1b** | **NOT RUN.** Hold a full draw for **five seconds** with a full magazine, now that the tick is `block.note_block.basedrum`. | **How many ticks sound, and whether the rise is tellable apart BY EAR** — have a second person, not watching the screen, call the count. Five expected, each step the same RATIO (1.2574). **The second half is the ruling's actual test**: R13 asks whether a player knows **WHICH STEP they are on**, not whether they can count events — so the listener should be asked to start listening LATE and still name the position. **And the fifth step is now a separate question**: a kick at pitch 2.0 is half as long and may stop reading as a kick (see `DrawCharge`). |
 | **H-2** | **THE CAP.** Load exactly **two** rounds, then hold a full draw for five seconds. | **The ticks must STOP at two.** Record how many sounded. Then, **without releasing**, have a reload complete mid-draw and record whether the ticks RESUME — R3's cap is live, and a cap read once at full charge is indistinguishable from a live one on a magazine that never changes. |
 | **H-3** | **THE ARROW — and this row proves a MECHANISM, not an absence.** One arrow in the off-hand, nothing else in the bag. Draw, hold past full charge, release. | **Is the arrow still there?** It survives only if `clearActiveItem()` inside `PlayerStopUsingItemEvent` made `LivingEntity.releaseUsingItem`'s re-read at offset 72 yield EMPTY, so `BowItem.releaseUsing` — and therefore `draw()`, and therefore `useAmmo` — never ran. **If the arrow is gone, that specific chain is what failed**, and the server log will say so: the `EntityShootBowEvent` guard fires loudly precisely here. |
 | **H-4** | **THE VISUAL DESYNC.** Draw, hold to five, release — and **watch the first-person hand and a second player's view of you**. Repeat while moving, and while looking up. | **Does the client keep animating a draw it no longer has?** The server clears the active item mid-release; nothing guarantees the client agrees. **Write this row's answer in words, not a verdict** — "the bow snapped back instantly" and "the arm stayed pulled for about a second" are different findings and both are passes for the mechanism. **No amount of bytecode reading could have predicted this row**, which is why it is here. |
 | **H-5** | **THE NEGATIVE ROW, and it is the one that fails if the gate is wrong.** With H1 installed: eat a food item to completion; raise and lower a shield; fire an **ordinary vanilla bow**; drink a potion; use a spyglass. | **Each must behave exactly as it did before.** `PlayerStopUsingItemEvent` fires for **every** item release on the server, so an ungated `clearActiveItem()` would break all of these silently. **This row exists because of the gate, and it is the row that catches a gate that does not gate.** |
+
+## H-1's READING, PRESERVED — AND A READING IS SCOPED TO THE CONDITIONS IT WAS TAKEN UNDER
+
+**A boot happened, on `block.note_block.pling`, and it read:** five ticks sounded, and a listener who
+could not see the screen called the count correctly. **The mechanism worked.**
+
+**THE INSTRUMENT IS ONE OF THOSE CONDITIONS, SO THE PASS DOES NOT CARRY ACROSS THE SWAP.** The tick
+is now a `basedrum`, ruled after that listen — *"the piano doesn't suit it, try snare or kick."* A
+drum is a different kind of sound, not a different setting of the same one: it is noise rather than a
+tone, and it changes what the top of the ladder even is. **So H-1b is NOT RUN, and it is a new row
+rather than a fresh figure written into H-1's cell.** Overwriting the cell would have destroyed the
+only evidence this mechanism has ever produced.
+
+> **AND THE READING WAS NEVER IN THIS FILE UNTIL NOW, WHICH IS ITS OWN FINDING.** It reached this
+> record on **2026-09-14**, from the operator's report, while the file still said `Status: NOT RUN`
+> and H-1's cell was the prediction. **`CLAUDE.md`: a finding that lives only in the conversation is
+> not recorded** — not greppable by the next person, not surviving the session, unable to fail.
+>
+> **The boot's own date is NOT KNOWN and is not invented here.** What is dated is the writing-down.
+> That gap is exactly what the rule is about: by the time anyone thought to record the reading, the
+> one fact nobody thought to keep was when it was taken.
+
+---
 
 > **H-3 AND H-5 FAIL IN OPPOSITE DIRECTIONS, AND THAT IS WHY BOTH ARE HERE.** H-3 fails if the clear
 > does not happen; H-5 fails if it happens to things it should not. A gate that is too narrow loses
@@ -44,9 +67,12 @@ are H2's, deliberately, and none of them can confuse a symptom here.
   about arrows; these are about architecture.
 - **The homing constants.** `PLAN-dragons-plume.md` §5 carries them `INHERITED AND UNJUDGED` with
   rows P1-P4, and nothing here touches them.
-- **The pitch ceiling.** `2.0` is outside knowledge this machine cannot measure — the pinned API
-  documents no range and the packet carries a raw float. **H-1 is where a person finds out**, and if
-  the top of the ladder is inaudible or ugly that is a reading, not a failure.
+- **The pitch ceiling, and the instrument change widened it.** `2.0` is outside knowledge this
+  machine cannot measure — the pinned API documents no range and the packet carries a raw float.
+  **That half is unchanged.** What changed is how the top of the ladder can FAIL: a pling at 2.0 was
+  simply a high note, while **a kick at 2.0 is half as long and may stop reading as a kick at all**.
+  So H-1b asks two things of the fifth step — is it audible, and is it still the same sound — and
+  either answer is **a reading, not a failure**.
 
 ## THE ONE THING MEASURED AND THE ONE THING NOT
 
