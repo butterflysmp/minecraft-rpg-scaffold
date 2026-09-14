@@ -230,7 +230,7 @@ public final class RpgListeners implements Listener {
         this.tools = tools;
         this.weaponService = weaponService;
         this.adapters = adapters;
-        this.plumeDraw = new PlumeDraw(weapons, adapters);
+        this.plumeDraw = new PlumeDraw(weapons, adapters, weaponService, cooldowns, fireCadence);
         this.recipeCatalogue = new RecipeCatalogue(adapters);
         this.healthSystem = healthSystem;
         this.nameplates = nameplates;

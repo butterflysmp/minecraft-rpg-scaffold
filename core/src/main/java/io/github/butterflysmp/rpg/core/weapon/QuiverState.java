@@ -320,7 +320,7 @@ public final class QuiverState {
      * re-clamps it. <b>This returns 8.</b>
      *
      * <p><b>MEASURED, AND IT IS THE REASON: SUCH A MAGAZINE PAYS FOR NINE, NOT ELEVEN.</b>
-     * {@code Quivers.spendRound} is {@code Quiver.spend(11) = 10} handed to
+     * {@code Quivers.spendRounds} is {@code Quiver.spend(11, 1) = 10} handed to
      * {@code QuiverItems.setLoaded}, which clamps the value it WRITES -- {@code clamp(10, 8) = 8}.
      * So the surplus is lost at the FIRST shot rather than carried: one over-full shot, then a
      * magazine of 8.

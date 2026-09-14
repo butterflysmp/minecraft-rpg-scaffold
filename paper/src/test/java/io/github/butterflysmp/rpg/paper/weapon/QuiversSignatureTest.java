@@ -90,7 +90,8 @@ class QuiversSignatureTest {
     /**
      * A COUNT WRITTEN IN PLAY MUST CARRY ITS OWN RENDER, AND {@code Quivers} MAY NOT WRITE ONE RAW.
      *
-     * <p><b>This is boot row V1's display failure turned into a red build.</b> {@code spendRound}
+     * <p><b>This is boot row V1's display failure turned into a red build.</b> {@code spendRounds}
+     * (then called {@code spendRound}, before a release could cost more than one)
      * wrote the count key and called {@code updateInventory}, and nothing re-ran {@code applyLore} --
      * which executes only from {@code mint} and {@code remint}. The stored count moved, the tooltip
      * did not, and <b>three green rows were entirely consistent with the defect</b>: Q4, Q5 and Q6
@@ -578,10 +579,16 @@ class QuiversSignatureTest {
     /**
      * TODAY'S PUBLIC SURFACE, named rather than counted.
      *
-     * <p>Three of these four WRITE ({@code resolveForShot}, {@code spendRound}, {@code beginReload},
+     * <p>Three of these four WRITE ({@code resolveForShot}, {@code spendRounds}, {@code beginReload},
      * {@code tryReloadHeldWeapon} -- all but {@code stateOf}), and every one is verb-named so it
      * cannot be mistaken for a query. A new member added here is a deliberate edit to this list,
      * which is the moment to ask whether its name says what it does.
+     *
+     * <p><b>AND A RENAME IS ONE TOO, WHICH IS THIS ROW EARNING ITS KEEP RATHER THAN OBSTRUCTING.</b>
+     * {@code spendRound} became {@code spendRounds} in slice H2b, when the Dragon's Plume's release
+     * made a press cost up to five rounds instead of one. The set went red, the rename was looked at
+     * rather than absorbed, and the plural turns out to be the honest name -- <b>a method called
+     * {@code spendRound} taking a count would read as spending one round of a particular kind.</b>
      *
      * <p>Pinned as a SET rather than a count, because a count over an unnamed set cannot be checked
      * by the reader -- which is the same rule this slice's reports are held to.
@@ -596,7 +603,7 @@ class QuiversSignatureTest {
                 .toList();
 
         assertEquals(
-                List.of("beginReload", "resolveForShot", "spendRound", "stateOf", "tryReloadHeldWeapon"),
+                List.of("beginReload", "resolveForShot", "spendRounds", "stateOf", "tryReloadHeldWeapon"),
                 publicMethods,
                 "Quivers' public surface changed. Every member but stateOf commits, so a new one "
                         + "needs a verb name that says so -- and a new PURE one belongs beside "

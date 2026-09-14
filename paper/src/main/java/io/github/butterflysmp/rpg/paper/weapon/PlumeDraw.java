@@ -1,8 +1,13 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.DrawCharge;
+import io.github.butterflysmp.rpg.core.combat.DrawFan;
+import io.github.butterflysmp.rpg.core.combat.DrawRelease;
+import io.github.butterflysmp.rpg.core.combat.FireCadence;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
+import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -15,10 +20,11 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * THE DRAGON'S PLUME'S DRAW: the vanilla bow is an INPUT DEVICE, and this reads it.
  *
- * <p>Slice H1, the input layer. <b>It fires NOTHING</b> -- see the section at the bottom, which is a
- * decision rather than an omission. Every DECISION in here lives in {@link DrawCharge}, in
- * {@code core}, where a test reaches it without a server; this class only reads a live player,
- * schedules, and makes a noise.
+ * <p>The input layer, and since slice H2b <b>the release as well</b>. Every DECISION in here lives
+ * in {@code core} -- {@link DrawCharge} for the charge, {@link DrawRelease} for what a release
+ * fires, {@link DrawFan} for where the arrows point -- so a test reaches all of it without a server.
+ * This class reads a live player, schedules, makes a noise, and hands a decision to
+ * {@link WeaponFire}.
  *
  * <h2>THE RELEASE ROUTE, AND THE ONE THAT WAS TRIED FIRST AND CANNOT WORK</h2>
  *
@@ -86,20 +92,21 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@code RpgListeners}'s main-hand check on the interact event, and for the same reason: a general
  * event firing for a case nobody pictured.
  *
- * <h2>H1 FIRES NOTHING, AND THAT IS THE POINT OF THE SPLIT RATHER THAN AN UNFINISHED EDGE</h2>
+ * <h2>H1 FIRED NOTHING, AND THAT WAS THE POINT OF THE SPLIT RATHER THAN AN UNFINISHED EDGE</h2>
  *
- * <p>A bow that ticks and does not shoot. <b>Every high-risk unknown in this weapon is in this
+ * <p>A bow that ticks and does not shoot. <b>Every high-risk unknown in this weapon was in this
  * layer</b> -- does {@code getActiveItemUsedTime} behave live as the jar reads, does the release
  * event arrive when expected, does the off-hand arrow really satisfy the draw gate in play, does the
  * clear leave the arrow alone.
  *
- * <p><b>All four are answered by a bow that only ticks.</b> Layer firing, homing, damage and
- * round-spending on top first and the boot stops being a measurement and becomes a debugging
- * session, with four candidate causes for every symptom and no way to separate them.
+ * <p><b>All four were answered by a bow that only ticks</b>, and H-3 answered the hardest of them.
+ * Layering firing, homing, damage and round-spending on top first would have made the boot a
+ * debugging session with four candidate causes for every symptom.
  *
- * <p>H2 spawns the projectiles through the existing cast path with F/F2's homing, spends the rounds,
- * and handles R4' (a partial draw: one arrow, no homing, 12 damage) and R10 (under three ticks,
- * nothing).
+ * <p><b>H2 ADDED THE SHOTS ON TOP OF THAT ANSWER.</b> {@link #onRelease} now asks
+ * {@link DrawRelease#decide} and fires: R4''s tap on {@link #TAP_INPUT}, the charged step on
+ * {@link #CHARGED_INPUT}, fanned by {@link DrawFan} and dispatched through
+ * {@code WeaponFire.attemptFan} -- one press, one input, one cooldown, N rounds.
  *
  * <h2>AND R10's FLOOR IS NOT INHERITED FROM THE PLATFORM -- THIS CLASS IS WHY</h2>
  *
@@ -184,6 +191,19 @@ public final class PlumeDraw {
     private final AdapterContext adapters;
 
     /**
+     * WHAT THE RELEASE NEEDS TO ACTUALLY FIRE, and every one of them is {@code WeaponFire}'s
+     * parameter rather than this class's business.
+     *
+     * <p>They are threaded through rather than reached for, because {@code WeaponFire} is the one
+     * place that turns a held item into a fired trigger and its gates -- broken, quiver, cooldown,
+     * mana -- must not be duplicated here. <b>This class decides WHICH input and HOW MANY arrows;
+     * it decides nothing about whether the shot is allowed.</b>
+     */
+    private final WeaponService weaponService;
+    private final CooldownTracker cooldowns;
+    private final FireCadence cadence;
+
+    /**
      * Which STEP each drawing player has been TOLD they are on.
      *
      * <p>Not the step itself: the step is a pure function of the time held and the live magazine,
@@ -203,9 +223,13 @@ public final class PlumeDraw {
      */
     private final Map<UUID, Integer> announced = new ConcurrentHashMap<>();
 
-    public PlumeDraw(WeaponRegistry weapons, AdapterContext adapters) {
+    public PlumeDraw(WeaponRegistry weapons, AdapterContext adapters, WeaponService weaponService,
+                     CooldownTracker cooldowns, FireCadence cadence) {
         this.weapons = weapons;
         this.adapters = adapters;
+        this.weaponService = weaponService;
+        this.cooldowns = cooldowns;
+        this.cadence = cadence;
     }
 
     /**
@@ -290,12 +314,55 @@ public final class PlumeDraw {
     }
 
     /**
-     * THE RELEASE. Take the draw, suppress vanilla's, and -- in H1 -- fire nothing.
+     * THE INPUT A CHARGED RELEASE FIRES. Content binds it as {@code draw:} -- the gesture, not the
+     * moment, which is the convention {@code left_click} and {@code right_click} already follow.
+     */
+    public static final String CHARGED_INPUT = "draw";
+
+    /**
+     * THE INPUT A TAP FIRES -- R4', a DIFFERENT SHOT: one arrow, no homing, 12 damage, one round.
+     *
+     * <h2>A SECOND BINDING RATHER THAN A SCALED FIRST ONE, AND THAT IS WHAT R4' REQUIRES</h2>
+     *
+     * <p>A tap is not a weaker charged release, it is another weapon's shot fired from the same
+     * bow: different damage, and NO homing at all. <b>{@code attack_damage} is weapon-level</b>, so
+     * the tap cannot be a {@code weapon_damage} payload under {@code draw:}'s binding without
+     * claiming 48; and the homing block lives on the cast, so the two shapes cannot share one.
+     *
+     * <p><b>No schema change was needed.</b> {@code TriggerBinding}'s input is a free String -- its
+     * own javadoc says <i>"a third input, or a right-click added later, needs no schema change"</i>
+     * -- which is how {@code draw} got in. This is the fourth input in the project and the second on
+     * one weapon.
+     *
+     * <p><b>AND IT IS WHERE R7's {@code cooldown_ticks: 0} FINALLY BELONGS.</b> That ruling was
+     * always about the TAP -- §7.2's whole account is that the field prices tapping and nothing else
+     * -- and it has been sitting on {@code draw:} because there was nowhere else to put it. The
+     * cooldown key is {@code (player, weaponId, input)}, so moving it makes "this timer governs the
+     * tap" <b>structural rather than an arithmetic coincidence</b>.
+     */
+    public static final String TAP_INPUT = "tap";
+
+    /**
+     * THE RELEASE. Take the draw, suppress vanilla's, and fire what the charge earned.
+     *
+     * <p>Every DECISION here is {@link DrawRelease}'s, in {@code core}: what the hold earned, what
+     * the magazine can pay for, whether it is a tap or a charged step, and whether it is anything at
+     * all. This method reads a live player, dispatches, and does no arithmetic of its own.
+     *
+     * <h2>THE TRACKER IS NOT WHAT FIRES, AND THE DIFFERENCE IS DELIBERATE</h2>
+     *
+     * <p>{@code announced} is what the player was TOLD -- the steps that made a sound. The release
+     * asks {@link DrawRelease#decide} from the platform's own {@code ticksHeldFor} and a fresh
+     * magazine read, so <b>a release fires what the draw earned rather than what the tracker
+     * happened to have announced.</b> The two are compared once, below, and a disagreement is
+     * REPORTED rather than reconciled -- see {@link DrawCharge#disagreement} for why that comparison
+     * is one-directional.
      *
      * @param released the item the event says was let go; the gate is on THIS, not on the event
      */
     public void onRelease(Player player, ItemStack released, int ticksHeldFor) {
-        if (drawWeapon(released).isEmpty()) return;
+        Optional<WeaponDefinition> weapon = drawWeapon(released);
+        if (weapon.isEmpty()) return;
 
         Integer tracked = announced.remove(player.getUniqueId());
         int tracker = tracked == null ? 0 : tracked;
@@ -307,8 +374,45 @@ public final class PlumeDraw {
         DrawCharge.disagreement(tracker, ticksHeldFor)
                 .ifPresent(complaint -> adapters.log().warning("[plume] " + complaint));
 
-        // THE MEASURED ROUTE. Everything above this line is bookkeeping; this is the mechanism.
+        // THE MEASURED ROUTE, AND IT MUST STAY ABOVE THE DISPATCH. This is what stops vanilla's own
+        // releaseUsing running -- and therefore what stops the off-hand arrow being consumed (H-3).
+        // Firing first and clearing second would leave a window in which the bow has both fired ours
+        // and kept vanilla's path alive.
         player.clearActiveItem();
+
+        fire(player, weapon.get(), DrawRelease.decide(ticksHeldFor, cap(
+                player.getInventory().getItemInMainHand(), weapon.get(), player)));
+    }
+
+    /**
+     * Turn the decision into shots. The whole of {@code paper}'s part in the release.
+     *
+     * <p><b>{@code Nothing} IS SILENT HERE, AND ITS TWO REASONS ARE NOT THE SAME SILENCE.</b>
+     * {@code BELOW_VANILLA_FLOOR} is silent by design -- nothing happened and nothing should be
+     * said. {@code NO_ROUNDS} owes the player a sentence, and <b>that notice is b3's, not this
+     * commit's</b>: the reason is carried so the notice has something to switch on, and until it
+     * exists an empty magazine is as silent as a twitch. Named rather than left, because a switch
+     * arm that does nothing reads as a decision when it is an unfinished one.
+     */
+    private void fire(Player player, WeaponDefinition weapon, DrawRelease release) {
+        switch (release) {
+            case DrawRelease.Nothing ignored -> { }
+
+            // ONE arrow, straight down the aim, on the TAP binding -- a different shot, not a
+            // scaled one. offsetsFor(1) is {0}, so it takes the same fanned path with a fan of one
+            // rather than a second dispatch shape that could drift from it.
+            case DrawRelease.Tap ignored ->
+                    release(player, TAP_INPUT, DrawFan.offsetsFor(1));
+
+            case DrawRelease.Charged charged ->
+                    release(player, CHARGED_INPUT, DrawFan.offsetsFor(charged.arrows()));
+        }
+    }
+
+    /** One press, one input, one fan. {@code WeaponFire} owns every gate from here. */
+    private void release(Player player, String input, double[] yawOffsets) {
+        WeaponFire.attemptFan(player, input, yawOffsets, weapons, weaponService, adapters,
+                cooldowns, cadence);
     }
 
     /**

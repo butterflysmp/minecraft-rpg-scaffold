@@ -127,7 +127,8 @@ public final class QuiverItems {
      *
      * <p><b>They were two, and the display silently stopped tracking.</b> The boot gate's V1 found it:
      * a bolt fired, the stored count went 9 → 8, and <i>"the number doesn't change in the lore of the
-     * item"</i>. {@code spendRound} wrote the key and called {@code updateInventory}, and nothing
+     * item"</i>. {@code spendRounds} (then {@code spendRound}) wrote the key and called
+     * {@code updateInventory}, and nothing
      * anywhere re-ran {@code applyLore} — which executes only from {@code mint} and {@code remint}. So
      * the tooltip carried whatever was rendered AT MINT TIME and never moved again.
      *

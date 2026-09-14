@@ -171,19 +171,36 @@ public final class Quivers {
     }
 
     /**
-     * Spend one round off the held weapon. Called only after a Success.
+     * Spend {@code rounds} rounds off the held weapon. Called only after a Success.
      *
      * <p>Takes the DEFINITION as well as the player because the write carries its own render, and
      * rendering needs to know what the weapon IS -- see {@link QuiverItems#setLoaded}. It gained that
      * parameter when the display half of boot row V1 failed.
+     *
+     * <h2>ONE READ, ONE ARITHMETIC CALL, ONE WRITE -- WHATEVER THE COUNT</h2>
+     *
+     * <p>A five-arrow release does NOT call this five times. Each call is a read-modify-write of a
+     * live {@code ItemStack} plus an {@code updateInventory}, so five would be five tooltip renders
+     * for one press, and four of them describing counts the player never had.
+     *
+     * <p><b>AND THE ARITHMETIC STAYS IN {@code core}. The subtraction is NOT written here.</b> It
+     * would have been one character -- {@code loaded - rounds} -- and it would have given the
+     * magazine a SECOND HOME: one in {@link Quiver} doing {@code -1}, one here doing {@code -n}, and
+     * nothing making them agree. {@code Quiver.spend} took a signature change instead, so a caller
+     * that misses the count is a compile error rather than a weapon that quietly bills one round for
+     * five arrows.
+     *
+     * @param rounds how many rounds this press costs -- ONE for every weapon that fires a single
+     *               shot, and the arrow count for the Dragon's Plume's fanned release
      */
-    public static void spendRound(Player player, WeaponDefinition weapon, AdapterContext adapters) {
+    public static void spendRounds(Player player, WeaponDefinition weapon, AdapterContext adapters,
+                                   int rounds) {
         Keys keys = adapters.keys();
         ItemStack held = player.getInventory().getItemInMainHand();
         OptionalInt loaded = QuiverItems.loadedIn(held, keys);
         if (loaded.isEmpty()) return;   // warned about in resolveForShot; never silently invent a count
 
-        int spent = Quiver.spend(loaded.getAsInt());
+        int spent = Quiver.spend(loaded.getAsInt(), rounds);
         // WRITE AND RENDER IN ONE CALL. Writing the key alone is what shipped: the stored count
         // moved, the tooltip did not, and it looked correct until a relog re-minted the item.
         held.editMeta(meta -> QuiverItems.setLoaded(meta, weapon, adapters, player.getUniqueId(), spent));

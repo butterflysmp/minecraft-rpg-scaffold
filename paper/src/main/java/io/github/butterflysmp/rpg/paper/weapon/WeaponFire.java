@@ -71,6 +71,54 @@ public final class WeaponFire {
                                                AdapterContext adapters,
                                                CooldownTracker cooldowns,
                                                FireCadence cadence) {
+        return attempt(player, input, weapons, weaponService, adapters, cooldowns, cadence, null);
+    }
+
+    /**
+     * Fire the held weapon's {@code input} trigger as a FAN: one press, several shots.
+     *
+     * <p>{@code yawOffsets} are horizontal rotations of the aim in degrees, from
+     * {@code DrawFan.offsetsFor}. The Dragon's Plume's release is the only caller.
+     *
+     * <h2>ONE PRESS IS ONE INPUT, ONE FIRE, ONE COOLDOWN AND ONE MANA CHARGE -- AND N ROUNDS</h2>
+     *
+     * <p><b>The alternative was calling {@link #attempt} five times, and it breaks this class's own
+     * stated invariant.</b> The Q7 counters above read <i>"inputs minus fires is exactly what the
+     * gates took"</i>. Five calls record FIVE inputs and five fires for one physical release, so the
+     * difference stays zero while the numerator is five times too large -- and {@code /rpg firerate},
+     * which is gate row P7's whole instrument, reports a cadence nobody performed.
+     *
+     * <p>So the press is counted once and the ROUNDS are the only thing that scales. That is not a
+     * convention invented here: it is the same split {@code CastExecutor.executeFan} makes one layer
+     * down, where the {@code on_cast} sound and the durability use are per-press and only the
+     * dispatch is per-arrow.
+     *
+     * <p><b>The quiver gate and the round count are computed from reads in the SAME TICK</b>, which
+     * is what makes it safe for the caller to have already capped the arrow count against the
+     * magazine (R3a): nothing can spend a round between the cap and this spend, because there is no
+     * suspension point between them.
+     *
+     * @param yawOffsets one per shot; its LENGTH is also the rounds spent. Null means a single
+     *                   unrotated shot spending one round -- what every other weapon does, and what
+     *                   {@link #attempt} passes.
+     */
+    public static Optional<CastResult> attemptFan(Player player, String input,
+                                                  double[] yawOffsets,
+                                                  WeaponRegistry weapons,
+                                                  WeaponService weaponService,
+                                                  AdapterContext adapters,
+                                                  CooldownTracker cooldowns,
+                                                  FireCadence cadence) {
+        return attempt(player, input, weapons, weaponService, adapters, cooldowns, cadence, yawOffsets);
+    }
+
+    private static Optional<CastResult> attempt(Player player, String input,
+                                               WeaponRegistry weapons,
+                                               WeaponService weaponService,
+                                               AdapterContext adapters,
+                                               CooldownTracker cooldowns,
+                                               FireCadence cadence,
+                                               double[] yawOffsets) {
         Optional<WeaponDefinition> held = WeaponItems.heldWeaponId(player, adapters.keys())
                 .flatMap(weapons::find);
         if (held.isEmpty()) return Optional.empty();
@@ -179,8 +227,12 @@ public final class WeaponFire {
                 // Only on Success, which is what makes it exact: a refused cast (cooldown, mana,
                 // empty, reloading) returns before this line, so no round is lost to a shot that
                 // never happened. Still on the player's thread -- the region hop is below.
+                // N ROUNDS FOR A FANNED RELEASE, ONE FOR EVERY OTHER WEAPON -- and in ONE write,
+                // because each call is a read-modify-write of a live ItemStack plus an
+                // updateInventory. The subtraction itself is core's; see Quivers.spendRounds.
                 if (weapon.hasQuiver() && !input.equals("left_click")) {
-                    Quivers.spendRound(player, weapon, adapters);
+                    Quivers.spendRounds(player, weapon, adapters,
+                            yawOffsets == null ? 1 : yawOffsets.length);
                 }
                 // A dash steers by WASD, not by the look-aim built above. Resolve it HERE,
                 // still on the player's thread, before the region hop -- getCurrentInput() is
@@ -195,10 +247,17 @@ public final class WeaponFire {
                 // Safe to touch the player's inventory from inside the hop: the region is the one
                 // owning `eye`, which is the player's own, and the listener only ever runs
                 // synchronously within execute(). Both halves of that are load-bearing.
-                adapters.scheduler().onRegion(eye, () ->
-                        new CastExecutor(new PaperCombatWorld(player.getWorld(), adapters),
-                                () -> WeaponDurability.applyWearOnUse(player, adapters.keys(), cooldowns))
-                                .execute(toRun));
+                adapters.scheduler().onRegion(eye, () -> {
+                    CastExecutor executor = new CastExecutor(
+                            new PaperCombatWorld(player.getWorld(), adapters),
+                            () -> WeaponDurability.applyWearOnUse(player, adapters.keys(), cooldowns));
+                    // ONE CAST ALONG N DIRECTIONS, not N casts. executeFan commits the on_cast
+                    // effects and the durability use ONCE and dispatches per offset -- five
+                    // execute() calls would bill the bow five times and play the release sound five
+                    // times, and no test outside CastExecutorFanTest would have noticed.
+                    if (yawOffsets == null) executor.execute(toRun);
+                    else executor.executeFan(toRun, yawOffsets);
+                });
             }
         });
         return result;
