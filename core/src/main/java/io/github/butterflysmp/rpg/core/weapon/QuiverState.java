@@ -291,6 +291,70 @@ public final class QuiverState {
     }
 
     /**
+     * How many rounds this magazine has, clamped to its resolved capacity.
+     *
+     * <p>Written for the Dragon's Plume's R3 -- <i>the charge tracker is capped at rounds remaining,
+     * and the sound never promises an arrow that is not coming</i> -- and it is a method here rather
+     * than {@code capacity() - roundsNeeded()} at the call site for two separate reasons. That
+     * subtraction is the one {@link #roundsNeeded}'s javadoc names and refuses; and it is
+     * <b>WRONG ON AN UNSTAMPED ITEM</b>, where {@code roundsNeeded()} returns 0 and the subtraction
+     * therefore reports a FULL MAGAZINE for an item with no count at all.
+     *
+     * <h2>UNSTAMPED IS ZERO, AND THE REASON IS ITS OWN RATHER THAN INHERITED</h2>
+     *
+     * <p>{@code roundsNeeded()} returns 0 when unstamped <i>because {@link #reloadVerdict} refuses
+     * such an item on the {@link Reload#UNSTAMPED} rung before the ammo rung is reached</i>. That
+     * reason belongs to that method and does not transfer, so this one states its own: <b>an item
+     * with no count has no rounds</b>, an unstamped stamp is a DEFECT and not an empty magazine
+     * (see the class javadoc), and R3's cap must promise NOTHING rather than something.
+     *
+     * <p><b>Zero collides by VALUE with a genuinely empty magazine, and that is not a loss of
+     * information</b>: {@link #fireVerdict} separates them by name -- {@link Fire#UNSTAMPED} against
+     * {@link Fire#EMPTY} -- so a caller that must tell them apart has a method that does, and a
+     * caller that only needs the cap gets the same correct answer from both.
+     *
+     * <h2>IT CLAMPS, AND THE ONE-ROUND GAP THAT BUYS IS KNOWN AND CHOSEN</h2>
+     *
+     * <p>An OVER-FULL magazine is representable: a stamp of 11 read against a capacity that now
+     * resolves to 8, in the window after a capacity modifier comes off and before the next write
+     * re-clamps it. <b>This returns 8.</b>
+     *
+     * <p><b>MEASURED, AND IT IS THE REASON: SUCH A MAGAZINE PAYS FOR NINE, NOT ELEVEN.</b>
+     * {@code Quivers.spendRound} is {@code Quiver.spend(11) = 10} handed to
+     * {@code QuiverItems.setLoaded}, which clamps the value it WRITES -- {@code clamp(10, 8) = 8}.
+     * So the surplus is lost at the FIRST shot rather than carried: one over-full shot, then a
+     * magazine of 8.
+     *
+     * <pre>
+     * unclamped  11   promises two arrows that are not coming   -- the dishonesty R3 exists to stop
+     * measured    9   one over-full shot, then the clamp        -- exact, but it projects future
+     *                                                              WRITES rather than reading state
+     * CHOSEN      8   under-promises by one, never over         -- and never couples to the write path
+     * </pre>
+     *
+     * <p><b>SO THIS ACCESSOR SAYS 8 WHERE THE MAGAZINE YIELDS 9, ON PURPOSE.</b> It is not an
+     * off-by-one and it must not be "fixed": closing that gap means modelling what the write funnel
+     * will do next, which is exactly the coupling the clamped form avoids. The gap exists only in a
+     * state that is <b>unreachable in play today</b> -- see {@code GATE-expanded-quiver.md} row A-5,
+     * whose trigger is the first shipped item granting quiver size outside the dev instrument.
+     *
+     * <h2>AND THE CLAMP IS WHAT MAKES THE IDENTITY TRUE, WHICH IS WHAT ADMITS IT TO THE PINNED SET</h2>
+     *
+     * <p>For every STAMPED state, including the over-full one:
+     * {@code roundsNeeded() + roundsRemaining() == capacity()}. Over-full works only because of the
+     * clamp -- {@code 0 + 8} -- and unclamped it would be {@code 0 + 11}, which recovers a number
+     * that is not the capacity and is not anything else either. <b>That identity is the argument
+     * {@code QuiversSignatureTest} admits this method on:</b> the pair it recovers is already
+     * public. Anyone tempted to unclamp has to answer that sentence first.
+     *
+     * <p><b>Unstamped is the one exception and it fails SAFE:</b> {@code 0 + 0} recovers 0 rather
+     * than the capacity -- less than the public surface already gives, never more.
+     */
+    public int roundsRemaining() {
+        return loaded.isEmpty() ? 0 : Quiver.clamp(loaded.getAsInt(), capacity);
+    }
+
+    /**
      * What pressing reload should do.
      *
      * <p>{@code ALREADY_FULL} is what stops a player who pressed reload out of habit from paying
