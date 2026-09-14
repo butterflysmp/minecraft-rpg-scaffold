@@ -56,19 +56,33 @@ public final class DrawCharge {
      * matters most -- at four and five, when the player is deciding whether to let go:
      *
      * <pre>
-     *              1      2      3      4      5     steps, in semitones (12 log2 of the ratio)
-     * linear    1.00   1.25   1.50   1.75   2.00     3.86  3.16  2.67  2.31   <- top step 40% smaller
-     * RULED     0.80   1.01   1.27   1.59   2.00     3.86  3.97  3.97  3.97   <- even, ~a major third
+     *              1      2      3      4      5     each step, as a RATIO
+     * linear    1.00   1.25   1.50   1.75   2.00     1.250  1.200  1.167  1.143   <- the step shrinks
+     * RULED     0.80   1.01   1.27   1.59   2.00     1.257  1.257  1.257  1.257   <- even
      * </pre>
+     *
+     * <h2>THE LADDER SURVIVED THE INSTRUMENT CHANGE; THE ARGUMENT THAT CHOSE IT DID NOT</h2>
+     *
+     * <p><b>The tick was a {@code pling} and is now a {@code basedrum}</b> ({@code PlumeDraw}, ruled
+     * after a listen). <b>The RATIO half of the reasoning survives: equal ratios are still probably
+     * equal perceptual steps, so the ladder stands unchanged.</b> The half that does not survive is
+     * the one that talked about SEMITONES and called each step a major third -- <b>a note-block drum
+     * is NOISE, not a tone.</b> Shifting its playback rate makes it shorter and brighter; there is no
+     * interval to hear. That sentence was about an instrument the weapon no longer uses, and it is
+     * removed rather than left to be re-derived.
      *
      * <p><b>The five values in {@code PLAN-dragons-plume.md} are this formula rounded for display.</b>
      * The formula is the ruled thing -- <i>authored for SEPARATION</i> -- and it is what ships, so
      * the tests assert the PROPERTY (equal ratios, both endpoints) rather than pinning a rounding.
      *
-     * <p><b>{@link #PITCH_CEILING} at 2.0 is OUTSIDE KNOWLEDGE THIS MACHINE CANNOT MEASURE.</b> The
-     * pinned API documents no range for {@code pitch} and {@code ClientboundSoundPacket} carries a
-     * raw float, so any cap is the client's. If it is wrong the mapping still works; it simply stops
-     * short of the top. Do not restate it as a fact of the platform.
+     * <p><b>{@link #PITCH_CEILING} at 2.0 IS OUTSIDE KNOWLEDGE THIS MACHINE CANNOT MEASURE, AND THE
+     * INSTRUMENT CHANGE WIDENED WHAT IS UNKNOWN ABOUT IT.</b> The pinned API documents no range for
+     * {@code pitch} and {@code ClientboundSoundPacket} carries a raw float, so any cap is the
+     * client's -- unchanged. <b>But the way the top of the range FAILS is now different in kind:</b>
+     * a pling at 2.0 is simply a high note, while a kick at 2.0 is <b>half as long</b> and may stop
+     * reading as a kick at all. So the ceiling is no longer only a question about whether the client
+     * clamps; it is a question about whether the fifth step is still the same sound. <b>A person
+     * listening is the only instrument for either half.</b>
      */
     public static final double PITCH_FLOOR = 0.8;
     public static final double PITCH_CEILING = 2.0;
