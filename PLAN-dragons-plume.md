@@ -903,7 +903,13 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
 > differently, and §7.2's own fencepost box already names this family. **Recorded rather than
 > silently harmonised**, because harmonising it would move a number Ben's ruling was taken against.
 
-> ### ⚠ OPEN — AND IT IS BEN'S. DO NOT QUIETLY KEEP 48.
+> ### ⚠ OPEN — THREE QUESTIONS, ONE SHOT, ONE ANSWER. ALL BEN'S. DO NOT QUIETLY KEEP ANY OF THEM.
+>
+> ```
+> attack_damage: 48   ruled against a cycle that no longer exists
+> reload_ticks:  90   its number did not change; its SHARE did, by half again
+> the tap's NAME      unauthored, so the tooltip says "Dragon's Plume  Tap"
+> ```
 >
 > **48 was ruled against a five-second cycle. The cycle is now three seconds and the anchors have
 > moved under it by a third.** At 48 the Plume sustains **61.54 dmg/s — about 1.9× the Locust's
@@ -941,10 +947,28 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
 > comparison between two weapons' magazines, and R1′ moved neither. **The flag asks whether the share
 > is what Ben intended, not whether the number has any support left.**
 >
-> **BOTH QUESTIONS GO IN ONE DIALOG, DELIBERATELY.** They are two consequences of one amendment and
+> **AND A THIRD, WHICH IS NOT A NUMBER: WHAT THE TAP IS CALLED.**
+>
+> ```
+> tooltip today   "Dragon's Plume  Tap"
+> ```
+>
+> **`tap:` authors no `name:`, so `WeaponLoader` falls back to the weapon's own display name** —
+> which is why the line reads as it does. `quiver_stone` names its shot **"Loose"**, `emberblade`
+> names one "Fireball"; every other ability block in the project carries a name of its own.
+>
+> **It was left unnamed rather than invented.** Nobody has ruled one, and a name on a tooltip is a
+> design decision, not a content-pass detail — inventing one would have been exactly that decision
+> wearing a comment's clothes. **A `name:` key is the whole change if Ben wants one.**
+>
+> **It belongs in THIS dialog rather than its own** because it is the same shot the other two
+> questions are about: R4′'s tap is what `cooldown_ticks` now prices and what the 12 is set against.
+> Three questions, one shot, one answer.
+
+> **ALL THREE GO IN ONE DIALOG, DELIBERATELY.** The two numbers are consequences of one amendment and
 > they interact — lowering 48 and shortening 90 both pull the same rate down, so answering them a
-> week apart risks paying for the amendment twice. **Asking the second one later is also how the
-> first one's answer gets quietly generalised into a ruling nobody gave.**
+> week apart risks paying for the amendment twice. **Asking any of them later is also how the first
+> one's answer gets quietly generalised into a ruling nobody gave.**
 >
 > **BOTH STAY IN `dragons_plume.yml` AND ARE FLAGGED THERE**, not adjusted on anyone's initiative.
 > **A number left in place because nobody re-asked is the defect this project keeps finding; a number

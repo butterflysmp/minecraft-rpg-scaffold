@@ -297,6 +297,34 @@ So:
   > CRLF — **and it is right because `tr` cannot normalise, not because it is more thorough.** The
   > same reasoning picks the instrument for the others: `cmp`/`od -c` for whitespace, `git diff
   > --numstat` for a change you were told did not happen.
+  >
+  > > ### AND SAY WHAT THAT COUNT PROVES, BECAUSE IT IS NARROWER THAN IT LOOKS — `core.autocrlf` IS `true` HERE
+  > >
+  > > **`tr -cd '\r' | wc -c` measures the WORKING TREE. It says nothing about the history.** With
+  > > `core.autocrlf=true` git normalises CRLF to LF on the way into the index, so **every committed
+  > > blob in this repo is LF** and the CRLF is reconstructed on checkout. Measured 2026-09-14:
+  > > `RpgCommand.java` is `CR=2091` in the working tree and `CR=0` in its own committed blob.
+  > >
+  > > **2026-09-14, THE INSTANCE, AND IT IS A CORRECTION TO A REPORT RATHER THAN A NEW FINDING.**
+  > > `sed -i` in Git Bash silently rewrote `RpgCommand.java` from CRLF to LF while reporting
+  > > nothing, and the byte count caught it. **It was then reported as a defect caught before it
+  > > could pollute the commit — and that second half was wrong.** The blob would have been
+  > > byte-identical either way; there was nothing to pollute.
+  > >
+  > > **The incident stands and the claim is narrowed, which is the point.** `sed -i` really does
+  > > normalise, the byte count really is the only instrument that sees it, and a working tree in
+  > > the wrong state really does mislead every later `tr` reading and any tool that cares. **What
+  > > it does not do is protect the history, and crediting it with that RETIRES THE QUESTION** —
+  > > the next person reads "line endings are checked" and stops looking for the check that would
+  > > actually see a line-ending change land.
+  > >
+  > > **A CONTROL CREDITED WITH PROTECTING SOMETHING IT DOES NOT TOUCH IS WORSE THAN NO CONTROL**,
+  > > and it fails the same way a stale load-bearing flag does: silently, and by discouraging the
+  > > work it appears to have done.
+  > >
+  > > **What DOES see a line-ending change reaching history:** `git diff --numstat` showing a file
+  > > wholly rewritten, or `git show <ref>:<path> | tr -cd '\r' | wc -c` — the blob, named as the
+  > > blob. That is the *integrity figure must say what it hashed* rule, applied to line endings.
 
   > **Practically, for all four:** before reporting an absence, ask *what would this look like if it
   > were present and my search were wrong?* If the answer is "identical", the search is not done.
