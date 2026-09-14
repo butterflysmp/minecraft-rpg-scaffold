@@ -726,4 +726,159 @@ class AbilityLoaderTest {
         // non-admitted kind is actually refused rather than falling through. Mutation: replace the
         // switch with `if (inner instanceof Volley) throw` -> self and melee load and this reddens.
     }
+
+    private static String homingYaml(String homingBlock) {
+        return """
+                id: seeker
+                element: void
+                cast:
+                  type: projectile
+                  speed: 2.5
+                  gravity: 0.05
+                  max_lifetime_ticks: 120
+                """ + homingBlock + """
+                on_hit:
+                  - type: damage
+                    amount: 48
+                    element: void
+                """;
+    }
+
+    /**
+     * THE HOMING BLOCK REACHES {@code CastSpec.Homing} FROM A FILE, WHICH IT COULD NOT BEFORE.
+     *
+     * <p>Slice F built the record, {@code CastExecutor}'s mapping and the flight's steer branch, and
+     * <b>nothing mapped a yml onto any of it</b> -- the three numbers were reachable only from Java.
+     * This row is the one that makes the Dragon's Plume's arrows describable in content.
+     *
+     * <p>The values are {@code PLAN-dragons-plume.md} §5's, carried INHERITED AND UNJUDGED with gate
+     * rows P1-P4. <b>This row asserts they arrive intact, not that they are right</b> -- only a boot
+     * can say the second thing, which is what those rows are for.
+     */
+    @Test
+    void aProjectileHOMINGBlockIsCarriedOntoTheCastSpec() throws IOException {
+        write("seeker.yml", homingYaml("""
+                  homing:
+                    lerp: 0.65
+                    activation_blocks: 15
+                    search_radius: 10
+                """));
+
+        var cast = (CastSpec.Projectile) load().find("seeker").orElseThrow().cast();
+
+        assertNotNull(cast.homing(), "an authored homing block must reach the cast spec");
+        assertEquals(0.65, cast.homing().lerp());
+        assertEquals(15.0, cast.homing().activationBlocks());
+        assertEquals(10.0, cast.homing().searchRadius());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /**
+     * THE ABSENT HALF, AND IT IS WHAT MAKES THIS SLICE NOT A CHANGE TO ANY SHIPPED WEAPON.
+     *
+     * <p>{@code hunters_bow}, {@code ember_staff}, {@code flint_staff}, {@code emberblade} and
+     * {@code volley_stone}'s inner projectile all author no homing block. They get exactly the null
+     * the five-argument constructor used to supply, and fly where they were aimed.
+     */
+    @Test
+    void aProjectileWITHOUTAHomingBlockGetsNullAndFliesWhereItWasAimed() throws IOException {
+        write("solar_grenade.yml", VALID);
+
+        var cast = (CastSpec.Projectile) load().find("solar_grenade").orElseThrow().cast();
+
+        assertNull(cast.homing(), "no homing block means no chasing, as every projectile was");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /**
+     * A PARTIAL BLOCK IS A NAMED, SKIPPED FILE -- never a bolt homing on a default nobody ruled.
+     *
+     * <p>{@code CastSpec.Homing} holds no defaults on purpose, so an omitted key has no honest
+     * reading. Filling one in would be the descent-launders shape {@code CLAUDE.md} records: an
+     * invented figure becoming the next weapon's precedent because nobody re-decides an inherited
+     * number.
+     *
+     * <p>Each of the three is dropped in turn rather than one standing for all, because a
+     * {@code reqDouble} call accidentally left off one key would pass a row that only ever omits a
+     * different one.
+     *
+     * <h2>MEASURED: THIS ROW UNIQUELY GUARDS ONLY ONE OF ITS THREE SUB-CASES, AND IT IS NOT THE ONE
+     * ANYONE WOULD PICK</h2>
+     *
+     * <p><b>MUT-REQ</b> -- {@code reqDouble}'s presence check replaced by {@code if (false)} --
+     * reddens this row, and the failure is <b>{@code expected: <1> but was: <2>}</b>. Only
+     * <b>ONE</b> of the three files got through:
+     *
+     * <pre>
+     * no_lerp        getDouble answers 0.0 -> lerp 0    -> refused by CastSpec.Homing anyway
+     * no_radius      getDouble answers 0.0 -> radius 0  -> refused by CastSpec.Homing anyway
+     * no_activation  getDouble answers 0.0 -> activation 0 IS LEGAL -> LOADS. This is the kill.
+     * </pre>
+     *
+     * <p><b>{@code activation_blocks} is the only one of the three whose absent-default is a VALID
+     * value</b>, because steering from the spawn point with no ballistic run-up is a real weapon
+     * (see {@code CastSpecHomingTest}'s boundary row). So two thirds of this row are protected twice
+     * over, by accident of where the value guards happen to sit, and <b>the presence check is
+     * load-bearing for exactly one key.</b>
+     *
+     * <p><b>Which means: delete the {@code no_activation} case and MUT-REQ goes green.</b> The row
+     * would still look like it tested three things. Recorded in the row rather than in the class
+     * header, because the person deleting a case is reading the case.</p>
+     */
+    @Test
+    void aPARTIALHomingBlockIsNamedAndSkipped() throws IOException {
+        write("no_lerp.yml", homingYaml("""
+                  homing:
+                    activation_blocks: 15
+                    search_radius: 10
+                """));
+        write("no_activation.yml", homingYaml("""
+                  homing:
+                    lerp: 0.65
+                    search_radius: 10
+                """));
+        write("no_radius.yml", homingYaml("""
+                  homing:
+                    lerp: 0.65
+                    activation_blocks: 15
+                """));
+        write("solar_grenade.yml", VALID);
+
+        assertEquals(1, load().size(), "all three partial files are skipped; only the valid one loads");
+        assertTrue(warningText().contains("lerp"), warningText());
+        assertTrue(warningText().contains("activation_blocks"), warningText());
+        assertTrue(warningText().contains("search_radius"), warningText());
+    }
+
+    /**
+     * A BAD VALUE IS A NAMED, SKIPPED FILE TOO -- and this row CAUSES the condition through the real
+     * YAML walk rather than calling the constructor.
+     *
+     * <p>{@code CastSpecHomingTest} exercises the guard directly; this proves the throw actually
+     * reaches the loader's {@code catch(RuntimeException)} and comes back out as a named file, which
+     * is the half a core test cannot see. <b>A guard in {@code core} that a loader swallowed
+     * silently would look identical to one that works.</b>
+     *
+     * <p>The value chosen is the NEGATIVE ACTIVATION, because it is the one that is not obvious from
+     * the field name: {@code ProjectileFlight.steer} squares it, so {@code -15} behaves exactly like
+     * {@code 15} and would otherwise have shipped as a working file.
+     */
+    @Test
+    void aMEANINGLESSHomingValueIsNamedAndSkipped() throws IOException {
+        write("backwards.yml", homingYaml("""
+                  homing:
+                    lerp: 0.65
+                    activation_blocks: -15
+                    search_radius: 10
+                """));
+        write("solar_grenade.yml", VALID);
+
+        var registry = load();
+
+        assertTrue(registry.find("seeker").isEmpty(), "the malformed file must be skipped");
+        assertEquals(1, registry.size());
+        assertTrue(warningText().contains("activation_blocks"), warningText());
+        assertTrue(warningText().contains("squared"),
+                "the warning must say WHY a negative is not merely odd: " + warningText());
+    }
 }
