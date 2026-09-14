@@ -99,7 +99,26 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>H2 spawns the projectiles through the existing cast path with F/F2's homing, spends the rounds,
  * and handles R4' (a partial draw: one arrow, no homing, 12 damage) and R10 (under three ticks,
- * nothing -- vanilla's own floor, taken from the platform rather than reimplemented).
+ * nothing).
+ *
+ * <h2>AND R10's FLOOR IS NOT INHERITED FROM THE PLATFORM -- THIS CLASS IS WHY</h2>
+ *
+ * <p><b>That sentence used to end <i>"vanilla's own floor, taken from the platform rather than
+ * reimplemented"</i>, and it was FALSIFIED BY THE LINE BELOW.</b>
+ *
+ * <p>The floor is the power gate inside {@code BowItem.releaseUsing}: no shot when
+ * {@code getPowerForTime(heldTicks) < 0.1}, measured at {@code t=3 -> 0.1075} in
+ * {@code PLAN-dragons-plume.md} §3.1. <b>{@link #onRelease}'s {@code clearActiveItem()} makes the
+ * re-read at offset 72 yield EMPTY, so {@code BowItem.releaseUsing} never runs and the gate inside
+ * it never executes.</b> H-3 measured exactly that on a server -- arrow YES, log YES.
+ *
+ * <p>So R10 was ruled <i>keep vanilla's behaviour</i> on an assumption this class then broke, and
+ * the floor is now a DERIVED CONSTANT that can drift from vanilla silently:
+ * {@link io.github.butterflysmp.rpg.core.combat.DrawRelease#MIN_RELEASE_TICKS}, with the measurement
+ * beside it and a core row pinning it against a transcription of vanilla's own curve.
+ *
+ * <p><b>A comment asserting the platform supplies something it no longer supplies is worse than no
+ * comment -- it is the reason nobody would look.</b>
  */
 public final class PlumeDraw {
 

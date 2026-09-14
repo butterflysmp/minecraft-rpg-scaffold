@@ -423,10 +423,26 @@ operator's call, not a detail.**
   `getPowerForTime(t) < 0.1`, measured in §3.1.
 
   > **SO §3.1's FINDING IS A FOOTNOTE ON R4′ RATHER THAN A CHANGE TO IT**, and
-  > `PlayerStopUsingItemEvent` is **not** pressed into serving `t < 3`. **The ruling simplifies the
-  > design rather than constraining it** — see §3.1, where it reverses which event the shot hangs on:
-  > the floor is now *wanted*, so it can come from the platform instead of from a second
-  > implementation of the same rule.
+  > `PlayerStopUsingItemEvent` is **not** pressed into serving `t < 3`.
+  >
+  > > ### ⚠ THE RULING STANDS. ITS JUSTIFICATION DID NOT SURVIVE H1, AND THE FLOOR IS OURS NOW
+  > >
+  > > **R10 was ruled as *keep vanilla's behaviour*, on the reasoning that the floor could be
+  > > INHERITED — *"it can come from the platform instead of from a second implementation of the same
+  > > rule."* H1 made that impossible, and H1 shipped after R10 was written.**
+  > >
+  > > `PlumeDraw.onRelease` calls `clearActiveItem()`, so `LivingEntity.releaseUsingItem`'s re-read
+  > > yields EMPTY and **`BowItem.releaseUsing` never runs.** The power gate is inside that method.
+  > > **The gate never runs, so the floor never applies, so there is nothing to inherit** — and
+  > > **H-3 measured exactly that on a server**, reading *arrow YES, log YES*.
+  > >
+  > > **THE RULING IS UNCHANGED — under 3 ticks, nothing.** What changed is its CHARACTER: an
+  > > inherited behaviour cannot drift, and a copied number can. It is now
+  > > `DrawRelease.MIN_RELEASE_TICKS`, with §3.1's measurement beside it, a core row pinning it
+  > > against a transcription of vanilla's own curve, and `MUT-FLOOR` to prove the row bites.
+  > >
+  > > **A re-implemented `ticksHeldFor >= 3` guard is no longer the duplicated-rule shape this repo
+  > > treats as a defect**, because there is no longer a first implementation for it to duplicate.
 
 - **R11 · REACH ≈ 300 BLOCKS** — the old repo's **120-tick** lifespan at **speed 2.5**.
 
@@ -567,9 +583,19 @@ the threading rule in `CLAUDE.md` is not in play:**
 >
 > **The earlier draft hung the shot on `PlayerStopUsingItemEvent`** precisely so that a sub-3-tick tap
 > could still fire — treating vanilla's floor as something to work around. **R10 rules the floor
-> KEPT**, so it is now a thing to inherit: hanging the shot on `EntityShootBowEvent` gets it **from
-> the platform, with no second implementation of the same rule** — and a re-implemented
-> `ticksHeldFor >= 3` guard would be exactly the duplicated-rule shape this repo treats as a defect.
+> KEPT**, so it was to be a thing to inherit: hanging the shot on `EntityShootBowEvent` would get it
+> **from the platform, with no second implementation of the same rule.**
+>
+> > **~~AND THAT IS HOW IT IS IMPLEMENTED.~~ IT IS NOT, AND THE SHOT HANGS ON
+> > `PlayerStopUsingItemEvent` AFTER ALL — H1 SETTLED IT THE OTHER WAY.** `PlumeDraw.onRelease`
+> > clears the active item, so `BowItem.releaseUsing` never runs and `EntityShootBowEvent` is never
+> > raised for one of our bows. **This table's first row describes an event the Plume does not
+> > receive**, and the guard that watches for it (`suppressManagedBowShot`) exists precisely to shout
+> > if it ever does.
+> >
+> > **So the floor IS a second implementation**, `DrawRelease.MIN_RELEASE_TICKS` — not because
+> > anybody chose duplication, but because the thing it would have duplicated no longer executes.
+> > See R10's entry in §2 for the full account.
 >
 > **`PlayerStopUsingItemEvent` is still needed, and not for the shot.** A hold that ends with **no**
 > release — under 3 ticks, a hotbar swap, a death — fires it and **not** the bow event, so it is the
