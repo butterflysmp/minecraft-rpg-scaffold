@@ -52,8 +52,22 @@ public sealed interface CastSpec {
      * as one slice earlier; a body without a trail is a silent thrown rock. Neither implies the
      * other, so neither defaults from the other.
      */
-    record Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item)
-            implements CastSpec {
+    record Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item,
+                      Homing homing) implements CastSpec {
+
+        /**
+         * A projectile that flies where it was aimed -- every projectile in this repo before the
+         * Dragon's Plume, and the shape any weapon keeps by simply not authoring a homing block.
+         *
+         * <p>THE NEW FIELD WENT ON THE END, WHICH IS THE LADDER'S OWN RULE rather than a
+         * preference: each convenience constructor drops the TAIL, never a middle field, so a
+         * reader counting arguments never has to work out which one was omitted. That is also why
+         * this rung exists at all -- the five-argument form was the canonical constructor until
+         * {@code homing} arrived, and it keeps working unchanged.
+         */
+        public Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item) {
+            this(speed, gravity, maxLifetimeTicks, trail, item, null);
+        }
 
         /**
          * A projectile with a trail but NO RENDERED BODY -- what the Flint Staff was between the
@@ -61,7 +75,7 @@ public sealed interface CastSpec {
          * an entity still is.
          */
         public Projectile(double speed, double gravity, int maxLifetimeTicks, String trail) {
-            this(speed, gravity, maxLifetimeTicks, trail, null);
+            this(speed, gravity, maxLifetimeTicks, trail, null, null);
         }
 
         /**
@@ -71,9 +85,49 @@ public sealed interface CastSpec {
          * so a reader counting arguments never has to work out which one was omitted.
          */
         public Projectile(double speed, double gravity, int maxLifetimeTicks) {
-            this(speed, gravity, maxLifetimeTicks, null, null);
+            this(speed, gravity, maxLifetimeTicks, null, null, null);
         }
     }
+
+    /**
+     * A projectile that STEERS toward a mob in flight. Null on a {@link Projectile} means the body
+     * flies where it was aimed, which is every projectile this repo shipped before the Dragon's
+     * Plume.
+     *
+     * <p>{@code lerp} is how far the flight turns toward its target each tick -- the direction is
+     * blended {@code lerp} of the way from where the bolt is going to where the target is, then
+     * renormalised. {@code activationBlocks} is how far from the SPAWN POINT the bolt flies
+     * ballistically before it starts steering at all. {@code searchRadius} is how far it looks for
+     * something to chase, re-chosen every tick.
+     *
+     * <h2>THE THREE NUMBERS ARE ANOTHER GAME'S, AND THIS TYPE DOES NOT JUDGE THEM</h2>
+     *
+     * <p>{@code PLAN-dragons-plume.md} §5 carries them as <b>INHERITED AND UNJUDGED</b> with a gate
+     * row each -- 0.65, 15 blocks and 10 blocks, tuned against a weapon that fired an instant fan of
+     * three rather than a charged release of five. <b>Nothing here is a ruling about their values</b>,
+     * and the record deliberately holds no defaults: a caller states all three or authors no homing.
+     *
+     * <p><b>AND THE SEARCH RADIUS CROSSED A SHAPE CHANGE, WHICH THE NUMBER DOES NOT SHOW.</b> The
+     * old repo's search was {@code getNearbyEntities(10, 10, 10)} -- a <b>20x20x20 BOX</b>, whose
+     * corner is {@code sqrt(3) x 10 = 17.32} blocks out. {@link
+     * io.github.butterflysmp.rpg.core.combat.CombatWorld#combatantsNear} is a <b>SPHERE</b>. So the
+     * same {@code 10} is a strictly smaller search everywhere except along the axes, and
+     * <b>a number carried across a shape change is not the same number.</b>
+     *
+     * <h2>NO VALIDATION HERE, DELIBERATELY, AND WHERE IT BELONGS INSTEAD</h2>
+     *
+     * <p>A compact constructor refusing {@code lerp <= 0} or {@code searchRadius <= 0} would be
+     * <b>unreachable today</b>: no content authors a homing block, because the YAML key does not
+     * exist yet -- this slice is core only. A guard whose triggering case cannot occur is exercised
+     * solely by a test that asserts the guard is present, which is the dead-catch shape {@code
+     * CLAUDE.md} records.
+     *
+     * <p><b>It is OWED at the schema slice</b>, where {@code AbilitySchema} first reads a
+     * {@code homing:} block and a bad value becomes authorable -- with a test that CAUSES the
+     * condition rather than one that asserts the arm exists. Named here rather than fixed, exactly
+     * as {@code boltor.yml} names {@code range} validation as owed.
+     */
+    record Homing(double lerp, double activationBlocks, double searchRadius) {}
 
     /**
      * Which way a dash sends the caster. The concrete direction VECTOR is still resolved
