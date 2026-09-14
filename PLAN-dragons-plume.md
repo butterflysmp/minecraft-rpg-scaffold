@@ -7,45 +7,65 @@ him with the arithmetic visible).
 
 ---
 
-## THE HEADLINE FINDING — THE MECHANIC IS DOMINATED BY IGNORING IT
+## THE HEADLINE FINDING — AND IT IS NOW CLOSED, BY A LEVER THE DIALOG NEVER OFFERED
 
-> **THIS IS THE POINTER. THE ACCOUNT IS §7.2** — the derivation, both fencepost conventions, the
-> full rate tables and the symbol discipline live there, and nothing is restated here that is not
-> needed to act.
+> **THIS IS THE POINTER. THE ACCOUNT IS §7.2** — the damage-per-second tables, both fencepost
+> conventions, the reload sensitivity and the symbol discipline live there.
 
-**As the Plume is specified today there is no `cooldown_ticks` ruling, so nothing taxes a tap. R4
-says a partial draw fires one arrow for one round. Therefore:**
+**The finding was: *clicking fast beat charging, so nobody would have used the charge.*** It was real
+— at the values the weapon then had, tapping led the charged release by every measure.
 
-> **UNGATED, TAPPING DELIVERS MORE THAN TWICE THE CHARGED RATE — and possibly more than four times.
-> The mechanic this weapon exists for is the worse option at the values it is currently specified
-> with.**
-
-**The spread is honest and it is bounded below by a measurement**, so the finding does not wait on
-anything (§7.2 resolves where the spread comes from):
+**It is answered by three rulings taken together, and by none of them alone:**
 
 ```
-charged, five arrows per release, c = 20 ruled     0.8929 arrows/s
-tapping at T = 8 ticks                             1.9841 arrows/s    x2.22
-tapping at T = 3 ticks, vanilla's own floor        3.7879 arrows/s    x4.24
+R4'  a partial draw fires one arrow -- NO HOMING, 12 damage      (overturns R4)
+R7   cooldown_ticks = 0, ruled                                   "fast shooting arrows is fine"
+R9   reload_ticks   = 90                                         the tax that actually bites
 ```
 
-**WHAT BEN RULES, IN THE UNITS HE AUTHORS — one field, one inequality:**
+**Redone in DAMAGE PER SECOND, because R4′ made arrows incommensurable — a charged arrow is 48 and
+homes, a tap arrow is 12 and does not:**
 
 ```
-cooldown_ticks >= 21        the charge wins
-
-  at 21   0.8865 arrows/s   charging ahead
-  at 20   0.9259 arrows/s   tapping ahead by 3.7%
+charged, five per release, c = 20          40.678 dmg/s      1200 per magazine
+tapping at T = 3, vanilla's own floor       37.037 dmg/s       300 per magazine   charge +9.8%
+tapping at T = 8, a rate a hand can keep    21.277 dmg/s       300 per magazine   charge +91.2%
 ```
 
-**21 is the answer under BOTH fencepost conventions** (§7.2 names them), so the number does not move
-whichever is adopted — and **a cooldown anywhere up to 100 ticks cannot touch the five-arrow path at
-all**, whose releases are already 100 ticks apart. **This field prices R4 and only R4.**
+**AND THE ARGUMENT A PLAYER ACTUALLY FEELS IS NOT THE RATE — IT IS THE AMMUNITION.** The same
+twenty-five rounds are worth **1200 damage charged and 300 tapped: four times**, so the tap-spammer
+runs dry four times as often for the same work, and it compounds with every reload. **That needs no
+hit-rate assumption**, which is why it carries more weight than the 9.8%.
 
-> **AND IT IS THE FOURTH OF A FAMILY, WHICH IS WHY IT IS AT THE TOP RATHER THAN IN §7.** Q7's
-> quantised input; Rapid Fire as a percentage of a quantised cooldown; Expanded Quiver as a
-> percentage of an integer magazine; and now **a mechanic whose own cheaper alternative is better
-> than it.** Every one of the four was arithmetic nobody had done until somebody did.
+> **NOT "SOLVED" — CLOSED WITH A MARGIN, AND THE REST IS UNQUANTIFIABLE HERE.** At vanilla's floor
+> the gap is **9.8%**, and `T = 3` means a sustained **6.7 clicks per second** — a tool's rate, not a
+> hand's. The removal of homing sits on top of that and **cannot be measured in this repository**: a
+> hit rate against a moving target is a property of the player and the fight. **No hit-rate
+> assumption is written into this plan to make a table come out.** P7 (§8) is where a person finds
+> out.
+
+> **AND R9 IS NOW LOAD-BEARING: below `reload_ticks` ≈ 71 the tap retakes the lead.** With
+> `cooldown_ticks` at 0, the reload is the entire tap tax. **Lowering it re-opens §7.2**, which is
+> exactly the coupling that gets broken by someone changing one field in isolation.
+
+### THE LESSON IS THE FRAMING, NOT THE ARITHMETIC
+
+**The dialog asked *"how much do we tax the tap"* and offered three values of `cooldown_ticks`. Ben
+answered on a different axis — *make the tap a different, worse shot*.** The cooldown was never the
+only lever; the dialog presented it as though it were, and the answer that worked came from outside
+the set of options on offer.
+
+> **A DIALOG THAT OFFERS THREE VALUES OF ONE VARIABLE CAN HIDE THE VARIABLE.**
+
+**The tell is available before the answer comes back: every option on offer moved the same field.**
+When that is true, the question being asked is *"what value"*, and nobody has asked *"which
+quantity"*. It is **name the quantity, and name the set of things that have it** (`CLAUDE.md`) turned
+on the designer's own question instead of on an enchant.
+
+> **AND THE FAMILY IT BELONGS TO IS UNCHANGED, WHICH IS WHY IT IS STILL AT THE TOP.** Q7's quantised
+> input; Rapid Fire as a percentage of a quantised cooldown; Expanded Quiver as a percentage of an
+> integer magazine; and now **a mechanic whose own cheaper alternative was better than it.** Every one
+> was arithmetic nobody had done until somebody did.
 
 ---
 
@@ -209,7 +229,7 @@ operator's call, not a detail.**
 
 ---
 
-## 2. THE SIX RULINGS, AND THE REASONING R1 OVERTURNED
+## 2. THE RULINGS — TEN LIVE, ONE OVERTURNED, AND THE REASONING R1 OVERTURNED
 
 **Operator's, all final. Do not re-derive them from the code.**
 
@@ -223,14 +243,61 @@ operator's call, not a detail.**
   for. Two rounds left means the ticks **stop at two**, and the sound never promises an arrow that is
   not coming. **The tracker reads the magazine LIVE** — ruled, and more work than the alternative
   deliberately.
-- **R4 · A PARTIAL DRAW FIRES ONE ARROW, AND IT STILL HOMES.** Costs one round. Full charge is purely
-  upside; the Plume is never dead at close range.
+- **R4′ · A PARTIAL DRAW FIRES ONE ARROW, WITH NO HOMING, AT 12 DAMAGE.** Costs one round.
 
-  > **AND R4 HAS A FLOOR VANILLA IMPOSES, WHICH IS THE SAME RULING SEEN FROM THE OTHER END.** A draw
-  > shorter than **3 ticks** fires nothing and reports nothing — `getPowerForTime(t) < 0.1`, measured
-  > in §3.1. *"A partial draw fires one arrow"* and *"the shortest taps fire nothing and say nothing"*
-  > describe one behaviour, and **which release signal the shot hangs on decides whether R4 is honest
-  > below 3 ticks** (§3.1). It is also the floor the headline's `T = 3` row stands on.
+  > **THIS IS AN OVERTURN OF R4, NOT AN AMENDMENT, AND THE THING IT REPLACED IS WRITTEN DOWN.**
+  >
+  > ```
+  > R4   a partial draw fires one arrow, AND IT STILL HOMES      -- superseded
+  > R4'  a partial draw fires one arrow, NO HOMING, 12 damage    -- RULED
+  > ```
+  >
+  > **R4 was not a default. The homing-versus-no-homing question was put to Ben when R4 was made, and
+  > he chose homing.** He has now chosen the option he previously declined, and added a damage cut.
+  > **A silently rewritten ruling reads as one nobody ever questioned**, which would make the next
+  > reader think the earlier choice was never considered. It was.
+
+  > **AND THE MORE USEFUL HALF IS WHY THE DIALOG FAILED TO REACH THIS.** §7.2 asked *"how much do we
+  > tax the tap"* and offered three values of `cooldown_ticks`. Ben answered on a **different axis** —
+  > *make the tap a different, worse shot*. The cooldown was never the only lever, and the dialog
+  > presented it as though it were.
+  >
+  > > **A DIALOG THAT OFFERS THREE VALUES OF ONE VARIABLE CAN HIDE THE VARIABLE.**
+  >
+  > **The tell is available before the answer comes back:** every option on offer moved the same
+  > field. When that is true, the question being asked is *"what value"*, and nobody has asked
+  > *"which quantity"*. It is the same shape as **name the quantity, and name the set of things that
+  > have it** (`CLAUDE.md`) — asked of the designer's own question rather than of an enchant.
+
+- **R7 · `cooldown_ticks` = 0, AUTHORED AS A RULING.** *"Fast shooting arrows is fine."* **The tap is
+  gated by being a worse shot, not by a timer.**
+
+  > §7.2 had already written the condition this satisfies: *"if the draw is meant to be the only
+  > gate, the answer is `0` and it should be authored as a RULING — not left at 0 by omission,
+  > because the headline finding is exactly the consequence somebody would later fix."* **It is now
+  > ruled, so the `0` in the content file is a decision with a name on it** rather than an absent key.
+
+- **R8 · `attack_damage` = 48 PER CHARGED ARROW → 240 IN ONE INSTANT at full charge.** Taken on the
+  **instantaneous-parity** anchor, **with §7.1's spike paragraph in front of him** — so the spike is
+  **chosen, not overlooked**, and that paragraph stays in the file beside the ruling rather than
+  being tidied away now that the number exists.
+
+- **R9 · `reload_ticks` = 90.** 4.5 seconds; **3.60 ticks per round**, just under `quiver_stone`'s
+  3.78 — so **the Plume is no longer the cheapest ammunition in the project.**
+
+  > **THIS NUMBER NOW DOES MORE WORK THAN IT LOOKS LIKE IT DOES, AND §7.3 CARRIES THE ACCOUNT.** With
+  > `cooldown_ticks` at 0, **the reload is the only thing pricing a tap-spammer** — they meet it far
+  > sooner per unit of damage dealt. **Measured in §7.2: lowering it back below ~71 ticks hands the
+  > lead back to tapping.**
+
+- **R10 · QUICK TAPS KEEP VANILLA'S FLOOR.** Under **3 ticks**, nothing fires —
+  `getPowerForTime(t) < 0.1`, measured in §3.1.
+
+  > **SO §3.1's FINDING IS A FOOTNOTE ON R4′ RATHER THAN A CHANGE TO IT**, and
+  > `PlayerStopUsingItemEvent` is **not** pressed into serving `t < 3`. **The ruling simplifies the
+  > design rather than constraining it** — see §3.1, where it reverses which event the shot hangs on:
+  > the floor is now *wanted*, so it can come from the platform instead of from a second
+  > implementation of the same rule.
 
 - **R5 · ONE ARROW IN THE OFF-HAND, FOR NOW.** The draw gate of §1 is satisfied by keeping a single
   plain arrow in the off-hand.
@@ -326,23 +393,34 @@ the threading rule in `CLAUDE.md` is not in play:**
 
 | event | when | what it carries | our use |
 |---|---|---|---|
-| `PlayerStopUsingItemEvent` | **every** release, **before** `ItemStack.releaseUsing` (`LivingEntity.releaseUsingItem`, event at offset 64, item at 84) | `getTicksHeldFor()`, which is `getTicksUsingItem()` = `useDuration − remaining`, counting **up** | **the release signal.** Not cancellable. |
-| `EntityShootBowEvent` | only when vanilla decides to shoot | `getForce()`, `getProjectile()` | **the suppressor.** Cancelling calls `Entity.remove()` on the arrow before it is added to the world. |
+| `EntityShootBowEvent` | only when vanilla decides to shoot — so **`t >= 3` and an arrow present** | `getForce()`, `getProjectile()` | **the shot, AND the suppressor.** Cancelling calls `Entity.remove()` on the arrow before it is added to the world. |
+| `PlayerStopUsingItemEvent` | **every** release, **before** `ItemStack.releaseUsing` (`LivingEntity.releaseUsingItem`, event at offset 64, item at 84) | `getTicksHeldFor()` = `getTicksUsingItem()` = `useDuration − remaining`, counting **up** | **the tracker's stop.** Not cancellable, and **not the shot** — see R10. |
 
-> **HANG THE SHOT ON THE FIRST ONE, NOT THE SECOND, AND THE REASON IS A MEASURED DEAD ZONE.**
-> `BowItem.releaseUsing` returns with no shot when `getPowerForTime(heldTicks) < 0.1` (offsets 54-65).
-> The curve is `((t/20)² + 2(t/20)) / 3`, so:
+> **R10 REVERSED THIS TABLE, AND THE REVERSAL IS WORTH RECORDING BECAUSE THE RULING MADE THE DESIGN
+> SIMPLER RATHER THAN NARROWER.**
+>
+> **The measured dead zone.** `BowItem.releaseUsing` returns with no shot when
+> `getPowerForTime(heldTicks) < 0.1` (offsets 54-65). The curve is `((t/20)² + 2(t/20)) / 3`:
 >
 > ```
 > t = 2   power 0.0700   NO SHOT, and no EntityShootBowEvent
 > t = 3   power 0.1075   shoots
 > ```
 >
-> **A tap under three ticks fires nothing in vanilla and delivers no bow event at all.** R4 says a
-> partial draw fires one arrow; hung on `EntityShootBowEvent`, the shortest taps would be **silently
-> dead** and nothing would report it. `PlayerStopUsingItemEvent` fires either way and carries the
-> tick count, so it can serve R4 down to `t = 1` if Ben wants it to. **Whether it should is an open
-> number (§7).**
+> **The earlier draft hung the shot on `PlayerStopUsingItemEvent`** precisely so that a sub-3-tick tap
+> could still fire — treating vanilla's floor as something to work around. **R10 rules the floor
+> KEPT**, so it is now a thing to inherit: hanging the shot on `EntityShootBowEvent` gets it **from
+> the platform, with no second implementation of the same rule** — and a re-implemented
+> `ticksHeldFor >= 3` guard would be exactly the duplicated-rule shape this repo treats as a defect.
+>
+> **`PlayerStopUsingItemEvent` is still needed, and not for the shot.** A hold that ends with **no**
+> release — under 3 ticks, a hotbar swap, a death — fires it and **not** the bow event, so it is the
+> only signal that can **stop the charge tracker and its sound**. Without it a dry release leaves a
+> tracker ticking.
+>
+> **The arrow COUNT comes from neither event.** `getForce()` saturates at `1.0` after 20 ticks
+> (§3.2), so it **cannot distinguish a 20-tick hold from a 100-tick one** — the count is the
+> tracker's, which has to exist anyway to play the per-second sound.
 
 ### 3.2 TWO MEASURED CONSTANTS THE DESIGN SITS ON
 
@@ -482,109 +560,133 @@ per-tick work list above; a figure for it belongs to the gate, not to this parag
 
 ---
 
-## 7. OPEN NUMBERS — A DIALOG. THE ARITHMETIC IS SHOWN SO EACH CAN BE RULED IN A SENTENCE
+## 7. THE NUMBERS — WHAT EACH ONE DECIDES, THEN THE ARITHMETIC UNDERNEATH
 
-**Ben rules any number a player experiences. None of these is invented below.**
+> **HOW THESE SECTIONS ARE WRITTEN, AND IT IS A CORRECTION TO HOW THEY WERE WRITTEN BEFORE.** Each
+> opens with **one plain sentence saying what is being decided and what it feels like**, and puts the
+> arithmetic below it as **evidence**. The earlier version led with DPS tables, fenceposts and
+> crossovers and buried the choice underneath — **it did not land, and the operator said so.** The
+> version that landed opened with *"right now clicking fast beats charging, so nobody would use the
+> charge"* and put the numbers second. **The numbers are not the question; they are the evidence for
+> the question.**
 
-### 7.0 CLOSED — THE ONE THAT CHANGED EVERY OTHER NUMBER ON THIS PAGE IS NOW **R6**
+> **AND ONE UNIT RULE, BECAUSE R4′ BROKE THE OLD ONE.** A charged arrow is **48 and homes**; a tap
+> arrow is **12 and does not**. **Twenty-five arrows is no longer twenty-five arrows**, so
+> **arrows/second is meaningless ACROSS the two paths** and every cross-path comparison below is in
+> **damage per second**. Within a single path all the arrows are alike and arrows/s still means
+> something; that is why both appear.
 
-**The question was: does full charge itself deliver the first arrow, or the zeroth?**
+### 7.0 CLOSED — **R6**: FULL CHARGE IS ARROW 1
+
+**What it decided:** whether holding to full charge and letting go immediately gives you one arrow or
+none.
 
 ```
 READING A   full charge = 1 arrow ready, +1 per further second      <- RULED (R6)
             N arrows costs 20 + (N-1)c ticks;  5 arrows = 100t = 5.00s at c = 20
 READING B   full charge = 0, the first second adds the first arrow
             5 arrows = 20 + 5c = 120t = 6.00s, and a full-charge release with no wait would
-            fire nothing at all, which contradicts R4
+            fire nothing at all, which contradicts R4'
 ```
 
-**R6 ruled Reading A, which is the one every figure below was already computed under — so nothing in
-§7.1 moves.** It is recorded as closed rather than deleted: **a plan that silently drops the question
-leaves the next reader unable to tell a ruling from an oversight**, and the two readings differ by a
-full second of hold at five arrows.
+**R6 ruled Reading A — the one every figure was already computed under, so nothing moved.** Recorded
+as closed rather than deleted: **a plan that silently drops a question leaves the next reader unable
+to tell a ruling from an oversight.**
 
-**`c` IS THE CHARGE SECOND AND IT IS RULED AT 20** (§7.5). **It is never written `T`** — `T` is the
-tap interval and belongs only to §7.2. The two are different quantities and the collision is easy to
-make: it was made once, in review, by a careful reader.
+**`c` IS THE CHARGE SECOND, RULED AT 20 (§7.5). IT IS NEVER WRITTEN `T`** — `T` is §7.2's tap
+interval, and the two collided once already, in review, by a careful reader.
 
-### 7.1 `attack_damage` PER ARROW — AND THEREFORE ×5 AT FULL CHARGE
+### 7.1 CLOSED — **R8**: 48 PER CHARGED ARROW, **240 IN ONE INSTANT**
 
-**The cycle, stated so the fencepost is visible.** Twenty-five rounds at one round per arrow is
-**five releases of five**. One release costs `20 + 4c` ticks — **`c` is the charge second, ruled at
-20 (R6, §7.5), and it is the only symbol used for it on this page** — so `20 + 80 = 100t`, and the
-magazine empties in `5 × 100 = 500t`.
+**What it decided:** how hard a full release hits. **240 damage lands in a single frame**, and then
+the weapon costs a full draw plus four seconds before it can do it again.
 
-**THERE IS NO FENCEPOST SUBTRACTION ON THIS SIDE, AND THAT ASYMMETRY IS THE ONE TO NAME.** Unlike the
-Locust's *twelve shots span eleven intervals*, each Plume release **consumes a whole window
-including its own draw** rather than sitting at the end of a gap — so the charged cycle counts all
-five draws. **§7.2's tap cycle does not count all twenty-five**, which is exactly why the crossover
-has two conventions. Add the reload:
+**Ben took the instantaneous-parity anchor, with the spike paragraph below in front of him.** The
+spike is **chosen, not overlooked.**
 
 ```
-500t hold + 60t reload = 560t = 28.00s per magazine of 25 arrows
-   with reload      25 / 28.00s = 0.8929 arrows/s
-   within magazine  25 / 25.00s = 1.0000 arrows/s
-   instantaneous    5 arrows in one frame
+one release   5 x 48                 =   240   in one frame
+magazine      25 x 48                =  1200   against the Locust's 312
+cycle         5 x 100t + 90t reload  =   590t  = 29.50s
+
+   sustained, with reload   1200 / 29.50s  =  40.68 dmg/s     Locust 32.50   +25.2%
+   within the magazine      1200 / 25.00s  =  48.00 dmg/s     Locust 47.27    +1.5%
 ```
 
-**The Locust, for comparison, from its own file — three rates, and the operator's "roughly 43" is a
-fourth:**
+> **THE COMPARISON THE TABLE CANNOT SHOW, AND THE ONE THE RULING WAS TAKEN AGAINST: the Plume lands
+> its whole release in ONE INSTANT and then costs a full draw plus four seconds.** 240 in a single
+> frame, against the **104** the Locust lands in its first two seconds (four shots at 12 ticks:
+> t = 0, 12, 24, 36). **A number that reads modest as a rate reads extreme as a spike**, and this
+> weapon is all spike.
+
+> **A NOTE THE RULING ITSELF CREATED, AND IT IS NOT A COMPLAINT ABOUT THE RULING.** The anchors Ben
+> chose against were computed at the **old 60-tick reload**: sustained parity `D = 36.40`,
+> instantaneous parity `D = 48.53`, and **48 sits just under the instantaneous one.** **R9 moved
+> those anchors in the same message** — at a 90-tick reload they become **38.35** and **51.13**, so
+> 48 now sits *between* them rather than at the top of the range.
+>
+> **Both rulings arrived together, so this is a fact to record rather than an error to fix** — and it
+> is recorded because a reader who recomputes the anchors will otherwise think 48 was chosen against
+> these ones. **It was chosen against the other two.**
+
+### 7.2 THE HEADLINE, RE-DONE IN **DAMAGE PER SECOND** — AND THE UNITS ARE THE POINT
+
+**What it decided, in one sentence:** *clicking fast used to beat charging, so nobody would have used
+the charge* — and it is now settled, **not by a timer but by making the tap a different, worse shot.**
+
+> **THIS IS THE ACCOUNT. THE POINTER IS THE HEADLINE SECTION AT THE TOP OF THIS FILE.**
+
+**THE OLD ANSWER IS SUPERSEDED AND IS RECORDED RATHER THAN DELETED.** This section used to end in
+`cooldown_ticks >= 21`, derived over **arrows per second**. **R7 ruled `cooldown_ticks = 0`**, and
+**R4′ made arrows incommensurable**, so that inequality is void — it priced a lever nobody pulled,
+in a unit that no longer works. *A superseded derivation that vanishes leaves the next reader
+re-deriving it.*
+
+**SYMBOLS.** `T` = the **tap interval** in ticks, this section only, never a charged-path quantity.
+`c` = the **charge second**, ruled 20, §7.0/§7.1/§7.5, never written `T`.
 
 ```
-sustained (with reload)   12 / 9.60s = 1.2500 sh/s x26 = 32.50 DPS
-burst (within magazine)   12 x 26 / 6.60s            = 47.2727 DPS
-instantaneous             20/12 x 26                 = 43.33 DPS   <- the "roughly 43"
+charged   5 x (20 + 4c) + 90  =  590t  =  29.50s  ->  1200 dmg  ->  40.678 dmg/s
+tapping   25 taps + the reload                    ->   300 dmg  ->  6000 / (24T + 90)   conv. A
+                                                                    6000 / (25T + 90)   conv. B
 ```
 
-**So, per-arrow damage D against both rates:**
+| `T` | tap dmg/s (A) | charged 40.678 is | tap dmg/s (B) | charged is |
+|---|---|---|---|---|
+| **3 — vanilla's floor** | **37.037** | **+9.8%** | **36.364** | **+11.9%** |
+| 4 | 32.258 | +26.1% | 31.579 | +28.8% |
+| 8 | 21.277 | +91.2% | 20.690 | +96.6% |
+| 12 | 15.873 | +156.3% | — | — |
+| 20 | 10.526 | +286.4% | — | — |
 
-| D | one release (5 arrows) | sustained, with reload | per magazine |
-|---|---|---|---|
-| 19 — the Boltor's | 95 | 16.96 | 475 |
-| 26 — the Locust's | 130 | 23.21 | 650 |
-| **36** | 180 | **32.14** | 900 |
-| 40 | 200 | 35.71 | 1000 |
-| 45 | 225 | 40.18 | 1125 |
-| 52 | 260 | 46.43 | 1300 |
+**THE CHARGE IS AHEAD AT EVERY `T`, INCLUDING VANILLA'S OWN FLOOR.**
 
-**D = 36.40 makes the Plume's sustained damage exactly the Locust's 32.50.** **D = 48.53 matches the
-Locust's instantaneous 43.33.** Neither is proposed; the pair is shown because **the answer depends
-entirely on which of the Locust's rates Ben is pricing against**, and the two differ by a third.
+> **AND THAT IS A CORRECTION TO THE ARITHMETIC THIS REVISION WAS ASKED TO REDO, NOT A RESTATEMENT OF
+> IT.** The rulings were sent with the figures *"charged 42.86, tap 45.45, the tap still ahead by
+> about 6%"* — and **those are the 60-tick-reload figures.** **R9 raised the reload to 90 in the same
+> message, and it lands on both paths unequally:**
+>
+> ```
+> reload 60   charged 42.857   tap@3 45.455   TAP ahead by 6.1%     <- the figures as sent
+> reload 90   charged 40.678   tap@3 37.037   CHARGE ahead by 9.8%  <- with R9 applied
+> ```
+>
+> **The instinct behind R9 — *"the reload is the actual tap tax"* — is not merely right, it is
+> load-bearing: it is what turns the answer over.** The tie is at **`reload_ticks` ≈ 70.67**
+> (convention A) or **66.67** (convention B); R9's 90 clears both.
 
-> **THE COMPARISON THE TABLE CANNOT SHOW: the Plume lands its whole release in ONE INSTANT and then
-> costs a full draw plus four seconds.** At D = 36 that is **180 damage in a single frame**, against
-> the **104** the Locust lands in its first two seconds (four shots at 12 ticks: t = 0, 12, 24, 36).
-> **A number that reads modest as a rate can read extreme as a spike**, and this weapon is all spike.
-
-### 7.2 `cooldown_ticks` — THE ACCOUNT BEHIND THE HEADLINE FINDING
-
-> **THIS IS THE ACCOUNT. THE POINTER IS THE HEADLINE SECTION AT THE TOP OF THIS FILE**, and it
-> carries the one thing Ben has to act on — `cooldown_ticks >= 21` — in a form that can be obeyed
-> without reading a line of this section.
-
-**SYMBOLS, STATED FIRST, BECAUSE THE COLLISION HAS ALREADY HAPPENED ONCE — IN REVIEW, BY A CAREFUL
-READER, WHICH IS THE EVIDENCE THAT THE NOTATION INVITES IT AND NOT THAT SOMEONE WAS HASTY:**
-
-```
-T   the TAP INTERVAL, in ticks.  THIS SECTION ONLY.  Never appears in a charged-path expression.
-c   the CHARGE SECOND, ruled 20 (R6, and §7.5).  Sections 7.0, 7.1, 7.5.  Never written T.
-```
-
-**The two cycles, side by side:**
-
-```
-charged   5 x (20 + 4c) + 60  =  560t = 28.00s  ->  0.892857 arrows/s
-          every one of the five draws is counted -- see §7.1
-
-tapping   25 taps, with the reload                  ->  500 / (24T + 60)   convention A
-                                                        500 / (25T + 60)   convention B
-```
+> **THE HONEST RESULT IS STILL NOT "SOLVED", AND THE REASON HAS MOVED.** At vanilla's floor the
+> margin is **9.8%**, which is *close*, and `T = 3` means a sustained **6.7 clicks per second** —
+> reachable by a tool, not by a hand. **At any rate a person can actually keep up (`T = 8`, 2.5
+> clicks/s) the charge is ahead by 91%.**
+>
+> **AND THE REMOVAL OF HOMING SITS ON TOP OF ALL OF IT, UNQUANTIFIED AND UNQUANTIFIABLE HERE.** A
+> homing arrow's hit rate against a moving target is a property of **the player and the fight**, not
+> of the tree. **No hit-rate assumption is written into this plan to make a table come out** — an
+> unmeasurable quantity named as unmeasurable is worth more than a number invented to close a gap,
+> and **P7 (§8) is where a person finds out.**
 
 #### THE FENCEPOST — NAME THE CONVENTION, BECAUSE "EXACT" WAS TOO STRONG
-
-**The earlier draft called the crossover *exact*. A figure that moves by 0.83 when a convention
-changes is not exact until the convention is named**, and this is the same fencepost family that has
-already cost this project twice on the ranged weapons.
 
 ```
 A  24 intervals   25 taps SPAN 24 gaps.  The locust convention -- shots at the END of intervals.
@@ -592,141 +694,132 @@ A  24 intervals   25 taps SPAN 24 gaps.  The locust convention -- shots at the E
 B  25 intervals   every tap costs a whole T, symmetric with the charged cycle.
 ```
 
-| `T` | A: `500/(24T+60)` | vs charging | B: `500/(25T+60)` | vs charging |
-|---|---|---|---|---|
-| 3 | 3.7879/s | **×4.24** | 3.7037/s | ×4.15 |
-| 7 | 2.1930/s | ×2.46 | 2.1277/s | ×2.38 |
-| 8 | 1.9841/s | **×2.22** | 1.9231/s | ×2.15 |
-| 16 | 1.1261/s | +26.1% | 1.0870/s | +21.7% |
-| 20 | 0.9259/s | +3.7% | 0.8929/s | **dead level** |
-| 21 | 0.8865/s | **−0.7%** | 0.8547/s | **−4.3%** |
+**The two disagree by about one percentage point and agree on every verdict in the table above**, so
+nothing here waits on the choice. It is named because **the earlier draft called a crossover *exact*
+when it moved by 0.83 ticks with the convention** — this is the same fencepost family that has
+already cost this project twice on the ranged weapons.
 
-```
-crossover     A: T = 20.8333        B: T = 20.0000 exactly
-in integers   cooldown_ticks >= 21  under BOTH
-```
+#### WHAT THE `T = 3` FLOOR RESTS ON — ONE STATEMENT, CITED TWICE
 
-> **THE ANSWER SURVIVES THE AMBIGUITY, AND THAT IS WORTH MORE THAN SETTLING IT.** The two conventions
-> disagree about the crossover by 0.83 ticks and **agree about the field Ben authors**, because
-> `cooldown_ticks` is an integer. **So the ruling does not wait on the convention** — it is named
-> because the *word* "exact" was a claim about a number that has two values, not because the decision
-> hangs on it.
+**The earlier draft derived the tap interval as *"3 ticks plus the client's 4-tick re-use delay, so
+roughly 7 or 8"* — and argued one paragraph later that the 4-tick grid's premise is absent for a
+latching input. Both could not stand.** Resolved the way the draw gate was: by going and looking.
 
-#### WHAT THE 4 RESTS ON — ONE STATEMENT, CITED TWICE, BECAUSE THE EARLIER DRAFT USED IT AND DENIED IT
-
-**The earlier draft derived the ungated tap interval as *"3 ticks plus the client's 4-tick re-use
-delay, so roughly 7 or 8"* — and then argued, one paragraph later, that the 4-tick grid's premise is
-absent for a latching input. Both cannot stand unexamined, and the contradiction set the headline
-number.** It was resolved the way the draw gate was resolved: by going and looking.
-
-**THE STATEMENT, and it is the only place this is asserted on this page:**
-
-1. **THE 4 IS A CLIENT CONSTANT, AND THE PINNED JAR CANNOT CONTAIN IT.**
+1. **THE 4 IS A CLIENT CONSTANT AND THE PINNED JAR CANNOT CONTAIN IT.**
    `unzip -l run/versions/26.1.2/paper-26.1.2.jar | grep -c "net/minecraft/client/"` returns **0**;
-   `MultiPlayerGameMode` and `LocalPlayer` are absent. **The instrument is missing, and no better
-   search fixes that** — this is an absence of the *class*, not of a match.
-2. **THE SERVER IMPOSES NO RELEVANT FLOOR OF ITS OWN, AND THAT PART IS IN THE JAR.**
-   `ServerGamePacketListenerImpl.handleUseItem`'s only rate check is `checkLimit`, Paper's spam
-   limiter: at most **8** use-item packets per `incoming-packet-threshold` milliseconds, the ninth
-   dropped. This repo's own `run/config/paper-global.yml` sets it to **300**, so the server's ceiling
-   is **26.67 packets/s — 1.33 per tick**. An order of magnitude above any tap rate, and therefore
-   **never the binding constraint.**
-3. **THE REPO'S ONLY MEASUREMENT OF THE 4 WAS TAKEN ON A HELD REPEAT.** `GATE-q7.md`, two weapons and
-   two materials, `min 4t`. That reading is untouched and stays exactly as strong as it was.
+   no `MultiPlayerGameMode`, no `LocalPlayer`. **The instrument is absent, and no better search fixes
+   an absent class.**
+2. **THE SERVER IMPOSES NO RELEVANT FLOOR, AND THAT PART IS IN THE JAR.**
+   `ServerGamePacketListenerImpl.handleUseItem`'s only rate check is `checkLimit` — Paper's spam
+   limiter, at most **8** use-item packets per `incoming-packet-threshold` ms, the ninth dropped.
+   This repo's `run/config/paper-global.yml` sets **300**, so the ceiling is **26.67/s, 1.33 per
+   tick**: an order above any tap rate, **never binding.**
+3. **THE REPO'S ONLY MEASUREMENT OF THE 4 WAS TAKEN ON A HELD REPEAT** — `GATE-q7.md`, two weapons,
+   two materials, `min 4t`. Untouched, and exactly as strong as it was.
 
-> **SO: `4` GOVERNS THE HELD-REPEAT STREAM — MEASURED. WHETHER IT ALSO GOVERNS DISCRETE CLICKS IS
-> UNMEASURED HERE AND UNRESOLVABLE FROM THIS JAR.** Both paragraphs below cite this statement instead
-> of using the number in opposite directions.
+> **SO: `4` GOVERNS THE HELD-REPEAT STREAM, MEASURED. WHETHER IT GOVERNS DISCRETE CLICKS IS
+> UNMEASURED HERE AND UNRESOLVABLE FROM THIS JAR.** Both paragraphs below cite this rather than using
+> the number in opposite directions.
 
-**FIRST CITATION — THE TAP FLOOR.** Applying the latch/repeat distinction to **my own tap interval**,
-which is where the earlier draft failed its own test: `T` has a measured lower bound of **3 ticks**
-(vanilla's `getPowerForTime < 0.1` gate, §3.1 — server-side, in the jar, and it holds for taps
-because it is a property of the *release*, not of the input stream). **It has no measured upper
-bound.** *A control carried past its precondition stops being a control*, and the 4 was being carried.
-
-**WHAT THAT DOES TO THE HEADLINE: IT CAN ONLY MAKE IT LARGER.**
-
-```
-T = 8   the 4 applied to taps as well      1.9841/s   x2.22    the CONSERVATIVE reading
-T = 3   vanilla's own floor, alone         3.7879/s   x4.24    the tighter one
-```
-
-**Tapping dominates under every reading**, which is why the headline states the bound that survives
-both — *more than twice* — and names the spread rather than picking the flattering end of it.
+**FIRST CITATION — THE TAP FLOOR.** Applying the latch/repeat distinction to **this plan's own tap
+interval**, which is where the earlier draft failed its own test: `T`'s measured lower bound is **3
+ticks** (R10, and `getPowerForTime < 0.1` in §3.1 — server-side, and a property of the *release*, so
+it holds for taps). **There is no measured upper bound**, which is why the table runs to `T = 20`.
+*A control carried past its precondition stops being a control*, and the 4 was being carried.
 
 **SECOND CITATION — THE MULTIPLES-OF-4 RULE IS NOT INHERITED HERE.** `CLAUDE.md`'s *author multiples
-of 4* exists because **a held right-click delivers inputs on a 4-tick grid**. This is the first weapon
-in the project whose input is a **latch** rather than a repeat (§1.4): one use packet, one release.
-**By the statement above, the grid's premise is measured only for the repeat** — so `12`, `20` or `21`
-may be honest values here where they would be quantised elsewhere. **That is a re-derivation owed
-before any cooldown is authored, not an exception granted in advance.**
+of 4* exists because **a held right-click delivers inputs on a 4-tick grid**. This weapon's input is
+a **latch**, not a repeat (§1.4). **By the statement above, the grid's premise is measured only for
+the repeat** — which is also why **R7's `cooldown_ticks: 0` needs no grid argument at all.**
 
-**WHAT DISCHARGES ALL OF IT: GATE ROW P7 (§8), AND THE INSTRUMENT ALREADY EXISTS.** `/rpg firerate`
-reads `FireCadence`, which counts **INPUTS before every gate** — Q7's own instrument, pointed at
+**WHAT DISCHARGES IT: GATE ROW P7 (§8)**, with `/rpg firerate` — Q7's own instrument pointed at
 discrete clicks instead of at a hold.
 
-#### AND THIS FIELD PRICES R4 AND ONLY R4
+### 7.2a THE REAL INCENTIVE IS AMMUNITION, AND IT IS IN NO RATE TABLE
 
-> **A COOLDOWN ANYWHERE UP TO 100 TICKS DOES NOT TOUCH THE FIVE-ARROW PATH AT ALL**, because its
-> releases are already `20 + 4c = 100` ticks apart. **So `cooldown_ticks` on this weapon means
-> something different from what it means on every other weapon in the project**: it is not a fire
-> rate, it is the tap tax — which is the reason the question is put rather than defaulted.
+**What it decides, in one sentence:** *a tap-spammer runs dry four times as often for the same work* —
+and that is what a player actually feels, not a nine-percent difference in a rate nobody can see.
+
+```
+25 rounds tapped     25 x 12              =   300 damage
+25 rounds charged    5 releases x 5 x 48  =  1200 damage     FOUR TIMES, from the same magazine
+```
+
+**It compounds with every reload, which a rate comparison never shows.** The tapper at `T = 3` empties
+the magazine in **72 ticks and then waits 90** — *more time reloading than shooting*:
+
+```
+duty cycle   tapping at T=3   72 / 162   =  44.4% shooting
+             charging          500 / 590  =  84.7% shooting
+```
+
+**This is the stronger argument for charging and it needs no hit-rate assumption**, which is exactly
+why it belongs beside the rate table rather than inside it.
+
+### 7.3 CLOSED — **R9**: `reload_ticks` = 90, AND IT IS NOW THE TAP TAX
+
+**What it decided, in one sentence:** *how long you stand there doing nothing* — 4.5 seconds — and,
+because `cooldown_ticks` is 0, **it is the only thing in the weapon that prices spam.**
+
+```
+boltor         8 rounds / 60t = 7.50 ticks per round
+locust        12 rounds / 60t = 5.00
+quiver_stone   9 rounds / 34t = 3.78
+PLUME         25 rounds / 90t = 3.60      <- no longer the cheapest ammunition in the project
+```
+
+At the old 60 it was **2.40**, the cheapest by 36%. **R9 gives that title back to `quiver_stone`** by
+a margin of 0.18 ticks per round.
+
+> **THIS NUMBER IS LOAD-BEARING NOW, AND THAT IS A COUPLING SOMEBODY WILL BREAK BY CHANGING ONE
+> FIELD IN ISOLATION.** With `cooldown_ticks = 0` (R7), **the reload is the whole tap tax**: the
+> tapper meets it five times as often per unit of damage dealt.
 >
-> **If the draw is meant to be the only gate, the answer is `0` and it should be authored as a
-> RULING** — not left at 0 by omission, because the headline finding is exactly the consequence
-> somebody would later "fix".
+> **MEASURED, SO THE COUPLING IS CHECKABLE RATHER THAN ASSERTED: below `reload_ticks` ≈ 71 the tap
+> retakes the lead at `T = 3`** (66.67 under the symmetric convention). **Lowering this number
+> re-opens §7.2.** It is not a comfort setting.
 
-### 7.3 `reload_ticks` — 60 IS THE DEFAULT, AND 25 ROUNDS IS WHY THE QUESTION IS ASKED
+### 7.4 OPEN — HOW FAR THE ARROW REACHES, AND WHETHER IT FALLS ON THE WAY
 
-**Shipped values and what they cost per round:**
+**What is being decided, in two plain sentences.** *How far a Plume arrow travels before it gives up
+and disappears* — and *whether a seeking arrow should drop toward the ground at all during the first
+15 blocks, before it starts steering.* Everything below is the argument, not the question.
 
-```
-boltor        8 rounds / 60t = 7.50 ticks per round
-locust       12 rounds / 60t = 5.00
-quiver_stone  9 rounds / 34t = 3.78
-PLUME        25 rounds / 60t = 2.40    <- 36.5% cheaper per round than the cheapest shipped
-```
+**The reach argument.** There is **no `range` key on a projectile** — reach is `speed × lifetime`.
+The old repo's inherited 120-tick lifespan at a shipped-style speed of 2.5 is **300 blocks**: the
+longest reach anything in this project has today is **160** (`ember_staff` 2.0 × 80, `emberblade`
+1.6 × 100), so the inherited figure is **1.9× the longest**, and well past render distance. **Whether
+that reads as "reaches anything you can see" or as "never gives up" is the decision.**
 
-**Matching the Locust's per-round rate would be 125 ticks (6.25s); matching the Boltor's, 187.5.**
-**60 is proposed as the default**; the table is what argues against it.
+**The drop argument.** Shipped projectiles author `gravity` 0.03-0.05. The arrow is **ballistic for
+the first 15 blocks** (§5) and steers afterwards, so gravity is real for that stretch and then fights
+the lerp. **`0.0` is representable and may be the honest answer for a seeking arrow** — but a bow
+that fires perfectly flat is a different-feeling weapon from one that arcs. **Unruled.**
 
-### 7.4 `speed` AND `max_lifetime_ticks` — THERE IS NO `range` TO AUTHOR
+### 7.5 CLOSED — **R6/§7.0**: THE CHARGE SECOND `c` IS **RULED AT 20**
 
-**Shipped projectiles:** `speed` 1.4-2.5, `gravity` 0.03-0.05, `max_lifetime_ticks` 40-100.
-`hunters_bow` is `2.5 / 0.05 / 60` → **150 blocks of reach**. The inherited lifespan is **120**.
-
-**Two sub-questions that only exist because of homing:**
-
-- **`gravity` during the ballistic phase.** The arrow is ballistic for the first 15 blocks (§5), so
-  gravity is real there and then fights the lerp afterwards. **`0.0` is representable and may be the
-  honest answer for a seeking arrow.** Unruled.
-- **Lifetime is the leash.** At speed 2.5 a 120-tick arrow travels **300 blocks** if it never turns.
-  The longest reach shipped today is **160** (`ember_staff` 2.0 × 80, `emberblade` 1.6 × 100), so the
-  inherited lifespan is **1.9× the longest thing in the project** and well past render distance.
-
-### 7.5 CLOSED — THE CHARGE SECOND `c` IS **RULED AT 20**
-
-**Ben's ruling.** `c = 20` — the only figure that makes *"every second"* literal, and the value every
-rate on this page was already computed under. **The relation is `N arrows = 20 + (N-1)c` ticks**, so
-five arrows is `20 + 4c = 100t`.
+**What it decided:** *how long a second of charge takes* — literally one second, so the sound ticks
+once per second and *"every second adds an arrow"* means what it says.
 
 **What the ruling chose against, kept because a ruling with no alternatives beside it reads as a
-default nobody considered:**
+default nobody considered** (all three at R9's 90-tick reload):
 
-| `c` | five arrows | magazine | sustained |
+| `c` | five arrows | magazine cycle | charged dmg/s |
 |---|---|---|---|
-| 16 | 84t (4.20s) | `5 × 84 + 60 = 480t = 24.00s` | 1.0417/s |
-| **20 — RULED** | **100t (5.00s)** | **560t = 28.00s** | **0.8929/s** |
-| 24 | 116t (5.80s) | `640t = 32.00s` | 0.7813/s |
+| 16 | 84t (4.20s) | `5 × 84 + 90 = 510t = 25.50s` | 47.06 |
+| **20 — RULED** | **100t (5.00s)** | **590t = 29.50s** | **40.68** |
+| 24 | 116t (5.80s) | `670t = 33.50s` | 35.82 |
 
-> **`c` IS NOT `T`.** `T` is §7.2's tap interval and the two have collided once already. The charge
-> second never appears as `T` anywhere on this page.
+### 7.6 OPEN — WHAT THE CHARGE SOUNDS LIKE AS IT FILLS
 
-### 7.6 THE SOUND, AND THE PITCH MAPPING ACROSS 1..5
+**What is being decided, in one plain sentence.** *Whether a player can tell, with their ears and
+without looking at anything, how many arrows they are holding* — because that legibility is the
+whole mitigation for the one thing this weapon gave up (§2.1: its charge is the first duration in the
+project no stat can move).
 
-**Which sound.** The precedent is that sounds are authored as **strings** and played
-**privately to the holder** (`QuiverNotice`: `"block.dispenser.fail"`, `"item.crossbow.loading_start"`).
-Candidates worth Ben's ear rather than mine: `block.note_block.pling`, `item.crossbow.loading_middle`,
+**The material.** Sounds are authored as **strings** and played **privately to the holder** — the
+form `QuiverNotice` uses (`"block.dispenser.fail"`, `"item.crossbow.loading_start"`). Candidates for
+Ben's ear rather than mine: `block.note_block.pling`, `item.crossbow.loading_middle`,
 `entity.experience_orb.pickup`.
 
 **The mapping, proposed and not ruled:**
@@ -736,17 +829,14 @@ arrows ready   1      2      3      4      5
 pitch        1.00   1.25   1.50   1.75   2.00        pitch = 1.0 + 0.25 x (n - 1)
 ```
 
-**That mapping assumes 2.0 is the top of the useful range, and THAT IS OUTSIDE KNOWLEDGE, UNVERIFIED
-HERE.** Checked and not found: `World#playSound`'s javadoc in the pinned API documents no range for
-`pitch` at all, and `ClientboundSoundPacket` carries a **raw float** — so any cap is the client's, and
+**That assumes 2.0 is the top of the useful range, and THAT IS OUTSIDE KNOWLEDGE, UNVERIFIED HERE.**
+Checked and not found: `World#playSound`'s javadoc in the pinned API documents **no range** for
+`pitch`, and `ClientboundSoundPacket` carries a **raw float** — so any cap is the client's, and
 nothing on this machine can measure it. **Do not restate it as a fact of the platform.**
 
-**It matters because the proposed mapping spends the whole assumed span on five arrows** and could not
-be extended if the cap ever rose above five. **An alternative that leaves room:**
-`pitch = 0.8 x 1.15^(n-1)` → 0.80, 0.92, 1.06, 1.22, 1.40. **Unruled; P6 is a person listening, and it
-is also where the 2.0 assumption gets tested rather than repeated.**
-
----
+**It matters because the proposed mapping spends the whole assumed span on five arrows.** An
+alternative that leaves room: `pitch = 0.8 x 1.15^(n-1)` → 0.80, 0.92, 1.06, 1.22, 1.40. **P6 is a
+person listening, and it is also where the 2.0 assumption gets tested rather than repeated.**
 
 ## 8. THE GATE ROWS, DRAFTED BEFORE THE BOOT
 
@@ -762,7 +852,7 @@ arrive with their discharge conditions attached rather than acquiring them after
 | **P4** | Fire with **no target in range**, over open ground. | How far it travels before it dies, in blocks, and whether 120 ticks reads as "forever". |
 | **P5** | **R3, the live magazine.** With **two** rounds loaded, hold past full charge for five seconds. | **How many ticks sound, and at what pitches.** The tracker must stop at two. **Then repeat with a reload completing mid-hold**, and record whether the cap moves. |
 | **P6** | Hold to five arrows with the sound on. | **Whether the rise is legible** — the mitigation R1's overturn rests on (§2.1). A person listening is the only instrument for this. **Also the row where the 2.0 pitch ceiling gets tested rather than repeated** (§7.6). |
-| **P7** | **THE TAP INTERVAL — what the headline finding's spread rests on.** `/rpg give` the weapon, then **tap right-click as fast as you can for ten seconds** — genuinely tapping, not holding, since the instrument cannot tell the difference and the whole row depends on it. Then `/rpg firerate`. | **`INPUTS count, window, mean and min`, verbatim.** The `min` is `T`'s real floor. **Record it even if it is 4** — a measured 4 for discrete clicks is a different fact from Q7's measured 4 for a held repeat, and only this row can tell them apart (§7.2). |
+| **P7** | **THE TAP INTERVAL, AND THE ONLY PLACE THE HOMING QUESTION CAN BE ANSWERED.** `/rpg give` the weapon, then **tap right-click as fast as you can for ten seconds** — genuinely tapping, not holding, since the instrument cannot tell the difference and the whole row depends on it. Then `/rpg firerate`. **Then do it again at a moving mob**, tapping, and then charged. | **`INPUTS count, window, mean and min`, verbatim.** The `min` is `T`'s real floor. **Record it even if it is 4** — a measured 4 for discrete clicks is a different fact from Q7's measured 4 for a held repeat, and only this row can tell them apart (§7.2). **And say, in words, how many of the un-homing taps MISSED** — §7.2 leaves the homing advantage deliberately unquantified, and a person shooting at a moving target is the only instrument there is. |
 
 > **P5's second half is the one that earns the ruling.** *"Reads the magazine live"* and *"reads it
 > once at full charge"* are **indistinguishable** on a quiver that does not change mid-hold — so a row
@@ -775,11 +865,12 @@ arrive with their discharge conditions attached rather than acquiring them after
 
 - **It authors no content file and no Java.** No `dragons_plume.yml`, no schema change, no listener.
   The next slice starts from §4's growth points and writes the `core` test first.
-- **It prices nothing itself.** Two of §7's numbers are now **RULED** and marked CLOSED — the charge
-  second `c = 20` (§7.5, R6) and the arrow-1 reading (§7.0, R6). **Every remaining number in §7 is a
-  question with its arithmetic attached, not a proposal**, and the open set is `attack_damage`,
-  `cooldown_ticks`, `reload_ticks`, `speed`/`max_lifetime_ticks`/`gravity`, and the sound with its
-  pitch mapping.
+- **It prices nothing itself, and most of §7 is now CLOSED rather than open.** Ruled: the arrow-1
+  reading and the charge second `c = 20` (R6, §7.0/§7.5), `attack_damage` 48 (R8, §7.1),
+  `cooldown_ticks` 0 (R7, §7.2), `reload_ticks` 90 (R9, §7.3), the partial draw at 12 with no homing
+  (R4′) and vanilla's 3-tick floor (R10). **Two remain open, and each is written as a question with
+  its arithmetic underneath rather than as a blank:** `speed`/`gravity`/`max_lifetime_ticks` (§7.4)
+  and the sound with its pitch mapping (§7.6).
 - **It does not rule the Endermen or the summons exclusions.** R2 carries them as candidates; they need
   a distinction `core` does not currently have — `CombatantSnapshot` knows `player` and nothing else —
   so ruling them in costs either a port extension or a `paper`-side predicate. **Named, not chosen.**
