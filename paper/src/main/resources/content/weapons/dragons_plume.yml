@@ -49,12 +49,32 @@ class: ranger
 # reads them. A different material would have no draw to read.
 material: bow
 
-# ================== 48: RULED, AND THE SPIKE WAS CHOSEN RATHER THAN OVERLOOKED ==================
+# ============ 48: RULED -- *** AND RE-OPENED, BECAUSE THE CYCLE IT WAS RULED AGAINST IS GONE ***
+#
+# *** DO NOT LOWER THIS NUMBER, AND DO NOT TREAT IT AS SETTLED. IT IS WITH BEN. ***
+#
+# R8 ruled 48 against a FIVE-SECOND release cycle: one arrow per charge second, five steps, a
+# 590-tick magazine cycle. R1' amended the charge to 1/3/5 -- three steps, TWO seconds past full
+# draw -- so the cycle is now 390 ticks and the same 48 buys a far higher rate:
+#
+#   240 in one instant            UNCHANGED. What changed is that it arrives every 3s, not every 5s.
+#   sustained 1200 / 19.50s       61.54 dmg/s      was 40.68
+#   Locust sustained              32.50 dmg/s      parity would be ~25 per arrow  (was ~38)
+#   Locust instantaneous          43.33 dmg/s      parity would be ~34 per arrow  (was ~51)
+#
+# When Ben ruled it, 48 sat BETWEEN those two anchors. It now sits ABOVE BOTH, at ~1.9x the Locust's
+# sustained output. A legendary outclassing a rare may be exactly right -- that is Ben's call and
+# nobody else's, and PLAN-dragons-plume.md 7.1 carries the dialog.
+#
+#   IT IS LEFT AUTHORED AND FLAGGED RATHER THAN QUIETLY ADJUSTED. A number left in place because
+#   nobody re-asked is the defect this project keeps finding; a number left in place because the
+#   operator was asked and said keep it is a ruling. The two are indistinguishable in a content file
+#   unless the file says which, so this comment is the difference.
 #
 # Per ARROW. Five arrows at full charge is 240 DAMAGE IN ONE INSTANT, and the ruling was taken with
 # that consequence in front of the operator -- against the 104 the Locust lands in its first two
 # seconds. A number that reads modest as a rate reads extreme as a spike, and this weapon is all
-# spike: the release lands in a single frame and then costs a full draw plus four seconds.
+# spike: the release lands in a single frame and then costs a full draw plus two seconds.
 #
 #   IT RENDERS NOWHERE ON THE TOOLTIP YET, AND THAT IS NOT A DEFECT IN THIS FILE. WeaponLore's stat
 #   block is gated on DamagePayload.isBasicAttack -- a weapon_damage on_hit -- and the draw binding
@@ -83,11 +103,19 @@ quiver_size: 25
 # the cheapest ammunition in the project. At the 60 first proposed it would have been 2.40, cheapest
 # by 36%.
 #
-#   *** THIS NUMBER IS LOAD-BEARING AND IT IS NOT A COMFORT SETTING. *** With cooldown_ticks at 0
-#   (R7, below), the reload is the ENTIRE tap tax -- a tap-spammer meets it far sooner per unit of
-#   damage dealt. MEASURED in PLAN-dragons-plume.md 7.2: below about 71 ticks the tap retakes the
-#   lead over the charge, and the whole balance of the weapon inverts. Lowering this re-opens that
-#   section.
+#   *** THE "BELOW 71 TICKS THE TAP RETAKES THE LEAD" COUPLING IS DEAD. IT DIED WITH R1'. ***
+#   This comment used to say that, and to call the number load-bearing for the rate crossover.
+#   RECOMPUTED at 1/3/5 (PLAN-dragons-plume.md 7.3): the tie is at reload_ticks = 4 on one fencepost
+#   convention and exactly 0 on the other, and at T=4 it is NEGATIVE -- meaning no reload value lets
+#   the tap retake the lead at all. The charge now leads everywhere.
+#
+#   WHAT 90 IS STILL FOR, which is not nothing: with cooldown_ticks at 0 (R7, below) the reload
+#   remains the ENTIRE tap tax on AMMUNITION -- a tap-spammer meets it four times as often per unit
+#   of damage dealt -- and 3.60 ticks per round is what keeps the Plume off the cheapest-ammunition
+#   spot. Those reasons are untouched.
+#
+#   A STALE LOAD-BEARING FLAG IS WORSE THAN NO FLAG: it makes the next author afraid of a field for
+#   a reason that has stopped existing, and the fear reads exactly like the real coupling did.
 #
 # NOT ON THE TOOLTIP. WeaponLore renders a quiver line and NO RELOAD LINE AT ALL, so this number
 # reaches a player only as the wait itself.

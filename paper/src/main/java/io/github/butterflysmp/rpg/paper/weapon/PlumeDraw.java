@@ -165,13 +165,19 @@ public final class PlumeDraw {
     private final AdapterContext adapters;
 
     /**
-     * How many arrows each drawing player has been TOLD they have.
+     * Which STEP each drawing player has been TOLD they are on.
      *
-     * <p>Not the count itself: the count is a pure function of the time held and the live magazine,
+     * <p>Not the step itself: the step is a pure function of the time held and the live magazine,
      * recomputed every tick, which is what makes R3's cap apply <b>as it climbs</b> rather than once
      * at the end -- and what lets a reload completing mid-draw raise the cap and resume the ticks.
-     * This map remembers only what has already been ANNOUNCED, so a sound plays once per arrow
+     * This map remembers only what has already been ANNOUNCED, so a sound plays once per step
      * gained rather than once per tick.
+     *
+     * <p><b>STEPS, NOT ARROWS, SINCE R1's AMENDMENT -- and while a step was one arrow this map held
+     * both at once without anyone choosing.</b> Under 1/3/5 they are different numbers and only one
+     * of them is what the ladder is indexed by: three sounds, at
+     * {@link DrawCharge#pitchFor(int) pitchFor(1..3)}. Holding arrows here and converting at the
+     * sound would have played five ticks on a three-rung ladder.
      *
      * <p>An INSTANCE field on a listener-owned object, never a static: player state in a static map
      * is the singleton this project refuses.
@@ -238,11 +244,11 @@ public final class PlumeDraw {
             return;
         }
 
-        int ready = DrawCharge.capped(DrawCharge.arrowsFor(player.getActiveItemUsedTime()),
+        int ready = DrawCharge.affordableStep(DrawCharge.stepsFor(player.getActiveItemUsedTime()),
                 cap(held, weapon.get(), player));
 
         int alreadyTold = announced.getOrDefault(id, 0);
-        // ONE SOUND PER ARROW GAINED, not per tick, and the loop covers a tick that crosses two
+        // ONE SOUND PER STEP GAINED, not per tick, and the loop covers a tick that crosses two
         // thresholds at once -- which a lagging server can produce.
         for (int n = alreadyTold + 1; n <= ready; n++) {
             player.playSound(player.getLocation(), TICK_SOUND, TICK_VOLUME, DrawCharge.pitchFor(n));
@@ -277,7 +283,8 @@ public final class PlumeDraw {
 
         // THE TWO MEASURES, CHECKED AGAINST EACH OTHER ONCE. The tracker is authoritative -- it is
         // the one carrying R3's cap -- and this only ever REPORTS. See DrawCharge.disagreement for
-        // why the comparison is one-directional.
+        // why the comparison is one-directional, and why it is in STEPS: the tracker's own unit is
+        // the step, so comparing arrows would check the conversion as much as the quantity.
         DrawCharge.disagreement(tracker, ticksHeldFor)
                 .ifPresent(complaint -> adapters.log().warning("[plume] " + complaint));
 

@@ -13,7 +13,8 @@ nowhere to go is a row that gets deleted.** More rows join it when H2 is scoped.
 
 | row | staging | what to record |
 |---|---|---|
-| **R-1** | **THE CAP — moved from H1's gate, where it could not be run.** Fire enough arrows to bring the magazine **under five**, then hold a full draw for five seconds. | **The ticks must STOP at the number of rounds left.** Record how many sounded against how many remained. Then, **without releasing**, have a reload complete mid-draw and record whether the ticks **RESUME**. |
+| **R-1** | **THE CAP — moved from H1's gate, where it could not be run.** Fire enough arrows to bring the magazine to **exactly 2**, then hold a full draw for three seconds. Repeat at **exactly 4**. | **The ticks must STOP when the NEXT STEP is unaffordable, and the release must fire EXACTLY the tracked step** (R3a). At 2 rounds: **one tick, one arrow, one round left over.** At 4 rounds: **two ticks, three arrows, one round left over.** Record ticks heard, arrows seen, and rounds remaining afterwards. Then, **without releasing**, have a reload complete mid-draw and record whether the ticks **RESUME**. |
+| **R-2** | **THE STRANDED ROUND IS VISIBLE AND IS NOT A BUG.** Straight after R-1's two-round release, check the magazine. | **It must read 1, not 0.** The player paid for one arrow and keeps the round that could not buy a step. **If this reads as a bug to whoever runs it, that is the finding R3a's overturn condition needs** — the ruling is explicitly overturnable and the alternative (`min(step, rounds)`, stranding nothing) costs one comparison. |
 
 > **R-1 IS `PLAN-dragons-plume.md`'s P5, LANDED — NOT A SECOND COPY OF IT.** The plan's §8 drafted its
 > rows *"before the boot"* and says they go into a gate file when the slice is written; this is that
@@ -25,6 +26,16 @@ nowhere to go is a row that gets deleted.** More rows join it when H2 is scoped.
 > **indistinguishable** on a magazine that does not change during the hold — so a row that only holds
 > a short magazine would pass under either implementation. **Staging a reload that completes during
 > the draw is what makes the two disagree.**
+
+> **WHY 2 AND 4 AND NOT 1 AND 3, WHICH IS THE SAME DISCIPLINE THE CORE ROW USES.** R1′ made the
+> charge 1/3/5, so the cap can land **between** steps for the first time, and R3a rules what happens
+> there. **At 1 round and 3 rounds the ruled rule and the rejected one give the same answer** — both
+> fire one arrow and three arrows respectively, stranding nothing. A row staged at 1 or 3 passes
+> under either implementation and measures the fixture.
+>
+> **2 and 4 are the only round counts where the two rules disagree**, which is exactly why they are
+> the staging. `DrawChargeTest`'s stranding row makes the same choice for the same reason, and its
+> mutation matrix records that the older cap row is completely blind to R3a.
 
 ## WHY THIS ROW COULD NOT BE RUN AT H1
 
