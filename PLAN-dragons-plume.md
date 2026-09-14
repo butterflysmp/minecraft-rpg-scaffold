@@ -893,7 +893,34 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
 > is not the operator's either; R8 is Ben's ruling and only Ben can restate it. **Put those three
 > lines to him and leave 48 authored until he answers.**
 >
-> **48 STAYS IN `dragons_plume.yml` AND IS FLAGGED THERE**, not lowered on anyone's initiative.
+> **AND THE SECOND QUESTION FOR THE SAME ANSWER: `reload_ticks: 90` CHANGED MEANING WITHOUT CHANGING
+> VALUE.**
+>
+> ```
+> ruled at   90 / 590 = 15.25% of the magazine cycle
+> now        90 / 390 = 23.08%                        a factor of 1.51
+> ```
+>
+> **Ben ruled 4.5 seconds as *"longer than anything shipped, but not punishing"* against a
+> 29.5-second magazine.** R1′ cut the shooting half from 500 ticks to 300 and left the reload alone,
+> so **the seconds did not move and the SHARE did, by half again.** Nobody edited the number.
+>
+> **This is NOT the dead coupling of §7.3 and the two are easy to conflate:** that one says a
+> *reason* for 90 stopped existing; this one says the *cost* of 90 grew. A reader who sees the
+> coupling struck out could reasonably conclude the number became less important. It became more
+> expensive.
+>
+> **90 IS OVER-DETERMINED RATHER THAN UNSUPPORTED**, which is why this is doubt about the **context**
+> and not about the value: its ticks-per-round reason — 3.60 against `quiver_stone`'s 3.78 — is a
+> comparison between two weapons' magazines, and R1′ moved neither. **The flag asks whether the share
+> is what Ben intended, not whether the number has any support left.**
+>
+> **BOTH QUESTIONS GO IN ONE DIALOG, DELIBERATELY.** They are two consequences of one amendment and
+> they interact — lowering 48 and shortening 90 both pull the same rate down, so answering them a
+> week apart risks paying for the amendment twice. **Asking the second one later is also how the
+> first one's answer gets quietly generalised into a ruling nobody gave.**
+>
+> **BOTH STAY IN `dragons_plume.yml` AND ARE FLAGGED THERE**, not adjusted on anyone's initiative.
 > **A number left in place because nobody re-asked is the defect this project keeps finding; a number
 > left in place because the operator was asked and said keep it is a ruling** — and the two are
 > indistinguishable in the file unless the file says which.

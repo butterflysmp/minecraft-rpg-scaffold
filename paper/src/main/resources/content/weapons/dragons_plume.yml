@@ -97,11 +97,36 @@ attack_damage: 48
 # reading a capacity cannot be measuring the fixture by coincidence.
 quiver_size: 25
 
-# 90 TICKS, 4.5s -- RULED, and it is the only thing in the weapon that prices spam.
+# 90 TICKS, 4.5s -- RULED -- *** AND RE-OPENED, BECAUSE THE CYCLE IT WAS RULED AGAINST IS GONE ***
+#
+# *** DO NOT CHANGE THIS NUMBER, AND DO NOT TREAT IT AS SETTLED. IT IS WITH BEN, ***
+# *** IN THE SAME DIALOG AS attack_damage ABOVE, SO HE RULES BOTH IN ONE ANSWER. ***
+#
+# THE SECONDS DID NOT MOVE. THE SHARE DID, BY HALF AGAIN, AND NOBODY EDITED THE NUMBER.
+#
+#   ruled at   90 / 590 = 15.25% of the magazine cycle
+#   now        90 / 390 = 23.08%                        a factor of 1.51
+#
+# Ben ruled 4.5 seconds as "longer than anything shipped, but not punishing" AGAINST A 29.5-SECOND
+# MAGAZINE CYCLE. R1' cut the shooting half from 500 ticks to 300 and left the reload untouched, so
+# the same 4.5 seconds is now most of half again as much of the player's time. R9's NUMBER did not
+# change; what it MEANS did, and a value re-read in a context nobody re-ruled is the same defect as
+# a value nobody re-asked about.
+#
+#   NOTE THIS IS A DIFFERENT FLAG FROM THE DEAD COUPLING BELOW, AND THE TWO ARE EASY TO CONFLATE.
+#   That one says a REASON for 90 stopped existing. This one says the COST of 90 grew. A reader who
+#   sees the coupling struck out could reasonably conclude the number got less important; it got
+#   more expensive.
+#
+#   *** AND 90 IS OVER-DETERMINED RATHER THAN UNSUPPORTED, WHICH IS WHY THIS IS DOUBT ABOUT THE
+#   CONTEXT AND NOT ABOUT THE VALUE. *** Its ticks-per-round reason is completely untouched by R1':
+#   3.60 against quiver_stone's 3.78 is a comparison between two weapons' magazines and R1' moved
+#   neither. So 90 still has a live, independent justification standing under it -- the flag asks
+#   whether the SHARE is what Ben intended, not whether the number has any support left.
 #
 # 3.60 ticks per round, deliberately just UNDER quiver_stone's 3.78: the Plume is emphatically NOT
 # the cheapest ammunition in the project. At the 60 first proposed it would have been 2.40, cheapest
-# by 36%.
+# by 36%. UNTOUCHED BY R1'.
 #
 #   *** THE "BELOW 71 TICKS THE TAP RETAKES THE LEAD" COUPLING IS DEAD. IT DIED WITH R1'. ***
 #   This comment used to say that, and to call the number load-bearing for the rate crossover.
@@ -116,6 +141,11 @@ quiver_size: 25
 #
 #   A STALE LOAD-BEARING FLAG IS WORSE THAN NO FLAG: it makes the next author afraid of a field for
 #   a reason that has stopped existing, and the fear reads exactly like the real coupling did.
+#
+#   IT IS LEFT AUTHORED AND FLAGGED RATHER THAN QUIETLY ADJUSTED. A number left in place because
+#   nobody re-asked is the defect this project keeps finding; a number left in place because the
+#   operator was asked and said keep it is a ruling. The two are indistinguishable in a content file
+#   unless the file says which, so this comment is the difference.
 #
 # NOT ON THE TOOLTIP. WeaponLore renders a quiver line and NO RELOAD LINE AT ALL, so this number
 # reaches a player only as the wait itself.
