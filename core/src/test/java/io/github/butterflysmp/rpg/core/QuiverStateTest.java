@@ -327,4 +327,85 @@ class QuiverStateTest {
                 "and reloading it is refused as already full -- 0 of 0 IS full. Both inputs "
                         + "refused, no third input, no recovery: the item is permanently dead.");
     }
+
+    // ------------------------------------------------------- roundsRemaining, slice G
+
+    /** The ordinary case, and the identity that admits the method to the pinned instance surface. */
+    @Test
+    void roundsRemainingIsTheLoadedCountAndCompletesTheCapacity() {
+        QuiverState state = QuiverState.loaded(2, CAPACITY);
+
+        assertEquals(2, state.roundsRemaining(), "two rounds loaded is two rounds remaining");
+        assertEquals(CAPACITY, state.roundsNeeded() + state.roundsRemaining(),
+                "needed + remaining == capacity. THIS is the sentence QuiversSignatureTest admits "
+                        + "roundsRemaining() on: the pair recovers only capacity(), which is public "
+                        + "already, so nothing new becomes derivable");
+    }
+
+    /**
+     * UNSTAMPED IS ZERO, AND THIS IS THE ROW THAT CATCHES {@code MUT-REMAINING}.
+     *
+     * <p>An unstamped stamp is a DEFECT, not an empty magazine, and R3's cap must promise nothing
+     * rather than something. <b>The wrong implementation -- {@code capacity() - roundsNeeded()} in
+     * paper -- reports a FULL MAGAZINE here</b>, because {@code roundsNeeded()} returns 0 on an
+     * unstamped item for a reason that belongs to that method and does not transfer.
+     *
+     * <p><b>No stamped fixture can see that mutation at all</b>, because the two forms agree
+     * everywhere else. This row is the only one that does.
+     */
+    @Test
+    void roundsRemainingIsZeroWhenUnstampedRatherThanAFullMagazine() {
+        QuiverState unstamped = QuiverState.unstamped(CAPACITY);
+
+        assertEquals(0, unstamped.roundsRemaining(),
+                "an item with no count has no rounds. capacity() - roundsNeeded() would answer "
+                        + CAPACITY + " here -- a full magazine, for an item that has never been "
+                        + "stamped");
+        assertEquals(QuiverState.Fire.UNSTAMPED, unstamped.fireVerdict(START),
+                "and the zero does not lose the distinction: fireVerdict still separates an "
+                        + "unstamped item from an empty one BY NAME, which is why the collision in "
+                        + "value costs nothing");
+    }
+
+    /**
+     * AN OVER-FULL MAGAZINE IS CLAMPED, AND THE ONE-ROUND GAP IS KNOWN AND CHOSEN.
+     *
+     * <p>Reachable in the window after a capacity modifier comes off and before the next write
+     * re-clamps the stamp: {@code loaded} 11 against a capacity that now resolves to 8.
+     *
+     * <p><b>MEASURED: SUCH A MAGAZINE PAYS FOR NINE.</b> {@code Quivers.spendRound} is
+     * {@code Quiver.spend(11) = 10} handed to {@code QuiverItems.setLoaded}, which clamps the value
+     * it WRITES -- {@code Quiver.clamp(10, 8) = 8}. One over-full shot, then a magazine of eight.
+     *
+     * <pre>
+     * unclamped  11   promises two arrows that are not coming
+     * measured    9   exact, but it projects future WRITES rather than reading state
+     * CHOSEN      8   under-promises by one, never over, and never couples to the write path
+     * </pre>
+     *
+     * <p><b>So this row asserts 8 while recording 9, deliberately.</b> It is not an off-by-one. The
+     * nine is written down here so the next reader meets it before deciding the eight is a bug --
+     * closing the gap means modelling what the write funnel will do next, which is the coupling the
+     * clamped form exists to avoid.
+     *
+     * <p><b>AND THE PAYOUT OF NINE IS ITSELF UNGUARDED.</b> {@code Quiver.clamp} and
+     * {@code Quiver.spend} each have rows; their COMPOSITION has none, and it lives in paper --
+     * {@code spendRound} plus {@code setLoaded}. Recorded as a second unguarded edge on
+     * {@code GATE-expanded-quiver.md} row A-5, whose own trigger is the first shipped item granting
+     * quiver size outside the dev instrument.
+     */
+    @Test
+    void roundsRemainingClampsAnOverFullMagazineToItsResolvedCapacity() {
+        QuiverState overFull = QuiverState.loaded(11, 8);
+
+        assertEquals(8, overFull.roundsRemaining(),
+                "clamped to the resolved capacity -- never promising rounds the tracker cannot be "
+                        + "sure of. The magazine actually pays for NINE (one over-full shot, then "
+                        + "the clamp at the write); 8 under-promises by one, on purpose");
+        assertEquals(0, overFull.roundsNeeded(), "an over-full magazine needs nothing");
+        assertEquals(8, overFull.roundsNeeded() + overFull.roundsRemaining(),
+                "and the identity still holds BECAUSE of the clamp: 0 + 8 == capacity. Unclamped "
+                        + "it would be 0 + 11, which recovers neither the capacity nor anything "
+                        + "else -- and the signature test's admission argument would stop being true");
+    }
 }

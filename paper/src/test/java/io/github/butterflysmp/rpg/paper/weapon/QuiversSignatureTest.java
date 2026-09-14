@@ -539,8 +539,34 @@ class QuiversSignatureTest {
                 // capacity and the count -- and exposes neither input. It exists precisely so paper
                 // does NOT need loaded() back to do the subtraction itself, which would have walked
                 // straight through the door this row guards.
+                // roundsRemaining() joined in Slice G, and THE OBJECTION COMES FIRST BECAUSE IT IS
+                // WHAT A REVIEWER SEES: it IS loaded(). Algebraically capacity - (capacity - loaded)
+                // = loaded, so it returns the accessor the record conversion removed, under a name
+                // that describes the Dragon's Plume's use of it.
+                //
+                // IT IS ADMITTED UNDER THIS ROW'S OWN RULE. The guarded pair is the RAW STAMP beside
+                // the AUTHORED VALUE, because a caller holding both can redo capacityOf's resolution
+                // outside it. `loaded` is NEITHER of those two -- it is a third quantity -- and
+                // capacity() already hands out the RESOLVED value, so what the pair recovers is
+                // capacity() itself, which is public already. Nothing new becomes derivable.
+                //
+                // *** AND THE ADMISSION DEPENDS ON THE CLAMP, WHICH IS WHY THAT IS NOT A DETAIL. ***
+                // roundsNeeded() + roundsRemaining() == capacity() holds for every STAMPED state
+                // INCLUDING the over-full one -- 0 + 8 -- only because roundsRemaining() clamps.
+                // Unclamped it would be 0 + 11, which recovers a number that is not the capacity and
+                // is not anything else either, and the sentence above stops being true. Anyone
+                // tempted to unclamp meets this comment before the red.
+                //
+                // Unstamped is the one exception and it fails SAFE: 0 + 0 recovers 0 rather than the
+                // capacity -- less than the public surface already gives, never more.
+                //
+                // AND loaded()'s REMOVAL WAS COLLATERAL, NOT A PROHIBITION. The class javadoc
+                // records it as one of three accessors lost to the record-to-class conversion with
+                // ZERO CALLERS anywhere in either module, and calls the narrower surface an
+                // improvement. "Nobody was using it" and "this must never come back" are different
+                // sentences, and only the first one was written.
                 List.of("capacity", "fireVerdict", "isReloading", "reloadTicksRemaining",
-                        "reloadVerdict", "roundsNeeded"),
+                        "reloadVerdict", "roundsNeeded", "roundsRemaining"),
                 instanceMembers,
                 "QuiverState's public INSTANCE surface changed. capacity() returns the RESOLVED "
                         + "value and is the only accessor anybody should need; an accessor handing "

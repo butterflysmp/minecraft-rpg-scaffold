@@ -149,6 +149,37 @@ shipped gear grants quiver size outside the dev instrument**, so no player can p
 > A **condition on the tree**, checkable by grep, **not "later"**. On that day a player can unequip it
 > mid-reload and this becomes reachable, and the forfeit stops being a dev-command curiosity.
 
+### A SECOND UNGUARDED EDGE ON THE SAME PARK — FOUND IN SLICE G, 2026-09-14
+
+**A-5's own state is `loaded = 8`: the clamp happens AT MATURITY, so the three arrows are forfeited
+and the magazine is never over-full.** But the capacity modifier can also come off **AFTER** maturity
+— and then the stamp still says **11** while capacity resolves to **8**, until the next write
+re-clamps it. **That state is representable, readable, and it is not this row.**
+
+**MEASURED: SUCH A MAGAZINE PAYS FOR NINE, NOT ELEVEN.**
+
+```
+spendRound   Quiver.spend(11) = 10
+setLoaded    Quiver.clamp(10, 8) = 8      <- the surplus is lost at the FIRST shot, not carried
+             so: one over-full shot, then a magazine of 8   =  9 total
+```
+
+> **AND NOTHING TESTS THAT COMPOSITION.** `Quiver.clamp` has rows and `Quiver.spend` has rows; the
+> **nine is a property of the two together**, and it lives in `paper` — `Quivers.spendRound` plus
+> `QuiverItems.setLoaded` — where no unit test reaches. **Two guarded halves and an unguarded whole.**
+
+**WHAT SLICE G DID ABOUT IT: NOTHING TO THE WRITE PATH, DELIBERATELY.** `QuiverState.roundsRemaining()`
+**clamps**, answering `8` where the magazine yields `9`. It under-promises by one and never
+over-promises, which is what the Plume's R3 requires; the alternative — answering `9` — would make an
+accessor model what the write funnel does next. **The gap is recorded in that method's javadoc and in
+its test row so the next reader meets it before deciding the eight is an off-by-one.**
+
+**THIS ROW'S TRIGGER COVERS BOTH EDGES** — the same shipped item that makes the forfeit reachable
+makes the over-full window reachable — so no second trigger is invented. What is added is the
+knowledge that **the park has two faces and only one of them was written down.**
+
+---
+
 > **THE TRIGGER IS PHRASED AS A CONDITION BECAUSE THE LAST PARK IN THIS PROJECT ROTTED.** Punch was
 > parked on *"the first ranger-class weapon with `type: projectile`"* — **a condition that was already
 > satisfied by `hunters_bow` on the day it was written**, and nothing fired. A trigger is only worth
