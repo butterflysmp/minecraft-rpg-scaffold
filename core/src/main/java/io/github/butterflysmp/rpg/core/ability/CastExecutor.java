@@ -83,8 +83,91 @@ public final class CastExecutor {
 
     public void execute(AbilityService.CastResult.Success success) {
         AbilityDefinition ability = success.ability();
+        boolean charges = charges(ability);
+        Caster source = commit(ability, success.caster(), success.aim(), charges);
+        dispatch(ability, success.caster(), source, success.aim(), charges);
+    }
+
+    /**
+     * ONE CAST, FIRED ALONG SEVERAL DIRECTIONS AT ONCE -- the Dragon's Plume's release.
+     *
+     * <p>Each offset in {@code yawOffsets} is a horizontal rotation of the aim, in degrees, applied
+     * with {@link io.github.butterflysmp.rpg.core.Vec3#rotateAboutY}. {@code DrawFan.offsetsFor}
+     * produces them; the same geometry {@code EffectSpec.ThrowEmbers.fan} already uses one layer
+     * down.
+     *
+     * <h2>IT COMMITS ONCE AND DISPATCHES N TIMES, AND THAT SPLIT IS THE WHOLE POINT OF THE METHOD</h2>
+     *
+     * <p><b>Calling {@link #execute} five times would have been the obvious wiring and it is wrong
+     * twice over</b>, because {@code execute} does two things per call that belong to the PRESS
+     * rather than to the arrow:
+     *
+     * <pre>
+     * on_cast effects     the sound you hear when you let go -- FIVE sounds for one release
+     * onBasicAttackUse    durability -- FIVE uses billed for one release
+     * </pre>
+     *
+     * <p>Both are already documented in {@code execute} as per-press: the cast hook <i>"lands on the
+     * frame the cast was committed"</i>, and the wear comment reasons from vanilla, where <i>an arrow
+     * costs the bow</i> -- one bow, one arrow, one use. <b>A five-arrow release is one press, so it
+     * is one sound and one use.</b> The melee arm's own note makes the same argument from the other
+     * side: a payload that splashes across five bodies is still ONE use.
+     *
+     * <p><b>THE FAN ROTATES THE AIM, so it means something only for a cast shape that READS the
+     * aim's direction</b> -- {@link CastSpec.Ray} and {@link CastSpec.Projectile}. A {@code Self} or
+     * a {@code Dash} fanned would be N identical casts, because neither consults the direction.
+     * That is not guarded here: it is <b>loud rather than silent</b> -- five dashes is visible on the
+     * first press -- and a runtime throw mid-release would be worse than the thing it prevents.
+     *
+     * <p><b>An empty array fires nothing AND COMMITS NOTHING</b> -- no sound, no wear. A release of
+     * zero arrows is not a press that happened quietly; it is a press that produced no shot, and
+     * billing the bow for it would be charging for an arrow nobody got.
+     */
+    public void executeFan(AbilityService.CastResult.Success success, double[] yawOffsets) {
+        if (yawOffsets.length == 0) return;
+
+        AbilityDefinition ability = success.ability();
         CombatantSnapshot caster = success.caster();
         Aim aim = success.aim();
+        boolean charges = charges(ability);
+
+        Caster source = commit(ability, caster, aim, charges);
+        for (double yaw : yawOffsets) {
+            dispatch(ability, caster, source, new Aim(aim.origin(), aim.direction().rotateAboutY(yaw)),
+                    charges);
+        }
+    }
+
+    /**
+     * WHAT COSTS A USE -- the whole rule, in one expression, rather than left to each caller to
+     * remember.
+     *
+     * <p>Only a BASIC ATTACK charges: an ability already spends mana, and charging it as well would
+     * bill one press twice. The gate is structural for the same reason {@code Durability}'s
+     * {@code maxDurability <= 0} guard is -- it is the ONLY thing separating the two shipped
+     * projectiles from each other. {@code hunters_bow}'s shot and {@code emberblade}'s Fireball are
+     * both {@code type: projectile}; nothing about the cast shape tells them apart, so a check left
+     * to the wiring is a check a future call site can forget.
+     *
+     * <p>A method rather than a local, now that {@link #execute} and {@link #executeFan} both need
+     * it: two copies of this expression is two places for the rule to drift.
+     */
+    private static boolean charges(AbilityDefinition ability) {
+        return DamagePayload.isBasicAttack(ability.onHit());
+    }
+
+    /**
+     * EVERYTHING A PRESS PAYS FOR, ONCE, WHATEVER IT GOES ON TO FIRE: the cast-frame projection of
+     * the caster, the {@code on_cast} effects, and the durability use.
+     *
+     * <p>Split out of {@link #execute} when {@link #executeFan} arrived. <b>The split is what makes
+     * a five-arrow release one sound and one use</b>; before it there was no seam between the press
+     * and the shot, because nothing had ever needed one.
+     *
+     * @return the cast-frame {@link Caster} projection, shared by every shot the press produces
+     */
+    private Caster commit(AbilityDefinition ability, CombatantSnapshot caster, Aim aim,
+                          boolean charges) {
 
         // Project the cast-time snapshot down to what an effect landing LATER may read: the id,
         // plus the stats frozen on the caster's own thread. Built once, here, because this is the
@@ -95,15 +178,6 @@ public final class CastExecutor {
         // fired with, not by what the caster holds when it lands.
         Caster source = Caster.of(caster)
                 .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), caster.attackDamage()));
-
-        // WHAT COSTS A USE, AND WHEN -- the whole rule, here, rather than left to each caller to
-        // remember. Only a BASIC ATTACK charges: an ability already spends mana, and charging it
-        // as well would bill one press twice. The gate is structural for the same reason
-        // Durability's maxDurability <= 0 guard is -- it is the ONLY thing separating the two
-        // shipped projectiles from each other. hunters_bow's shot and emberblade's Fireball are
-        // both `type: projectile`; nothing about the cast shape tells them apart, so a check left
-        // to the wiring is a check a future call site can forget.
-        boolean charges = DamagePayload.isBasicAttack(ability.onHit());
 
         // WHAT YOU HEAR WHEN YOU PRESS THE BUTTON. Fired here, before the switch, so it is
         // independent of cast shape and lands on the frame the cast was committed -- a projectile
@@ -121,11 +195,29 @@ public final class CastExecutor {
         // here is scheduled, so there is no region hop to get wrong.
         effects.applyAll(ability.onCast(), source, null, aim.origin());
 
-        // A melee use is charged on CONNECT (in the Melee arm below); every other shape is charged
-        // at COMMIT, here. An arrow costs the bow whether or not it lands, like vanilla; a swing
-        // that touches nothing is free.
+        // A melee use is charged on CONNECT (in the Melee arm of dispatch); every other shape is
+        // charged at COMMIT, here. An arrow costs the bow whether or not it lands, like vanilla; a
+        // swing that touches nothing is free.
+        //
+        // AND THIS IS WHY A FANNED RELEASE BILLS ONCE: the wear is here, on the press, not in the
+        // per-shot dispatch below. Five arrows, one use -- the same argument the Melee arm makes
+        // when a splashing payload catches five bodies.
         if (charges && !(ability.cast() instanceof CastSpec.Melee)) onBasicAttackUse.run();
 
+        return source;
+    }
+
+    /**
+     * ONE SHOT, ALONG ONE AIM. The cast-shape switch, split out of {@link #execute} so
+     * {@link #executeFan} can run it once per direction without repeating what the press already
+     * paid for.
+     *
+     * <p>Everything here is per-ARROW. Everything in {@link #commit} is per-PRESS. <b>That is the
+     * only rule this split encodes, and getting a line on the wrong side of it is how a release
+     * starts billing five uses or playing five sounds.</b>
+     */
+    private void dispatch(AbilityDefinition ability, CombatantSnapshot caster, Caster source,
+                          Aim aim, boolean charges) {
         switch (ability.cast()) {
             // The caster is their own target: heals, buffs, self-detonations. Their handle
             // is fetched here rather than carried in the Success, which holds a snapshot.
