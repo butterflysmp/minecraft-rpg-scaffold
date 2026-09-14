@@ -1,9 +1,12 @@
 # PLAN — The Dragon's Plume
 
 **Status: NOT IMPLEMENTED. No Java written, no content file authored, no test written, nothing
-booted.** This document is the investigation, the rulings and the design. Everything below that is a
-number a player experiences is either **RULED** (operator, and named as such) or **OPEN** (§7, put to
-him with the arithmetic visible).
+booted.** This document is the investigation, the rulings and the design.
+
+**EVERY NUMBER A PLAYER EXPERIENCES IS NOW RULED** — thirteen rulings, one of them an overturn, each
+named where it lands (§2, and the closed sections of §7). **Two things that are not numbers remain
+open:** the charge **sound key**, which P6 decides by ear, and §5's **homing constants**, which stay
+`INHERITED AND UNJUDGED` with a gate row each.
 
 ---
 
@@ -229,7 +232,7 @@ operator's call, not a detail.**
 
 ---
 
-## 2. THE RULINGS — TEN LIVE, ONE OVERTURNED, AND THE REASONING R1 OVERTURNED
+## 2. THE RULINGS — THIRTEEN LIVE, ONE OVERTURNED, AND THE REASONING R1 OVERTURNED
 
 **Operator's, all final. Do not re-derive them from the code.**
 
@@ -269,6 +272,33 @@ operator's call, not a detail.**
   > *"which quantity"*. It is the same shape as **name the quantity, and name the set of things that
   > have it** (`CLAUDE.md`) — asked of the designer's own question rather than of an enchant.
 
+- **R5 · ONE ARROW IN THE OFF-HAND, FOR NOW.** The draw gate of §1 is satisfied by keeping a single
+  plain arrow in the off-hand.
+
+  **WHY IT WORKS IS A MECHANISM, NOT A COINCIDENCE, AND THAT IS THE PART TO RECORD.** Vanilla's
+  `ProjectileWeaponItem.getHeldProjectile` checks **OFF_HAND first**; `QuiverAmmo.sources` walks
+  **`getStorageContents()`, which excludes the off-hand**. So the arrow **satisfies the draw and no
+  reload can ever eat it** — the two halves are in different sets by construction. **A later change
+  to that walk would break the Plume silently**, with nothing to report it, which is why the reason is
+  written here rather than left to be re-derived from the fact that it happens to work.
+
+  > **RECORDED AS A KNOWN WORKAROUND WITH NO TRIGGER.** The operator's words: *"in the future we will
+  > have a better solution."* **No grep-evaluable condition is manufactured for this one, because
+  > there is no honest one** — it is not waiting on a fact about the tree, it is waiting on a decision
+  > nobody has made. **A park with a fake trigger is worse than one that says NO CONDITION; THIS NEEDS
+  > DECIDING**, because the fake one looks like it will fire.
+
+  **AND WHAT THE PLAYER HAS TO KNOW, WHICH NOTHING TEACHES THEM.** Measured against the tree:
+  `WeaponLore` renders no such line, there is no notice path for it, and the vanilla failure is
+  silent — the bow simply does not move. **So: nothing currently tells them, and a legendary bow that
+  will not draw is indistinguishable from a broken item.** That is the cost of R5 as it stands, and
+  it is the strongest argument for the better solution the ruling defers.
+
+- **R6 · FULL CHARGE IS ARROW 1.** Reaching full draw gives one arrow; each further second adds
+  another, to five. **This replaces §7.0's flagged assumption with a ruling** — and it was *Reading
+  A*, the one every figure was computed under, so **§7.1's rates stand unchanged** rather than
+  needing recomputation.
+
 - **R7 · `cooldown_ticks` = 0, AUTHORED AS A RULING.** *"Fast shooting arrows is fine."* **The tap is
   gated by being a worse shot, not by a timer.**
 
@@ -299,32 +329,37 @@ operator's call, not a detail.**
   > the floor is now *wanted*, so it can come from the platform instead of from a second
   > implementation of the same rule.
 
-- **R5 · ONE ARROW IN THE OFF-HAND, FOR NOW.** The draw gate of §1 is satisfied by keeping a single
-  plain arrow in the off-hand.
+- **R11 · REACH ≈ 300 BLOCKS** — the old repo's **120-tick** lifespan at **speed 2.5**.
 
-  **WHY IT WORKS IS A MECHANISM, NOT A COINCIDENCE, AND THAT IS THE PART TO RECORD.** Vanilla's
-  `ProjectileWeaponItem.getHeldProjectile` checks **OFF_HAND first**; `QuiverAmmo.sources` walks
-  **`getStorageContents()`, which excludes the off-hand**. So the arrow **satisfies the draw and no
-  reload can ever eat it** — the two halves are in different sets by construction. **A later change
-  to that walk would break the Plume silently**, with nothing to report it, which is why the reason is
-  written here rather than left to be re-derived from the fact that it happens to work.
+  > **RULED AGAINST §7.4's OWN ARGUMENT, WHICH IS WHAT MAKES IT A RULING RATHER THAN AN
+  > INHERITANCE.** §7.4 put the case *against*: 300 is **1.9× the longest reach in the project** and
+  > **past render distance**, so the weapon can kill a thing its wielder cannot see. **Ben read that
+  > and took *"never gives up"* anyway.** *Inherited because nobody looked* and *chosen over an
+  > argument* look identical a month later and age in opposite directions, so the file says which
+  > this is.
 
-  > **RECORDED AS A KNOWN WORKAROUND WITH NO TRIGGER.** The operator's words: *"in the future we will
-  > have a better solution."* **No grep-evaluable condition is manufactured for this one, because
-  > there is no honest one** — it is not waiting on a fact about the tree, it is waiting on a decision
-  > nobody has made. **A park with a fake trigger is worse than one that says NO CONDITION; THIS NEEDS
-  > DECIDING**, because the fake one looks like it will fire.
+- **R12 · THE ARROW DROPS LIKE A NORMAL ARROW.** `gravity` from the shipped band — **`0.05`
+  authored**, because `hunters_bow` is **the only bow in the project** and the 0.03 figures belong to
+  staves. **The ruling's own words name the weapon class the value should come from** (§7.4).
 
-  **AND WHAT THE PLAYER HAS TO KNOW, WHICH NOTHING TEACHES THEM.** Measured against the tree:
-  `WeaponLore` renders no such line, there is no notice path for it, and the vanilla failure is
-  silent — the bow simply does not move. **So: nothing currently tells them, and a legendary bow that
-  will not draw is indistinguishable from a broken item.** That is the cost of R5 as it stands, and
-  it is the strongest argument for the better solution the ruling defers.
+  > **AND IT IS THE HALF OF THE PAIR THAT KEEPS R11 HONEST.** With gravity continuing on a targetless
+  > arrow (§3.3), a stray shot is in the ground at **22.5 blocks** fired flat and **129** at 45° — so
+  > **the 300-block leash binds only for arrows actually chasing something.** Computed, not asserted:
+  > at 0.03 the 45° stray arrow is still airborne when the leash expires, and the claim weakens.
 
-- **R6 · FULL CHARGE IS ARROW 1.** Reaching full draw gives one arrow; each further second adds
-  another, to five. **This replaces §7.0's flagged assumption with a ruling** — and it was *Reading
-  A*, the one every figure was computed under, so **§7.1's rates stand unchanged** rather than
-  needing recomputation.
+- **R13 · THE FIVE STEPS MUST BE TELLABLE APART BY EAR.** A player holding the draw must be able to
+  **release on the count they wanted without looking at anything**, so the pitch mapping is authored
+  for **SEPARATION, not subtlety** — the geometric row in §7.6, even to an ear at ~4 semitones a step,
+  rather than the linear one whose top step is **40% smaller** than its bottom one.
+
+  > **AND P6 GAINS A SECOND HALF THAT ITS FIRST CANNOT ANSWER.** Not only *is the top of the range
+  > still pleasant*, but **can a person NAME THE COUNT WITHOUT LOOKING.** That is the ruling's actual
+  > test, and it is a different question from whether the sound is nice. **The 2.0 ceiling stays
+  > flagged as outside knowledge this machine cannot measure.**
+
+> **AND THE HOLE THE LAST THREE LEFT BETWEEN THEM IS RULED IN §3.3** — *what a TARGETLESS arrow does
+> past 15 blocks*, which is **every shot that misses**. That one is the operator's rather than Ben's,
+> and it is marked overturnable where it is made.
 
 **Settled previously and unchanged:** `legendary`, `void`, `ranger`, `material: bow`,
 `quiver_size: 25`, **one round per arrow** — so five arrows is five rounds and twenty-five is five
@@ -433,6 +468,62 @@ BowItem.getUseDuration    = 72000     one hour -- so the hold NEVER times out on
 **The second is what makes R1 implementable without fighting the platform:** the tracker can simply
 read how long the bow has been held, for as long as the player holds it.
 
+### 3.3 A TARGETLESS ARROW KEEPS ITS BALLISTIC BEHAVIOUR — **THE COMMON CASE, AND IT WAS UNRULED**
+
+**Three rulings met and left a hole between them, and the hole is every shot that misses:**
+
+```
+§5    a null target FLIES STRAIGHT ON
+§7.4  ballistic for the first 15 blocks, steering afterwards
+R12   it falls like an arrow
+```
+
+**So what does an arrow with NO TARGET do past 15 blocks — keep falling, or sail flat for up to 300
+blocks?** Nothing ruled it, and **it is the common case**: a homing arrow only homes when there is
+something to home at.
+
+> **THE RULING IS THE OPERATOR'S, NOT BEN'S, AND IT IS OVERTURNABLE.**
+>
+> **A TARGETLESS ARROW KEEPS ITS BALLISTIC BEHAVIOUR. GRAVITY CONTINUES.** It behaves like an arrow
+> until something to chase appears — the least surprising answer, and the one a player already
+> predicts from every other bow they have used.
+
+**AND THE CLAIM MADE FOR IT IS THAT IT MAKES R11 AND R12 WORK TOGETHER RATHER THAN FIGHT: under
+gravity a stray arrow reaches the ground long before 300 blocks, so THE LONG LEASH ONLY BINDS FOR
+ARROWS ACTUALLY CHASING SOMETHING.** *The reach Ben ruled is a reach for seeking, not a licence for
+stray arrows to cross the map.*
+
+**THAT CLAIM IS COMPUTED HERE RATHER THAN REPEATED**, because a plan that asserts its own convenience
+is how a wrong premise survives. The model is `ProjectileFlight.step`'s own: position advances by
+`velocity`, **then** gravity is added — so after `n` ticks the drop is `g·n(n-1)/2` and the horizontal
+distance is `speed·n`. **There is no drag in that loop** (see the caveat below). Fired from a
+player's eye at 1.62 blocks, speed 2.5:
+
+| | `g = 0.05` (RULED) | `g = 0.03` |
+|---|---|---|
+| **flat fire** | lands tick **9**, **22.5 blocks** | lands tick 11, 27.5 blocks |
+| **45°, the max-range launch** | lands tick **73**, **129.0 blocks** | **still airborne at tick 120** — 212.1 blocks, stopped by the leash rather than by the ground |
+| drop over the whole 120-tick leash | **357 blocks** | 214 blocks |
+
+**THE CLAIM HOLDS, AND IT HOLDS BETTER AT 0.05 — which is one of the reasons §7.4 chose it.** At
+0.05 even the optimal 45° stray arrow is in the ground at **129 blocks**, well short of 300 and well
+inside the leash. **At 0.03 the 45° shot is leash-limited rather than ground-limited**, so the ruling
+would do *less* of the work claimed for it — the honest version of "if it is over, the plan says so
+instead of repeating the claim."
+
+**And the full 300 blocks is unreachable for a stray arrow in any ordinary geometry:** staying up for
+120 ticks means falling **357 blocks**, which needs that much open air beneath the shooter. Firing
+off build height over a void is the only shape of world that allows it.
+
+> **ONE CAVEAT, BECAUSE R12's WORDS ARE "LIKE A NORMAL ARROW" AND THIS IS THE PLACE THAT IS NOT
+> TRUE.** A vanilla arrow also has **drag** — it loses a fraction of its speed every tick —
+> and `ProjectileFlight.step` has **none**: its horizontal speed is constant until it lands. So a
+> Plume arrow **falls** like an arrow and **does not slow down** like one. Named rather than fixed:
+> adding drag is a change to the shared flight loop that every other projectile in the project rides,
+> which is a decision well outside this weapon.
+
+**GATE ROW P8 (§8) is the visible half: fire at nothing and watch where the arrow goes.**
+
 ---
 
 ## 4. WHAT THE ENGINE ALREADY HAS, AND WHERE IT GROWS
@@ -512,7 +603,7 @@ number it was copied from.*
 | activation | **ballistic until 15 blocks** from spawn | the arrow flies straight, then seeks | **P2** |
 | search radius | `getNearbyEntities(10, 10, 10)` → **`combatantsNear(pos, 10)`** | the box it looks in, per tick | **P3** |
 | re-target | **every tick**; a null target flies straight on | no target lock | **P3** |
-| lifespan | **120 ticks** | the leash | **P4** |
+| lifespan | **120 ticks** — **RULED (R11)**, no longer inherited | the leash; ≈300 blocks at speed 2.5 | **P4** |
 
 **Three things about that table are already known to be wrong-shaped, and saying so is cheaper than
 letting a gate discover it:**
@@ -529,8 +620,8 @@ letting a gate discover it:**
   `hunters_bow` the equivalent is `2.5 × 60 = 150` blocks.
 
 **WHAT DISCHARGES THEM:** a booted reading, per row, in a `GATE-dragons-plume.md` written **before the
-boot** and not after. **The full row set, P0-P7, is drafted in §8**; these five constants are
-P1-P4.
+boot** and not after. **The full row set, P0-P8, is drafted in §8**; these five constants are
+P1-P4, and **the lifespan is no longer one of them — R11 ruled it** (§7.4).
 
 ---
 
@@ -779,22 +870,32 @@ a margin of 0.18 ticks per round.
 > retakes the lead at `T = 3`** (66.67 under the symmetric convention). **Lowering this number
 > re-opens §7.2.** It is not a comfort setting.
 
-### 7.4 OPEN — HOW FAR THE ARROW REACHES, AND WHETHER IT FALLS ON THE WAY
+### 7.4 CLOSED — **R11**: REACH ≈ 300 BLOCKS, AND **R12**: IT DROPS LIKE AN ARROW
 
-**What is being decided, in two plain sentences.** *How far a Plume arrow travels before it gives up
-and disappears* — and *whether a seeking arrow should drop toward the ground at all during the first
-15 blocks, before it starts steering.* Everything below is the argument, not the question.
+**What was decided:** *how far a Plume arrow travels before it gives up* — **it does not, in any
+practical sense** — and *whether it falls on the way* — **it does, like any arrow.**
 
-**The reach argument.** There is **no `range` key on a projectile** — reach is `speed × lifetime`.
-The old repo's inherited 120-tick lifespan at a shipped-style speed of 2.5 is **300 blocks**: the
-longest reach anything in this project has today is **160** (`ember_staff` 2.0 × 80, `emberblade`
-1.6 × 100), so the inherited figure is **1.9× the longest**, and well past render distance. **Whether
-that reads as "reaches anything you can see" or as "never gives up" is the decision.**
+```
+speed 2.5   x   max_lifetime_ticks 120   =   ~300 blocks        R11
+gravity 0.05                                                     R12  -- see the choice below
+```
 
-**The drop argument.** Shipped projectiles author `gravity` 0.03-0.05. The arrow is **ballistic for
-the first 15 blocks** (§5) and steers afterwards, so gravity is real for that stretch and then fights
-the lerp. **`0.0` is representable and may be the honest answer for a seeking arrow** — but a bow
-that fires perfectly flat is a different-feeling weapon from one that arcs. **Unruled.**
+> **R11 WAS RULED AGAINST THIS SECTION'S OWN ARGUMENT, AND THAT IS WHAT MAKES IT A RULING.** §7.4
+> argued the other way: 300 blocks is **1.9× the longest reach in the project** — 160
+> (`ember_staff` 2.0 × 80, `emberblade` 1.6 × 100) — and **well past render distance**, so the
+> weapon can hit a thing its wielder cannot see. **Ben read that and took *"never gives up"*
+> anyway.** Recorded, because *inherited because nobody looked* and *chosen over an argument* age in
+> opposite directions and look identical a month later.
+
+**WHICH GRAVITY, AND WHY — 0.05.** R12 says *drops like a normal arrow*, and the shipped band is
+`0.03`-`0.05`. **`hunters_bow` authors `0.05`, and it is the only BOW in the project**; the 0.03
+figures belong to staves (`ember_staff`, `emberblade`). **The precedent that matches the ruling's own
+words is the bow one**, so 0.05 — not as a tie-break, but because "like a normal arrow" names the
+weapon class the value should come from.
+
+**AND IT IS ALSO THE VALUE THAT MAKES R11 AND R12 AGREE RATHER THAN FIGHT** — see §3.3, where the
+targetless case is ruled and the drop is computed at both candidates. **0.03 leaves a 45° stray
+arrow airborne for the entire 120-tick leash; 0.05 puts it in the ground at tick 73.**
 
 ### 7.5 CLOSED — **R6/§7.0**: THE CHARGE SECOND `c` IS **RULED AT 20**
 
@@ -810,33 +911,42 @@ default nobody considered** (all three at R9's 90-tick reload):
 | **20 — RULED** | **100t (5.00s)** | **590t = 29.50s** | **40.68** |
 | 24 | 116t (5.80s) | `670t = 33.50s` | 35.82 |
 
-### 7.6 OPEN — WHAT THE CHARGE SOUNDS LIKE AS IT FILLS
+### 7.6 CLOSED — **R13**: THE FIVE STEPS MUST BE TELLABLE APART BY EAR
 
-**What is being decided, in one plain sentence.** *Whether a player can tell, with their ears and
-without looking at anything, how many arrows they are holding* — because that legibility is the
-whole mitigation for the one thing this weapon gave up (§2.1: its charge is the first duration in the
-project no stat can move).
+**What was decided, in one plain sentence.** *A player holding the draw must be able to release on
+the count they wanted without looking at anything* — so the mapping is authored for **SEPARATION,
+not for subtlety**. That legibility is the whole mitigation for the one thing this weapon gave up
+(§2.1: its charge is the first duration in the project no stat can move).
 
 **The material.** Sounds are authored as **strings** and played **privately to the holder** — the
 form `QuiverNotice` uses (`"block.dispenser.fail"`, `"item.crossbow.loading_start"`). Candidates for
 Ben's ear rather than mine: `block.note_block.pling`, `item.crossbow.loading_middle`,
 `entity.experience_orb.pickup`.
 
-**The mapping, proposed and not ruled:**
+**THE MAPPING R13 SELECTS, AND THE ARITHMETIC THAT SELECTS IT.** Pitch in Minecraft is a **playback
+rate**, so what an ear hears as a *step* is the **ratio** between two pitches, not the difference.
+A mapping with even *differences* therefore has **shrinking steps**, and it shrinks exactly where the
+counts matter most — at four and five, when the player is deciding whether to let go.
 
 ```
-arrows ready   1      2      3      4      5
-pitch        1.00   1.25   1.50   1.75   2.00        pitch = 1.0 + 0.25 x (n - 1)
+                 1      2      3      4      5      steps, in semitones (12 log2 of the ratio)
+linear      1.00   1.25   1.50   1.75   2.00        3.86   3.16   2.67   2.31     <- top step is 40% smaller
+RULED       0.80   1.00   1.26   1.59   2.00        3.86   4.00   4.03   3.97     <- even, ~a major third each
 ```
 
-**That assumes 2.0 is the top of the useful range, and THAT IS OUTSIDE KNOWLEDGE, UNVERIFIED HERE.**
-Checked and not found: `World#playSound`'s javadoc in the pinned API documents **no range** for
-`pitch`, and `ClientboundSoundPacket` carries a **raw float** — so any cap is the client's, and
-nothing on this machine can measure it. **Do not restate it as a fact of the platform.**
+**The ruled row is geometric — `pitch = 0.8 × r^(n-1)` with `r = (2.0/0.8)^(1/4) = 1.2574`** — which
+is *"authored for separation"* stated as a number rather than as an intention: **every step is the
+same size to an ear**, and it is the largest even step the assumed span allows.
 
-**It matters because the proposed mapping spends the whole assumed span on five arrows.** An
-alternative that leaves room: `pitch = 0.8 x 1.15^(n-1)` → 0.80, 0.92, 1.06, 1.22, 1.40. **P6 is a
-person listening, and it is also where the 2.0 assumption gets tested rather than repeated.**
+**THE 2.0 CEILING REMAINS OUTSIDE KNOWLEDGE THIS MACHINE CANNOT MEASURE.** Checked and not found:
+`World#playSound`'s javadoc in the pinned API documents **no range** for `pitch`, and
+`ClientboundSoundPacket` carries a **raw float** — so any cap is the client's. **Do not restate it as
+a fact of the platform.** If it is wrong the mapping still works; it simply stops short of the top.
+
+> **THE SOUND KEY ITSELF IS NOT A NUMBER AND IS NOT RULED HERE.** Candidates go to **P6**, which is a
+> person listening — and R13 gives that row a **second half** that its first half cannot answer: not
+> only *is the top of the range still pleasant*, but **can a person NAME THE COUNT WITHOUT LOOKING.**
+> Those are different questions, and only the second one is the ruling's test.
 
 ## 8. THE GATE ROWS, DRAFTED BEFORE THE BOOT
 
@@ -851,8 +961,10 @@ arrive with their discharge conditions attached rather than acquiring them after
 | **P3** | Stand where **two** mobs are within 10 blocks and one is at **~15** (inside the old box's corner, outside our sphere). | Which one it takes, and whether the far one is ever acquired. **The cube-vs-sphere note in §5 is what this row settles.** |
 | **P4** | Fire with **no target in range**, over open ground. | How far it travels before it dies, in blocks, and whether 120 ticks reads as "forever". |
 | **P5** | **R3, the live magazine.** With **two** rounds loaded, hold past full charge for five seconds. | **How many ticks sound, and at what pitches.** The tracker must stop at two. **Then repeat with a reload completing mid-hold**, and record whether the cap moves. |
-| **P6** | Hold to five arrows with the sound on. | **Whether the rise is legible** — the mitigation R1's overturn rests on (§2.1). A person listening is the only instrument for this. **Also the row where the 2.0 pitch ceiling gets tested rather than repeated** (§7.6). |
+| **P6** | Hold to five arrows with the sound on — **then have someone hold it while a second person, NOT WATCHING THE SCREEN, calls the count out loud.** | **TWO ANSWERS, AND THE SECOND IS R13's ACTUAL TEST.** (i) whether the rise is legible and the top of the range is still pleasant — the mitigation R1's overturn rests on (§2.1), and where the 2.0 ceiling gets tested rather than repeated (§7.6); (ii) **whether a person can NAME THE COUNT WITHOUT LOOKING.** A sound can be pleasant and still fail (ii), which is why the row asks both. |
 | **P7** | **THE TAP INTERVAL, AND THE ONLY PLACE THE HOMING QUESTION CAN BE ANSWERED.** `/rpg give` the weapon, then **tap right-click as fast as you can for ten seconds** — genuinely tapping, not holding, since the instrument cannot tell the difference and the whole row depends on it. Then `/rpg firerate`. **Then do it again at a moving mob**, tapping, and then charged. | **`INPUTS count, window, mean and min`, verbatim.** The `min` is `T`'s real floor. **Record it even if it is 4** — a measured 4 for discrete clicks is a different fact from Q7's measured 4 for a held repeat, and only this row can tell them apart (§7.2). **And say, in words, how many of the un-homing taps MISSED** — §7.2 leaves the homing advantage deliberately unquantified, and a person shooting at a moving target is the only instrument there is. |
+
+| **P8** | **THE TARGETLESS ARROW — §3.3, and it is the common case.** Fire **at nothing**, flat, over open ground: charged, and then a single tap. Then fire at nothing **at roughly 45°**. | **Where the arrow lands, in blocks**, for each. §3.3 computes **22.5 flat** and **129 at 45°** at `gravity 0.05` — **a reading far from those means the flight model in this plan is wrong**, and every reach claim built on it with it. **Also: does it visibly ARC, or does it look flat?** R12's whole content is that it drops like an arrow. |
 
 > **P5's second half is the one that earns the ruling.** *"Reads the magazine live"* and *"reads it
 > once at full charge"* are **indistinguishable** on a quiver that does not change mid-hold — so a row
@@ -865,12 +977,17 @@ arrive with their discharge conditions attached rather than acquiring them after
 
 - **It authors no content file and no Java.** No `dragons_plume.yml`, no schema change, no listener.
   The next slice starts from §4's growth points and writes the `core` test first.
-- **It prices nothing itself, and most of §7 is now CLOSED rather than open.** Ruled: the arrow-1
-  reading and the charge second `c = 20` (R6, §7.0/§7.5), `attack_damage` 48 (R8, §7.1),
-  `cooldown_ticks` 0 (R7, §7.2), `reload_ticks` 90 (R9, §7.3), the partial draw at 12 with no homing
-  (R4′) and vanilla's 3-tick floor (R10). **Two remain open, and each is written as a question with
-  its arithmetic underneath rather than as a blank:** `speed`/`gravity`/`max_lifetime_ticks` (§7.4)
-  and the sound with its pitch mapping (§7.6).
+- **It prices nothing itself — and §7 is now CLOSED, every number in it ruled.**
+
+  ```
+  arrow 1 at full charge   R6    charge second c = 20      R6     attack_damage 48   R8
+  cooldown_ticks 0         R7    reload_ticks 90           R9     partial draw 12    R4'
+  vanilla's 3-tick floor   R10   max_lifetime_ticks 120    R11    gravity 0.05       R12
+  speed 2.5 (with R11)     R11   the pitch mapping         R13
+  ```
+
+  **What is NOT ruled is not a number:** the **sound key** itself (P6 is a person listening), and
+  the **homing constants** of §5, which stay `INHERITED AND UNJUDGED` with a gate row each.
 - **It does not rule the Endermen or the summons exclusions.** R2 carries them as candidates; they need
   a distinction `core` does not currently have — `CombatantSnapshot` knows `player` and nothing else —
   so ruling them in costs either a port extension or a `paper`-side predicate. **Named, not chosen.**
