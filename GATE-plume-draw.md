@@ -28,11 +28,86 @@ are H2's, deliberately, and none of them can confuse a symptom here.
 | row | staging | what to record |
 |---|---|---|
 | **H-1** | ~~Hold a full draw for **five seconds** with a full magazine.~~ **SUPERSEDED BY H-1b — the instrument changed.** | **READ ONCE, ON A `pling`, AND THE READING IS PRESERVED BELOW** rather than overwritten. See the block under this table. |
-| **H-1b** | **NOT RUN.** Hold a full draw for **five seconds** with a full magazine, now that the tick is `block.note_block.basedrum`. | **How many ticks sound, and whether the rise is tellable apart BY EAR** — have a second person, not watching the screen, call the count. Five expected, each step the same RATIO (1.2574). **The second half is the ruling's actual test**: R13 asks whether a player knows **WHICH STEP they are on**, not whether they can count events — so the listener should be asked to start listening LATE and still name the position. **And the fifth step is now a separate question**: a kick at pitch 2.0 is half as long and may stop reading as a kick (see `DrawCharge`). |
-| **H-2** | **THE CAP.** Load exactly **two** rounds, then hold a full draw for five seconds. | **The ticks must STOP at two.** Record how many sounded. Then, **without releasing**, have a reload complete mid-draw and record whether the ticks RESUME — R3's cap is live, and a cap read once at full charge is indistinguishable from a live one on a magazine that never changes. |
+| **H-1b** | **NOT RUN.** Hold a full draw for **five seconds** with a full magazine, now that the tick is `block.note_block.basedrum`. | **How many ticks sound, and whether the rise is tellable apart BY EAR** — have a second person, not watching the screen, call the count. Five expected, each step the same RATIO (1.2574). **The second half is the ruling's actual test**: R13 asks whether a player knows **WHICH STEP they are on**, not whether they can count events — so the listener should be asked to start listening LATE and still name the position. **And the fifth step is now a separate question**: a kick at pitch 2.0 is half as long and may stop reading as a kick (see `DrawCharge`). **IF NO DRUM SOUNDS AT ALL, DO NOT CONCLUDE THE TRACKER FAILED — run the fallback step below before recording anything.** |
+| **H-2** | **MOVED TO `GATE-plume-release.md` — THE CAP IS UNOBSERVABLE IN PRINCIPLE AT H1.** Not "hard to stage": there is no staging. | See the block below for the arithmetic, and the release gate for the row itself. **Do not spend an evening looking for a clever staging; the reason is structural.** |
 | **H-3** | **THE ARROW — and this row proves a MECHANISM, not an absence.** One arrow in the off-hand, nothing else in the bag. Draw, hold past full charge, release. | **Is the arrow still there?** It survives only if `clearActiveItem()` inside `PlayerStopUsingItemEvent` made `LivingEntity.releaseUsingItem`'s re-read at offset 72 yield EMPTY, so `BowItem.releaseUsing` — and therefore `draw()`, and therefore `useAmmo` — never ran. **If the arrow is gone, that specific chain is what failed**, and the server log will say so: the `EntityShootBowEvent` guard fires loudly precisely here. |
 | **H-4** | **THE VISUAL DESYNC.** Draw, hold to five, release — and **watch the first-person hand and a second player's view of you**. Repeat while moving, and while looking up. | **Does the client keep animating a draw it no longer has?** The server clears the active item mid-release; nothing guarantees the client agrees. **Write this row's answer in words, not a verdict** — "the bow snapped back instantly" and "the arm stayed pulled for about a second" are different findings and both are passes for the mechanism. **No amount of bytecode reading could have predicted this row**, which is why it is here. |
 | **H-5** | **THE NEGATIVE ROW, and it is the one that fails if the gate is wrong.** With H1 installed: eat a food item to completion; raise and lower a shield; fire an **ordinary vanilla bow**; drink a potion; use a spyglass. | **Each must behave exactly as it did before.** `PlayerStopUsingItemEvent` fires for **every** item release on the server, so an ungated `clearActiveItem()` would break all of these silently. **This row exists because of the gate, and it is the row that catches a gate that does not gate.** |
+
+## H-1b's FALLBACK STEP — A SILENT KEY AND A BROKEN TRACKER LOOK IDENTICAL
+
+**Silence has two causes and they are not close in kind.** The sound key is `block.note_block.basedrum`
+and **only half of it is verified**: `SoundEvents` declares the FIELD `NOTE_BLOCK_BASEDRUM`, but the
+ID STRING is **inferred** from the field-name convention — corroborated by two siblings known to
+play, not measured. **A misspelled key is silent, and at H-1b silence reads as the mechanism
+failing.**
+
+**So the discriminator lives in this row rather than in whoever is at the keyboard:**
+
+> **If no drum sounds, swap `PlumeDraw.TICK_SOUND` to `block.note_block.pling`, rebuild, and draw
+> once.**
+>
+> ```
+> pling sounds, drum does not   ->  THE ID STRING IS WRONG. A typo, not a defect. Fix the string.
+> neither sounds                ->  the tracker or the draw failed, and THAT is the real finding.
+> ```
+
+**One line each way, and it separates a typo from an architecture failure in a single boot instead of
+a debugging session.**
+
+**AND IT IS H-1's SUPERSEDED READING THAT MAKES THIS POSSIBLE.** The pling is not a guess at a
+control: it **demonstrably played**, recorded 2026-09-14. **A superseded row that still carries its
+reading has become a POSITIVE CONTROL for the instrument** — which is the second reason not to have
+overwritten its cell, and one nobody had in mind when the reading was preserved.
+
+> **Same shape as the two silences this page already separates, one layer down:** two different
+> causes producing one identical observation, and a cheap experiment only one of them survives.
+
+---
+
+## WHY H-2 LEFT: THE CAP CANNOT BIND AT H1, AND THAT IS ARITHMETIC RATHER THAN A MISSING LEVER
+
+**R3's cap is `roundsRemaining()`, which slice G defines as `min(loaded, capacity)`, clamped.** For
+that to stop the ticks it must come in **under 5**, the maximum charge. On a Plume at H1 it cannot:
+
+```
+loaded    25 at mint (QuiverItems.stampFull), and IT CANNOT FALL.
+          Quivers.spendRound has exactly ONE call site -- WeaponFire:183, gated on a
+          Success and on the input not being left_click -- and the Plume binds NO
+          left_click and NO right_click, so WeaponFire.attempt returns empty for it.
+          H1 fires nothing. Left-click only reloads, and a full magazine is ALREADY_FULL.
+
+capacity  authored 25 plus modifiers, and every instrument that exists ONLY ADDS:
+          /rpg quiversize is DoubleArgumentType.doubleArg(0.0, 200.0) -- floor ZERO --
+          and the quiver_size_boost item it mints adds the same bonus.
+
+          min(25, >= 25) = 25,  against a maximum charge of 5.
+```
+
+> **SO THE CAP IS UNOBSERVABLE IN PRINCIPLE ON A MAGAZINE FIVE TIMES THE MAXIMUM CHARGE THAT CANNOT
+> SPEND A ROUND.** That phrasing is chosen over *"not stageable"* deliberately: the second invites
+> somebody to go looking for a clever staging, and there is not one to find.
+>
+> **BOTH HALVES GO, NOT JUST THE COUNT.** The live re-read has no lever either — raising capacity
+> mid-draw does not move `min(25, capacity)`, so a reload completing during a hold changes nothing
+> observable.
+>
+> **TRIGGER — THE FIRST SLICE IN WHICH A PLUME ROUND CAN BE SPENT.** That is H2's release: one fired
+> arrow takes `loaded` to 24, and a few more make both halves stageable immediately. A condition on
+> the tree, not a "later".
+>
+> **And one other way it could become stageable, which does not exist today:** a capacity modifier
+> that SUBTRACTS. `QuiverSize.arrows` handles a negative — `QuiverSizeTest` has a row asserting
+> `arrows(-2.1) == -3` — so the arithmetic permits it and only the instruments forbid it. **The
+> argument above rests on no instrument producing one, not on the maths refusing it**, which is a
+> weaker claim and is stated as such.
+
+**THIS WAS FOUND, TOLD, AND NOT WRITTEN DOWN.** The measurement existed in a chat and never reached
+a file, so the row survived a review that read the file and reported what it said. That is this
+project's own recorded failure — *a finding that lives only in the conversation is not recorded* —
+firing for the second time on this gate page, the first being H-1's reading.
+
+---
 
 ## H-1's READING, PRESERVED — AND A READING IS SCOPED TO THE CONDITIONS IT WAS TAKEN UNDER
 
@@ -64,7 +139,8 @@ only evidence this mechanism has ever produced.
 ## WHAT THIS GATE DOES NOT COVER
 
 - **Anything that fires.** H1 spawns no projectile, spends no round, deals no damage. H2's rows are
-  about arrows; these are about architecture.
+  about arrows; these are about architecture. They live in **`GATE-plume-release.md`**, which already
+  holds the one row that had to leave this page.
 - **The homing constants.** `PLAN-dragons-plume.md` §5 carries them `INHERITED AND UNJUDGED` with
   rows P1-P4, and nothing here touches them.
 - **The pitch ceiling, and the instrument change widened it.** `2.0` is outside knowledge this
