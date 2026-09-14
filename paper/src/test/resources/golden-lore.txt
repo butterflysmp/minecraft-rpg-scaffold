@@ -31,6 +31,16 @@
    "It asks for a moment before it answers." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- dragons_plume
+   "Void" color=#AA00AA O=. B=. S=. U=. I=F
+   "Quiver: --/25" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Dragon's Plume" color=#FFAA00 O=. B=. S=. U=. I=F ["  Draw" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Patience is the only string it answers to;" color=#AAAAAA O=. B=. S=. U=. I=T
+   "what it cannot see, it lets pass." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Legendary Ranged Weapon" color=#FFAA00 O=. B=. S=. U=. I=F
 -- ember_staff
    "Fire" color=#FF5555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -524,4 +534,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 91 renderings ===
+=== 92 renderings ===
