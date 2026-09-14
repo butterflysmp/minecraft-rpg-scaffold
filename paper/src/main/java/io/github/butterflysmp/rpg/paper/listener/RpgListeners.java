@@ -168,8 +168,10 @@ public final class RpgListeners implements Listener {
      * The Dragon's Plume's draw: the charge tracker, its rising tick, and the release that suppresses
      * vanilla's shot. Slice H1 -- it FIRES NOTHING, deliberately; see {@link PlumeDraw}.
      *
-     * <p>Assigned in the constructor rather than inline because it needs the registry and the
-     * adapters, which arrive as parameters.
+     * <p><b>INJECTED RATHER THAN BUILT HERE, AND IT STOPPED BEING LISTENER-SCOPED THE DAY
+     * {@code /rpg drawsound} EXISTED.</b> The command mutates the tick's sound key and this class
+     * reads it, so the two must hold the SAME instance -- hoisted in {@code RpgPlugin} and handed to
+     * both, exactly as {@code FireCadence} already is for {@code /rpg firerate}.
      */
     private final PlumeDraw plumeDraw;
 
@@ -208,7 +210,8 @@ public final class RpgListeners implements Listener {
                         AdapterContext adapters,
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
                         StatsBarSystem statsBar, HealthRegenSystem healthRegen,
-                        Plugin plugin, RecipeRegistry recipes) {
+                        Plugin plugin, RecipeRegistry recipes,
+                        PlumeDraw plumeDraw) {
         this.plugin = plugin;
         this.recipes = recipes;
         this.cooldowns = cooldowns;
@@ -221,9 +224,7 @@ public final class RpgListeners implements Listener {
         this.tools = tools;
         this.weaponService = weaponService;
         this.adapters = adapters;
-        // Listener-scoped for MeleeHits' reason: the three events it bridges are all on this class,
-        // and nothing else in the plugin has a use for a half-finished draw.
-        this.plumeDraw = new PlumeDraw(weapons, adapters);
+        this.plumeDraw = plumeDraw;
         this.recipeCatalogue = new RecipeCatalogue(adapters);
         this.healthSystem = healthSystem;
         this.nameplates = nameplates;

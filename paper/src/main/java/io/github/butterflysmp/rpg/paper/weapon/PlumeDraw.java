@@ -123,8 +123,41 @@ public final class PlumeDraw {
      * <p>The precedent for choosing a note-block sound and proving it by ear is
      * {@code BrokenNotice}'s {@code block.note_block.bass}.
      */
-    private static final String TICK_SOUND = "block.note_block.basedrum";
+    public static final String DEFAULT_TICK_SOUND = "block.note_block.basedrum";
+
+    /**
+     * The key actually in force, which {@code /rpg drawsound} can move for the session.
+     *
+     * <h2>BORN WITH A DELETION TRIGGER, BECAUSE DEV INSTRUMENTS HERE OUTLIVE THEIR PURPOSE</h2>
+     *
+     * <p>The dev weapons and {@code /kit} are both still parked, so this one states its own end
+     * condition rather than waiting to be noticed:
+     *
+     * <p><b>TRIGGER: the charge tick's sound is ruled. On that day this field, its accessors and
+     * {@code /rpg drawsound} are deleted IN THE SAME COMMIT that authors the ruling</b> — not in a
+     * follow-up, because a follow-up is what turns an instrument into furniture.
+     *
+     * <p><b>Why the knob exists at all:</b> three candidates cost three build-deploy-boot cycles and
+     * three relays, one candidate each. One argument turns that into one boot and as many candidates
+     * as an ear wants. It is the same argument {@code /rpg quiversize}, {@code /rpg reloadtime} and
+     * {@code /rpg firerate} were each built on, and it is smaller than any of them.
+     *
+     * <p>An INSTANCE field on a listener-owned object rather than a static: the same object the
+     * command mutates is the one the tick reads, hoisted in {@code RpgPlugin} and handed to both,
+     * exactly as {@code FireCadence} already is.
+     */
+    private String tickSound = DEFAULT_TICK_SOUND;
     private static final float TICK_VOLUME = 0.7f;
+
+    /** The key the charge tick is playing right now. */
+    public String tickSound() {
+        return tickSound;
+    }
+
+    /** Point the charge tick at a different key for this session. {@code /rpg drawsound} only. */
+    public void tickSound(String key) {
+        this.tickSound = key;
+    }
 
     /** The material whose vanilla draw this reads. Content authors it as {@code material: bow}. */
     private static final String DRAW_MATERIAL = "bow";
@@ -213,7 +246,7 @@ public final class PlumeDraw {
         // ONE SOUND PER ARROW GAINED, not per tick, and the loop covers a tick that crosses two
         // thresholds at once -- which a lagging server can produce.
         for (int n = alreadyTold + 1; n <= ready; n++) {
-            player.playSound(player.getLocation(), TICK_SOUND, TICK_VOLUME, DrawCharge.pitchFor(n));
+            player.playSound(player.getLocation(), tickSound, TICK_VOLUME, DrawCharge.pitchFor(n));
         }
         announced.put(id, ready);
 
