@@ -47,6 +47,7 @@ import io.github.butterflysmp.rpg.paper.health.VanillaHealPolicy;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.core.combat.AttackCharge;
 import io.github.butterflysmp.rpg.paper.weapon.MeleeHits;
+import io.github.butterflysmp.rpg.paper.weapon.PlumeDraw;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import io.github.butterflysmp.rpg.paper.weapon.BrokenNotice;
 import io.github.butterflysmp.rpg.paper.weapon.QuiverNotice;
@@ -75,8 +76,10 @@ import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityShootBowEvent;
 import io.papermc.paper.event.entity.EntityKnockbackEvent;
 import io.papermc.paper.event.entity.EntityMoveEvent;
+import io.papermc.paper.event.player.PlayerStopUsingItemEvent;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.damage.DamageSource;
@@ -162,6 +165,15 @@ public final class RpgListeners implements Listener {
     private final MeleeHits meleeHits = new MeleeHits(Bukkit::getCurrentTick);
 
     /**
+     * The Dragon's Plume's draw: the charge tracker, its rising tick, and the release that suppresses
+     * vanilla's shot. Slice H1 -- it FIRES NOTHING, deliberately; see {@link PlumeDraw}.
+     *
+     * <p>Assigned in the constructor rather than inline because it needs the registry and the
+     * adapters, which arrive as parameters.
+     */
+    private final PlumeDraw plumeDraw;
+
+    /**
      * The cadence for environmental damage, owned because the token destroys vanilla's ratchet.
      * Listener-scoped for MeleeHits' reason -- the one handler that claims from it is on this class.
      */
@@ -209,6 +221,9 @@ public final class RpgListeners implements Listener {
         this.tools = tools;
         this.weaponService = weaponService;
         this.adapters = adapters;
+        // Listener-scoped for MeleeHits' reason: the three events it bridges are all on this class,
+        // and nothing else in the plugin has a use for a half-finished draw.
+        this.plumeDraw = new PlumeDraw(weapons, adapters);
         this.recipeCatalogue = new RecipeCatalogue(adapters);
         this.healthSystem = healthSystem;
         this.nameplates = nameplates;
@@ -550,6 +565,52 @@ public final class RpgListeners implements Listener {
                         case CastResult.Reloading ignored -> { }
                     }
                 });
+
+        // THE DRAGON'S PLUME'S DRAW STARTS HERE, AND ONLY FOR A WEAPON THAT BINDS NO right_click.
+        //
+        // Unconditional on purpose: PlumeDraw.onDrawStarted gates on the ITEM, and its gate excludes
+        // every weapon whose vanilla interaction the block above just cancelled. A weapon that binds
+        // right_click never reaches BowItem.use, so its draw never starts and there is nothing to
+        // watch -- which is why hunters_bow, the only bow shipped today, is not a draw weapon.
+        //
+        // AFTER the attempt rather than before it, so that if a weapon ever binds both, the special
+        // is dispatched first and the draw watcher declines on its own terms rather than racing it.
+        plumeDraw.onDrawStarted(event.getPlayer());
+    }
+
+    /**
+     * THE RELEASE OF A DRAWN PLUME -- and the event fires for EVERY item release on the server.
+     *
+     * <p>Eating, drinking, shields, crossbows, tridents, spyglasses: all of them arrive here. The
+     * gate is on the ITEM, inside {@link PlumeDraw}, because an ungated {@code clearActiveItem()}
+     * in this handler would break every one of those, silently, on a server where nobody is testing
+     * the Plume.
+     *
+     * <p><b>{@code PlayerStopUsingItemEvent} is not cancellable and does not need to be.</b> It
+     * fires BEFORE {@code LivingEntity.releaseUsingItem} re-reads its {@code useItem} field, so
+     * clearing the active item from in here makes that re-read yield EMPTY and vanilla's whole
+     * release -- {@code BowItem.releaseUsing}, {@code draw()}, {@code useAmmo} -- never runs. The
+     * measurement is written up at {@link PlumeDraw}.
+     */
+    @EventHandler
+    public void onStopUsingItem(PlayerStopUsingItemEvent event) {
+        plumeDraw.onRelease(event.getPlayer(), event.getItem(), event.getTicksHeldFor());
+    }
+
+    /**
+     * THE BELT-AND-BRACES GUARD FOR A SHOT THAT SHOULD BE IMPOSSIBLE.
+     *
+     * <p>If the release clear took, vanilla never reaches the code that fires this event for one of
+     * our bows. <b>Its firing is therefore the signal</b> -- see
+     * {@link PlumeDraw#suppressManagedBowShot}, which logs loudly rather than cancelling quietly,
+     * because a silent cancel would hide exactly the failure the guard exists for.
+     */
+    @EventHandler
+    public void onManagedBowShot(EntityShootBowEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (plumeDraw.suppressManagedBowShot(player, event.getBow())) {
+            event.setCancelled(true);
+        }
     }
 
     /**
