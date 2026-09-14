@@ -1,11 +1,33 @@
 # GATE — the Dragon's Plume's release (slice H2)
 
-**Status: NOT RUN, AND THE SLICE IS NOT BUILT.** H2 spawns the projectiles through the existing cast
-path with F/F2's homing, spends the rounds, and handles R4′ (a partial draw: one arrow, no homing, 12
-damage) and R10 (under three ticks, nothing — vanilla's own floor). **None of that exists.**
+**Status: NOT RUN. THE SLICE IS NOW BUILT.** ~~AND THE SLICE IS NOT BUILT... None of that exists.~~
+H2 spawns the projectiles through the existing cast path with F/F2's homing, spends the rounds, and
+handles R4′ (a partial draw: one arrow, no homing, 12 damage) and R10 (under three ticks, nothing).
+**All of that now exists and none of it has been booted.**
 
-**This file exists early for one reason: a row had to leave `GATE-plume-draw.md`, and a row with
-nowhere to go is a row that gets deleted.** More rows join it when H2 is scoped.
+**This file existed early for one reason: a row had to leave `GATE-plume-draw.md`, and a row with
+nowhere to go is a row that gets deleted.** It has since gained the rows H2 made stageable.
+
+```
+R-1    NOT RUN   the cap, at exactly 2 and exactly 4 rounds
+R-2    NOT RUN   the stranded round is visible and is not a bug
+R-N1   NOT RUN   NO ARROW -- the only thing in the game that teaches R5
+R-N2   NOT RUN   NO ROUNDS -- its own sentence, not the empty-quiver one
+R-N3   NOT RUN   BOTH IN ONE FIGHT -- the row the two-key commit rests on
+R-N4   NOT RUN   THE SILENCE, with its positive control
+```
+
+> ## NEITHER NOTICE HAS EVER BEEN SEEN BY A PLAYER
+>
+> **Both are `paper`-side and neither has been booted.** `NoticeThrottleKeysTest` guards that the two
+> throttle keys are DISTINCT; it does not and cannot guard that **either message ever appears.** A
+> notice that is never sent, sent to nobody, swallowed by a throttle stamped elsewhere, or rendered
+> as an empty component would pass every row in that file.
+>
+> **So R-N1 and R-N2 are the first evidence these surfaces exist at all**, and R-N3 is the first
+> evidence of the thing the commit was actually argued on.
+
+**Every row below was written BEFORE any boot**, and the predictions with them.
 
 ---
 
@@ -15,6 +37,10 @@ nowhere to go is a row that gets deleted.** More rows join it when H2 is scoped.
 |---|---|---|
 | **R-1** | **THE CAP — moved from H1's gate, where it could not be run.** Fire enough arrows to bring the magazine to **exactly 2**, then hold a full draw for three seconds. Repeat at **exactly 4**. | **The ticks must STOP when the NEXT STEP is unaffordable, and the release must fire EXACTLY the tracked step** (R3a). At 2 rounds: **one tick, one arrow, one round left over.** At 4 rounds: **two ticks, three arrows, one round left over.** Record ticks heard, arrows seen, and rounds remaining afterwards. Then, **without releasing**, have a reload complete mid-draw and record whether the ticks **RESUME**. |
 | **R-2** | **THE STRANDED ROUND IS VISIBLE AND IS NOT A BUG.** Straight after R-1's two-round release, check the magazine. | **It must read 1, not 0.** The player paid for one arrow and keeps the round that could not buy a step. **If this reads as a bug to whoever runs it, that is the finding R3a's overturn condition needs** — the ruling is explicitly overturnable and the alternative (`min(step, rounds)`, stranding nothing) costs one comparison. |
+| **R-N1** | **NO ARROW.** Hold a Plume with **an empty bag** — no arrows anywhere, off-hand included. Right-click. **The magazine may be full; that is the point.** | **PREDICTED: the bow does not move, and a message names the remedy** — a plain Arrow, in the off-hand. **THIS IS THE ONLY THING IN THE GAME THAT TEACHES R5**, so the row is not "did text appear". **Ask someone who has never been told**: could they act on it? Record the sentence verbatim and whether the reader knew what to do next. **A player can be FULLY LOADED and unable to draw**, which is the part that reads as a broken item. |
+| **R-N2** | **NO ROUNDS.** Fire the magazine dry, then hold a **full** draw and release. | **PREDICTED: one message, naming the HOLD** — *"The draw was held for nothing — your quiver is empty. Left-click to reload."* **It must NOT be the empty-quiver line every other weapon uses.** Every other quiver weapon refuses BEFORE the shot; the Plume refuses **after three seconds of holding**, and an identical message hides that the charge was paid. Record which sentence appeared. |
+| **R-N3** | ***BOTH IN ONE FIGHT — THE ROW THE TWO-KEY COMMIT RESTS ON.*** Trigger R-N1's no-arrow notice, then **within 40 ticks (2 seconds)** trigger R-N2's no-rounds notice. The natural sequence does it for you: release on an empty magazine → *left-click to reload* → the reload eats the loose arrows → right-click → no arrow. | **PREDICTED: BOTH messages appear.** **NO UNIT TEST CAN SHOW THIS.** What is guarded today is that the two keys DIFFER, not that a player sees both — a notice can fail to appear for four reasons a key comparison cannot see. **If only one appears, the two-key argument is unproven and the second key is doing nothing.** Slice E's precedent is exact: two refusals sharing a throttle silence each other, **and it only shows up in the one sequence that matters.** |
+| **R-N4** | **THE SILENCE, WITH ITS POSITIVE CONTROL. Two halves, one sitting, and the second half is not optional.** (i) Twitch the bow **under three ticks** — a flick of right-click, released immediately. (ii) **Then, changing nothing else**, do a real no-rounds release. | **PREDICTED: (i) NOTHING is said. (ii) the message appears.** **THE SECOND HALF IS WHAT MAKES THE FIRST A READING.** A correct silence and a notice that is broken, unwired or throttled-out are **the same observation** — and (i) alone would be reported as a pass under every one of them. Only a notice firing immediately afterwards, on the same weapon in the same sitting, separates them. **Same move as the pling kept as H-1b's control:** a known-audible thing proves the pipeline is alive before a silence is believed. |
 
 > **R-1 IS `PLAN-dragons-plume.md`'s P5, LANDED — NOT A SECOND COPY OF IT.** The plan's §8 drafted its
 > rows *"before the boot"* and says they go into a gate file when the slice is written; this is that
@@ -69,6 +95,35 @@ capacity  authored 25 plus modifiers, and every instrument ONLY ADDS: /rpg quive
 > instrument producing one**, which is a weaker claim than the arithmetic refusing it, and is stated
 > as such.
 
+---
+
+## WHY THE NOTICE ROWS ARE FOUR AND NOT TWO
+
+**R-N1 and R-N2 each prove one surface exists. Neither proves the thing the slice was argued on**, and
+R-N4's first half proves nothing at all on its own. The two extra rows are the two failures a
+straightforward pair would report as passes:
+
+```
+R-N1 + R-N2 alone     both messages exist          <- and a SHARED key passes this, if you
+                                                      run them more than 2 seconds apart
+R-N4 (i) alone        the twitch said nothing      <- and an UNWIRED notice passes this
+```
+
+> **THE FIRST IS A TIMING ACCIDENT, WHICH IS WHAT MAKES IT DANGEROUS.** R-N1 and R-N2 run in
+> whatever order and at whatever pace a person happens to work at. **Run them a minute apart and a
+> single shared key passes both** — the throttle window is 40 ticks and has long since lapsed. The
+> defect appears only inside the window, which is exactly where a player meets it and exactly where
+> an unhurried tester does not. **R-N3 forces the interval.**
+>
+> **THE SECOND IS THIS PROJECT'S OLDEST SHAPE:** a check that did not run looks exactly like a check
+> that passed. A silence is the purest case — there is nothing to look at either way.
+
+> **AND R-N3's PREDICTION IS THE ONE TO WRITE DOWN BEFORE RUNNING, because the failure is a NON-EVENT.**
+> *"Both messages appeared"* is only meaningful against *"both were expected"*. A tester who has not
+> written the expectation first sees one message, reads it, acts on it, and never notices the second
+> was owed — **which is precisely what the player does, and why the bug would come back as "the reload
+> broke my bow" rather than as a missing notice.**
+
 ## WHAT THIS GATE DOES NOT COVER
 
 - **The input layer.** The draw, the tracker, the tick and the release's suppression of vanilla's
@@ -76,3 +131,10 @@ capacity  authored 25 plus modifiers, and every instrument ONLY ADDS: /rpg quive
 - **The homing constants.** `PLAN-dragons-plume.md` §5 carries them `INHERITED AND UNJUDGED` with
   rows P1-P4, and the sight gate's visible half is P9. H2 makes those runnable for the first time,
   because nothing has ever fired one of these arrows.
+- **Whether the notices are the RIGHT WORDS.** These rows check that a message appears, names a
+  remedy, and is not its sibling's sentence. **Whether a player finds the wording clear is R-N1's
+  "could they act on it" half and nothing more** — and if the answer is no, that is a finding about
+  the sentence rather than a row failure.
+- **R5 itself.** The notice teaches the workaround; it does not make the workaround less of one.
+  **`PlumeNotice.noArrow` carries a deletion trigger** — the day the off-hand requirement is
+  replaced, the method and its key go in the same commit — and **R-N1 goes with them.**

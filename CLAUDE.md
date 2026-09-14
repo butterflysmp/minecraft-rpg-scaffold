@@ -362,6 +362,26 @@ So:
   `-Dtest=` takes commas, not `+`; a bad pattern reports success having executed nothing.
 - Never `git checkout --` a file with uncommitted work to undo a mutation. Copy it to the
   scratchpad first and restore from there.
+
+  > **AN UNTRACKED FILE IS THE PUREST CASE OF THIS RULE, NOT AN EXCEPTION TO IT — AND
+  > `|| true` IS WHAT TURNS THE FAILURE SILENT.** `git checkout -- <path>` on a file git has never
+  > seen **cannot restore anything**; there is no version to restore. It fails loudly, and that loud
+  > failure is the whole protection.
+  >
+  > **`|| true` DISCARDS EXACTLY THE REPORT THE RULE EXISTS TO PRESERVE.** `cmd || true` is not
+  > "tolerate a harmless error" — it is *do not tell me whether this worked*, applied to the one step
+  > whose working is the point. Same family as `cmd | grep X; echo ok`: the status belongs to the
+  > wrong thing.
+  >
+  > **2026-09-14.** `MUT-SCANBLIND` was "restored" with `git checkout -- <new test file> || true`.
+  > The file was untracked, nothing was restored, the step printed nothing, and **the mutation stayed
+  > in the tree**. The suite was **GREEN** at that moment — the blinded scan found zero keys and the
+  > row's other assertions still held — so nothing else would have caught it. **The marker grep did,
+  > and only because it was run afterwards on a file the restore had silently skipped.**
+  >
+  > **Practically: never `|| true` a restore, and prefer `cp` from the scratchpad for every mutated
+  > file rather than only the tracked ones.** `cp` works on both, needs no knowledge of what git
+  > knows, and is the instrument the rule already names.
 - When you report something as verified, **say what you executed** and what it printed.
 - **Report the FILE LIST from `git diff --numstat` AND from what you touched, and RECONCILE THEM.**
   **A row in one and not the other is the interesting one.** Account for every row, in both
