@@ -61,10 +61,14 @@ public final class DrawCharge {
      * RULED     0.80   1.01   1.27   1.59   2.00     1.257  1.257  1.257  1.257   <- even
      * </pre>
      *
-     * <h2>THE LADDER SURVIVED THE INSTRUMENT CHANGE; THE ARGUMENT THAT CHOSE IT DID NOT</h2>
+     * <h2>THE LADDER HAS NOW SURVIVED TWO INSTRUMENT CHANGES; THE ARGUMENT THAT CHOSE IT DID NOT</h2>
      *
-     * <p><b>The tick was a {@code pling} and is now a {@code basedrum}</b> ({@code PlumeDraw}, ruled
-     * after a listen). <b>The RATIO half of the reasoning survives: equal ratios are still probably
+     * <p><b>The tick was a {@code pling}, then a {@code basedrum}, and is now a {@code hat}</b>
+     * ({@code PlumeDraw}, each ruled after a listen). <b>Twice now the material has moved and this
+     * formula has not</b>, which is the strongest available evidence that the ladder is about
+     * RATIOS rather than about the sound it is played on.
+     *
+     * <p><b>The RATIO half of the reasoning survives: equal ratios are still probably
      * equal perceptual steps, so the ladder stands unchanged.</b> The half that does not survive is
      * the one that talked about SEMITONES and called each step a major third -- <b>a note-block drum
      * is NOISE, not a tone.</b> Shifting its playback rate makes it shorter and brighter; there is no
@@ -78,11 +82,18 @@ public final class DrawCharge {
      * <p><b>{@link #PITCH_CEILING} at 2.0 IS OUTSIDE KNOWLEDGE THIS MACHINE CANNOT MEASURE, AND THE
      * INSTRUMENT CHANGE WIDENED WHAT IS UNKNOWN ABOUT IT.</b> The pinned API documents no range for
      * {@code pitch} and {@code ClientboundSoundPacket} carries a raw float, so any cap is the
-     * client's -- unchanged. <b>But the way the top of the range FAILS is now different in kind:</b>
-     * a pling at 2.0 is simply a high note, while a kick at 2.0 is <b>half as long</b> and may stop
-     * reading as a kick at all. So the ceiling is no longer only a question about whether the client
-     * clamps; it is a question about whether the fifth step is still the same sound. <b>A person
-     * listening is the only instrument for either half.</b>
+     * client's -- unchanged. <b>But the way the top of the range FAILS is not the same question it
+     * was on a tone:</b> pitch is a PLAYBACK RATE, so any note-block percussion at 2.0 is
+     * <b>half as long</b> and brighter, where a pling at 2.0 was simply a high note. So the ceiling
+     * is no longer only a question about whether the client clamps; it is a question about whether
+     * the fifth step is still the same sound.
+     *
+     * <p><b>That half is a property of note-block percussion and survived the swap from the kick to
+     * the hat; what the swap moved is UNMEASURED.</b> A hat is already the shortest and driest of
+     * the three, so it has less body to lose than a kick did -- but <b>whether a hat at 2.0 still
+     * reads as a hat has not been listened to</b>, and no reading on this page or in
+     * {@code GATE-plume-draw.md} answers it. <b>A person listening is the only instrument for either
+     * half, and H-1b is the row that owes both.</b>
      */
     public static final double PITCH_FLOOR = 0.8;
     public static final double PITCH_CEILING = 2.0;

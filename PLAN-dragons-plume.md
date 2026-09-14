@@ -359,11 +359,19 @@ operator's call, not a detail.**
   for **SEPARATION, not subtlety** — the geometric row in §7.6, every step the same RATIO, rather
   than the linear one whose top step is **40% smaller** than its bottom one.
 
-  > **AND R13's SOUND IS NOW RULED TOO: `block.note_block.basedrum`**, after a listen —
-  > *"the piano doesn't suit it, try snare or kick."* `block.note_block.snare` is recorded beside it
-  > as the one-line alternative. **The kick because R13's subject is POSITION, not counting:** a
-  > snare's sharper transient is easier to count as discrete hits, while a kick carries the rise more
-  > legibly and so tells you *which step you are on* if you lost count or started listening late.
+  > **AND R13's SOUND IS RULED: `block.note_block.hat`**, 2026-09-14, on feel — Ben heard it and it
+  > suits the weapon. It is the third key the tick has worn: `pling`, withdrawn on a listen (*"the
+  > piano doesn't suit it, try snare or kick"*), then `basedrum`, the kick, now superseded.
+  >
+  > **THE KICK'S ARGUMENT IS WITHDRAWN, NOT REWRITTEN ONTO THE HAT.** It ran: *a snare's sharper
+  > transient is easier to count as discrete hits, while a kick carries the rise more legibly and so
+  > tells you which step you are on.* That argument **selected a key that is no longer ruled**, and
+  > the ruling that replaced it gave a different kind of reason. Retargeting it would put an argument
+  > in Ben's mouth.
+  >
+  > **THE RULING IS ON FEEL AND DOES NOT DISCHARGE R13.** R13's property is that a player can NAME
+  > THE STEP by ear. **No position trial has been run on any candidate** — `GATE-plume-draw.md`'s
+  > H-1b is still OPEN, and what it owes is the position reading on this key.
 
   > **AND P6 GAINS A SECOND HALF THAT ITS FIRST CANNOT ANSWER.** Not only *is the top of the range
   > still pleasant*, but **can a person NAME THE COUNT WITHOUT LOOKING.** That is the ruling's actual
@@ -949,17 +957,25 @@ authored as **strings** and played **privately to the holder** — the form `Qui
 (`"block.dispenser.fail"`, `"item.crossbow.loading_start"`).
 
 ```
-RULED        block.note_block.basedrum    the kick
-ALTERNATIVE  block.note_block.snare       one line away, overturnable after a listen
-SHIPPED AND WITHDRAWN
+RULED        block.note_block.hat         2026-09-14, on feel -- "it suits the weapon"
+SHIPPED AND SUPERSEDED
+             block.note_block.basedrum    the kick; ruled, shipped, replaced by the hat
              block.note_block.pling       "the piano doesn't suit it, try snare or kick"
+NEVER AUDITIONED
+             block.note_block.snare       the kick ruling's recorded alternative
+             + four click candidates      listed in GATE-plume-draw.md, all measured present
 ```
 
-**The kick over the snare, and the reason is R13's own subject.** The ruling asks whether a player can
-tell **how many arrows they hold** — which is knowing your **POSITION** on the ladder, not counting
-events. A snare has the sharper transient and is easier to count as discrete hits; **a kick carries
-the rise more legibly, so it tells you WHICH STEP you are on if you lost count or started listening
-late.**
+**THE REASON GIVEN WAS FEEL, AND THAT IS THE WHOLE REASON ON RECORD.** Ben heard it and it suits the
+weapon. **The argument that had chosen the kick — *a snare is easier to COUNT, a kick tells you WHICH
+STEP you are on* — selected a different key and is withdrawn rather than reworded onto this one.**
+
+> **THE MATERIAL IS RULED; R13's PROPERTY IS NOT MEASURED, AND THE TWO ARE DIFFERENT QUESTIONS.**
+> R13 asks whether a player can tell **how many arrows they hold** — knowing your **POSITION** on the
+> ladder, not counting events, and nameable having started listening late. **A feel judgement does
+> not establish that, and no position trial exists on any candidate.** `GATE-plume-draw.md`'s H-1b
+> is the row, it is OPEN, and the ruling narrowed it rather than closing it: one key to test instead
+> of eight.
 
 **THE MAPPING R13 SELECTS, AND THE ARITHMETIC THAT SELECTS IT.** Pitch in Minecraft is a **playback
 rate**, so what an ear hears as a *step* is the **ratio** between two pitches, not the difference.
@@ -988,19 +1004,26 @@ WIDENED WHAT IS UNKNOWN ABOUT IT.** Checked and not found: `World#playSound`'s j
 API documents **no range** for `pitch`, and `ClientboundSoundPacket` carries a **raw float** — so any
 cap is the client's. **Do not restate it as a fact of the platform.**
 
-**That half is unchanged. What changed is how the top can FAIL.** A pling at 2.0 was simply a high
-note; **a kick at 2.0 is half as long and may stop reading as a kick at all.** So the fifth step now
-raises two questions rather than one — *is it audible* and *is it still the same sound* — and a
-person listening is the only instrument for either.
+**That half is unchanged by either swap. What changed when the tick stopped being a tone is how the
+top can FAIL.** Pitch is a **playback rate**, so any note-block percussion at 2.0 is **half as long
+and brighter**, where a pling at 2.0 was simply a high note. So the fifth step raises two questions
+rather than one — *is it audible* and *is it still the same sound* — and a person listening is the
+only instrument for either.
 
-> **THE SOUND KEY IS NOW RULED** — `block.note_block.basedrum`, above — **so what remains for a
-> listener is the LADDER rather than the material.** R13's test is the half that a pleasant sound can
-> still fail: not *is the top of the range nice*, but **can a person NAME THE COUNT WITHOUT
-> LOOKING** — and, more sharply, name it **having started listening late**, since the ruling's
-> subject is position rather than counting.
+> **AND WHAT THE MOVE FROM KICK TO HAT DID TO THAT RISK IS NOT ESTIMATED HERE.** A hat is the driest
+> and shortest of the candidates, so there is less body to lose — **but no one has listened to one at
+> 2.0**, and a plausible sentence about which way it went would sit among measured ones and be read
+> as another. **The fifth-step question is unchanged and still owed.**
+
+> **THE SOUND KEY IS RULED** — `block.note_block.hat`, above — **so what remains for a listener is
+> the LADDER rather than the material.** R13's test is the half that a pleasant sound can still fail:
+> not *is the top of the range nice*, but **can a person NAME THE COUNT WITHOUT LOOKING** — and, more
+> sharply, name it **having started listening late**, since the ruling's subject is position rather
+> than counting.
 >
-> **The reading that ruled the material was taken on the pling and does not carry across the swap.**
-> It is preserved in `GATE-plume-draw.md` under H-1, with H-1b as the drum's own row.
+> **The one reading this mechanism has ever produced was taken on the PLING and carries across
+> neither swap.** It is preserved in `GATE-plume-draw.md` under H-1, with H-1b as the row that owes a
+> position reading on the hat. **No trial exists on the kick or on the hat.**
 
 ## 8. THE GATE ROWS, DRAFTED BEFORE THE BOOT
 
@@ -1042,9 +1065,10 @@ arrive with their discharge conditions attached rather than acquiring them after
   speed 2.5 (with R11)     R11   the pitch mapping         R13
   ```
 
-  **The sound key joined them** — `block.note_block.basedrum`, ruled after a listen (§7.6), which is
-  the only instrument there was for it. **What is NOT ruled is not a number:** the **homing
-  constants** of §5, which stay `INHERITED AND UNJUDGED` with a gate row each.
+  **The sound key joined them** — `block.note_block.hat`, ruled on feel 2026-09-14 (§7.6), which is
+  the only instrument there was for it. **The MATERIAL being ruled is not R13 being discharged:**
+  H-1b still owes the position reading, on the ruled key. **What is NOT ruled is not a number:** the
+  **homing constants** of §5, which stay `INHERITED AND UNJUDGED` with a gate row each.
 - **It does not rule the Endermen or the summons exclusions.** R2 carries them as candidates; they need
   a distinction `core` does not currently have — `CombatantSnapshot` knows `player` and nothing else —
   so ruling them in costs either a port extension or a `paper`-side predicate. **Named, not chosen.**
