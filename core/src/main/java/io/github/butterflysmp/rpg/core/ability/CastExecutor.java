@@ -254,7 +254,25 @@ public final class CastExecutor {
         ProjectileFlight.launch(world, caster, aim.origin(), aim.direction().scale(spec.speed()),
                 spec.gravity(), spec.maxLifetimeTicks(),
                 new ProjectileFlight.Look(spec.trail(), spec.item()),
+                seekOf(spec),
                 (target, point) -> detonate(ability, caster, target, point));
+    }
+
+    /**
+     * The content's homing block in the flight's own vocabulary, or null for a bolt that flies where
+     * it was aimed.
+     *
+     * <p><b>THE SAME MAPPING {@code Look} ALREADY GETS, AND FOR THE SAME REASON.</b>
+     * {@code core.combat} imports nothing from {@code core.ability}, so the flight cannot take a
+     * {@code CastSpec} type and this call site is where the two vocabularies meet. Null in, null
+     * out: a projectile with no homing block is byte-identical to what it was before this field
+     * existed.
+     */
+    private static ProjectileFlight.Seek seekOf(CastSpec.Projectile spec) {
+        CastSpec.Homing homing = spec.homing();
+        return homing == null ? null
+                : new ProjectileFlight.Seek(homing.lerp(), homing.activationBlocks(),
+                        homing.searchRadius());
     }
 
     /**
