@@ -1030,7 +1030,45 @@ the defect this rule is about, wearing the rule's own clothes.
 > > `wc -l` plus an unterminated final line — the file **is** newline-terminated (`tail -c 1` is
 > > `\n`) and `wc -l` is **224**. Controlled: delete the single NUL and `grep -c ''` drops to
 > > **224**; `grep -ac ''` on the original is **224** too. **The `+1` is a BINARY-MODE artefact,
-> > supplied by the very byte being counted** — GNU grep **3.0**; scope it to that version.
+> > supplied by the very byte being counted.**
+> >
+> > > **AND IT IS NOT VERSION-SCOPED — THIS ENTRY SAID *"GNU grep 3.0; scope it to that version"*
+> > > UNTIL 2026-09-15, AND THAT WAS THE VERSION-SCOPING RULE FAILING IN MIRROR.** Measured on
+> > > **3.11** (operator's reading, see below): `grep -c ''` **225**, `grep -ac ''` **224**,
+> > > `wc -l` **224**. **The artefact reproduces exactly. Both builds have it.**
+> > >
+> > > **TWO DIFFERENT BEHAVIOURS WERE COLLAPSED INTO ONE SCOPE, AND ONLY ONE OF THEM IS
+> > > VERSION-DEPENDENT:**
+> > >
+> > > | behaviour | version-dependent? |
+> > > |---|---|
+> > > | the `-c` **COUNT** returning `225` against `wc -l`'s `224` | **NO** — 3.0 and 3.11 both |
+> > > | the `Binary file … matches` **NOTICE** on stdout when piped | **YES** — 3.0 narrates it, 3.11 suppresses it. This is what produced the `995` / `994` split below |
+> > >
+> > > **THE CONFLATION IS VISIBLE ON ONE BUILD, WITHOUT THE SECOND READING — WHICH IS WHY IT SHOULD
+> > > HAVE BEEN CAUGHT WHEN IT WAS WRITTEN.** On **3.0** alone: `grep -c '' <file> | wc -l` is
+> > > **1**, and that one line is `225`. **`-c` emits NO notice**, so the `+1` cannot be a narrated
+> > > line; it is inside the count. Separately, and on the same build, `grep '' <file> | wc -l` is
+> > > **1** — the notice, suppressing all 224 real lines — against `grep -a '' <file> | wc -l` at
+> > > **224**. **Two distinct mechanisms, both demonstrable on one grep.**
+> > >
+> > > **OVER-SCOPING IS THE MIRROR OF THE RULE BELOW AND IT FAILS WORSE, BY THE FALSE-PRESENCE
+> > > ASYMMETRY.** *Scope every version-dependent claim to its version* guards against a property of
+> > > ONE build stated as a property of the tool — an **UNDER**-scoped claim, which a reader on
+> > > another build may test and disprove. **An OVER-scoped claim is a FALSE ABSENCE**: it tells the
+> > > 3.11 reader *this does not concern you*, and **nobody re-checks a claim that has excused
+> > > them.** Same distinction as the ordinal rule under *Squash-merge bodies*, on a different axis.
+> > >
+> > > **So the instruction is BOTH DIRECTIONS: scope a claim to the builds you MEASURED, and to no
+> > > fewer.** *"Measured on 3.0 and 3.11"* is a different sentence from *"3.0-specific"*, and the
+> > > second is a claim about 3.11 that nobody made.
+> > >
+> > > **PROVENANCE, because this entry is about instruments lying: the `3.11` readings are the
+> > > OPERATOR'S, taken on their shell.** Only GNU grep **3.0** is reachable from this working
+> > > environment — `grep`, `/usr/bin/grep` and `/bin/grep` are all 3.0, and there is no WSL — so
+> > > the 3.11 column above is **not independently reproduced here** and is named as theirs rather
+> > > than absorbed into the measured set. The 3.0 column, and the whole two-mechanism separation,
+> > > are reproduced.
 
 **The accounts, by section — the concept is old here, only the enumeration was homeless:**
 
