@@ -5,20 +5,23 @@
 #
 # ~~FIRST PASS. IT AUTHORS ONLY WHAT THE BOOT NEEDS... SO THE RELEASE IS DELIBERATELY ABSENT.~~
 # That header was true for one slice. H1 read the draw, H2 built the release, and this file now
-# carries BOTH casts -- the charged shot under `draw:` and R4''s tap under `tap:`.
+# carries FOUR casts -- the charged shot under `draw:` and R4'''s three tap bands.
 #
 # ================== EVERY NUMBER HERE WAS RULED BY THE OPERATOR ==================
 #
-#   attack_damage 34   quiver_size 25   reload_ticks 60   cooldown_ticks 0 (on `tap:`)
-#   tap damage     8   legendary        void              ranger, material bow
+#   attack_damage 34   quiver_size 25   reload_ticks 60   cooldown_ticks 0 (on each tap band)
+#   tap damage 9/17/26 legendary        void              ranger, material bow
 #   speed 2.5          gravity 0.05     max_lifetime_ticks 120
 #
-#   UNRULED AND MARKED AS SUCH: the three homing figures (INHERITED AND UNJUDGED, gate rows P1-P3)
-#   and `item: arrow`, which is a derivation -- see each in place.
+#   UNRULED AND MARKED AS SUCH: the three homing figures (INHERITED AND UNJUDGED, gate rows P1-P3).
+#   `item: arrow` is NO LONGER UNRULED -- it is SUPERSEDED; see its own note at `draw:`.
 #
 # THREE OF THESE MOVED TOGETHER IN ONE RULING: attack_damage 48 -> 34, reload_ticks 90 -> 60, and
-# the tap 12 -> 8. They are one answer to one dialog and must be read as one -- PLAN-dragons-plume.md
+# the tap 12 -> 8. One answer to one dialog, read as one -- PLAN-dragons-plume.md
 # 7.1. Changing any one alone re-opens arithmetic the other two were balanced against.
+#
+# AND TWO LATER RULINGS MOVED THINGS AGAIN: R14 (c 20 -> 16, the charge second) and R4''' (the tap
+# 8 -> three bands, 9 / 17 / 26). Those are SEPARATE rulings, not part of that answer.
 #
 # NOTHING below is a proposal. PLAN-dragons-plume.md carries the derivations and the arithmetic each
 # was ruled against; this file carries the values and the consequences a reader of THIS file needs.
@@ -53,19 +56,24 @@ material: bow
 
 # ============ 34: RULED, AND THE DIALOG THAT RE-OPENED 48 IS CLOSED ============
 #
-# R8 ruled 48 against a FIVE-SECOND release cycle. R1' amended the charge to 1/3/5 and the cycle
-# became three seconds, so the same 48 bought a far higher rate and was FLAGGED here as
-# ruled-against-a-superseded-cycle. THE FLAG HAS BEEN ANSWERED: 34, with reload_ticks 60 below.
+# R8 ruled 48 against a FIVE-SECOND release cycle. R1' amended the charge to 1/3/5, and the flag
+# raised here -- ruled-against-a-superseded-cycle -- WAS ANSWERED: 34, with reload_ticks 60 below.
 #
-#   170 in one instant            5 x 34, was 240
-#   sustained 850 / 18.00s        47.22 dmg/s      was 61.54
-#   Locust sustained              32.50 dmg/s      the Plume is 1.45x it, was 1.89x
+# *** AND R14 HAS SINCE MOVED THE CYCLE AGAIN WITHOUT MOVING THIS NUMBER. *** c went 20 -> 16, so
+# the figures 34 was ruled against are NOT the figures it now produces. 34 is not re-flagged -- the
+# dialog that set it also set the reload, and R14 is a pacing ruling rather than a damage one --
+# but the arithmetic below is R14's, not R8''s:
 #
-# *** AND THE THING THE DIALOG DID NOT ACHIEVE, RECORDED BECAUSE IT IS THE OBVIOUS READING: 34
-# STILL SITS ABOVE BOTH LOCUST ANCHORS, EXACTLY AS 48 DID. *** Recomputed at the new cycle,
-# sustained parity is 23.40 per arrow and instantaneous parity 31.20. Cutting the damage did not
-# bring the weapon between them, BECAUSE THE RELOAD SHORTENED IN THE SAME RULING and pulled the
-# anchors down with it. A reader who assumes 48 -> 34 was a move toward parity will be wrong.
+#   170 in one instant            5 x 34            UNCHANGED by either ruling
+#   sustained 850 / 16.00s        53.13 dmg/s       was 47.22 at c=20, 61.54 at 48/90
+#   Locust sustained              32.50 dmg/s       the Plume is 1.63x it, was 1.45x
+#
+# *** AND THE THING NEITHER RULING ACHIEVED, RECORDED BECAUSE IT IS THE OBVIOUS READING: 34 STILL
+# SITS ABOVE BOTH LOCUST ANCHORS, AS 48 DID. *** Recomputed at the 16.00s cycle, sustained parity
+# is 20.80 per arrow and instantaneous parity 27.73 -- both LOWER than they were at 18.00s, because
+# a shorter cycle lowers the bar the same way it raises the rate. Cutting the damage never brought
+# the weapon between them, and R14 moved it further above. A reader who assumes 48 -> 34 was a move
+# toward parity will be wrong, and more wrong than before.
 #
 #   THE FLAG IS GONE BECAUSE THE QUESTION WAS ASKED AND ANSWERED, WHICH IS THE DISTINCTION THE FLAG
 #   EXISTED TO MAKE. A number left in place because nobody re-asked is the defect this project keeps
@@ -75,7 +83,7 @@ material: bow
 # Per ARROW. Five arrows at full charge is 170 DAMAGE IN ONE INSTANT, and both rulings were taken with
 # that consequence in front of the operator -- against the 104 the Locust lands in its first two
 # seconds. A number that reads modest as a rate reads extreme as a spike, and this weapon is all
-# spike: the release lands in a single frame and then costs a full draw plus two seconds.
+# spike: the release lands in a single frame and then costs a full draw plus 1.6 seconds (R14).
 #
 #   IT NOW RENDERS, AND THE COMMENT THAT SAID IT DID NOT IS REPLACED RATHER THAN LEFT. This used to
 #   read: "IT RENDERS NOWHERE ON THE TOOLTIP YET... the 'Ranged Damage: 48' line appears when H2
@@ -110,7 +118,8 @@ quiver_size: 25
 #
 #   1. THE RATE COUPLING       DEAD, and it died twice. "Below reload_ticks ~= 71 the tap retakes
 #                              the lead" was true at one arrow per second. R1' killed it; the
-#                              re-derivation at d=8 KILLED IT HARDER -- see the note below.
+#                              re-derivation at d=9 (R4'''s floor band) KILLED IT HARDER: the tie
+#                              is at reload_ticks = -4.32 -- see PLAN 7.3.
 #   2. TICKS PER ROUND         OVERTURNED BY THE OPERATOR, with the consequence in front of him.
 #                              This file used to argue 3.60 was "deliberately just UNDER
 #                              quiver_stone's 3.78" and that "at the 60 first proposed it would have
@@ -126,17 +135,26 @@ quiver_size: 25
 # well under 3.78, will read that as a defect, and will be reversing a ruling rather than fixing an
 # oversight. THE ONLY THING THAT CAN MOVE THIS NUMBER IS ANOTHER FEEL JUDGEMENT.
 #
-#   AND THE RATE COUPLING IS DEAD IN A STRONGER SENSE NOW, RE-DERIVED RATHER THAN CARRIED FORWARD:
-#   at d=8 the tie is at reload_ticks = -1.85 (fencepost A) and -5.77 (B). At the OLD set it was
-#   +4.00, meaning a zero reload would have handed the lead back to the tap. THE SIGN AT R=0 HAS
-#   FLIPPED: even a zero reload now leaves the charge ahead, so this field has stopped bearing on
-#   the rate comparison at all. PLAN-dragons-plume.md 7.3 carries the working.
+#   AND THE RATE COUPLING IS DEAD IN A STRONGER SENSE AGAIN, RE-DERIVED RATHER THAN CARRIED FORWARD
+#   FOR THE THIRD TIME: at R14's c=16 and R4'''s band-1 floor of 9 damage over 3 ticks, the tie is at
+#   reload_ticks = -4.32 (fencepost A) and -8.40 (B). It was -1.85 / -5.77 at d=8 and c=20, and
+#   +4.00 at the original set, meaning a zero reload would once have handed the lead back to the tap.
+#   THE SIGN AT R=0 FLIPPED AT R8' AND HAS MOVED FURTHER FROM ZERO SINCE: even a zero reload leaves
+#   the charge ahead, so this field has stopped bearing on the rate comparison at all. The higher
+#   bands are further out still, -172 and -685, because their hold floors cost more than their damage
+#   buys. PLAN-dragons-plume.md 7.3 carries the working.
 #
-#   AND THE TAP TAX SURVIVES AS AN AMMUNITION ARGUMENT, WHICH IS NOT A RATE ONE. With cooldown_ticks
-#   at 0 (R7, below) the reload is still the whole price of tapping: the same 25 rounds are worth 850
-#   damage charged and 200 tapped -- 4.25x -- so a tap-spammer meets the reload four times as often
-#   per unit of damage dealt. THAT ratio is untouched by any of this, because it is damage per ROUND
-#   and every ruling here moved time.
+#   AND THE TAP TAX SURVIVES AS AN AMMUNITION ARGUMENT, WHICH IS NOT A RATE ONE -- BUT IT IS WEAKER
+#   THAN IT WAS, AND THIS COMMENT USED TO SAY IT COULD NOT BE. With cooldown_ticks at 0 (R7, below)
+#   the reload is still the whole price of tapping: the same 25 rounds are worth 850 damage charged
+#   against 225 / 425 / 650 tapped -- 3.78x / 2.00x / 1.31x BY BAND.
+#
+#     *** THIS READ "200 tapped -- 4.25x ... THAT ratio is untouched by any of this, because it is
+#     damage per ROUND and every ruling here moved time." R4''' MOVED DAMAGE PER ROUND. *** A
+#     sentence asserting its own figure is immune to change is the one to re-check first, because
+#     nobody re-checks it afterwards. At band 3 a tapper gets 76% of the magazine's charged value
+#     and the ammunition brake barely brakes; what holds band 3 back is the RATE table, which does
+#     rest on an inter-click gap nobody has measured. Flagged for gate row P7.
 #
 # NOT ON THE TOOLTIP. WeaponLore renders a quiver line and NO RELOAD LINE AT ALL, so this number
 # reaches a player only as the wait itself -- which is exactly why a feel judgement is the right kind
@@ -229,7 +247,7 @@ triggers:
     #   CONSEQUENCE ON THE TOOLTIP, PREDICTED BEFORE THE GOLDEN WAS REGENERATED AND CONFIRMED BY IT:
     #   WeaponLoreLines.rangedAttackSpeedLabel returns "" at or below zero, so THIS WEAPON RENDERS NO
     #   "Attack Speed" LINE, where boltor and locust both do. That is correct rather than a
-    #   regression: a charged release's cadence is a three-second HOLD, not a cooldown, and 20/0 is
+    #   regression: a charged release's cadence is a 2.6-SECOND HOLD, not a cooldown, and 20/0 is
     #   not a rate. A number there would be a lie the tooltip tells.
     #
     # DO NOT ADD A cooldown_ticks BACK HERE. A timer on the charged release would price the shot the
@@ -246,16 +264,25 @@ triggers:
       gravity: 0.05
       max_lifetime_ticks: 120
 
-      # THE BODY IS NOT RULED. *** FLAGGED RATHER THAN QUIETLY CHOSEN. ***
+      # *** SUPERSEDED BY THE BODY RULING. THIS KEY IS ON ITS WAY OUT, IN SLICE K. ***
       #
-      # Nothing rules what a Plume arrow LOOKS like. It is authored because ProjectileFlight spawns a
-      # marker only for a bolt with a rendered body, so without it the arrows are invisible and gate
-      # rows P1-P4, P8 and P9 -- every one of which says "watch where the arrow goes" -- cannot be
-      # read at all. PLAN-dragons-plume.md 6 already assumes one: "each arrow carries a marker
-      # entity (spawnMarker), so five arrows is five entities in flight".
+      # ~~THE BODY IS NOT RULED. FLAGGED RATHER THAN QUIETLY CHOSEN.~~ It was carried as an UNRULED
+      # DERIVATION: authored only because ProjectileFlight spawns a marker for a bolt with a rendered
+      # body, so without it the arrows are invisible and gate rows P1-P4, P8 and P9 -- every one of
+      # which says "watch where the arrow goes" -- could not be read at all.
       #
-      # So `arrow` is the obvious material and NOT a ruling. If the operator wants something else it
-      # is a one-word change and this comment is where to look.
+      # THE BODY IS NOW RULED, AND THE RULING RETIRES THE QUESTION RATHER THAN ANSWERING IT: the
+      # arrow is a real arrow that VANISHES ON RESOLVE -- no pickup, no sticking. That is not an
+      # ITEM at all, so `item:` stops being the key that expresses it.
+      #
+      #   SO THE DERIVATION DOES NOT NEED RULING, IT NEEDS DELETING -- and the distinction matters
+      #   for the sweep: this is not an open question any more, and it is not resolved either. It is
+      #   a line with a scheduled removal. PLAN 9's unruled list drops it for that reason.
+      #
+      # *** IT STAYS AUTHORED UNTIL SLICE K LANDS, AND THAT IS DELIBERATE. *** Slice K starts with a
+      # measurement against the pinned jar -- what an Arrow entity does about block collision,
+      # pickup, damage and despawn -- and until that comes back there is no key to author instead.
+      # Deleting this now would make the arrows invisible and take five gate rows down with them.
       item: arrow
 
       # ================== THE HOMING FIGURES ARE INHERITED AND UNJUDGED ==================
@@ -280,27 +307,50 @@ triggers:
     # weapon_damage, NOT a literal -- so attack_damage above is a stat a modifier can grip, and so
     # Power (enchants/power.yml, effect: damage, class: ranger) reaches this shot.
     #
-    # THIS IS THE LINE THAT MAKES "Ranged Damage: 48" RENDER. WeaponLore's stat block is gated on
+    # THIS IS THE LINE THAT MAKES "Ranged Damage: 34" RENDER. WeaponLore's stat block is gated on
     # DamagePayload.isBasicAttack, which is exactly this effect type -- see the attack_damage comment
     # above, which said the line "appears when H2 authors the payload, not before". This is that.
     on_hit:
       - type: weapon_damage
         element: void
 
-  # ================== `tap`: R4', AND IT IS A DIFFERENT SHOT RATHER THAN A SMALLER ONE ==================
+  # ============ `tap1` / `tap2` / `tap3`: R4''', AND THE PARTIAL DRAW IS THREE BANDS ============
   #
-  # A partial draw -- released after vanilla's 3-tick floor but before full charge. One arrow, NO
-  # seeking, a quarter of the damage. DrawRelease.decide picks between this binding and `draw:` and
-  # PlumeDraw dispatches the input by name; neither is reachable from a click.
+  # A partial draw -- released after vanilla's 3-tick floor but before full charge. ONE arrow, NO
+  # seeking, and a damage that depends on HOW FAR THE BOW WAS PULLED. DrawRelease.decide picks the
+  # band and PlumeDraw dispatches the matching input by name; none of the three is reachable from a
+  # click.
   #
-  # R4' OVERTURNED R4, WHICH GAVE THE TAP HOMING. The homing-versus-no-homing question was put to Ben
-  # when R4 was made and he chose homing; he has since chosen the option he previously declined and
-  # added a damage cut. A silently rewritten ruling reads as one nobody ever questioned.
+  #   held  3 - 8 ticks   ->  tap1    9 damage
+  #   held  9 - 14 ticks  ->  tap2   17 damage
+  #   held 15 - 19 ticks  ->  tap3   26 damage
+  #   held 20+            ->  `draw:` above, the charged release
+  #
+  # THE BOUNDARIES ARE VANILLA'S OWN POWER CURVE CUT IN THIRDS, derived rather than chosen:
+  # solving (x^2+2x)/3 against 1/3 and 2/3 with x = t/20 gives t = 8.2843 and t = 14.6410, so the
+  # integer bands are the floors. DrawRelease.bandFor carries the derivation and a test re-solves it.
+  #
+  #   THE REJECTED ALTERNATIVE, ON THE RECORD: the bow's three VISIBLE pull textures, which change
+  #   at pull 0.0 / 0.65 / 0.9 -- t = 0 / 13 / 18. That would have made the bands match what the
+  #   PLAYER SEES, which is a real argument. It was rejected because its top band is TWO TICKS WIDE
+  #   (18..19): the highest-damage tap would be unhittable on purpose and hit by accident.
+  #
+  # THE CHAIN IS FOUR DEEP AND EVERY LINK IS WRITTEN DOWN, because a silently rewritten ruling reads
+  # as one nobody ever questioned:
+  #
+  #   R4     one arrow, AND IT STILL HOMES                 -- superseded
+  #   R4'    one arrow, NO homing, 12 damage               -- superseded by R8'
+  #   R4''   one arrow, NO homing, 8 damage                -- superseded by R4'''
+  #   R4'''  one arrow, NO homing, 9 / 17 / 26 BY BAND     -- RULED
+  #
+  #   *** THE 8 IS GONE, NOT JOINED. *** 9 does not extend R4'''s predecessor, it RE-RULES it. Ben
+  #   was shown that 8 was the already-ruled floor and chose 9 knowingly. When a value changes the
+  #   check is not "is the new value right", it is "IS THE OLD VALUE GONE".
   #
   # ================== THE PLAIN LABEL IS RULED. THE ABSENT `name:` IS THE DECISION. ==================
   #
-  # The tooltip reads "Dragon's Plume  Tap" -- the WEAPON's display name beside the input, which is
-  # what WeaponLoader falls back to when a binding authors no `name:`.
+  # No binding authors a `name:`, so each tooltip line reads "Dragon's Plume  Tap1" / "Tap2" /
+  # "Tap3" -- the WEAPON's display name beside the input, which is what WeaponLoader falls back to.
   #
   # *** THAT IS CHOSEN, NOT LEFT OVER. *** It went to Ben as the third item of the three-question
   # dialog in PLAN-dragons-plume.md 7.1, with quiver_stone's "Loose" in front of him as the worked
@@ -311,61 +361,94 @@ triggers:
   #   ruling that happens to look like an omission. This comment is the only thing separating the
   #   two, which is why it is here and not in the plan alone.
   #
-  # A `name:` key is still all it takes to change it, if the ruling is ever revisited.
-  tap:
-    # ================== 0: RULED (R7), AND AUTHORED EXPLICITLY FOR THAT REASON ==================
-    #
-    # "Fast shooting arrows is fine." THE TAP IS GATED BY BEING A WORSE SHOT, NOT BY A TIMER: one
-    # arrow, no homing, 8 damage, and the 60-tick reload above is what prices spamming it.
-    #
-    # *** A 0 LEFT IMPLICIT IS EXACTLY WHAT SOMEBODY LATER "FIXES". *** PLAN-dragons-plume.md 7.2
-    # wrote the condition before the ruling existed: "if the draw is meant to be the only gate, the
-    # answer is 0 and it should be authored as a RULING -- not left at 0 by omission, because the
-    # headline finding is exactly the consequence somebody would later fix." Fixing it would break
-    # the balance the weapon rests on.
-    #
-    # IT RENDERS NOTHING. cadenceLine drops a free, instant trigger, so there is no "Cooldown:" line
-    # on the tooltip -- the 0 is a ruling for a reader of this file, not a line for a player.
-    cooldown_ticks: 0
+  # *** AND THE RULING WAS TAKEN ON ONE BINDING, NOW APPLIED TO THREE. *** Ben ruled the plain label
+  # when there was a single `tap:`. Three bands render three lines. That is the ruling being
+  # EXTENDED rather than re-taken, and it is flagged here rather than assumed: if "Tap1 / Tap2 /
+  # Tap3" reads worse than one line did, that is a finding for Ben and a `name:` key each is the
+  # whole fix.
+  #
+  # ================== WHAT EVERY BAND SHARES ==================
+  #
+  # THE SAME FLIGHT AS THE CHARGED SHOT, AND THAT IS A DERIVATION RATHER THAN A RULING. R11 and R12
+  # rule the reach and the drop for THE WEAPON; nothing rules the taps separately. Same flight minus
+  # the seeking, labelled a derivation so nobody later cites it as a decision Ben made.
+  #
+  # cooldown_ticks: 0 ON EACH -- R7, "fast shooting arrows is fine". THE TAP IS GATED BY BEING A
+  # WORSE SHOT, NOT BY A TIMER, and the 60-tick reload above is what prices spamming it.
+  #
+  #   *** A 0 LEFT IMPLICIT IS EXACTLY WHAT SOMEBODY LATER "FIXES". *** PLAN-dragons-plume.md 7.2
+  #   wrote the condition before the ruling existed: "if the draw is meant to be the only gate, the
+  #   answer is 0 and it should be authored as a RULING -- not left at 0 by omission." It renders
+  #   nothing: cadenceLine drops a free, instant trigger.
+  #
+  #   *** AND IT IS NOW THREE BUCKETS, NOT ONE. *** Ability ids are weaponId + "/" + input and
+  #   CooldownTracker keys on (player, abilityId), so the three bands are on three separate timers.
+  #   INERT TODAY because all three are 0 -- and the moment anyone authors a non-zero cooldown on a
+  #   tap they will be authoring one third of the gate they think they are. The symptom would be a
+  #   spammer beating the cooldown by ALTERNATING BANDS, which reads as the cooldown not working.
+  #   See PlumeDraw.TAP_INPUTS, which is where this property was created.
+  #
+  # DAMAGE IS AUTHORED, NEVER COMPUTED. Three literals is the point of this shape: every number a
+  # player experiences stays in the file Ben can rule on. DO NOT "improve" these into a multiplier
+  # on attack_damage -- weapon_damage reads the wielder's ATTACK_DAMAGE (34), and a literal is the
+  # only way to say a number that is not the weapon's.
+  #
+  #   CONSEQUENCE ON THE TOOLTIP: each renders "Void Damage: N", ELEMENT-typed rather than
+  #   class-typed, because a literal reads no stat -- so no "+N Ranged Damage" modifier can reach
+  #   them, and claiming otherwise would be a lie the tooltip tells.
 
-    # THE SAME FLIGHT AS THE CHARGED SHOT, AND THAT IS A DERIVATION RATHER THAN A RULING.
-    #
-    # R11 and R12 rule the reach and the drop for THE WEAPON; nothing rules the tap separately. Same
-    # flight minus the seeking is the derivation, and it is labelled one so nobody later cites it as
-    # a decision Ben made. If the tap should fly differently, that is an open question and not a
-    # discrepancy with this file.
+  # --- BAND 1: held 3-8 ticks, the floor band ---------------------------------------------------
+  tap1:
+    cooldown_ticks: 0
     cast:
       type: projectile
       speed: 2.5
       gravity: 0.05
       max_lifetime_ticks: 120
+      # See `draw:`'s item note above -- superseded by the BODY ruling, removed in slice K.
       item: arrow
-
-      # NO homing BLOCK, AND ITS ABSENCE IS THE RULING RATHER THAN AN OMISSION.
-      #
-      # R4'' is "one arrow, WITH NO HOMING, at 8 damage". An absent homing block is exactly how the
-      # schema says that: AbilitySchema maps a missing section to null, and a null Seek makes
-      # ProjectileFlight.steer return the velocity untouched on its first line. The bolt flies where
-      # it was aimed, like every projectile in the project before this weapon.
-      #
-      # DO NOT "COMPLETE" THIS BY COPYING THE BLOCK FROM `draw:` ABOVE. The two casts are deliberately
-      # not the same shot, and the difference between them is the entire content of R4'.
-
-    # ================== 8: A LITERAL, AND THAT IS WHY THIS BINDING EXISTS AT ALL ==================
-    #
-    # *** WHY 8 IS A LITERAL AND 34 IS NOT. *** weapon_damage reads the wielder's ATTACK_DAMAGE
-    # attribute, which is this weapon's attack_damage -- 34. A LITERAL IS THE ONLY WAY TO SAY A
-    # NUMBER THAT IS NOT THE WEAPON'S, and R4' rules the tap well under the charged arrow -- 8 against 34, ruled alongside it.
-    #
-    # THAT IS THE REASON THERE ARE TWO BINDINGS RATHER THAN ONE. The tap is not a scaled charged
-    # release: different damage, no seeking, different shot. Neither half of that is expressible
-    # under one binding -- attack_damage is weapon-level, and the homing block lives on the cast.
-    #
-    #   CONSEQUENCE ON THE TOOLTIP: this renders "Void Damage: 8", ELEMENT-typed rather than
-    #   class-typed, because a literal reads no stat -- so no "+N Ranged Damage" modifier can reach
-    #   it, and claiming otherwise would be a lie the tooltip tells. WeaponLore's own comment says
-    #   exactly this about the ability path.
+      # NO homing BLOCK, AND ITS ABSENCE IS THE RULING RATHER THAN AN OMISSION. R4''' is "one arrow,
+      # WITH NO HOMING". AbilitySchema maps a missing section to null and a null Seek makes
+      # ProjectileFlight.steer return the velocity untouched on its first line.
+      # DO NOT "COMPLETE" THIS BY COPYING THE BLOCK FROM `draw:`.
     on_hit:
       - type: damage
-        amount: 8
+        amount: 9
+        element: void
+
+  # --- BAND 2: held 9-14 ticks ------------------------------------------------------------------
+  tap2:
+    cooldown_ticks: 0
+    cast:
+      type: projectile
+      speed: 2.5
+      gravity: 0.05
+      max_lifetime_ticks: 120
+      # See `draw:`'s item note above -- superseded by the BODY ruling, removed in slice K.
+      item: arrow
+      # NO homing BLOCK, AND ITS ABSENCE IS THE RULING. Same as band 1 and for the same reason;
+      # repeated at each binding rather than stated once, because an absence is invisible and a
+      # reader checking THIS binding must not have to find the note on another one.
+    on_hit:
+      - type: damage
+        amount: 17
+        element: void
+
+  # --- BAND 3: held 15-19 ticks, one tick short of a charged release ----------------------------
+  tap3:
+    cooldown_ticks: 0
+    cast:
+      type: projectile
+      speed: 2.5
+      gravity: 0.05
+      max_lifetime_ticks: 120
+      # See `draw:`'s item note above -- superseded by the BODY ruling, removed in slice K.
+      item: arrow
+      # NO homing BLOCK, AND ITS ABSENCE IS THE RULING -- and it matters most HERE. At 19 ticks held
+      # this is one tick from a charged release that DOES home, for 34 rather than 26. The two
+      # shots are adjacent in the player's hand and different in every other way; the absent block
+      # is what makes that true.
+    on_hit:
+      - type: damage
+        amount: 26
         element: void

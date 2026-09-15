@@ -1,8 +1,10 @@
 # GATE — the Dragon's Plume's release (slice H2)
 
-**Status: NOT RUN. THE SLICE IS NOW BUILT.** ~~AND THE SLICE IS NOT BUILT... None of that exists.~~
+**Status: NOT RUN. THE SLICE IS NOW BUILT, AND SLICE J HAS ADDED THREE ROWS TO IT.** ~~AND THE SLICE
+IS NOT BUILT... None of that exists.~~
 H2 spawns the projectiles through the existing cast path with F/F2's homing, spends the rounds, and
-handles R4′ (a partial draw: one arrow, no homing, 12 damage) and R10 (under three ticks, nothing).
+handles R4‴ (a partial draw: one arrow, no homing, **9 / 17 / 26 by band**) and R10 (under three
+ticks, nothing).
 **All of that now exists and none of it has been booted.**
 
 **This file existed early for one reason: a row had to leave `GATE-plume-draw.md`, and a row with
@@ -15,6 +17,9 @@ R-N1   NOT RUN   NO ARROW -- the only thing in the game that teaches R5
 R-N2   NOT RUN   NO ROUNDS -- its own sentence, not the empty-quiver one
 R-N3   NOT RUN   BOTH IN ONE FIGHT -- the row the two-key commit rests on
 R-N4   NOT RUN   THE SILENCE, with its positive control
+R-B1   NOT RUN   BAND 1 fires at 8 and NOT at 9        R4''' boundary
+R-B2   NOT RUN   BAND 2 fires at 9 and at 14, NOT 15   R4''' boundary
+R-B3   NOT RUN   BAND 3 fires at 15 and at 19          and 20 is a CHARGED release
 ```
 
 > ## NEITHER NOTICE HAS EVER BEEN SEEN BY A PLAYER
@@ -35,12 +40,52 @@ R-N4   NOT RUN   THE SILENCE, with its positive control
 
 | row | staging | what to record |
 |---|---|---|
-| **R-1** | **THE CAP — moved from H1's gate, where it could not be run.** Fire enough arrows to bring the magazine to **exactly 2**, then hold a full draw for three seconds. Repeat at **exactly 4**. | **The ticks must STOP when the NEXT STEP is unaffordable, and the release must fire EXACTLY the tracked step** (R3a). At 2 rounds: **one tick, one arrow, one round left over.** At 4 rounds: **two ticks, three arrows, one round left over.** Record ticks heard, arrows seen, and rounds remaining afterwards. Then, **without releasing**, have a reload complete mid-draw and record whether the ticks **RESUME**. |
+| **R-1** | **THE CAP — moved from H1's gate, where it could not be run.** Fire enough arrows to bring the magazine to **exactly 2**, then hold a full draw for **2.6 seconds (52 ticks)** — R14 shortened it from 3.0. Repeat at **exactly 4**. | **The ticks must STOP when the NEXT STEP is unaffordable, and the release must fire EXACTLY the tracked step** (R3a). At 2 rounds: **one tick, one arrow, one round left over.** At 4 rounds: **two ticks, three arrows, one round left over.** Record ticks heard, arrows seen, and rounds remaining afterwards. Then, **without releasing**, have a reload complete mid-draw and record whether the ticks **RESUME**. |
 | **R-2** | **THE STRANDED ROUND IS VISIBLE AND IS NOT A BUG.** Straight after R-1's two-round release, check the magazine. | **It must read 1, not 0.** The player paid for one arrow and keeps the round that could not buy a step. **If this reads as a bug to whoever runs it, that is the finding R3a's overturn condition needs** — the ruling is explicitly overturnable and the alternative (`min(step, rounds)`, stranding nothing) costs one comparison. |
 | **R-N1** | **NO ARROW.** Hold a Plume with **an empty bag** — no arrows anywhere, off-hand included. Right-click. **The magazine may be full; that is the point.** | **PREDICTED: the bow does not move, and a message names the remedy** — a plain Arrow, in the off-hand. **THIS IS THE ONLY THING IN THE GAME THAT TEACHES R5**, so the row is not "did text appear". **Ask someone who has never been told**: could they act on it? Record the sentence verbatim and whether the reader knew what to do next. **A player can be FULLY LOADED and unable to draw**, which is the part that reads as a broken item. |
-| **R-N2** | **NO ROUNDS.** Fire the magazine dry, then hold a **full** draw and release. | **PREDICTED: one message, naming the HOLD** — *"The draw was held for nothing — your quiver is empty. Left-click to reload."* **It must NOT be the empty-quiver line every other weapon uses.** Every other quiver weapon refuses BEFORE the shot; the Plume refuses **after three seconds of holding**, and an identical message hides that the charge was paid. Record which sentence appeared. |
+| **R-N2** | **NO ROUNDS.** Fire the magazine dry, then hold a **full** draw and release. | **PREDICTED: one message, naming the HOLD** — *"The draw was held for nothing — your quiver is empty. Left-click to reload."* **It must NOT be the empty-quiver line every other weapon uses.** Every other quiver weapon refuses BEFORE the shot; the Plume refuses **after 2.6 seconds of holding** (52 ticks, R14), and an identical message hides that the charge was paid. Record which sentence appeared. |
 | **R-N3** | ***BOTH IN ONE FIGHT — THE ROW THE TWO-KEY COMMIT RESTS ON.*** Trigger R-N1's no-arrow notice, then **within 40 ticks (2 seconds)** trigger R-N2's no-rounds notice. The natural sequence does it for you: release on an empty magazine → *left-click to reload* → the reload eats the loose arrows → right-click → no arrow. | **PREDICTED: BOTH messages appear.** **NO UNIT TEST CAN SHOW THIS.** What is guarded today is that the two keys DIFFER, not that a player sees both — a notice can fail to appear for four reasons a key comparison cannot see. **If only one appears, the two-key argument is unproven and the second key is doing nothing.** Slice E's precedent is exact: two refusals sharing a throttle silence each other, **and it only shows up in the one sequence that matters.** |
 | **R-N4** | **THE SILENCE, WITH ITS POSITIVE CONTROL. Two halves, one sitting, and the second half is not optional.** (i) Twitch the bow **under three ticks** — a flick of right-click, released immediately. (ii) **Then, changing nothing else**, do a real no-rounds release. | **PREDICTED: (i) NOTHING is said. (ii) the message appears.** **THE SECOND HALF IS WHAT MAKES THE FIRST A READING.** A correct silence and a notice that is broken, unwired or throttled-out are **the same observation** — and (i) alone would be reported as a pass under every one of them. Only a notice firing immediately afterwards, on the same weapon in the same sitting, separates them. **Same move as the pling kept as H-1b's control:** a known-audible thing proves the pipeline is alive before a silence is believed. |
+
+---
+
+## THE BAND ROWS — R4‴, AND THEY ARE STAGED AT BOUNDARIES BECAUSE NOTHING ELSE CAN READ THEM
+
+**R4‴ makes the partial draw three shots — 9 / 17 / 26 — cut by vanilla's power curve in thirds.**
+`DrawReleaseTest` guards the cut in `core`; **these rows are the only thing that can show the cut
+survives the input path**, which is where the hold is actually counted.
+
+```
+held  3 - 8 ticks   ->  band 1   9 damage    tap1
+held  9 - 14 ticks  ->  band 2  17 damage    tap2
+held 15 - 19 ticks  ->  band 3  26 damage    tap3
+held 20+            ->  charged, 34 and homing
+```
+
+| row | staging | what to record |
+|---|---|---|
+| **R-B1** | **BAND 1 AND ITS TOP BOUNDARY.** Tap as briefly as you can, repeatedly, into a mob at point-blank — then a fractionally longer press. **The readable pair is 8 vs 9 ticks**, which is 0.40s vs 0.45s and **cannot be hit reliably by hand**, so this row is run by VOLUME: twenty taps, recording the damage numbers that appear. | **PREDICTED: only `9` and `17` appear, never a number between them.** Record every distinct damage number seen and how many of each. **A `13`, or a `9` where the bow was clearly pulled halfway, is the finding.** The `void` glyph makes each number legible (`✧`), which is why this row is readable at all. |
+| **R-B2** | **BAND 2, BOTH ITS BOUNDARIES.** Deliberately half-draw — roughly half a second — twenty times. | **PREDICTED: `17` dominates, with `9` and `26` at the edges of the attempt spread.** **THE INTERESTING RESULT IS A BAND THAT NEVER APPEARS**: if `17` never lands, band 2 is unhittable by hand and that is a finding for Ben about the thirds, not a defect in the cut. |
+| **R-B3** | **BAND 3 AND THE ONE-TICK BOUNDARY WITH A CHARGED RELEASE.** Draw to *just* short of the bow's full pull, twenty times, at a mob at range. | **PREDICTED: `26` with NO seeking, and `34` WITH seeking, and nothing between.** **19 vs 20 is the single most important tick in the weapon**: one arrow either way, and the two shots differ in damage AND in whether they home. **Record whether a `26` ever visibly homed** — that would mean the tap path acquired a seek block, which no unit test watches for, since `core` never sees the content file. |
+
+> ### ⚠ WHY ALL THREE ARE AT BOUNDARIES, AND WHY A ROW IN THE MIDDLE OF A BAND IS WORTHLESS HERE
+>
+> **A tap staged at 5 ticks passes under ANY cut whatsoever** — under the ruled thirds, under the
+> rejected pull-texture bands (`0 / 13 / 18`), and under a single flat tap that ignores the hold
+> entirely. **The fixture would be measuring itself.** 8-vs-9 and 14-vs-15 are the only ticks in the
+> whole range where a wrong cut is observable, which is the same discipline `DrawReleaseTest` uses
+> and the same reason R-1 is staged at 2 and 4 rounds rather than 1 and 3.
+>
+> **AND THE HONEST DIFFICULTY IS STATED RATHER THAN DESIGNED AROUND: A HUMAN CANNOT HIT A SINGLE
+> TICK.** One tick is 50ms. **So these rows are run by VOLUME and read as a DISTRIBUTION** — the
+> question is *which damage numbers exist*, not *did tick 9 produce a 17*. **A row that pretended to
+> stage an exact tick would be reporting precision it cannot have**, which is worse than a
+> distribution honestly labelled as one.
+>
+> > **THE ONE THING NO UNIT TEST CAN SEE, AND THE REASON THESE ROWS ARE NOT REDUNDANT WITH
+> > `DrawReleaseTest`:** `core` decides the band; **`dragons_plume.yml` authors the damage**, and
+> > nothing checks that `Tap(2)` reaches the binding that says `17`. **A transposition of two
+> > bindings' amounts is green everywhere in the suite** and visible only as a number on a mob.
 
 > **R-1 IS `PLAN-dragons-plume.md`'s P5, LANDED — NOT A SECOND COPY OF IT.** The plan's §8 drafted its
 > rows *"before the boot"* and says they go into a gate file when the slice is written; this is that

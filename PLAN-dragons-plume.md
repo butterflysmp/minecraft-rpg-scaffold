@@ -28,41 +28,60 @@ UNJUDGED` with a gate row each.
 **It is answered by three rulings taken together, and by none of them alone:**
 
 ```
-R4'' a partial draw fires one arrow -- NO HOMING, 8 damage       (overturns R4)
-R7   cooldown_ticks = 0, ruled                                   "fast shooting arrows is fine"
-R9'  reload_ticks   = 60                                         the tax that actually bites
+R4''' a partial draw fires ONE arrow -- NO HOMING, 9 / 17 / 26 by band   (overturns R4'')
+R7    cooldown_ticks = 0, ruled                                  "fast shooting arrows is fine"
+R9'   reload_ticks   = 60                                        the tax that actually bites
 ```
 
-**Redone in DAMAGE PER SECOND, because R4′ made arrows incommensurable — a charged arrow is 34 and
-homes, a tap arrow is 8 and does not. RECOMPUTED under R8′ (34 / 60 / 8), and every figure here
-moved:**
+**Redone in DAMAGE PER SECOND, because R4‴ made arrows incommensurable — a charged arrow is 34 and
+homes, a tap arrow is 9, 17 or 26 and does not. RECOMPUTED under R14 (c = 16) and R4‴:**
 
 ```
-charged, five per release, c = 20          47.222 dmg/s       850 per magazine
-tapping at T = 3, vanilla's own floor       30.303 dmg/s       200 per magazine   charge +55.8%
-tapping at T = 8, a rate a hand can keep    15.873 dmg/s       200 per magazine   charge +197.5%
+charged, five per release, c = 16          53.125 dmg/s       850 per magazine
+band 1 tap, held 3t, no gap at all         34.091 dmg/s       the FLOOR band, 9 damage
+band 3 tap, held 15t, no gap at all        30.952 dmg/s       the TOP band, 26 damage
 ```
 
-**BOTH SIDES MOVED THIS TIME.** R1′ changed only the charged path and left the tap alone; **R8′
-changed both** — 48 → 34 with a 90 → 60 reload, and the tap 12 → 8. So the margin came **down** from
-+66.2% to +55.8%, which is the ruling doing what it was asked to: 48 was flagged as too far ahead,
-and the answer moved it back **without crossing the tap.**
+**THE TAP'S BEST CASE IS THE FLOOR BAND WITH NO GAP, AND THE CHARGE STILL LEADS IT BY 55.8%.**
+Quoted at gap 0 deliberately: every other figure rests on an inter-click gap **never measured for
+discrete clicks** (§7.2's table says so at each row), and gap 0 is the only assumption-free reading.
+
+**THE MARGIN IS UNCHANGED AT 55.8%, AND THAT IS A COINCIDENCE RATHER THAN A CONSTANT.** R8′ left it
+there against a flat-8 tap at `T = 3`; R14 and R4‴ moved the charged path up (47.22 → 53.13) and the
+tap's best case up with it (30.30 → 34.09) by almost exactly the same factor. **Two ratios landing on
+one number is the thing this project checks twice** — they are different quantities and nothing holds
+them together.
 
 **AND THE ARGUMENT A PLAYER ACTUALLY FEELS IS NOT THE RATE — IT IS THE AMMUNITION.** The same
-twenty-five rounds are worth **850 damage charged and 200 tapped: 4.25 times**, so the tap-spammer
-runs dry four times as often for the same work, and it compounds with every reload. **That ratio is
-damage per ROUND, so every ruling here has moved time and left it alone** — R1′ did not touch it, and
-R8′ nudged it *up* from 4× because `34/8` is a slightly wider gap than `48/12`. **It is the one
-figure in this file that has only ever got stronger**, which is why it was the argument worth having.
+twenty-five rounds are worth **850 damage charged against 225 / 425 / 650 tapped — 3.78× / 2.00× /
+1.31× by band** — so a tap-spammer runs dry sooner for the same work, and it compounds with every
+reload.
+
+> ### ⚠ R4‴ WEAKENED THIS ARGUMENT, AND THE PREVIOUS DRAFT OF THIS PARAGRAPH SAID IT COULD NOT
+>
+> **It read: *"850 charged and 200 tapped: 4.25 times… That ratio is damage per ROUND, so every
+> ruling here has moved TIME and left it alone… the one figure in this file that has only ever got
+> stronger."*** **R4‴ moved damage per round**, which is the one thing that sentence assumed nothing
+> would. At band 3 the multiple is **1.31×** and the argument barely argues.
+>
+> **THE OPERATOR'S OWN READING WENT THE OTHER WAY AND IS FALSIFIED HERE RATHER THAN QUIETLY
+> DROPPED:** *"per ROUND, band 3 is 26 against the charged 34, so §7.2a's ammunition argument
+> strengthens rather than weakens."* **26 against 34 is a RATIO OF 1.31, where the flat 8 gave 4.25**
+> — the gap narrowed, so the brake weakened. **The comparison that matters is tap-to-charged, not
+> tap-to-tap**, and reading a bigger tap number as a stronger brake inverts it.
+>
+> **What holds band 3 back instead is the RATE table (§7.2), and that one DOES rest on an unmeasured
+> inter-click gap.** So the weapon's least assumption-dependent argument is also its weakest at the
+> top band. **Flagged for P7, not repaired here.**
 
 > **THE SHAPE OF THE RISK HAS INVERTED, AND IT IS RECORDED AS CHOSEN RATHER THAN DISCOVERED.** The
 > original finding was *the tap beats the charge, so nobody would charge*. At **+55.8%** the danger is
 > the opposite one: **a tap nobody would ever use is a mechanic costing a trigger binding, a content
 > block and a gate row for nothing.**
 >
-> **That is NOT a defect today, and the reason is not about rate at all.** R4′ exists so the weapon
+> **That is NOT a defect today, and the reason is not about rate at all.** R4‴ exists so the weapon
 > is **never dead at close range** — a player caught at three blocks needs something to do that is
-> not a three-second hold. A shot that is deliberately worse still beats no shot. **The tap is priced
+> not a 2.6-second hold. A shot that is deliberately worse still beats no shot. **The tap is priced
 > to be a last resort and it now unambiguously is one**, which is the design working rather than
 > failing.
 >
@@ -71,9 +90,12 @@ figure in this file that has only ever got stronger**, which is why it was the a
 > somebody missed.
 
 > **~~R9 IS LOAD-BEARING: below `reload_ticks` ≈ 71 the tap retakes the lead.~~ THAT COUPLING IS
-> DEAD, AND IT HAS NOW DIED TWICE.** R1′ killed it; **R8′ was re-derived rather than assumed to
-> inherit the verdict**, because a coupling dead under one parameter set is not dead under another.
-> At `d = 8` the tie is **`reload_ticks` = −1.85** (fencepost A) and **−5.77** (B).
+> DEAD, AND IT HAS NOW DIED THREE TIMES.** R1′ killed it; **R8′ was re-derived rather than assumed to
+> inherit the verdict**, because a coupling dead under one parameter set is not dead under another;
+> **R14 + R4‴ were re-derived again on the same principle.** At band 1's floor the tie is
+> **`reload_ticks` = −4.32** (fencepost A) and **−8.40** (B), where `d = 8` gave −1.85 and −5.77.
+> **The higher bands are further out still — −172 and −685** — because their hold floors cost more
+> than their damage buys.
 >
 > **THE SIGN AT `R = 0` FLIPPED**, which is stronger than "still dead": under the old set a zero
 > reload would have handed the lead back at `T = 3` (tie at +4). Now nothing does. **`reload_ticks`
@@ -267,7 +289,16 @@ operator's call, not a detail.**
 
 ---
 
-## 2. THE RULINGS — THIRTEEN LIVE, ONE OVERTURNED, AND THE REASONING R1 OVERTURNED
+## 2. THE RULINGS — FOURTEEN LIVE, AND THE REASONING EACH OVERTURN REPLACED
+
+> **THE COUNT IS `grep -c "^- \*\*R" ` OVER THIS SECTION, NOT A NUMBER TYPED FROM MEMORY** — it read
+> THIRTEEN until R14 and was correct; a count in a heading is a line that has to change with the set
+> it counts, which is the failure `CLAUDE.md` records twice.
+>
+> **AND THE HEADING USED TO SAY *"ONE OVERTURNED"*, WHICH STOPPED BEING TRUE SEVERAL RULINGS AGO.**
+> R1 → R1′, R4 → R4′ → R4″ → R4‴, R8 → R8′, R9 → R9′, and now R6's `c` → R14. **A tally of overturns
+> is a figure nobody re-checks**, so the heading no longer carries one and each entry carries its own
+> chain instead.
 
 **Operator's, all final. Do not re-derive them from the code.**
 
@@ -300,10 +331,17 @@ operator's call, not a detail.**
   >   **Only the INCREMENT moved**, +1 to +2, and the increment has never applied to the first step;
   >   that is R6's entire content. Reading the new increment into the base gives 2/4/6, which is not
   >   the ruling and is not five.
-  > - **§7.5 · THE CHARGE SECOND `c` = 20 — UNCHANGED.** A step is still one second, so every
-  >   boundary sits at exactly the tick it always did. What changed is the step's **YIELD** (+1 → +2)
-  >   and the **NUMBER** of steps (5 → 3). **`c` was never the quantity in question** — do not
-  >   re-open it, and do not read a shorter charge as a shorter second.
+  > - **§7.5 · THE CHARGE SECOND `c` = 20 — UNCHANGED BY R1′.** A step was still one second, so every
+  >   boundary sat at exactly the tick it always had. What R1′ changed is the step's **YIELD**
+  >   (+1 → +2) and the **NUMBER** of steps (5 → 3). **`c` was never the quantity in question** in
+  >   that amendment.
+  >
+  >   > ***AND R14 HAS SINCE MOVED IT ANYWAY: `c` = 16.*** **That is a SEPARATE ruling, not this one
+  >   > leaking** — R1′ really did leave `c` alone, and this entry stays true as written about R1′.
+  >   > **The sentence that had to go is *"do not read a shorter charge as a shorter second"***, which
+  >   > described the state of the world for one amendment and is now precisely wrong: the charge IS
+  >   > shorter because the second is. **A survival note is a claim about ONE ruling and ages the
+  >   > moment another one lands on its subject.**
   >
   > **The two together are why the amendment cost no code in `DrawCharge` beyond the yield:** the
   > tick boundaries, the full-draw constant and the off-by-one all survived it untouched.
@@ -343,27 +381,54 @@ operator's call, not a detail.**
   >
   > **OVERTURNABLE, AND CHEAP EITHER WAY** — one comparison in `DrawCharge.affordableStep`, with its
   > own core row. Ruled by the operator rather than by Ben.
-- **R4″ · A PARTIAL DRAW FIRES ONE ARROW, WITH NO HOMING, AT 8 DAMAGE.** Costs one round.
+- **R4‴ · A PARTIAL DRAW FIRES ONE ARROW, WITH NO HOMING, AT 9 / 17 / 26 BY BAND.** One round each.
 
-  > **THE DAMAGE MOVED WITH R8′, 12 → 8, IN THE SAME ANSWER.** The shot's SHAPE is R4′'s and is
-  > untouched — one arrow, no seeking, a literal rather than `weapon_damage`. **Only the number
-  > moved**, and it moved so the tap kept its ratio to a charged arrow that had itself come down:
-  > `8/34` against `12/48` is a slightly WIDER gap, which is why §7.2a's ammunition ratio went 4× →
-  > 4.25×. **"A quarter of the charged arrow" was the old shorthand and is now wrong** — it is just
-  > under.
+  > **THE SHAPE IS R4′'s AND IS UNTOUCHED THROUGH EVERY OVERTURN** — one arrow, no seeking, a
+  > literal rather than `weapon_damage`. **Only the number has ever moved**, and R4‴ is the first
+  > time it moved into a LADDER rather than to another single value.
 
-  > **THIS IS AN OVERTURN OF R4, NOT AN AMENDMENT, AND THE THING IT REPLACED IS WRITTEN DOWN.**
+  > **THIS IS AN OVERTURN OF R4″, NOT AN EXTENSION OF IT, AND THE WHOLE CHAIN IS WRITTEN DOWN.**
   >
   > ```
-  > R4    a partial draw fires one arrow, AND IT STILL HOMES      -- superseded
-  > R4'   a partial draw fires one arrow, NO HOMING, 12 damage    -- superseded by R8'
-  > R4''  a partial draw fires one arrow, NO HOMING, 8 damage     -- RULED
+  > R4    a partial draw fires one arrow, AND IT STILL HOMES          -- superseded
+  > R4'   a partial draw fires one arrow, NO HOMING, 12 damage        -- superseded by R8'
+  > R4''  a partial draw fires one arrow, NO HOMING, 8 damage         -- superseded by R4'''
+  > R4''' one arrow, NO HOMING, 9 / 17 / 26 BY BAND                   -- RULED
   > ```
+  >
+  > ### *** THE 8 IS GONE, NOT JOINED ***
+  >
+  > **9 does not extend the ladder downward from 8; it RE-RULES the floor.** Ben was shown that 8 was
+  > the already-ruled value and chose 9 knowingly. **When a value changes the check is not "is the new
+  > value right", it is "IS THE OLD VALUE GONE"** — which is why the sweep for this ruling greps `8`
+  > in context rather than reading for `9`.
   >
   > **R4 was not a default. The homing-versus-no-homing question was put to Ben when R4 was made, and
   > he chose homing.** He has now chosen the option he previously declined, and added a damage cut.
   > **A silently rewritten ruling reads as one nobody ever questioned**, which would make the next
   > reader think the earlier choice was never considered. It was.
+
+  > **THE BANDS ARE DERIVED, AND THE DERIVATION IS VANILLA'S OWN POWER CURVE CUT IN THIRDS.**
+  > `DrawRelease` already transcribes `power(t) = (x² + 2x)/3` with `x = t/20`. Solving it at `1/3`
+  > and `2/3`:
+  >
+  > ```
+  > power = 1/3   ->  x^2 + 2x - 1 = 0   ->  x = sqrt(2) - 1 = 0.4142136   ->  t =  8.2842712
+  > power = 2/3   ->  x^2 + 2x - 2 = 0   ->  x = sqrt(3) - 1 = 0.7320508   ->  t = 14.6410162
+  > ```
+  >
+  > **RECOMPUTED, NOT ADOPTED — and the operator's 8.28 and 14.64 are both right.** The integer bands
+  > are the floors of those roots, so band 1 runs to **8**, band 2 to **14**, and band 3 takes the
+  > rest up to 19. `DrawReleaseTest` re-solves the first root rather than pinning `8`, so a band
+  > boundary that drifts off the curve reddens.
+  >
+  > **THE REJECTED ALTERNATIVE, ON THE RECORD:** the bow's three VISIBLE pull textures, which change
+  > at pull `0.0 / 0.65 / 0.9` — `t = 0 / 13 / 18`. **That would have made the bands match what the
+  > PLAYER SEES**, which is a real argument. Rejected because its top band is **two ticks wide**
+  > (18..19): the highest-damage tap would be unhittable on purpose and hit by accident.
+  >
+  > **This one was ruled by the operator rather than put to Ben**, and is marked as such so the
+  > authority behind it is not later assumed to be Ben's.
 
   > **AND THE MORE USEFUL HALF IS WHY THE DIALOG FAILED TO REACH THIS.** §7.2 asked *"how much do we
   > tax the tap"* and offered three values of `cooldown_ticks`. Ben answered on a **different axis** —
@@ -429,12 +494,19 @@ operator's call, not a detail.**
   > ```
   > R8   48 per arrow, 240 in one instant, against a 29.5s magazine cycle   -- superseded
   > R8'  34 per arrow, 170 in one instant, against an 18.0s cycle           -- RULED
+  >      34 per arrow, 170 in one instant, against a  16.0s cycle           -- R14 moved the CYCLE
   > ```
   >
   > **34 STILL SITS ABOVE BOTH LOCUST ANCHORS, EXACTLY AS 48 DID** (§7.1) — because the reload
   > shortened in the same ruling and pulled the anchors down with it. **The cut bought 1.89× → 1.45×
   > against the Locust, not a crossing**, and a reader expecting otherwise may take a second bite at
   > a number that has been answered.
+  >
+  > > **AND R14 HAS SINCE PUT IT BACK TO 1.63× WITHOUT TOUCHING `attack_damage`.** A shorter charge
+  > > second shortened the cycle 18.0s → 16.0s, and **both anchors are proportional to the cycle**, so
+  > > they fell 11.1% under a fixed 34. **The ruled value did not move and its relationship to every
+  > > anchor did** — which is why §7.1's anchor table now carries a row per cycle rather than per
+  > > damage ruling.
 
 - **R9′ · `reload_ticks` = 60.** 3.0 seconds; **2.40 ticks per round** — **the cheapest ammunition in
   the project, by 36.5% over `quiver_stone`'s 3.78.**
@@ -445,7 +517,7 @@ operator's call, not a detail.**
   > consequence in front of him.
   >
   > **SO 60 RESTS ON A RULING AND NOT ON AN ARGUMENT.** Of 90's three supports the rate coupling is
-  > dead (twice, and re-derived at `d = 8` rather than inherited — §7.3), the ticks-per-round
+  > dead (three times, re-derived at `d = 8` and again at R14 + R4‴ rather than inherited — §7.3), the ticks-per-round
   > comparison is overturned, and **what remains is PACING, a feel judgement.** That is legitimate and
   > it is said out loud because **a number with no derivation is one somebody later "fixes"** —
   > anyone re-deriving it from the ammunition table will be reversing a ruling, not fixing an
@@ -527,6 +599,41 @@ operator's call, not a detail.**
   > still pleasant*, but **can a person NAME THE COUNT WITHOUT LOOKING.** That is the ruling's actual
   > test, and it is a different question from whether the sound is nice. **The 2.0 ceiling stays
   > flagged as outside knowledge this machine cannot measure.**
+
+  > **AND R14 MAKES H-1b HARDER, WHICH IS THE OPPOSITE OF WHAT R1′ DID.** R1′ cut five rungs to
+  > three; R14 puts those three **0.8 seconds apart instead of one second**, so there is less time to
+  > place a tick by ear. **The row is noted rather than restaged** — the property R13 asks for has
+  > not changed, only the difficulty of reading it.
+
+- **R14 · THE CHARGE SECOND IS 16 TICKS, NOT 20.** Ruled on feel, 2026-09-15. A step costs **0.8
+  seconds**; the three steps land at **20 / 36 / 52** ticks held.
+
+  > **THIS OVERTURNS R6/§7.5's `c = 20`, AND THE OVERTURNED REASONING IS RECORDED RATHER THAN
+  > SOFTENED.** §7.5 argued 20 because *a step is literally one second, so the sound ticks once per
+  > second and "every second adds an arrow" means what it says.* **That is now false of the weapon**,
+  > and the sentence is struck rather than reworded — it was a real argument, not a placeholder.
+  >
+  > ```
+  > R6/§7.5   c = 20, a step is one second      -- superseded
+  > R14       c = 16, a step is 0.8 seconds     -- RULED
+  > ```
+  >
+  > **`FULL_DRAW_TICKS` STAYS 20 AND IS NOT PART OF THIS RULING.** It is **measured** —
+  > `BowItem.MAX_DRAW_DURATION` — not chosen. **The two 20s were never the same quantity**, and §7.5
+  > said so while they still shared a value.
+  >
+  > ### THE ARGUMENT THAT KEPT THEM APART IS NOW VINDICATED, WHICH IS WHY THIS IS A ONE-CONSTANT CHANGE
+  >
+  > `DrawCharge` held `FULL_DRAW_TICKS` and `CHARGE_SECOND_TICKS` as two constants on the explicit
+  > grounds that they were **different quantities that merely happened to agree**. **Because nothing
+  > had been conflated, R14 is one edit** — no hunt through everything that said 20, no disambiguation
+  > pass. **A convention that costs something up front and pays out exactly once is worth recording
+  > the day it pays**, because that is the only day the argument is checkable.
+  >
+  > **THE CONSTANT IS NOT RENAMED.** `CHARGE_SECOND_TICKS` holding 16 is a name that no longer
+  > describes its value, and that is deliberate: the constant is *what a step costs*, which is what
+  > every call site wants. **A later reader "correcting" it back to 20 is the risk**, and the javadoc
+  > names it.
 
 > **AND THE HOLE THE LAST THREE LEFT BETWEEN THEM IS RULED IN §3.3** — *what a TARGETLESS arrow does
 > past 15 blocks*, which is **every shot that misses**. That one is the operator's rather than Ben's,
@@ -868,7 +975,7 @@ none.
 
 ```
 READING A   full charge = 1 arrow ready, then the increment per further second   <- RULED (R6)
-            step k costs 20 + (k-1)c ticks;  step 3 = 60t = 3.00s at c = 20
+            step k costs 20 + (k-1)c ticks;  step 3 = 52t = 2.60s at c = 16
 READING B   full charge = 0, the first second adds the first arrow
             which makes a full-charge release with no wait fire nothing at all, contradicting R4'
 ```
@@ -880,17 +987,31 @@ to tell a ruling from an oversight.**
 > **THE TICK ARITHMETIC IN READING A WAS RESTATED FOR R1′, AND THE READING ITSELF WAS NOT TOUCHED.**
 > It used to read *"N arrows costs 20 + (N-1)c ticks; 5 arrows = 100t"*, which is the same rule
 > **indexed by arrows** — correct only while a step was one arrow. It is now indexed by **step**,
-> and step 3 is `20 + 2c = 60t`. **The question R6 answered, and the answer, are unchanged**; what
+> and step 3 is `20 + 2c = 52t` (R14). **The question R6 answered, and the answer, are unchanged**; what
 > moved is the unit the formula counts in.
 
-**`c` IS THE CHARGE SECOND, RULED AT 20 (§7.5). IT IS NEVER WRITTEN `T`** — `T` is §7.2's tap
+**`c` IS THE CHARGE SECOND, RULED AT 16 (R14, §7.5). IT IS NEVER WRITTEN `T`** — `T` is §7.2's tap
 interval, and the two collided once already, in review, by a careful reader.
 
-### 7.1 ***CLOSED AGAIN*** — **R8′: 34 PER CHARGED ARROW, WITH `reload_ticks` 60 AND THE TAP AT 8**
+> **AND `c` IS NO LONGER 20, WHICH RETIRES A SECOND COLLISION THIS PLAN HAS BEEN LIVING WITH.**
+> `FULL_DRAW_TICKS` is **20 and stays 20** — it is MEASURED, `BowItem.MAX_DRAW_DURATION`, not a
+> choice. `CHARGE_SECOND_TICKS` was 20 by ruling and is now **16**. **The two quantities that
+> §7.5 insisted were different while sharing a value no longer share it**, so the argument for
+> keeping them apart is vindicated rather than merely asserted — and keeping them apart is exactly
+> why R14 is a one-constant change instead of a hunt through everything that said 20.
+
+### 7.1 ***CLOSED AGAIN*** — **R8′: 34 PER CHARGED ARROW, WITH `reload_ticks` 60; THE TAP HAS SINCE BEEN RE-RULED**
 
 **What it decided:** how hard a full release hits, re-answered after R1′ moved the cycle out from
 under R8's 48. **Three numbers moved in ONE ruling — 48 → 34, 90 → 60, 12 → 8 — and they must be
 read as one answer**, because each was balanced against the other two.
+
+> **AND THE THIRD OF THE THREE HAS SINCE BEEN OVERTURNED ON ITS OWN, WHICH THIS SECTION'S "ONE
+> ANSWER" FRAMING DID NOT ANTICIPATE.** R4‴ replaced the flat 8 with **9 / 17 / 26 by band**. **34
+> and 60 did NOT move with it**, so the balanced triple is now a balanced pair plus a ladder — and
+> the re-derivations that mattered are in §7.2, §7.2a and §7.3, all of which were re-run rather
+> than inherited. **The section heading used to end *"AND THE TAP AT 8"* and that is deleted, not
+> footnoted**: the 8 is gone, not joined.
 
 **Ben took the instantaneous-parity anchor originally, with the spike paragraph below in front of
 him.** The spike is **chosen, not overlooked**, and it is now **170** rather than 240.
@@ -898,17 +1019,23 @@ him.** The spike is **chosen, not overlooked**, and it is now **170** rather tha
 ```
 one release   5 x 34                =   170   in one frame        was 240
 magazine      25 x 34               =   850   against the Locust's 312
-cycle         5 x 60t + 60t reload  =   360t  = 18.00s            was 390t = 19.50s
+cycle         5 x 52t + 60t reload  =   320t  = 16.00s            was 360t = 18.00s   (R14, c=16)
 
-   sustained, with reload   850 / 18.00s  =  47.22 dmg/s     Locust 32.50   +45.3%
-   within the magazine      850 / 15.00s  =  56.67 dmg/s     Locust 47.27   +19.9%
+   sustained, with reload   850 / 16.00s  =  53.125 dmg/s    Locust 32.500  +63.5%
+   within the magazine      850 / 13.00s  =  65.385 dmg/s    Locust 47.273  +38.3%
 ```
 
 > **THE COMPARISON THE TABLE CANNOT SHOW, AND THE ONE THE RULING WAS TAKEN AGAINST: the Plume lands
-> its whole release in ONE INSTANT.** 240 in a single frame, against the **104** the Locust lands in
-> its first two seconds (four shots at 12 ticks: t = 0, 12, 24, 36). **A number that reads modest as
-> a rate reads extreme as a spike**, and this weapon is all spike. **That half is untouched** — the
-> amendment did not move the spike, only how often it lands.
+> its whole release in ONE INSTANT.** **170** in a single frame, against the **104** the Locust lands
+> in its first two seconds (four shots at 12 ticks: t = 0, 12, 24, 36). **A number that reads modest
+> as a rate reads extreme as a spike**, and this weapon is all spike. **That half is untouched by
+> R14** — a shorter charge second did not move the spike, only how often it lands.
+>
+> > **THIS PARAGRAPH SAID `240` UNTIL 2026-09-15, THREE LINES UNDER A BLOCK THAT SAID `was 240`.**
+> > A stale figure from R8′, surviving in the prose of the very section that recorded its
+> > replacement. **Found by grepping the DIGITS during R14's sweep, not by reading** — the same shape
+> > as the five stale figures §3 of R14's brief found in `DrawRelease`, and the reason the sweep
+> > greps `240` rather than "the spike".
 
 #### THE ANCHORS, RECOMPUTED AGAIN — AND 34 IS STILL ABOVE BOTH, WHICH IS THE COUNTER-INTUITIVE PART
 
@@ -926,8 +1053,21 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
                         sustained parity     instantaneous parity (B)
    cycle 29.50s (R8)         D = 38.35              D = 51.13      <- 48 sat BETWEEN these
    cycle 19.50s (R1')        D = 25.35              D = 33.80      <- 48 sat ABOVE both
-   cycle 18.00s (R8')        D = 23.40              D = 31.20      <- 34 SITS ABOVE BOTH TOO
+   cycle 18.00s (R8')        D = 23.40              D = 31.20      <- 34 sat ABOVE both
+   cycle 16.00s (R14)        D = 20.80              D = 27.73      <- 34 SITS ABOVE BOTH, FURTHER
 ```
+
+> ### ⚠ R14 MOVED THE WEAPON AWAY FROM PARITY WITHOUT TOUCHING ITS DAMAGE, AND THAT IS THE WHOLE
+> ### POINT OF KEEPING THE ANCHORS PROPORTIONAL TO THE CYCLE
+>
+> `attack_damage` did not move. **Both anchors fell 11.1%**, because a cycle 40 ticks shorter needs
+> a smaller per-arrow number to match the Locust. **A ruling about how long a charge FEELS re-priced
+> the weapon against every anchor in this section**, and nothing in the ruling said so.
+>
+> **This is the reason §9 says 34 / 60 / the partial draw were one balanced ruling.** `c` was not in
+> that triple — and it should have been, because it multiplies the cycle that every anchor divides.
+> **Recorded as a finding for Ben rather than as a reason to re-open 34**, which is his to re-open
+> and not this file's to pre-empt.
 
 > **CUTTING THE DAMAGE DID NOT MOVE THE WEAPON TOWARD PARITY, AND THAT IS THE OBVIOUS WRONG READING
 > OF THIS RULING.** 48 → 34 is a 29% cut, and the anchors fell with it — because
@@ -935,13 +1075,19 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
 > the cycle. **34 stands in the same relationship to both anchors that 48 did.**
 >
 > ```
-> 48 against its anchors    1.89x the Locust sustained
-> 34 against its anchors    1.45x
+> 48 against its anchors    1.89x the sustained-parity anchor     48 / 25.35   R1'
+> 34 against its anchors    1.45x                                 34 / 23.40   R8'
+> 34 against its anchors    1.63x                                 34 / 20.80   R14  <- BACK UP
 > ```
 >
-> **What the ruling bought is 1.89× → 1.45×, not a crossing.** Anyone reading "the damage came down"
+> **What R8′ bought is 1.89× → 1.45×, not a crossing.** Anyone reading "the damage came down"
 > and expecting the weapon to have landed between the anchors will find it has not, and may take a
 > second bite at a number that has already been answered.
+>
+> > **AND R14 GAVE TWO FIFTHS OF IT BACK — `0.18` of R8′'s `0.44` — WITH NO RULING ABOUT DAMAGE.**
+> > 1.45× → 1.63× is the anchor
+> > moving under a fixed 34. **A reader who remembers "R8′ brought the Plume closer to parity" is
+> > remembering a state that lasted one ruling.**
 
 > **A FENCEPOST INCONSISTENCY THIS RECOMPUTATION EXPOSED, AND IT PREDATES THE AMENDMENT.** The table
 > above quotes the Locust's burst as **47.27** (fencepost A) while **both old anchors were derived
@@ -953,16 +1099,22 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
 > ### ✔ ANSWERED — THREE QUESTIONS, ONE SHOT, **ONE RULING**
 >
 > ```
-> attack_damage: 48 -> 34
-> reload_ticks:  90 -> 60
-> the tap:       12 -> 8
-> the tap's NAME     RULED: leave it reading "Tap" -- the plain label, chosen
+> attack_damage: 48 -> 34                          STILL 34
+> reload_ticks:  90 -> 60                          STILL 60
+> the tap:       12 -> 8   -> 9 / 17 / 26 BY BAND  OVERTURNED AGAIN, R4''' -- the 8 is GONE
+> the tap's NAME     RULED: the plain label, chosen -- now rendering THREE lines, not one
 > ```
 >
-> **They are ONE answer and must be read as one.** Each was balanced against the other two: 34 was
+> **They were ONE answer and were balanced as one.** Each was set against the other two: 34 was
 > chosen against a cycle that 60 shortens, and 8 against the 34 it is a fraction of. **Changing any
 > one alone re-opens arithmetic the other two were settled against**, which is why
-> `dragons_plume.yml`'s header now says so at the top of the file rather than at each field.
+> `dragons_plume.yml`'s header says so at the top of the file rather than at each field.
+>
+> > **AND EXACTLY THAT HAS NOW HAPPENED, TWICE IN ONE MESSAGE — WHICH IS WHY R14 AND R4‴ SHIPPED IN
+> > ONE PR.** R4‴ moved the third member alone; R14 moved `c`, which was never in the triple and
+> > turns out to price it. **Landing either on `master` without the other would have left §7's
+> > arithmetic wrong in between**, which is the whole argument for the single PR and is recorded
+> > here because the triple's own note is what predicted it.
 >
 > ### ⚠ AND `reload_ticks: 60` NOW RESTS ON A RULING AND NOT ON AN ARGUMENT — SAY IT PLAINLY
 >
@@ -972,7 +1124,7 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
 >
 > | support for 90 | what happened to it |
 > |---|---|
-> | **the rate coupling** — *"below ≈ 71 ticks the tap retakes the lead"* | **DEAD, twice over.** R1′ killed it; the re-derivation at `d = 8` killed it harder — see §7.3 |
+> | **the rate coupling** — *"below ≈ 71 ticks the tap retakes the lead"* | **DEAD, three times over.** R1′ killed it; the re-derivation at `d = 8` killed it harder; R14 + R4‴ took the tie to **−4.32** — see §7.3 |
 > | **ticks per round** — 3.60, *"deliberately just UNDER `quiver_stone`'s 3.78"* | **OVERTURNED BY THE OPERATOR**, with the consequence in front of him |
 > | **pacing** — *"longer than anything shipped, but not punishing"* | **THE ONLY THING LEFT, and it is a feel judgement** |
 >
@@ -993,22 +1145,35 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
 >
 > **What the reload IS still for is an AMMUNITION argument, which is not a rate one.** With
 > `cooldown_ticks` at 0 the reload remains the whole price of tapping: the same 25 rounds are worth
-> **850 charged and 200 tapped — 4.25×** — so a tap-spammer meets it four times as often per unit of
-> damage dealt. **That ratio is untouched by any of this**, because it is damage per ROUND and every
-> ruling here moved time.
+> **850 charged against 225 / 425 / 650 tapped — 3.78× / 2.00× / 1.31× by band** (§7.2a).
+>
+> > **THIS USED TO READ *"200 tapped — 4.25×"* AND CLAIMED THE RATIO WAS *"UNTOUCHED BY ANY OF
+> > THIS"*.** R4‴ touched it, and in the direction that weakens the argument. **A sentence asserting
+> > its own figure is immune to change is the one to re-check first**, because nobody re-checks it
+> > afterwards.
 >
 > **AND A THIRD, WHICH IS NOT A NUMBER: WHAT THE TAP IS CALLED.**
 >
 > ```
-> tooltip today   "Dragon's Plume  Tap"
+> tooltip when the ruling was taken   "Dragon's Plume  Tap"
+> tooltip today                       "Dragon's Plume  Tap1"
+>                                     "Dragon's Plume  Tap2"
+>                                     "Dragon's Plume  Tap3"
 > ```
 >
-> **`tap:` authors no `name:`, so `WeaponLoader` falls back to the weapon's own display name** —
-> which is why the line reads as it does. `quiver_stone` names its shot **"Loose"**, `emberblade`
+> **No tap binding authors a `name:`, so `WeaponLoader` falls back to the weapon's own display name**
+> — which is why the lines read as they do. `quiver_stone` names its shot **"Loose"**, `emberblade`
 > names one "Fireball"; every other ability block in the project carries a name of its own.
 >
-> **It went in that dialog because it is the same shot the other questions are about** — R4′'s tap is
-> what `cooldown_ticks` prices and what the 8 is set against.
+> **It went in that dialog because it is the same shot the other questions are about** — the tap is
+> what `cooldown_ticks` prices and what the damage is set against.
+>
+> > **THE RULING WAS TAKEN ON ONE BINDING AND NOW GOVERNS THREE — EXTENDED, NOT RE-TAKEN.** Ben ruled
+> > the plain label against `quiver_stone`'s "Loose" when there was a single `tap:`. **R4‴ renders it
+> > three times**, and *"Tap1 / Tap2 / Tap3"* is a different reading experience from one line.
+> > **Flagged rather than assumed**: if three plain labels read worse than one did, that is a finding
+> > for Ben and three `name:` keys are the whole fix. The same note is in `dragons_plume.yml`, where
+> > the absence lives.
 >
 > ### ✔ RULED: LEAVE IT READING "Tap"
 >
@@ -1049,31 +1214,56 @@ in a unit that no longer works. *A superseded derivation that vanishes leaves th
 re-deriving it.*
 
 **SYMBOLS.** `T` = the **tap interval** in ticks, this section only, never a charged-path quantity.
-`c` = the **charge second**, ruled 20, §7.0/§7.1/§7.5, never written `T`.
+`c` = the **charge second**, ruled 16 (R14), §7.0/§7.5, never written `T`.
 
 ```
-charged   5 x (20 + 2c) + 60  =  360t  =  18.00s  ->   850 dmg  ->  47.222 dmg/s
-tapping   25 taps + the reload                    ->   200 dmg  ->  4000 / (24T + 60)   conv. A
-                                                                    4000 / (25T + 60)   conv. B
+charged   5 x (20 + 2c) + 60  =  320t  =  16.00s  ->   850 dmg  ->  53.125 dmg/s
+tapping   25 taps + the reload   band 1  ->  225 dmg  ->   4500 / (24T + 60)   conv. A
+                                 band 2  ->  425 dmg  ->   8500 / (24T + 60)
+                                 band 3  ->  650 dmg  ->  13000 / (24T + 60)
+                                 conv. B replaces 24T with 25T throughout
 ```
 
-| `T` | tap dmg/s (A) | charged 47.222 is | tap dmg/s (B) | charged is |
-|---|---|---|---|---|
-| **3 — vanilla's floor** | **30.303** | **+55.8%** | **29.630** | **+59.4%** |
-| 4 | 25.641 | +84.2% | 25.000 | +88.9% |
-| 8 | 15.873 | +197.5% | 15.385 | +206.9% |
-| 12 | 11.494 | +310.8% | 11.111 | +325.0% |
-| 20 | 7.407 | +537.5% | 7.143 | +561.1% |
+> **THE TAPPING LINE USED TO BE ONE ROW, `4000 / (24T + 60)`, AND THAT NUMERATOR IS GONE.** It was
+> `25 x 8 x 20`, R4″'s flat tap. **R4‴ gives three numerators and three FLOORS on `T`**, since a band
+> cannot be fired faster than it can be drawn — which is the whole reason the table below is indexed
+> by gap rather than by `T`.
 
-**THE CHARGE IS AHEAD AT EVERY `T`, INCLUDING VANILLA'S OWN FLOOR.**
-
-> **BOTH COLUMNS MOVED THIS TIME, WHICH IS THE OPPOSITE OF LAST TIME AND WORTH SAYING.** R1′ left the
-> tap untouched and changed only the charged side; **R8′ changed BOTH** — the charged path by 34/60
-> and the tap by `d: 12 → 8`. So a reader comparing this table to the previous revision cannot
-> attribute any single percentage to one cause.
+> ### ⚠ THE TABLE'S OLD SHAPE DIED WITH R4‴, AND SAYING SO IS PART OF THE RECOMPUTE
 >
-> **The margin came DOWN, from +66.2% to +55.8%, which is the ruling working.** 48 was flagged as
-> too far ahead; the answer moved it back without crossing the tap.
+> It was parameterised by a single `T`, the tap interval, because the tap was **one flat shot** and
+> `T` was the only thing a tapper chose. **R4‴ makes the tap three shots with three different HOLD
+> COSTS baked in** — 3, 9 and 15 ticks — so `T` is no longer free: it is `hold + gap`, and the hold
+> is set by which band you want.
+>
+> **A one-`T` table would have to pretend the three bands cost the same to produce, which is the one
+> thing the bands are about.** So the parameter becomes the INTER-CLICK GAP, and each band gets a
+> column.
+
+`T = hold + gap`, so each band's floor is its own hold. Damage per second **including the reload**,
+fencepost A:
+
+| gap | band 1 (9, held 3t) | band 2 (17, held 9t) | band 3 (26, held 15t) | charged 53.125 leads by |
+|---|---|---|---|---|
+| **0 — a tapper with no gap at all** | **34.091** | 30.797 | 30.952 | **+55.8%** at worst |
+| 2 | 25.000 | 26.235 | 27.778 | +91.2% |
+| **4 — Q7's measured HELD-REPEAT gap** | 19.737 | 22.849 | 25.194 | +110.9% |
+| 8 | 13.889 | 18.162 | 21.242 | +150.1% |
+
+**THE CHARGE IS AHEAD OF EVERY BAND AT EVERY GAP, INCLUDING A GAP OF ZERO.**
+
+> **EVERY FIGURE BELOW THE FIRST ROW RESTS ON A NUMBER NEVER MEASURED FOR DISCRETE CLICKS.**
+> `GATE-q7.md` measured a 4-tick floor on a HELD REPEAT, on two weapons; **nothing in this repository
+> has ever measured the gap between two deliberate clicks.** The **gap-0 row assumes nothing**, which
+> is why the verdict is quoted from it — it is the tapper's best possible case and the charge still
+> leads by 55.8%. **P7 (§8) still owes that measurement**, and has since Q7.
+>
+> **AND THE BANDS ARE NOT MONOTONE AT GAP 0, WHICH IS WORTH READING TWICE.** Band 1 (34.091) beats
+> band 3 (30.952), and band 2 sits lowest of the three. **A cheap shot fired often beats a dear one
+> at zero gap**, and the ordering inverts once the gap is 2. That is the bands working as designed:
+> the higher bands buy damage with DRAW TIME, so they only pay off once a real hand's gap is in the
+> denominator. **A reader who expects "higher band = better" will find it false exactly where the
+> assumption is most heroic.**
 
 > **THE HISTORY OF THIS TABLE, KEPT BECAUSE IT HAS TURNED OVER TWICE AND FOR DIFFERENT REASONS.**
 >
@@ -1082,34 +1272,73 @@ tapping   25 taps + the reload                    ->   200 dmg  ->  4000 / (24T 
 > reload 90, 1/s ladder            charged 40.678  tap@3 37.037  CHARGE ahead 9.8%  <- R9
 > reload 90, 1/3/5                 charged 61.538  tap@3 37.037  CHARGE ahead 66.2% <- R1'
 > reload 60, 1/3/5, D=34, d=8      charged 47.222  tap@3 30.303  CHARGE ahead 55.8% <- R8'
+> reload 60, c=16, bands 9/17/26   charged 53.125  band1 34.091  CHARGE ahead 55.8% <- R14 + R4'''
 > ```
 >
 > **R9 turned the verdict over; R1′ turned a nine-percent margin into a two-thirds one; R8′ brought
 > it back to just over half.** The first was a correction to arithmetic nobody had done; the second
 > and third are design rulings that happened to land on the same quantity.
 >
-> **NOTE ROW ONE AND ROW FOUR SHARE A RELOAD AND NOTHING ELSE.** Both are at 60, and they sit on
-> opposite sides of the verdict — 6.1% for the tap against 55.8% for the charge. **A reader who
-> remembers "60 was the value where the tap won" is remembering row one**, which was computed at one
-> arrow per second and a 12-damage tap. The reload was never what decided it.
+> > ### ⚠ ROWS FOUR AND FIVE AGREE TO THREE FIGURES AND IT IS AN ACCIDENT
+> >
+> > **Both sides moved and they moved by the SAME FACTOR, which is the only reason 55.8% survived
+> > R14 and R4‴ intact.** Charged: `360 -> 320` ticks per magazine, **×1.125**. Tapping: `8 -> 9`
+> > damage, **×1.125**. `9/8` and `360/320` are the same ratio, and **nothing chose that** — `c` moved
+> > on feel and the tap floor moved on a power curve cut in thirds, in the same message, for unrelated
+> > reasons.
+> >
+> > **SO DO NOT READ ROW FIVE AS EVIDENCE THAT THE MARGIN IS STABLE UNDER RULINGS.** It is evidence
+> > that two independent rulings happened to cancel. **The next ruling to move either side alone will
+> > move it**, and the figure downstream that did NOT survive is the zero-reload tie below: `2.9412 ->
+> > 2.8676`, because the reload is not in that one and so nothing cancels.
+>
+> **NOTE ROWS ONE, FOUR AND FIVE SHARE A RELOAD AND LITTLE ELSE.** All three are at 60, and row one
+> sits on the opposite side of the verdict from the other two — 6.1% for the tap against 55.8% for
+> the charge, twice. **A reader who remembers "60 was the value where the tap won" is remembering row
+> one**, which was computed at one arrow per second and a 12-damage tap. The reload was never what
+> decided it.
 
 > **THE HONEST RESULT IS "SOLVED WITH ROOM", AND THE ROOM IS SMALLER THAN IT WAS.** At vanilla's
-> floor the margin is **55.8%**, and `T = 3` still means a sustained **6.7 clicks per second** — a
-> tool's rate, not a hand's. **At any rate a person can actually keep up (`T = 8`, 2.5 clicks/s) the
-> charge is ahead by 197.5%.**
+> floor the margin is **55.8%**, and band 1 at `T = 3` still means a sustained **6.7 clicks per
+> second** — a tool's rate, not a hand's. **At any rate a person can actually keep up — a gap of 8,
+> which is band 1 at `T = 11` (1.8 clicks/s) or band 3 at `T = 23` — the charge is ahead by 150.1%,
+> and band 3 is the tapper's best answer there.**
 >
-> > **AND A MARGIN NOBODY CHOSE, WHICH IS NOW THIN ENOUGH TO NAME.** The tap interval at which
-> > tapping would draw level **on a zero reload** is **`T = 2.9412`**, against R10's floor of **3**.
-> > **Six hundredths of a tick.** Nothing picked either number — the 3 is read off vanilla's power
-> > curve and the 2.9412 falls out of three ruled values chosen for other reasons.
+> > **AND A MARGIN NOBODY CHOSE, WHICH WAS THIN ENOUGH TO NAME AND HAS SINCE MORE THAN DOUBLED.**
+> > The tap interval at which tapping would draw level **on a zero reload** is now **`T = 2.8676`**
+> > for band 1, against R10's floor of **3** — a margin of **0.1324 ticks**, where R4″'s flat 8 gave
+> > **2.9412** and **0.0588**. Nothing picked either number: the 3 is read off vanilla's power curve
+> > and the tie falls out of ruled values chosen for other reasons.
+> >
+> > ```
+> > T = d x releases x rel / (D x (mag - 1))   conv A, 25 taps span 24 intervals
+> >
+> > band 1   9 x 5 x 52 / (34 x 24)  =  2340 / 816  =  2.8676     hold floor  3   margin 0.1324
+> > band 2  17 x 5 x 52 / (34 x 24)  =  4420 / 816  =  5.4167     hold floor  9   margin 3.5833
+> > band 3  26 x 5 x 52 / (34 x 24)  =  6760 / 816  =  8.2843     hold floor 15   margin 6.7157
+> > ```
+> >
+> > **BAND 1 IS STILL THE BINDING CASE AND THE OTHER TWO ARE NOT CLOSE**, because a band's own hold
+> > is a floor on its `T` and the higher bands' floors outrun their ties by ticks rather than by
+> > hundredths. **R4‴ did not add two new ways to lose; it widened the one that existed.**
+> >
+> > **A NEAR-COLLISION WORTH NOT MISTAKING FOR AN IDENTITY:** band 3's tie is `8.2843137` and the
+> > power-curve root that sets band 1's ceiling is `20(√2 − 1) = 8.2842712`. **They agree to four
+> > significant figures and are different quantities** — one is a DPS crossover in ruled damage, the
+> > other is where vanilla's charge reaches a third. Nothing connects them.
 > >
 > > **It is a COINCIDENCE, not a design margin, and it has a condition**: if a future Paper moves
-> > the power curve so the floor drops below 2.9412, the tap retakes the lead at a zero reload and
+> > the power curve so the floor drops below 2.8676, the tap retakes the lead at a zero reload and
 > > §7.3's dead coupling is alive again. **Recorded at `DrawRelease.MIN_RELEASE_TICKS` as well as
 > > here**, because that is the file an upgrade makes somebody open and this one is not.
+> >
+> > **AND THE MARGIN MOVES WHEN *WE* MOVE THE RULED VALUES, NOT ONLY WHEN MOJANG MOVES THE CURVE** —
+> > which is how it just moved. `d`, `c` and `D` are all in the numerator's gift. **The upgrade
+> > condition above is the one everybody watches; the ruling condition is the one that has actually
+> > fired, twice.**
 >
 > **WHICH IS WHY THE RISK NOW POINTS THE OTHER WAY — see the headline section.** The question is no
-> longer *would anyone charge*; it is *would anyone ever tap*. R4′'s answer is that the tap is not a
+> longer *would anyone charge*; it is *would anyone ever tap*. R4‴'s answer is that the tap is not a
 > rate choice at all: it is what a player does at three blocks with no time to hold.
 >
 > **AND THE REMOVAL OF HOMING SITS ON TOP OF ALL OF IT, UNQUANTIFIED AND UNQUANTIFIABLE HERE.** A
@@ -1156,8 +1385,14 @@ latching input. Both could not stand.** Resolved the way the draw gate was: by g
 **FIRST CITATION — THE TAP FLOOR.** Applying the latch/repeat distinction to **this plan's own tap
 interval**, which is where the earlier draft failed its own test: `T`'s measured lower bound is **3
 ticks** (R10, and `getPowerForTime < 0.1` in §3.1 — server-side, and a property of the *release*, so
-it holds for taps). **There is no measured upper bound**, which is why the table runs to `T = 20`.
+it holds for taps). **There is no measured upper bound**, which is why the table above runs out to a
+gap of **8** — `T = 23` in band 3 — rather than stopping at anything the repo can defend.
 *A control carried past its precondition stops being a control*, and the 4 was being carried.
+
+> **R4‴ ADDS A LOWER BOUND THE 3 NEVER HAD, AND IT IS NOT VANILLA'S.** Band 2 cannot be fired faster
+> than `T = 9` and band 3 faster than `T = 15`, because **the hold is part of the shot.** Those two
+> floors are OURS — they come out of `DrawRelease.bandFor`, not out of the jar — and unlike the 3
+> they move the day the bands move.
 
 **SECOND CITATION — THE MULTIPLES-OF-4 RULE IS NOT INHERITED HERE.** `CLAUDE.md`'s *author multiples
 of 4* exists because **a held right-click delivers inputs on a 4-tick grid**. This weapon's input is
@@ -1169,39 +1404,63 @@ discrete clicks instead of at a hold.
 
 ### 7.2a THE REAL INCENTIVE IS AMMUNITION, AND IT IS IN NO RATE TABLE
 
-**What it decides, in one sentence:** *a tap-spammer runs dry four times as often for the same work* —
-and that is what a player actually feels, not a difference in a rate nobody can see.
+**What it decides, in one sentence:** *a tap-spammer runs dry sooner for the same work* — and that is
+what a player actually feels, not a difference in a rate nobody can see.
+
+> **THIS SENTENCE USED TO READ *"four times as often"* AND R4‴ KILLED THE NUMBER, NOT THE CLAIM.**
+> The multiple is now **3.78× / 2.00× / 1.31× by band**, so a single figure cannot stand here. The
+> sentence is weakened rather than re-quantified because **the honest summary is a ladder**, and the
+> ladder is directly below.
 
 ```
-25 rounds tapped     25 x 8               =   200 damage
-25 rounds charged    5 releases x 5 x 34  =   850 damage     4.25x, from the same magazine
+25 rounds tapped     25 x 9 / 17 / 26     =   225 / 425 / 650 damage, by band
+25 rounds charged    5 releases x 5 x 34  =   850 damage     3.8x / 2.0x / 1.3x by band
 ```
 
-> **THE RATIO WENT UP, FROM 4× TO 4.25×, WHICH IS THE ONE FIGURE IN THIS FILE R8′ STRENGTHENED.**
-> `34 / 8` is a slightly wider gap than `48 / 12`, so the argument this section rests on is a little
-> better than it was. **It is also the figure most likely to be assumed unchanged**, since both
-> numbers moved and "a quarter" was the old shorthand — the tap is now **just under** a quarter.
-
-**It compounds with every reload, which a rate comparison never shows.** The tapper at `T = 3` empties
-the magazine in **72 ticks and then waits 60**:
-
-```
-duty cycle   tapping at T=3    72 / 132  =  54.5% shooting      was 44.4%
-             charging         300 / 360  =  83.3% shooting      was 76.9%
-```
-
-> **BOTH DUTY CYCLES WENT UP, AND THE CONTRAST WIDENED BACK.** R1′ had narrowed it to 1.73×; the
-> shorter reload lifts both sides and leaves the gap at **1.53×**. **So this figure has now moved in
-> both directions across two rulings** — recorded each time, because a figure that moves against the
-> claim it supports is exactly the one that gets quietly left at its old value, and one that moves
-> back is exactly the one nobody re-checks.
+> ### ⚠ R4‴ TURNS ONE RATIO INTO THREE, AND THE TOP BAND ALMOST CLOSES IT
 >
-> **Note the tapper gained MORE than the charger in proportional terms** (44.4 → 54.5 against
-> 76.9 → 83.3), because the reload is a larger share of a tapper's cycle. **The ammunition argument
-> is untouched by all of it**, being damage per ROUND, and every ruling here moved time.
+> **This section's whole claim was "four times", a single number.** With bands it is a ladder, and
+> **the ladder's top rung is very nearly parity:**
+>
+> ```
+> band 1    850 / 225  =  3.78x     stronger than the old 4.25x? NO -- weaker
+> band 2    850 / 425  =  2.00x
+> band 3    850 / 650  =  1.31x     <- the ammunition argument nearly VANISHES here
+> ```
+>
+> **THE ARGUMENT THIS SECTION RESTS ON IS WEAKER THAN IT WAS AT EVERY BAND, AND ALMOST GONE AT BAND
+> 3.** A player who taps at band 3 gets **76% of the magazine's charged value**, where a flat-8
+> tapper got 24%. *"A tap-spammer runs dry four times as often"* was true of R4″ and is **false of
+> R4‴'s top band.**
+>
+> **This is the one figure in the recompute that moved AGAINST the design's stated intent**, and it
+> is recorded rather than smoothed: the ammunition brake was the argument that needed *no hit-rate
+> assumption*, and band 3 is where it stops carrying weight. **The rate argument (§7.2, +110.9% at a
+> 4-tick gap) is what holds band 3 back**, and that argument DOES rest on an unmeasured gap.
+>
+> **Not a defect, and not obviously fine either** — flagged for whoever runs P7, because it is the
+> first time the two arguments for charging have pointed in different directions.
 
-**The ammunition argument is the stronger one for charging and it needs no hit-rate assumption**,
-which is exactly why it belongs beside the rate table rather than inside it.
+**It compounds with every reload, which a rate comparison never shows.** A band-1 tapper with no gap
+empties the magazine in **72 ticks and then waits 60**:
+
+```
+duty cycle   band 1, gap 0     72 / 132  =  54.5% shooting
+             band 3, gap 0    360 / 420  =  85.7% shooting   <- barely below the charger
+             charging         260 / 320  =  81.3% shooting   was 83.3% at c=20
+```
+
+> **AND THE DUTY-CYCLE CONTRAST INVERTS AT BAND 3.** A band-3 tapper spends MORE of their time
+> shooting than a charger does, because 15 ticks of hold per arrow is 360 ticks of magazine against
+> the charger's 260. **The contrast was the argument; at band 3 it runs the other way.**
+>
+> **Same shape as the ammunition ladder above and the same conclusion:** what holds band 3 back is
+> the RATE, not the brake. Recorded because a figure that reverses is the one nobody re-checks.
+
+**The ammunition argument needs no hit-rate assumption**, which is exactly why it belongs beside the
+rate table rather than inside it. **It is no longer the STRONGER of the two**, and that half of the
+sentence was deleted rather than softened: at band 3 it is the weaker, and the rate table — the one
+that *does* rest on an unmeasured gap — is what carries the verdict there.
 
 ### 7.3 CLOSED — **R9′**: `reload_ticks` = 60, **RULED AND NOT DERIVED**
 
@@ -1236,30 +1495,41 @@ chosen to avoid is now the ruled one.**
 > this number is another feel judgement.
 
 > **~~THIS NUMBER IS LOAD-BEARING: below `reload_ticks` ≈ 71 the tap retakes the lead.~~ THAT
-> COUPLING IS DEAD, AND IT DIED TWICE — RE-DERIVED AT `d = 8`, NOT CARRIED FORWARD.**
+> COUPLING IS DEAD, AND IT HAS NOW DIED THREE TIMES — RE-DERIVED AT `c = 16` AND THE THREE BANDS,
+> NOT CARRIED FORWARD.**
 >
 > A coupling declared dead under one parameter set is **not** dead under another, and that sentence
-> is quoted in several places — so it was recomputed rather than inherited:
+> is quoted in several places — so it was recomputed rather than inherited. **Solving
+> `850/(260+R) = 25d/(kT+R)` for `R`, at each band's own floor on `T`:**
 >
 > ```
->                             tie at reload_ticks
-> T = 3   fencepost A              -1.85       was +4.00 at d=12, D=48
-> T = 3   fencepost B              -5.77       was  0.00
-> T = 4   fencepost A             -33.23       was -28.00
-> T = 4   fencepost B             -38.46
+>                                          tie at reload_ticks
+> band 1  T = 3    fencepost A                   -4.32     was -1.85 at d=8, c=20
+> band 1  T = 3    fencepost B                   -8.40     was -5.77
+> band 1  T = 4    fencepost A                  -36.96     was -33.23
+> band 1  T = 4    fencepost B                  -42.40     was -38.46
+> band 2  T = 9    fencepost A / B         -172 / -190     new with R4'''
+> band 3  T = 15   fencepost A / B         -685 / -749     new with R4'''
 > ```
 >
-> **THE SIGN AT `R = 0` HAS FLIPPED, WHICH IS A STRONGER STATEMENT THAN "STILL DEAD".** Under the old
-> set a **zero** reload would have handed the lead back to the tap at `T = 3` (tie at +4). Under this
-> one even a zero reload leaves the charge ahead. **`reload_ticks` has stopped bearing on the rate
-> comparison at all** — there is no value, however small, that revives it.
+> **THE SIGN AT `R = 0` HAS FLIPPED AND HAS NOW MOVED FURTHER FROM ZERO.** Under the pre-R8′ set a
+> **zero** reload would have handed the lead back to the tap at `T = 3` (tie at +4). Under this one
+> even a zero reload leaves the charge ahead, by more than before. **`reload_ticks` has stopped
+> bearing on the rate comparison at all** — there is no value, however small, that revives it.
 >
-> **AND THE REASON IS NOT THAT THE RELOAD GOT SHORTER.** It got shorter, which helps the tap; the
-> tap's damage fell 12 → 8, which hurts it more. **The two moves did not cancel, and that is only
-> visible by re-deriving.**
+> **AND R4‴ DID NOT GIVE THE TAP A NEW WAY BACK IN, WHICH IS THE THING WORTH CHECKING AND NOT
+> ASSUMING.** The higher bands hit harder, so the obvious worry is that one of them revives the
+> coupling. **It is the opposite by two orders of magnitude**: their hold floors enter the
+> denominator at 9 and 15 ticks, which costs far more than 17 or 26 damage buys. **Band 1 is the
+> binding case at every quantity in this plan** — the tie, the margin, and now the coupling.
+>
+> **AND THE REASON IS NOT THAT THE RELOAD GOT SHORTER.** It has not moved since R9′; what moved is
+> `c`, which shortened the CHARGED cycle from 360 to 320 and so raised the side the tap is chasing.
 >
 > **What the reload is still for is an AMMUNITION argument, which is not a rate one** — §7.2a's
-> 4.25×, untouched by any of this because it is damage per ROUND.
+> ladder. **That ladder is NOT untouched, and this sentence used to say it was:** R4‴ moved it from
+> a flat 4.25× to 3.78× / 2.00× / 1.31×, and at band 3 it barely argues anything. Damage per ROUND
+> is still the right unit; the conclusion it supports is just much weaker than it was.
 
 ### 7.4 CLOSED — **R11**: REACH ≈ 300 BLOCKS, AND **R12**: IT DROPS LIKE AN ARROW
 
@@ -1288,35 +1558,55 @@ weapon class the value should come from.
 targetless case is ruled and the drop is computed at both candidates. **0.03 leaves a 45° stray
 arrow airborne for the entire 120-tick leash; 0.05 puts it in the ground at tick 73.**
 
-### 7.5 CLOSED — **R6/§7.0**: THE CHARGE SECOND `c` IS **RULED AT 20**
+### 7.5 ***CLOSED AGAIN*** — **R14: THE CHARGE SECOND `c` IS RULED AT 16**
 
-**What it decided:** *how long a second of charge takes* — literally one second, so the sound ticks
-once per second and *"every second adds an arrow"* means what it says.
+**What it decides:** *how long a second of charge takes* — **0.8 seconds, ruled on feel 2026-09-15.**
+
+> ### ⚠ R14 OVERTURNS R6/§7.0's 20, AND THE OVERTURNED REASONING IS RECORDED RATHER THAN SOFTENED
+>
+> **What §7.5 argued for 20, in its own words:** *a step is literally one second, so the sound ticks
+> once per second and "every second adds an arrow" means what it says.* **That is now false of the
+> weapon.** A step is 16 ticks, the ticks are 0.8 seconds apart, and *"every second"* is a name
+> rather than a measurement.
+>
+> **THE NAME SURVIVES THE RULING AND `CHARGE_SECOND_TICKS` IS NOT RENAMED**, because the constant is
+> *the thing a step costs* and that is what every call site wants. **The javadoc carries the
+> mismatch explicitly** — a constant with "second" in its name holding 16 is exactly the sort of
+> thing a later reader quietly "corrects" back to 20.
+>
+> **AND §7.5's OTHER ARGUMENT — THE ONE ABOUT TWO QUANTITIES — IS VINDICATED, NOT OVERTURNED.** It
+> insisted `FULL_DRAW_TICKS` and `CHARGE_SECOND_TICKS` were different quantities that merely happened
+> to share the value 20, and kept them as two constants on that basis. **The coincidence is now
+> gone**, and because the file had kept them apart, R14 is a **one-constant change**: nothing had to
+> be disambiguated, because nothing had been conflated. **That is the argument paying out.**
 
 **What the ruling chose against, kept because a ruling with no alternatives beside it reads as a
-default nobody considered.** ***RECOMPUTED AT R8′*** — at `D = 34` and `reload_ticks` 60, so every
-cell has now moved twice:
+default nobody considered.** ***RECOMPUTED AT R8′*** — at `D = 34` and `reload_ticks` 60:
 
-| `c` | five arrows | magazine cycle | charged dmg/s |
+| `c` | five arrows (step 3) | magazine cycle | charged dmg/s |
 |---|---|---|---|
-| 16 | 52t (2.60s) | `5 × 52 + 60 = 320t = 16.00s` | 53.13 |
-| **20 — RULED** | **60t (3.00s)** | **360t = 18.00s** | **47.22** |
+| **16 — RULED (R14)** | **52t (2.60s)** | **`5 × 52 + 60 = 320t = 16.00s`** | **53.13** |
+| 20 — *was ruled (R6)* | 60t (3.00s) | `5 × 60 + 60 = 360t = 18.00s` | 47.22 |
 | 24 | 68t (3.40s) | `5 × 68 + 60 = 400t = 20.00s` | 42.50 |
 
-> **`c` IS NOT RE-OPENED BY EITHER AMENDMENT, AND THIS TABLE IS NOT AN INVITATION TO RE-OPEN IT.** A
-> step is still one second. R1′ moved the step's **yield** and the **number** of steps; R8′ moved the
-> damage and the reload. **Neither touched `c`**, and the alternatives are recomputed only so the
-> ruling keeps a live comparison beside it.
+> **THE RULING TOOK THE ROW THE TABLE ALREADY HELD.** 16 was a live alternative under R6 and was
+> passed over; it has now been taken. **Neither reading is a default** — the table is the record that
+> both were in front of the operator, twice.
 >
-> **The spread keeps narrowing, which is the one thing the recomputation says.** Across the three
+> **The spread does not narrow, which is the one thing the recomputation says.** Across the three
 > candidates it was a factor of **1.31** at one arrow per second, **1.23** after R1′, and **1.25**
-> now — essentially flat.
+> at R8′ and still — essentially flat.
 >
-> > **AND THAT NEAR-REVERSAL IS WORTH ONE LINE, BECAUSE THE PREVIOUS REVISION CLAIMED A TREND.** It
+> > **AND THAT NEAR-REVERSAL IS WORTH ONE LINE, BECAUSE AN EARLIER REVISION CLAIMED A TREND.** It
 > > read *"`c` matters LESS than it did"* off a single step from 1.31 to 1.23. **Two points are not a
 > > trend**, and the third came back at 1.25. The ratio is set by `(20 + 2c)` against a fixed reload,
 > > so it drifts with the reload rather than moving in one direction — **and the sentence that
 > > generalised from two points was wrong within one ruling.**
+> >
+> > **R14 IS THE FOURTH POINT AND IT DID NOT MOVE THE SPREAD AT ALL**, because moving `c` moves which
+> > ROW is ruled and not the ratio between rows. **A figure that survives a ruling aimed straight at
+> > its subject is worth one line of confirmation** — the earlier draft would have reported it as
+> > stable after two points and been wrong; it is reported as stable after four, for a stated reason.
 
 ### 7.6 CLOSED — **R13**: THE FIVE STEPS MUST BE TELLABLE APART BY EAR
 
@@ -1468,33 +1758,54 @@ arrive with their discharge conditions attached rather than acquiring them after
 - **It prices nothing itself — and §7 is now CLOSED, every number in it ruled.**
 
   ```
-  arrow 1 at full charge   R6    charge second c = 20      R6     gravity 0.05       R12
+  arrow 1 at full charge   R6    charge second c = 16      R14    gravity 0.05       R12
   cooldown_ticks 0         R7    vanilla's 3-tick floor    R10    speed 2.5          R11
   max_lifetime_ticks 120   R11   1 / 3 / 5, three steps    R1'    the cap strands    R3a
   the pitch mapping        R13   the sound key             R13
 
-  attack_damage 34         R8'   ) ONE RULING, THREE FIELDS. Each was balanced against
+  attack_damage 34         R8'   ) WAS ONE RULING, THREE FIELDS. Each was balanced against
   reload_ticks   60        R9'   ) the other two, so changing one alone re-opens the
-  partial draw    8        R4''  ) arithmetic the others were settled against.
+  partial draw 9/17/26     R4''' ) arithmetic the others were settled against.
   ```
+
+  > **AND THE THIRD FIELD HAS BEEN CHANGED ALONE, WHICH IS WHAT THIS BLOCK WARNED AGAINST.** R4‴
+  > replaced the flat 8 with three bands while 34 and 60 stood. **The warning was honoured rather
+  > than ignored**: the arithmetic the other two were settled against was *re-run*, in §7.1, §7.2,
+  > §7.2a and §7.3, and one of those re-runs found the ammunition argument had weakened at band 3.
+  > **R14 landed in the same PR for the same reason** — `c` prices the cycle every anchor divides,
+  > so shipping it separately would have left §7 wrong on `master` in between.
+  >
+  > **THE HONEST STATE OF THE TRIPLE: it is no longer a triple.** `c` belongs in it and was never in
+  > it; the tap is a ladder rather than a field. **Named here rather than re-drawn**, because
+  > re-drawing it is a ruling and this file does not take those.
 
   **`reload_ticks: 60` IS RULED AND NOT DERIVED, AND §7.3 SAYS SO IN THOSE WORDS.** Of 90's three
   supports the rate coupling is dead and the ticks-per-round comparison was overturned; **pacing, a
   feel judgement, is the only one left.** A number with no derivation is one somebody later "fixes",
   so both the plan and `dragons_plume.yml` warn against re-deriving it from the ammunition table.
 
-  **THE TAP'S NAME WAS THE THIRD ITEM AND IS RULED TOO** — leave it reading `"Tap"`, the plain label
-  chosen over a named one. **The absent `name:` key is the decision**, which is why
-  `dragons_plume.yml` says so at the binding: a name cannot be authored as an absence.
+  **THE TAP'S NAME WAS THE THIRD ITEM AND IS RULED TOO** — the plain label, chosen over a named one.
+  **The absent `name:` key is the decision**, which is why `dragons_plume.yml` says so at every
+  binding: a name cannot be authored as an absence. **R4‴ extends that ruling from one line to
+  three** — `"Tap1" / "Tap2" / "Tap3"` — which is flagged at the bindings as an extension rather than
+  a re-taking.
+
+  **`item: arrow` IS RESOLVED AND IS NO LONGER LISTED HERE AS AN UNRULED DERIVATION.** The **BODY**
+  ruling (2026-09-15) says the arrow body vanishes on resolve — no pickup, no sticking — so the body
+  is not an item at all. **The derivation did not need ruling; it needs deleting**, and slice K is
+  where the key leaves the file. The `item: arrow` lines carry a superseded-by-BODY note until then,
+  so nobody re-derives a key that is on its way out.
 
   **STILL UNRULED AND STILL MARKED AS SUCH:** the **homing constants** of §5, `INHERITED AND
-  UNJUDGED` with gate rows P1-P3, and `item: arrow`, which is a derivation rather than a ruling.
+  UNJUDGED` with gate rows P1-P3.
 
   **The sound key is ruled** — `block.note_block.hat`, on feel 2026-09-14 (§7.6), the only instrument
   there was for it — **and it survived R1′ untouched**, because Ben ruled the timbre and the
   amendment moved the ladder. **The MATERIAL being ruled is not R13 being discharged:** H-1b still
-  owes the position reading, on the ruled key, and the amendment made that row **easier** rather than
-  closing it.
+  owes the position reading, on the ruled key. R1′ made that row **easier** — three rungs to name
+  instead of five — and **R14 has now made it HARDER again**: the three ticks land **0.8 seconds
+  apart** rather than one second apart, so there is less time to place one by ear. **The row is
+  noted, not restaged.**
 
   **What is NOT ruled is not a number:** the **homing constants** of §5, which stay
   `INHERITED AND UNJUDGED` with a gate row each.
