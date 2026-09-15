@@ -40,6 +40,8 @@ import io.github.butterflysmp.rpg.core.recipe.RecipeRegistry;
 import io.github.butterflysmp.rpg.paper.content.RecipeRegistrar;
 import io.github.butterflysmp.rpg.paper.menu.RecipeCatalogue;
 import io.github.butterflysmp.rpg.paper.menu.RecipeProbe;
+import io.github.butterflysmp.rpg.paper.nexus.NexusItems;
+import io.github.butterflysmp.rpg.paper.nexus.NexusSlots;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenSystem;
@@ -97,9 +99,13 @@ import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -420,6 +426,11 @@ public final class RpgListeners implements Listener {
         // Start this player's action-bar stats line.
         statsBar.onJoin(event.getPlayer());
         healthRegen.onJoin(event.getPlayer());        // start the passive regeneration loop
+        // Exactly one Nexus star, in its locked slot. CONVERGES rather than mints-if-absent: the
+        // refusals keep a correct state correct and cannot repair a wrong one, and a star stranded
+        // in the backpack would be welded there by the same rule that guards the locked slot.
+        // Never destroys a player's item -- the displaced occupant goes through MenuSafety.give.
+        NexusSlots.converge(event.getPlayer(), adapters.keys());
     }
 
     /**
@@ -766,16 +777,39 @@ public final class RpgListeners implements Listener {
      * getHolder() IS the registry -- no map to keep in step, and identity that a renamed item or a
      * duplicated title cannot spoof. getView().getTopInventory() rather than getInventory(): the
      * same object today, but the explicit form stays right when read beside getClickedInventory().
+     *
+     * <p><b>ignoreCancelled = true IS NOT DECORATION, AND DELETING IT LOOKS LIKE A TIDY-UP.</b> It
+     * is the half of the Nexus lock that lives in this annotation. {@link #onNexusClick} runs at
+     * LOWEST and cancels; this runs at NORMAL, strictly after, and must then SKIP -- because
+     * MenuRouting does not merely un-cancel own-inventory actions, it PERFORMS shiftMove,
+     * hotbarMove, offhandMove and collectToCursor by calling setItem / setCurrentItem /
+     * setItemOnCursor directly. Those are real writes. A cancel at any LATER priority arrives after
+     * the star has already moved and undoes nothing, which is why the guard is below rather than
+     * above.
+     *
+     * <p><b>What its deletion would look like:</b> the star still cannot be dropped with Q, still
+     * cannot be picked up in a plain inventory screen, and every menu still opens. ONLY the
+     * performed routes -- shift-click into the crafting grid, number key over a grid cell -- quietly
+     * start working again, and every test stays green except {@code NexusWiringSignatureTest},
+     * which exists for precisely this. Same arrangement as {@link #onMobMeleeAttack} and
+     * {@link #onPlayerMeleeAttack}, whose javadoc states the property both rest on: same-priority
+     * order is undefined, a strictly later priority is not.
      */
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onMenuClick(InventoryClickEvent event) {
         if (event.getView().getTopInventory().getHolder() instanceof Menu menu) {
             menu.handleClick(event);
         }
     }
 
-    /** A drag can place items into slots the click handler never sees. Same holder, same rule. */
-    @EventHandler
+    /**
+     * A drag can place items into slots the click handler never sees. Same holder, same rule.
+     *
+     * <p><b>ignoreCancelled = true, for the reason spelled out on {@link #onMenuClick}</b> --
+     * {@link #onNexusDrag} cancels at LOWEST and this must then skip. Pinned by
+     * {@code NexusWiringSignatureTest}; deleting it is silent.
+     */
+    @EventHandler(ignoreCancelled = true)
     public void onMenuDrag(InventoryDragEvent event) {
         if (event.getView().getTopInventory().getHolder() instanceof Menu menu) {
             menu.handleDrag(event);
@@ -791,6 +825,116 @@ public final class RpgListeners implements Listener {
         if (event.getView().getTopInventory().getHolder() instanceof Menu menu) {
             menu.handleClose(event);
         }
+    }
+
+    // ------------------------------------------------------------------ the Nexus lock
+    //
+    // SIX HANDLERS, because the star can leave its slot by six independent families of event and
+    // an inventory guard reaches only two of them. Each is a thin adapter: NexusSlots decides,
+    // this executes. Refusal is SILENT -- no message, no sound. The player can see the star did
+    // not move, and updateInventory() is what makes that true rather than merely intended.
+    //
+    // DELIBERATELY NOT on onMenuClose: InventoryCloseEvent is not Cancellable, so ignoreCancelled
+    // there would be meaningless and a seventh handler would have nothing to cancel. Applying the
+    // change uniformly across all three menu dispatchers is the obvious move and the wrong one.
+
+    /**
+     * The inventory half of the lock, and the reason {@link #onMenuClick} is ignoreCancelled.
+     *
+     * <p><b>LOWEST, and it must be strictly below the menu dispatcher rather than above it.</b>
+     * MenuRouting PERFORMS its cross-inventory moves -- shiftMove and hotbarMove call
+     * {@code setCurrentItem} / {@code setItem} directly -- so a cancel at HIGHEST would arrive
+     * after the star had already been written into a crafting grid and would undo nothing. Running
+     * first and letting the dispatcher skip is the only arrangement that reaches those two routes.
+     * Both are live today: {@code CraftingMenu.acceptsInput} returns true unconditionally over a
+     * STACKING grid, and a crafting table is one right-click away.
+     *
+     * <p>LOWEST -> NORMAL is guaranteed by Bukkit's priority contract, not by registration order.
+     * Same-priority order is undefined, which is exactly the trap {@link #onPlayerSweepAttack}'s
+     * javadoc records; a strictly lower priority has no coin toss in it.
+     *
+     * <p><b>If someone later moves the menu dispatcher to LOWEST</b>, the two tie, ordering becomes
+     * undefined again and this silently stops working for the performed routes.
+     * {@code NexusWiringSignatureTest} is what goes red.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onNexusClick(InventoryClickEvent event) {
+        if (!NexusSlots.refuses(event, adapters.keys())) return;
+        event.setCancelled(true);
+        if (event.getWhoClicked() instanceof Player player) player.updateInventory();
+    }
+
+    /**
+     * A drag never reaches {@link #onMenuDrag} when no menu is open, so this exists in its own
+     * right rather than as a second copy of the click guard. Same reason {@code Menu.handleDrag}
+     * is separate from {@code handleClick}: a drag places items into slots the click handler never
+     * sees, and {@code getRawSlots()} is the only thing that enumerates them.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onNexusDrag(InventoryDragEvent event) {
+        if (!NexusSlots.refuses(event, adapters.keys())) return;
+        event.setCancelled(true);
+        if (event.getWhoClicked() instanceof Player player) player.updateInventory();
+    }
+
+    /** Q and Ctrl-Q with no screen open. Not an inventory event; the lock above cannot see it. */
+    @EventHandler
+    public void onNexusDrop(PlayerDropItemEvent event) {
+        if (!NexusItems.isNexus(event.getItemDrop().getItemStack(), adapters.keys())) return;
+        event.setCancelled(true);
+        event.getPlayer().updateInventory();
+    }
+
+    /**
+     * F with no screen open. The in-screen F is a different event entirely and is handled by
+     * {@link #onNexusClick} through ClickType.SWAP_OFFHAND.
+     *
+     * <p>Both directions are checked. Swapping the star OUT of the locked slot is the obvious one;
+     * swapping something INTO it from the offhand is the other, and it is what would leave the
+     * locked slot holding a stranger's item with the star in the offhand.
+     */
+    @EventHandler
+    public void onNexusSwapHand(PlayerSwapHandItemsEvent event) {
+        if (!NexusItems.isNexus(event.getMainHandItem(), adapters.keys())
+                && !NexusItems.isNexus(event.getOffHandItem(), adapters.keys())) return;
+        event.setCancelled(true);
+        event.getPlayer().updateInventory();
+    }
+
+    /**
+     * Right-clicking the held star onto an entity that TAKES it -- an item frame, a glow item
+     * frame. The item leaves the hand with no inventory event of any kind, so nothing above sees it.
+     *
+     * <p><b>The entity type is deliberately NOT filtered.</b> An {@code instanceof ItemFrame} here
+     * would read as a tightening and would be a hole: {@code PlayerInteractAtEntityEvent} declares
+     * no HandlerList of its own and therefore arrives HERE, covering the whole at-entity family for
+     * free. Refusing on "the player is holding the star" needs to know nothing about the target,
+     * and slice 1 gives the star no right-click behaviour to preserve.
+     */
+    @EventHandler
+    public void onNexusGiveToEntity(PlayerInteractEntityEvent event) {
+        Player player = event.getPlayer();
+        if (!NexusItems.isNexus(player.getInventory().getItem(event.getHand()), adapters.keys())) return;
+        event.setCancelled(true);
+        player.updateInventory();
+    }
+
+    /**
+     * An armour stand with arms takes a held item, and it needs its OWN handler.
+     *
+     * <p><b>MEASURED, NOT ASSUMED, because the obvious reading is wrong.</b> Read from the pinned
+     * paper-api jar: {@code PlayerArmorStandManipulateEvent} declares its own
+     * {@code getHandlerList}/{@code getHandlers}, so it has its own HandlerList and a listener
+     * registered for {@code PlayerInteractEntityEvent} NEVER RECEIVES IT -- even though it extends
+     * that class. {@code PlayerInteractAtEntityEvent} declares neither and does inherit, which is
+     * why {@link #onNexusGiveToEntity} covers that one and not this one. Widening a handler's NAME
+     * would not have closed this route.
+     */
+    @EventHandler
+    public void onNexusArmorStand(PlayerArmorStandManipulateEvent event) {
+        if (!NexusItems.isNexus(event.getPlayerItem(), adapters.keys())) return;
+        event.setCancelled(true);
+        event.getPlayer().updateInventory();
     }
 
     /**
@@ -996,6 +1140,10 @@ public final class RpgListeners implements Listener {
         // handling does not run on death and entity-removal filters players out, so without this a
         // player who died mid-burn respawns still scorched, burning on the old applier's credit.
         adapters.scorch().forget(event.getPlayer().getUniqueId());
+        // Same convergence as on join. onQuit does not run on death, and the cursor-at-death path
+        // is unverified on 26.1 (GATE-nexus.md row 1), so a star lost to a death would otherwise
+        // stay lost until the player's next reconnect rather than until their next respawn.
+        NexusSlots.converge(event.getPlayer(), adapters.keys());
     }
 
     // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is

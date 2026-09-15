@@ -297,6 +297,29 @@ public final class Keys {
      */
     public final NamespacedKey markerEntity;
 
+    /**
+     * Marks the Nexus star -- the hub item every player carries in a locked hotbar slot. A BYTE;
+     * only its PRESENCE is ever read, never its value.
+     *
+     * <p><b>NOT keyed by Material, and that is load-bearing rather than stylistic.</b>
+     * {@code HealthModifierItems.mint} already mints a {@code NETHER_STAR} for the
+     * health_boost_TEMP dev fixture, and the two coexist on the bench until the dev items are
+     * deleted -- which is parked behind the owed 4-tick grid readings, so this is not a
+     * short-lived overlap. A Material test would lock the DEV star into the hotbar and leave a
+     * re-minted Nexus star droppable: wrong in both directions at once. The precedent is that
+     * very file, which keys off {@code healthBoost} rather than off the material it mints on.
+     *
+     * <p><b>ABSENCE IS NOT A DEFECT</b>, unlike {@code quiverLoaded}. An untagged nether star is
+     * somebody's nether star -- a beacon ingredient a player mined for -- and must be left
+     * entirely alone. Absence here means "not ours", never "ours but unstamped".
+     *
+     * <p>On the ITEM, not on the player: the lock is a property of the star, so a star that ends
+     * up somewhere it should not be is still recognisable there. That is what lets the join-time
+     * convergence in {@code NexusSlots} find a stray one and put it back, rather than minting a
+     * second and leaving the player holding two.
+     */
+    public final NamespacedKey nexus;
+
     public Keys(Plugin plugin) {
         this.markerEntity = new NamespacedKey(plugin, "marker_entity");
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
@@ -329,6 +352,7 @@ public final class Keys {
         this.quiverReloadPending = new NamespacedKey(plugin, "quiver_reload_pending");
         this.armorBarOverride = new NamespacedKey(plugin, "armor_bar_override");
         this.attackSpeedOverride = new NamespacedKey(plugin, "attack_speed_override");
+        this.nexus = new NamespacedKey(plugin, "nexus");
     }
 
     /**
