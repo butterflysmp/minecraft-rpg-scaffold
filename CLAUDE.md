@@ -1000,6 +1000,38 @@ condition can fail to arrive in **SPACE, TIME, KIND, or OBSERVABILITY**.
 named-but-unwitnessed ones is an honest record; four arms each with a plausible-sounding example is
 the defect this rule is about, wearing the rule's own clothes.
 
+> ### A HOLLOW *MEASUREMENT* — KIND, AT A BOUNDARY THE ARMS HAD NOT BEEN POINTED AT: THE INSTRUMENT
+>
+> The condition can fail to arrive **at the SHELL, before the tool ever runs.** Same arm — a
+> different condition arrived — but the fixture is fine and it is the *instrument* that was never
+> the one you named.
+>
+> **2026-09-15.** `grep -c $'\x00' <file>` was run to count NUL bytes and reported **225**. **Bash
+> cannot carry a NUL in a word: `$'\x00'` expands to ZERO BYTES**, so what executed was
+> `grep -c ''` — an empty pattern matching every line. Measured, both forms return the identical
+> `225`. The file's true NUL count is **1** (`tr -cd '\0'`, `perl -0777` and `od` all agree).
+>
+> **Three things let it survive, and they are the reusable part:**
+>
+> - **The shell swallowed the pattern SILENTLY** — no error, no empty-pattern warning.
+> - **The number was PLAUSIBLE for the quantity claimed.** A wrong figure needs nothing else to
+>   survive a reading.
+> - **The command printed its own interpretation beside its output**, so the reading and the label
+>   arrived together and appeared to confirm one another. **ONE COMMAND CANNOT BE ITS OWN CONTROL.**
+>
+> **AND "SAY WHICH INSTRUMENT" DOES NOT COVER THIS, WHICH IS WHY IT IS FILED HERE RATHER THAN THERE.**
+> The instrument *was* named. What was named is the instrument the author **thought they had run** —
+> and the rule cannot tell the two apart, because both produce the same sentence.
+>
+> **The fix is one line: a command that measures a byte must be shown able to EXPRESS that byte.**
+> `printf '%s' $'\x00' | wc -c` returns **0** and settles it in one keystroke.
+>
+> > **Where `225` actually comes from, since the plausible explanation is also wrong.** It is not
+> > `wc -l` plus an unterminated final line — the file **is** newline-terminated (`tail -c 1` is
+> > `\n`) and `wc -l` is **224**. Controlled: delete the single NUL and `grep -c ''` drops to
+> > **224**; `grep -ac ''` on the original is **224** too. **The `+1` is a BINARY-MODE artefact,
+> > supplied by the very byte being counted** — GNU grep **3.0**; scope it to that version.
+
 **The accounts, by section — the concept is old here, only the enumeration was homeless:**
 
 - `NEXT.md`, *A RULE AND ITS IMPLEMENTATION AGREE ON THE CASES SOMEONE CHECKED* — *"a hollow row,
@@ -1047,11 +1079,22 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   > terminal) or feeds the warning into the measurement (3.0). **Silence and self-description are both
   > failures here, and neither is visible to `| wc -l`.** This file's own headline defect, one layer
   > down: the instrument, not the test, is what lied.
+  >
+  > > **AND THE RULE THAT DISAGREEMENT TAUGHT: SCOPE EVERY VERSION-DEPENDENT CLAIM TO ITS VERSION, IN
+  > > THE SENTENCE ITSELF.** The `995` / `994` split was not a disagreement about the tree — both
+  > > readings were correct, on different greps. **Each side had written a property of ONE grep as a
+  > > property of grep**, which is why neither could reproduce the other and why the reconciliation
+  > > took three instruments.
+  > >
+  > > A claim about a tool's behaviour is a claim about **a build of that tool**, and it is worth
+  > > exactly nothing to a reader on a different one unless the version is in the sentence. Print
+  > > `--version` beside the reading, not in a footnote.
 - **Reason from `origin/<ref>`, never a local ref.** `origin/master` appears **0** times here;
   `ls-remote` appears 7, but only about pushes.
-- **A squash body must carry the DEFECTS FOUND, not only what worked.** The *Record in the body* list
-  names the tip, the tree and the verdict — and not this, which is the half that made `#92`'s and
-  `#93`'s bodies worth keeping.
+- ~~**A squash body must carry the DEFECTS FOUND, not only what worked.**~~ **PAID** — it is now
+  stated under *Squash-merge bodies*, with the `#92` instance. **Left struck rather than deleted, so
+  the list records that the debt was paid rather than silently shortening**; a debt list that only
+  ever loses rows cannot be told from one nobody is maintaining.
 - **The gate-file conventions**: `Status: NOT RUN`, every prediction written *before* the boot, the
   reading written *beside* the prediction, and the prediction not edited once a row has been read.
   Stated in each `GATE-*.md` header and nowhere central; this file's one *NOT RUN* mention is an
@@ -1354,6 +1397,33 @@ underneath it.
 - the branch **tip SHA** and its **tree SHA**
 - the `check-absorbed.sh` verdict, in full, **including the positive-control line** — a verdict
   quoted without its control is a search that may have been blind
+- **THE DEFECTS FOUND, NOT ONLY WHAT WORKED** — see immediately below
+
+### AND THE BODY CARRIES THE DEFECTS FOUND, NOT ONLY WHAT WORKED
+
+**A body that records only the outcome is a CHANGELOG. The defects are the part that cannot be
+re-derived from the diff**, because the diff shows what the code became and never what it nearly
+became, what was tried and abandoned, or which green check turned out to be measuring nothing.
+
+**THE DEFECTS ARE ALSO THE HALF MOST LIKELY TO BE OMITTED, AND THE OMISSION IS SELECTION RATHER THAN
+CHANCE.** A body is written by the person who has just finished the work, at the moment they most
+want it to read as finished. What worked is in front of them; what went wrong is behind them, and
+leaving it out costs nothing that anyone will notice this week.
+
+> **The measured consequence, and it is this repo's own: `#92`'s body was written to carry eleven
+> named defects, and when the context that produced it was lost, THAT BODY IS WHAT RESTORED IT.** A
+> changelog-shaped body of the same work would have said the Nexus shipped and left the two hollow
+> checks, the unreachable-guard finding and the two tooling traps to be rediscovered.
+>
+> **Two later slices ran off it.** `#93` found `5d`'s prediction unfalsifiable because `#92`'s body
+> had named the hollow-check shape; `#94` found a taxonomy with no home because `#93`'s body named
+> the arm. **None of that is in any diff.**
+
+**So: a body with no defects section is a claim that none were found, and that claim is almost always
+false.** If a slice genuinely produced none, say so in those words — it is a surprising result and it
+should read as one.
+
+Applies to a PR conversation the same way: the verdict, the controls, and what they refuted.
 
 > **THE THIRD ITEM CANNOT GO IN THE BODY, AND THE FIRST DRAFT ASKED FOR IT ANYWAY.** It said to
 > record *"the squash's own tree SHA, and that the two were EQUAL"*. **A commit message cannot
