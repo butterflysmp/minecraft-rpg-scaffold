@@ -426,6 +426,10 @@ So:
   > after the last file lands fixes the second. Third in the family is the `27`-for-`29` plan count —
   > *a figure taken from a glance at something adjacent to the answer.* Full entries in `NEXT.md`.
 
+- **A PUSH NAMES ITS BRANCH.** `git push -u origin <branch>`, always. A bare `git push` resolves
+  against whatever the current branch tracks, so it can land unreviewed work on `master`; the
+  explicit form fails loudly instead of guessing.
+
 - **A PUSH IS A FACT ABOUT THE WIRE, AND ONLY `git ls-remote` OBSERVES IT.** *"Pushed"* and *"not
   pushed"* in a report are **both claims**. Report the command's output, not your belief about the
   command's output — the same rule as the `--numstat` one above, applied to the remote.
