@@ -1425,13 +1425,32 @@ should read as one.
 
 Applies to a PR conversation the same way: the verdict, the controls, and what they refuted.
 
-> **THE THIRD ITEM CANNOT GO IN THE BODY, AND THE FIRST DRAFT ASKED FOR IT ANYWAY.** It said to
-> record *"the squash's own tree SHA, and that the two were EQUAL"*. **A commit message cannot
-> contain its own tree SHA** — the tree is an input to the hash, and the message is part of the
-> commit that names it. Nor can it contain the `ABSORBED` verdict, which is computed against the
+> **THE SQUASH'S OWN TREE SHA CANNOT GO IN THE BODY, AND THE FIRST DRAFT ASKED FOR IT ANYWAY.** That
+> draft required *"the squash's own tree SHA, and that the two were EQUAL"*. **A commit message
+> cannot contain its own tree SHA** — the tree is an input to the hash, and the message is part of
+> the commit that names it. Nor can it contain the `ABSORBED` verdict, which is computed against the
 > squash that does not exist yet. Both were discovered on the **first attempt to follow the
-> convention**, one merge after it landed, by trying to write the body and finding two of its three
-> required fields unwritable.
+> convention**, one merge after it landed, by trying to write the body and finding two of **that
+> draft's** three required fields unwritable.
+>
+> > **THIS HEADING SAID *"THE THIRD ITEM"* UNTIL 2026-09-15, AND THE COMMIT THAT ADDED THE DEFECTS
+> > SECTION IS WHAT FALSIFIED IT.** The list above had **two** items when that note was written, so
+> > *"the third item"* had **no referent in it** — a reader counting to three found nothing, re-read,
+> > and resolved it from the note's own text. Adding **THE DEFECTS FOUND** as a third bullet gave the
+> > ordinal a live and **exactly wrong** referent: the note now appeared to say that the defects
+> > cannot go in the body, which is the opposite of the section it was pushed below.
+> >
+> > **AN ORDINAL INTO A LIST IS A LINE CITATION WEARING DIFFERENT CLOTHES**, and it fails by this
+> > file's own rule — *the pointer names a SECTION, never a line* — falsified by any insertion above
+> > it, silently, and invisibly to every test. **The insertion was made by the commit that also added
+> > this note's neighbours, and nothing flagged it**: the `###` heading spliced in between put **27
+> > lines** (measured, not estimated) between the list and the note, so the two were never adjacent
+> > enough for the collision to be seen.
+> >
+> > **And it got WORSE by being fixed elsewhere**, which is the part worth carrying: a dangling
+> > ordinal is a FALSE ABSENCE and prompts a second look; an ordinal that resolves to the wrong item
+> > is a FALSE PRESENCE and closes the question. **Growing a list is enough to convert one into the
+> > other.** So: name the item, never its position.
 >
 > **Recording the branch tree is what makes the equality checkable, and it is sufficient**, because
 > the squash's own tree is free forever: `git rev-parse <squash>^{tree}`. A reader compares that to
