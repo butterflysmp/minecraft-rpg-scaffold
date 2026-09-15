@@ -38,24 +38,25 @@ homes, a tap arrow is 12 and does not. RECOMPUTED under R1 as amended (1/3/5), a
 moved except the tap:**
 
 ```
-charged, five per release, c = 20          61.538 dmg/s      1200 per magazine
-tapping at T = 3, vanilla's own floor       37.037 dmg/s       300 per magazine   charge +66.2%
-tapping at T = 8, a rate a hand can keep    21.277 dmg/s       300 per magazine   charge +189.2%
+charged, five per release, c = 20          47.222 dmg/s       850 per magazine
+tapping at T = 3, vanilla's own floor       30.303 dmg/s       200 per magazine   charge +55.8%
+tapping at T = 8, a rate a hand can keep    15.873 dmg/s       200 per magazine   charge +197.5%
 ```
 
-**THE TAP DID NOT MOVE AND DID NOT NEED TO.** R4′ is one arrow at 12 for one round, which the
-amendment does not touch; the charged path got **51.3% faster** because a maximum release now costs a
-**60-tick** draw instead of 100. The margin went from **+9.8%** to **+66.2%** without anyone
-re-pricing the tap.
+**BOTH SIDES MOVED THIS TIME.** R1′ changed only the charged path and left the tap alone; **R8′
+changed both** — 48 → 34 with a 90 → 60 reload, and the tap 12 → 8. So the margin came **down** from
++66.2% to +55.8%, which is the ruling doing what it was asked to: 48 was flagged as too far ahead,
+and the answer moved it back **without crossing the tap.**
 
 **AND THE ARGUMENT A PLAYER ACTUALLY FEELS IS NOT THE RATE — IT IS THE AMMUNITION.** The same
-twenty-five rounds are worth **1200 damage charged and 300 tapped: four times**, so the tap-spammer
+twenty-five rounds are worth **850 damage charged and 200 tapped: 4.25 times**, so the tap-spammer
 runs dry four times as often for the same work, and it compounds with every reload. **That ratio is
-UNCHANGED by the amendment** — it is damage per ROUND, and the amendment moved time, not rounds —
-which is why it was the argument worth having.
+damage per ROUND, so every ruling here has moved time and left it alone** — R1′ did not touch it, and
+R8′ nudged it *up* from 4× because `34/8` is a slightly wider gap than `48/12`. **It is the one
+figure in this file that has only ever got stronger**, which is why it was the argument worth having.
 
 > **THE SHAPE OF THE RISK HAS INVERTED, AND IT IS RECORDED AS CHOSEN RATHER THAN DISCOVERED.** The
-> original finding was *the tap beats the charge, so nobody would charge*. At **+66%** the danger is
+> original finding was *the tap beats the charge, so nobody would charge*. At **+55.8%** the danger is
 > the opposite one: **a tap nobody would ever use is a mechanic costing a trigger binding, a content
 > block and a gate row for nothing.**
 >
@@ -66,20 +67,24 @@ which is why it was the argument worth having.
 > failing.
 >
 > **It is written down because the two failures look identical in a table and opposite in play**, and
-> because the next person to read *"the tap is 66% behind"* will otherwise read it as a defect
+> because the next person to read *"the tap is 56% behind"* will otherwise read it as a defect
 > somebody missed.
 
 > **~~R9 IS LOAD-BEARING: below `reload_ticks` ≈ 71 the tap retakes the lead.~~ THAT COUPLING IS
-> DEAD, AND IT DIED WITH THE AMENDMENT.** Recomputed at 1/3/5: the tie is at **`reload_ticks` = 4**
-> (fencepost A) and **exactly 0** (fencepost B) — and at `T = 4` it is **negative**, meaning the tap
-> cannot retake the lead at any reload whatsoever. **The charge now leads at every reload value
-> anybody would author.**
+> DEAD, AND IT HAS NOW DIED TWICE.** R1′ killed it; **R8′ was re-derived rather than assumed to
+> inherit the verdict**, because a coupling dead under one parameter set is not dead under another.
+> At `d = 8` the tie is **`reload_ticks` = −1.85** (fencepost A) and **−5.77** (B).
 >
-> **R9 KEEPS ITS OTHER REASONS AND LOSES THIS ONE.** 90 ticks is still 3.60 ticks per round, still
-> just under `quiver_stone`'s 3.78, and still the only thing pricing a tap-spammer's ammunition. What
-> it is no longer is *the number holding the headline finding up*. **A stale load-bearing flag is
-> worse than no flag** — it makes the next author afraid of a field for a reason that has stopped
-> existing. Full working in §7.3.
+> **THE SIGN AT `R = 0` FLIPPED**, which is stronger than "still dead": under the old set a zero
+> reload would have handed the lead back at `T = 3` (tie at +4). Now nothing does. **`reload_ticks`
+> has stopped bearing on the rate comparison at all.**
+>
+> **AND `reload_ticks: 60` NOW RESTS ON A RULING RATHER THAN AN ARGUMENT.** Of 90's three supports,
+> the coupling is dead and the ticks-per-round comparison was **overturned by the operator with the
+> consequence in front of him** — the Plume is now the cheapest ammunition in the project by 36.5%,
+> which is the outcome 90 was chosen to avoid. **What is left is pacing, which is a feel judgement.**
+> That is legitimate and it is written down because **a number with no derivation is one somebody
+> later "fixes".** Full working in §7.3.
 
 ### THE LESSON IS THE FRAMING, NOT THE ARITHMETIC
 
@@ -338,7 +343,14 @@ operator's call, not a detail.**
   >
   > **OVERTURNABLE, AND CHEAP EITHER WAY** — one comparison in `DrawCharge.affordableStep`, with its
   > own core row. Ruled by the operator rather than by Ben.
-- **R4′ · A PARTIAL DRAW FIRES ONE ARROW, WITH NO HOMING, AT 12 DAMAGE.** Costs one round.
+- **R4″ · A PARTIAL DRAW FIRES ONE ARROW, WITH NO HOMING, AT 8 DAMAGE.** Costs one round.
+
+  > **THE DAMAGE MOVED WITH R8′, 12 → 8, IN THE SAME ANSWER.** The shot's SHAPE is R4′'s and is
+  > untouched — one arrow, no seeking, a literal rather than `weapon_damage`. **Only the number
+  > moved**, and it moved so the tap kept its ratio to a charged arrow that had itself come down:
+  > `8/34` against `12/48` is a slightly WIDER gap, which is why §7.2a's ammunition ratio went 4× →
+  > 4.25×. **"A quarter of the charged arrow" was the old shorthand and is now wrong** — it is just
+  > under.
 
   > **THIS IS AN OVERTURN OF R4, NOT AN AMENDMENT, AND THE THING IT REPLACED IS WRITTEN DOWN.**
   >
@@ -406,18 +418,37 @@ operator's call, not a detail.**
   > because the headline finding is exactly the consequence somebody would later fix."* **It is now
   > ruled, so the `0` in the content file is a decision with a name on it** rather than an absent key.
 
-- **R8 · `attack_damage` = 48 PER CHARGED ARROW → 240 IN ONE INSTANT at full charge.** Taken on the
-  **instantaneous-parity** anchor, **with §7.1's spike paragraph in front of him** — so the spike is
-  **chosen, not overlooked**, and that paragraph stays in the file beside the ruling rather than
-  being tidied away now that the number exists.
+- **R8′ · `attack_damage` = 34 PER CHARGED ARROW → 170 IN ONE INSTANT at full charge.**
 
-- **R9 · `reload_ticks` = 90.** 4.5 seconds; **3.60 ticks per round**, just under `quiver_stone`'s
-  3.78 — so **the Plume is no longer the cheapest ammunition in the project.**
+  > **THIS IS AN AMENDMENT TO R8, AND IT CAME AS ONE ANSWER WITH R9′ AND R4″.** R8's 48 was taken on
+  > the **instantaneous-parity** anchor against a five-second cycle, with §7.1's spike paragraph in
+  > front of Ben — the spike was **chosen, not overlooked**. R1′ moved the cycle out from under it,
+  > 48 was flagged in the content file as ruled-against-a-superseded-cycle, and this is the answer.
+  >
+  > ```
+  > R8   48 per arrow, 240 in one instant, against a 29.5s magazine cycle   -- superseded
+  > R8'  34 per arrow, 170 in one instant, against an 18.0s cycle           -- RULED
+  > ```
+  >
+  > **34 STILL SITS ABOVE BOTH LOCUST ANCHORS, EXACTLY AS 48 DID** (§7.1) — because the reload
+  > shortened in the same ruling and pulled the anchors down with it. **The cut bought 1.89× → 1.45×
+  > against the Locust, not a crossing**, and a reader expecting otherwise may take a second bite at
+  > a number that has been answered.
 
-  > **THIS NUMBER NOW DOES MORE WORK THAN IT LOOKS LIKE IT DOES, AND §7.3 CARRIES THE ACCOUNT.** With
-  > `cooldown_ticks` at 0, **the reload is the only thing pricing a tap-spammer** — they meet it far
-  > sooner per unit of damage dealt. **Measured in §7.2: lowering it back below ~71 ticks hands the
-  > lead back to tapping.**
+- **R9′ · `reload_ticks` = 60.** 3.0 seconds; **2.40 ticks per round** — **the cheapest ammunition in
+  the project, by 36.5% over `quiver_stone`'s 3.78.**
+
+  > **THAT IS THE OUTCOME 90 WAS CHOSEN TO AVOID, AND IT IS CHOSEN RATHER THAN OVERLOOKED.** R9's own
+  > entry said 3.60 was *"just under `quiver_stone`'s 3.78"* and §7.3 said **"at the old 60 it was
+  > 2.40, the cheapest by 36%"**. **60 is that value**, overturned by the operator with the
+  > consequence in front of him.
+  >
+  > **SO 60 RESTS ON A RULING AND NOT ON AN ARGUMENT.** Of 90's three supports the rate coupling is
+  > dead (twice, and re-derived at `d = 8` rather than inherited — §7.3), the ticks-per-round
+  > comparison is overturned, and **what remains is PACING, a feel judgement.** That is legitimate and
+  > it is said out loud because **a number with no derivation is one somebody later "fixes"** —
+  > anyone re-deriving it from the ammunition table will be reversing a ruling, not fixing an
+  > oversight.
 
 - **R10 · QUICK TAPS KEEP VANILLA'S FLOOR.** Under **3 ticks**, nothing fires —
   `getPowerForTime(t) < 0.1`, measured in §3.1.
@@ -854,22 +885,22 @@ to tell a ruling from an oversight.**
 **`c` IS THE CHARGE SECOND, RULED AT 20 (§7.5). IT IS NEVER WRITTEN `T`** — `T` is §7.2's tap
 interval, and the two collided once already, in review, by a careful reader.
 
-### 7.1 ***RE-OPENED*** — **R8's 48 WAS RULED AGAINST A CYCLE THAT NO LONGER EXISTS**
+### 7.1 ***CLOSED AGAIN*** — **R8′: 34 PER CHARGED ARROW, WITH `reload_ticks` 60 AND THE TAP AT 8**
 
-**What it decided:** how hard a full release hits. **240 damage lands in a single frame** — and
-**240 is UNCHANGED by R1′.** What changed is that it now arrives **every three seconds instead of
-every five.**
+**What it decided:** how hard a full release hits, re-answered after R1′ moved the cycle out from
+under R8's 48. **Three numbers moved in ONE ruling — 48 → 34, 90 → 60, 12 → 8 — and they must be
+read as one answer**, because each was balanced against the other two.
 
-**Ben took the instantaneous-parity anchor, with the spike paragraph below in front of him.** The
-spike is **chosen, not overlooked.** But the anchor he took it against has moved underneath it.
+**Ben took the instantaneous-parity anchor originally, with the spike paragraph below in front of
+him.** The spike is **chosen, not overlooked**, and it is now **170** rather than 240.
 
 ```
-one release   5 x 48                =   240   in one frame        UNCHANGED
-magazine      25 x 48               =  1200   against the Locust's 312    UNCHANGED
-cycle         5 x 60t + 90t reload  =   390t  = 19.50s            was 590t = 29.50s
+one release   5 x 34                =   170   in one frame        was 240
+magazine      25 x 34               =   850   against the Locust's 312
+cycle         5 x 60t + 60t reload  =   360t  = 18.00s            was 390t = 19.50s
 
-   sustained, with reload   1200 / 19.50s  =  61.54 dmg/s     Locust 32.50   +89.3%
-   within the magazine      1200 / 15.00s  =  80.00 dmg/s     Locust 47.27   +69.2%
+   sustained, with reload   850 / 18.00s  =  47.22 dmg/s     Locust 32.50   +45.3%
+   within the magazine      850 / 15.00s  =  56.67 dmg/s     Locust 47.27   +19.9%
 ```
 
 > **THE COMPARISON THE TABLE CANNOT SHOW, AND THE ONE THE RULING WAS TAKEN AGAINST: the Plume lands
@@ -878,7 +909,7 @@ cycle         5 x 60t + 90t reload  =   390t  = 19.50s            was 590t = 29.
 > a rate reads extreme as a spike**, and this weapon is all spike. **That half is untouched** — the
 > amendment did not move the spike, only how often it lands.
 
-#### THE ANCHORS, RECOMPUTED — AND 48 HAS CROSSED FROM BETWEEN THEM TO ABOVE BOTH
+#### THE ANCHORS, RECOMPUTED AGAIN — AND 34 IS STILL ABOVE BOTH, WHICH IS THE COUNTER-INTUITIVE PART
 
 **The anchor convention, stated because it is not obvious from the names** and both previous anchors
 were computed under it: `D = LocustRate × PlumeCycleSeconds / 25`. So *"instantaneous parity"* does
@@ -892,9 +923,24 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
                   312 / 7.20s  = 43.333 dmg/s     fencepost B -- 12 shots span 12 intervals
 
                         sustained parity     instantaneous parity (B)
-   OLD cycle 29.50s          D = 38.35              D = 51.13      <- 48 sat BETWEEN these
-   NEW cycle 19.50s          D = 25.35              D = 33.80      <- 48 sits ABOVE both
+   cycle 29.50s (R8)         D = 38.35              D = 51.13      <- 48 sat BETWEEN these
+   cycle 19.50s (R1')        D = 25.35              D = 33.80      <- 48 sat ABOVE both
+   cycle 18.00s (R8')        D = 23.40              D = 31.20      <- 34 SITS ABOVE BOTH TOO
 ```
+
+> **CUTTING THE DAMAGE DID NOT MOVE THE WEAPON TOWARD PARITY, AND THAT IS THE OBVIOUS WRONG READING
+> OF THIS RULING.** 48 → 34 is a 29% cut, and the anchors fell with it — because
+> `reload_ticks` 90 → 60 shortened the cycle in the same breath, and the anchors are proportional to
+> the cycle. **34 stands in the same relationship to both anchors that 48 did.**
+>
+> ```
+> 48 against its anchors    1.89x the Locust sustained
+> 34 against its anchors    1.45x
+> ```
+>
+> **What the ruling bought is 1.89× → 1.45×, not a crossing.** Anyone reading "the damage came down"
+> and expecting the weapon to have landed between the anchors will find it has not, and may take a
+> second bite at a number that has already been answered.
 
 > **A FENCEPOST INCONSISTENCY THIS RECOMPUTATION EXPOSED, AND IT PREDATES THE AMENDMENT.** The table
 > above quotes the Locust's burst as **47.27** (fencepost A) while **both old anchors were derived
@@ -903,49 +949,52 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
 > differently, and §7.2's own fencepost box already names this family. **Recorded rather than
 > silently harmonised**, because harmonising it would move a number Ben's ruling was taken against.
 
-> ### ⚠ OPEN — THREE QUESTIONS, ONE SHOT, ONE ANSWER. ALL BEN'S. DO NOT QUIETLY KEEP ANY OF THEM.
+> ### ✔ ANSWERED — THREE QUESTIONS, ONE SHOT, **ONE RULING**
 >
 > ```
-> attack_damage: 48   ruled against a cycle that no longer exists
-> reload_ticks:  90   its number did not change; its SHARE did, by half again
-> the tap's NAME      unauthored, so the tooltip says "Dragon's Plume  Tap"
+> attack_damage: 48 -> 34
+> reload_ticks:  90 -> 60
+> the tap:       12 -> 8
+> the tap's NAME     STILL UNAUTHORED -- see below; it was not part of the answer
 > ```
 >
-> **48 was ruled against a five-second cycle. The cycle is now three seconds and the anchors have
-> moved under it by a third.** At 48 the Plume sustains **61.54 dmg/s — about 1.9× the Locust's
-> 32.50**, where it was 1.25× before.
+> **They are ONE answer and must be read as one.** Each was balanced against the other two: 34 was
+> chosen against a cycle that 60 shortens, and 8 against the 34 it is a fraction of. **Changing any
+> one alone re-opens arithmetic the other two were settled against**, which is why
+> `dragons_plume.yml`'s header now says so at the top of the file rather than at each field.
+>
+> ### ⚠ AND `reload_ticks: 60` NOW RESTS ON A RULING AND NOT ON AN ARGUMENT — SAY IT PLAINLY
+>
+> **90 had THREE supports. Two are gone, and the one that remains is a feel judgement.** That is
+> legitimate and it must be VISIBLE, because **a number with no derivation is one somebody later
+> "fixes".**
+>
+> | support for 90 | what happened to it |
+> |---|---|
+> | **the rate coupling** — *"below ≈ 71 ticks the tap retakes the lead"* | **DEAD, twice over.** R1′ killed it; the re-derivation at `d = 8` killed it harder — see §7.3 |
+> | **ticks per round** — 3.60, *"deliberately just UNDER `quiver_stone`'s 3.78"* | **OVERTURNED BY THE OPERATOR**, with the consequence in front of him |
+> | **pacing** — *"longer than anything shipped, but not punishing"* | **THE ONLY THING LEFT, and it is a feel judgement** |
+>
+> **THE SECOND ROW IS THE ONE TO READ TWICE.** `dragons_plume.yml` argued, in its own words, that
+> 3.60 kept the Plume off the cheapest-ammunition spot and that **"at the 60 first proposed it would
+> have been 2.40, cheapest by 36%"**. **60 IS THAT VALUE.** Recomputed: `25 / 60 = 2.40` against
+> `quiver_stone`'s `9 / 34 = 3.78` — **the Plume is now the cheapest ammunition in the project by
+> 36.5%**, which is precisely the outcome 90 was chosen to avoid.
 >
 > ```
-> Locust sustained       32.50 dmg/s      parity now ~25 per arrow   (was ~38)
-> Locust instantaneous   43.33 dmg/s      parity now ~34 per arrow   (was ~51)
-> Plume at 48            61.54 dmg/s      ~1.9x the Locust sustained
+> boltor 7.50    locust 5.00    quiver_stone 3.78    PLUME 2.40
 > ```
 >
-> **A legendary outclassing a rare may be exactly right. That is not this document's call** — and it
-> is not the operator's either; R8 is Ben's ruling and only Ben can restate it. **Put those three
-> lines to him and leave 48 authored until he answers.**
+> > **SO DO NOT RE-DERIVE 60 FROM THE AMMUNITION COMPARISON.** That comparison was the argument FOR
+> > 90; it was heard and overruled. **Anyone who recomputes it will find 2.40 well under 3.78, read
+> > that as a defect, and be reversing a ruling rather than fixing an oversight.** The only thing
+> > that can move this number is another feel judgement.
 >
-> **AND THE SECOND QUESTION FOR THE SAME ANSWER: `reload_ticks: 90` CHANGED MEANING WITHOUT CHANGING
-> VALUE.**
->
-> ```
-> ruled at   90 / 590 = 15.25% of the magazine cycle
-> now        90 / 390 = 23.08%                        a factor of 1.51
-> ```
->
-> **Ben ruled 4.5 seconds as *"longer than anything shipped, but not punishing"* against a
-> 29.5-second magazine.** R1′ cut the shooting half from 500 ticks to 300 and left the reload alone,
-> so **the seconds did not move and the SHARE did, by half again.** Nobody edited the number.
->
-> **This is NOT the dead coupling of §7.3 and the two are easy to conflate:** that one says a
-> *reason* for 90 stopped existing; this one says the *cost* of 90 grew. A reader who sees the
-> coupling struck out could reasonably conclude the number became less important. It became more
-> expensive.
->
-> **90 IS OVER-DETERMINED RATHER THAN UNSUPPORTED**, which is why this is doubt about the **context**
-> and not about the value: its ticks-per-round reason — 3.60 against `quiver_stone`'s 3.78 — is a
-> comparison between two weapons' magazines, and R1′ moved neither. **The flag asks whether the share
-> is what Ben intended, not whether the number has any support left.**
+> **What the reload IS still for is an AMMUNITION argument, which is not a rate one.** With
+> `cooldown_ticks` at 0 the reload remains the whole price of tapping: the same 25 rounds are worth
+> **850 charged and 200 tapped — 4.25×** — so a tap-spammer meets it four times as often per unit of
+> damage dealt. **That ratio is untouched by any of this**, because it is damage per ROUND and every
+> ruling here moved time.
 >
 > **AND A THIRD, WHICH IS NOT A NUMBER: WHAT THE TAP IS CALLED.**
 >
@@ -961,19 +1010,29 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
 > design decision, not a content-pass detail — inventing one would have been exactly that decision
 > wearing a comment's clothes. **A `name:` key is the whole change if Ben wants one.**
 >
-> **It belongs in THIS dialog rather than its own** because it is the same shot the other two
-> questions are about: R4′'s tap is what `cooldown_ticks` now prices and what the 12 is set against.
-> Three questions, one shot, one answer.
-
-> **ALL THREE GO IN ONE DIALOG, DELIBERATELY.** The two numbers are consequences of one amendment and
-> they interact — lowering 48 and shortening 90 both pull the same rate down, so answering them a
-> week apart risks paying for the amendment twice. **Asking any of them later is also how the first
-> one's answer gets quietly generalised into a ruling nobody gave.**
+> **It went in that dialog because it is the same shot the other questions are about** — R4′'s tap is
+> what `cooldown_ticks` prices and what the 8 is set against.
 >
-> **BOTH STAY IN `dragons_plume.yml` AND ARE FLAGGED THERE**, not adjusted on anyone's initiative.
-> **A number left in place because nobody re-asked is the defect this project keeps finding; a number
-> left in place because the operator was asked and said keep it is a ruling** — and the two are
-> indistinguishable in the file unless the file says which.
+> **IT CAME BACK UNANSWERED, AND IT STAYS OPEN RATHER THAN BEING TREATED AS DECLINED.** The two
+> numbers were ruled and the name was not mentioned. **Silence on one item of a three-item dialog is
+> not a ruling against it** — an unruled case recorded as excluded silently converts an omission into
+> a decision nobody made, and the next reader finds a settled-looking answer with no author.
+>
+> ```
+> tooltip today   "Dragon's Plume  Tap"      still, and still unauthored
+> ```
+
+> **THE OTHER TWO WERE ONE ANSWER, WHICH IS WHY THEY WERE ASKED TOGETHER.** Lowering 48 and
+> shortening 90 both pull the same rate down, so answering them a week apart would have risked paying
+> for the amendment twice — and the recompute confirms they were: **34 alone would have overshot,
+> because 60 raised the rate back up.** See the anchors above, where the two moves cancel almost
+> exactly in the ratio to the anchors and not at all in the ratio to the Locust.
+>
+> **BOTH ARE NOW AUTHORED IN `dragons_plume.yml` AND THEIR FLAGS ARE GONE**, because the question was
+> asked and answered. **A number left in place because nobody re-asked is the defect this project
+> keeps finding; a number in place because the operator was asked and answered is a ruling** — and the
+> two are indistinguishable in the file unless the file says which, which is what the flags were for
+> and why removing them is part of the answer rather than tidying.
 
 ### 7.2 THE HEADLINE, RE-DONE IN **DAMAGE PER SECOND** — AND THE UNITS ARE THE POINT
 
@@ -992,43 +1051,61 @@ re-deriving it.*
 `c` = the **charge second**, ruled 20, §7.0/§7.1/§7.5, never written `T`.
 
 ```
-charged   5 x (20 + 2c) + 90  =  390t  =  19.50s  ->  1200 dmg  ->  61.538 dmg/s
-tapping   25 taps + the reload                    ->   300 dmg  ->  6000 / (24T + 90)   conv. A
-                                                                    6000 / (25T + 90)   conv. B
+charged   5 x (20 + 2c) + 60  =  360t  =  18.00s  ->   850 dmg  ->  47.222 dmg/s
+tapping   25 taps + the reload                    ->   200 dmg  ->  4000 / (24T + 60)   conv. A
+                                                                    4000 / (25T + 60)   conv. B
 ```
 
-| `T` | tap dmg/s (A) | charged 61.538 is | tap dmg/s (B) | charged is |
+| `T` | tap dmg/s (A) | charged 47.222 is | tap dmg/s (B) | charged is |
 |---|---|---|---|---|
-| **3 — vanilla's floor** | **37.037** | **+66.2%** | **36.364** | **+69.2%** |
-| 4 | 32.258 | +90.8% | 31.579 | +94.9% |
-| 8 | 21.277 | +189.2% | 20.690 | +197.4% |
-| 12 | 15.873 | +287.7% | 15.385 | +300.0% |
-| 20 | 10.526 | +484.6% | 10.169 | +505.1% |
+| **3 — vanilla's floor** | **30.303** | **+55.8%** | **29.630** | **+59.4%** |
+| 4 | 25.641 | +84.2% | 25.000 | +88.9% |
+| 8 | 15.873 | +197.5% | 15.385 | +206.9% |
+| 12 | 11.494 | +310.8% | 11.111 | +325.0% |
+| 20 | 7.407 | +537.5% | 7.143 | +561.1% |
 
-**THE CHARGE IS AHEAD AT EVERY `T`, INCLUDING VANILLA'S OWN FLOOR — AND NOW BY A MARGIN NOBODY HAS
-TO SQUINT AT.**
+**THE CHARGE IS AHEAD AT EVERY `T`, INCLUDING VANILLA'S OWN FLOOR.**
 
-> **THE TAP COLUMN IS UNCHANGED BY R1′ AND THE CHARGED COLUMN MOVED 51.3%.** R4′ is one arrow at 12
-> for one round; the amendment touched neither. **Every percentage in this table moved because one
-> of its two inputs did**, which is worth saying because a table where every number changed usually
-> means both sides were re-derived.
+> **BOTH COLUMNS MOVED THIS TIME, WHICH IS THE OPPOSITE OF LAST TIME AND WORTH SAYING.** R1′ left the
+> tap untouched and changed only the charged side; **R8′ changed BOTH** — the charged path by 34/60
+> and the tap by `d: 12 → 8`. So a reader comparing this table to the previous revision cannot
+> attribute any single percentage to one cause.
+>
+> **The margin came DOWN, from +66.2% to +55.8%, which is the ruling working.** 48 was flagged as
+> too far ahead; the answer moved it back without crossing the tap.
 
 > **THE HISTORY OF THIS TABLE, KEPT BECAUSE IT HAS TURNED OVER TWICE AND FOR DIFFERENT REASONS.**
 >
 > ```
-> reload 60, 1/s ladder   charged 42.857   tap@3 45.455   TAP ahead by 6.1%     <- as first sent
-> reload 90, 1/s ladder   charged 40.678   tap@3 37.037   CHARGE ahead by 9.8%  <- R9 applied
-> reload 90, 1/3/5        charged 61.538   tap@3 37.037   CHARGE ahead by 66.2% <- R1' applied
+> reload 60, 1/s ladder            charged 42.857  tap@3 45.455  TAP ahead 6.1%     <- as first sent
+> reload 90, 1/s ladder            charged 40.678  tap@3 37.037  CHARGE ahead 9.8%  <- R9
+> reload 90, 1/3/5                 charged 61.538  tap@3 37.037  CHARGE ahead 66.2% <- R1'
+> reload 60, 1/3/5, D=34, d=8      charged 47.222  tap@3 30.303  CHARGE ahead 55.8% <- R8'
 > ```
 >
-> **R9 turned the verdict over; R1′ turned a nine-percent margin into a two-thirds one.** The first
-> was a correction to arithmetic nobody had done; the second is a design ruling that happened to land
-> on the same quantity.
+> **R9 turned the verdict over; R1′ turned a nine-percent margin into a two-thirds one; R8′ brought
+> it back to just over half.** The first was a correction to arithmetic nobody had done; the second
+> and third are design rulings that happened to land on the same quantity.
+>
+> **NOTE ROW ONE AND ROW FOUR SHARE A RELOAD AND NOTHING ELSE.** Both are at 60, and they sit on
+> opposite sides of the verdict — 6.1% for the tap against 55.8% for the charge. **A reader who
+> remembers "60 was the value where the tap won" is remembering row one**, which was computed at one
+> arrow per second and a 12-damage tap. The reload was never what decided it.
 
-> **THE HONEST RESULT IS NOW "SOLVED WITH ROOM", AND THE REASON HAS MOVED AGAIN.** At vanilla's floor
-> the margin is **66.2%**, and `T = 3` still means a sustained **6.7 clicks per second** — a tool's
-> rate, not a hand's. **At any rate a person can actually keep up (`T = 8`, 2.5 clicks/s) the charge
-> is ahead by 189%.**
+> **THE HONEST RESULT IS "SOLVED WITH ROOM", AND THE ROOM IS SMALLER THAN IT WAS.** At vanilla's
+> floor the margin is **55.8%**, and `T = 3` still means a sustained **6.7 clicks per second** — a
+> tool's rate, not a hand's. **At any rate a person can actually keep up (`T = 8`, 2.5 clicks/s) the
+> charge is ahead by 197.5%.**
+>
+> > **AND A MARGIN NOBODY CHOSE, WHICH IS NOW THIN ENOUGH TO NAME.** The tap interval at which
+> > tapping would draw level **on a zero reload** is **`T = 2.9412`**, against R10's floor of **3**.
+> > **Six hundredths of a tick.** Nothing picked either number — the 3 is read off vanilla's power
+> > curve and the 2.9412 falls out of three ruled values chosen for other reasons.
+> >
+> > **It is a COINCIDENCE, not a design margin, and it has a condition**: if a future Paper moves
+> > the power curve so the floor drops below 2.9412, the tap retakes the lead at a zero reload and
+> > §7.3's dead coupling is alive again. **Recorded at `DrawRelease.MIN_RELEASE_TICKS` as well as
+> > here**, because that is the file an upgrade makes somebody open and this one is not.
 >
 > **WHICH IS WHY THE RISK NOW POINTS THE OTHER WAY — see the headline section.** The question is no
 > longer *would anyone charge*; it is *would anyone ever tap*. R4′'s answer is that the tap is not a
@@ -1092,75 +1169,96 @@ discrete clicks instead of at a hold.
 ### 7.2a THE REAL INCENTIVE IS AMMUNITION, AND IT IS IN NO RATE TABLE
 
 **What it decides, in one sentence:** *a tap-spammer runs dry four times as often for the same work* —
-and that is what a player actually feels, not a nine-percent difference in a rate nobody can see.
+and that is what a player actually feels, not a difference in a rate nobody can see.
 
 ```
-25 rounds tapped     25 x 12              =   300 damage
-25 rounds charged    5 releases x 5 x 48  =  1200 damage     FOUR TIMES, from the same magazine
+25 rounds tapped     25 x 8               =   200 damage
+25 rounds charged    5 releases x 5 x 34  =   850 damage     4.25x, from the same magazine
 ```
+
+> **THE RATIO WENT UP, FROM 4× TO 4.25×, WHICH IS THE ONE FIGURE IN THIS FILE R8′ STRENGTHENED.**
+> `34 / 8` is a slightly wider gap than `48 / 12`, so the argument this section rests on is a little
+> better than it was. **It is also the figure most likely to be assumed unchanged**, since both
+> numbers moved and "a quarter" was the old shorthand — the tap is now **just under** a quarter.
 
 **It compounds with every reload, which a rate comparison never shows.** The tapper at `T = 3` empties
-the magazine in **72 ticks and then waits 90** — *more time reloading than shooting*:
+the magazine in **72 ticks and then waits 60**:
 
 ```
-duty cycle   tapping at T=3    72 / 162  =  44.4% shooting      UNCHANGED
-             charging         300 / 390  =  76.9% shooting      was 500 / 590 = 84.7%
+duty cycle   tapping at T=3    72 / 132  =  54.5% shooting      was 44.4%
+             charging         300 / 360  =  83.3% shooting      was 76.9%
 ```
 
-> **THE DUTY-CYCLE CONTRAST NARROWED, AND IT IS THE ONE FIGURE IN THIS SECTION R1′ MOVED THE WRONG
-> WAY.** The charged side's shooting phase shrank from 500 ticks to 300 while the reload stayed at
-> 90, so **a charging player now spends proportionally MORE of their time reloading than before** —
-> 84.7% down to 76.9%. The gap over the tapper is 1.73× rather than 1.91×.
+> **BOTH DUTY CYCLES WENT UP, AND THE CONTRAST WIDENED BACK.** R1′ had narrowed it to 1.73×; the
+> shorter reload lifts both sides and leaves the gap at **1.53×**. **So this figure has now moved in
+> both directions across two rulings** — recorded each time, because a figure that moves against the
+> claim it supports is exactly the one that gets quietly left at its old value, and one that moves
+> back is exactly the one nobody re-checks.
 >
-> **It does not touch the argument, which is about ROUNDS and not about time:** the 4× ammunition
-> ratio is damage per round, and R1′ moved time, not rounds. **Recorded because the recomputation
-> found it** and a figure that moved against the claim it supports is exactly the one that gets
-> quietly left at its old value.
+> **Note the tapper gained MORE than the charger in proportional terms** (44.4 → 54.5 against
+> 76.9 → 83.3), because the reload is a larger share of a tapper's cycle. **The ammunition argument
+> is untouched by all of it**, being damage per ROUND, and every ruling here moved time.
 
 **The ammunition argument is the stronger one for charging and it needs no hit-rate assumption**,
 which is exactly why it belongs beside the rate table rather than inside it.
 
-### 7.3 CLOSED — **R9**: `reload_ticks` = 90, AND IT IS NOW THE TAP TAX
+### 7.3 CLOSED — **R9′**: `reload_ticks` = 60, **RULED AND NOT DERIVED**
 
-**What it decided, in one sentence:** *how long you stand there doing nothing* — 4.5 seconds — and,
-because `cooldown_ticks` is 0, **it is the only thing in the weapon that prices spam.**
+**What it decided, in one sentence:** *how long you stand there doing nothing* — 3.0 seconds.
+
+> ### ⚠ THIS VALUE RESTS ON A FEEL JUDGEMENT AND ON NOTHING ELSE, AND THAT MUST BE VISIBLE
+>
+> **90 had THREE supports. 60 has one.** A number with no derivation is one somebody later "fixes",
+> so the account is here rather than the value alone:
+>
+> | support for 90 | status |
+> |---|---|
+> | the rate coupling | **DEAD**, twice over — below |
+> | ticks per round | **OVERTURNED**, with the consequence in front of the operator |
+> | pacing — *"longer than anything shipped, but not punishing"* | **the only one left, and it is a feel judgement** |
 
 ```
 boltor         8 rounds / 60t = 7.50 ticks per round
 locust        12 rounds / 60t = 5.00
 quiver_stone   9 rounds / 34t = 3.78
-PLUME         25 rounds / 90t = 3.60      <- no longer the cheapest ammunition in the project
+PLUME         25 rounds / 60t = 2.40      <- the CHEAPEST ammunition in the project, by 36.5%
 ```
 
-At the old 60 it was **2.40**, the cheapest by 36%. **R9 gives that title back to `quiver_stone`** by
-a margin of 0.18 ticks per round.
+**~~R9 gives that title back to `quiver_stone`.~~ R9′ takes it straight back off it.** This section
+argued, in its own words, that 3.60 was *"deliberately just UNDER `quiver_stone`'s 3.78"* and that
+**"at the old 60 it was 2.40, the cheapest by 36%"**. **60 IS THAT VALUE, and the outcome 90 was
+chosen to avoid is now the ruled one.**
+
+> **SO DO NOT RE-DERIVE 60 FROM THE AMMUNITION COMPARISON.** That comparison was the argument FOR 90;
+> it was heard and overruled. **Anyone who recomputes it will find 2.40 well under 3.78, read that as
+> a defect, and be reversing a ruling rather than fixing an oversight.** The only thing that can move
+> this number is another feel judgement.
 
 > **~~THIS NUMBER IS LOAD-BEARING: below `reload_ticks` ≈ 71 the tap retakes the lead.~~ THAT
-> COUPLING DIED WITH R1′, AND THE STRIKETHROUGH IS DELIBERATE.** With `cooldown_ticks = 0` (R7) the
-> reload is still the whole tap tax, and the tapper still meets it five times as often per unit of
-> damage dealt. **What is no longer true is that lowering it hands the lead back.**
+> COUPLING IS DEAD, AND IT DIED TWICE — RE-DERIVED AT `d = 8`, NOT CARRIED FORWARD.**
 >
-> **RECOMPUTED AT 1/3/5, and the crossover did not move a little — it fell off the bottom:**
+> A coupling declared dead under one parameter set is **not** dead under another, and that sentence
+> is quoted in several places — so it was recomputed rather than inherited:
 >
 > ```
-> T = 3   fencepost A   tie at reload_ticks =    4.00      was ~70.67
-> T = 3   fencepost B   tie at reload_ticks =    0.00      was  66.67
-> T = 4   fencepost A   tie at reload_ticks =  -28.00      no tie exists
-> T = 4   fencepost B   tie at reload_ticks =  -33.33      no tie exists
+>                             tie at reload_ticks
+> T = 3   fencepost A              -1.85       was +4.00 at d=12, D=48
+> T = 3   fencepost B              -5.77       was  0.00
+> T = 4   fencepost A             -33.23       was -28.00
+> T = 4   fencepost B             -38.46
 > ```
 >
-> **A NEGATIVE TIE MEANS THE TAP CANNOT RETAKE THE LEAD AT ANY RELOAD WHATSOEVER**, and at vanilla's
-> own floor it would take a reload of four ticks. **The charge leads at every value anybody would
-> author.**
+> **THE SIGN AT `R = 0` HAS FLIPPED, WHICH IS A STRONGER STATEMENT THAN "STILL DEAD".** Under the old
+> set a **zero** reload would have handed the lead back to the tap at `T = 3` (tie at +4). Under this
+> one even a zero reload leaves the charge ahead. **`reload_ticks` has stopped bearing on the rate
+> comparison at all** — there is no value, however small, that revives it.
 >
-> **SO R9 KEEPS ITS OTHER REASONS AND LOSES THIS ONE**, and they are separated rather than left to
-> be untangled: 90 ticks is **3.60 ticks per round**, still just under `quiver_stone`'s 3.78, and
-> still the only thing pricing a tap-spammer's ammunition (§7.2a). It is simply no longer *the number
-> holding the headline finding up*.
+> **AND THE REASON IS NOT THAT THE RELOAD GOT SHORTER.** It got shorter, which helps the tap; the
+> tap's damage fell 12 → 8, which hurts it more. **The two moves did not cancel, and that is only
+> visible by re-deriving.**
 >
-> **A STALE LOAD-BEARING FLAG IS WORSE THAN NO FLAG.** It makes the next author afraid to touch a
-> field for a reason that has stopped existing — and the fear reads exactly like the real coupling
-> did, which is why this paragraph corrects rather than deletes.
+> **What the reload is still for is an AMMUNITION argument, which is not a rate one** — §7.2a's
+> 4.25×, untouched by any of this because it is damage per ROUND.
 
 ### 7.4 CLOSED — **R11**: REACH ≈ 300 BLOCKS, AND **R12**: IT DROPS LIKE AN ARROW
 
@@ -1195,23 +1293,29 @@ arrow airborne for the entire 120-tick leash; 0.05 puts it in the ground at tick
 once per second and *"every second adds an arrow"* means what it says.
 
 **What the ruling chose against, kept because a ruling with no alternatives beside it reads as a
-default nobody considered.** ***RECOMPUTED AT 1/3/5*** — the table below was computed at one arrow
-per second throughout, so every cell in it moved:
+default nobody considered.** ***RECOMPUTED AT R8′*** — at `D = 34` and `reload_ticks` 60, so every
+cell has now moved twice:
 
 | `c` | five arrows | magazine cycle | charged dmg/s |
 |---|---|---|---|
-| 16 | 52t (2.60s) | `5 × 52 + 90 = 350t = 17.50s` | 68.57 |
-| **20 — RULED** | **60t (3.00s)** | **390t = 19.50s** | **61.54** |
-| 24 | 68t (3.40s) | `5 × 68 + 90 = 430t = 21.50s` | 55.81 |
+| 16 | 52t (2.60s) | `5 × 52 + 60 = 320t = 16.00s` | 53.13 |
+| **20 — RULED** | **60t (3.00s)** | **360t = 18.00s** | **47.22** |
+| 24 | 68t (3.40s) | `5 × 68 + 60 = 400t = 20.00s` | 42.50 |
 
-> **`c` IS NOT RE-OPENED BY R1′, AND THIS TABLE IS NOT AN INVITATION TO RE-OPEN IT.** A step is still
-> one second; the amendment moved the step's **yield** and the **number** of steps. The alternatives
-> are recomputed so the ruling still has a live comparison beside it — **not because the ruling is in
-> question.**
+> **`c` IS NOT RE-OPENED BY EITHER AMENDMENT, AND THIS TABLE IS NOT AN INVITATION TO RE-OPEN IT.** A
+> step is still one second. R1′ moved the step's **yield** and the **number** of steps; R8′ moved the
+> damage and the reload. **Neither touched `c`**, and the alternatives are recomputed only so the
+> ruling keeps a live comparison beside it.
 >
-> **What the recomputation does show is that `c` matters LESS than it did.** The spread across the
-> three candidates was `47.06 → 35.82`, a factor of **1.31**; it is now `68.57 → 55.81`, a factor of
-> **1.23**. With only two increments left to charge, a longer second buys proportionally less delay.
+> **The spread keeps narrowing, which is the one thing the recomputation says.** Across the three
+> candidates it was a factor of **1.31** at one arrow per second, **1.23** after R1′, and **1.25**
+> now — essentially flat.
+>
+> > **AND THAT NEAR-REVERSAL IS WORTH ONE LINE, BECAUSE THE PREVIOUS REVISION CLAIMED A TREND.** It
+> > read *"`c` matters LESS than it did"* off a single step from 1.31 to 1.23. **Two points are not a
+> > trend**, and the third came back at 1.25. The ratio is set by `(20 + 2c)` against a fixed reload,
+> > so it drifts with the reload rather than moving in one direction — **and the sentence that
+> > generalised from two points was wrong within one ruling.**
 
 ### 7.6 CLOSED — **R13**: THE FIVE STEPS MUST BE TELLABLE APART BY EAR
 
@@ -1360,18 +1464,27 @@ arrive with their discharge conditions attached rather than acquiring them after
 
 - **It authors no content file and no Java.** No `dragons_plume.yml`, no schema change, no listener.
   The next slice starts from §4's growth points and writes the `core` test first.
-- **It prices nothing itself — and §7 is CLOSED EXCEPT FOR ONE NUMBER, WHICH R1′ RE-OPENED.**
+- **It prices nothing itself — and §7 is now CLOSED, every number in it ruled.**
 
   ```
-  arrow 1 at full charge   R6    charge second c = 20      R6     partial draw 12    R4'
-  cooldown_ticks 0         R7    reload_ticks 90           R9     gravity 0.05       R12
-  vanilla's 3-tick floor   R10   max_lifetime_ticks 120    R11    speed 2.5          R11
-  1 / 3 / 5, three steps   R1'   the cap strands           R3a    the pitch mapping  R13
+  arrow 1 at full charge   R6    charge second c = 20      R6     gravity 0.05       R12
+  cooldown_ticks 0         R7    vanilla's 3-tick floor    R10    speed 2.5          R11
+  max_lifetime_ticks 120   R11   1 / 3 / 5, three steps    R1'    the cap strands    R3a
+  the pitch mapping        R13   the sound key             R13
 
-  attack_damage 48         R8    *** RE-OPENED -- ruled against the superseded 5-second
-                                     cycle; §7.1 carries the dialog for Ben. Authored and
-                                     FLAGGED in dragons_plume.yml until he answers. ***
+  attack_damage 34         R8'   ) ONE RULING, THREE FIELDS. Each was balanced against
+  reload_ticks   60        R9'   ) the other two, so changing one alone re-opens the
+  partial draw    8        R4''  ) arithmetic the others were settled against.
   ```
+
+  **`reload_ticks: 60` IS RULED AND NOT DERIVED, AND §7.3 SAYS SO IN THOSE WORDS.** Of 90's three
+  supports the rate coupling is dead and the ticks-per-round comparison was overturned; **pacing, a
+  feel judgement, is the only one left.** A number with no derivation is one somebody later "fixes",
+  so both the plan and `dragons_plume.yml` warn against re-deriving it from the ammunition table.
+
+  **STILL UNRULED AND STILL MARKED AS SUCH:** the tap's **NAME** (it went into §7.1's dialog and came
+  back unmentioned — **unruled, not declined**), the **homing constants** of §5, and `item: arrow`,
+  which is a derivation rather than a ruling.
 
   **The sound key is ruled** — `block.note_block.hat`, on feel 2026-09-14 (§7.6), the only instrument
   there was for it — **and it survived R1′ untouched**, because Ben ruled the timbre and the

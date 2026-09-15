@@ -1,22 +1,24 @@
 # THE DRAGON'S PLUME -- the Ranger's third weapon, and the first in this project whose INPUT IS NOT
 # A CLICK.
 #
-# ================== FIRST PASS. IT AUTHORS ONLY WHAT THE BOOT NEEDS. ==================
+# ================== COMPLETE. BOTH SHOTS ARE AUTHORED AND THE WEAPON FIRES. ==================
 #
-# Slice H1 -- the draw, the charge tracker, the rising tick and a release that fires NOTHING -- is
-# merged and CANNOT BE TESTED without this file: its gate is a bow-material weapon of ours that binds
-# no right_click, and hunters_bow binds one. This file is the blocker, and unblocking the boot is the
-# whole reason it exists yet.
-#
-# SO THE RELEASE IS DELIBERATELY ABSENT. No speed, no gravity, no max_lifetime_ticks, no homing
-# block, no cast of any kind. Those numbers are RULED -- reach ~300 blocks (R11), gravity like a
-# normal arrow (R12) -- but slice H2 has not decided how the release reaches a cast spec, and
-# authoring under a binding that may not exist is authoring a guess that gets rewritten.
+# ~~FIRST PASS. IT AUTHORS ONLY WHAT THE BOOT NEEDS... SO THE RELEASE IS DELIBERATELY ABSENT.~~
+# That header was true for one slice. H1 read the draw, H2 built the release, and this file now
+# carries BOTH casts -- the charged shot under `draw:` and R4''s tap under `tap:`.
 #
 # ================== EVERY NUMBER HERE WAS RULED BY THE OPERATOR ==================
 #
-#   attack_damage 48   quiver_size 25   reload_ticks 90   cooldown_ticks 0
-#   legendary          void             ranger            material bow
+#   attack_damage 34   quiver_size 25   reload_ticks 60   cooldown_ticks 0 (on `tap:`)
+#   tap damage     8   legendary        void              ranger, material bow
+#   speed 2.5          gravity 0.05     max_lifetime_ticks 120
+#
+#   UNRULED AND MARKED AS SUCH: the three homing figures (INHERITED AND UNJUDGED, gate rows P1-P3)
+#   and `item: arrow`, which is a derivation -- see each in place.
+#
+# THREE OF THESE MOVED TOGETHER IN ONE RULING: attack_damage 48 -> 34, reload_ticks 90 -> 60, and
+# the tap 12 -> 8. They are one answer to one dialog and must be read as one -- PLAN-dragons-plume.md
+# 7.1. Changing any one alone re-opens arithmetic the other two were balanced against.
 #
 # NOTHING below is a proposal. PLAN-dragons-plume.md carries the derivations and the arithmetic each
 # was ruled against; this file carries the values and the consequences a reader of THIS file needs.
@@ -49,29 +51,28 @@ class: ranger
 # reads them. A different material would have no draw to read.
 material: bow
 
-# ============ 48: RULED -- *** AND RE-OPENED, BECAUSE THE CYCLE IT WAS RULED AGAINST IS GONE ***
+# ============ 34: RULED, AND THE DIALOG THAT RE-OPENED 48 IS CLOSED ============
 #
-# *** DO NOT LOWER THIS NUMBER, AND DO NOT TREAT IT AS SETTLED. IT IS WITH BEN. ***
+# R8 ruled 48 against a FIVE-SECOND release cycle. R1' amended the charge to 1/3/5 and the cycle
+# became three seconds, so the same 48 bought a far higher rate and was FLAGGED here as
+# ruled-against-a-superseded-cycle. THE FLAG HAS BEEN ANSWERED: 34, with reload_ticks 60 below.
 #
-# R8 ruled 48 against a FIVE-SECOND release cycle: one arrow per charge second, five steps, a
-# 590-tick magazine cycle. R1' amended the charge to 1/3/5 -- three steps, TWO seconds past full
-# draw -- so the cycle is now 390 ticks and the same 48 buys a far higher rate:
+#   170 in one instant            5 x 34, was 240
+#   sustained 850 / 18.00s        47.22 dmg/s      was 61.54
+#   Locust sustained              32.50 dmg/s      the Plume is 1.45x it, was 1.89x
 #
-#   240 in one instant            UNCHANGED. What changed is that it arrives every 3s, not every 5s.
-#   sustained 1200 / 19.50s       61.54 dmg/s      was 40.68
-#   Locust sustained              32.50 dmg/s      parity would be ~25 per arrow  (was ~38)
-#   Locust instantaneous          43.33 dmg/s      parity would be ~34 per arrow  (was ~51)
+# *** AND THE THING THE DIALOG DID NOT ACHIEVE, RECORDED BECAUSE IT IS THE OBVIOUS READING: 34
+# STILL SITS ABOVE BOTH LOCUST ANCHORS, EXACTLY AS 48 DID. *** Recomputed at the new cycle,
+# sustained parity is 23.40 per arrow and instantaneous parity 31.20. Cutting the damage did not
+# bring the weapon between them, BECAUSE THE RELOAD SHORTENED IN THE SAME RULING and pulled the
+# anchors down with it. A reader who assumes 48 -> 34 was a move toward parity will be wrong.
 #
-# When Ben ruled it, 48 sat BETWEEN those two anchors. It now sits ABOVE BOTH, at ~1.9x the Locust's
-# sustained output. A legendary outclassing a rare may be exactly right -- that is Ben's call and
-# nobody else's, and PLAN-dragons-plume.md 7.1 carries the dialog.
+#   THE FLAG IS GONE BECAUSE THE QUESTION WAS ASKED AND ANSWERED, WHICH IS THE DISTINCTION THE FLAG
+#   EXISTED TO MAKE. A number left in place because nobody re-asked is the defect this project keeps
+#   finding; a number in place because the operator was asked and answered is a ruling, and the two
+#   are indistinguishable in a content file unless the file says which.
 #
-#   IT IS LEFT AUTHORED AND FLAGGED RATHER THAN QUIETLY ADJUSTED. A number left in place because
-#   nobody re-asked is the defect this project keeps finding; a number left in place because the
-#   operator was asked and said keep it is a ruling. The two are indistinguishable in a content file
-#   unless the file says which, so this comment is the difference.
-#
-# Per ARROW. Five arrows at full charge is 240 DAMAGE IN ONE INSTANT, and the ruling was taken with
+# Per ARROW. Five arrows at full charge is 170 DAMAGE IN ONE INSTANT, and both rulings were taken with
 # that consequence in front of the operator -- against the 104 the Locust lands in its first two
 # seconds. A number that reads modest as a rate reads extreme as a spike, and this weapon is all
 # spike: the release lands in a single frame and then costs a full draw plus two seconds.
@@ -85,7 +86,7 @@ material: bow
 #   THE MODIFIER WAS NEVER WAITING, WHICH IS THE HALF THAT DID NOT CHANGE: WeaponItems.mint derives
 #   the wielder's ATTACK_DAMAGE attribute from this value regardless of triggers, so the stat has
 #   been real since the file shipped and only the tooltip line was ever missing.
-attack_damage: 48
+attack_damage: 34
 
 # ================== THE MAGAZINE ==================
 #
@@ -100,59 +101,47 @@ attack_damage: 48
 # reading a capacity cannot be measuring the fixture by coincidence.
 quiver_size: 25
 
-# 90 TICKS, 4.5s -- RULED -- *** AND RE-OPENED, BECAUSE THE CYCLE IT WAS RULED AGAINST IS GONE ***
+# ================== 60 TICKS, 3.0s -- RULED. *** AND IT IS A RULING, NOT A DERIVATION. *** ==========
 #
-# *** DO NOT CHANGE THIS NUMBER, AND DO NOT TREAT IT AS SETTLED. IT IS WITH BEN, ***
-# *** IN THE SAME DIALOG AS attack_damage ABOVE, SO HE RULES BOTH IN ONE ANSWER. ***
+# *** THIS VALUE RESTS ON A FEEL JUDGEMENT AND ON NOTHING ELSE. SAY SO, BECAUSE A NUMBER WITH NO
+# *** DERIVATION IS ONE SOMEBODY LATER "FIXES".
 #
-# THE SECONDS DID NOT MOVE. THE SHARE DID, BY HALF AGAIN, AND NOBODY EDITED THE NUMBER.
+# 90 HAD THREE SUPPORTS. TWO ARE GONE AND THE THIRD IS WHAT 60 STANDS ON:
 #
-#   ruled at   90 / 590 = 15.25% of the magazine cycle
-#   now        90 / 390 = 23.08%                        a factor of 1.51
+#   1. THE RATE COUPLING       DEAD, and it died twice. "Below reload_ticks ~= 71 the tap retakes
+#                              the lead" was true at one arrow per second. R1' killed it; the
+#                              re-derivation at d=8 KILLED IT HARDER -- see the note below.
+#   2. TICKS PER ROUND         OVERTURNED BY THE OPERATOR, with the consequence in front of him.
+#                              This file used to argue 3.60 was "deliberately just UNDER
+#                              quiver_stone's 3.78" and that "at the 60 first proposed it would have
+#                              been 2.40, cheapest by 36%". 60 IS THAT VALUE. The Plume is now the
+#                              cheapest ammunition in the project by 36.5%, and that is chosen.
+#   3. PACING                  "Longer than anything shipped, but not punishing." A FEEL JUDGEMENT,
+#                              and the only support 60 has.
 #
-# Ben ruled 4.5 seconds as "longer than anything shipped, but not punishing" AGAINST A 29.5-SECOND
-# MAGAZINE CYCLE. R1' cut the shooting half from 500 ticks to 300 and left the reload untouched, so
-# the same 4.5 seconds is now most of half again as much of the player's time. R9's NUMBER did not
-# change; what it MEANS did, and a value re-read in a context nobody re-ruled is the same defect as
-# a value nobody re-asked about.
+#   ticks per round:  boltor 7.50   locust 5.00   quiver_stone 3.78   PLUME 2.40
 #
-#   NOTE THIS IS A DIFFERENT FLAG FROM THE DEAD COUPLING BELOW, AND THE TWO ARE EASY TO CONFLATE.
-#   That one says a REASON for 90 stopped existing. This one says the COST of 90 grew. A reader who
-#   sees the coupling struck out could reasonably conclude the number got less important; it got
-#   more expensive.
+# *** SO DO NOT RE-DERIVE THIS NUMBER FROM THE AMMUNITION COMPARISON. *** That comparison was the
+# argument for 90 and it was heard and overruled. Anyone who recomputes it will find 2.40 sitting
+# well under 3.78, will read that as a defect, and will be reversing a ruling rather than fixing an
+# oversight. THE ONLY THING THAT CAN MOVE THIS NUMBER IS ANOTHER FEEL JUDGEMENT.
 #
-#   *** AND 90 IS OVER-DETERMINED RATHER THAN UNSUPPORTED, WHICH IS WHY THIS IS DOUBT ABOUT THE
-#   CONTEXT AND NOT ABOUT THE VALUE. *** Its ticks-per-round reason is completely untouched by R1':
-#   3.60 against quiver_stone's 3.78 is a comparison between two weapons' magazines and R1' moved
-#   neither. So 90 still has a live, independent justification standing under it -- the flag asks
-#   whether the SHARE is what Ben intended, not whether the number has any support left.
+#   AND THE RATE COUPLING IS DEAD IN A STRONGER SENSE NOW, RE-DERIVED RATHER THAN CARRIED FORWARD:
+#   at d=8 the tie is at reload_ticks = -1.85 (fencepost A) and -5.77 (B). At the OLD set it was
+#   +4.00, meaning a zero reload would have handed the lead back to the tap. THE SIGN AT R=0 HAS
+#   FLIPPED: even a zero reload now leaves the charge ahead, so this field has stopped bearing on
+#   the rate comparison at all. PLAN-dragons-plume.md 7.3 carries the working.
 #
-# 3.60 ticks per round, deliberately just UNDER quiver_stone's 3.78: the Plume is emphatically NOT
-# the cheapest ammunition in the project. At the 60 first proposed it would have been 2.40, cheapest
-# by 36%. UNTOUCHED BY R1'.
-#
-#   *** THE "BELOW 71 TICKS THE TAP RETAKES THE LEAD" COUPLING IS DEAD. IT DIED WITH R1'. ***
-#   This comment used to say that, and to call the number load-bearing for the rate crossover.
-#   RECOMPUTED at 1/3/5 (PLAN-dragons-plume.md 7.3): the tie is at reload_ticks = 4 on one fencepost
-#   convention and exactly 0 on the other, and at T=4 it is NEGATIVE -- meaning no reload value lets
-#   the tap retake the lead at all. The charge now leads everywhere.
-#
-#   WHAT 90 IS STILL FOR, which is not nothing: with cooldown_ticks at 0 (R7, below) the reload
-#   remains the ENTIRE tap tax on AMMUNITION -- a tap-spammer meets it four times as often per unit
-#   of damage dealt -- and 3.60 ticks per round is what keeps the Plume off the cheapest-ammunition
-#   spot. Those reasons are untouched.
-#
-#   A STALE LOAD-BEARING FLAG IS WORSE THAN NO FLAG: it makes the next author afraid of a field for
-#   a reason that has stopped existing, and the fear reads exactly like the real coupling did.
-#
-#   IT IS LEFT AUTHORED AND FLAGGED RATHER THAN QUIETLY ADJUSTED. A number left in place because
-#   nobody re-asked is the defect this project keeps finding; a number left in place because the
-#   operator was asked and said keep it is a ruling. The two are indistinguishable in a content file
-#   unless the file says which, so this comment is the difference.
+#   AND THE TAP TAX SURVIVES AS AN AMMUNITION ARGUMENT, WHICH IS NOT A RATE ONE. With cooldown_ticks
+#   at 0 (R7, below) the reload is still the whole price of tapping: the same 25 rounds are worth 850
+#   damage charged and 200 tapped -- 4.25x -- so a tap-spammer meets the reload four times as often
+#   per unit of damage dealt. THAT ratio is untouched by any of this, because it is damage per ROUND
+#   and every ruling here moved time.
 #
 # NOT ON THE TOOLTIP. WeaponLore renders a quiver line and NO RELOAD LINE AT ALL, so this number
-# reaches a player only as the wait itself.
-reload_ticks: 90
+# reaches a player only as the wait itself -- which is exactly why a feel judgement is the right kind
+# of support for it, and why no arithmetic here can check it.
+reload_ticks: 60
 
 # THE FLAVOUR NAMES NO NUMBER AND NOTHING A STAT CAN MOVE, which is locust.yml's rule rather than
 # boltor.yml's. "Eight bolts, then three seconds" quotes a quiver_size that QuiverSize.resolve can
@@ -351,21 +340,21 @@ triggers:
       # DO NOT "COMPLETE" THIS BY COPYING THE BLOCK FROM `draw:` ABOVE. The two casts are deliberately
       # not the same shot, and the difference between them is the entire content of R4'.
 
-    # ================== 12: A LITERAL, AND THAT IS WHY THIS BINDING EXISTS AT ALL ==================
+    # ================== 8: A LITERAL, AND THAT IS WHY THIS BINDING EXISTS AT ALL ==================
     #
-    # *** WHY 12 IS A LITERAL AND 48 IS NOT. *** weapon_damage reads the wielder's ATTACK_DAMAGE
-    # attribute, which is this weapon's attack_damage -- 48. A LITERAL IS THE ONLY WAY TO SAY A
-    # NUMBER THAT IS NOT THE WEAPON'S, and R4' rules the tap at a quarter of the charged arrow.
+    # *** WHY 8 IS A LITERAL AND 34 IS NOT. *** weapon_damage reads the wielder's ATTACK_DAMAGE
+    # attribute, which is this weapon's attack_damage -- 34. A LITERAL IS THE ONLY WAY TO SAY A
+    # NUMBER THAT IS NOT THE WEAPON'S, and R4' rules the tap well under the charged arrow -- 8 against 34, ruled alongside it.
     #
     # THAT IS THE REASON THERE ARE TWO BINDINGS RATHER THAN ONE. The tap is not a scaled charged
     # release: different damage, no seeking, different shot. Neither half of that is expressible
     # under one binding -- attack_damage is weapon-level, and the homing block lives on the cast.
     #
-    #   CONSEQUENCE ON THE TOOLTIP: this renders "Void Damage: 12", ELEMENT-typed rather than
+    #   CONSEQUENCE ON THE TOOLTIP: this renders "Void Damage: 8", ELEMENT-typed rather than
     #   class-typed, because a literal reads no stat -- so no "+N Ranged Damage" modifier can reach
     #   it, and claiming otherwise would be a lie the tooltip tells. WeaponLore's own comment says
     #   exactly this about the ability path.
     on_hit:
       - type: damage
-        amount: 12
+        amount: 8
         element: void
