@@ -73,8 +73,8 @@ forming by accident**, so it is stated rather than left: a reader looking for "t
 have to know which family a rule is in before knowing where to look.
 
 **Why this way round, and the argument is about who reads what.** This file's own first line is *read
-this before writing any code*, and it is loaded every session; `NEXT.md` is nine thousand lines read
-on demand. **A rule that lives only in `NEXT.md` will not be read by the person about to break it.**
+this before writing any code*, and it is loaded every session; `NEXT.md` is **10,966 lines** read
+on demand (measured at `0dd9bbe`; this said *"nine thousand"* until 2026-09-15). **A rule that lives only in `NEXT.md` will not be read by the person about to break it.**
 The cost is that this file grows, and it is paid down by keeping each entry here to the operational
 core — what to DO — and leaving the persuasion, the worked example and the dated instance to
 `NEXT.md`.
@@ -1176,6 +1176,25 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   > `InventoryCreativeEvent` as a MECHANISM, and `GATE-vanilla-damage.md`'s one hit is *"nearly
   > recorded as a survival"* — **a fall the player lived through, not a game mode.** A bare
   > `grep -l` says 4 of 19 and the answer is 2.
+- **THIS FILE'S OWN LENGTH, AND THE ACCOUNT FILE THAT STOPPED BEING WRITTEN.** `CLAUDE.md` is loaded
+  every session by both seats, so **its length is paid on every turn, forever.** Measured:
+  **`618bc9e` 1377 → `0dd9bbe` 1620 — +243 lines, +17.6%, in one week, across four commits**
+  (`#91`, `#94`, `#95`, `#98`). **Anchored to `0dd9bbe` because this entry cost 19 more: a line that
+  carries a count is itself a line, and an unanchored figure here would be stale on arrival.**
+
+  > **THE CAUSE IS A MISSING DESTINATION, NOT CARELESSNESS.** `NEXT.md` has not been written since
+  > `2b41c62` (`#71`, 2026-09-13). **Every account since has had nowhere to go** — the squash bodies
+  > have been carrying them, which is why they are so good, and the remainder has landed *here*, in
+  > the POINTER file, for want of an alternative. **The project lost its account file and has been
+  > writing accounts into its pointer file ever since.**
+  >
+  > **The failure mode is the one the two-homes convention exists to prevent, one level up: a loaded
+  > file that grows past being read stops being loaded IN PRACTICE, and then every rule in it is
+  > homeless again.** The cure and the disease are the same mechanism at different lengths.
+  >
+  > **THE QUESTION IS WHETHER `NEXT.md` IS REVIVED OR SUCCEEDED, AND IT IS BEN'S — NOT A CLEANUP.**
+  > Named here rather than fixed: fixing it inside any PR would widen that PR by more than the rule
+  > it was carrying.
 
 
 ### THREE THINGS THAT DO NOT ANNOUNCE THEIR OWN ABSENCE
