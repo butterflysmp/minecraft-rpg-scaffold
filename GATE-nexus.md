@@ -217,21 +217,6 @@ refused"*. Hotbar index *n* is `hotbar.n`, so the locked slot is `hotbar.8` and 
 and the reading presents as *"the surplus star was not deleted"*. **A hollow fixture reported as a
 defect in the code it was meant to test**, and it is the one wrong turn this row makes easy.
 
-**THE PRE-JOIN CONTROL, WHICH IS WHAT MAKES THE STAGING CHECKABLE WITHOUT CONVERGE.** Before
-quitting, in the own-inventory screen:
-
-- Left-click the item at **slot 3** — it must be **REFUSED**. `touchesTheStar`'s second arm refuses a
-  star *wherever it sits*, so a refusal here proves the copy carried the tag. It is independent of
-  `converge`, and it is non-destructive: a refusal changes nothing, so the staging survives the
-  check.
-- Left-click an ordinary item elsewhere — it must **MOVE**. Without it, a refusal at slot 3 is
-  equally consistent with the guard refusing everything, which is the control every other row in this
-  file carries.
-
-**And for 5c only: no other cobblestone anywhere in the inventory.** `MenuSafety.give` calls
-`addItem`, which fills a **PARTIAL stack before an empty slot** — so a second cobblestone stack
-silently absorbs the displaced 13 and the count reading is destroyed rather than failed.
-
 **Route B — the offline copy.** Stop the server and, in `world/playerdata/<uuid>.dat`, **COPY the
 existing star's stack** into the slot-3 entry rather than authoring one. A copy cannot get the tag
 wrong; a hand-written tag can, and its failure is the silent one above. The tag is `rpg:nexus` — a
@@ -250,6 +235,53 @@ with no guard registered, quit, restore the jar, boot normally, join.
 > plugin-PRESENT server still answering, which refuses every move and reads as Route C being
 > impossible. **Confirm no surviving `java` process before removing the jar, and confirm the jar is
 > gone afterwards.** Same file lock as `CLAUDE.md`'s `*** MUTATION STILL IN DEPLOYED JAR ***` entry.
+
+### COMMON TO ALL THREE ROUTES — AND THE HAZARD THAT WOULD PASS A ROW THAT TESTED NOTHING
+
+**`converge` RUNS ON RESPAWN, NOT ONLY ON JOIN.** Two call sites, measured: `RpgListeners:433`
+(`onJoin`) and `RpgListeners:1146` (`onPlayerRespawn`). `NexusSlots.converge`'s own javadoc says why —
+`onQuit` does not run on death, so a star lost at death would otherwise be missing until the next
+reconnect.
+
+**SO A DEATH BETWEEN STAGING AND QUITTING SILENTLY CONVERGES THE STAGING AWAY.** The surplus is
+deleted, the survivor promoted into slot 8, and the operator then quits and joins into an
+**ALREADY-CONVERGED** state — seeing one star in slot 8, which is *exactly 5d's predicted end state*,
+and ticking **PASS**. The row passes on a starting state that stopped existing before the join.
+
+**That is not hypothetical in this file's own boot order.** Row 1 is the DEATH row and it sits
+immediately before row 5. An operator working the sequence dies three times, then stages row 5.
+
+> **Stage, run the control, quit. Do not die in between.** It binds Routes A, B and C alike: A stages
+> in a live session where death is one mob away, and B and C both end with a join, after which any
+> death before the measured one has the same effect.
+
+**THE PRE-JOIN CONTROL — AND IT HAS TWO JOBS, WHICH IS WHY BOTH ARE NAMED.** Before quitting, in the
+own-inventory screen:
+
+- Left-click the item at **slot 3** — it must be **REFUSED**. `touchesTheStar`'s second arm refuses a
+  star *wherever it sits*. It is independent of `converge`, and it is non-destructive: a refusal
+  changes nothing, so the staging survives the check.
+- Left-click an ordinary item elsewhere — it must **MOVE**. Without it, a refusal at slot 3 is
+  equally consistent with the guard refusing everything, which is the control every other row in this
+  file carries.
+
+**A FAILED CONTROL HAS TWO CAUSES AND ONE SYMPTOM, SO THE SYMPTOM IS NOT THE READING.** The control
+was first written to prove only that *the copy carried the tag*. It also catches *a respawn-converge
+that has already run*, and both present as "the left-click at slot 3 was permitted":
+
+| what slot 3 shows on a failed control | what happened | what to do |
+|---|---|---|
+| a star IS there, and it **MOVES** | the copy is **UNTAGGED** — the tag did not carry | re-stage; never with `with minecraft:nether_star` |
+| slot 3 is **EMPTY**, one star at 8 | **you died** — `converge` already ran on respawn | re-stage, and do not die before quitting |
+
+**Do not collapse those two into "the control failed".** One observation, two causes, no way to tell
+them apart — the defect shape this whole file is about, and it does not stop being that shape because
+it turned up inside the control written to close it.
+
+**And for 5c only: no other cobblestone anywhere in the inventory.** The displaced stack goes through
+`MenuSafety.give` → `addItem`, and `MenuSafety.fits`'s javadoc records that fill order in its own
+words — *"partial matching stacks first, then empties"*. A second cobblestone stack therefore absorbs
+the displaced 13, and the *"Count still 13"* reading is **destroyed rather than failed**.
 
 **PREDICTED:**
 
@@ -276,9 +308,12 @@ with no guard registered, quit, restore the jar, boot normally, join.
 > rule binds **after a row is read**; this file is `Status: NOT RUN`, nothing has been read, and the
 > old sentence would have sent the first reading to the wrong conclusion.
 
-**READING:** _(not run)_ — **5c and 5d are not readable without naming their STAGING ROUTE (A, B or
-C) and the outcome of the PRE-JOIN CONTROL.** A reading that omits either records an ending state
-with no known starting one, which cannot be interpreted later and cannot be re-run.
+**READING:** _(not run)_ — **5c and 5d are not readable without all three of: the STAGING ROUTE
+(A, B or C), the outcome of the PRE-JOIN CONTROL, and the statement that NO DEATH OCCURRED between
+staging and quitting.** The first two record what the starting state was; the third records that it
+still existed at the join, because `converge` runs on respawn and a death silently replaces the
+staged state with the row's own predicted end state. A reading missing any of the three records an
+ending state with no known starting one — uninterpretable later, and not re-runnable.
 
 **5d is the only deletion this feature performs and it is deliberate.** A surplus Nexus star is
 plugin-minted, worth nothing and re-minted free; the guarantee is *never destroys a PLAYER's item*,
