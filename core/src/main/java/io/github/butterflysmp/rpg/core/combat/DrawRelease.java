@@ -86,6 +86,39 @@ public sealed interface DrawRelease {
      * transcription is stale too and <b>the test stays green while both are wrong together.</b>
      * There is no automatic detector for that; the upgrade procedure's smoke test is the only thing
      * that would notice, and only if somebody taps.
+     *
+     * <h2>AND A SECOND CONSEQUENCE OF THE SAME EVENT, WHICH IS NOT ABOUT THIS CONSTANT'S VALUE AT
+     * ALL -- IT IS ABOUT WHAT THE FLOOR IS HOLDING UP</h2>
+     *
+     * <p><b>THE DRAGON'S PLUME'S BALANCE RESTS ON THIS 3 BY A MARGIN OF SIX HUNDREDTHS OF A TICK,
+     * AND NOTHING CHOSE THAT.</b> Computed at the ruled values (charged 34, tap 8,
+     * {@code reload_ticks} 60): the tap interval at which tapping would draw level with charging
+     * <b>on a zero reload</b> is
+     *
+     * <pre>
+     * T = 2.9412     against this constant's 3     -- a margin of 0.0588 ticks
+     * </pre>
+     *
+     * <p>So the charged release stays ahead partly because <b>vanilla's power curve happens to
+     * refuse a two-tick tap.</b> {@code PLAN-dragons-plume.md} §7.3 records the coupling as dead --
+     * no reload value lets the tap back in front -- and <b>that conclusion is true only while the
+     * floor sits above 2.9412.</b>
+     *
+     * <p><b>IT IS A COINCIDENCE, NOT A DESIGN MARGIN, AND THE DIFFERENCE MATTERS.</b> Nobody picked
+     * 3; it is read off {@code BowItem.getPowerForTime} and was inherited before it was ours. Nobody
+     * picked 2.9412 either -- it falls out of three ruled numbers that were chosen for other
+     * reasons. <b>Two independent quantities landed 0.06 apart by accident</b>, and a margin nobody
+     * chose is a margin nobody is watching.
+     *
+     * <p><b>ITS CONDITION, stated as an event rather than a date:</b> if a future Paper moves the
+     * power curve such that this floor drops <b>below 2.9412</b> -- which is a change of THEIRS,
+     * not of ours -- <b>the tap retakes the lead at a zero reload and §7.3's "dead coupling" is
+     * alive again.</b> That is the same upgrade this javadoc already warns about one paragraph up,
+     * and it has two consequences rather than one: the constant and its transcription go stale
+     * together, AND a balance conclusion three files away quietly stops holding.
+     *
+     * <p>Named here rather than only in the plan, because <b>this is the file an upgrade makes
+     * somebody open</b>, and the plan is not.
      */
     int MIN_RELEASE_TICKS = 3;
 
