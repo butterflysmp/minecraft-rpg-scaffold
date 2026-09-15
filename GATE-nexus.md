@@ -145,6 +145,144 @@ occupied.
 | 5c | cobblestone x13 | star in slot 3 | 5 |
 | 5d | **the star** | a second star in slot 3 | 5 |
 
+### 5c AND 5d HAVE NO IN-GAME ROUTE TO THEIR STARTING STATE, SO THE STAGING IS PART OF THE ROW
+
+**Caught BEFORE the boot rather than after, which is the good version of finding it.** Both sub-rows
+need a Nexus star resting at **slot 3** before the join, and 5d needs a **second** one. Neither
+condition can arrive by playing — every route to it is refused by the guard the row exists to test:
+
+| the route to slot 3 | what refuses it |
+|---|---|
+| left / right / shift-click the star at 8 | `touchesTheStar`, `LOCKED_SLOT` arm — the clicked index IS 8 |
+| number key while hovering the star | the same arm, via the clicked slot |
+| hover slot 3, press **9** | the same arm, via `getHotbarButton()` — the `NUMBER_KEY` arm contributes `(true, 8)` |
+| **F** | `onNexusSwapHand`, and `SWAP_OFFHAND` contributes `(true, 40)` besides |
+| **Q**, in a screen or in hand | the `DROP` / `CONTROL_DROP` arm, and `onNexusDrop` for the in-hand case |
+| drag off the star | you cannot start one — picking it up is refused, and `refusesDrag` refuses a star on the cursor anyway |
+| creative middle-click | `InventoryCreativeEvent` inherits `InventoryClickEvent`'s `HandlerList`, so it reaches `onNexusClick` — **measured below** |
+| minting a second star | `NexusItems.mint` has **exactly one call site**, inside `converge`, and it mints only when none is present |
+
+**And `converge()` runs only ON JOIN**, which is the thing being measured — so the row cannot stage
+itself by converging first.
+
+**The creative row is MEASURED, not assumed**, because own-`HandlerList` inheritance is the exact
+shape that produced defect 5 of `#92`. `javap -p` against the pinned
+`paper-api 26.1.2.build.74-stable`:
+
+```
+InventoryCreativeEvent           declares NEITHER  -> inherits, so onNexusClick DOES receive it
+PlayerInteractAtEntityEvent      declares NEITHER  -> inherits            (CONTROL, agrees with #92)
+PlayerArmorStandManipulateEvent  declares BOTH     -> its own HandlerList (CONTROL, agrees with #92)
+```
+
+The two control lines reproduce `#92`'s recorded readings from the same jar on the same run. **An
+instrument that finds nothing looks identical to one that is not looking**, so it is made to print a
+known-present positive alongside the answer being sought.
+
+**THE READING IS VOID WITHOUT THE ROUTE.** A star placed by a staging route and a star stranded by a
+real defect are not the same starting state, so **the reading names which route it used** or it
+records an ending state with no known starting one.
+
+**Route A — `/item replace … from …`, which COPIES a stack with its components.** No restart, no NBT
+editor, no second account. It raises no inventory event, so the lock never sees it: exactly the class
+of route `NexusSlots.converge`'s own javadoc names as the reason convergence exists rather than
+mint-if-absent — *"a direct server-side `setItem`, which raises no event at all and so cannot be
+refused"*. Hotbar index *n* is `hotbar.n`, so the locked slot is `hotbar.8` and slot 3 is `hotbar.3`.
+
+- **5d** — one command, and the copy is byte-identical to the original **by construction**:
+
+  ```
+  /item replace entity @s hotbar.3 from entity @s hotbar.8
+  ```
+
+  Leave slot 8 alone. That is 5d's starting state: the star at 8, a second at 3.
+
+- **5c** — the same copy FIRST, then overwrite the original. **In that order** — the reverse destroys
+  the source before it has been copied:
+
+  ```
+  /item replace entity @s hotbar.3 from entity @s hotbar.8
+  /item replace entity @s hotbar.8 with minecraft:cobblestone 13
+  ```
+
+  That leaves exactly one star, at 3, with 13 cobblestone at 8.
+
+> **The `from entity` form is UNCONFIRMED on 26.1 and is written here unverified.** It is offered
+> first because its failure is **LOUD** — an unparseable command errors at the console — and because
+> tab-completion after `/item replace entity @s hotbar.3 ` settles it in one keystroke. If it is not
+> there, fall to Route B or C rather than improvising.
+
+**NEVER STAGE THE SECOND STAR WITH `with minecraft:nether_star`.** That mints an UNTAGGED lookalike
+— row 7's whole subject — which `isNexus` rejects, so `converge` correctly leaves it where it sits
+and the reading presents as *"the surplus star was not deleted"*. **A hollow fixture reported as a
+defect in the code it was meant to test**, and it is the one wrong turn this row makes easy.
+
+**Route B — the offline copy.** Stop the server and, in `world/playerdata/<uuid>.dat`, **COPY the
+existing star's stack** into the slot-3 entry rather than authoring one. A copy cannot get the tag
+wrong; a hand-written tag can, and its failure is the silent one above. The tag is `rpg:nexus` — a
+`BYTE` under `new NamespacedKey(plugin, "nexus")`, the namespace being `paper-plugin.yml`'s
+`name: Rpg` lowercased.
+
+**Route C — the plugin-absent boot**, which is *"disable the plugin, move the star, re-enable"* made
+executable: **Paper has no `/plugin disable`**, so the window is opened by removing the jar. Stop the
+server, `rm -f run/plugins/rpg-*.jar`, boot the server **directly** — `cd run && java -jar paper.jar
+--nogui`, because `dev-server.sh` re-deploys the jar even under `--no-build` — move the star by hand
+with no guard registered, quit, restore the jar, boot normally, join.
+
+> **AND THE TRAP THAT MAKES ROUTE C THE RISKIEST OF THE THREE: KILLING THE SCRIPT DOES NOT KILL THE
+> SERVER.** Ctrl-C on `dev-server.sh` leaves `java` running. It holds `rpg-*.jar` open, so `rm -f`
+> fails with *"Device or resource busy"* — and the boot you then take for plugin-absent is the old
+> plugin-PRESENT server still answering, which refuses every move and reads as Route C being
+> impossible. **Confirm no surviving `java` process before removing the jar, and confirm the jar is
+> gone afterwards.** Same file lock as `CLAUDE.md`'s `*** MUTATION STILL IN DEPLOYED JAR ***` entry.
+
+### COMMON TO ALL THREE ROUTES — AND THE HAZARD THAT WOULD PASS A ROW THAT TESTED NOTHING
+
+**`converge` RUNS ON RESPAWN, NOT ONLY ON JOIN.** Two call sites, measured: `RpgListeners:433`
+(`onJoin`) and `RpgListeners:1146` (`onPlayerRespawn`). `NexusSlots.converge`'s own javadoc says why —
+`onQuit` does not run on death, so a star lost at death would otherwise be missing until the next
+reconnect.
+
+**SO A DEATH BETWEEN STAGING AND QUITTING SILENTLY CONVERGES THE STAGING AWAY.** The surplus is
+deleted, the survivor promoted into slot 8, and the operator then quits and joins into an
+**ALREADY-CONVERGED** state — seeing one star in slot 8, which is *exactly 5d's predicted end state*,
+and ticking **PASS**. The row passes on a starting state that stopped existing before the join.
+
+**That is not hypothetical in this file's own boot order.** Row 1 is the DEATH row and it sits
+immediately before row 5. An operator working the sequence dies three times, then stages row 5.
+
+> **Stage, run the control, quit. Do not die in between.** It binds Routes A, B and C alike: A stages
+> in a live session where death is one mob away, and B and C both end with a join, after which any
+> death before the measured one has the same effect.
+
+**THE PRE-JOIN CONTROL — AND IT HAS TWO JOBS, WHICH IS WHY BOTH ARE NAMED.** Before quitting, in the
+own-inventory screen:
+
+- Left-click the item at **slot 3** — it must be **REFUSED**. `touchesTheStar`'s second arm refuses a
+  star *wherever it sits*. It is independent of `converge`, and it is non-destructive: a refusal
+  changes nothing, so the staging survives the check.
+- Left-click an ordinary item elsewhere — it must **MOVE**. Without it, a refusal at slot 3 is
+  equally consistent with the guard refusing everything, which is the control every other row in this
+  file carries.
+
+**A FAILED CONTROL HAS TWO CAUSES AND ONE SYMPTOM, SO THE SYMPTOM IS NOT THE READING.** The control
+was first written to prove only that *the copy carried the tag*. It also catches *a respawn-converge
+that has already run*, and both present as "the left-click at slot 3 was permitted":
+
+| what slot 3 shows on a failed control | what happened | what to do |
+|---|---|---|
+| a star IS there, and it **MOVES** | the copy is **UNTAGGED** — the tag did not carry | re-stage; never with `with minecraft:nether_star` |
+| slot 3 is **EMPTY**, one star at 8 | **you died** — `converge` already ran on respawn | re-stage, and do not die before quitting |
+
+**Do not collapse those two into "the control failed".** One observation, two causes, no way to tell
+them apart — the defect shape this whole file is about, and it does not stop being that shape because
+it turned up inside the control written to close it.
+
+**And for 5c only: no other cobblestone anywhere in the inventory.** The displaced stack goes through
+`MenuSafety.give` → `addItem`, and `MenuSafety.fits`'s javadoc records that fill order in its own
+words — *"partial matching stacks first, then empties"*. A second cobblestone stack therefore absorbs
+the displaced 13, and the *"Count still 13"* reading is **destroyed rather than failed**.
+
 **PREDICTED:**
 
 - **5a** — sword moved to a free slot, star minted into 8. **Sword not destroyed.**
@@ -152,9 +290,30 @@ occupied.
   dropped at your feet."* Star in 8. **Sword not destroyed.**
 - **5c** — star moved from 3 to 8; the 13 cobblestone land in a free slot (3 is now free, so most
   likely there). **Count still 13.** Thirteen because it collides with nothing else in this file.
-- **5d** — the surplus star at slot 3 is **deleted**; one star remains, in slot 8.
+- **5d** — one star remains, **in slot 8**, and no Nexus star sits anywhere else.
 
-**READING:** _(not run)_
+> **5d's PREDICTION WAS CHANGED WHILE THE STAGING WAS WRITTEN, AND THE OLD WORDING IS RECORDED
+> BECAUSE IT WAS THE OPPOSITE OF WHAT THE CODE DOES.** It read *"the surplus star at slot 3 is
+> **deleted**"*. Traced: `converge` collects `stars = [3, 8]` in index order, deletes every entry
+> **after the first** — `setItem(stars.get(1), null)`, which is the star at **8** — then promotes the
+> survivor at 3 into 8. The star that dies is slot **8**'s.
+>
+> **The row cannot read which one died, and that is why the prediction is an END STATE.** Both stars
+> are byte-identical under every route above, so no observation distinguishes them. Staging with
+> *distinguishable* stars to recover the mechanism would test convergence against a state convergence
+> cannot produce — `mint` makes them identical — so a future reader must not turn this bullet back
+> into a claim about WHICH star was deleted.
+>
+> This is a change to a prediction in a file whose own rule is that predictions are not edited. The
+> rule binds **after a row is read**; this file is `Status: NOT RUN`, nothing has been read, and the
+> old sentence would have sent the first reading to the wrong conclusion.
+
+**READING:** _(not run)_ — **5c and 5d are not readable without all three of: the STAGING ROUTE
+(A, B or C), the outcome of the PRE-JOIN CONTROL, and the statement that NO DEATH OCCURRED between
+staging and quitting.** The first two record what the starting state was; the third records that it
+still existed at the join, because `converge` runs on respawn and a death silently replaces the
+staged state with the row's own predicted end state. A reading missing any of the three records an
+ending state with no known starting one — uninterpretable later, and not re-runnable.
 
 **5d is the only deletion this feature performs and it is deliberate.** A surplus Nexus star is
 plugin-minted, worth nothing and re-minted free; the guarantee is *never destroys a PLAYER's item*,
