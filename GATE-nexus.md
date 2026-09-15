@@ -5,11 +5,35 @@ was written BEFORE any boot, and every expected value was recorded so that a lat
 disagree with it. **When a row is read, its reading is written BESIDE its prediction and the
 prediction is NOT edited.** A prediction revised after the fact proves nothing.
 
-**Row 6 was booted in CREATIVE, and the row does not say so** — two of its six readings are therefore
-**VOID** rather than PASS or FAIL. Row 6 carries the account. **This file still declares no game mode
-anywhere, and that is an OPEN DEBT, not an oversight now closed**: adding a header declaration and a
-per-row mode is owed to this file and to the 16 others that declare none, and is deliberately not
-done in the same change as the reading, so that the reading is not edited by the fix it prompted.
+**Row 6 was booted in CREATIVE, and the row did not say so** — two of its six readings are therefore
+**VOID** rather than PASS or FAIL. Row 6 carries the account. The declaration it was missing is
+immediately below.
+
+---
+
+## GAME MODE — DECLARED, BECAUSE A ROW THAT DOES NOT SAY COSTS A BOOT TO FIND OUT
+
+**EVERY ROW IN THIS FILE IS `/gamemode survival` UNLESS ITS OWN HEADING SAYS OTHERWISE.** The plugin
+ships to a survival server; **a creative reading certifies creative**, and nothing else.
+
+| row | mode | why it is stated rather than assumed |
+|---|---|---|
+| 1 | **SURVIVAL** | a creative player is hard to kill, and the row is about dying |
+| 2 | **SURVIVAL** | **and the row must be read on the FRAME, not on slot 8.** In creative the held item is **not consumed** when it enters an item frame, so *"the star stays in slot 8"* is satisfied whether or not the handler fired — **half the prediction goes hollow in creative** |
+| 3 | **SURVIVAL** | a crafting-table screen is a container in both modes, so this one is *believed* mode-independent — **stated as a belief, and survival is what is certified** |
+| 4 | **SURVIVAL**, and **4a especially** | 4a is the own-inventory screen, which is **exactly the surface Row 8 shows behaves differently in creative**. A creative 4a reads the creative path and says nothing about the shipped one |
+| 5 | **SURVIVAL** | the staging routes are commands and a `.dat` edit; none of them needs creative |
+| 6 | **SURVIVAL** | **ruled after the fact** — it was booted in creative and two readings were lost to it |
+| 7 | **SURVIVAL** | `/rpg health 300` is a command and works in either |
+| **8** | **CREATIVE** | **its own row, not a caveat on another one.** A caveat on a row is a caveat that gets forgotten |
+
+> **CREATIVE GETS A ROW, NOT A FOOTNOTE, AND THAT IS THE WHOLE LESSON OF ROW 6.** The alternative —
+> *"row 6, but note it behaves differently in creative"* — is a sentence that survives exactly until
+> someone reads row 6 and boots it. **A mode that changes the answer is a different row.**
+
+> **THIS FILE'S OWN DEBT IS NOW PAID AND 16 OTHERS' ARE NOT.** Measured at `e9b3e0e` across all 19
+> `GATE-*.md`: only `GATE-quiver-ammo.md` and `GATE-crafting.md` declare a mode. See Row 6's reading
+> for the measurement and for the two files that **look** like they declare one and do not.
 
 **The unit suite covers the DECISION, not the DELIVERY.** `NexusLockTest` has 21 rows over
 `NexusLock`, and `NexusWiringSignatureTest` has 5 over the annotation wiring. Neither can see a
@@ -469,6 +493,143 @@ does not. They **do not stack**, both because their PDC differs and because the 
 **A Material-keyed lock would fail this row in the most confusing possible way**: the dev star
 would become undroppable and the bug would present as "the health item is stuck", nowhere near the
 Nexus.
+
+---
+
+## ROW 8 — CREATIVE, THE OWN-INVENTORY SCREEN, AND THE STAR THAT DUPLICATES
+
+**`/gamemode creative`. THIS ROW'S MODE IS THE ROW.** It exists because Row 6's 6.4 and 6.5 were
+read here and are VOID against a survival gate. **Status: NOT RUN** — every prediction below was
+written before any boot of this row.
+
+### WHAT IS ALREADY KNOWN, SO THE ROW DOES NOT RE-ASK IT
+
+Measured off-server from the pinned `paper-api 26.1.2.build.74-stable` with `javap -p`:
+
+```
+InventoryCreativeEvent extends InventoryClickEvent
+  private ItemStack item;
+  public InventoryCreativeEvent(InventoryView, InventoryType$SlotType, int slot, ItemStack newItem)
+  public ItemStack getCursor()            <- OVERRIDDEN. Returns `item`, the NEW STACK for the slot
+  public void setCursor(ItemStack)
+```
+
+**THE EVENT CARRIES ONE SLOT AND THE ITEM BEING WRITTEN INTO IT.** That is the shape of a
+set-creative-slot packet, not of a container click — and `getCursor()` on this subclass does not mean
+*"what is on the cursor"*, it means *"what this slot is about to become"*.
+
+### THE MECHANISM, DEDUCED FROM THE UNIT TABLE AND THE READING RATHER THAN FROM THE CLIENT
+
+**The deduction needs no knowledge of vanilla packets, which is why it is stated first.** A
+number-key gesture arriving as **one** `InventoryClickEvent` with `ClickType.NUMBER_KEY` is refused
+by `NexusLock` under either staging — hovering the star makes `clicked` the locked slot, and hovering
+the destination makes `getHotbarButton()` contribute `(true, 8)`. `NexusLockTest` pins both.
+**The gesture was NOT fully refused. Therefore it did not arrive as one event.** The identical
+argument applies to F, which `swapOffhandIsREFUSEDFromBothEnds` pins from both ends.
+
+**So the gesture arrives DECOMPOSED — two independent single-slot writes:**
+
+```
+write A   slot 8  <- AIR      clicked = LOCKED_SLOT           -> REFUSED   (star returns to 8)
+write B   slot 1  <- the star clicked = 1, no star at 1 yet   -> PERMITTED (a second star appears)
+```
+
+**AND THE RULE IS COMPLETE ONLY IF THE GESTURE ARRIVES WHOLE.** `NexusLock` asks *"does this touch
+the star?"* — a question about **slots**. Write B touches no star: slot 1 is empty at the moment the
+event fires, and the star is not on the cursor in the ordinary sense. **The half that moves the star
+is refused; the half that CREATES one is innocent by the rule as written.** That is not a hole in the
+decision class, it is the decision class being asked about half a gesture.
+
+> **THE OPERATOR'S HYPOTHESIS, CONFIRMED IN ITS ESSENTIAL CLAIM AND REFINED IN ITS REASON.** It read:
+> *"in creative the client is authoritative over its own inventory screen and sends set-slot packets
+> the server applies with little validation, rather than the container-click packets a chest view
+> uses."* **The authoritative-client half is confirmed** — the decomposition, the event's one-slot
+> shape, and the chest's non-reproduction all agree. **The "little validation" half is withdrawn:**
+> the server validated fine and our guard fired correctly on write A. What defeats the guard is
+> **decomposition, not laxity.** The distinction matters because it predicts where else to look:
+> anywhere a multi-slot gesture is delivered as independent single-slot writes.
+
+> **AND THE READING ALREADY PROVES `InventoryCreativeEvent` IS CANCELLABLE HERE, WHICH THE FIX RESTS
+> ON.** Write A *was* refused — the star returned to slot 8 — so a cancel on this event is honoured
+> by this server on this path. **That is an empirical result from Row 6, not an assumption about
+> CraftBukkit internals**, and it is the reason the fix below is one guard rather than a new
+> mechanism.
+
+### THE STAGING
+
+**Every sub-row states its own expected `/data` reading, because the whole question is whether the
+server agrees with the screen.**
+
+| | gesture, in creative, own-inventory screen (E) | then |
+|---|---|---|
+| 8a | number-key the star from slot 8 to slot 1 | `/data get entity @s Inventory` **from the console** |
+| 8b | F on the star in the inventory | `/data get entity @s Inventory` from the console |
+| 8c | 8a, then **quit and rejoin** | `/data get entity @s Inventory` from the console |
+| 8d | **`/gamemode survival`**, then repeat 8a and 8b | the CONTROL |
+
+**PREDICTED, 8a:** the console read shows **TWO** `rpg:nexus`-tagged stacks — one in the **hotbar
+slot 1** entry, one in the **hotbar slot 8** entry. **That is the row's answer to "real or client
+artifact": REAL.** It is predicted rather than assumed because *"it persisted until `/clear`"* is
+strong but is still a screen reading — `/clear` is server-side, but what it removed was named by the
+client.
+
+> **THE PREDICTION IS A COUNT AND A PLACE, NOT AN NBT SLOT NUMBER, DELIBERATELY.** The classic
+> encoding puts the offhand at `-106b` and armour at `100b`–`103b`, and **26.1 is not assumed to
+> match it** — the inventory NBT layout is exactly the sort of thing a year-versioned drop rewrites.
+> **Read the numbering off the first `/data` output and write it down beside the reading**; a
+> prediction naming a number nobody has checked would fail on the encoding and be recorded as a
+> failure of the star.
+
+**PREDICTED, 8b:** **TWO** tagged stacks, one in the **hotbar slot 8** entry and one in the
+**OFFHAND** entry. The offhand residual and the slot-1 duplicate are **the same defect on two arms**,
+not two defects.
+
+**PREDICTED, 8c:** **ONE** tagged stack, in the **hotbar slot 8** entry. **THIS IS THE
+SURVIVABILITY CLAIM AND IT IS WHY THIS IS A DEFECT AND NOT AN EMERGENCY.** Traced in
+`NexusSlots.converge`: it collects every star
+index, deletes all but the lowest (`setItem(stars.get(i), null)` for `i >= 1`), then relocates the
+survivor into `LOCKED_SLOT`. With stars at `[1, 8]` it deletes **8**'s, keeps **1**'s, and moves it
+to 8 — **exactly one star, in the right slot.** It runs on join **and on respawn**, so a death heals
+it too.
+
+**PREDICTED, 8d:** **ONE** tagged stack, in the **hotbar slot 8** entry, after both gestures.
+**8d IS THE ROW.**
+Without it, 8a and 8b are equally consistent with the lock being broken everywhere, and this file
+would be recording a general failure as a creative one. It is the same control as Row 3's 3c and
+Row 2's cobblestone.
+
+**READING:** _(not run)_
+
+### THE FIX IS ONE GUARD, AND WHERE IT GOES IS AN OPEN QUESTION FOR THE OPERATOR
+
+**IT IS CHEAP BY BEN'S TEST: it needs no second refusal mechanism and no second event.** The
+deciding value is **already computed and already passed** — `NexusSlots.refuses` hands
+`NexusItems.isNexus(event.getCursor(), keys)` to `NexusLock` as `cursorIsStar`, and on an
+`InventoryCreativeEvent` that argument is exactly *"the item about to be written into this slot is a
+Nexus star"*. **`NexusLock`'s `CREATIVE` arm discards it** — `CREATIVE` sits in the
+`Set.of(clicked)` group, and only `DOUBLE_CLICK` consults `cursorIsStar` at all.
+
+**The rule that closes it: a creative write whose NEW ITEM is a Nexus star is refused unless its
+destination is the locked slot.** Nothing legitimate is lost — the only sanctioned way a star enters
+an inventory is `converge`'s direct `setItem`, which raises no event and so is untouched by any
+refusal.
+
+**TWO PLACES IT COULD LIVE, AND THEY TRADE AGAINST EACH OTHER:**
+
+| | where | cost |
+|---|---|---|
+| **A** | `NexusLock`'s `CREATIVE` arm consults `cursorIsStar` | **unit-testable** — `NexusLockTest` can pin it, and a mutation can kill it. **But the operator has said do not touch `NexusLock`** |
+| **B** | an early return in `NexusSlots.refuses` for `InventoryCreativeEvent` | honours that instruction, **and lands in the one class this slice deliberately gave no test file.** Its only coverage would be Row 8 |
+
+**NOT BUILT, PENDING THE RULING.** The prohibition on `NexusLock` was given because the two-member
+arms are correct and must not be "fixed" — **and A does not touch them**: it adds a second axis
+(*what is being written*) to one arm, leaving every slot decision as it is. **But it is still an edit
+to a file that was named off-limits, so it is asked rather than assumed.** B is available and needs
+no ruling; it costs the test.
+
+**EITHER WAY THIS ROW SHIPS.** Ben's instruction was *fix it if it is cheap; gate it as survival
+either way* — 8d is that survival gate, and it is written before any fix so the fix cannot be
+back-fitted to it.
 
 ---
 
