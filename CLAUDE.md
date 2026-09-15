@@ -985,6 +985,61 @@ Every bundled element declares `scorch` or nothing, so **production cannot reach
   being maintained while still looking load-bearing.
 
 
+### A HOLLOW FIXTURE — THE POINTER. THE ACCOUNTS ARE THE INSTANCES LISTED BENEATH IT
+
+**A FIXTURE IS HOLLOW WHEN IT NEVER PRESENTS THE CONDITION THE ROW CLAIMS TO TEST**, and the
+condition can fail to arrive in **SPACE, TIME, KIND, or OBSERVABILITY**.
+
+| arm | the condition… | worked instance |
+|---|---|---|
+| **KIND** | arrives, but it is a *different* condition | `#92` — two in one file |
+| **OBSERVABILITY** | arrives correctly, and the row then claims something **no instrument in the room can read** | `#93` — 5d's deleted star, one of two byte-identical stacks |
+| **SPACE**, **TIME** | named for completeness | **none recorded.** Say so; do not invent one |
+
+**The last row is the rule applied to itself.** A taxonomy with two proven arms and two
+named-but-unwitnessed ones is an honest record; four arms each with a plausible-sounding example is
+the defect this rule is about, wearing the rule's own clothes.
+
+**The accounts, by section — the concept is old here, only the enumeration was homeless:**
+
+- `NEXT.md`, *A RULE AND ITS IMPLEMENTATION AGREE ON THE CASES SOMEONE CHECKED* — *"a hollow row,
+  prescribed by a note about hollow rows"*, and the same finding again under *DEFERRED — PER-CAUSE
+  AMOUNT RULES*.
+- `NEXT.md`, *OPEN FINDING — THE INLINE TWO-MAP MERGE IS A KNOWN-HOLLOW GUARD* — still open.
+- `GATE-ignite.md`, *FIVE ROWS CANNOT ACCEPT A BLANKET* — *"a hollow I7 does not merely lose its own
+  coverage; it withdraws the licence from all eleven."*
+- The `#92` and `#93` squash bodies carry the two arms above.
+
+> **WHY THIS ENTRY EXISTS AT ALL, AND IT IS THE GENERALISABLE PART.** The four arms were cited across
+> two reviews as *"this repo's own taxonomy"* and were **in no file in this repo** — measured,
+> `CLAUDE.md` contained no occurrence of *hollow*. They came from a handoff document: a chat message.
+>
+> **A RULE EVERYONE FOLLOWS AND NO FILE STATES IS ONE CONTEXT LOSS AWAY FROM BEING GONE**, and this
+> project has now lost context once. It was followed correctly the whole time, by convention, carried
+> in conversation — **invisible to anything that greps.**
+>
+> **Second instance, so it is a pattern and not an accident:** the explicit-branch push rule shipped
+> as `#91`, having been owed for sessions on exactly the same terms.
+
+**STANDING DEBT — OTHER RULES CURRENTLY CARRIED ONLY BY CONVENTION.** Named, not fixed; each is a
+candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
+
+- **The test-count instrument.** `@Test` appears **0** times here. The rule is
+  `git grep -ho '@Test' <ref> -- '<module>/src/test/**/*.java' | wc -l`, and *say which instrument*:
+  measured, `grep -rho` reports **995** against git-grep's **1009** in `core` — and a third
+  instrument (`perl`, counting `/\@Test/g`) says **1009**, so **`grep -rho` is the one undercounting**,
+  by 14, with no line in the tree carrying two `@Test`.
+- **Reason from `origin/<ref>`, never a local ref.** `origin/master` appears **0** times here;
+  `ls-remote` appears 7, but only about pushes.
+- **A squash body must carry the DEFECTS FOUND, not only what worked.** The *Record in the body* list
+  names the tip, the tree and the verdict — and not this, which is the half that made `#92`'s and
+  `#93`'s bodies worth keeping.
+- **The gate-file conventions**: `Status: NOT RUN`, every prediction written *before* the boot, the
+  reading written *beside* the prediction, and the prediction not edited once a row has been read.
+  Stated in each `GATE-*.md` header and nowhere central; this file's one *NOT RUN* mention is an
+  anecdote about a splice, not the rule.
+
+
 ### THREE THINGS THAT DO NOT ANNOUNCE THEIR OWN ABSENCE
 
 Everything else in a plan or a diff is noticed by someone who wanted it. These are not, and each
