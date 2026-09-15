@@ -1,9 +1,15 @@
 # GATE — the Nexus: the six routes out, and the two things a unit test cannot see
 
-**Status: NOT RUN.** Every row below was written BEFORE any boot, and every expected value was
-recorded so that a later reading could disagree with it. **When a row is read, its reading is
-written BESIDE its prediction and the prediction is NOT edited.** A prediction revised after the
-fact proves nothing.
+**Status: PARTIALLY RUN — ROW 6 ONLY, 2026-09-15. Rows 1–5 and 7 remain NOT RUN.** Every row below
+was written BEFORE any boot, and every expected value was recorded so that a later reading could
+disagree with it. **When a row is read, its reading is written BESIDE its prediction and the
+prediction is NOT edited.** A prediction revised after the fact proves nothing.
+
+**Row 6 was booted in CREATIVE, and the row does not say so** — two of its six readings are therefore
+**VOID** rather than PASS or FAIL. Row 6 carries the account. **This file still declares no game mode
+anywhere, and that is an OPEN DEBT, not an oversight now closed**: adding a header declaration and a
+per-row mode is owed to this file and to the 16 others that declare none, and is deliberately not
+done in the same change as the reading, so that the reading is not edited by the fix it prompted.
 
 **The unit suite covers the DECISION, not the DELIVERY.** `NexusLockTest` has 21 rows over
 `NexusLock`, and `NexusWiringSignatureTest` has 5 over the annotation wiring. Neither can see a
@@ -159,7 +165,7 @@ condition can arrive by playing — every route to it is refused by the guard th
 | **F** | `onNexusSwapHand`, and `SWAP_OFFHAND` contributes `(true, 40)` besides |
 | **Q**, in a screen or in hand | the `DROP` / `CONTROL_DROP` arm, and `onNexusDrop` for the in-hand case |
 | drag off the star | you cannot start one — picking it up is refused, and `refusesDrag` refuses a star on the cursor anyway |
-| creative middle-click | `InventoryCreativeEvent` inherits `InventoryClickEvent`'s `HandlerList`, so it reaches `onNexusClick` — **measured below** |
+| creative middle-click | `InventoryCreativeEvent` inherits `InventoryClickEvent`'s `HandlerList`, so it **REACHES** `onNexusClick` — **measured below, and reaching is NOT refusing: see the correction under the table** |
 | minting a second star | `NexusItems.mint` has **exactly one call site**, inside `converge`, and it mints only when none is present |
 
 **And `converge()` runs only ON JOIN**, which is the thing being measured — so the row cannot stage
@@ -178,6 +184,35 @@ PlayerArmorStandManipulateEvent  declares BOTH     -> its own HandlerList (CONTR
 The two control lines reproduce `#92`'s recorded readings from the same jar on the same run. **An
 instrument that finds nothing looks identical to one that is not looking**, so it is made to print a
 known-present positive alongside the answer being sought.
+
+> ### CORRECTION, 2026-09-15 — THE MEASUREMENT IS RIGHT AND THE COLUMN IT SITS IN IS WRONG
+>
+> **REACHING A HANDLER IS NOT BEING REFUSED BY IT.** Inheritance of the `HandlerList` is **NECESSARY**
+> for refusal and **NOT SUFFICIENT**: it establishes that the handler is *invoked*, and says nothing
+> about whether cancelling it stops the write. The `javap` reading above is correct, reproducible, and
+> was filed under a column heading — *what refuses it* — that claims more than it measured.
+>
+> **Row 6's reading is the refutation, from the same feature on the same jar.** In creative, in the
+> own-inventory screen, a number-key gesture **reaches the handler, the handler cancels, and a real
+> item still lands in slot 1.** So at least one creative route to a second star is NOT refused, and
+> the table asserted that all of them were.
+>
+> **THE SHAPE, AND IT IS THE REUSABLE PART: A NECESSARY CONDITION, MEASURED CORRECTLY, FILED AS A
+> SUFFICIENT ONE.** Nothing about the measurement was sloppy — it was made against the pinned jar,
+> with two positive controls, precisely because the author knew an instrument can fail to look. **The
+> defect is one column to the left of the number.** A measurement inherits the claim of the heading it
+> is placed under, and no control on the measurement can detect that, because the control is checking
+> the instrument and the error is in the filing.
+>
+> **Practically: when a row in a "what refuses / what prevents / what guarantees" table is a
+> MECHANISM rather than an OBSERVED REFUSAL, say which it is in the cell.** A cell reading *"reaches
+> the handler"* under *what refuses it* is answering a different question from the one the column
+> asks, and it reads as an answer.
+>
+> **What this does NOT invalidate:** rows 5c and 5d still have no in-game route to their starting
+> state via any gesture the lock names — the seven other rows of the table are untouched, and the
+> creative number-key route is a **defect**, not a sanctioned staging route. Staging still uses Route
+> A, B or C below.
 
 **THE READING IS VOID WITHOUT THE ROUTE.** A star placed by a staging route and a star stranded by a
 real defect are not the same starting state, so **the reading names which route it used** or it
@@ -307,6 +342,13 @@ the displaced 13, and the *"Count still 13"* reading is **destroyed rather than 
 > This is a change to a prediction in a file whose own rule is that predictions are not edited. The
 > rule binds **after a row is read**; this file is `Status: NOT RUN`, nothing has been read, and the
 > old sentence would have sent the first reading to the wrong conclusion.
+>
+> > **THAT LICENCE HAS SINCE LAPSED, 2026-09-15, AND IT IS NOTED HERE RATHER THAN LEFT TO BE
+> > RE-QUOTED.** The file is now `PARTIALLY RUN` — Row 6 has been read. The paragraph above is a
+> > correct account of a change made while nothing had been read, and it is **no longer a licence to
+> > make another one.** A precondition that lapses silently is `CLAUDE.md`'s own *control carried
+> > past its precondition*: 5c and 5d are still unread, but the sentence *"nothing has been read"* is
+> > now false of this file and cannot be cited again as written.
 
 **READING:** _(not run)_ — **5c and 5d are not readable without all three of: the STAGING ROUTE
 (A, B or C), the outcome of the PRE-JOIN CONTROL, and the statement that NO DEATH OCCURRED between
@@ -338,7 +380,75 @@ on it; press F on it; number-key it to slot 1. Watch the slot, not the chat.
 title. **If a flicker is visible on any of the five, name which** — the resync is per-path and a
 flicker on one is not a flicker on all.
 
-**READING:** _(not run)_
+**READING — 2026-09-15, booted by Ben. CONDITIONS: CREATIVE mode, own-inventory screen (E).**
+The prediction above is untouched.
+
+| | gesture | reading |
+|---|---|---|
+| 6.1 | pick up the star | **PASS** |
+| 6.2 | drag from it | **PASS** |
+| 6.3 | Q on it | **PASS** |
+| 6.4 | F, star in the INVENTORY | **VOID** — a residual is left in the **OFFHAND** |
+| 6.4′ | F, star **IN HAND** (no screen) | **PASS** |
+| 6.5 | number-key it to slot 1 | **VOID** — the star returns to slot 8 **and a second star appears in slot 1**, persisting until `/clear` |
+
+**Six readings from five staged gestures** — 6.4 was read twice, in-screen and in-hand, and the two
+are different code paths rather than a repeat. **Four PASS, two VOID.** No chat line, no sound, no
+title on any of the six, and **no flicker was named on any path**, so the resync claim is unrefuted
+as far as this boot reaches.
+
+**6.4 AND 6.5 ARE VOID, NOT FAILED, AND THE DIFFERENCE IS THE WHOLE POINT.** They were read under a
+condition **this row never pinned and which decides the answer**: re-tested and confirmed, both
+reproduce **ONLY in creative** and **ONLY in the own-inventory screen** — with a **CHEST open they do
+not reproduce at all**. The row names no game mode. So there is no verdict to give, only a reading
+whose scope cannot be interpreted; writing FAIL here would assert a survival defect this boot never
+measured, and writing PASS would assert a creative one it never measured either.
+
+> **THE OMISSION IS ITSELF THE FINDING, AND IT IS NOT LOCAL TO THIS ROW.** Measured at `e9b3e0e`
+> over all 19 `GATE-*.md`, case-insensitively, for
+> `gamemode|survival|creative|adventure|spectator`:
+>
+> ```
+> 15 files   ZERO hits                                     declare no mode
+>  1 file    GATE-nexus.md            3 hits               all three are InventoryCreativeEvent
+>                                                          MECHANISM -- no boot condition
+>  1 file    GATE-vanilla-damage.md   1 hit                "nearly recorded as a survival" --
+>                                                          the word, not the mode
+>  1 file    GATE-crafting.md         2 hits               DECLARES: "In creative mode", and a
+>                                                          "survival-mode player" setup
+>  1 file    GATE-quiver-ammo.md      8 hits               DECLARES, per row: "/gamemode survival
+>                                                          rows 1-3 and 5. Row 4 is the creative one"
+> ```
+>
+> **So the convention is applied in 2 files of 19, not 4** — and the two that look like it on a grep
+> are `CLAUDE.md`'s FALSE PRESENCE, exactly: *prose that names a key is indistinguishable from the
+> key.* `GATE-vanilla-damage.md`'s `survival` is a fall the player lived through. **That omission cost
+> two of the six readings in this row.** The file-level fix and the standing debt for the other 16
+> are tracked separately; this row records only what it cost here.
+
+**THE PATTERN, WHICH IS THE PART THAT GENERALISES: the two VOID gestures are EXACTLY the two
+`ClickType` arms in `NexusLock` whose touched set has a SECOND member.**
+
+```
+NUMBER_KEY     Set.copyOf(List.of(clicked, new Touched(true, hotbarButton)))   -> 6.5 VOID
+SWAP_OFFHAND   Set.copyOf(List.of(clicked, new Touched(true, OFFHAND_SLOT)))   -> 6.4 VOID
+every other arm          Set.of(clicked)                                       -> PASS
+```
+
+Measured against the switch, not inferred from the readings: those are the only two arms in it with
+more than one member. **Every one-slot gesture passed; both second slots are in the failing set.**
+
+**SO THE DECISION CLASS IS RIGHT, AND `NexusLock` IS NOT WHAT IS WRONG HERE.** The lock names both
+second slots and refuses both; the residual arrives *after* a refusal that fired. The split is
+evidence **for** the two-member arms, not against them — a lock that named only the clicked slot
+would have produced the same two symptoms with no refusal behind them at all, and nothing to
+distinguish the two cases.
+
+**WHAT THIS READING FALSIFIES ELSEWHERE IN THIS FILE:** the 5c/5d staging table's creative row, which
+reads *"`InventoryCreativeEvent` inherits … so it reaches `onNexusClick`"* under the column heading
+**WHAT REFUSES IT**. The measurement is correct and the filing is not: **reaching a handler is
+necessary for refusal, not sufficient.** Tonight is the evidence — the event reaches the handler, the
+handler cancels, and a real item still lands in slot 1. Corrected in the table itself.
 
 ---
 
