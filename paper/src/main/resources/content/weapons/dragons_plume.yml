@@ -297,15 +297,26 @@ triggers:
   # when R4 was made and he chose homing; he has since chosen the option he previously declined and
   # added a damage cut. A silently rewritten ruling reads as one nobody ever questioned.
   #
-  # THE BINDING NAME IS NOT AUTHORED, so the tooltip renders the WEAPON's display name beside the
-  # input: "Dragon's Plume  Tap". quiver_stone names its shot "Loose"; this one is unnamed because
-  # nobody has ruled a name, and inventing one here would be a design decision wearing a comment's
-  # clothes. A `name:` key is all it takes if the operator wants one.
+  # ================== THE PLAIN LABEL IS RULED. THE ABSENT `name:` IS THE DECISION. ==================
+  #
+  # The tooltip reads "Dragon's Plume  Tap" -- the WEAPON's display name beside the input, which is
+  # what WeaponLoader falls back to when a binding authors no `name:`.
+  #
+  # *** THAT IS CHOSEN, NOT LEFT OVER. *** It went to Ben as the third item of the three-question
+  # dialog in PLAN-dragons-plume.md 7.1, with quiver_stone's "Loose" in front of him as the worked
+  # alternative -- every other ability block in the project carries a name of its own. HE CHOSE THE
+  # PLAIN LABEL.
+  #
+  #   SO AN ABSENT KEY HERE MEANS THE SAME THING AN AUTHORED 0 MEANS AT cooldown_ticks BELOW: a
+  #   ruling that happens to look like an omission. This comment is the only thing separating the
+  #   two, which is why it is here and not in the plan alone.
+  #
+  # A `name:` key is still all it takes to change it, if the ruling is ever revisited.
   tap:
     # ================== 0: RULED (R7), AND AUTHORED EXPLICITLY FOR THAT REASON ==================
     #
     # "Fast shooting arrows is fine." THE TAP IS GATED BY BEING A WORSE SHOT, NOT BY A TIMER: one
-    # arrow, no homing, 12 damage, and the 90-tick reload above is what prices spamming it.
+    # arrow, no homing, 8 damage, and the 60-tick reload above is what prices spamming it.
     #
     # *** A 0 LEFT IMPLICIT IS EXACTLY WHAT SOMEBODY LATER "FIXES". *** PLAN-dragons-plume.md 7.2
     # wrote the condition before the ruling existed: "if the draw is meant to be the only gate, the
@@ -332,7 +343,7 @@ triggers:
 
       # NO homing BLOCK, AND ITS ABSENCE IS THE RULING RATHER THAN AN OMISSION.
       #
-      # R4' is "one arrow, WITH NO HOMING, at 12 damage". An absent homing block is exactly how the
+      # R4'' is "one arrow, WITH NO HOMING, at 8 damage". An absent homing block is exactly how the
       # schema says that: AbilitySchema maps a missing section to null, and a null Seek makes
       # ProjectileFlight.steer return the velocity untouched on its first line. The bolt flies where
       # it was aimed, like every projectile in the project before this weapon.

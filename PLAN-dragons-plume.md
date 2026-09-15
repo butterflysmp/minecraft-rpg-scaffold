@@ -28,14 +28,14 @@ UNJUDGED` with a gate row each.
 **It is answered by three rulings taken together, and by none of them alone:**
 
 ```
-R4'  a partial draw fires one arrow -- NO HOMING, 12 damage      (overturns R4)
+R4'' a partial draw fires one arrow -- NO HOMING, 8 damage       (overturns R4)
 R7   cooldown_ticks = 0, ruled                                   "fast shooting arrows is fine"
-R9   reload_ticks   = 90                                         the tax that actually bites
+R9'  reload_ticks   = 60                                         the tax that actually bites
 ```
 
-**Redone in DAMAGE PER SECOND, because R4′ made arrows incommensurable — a charged arrow is 48 and
-homes, a tap arrow is 12 and does not. RECOMPUTED under R1 as amended (1/3/5), and every figure here
-moved except the tap:**
+**Redone in DAMAGE PER SECOND, because R4′ made arrows incommensurable — a charged arrow is 34 and
+homes, a tap arrow is 8 and does not. RECOMPUTED under R8′ (34 / 60 / 8), and every figure here
+moved:**
 
 ```
 charged, five per release, c = 20          47.222 dmg/s       850 per magazine
@@ -355,8 +355,9 @@ operator's call, not a detail.**
   > **THIS IS AN OVERTURN OF R4, NOT AN AMENDMENT, AND THE THING IT REPLACED IS WRITTEN DOWN.**
   >
   > ```
-  > R4   a partial draw fires one arrow, AND IT STILL HOMES      -- superseded
-  > R4'  a partial draw fires one arrow, NO HOMING, 12 damage    -- RULED
+  > R4    a partial draw fires one arrow, AND IT STILL HOMES      -- superseded
+  > R4'   a partial draw fires one arrow, NO HOMING, 12 damage    -- superseded by R8'
+  > R4''  a partial draw fires one arrow, NO HOMING, 8 damage     -- RULED
   > ```
   >
   > **R4 was not a default. The homing-versus-no-homing question was put to Ben when R4 was made, and
@@ -854,8 +855,8 @@ per-tick work list above; a figure for it belongs to the gate, not to this parag
 > charge"* and put the numbers second. **The numbers are not the question; they are the evidence for
 > the question.**
 
-> **AND ONE UNIT RULE, BECAUSE R4′ BROKE THE OLD ONE.** A charged arrow is **48 and homes**; a tap
-> arrow is **12 and does not**. **Twenty-five arrows is no longer twenty-five arrows**, so
+> **AND ONE UNIT RULE, BECAUSE R4′ BROKE THE OLD ONE.** A charged arrow is **34 and homes**; a tap
+> arrow is **8 and does not**. **Twenty-five arrows is no longer twenty-five arrows**, so
 > **arrows/second is meaningless ACROSS the two paths** and every cross-path comparison below is in
 > **damage per second**. Within a single path all the arrows are alike and arrows/s still means
 > something; that is why both appear.
@@ -955,7 +956,7 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
 > attack_damage: 48 -> 34
 > reload_ticks:  90 -> 60
 > the tap:       12 -> 8
-> the tap's NAME     STILL UNAUTHORED -- see below; it was not part of the answer
+> the tap's NAME     RULED: leave it reading "Tap" -- the plain label, chosen
 > ```
 >
 > **They are ONE answer and must be read as one.** Each was balanced against the other two: 34 was
@@ -1006,21 +1007,21 @@ Locust, from its own file (26 dmg, 12 rounds, 60t reload, 12t cooldown):
 > which is why the line reads as it does. `quiver_stone` names its shot **"Loose"**, `emberblade`
 > names one "Fireball"; every other ability block in the project carries a name of its own.
 >
-> **It was left unnamed rather than invented.** Nobody has ruled one, and a name on a tooltip is a
-> design decision, not a content-pass detail — inventing one would have been exactly that decision
-> wearing a comment's clothes. **A `name:` key is the whole change if Ben wants one.**
->
 > **It went in that dialog because it is the same shot the other questions are about** — R4′'s tap is
 > what `cooldown_ticks` prices and what the 8 is set against.
 >
-> **IT CAME BACK UNANSWERED, AND IT STAYS OPEN RATHER THAN BEING TREATED AS DECLINED.** The two
-> numbers were ruled and the name was not mentioned. **Silence on one item of a three-item dialog is
-> not a ruling against it** — an unruled case recorded as excluded silently converts an omission into
-> a decision nobody made, and the next reader finds a settled-looking answer with no author.
+> ### ✔ RULED: LEAVE IT READING "Tap"
 >
-> ```
-> tooltip today   "Dragon's Plume  Tap"      still, and still unauthored
-> ```
+> **Ben chose the plain label**, with `quiver_stone`'s **"Loose"** in front of him as the worked
+> alternative. **The absent `name:` key is the decision, not the leftover.**
+>
+> > **SO AN ABSENT KEY HERE MEANS WHAT AN AUTHORED `0` MEANS AT `cooldown_ticks`: A RULING THAT
+> > LOOKS LIKE AN OMISSION.** R7's own entry insists the zero be *"authored as a RULING — not left at
+> > 0 by omission, because the headline finding is exactly the consequence somebody would later
+> > fix"*. **A name cannot be authored as an absence**, so the comment in `dragons_plume.yml` is the
+> > only thing separating the two readings, and it is written there rather than here alone.
+>
+> **A `name:` key is still the whole change if the ruling is ever revisited.**
 
 > **THE OTHER TWO WERE ONE ANSWER, WHICH IS WHY THEY WERE ASKED TOGETHER.** Lowering 48 and
 > shortening 90 both pull the same rate down, so answering them a week apart would have risked paying
@@ -1482,9 +1483,12 @@ arrive with their discharge conditions attached rather than acquiring them after
   feel judgement, is the only one left.** A number with no derivation is one somebody later "fixes",
   so both the plan and `dragons_plume.yml` warn against re-deriving it from the ammunition table.
 
-  **STILL UNRULED AND STILL MARKED AS SUCH:** the tap's **NAME** (it went into §7.1's dialog and came
-  back unmentioned — **unruled, not declined**), the **homing constants** of §5, and `item: arrow`,
-  which is a derivation rather than a ruling.
+  **THE TAP'S NAME WAS THE THIRD ITEM AND IS RULED TOO** — leave it reading `"Tap"`, the plain label
+  chosen over a named one. **The absent `name:` key is the decision**, which is why
+  `dragons_plume.yml` says so at the binding: a name cannot be authored as an absence.
+
+  **STILL UNRULED AND STILL MARKED AS SUCH:** the **homing constants** of §5, `INHERITED AND
+  UNJUDGED` with gate rows P1-P3, and `item: arrow`, which is a derivation rather than a ruling.
 
   **The sound key is ruled** — `block.note_block.hat`, on feel 2026-09-14 (§7.6), the only instrument
   there was for it — **and it survived R1′ untouched**, because Ben ruled the timbre and the
