@@ -36,8 +36,8 @@ class DrawReleaseTest {
     void underThreeTicksFiresNothingAtAll() {
         assertEquals(new DrawRelease.Nothing(DrawRelease.Reason.BELOW_VANILLA_FLOOR),
                 DrawRelease.decide(2, 25), "two ticks is below the floor -- vanilla would not fire either");
-        assertInstanceOf(DrawRelease.Tap.class, DrawRelease.decide(3, 25),
-                "and exactly on it the release becomes a tap");
+        assertEquals(new DrawRelease.Tap(1), DrawRelease.decide(3, 25),
+                "and exactly on it the release becomes a tap -- band 1, the floor band");
         assertEquals(new DrawRelease.Nothing(DrawRelease.Reason.BELOW_VANILLA_FLOOR),
                 DrawRelease.decide(0, 25), "a release with no hold at all is the same refusal");
     }
@@ -68,22 +68,83 @@ class DrawReleaseTest {
     }
 
     /**
-     * R4': A PARTIAL DRAW IS A TAP, AND THE BOUNDARY WITH A ONE-ARROW CHARGED RELEASE IS ONE TICK
+     * R4''': A PARTIAL DRAW IS A TAP, AND THE BOUNDARY WITH A ONE-ARROW CHARGED RELEASE IS ONE TICK
      * WIDE.
      *
-     * <p><b>Both fire a single arrow and they are different shots</b> -- 12 and no homing against 48
+     * <p><b>Both fire a single arrow and they are different shots</b> -- 26 and no homing against 34
      * and homing. That is R4 overturned rather than amended, and this row is where the overturn is
      * observable at all: a test asserting only "a partial draw fires one arrow" would pass under the
      * ruling it replaced.
+     *
+     * <p><b>THIS JAVADOC READ "12 and no homing against 48" UNTIL R14's SWEEP</b> -- two figures
+     * from before R8', in a row whose whole subject is the difference between those two numbers.
+     * Found by grepping the digits, which is the only thing that finds a stale figure sitting in
+     * prose that is otherwise still correct.
      */
     @Test
     void nineteenTicksIsATapAndTwentyIsAChargedReleaseOfONEArrow() {
-        assertInstanceOf(DrawRelease.Tap.class, DrawRelease.decide(DrawCharge.FULL_DRAW_TICKS - 1, 25),
-                "one tick short of full draw is R4's tap: one arrow, no homing, 12");
+        assertEquals(new DrawRelease.Tap(3), DrawRelease.decide(DrawCharge.FULL_DRAW_TICKS - 1, 25),
+                "one tick short of full draw is R4''''s tap at its TOP band: one arrow, no homing, "
+                        + "26 -- asserted as the band rather than as `some Tap`, because 19 is the "
+                        + "one tick where a band-3 tap and a one-arrow charged release are hardest "
+                        + "to tell apart");
         assertEquals(new DrawRelease.Charged(1, 1),
                 DrawRelease.decide(DrawCharge.FULL_DRAW_TICKS, 25),
-                "and full draw is R6's FIRST STEP: one arrow, homing, 48 -- the same count, a "
+                "and full draw is R6's FIRST STEP: one arrow, homing, 34 -- the same count, a "
                         + "different shot");
+    }
+
+    /**
+     * R4''': THE THREE TAP BANDS, AND THE ROWS ARE AT THE BOUNDARIES RATHER THAN IN THE MIDDLES.
+     *
+     * <p>The bands are vanilla's power curve cut in thirds: the roots are {@code t = 8.2843} and
+     * {@code t = 14.6410}, so the integer bands are {@code 3..8}, {@code 9..14}, {@code 15..19}.
+     *
+     * <p><b>EVERY ASSERTION HERE IS ON A BOUNDARY PAIR, because a row staged in the middle of a
+     * band passes under ANY boundary at all.</b> 8-vs-9 and 14-vs-15 are the only two ticks in the
+     * whole range where a wrong cut is observable, and a fixture at, say, 5 and 11 would be green
+     * for a version that split at 6 and 10.
+     */
+    @Test
+    void theTapBandsCutAtTheCURVESThirdsAndTheRowsSitOnTheBOUNDARIES() {
+        assertEquals(1, DrawRelease.bandFor(3), "the floor tick is band 1");
+        assertEquals(1, DrawRelease.bandFor(8), "8 is the last tick of band 1 -- root 8.2843");
+        assertEquals(2, DrawRelease.bandFor(9), "and 9 is the first of band 2");
+        assertEquals(2, DrawRelease.bandFor(14), "14 is the last of band 2 -- root 14.6410");
+        assertEquals(3, DrawRelease.bandFor(15), "and 15 is the first of band 3");
+        assertEquals(3, DrawRelease.bandFor(19), "19 is the last tick that is a tap at all");
+    }
+
+    /**
+     * THE BOUNDARIES ARE THE CURVE'S THIRDS, RE-DERIVED HERE RATHER THAN PINNED AS TWO INTEGERS.
+     *
+     * <p>{@code bandFor} hard-codes 8 and 14. <b>This row is what stops those being two numbers
+     * nobody can check:</b> it solves the curve for the thirds and asserts the integers agree.
+     * Change the curve transcription and this reddens, where {@code bandFor}'s own rows would not.
+     */
+    @Test
+    void theBandBoundariesAgreeWithTheCURVETheyWereDerivedFrom() {
+        double third = 1.0 / 3, twoThirds = 2.0 / 3;
+
+        assertTrue(DrawRelease.vanillaPowerFor(8) < third, "8 is below the first third");
+        assertTrue(DrawRelease.vanillaPowerFor(9) > third, "9 is above it");
+        assertTrue(DrawRelease.vanillaPowerFor(14) < twoThirds, "14 is below the second third");
+        assertTrue(DrawRelease.vanillaPowerFor(15) > twoThirds, "15 is above it");
+
+        // The roots themselves, so the derivation is executable rather than only described:
+        // (x^2 + 2x)/3 = 1/3  ->  x = sqrt(2) - 1;  = 2/3  ->  x = sqrt(3) - 1.
+        assertEquals(8.2843, (Math.sqrt(2) - 1) * DrawCharge.FULL_DRAW_TICKS, 1e-4);
+        assertEquals(14.6410, (Math.sqrt(3) - 1) * DrawCharge.FULL_DRAW_TICKS, 1e-4);
+    }
+
+    /** A release below the floor is not a band-1 tap -- it is not a tap at all. */
+    @Test
+    void theFloorIsCheckedBeforeTheBandSoASubFloorTwitchIsNotBandOne() {
+        assertEquals(new DrawRelease.Nothing(DrawRelease.Reason.BELOW_VANILLA_FLOOR),
+                DrawRelease.decide(2, 25),
+                "bandFor(2) would answer 1, and decide must never ask it -- the floor comes first");
+        assertEquals(new DrawRelease.Tap(1), DrawRelease.decide(3, 25),
+                "and the very next tick is band 1");
     }
 
     /** R1': the three steps, each carrying the step it announced as well as the arrows it fires. */
@@ -137,7 +198,7 @@ class DrawReleaseTest {
                 "a full draw on an empty magazine: the weapon is dead until reloaded");
         assertEquals(new DrawRelease.Nothing(DrawRelease.Reason.NO_ROUNDS),
                 DrawRelease.decide(DrawRelease.MIN_RELEASE_TICKS, 0),
-                "and so is a tap -- R4' costs a round like any other shot");
+                "and so is a tap -- R4''' costs a round like any other shot, at every band");
         assertEquals(new DrawRelease.Nothing(DrawRelease.Reason.NO_ROUNDS),
                 DrawRelease.decide(DrawCharge.FULL_DRAW_TICKS, -2),
                 "a magazine cannot owe arrows: floored, not thrown");

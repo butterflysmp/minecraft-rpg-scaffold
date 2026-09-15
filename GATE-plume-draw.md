@@ -39,8 +39,9 @@ H-5    PASS               all five normal -- the gate-too-wide risk is closed
 
 > ## AND THE LADDER IS THREE STEPS NOW — R1′ — SO H-1b IS A MATERIALLY EASIER QUESTION
 >
-> **R1′ amends the charge to 1 / 3 / 5 arrows: three steps, three sounds, two seconds past full
-> draw.** The sound ruling is untouched — Ben ruled the timbre, not the ladder.
+> **R1′ amends the charge to 1 / 3 / 5 arrows: three steps, three sounds, 1.6 seconds past full
+> draw** (two seconds until R14 shortened the charge second to 16 ticks). The sound ruling is
+> untouched — Ben ruled the timbre, not the ladder.
 >
 > **THE HARDEST PART OF R13 WAS TELLING FIVE STEPS APART BY EAR. IT IS NOW THREE, TWICE AS FAR
 > APART** — a ratio of `1.5811` per step against `1.2574`, about eight semitones instead of four.
@@ -54,12 +55,35 @@ H-5    PASS               all five normal -- the gate-too-wide risk is closed
 > > **It is still the right row to run** — R13's property is unchanged and three steps is what ships.
 > > What changed is how much a pass is evidence of.
 >
+> > ### ⚠ AND R14 PUSHES THE ROW BACK THE OTHER WAY — IT IS HARDER AGAIN, NOT EASIER
+> >
+> > **Ruled 2026-09-15: the charge second is 16 ticks, not 20.** The three ticks now land at
+> > **20 / 36 / 52** ticks held — **0.8 seconds apart instead of a full second** — and the whole hold
+> > is **2.6 seconds** where it was 3.0.
+> >
+> > ```
+> > R1'   five steps -> three          EASIER   twice the pitch separation
+> > R14   one second -> 0.8 seconds    HARDER   20% less time to place each tick
+> > ```
+> >
+> > **THE PITCH LADDER DID NOT MOVE. THE TIME BETWEEN RUNGS DID.** R13's property is about placing a
+> > tick on a ladder by ear, and the two amendments push on **different axes** — separation and
+> > tempo — so neither cancels the other and the net difficulty is **not computable from here.** A
+> > listener has to say.
+> >
+> > ***DO NOT RESTAGE THE ROW.*** The staging, the three trials and the entry-point discipline are all
+> > unchanged; only the interval between ticks moved, and the drawer does not have to do anything
+> > differently to produce it. **What is recorded is the note, so that a pass or a fail is weighed
+> > against the tempo that actually shipped** rather than against the one-second ladder the row was
+> > drafted for.
+>
 > **The staging is otherwise untouched: the listener names WHICH STEP, never how many they heard.**
 > Three trials, each entered at a different drawer-chosen step. **With three steps there are only
 > three entry points**, so "a different step each time" now means all of them.
 
 > **H-1b AND H-4's RESIDUE ARE ONE SITTING, AND EACH ROW SAYS SO.** Same weapon, same full draw,
-> **same three seconds** (R1′ — it was five) — **only the eyes move.** H-1b asks what the EAR can
+> **same 2.6 seconds** (52 ticks — R1′ cut five steps to three, R14 cut the step to 16 ticks) —
+> **only the eyes move.** H-1b asks what the EAR can
 > place; H-4's residue asks
 > what the HAND does at release. Running them separately costs a second boot and buys nothing, and
 > **a row that only one of the two rows mentions is a row that gets run alone**, which is how H-4
@@ -96,7 +120,7 @@ are H2's, deliberately, and none of them can confuse a symptom here.
 | **H-1b** | **NOT RUN. ONE KEY NOW, NOT EIGHT — `block.note_block.hat`, the ruled one, which is what ships.** Two people, one sitting, one full magazine. The listener **faces away from the screen and is brought in LATE**: the drawer starts the draw, waits a step or two of their own choosing, and only then says *"listening"*. **The listener's job is to name WHICH STEP the next tick is — "that was the second of three" — never how many they heard.** **Three trials, each starting at a different drawer-chosen step — with three steps that is ALL OF THEM**; the listener is never told the entry point. **THE SWEEP IS GONE WITH ITS INSTRUMENT: `/rpg drawsound` was deleted when the sound was ruled**, so changing the key now costs an edit, a rebuild, a redeploy and a boot — which is why this row tests the ruled key and no other. **This rides in the same sitting as H-4's residue — see that row; do not run either alone.** | **CAN A LISTENER PLACE A TICK WITHOUT COUNTING FROM THE START?** Record, per trial: **the step the drawer entered on, the step the listener called, and the true step.** A count is not a pass and must not be written into this cell — **counting is what H-1 already measured on the pling, and it is exactly the thing R13 does not ask.** **THREE steps now (R1′), each a ratio of `1.5811` above the last — about eight semitones, where five steps were four.** **And the TOP step is a separate question**: pitch is a playback rate, so any note-block percussion at 2.0 is half as long and brighter — **whether a hat at 2.0 still reads as a hat is unmeasured** (see `DrawCharge`), **and R1′ makes a player meet it on every full release rather than only on the patient ones.** **IF NOTHING SOUNDS AT ALL, DO NOT CONCLUDE THE TRACKER FAILED — run the fallback step below before recording anything.** **AND IF THE RULED KEY FAILS THE POSITION TEST, THAT IS NOT A ROW FAILURE — it is a finding about R13 and it goes to Ben**, because the ruling assumes a rising tick can be placed by ear and this row would have measured that it cannot. | **OPEN. The only unread row on this page.** **THE RULING DID NOT CLOSE IT** — the key is settled on FEEL; this row is the POSITION reading, and no hat trial exists. **AND R1′ MADE IT EASIER — see the note above the table; a pass now means less than it would have.** |
 | **H-2** | **MOVED TO `GATE-plume-release.md` — THE CAP IS UNOBSERVABLE IN PRINCIPLE AT H1.** Not "hard to stage": there is no staging. | See the block below for the arithmetic, and the release gate for the row itself. **Do not spend an evening looking for a clever staging; the reason is structural.** | **n/a — moved, not skipped.** |
 | **H-3** | **THE ARROW — and this row proves a MECHANISM, not an absence.** One arrow in the off-hand, nothing else in the bag. Draw, hold past full charge, release. | **Is the arrow still there?** It survives only if `clearActiveItem()` inside `PlayerStopUsingItemEvent` made `LivingEntity.releaseUsingItem`'s re-read at offset 72 yield EMPTY, so `BowItem.releaseUsing` — and therefore `draw()`, and therefore `useAmmo` — never ran. **If the arrow is gone, that specific chain is what failed**, and the server log will say so: the `EntityShootBowEvent` guard fires loudly precisely here. | **PASS — arrow YES, log YES.** The arrow survived the release and the loud guard did not fire. **Route: this page's own store**, 2026-09-14T04:42:16Z — the only row here whose reading arrived through the instrument rather than through a conversation. **THE BOOT'S HEADLINE RESULT; see the discharge below.** |
-| **H-4** | **THE VISUAL DESYNC.** Draw, hold to five, release — and **watch the first-person hand and a second player's view of you**. Repeat while moving, and while looking up. | **Does the client keep animating a draw it no longer has?** The server clears the active item mid-release; nothing guarantees the client agrees. **Write this row's answer in words, not a verdict** — "the bow snapped back instantly" and "the arm stayed pulled for about a second" are different findings and both are passes for the mechanism. **No amount of bytecode reading could have predicted this row**, which is why it is here. | **RUN — no desync observed, AT A GRANULARITY THAT CANNOT SEPARATE THE TWO SHAPES THIS ROW EXISTS TO SEPARATE.** Operator, verbatim: *"H4 is fine everything looks normal"*. **Route: conversation.** A verdict about the mechanism, **not** the description in words the row asked for — see below. **NOT fully answered. THE RESIDUE IS ONE MORE DRAW, WATCHING THE HAND, AND IT RIDES IN H-1b's SITTING** — same weapon, same five-second draw, only the eyes move. Named in H-1b's staging as well, so neither row can be run alone. |
+| **H-4** | **THE VISUAL DESYNC.** Draw, hold to five, release — and **watch the first-person hand and a second player's view of you**. Repeat while moving, and while looking up. | **Does the client keep animating a draw it no longer has?** The server clears the active item mid-release; nothing guarantees the client agrees. **Write this row's answer in words, not a verdict** — "the bow snapped back instantly" and "the arm stayed pulled for about a second" are different findings and both are passes for the mechanism. **No amount of bytecode reading could have predicted this row**, which is why it is here. | **RUN — no desync observed, AT A GRANULARITY THAT CANNOT SEPARATE THE TWO SHAPES THIS ROW EXISTS TO SEPARATE.** Operator, verbatim: *"H4 is fine everything looks normal"*. **Route: conversation.** A verdict about the mechanism, **not** the description in words the row asked for — see below. **NOT fully answered. THE RESIDUE IS ONE MORE DRAW, WATCHING THE HAND, AND IT RIDES IN H-1b's SITTING** — same weapon, same 2.6-second draw (52 ticks, R14), only the eyes move. Named in H-1b's staging as well, so neither row can be run alone. |
 | **H-5** | **THE NEGATIVE ROW, and it is the one that fails if the gate is wrong.** With H1 installed: eat a food item to completion; raise and lower a shield; fire an **ordinary vanilla bow**; drink a potion; use a spyglass. | **Each must behave exactly as it did before.** `PlayerStopUsingItemEvent` fires for **every** item release on the server, so an ungated `clearActiveItem()` would break all of these silently. **This row exists because of the gate, and it is the row that catches a gate that does not gate.** | **PASS — all five normal.** Operator, verbatim: *"H5 is all good to"*. **Route: conversation.** **This is what closes the gate-too-wide risk**, whose failures are silent — see below. |
 
 ## H-4's READING IS COARSER THAN ITS ROW, AND THAT IS RECORDED RATHER THAN REPAIRED

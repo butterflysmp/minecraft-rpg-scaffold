@@ -104,7 +104,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * debugging session with four candidate causes for every symptom.
  *
  * <p><b>H2 ADDED THE SHOTS ON TOP OF THAT ANSWER.</b> {@link #onRelease} now asks
- * {@link DrawRelease#decide} and fires: R4''s tap on {@link #TAP_INPUT}, the charged step on
+ * {@link DrawRelease#decide} and fires: R4'''s tap on one of {@link #TAP_INPUTS}, the charged step on
  * {@link #CHARGED_INPUT}, fanned by {@link DrawFan} and dispatched through
  * {@code WeaponFire.attemptFan} -- one press, one input, one cooldown, N rounds.
  *
@@ -351,27 +351,46 @@ public final class PlumeDraw {
     public static final String CHARGED_INPUT = "draw";
 
     /**
-     * THE INPUT A TAP FIRES -- R4', a DIFFERENT SHOT: one arrow, no homing, 12 damage, one round.
+     * THE INPUTS A TAP FIRES -- R4''', and there are THREE of them: {@code tap1 tap2 tap3}.
      *
-     * <h2>A SECOND BINDING RATHER THAN A SCALED FIRST ONE, AND THAT IS WHAT R4' REQUIRES</h2>
+     * <p>One per band, dispatched by {@link DrawRelease.Tap#band()}. Each binding authors its own
+     * damage in {@code dragons_plume.yml} -- 9, 17, 26 -- so the numbers a player experiences stay
+     * in the file rather than becoming a multiplier in Java.
+     *
+     * <p><b>NO NEW MECHANISM.</b> {@code TriggerBinding}'s javadoc names the open input set as the
+     * designed extension point -- <i>"a third input, or a right-click added later, needs no schema
+     * change"</i> -- and this is that point carrying its first real load: five bindings on one
+     * weapon, four of them inputs no click can produce.
+     *
+     * <h2>*** A PROPERTY THIS CHANGE CREATED, WHICH IS THE EASIEST KIND TO MISS ***</h2>
+     *
+     * <p>Ability ids are {@code weaponId + "/" + input}, and {@code CooldownTracker} keys on
+     * {@code (player, abilityId)}. <b>So the tap's cooldown is now THREE SEPARATE BUCKETS where it
+     * was one.</b> A player who taps band 1 and immediately taps band 2 is on two different timers.
+     *
+     * <p><b>IT IS INERT TODAY AND IT WILL NOT STAY INERT.</b> Every tap binding authors
+     * {@code cooldown_ticks: 0} (R7), so nothing is being gated and no behaviour differs. <b>The
+     * moment anyone authors a non-zero cooldown on a tap, they will be authoring one third of the
+     * gate they think they are authoring</b> -- and the symptom is a tap-spammer who beats the
+     * cooldown by alternating bands, which reads as the cooldown not working.
+     *
+     * <p>Named here rather than discovered there. <b>A property created by a refactor is invisible
+     * to every test, because nothing behaves differently yet.</b>
+     *
+     * <h2>SEPARATE BINDINGS RATHER THAN ONE SCALED SHOT, WHICH IS WHAT R4''' REQUIRES</h2>
      *
      * <p>A tap is not a weaker charged release, it is another weapon's shot fired from the same
      * bow: different damage, and NO homing at all. <b>{@code attack_damage} is weapon-level</b>, so
-     * the tap cannot be a {@code weapon_damage} payload under {@code draw:}'s binding without
-     * claiming 48; and the homing block lives on the cast, so the two shapes cannot share one.
+     * a tap cannot be a {@code weapon_damage} payload under {@code draw:}'s binding without claiming
+     * 34; and the homing block lives on the cast, so the shapes cannot share one. <b>The bands need
+     * THREE for the same reason the tap needed TWO</b> -- 9, 17 and 26 are three different literals
+     * and three different payloads, and one binding carries one.
      *
-     * <p><b>No schema change was needed.</b> {@code TriggerBinding}'s input is a free String -- its
-     * own javadoc says <i>"a third input, or a right-click added later, needs no schema change"</i>
-     * -- which is how {@code draw} got in. This is the fourth input in the project and the second on
-     * one weapon.
-     *
-     * <p><b>AND IT IS WHERE R7's {@code cooldown_ticks: 0} FINALLY BELONGS.</b> That ruling was
-     * always about the TAP -- §7.2's whole account is that the field prices tapping and nothing else
-     * -- and it has been sitting on {@code draw:} because there was nowhere else to put it. The
-     * cooldown key is {@code (player, weaponId, input)}, so moving it makes "this timer governs the
-     * tap" <b>structural rather than an arithmetic coincidence</b>.
+     * <p>Returned as an array indexed by {@code band - 1}; there is no map because the bands are
+     * {@code 1..DrawRelease.TAP_BANDS} and a gap is not expressible.
      */
-    public static final String TAP_INPUT = "tap";
+    public static final String[] TAP_INPUTS = {"tap1", "tap2", "tap3"};
+
 
     /**
      * THE RELEASE. Take the draw, suppress vanilla's, and fire what the charge earned.
@@ -442,11 +461,15 @@ public final class PlumeDraw {
                 }
             }
 
-            // ONE arrow, straight down the aim, on the TAP binding -- a different shot, not a
-            // scaled one. offsetsFor(1) is {0}, so it takes the same fanned path with a fan of one
-            // rather than a second dispatch shape that could drift from it.
-            case DrawRelease.Tap ignored ->
-                    release(player, TAP_INPUT, DrawFan.offsetsFor(1));
+            // ONE arrow, straight down the aim, on the band's OWN binding -- a different shot, not
+            // a scaled one. offsetsFor(1) is {0}, so it takes the same fanned path with a fan of
+            // one rather than a second dispatch shape that could drift from it.
+            //
+            // The band indexes TAP_INPUTS directly. DrawRelease.bandFor only ever returns 1..3, so
+            // the subtraction cannot go out of range -- and if TAP_BANDS ever grows, the array is
+            // the thing that fails to compile rather than the thing that reads past its end.
+            case DrawRelease.Tap tap ->
+                    release(player, TAP_INPUTS[tap.band() - 1], DrawFan.offsetsFor(1));
 
             case DrawRelease.Charged charged ->
                     release(player, CHARGED_INPUT, DrawFan.offsetsFor(charged.arrows()));

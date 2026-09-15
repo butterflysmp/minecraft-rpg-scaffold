@@ -85,9 +85,10 @@ class DrawChargeTest {
         assertEquals(5, DrawCharge.arrowsFor(full + 2 * c), "the third step, and the maximum");
 
         assertEquals(3, DrawCharge.stepsFor(full + 2 * c), "which is three steps, not five");
-        assertEquals(60, full + 2 * c,
-                "TWO seconds past full draw to reach maximum, not four -- the amendment's whole "
-                        + "visible effect on the player");
+        assertEquals(52, full + 2 * c,
+                "R14: a full charge is 52 ticks -- 2.6 SECONDS. This row asserted 60 until c went "
+                        + "20 -> 16, and it is the ONLY row in this file that reddened, because "
+                        + "every other one is written against the constants rather than the clock");
     }
 
     /**

@@ -13,8 +13,8 @@ import java.util.Optional;
  *
  * <pre>
  * step 1   held 20t   1 arrow    tick 1
- * step 2   held 40t   3 arrows   tick 2
- * step 3   held 60t   5 arrows   tick 3      <- maximum, TWO seconds past full draw
+ * step 2   held 36t   3 arrows   tick 2
+ * step 3   held 52t   5 arrows   tick 3      <- maximum, 2.6 SECONDS in all
  * </pre>
  *
  * <p><b>R1 ORIGINALLY READ <i>"every second adds one arrow, to five"</i>, WHICH IS FOUR SECONDS PAST
@@ -28,9 +28,12 @@ import java.util.Optional;
  * <pre>
  * R6    FULL CHARGE IS ARROW 1     UNCHANGED. The first step still yields exactly one arrow;
  *                                  only the INCREMENT moved (+1 -> +2).
- * c=20  THE CHARGE SECOND          UNCHANGED (PLAN-dragons-plume.md 7.5). A step is still one
- *                                  second. What moved is the step's YIELD and the NUMBER of
- *                                  steps (5 -> 3). `c` was never the quantity in question.
+ * c=20  THE CHARGE SECOND          UNCHANGED BY R1'. A step was still one second; what R1' moved
+ *                                  was the step's YIELD and the NUMBER of steps (5 -> 3).
+ *
+ *                                  *** AND R14 HAS SINCE MOVED IT ANYWAY: c = 16. *** That is a
+ *                                  SEPARATE ruling, not this one leaking -- R1' really did leave
+ *                                  it alone, and saying so stays true. See CHARGE_SECOND_TICKS.
  * </pre>
  *
  * <h2>THE FOUR NUMBERS, AND WHERE EACH ONE COMES FROM</h2>
@@ -38,16 +41,23 @@ import java.util.Optional;
  * <pre>
  * FULL_DRAW_TICKS      20   MEASURED from the pinned jar: BowItem.MAX_DRAW_DURATION, and
  *                           getPowerForTime(20) = 1.0 exactly. A platform fact, not a choice.
- * CHARGE_SECOND_TICKS  20   RULED (R6, and PLAN-dragons-plume.md 7.5): `c`, the charge second.
- *                           It equals the draw duration by coincidence of both being one second;
- *                           they are different quantities and are kept apart.
+ * CHARGE_SECOND_TICKS  16   RULED (R14, 2026-09-15, on feel; PLAN-dragons-plume.md 7.5): `c`,
+ *                           the charge second. It USED to equal the draw duration, by coincidence
+ *                           of both being one second. It no longer does.
  * MAX_STEPS             3   RULED, R1 as amended. The number of TICKS a full draw sounds.
  * ARROWS_PER_STEP       2   RULED, R1 as amended -- the increment, NOT the first step's yield.
  * </pre>
  *
- * <p><b>The two 20s are not the same 20.</b> One is how long vanilla takes to reach full draw; the
- * other is how long a held bow takes to earn its next step. A future ruling can move either without
- * the other, which is why they are two constants and not one.
+ * <p><b>THERE ARE NO LONGER TWO 20s, AND THE ARGUMENT THAT KEPT THEM APART IS WHY THAT WAS ONE
+ * EDIT.</b> This javadoc used to read "the two 20s are not the same 20" and insist they were
+ * different quantities that merely happened to agree -- one is how long vanilla takes to reach full
+ * draw, the other is how long a held bow takes to earn its next step.
+ *
+ * <p><b>R14 moved the second one alone, which is exactly what that argument said a future ruling
+ * would be able to do.</b> Because they were two constants and not one, the ruling cost a single
+ * literal: nothing had to be disambiguated, because nothing had been conflated. <b>The coincidence
+ * is gone and the convention is vindicated</b> -- recorded here because the day a convention pays
+ * out is the only day its argument is checkable.
  *
  * <p><b>{@link #MAX_ARROWS} IS DERIVED NOW, NOT AUTHORED.</b> Five is
  * {@code 1 + (MAX_STEPS - 1) * ARROWS_PER_STEP}, so moving either constant re-derives it instead of
@@ -60,11 +70,16 @@ import java.util.Optional;
  * held  19 ticks -> 0 steps, 0 arrows    not yet at full draw
  * held  20 ticks -> 1 step,  1 arrow     R6: reaching full charge GIVES one, it does not start
  *                                        a count -- and the increment does not apply to it
- * held  39 ticks -> 1 step,  1 arrow
- * held  40 ticks -> 2 steps, 3 arrows    and TWO per charge second after
- * held  60 ticks -> 3 steps, 5 arrows    the cap
+ * held  35 ticks -> 1 step,  1 arrow
+ * held  36 ticks -> 2 steps, 3 arrows    and TWO per charge second after
+ * held  52 ticks -> 3 steps, 5 arrows    the cap
  * held 999 ticks -> 3 steps, 5 arrows
  * </pre>
+ *
+ * <p><b>THE BOUNDARIES MOVED WITH R14 (c 20 -> 16) AND THE RULE DID NOT.</b> The steps are
+ * 20 / 36 / 52 ticks where they were 20 / 40 / 60, so a full charge is <b>2.6 seconds</b> rather
+ * than three. <b>Only {@link #CHARGE_SECOND_TICKS} changed</b> -- the first step is still
+ * {@link #FULL_DRAW_TICKS}, which is measured and did not move.
  */
 public final class DrawCharge {
 
@@ -73,8 +88,35 @@ public final class DrawCharge {
     /** MEASURED: {@code BowItem.MAX_DRAW_DURATION} on the pinned jar. */
     public static final int FULL_DRAW_TICKS = 20;
 
-    /** RULED: {@code c}, the charge second. */
-    public static final int CHARGE_SECOND_TICKS = 20;
+    /**
+     * RULED (R14, 2026-09-15, on feel): {@code c}, the charge second. <b>16, and it OVERTURNS the
+     * 20 that R6 and {@code PLAN-dragons-plume.md} §7.5 settled.</b>
+     *
+     * <p><b>IT IS NO LONGER A SECOND, AND THE NAME IS KEPT ANYWAY.</b> 16 ticks is 0.8s, so
+     * *"every second adds two arrows"* has stopped being literally true. The name survives because
+     * it names the ROLE -- the interval between steps -- and renaming it would break every citation
+     * in the plan and both gate pages to fix a word. <b>The three steps are 20 / 36 / 52 ticks and a
+     * full charge is 2.6 seconds.</b>
+     *
+     * <h2>§7.5's ARGUMENT FOR 20 IS OVERTURNED. ITS OTHER ARGUMENT IS VINDICATED.</h2>
+     *
+     * <p>§7.5 chose 20 partly because *"a second of charge takes literally one second"*. <b>That is
+     * the half Ben overturned</b>, on feel, and it is recorded rather than softened.
+     *
+     * <p><b>But §7.5 also insisted that {@link #FULL_DRAW_TICKS} and this constant were TWO
+     * DIFFERENT QUANTITIES that merely happened to share a value</b> -- and this class has said so
+     * since it was written: *"The two 20s are not the same 20... A future ruling can move either
+     * without the other, which is why they are two constants and not one."*
+     *
+     * <p><b>THAT ARGUMENT IS NOW VINDICATED, AND IT IS THE REASON THIS IS A ONE-CONSTANT CHANGE.</b>
+     * The coincidence is gone: 20 and 16. Had the two ever been folded into one field -- and they
+     * looked identical for the whole of H1 and H2 -- R14 would have moved vanilla's measured draw
+     * duration as a side effect of a feel judgement about pacing.
+     *
+     * <p><b>{@link #FULL_DRAW_TICKS} STAYS 20 AND IS NOT A CHOICE.</b> It is MEASURED --
+     * {@code BowItem.MAX_DRAW_DURATION} on the pinned jar -- and nothing in R14 touches it.
+     */
+    public static final int CHARGE_SECOND_TICKS = 16;
 
     /** RULED (R1 as amended): three steps, so a full draw sounds three times. */
     public static final int MAX_STEPS = 3;
