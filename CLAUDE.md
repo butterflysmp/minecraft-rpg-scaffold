@@ -1025,10 +1025,28 @@ the defect this rule is about, wearing the rule's own clothes.
 candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
 
 - **The test-count instrument.** `@Test` appears **0** times here. The rule is
-  `git grep -ho '@Test' <ref> -- '<module>/src/test/**/*.java' | wc -l`, and *say which instrument*:
-  measured, `grep -rho` reports **995** against git-grep's **1009** in `core` — and a third
-  instrument (`perl`, counting `/\@Test/g`) says **1009**, so **`grep -rho` is the one undercounting**,
-  by 14, with no line in the tree carrying two `@Test`.
+  `git grep -ho '@Test' <ref> -- '<module>/src/test/**/*.java' | wc -l`, and *say which instrument*.
+  **`grep -rho` IS NOT AN EQUIVALENT, AND THE DIFFERENCE IS NOT ARITHMETIC:** it classifies any file
+  holding a NUL byte as **binary** and counts **nothing** from it. `core` has one — `EnchantCodecTest`
+  carries a **single** NUL inside a string literal, and **15** `@Test` that grep never sees.
+  `grep -rhoa` returns **1009**, agreeing with `git grep` and with `perl`.
+
+  > **SO THE MAGNITUDE IS THE WRONG FORM FOR THIS RULE, AND ONLY THE MECHANISM SURVIVES.** The gap is
+  > whatever lives in whichever files *that* grep, on *that* machine, in *that* locale calls binary.
+  > It moves when a test is added to one of them, and a new NUL-carrying file joins the set with no
+  > announcement.
+  >
+  > **It is not even stable across grep versions on one tree.** Measured at `c5ee6a0`: GNU grep
+  > **3.11** returns **994**, GNU grep **3.0** returns **995** — and that extra line **is not a
+  > match**. It is grep's own `Binary file … matches` notice, written **to stdout, while piped**, and
+  > counted by `wc -l` as though it were data. Both versions emit **zero** real matches from the file;
+  > they differ only in whether they narrate the skip into the count.
+  >
+  > **AN INSTRUMENT THAT SKIPPED A FILE LOOKS EXACTLY LIKE ONE THAT COUNTED IT** — and it either
+  > suppresses its warning precisely when it is being measured with (3.11, silent when stdout is not a
+  > terminal) or feeds the warning into the measurement (3.0). **Silence and self-description are both
+  > failures here, and neither is visible to `| wc -l`.** This file's own headline defect, one layer
+  > down: the instrument, not the test, is what lied.
 - **Reason from `origin/<ref>`, never a local ref.** `origin/master` appears **0** times here;
   `ls-remote` appears 7, but only about pushes.
 - **A squash body must carry the DEFECTS FOUND, not only what worked.** The *Record in the body* list
