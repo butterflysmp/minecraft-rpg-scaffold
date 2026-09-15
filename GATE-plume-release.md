@@ -25,6 +25,36 @@ R-K2   NOT RUN   IT TOUCHES NOTHING: wall, mob, water -- no damage, stick, picku
 R-K3   NOT RUN   THE ORPHAN EXIT -- and it TRAVELS, which is the accepted cost
 ```
 
+## GAME MODE — `/gamemode survival`, AND ONE ROW HERE CANNOT BE STAGED IN CREATIVE AT ALL
+
+**EVERY ROW ON THIS PAGE IS SURVIVAL**, for the reason set out in `GATE-plume-draw.md`'s *GAME MODE*
+section: `BowItem.use` short-circuits its ammunition check on `hasInfiniteMaterials()`, so creative
+starts the draw unconditionally and supplies a phantom arrow where survival supplies none.
+
+**R-N1 IS THE ROW THAT GOES FURTHER THAN HOLLOW.** Its condition is *no arrow* — and in creative
+**the condition cannot be produced.** `Player.getProjectile` hands back a fresh `Items.ARROW`, the
+draw starts, and R5 never happens. **There is nothing to stage.**
+
+> **AND ITS FAILURE IN CREATIVE LOOKS LIKE OUR BUG, WHICH IS WHY THIS IS URGENT AND NOT TIDY.** A
+> creative boot of R-N1 empties the quiver and the inventory, right-clicks, and sees **no NO ARROW
+> notice** — because the draw began normally and `PlumeDraw.tick`'s `ticksWatched == 0` branch was
+> never reached. **That reads as `PlumeNotice` being broken.** The investigation goes to the notice,
+> the throttle and the two-key commit, and every one of them is working.
+>
+> **A hollow row passes while testing nothing. THIS one FAILS while testing nothing**, and a false
+> red costs more than a false green because somebody acts on it.
+
+**R-N2, R-N3 and R-N4** all turn on notices raised by draw and release paths that creative reaches
+differently; R-N3 stages *both* refusals in one fight and therefore inherits R-N1's problem whole.
+**R-1, R-2, the three band rows and the three body rows** need a draw to start and a round to be
+spent — **believed reachable in creative, and stated as a belief, because nothing here has measured
+it and survival is what ships.**
+
+> **THE ROW COUNT, MEASURED RATHER THAN QUOTED.** 12 rows are listed in this file's status block and
+> 6 in `GATE-plume-draw.md`'s — **18**, of which `H-2` is a move between the two pages rather than a
+> row of its own. Stated because *"the Plume's twenty-two rows"* has been said and does not match
+> either block.
+
 > ## NEITHER NOTICE HAS EVER BEEN SEEN BY A PLAYER
 >
 > **Both are `paper`-side and neither has been booted.** `NoticeThrottleKeysTest` guards that the two

@@ -1091,6 +1091,33 @@ the defect this rule is about, wearing the rule's own clothes.
 > **Second instance, so it is a pattern and not an accident:** the explicit-branch push rule shipped
 > as `#91`, having been owed for sessions on exactly the same terms.
 
+### THE CREATIVE-DIVERGENCE REGISTER — THE BENCH IS NOT THE GAME
+
+**WE TEST IN CREATIVE AND WE SHIP TO SURVIVAL, SO EVERY CREATIVE READING CERTIFIES CREATIVE.** This
+is a **POINTER**, and its one job is to answer *"can this row be read in creative?"* **before** a boot
+is spent finding out. Each entry names the divergence and where the account lives.
+
+**BLANKET PARITY IS NOT ON OFFER AND IS NOT BEING PROMISED HERE.** Creative changes vanilla's own
+behaviour, not only ours; the register records the divergences we have MEASURED, and its growth is
+the point. **An empty-looking register means nobody has looked, not that the modes agree.**
+
+| divergence | effect | account |
+|---|---|---|
+| **`hasInfiniteMaterials()`** short-circuits `BowItem.use`'s ammunition check | the Plume's **draw always starts** and **its arrow is never consumed**. `R-N1`'s condition cannot be produced at all | `GATE-plume-draw.md` and `GATE-plume-release.md`, *GAME MODE*; bytecode in `PLAN-dragons-plume.md` §1.1 |
+| **The own-inventory screen decomposes a gesture into independent single-slot writes** — `InventoryCreativeEvent`, one slot and its new item | a slot-guard is asked about **half a gesture**: the half that MOVES the protected item is refused, the half that CREATES one is innocent. **Duplicates the Nexus star**; a chest view does not reproduce it | `GATE-nexus.md` Row 8 |
+| **`MenuRouting` refuses `CLONE_STACK` outright** — creative middle-click *"makes items out of nothing"* | our own refusal, not vanilla's. **The one creative constant whose loss is a real economy hole** | `MenuRouting`'s `CLONE_STACK` section; `GATE-crafting.md` S10 is its **sole witness** |
+
+> **THE FIRST TWO ARE VANILLA'S AND THE THIRD IS OURS, AND THE REGISTER IS WORTH MORE FOR MIXING
+> THEM.** A reader asking *"can I boot this in creative?"* does not care whose code diverges; they
+> care whether the answer changes. **Sorting by owner would put the two halves of that question in
+> different lists.**
+
+> **AND THE SHAPE TO LOOK FOR WHEN ADDING THE FOURTH: CREATIVE REMOVES A COST.** Ammunition,
+> durability, consumption, the need to have the item at all. **A row whose reading is "the thing is
+> still there" is satisfied for free the moment the cost is gone**, and it passes without exercising
+> anything. That is the hollow-fixture rule above, with creative as the mechanism — which is why this
+> register sits beside it rather than in the gate-file conventions.
+
 **STANDING DEBT — OTHER RULES CURRENTLY CARRIED ONLY BY CONVENTION.** Named, not fixed; each is a
 candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
 
@@ -1137,6 +1164,18 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   reading written *beside* the prediction, and the prediction not edited once a row has been read.
   Stated in each `GATE-*.md` header and nowhere central; this file's one *NOT RUN* mention is an
   anecdote about a splice, not the rule.
+- **A GATE FILE DECLARES ITS GAME MODE, in the header and per row.** Measured across all 19
+  `GATE-*.md` at `e9b3e0e` for `gamemode|survival|creative|adventure|spectator`: **only
+  `GATE-quiver-ammo.md` and `GATE-crafting.md` declare one.** `GATE-nexus.md` and the two Plume files
+  have since been fixed; **16 files are still owed it and are NOT edited here.** The cost is measured
+  rather than asserted — two of `GATE-nexus.md` Row 6's six readings are **VOID** for want of this
+  line, and `GATE-plume-release.md`'s `R-N1` **fails while testing nothing** in the wrong mode.
+
+  > **THE GREP FOR THIS DEBT IS A FALSE-PRESENCE TRAP, SO THE COUNT IS STATED WITH ITS METHOD.**
+  > Two more files match those tokens and declare nothing: `GATE-nexus.md`'s three hits were all
+  > `InventoryCreativeEvent` as a MECHANISM, and `GATE-vanilla-damage.md`'s one hit is *"nearly
+  > recorded as a survival"* — **a fall the player lived through, not a game mode.** A bare
+  > `grep -l` says 4 of 19 and the answer is 2.
 
 
 ### THREE THINGS THAT DO NOT ANNOUNCE THEIR OWN ABSENCE

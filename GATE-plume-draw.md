@@ -11,6 +11,49 @@ H-4    RUN, INCOMPLETE    no desync observed, COARSER than the row asked for; re
 H-5    PASS               all five normal -- the gate-too-wide risk is closed
 ```
 
+## GAME MODE — `/gamemode survival`, AND HERE IT IS LOAD-BEARING RATHER THAN TIDY
+
+**EVERY ROW ON THIS PAGE IS SURVIVAL.** Not a convention borrowed from the other gate files: **this
+weapon's entire input path runs through a vanilla gate that CREATIVE SWITCHES OFF.** Read off the
+bytecode and recorded in `PLAN-dragons-plume.md` §1.1:
+
+```java
+boolean hasAmmo = !player.getProjectile(bow).isEmpty();
+if (!player.hasInfiniteMaterials() && !hasAmmo) return FAIL;   // BowItem.use, offsets 26-41
+player.startUsingItem(hand);
+```
+
+**`hasInfiniteMaterials()` is TRUE in creative, so the `FAIL` short-circuits and `startUsingItem` is
+ALWAYS reached.** `Player.getProjectile` also returns a **fresh `Items.ARROW`** in creative where it
+would otherwise return `EMPTY`. So in creative:
+
+- **the draw always starts**, with or without an arrow;
+- **the arrow is never consumed**, so *"is the arrow still there?"* is answered **YES** by the game
+  itself, before any of our code is asked.
+
+> **GREPPING THIS REPO FOR `hasInfiniteMaterials` RETURNS NOTHING, AND THAT IS NOT EVIDENCE OF
+> ANYTHING.** Measured 2026-09-15: **zero** occurrences in any `.java` file; the only occurrence in
+> the repo is in `PLAN-dragons-plume.md`. **The call is VANILLA'S, inside `BowItem.use`** — we never
+> write it, we are gated BY it. A search of our source is a search of the wrong document, and it
+> produces `CLAUDE.md`'s false absence exactly.
+
+### WHAT A CREATIVE BOOT WOULD DO TO THE ROWS ON THIS PAGE
+
+| row | in creative |
+|---|---|
+| **H-3** | **its "arrow YES" half goes HOLLOW.** Creative does not consume the arrow whether or not `clearActiveItem()` took, so the arrow is present either way — the row's own words, *"the arrow being present is consistent with several things"*, become the whole reading |
+| **H-3**, the other half | **"log YES" SURVIVES.** If the clear had not taken, `BowItem.releaseUsing` would run and raise `EntityShootBowEvent` in creative too, and the loud guard would fire. **The detector is mode-independent** |
+| H-1b, H-4, H-5 | need a draw to start, which creative guarantees; they read sound and animation, not ammunition. **Believed unaffected — stated as a belief** |
+
+> **SO H-3's DISCHARGE STANDS IN EITHER MODE, AND THIS SECTION IS NOT A RETRACTION.** It rests on the
+> guard's silence, which the row already argued is *"the half that is easy to skip"* and is the half
+> creative cannot touch. **The row was built with a second instrument and that is the only reason it
+> survives a question nobody had asked it.**
+>
+> **H-3's reading does not state its mode, and this section does not invent one.** What it does is
+> make the mode STOP MATTERING for the conclusion drawn from it — which is the honest repair when the
+> boot is over and the condition was never recorded.
+
 > ## THE SOUND IS RULED — `block.note_block.hat` — AND H-1b IS STILL OPEN
 >
 > **Ben heard it and it suits the weapon.** Ruled 2026-09-14, on feel, which is the only instrument
