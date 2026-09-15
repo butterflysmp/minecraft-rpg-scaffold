@@ -512,6 +512,79 @@ class NexusLockTest {
         // a menu was open.
     }
 
+    // ------------------------------------------------- THE CREATIVE PAYLOAD GUARD
+
+    @Test
+    void aCreativeWriteCARRYINGAStarIsREFUSEDWhereverItLands() {
+        // THE ROW FOR THE DEFECT GATE-nexus.md ROW 8 RECORDS, AND IT IS ABOUT THE PAYLOAD, NOT THE
+        // SLOT. Every other refusal in this file answers "which slots does this gesture touch?".
+        // This one cannot: an InventoryCreativeEvent names one slot and the stack that slot is
+        // ABOUT TO BECOME, so at the moment it fires the destination is EMPTY and the star is
+        // somewhere else entirely. NO_STARS is the fixture, deliberately -- it is the state
+        // `starAt` reports during the duplicating write, and under the old rule it meant PERMITTED.
+        //
+        // Swept over every player slot rather than one: the two gestures that produced residuals in
+        // play landed in DIFFERENT places -- slot 1 from a number key, the OFFHAND from F -- so a
+        // row staged at a single index could pass while the other arm stayed open. Two instances of
+        // one shape, one gesture apart, is what OFFHAND_SLOT already cost this file once.
+        for (int index = 0; index < 41; index++) {
+            assertTrue(
+                    NexusLock.refusesClick(ClickType.CREATIVE, InventoryAction.PLACE_ALL,
+                            player(index), -1, true, NO_STARS),
+                    "a creative write of a star into player slot " + index + " must be REFUSED");
+        }
+        // Mutation MUTCREATIVE: delete the `click == ClickType.CREATIVE && cursorIsStar` return
+        // -> reddens here at index 0 and at every index except LOCKED_SLOT, which the slot arm
+        // still catches on its own. APPLIED AND MEASURED, not expected -- see the PR body.
+    }
+
+    @Test
+    void aCreativeWriteOfAnORDINARYItemIsUNCHANGEDByTheGuard() {
+        // THE POSITIVE CONTROL, AND WITHOUT IT THE ROW ABOVE IS EQUALLY CONSISTENT WITH THE GUARD
+        // HAVING REFUSED EVERY CREATIVE CLICK IN THE GAME -- which would break creative inventory
+        // editing wholesale and redden nothing, the same shape as the dead-menu guard above.
+        assertFalse(NexusLock.refusesClick(ClickType.CREATIVE, InventoryAction.PLACE_ALL,
+                        player(A_STORAGE_SLOT), -1, false, NO_STARS),
+                "a creative write of an ordinary item into an ordinary slot must be PERMITTED");
+
+        // And the pre-existing slot behaviour is untouched on the same click type: the locked slot
+        // still refuses a write whose payload is NOT a star. This is what refuses PICKING THE STAR
+        // UP in creative -- that write is slot 8 <- AIR. GATE-nexus.md Row 6's 6.1 read PASS.
+        assertTrue(NexusLock.refusesClick(ClickType.CREATIVE, InventoryAction.PLACE_ALL,
+                        player(NexusLock.LOCKED_SLOT), -1, false, NO_STARS),
+                "a creative write to the LOCKED slot must still be REFUSED on payload alone");
+        // Mutation MUTCREATIVEWIDE: widen 2b to `click == ClickType.CREATIVE` -> reddens the first
+        // assertion. APPLIED AND MEASURED.
+    }
+
+    @Test
+    void theCreativeGuardAndTheCURSORPlaceDISAGREE_deliberately_doNotHarmoniseThem() {
+        // TWO ARMS, ONE PAYLOAD, THE SAME SLOT, OPPOSITE ANSWERS -- ON PURPOSE. Written down here
+        // because an asymmetry that is only inferable gets "tidied up" by the next reader, and the
+        // tidy-up silently reopens one of the two.
+        //
+        //   LEFT     + star payload -> PERMITTED   the player is MOVING something they hold
+        //   CREATIVE + star payload -> REFUSED     the client is MANUFACTURING one
+        //
+        // The reason is not squeamishness about creative. A cursor place relocates a star that is
+        // ALREADY outside its slot, where convergence collects it on the next join, and refusing it
+        // would wedge the star on the cursor with no legal destination at all. A creative set-slot
+        // write CREATES a star that convergence would then have to delete. Permit the move, refuse
+        // the mint.
+        NexusLock.Touched sameSlot = player(A_STORAGE_SLOT);
+
+        assertFalse(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PLACE_ALL,
+                        sameSlot, -1, true, NO_STARS),
+                "the cursor place must stay PERMITTED -- see "
+                        + "placingAStarFromTheCursorIntoAnOrdinarySlotIsPERMITTED");
+        assertTrue(NexusLock.refusesClick(ClickType.CREATIVE, InventoryAction.PLACE_ALL,
+                        sameSlot, -1, true, NO_STARS),
+                "the creative write of the same payload into the same slot must be REFUSED");
+        // Mutation: harmonise the two, in either direction -> reddens. That is this row's whole
+        // job; it guards a DECISION rather than a behaviour, and nothing else in the file would
+        // notice the decision being reversed.
+    }
+
     // ---------------------------------------------------------------- helpers
 
     /** A slot in the PLAYER's own inventory, at the given index. */
