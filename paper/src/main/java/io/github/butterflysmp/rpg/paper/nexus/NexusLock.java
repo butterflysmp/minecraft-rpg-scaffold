@@ -128,6 +128,41 @@ public final class NexusLock {
         //    Returned before the switch so no slot work happens at all on this path.
         if (click == ClickType.DOUBLE_CLICK) return cursorIsStar;
 
+        // 2b. A CREATIVE SET-SLOT WRITE CARRYING A STAR. THE ONE GESTURE WHERE *WHAT IS BEING
+        //     WRITTEN* DECIDES THE ANSWER AND NO SLOT RULE CAN SEE IT.
+        //
+        //     `InventoryCreativeEvent` names ONE slot and the item that slot is ABOUT TO BECOME --
+        //     measured off the pinned paper-api, it overrides getCursor() to return that new stack.
+        //     So the creative client does not MOVE an item, it MANUFACTURES one into a destination,
+        //     and at the moment the event fires the destination is empty and the star is elsewhere.
+        //     `starAt` sees nothing. `Set.of(clicked)` refuses nothing. The star duplicates.
+        //
+        //     GATE-nexus.md Row 8 is the account: a number-key gesture in the creative
+        //     own-inventory screen arrives DECOMPOSED as two independent single-slot writes. The
+        //     one that clears slot 8 is refused by the locked-slot arm; the one that creates a star
+        //     at the destination is innocent by every rule below. Refusing at the source cannot
+        //     help when there is no source.
+        //
+        //     TOTAL, WITH NO EXEMPTION FOR THE LOCKED SLOT, AND THE MISSING EXEMPTION IS
+        //     DELIBERATE. Writing a star INTO slot 8 looks like it should be permitted -- it is the
+        //     star's own home -- but the arm below already refuses every gesture NAMING the locked
+        //     slot, so that exemption would be a branch nothing can reach. An unreachable arm is
+        //     indistinguishable from one that protects you; this file does not add one.
+        //
+        //     NOTHING LEGITIMATE IS LOST. `NexusItems.mint` has exactly one call site, inside
+        //     `NexusSlots.converge`, which writes with a direct `setItem` that raises no event at
+        //     all -- so no sanctioned route to a star passes through here to be refused.
+        //
+        //     THE ASYMMETRY WITH THE LEFT-CLICK PLACE IS INTENTIONAL AND MUST NOT BE HARMONISED.
+        //     `placingAStarFromTheCursorIntoAnOrdinarySlotIsPERMITTED` permits exactly the payload
+        //     this refuses, into exactly the same slot. They are different events about different
+        //     things: a cursor place is THE PLAYER MOVING SOMETHING THEY ARE ALREADY HOLDING, which
+        //     convergence will collect on the next join, and refusing it would wedge the star on
+        //     the cursor with no legal destination. A creative set-slot write is THE CLIENT
+        //     MANUFACTURING ONE, which convergence would then have to delete. Permit the move,
+        //     refuse the mint.
+        if (click == ClickType.CREATIVE && cursorIsStar) return true;
+
         // 3. Every other gesture: which PLAYER-inventory slots could it move an item into or out of?
         //
         //    EXHAUSTIVE SWITCH EXPRESSION, NO DEFAULT ARM. ClickType is Bukkit's enum and it grows
@@ -138,8 +173,23 @@ public final class NexusLock {
             // The clicked slot and nothing else. A shift-click's DESTINATION is chosen by vanilla
             // and is not named here, which is sound: refusing at the SOURCE is enough to stop the
             // star leaving, and the star's slot is always the source when the star is what moves.
-            case LEFT, RIGHT, SHIFT_LEFT, SHIFT_RIGHT, MIDDLE, DROP, CONTROL_DROP, CREATIVE,
+            case LEFT, RIGHT, SHIFT_LEFT, SHIFT_RIGHT, MIDDLE, DROP, CONTROL_DROP,
                  WINDOW_BORDER_LEFT, WINDOW_BORDER_RIGHT, UNKNOWN -> Set.of(clicked);
+
+            // CREATIVE, reaching here ONLY when step 2b let it through -- i.e. the payload is not a
+            // star. The ordinary slot rule then applies: refuse a write that names the locked slot,
+            // refuse one that lands on a slot already holding the star.
+            //
+            // IT HAS ITS OWN ARM BECAUSE THE SHARED ARM'S SENTENCE IS FALSE OF IT, and leaving it
+            // up there would have left a comment describing a set it no longer covers. "The star's
+            // slot is always the source when the star is what moves" is true of every click that
+            // MOVES something; a creative set-slot write has NO SOURCE. The client names a
+            // destination and a payload, and step 2b exists precisely because of that.
+            //
+            // This arm is what still refuses picking the star UP in creative -- that write is
+            // slot 8 <- AIR, whose payload is not a star, so it arrives here and the locked-slot
+            // arm takes it. GATE-nexus.md Row 6's 6.1 is the reading.
+            case CREATIVE -> Set.of(clicked);
 
             // THE HOTBAR BUTTON IS A SECOND SLOT, AND IT IS NOT THE CLICKED ONE. Hovering a
             // crafting-grid cell and pressing 9 swaps hotbar index 8 into that cell: the raw slot

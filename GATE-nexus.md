@@ -621,15 +621,54 @@ refusal.
 | **A** | `NexusLock`'s `CREATIVE` arm consults `cursorIsStar` | **unit-testable** — `NexusLockTest` can pin it, and a mutation can kill it. **But the operator has said do not touch `NexusLock`** |
 | **B** | an early return in `NexusSlots.refuses` for `InventoryCreativeEvent` | honours that instruction, **and lands in the one class this slice deliberately gave no test file.** Its only coverage would be Row 8 |
 
-**NOT BUILT, PENDING THE RULING.** The prohibition on `NexusLock` was given because the two-member
-arms are correct and must not be "fixed" — **and A does not touch them**: it adds a second axis
-(*what is being written*) to one arm, leaving every slot decision as it is. **But it is still an edit
-to a file that was named off-limits, so it is asked rather than assumed.** B is available and needs
-no ruling; it costs the test.
+> ### RULED 2026-09-15: **A**, AND THE PROHIBITION WAS LIFTED FOR THIS CHANGE ONLY.
+>
+> **The operator verified the premise from `origin` rather than adopting it**, and refused **B** for
+> the reason given above: `NexusSlots` is the class this slice deliberately left untested, and
+> putting the one genuinely unit-testable piece of the fix inside it trades a killable test for a
+> boot row.
+>
+> **AND THE RULE SHIPPED WITHOUT ITS EXEMPTION, WHICH IS A CHANGE FROM THE SENTENCE ABOVE.** *"…
+> unless its destination is the locked slot"* was **dropped**: the switch arm below already refuses
+> every gesture NAMING the locked slot, so that clause is **a branch nothing can reach.** An
+> unreachable arm is indistinguishable from one that protects you, and this file has an open finding
+> about exactly that. **The shipped guard is total —
+> `if (click == ClickType.CREATIVE && cursorIsStar) return true;`** — one line, no exemption.
+>
+> **THE SWEEP THE RULING REQUIRED FIRST, and its answer is ONE ARM.** `cursorIsStar` is consulted in
+> three places (the cursor-drop actions, `DOUBLE_CLICK`, and `refusesDrag`) and in none of the slot
+> arms. For every other `ClickType` the payload is reachable anyway: it is either **the cursor** —
+> where placing is a deliberate permit — or **the contents of a slot already in the touched set**,
+> which `starAt` reads. `ClickType.CREATIVE` is the only one whose payload is in **neither**, because
+> the client manufactures it and only `InventoryCreativeEvent.getCursor()` names it.
 
-**EITHER WAY THIS ROW SHIPS.** Ben's instruction was *fix it if it is cheap; gate it as survival
-either way* — 8d is that survival gate, and it is written before any fix so the fix cannot be
-back-fitted to it.
+### 8e AND 8f — THE FIX, IN PLAY, ON BOTH GESTURES. **THE SHIP CONDITION.**
+
+**WRITTEN BEFORE THE FIX WAS BOOTED.** The unit rows prove the decision; these prove the delivery,
+and **the ruling makes them blocking rather than confirmatory**.
+
+| | gesture, creative, own-inventory screen, **with the guard deployed** | expected |
+|---|---|---|
+| **8e** | number-key the star from slot 8 to slot 1 | `/data` shows **ONE** tagged stack, hotbar slot 8 |
+| **8f** | **F** on the star in the inventory | `/data` shows **ONE** tagged stack, hotbar slot 8, **and the OFFHAND entry holds no star** |
+| **8g** | the control: middle-click, drag and left-click ordinary items around the creative inventory | **everything still moves.** A guard that refuses every creative click reads identically to one that works, until someone tries to build |
+
+**READING:** _(not run)_
+
+> **IF 8e CLOSES AND 8f DOES NOT, THE FIX DOES NOT SHIP — operator's instruction, and the fallback is
+> pre-authorised: drop to gating it and leave the code alone.** A half-fix is worse than none here,
+> because the surviving symptom then presents as a **new** bug in a path just declared guarded, and
+> the next person debugging it starts from *"but the creative arm handles this"*.
+>
+> **THE REASONING COVERS BOTH AND THAT IS PRECISELY WHY BOTH ARE MEASURED.** The argument for 8f is
+> one step longer than for 8e and the extra step is the one that could be wrong: the offhand residual
+> was **not** refused by the `SWAP_OFFHAND` arm and **not** by `onNexusSwapHand`, so it did not arrive
+> as either; if it raises an inventory event at all, `ClickType.CREATIVE` is the only remaining
+> candidate and the guard takes it. **The unmeasured case is that it raises NO event** — in which
+> case nothing in this design can refuse it and the fallback is forced.
+>
+> This is `OFFHAND_SLOT`'s lesson in its live form: **one instance reasoned about, a second instance
+> of the same shape one gesture away.**
 
 ---
 
