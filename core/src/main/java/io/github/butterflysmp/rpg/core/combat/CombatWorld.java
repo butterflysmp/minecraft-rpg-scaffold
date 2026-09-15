@@ -165,6 +165,32 @@ public interface CombatWorld {
     UUID spawnMarker(Vec3 at, String itemId, int expectedLifetimeTicks);
 
     /**
+     * Plant an ARROW BODY at {@code at}, already moving at {@code velocity}, and return its id.
+     * The sibling of {@link #spawnMarker}, and everything that method's contract says about
+     * ownership, {@code expectedLifetimeTicks} and {@link #driveMarker} applies here unchanged.
+     *
+     * <p><b>WHY A SIBLING AND NOT A MATERIAL ID ON THE EXISTING METHOD.</b> {@code spawnMarker}
+     * takes an ITEM id and renders a dropped item. An arrow body is not an item and has no item id;
+     * passing a magic string like {@code "arrow"} through {@code itemId} would put a value in that
+     * parameter which is not the thing the parameter is named for, and which the next reader
+     * resolves as a {@code Material}. <b>Two shapes, two methods.</b>
+     *
+     * <p><b>WHY {@code velocity} IS A PARAMETER, AND IT IS THE OPPOSITE OF THE ITEM MARKER'S
+     * RULE.</b> {@code spawnMarker}'s shared configuration ZEROES the velocity, and argues at
+     * length that <i>a marker must SAY it moves rather than forget to say it does not</i> -- correct,
+     * because a fresh item entity has a random pop and a still body is the safe default.
+     *
+     * <p><b>An arrow derives its ROTATION from its own velocity, so for this body the safe default
+     * is inverted.</b> Spawned still, it has no direction to point in on its launch frame, and the
+     * platform smooths rotation across ticks, so it would visibly SNAP into line one tick later.
+     * The launch velocity is therefore part of creating the body, not something done to it
+     * afterwards -- which is why it is a constructor argument here and a forbidden one there.
+     *
+     * <p>Only legal on the thread owning {@code at}'s region, like every other world write.
+     */
+    UUID spawnBoltMarker(Vec3 at, Vec3 velocity, int expectedLifetimeTicks);
+
+    /**
      * Drive a marker: give it {@code stepVelocity} as this tick's motion and let the platform carry
      * it. Named for what it does -- it does NOT set a position.
      *

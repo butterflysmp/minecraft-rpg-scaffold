@@ -60,10 +60,22 @@ final class AbilitySchema {
             // which is every projectile this repo shipped before the Dragon's Plume. Unlike `trail`
             // and `item` it is a SECTION rather than a scalar, and unlike them it has no partial
             // form: see parseHoming.
+            // `body` is OPTIONAL and absent means null. It is the OTHER kind of body: `item` renders
+            // a dropped item driven along the flight, `body` renders a real arrow oriented along its
+            // travel with every interaction switched off. MUTUALLY EXCLUSIVE with `item` -- a bolt
+            // has one body -- and refused here rather than resolved, because whichever the flight
+            // picked the other key would silently do nothing.
+            //
+            // The VALUE is checked because there is exactly one body kind and a typo must be a named
+            // file rather than a bolt that quietly renders nothing. That is a different standard
+            // from `item`, which is NOT checked here (the adapter warns once and falls back to
+            // BLAZE_POWDER), and the difference is deliberate: `item` names a Material out of a
+            // huge open set, `body` names one of ours out of a set of one.
             case "projectile" -> new CastSpec.Projectile(
                     s.getDouble("speed", 1.0), s.getDouble("gravity", 0.03),
                     s.getInt("max_lifetime_ticks", 100), s.getString("trail"), s.getString("item"),
-                    parseHoming(s.getConfigurationSection("homing")));
+                    parseHoming(s.getConfigurationSection("homing")),
+                    parseBody(s.getString("body")));
             case "dash"       -> new CastSpec.Dash(
                     s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4),
                     parseDashDirection(s.getString("direction", "movement_else_forward")));
@@ -154,6 +166,27 @@ final class AbilitySchema {
      * compact constructor asks whether the numbers MEAN anything, a question a unit test reaches
      * without a server. Both throws land in the same {@code catch} and read the same to an operator.
      */
+    /**
+     * The one body kind {@code body:} may name.
+     *
+     * <p><b>A SET OF ONE IS STILL A SET, AND IT IS CHECKED LIKE ONE.</b> Today the only answer is
+     * {@code arrow}; the day a second body exists this becomes a switch and
+     * {@code CombatWorld.spawnBoltMarker} grows the id as a parameter. Until then a typo --
+     * {@code body: arow} -- is a NAMED, SKIPPED FILE, which is this grammar's contract for every
+     * malformed field, rather than a bolt that silently renders no body at all.
+     *
+     * <p>Absent means null, which is the ordinary case for every projectile in the repo.
+     */
+    private static String parseBody(String raw) {
+        if (raw == null) return null;
+        String body = raw.toLowerCase(Locale.ROOT);
+        if (!body.equals("arrow")) {
+            throw new IllegalArgumentException(
+                    "Unknown projectile body '" + raw + "'; the only body is 'arrow'");
+        }
+        return body;
+    }
+
     private static CastSpec.Homing parseHoming(ConfigurationSection s) {
         if (s == null) return null;
         return new CastSpec.Homing(reqDouble(s, "lerp"), reqDouble(s, "activation_blocks"),

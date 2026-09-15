@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.core;
 import io.github.butterflysmp.rpg.core.ability.*;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.combat.Aim;
+import io.github.butterflysmp.rpg.core.combat.ProjectileFlight;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import org.junit.jupiter.api.Test;
@@ -247,6 +248,23 @@ class ProjectileFlightTest {
      * A projectile that asks for no body spawns none. This is what keeps hunters_bow and
      * ember_staff byte-identical -- and note that the LIVE markers map cannot tell "one body,
      * correctly cleaned up" from "no body was ever made", which is why markersEverSpawned exists.
+     *
+     * <h2>THIS ROW QUIETLY BECAME LOAD-BEARING FOR SOMETHING OUTSIDE ITS NAME, AND SAYING SO HERE
+     * IS THE POINT -- THE PERSON DELETING A ROW IS READING THE ROW</h2>
+     *
+     * <p>{@code launch}'s body gate used to be one null check. It is now a three-branch dispatch
+     * ({@code body} / {@code item} / neither), and <b>this row is the only thing in the suite that
+     * holds the THIRD branch.</b> Measured, not assumed: {@code MUTNOBODY} -- making the
+     * {@code else} call {@code spawnBoltMarker} -- reddens exactly this row.
+     *
+     * <p><b>A row was written for that branch during the arrow-body slice and then DELETED, because
+     * the measurement said it had no unique kill: it reddened only alongside this one.</b> Two rows
+     * asserting one fact is how a suite grows without gaining coverage. What survived instead is
+     * this sentence.
+     *
+     * <p>So: a bug that spawned an arrow for EVERY projectile -- one real entity per grenade, in
+     * production -- is caught here and nowhere else. The flight would still fly, trace and resolve,
+     * so no other row in this file can see it.
      */
     @Test
     void aProjectileWithNoItemSpawnsNoBody() {
@@ -593,5 +611,83 @@ class ProjectileFlightTest {
         assertEquals(86.2, target.health, 1e-9,
                 "12 * 1.15 = 13.8, the percent frozen at launch, not the 900% held at impact");
         // Mutation: read the percent live at impact -> 12 * 10 = 120 -> reddens.
+    }
+
+    /** 1 block/tick, no gravity, an ARROW body, and a payload that presents nothing. */
+    private static AbilityDefinition arrowBolt(int lifetime) {
+        return new AbilityDefinition("grenade", "Grenade", "fire", "hunter",
+                0, ResourceCost.FREE,
+                new CastSpec.Projectile(1.0, 0, lifetime, null, null, null, "arrow"),
+                List.of(new EffectSpec.Damage(12, "fire")));
+    }
+
+    /**
+     * THE BODY GATE HAS THREE STATES AND THE ARROW BODY GOES DOWN ITS OWN PORT METHOD -- CARRYING
+     * THE LAUNCH VELOCITY, WHICH IS THE WHOLE REASON THE METHOD EXISTS.
+     *
+     * <p>{@code launch} used to read {@code look.item() == null ? null : spawnMarker(...)}: ONE null
+     * check carrying the whole decision. Adding a second body kind to that shape leaves the null
+     * check silently meaning "item body" and the arrow arriving as an invisible {@code else}.
+     *
+     * <p><b>THE VELOCITY ASSERTION IS THE LOAD-BEARING HALF, and a body count cannot see it.</b>
+     * An arrow derives its rotation from its own {@code deltaMovement} inside its own tick, so a
+     * body created still has no direction on its first frame and visibly snaps into line one tick
+     * later. A three-argument sibling that accepted the velocity and threw it away would pass every
+     * count assertion in this file.
+     *
+     * <p>Staged at speed 1 down +X so the launch velocity is {@code (1,0,0)} and cannot be confused
+     * with the origin {@code (0,0,0)} -- no two quantities this row reads are equal, so a
+     * transposition between them has nowhere to hide.
+     *
+     * <p>Mutations: drop the velocity argument at the call site -> the velocity assertion reddens
+     * alone. Route the arrow body to {@code spawnMarker} instead -> the {@code markers} assertion
+     * reddens alone. Neither reddens the other.
+     */
+    @Test
+    void anArrowBodyTakesItsOwnPortMethodAndArrivesAlreadyMoving() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        cast(world, caster, arrowBolt(5), FORWARD);
+
+        assertEquals(1, world.markersEverSpawned.size(), "exactly one body, created immediately");
+        UUID body = world.markersEverSpawned.get(0);
+
+        assertNull(world.markers.get(body),
+                "an arrow body is NOT an item marker -- spawnMarker must not have been called, and "
+                        + "the item map is the only thing that can tell the two ports apart");
+        assertEquals(new Vec3(1, 0, 0), world.boltMarkerLaunchVelocities.get(body),
+                "the LAUNCH VELOCITY is part of creating an arrow body: it orients along its own "
+                        + "deltaMovement, so one spawned still has no direction on its first frame");
+        assertEquals(FORWARD.origin(), world.markerSpawnedAt.get(body),
+                "and it appears at the aim origin, exactly as the item body does");
+    }
+
+    /**
+     * ONE BOLT, ONE BODY -- REFUSED AT BOTH ENDS, AND THE TWO ENDS ANSWER DIFFERENT QUESTIONS.
+     *
+     * <p>{@code CastSpec.Projectile} is what CONTENT produces; {@code ProjectileFlight.Look} is what
+     * the flight consumes. Either alone would leave the other constructible with two bodies, and
+     * the flight would then have to pick one -- silently making the other authored key do nothing.
+     *
+     * <p><b>Asserted on the MESSAGE and not merely on the throw</b>, because both records throw
+     * {@code IllegalArgumentException} for their own reasons and a bare {@code assertThrows} would
+     * pass against an unrelated failure. The asserted token {@code "mutually exclusive"} appears
+     * exactly once in each message.
+     */
+    @Test
+    void aProjectileCannotDeclareBothAnItemBodyAndAnArrowBody() {
+        var fromContent = assertThrows(IllegalArgumentException.class,
+                () -> new CastSpec.Projectile(1.0, 0, 5, null, "flint", null, "arrow"),
+                "the content-side record must refuse it");
+        assertTrue(fromContent.getMessage().contains("mutually exclusive"), fromContent.getMessage());
+
+        var atTheFlight = assertThrows(IllegalArgumentException.class,
+                () -> new ProjectileFlight.Look(null, "flint", "arrow"),
+                "and so must the shape the flight actually reads");
+        assertTrue(atTheFlight.getMessage().contains("mutually exclusive"), atTheFlight.getMessage());
+
+        assertDoesNotThrow(() -> new ProjectileFlight.Look("trail", null, "arrow"),
+                "a TRAIL is orthogonal to both and must not be caught by the exclusion");
     }
 }

@@ -1790,11 +1790,48 @@ arrive with their discharge conditions attached rather than acquiring them after
   three** — `"Tap1" / "Tap2" / "Tap3"` — which is flagged at the bindings as an extension rather than
   a re-taking.
 
-  **`item: arrow` IS RESOLVED AND IS NO LONGER LISTED HERE AS AN UNRULED DERIVATION.** The **BODY**
-  ruling (2026-09-15) says the arrow body vanishes on resolve — no pickup, no sticking — so the body
-  is not an item at all. **The derivation did not need ruling; it needs deleting**, and slice K is
-  where the key leaves the file. The `item: arrow` lines carry a superseded-by-BODY note until then,
-  so nobody re-derives a key that is on its way out.
+  **`item: arrow` IS GONE, NOT RESOLVED-IN-PLACE — SLICE K DELETED IT.** The **BODY** ruling
+  (2026-09-15) says the arrow body vanishes on resolve — no pickup, no sticking — so the body was
+  never an item at all. **The derivation did not need ruling; it needed deleting**, and every cast
+  now authors **`body: arrow`**: a real arrow entity, oriented along its own travel, inert in every
+  other way. The two keys are **mutually exclusive and the loader refuses a file that authors
+  both**, so the old key cannot come back by accident.
+
+  > ### ⚠ THE ORPHAN EXIT IS RULED, AND WHAT WAS ACCEPTED IS NOT WHAT THE ITEM MARKER ACCEPTED
+  >
+  > **`spawnMarker`'s pre-age trick does NOT transfer, measured from the pinned jar.** An item
+  > marker subtracts from `ItemEntity.LIFETIME`, a **constant compiled into the server**, and gets
+  > an exact `expectedLifetimeTicks + grace` window. An arrow's limit is read from **config at
+  > runtime**, and worse, `AbstractArrow.life` does not increment at all until
+  > `tickCount > max-arrow-despawn-invulnerability` — **200 on this server, and unreadable from the
+  > API**.
+  >
+  > ```
+  > item marker    discard at  120 + 60          = 180t exactly    3.0s
+  > arrow body     discard at  200 + 1           = 201t FLOOR     ~10.05s
+  > ```
+  >
+  > **OPTION A RULED: accept the ~201-tick floor.** The two alternatives were rejected on the
+  > record — lowering the config is **server-wide**, changing every arrow every player fires to fix
+  > one weapon's decoration; and a removal mechanism of our own **is the failure it is meant to
+  > cover**, since the third exit exists precisely because a scheduled chain can fail to run. That
+  > second argument is `spawnMarker`'s own and nothing in the measurement touched it.
+  >
+  > ***AND THE ACCEPTED COST IS NOT WHAT IT SOUNDS LIKE: THE ORPHAN TRAVELS.*** An orphaned ITEM
+  > marker stops — gravity off, velocity never renewed. An orphaned ARROW keeps flying on its last
+  > velocity, because the no-physics branch is `setPos(position + delta)` and the only thing acting
+  > on `delta` is a 1%/tick inertia that is **not** gated on `noPhysics`.
+  >
+  > ```
+  > sum of 0.99^n over 201 ticks  =  86.74 tick-lengths  ->  216.8 blocks at speed 2.5
+  > bounded above, any window     =  100 tick-lengths    ->  250 blocks
+  > ```
+  >
+  > **So: "a stray body drifts up to ~217 blocks THROUGH TERRAIN for ten seconds", not "a stray body
+  > hangs for ten seconds."** It cannot hit, damage, stick or be picked up while it does, and it
+  > dies on vanilla's own timer with no code of ours running — a stronger guarantee than any
+  > mechanism of ours could make, which is why A wins anyway. `GATE-plume-release.md`'s **R-K3** is
+  > the row, and it says to look DOWNRANGE rather than at the impact point.
 
   **STILL UNRULED AND STILL MARKED AS SUCH:** the **homing constants** of §5, `INHERITED AND
   UNJUDGED` with gate rows P1-P3.
