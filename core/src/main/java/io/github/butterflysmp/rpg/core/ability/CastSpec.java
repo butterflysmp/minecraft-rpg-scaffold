@@ -53,7 +53,42 @@ public sealed interface CastSpec {
      * other, so neither defaults from the other.
      */
     record Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item,
-                      Homing homing) implements CastSpec {
+                      Homing homing, String body) implements CastSpec {
+
+        /**
+         * <b>{@code item} AND {@code body} ARE MUTUALLY EXCLUSIVE, AND IT IS ENFORCED HERE RATHER
+         * THAN TRUSTED.</b> A bolt has one body. {@code item} renders a dropped ITEM driven along
+         * the flight; {@code body} renders a real ARROW, oriented along its travel, with every
+         * interaction it would normally have switched off. Authoring both is a content mistake with
+         * no sensible resolution -- whichever the flight picked, the other field would silently do
+         * nothing.
+         *
+         * <p><b>{@code body} IS THE TAIL FIELD EVEN THOUGH {@code homing} IS OLDER</b>, because the
+         * ladder's rule is that each convenience constructor drops the TAIL and never a middle
+         * field. Putting {@code body} beside {@code item}, where it reads more naturally, would
+         * have renumbered every existing call site and broken the property that a reader counting
+         * arguments never has to work out which one was omitted.
+         *
+         * <p><b>The values are judged in {@code core}; PRESENCE is judged in the schema.</b> Same
+         * split {@link Homing} uses -- {@code AbilitySchema} asks a question about a file, this asks
+         * whether the combination means anything, and a unit test reaches this without a server.
+         */
+        public Projectile {
+            if (item != null && body != null) {
+                throw new IllegalArgumentException(
+                        "a projectile cast declares ONE body: 'item: " + item + "' and 'body: "
+                                + body + "' are mutually exclusive");
+            }
+        }
+
+        /**
+         * A projectile with a homing block and an ITEM body -- the canonical form until the arrow
+         * body arrived, and what every existing call site still constructs.
+         */
+        public Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item,
+                          Homing homing) {
+            this(speed, gravity, maxLifetimeTicks, trail, item, homing, null);
+        }
 
         /**
          * A projectile that flies where it was aimed -- every projectile in this repo before the

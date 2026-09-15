@@ -345,7 +345,11 @@ public final class CastExecutor {
     private void launch(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec) {
         ProjectileFlight.launch(world, caster, aim.origin(), aim.direction().scale(spec.speed()),
                 spec.gravity(), spec.maxLifetimeTicks(),
-                new ProjectileFlight.Look(spec.trail(), spec.item()),
+                // All three presentation fields, mapped straight across. The exclusion between
+                // `item` and `body` is the RECORDS' invariant at both ends, so this is a copy and
+                // not a decision -- and a Projectile that got past its own constructor cannot
+                // produce a Look that fails its one.
+                new ProjectileFlight.Look(spec.trail(), spec.item(), spec.body()),
                 seekOf(spec),
                 (target, point) -> detonate(ability, caster, target, point));
     }

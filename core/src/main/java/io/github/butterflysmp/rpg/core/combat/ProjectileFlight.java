@@ -44,9 +44,40 @@ public final class ProjectileFlight {
      * <p>They are independent on purpose. A trail with no body is what the Flint Staff shipped as
      * one slice earlier; a body with no trail is a silent thrown rock.
      */
-    public record Look(String trail, String item) {
+    public record Look(String trail, String item, String body) {
+
+        /**
+         * <b>{@code item} AND {@code body} ARE TWO KINDS OF THE SAME SLOT AND CANNOT BOTH BE SET.</b>
+         * One bolt has one body; a flight holding both would have to pick, and whichever it picked
+         * would make the other field silently do nothing.
+         *
+         * <p>{@code trail} is NOT in that exclusion and is orthogonal to both -- a trail with no
+         * body is what the Flint Staff shipped as one slice earlier.
+         *
+         * <p>Judged here as well as in the schema, and the split is the one {@code CastSpec.Homing}
+         * already uses: the schema asks a question about a FILE, this asks whether the value means
+         * anything, and a unit test reaches this one without a server.
+         */
+        public Look {
+            if (item != null && body != null) {
+                throw new IllegalArgumentException(
+                        "a projectile has ONE body: item '" + item + "' and body '" + body
+                                + "' are mutually exclusive");
+            }
+        }
+
         /** Neither -- a bare grenade, and both dev weapons. */
-        public static final Look NONE = new Look(null, null);
+        public static final Look NONE = new Look(null, null, null);
+
+        /**
+         * A trail and an ITEM body, the shape every projectile in this repo had before the arrow
+         * body existed. <b>The new field went on the END, which is the ladder's own rule</b>: each
+         * convenience constructor drops the TAIL, never a middle field, so a reader counting
+         * arguments never has to work out which one was omitted.
+         */
+        public Look(String trail, String item) {
+            this(trail, item, null);
+        }
     }
 
     /**
@@ -101,8 +132,29 @@ public final class ProjectileFlight {
         // body that is already there.
         //
         // Legal here: we are on the region owning `origin`, which is where the entity is created.
-        UUID markerId = look.item() == null ? null
-                : world.spawnMarker(origin, look.item(), maxLifetimeTicks);
+        //
+        // THREE STATES, WRITTEN AS THREE BRANCHES, AND THE SHAPE IS THE POINT.
+        //
+        // This was `look.item() == null ? null : spawnMarker(...)` -- a ternary in which ONE null
+        // check carried the whole decision. Growing a second body kind onto that shape means the
+        // null check silently keeps meaning "item body", and the arrow body arrives as an `else`
+        // nobody can see. So the gate is an if/else-if/else with a named local: adding a fourth
+        // body kind is a compile-time-visible edit to a list, not a re-reading of a ternary.
+        //
+        // The arrow body is asked for FIRST because it is the narrower case; the ORDER cannot
+        // matter, because Look's own constructor refuses a value with both set. That invariant is
+        // what lets this read as a dispatch rather than as a precedence rule.
+        final UUID markerId;
+        if (look.body() != null) {
+            // THE LAUNCH VELOCITY GOES IN AT CREATION, WHICH IS THE OPPOSITE OF THE ITEM PATH.
+            // An arrow points along its own velocity; spawned still it has no direction to take on
+            // its first frame and snaps into line a tick later. See CombatWorld.spawnBoltMarker.
+            markerId = world.spawnBoltMarker(origin, velocity, maxLifetimeTicks);
+        } else if (look.item() != null) {
+            markerId = world.spawnMarker(origin, look.item(), maxLifetimeTicks);
+        } else {
+            markerId = null;
+        }
         step(world, caster, origin, origin, velocity, gravity, maxLifetimeTicks, 0, look, seek,
                 markerId, onImpact);
     }

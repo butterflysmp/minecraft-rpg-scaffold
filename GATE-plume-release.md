@@ -20,6 +20,9 @@ R-N4   NOT RUN   THE SILENCE, with its positive control
 R-B1   NOT RUN   BAND 1 fires at 8 and NOT at 9        R4''' boundary
 R-B2   NOT RUN   BAND 2 fires at 9 and at 14, NOT 15   R4''' boundary
 R-B3   NOT RUN   BAND 3 fires at 15 and at 19          and 20 is a CHARGED release
+R-K1   NOT RUN   THE BODY READS AS A VANILLA ARROW IN FLIGHT -- and the FIRST FRAME
+R-K2   NOT RUN   IT TOUCHES NOTHING: wall, mob, water -- no damage, stick, pickup or log
+R-K3   NOT RUN   THE ORPHAN EXIT -- and it TRAVELS, which is the accepted cost
 ```
 
 > ## NEITHER NOTICE HAS EVER BEEN SEEN BY A PLAYER
@@ -86,6 +89,45 @@ held 20+            ->  charged, 34 and homing
 > > `DrawReleaseTest`:** `core` decides the band; **`dragons_plume.yml` authors the damage**, and
 > > nothing checks that `Tap(2)` reaches the binding that says `17`. **A transposition of two
 > > bindings' amounts is green everywhere in the suite** and visible only as a number on a mob.
+
+---
+
+## THE BODY ROWS — SLICE K, AND THE FIRST ONE IS THE WHOLE REASON THE SLICE EXISTS
+
+**`body: arrow` replaces `item: arrow`: a real arrow entity rather than a dropped item.** Everything
+that makes it inert is `setNoPhysics(true)` and `setPickupStatus(DISALLOWED)` in
+`PaperCombatWorld.spawnBoltMarker`, both read out of the pinned jar. **No unit test can see any of
+this** — `core` drives a `FakeWorld` that has no entities, and `castRay` owns resolution, so the
+suite is green whether the body behaves or not.
+
+| row | staging | what to record |
+|---|---|---|
+| **R-K1** | **IT READS AS A VANILLA ARROW IN FLIGHT.** Fire a charged release across open ground and watch one arrow from the side. Then have a second player watch from downrange. **AND WATCH THE FIRST FRAME SPECIFICALLY** — fire repeatedly at a wall three blocks away, where the whole flight is one or two ticks. | **WORDS, NOT A VERDICT.** *"It flies point-first like a bow shot"* and *"it tumbles end over end"* are different findings and only one of them is a pass. **The first frame is where the predicted failure is**: an arrow takes its rotation from its own velocity, and the body is now spawned WITH its launch velocity for exactly that reason. **If it appears sideways and snaps into line a tick later, the velocity is not reaching the constructor** — that is the defect this staging exists to catch, and it is invisible at 30 blocks. |
+| **R-K2** | **IT TOUCHES NOTHING. Four shots, one sitting.** (i) point-blank into a **wall**; (ii) straight **through a mob** at five blocks; (iii) through **water**; (iv) walk through the flight path of a slow shot, on purpose, trying to collect it. | **PREDICTED: nothing in all four.** No damage number from the BODY (the ability's own damage still lands — that is `castRay`, and it must still work); nothing stuck in the masonry; nothing added to the inventory; **and NOTHING IN THE SERVER LOG.** **The log is half the row**: `RpgListeners.onPlumeBodyDamage` and `onPlumeBodyPickup` are loud guards, so a silent console is a positive reading and any `[plume]` line is the finding. **(iii) is expected to LOOK wrong and be right**: water still slows the body 40% per tick, so it falls behind the shot. The damage lands on the traced segment anyway. Record whether that reads as a bug to whoever runs it. |
+| **R-K3** | **THE ORPHAN EXIT — the row that reads the whole cleanup design.** Two halves, and both are needed. (i) Fire a charged release into a region that **unloads** mid-flight. (ii) Fire down a long open corridor and **stop the server** while the arrows are still in the air; restart and go and look. | **PREDICTED: nothing survives, and it takes about ten seconds.** **RECORD TWO THINGS: how long, and WHERE.** The window is `max-arrow-despawn-invulnerability + 1` = **201 ticks** on this server's config. **AND THE BODY TRAVELS WHILE IT WAITS** — this is the accepted cost and the row is what confirms it: an orphan keeps flying on its last velocity, decaying 1%/tick, **through terrain**, for a computed ~217 blocks at speed 2.5. **So look downrange, not where you shot.** An orphan found ON THE GROUND at the impact point would mean the body is colliding, which is R-K2's switch having failed. |
+
+> ### ⚠ R-K3's TEN SECONDS IS AN ASSUMPTION ABOUT CONFIG, NOT A PLATFORM FACT
+>
+> **`AbstractArrow.life` does not increment at all until `tickCount > max-arrow-despawn-invulnerability`**,
+> which is `200` in `run/config/paper-world-defaults.yml`. That is the only thing setting the
+> window, and **the adapter cannot read it**: `WorldConfiguration` is not in the API jar, and the
+> only `io.papermc.paper.configuration` type the API exposes is `ServerConfiguration`, whose whole
+> surface is `isProxyOnlineMode()` and `isProxyEnabled()`.
+>
+> **So if this row measures something other than ~10 seconds, check that config BEFORE suspecting
+> the code.** The arming itself is config-independent by construction — `life` is set so the FIRST
+> despawn tick is fatal at any rate — but WHEN that first tick arrives is the operator's to set, and
+> nothing of ours notices if they move it.
+
+> ### AND THE THING R-K3 CANNOT DISTINGUISH, SO IT IS STAGED TO AVOID IT
+>
+> **A body removed correctly on resolve and a body that never existed are the same observation.**
+> Every shot that lands normally removes its own body, so an empty field proves nothing about the
+> orphan path. **That is why (ii) stops the server mid-flight**: it is the only way to reach the exit
+> where no code of ours ever runs again, which is the exit the whole arming exists for.
+>
+> **The positive control is R-K1**: if the bodies were never being created at all, R-K1 has already
+> failed and R-K3's empty field is meaningless. **Run R-K1 first in the same sitting.**
 
 > **R-1 IS `PLAN-dragons-plume.md`'s P5, LANDED — NOT A SECOND COPY OF IT.** The plan's §8 drafted its
 > rows *"before the boot"* and says they go into a gate file when the slice is written; this is that

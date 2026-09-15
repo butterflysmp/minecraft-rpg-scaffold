@@ -338,6 +338,24 @@ public final class FakeWorld implements CombatWorld {
         return id;
     }
 
+    /** Every arrow body ever spawned, id -> the LAUNCH VELOCITY it was created with.
+     *
+     *  <p><b>The velocity is recorded because it is the whole reason this port method exists.</b>
+     *  An arrow points along its own velocity, so a body spawned still has no direction on its
+     *  first frame; a test that only counted bodies would pass under a three-argument sibling that
+     *  threw the velocity away. Keyed separately from {@link #markers} so a row can assert WHICH
+     *  kind of body was made, which a shared map could not. */
+    public final Map<UUID, Vec3> boltMarkerLaunchVelocities = new HashMap<>();
+
+    @Override public UUID spawnBoltMarker(Vec3 at, Vec3 velocity, int expectedLifetimeTicks) {
+        UUID id = UUID.randomUUID();
+        boltMarkerLaunchVelocities.put(id, velocity);
+        markerPositions.put(id, at);
+        markerSpawnedAt.put(id, at);
+        markersEverSpawned.add(id);
+        return id;
+    }
+
     /** Drift a marker to a new spot -- a TEST HELPER again, not a port method. The flight drives
      *  its body by velocity now; this remains because throw_embers tests need to prove a fuse
      *  detonates at the LIVE position rather than where the marker was planted. */

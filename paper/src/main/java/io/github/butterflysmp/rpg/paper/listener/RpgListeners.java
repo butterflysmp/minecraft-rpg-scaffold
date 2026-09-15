@@ -23,6 +23,7 @@ import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
+import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.persistence.PersistentDataType;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
@@ -317,6 +318,72 @@ public final class RpgListeners implements Listener {
                 .has(adapters.keys().markerEntity, PersistentDataType.BYTE)) {
             event.setCancelled(true);
         }
+    }
+
+    /**
+     * THE ARROW BODY MUST NEVER BE PICKED UP, AND THIS IS THE DETECTOR RATHER THAN THE FIX.
+     *
+     * <p>The fix is {@code PaperCombatWorld.spawnBoltMarker}'s
+     * {@code setPickupStatus(DISALLOWED)}. With it, {@code AbstractArrow.playerTouch} refuses
+     * before this event is ever raised, so <b>this handler should never fire</b>.
+     *
+     * <p><b>It is kept, and it is LOUD, because the thing it guards reads REDUNDANT and is not.</b>
+     * {@code playerTouch}'s guard is {@code isInGround() OR isNoPhysics()} -- and the body runs with
+     * {@code noPhysics} on, which satisfies that disjunction IN MID-AIR. An ordinary flying arrow is
+     * unpickable because it is neither; ours is pickable-in-principle for exactly the reason it
+     * passes through walls. Delete the {@code DISALLOWED} call as tidy-up and every player who walks
+     * through a bolt mints a free arrow.
+     *
+     * <p><b>A silent cancel would hide exactly the failure it exists for</b> -- same argument, same
+     * shape, as {@code PlumeDraw.suppressManagedBowShot}. A guard that logs when it fires cannot be
+     * hollow: its firing IS the detector.
+     */
+    @EventHandler
+    public void onPlumeBodyPickup(PlayerPickupArrowEvent event) {
+        if (!event.getArrow().getPersistentDataContainer()
+                .has(adapters.keys().markerEntity, PersistentDataType.BYTE)) {
+            return;
+        }
+        event.setCancelled(true);
+        adapters.log().warning(
+                "[plume] PlayerPickupArrowEvent fired for a MARKER BODY, picked up by "
+                        + event.getPlayer().getName() + " -- setPickupStatus(DISALLOWED) DID NOT"
+                        + " TAKE. playerTouch's guard is `isInGround() OR isNoPhysics()`, and the"
+                        + " body runs noPhysics, so nothing else refuses this. The pickup is"
+                        + " cancelled here, but a free arrow was one call away from entering the"
+                        + " economy -- see PaperCombatWorld.spawnBoltMarker.");
+    }
+
+    /**
+     * THE ARROW BODY MUST NEVER DEAL DAMAGE, AND ITS FIRING IS THE SIGNAL.
+     *
+     * <p>{@code castRay} owns every hit in this engine. The body is decoration driven along the
+     * segment the ray already traced, so a hit FROM it would be a second, competing resolution --
+     * damage the ability never authored, on a target the flight may not have chosen.
+     *
+     * <p>With {@code setNoPhysics(true)} there is no route to it at all: {@code stepMoveAndHit} is
+     * gated on {@code !noPhysics} and is the only caller of {@code findHitEntities} and
+     * {@code hitTargetsOrDeflectSelf}. <b>So if this fires, the switch did not take</b> -- which
+     * also means the body is colliding with blocks and sticking in them, and the whole visual
+     * contract is broken rather than just this one hit.
+     *
+     * <p>Cancelled AND logged, for {@code suppressManagedBowShot}'s reason: a silent cancel would
+     * leave a body that collides with the world and nobody would ever learn why the bolts stopped
+     * mid-air.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onPlumeBodyDamage(EntityDamageByEntityEvent event) {
+        if (!event.getDamager().getPersistentDataContainer()
+                .has(adapters.keys().markerEntity, PersistentDataType.BYTE)) {
+            return;
+        }
+        event.setCancelled(true);
+        adapters.log().warning(
+                "[plume] A MARKER BODY dealt damage to " + event.getEntity().getType()
+                        + " -- setNoPhysics(true) DID NOT TAKE. stepMoveAndHit is the only route to"
+                        + " findHitEntities and it is gated on !noPhysics, so this body is also"
+                        + " colliding with blocks and sticking in them. The damage is cancelled"
+                        + " here; castRay owns every hit -- see PaperCombatWorld.spawnBoltMarker.");
     }
 
     @EventHandler

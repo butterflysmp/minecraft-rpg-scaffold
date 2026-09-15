@@ -881,4 +881,108 @@ class AbilityLoaderTest {
         assertTrue(warningText().contains("squared"),
                 "the warning must say WHY a negative is not merely odd: " + warningText());
     }
+
+    /**
+     * THE ARROW BODY: authored -> carried, absent -> null, and it is NOT the item body.
+     *
+     * <p>Both fields are asserted in one row because the interesting property is that they are two
+     * SLOTS and not one: a schema that mapped {@code body:} onto {@code item()} would satisfy any
+     * test that only asked "is a body carried", and would then render a dropped arrow ITEM -- a
+     * tumbling stack, which is the exact look slice K exists to remove.
+     */
+    @Test
+    void aProjectileArrowBodyIsCarriedAndIsADifferentSlotFromTheItemBody() throws IOException {
+        write("arrow_bodied.yml", """
+                id: arrow_bodied
+                element: fire
+                cast:
+                  type: projectile
+                  speed: 2.5
+                  body: arrow
+                on_hit:
+                  - type: damage
+                    amount: 20
+                    element: fire
+                """);
+        write("plain.yml", VALID);
+
+        var registry = load();
+        var arrowBodied = (CastSpec.Projectile) registry.find("arrow_bodied").orElseThrow().cast();
+        var bare = (CastSpec.Projectile) registry.find("solar_grenade").orElseThrow().cast();
+
+        assertEquals("arrow", arrowBodied.body());
+        assertNull(arrowBodied.item(),
+                "`body` must NOT be mapped onto `item` -- an item body TUMBLES, which is the look "
+                        + "the arrow body exists to replace");
+        assertNull(bare.body(), "a projectile that names no body gets null, exactly as before");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /**
+     * ONE BOLT, ONE BODY: authoring both is a NAMED, SKIPPED FILE rather than a silent pick.
+     *
+     * <p>Whichever the flight chose, the other authored key would do nothing -- a tooltip-class
+     * dishonesty in the content file: the author wrote a line, the server read it, nothing happened.
+     *
+     * <p>Asserted on the WARNING TEXT and not merely on the ability being absent, because a YAML
+     * typo, a missing element and this are all "the file did not load". The asserted token
+     * {@code "mutually exclusive"} appears exactly once in the message.
+     */
+    @Test
+    void aProjectileAuthoringBothItemAndBodyIsNamedAndSkipped() throws IOException {
+        write("two_bodies.yml", """
+                id: two_bodies
+                element: fire
+                cast:
+                  type: projectile
+                  speed: 2.5
+                  item: flint
+                  body: arrow
+                on_hit:
+                  - type: damage
+                    amount: 20
+                    element: fire
+                """);
+
+        var registry = load();
+
+        assertTrue(registry.find("two_bodies").isEmpty(), "the file must be skipped, not resolved");
+        assertTrue(warningText().contains("mutually exclusive"),
+                "and the operator must be told WHICH two keys fight: " + warningText());
+        assertTrue(warningText().contains("two_bodies"),
+                "named, so a typo in the 400th weapon is findable: " + warningText());
+    }
+
+    /**
+     * A SET OF ONE IS STILL A SET. {@code body: arow} is a skipped file, not a silent no-body.
+     *
+     * <p><b>This is a DIFFERENT standard from {@code item:}, deliberately</b>, and the asymmetry is
+     * the thing worth pinning: {@code item:} names a Material out of a huge open set and the adapter
+     * warns once and falls back; {@code body:} names one of OURS out of a set of exactly one, so a
+     * typo has no plausible reading and must fail loudly.
+     *
+     * <p>Without this the bolt would fly with no body at all -- visually identical to a weapon that
+     * authored nothing, and undetectable from the content file.
+     */
+    @Test
+    void anUnknownProjectileBodyIsNamedAndSkipped() throws IOException {
+        write("typo_body.yml", """
+                id: typo_body
+                element: fire
+                cast:
+                  type: projectile
+                  speed: 2.5
+                  body: arow
+                on_hit:
+                  - type: damage
+                    amount: 20
+                    element: fire
+                """);
+
+        var registry = load();
+
+        assertTrue(registry.find("typo_body").isEmpty(), "the file must be skipped");
+        assertTrue(warningText().contains("arow"),
+                "the warning must quote what was AUTHORED, not what was expected: " + warningText());
+    }
 }

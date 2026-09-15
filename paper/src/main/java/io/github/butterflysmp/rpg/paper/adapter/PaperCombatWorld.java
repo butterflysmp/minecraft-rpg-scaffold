@@ -12,6 +12,8 @@ import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.AbstractArrow;
+import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
@@ -428,6 +430,230 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
+     * The value handed to {@code AbstractArrow.setLifetimeTicks} so that the FIRST despawn tick the
+     * arrow is ever given discards it, whatever the server's despawn rates are set to.
+     *
+     * <h2>WHY A SENTINEL AND NOT AN ARITHMETIC PRE-AGE, WHICH IS WHAT THE ITEM MARKER DOES</h2>
+     *
+     * <p>{@link #spawnMarker} computes {@code 6000 - lifetime - grace} against
+     * {@link #VANILLA_ITEM_LIFETIME_TICKS}, a CONSTANT compiled into the server. The arrow's
+     * equivalent limit is not a constant: {@code AbstractArrow.tickDespawn} reads it from config at
+     * runtime -- {@code non-player-arrow-despawn-rate}, falling back to spigot's
+     * {@code arrow-despawn-rate} -- so the same arithmetic would bake this server's 1200 into the
+     * jar and give a seventy-second orphan on a server that raised it.
+     *
+     * <p>Read out of the pinned jar, {@code tickDespawn} is:
+     *
+     * <pre>
+     *   life++;  if (life &gt;= rate) discard(DESPAWN);
+     * </pre>
+     *
+     * <p>so arming {@code life} such that {@code life + 1} is at least the largest value {@code rate}
+     * can hold makes the comparison true on the first call <b>for every configuration</b>, and turns
+     * two config dependencies into one.
+     *
+     * <h2>*** IT IS {@code MAX_VALUE - 1} AND {@code MAX_VALUE} IS EXACTLY WRONG ***</h2>
+     *
+     * <p>{@code life} is an {@code int} and the increment is unguarded. At {@code MAX_VALUE} the
+     * {@code life++} OVERFLOWS to {@code Integer.MIN_VALUE}, and {@code MIN_VALUE >= rate} is false
+     * for every non-negative rate -- so the obvious "even safer" value is the one that disarms the
+     * trap completely, and disarms it SILENTLY: the body would simply live out the full configured
+     * rate instead.
+     *
+     * <p>At {@code MAX_VALUE - 1} the increment lands exactly on {@code MAX_VALUE} and stops there.
+     * {@code PlumeBodyLifetimeTest} asserts both halves of that, so the off-by-one cannot be tidied
+     * back in.
+     *
+     * <p><b>{@code CraftAbstractArrow.setLifetimeTicks} does NOT validate its argument</b> -- it is a
+     * bare {@code putfield} into {@code AbstractArrow.life}, verified from the jar. Contrast
+     * {@code CraftEntity.setTicksLived}, which rejects anything {@code <= 0}. So no clamp is needed
+     * here, and none should be added: a clamp would be guarding against a value this constant is
+     * chosen to be.
+     */
+    static final int ARMED_ARROW_LIFETIME = Integer.MAX_VALUE - 1;
+
+    /**
+     * This server's {@code max-arrow-despawn-invulnerability}, in ticks -- the number of ticks an
+     * airborne arrow gets before {@code tickDespawn} is called on it at all.
+     *
+     * <p><b>THIS IS AN ASSUMPTION ABOUT THE OPERATOR'S CONFIG, NOT A PLATFORM CONSTANT, AND IT IS
+     * NOT READABLE FROM THE API.</b> The value lives at
+     * {@code paper-world-defaults.yml: entities.spawning.max-arrow-despawn-invulnerability} and is
+     * {@code 200} in this repo. The server reads it through
+     * {@code Level.paperConfig().entities.spawning.maxArrowDespawnInvulnerability}, and
+     * {@code WorldConfiguration} <b>is not in the API jar at all</b>: the only type under
+     * {@code io.papermc.paper.configuration} that the API exposes is {@code ServerConfiguration},
+     * whose entire surface is {@code isProxyOnlineMode()} and {@code isProxyEnabled()}. There is no
+     * {@code World#getWorldConfig()}. Measured against the pinned API build; reaching the real value
+     * would need NMS, which this repo bans.
+     *
+     * <p>So this constant is <b>used for nothing but the log line and this documentation</b> -- no
+     * arithmetic depends on it, which is the deliberate consequence of the sentinel above. <b>If an
+     * operator raises that config, our orphan window grows with it and nothing of ours notices.</b>
+     * The key is named here so the next person finds the LEVER rather than trying to correct the
+     * NUMBER.
+     */
+    private static final int ASSUMED_ARROW_DESPAWN_INVULNERABILITY_TICKS = 200;
+
+    /**
+     * An arrow rendered along the path core computes -- the Dragon's Plume's body. The sibling of
+     * {@link #spawnMarker}, and the reason it is a sibling is in {@code CombatWorld}: an arrow is
+     * not an item and has no item id.
+     *
+     * <h2>ONE SWITCH DOES THE WORK, AND IT IS NOT THE ONE THE API ADVERTISES</h2>
+     *
+     * <p>Measured from the pinned jar rather than assumed. {@code AbstractArrow.tick()} opens by
+     * computing {@code flag = !isNoPhysics()} and gates on it:
+     *
+     * <pre>
+     *   in-ground / collision-shape detection   gated on flag
+     *   if (isInGround() &amp;&amp; flag)  ...          the in-ground branch
+     *   if (flag) clipIncludingBorder(..) -&gt; stepMoveAndHit(hit)
+     *   else      setPos(position + delta)
+     *   if (flag &amp;&amp; !isInGround()) applyGravity()
+     * </pre>
+     *
+     * <p>{@code stepMoveAndHit} is the ONLY route to {@code onHitBlock}, {@code findHitEntities},
+     * {@code hitTargetsOrDeflectSelf} and {@code CraftEventFactory.callProjectileHitEvent}. So
+     * {@code setNoPhysics(true)} turns off block collision, entity collision, the hit event,
+     * in-ground sticking AND gravity together.
+     *
+     * <p><b>{@code setGravity(false)} IS NOT A SUBSTITUTE AND IS NOT REDUNDANT EITHER.</b>
+     * {@code Entity.applyGravity()} is {@code if (getGravity() != 0) deltaMovement.add(0, -g, 0)} --
+     * it suppresses the fall and NOTHING ELSE. A gravity-less arrow still clips blocks, still finds
+     * hit entities and still fires {@code ProjectileHitEvent}. It is set here anyway because
+     * {@code noPhysics} is the thing a later reader is most likely to question, and the two must not
+     * both have to be right for the body to stop falling.
+     *
+     * <p><b>{@code Projectile.canHitEntity(Entity)} IS A QUERY WITH NO SETTER ANYWHERE ON THE
+     * API</b> -- checked, so nobody spends an hour looking for one. There is no third route.
+     *
+     * <h2>*** setPickupStatus(DISALLOWED) IS LOAD-BEARING AND READS REDUNDANT ***</h2>
+     *
+     * <p>{@code AbstractArrow.playerTouch(Player)} guards on
+     * <b>{@code isInGround() OR isNoPhysics()}</b>, then on {@code pickup == ALLOWED}. An ordinary
+     * flying arrow is neither in-ground nor no-physics, which is why nobody can pick one out of the
+     * air. <b>Turning on {@code noPhysics} satisfies that disjunction in MID-AIR and OPENS a pickup
+     * path that does not otherwise exist.</b>
+     *
+     * <p>So this call is not belt-and-braces: deleting it as redundant mints a free arrow into a
+     * player's inventory on every shot they walk into. {@code RpgListeners.onPlumeBodyPickup} is the
+     * loud detector for that, and it is a detector rather than the fix.
+     *
+     * <h2>WHAT REACHES THIS BODY, ENUMERATED FROM THE JAR -- AND THE ITEM LIST DOES NOT APPLY</h2>
+     *
+     * <p>{@link #spawnMarker} enumerates water buoyancy, fire and lava destroying the stack, hoppers
+     * eating it, pistons and explosions pushing it. <b>That list is about an ITEM ENTITY and is
+     * deliberately NOT carried across</b>; it is re-derived here for an arrow. Each entry says what
+     * was read, not what was assumed:
+     *
+     * <ul>
+     *   <li><b>Hoppers: GONE, structurally.</b> {@code HopperBlockEntity} collects
+     *       {@code ItemEntity} only. An arrow is not one, so the economy leak {@code spawnMarker}
+     *       has to refuse at {@code InventoryPickupItemEvent} cannot arise here at all.</li>
+     *   <li><b>Every "inside block" effect: GONE.</b> {@code Entity.isAffectedByBlocks()} is
+     *       {@code !isRemoved() &amp;&amp; !noPhysics}, and {@code applyEffectsFromBlocks(List)} gates its
+     *       entire body on it. That one guard removes {@code checkInsideBlocks}, {@code stepOn},
+     *       cobwebs, powder snow, honey, berry bushes, magma, climbables and rails in one go.</li>
+     *   <li><b>Deflection (wind charges) and block-hit side effects: GONE</b>, because
+     *       {@code preHitTargetOrDeflectSelf} is reached only from {@code stepMoveAndHit}.</li>
+     *   <li><b>WATER: SURVIVES, AND IT BITES HARDER THAN IT DOES ON AN ITEM.</b>
+     *       {@code Projectile.tick() -&gt; Entity.tick() -&gt; baseTick()} runs unconditionally at the
+     *       END of {@code AbstractArrow.tick()}, and {@code baseTick} calls
+     *       {@code updateFluidInteraction()}. The resulting {@code isInWater()} is read back at the
+     *       TOP of the next arrow tick, OUTSIDE the noPhysics gate, and applies
+     *       {@code getWaterInertia() = 0.6f} -- a 40% velocity cut per tick. It is cosmetic only:
+     *       {@code castRay} owns resolution and never consults the body, so a bolt fired across a
+     *       pond resolves on its computed segment while the body falls behind it.</li>
+     *   <li><b>Inertia: SURVIVES, and it is new.</b> {@code applyInertia(0.99f)} is gated only on
+     *       {@code isInWater()}, never on {@code noPhysics}. Harmless while the flight is driving --
+     *       {@link #driveMarker} overwrites the velocity every tick before it can accumulate -- and
+     *       it is the whole reason an ORPHAN travels rather than hangs. See below.</li>
+     *   <li><b>Rotation: SURVIVES, and it is why we use an arrow at all.</b> {@code atan2} over
+     *       {@code deltaMovement} into {@code setXRot}/{@code setYRot}, outside the gate. The body
+     *       points along the velocity {@link #driveMarker} gave it -- for free, every tick.</li>
+     *   <li><b>Fire and lava: the body can BURN but is not destroyed.</b> {@code baseTick} handles
+     *       fire ticks and lava; an arrow is not a stack that can be consumed, so unlike a flint
+     *       marker there is no "the body simply vanishes" case from this axis.</li>
+     *   <li><b>Below the world: {@code baseTick -&gt; checkBelowWorld()}</b> removes it, as it removes
+     *       anything. A free extra exit rather than a hazard.</li>
+     * </ul>
+     *
+     * <h2>*** THE ORPHAN TRAVELS. IT DOES NOT HANG. ***</h2>
+     *
+     * <p>An orphaned ITEM marker stops -- gravity off, velocity never renewed, nothing moves it. An
+     * orphaned ARROW keeps flying on its last velocity, because the {@code else} branch is
+     * {@code setPos(position + delta)} and the only thing acting on {@code delta} is the 1%/tick
+     * inertia. Computed over the {@value #ASSUMED_ARROW_DESPAWN_INVULNERABILITY_TICKS}-tick window:
+     *
+     * <pre>
+     *   sum of 0.99^n, n = 0..200   =  86.74 tick-lengths
+     *   at the Plume's speed 2.5    =  216.8 blocks
+     *   bounded above, any window   =  1/0.01 = 100 tick-lengths = 250 blocks at 2.5
+     * </pre>
+     *
+     * <p><b>So the accepted cost is not "a stray body hangs for ten seconds". It is "a stray body
+     * drifts up to ~217 blocks THROUGH TERRAIN for ten seconds."</b> While it does, it cannot hit,
+     * damage, stick to anything or be picked up, and it dies on vanilla's own timer with no code of
+     * ours running -- which is a stronger guarantee than any mechanism of ours could make, and is
+     * why this exit was accepted over the two alternatives (see {@code PLAN-dragons-plume.md}).
+     *
+     * <h2>NEVER CALL {@code shoot()} OR {@code lerpMotion()} ON THIS BODY</h2>
+     *
+     * <p>{@code AbstractArrow.shoot(DDDFF)} ends with {@code life = 0}, and {@code lerpMotion}
+     * zeroes it too when {@code max-arrow-despawn-invulnerability} is DISABLED. Either would disarm
+     * {@link #ARMED_ARROW_LIFETIME} silently. {@code CraftEntity.setVelocity} is a plain
+     * {@code setDeltaMovement} and touches neither -- verified from the jar -- which is why the
+     * velocity goes in that way both here and in {@link #driveMarker}.
+     */
+    @Override
+    public UUID spawnBoltMarker(Vec3 at, Vec3 velocity, int expectedLifetimeTicks) {
+        Arrow body = world.spawn(toLocation(at), Arrow.class, arrow -> {
+            // THE ONE SWITCH. Block collision, entity collision, ProjectileHitEvent, in-ground
+            // sticking and gravity, all off together -- see this method's javadoc for the gate.
+            arrow.setNoPhysics(true);
+
+            // NOT redundant with the line above, and not a substitute for it either: applyGravity
+            // is suppressed by BOTH, and neither alone should have to be right.
+            arrow.setGravity(false);
+
+            // *** LOAD-BEARING. playerTouch's guard is `isInGround() OR isNoPhysics()`, so the line
+            // above just OPENED a mid-air pickup path that no ordinary arrow has. Deleting this as
+            // redundant mints a free arrow per shot. ***
+            arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+
+            // Belt on the same trousers: a body that somehow resolved a hit would deal zero.
+            arrow.setDamage(0.0);
+            arrow.setKnockbackStrength(0);
+            arrow.setCritical(false);
+
+            // No shooter. castRay owns every hit; an owner would only give vanilla a reason to
+            // treat this as somebody's arrow in whatever path we have not read.
+            arrow.setShooter(null);
+            arrow.setPersistent(false);              // unload backstop, exactly as configureMarker
+
+            // THE LAUNCH VELOCITY IS PART OF CREATING THIS BODY, NOT SOMETHING DONE TO IT AFTER.
+            // An arrow's rotation is derived from its own deltaMovement inside its own tick, so a
+            // body spawned still has no direction on its first frame and visibly snaps into line a
+            // tick later. This is the exact inverse of configureMarker's zeroing rule, which is
+            // right for items and wrong here -- see CombatWorld.spawnBoltMarker.
+            arrow.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z()));
+
+            // The same tag every other marker carries, and the reason markerOf() below can find
+            // this entity without knowing which kind it is.
+            arrow.getPersistentDataContainer()
+                    .set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);
+
+            // ARMED SELF-DESTRUCT -- config-independent by construction. See ARMED_ARROW_LIFETIME.
+            // expectedLifetimeTicks is deliberately NOT read: unlike the item path there is no
+            // arithmetic to do, because we cannot influence WHEN the first despawn tick arrives,
+            // only that it is fatal when it does.
+            arrow.setLifetimeTicks(ARMED_ARROW_LIFETIME);
+        });
+        return body.getUniqueId();
+    }
+
+    /**
      * Drive a marker: hand the platform's own mover this tick's displacement and let IT move the
      * entity. Deliberately NOT a reposition.
      *
@@ -476,19 +702,53 @@ public final class PaperCombatWorld implements CombatWorld {
      * phase-sensitive at all, so this is a property the design ACQUIRED, knowingly, on the strength
      * of a check that covers one platform. Re-establish it before trusting this on Folia.
      */
+    /**
+     * The entity behind a marker id, whatever KIND of marker it is, or null if it is gone.
+     *
+     * <h2>*** THIS EXISTS BECAUSE {@code instanceof Item} WAS THE GATE ON ALL THREE MARKER
+     * OPERATIONS, AND AN ARROW BODY IS NOT AN {@code Item} ***</h2>
+     *
+     * <p>{@link #driveMarker}, {@link #removeMarker} and {@link #markerLocation} each opened with
+     * {@code if (world.getEntity(markerId) instanceof Item marker)}. That test was correct while
+     * there was one marker kind and <b>silently false</b> for the arrow body, which is the same
+     * failure shape as {@code ProjectileFlight}'s {@code look.item() == null} gate -- a check whose
+     * meaning quietly narrowed when a second kind arrived.
+     *
+     * <p><b>The three failures are not equally visible, and the invisible one is the worst.</b>
+     * A no-op {@code driveMarker} is a body that never gets its velocity renewed -- noticeable, and
+     * it still drifts roughly along the path. A no-op {@code removeMarker} is <b>a body that is
+     * never cleaned up on a NORMAL resolve</b>, so every shot leaks one for the full orphan window,
+     * and nothing anywhere goes red.
+     *
+     * <p><b>Matched on the TAG rather than widened to {@code Entity}.</b> Widening would let any id
+     * that happened to name an entity be driven or removed; the tag is set by
+     * {@link #configureMarker} and by {@link #spawnBoltMarker} and by nothing else, so it is a
+     * STRICTLY stronger guard than the type test it replaces, not a looser one. A third marker kind
+     * that forgets the tag fails loudly at its first drive rather than half-working.
+     */
+    private Entity markerOf(UUID markerId) {
+        Entity entity = world.getEntity(markerId);
+        if (entity == null) return null;
+        return entity.getPersistentDataContainer()
+                .has(ctx.keys().markerEntity, PersistentDataType.BYTE) ? entity : null;
+    }
+
     @Override
     public void driveMarker(UUID markerId, Vec3 stepVelocity) {
-        if (world.getEntity(markerId) instanceof Item marker) {
+        Entity marker = markerOf(markerId);
+        if (marker != null) {
             marker.setVelocity(new Vector(stepVelocity.x(), stepVelocity.y(), stepVelocity.z()));
         }
         // Silently absent is CORRECT here and is a reachable state, not a defensive one: a driven
-        // body is a fully participating item entity, and fire, lava and cactus destroy those. The
-        // flight continues and resolves normally with no body -- see spawnMarker's interaction note.
+        // ITEM body is a fully participating item entity, and fire, lava and cactus destroy those.
+        // An ARROW body has a shorter list -- see spawnBoltMarker -- but checkBelowWorld still
+        // reaches it. Either way the flight continues and resolves normally with no body.
     }
 
     @Override
     public void removeMarker(UUID markerId) {
-        if (world.getEntity(markerId) instanceof Item marker) {
+        Entity marker = markerOf(markerId);
+        if (marker != null) {
             marker.remove();
         }
     }
@@ -501,7 +761,8 @@ public final class PaperCombatWorld implements CombatWorld {
      */
     @Override
     public Optional<Vec3> markerLocation(UUID markerId) {
-        if (world.getEntity(markerId) instanceof Item marker) {
+        Entity marker = markerOf(markerId);
+        if (marker != null) {
             Location loc = marker.getLocation();
             return Optional.of(new Vec3(loc.getX(), loc.getY(), loc.getZ()));
         }

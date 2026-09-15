@@ -14,7 +14,9 @@
 #   speed 2.5          gravity 0.05     max_lifetime_ticks 120
 #
 #   UNRULED AND MARKED AS SUCH: the three homing figures (INHERITED AND UNJUDGED, gate rows P1-P3).
-#   `item: arrow` is NO LONGER UNRULED -- it is SUPERSEDED; see its own note at `draw:`.
+#   THE BODY IS RULED AND LANDED: every cast authors `body: arrow` -- a real arrow, oriented along
+#   its travel, that cannot hit, stick or be picked up. `item: arrow` is GONE, not superseded-in-
+#   place; the two keys are mutually exclusive and the loader refuses a file that authors both.
 #
 # THREE OF THESE MOVED TOGETHER IN ONE RULING: attack_damage 48 -> 34, reload_ticks 90 -> 60, and
 # the tap 12 -> 8. One answer to one dialog, read as one -- PLAN-dragons-plume.md
@@ -264,26 +266,41 @@ triggers:
       gravity: 0.05
       max_lifetime_ticks: 120
 
-      # *** SUPERSEDED BY THE BODY RULING. THIS KEY IS ON ITS WAY OUT, IN SLICE K. ***
+      # ================== `body: arrow` -- THE BODY RULING, LANDED. `item:` IS GONE. ==================
       #
-      # ~~THE BODY IS NOT RULED. FLAGGED RATHER THAN QUIETLY CHOSEN.~~ It was carried as an UNRULED
-      # DERIVATION: authored only because ProjectileFlight spawns a marker for a bolt with a rendered
-      # body, so without it the arrows are invisible and gate rows P1-P4, P8 and P9 -- every one of
-      # which says "watch where the arrow goes" -- could not be read at all.
+      # ~~item: arrow~~ -- carried as an UNRULED DERIVATION until slice K, authored only because
+      # ProjectileFlight spawns a marker for a bolt with a rendered body, so without it the arrows
+      # were invisible and gate rows P1-P4, P8 and P9 could not be read at all.
       #
-      # THE BODY IS NOW RULED, AND THE RULING RETIRES THE QUESTION RATHER THAN ANSWERING IT: the
-      # arrow is a real arrow that VANISHES ON RESOLVE -- no pickup, no sticking. That is not an
-      # ITEM at all, so `item:` stops being the key that expresses it.
+      # THE RULING RETIRED THE QUESTION RATHER THAN ANSWERING IT: the arrow is a real arrow that
+      # VANISHES ON RESOLVE -- no pickup, no sticking, no damage. That is not an ITEM at all, so
+      # `item:` was never the key that could express it. The derivation did not need ruling, it
+      # needed DELETING, and this is the line that deleted it.
       #
-      #   SO THE DERIVATION DOES NOT NEED RULING, IT NEEDS DELETING -- and the distinction matters
-      #   for the sweep: this is not an open question any more, and it is not resolved either. It is
-      #   a line with a scheduled removal. PLAN 9's unruled list drops it for that reason.
+      # WHAT THE TWO KEYS ACTUALLY DIFFER BY, since "it renders the body" is true of both:
       #
-      # *** IT STAYS AUTHORED UNTIL SLICE K LANDS, AND THAT IS DELIBERATE. *** Slice K starts with a
-      # measurement against the pinned jar -- what an Arrow entity does about block collision,
-      # pickup, damage and despawn -- and until that comes back there is no key to author instead.
-      # Deleting this now would make the arrows invisible and take five gate rows down with them.
-      item: arrow
+      #   item:  a dropped ITEM entity, driven along the path. It TUMBLES, because it is one.
+      #   body:  a real ARROW, which orients along its own velocity -- so it flies POINT-FIRST, for
+      #          free, with no orientation code of ours. That look is the entire reason for K.
+      #
+      # THEY ARE MUTUALLY EXCLUSIVE AND THE LOADER REFUSES BOTH. A bolt has one body; authoring
+      # `item:` and `body:` together is a named, skipped file rather than a silent pick. Checked in
+      # AbilitySchema (is the key present) AND in CastSpec.Projectile's own constructor (does the
+      # combination mean anything) -- the same split CastSpec.Homing already uses.
+      #
+      # *** AND THE VALUE IS CHECKED, WHICH `item:` IS NOT. *** `body: arow` is a named, skipped
+      # file; `item: blaze_ppowder` warns once and falls back to BLAZE_POWDER. That asymmetry is
+      # deliberate: `item` names a Material out of a huge open set, `body` names one of OURS out of
+      # a set of exactly one. See AbilitySchema.parseBody, which is where the second body kind will
+      # turn this into a switch.
+      #
+      # WHAT MAKES IT INERT, AND IT IS ONE SWITCH RATHER THAN THE THREE THE API ADVERTISES:
+      # setNoPhysics(true) turns off block collision, entity collision, ProjectileHitEvent,
+      # in-ground sticking AND gravity together -- measured from the pinned jar, not assumed.
+      # setPickupStatus(DISALLOWED) is SEPARATE and load-bearing, because noPhysics OPENS a mid-air
+      # pickup path that no ordinary arrow has. Both are in PaperCombatWorld.spawnBoltMarker with
+      # the bytecode that says so.
+      body: arrow
 
       # ================== THE HOMING FIGURES ARE INHERITED AND UNJUDGED ==================
       #
@@ -405,8 +422,9 @@ triggers:
       speed: 2.5
       gravity: 0.05
       max_lifetime_ticks: 120
-      # See `draw:`'s item note above -- superseded by the BODY ruling, removed in slice K.
-      item: arrow
+      # See `draw:`'s body note above. A real arrow, oriented along travel, inert in every other
+      # way -- and mutually exclusive with `item:`, which the loader refuses rather than resolves.
+      body: arrow
       # NO homing BLOCK, AND ITS ABSENCE IS THE RULING RATHER THAN AN OMISSION. R4''' is "one arrow,
       # WITH NO HOMING". AbilitySchema maps a missing section to null and a null Seek makes
       # ProjectileFlight.steer return the velocity untouched on its first line.
@@ -424,8 +442,9 @@ triggers:
       speed: 2.5
       gravity: 0.05
       max_lifetime_ticks: 120
-      # See `draw:`'s item note above -- superseded by the BODY ruling, removed in slice K.
-      item: arrow
+      # See `draw:`'s body note above. A real arrow, oriented along travel, inert in every other
+      # way -- and mutually exclusive with `item:`, which the loader refuses rather than resolves.
+      body: arrow
       # NO homing BLOCK, AND ITS ABSENCE IS THE RULING. Same as band 1 and for the same reason;
       # repeated at each binding rather than stated once, because an absence is invisible and a
       # reader checking THIS binding must not have to find the note on another one.
@@ -442,8 +461,9 @@ triggers:
       speed: 2.5
       gravity: 0.05
       max_lifetime_ticks: 120
-      # See `draw:`'s item note above -- superseded by the BODY ruling, removed in slice K.
-      item: arrow
+      # See `draw:`'s body note above. A real arrow, oriented along travel, inert in every other
+      # way -- and mutually exclusive with `item:`, which the loader refuses rather than resolves.
+      body: arrow
       # NO homing BLOCK, AND ITS ABSENCE IS THE RULING -- and it matters most HERE. At 19 ticks held
       # this is one tick from a charged release that DOES home, for 34 rather than 26. The two
       # shots are adjacent in the player's hand and different in every other way; the absent block
