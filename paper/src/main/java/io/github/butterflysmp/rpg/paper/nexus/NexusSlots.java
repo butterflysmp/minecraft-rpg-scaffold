@@ -24,6 +24,31 @@ import java.util.function.IntPredicate;
  * here, so that {@link NexusLock} needs none of them and has real unit tests. This class is the
  * part that cannot be unit-tested and is therefore kept as thin as it can be made -- the same trade
  * {@code GridClickIntent} makes against {@code MenuRouting}.
+ *
+ * <h2>THIS CLASS HAS NO TEST FILE, DELIBERATELY. WHAT CARRIES IT IS {@code GATE-nexus.md}</h2>
+ *
+ * <b>Said here because a class with no test and no explanation reads to the next auditor as an
+ * oversight</b>, and they will either write a hollow test for it or assume it is covered elsewhere.
+ * It is neither.
+ *
+ * <p>The one branch that IS unit-testable -- {@link #touchedOf} returning before the view is
+ * consulted -- has a row in {@code NexusLockTest}. Nothing else here can have one:
+ *
+ * <ul>
+ *   <li><b>The conversion is not stubbable, and that is measured.</b> Probed against the pinned
+ *       paper-api, both {@code InventoryView.convertSlot(int)} and
+ *       {@code InventoryView.getInventory(int)} are <b>ABSTRACT, not default</b> -- <i>"abstract
+ *       method convertSlot(int) in InventoryView cannot be accessed directly"</i>. The raw-to-index
+ *       arithmetic lives in the server's {@code CraftInventoryView}, off the test classpath. A stub
+ *       would have to implement it, and the test would then assert its own fake arithmetic.
+ *   <li><b>{@link #converge} is the riskiest code in this slice</b> -- it is the only thing here
+ *       that MOVES and DESTROYS items -- and it needs a real {@code PlayerInventory}.
+ *       {@code new ItemStack(...)} throws without a running server and there is no MockBukkit.
+ * </ul>
+ *
+ * <p><b>{@code GATE-nexus.md} rows 4 and 5 are the whole of this class's coverage.</b> Row 4 reads
+ * the conversion in both view shapes; row 5 stages four joins, including a full inventory, against
+ * the displacement path. If those rows are ever deleted, this class is unguarded.
  */
 public final class NexusSlots {
 

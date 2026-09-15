@@ -213,6 +213,7 @@ because it is untracked**.
 | mutation | rows killed | note |
 |---|---|---|
 | `MUTLOCKED` `LOCKED_SLOT 8 -> 7` | **0, then 1** | **APPLIED AND DID NOT BITE on the first run.** See below. |
+| `MUTOFFHAND` `OFFHAND_SLOT 40 -> 39` | **0, then 1** | **THE SAME DEFECT, MISSED BY THE SWEEP THAT SHOULD HAVE FOLLOWED THE FIRST.** See below. |
 | `MUTIGNORE` strip `ignoreCancelled` from `onMenuClick` | 1 | `NexusWiringSignatureTest` only; `NexusLockTest` stayed green, correctly |
 | `MUTALWAYSFALSE` | 10 | every refusal row |
 | `MUTALWAYSTRUE` | 8 | **every PERMIT row — the dead-menu guard** |
@@ -240,3 +241,60 @@ because it is untracked**.
 >
 > **Every row in this gate is staged against 8.** If the locked slot is ever re-ruled, that test
 > row goes red first and this file needs restaging.
+
+> ### AND THE SAME DEFECT WAS SHIPPED A SECOND TIME, IN THE SAME FILE, BY NOT SWEEPING FOR IT
+>
+> `OFFHAND_SLOT = 40` was in **exactly** the state `LOCKED_SLOT` had just been found in. Its only
+> appearance in the whole test file named it symbolically **on both sides** — the touched set built
+> `Touched(true, OFFHAND_SLOT)` and the predicate tested `index == NexusLock.OFFHAND_SLOT` — so the
+> two moved together. Measured: `40 -> 39` applied, all 21 rows **green**.
+>
+> **And 39 is the HELMET slot** in the index space this class declares. The mutant lock watches a
+> player's helmet instead of their offhand; every F-swap of the star out of the locked slot goes
+> unrefused, and nothing reddens.
+>
+> **THE LESSON IS NOT "PIN YOUR CONSTANTS". IT IS THAT FINDING A SHAPE IS NOT SWEEPING FOR IT.**
+> The first instance was found by mutation, written up, and fixed — and the write-up said *"the
+> javadoc now says which row is the sole guard"*, a sentence scoped to one constant while a second
+> instance of the identical defect sat two lines below it. It was caught in **review**, not by the
+> work that had just identified the shape.
+>
+> **The rule, in the form that would have caught it: when you find a defect shape, enumerate where
+> else it can live BEFORE writing the fix.** Here that enumeration is two lines long — `NexusLock`
+> has exactly two constants.
+>
+> Swept afterwards, and recorded so the next reader need not redo it:
+>
+> | value | pinned by |
+> |---|---|
+> | `NexusLock.LOCKED_SLOT = 8` | `theLockedSlotIsTheRIGHTMOSTHOTBARSLOT_theONLYRowThatPinsTheVALUE` |
+> | `NexusLock.OFFHAND_SLOT = 40` | `theOffhandIsSLOT40AndNOT39_theHELMET_theONLYRowThatPinsThatVALUE` |
+> | `NexusItems` — `NETHER_STAR`, the `BYTE` tag, `setMaxStackSize(1)` | **nothing in the suite.** Row 7 of this file, and only that. A different gap: visibly untested rather than falsely guarded. |
+> | `NexusSlots` — the conversion | **nothing in the suite.** Rows 4–5, and only those. |
+
+> ### THE SUITE PRODUCED TWO HOLLOW CHECKS, NOT ONE — AND THE SECOND WAS FOUND IN REVIEW
+>
+> One is an accident; two in one file is a pattern worth naming.
+>
+> The first was `MUTLOCKED` passing against symbolic rows. The second was a row named
+> *`theSameLockedSlotIsRefusedWhicheverViewItArrivedFrom`*, which asserted
+> `refusesClick(X) == refusesClick(X)`: two `Touched` **records** built from identical arguments,
+> compared through the same function. `Touched` is a record, so they were equal. **It could not fail
+> for any implementation whatsoever.** Two comments — *"raw 44 converted"*, *"raw 89 converted"* —
+> described a conversion the test never performed, because `NexusSlots` was never on the stack. Its
+> mutation note named a mutation that **cannot be written**: `refusesClick` has no view-shaped
+> parameter to corrupt.
+>
+> It read as coverage of the coordinate-space property — the property this entire slice exists
+> around — and provided none.
+>
+> **The conversion cannot be unit-tested here, and that is measured rather than assumed.** Probed
+> against the pinned `paper-api`: both `InventoryView.convertSlot(int)` and
+> `InventoryView.getInventory(int)` are **ABSTRACT, not default** — *"abstract method convertSlot(int)
+> in InventoryView cannot be accessed directly"*. The arithmetic lives in the server's
+> `CraftInventoryView`, off the test classpath. A stub would have to implement `convertSlot` itself,
+> and the test would then assert its own fake arithmetic: the same hollowness one layer down.
+>
+> The row was replaced with one that claims only what it can show — the single branch of
+> `touchedOf` that returns before the view is consulted, which a plausible reordering would turn
+> into an NPE inside an event handler. **Rows 4–5 below carry the conversion, alone.**

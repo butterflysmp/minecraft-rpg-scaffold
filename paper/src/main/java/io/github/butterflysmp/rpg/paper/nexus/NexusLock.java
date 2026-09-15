@@ -190,9 +190,21 @@ public final class NexusLock {
      * The biconditional's second half, shared so the click and drag paths cannot drift apart.
      *
      * <p>Two independent arms, which is why one mutation cannot certify this method: the LOCKED
-     * SLOT is refused whether or not it currently holds a star (so nothing can be put INTO it, and
-     * a momentarily empty locked slot is still locked), and a star is refused wherever it actually
-     * sits (so a stray one is not freely movable while convergence has not yet run).
+     * SLOT is refused whether or not it currently holds a star, and a star is refused wherever it
+     * actually sits (so a stray one is not freely movable while convergence has not yet run).
+     * Measured -- {@code MUTAXISLOCKED} and {@code MUTAXISSTAR} have disjoint kill sets.
+     *
+     * <p><b>THE FIRST ARM IS NARROWER THAN "NOTHING CAN BE PUT INTO THE LOCKED SLOT", AND THIS
+     * JAVADOC USED TO CLAIM THE WIDER THING.</b> It refuses gestures that NAME the locked slot. A
+     * shift-click's destination is chosen by vanilla and is not named anywhere -- the
+     * {@code MOVE_TO_OTHER_INVENTORY} arm contributes only the clicked SOURCE -- so shift-clicking
+     * a stack from a chest CAN land it in the locked slot while that slot is momentarily empty.
+     *
+     * <p>That is reachable only in a NON-CONVERGED state (the locked slot is empty only between a
+     * star being lost and the next join or respawn), and {@code NexusSlots.converge} displaces
+     * whatever it finds there. <b>So the destination case is covered by CONVERGENCE, not by this
+     * method</b>, and the absolute claim is withdrawn rather than left for a future reader to build
+     * on.
      */
     private static boolean touchesTheStar(Set<Touched> touched, IntPredicate starAt) {
         for (Touched t : touched) {

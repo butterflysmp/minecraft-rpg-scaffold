@@ -22,6 +22,23 @@ import org.bukkit.persistence.PersistentDataType;
  * owed 4-tick grid readings -- so this is a long overlap, not a transient one. A Material test
  * would lock the DEV star to the hotbar and leave a re-minted Nexus star droppable. The precedent
  * is that same file, which keys off {@code keys.healthBoost} rather than off the material.
+ *
+ * <h2>NO UNIT TEST, AND THE THREE VALUES BELOW ARE CARRIED BY {@code GATE-nexus.md} ROW 7</h2>
+ *
+ * {@code new ItemStack(...)} throws without a running server and there is no MockBukkit, so
+ * nothing here is unit-testable -- the same constraint {@code QuiverItems} records. <b>Three value
+ * decisions are therefore unpinned by the suite</b>, and are named so a reader does not assume
+ * otherwise: the {@code NETHER_STAR} material, the {@code BYTE} tag under {@code keys.nexus}, and
+ * {@code setMaxStackSize(1)}.
+ *
+ * <p>Row 7 is what reads them: it mints a {@code health_boost_TEMP} dev star alongside a Nexus
+ * star, confirms the dev star still moves freely -- which a Material-keyed lock would break, in a
+ * way that would present as "the health item is stuck", nowhere near the Nexus -- and stack-tests
+ * the two against each other. <b>If that row is deleted, these three values are unguarded.</b>
+ *
+ * <p>This is a DIFFERENT gap from a value a test names symbolically. Those look guarded and are
+ * not; these are visibly untested. The first kind cost this slice a mutation that applied cleanly
+ * and killed nothing -- see {@link NexusLock#LOCKED_SLOT}.
  */
 public final class NexusItems {
 

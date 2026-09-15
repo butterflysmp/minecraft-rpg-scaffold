@@ -174,6 +174,34 @@ class NexusLockTest {
     }
 
     @Test
+    void theOffhandIsSLOT40AndNOT39_theHELMET_theONLYRowThatPinsThatVALUE() {
+        // THE SAME DEFECT AS THE ROW ABOVE, FOUND IN REVIEW RATHER THAN BY THE SWEEP THAT SHOULD
+        // HAVE FOLLOWED IT. swapOffhandIsREFUSEDFromBothEnds was OFFHAND_SLOT's only appearance in
+        // this file and it named the constant symbolically on BOTH sides -- the touched set built
+        // Touched(true, OFFHAND_SLOT) and the predicate tested index == NexusLock.OFFHAND_SLOT --
+        // so the two moved together under mutation.
+        //
+        // MEASURED: 40 -> 39 applied (marker present, original gone) and all 21 rows stayed GREEN.
+        //
+        // AND 39 IS NOT AN ARBITRARY WRONG NUMBER. In this class's stated index space -- "36-39
+        // armour, 40 offhand" -- 39 is the HELMET. The mutant lock watches a player's helmet
+        // instead of their offhand, every F-swap of the star out of the locked slot goes unrefused,
+        // and nothing reddens.
+        assertEquals(40, NexusLock.OFFHAND_SLOT,
+                "PlayerInventory indexes armour 36-39 and the offhand 40; 39 is the HELMET");
+
+        // The value expressed as behaviour, and as a DISCRIMINATING PAIR rather than one assertion:
+        // a star in the offhand is reachable by F, a star in the helmet slot is not.
+        assertTrue(NexusLock.refusesClick(ClickType.SWAP_OFFHAND, InventoryAction.HOTBAR_SWAP,
+                        player(A_STORAGE_SLOT), -1, false, index -> index == 40),
+                "a star at index 40 IS in the offhand and F must refuse");
+        assertFalse(NexusLock.refusesClick(ClickType.SWAP_OFFHAND, InventoryAction.HOTBAR_SWAP,
+                        player(A_STORAGE_SLOT), -1, false, index -> index == 39),
+                "index 39 is the HELMET, not the offhand; F does not reach it");
+        // Mutation: OFFHAND_SLOT 40 -> 39 -> reddens HERE, and only here.
+    }
+
+    @Test
     void theLockedSlotIsREFUSEDEvenWhenNoStarIsInIt() {
         // THE SECOND AXIS, and it is invisible to every row that stages a star. The locked slot is
         // refused because it IS the locked slot, not because of what it currently holds -- so
@@ -283,26 +311,33 @@ class NexusLockTest {
     // ---------------------------------------------------------------- per-view
 
     @Test
-    void theSameLockedSlotIsRefusedWhicheverViewItArrivedFrom() {
-        // The property the conversion must deliver, stated in the space this class owns: the
-        // locked hotbar slot is raw 44 in the own-inventory screen and raw 89 with a 54-chest
-        // open, and BOTH must convert to Touched(true, 8) and give the same verdict.
+    void anOutsideTheWindowClickNamesNoSlotAndIsConvertedWithoutTouchingTheView() {
+        // THIS ROW REPLACES A HOLLOW ONE, AND THE REPLACEMENT IS THE POINT.
         //
-        // That convertSlot actually produces 8 from both is boot-only -- it needs a live
-        // InventoryView -- and is GATE-nexus.md rows 4-5. This row is what those gate rows are
-        // checked against.
-        Touched fromOwnScreen = new Touched(true, NexusLock.LOCKED_SLOT);   // raw 44 converted
-        Touched fromChestView = new Touched(true, NexusLock.LOCKED_SLOT);   // raw 89 converted
-
-        assertEquals(
-                NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
-                        fromOwnScreen, -1, false, STAR_IN_LOCKED_SLOT),
-                NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
-                        fromChestView, -1, false, STAR_IN_LOCKED_SLOT),
-                "the same physical slot decided differently depending on the open view");
-        assertTrue(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
-                fromOwnScreen, -1, false, STAR_IN_LOCKED_SLOT));
-        // Mutation: make the verdict depend on anything view-shaped -> reddens.
+        // What was here asserted refusesClick(X) == refusesClick(X): two `Touched` records built
+        // from identical arguments, compared through the same function. `Touched` is a record, so
+        // they were equal, and the assertion COULD NOT FAIL for any implementation whatsoever. Two
+        // comments -- "raw 44 converted", "raw 89 converted" -- described a conversion the test
+        // never performed, because NexusSlots was never on the stack. Its mutation note named a
+        // mutation that cannot be written: refusesClick has no view-shaped parameter to corrupt.
+        //
+        // THE CONVERSION ITSELF CANNOT BE UNIT-TESTED HERE, AND THAT IS MEASURED RATHER THAN
+        // ASSUMED. Probed against the pinned paper-api: both InventoryView.convertSlot(int) and
+        // InventoryView.getInventory(int) are ABSTRACT, not default --
+        //     "abstract method convertSlot(int) in InventoryView cannot be accessed directly"
+        // -- so the raw->index arithmetic lives in the server's CraftInventoryView, which is not on
+        // the test classpath. A stub would have to implement convertSlot ITSELF, and the test would
+        // then assert its own fake arithmetic: the same hollowness, one layer down.
+        //
+        // So the conversion is carried by GATE-nexus.md rows 4-5 and by nothing else, and this row
+        // claims only what it can show: the ONE branch of touchedOf that returns before the view is
+        // ever consulted.
+        assertEquals(new Touched(false, -1), NexusSlots.touchedOf(null, -999),
+                "an outside-the-window click names no slot, and must not dereference the view");
+        assertEquals(new Touched(false, -1), NexusSlots.touchedOf(null, -1));
+        // Mutation: move the `rawSlot < 0` guard below the getInventory call -> NullPointerException
+        // here. That reordering is a plausible tidy-up and would NPE inside an event handler on
+        // every click a player makes outside a window.
     }
 
     // ---------------------------------------------------------------- drags
