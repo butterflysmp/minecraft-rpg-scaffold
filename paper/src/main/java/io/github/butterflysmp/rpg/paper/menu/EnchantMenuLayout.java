@@ -15,9 +15,38 @@ import java.util.Optional;
  * not touch Minecraft. What is left for the boot gate is then genuinely "look at it", not "does the
  * arithmetic work".
  *
- * <p>Row-major, as chest inventories are: {@code index = row * 9 + col}. The three enchant slots are
- * COLUMNS 2, 4 and 6, and a slot's candidates stack down ROWS 2, 3 and 4 -- so a column is one
- * enchant slot's worth of choices and is read top to bottom.
+ * <h2>COORDINATES ARE 1-BASED IN PROSE AND 0-BASED IN CODE, AND THIS SECTION SAYS WHICH</h2>
+ *
+ * <b>Every position described in words on this project is 1-BASED</b> -- "row 2, slot 5" is what an
+ * operator says and what a player counts. <b>Every index in the code is 0-BASED</b>, because
+ * {@code index = row * 9 + col} is what a chest inventory is.
+ *
+ * <pre>
+ *   index = (row - 1) * 9 + (col - 1)        prose -> code
+ * </pre>
+ *
+ * <p><b>THIS FILE USED TO MIX THEM AND IT WAS A DEFECT WAITING TO BE READ.</b> Its javadoc said the
+ * candidates were at <i>"COLUMNS 2, 4 and 6 ... ROWS 2, 3 and 4"</i> -- 0-based -- while every
+ * instruction about this screen arrives 1-based. <b>"Rows 2, 3 and 4" is true in both conventions
+ * and means different rows in each</b>, so a change implemented from the old javadoc would have
+ * moved nothing and passed every gate row.
+ *
+ * <p>That is the raw-versus-index defect {@code NexusLock} records, one abstraction up: <b>two
+ * coordinate spaces, the same numerals legal in both, and nothing in the type system to tell them
+ * apart.</b> The remedy is the same -- name the space, once, where the numbers live.
+ *
+ * <h2>THE LAYOUT, IN 1-BASED PROSE</h2>
+ *
+ * <pre>
+ *   row 1   col 5   the hint line              index  4
+ *           col 9   the bookshelf readout      index  8
+ *   row 2   col 2   the INPUT slot             index 10
+ *   rows 2-4  cols 4, 6, 8   the candidates    indices 12 14 16 / 21 23 25 / 30 32 34
+ *   row 6   col 5   Close                      index 49
+ * </pre>
+ *
+ * <p>A COLUMN is one enchant slot's worth of choices and is read top to bottom; the columns advance
+ * by two so they are not adjacent.
  */
 public final class EnchantMenuLayout {
 
@@ -31,20 +60,53 @@ public final class EnchantMenuLayout {
     /**
      * Closes the menu and returns the weapon -- the same path Esc takes, because it IS that path.
      *
-     * <p>Labelled "Close" with a door, not "Back" with an arrow: there is no parent menu yet, and a
-     * back-arrow promises somewhere to go back to. When a hub menu exists this slot becomes the real
-     * Back with no layout change.
+     * <p>Row 6, column 5. Labelled "Close" on a BARRIER, not "Back" with an arrow: this closes
+     * rather than navigates, and {@code MenuIcons.close} carries that distinction.
+     *
+     * <h2>THE DISAGREEMENT IS OVER. THIS WAS 0, AND EVERY OTHER SCREEN SAID 49</h2>
+     *
+     * <b>{@code CraftingMenuLayout.CLOSE_SLOT}'s javadoc recorded the divergence as DELIBERATE</b>
+     * -- <i>"the two menus disagree about where Close lives, deliberately, because only the
+     * crafting screen was redesigned"</i> -- and {@code NexusMenuLayout} cited it as settled and
+     * not to be re-litigated. <b>Both paragraphs were true when written and are now false.</b>
+     *
+     * <p>They are rewritten rather than deleted, and the argument they carried is kept: a
+     * divergence that exists because one screen was redesigned and another was not is a REASON, and
+     * the next person to find two screens disagreeing needs to know it was noticed rather than
+     * overlooked. What changed is that the enchant screen has now been redesigned too, so the
+     * condition the divergence rested on is gone.
+     *
+     * <p><b>Close is 49 on every screen in this plugin.</b> Crafting, the hub, settings, and now
+     * here.
      */
-    public static final int CLOSE_SLOT = 0;
+    public static final int CLOSE_SLOT = 49;
 
     /**
      * The one slot in the whole menu a player may put an item into or take one out of.
      *
-     * <p>Bottom-centre, directly under the three candidate columns, and directly above the player's
-     * own inventory -- so the item travels the shortest distance and the thing being enchanted sits
-     * nearest the choices being made about it.
+     * <p>Row 2, column 2 -- top-left, above the candidate columns.
+     *
+     * <h2>IT WAS BOTTOM-CENTRE, AND THAT ARGUMENT WAS SOUND. IT WAS TRADED, NOT OVERLOOKED</h2>
+     *
+     * The old javadoc said: <i>"Bottom-centre, directly under the three candidate columns, and
+     * directly above the player's own inventory -- so the item travels the shortest distance and the
+     * thing being enchanted sits nearest the choices being made about it."</i>
+     *
+     * <p><b>That is still true and it is what was given up.</b> From slot 10 the item genuinely
+     * travels further from the hotbar than it did from 49. The paragraph is kept per
+     * {@code MenuIcons.close}'s precedent -- an argument can outlive the thing it argued for, and
+     * deleting it with its position loses the only reason anyone would have to reconsider.
+     *
+     * <p><b>What replaced it, and it is two reasons:</b> the screen reads as a FORM, input first
+     * and results below; and <b>CLOSE takes 49 because every other screen in this project has it
+     * there.</b> One of the two had to move, and <b>consistency across screens outranks travel
+     * within one</b> -- a player learns Close once and uses it on four screens, and learns the
+     * input slot once per screen anyway.
+     *
+     * <p>So: if someone proposes moving the input nearer the player again, the answer is that it
+     * costs the Close convergence above, not that nobody thought of it.
      */
-    public static final int INPUT_SLOT = 49;
+    public static final int INPUT_SLOT = 10;
 
     /** The bookshelf readout. A labelled placeholder this pass -- see EnchantMenu. */
     public static final int BOOKSHELF_SLOT = 8;
@@ -65,15 +127,22 @@ public final class EnchantMenuLayout {
     public static final int SLOTS = 3;
     public static final int CANDIDATES = 3;
 
-    /** The first row of candidates. Rows 0 and 1 carry the input and chrome. */
-    private static final int FIRST_CANDIDATE_ROW = 2;
-    /** The leftmost enchant-slot column. Columns advance by two so the columns are not adjacent. */
-    private static final int FIRST_SLOT_COLUMN = 2;
+    /**
+     * The first row of candidates, 0-BASED -- prose row 2. Row 0 carries the hint and the bookshelf.
+     *
+     * <p>The candidates share row 1 with the input slot, which sits to their left at column 1.
+     */
+    private static final int FIRST_CANDIDATE_ROW = 1;
+    /**
+     * The leftmost enchant-slot column, 0-BASED -- prose column 4. Columns advance by
+     * {@link #COLUMN_STRIDE} so they are not adjacent.
+     */
+    private static final int FIRST_SLOT_COLUMN = 3;
     private static final int COLUMN_STRIDE = 2;
 
     /**
-     * The chest index a candidate cell occupies: slot 0 -> {20, 29, 38}, 1 -> {22, 31, 40},
-     * 2 -> {24, 33, 42}.
+     * The chest index a candidate cell occupies: slot 0 -> {12, 21, 30}, 1 -> {14, 23, 32},
+     * 2 -> {16, 25, 34}.
      */
     public static int rawSlotFor(int slot, int candidate) {
         if (slot < 0 || slot >= SLOTS) {
@@ -93,6 +162,21 @@ public final class EnchantMenuLayout {
      *
      * <p>The exact inverse of {@link #rawSlotFor}, and the reason a click handler never has to
      * carry a slot->cell table of its own: the click arrives as an index and leaves as a cell.
+     *
+     * <h2>IT NEEDED NO EDIT WHEN THE LAYOUT MOVED, AND THAT IS A PROPERTY WORTH NAMING</h2>
+     *
+     * <b>Both directions are computed from the SAME THREE CONSTANTS</b> --
+     * {@link #FIRST_CANDIDATE_ROW}, {@link #FIRST_SLOT_COLUMN} and {@link #COLUMN_STRIDE} -- so
+     * re-ruling the grid moves the forward function and this one together, by construction. The
+     * 2026-09-16 move (rows 2-4 to columns 4-6-8 in prose) changed two constants and neither
+     * function body.
+     *
+     * <p><b>That is a claim about today's code, not a guarantee about tomorrow's</b>, which is why
+     * {@code EnchantMenuLayoutTest} round-trips all NINE positions:
+     * {@code rawSlotFor(cellAt(n)) == n}. A future change that touched one direction and not the
+     * other would compile, would move the screen, and would be caught only there -- a click landing
+     * on one cell and resolving to another is silent, and the player sees the wrong enchant
+     * selected.
      */
     public static Optional<Cell> cellAt(int rawSlot) {
         if (rawSlot < 0 || rawSlot >= SIZE) return Optional.empty();

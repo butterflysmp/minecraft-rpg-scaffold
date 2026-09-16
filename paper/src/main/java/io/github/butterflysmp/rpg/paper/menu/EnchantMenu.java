@@ -326,12 +326,33 @@ public final class EnchantMenu extends Menu {
     private ItemStack bookshelfIcon() {
         // clampPower, not bookshelfPower directly: the percentage shown and the percentage charged
         // come out of ONE expression, so the number here cannot drift from the number on the cells.
-        return MenuIcons.icon(Material.BOOKSHELF,
+        ItemStack icon = MenuIcons.icon(Material.BOOKSHELF,
                 MenuIcons.line("Bookshelf Power " + bookshelfPower + "/" + EnchantCost.MAX_POWER,
                         NamedTextColor.DARK_GRAY),
                 List.of(MenuIcons.line(EnchantCost.clampPower(bookshelfPower)
                                 + "% off unlocks and level-ups.", NamedTextColor.DARK_GRAY),
                         MenuIcons.line("Shelves in a ring around the table.", NamedTextColor.DARK_GRAY)));
+
+        // THE STACK SIZE IS THE READOUT AT A GLANCE, AND THE ZERO EDGE IS WHY IT IS CLAMPED.
+        //
+        // An ItemStack of amount 0 renders as NOTHING -- an empty cell, indistinguishable from a
+        // feature that is not there, which is MenuIcons.placeholder's whole argument and the reason
+        // this slot printed "0/30" rather than "0%" in the first place. So the AMOUNT floors at 1
+        // and the NAME carries the exact figure.
+        //
+        // That makes power 0 and power 1 show the SAME single book, which is deliberate: an item
+        // of amount 1 also shows no count badge, so the two were never distinguishable by bulk
+        // anyway. They are distinguishable by TEXT -- "Bookshelf Power 0/30" against "1/30" -- and
+        // the text is the measurement. The stack is the glance.
+        icon.setAmount(Math.max(1, Math.min(bookshelfPower, icon.getMaxStackSize())));
+
+        // The glint marks the CEILING, so a player can see they have stopped gaining without
+        // reading the number. MAX_POWER is EnchantCost's, not a literal, so the mark and the
+        // clamp cannot disagree.
+        if (bookshelfPower >= EnchantCost.MAX_POWER) {
+            icon.editMeta(meta -> meta.setEnchantmentGlintOverride(true));
+        }
+        return icon;
     }
 
     /** The three columns. A slot that rolled fewer than three candidates leaves filler behind. */
@@ -403,12 +424,26 @@ public final class EnchantMenu extends Menu {
                 locked ? NamedTextColor.DARK_GRAY : active ? NamedTextColor.GREEN : NamedTextColor.WHITE);
 
         ItemStack icon = MenuIcons.icon(iconMaterial(definition, locked), title, lore);
-        if (active) {
-            icon.editMeta(meta -> meta.setEnchantmentGlintOverride(true));
-            // Set ONLY on the active one. Left unset -- not false -- everywhere else: null means
-            // "vanilla decides", and vanilla decides no glint because we add no enchantments. The
-            // omission is deliberate, not a forgotten branch.
-        }
+
+        // THE GLINT IS THE SELECTION MARK, AND IT IS SET IN BOTH DIRECTIONS. Explicitly false on an
+        // inactive cell, not merely left unset.
+        //
+        // THIS USED TO BE `if (active)` ALONE, and the comment beside it argued the omission was
+        // safe: "null means vanilla decides, and vanilla decides no glint because we add no
+        // enchantments." THAT REASONING IS CORRECT AND DOES NOT COVER EVERY CASE REACHABLE HERE.
+        //
+        // Vanilla also glints by MATERIAL, and `iconMaterial` falls back to ENCHANTED_BOOK twice:
+        // for a null definition, and for an `icon:` that names no material. An ENCHANTED_BOOK
+        // glints on its own. So an enchant whose icon is misspelled -- GATE ROW 23's exact staging
+        // -- would render glinting and read as PERMANENTLY SELECTED, in the one screen where the
+        // glint is the only thing saying which candidate is active.
+        //
+        // Same shape as MenuIcons.line's explicit ITALIC=false: the default is not neutral, so it
+        // is stated rather than assumed. A sweep of the ten DECLARED icons finds none that glints
+        // -- blaze_rod, shield, spectral_arrow, golden_apple, lapis_lazuli, bow, diamond_chestplate,
+        // iron_sword, arrow, anvil -- which is why this was invisible: the hole is in the FALLBACK,
+        // not in the content.
+        icon.editMeta(meta -> meta.setEnchantmentGlintOverride(active));
         return icon;
     }
 

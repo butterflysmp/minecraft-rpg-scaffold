@@ -30,9 +30,11 @@ final class NexusMenuLayout {
      * Close. <b>49, the same slot the crafting menu uses</b>, so the button a player has learned
      * does not move between our screens.
      *
-     * <p>{@code EnchantMenuLayout.CLOSE_SLOT} is still 0 and the two disagree -- that divergence is
-     * recorded in {@code CraftingMenuLayout} and is not re-litigated here. This matches the newer
-     * pair, which is the majority and the one a player meets first.
+     * <p><b>ALL FOUR SCREENS NOW AGREE.</b> This paragraph used to say
+     * {@code EnchantMenuLayout.CLOSE_SLOT} was still 0 and that the divergence was recorded in
+     * {@code CraftingMenuLayout} and not re-litigated here. <b>The enchant screen was redesigned on
+     * 2026-09-16 and moved to 49</b>, so there is no divergence left to defer to -- crafting, the
+     * hub, settings and the enchant table all put Close in the same cell.
      */
     static final int CLOSE_SLOT = 49;
 
