@@ -2,7 +2,6 @@ package io.github.butterflysmp.rpg.paper.hud;
 
 import io.github.butterflysmp.rpg.core.combat.StatsSheetLines;
 import io.github.butterflysmp.rpg.core.combat.StatsSheetValues;
-import io.github.butterflysmp.rpg.core.combat.StatsSheetValues;
 import io.github.butterflysmp.rpg.paper.weapon.GearLore;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -30,6 +29,21 @@ import java.util.List;
  * Health pair, mana pair, defense, then the damage trio. A regen line wears its PARENT stat's colour
  * -- health regen is red, mana regen is blue -- which is what makes the pairing read without a
  * separator. Only the first line of a group carries an icon; the second is indented under it.
+ *
+ * <h2>TWO CONSUMERS NOW, AND THE ITALIC CALL IS WHAT MAKES THE SECOND ONE FREE</h2>
+ *
+ * <b>{@code /rpg stats} sends these to CHAT; {@code NexusStatsLore} puts them in an item's LORE</b>
+ * -- unmodified, through {@link #statLines}. That reuse works for exactly one reason:
+ * {@code GearLore.plain} sets {@code decoration(ITALIC, false)} on every segment.
+ *
+ * <p><b>THAT IS NOW A REQUIREMENT, NOT A COINCIDENCE.</b> Minecraft renders lore italic by DEFAULT,
+ * so a line built with a bare {@code Component.text} is left italic via NOT_SET. It would look
+ * correct in chat and wrong in a tooltip -- <b>wrong in the consumer nobody is looking at while they
+ * write it.</b> Anyone adding a line here is adding it to a tooltip as well: build it with
+ * {@code GearLore.plain}, or with something that makes the same call.
+ *
+ * <p>This class is therefore a CHAT renderer built out of LORE tooling, which is the property that
+ * let the hub reuse it instead of growing a third stat renderer.
  */
 public final class StatsSheet {
 
@@ -63,6 +77,25 @@ public final class StatsSheet {
     public static List<Component> build(StatsSheetValues v) {
         List<Component> lines = new ArrayList<>();
         lines.add(header());
+        lines.addAll(statLines(v));
+        return lines;
+    }
+
+    /**
+     * The stat lines WITHOUT the header: eight always, plus the quiver pair when one is held.
+     *
+     * <p><b>A SEPARATE METHOD RATHER THAN {@code build(v).subList(1, ...)}, AND THE DIFFERENCE IS
+     * THE POINT.</b> An index into a list is a line citation wearing different clothes -- falsified
+     * by any insertion above it, silently, and invisibly to every test. The header is dropped by
+     * NOT BEING ADDED, which cannot go stale.
+     *
+     * <p><b>Why a consumer would want this:</b> the header is chat CHROME. A chat message has no
+     * frame, so it needs a line saying where it starts; a tooltip is nothing but frame and already
+     * carries the item's display name. {@code NexusStatsLore} is the caller, and it wears
+     * {@code StatsSheetLines.HEADER} as that name instead.
+     */
+    public static List<Component> statLines(StatsSheetValues v) {
+        List<Component> lines = new ArrayList<>();
 
         lines.add(line(StatsBarText.HEART, StatsSheetLines.MAX_HEALTH_LABEL,
                 StatsSheetLines.capacity(v.maxHealth()), StatsBarText.HEALTH_COLOR));

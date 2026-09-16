@@ -391,9 +391,9 @@ class QuiversSignatureTest {
         java.util.Collections.sort(resolvers);
         assertEquals(
                 List.of("QuiverItems.java", "QuiverState.java", "Quivers.java", "RpgCommand.java",
-                        "WeaponItems.java", "WeaponLore.java"),
+                        "StatsSheetProjection.java", "WeaponItems.java", "WeaponLore.java"),
                 resolvers,
-                "a capacity may only be OBTAINED in these SIX files, across core AND paper. Reading "
+                "a capacity may only be OBTAINED in these SEVEN files, across core AND paper. Reading "
                         + "QuiverItems.capacityIn anywhere else and resolving it inline -- "
                         + "stamped.orElse(weapon.quiverSize()) -- is a second resolver, and two "
                         + "resolvers is how the tooltip and the refusal logic come to disagree.");
@@ -633,6 +633,12 @@ class QuiversSignatureTest {
      * <tr><td>{@code RpgCommand}</td><td><b>READOUT</b> -- reads it to show somebody a number, and
      *     prints the RESOLVED value beside the authored one every time, through
      *     {@code ReloadTime.resolve} rather than re-deriving {@code authored + bonus}.</td></tr>
+     * <tr><td>{@code StatsSheetProjection}</td><td><b>READOUT</b>, and it is the {@code /rpg stats}
+     *     readout that MOVED here rather than a new one. It joined this list the day the Nexus
+     *     stats head needed the same ten numbers: the alternative was the hub re-deriving them,
+     *     which is this row's defect on all ten at once. <b>Two surfaces render it now -- chat and
+     *     an item tooltip -- and both read it from here</b>, so the set grew by a file and not by a
+     *     source of truth.</td></tr>
      * </table>
      *
      * <p><b>A readout cannot quietly become a second source of truth</b> as long as it composes
@@ -670,13 +676,14 @@ class QuiversSignatureTest {
         assertTrue(scanned > 100, "only " + scanned + " files scanned across both modules");
 
         java.util.Collections.sort(readers);
-        assertEquals(List.of("Quivers.java", "RpgCommand.java"), readers,
-                "the authored reload duration may only be read in these TWO files: Quivers SUPPLIES "
-                        + "it (beginReload resolves and stamps), RpgCommand READS IT OUT beside the "
-                        + "resolved value. A third file is a deliberate edit -- and the question to "
-                        + "ask is which of the two it is, because a supply site that does not go "
-                        + "through ReloadTime.resolve is a second source of truth and a readout that "
-                        + "does not is a number that will drift from the weapon.");
+        assertEquals(List.of("Quivers.java", "RpgCommand.java", "StatsSheetProjection.java"), readers,
+                "the authored reload duration may only be read in these THREE files: Quivers SUPPLIES "
+                        + "it (beginReload resolves and stamps), RpgCommand and StatsSheetProjection "
+                        + "READ IT OUT beside the resolved value. A fourth file is a deliberate edit "
+                        + "-- and the question to ask is which of the two it is, because a supply "
+                        + "site that does not go through ReloadTime.resolve is a second source of "
+                        + "truth and a readout that does not is a number that will drift from the "
+                        + "weapon.");
     }
 
     /**
@@ -754,12 +761,14 @@ class QuiversSignatureTest {
 
         java.util.Collections.sort(readers);
         assertEquals(
-                List.of("QuiverItems.java", "Quivers.java", "RpgCommand.java", "WeaponLore.java"),
+                List.of("QuiverItems.java", "Quivers.java", "RpgCommand.java",
+                        "StatsSheetProjection.java", "WeaponLore.java"),
                 readers,
-                "the AUTHORED quiver size may only be read in these FOUR files. QuiverItems and "
+                "the AUTHORED quiver size may only be read in these FIVE files. QuiverItems and "
                         + "Quivers SUPPLY it (a mint stamp, a write's resolution, an unstamped "
-                        + "fallback that drives a verdict); WeaponLore and RpgCommand READ IT OUT. A "
-                        + "fifth file is a deliberate edit, and the question to ask is which half it "
+                        + "fallback that drives a verdict); WeaponLore, RpgCommand and "
+                        + "StatsSheetProjection READ IT OUT. A "
+                        + "sixth file is a deliberate edit, and the question to ask is which half it "
                         + "is in -- a supply site that does not go through QuiverSize.resolve is a "
                         + "second source of truth, and a readout that does not is a number that will "
                         + "drift from the weapon.");

@@ -1,10 +1,15 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
+import io.github.butterflysmp.rpg.core.combat.ResourcePool;
+import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
+import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
+import io.github.butterflysmp.rpg.paper.hud.StatsSheetProjection;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.Set;
 
@@ -16,19 +21,20 @@ import java.util.Set;
  * Everything the hub will hold hangs off that, and none of it can be built until the route is
  * confirmed in play.
  *
- * <h2>THE SETTINGS TORCH IS A {@code placeholder}, AND THE STATS HEAD NEXT SLICE MUST NOT BE</h2>
+ * <h2>THE SETTINGS TORCH IS A {@code placeholder}, AND THE STATS HEAD IS NOT</h2>
  *
- * <b>Written down here, one slice early, because the second half lands later and by then the
- * reason will have to be rediscovered.</b>
+ * <b>Written down here one slice early, because the second half landed later -- and SLICE 3 HAS NOW
+ * LANDED IT.</b> Both halves of the pair are in {@link #render()}, three lines apart, and this
+ * section is the argument they both point at.
  *
  * <p>The settings button uses {@link MenuIcons#placeholder}, whose lore reads <i>"Not implemented
  * yet."</i> That is CORRECT here: the settings screen is <b>genuinely not built</b>. There is no
  * behaviour behind the torch, nothing to read off it, and nothing a click could do.
  *
- * <p><b>The stats head coming in slice 3 is the opposite case and needs {@link MenuIcons#icon}.</b>
- * It will carry REAL lore -- a working readout of live figures -- and only its CLICK will be
- * unbuilt. Rendering it with {@code placeholder} would print <i>"Not implemented yet."</i> above
- * correct, live stat numbers.
+ * <p><b>The stats head is the opposite case and uses {@link MenuIcons#icon}.</b> It carries REAL
+ * lore -- a working readout of live figures, from {@code StatsSheetProjection} -- and only its
+ * CLICK is unbuilt. Rendering it with {@code placeholder} would print <i>"Not implemented yet."</i>
+ * above correct, live stat numbers.
  *
  * <p><b>That is not hypothetical: it is the defect {@code MenuIcons.placeholder}'s own javadoc
  * records.</b> The recipe browser's empty state -- a feature that worked and had measured zero --
@@ -47,8 +53,25 @@ import java.util.Set;
  */
 public final class NexusMenu extends Menu {
 
-    public NexusMenu(Player viewer) {
+    private final AdapterContext adapters;
+    private final WeaponRegistry weapons;
+    private final ResourcePool resources;
+
+    /**
+     * @param adapters  stats and keys, for the stats head's figures
+     * @param weapons   the registry, for the held weapon's quiver pair
+     * @param resources the mana pool
+     *
+     * <p>The three services are taken rather than a pre-built {@code StatsSheetValues} so that the
+     * slice which makes the head clickable can REPAINT it. Four parameters of four distinct types,
+     * so there is no transposable adjacent pair.
+     */
+    public NexusMenu(Player viewer, AdapterContext adapters, WeaponRegistry weapons,
+                     ResourcePool resources) {
         super(viewer, NexusMenuLayout.SIZE, MenuIcons.line("Nexus", NamedTextColor.DARK_GRAY));
+        this.adapters = adapters;
+        this.weapons = weapons;
+        this.resources = resources;
         render();
     }
 
@@ -101,5 +124,27 @@ public final class NexusMenu extends Menu {
         // and the stats head next slice is the case that must go the other way.
         getInventory().setItem(NexusMenuLayout.SETTINGS_SLOT, MenuIcons.placeholder(
                 Material.REDSTONE_TORCH, "Settings", "No settings to change yet."));
+
+        // icon(), NOT placeholder() -- THE OTHER HALF OF THE PAIR THE TORCH ABOVE IS ONE OF, and
+        // the class javadoc carries the argument. The lore below is REAL and WORKING; only the
+        // click is unbuilt. placeholder() would print "Not implemented yet." above live stat
+        // figures, which is the Q33 defect with the readout and the notice inverted.
+        ItemStack head = MenuIcons.icon(Material.PLAYER_HEAD, NexusStatsLore.name(),
+                NexusStatsLore.lore(
+                        StatsSheetProjection.of(viewer, adapters, weapons, resources)));
+
+        // THE SKIN. Cheap HERE AND ONLY HERE: the viewer is online, so their profile is already
+        // resolved and nothing fetches.
+        //
+        // *** DO NOT GENERALISE THIS CALL. *** The same setOwningPlayer for an OFFLINE or
+        // third-party player can block on a texture fetch -- on the region thread, inside a menu
+        // open, with the client waiting on the screen. The next head added to this hub will be
+        // somebody else's, which is why this warning is here and not in a design note.
+        //
+        // It returns a boolean and can fail; the failure renders as Steve, which is what
+        // GATE-nexus.md's own-skin row is reading.
+        head.editMeta(SkullMeta.class, meta -> meta.setOwningPlayer(viewer));
+
+        getInventory().setItem(NexusMenuLayout.STATS_SLOT, head);
     }
 }

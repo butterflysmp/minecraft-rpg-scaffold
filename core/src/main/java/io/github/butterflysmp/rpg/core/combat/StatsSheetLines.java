@@ -46,8 +46,38 @@ public final class StatsSheetLines {
 
     private StatsSheetLines() {}
 
-    /** The header the eight lines sit under. */
+    /**
+     * The header the eight lines sit under -- <b>and, since the Nexus hub, also an ITEM DISPLAY
+     * NAME.</b>
+     *
+     * <p><b>THE SECOND CONSUMER HAS DIFFERENT RULES, WHICH IS WHY IT IS NAMED HERE.</b> A chat
+     * header is a place people add decoration -- {@code === Your Stats ===}, a rule of dashes,
+     * something to say where the message starts. <b>A button's name is not.</b> The hub's stats head
+     * wears this string as its display name and deliberately carries no header LINE, because a
+     * tooltip is nothing but frame and would otherwise state its own name twice.
+     *
+     * <p>So decorate this and you have decorated a button. If chat wants a rule of dashes, that is
+     * a second constant, not an edit to this one.
+     */
     public static final String HEADER = "Your Stats";
+
+    /**
+     * What every surface says when the stat engine is not tracking a player yet.
+     *
+     * <p><b>ONE CONSTANT BECAUSE TWO SURFACES SAY IT.</b> {@code /rpg stats} prints it in red and
+     * the Nexus stats head renders it as its only lore line. A freshly-joined player reaches this
+     * before their reconcile loop has registered them, and it is the hub's head they are most
+     * likely to meet it on.
+     *
+     * <p><b>It exists so neither surface can render ZEROES instead.</b> A readout showing {@code 0}
+     * when nothing was counted is indistinguishable from a working readout that measured zero --
+     * {@code MenuIcons.placeholder}'s own argument, and the reason
+     * {@code StatsSheetProjection.of} returns an {@code Optional} rather than a zeroed sheet.
+     *
+     * <p>Two surfaces that disagree about the FAILURE are as wrong as two that disagree about the
+     * numbers, and the failure is the case nobody re-reads.
+     */
+    public static final String UNTRACKED = "No stats tracked yet -- try rejoining.";
 
     // --- Labels. No trailing punctuation: the paper side supplies the separator, exactly as
     // --- GearLore.appendFlatBonus does, so one place owns it and the eight cannot drift apart.

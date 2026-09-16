@@ -1,6 +1,7 @@
 # GATE — the Nexus: the six routes out, and the two things a unit test cannot see
 
-**Status: PARTIALLY RUN — ROW 6 ONLY, 2026-09-15. Rows 1–5 and 7 remain NOT RUN.** Every row below
+**Status: PARTIALLY RUN — ROW 6 ONLY, 2026-09-15. Rows 1–5 and 7 remain NOT RUN, and so does every
+row of SLICE 2 (8–13) and SLICE 3 (14–19)** — each block carries its own status line. Every row below
 was written BEFORE any boot, and every expected value was recorded so that a later reading could
 disagree with it. **When a row is read, its reading is written BESIDE its prediction and the
 prediction is NOT edited.** A prediction revised after the fact proves nothing.
@@ -28,6 +29,8 @@ ships to a survival server; **a creative reading certifies creative**, and nothi
 | **8** | **CREATIVE** | **its own row, not a caveat on another one.** A caveat on a row is a caveat that gets forgotten |
 | **9–12b** | **SURVIVAL** | slice 2, the hub. The opener is a `PlayerInteractEvent` path and nothing in it reads a game mode |
 | **13** | **CREATIVE** | slice 2's creative row, and **it exists because Row 8 taught this file not to assume the modes agree about inventory interaction** |
+| **14–17, 19** | **SURVIVAL** | slice 3, the stats head. Nothing in the head's render or its lore reads a game mode; survival is what is certified |
+| **18** | **SURVIVAL**, and **this one is load-bearing** | it moves an item **in the player's own inventory with a menu open** — the exact surface Row 8 shows behaves differently in creative. **A creative reading of 18 certifies creative and says nothing about the shipped path** |
 
 > **CREATIVE GETS A ROW, NOT A FOOTNOTE, AND THAT IS THE WHOLE LESSON OF ROW 6.** The alternative —
 > *"row 6, but note it behaves differently in creative"* — is a sentence that survives exactly until
@@ -782,6 +785,169 @@ inventory slot, and `PlayerInteractEvent`'s hand-pair behaviour is not a creativ
 > **IF IT DIVERGES, IT IS THE REGISTER'S FOURTH ENTRY.** If it does not, **say so in the register**
 > — *"checked, agrees"* is a different and more useful record than silence, which is
 > indistinguishable from nobody having looked.
+
+**READING:** _(not run)_
+
+---
+
+# SLICE 3 — THE STATS HEAD. ROWS 14–19
+
+**Status: NOT RUN.** Every row below was written **before any boot**, and before the branch that
+adds them was pushed.
+
+**GAME MODE: `/gamemode survival` for all six**, declared here and repeated per row. Nothing in this
+slice reads a game mode, but Row 6 taught this file that a mode which is not stated costs a boot to
+find out — and **Row 18 stages an inventory gesture with a menu open, which is the surface Row 8
+proved behaves differently in creative.**
+
+**What the unit suite already settled, so no row re-asks it.** `NexusStatsLoreTest` has 5 rows over
+the tooltip's text and `NexusMenuLayoutTest` has 4 over the layout. Between them, eight mutations
+were applied and measured. **They cover every figure, the absence of the header, the untracked
+notice, the italic discipline, and the slot.** What they cannot see is a `SkullMeta`, a real
+`PLAYER_HEAD`, a live `StatsSheetProjection`, or whether two surfaces rendered from one input path
+actually agree on screen. **That gap is these six rows.**
+
+> **AND ONE THING NO ROW HERE CAN SETTLE, SAID PLAINLY.** The projection extraction — forty lines
+> moved out of `RpgCommand.stats` — has **no executed check at all** until Row 15 runs.
+> `RpgCommand.stats` has never had a unit test (it needs a live `Player`), and this file has never
+> been booted. Its only verification today is a **textual diff with a positive control**, recorded
+> in the PR body. **Row 15 is the first thing that will actually execute the moved code.**
+
+## ROW 14 — THE HEAD WEARS **YOUR** SKIN, NOT STEVE'S AND NOT SOMEONE ELSE'S
+
+`SkullMeta.setOwningPlayer` **returns a boolean and can fail**, and its failure mode is silent: the
+head renders as the default skin and nothing is logged. That is indistinguishable from a head that
+was never given an owner at all.
+
+**Staging.** `/gamemode survival`. Right-click the star to open the hub. **Look at slot 20 — the
+third slot of the third row.** Then have a second player open their own hub and look at theirs.
+
+**PREDICTED:** the head is **your own skin**, recognisably, and the second player's is **theirs**.
+Not Steve, not Alex, and not each other's.
+
+> **THE SECOND PLAYER IS NOT PADDING AND IS THE HALF THAT CAN FAIL.** A head wired to a constant
+> profile, or to the wrong `Player` reference, **passes a one-player reading perfectly** — the
+> operator sees their own face and ticks the row. Only two players distinguish "wears the viewer's
+> skin" from "wears somebody's skin".
+>
+> **If it is Steve:** that is `setOwningPlayer` returning false, not a layout fault. Say so in the
+> reading rather than "the head looked wrong", because the two have different fixes.
+
+**READING:** _(not run)_
+
+## ROW 15 — **THE ANTI-DRIFT ROW.** THE LORE AND `/rpg stats` AGREE, FIGURE FOR FIGURE
+
+**This is the row the slice exists around, and it is also the row whose meaning CHANGED while the
+slice was being built — so what it now proves is written down rather than assumed.**
+
+Before the extraction this would have compared **two computations**. It now compares **two
+renderings of ONE**: both surfaces read `StatsSheetProjection.of` and both render through
+`StatsSheet.statLines`. **That is a weaker row for a stronger reason**, and it is said here so the
+reading is not mistaken for coverage that was never lost.
+
+**What it can still catch, which is not nothing:** the two surfaces being fed at different moments,
+a held-weapon difference between the command and the menu open, a unit error surviving the move, and
+**the moved projection failing to execute correctly at all** — which nothing else checks.
+
+**Staging.** `/gamemode survival`. **Hold a quiver weapon** (the Boltor), so all ten lines are in
+play. Run `/rpg stats`, leave the chat visible, then open the hub **in the same session without
+changing what you are holding**. Read the head's tooltip against the chat output **line by line**.
+
+**PREDICTED:** **ten lines in chat under the header, and the same ten in the tooltip with no
+header.** Every label and every figure identical, including the two decimal places — `Max Health`,
+`Health Regen`, `Max Mana`, `Mana Regen`, `Defense`, `Damage`, `Crit Chance`, `Crit Damage`,
+`Quiver`, `Reload`. The tooltip's **name** is `Your Stats`, which is the header's text.
+
+> **READ THE FIGURES, NOT THE SHAPE.** "They looked the same" is what this row must not accept —
+> `Q33`'s lesson, one file over. **Name at least the Damage and Reload values in the reading**, with
+> their digits, so a later reader can tell the row was actually read.
+>
+> **AND THE TOOLTIP MUST NOT SAY *"Not implemented yet."*** — Row 12's forward-looking half, now
+> due. The head is `MenuIcons.icon`, not `placeholder`. If that string appears above live numbers
+> anywhere on this screen, that is the `Q33` defect recurring.
+
+**READING:** _(not run)_
+
+## ROW 16 — CLICKING IT DOES NOTHING, AND SAYS NOTHING
+
+The head is a readout with an unbuilt click. **`NexusMenu.onClick` has no `STATS_SLOT` branch at
+all**, deliberately: a no-op branch would read as a wired button whose body someone forgot to write.
+
+**Staging.** `/gamemode survival`. Open the hub. **Left-click the head. Then right-click it. Then
+shift-click it. Then number-key over it.**
+
+**PREDICTED:** on all four — **nothing.** No chat line, no sound, no screen change, no item moves to
+the cursor, and the hub stays open. The head is still in slot 20 afterwards.
+
+> **THE FOUR GESTURES ARE NOT ONE GESTURE REPEATED.** Shift-click and the number key are the
+> **performed** routes — the ones `MenuRouting` writes directly rather than merely permitting — and
+> they are the pair that would move the head out of the menu if `inputSlots()` were ever widened.
+> A left-click-only reading cannot see that.
+
+**READING:** _(not run)_
+
+## ROW 17 — THE UNTRACKED PLAYER IS **TOLD**, AND IS NEVER SHOWN ZEROES
+
+**A real state, and the hub is the surface a player meets it on** — `/rpg stats` has to be typed;
+the head is simply there. A readout showing `0` when nothing was counted is indistinguishable from a
+working readout that measured zero.
+
+**Staging.** `/gamemode survival`. **Join the server and open the hub as fast as you can**, before
+the stat engine has registered you. If that window is too tight to hit by hand, reach the same state
+the way Row 5 reaches its staging and say in the reading which route was used.
+
+**PREDICTED:** the tooltip has **exactly one lore line** — *"No stats tracked yet -- try
+rejoining."* — and **no numbers of any kind.** `/rpg stats` in the same moment says the same
+sentence, word for word, because both read it from one constant.
+
+> **IF THIS ROW CANNOT BE STAGED, SAY SO AND LEAVE IT UNREAD.** Do not tick it from the unit test:
+> `NexusStatsLoreTest` covers the lore's TEXT in that state and cannot cover the projection
+> returning empty on a live server, which is the half this row is for. **An unstageable row recorded
+> as unstaged is an honest gate; one ticked from a unit test is a false witness.**
+
+**READING:** _(not run)_
+
+## ROW 18 — THE QUIVER PAIR GOES STALE, AND THIS ROW **RECORDS** IT RATHER THAN FAILING IT
+
+**KNOWN AND ACCEPTED FOR THIS SLICE.** The menu paints once, on open. Eight of the ten lines are
+maxima and rates and cannot move while a screen is up. **The quiver pair is keyed to the HELD
+weapon**, and `MenuRouting` deliberately permits a player to rearrange their own inventory with a
+menu open — so the head can go on showing a capacity for a weapon no longer selected.
+
+**Staging.** `/gamemode survival`. Hold the Boltor. Open the hub. **Read the Quiver and Reload
+lines. Then, with the hub still open, move the Boltor out of your selected hotbar slot. Re-read the
+tooltip.**
+
+**PREDICTED:** the two lines are **unchanged** — still showing the Boltor's capacity — because
+nothing repaints. **This is the expected behaviour, not a defect**, and the row exists so the slice
+that makes this head clickable finds the answer instead of rediscovering the question.
+
+> **WHAT WOULD MAKE IT A DEFECT, so the reading can tell them apart:** if the lines **disappear**,
+> or show a **different** weapon's numbers, or the head renders blank. Any of those means something
+> is repainting, and repainting is what this slice decided not to build.
+>
+> **SURVIVAL IS STATED AND IT MATTERS HERE.** This is an own-inventory gesture with a menu open —
+> the exact surface Row 8 shows behaves differently in creative. **A creative reading of this row
+> certifies creative and nothing else.**
+
+**READING:** _(not run)_
+
+## ROW 19 — **THE CONTROL.** THE CLOSE BUTTON STILL CLOSES
+
+The new icon is the first thing ever added to this screen's body. **The control is that adding it
+broke nothing that already worked** — filler painted over a live button is invisible until someone
+clicks it, and `FILLER_SLOTS` is now built by three subtractions instead of two.
+
+**Staging.** `/gamemode survival`, with a **known, counted inventory**. Open the hub. **Close it
+with the BARRIER at slot 49.** Open it again and **close it with Esc.**
+
+**PREDICTED:** both close the screen, and the inventory is **byte-for-byte what it was** — nothing
+gained, nothing lost, nothing dropped at your feet. **The star is still in slot 8.**
+
+> **THIS IS ROW 11 RE-RUN, AND IT IS RE-RUN DELIBERATELY RATHER THAN CITED.** Row 11 passed against
+> a two-button screen. This slice changed `FILLER_SLOTS` — the set that decides which slots get
+> painted over — so Row 11's result is about a layout that no longer exists. **A control carried
+> past its precondition stops being a control without stopping being quotable.**
 
 **READING:** _(not run)_
 

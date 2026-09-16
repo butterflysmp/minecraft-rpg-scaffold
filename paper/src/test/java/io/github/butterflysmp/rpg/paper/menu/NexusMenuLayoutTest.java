@@ -31,9 +31,53 @@ class NexusMenuLayoutTest {
                         + "move between our screens");
         assertEquals(50, NexusMenuLayout.SETTINGS_SLOT, "Settings is slot 50");
         assertEquals(54, NexusMenuLayout.SIZE, "six rows");
+        assertEquals(20, NexusMenuLayout.STATS_SLOT,
+                "the stats head is slot 20 -- the first slot of the FEATURE body, so the next "
+                        + "feature appends at 21 rather than every icon re-centring");
         // Mutation MUTCLOSE: CLOSE_SLOT 49 -> 48   -> reddens HERE, and only here.
         // Mutation MUTSETTINGS: SETTINGS_SLOT 50 -> 51 -> reddens HERE, and only here.
-        // Both APPLIED AND MEASURED, not expected -- see the PR body.
+        //
+        // *** THIS ROW IS THE SOLE GUARD OF STATS_SLOT'S VALUE. MEASURED, AND IT CORRECTS A
+        // PREDICTION MADE IN THE PLAN. ***
+        //
+        //   MUTSTATS19      STATS_SLOT 20 -> 19   -> reddens HERE, AND NOWHERE ELSE
+        //   MUTSTATS21      STATS_SLOT 20 -> 21   -> reddens HERE, AND NOWHERE ELSE
+        //   MUTSTATSBOTTOM  STATS_SLOT 20 -> 51   -> reddens here AND the body-rule row
+        //
+        // The plan predicted 19 and 21 would also redden the filler row. THEY DO NOT. The filler
+        // row names STATS_SLOT symbolically throughout -- contains(STATS_SLOT), and the isButton
+        // disjunction -- so moving the constant moves the code and the expectation TOGETHER and
+        // bites nothing. That is the exact defect this file's first comment records about
+        // LOCKED_SLOT and OFFHAND_SLOT, arriving a third time on a third constant.
+        //
+        // So: delete this assertion and STATS_SLOT can be moved to any other body slot with the
+        // whole suite green. Only 51 is caught elsewhere, and only because it leaves the body.
+        // ALL APPLIED AND MEASURED, not expected -- see the PR body.
+    }
+
+    @Test
+    void theStatsHeadIsInTheBODY_notInTheChromeRowWithTheTwoButtons() {
+        // THE STANDING LAYOUT RULE, GUARDED RATHER THAN ONLY JAVADOC'D: chrome in the bottom row,
+        // features in the body. Without this, "slot 20" is just a number someone picked, and the
+        // next person adding a feature has nothing to object to when they drop it at 51.
+        //
+        // This is the STATS_SLOT twin of theTwoButtonsAreADJACENTInTheBottomRow, and it has the
+        // same property: no mutation can kill it alone, because the literal row pins 20 exactly.
+        // What is lost if it goes is the RULE -- re-rule the head to slot 24 and the literal row is
+        // simply rewritten, with nothing left objecting to 51.
+        assertTrue(NexusMenuLayout.STATS_SLOT < NexusMenuLayout.BOTTOM_ROW_START,
+                "a FEATURE must not sit in the chrome row");
+        assertFalse(NexusMenuLayout.STATS_SLOT == NexusMenuLayout.CLOSE_SLOT
+                        || NexusMenuLayout.STATS_SLOT == NexusMenuLayout.SETTINGS_SLOT,
+                "and it must not collide with either button");
+        // Mutation MUTSTATSBOTTOM: STATS_SLOT 20 -> 51 -> reddens HERE and the literal row.
+        // APPLIED AND MEASURED. It has no unique kill, for the adjacency row's reason: the literal
+        // row pins 20 exactly, so any move fails there first. What is lost if this row goes is the
+        // RULE -- re-rule the head to 24 and the literal row is simply rewritten, with nothing left
+        // objecting to 51.
+        //
+        // MUTSTATS19 and MUTSTATS21 do NOT redden this row, correctly: 19 and 21 are both in the
+        // body, which is all this row claims.
     }
 
     @Test
@@ -87,18 +131,29 @@ class NexusMenuLayoutTest {
                 "filler must never cover Close");
         assertFalse(NexusMenuLayout.FILLER_SLOTS.contains(NexusMenuLayout.SETTINGS_SLOT),
                 "filler must never cover Settings");
+        assertFalse(NexusMenuLayout.FILLER_SLOTS.contains(NexusMenuLayout.STATS_SLOT),
+                "filler must never cover the stats head -- a pane painted over it would hide a "
+                        + "working readout behind a black square, and nothing would say so");
 
         // AND IT COVERS EVERYTHING ELSE -- the other half, without which the assertions above are
         // equally consistent with FILLER_SLOTS being empty and the whole screen rendering blank.
-        assertEquals(NexusMenuLayout.SIZE - 2, NexusMenuLayout.FILLER_SLOTS.size(),
-                "every slot except the two buttons is filler");
+        assertEquals(NexusMenuLayout.SIZE - 3, NexusMenuLayout.FILLER_SLOTS.size(),
+                "every slot except the two buttons and the stats head is filler");
         for (int slot = 0; slot < NexusMenuLayout.SIZE; slot++) {
             boolean isButton = slot == NexusMenuLayout.CLOSE_SLOT
-                    || slot == NexusMenuLayout.SETTINGS_SLOT;
+                    || slot == NexusMenuLayout.SETTINGS_SLOT
+                    || slot == NexusMenuLayout.STATS_SLOT;
             assertEquals(!isButton, NexusMenuLayout.FILLER_SLOTS.contains(slot),
                     "slot " + slot + " filler membership");
         }
         // Mutation MUTFILLER: drop the slots.remove(CLOSE_SLOT) line -> reddens on the first
         // assertion AND on the size. APPLIED AND MEASURED.
+        // Mutation MUTFILLERSTATS: drop slots.remove(STATS_SLOT) -> reddens HERE, and only here.
+        // APPLIED AND MEASURED. This row is the sole guard of that line.
+        //
+        // NOTE, because it is the other half of the literal row's finding: this row is BLIND to
+        // STATS_SLOT's VALUE. It names the constant symbolically everywhere, so it passes for any
+        // value the remove() line is given. It guards that the head is EXCLUDED from filler, never
+        // WHERE the head is.
     }
 }

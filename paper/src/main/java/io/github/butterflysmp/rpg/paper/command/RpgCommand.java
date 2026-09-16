@@ -22,6 +22,7 @@ import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.combat.ManaRegen;
 import io.github.butterflysmp.rpg.core.combat.QuiverSize;
 import io.github.butterflysmp.rpg.core.combat.ReloadTime;
+import io.github.butterflysmp.rpg.core.combat.StatsSheetLines;
 import io.github.butterflysmp.rpg.core.combat.StatsSheetValues;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
@@ -56,6 +57,7 @@ import io.github.butterflysmp.rpg.paper.health.ManaRegenModifierItems;
 import io.github.butterflysmp.rpg.paper.health.QuiverSizeModifierItems;
 import io.github.butterflysmp.rpg.paper.health.ReloadTimeModifierItems;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheet;
+import io.github.butterflysmp.rpg.paper.hud.StatsSheetProjection;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
@@ -832,30 +834,23 @@ public final class RpgCommand {
     }
 
     /**
-     * The caller's stat sheet: eight build stats, read-only.
+     * The caller's stat sheet: eight build stats, read-only, self-only.
      *
-     * <p><b>The Damage line is the whole reason this command needed a refactor to exist.</b> It is
-     * {@code HitDamage.hitBase(...)} -- the SAME function both {@code EffectApplier} damage arms call
-     * -- fed the same three accessors {@code BukkitCombatant.snapshot} feeds them. Not a
-     * re-derivation that resembles a swing: {@code HitDamage.dealt(hitBase, 1.0, 1.0) == hitBase}
-     * exactly, so this IS a full-charge non-crit hit.
+     * <p><b>THIS METHOD IS NOW A RENDERER AND NOTHING ELSE.</b> It reads no stat. Every figure comes
+     * from {@link StatsSheetProjection#of}, and {@link StatsSheet} turns them into chat lines.
      *
-     * <p><b>Sharing the formula is not the same as sharing the INPUTS</b>, and only the first is
-     * guaranteed by construction. The combat path reads its three summands off a snapshot frozen at
-     * cast time; this reads them live. They agree because the projection is a straight read of
-     * {@code attackValue} / {@code classDamageValue} / {@code enchantDamagePercentValue} with no
-     * transform at either hop -- verified at {@code BukkitCombatant.snapshot}, which carries a note
-     * pointing back here. If a transform is ever added there, this line drifts and NO unit test would
-     * catch it, because the formula would still be shared. The boot gate's swing-and-compare row is
-     * the check for that.
+     * <p>The mechanism -- why the Damage line is a real swing rather than a lookalike, why charge
+     * and crit are absent, why the guard is {@code tracks} rather than register-if-absent, and the
+     * snapshot-versus-live seam that no unit test can watch -- <b>is recorded at
+     * {@code StatsSheetProjection}. This is the POINTER; that is the ACCOUNT.</b> It moved there
+     * with the code it describes, when the Nexus stats head became a second reader of the same ten
+     * numbers.
      *
-     * <p>Charge and crit are deliberately absent rather than sampled: a sheet showing a rolled crit
-     * would print a different number every time it was run, and {@code snapshot} draws from
-     * {@code ThreadLocalRandom}, which is not something a read-only command should do.
-     *
-     * <p>Guarded with {@code tracks} and NOT with the register-if-absent path {@code damageSelf} and
-     * {@code healSelf} take -- that is a WRITE, and this command must not have one. {@code current}
-     * and {@code max} throw for an untracked id rather than returning 0.
+     * <p>What stays here is what is specific to being a COMMAND: the executor check, the untracked
+     * message, and the exit codes. <b>The untracked wording is
+     * {@link StatsSheetLines#UNTRACKED}, not a literal</b> -- the hub's head says the same thing,
+     * and two surfaces that disagree about the failure are as wrong as two that disagree about the
+     * numbers.
      */
     private static int stats(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
                              WeaponRegistry weapons,
@@ -864,47 +859,18 @@ public final class RpgCommand {
             ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
             return 0;
         }
-        UUID id = player.getUniqueId();
-        CombatantStats stats = adapters.stats();
-        if (!stats.tracks(id)) {
-            player.sendMessage(Component.text("No stats tracked yet -- try rejoining.",
-                    NamedTextColor.RED));
+        // EVERY FIGURE COMES FROM StatsSheetProjection, WHICH IS THE ONLY PLACE THEY ARE READ.
+        // This used to be forty lines of inline projection, and it moved out unchanged when the
+        // Nexus hub needed the same ten numbers -- see that class for why a second copy was
+        // refused rather than written.
+        Optional<StatsSheetValues> values =
+                StatsSheetProjection.of(player, adapters, weapons, resources);
+        if (values.isEmpty()) {
+            player.sendMessage(Component.text(StatsSheetLines.UNTRACKED, NamedTextColor.RED));
             return 0;
         }
 
-        // The same three the snapshot projection reads, in the same units, so the Damage line below
-        // composes exactly what a swing composes.
-        double damage = HitDamage.hitBase(stats.attackValue(id),
-                stats.enchantDamagePercentValue(id), stats.classDamageValue(id));
-
-        // THE QUIVER PAIR IS CONDITIONAL, AND THE CONDITION IS WHAT IS IN YOUR HAND. Every other
-        // line is a fact about the player; a capacity is a fact about a weapon. Absent rather than
-        // zero, because "Quiver 0" reads as a broken magazine rather than as "you are holding a
-        // sword".
-        //
-        // Both numbers go through the SAME resolvers the write paths use -- QuiverSize.resolve and
-        // ReloadTime.resolve -- rather than being re-derived as authored+bonus here. That is the
-        // difference between a readout and a second source of truth, and it is why this file is on
-        // the capacity guard's list rather than excluded from it.
-        StatsSheetValues.Builder values = StatsSheetValues.builder()
-                .maxHealth(stats.max(id))
-                .healthRegenPerSecond(stats.healthRegenValue(id))     // stored per second
-                .maxMana(resources.max(id, ResourceCost.DEFAULT_RESOURCE))
-                .manaRegenPerSecond(ManaRegen.perSecond(              // per TICK out of the pool
-                        resources.regen(id, ResourceCost.DEFAULT_RESOURCE)))
-                .defense(stats.defenseValue(id))
-                .damage(damage)
-                .critChance(stats.critChanceValue(id))
-                .critDamageBonus(stats.critDamageValue(id));
-
-        WeaponItems.heldWeaponId(player, adapters.keys())
-                .flatMap(weapons::find)
-                .filter(WeaponDefinition::hasQuiver)
-                .ifPresent(weapon -> values.quiver(
-                        QuiverSize.resolve(weapon.quiverSize(), stats.quiverSizeBonusValue(id)),
-                        ReloadTime.resolve(weapon.reloadTicks(), stats.reloadTimeBonusValue(id))));
-
-        StatsSheet.build(values.build()).forEach(player::sendMessage);
+        StatsSheet.build(values.get()).forEach(player::sendMessage);
         return 1;
     }
 
