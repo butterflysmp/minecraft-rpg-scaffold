@@ -216,10 +216,36 @@ public final class MenuIcons {
     /**
      * The back button: a navigation, not a close.
      *
-     * <p>No lore, matching {@link #close}'s ruling that chrome is name-only. The material is the
-     * caller's because a back button should look like where it GOES -- the recipe browser's points
-     * at a {@code CRAFTING_TABLE} -- and a single shared material would make every back button in
-     * the plugin identical and none of them informative.
+     * <p>No lore, matching {@link #close}'s ruling that chrome is name-only.
+     *
+     * <h2>ARROW, AND THAT OVERTURNS AN EARLIER RULING RATHER THAN EXTENDING IT</h2>
+     *
+     * <b>Ben first ruled a CONTEXTUAL icon</b> -- a back button should look like where it GOES, so
+     * the settings screen's pointed at a {@code NETHER_STAR} and the recipe browser's at a
+     * {@code CRAFTING_TABLE}. <b>He has since ruled ARROW.</b> Recorded as an overturn, not
+     * quietly replaced, because the first ruling had a reason and a reader who finds only the
+     * second will re-derive the first and change it back.
+     *
+     * <p><b>THE NAME IS UNTOUCHED.</b> Only the material moved: {@link #backName} still produces
+     * <i>"Back to the Nexus"</i>, and its two {@code MenuIconsTest} assertions are unchanged. The
+     * destination-naming ruling stands; what changed is what the button is made of.
+     *
+     * <h2>IT REINTRODUCES THE PAGINATION COLLISION, KNOWINGLY</h2>
+     *
+     * <b>{@code RecipeBrowserMenu} uses {@code ARROW} for Previous and Next</b>, at slots 45 and 53.
+     * So on a paginated screen with a back button there would be three arrows in one row.
+     *
+     * <p><b>Two things disambiguate them and both are deliberate:</b> POSITION -- back is 48,
+     * pagination is 45 and 53, and {@code RecipeBrowserLayout.BACK_SLOT} has been 48 since before
+     * this ruling -- and the NAME, since "Previous page" moves within a screen and "Back to X"
+     * leaves it. <b>Not a blocker, and written down so a future paginated submenu does not
+     * rediscover it as a defect.</b>
+     *
+     * <p><b>No interaction with {@code QuiverAmmo}</b>, whose {@code AMMO} is also
+     * {@code Material.ARROW} and whose scan asserts <i>"no minted item is Material.ARROW"</i>. That
+     * scan reads the PLAYER's inventory; menu icons live in a menu with no input slots, every click
+     * cancelled. The recipe browser has minted ARROW icons since before this ruling, so nothing here
+     * is new.
      *
      * <p><b>One consumer today</b>, the settings screen. {@link #placeholder}'s javadoc records this
      * class's precedent for that: a factory with few consumers is kept as a dated decision rather

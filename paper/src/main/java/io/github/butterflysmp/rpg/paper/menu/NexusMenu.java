@@ -87,7 +87,7 @@ public final class NexusMenu extends Menu {
      */
     public NexusMenu(Player viewer, AdapterContext adapters, ProfileService profiles,
                      WeaponRegistry weapons, ResourcePool resources) {
-        super(viewer, NexusMenuLayout.SIZE, MenuIcons.line("Nexus", NamedTextColor.DARK_GRAY));
+        super(viewer, NexusMenuLayout.SIZE, MenuIcons.line("Nexus Menu", NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
         this.profiles = profiles;
         this.weapons = weapons;

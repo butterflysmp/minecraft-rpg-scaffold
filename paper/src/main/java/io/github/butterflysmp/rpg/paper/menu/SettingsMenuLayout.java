@@ -24,8 +24,9 @@ import java.util.Set;
  * <h2>CHROME IN THE BOTTOM ROW, per the hub's standing rule</h2>
  *
  * {@code NexusMenuLayout} states it: chrome in the bottom row, features in the body. Close keeps
- * its slot 49 so the button a player has learned does not move between our screens, and Back takes
- * 45 -- the first slot of that row, and the same slot the recipe browser's footer starts at.
+ * its slot 49 so the button a player has learned does not move between our screens, and <b>Back
+ * takes 48, immediately to its left -- the same cell {@code RecipeBrowserLayout.BACK_SLOT} already
+ * uses.</b> Both back buttons in the plugin now agree; see {@link #BACK_SLOT}.
  */
 final class SettingsMenuLayout {
 
@@ -38,11 +39,22 @@ final class SettingsMenuLayout {
     static final int BOTTOM_ROW_START = 45;
 
     /**
-     * Back to the Nexus. <b>45, the first slot of the chrome row</b> -- read before Close because a
-     * left-to-right reader meets it first, and leaving is the more common intent on a settings
-     * screen than closing outright.
+     * Back to the Nexus. <b>48, immediately left of Close.</b>
+     *
+     * <h2>THIS IS CONVERGENCE, NOT COINCIDENCE -- {@code RecipeBrowserLayout.BACK_SLOT} IS ALSO 48</h2>
+     *
+     * It was 45 -- the first slot of the chrome row -- until Ben ruled 48. <b>The recipe browser's
+     * back button was already there</b>, so after this ruling BOTH back buttons in the plugin sit in
+     * the same cell, and <b>the next screen that needs one has a single answer to copy rather than
+     * two to choose between.</b>
+     *
+     * <p>Stated here because two literals that happen to match are indistinguishable from two that
+     * agree on purpose, and the second is worth keeping. {@code SettingsMenuLayoutTest} asserts the
+     * agreement rather than the number alone, so the two cannot drift apart silently --
+     * {@code CraftingMenuLayout.CLOSE_SLOT} records the same relationship for Close, and records
+     * that the enchant table deliberately did NOT join it.
      */
-    static final int BACK_SLOT = 45;
+    static final int BACK_SLOT = 48;
 
     /**
      * Close. <b>49, the same slot the crafting menu and the hub use.</b> The one button that must

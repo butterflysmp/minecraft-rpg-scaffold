@@ -31,9 +31,10 @@ class NexusMenuLayoutTest {
                         + "move between our screens");
         assertEquals(50, NexusMenuLayout.SETTINGS_SLOT, "Settings is slot 50");
         assertEquals(54, NexusMenuLayout.SIZE, "six rows");
-        assertEquals(20, NexusMenuLayout.STATS_SLOT,
-                "the stats head is slot 20 -- the first slot of the FEATURE body, so the next "
-                        + "feature appends at 21 rather than every icon re-centring");
+        assertEquals(13, NexusMenuLayout.STATS_SLOT,
+                "the stats head is slot 13 -- the CENTRE of row 2 (slots 9-17), Ben's ruling. It "
+                        + "was 20 under a withdrawn rule that made it the start of a left-to-right "
+                        + "run; where a SECOND feature goes is now UNRULED, see the constant");
         // Mutation MUTCLOSE: CLOSE_SLOT 49 -> 48   -> reddens HERE, and only here.
         // Mutation MUTSETTINGS: SETTINGS_SLOT 50 -> 51 -> reddens HERE, and only here.
         //
@@ -57,27 +58,54 @@ class NexusMenuLayoutTest {
 
     @Test
     void theStatsHeadIsInTheBODY_notInTheChromeRowWithTheTwoButtons() {
-        // THE STANDING LAYOUT RULE, GUARDED RATHER THAN ONLY JAVADOC'D: chrome in the bottom row,
-        // features in the body. Without this, "slot 20" is just a number someone picked, and the
-        // next person adding a feature has nothing to object to when they drop it at 51.
+        // THE LAYOUT RULE, GUARDED RATHER THAN ONLY JAVADOC'D. Without it, "slot 13" is a number
+        // someone picked and the next person adding a feature has nothing to object to at 51.
         //
-        // This is the STATS_SLOT twin of theTwoButtonsAreADJACENTInTheBottomRow, and it has the
-        // same property: no mutation can kill it alone, because the literal row pins 20 exactly.
-        // What is lost if it goes is the RULE -- re-rule the head to slot 24 and the literal row is
-        // simply rewritten, with nothing left objecting to 51.
+        // REWRITTEN FOR BEN'S RULING. It used to assert only "not in the chrome row", which was the
+        // whole of the withdrawn left-to-right rule's content. The live rule is stronger and says
+        // something checkable: the head is the MIDDLE CELL OF ROW 2.
         assertTrue(NexusMenuLayout.STATS_SLOT < NexusMenuLayout.BOTTOM_ROW_START,
                 "a FEATURE must not sit in the chrome row");
         assertFalse(NexusMenuLayout.STATS_SLOT == NexusMenuLayout.CLOSE_SLOT
                         || NexusMenuLayout.STATS_SLOT == NexusMenuLayout.SETTINGS_SLOT,
                 "and it must not collide with either button");
-        // Mutation MUTSTATSBOTTOM: STATS_SLOT 20 -> 51 -> reddens HERE and the literal row.
-        // APPLIED AND MEASURED. It has no unique kill, for the adjacency row's reason: the literal
-        // row pins 20 exactly, so any move fails there first. What is lost if this row goes is the
-        // RULE -- re-rule the head to 24 and the literal row is simply rewritten, with nothing left
-        // objecting to 51.
+
+        // THE HEADER BAND. Row 2 is indices 9-17, and the head is centred in it.
+        assertEquals(1, NexusMenuLayout.STATS_SLOT / 9,
+                "row 2 -- the HEADER band. The player head is not the first feature; it is the "
+                        + "header, which is why it sits alone");
+        assertEquals(4, NexusMenuLayout.STATS_SLOT % 9,
+                "and centred in it: a nine-wide row's middle cell is column 4, counting from 0");
+
+        // Mutation MUTSTATSBOTTOM: STATS_SLOT -> 51 -> kill set RECORDED in the PR body.
         //
-        // MUTSTATS19 and MUTSTATS21 do NOT redden this row, correctly: 19 and 21 are both in the
-        // body, which is all this row claims.
+        // THIS ROW STOPPED BEING A TRIPWIRE. It previously carried a note saying it would go red
+        // the moment a second feature arrived, because the rule for that was unruled. IT IS RULED:
+        // the hub is BANDS, each with a meaning, so a second feature goes in the band its KIND
+        // names and this row is untouched by it. See the band table on STATS_SLOT.
+    }
+
+    @Test
+    void theHUBISBANDS_andEachBandHasAMeaningRatherThanAFillOrder() {
+        // THE RULE, GUARDED. Without it the band table is prose and the next person adding a
+        // feature has nothing mechanical objecting when they drop it in the header row beside the
+        // player head -- which is the one placement the bands exist to prevent.
+        //
+        //   row 2  ( 9-17)  HEADER -- the player head alone
+        //   row 3  (18-26)  other features
+        //   row 4  (27-35)  crafting-type menus
+        //   row 5  (36-44)  unassigned
+        //   row 6  (45-53)  chrome
+        assertEquals(1, NexusMenuLayout.STATS_SLOT / 9, "the head is the HEADER band, row 2");
+        assertEquals(5, NexusMenuLayout.CLOSE_SLOT / 9, "Close is chrome, row 6");
+        assertEquals(5, NexusMenuLayout.SETTINGS_SLOT / 9, "Settings is chrome, row 6");
+
+        // AND THE BANDS DO NOT OVERLAP, which is the half that would otherwise be vacuous: a table
+        // of bands that all resolved to the same row would satisfy every assertion above.
+        assertTrue(NexusMenuLayout.STATS_SLOT / 9 < NexusMenuLayout.CLOSE_SLOT / 9,
+                "the HEADER band is above the CHROME band -- a player reads the screen downwards");
+        assertEquals(45, NexusMenuLayout.BOTTOM_ROW_START,
+                "and the chrome band starts at 45, which is row 6 index 0");
     }
 
     @Test

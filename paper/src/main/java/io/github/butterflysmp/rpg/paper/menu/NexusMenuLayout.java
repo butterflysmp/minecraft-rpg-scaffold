@@ -46,21 +46,44 @@ final class NexusMenuLayout {
     /**
      * The stats head, and <b>the first FEATURE on this screen rather than more chrome.</b>
      *
-     * <h2>CHROME IN THE BOTTOM ROW. FEATURES IN THE BODY, FILLING LEFT TO RIGHT FROM 20</h2>
+     * <h2>THE HUB IS BANDS WITH MEANINGS, NOT CHROME PLUS A LIST OF FEATURES</h2>
      *
-     * <b>Stated now, before a third button makes it accidental.</b> Close and Settings are chrome
-     * and live in the bottom row; everything a player came here to USE goes in the body and
-     * APPENDS. The alternative -- centring whatever features exist -- looks best with one icon and
-     * <b>moves every icon the moment a second one arrives</b>, which is churn in a screen players
-     * learn by position.
+     * <b>Operator's ruling. Rows are 1-based, as every layout instruction on this project is.</b>
      *
-     * <p>So 20 is a starting point, not a centre. The next feature is 21.
+     * <pre>
+     *   row 2   indices  9-17   THE HEADER. The player head, and nothing else.
+     *   row 3   indices 18-26   other features
+     *   row 4   indices 27-35   crafting-type menus
+     *   row 5   indices 36-44   unassigned
+     *   row 6   indices 45-53   chrome. Close 49, Settings 50.
+     * </pre>
      *
-     * <p><b>THIS IS THE ASSISTANT'S PROPOSAL, NOT BEN'S RULING</b>, unlike {@link #SIZE} and the
-     * 49/50 pair. It is a number a player experiences, so it went to him with the slice rather than
-     * being buried -- and it is one constant, so one word changes it.
+     * <p><b>A BAND ANSWERS "WHERE DOES THIS GO" BY ITSELF, which is why there is no fill order
+     * inside one and must not be.</b> Do not propose one, and do not treat the next feature as an
+     * open question: its KIND picks its band.
+     *
+     * <h2>TWO WITHDRAWN RULES, KEPT BECAUSE THE WAY THEY FAILED IS THE USEFUL PART</h2>
+     *
+     * This javadoc has been wrong twice, and both times it was <b>an assistant proposal derived
+     * from the placements that existed at the time</b>:
+     *
+     * <ol>
+     *   <li><i>"Features fill left to right from 20; the next feature is 21."</i> Withdrawn when the
+     *       head moved to 13 -- 13 is a centre, not the start of a run.
+     *   <li><i>"Where the second feature goes is UNRULED."</i> Withdrawn by the bands above, which
+     *       had been the rule the whole time.
+     * </ol>
+     *
+     * <p><b>THE MODEL WAS WRONG, NOT THE NUMBERS.</b> Both rules described the hub as chrome plus a
+     * flat list of features, so the player head read as <i>the first feature</i> -- and a flat list
+     * has a fill order, so one had to be invented. It is a HEADER, which is why it sits alone and
+     * centred and why no fill-order rule ever agreed with a placement the operator actually made.
+     *
+     * <p><b>A rule derived from two placements described the placements and not the rule</b> -- the
+     * same shape as two points looking like a line. When a layout instruction arrives, ask what the
+     * ROW MEANS before generalising from where the icon landed.
      */
-    static final int STATS_SLOT = 20;
+    static final int STATS_SLOT = 13;
 
     /**
      * Every slot that is plain filler -- the whole menu except the two buttons.
