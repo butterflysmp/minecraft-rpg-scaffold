@@ -835,17 +835,23 @@ The rule underneath all three: **silence is not a result.** An instrument that o
 either found nothing or done nothing, and those are the same picture.
 
 
-### THE SEVEN WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
+### THE EIGHT WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
 
 The first three were hit in one slice (2026-09-08, elements); the fourth and fifth arrived on
 2026-09-09, Ignite — **from two different mechanisms, one commit apart**, which is the evidence that
-this is a family and not a run of bad luck. The sixth followed on 2026-09-10 and the seventh on
-2026-09-12. They are one table because the shape only becomes visible together: **each guard catches
-the previous failure and cannot see the one below it.**
+this is a family and not a run of bad luck. The sixth followed on 2026-09-10, the seventh on
+2026-09-12 and the eighth on 2026-09-16. They are one table because the shape only becomes visible
+together: **each guard catches the previous failure and cannot see the one below it.**
 
-**Rows one to six are BROKEN EDITS — the mutation did not do what was written. The seventh is not:
-there the edit is perfect and the CONCLUSION drawn from it is too broad.** So the table has two
-halves, and no amount of care with `perl` reaches the second.
+**The table has THREE parts, and they need three different responses:**
+
+- **Rows one to six are BROKEN EDITS** — the mutation did not do what was written. **Response: fix
+  the edit and re-run it.**
+- **The seventh is not broken at all** — the edit is perfect and the CONCLUSION drawn from it is too
+  broad. **Response: run more mutations.** No amount of care with `perl` reaches it.
+- **The eighth is neither** — the edit is perfect AND the conclusion would be sound, but **the
+  INSTRUMENT does not apply to this shape of mutation.** **Response: use a different instrument.**
+  Care with `perl` does not reach it either, and neither does running more mutations.
 
 | failure | what happened | what catches it |
 |---|---|---|
@@ -856,6 +862,7 @@ halves, and no amount of care with `perl` reaches the second.
 | **applied, wrong side** | the test passed on an accident (a floating-point coincidence; an undefended victim where `dealt == amount`) rather than on the thing it guards | **nothing at all** — only designing the fixture so the two values differ |
 | **APPLIED TOO WIDELY** | a scope guard that **silently did not bind**: `perl -i -pe 's{A}g; s{B}g if $. >= L && $. <= L+35'` — **the `if` binds ONLY to the last statement in the chain**, so `s{A}` ran over the whole file | **NOTHING in the marker grep — BOTH halves pass.** Only a measured line/byte delta **against a pristine copy of the file taken before the edit** sees it — **NOT `git diff --numstat`**, whose baseline is HEAD and which therefore reports the slice rather than the mutation. Account in the *scripted edit* bullet above |
 | **APPLIED, BIT, AND CERTIFIED ONE AXIS OF TWO** | the expression had **more than one degree of freedom** and the mutation moved one. `now - lastTick` names two: *which endpoint* (first/last) and *which reference* (now/last event). One splice reddened rows and proved only its own axis | **nothing mechanical, and the RED makes it worse** — only counting the axes in the expression before counting the mutations |
+| **THE MUTATION WAS A DELETION, SO THE MARKER GREP DOES NOT APPLY** | the replacement text was a **SUBSTRING of the search text** — the mutation removed a line rather than changing one. Both halves of the marker grep then count *the same surviving text*: measured, `marker present: 3` and `original gone: 5` where a working edit gives `1` and `0`. **Not wrong — UNINTERPRETABLE** | **the marker grep cannot, by construction.** Only a measured line delta against a **pristine copy taken before the edit** |
 
 > **THE SIXTH ROW IS THE MIRROR IMAGE OF THE FIRST, AND ONE INSTRUMENT CANNOT COVER BOTH.**
 > *Didn't apply* is **too little**; *applied too widely* is **too much**. The marker grep sees the
@@ -873,8 +880,12 @@ halves, and no amount of care with `perl` reaches the second.
 > instrument in the table above. Restored byte-identical from a scratchpad copy and redone with an
 > editor on the specific lines.
 
-> **THE SEVENTH ROW IS THE ONLY ONE WHERE THE MUTATION WORKED PERFECTLY, AND THAT IS WHAT MAKES IT
-> HARD TO SEE.** Rows one to six are broken edits. Here the edit applies, is scoped correctly, bites,
+> **THE SEVENTH ROW IS ONE OF TWO WHERE THE MUTATION WORKED PERFECTLY, AND THAT IS WHAT MAKES IT
+> HARD TO SEE.** (It said *"the ONLY one"* until the eighth row was added on 2026-09-16 — **a claim
+> that was true of the table and falsified by growing it**, which is this page's own ordinal rule
+> biting the page itself. The eighth is the other; they differ in whether the flaw is in the
+> CONCLUSION or in the INSTRUMENT.) Rows one to six are broken edits. Here the edit applies, is
+> scoped correctly, bites,
 > and reddens exactly the row written for it. **It is a partial test wearing a complete one's
 > colour** — and it is the most convincing kind, because a red result reads as proof and the report
 > carries a number.
@@ -897,6 +908,39 @@ halves, and no amount of care with `perl` reaches the second.
 > names two quantities and a relation between them, one splice cannot certify all of it. This is the
 > neighbour of *a control that succeeds for the wrong reason* and is **not** that: this control
 > succeeds for the **right** reason, over too small a set.
+
+> ### THE EIGHTH ROW IS NOT THE FIRST ONE IN A NEW COSTUME, AND THE RESPONSES ARE WHY IT IS SEPARATE
+>
+> **The first row is a mutation that DID NOT APPLY. The eighth is a mutation that applied
+> PERFECTLY while the instrument checking it was inapplicable by construction.** They look similar
+> in the terminal — a marker grep whose numbers are not `1` and `0` — and they call for opposite
+> actions:
+>
+> ```
+> row one     the numbers are 0 and 1     the EDIT is broken        -> fix the edit, re-run
+> row eight   the numbers are 3 and 5     the INSTRUMENT is wrong   -> different instrument
+> ```
+>
+> **THE ASSUMPTION THE MARKER GREP RESTS ON, NAMED BECAUSE IT IS NEVER STATED: the marker is
+> DISTINCT FROM THE ORIGINAL.** "Marker present, original gone" is only a biconditional when the
+> two texts do not overlap. **A deletion violates that rather than failing it** — the new text is
+> contained in the old, so both halves count the same surviving characters and neither means what
+> it says.
+>
+> **2026-09-16, the instance.** `MUT4B-NOCACHE` deleted one line from a two-line block. `marker
+> present: 3`, `original gone: 5`. Neither number is a bug in the edit; both are the greps matching
+> fragments of text that is legitimately still there. The line delta against a scratchpad copy read
+> **`0`**, correctly, and that is what caught it.
+>
+> **Practically: before mutating, ask whether your replacement is a SUBSTRING of what it replaces.**
+> If it is, the mutation is a deletion, the marker grep is off the table, and the line delta is the
+> whole verification. Prefer deleting a line by **splicing it out and printing the region** over
+> trying to make a grep meaningful about text that did not move.
+>
+> **The same session produced a row-ONE failure too**, one mutation apart, which is what made the
+> distinction visible: `MUT4B-WRITE-ON-FAIL` used `perl`'s `!` delimiter against a pattern
+> containing `!loading.isDone()` and closed early — an ordinary broken edit, fixed by re-running it
+> with brace delimiters. **Two failures, adjacent, same terminal output shape, opposite remedies.**
 
 > **AND THE COROLLARY OF THE SEVENTH ROW: A ROW CAN BE THE ONLY GUARD OF SOMETHING IT DOES NOT
 > MENTION.** Counting axes tells you how many mutations to run. This tells you how to read the
@@ -1233,6 +1277,37 @@ WHO CANNOT.** So the sweep for prose that outlived its mechanism covers `flavor:
 in content, not only code comments. A developer can diff a comment against the code beside it; a
 player has only the string. `emberblade.yml`'s *"Swing to cut; loose to burn"* became false the day
 melee started accruing scorch, and nothing but a person reading it would ever have said so.
+
+**AND THE THIRD MEMBER, WHICH IS NEITHER FALSE NOR STALE: A MISORDERED EXPLANATION SURVIVES EVERY
+CHECK A FALSE ONE FAILS.**
+
+The two above are sweepable — something was true and stopped being true, so a diff against the code
+finds it. **This one was accurate the day it was written, is accurate now, and still misleads every
+reader**, because of which reason it puts first.
+
+> **2026-09-16, and it cost a week of a parked finding and five briefs carrying it.**
+> `CraftingMenu`'s navigation comment gives two reasons for closing before it navigates: a
+> ghost-item desync, then that `returnEverything` runs on the close. **Both true.** But the first is
+> handled by the tick hop, which the sibling path also has, and **only the second is specific to
+> this site** — the crafting grid is `inputSlots()` and the recipe browser's is empty.
+>
+> So a reader comparing the two implementations finds the **leading** reason present on one and
+> absent on the other, and concludes one of them is a defect. **It was carried as one for a week.
+> Neither was wrong; they differ exactly where the rule says they should.**
+>
+> **NOTHING CATCHES THIS.** A grep finds the comment, the compiler accepts it, no test can see it,
+> and a *careful* reader is misled precisely by reading carefully. It is not a stale claim, so the
+> stale-prose sweep walks past it; it is not an unswept instance, so counting instances finds
+> nothing.
+>
+> **The operational form: WHEN A COMMENT GIVES TWO REASONS FOR ONE CONSTRUCT, LEAD WITH THE ONE
+> SPECIFIC TO THIS SITE.** A reason shared with every sibling goes second — or better, goes in the
+> shared place, which is where this one now lives (`Menu.open`, which had no javadoc at all).
+>
+> **The tell, when auditing: a construct that appears on one path and not its sibling, justified by
+> a reason that is true of both.** Either the sibling is wrong, or the justification is
+> misordered — and the second is far more likely, because the first would usually have broken
+> something by now.
 
 ## Architecture invariants
 
