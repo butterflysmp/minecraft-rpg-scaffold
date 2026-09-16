@@ -56,6 +56,19 @@ public final class ProfileMigrations {
         // there. THIS is the only place that can tell the two apart, and the reason is the stamp
         // itself: a profile below v3 predates the field, so its zero is ALWAYS absence.
         //
+        // *** THE STAMP IS THE EVIDENCE, AND IT EXPIRES. *** This is the LAST MOMENT at which the
+        // distinction exists. Once a profile is stamped 3, lockedSlot == 0 is ambiguous FOREVER --
+        // the stamp no longer separates "absent" from "chosen", because both are now v3. That is
+        // why this cannot be deferred to a later read, a lazy default, or a getter: there is
+        // exactly one instant in a profile's life when absence is still knowable, and it is here.
+        //
+        // AND THE PRECEDENT ABOVE IS A TRAP RATHER THAN A TEMPLATE. The v1 -> v2 comment explains
+        // why a bare stamp bump is SAFE -- "Gson leaves it null and the compact constructor already
+        // defaulted it to NONE" -- and that explanation is CORRECT for a reference type, where
+        // absent is distinguishable. The explanation stopped applying when the type changed;
+        // nothing about it announced that it had. A pattern that was right twice can be wrong the
+        // third time because its precondition quietly left.
+        //
         // Do not copy the two steps above when adding a primitive. Copy this one.
         if (profile.schemaVersion() < 3) {
             profile = profile.withNexusSlot(PlayerProfile.DEFAULT_NEXUS_SLOT).withSchemaVersion(3);

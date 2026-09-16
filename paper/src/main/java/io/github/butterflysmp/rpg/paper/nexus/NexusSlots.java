@@ -194,9 +194,30 @@ public final class NexusSlots {
      * <p><b>NO UNIT TEST GUARDS THAT THIS METHOD USES {@code lockedSlot} AT ALL, AND THAT IS
      * MEASURED.</b> {@code MUTWELDDEFAULT} -- replacing the target with
      * {@link NexusLock#DEFAULT_LOCKED_SLOT} outright, so the argument is ignored and every player's
-     * star goes to 8 -- left the whole suite GREEN. Everything here needs a live
-     * {@code PlayerInventory}, so there is nothing to extract: the bound came out as
-     * {@link #validSlotOr} and what remains is inventory manipulation.
+     * star goes to 8 -- left the whole suite GREEN.
+     *
+     * <h2>NAMED DEBT: THE PLAN/EXECUTE SEAM, DEFERRED 2026-09-16 RATHER THAN ABSENT</h2>
+     *
+     * <b>This javadoc first said "there is nothing to extract". That was wrong, and the operator
+     * refuted it with two precedents in this repo</b>:
+     *
+     * <pre>
+     *   CollectPlan.plan(sources, ...) -&gt; List&lt;Draw&gt;   and collectToCursor EXECUTES the plan
+     *   GridClickIntent.of(...)        -&gt; an intent    and MenuRouting PERFORMS it
+     * </pre>
+     *
+     * <p><b>This method has the same seam.</b> Given the star indices found, the target slot, and
+     * whether the target is occupied, the WRITES are a pure function -- which indices to clear,
+     * where the surviving star comes from or whether to mint, whether to displace. Only the
+     * execution needs a {@code PlayerInventory}. Splitting it would make {@code MUTWELDDEFAULT}
+     * killable and give <b>the only code in the Nexus that destroys items</b> its first unit
+     * coverage.
+     *
+     * <p><b>DEFERRED, NOT DECLINED.</b> Slice 4a already carried a schema bump, a join race, a
+     * signature change to the decision class and 108 compile errors of test rewriting; widening it
+     * further is the trade this project avoids. <b>The trigger is the next slice that opens this
+     * method for any other reason</b> -- at that point the split is nearly free, and this note is
+     * what says to take it rather than rediscovering the seam.
      *
      * <p><b>{@code GATE-nexus.md}'s slice 4a rows are the only thing standing between this method
      * and silently ignoring the setting.</b> If those rows are deleted, this is unguarded --
