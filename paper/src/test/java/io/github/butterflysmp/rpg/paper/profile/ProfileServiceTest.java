@@ -73,7 +73,7 @@ class ProfileServiceTest {
 
     @Test
     void joinLoadsAnExistingProfile() {
-        repo.saved.put(player, new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of("x"), 1L));
+        repo.saved.put(player, new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of("x"), 1L, 3));
 
         service.onJoin(player);
 
@@ -114,7 +114,7 @@ class ProfileServiceTest {
 
         // The read finally lands.
         repo.pendingLoad.complete(Optional.of(
-                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of(), 1L)));
+                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of(), 1L, 3)));
 
         assertEquals(1, repo.saveCount.get());
         assertEquals(9, repo.saved.get(player).level());
@@ -147,6 +147,90 @@ class ProfileServiceTest {
 
         repo.pendingLoad.complete(Optional.empty());
         assertTrue(service.profile(player).isPresent());
+    }
+
+    /**
+     * THE JOIN RACE, AND THIS IS THE ONLY UNIT-TESTABLE HALF OF IT.
+     *
+     * <p>The Nexus needs the player's locked slot on the join tick, and {@code profile()} answers
+     * empty until the disk read finishes -- so a caller using it gets the default for every player
+     * on every join. This row stages that exact ordering: the load is held open, the action must
+     * NOT have run, and it must run with the real profile once the load completes.
+     *
+     * <p>What it cannot cover is the scheduler hop and the inventory write in
+     * {@code RpgListeners.onJoin}, which need a live server. {@code GATE-nexus.md} carries those.
+     */
+    @Test
+    void whenSettledDoesNotRunUntilTheLoadCompletes_andThenSeesTheRealProfile() {
+        repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
+                "hunter", "fire", 9, 500, List.of(), 1L, 3));
+        repo.pendingLoad = new CompletableFuture<>();
+        service.onJoin(player);
+
+        var seen = new java.util.concurrent.atomic.AtomicReference<Optional<PlayerProfile>>();
+        var ran = new java.util.concurrent.atomic.AtomicInteger();
+        service.whenSettled(player, profile -> { ran.incrementAndGet(); seen.set(profile); });
+
+        assertEquals(0, ran.get(),
+                "IT MUST NOT RUN YET. This is the whole defect: profile() would have answered "
+                        + "empty here and a caller would have taken the default");
+
+        repo.pendingLoad.complete(Optional.of(repo.saved.get(player)));
+
+        assertEquals(1, ran.get(), "exactly once, after the load settles");
+        assertTrue(seen.get().isPresent(), "and with the profile, not an empty");
+        assertEquals(3, seen.get().orElseThrow().nexusSlot(),
+                "the STORED slot, not the default -- 3 is what this player chose");
+    }
+
+    /**
+     * A failed load settles too, and empty there means PERMANENTLY no preference rather than
+     * "not yet" -- which is what lets a caller use its default without racing anything.
+     */
+    @Test
+    void whenSettledStillRunsWhenTheLoadFAILS_andReportsEmpty() {
+        repo.pendingLoad = new CompletableFuture<>();
+        service.onJoin(player);
+
+        var seen = new java.util.concurrent.atomic.AtomicReference<Optional<PlayerProfile>>();
+        var ran = new java.util.concurrent.atomic.AtomicInteger();
+        service.whenSettled(player, profile -> { ran.incrementAndGet(); seen.set(profile); });
+        assertEquals(0, ran.get(), "not before it settles, failure included");
+
+        repo.pendingLoad.completeExceptionally(new java.io.IOException("corrupt"));
+
+        assertEquals(1, ran.get(),
+                "A FAILED LOAD MUST STILL RUN THE ACTION. If it did not, a player whose file is "
+                        + "corrupt would never get a star placed at all");
+        assertTrue(seen.get().isEmpty(), "and reports empty, so the caller uses its default");
+    }
+
+    /** Someone who never joined is settled by definition: there is nothing to wait for. */
+    @Test
+    void whenSettledForSomeoneWhoNeverJoinedRunsImmediatelyWithEmpty() {
+        var ran = new java.util.concurrent.atomic.AtomicInteger();
+        service.whenSettled(UUID.randomUUID(), profile -> {
+            ran.incrementAndGet();
+            assertTrue(profile.isEmpty());
+        });
+        assertEquals(1, ran.get(), "must not hang waiting for a load that was never started");
+    }
+
+    /**
+     * A player with NO stored file is NOT an empty case, and this is the one people assume wrong.
+     * onJoin maps a missing file to PlayerProfile.fresh, so they settle as a PRESENT profile
+     * carrying the default -- which is why empty can be read as "unreadable", not "new player".
+     */
+    @Test
+    void whenSettledSeesAFRESHProfileForAPlayerWithNoFile_notAnEmpty() {
+        service.onJoin(player);
+
+        var seen = new java.util.concurrent.atomic.AtomicReference<Optional<PlayerProfile>>();
+        service.whenSettled(player, seen::set);
+
+        assertTrue(seen.get().isPresent(), "a brand-new player is present, not absent");
+        assertEquals(PlayerProfile.DEFAULT_NEXUS_SLOT, seen.get().orElseThrow().nexusSlot(),
+                "carrying the default slot");
     }
 
     @Test

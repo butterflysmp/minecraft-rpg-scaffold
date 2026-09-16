@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.nexus;
 
+import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryAction;
 
@@ -14,8 +15,19 @@ import java.util.function.IntPredicate;
  * <h2>COORDINATE SPACE -- {@code PlayerInventory} INDEX SPACE, AND NOTHING ELSE</h2>
  *
  * Every slot number reaching this class is an index into {@code PlayerInventory}:
- * <b>0-8 hotbar, 9-35 storage, 36-39 armour, 40 offhand</b>. {@link #LOCKED_SLOT} is 8, the
- * rightmost hotbar slot, and that is unambiguous here.
+ * <b>0-8 hotbar, 9-35 storage, 36-39 armour, 40 offhand</b>. The locked slot is
+ * {@link #DEFAULT_LOCKED_SLOT} for a player who has never chosen -- 8, the rightmost hotbar slot --
+ * and that is unambiguous here.
+ *
+ * <h2>THE LOCKED SLOT IS A PARAMETER NOW, NOT A CONSTANT</h2>
+ *
+ * <b>It is per-player, and it arrives as an argument on every call.</b> This class still holds no
+ * {@code Player}: the caller ({@code NexusSlots}) resolves the number and passes it, which keeps
+ * every signature here server-free and unit-testable, the property the section below is about.
+ *
+ * <p>A reader looking for the old {@code LOCKED_SLOT} constant will not find it. That is
+ * deliberate -- leaving it as a default would have given every call site a plausible value to pass
+ * when it did not know the real one, which is the defect {@link #NO_LOCKED_SLOT} exists to prevent.
  *
  * <p><b>IT IS NOT RAW / VIEW SPACE, AND THE NUMBER 8 IS WRONG IN EVERY VIEW.</b> In the player's
  * own inventory screen (top is {@code CRAFTING}, size 5) raw 8 is the <b>BOOTS</b> slot and the
@@ -54,19 +66,39 @@ public final class NexusLock {
     private NexusLock() {}
 
     /**
-     * The one slot the Nexus star lives in, in {@code PlayerInventory} INDEX space.
+     * "This player's locked slot is not known." Passing it makes the locked-slot arm INERT, leaving
+     * only the star-follows-the-item arm.
      *
-     * <p>Fixed for this slice by decision, not by discovery: there is no choosing it and no
-     * remembering it. It is ONE constant so that moving it later is one edit rather than a sweep.
+     * <h2>IT IS A REAL STATE, NOT A DEFENSIVE SENTINEL</h2>
      *
-     * <p><b>EXACTLY ONE TEST ROW PINS THIS VALUE, AND IT IS NOT THE ONE YOU WOULD GUESS.</b> Every
-     * other row in {@code NexusLockTest} names this constant symbolically, so a mutation of it
-     * moves the code AND the expectation together and bites nothing -- measured, {@code 8 -> 7} left
-     * all twenty rows green. {@code theLockedSlotIsTheRIGHTMOSTHOTBARSLOT_theONLYRowThatPinsTheVALUE}
-     * asserts the literal and is the sole guard. <b>This javadoc used to claim the opposite</b>, that
-     * the constant was guarded BECAUSE the tests referred to it symbolically, which is backwards.
+     * <b>The slot now comes from the player's profile, which is read from disk asynchronously.</b>
+     * Between a player joining and that read completing there is a window in which nobody can say
+     * which slot is theirs. This is the value for that window.
+     *
+     * <p><b>Why not just pass the default during the window?</b> Because the default would be
+     * WRONG for exactly the players who set the option, and it is not a harmless wrong: the
+     * locked-slot arm refuses gestures naming that slot <i>whether or not a star is in it</i>. A
+     * player whose slot is 3, handed the default 8 for a few hundred milliseconds, would find slot
+     * 8 -- an ordinary hotbar cell holding their sword -- inert, with nothing said and no way to
+     * attribute it.
+     *
+     * <p><b>Nothing is left unprotected by choosing this instead.</b> The star itself is guarded by
+     * the OTHER arm, which follows the item rather than the slot, and that arm does not need to
+     * know the setting. See {@code touchesTheStar} -- the two arms are independent, and this one is
+     * the one that can afford to be silent for a moment.
      */
-    public static final int LOCKED_SLOT = 8;
+    public static final int NO_LOCKED_SLOT = -1;
+
+    /**
+     * Where the star sits for a player who has never chosen.
+     *
+     * <p><b>It is NOT declared here.</b> {@code ProfileMigrations} writes this value into every
+     * pre-v3 profile and {@code storage} cannot depend on {@code paper}, so the constant lives at
+     * {@link PlayerProfile#DEFAULT_NEXUS_SLOT} and is re-exported here for readers who come looking
+     * in the Nexus, where it belongs conceptually. <b>One declaration, two names for it, and this
+     * alias is the one that must never grow its own literal.</b>
+     */
+    public static final int DEFAULT_LOCKED_SLOT = PlayerProfile.DEFAULT_NEXUS_SLOT;
 
     /** The offhand, in the same index space. Reached by F, which is a two-way swap. */
     public static final int OFFHAND_SLOT = 40;
@@ -89,6 +121,9 @@ public final class NexusLock {
      *                     click was not a hotbar press</b>, and it must never reach the touched set
      *                     -- {@code MenuRouting.hotbarMove} guards the same value the same way.
      * @param cursorIsStar whether the item on the CURSOR is a Nexus star.
+     * @param lockedSlot   THIS PLAYER's locked slot, from their profile, in index space.
+     *                     {@link #NO_LOCKED_SLOT} while their profile has not finished loading --
+     *                     see that constant for why the default is not passed instead.
      * @param starAt       whether the given player-inventory index currently holds a Nexus star.
      *                     <b>An {@code IntPredicate} rather than a {@code Set}</b>: a set is eager
      *                     by construction, so the signature would make a 41-slot PDC scan --
@@ -96,7 +131,8 @@ public final class NexusLock {
      *                     every player in every menu, to answer a question about at most two slots.
      */
     public static boolean refusesClick(ClickType click, InventoryAction action, Touched clicked,
-                                       int hotbarButton, boolean cursorIsStar, IntPredicate starAt) {
+                                       int hotbarButton, boolean cursorIsStar, int lockedSlot,
+                                       IntPredicate starAt) {
 
         // 1. THE TWO GESTURES THAT SEND THE CURSOR TO THE WORLD FLOOR, and the only reason this
         //    method reads InventoryAction at all.
@@ -163,7 +199,7 @@ public final class NexusLock {
             case DOUBLE_CLICK -> Set.of();
         };
 
-        return touchesTheStar(touched, starAt);
+        return touchesTheStar(touched, lockedSlot, starAt);
     }
 
     /**
@@ -181,9 +217,9 @@ public final class NexusLock {
      * it on the cursor with no legal destination at all, which is the failure mode a lock is most
      * likely to create and least likely to be blamed for.
      */
-    public static boolean refusesDrag(Set<Touched> dragged, boolean cursorIsStar,
+    public static boolean refusesDrag(Set<Touched> dragged, boolean cursorIsStar, int lockedSlot,
                                       IntPredicate starAt) {
-        return cursorIsStar || touchesTheStar(dragged, starAt);
+        return cursorIsStar || touchesTheStar(dragged, lockedSlot, starAt);
     }
 
     /**
@@ -193,6 +229,21 @@ public final class NexusLock {
      * SLOT is refused whether or not it currently holds a star, and a star is refused wherever it
      * actually sits (so a stray one is not freely movable while convergence has not yet run).
      * Measured -- {@code MUTAXISLOCKED} and {@code MUTAXISSTAR} have disjoint kill sets.
+     *
+     * <p><b>THE SECOND ARM IS WHAT MAKES A PER-PLAYER SLOT SAFE, AND IT ALREADY SAID SO.</b> The
+     * parenthesis above was written for a stray star before convergence; the profile-load window is
+     * the same situation arriving by a new route. While {@code lockedSlot} is
+     * {@link #NO_LOCKED_SLOT} the first arm is inert and this one still refuses every gesture that
+     * touches the star, wherever it sits. <b>So the star is never unguarded, and it was not made
+     * safe by anything added for this change.</b>
+     *
+     * <p><b>The first arm now carries the {@code >= 0} guard the second one always had</b>, and the
+     * asymmetry was load-bearing rather than untidy: with a positive constant it could never
+     * matter, and with a parameter it decides whether "not known" means "refuse nothing" or
+     * "refuse slot -1". Nothing constructs a player-inventory {@code Touched} at -1 today --
+     * {@code touchedOf} pairs -1 with {@code false}, and the {@code NUMBER_KEY} arm range-checks
+     * the hotbar button -- so the guard is belt-and-braces for a caller that does not exist yet,
+     * which is exactly when it is cheap to add.
      *
      * <p><b>THE FIRST ARM IS NARROWER THAN "NOTHING CAN BE PUT INTO THE LOCKED SLOT", AND THIS
      * JAVADOC USED TO CLAIM THE WIDER THING.</b> It refuses gestures that NAME the locked slot. A
@@ -206,10 +257,11 @@ public final class NexusLock {
      * method</b>, and the absolute claim is withdrawn rather than left for a future reader to build
      * on.
      */
-    private static boolean touchesTheStar(Set<Touched> touched, IntPredicate starAt) {
+    private static boolean touchesTheStar(Set<Touched> touched, int lockedSlot,
+                                          IntPredicate starAt) {
         for (Touched t : touched) {
             if (!t.playerInventory()) continue;          // a menu's or a chest's slot 8 is not ours
-            if (t.index() == LOCKED_SLOT) return true;
+            if (lockedSlot >= 0 && t.index() == lockedSlot) return true;
             if (t.index() >= 0 && starAt.test(t.index())) return true;
         }
         return false;

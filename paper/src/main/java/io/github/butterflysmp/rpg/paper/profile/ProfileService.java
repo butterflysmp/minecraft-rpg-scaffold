@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -64,6 +65,51 @@ public final class ProfileService {
                     log.log(Level.SEVERE, "Failed to save profile for " + playerId, error);
                     return null;
                 });
+    }
+
+    /**
+     * Run something once this player's load has SETTLED -- succeeded or failed -- and never before.
+     *
+     * <h2>WHY THIS EXISTS: {@link #profile} CANNOT BE ASKED AT JOIN TIME</h2>
+     *
+     * Every other caller reads {@code profile()} from a COMMAND, which a player types seconds after
+     * joining, so the load has long since finished. <b>The Nexus is the first consumer that runs on
+     * the join tick itself</b>, twelve lines after {@code onJoin} starts the disk read -- where
+     * {@code profile()} returns empty essentially always, and a caller that treats that as "no
+     * preference" silently gets the default for every player on every join.
+     *
+     * <p>That is not a corner case; it is the DEFAULT outcome of the obvious code. So the obvious
+     * code is not available, and this is the alternative.
+     *
+     * <h2>EMPTY MEANS "NO STORED PREFERENCE, PERMANENTLY", NOT "NOT YET"</h2>
+     *
+     * <b>This is the whole point of settling.</b> {@code profile()}'s empty collapses three
+     * situations -- never tracked, still loading, failed -- and a caller cannot tell the transient
+     * one from the permanent ones. Here the transient case is gone by construction: the action does
+     * not run until the future completes. What is left is permanent for this session, so a caller
+     * may treat empty as a final answer and use its default.
+     *
+     * <p><b>A fresh player is NOT an empty case</b>, which is worth stating because it is the one
+     * people assume. {@code onJoin} maps a missing file to {@link PlayerProfile#fresh}, so someone
+     * with no saved data arrives here as a PRESENT profile carrying defaults. Empty here means the
+     * file was unreadable, or the player is not tracked at all.
+     *
+     * <p><b>THREADING: the action runs on the repository's I/O thread</b> -- or on the calling
+     * thread, if the load already finished. Either way the class rule applies and this method
+     * cannot relax it: <b>the action must not touch the Bukkit API.</b> A caller that needs to
+     * (the Nexus does -- it writes an inventory) must hop with
+     * {@code Scheduler.onEntity} inside its own action, and check the player is still online,
+     * because a load can settle after they have left.
+     */
+    public void whenSettled(UUID playerId, Consumer<Optional<PlayerProfile>> action) {
+        CompletableFuture<PlayerProfile> loading = profiles.get(playerId);
+        if (loading == null) {
+            // Never tracked, or already quit. Settled by definition, and the answer is "nothing".
+            action.accept(Optional.empty());
+            return;
+        }
+        loading.whenComplete((profile, error) ->
+                action.accept(error == null ? Optional.ofNullable(profile) : Optional.empty()));
     }
 
     /** The profile, if it has finished loading and did not fail. */

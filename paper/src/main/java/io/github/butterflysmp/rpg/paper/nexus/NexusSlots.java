@@ -2,6 +2,8 @@ package io.github.butterflysmp.rpg.paper.nexus;
 
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.menu.MenuSafety;
+import io.github.butterflysmp.rpg.paper.profile.ProfileService;
+import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -56,8 +58,57 @@ public final class NexusSlots {
 
     // ------------------------------------------------------------------ the verdicts
 
+    /**
+     * This player's locked slot, or {@link NexusLock#NO_LOCKED_SLOT} if it cannot be known yet.
+     *
+     * <h2>THE ONE PLACE A STORED SLOT IS VALIDATED, AND IT MUST BE HERE</h2>
+     *
+     * {@code PlayerProfile} deliberately does not bound the value -- it is a data carrier and knows
+     * nothing about inventories. <b>A slot reaches this method from a JSON file</b>, which may have
+     * been hand-edited, written by a future build, or corrupted, so the bound cannot be enforced
+     * only at the point a player chooses one.
+     *
+     * <p><b>Out of range is treated as NOT CHOSEN, not as an error.</b> The alternative -- passing
+     * it through -- puts an arbitrary integer into {@code inventory.setItem} inside a join handler,
+     * where the throw takes out every listener after it. Falling back is also the honest reading:
+     * a slot that is not a hotbar cell is not a slot this feature can mean.
+     *
+     * <p>The bound is the HOTBAR, {@code 0..8}, not the whole inventory. The star is a held item;
+     * putting it in the backpack or on the player's head would be a different feature.
+     */
+    public static int lockedSlotOf(Player player, ProfileService profiles) {
+        return profiles.profile(player.getUniqueId())
+                .map(PlayerProfile::nexusSlot)
+                .map(slot -> validSlotOr(slot, NexusLock.NO_LOCKED_SLOT))
+                .orElse(NexusLock.NO_LOCKED_SLOT);
+    }
+
+    /**
+     * A stored slot if it is a hotbar cell, otherwise the caller's fallback.
+     *
+     * <h2>ONE HOME FOR THE BOUND, AND IT WAS WRITTEN TWICE BEFORE THIS EXISTED</h2>
+     *
+     * {@link #lockedSlotOf} and {@link #converge} both have to reject an out-of-range slot, for
+     * different reasons -- the first so the lock does not protect a slot that cannot exist, the
+     * second so {@code setItem} does not throw from inside a join handler -- and each carried its
+     * own {@code >= 0 && <= 8}. <b>Two copies of a bound is how the two come to disagree</b>, and
+     * the disagreement would be invisible: the lock guarding one slot while the star is placed in
+     * another is precisely the defect this whole slice exists to prevent, arriving by a second
+     * route.
+     *
+     * <p><b>It is also the only part of this file a unit test can reach.</b> Everything around it
+     * needs a live {@code Player}. Extracting it was not tidying: a mutation removing the range
+     * check killed NOTHING while it was inline, measured, because no test could get at it.
+     *
+     * <p>The bound is the HOTBAR, {@code 0..8}. The star is a held item; the backpack, the armour
+     * slots and the offhand are not places this feature can mean.
+     */
+    static int validSlotOr(int slot, int fallback) {
+        return slot >= 0 && slot <= 8 ? slot : fallback;
+    }
+
     /** Would this click move the Nexus star? Pure translation; it changes nothing. */
-    public static boolean refuses(InventoryClickEvent event, Keys keys) {
+    public static boolean refuses(InventoryClickEvent event, Keys keys, ProfileService profiles) {
         if (!(event.getWhoClicked() instanceof Player player)) return false;
         return NexusLock.refusesClick(
                 event.getClick(),
@@ -65,6 +116,7 @@ public final class NexusSlots {
                 touchedOf(event.getView(), event.getRawSlot()),
                 event.getHotbarButton(),
                 NexusItems.isNexus(event.getCursor(), keys),
+                lockedSlotOf(player, profiles),
                 starAt(player, keys));
     }
 
@@ -74,7 +126,7 @@ public final class NexusSlots {
      * <p>{@code getOldCursor()} rather than {@code getCursor()}: the old cursor is what is being
      * distributed, and it is the drag's SOURCE. {@code getRawSlots()} names only destinations.
      */
-    public static boolean refuses(InventoryDragEvent event, Keys keys) {
+    public static boolean refuses(InventoryDragEvent event, Keys keys, ProfileService profiles) {
         if (!(event.getWhoClicked() instanceof Player player)) return false;
 
         Set<NexusLock.Touched> dragged = new HashSet<>();
@@ -82,6 +134,7 @@ public final class NexusSlots {
 
         return NexusLock.refusesDrag(dragged,
                 NexusItems.isNexus(event.getOldCursor(), keys),
+                lockedSlotOf(player, profiles),
                 starAt(player, keys));
     }
 
@@ -129,7 +182,47 @@ public final class NexusSlots {
     // ------------------------------------------------------------------ convergence
 
     /**
-     * Assert the invariant: EXACTLY ONE Nexus star, and it is at {@link NexusLock#LOCKED_SLOT}.
+     * Assert the invariant: EXACTLY ONE Nexus star, and it is at the player's own locked slot.
+     *
+     * <p><b>THE TARGET IS AN ARGUMENT, AND THE CALLER MUST KNOW IT BEFORE CALLING.</b> Out of range
+     * -- including {@link NexusLock#NO_LOCKED_SLOT} -- falls back to
+     * {@link NexusLock#DEFAULT_LOCKED_SLOT} rather than throwing from inside a join handler. That
+     * fallback is a LAST RESORT and not the way to handle "not loaded yet": a caller that converges
+     * before the profile arrives places the star at the default and then has to move it, which the
+     * player sees. {@code RpgListeners.onJoin} waits instead.
+     *
+     * <p><b>NO UNIT TEST GUARDS THAT THIS METHOD USES {@code lockedSlot} AT ALL, AND THAT IS
+     * MEASURED.</b> {@code MUTWELDDEFAULT} -- replacing the target with
+     * {@link NexusLock#DEFAULT_LOCKED_SLOT} outright, so the argument is ignored and every player's
+     * star goes to 8 -- left the whole suite GREEN.
+     *
+     * <h2>NAMED DEBT: THE PLAN/EXECUTE SEAM, DEFERRED 2026-09-16 RATHER THAN ABSENT</h2>
+     *
+     * <b>This javadoc first said "there is nothing to extract". That was wrong, and the operator
+     * refuted it with two precedents in this repo</b>:
+     *
+     * <pre>
+     *   CollectPlan.plan(sources, ...) -&gt; List&lt;Draw&gt;   and collectToCursor EXECUTES the plan
+     *   GridClickIntent.of(...)        -&gt; an intent    and MenuRouting PERFORMS it
+     * </pre>
+     *
+     * <p><b>This method has the same seam.</b> Given the star indices found, the target slot, and
+     * whether the target is occupied, the WRITES are a pure function -- which indices to clear,
+     * where the surviving star comes from or whether to mint, whether to displace. Only the
+     * execution needs a {@code PlayerInventory}. Splitting it would make {@code MUTWELDDEFAULT}
+     * killable and give <b>the only code in the Nexus that destroys items</b> its first unit
+     * coverage.
+     *
+     * <p><b>DEFERRED, NOT DECLINED.</b> Slice 4a already carried a schema bump, a join race, a
+     * signature change to the decision class and 108 compile errors of test rewriting; widening it
+     * further is the trade this project avoids. <b>The trigger is the next slice that opens this
+     * method for any other reason</b> -- at that point the split is nearly free, and this note is
+     * what says to take it rather than rediscovering the seam.
+     *
+     * <p><b>{@code GATE-nexus.md}'s slice 4a rows are the only thing standing between this method
+     * and silently ignoring the setting.</b> If those rows are deleted, this is unguarded --
+     * stated here rather than in the gate, because the person deleting a row is reading the row and
+     * the person breaking this is reading this.
      *
      * <h2>WHY THIS IS NOT "MINT IF ABSENT"</h2>
      *
@@ -158,8 +251,14 @@ public final class NexusSlots {
      * keepInventory failure, a cursor drop at death, or any future death path that loses the star
      * would otherwise leave the player without one until their next reconnect.
      */
-    public static void converge(Player player, Keys keys) {
+    public static void converge(Player player, Keys keys, int lockedSlot) {
         PlayerInventory inventory = player.getInventory();
+
+        // READ ONCE INTO A LOCAL, AND THE TARGET IS NEVER RE-DERIVED BELOW. With a constant it did
+        // not matter; with a per-player value, resolving it twice could split the decision -- the
+        // "already correct" test comparing against one slot and the write landing in another, which
+        // would move the star every join and displace whatever it found.
+        int target = validSlotOr(lockedSlot, NexusLock.DEFAULT_LOCKED_SLOT);
 
         List<Integer> stars = new ArrayList<>();
         for (int index = 0; index < inventory.getSize(); index++) {
@@ -169,10 +268,16 @@ public final class NexusSlots {
         // Surplus first, so the "already correct" test below cannot pass while a duplicate sits in
         // the backpack. Keep the lowest index and delete the rest; which one survives is arbitrary
         // because they are identical.
+        //
+        // STILL "LOWEST INDEX", NOT "THE ONE ALREADY IN THE TARGET", AND THAT IS UNCHANGED ON
+        // PURPOSE. The survivor is lifted into the target a few lines below whichever one it is, so
+        // preferring the target would change which identical item is kept and nothing else. The
+        // existing behaviour is documented in GATE-nexus.md and re-deciding it here would be a
+        // silent change riding along with this one.
         for (int i = 1; i < stars.size(); i++) inventory.setItem(stars.get(i), null);
 
         int held = stars.isEmpty() ? -1 : stars.get(0);
-        if (held == NexusLock.LOCKED_SLOT && stars.size() == 1) return;   // nothing to do
+        if (held == target && stars.size() == 1) return;   // nothing to do
 
         // Take the existing star rather than minting a second, so a star that has been renamed,
         // re-tagged or otherwise touched is preserved as the one the player has.
@@ -185,8 +290,8 @@ public final class NexusSlots {
         }
 
         // Captured BEFORE the write, or it is gone.
-        ItemStack occupant = inventory.getItem(NexusLock.LOCKED_SLOT);
-        inventory.setItem(NexusLock.LOCKED_SLOT, star);
+        ItemStack occupant = inventory.getItem(target);
+        inventory.setItem(target, star);
 
         // MenuSafety.isEmpty is the canonical copy -- absent, AIR, and zero-count husks all mean
         // nothing here, and testing only one of them is how a slot ends up holding an invisible

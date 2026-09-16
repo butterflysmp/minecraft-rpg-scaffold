@@ -9,9 +9,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PlayerProfileMigrationTest {
 
+    /**
+     * A profile at a given stamp. <b>nexusSlot is 3, which is DELIBERATELY NOT the default 8</b> --
+     * a fixture staged on the default would pass whether the v2 -> v3 step set the value or not,
+     * and that step's whole job is setting it. It is also distinct from every other number here
+     * (level 7, experience 1234, lastSeen 99), so no two quantities this file reads are equal and
+     * a transposition between any two has nowhere to hide.
+     */
     private static PlayerProfile at(int schemaVersion) {
         return new PlayerProfile(schemaVersion, UUID.randomUUID(), "hunter", "fire", 7, 1234,
-                List.of("solar_grenade"), 99L);
+                List.of("solar_grenade"), 99L, 3);
     }
 
     @Test
@@ -35,6 +42,14 @@ class PlayerProfileMigrationTest {
         assertEquals(1234, migrated.experience());
         assertEquals(List.of("solar_grenade"), migrated.unlockedAbilities());
         assertEquals(99L, migrated.lastSeenEpochMillis());
+
+        // AND ONE FIELD IS DELIBERATELY *NOT* CARRIED, WHICH IS WHY THIS ROW'S NAME IS NOW SLIGHTLY
+        // WRONG AND IS LEFT ALONE. nexusSlot is RESET to the default rather than preserved: a
+        // profile stamped below 3 predates the field, so the 3 this fixture carries could not have
+        // come from disk -- on a real v0 file Gson would have left it 0. The step overwrites
+        // whatever is there precisely because it cannot be trusted.
+        assertEquals(PlayerProfile.DEFAULT_NEXUS_SLOT, migrated.nexusSlot(),
+                "a pre-v3 profile's nexusSlot is absence, never a choice, so it is set not kept");
     }
 
     /**
@@ -46,7 +61,7 @@ class PlayerProfileMigrationTest {
     void versionOneGainsAnElementOfNoneAndKeepsTheRest() {
         // A v1 JSON has no elementId -> null on read -> NONE via the compact constructor.
         PlayerProfile v1 = new PlayerProfile(1, UUID.randomUUID(), "hunter", null, 7, 1234,
-                List.of("solar_grenade"), 99L);
+                List.of("solar_grenade"), 99L, 3);
         assertEquals(PlayerProfile.NONE, v1.elementId(), "absent elementId defaults to NONE");
 
         PlayerProfile migrated = ProfileMigrations.migrate(v1);
@@ -55,6 +70,56 @@ class PlayerProfileMigrationTest {
         assertEquals("hunter", migrated.archetypeId());
         assertEquals(PlayerProfile.NONE, migrated.elementId());
         assertEquals(List.of("solar_grenade"), migrated.unlockedAbilities());
+    }
+
+    /**
+     * The v2->v3 step, and <b>it is the first step that SETS a value rather than only stamping.</b>
+     *
+     * <p>A real v2 JSON has no {@code nexusSlot} key, and Gson leaves an absent INT as <b>0</b> --
+     * not null, because an int has no null. So this fixture stages the zero a real file would
+     * produce. Zero is a legal slot, which is exactly why the compact constructor cannot default
+     * it and the migration must.
+     */
+    @Test
+    void versionTwoGainsTheDefaultNexusSlot_andZeroIsNOTTreatedAsAChoice() {
+        PlayerProfile v2 = new PlayerProfile(2, UUID.randomUUID(), "hunter", "fire", 7, 1234,
+                List.of("solar_grenade"), 99L, 0);
+        assertEquals(0, v2.nexusSlot(), "the constructor leaves it alone -- it cannot tell 0 from 0");
+
+        PlayerProfile migrated = ProfileMigrations.migrate(v2);
+
+        assertEquals(PlayerProfile.CURRENT_SCHEMA_VERSION, migrated.schemaVersion());
+        assertEquals(PlayerProfile.DEFAULT_NEXUS_SLOT, migrated.nexusSlot(),
+                "an absent int reads as 0, and a v2 profile's 0 is absence -- it becomes the default");
+        assertNotEquals(0, migrated.nexusSlot(),
+                "and it must NOT be left at 0, which is the leftmost hotbar cell");
+
+        // Everything else survives, because this step sets ONE field.
+        assertEquals("hunter", migrated.archetypeId());
+        assertEquals("fire", migrated.elementId());
+        assertEquals(7, migrated.level());
+        assertEquals(1234, migrated.experience());
+        assertEquals(List.of("solar_grenade"), migrated.unlockedAbilities());
+        assertEquals(99L, migrated.lastSeenEpochMillis());
+    }
+
+    /**
+     * The other half, and without it the row above is equally consistent with the step CLOBBERING
+     * every profile's slot on every load -- which would silently undo the setting for everyone who
+     * ever changes it.
+     */
+    @Test
+    void aV3ProfilesCHOSENSlotSurvivesMigration_includingSlotZero() {
+        PlayerProfile chose3 = at(PlayerProfile.CURRENT_SCHEMA_VERSION);
+        assertEquals(3, ProfileMigrations.migrate(chose3).nexusSlot(),
+                "already at v3: the step must not run, so a chosen slot is untouched");
+
+        PlayerProfile chose0 = new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION,
+                UUID.randomUUID(), "hunter", "fire", 7, 1234, List.of(), 99L, 0);
+        assertEquals(0, ProfileMigrations.migrate(chose0).nexusSlot(),
+                "SLOT ZERO IS A LEGAL CHOICE at v3 and must survive -- this is the case the "
+                        + "stamp is what distinguishes, and the whole reason the default is not "
+                        + "applied in the compact constructor");
     }
 
     @Test
@@ -78,20 +143,20 @@ class PlayerProfileMigrationTest {
     /** Legacy JSON has no unlockedAbilities key at all; it must not NPE. */
     @Test
     void nullUnlockedAbilitiesBecomesEmptyList() {
-        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, null, 0L);
+        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, null, 0L, 3);
         assertEquals(List.of(), profile.unlockedAbilities());
     }
 
     @Test
     void nullElementIdBecomesNone() {
-        var profile = new PlayerProfile(2, UUID.randomUUID(), "ranger", null, 1, 0, List.of(), 0L);
+        var profile = new PlayerProfile(2, UUID.randomUUID(), "ranger", null, 1, 0, List.of(), 0L, 3);
         assertEquals(PlayerProfile.NONE, profile.elementId());
     }
 
     @Test
     void unlockedAbilitiesIsDefensivelyCopied() {
         var mutable = new java.util.ArrayList<>(List.of("a"));
-        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, mutable, 0L);
+        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, mutable, 0L, 3);
 
         mutable.add("b");
 
