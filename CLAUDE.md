@@ -1798,6 +1798,22 @@ build.**
 > | two-dot `git diff` for what a branch changed | *tip vs tip*, not *what the branch contributed* |
 > | `merge-tree` / a clean rebase | *do these diffs touch the same lines*, not *does it still compile* |
 > | **`perl -i` with a `$` anchor, on this tree** | **nothing at all — see below** |
+> | **a generic bound** (`n-1` for sum-of-floors vs floor-of-sum) | **what the quantity can NEVER EXCEED, not what it IS** |
+>
+> **THE BOUND IS THE MEMBER THAT NEEDS NO TOOLING TO COMMIT, AND IT IS NOT A FABRICATION.** A
+> fabricated quote has no source and is caught by reading the line. **A bound HAS a source and is
+> TRUE** — it is caught only by asking whether the question it answers is the question that was
+> put. ***"Up to `n-1`" is always safe to say and almost never the number.***
+>
+> **2026-09-16.** A brief and a javadoc both put the tray-batching gap at **13**, the `n-1` bound
+> for fourteen items. **The reachable maximum is 12.** Per-item spends are sums of
+> `{352, 1262, 4182}`, so `(c * 35) mod 100` takes only the ten values `{0,10,…,90}`; fourteen
+> items at `90` sum to `1260`, whose own remainder is `60`, so the gap floors to **12**. The `13`
+> was never wrong — it was never a measurement.
+>
+> **This is *compute the class, do not characterise it*, one level up**: there the description
+> fitted the examples in front of you, here the bound fits every case and identifies none. **Same
+> remedy: enumerate over the reachable range and read the answer off.**
 >
 > **AND THE FOURTH IS THE PUREST OF THEM, BECAUSE IT RETURNS NO NUMBER TO MISREAD.** The other three
 > hand you a misleading figure. **This one exits 0 having changed nothing**, and silence is
