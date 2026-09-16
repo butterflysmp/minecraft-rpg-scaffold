@@ -438,11 +438,17 @@ public final class EnchantMenu extends Menu {
         // -- would render glinting and read as PERMANENTLY SELECTED, in the one screen where the
         // glint is the only thing saying which candidate is active.
         //
-        // Same shape as MenuIcons.line's explicit ITALIC=false: the default is not neutral, so it
-        // is stated rather than assumed. A sweep of the ten DECLARED icons finds none that glints
-        // -- blaze_rod, shield, spectral_arrow, golden_apple, lapis_lazuli, bow, diamond_chestplate,
-        // iron_sword, arrow, anvil -- which is why this was invisible: the hole is in the FALLBACK,
-        // not in the content.
+        // *** THE DEFAULT IS NOT NEUTRAL, SO SAY IT. *** That is the whole rule, and it already has
+        // a second instance in this package: MenuIcons.line's explicit ITALIC=false, because lore
+        // renders italic by default and "unset" is not "off". Leaving a default unstated is only
+        // safe when you know what the default IS for every input that can reach it.
+        //
+        // A sweep of the ten DECLARED icons finds none that glints -- blaze_rod, shield,
+        // spectral_arrow, golden_apple, lapis_lazuli, bow, diamond_chestplate, iron_sword, arrow,
+        // anvil. THAT SWEEP IS CORRECT AND COULD NOT HAVE FOUND THIS: the eleventh material has no
+        // `icon:` line to sweep, because it is a fallback in Java rather than a value in content.
+        // The hole is in the FALLBACK, not the content, so a content sweep is looking in the wrong
+        // file type -- not merely at too few files.
         icon.editMeta(meta -> meta.setEnchantmentGlintOverride(active));
         return icon;
     }

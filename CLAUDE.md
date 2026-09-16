@@ -1100,6 +1100,28 @@ the defect this rule is about, wearing the rule's own clothes.
 > **The fix is one line: a command that measures a byte must be shown able to EXPRESS that byte.**
 > `printf '%s' $'\x00' | wc -c` returns **0** and settles it in one keystroke.
 >
+> > **SECOND INSTANCE, 2026-09-16, AND IT IS THE SAME SHAPE WITH THE SWEEP AS THE INSTRUMENT:
+> > A SWEEP OF THE ENUMERATED VALUES CANNOT SEE THE DEFAULT, BECAUSE THE DEFAULT IS NOT ONE OF
+> > THEM.**
+> >
+> > A selection mark was to be a glint, which is only unambiguous if no icon glints already. **Ten
+> > content files were swept for `icon:` and the scheme reported clear — correctly.** The eleventh
+> > material has no `icon:` line to find: it is a **fallback in Java**, reached by a definition that
+> > is null or names nothing, and it is `ENCHANTED_BOOK`, which **glints by material**.
+> >
+> > **The instrument was in the wrong FILE TYPE, not merely pointed at too few files** — which is
+> > why "sweep harder" would not have found it and why this is the instrument arm rather than an
+> > incomplete enumeration.
+> >
+> > **AND THE GATE ROW WRITTEN TO CATCH THE NEIGHBOURING DEFECT STAGES THIS ONE.** Row 23 boots a
+> > **misspelled** `icon:` to prove the loader names it — which is exactly the input that reaches
+> > the fallback. The row would have rendered a permanently glinting candidate on the one screen
+> > where glint means *selected*: **a row exercising its own defect while testing something else.**
+> >
+> > **Practically: when a scheme depends on a property holding for every value, sweep the AUTHORED
+> > values and then go and read the DEFAULT.** They live in different files, and only one of them
+> > has a grep.
+>
 > > **Where `225` actually comes from, since the plausible explanation is also wrong.** It is not
 > > `wc -l` plus an unterminated final line — the file **is** newline-terminated (`tail -c 1` is
 > > `\n`) and `wc -l` is **224**. Controlled: delete the single NUL and `grep -c ''` drops to
