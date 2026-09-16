@@ -41,6 +41,7 @@ import io.github.butterflysmp.rpg.core.recipe.RecipeRegistry;
 import io.github.butterflysmp.rpg.paper.content.RecipeRegistrar;
 import io.github.butterflysmp.rpg.paper.menu.RecipeCatalogue;
 import io.github.butterflysmp.rpg.paper.menu.RecipeProbe;
+import io.github.butterflysmp.rpg.paper.nexus.NexusCollisionNotice;
 import io.github.butterflysmp.rpg.paper.nexus.NexusItems;
 import io.github.butterflysmp.rpg.paper.nexus.NexusSlots;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
@@ -615,6 +616,26 @@ public final class RpgListeners implements Listener {
         if (NexusItems.isNexus(event.getPlayer().getInventory().getItemInMainHand(),
                 adapters.keys())) {
             event.setCancelled(true);
+
+            // THE COLLISION SPEAKS; THE ORDINARY OPEN DOES NOT. Scoped to the shadowed block and
+            // NOT to the open, because the usual way to reach the hub is right-clicking AIR and a
+            // line of chat every time a player opens their menu is MenuSafety's "no message
+            // repeated sixty-four times helps" objection, earned every session.
+            //
+            // hijackedBlocks.containsKey IS A MAP LOOKUP WITH NO SIDE EFFECT, and that is why it is
+            // asked rather than openHijackedBlock being called to find out: that method CANCELS and
+            // OPENS, so using it as a predicate would open the very screen being shadowed.
+            //
+            // Why this speaks at all when the Nexus lock is silent: the lock refuses a GESTURE and
+            // the player can SEE the star did not move, so chat would repeat what is on screen.
+            // This SHADOWS something else, and the evidence is the thing that did NOT happen --
+            // nothing to see, so something to say. Full boundary in NexusCollisionNotice's javadoc.
+            Block clicked = event.getClickedBlock();
+            if (action == Action.RIGHT_CLICK_BLOCK && clicked != null
+                    && hijackedBlocks.containsKey(clicked.getType())) {
+                NexusCollisionNotice.shadowedBlock(event.getPlayer(), cooldowns);
+            }
+
             new NexusMenu(event.getPlayer()).open();
             return;
         }

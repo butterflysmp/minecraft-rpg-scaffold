@@ -26,7 +26,7 @@ ships to a survival server; **a creative reading certifies creative**, and nothi
 | 6 | **SURVIVAL** | **ruled after the fact** — it was booted in creative and two readings were lost to it |
 | 7 | **SURVIVAL** | `/rpg health 300` is a command and works in either |
 | **8** | **CREATIVE** | **its own row, not a caveat on another one.** A caveat on a row is a caveat that gets forgotten |
-| **9–12** | **SURVIVAL** | slice 2, the hub. The opener is a `PlayerInteractEvent` path and nothing in it reads a game mode |
+| **9–12b** | **SURVIVAL** | slice 2, the hub. The opener is a `PlayerInteractEvent` path and nothing in it reads a game mode |
 | **13** | **CREATIVE** | slice 2's creative row, and **it exists because Row 8 taught this file not to assume the modes agree about inventory interaction** |
 
 > **CREATIVE GETS A ROW, NOT A FOOTNOTE, AND THAT IS THE WHOLE LESSON OF ROW 6.** The alternative —
@@ -635,7 +635,7 @@ back-fitted to it.
 
 ---
 
-# SLICE 2 — THE HUB. ROWS 9–13
+# SLICE 2 — THE HUB. ROWS 9–13, INCLUDING 12b
 
 **Status: NOT RUN.** Every row below was written **before any boot**, and before the branch that
 adds them was pushed. **`NexusMenuLayoutTest` covers the layout and nothing else** — three rows over
@@ -728,9 +728,40 @@ message, no sound, no screen change, and the hub stays open.
 
 **READING:** _(not run)_
 
+## ROW 12b — THE COLLISION SPEAKS, AND THE CONTROL IS THAT THE ORDINARY OPEN DOES NOT
+
+**The star's branch runs ahead of `hijackedBlocks`, so a crafting table right-clicked with the star
+in hand opens the HUB.** Ben ruled that precedence and it stands — what this row reads is that it
+**says so**, because the shadowed block is invisible and *"doing nothing without an explanation
+reads as a defect"* is the recorded ground `BrokenNotice` and `QuiverNotice` both stand on.
+
+**Staging.** `/gamemode survival`. Two sub-rows, and **the second is the row**:
+
+| | gesture, holding the star | expected |
+|---|---|---|
+| **12b-i** | right-click a **crafting table** | the **hub opens** AND one chat line: *"The Nexus took that click -- switch to another hotbar slot to use the block."* The crafting menu does **not** appear |
+| **12b-ii** | **THE CONTROL** — right-click **AIR** | the **hub opens** and **NOTHING is said** |
+| **12b-iii** | right-click the crafting table **twice inside two seconds** | **ONE line, not two** |
+
+**PREDICTED:** as above. No sound on any of the three — **deliberately, and it is not an
+omission**: Ben's ruling is that the Nexus is quiet, and a sound here would be the loudest thing it
+does attached to its least important event.
+
+> **12b-ii IS NOT PADDING AND IT IS THE HALF THAT CAN ACTUALLY FAIL.** The ordinary way to reach the
+> hub is right-clicking air. **A notice wired to the OPEN rather than to the COLLISION passes 12b-i
+> perfectly** — the line appears, the hub opens, everything looks right — and then says the same
+> thing every time a player opens their menu for the rest of the server's life. **The defect is
+> invisible from the row that was written to find it.** Same shape as Row 3's 3c and Row 10's
+> not-the-star control.
+>
+> **12b-iii guards the throttle**, which exists because right-click repeats when held. `40` ticks,
+> the same window `BrokenNotice` uses.
+
+**READING:** _(not run)_
+
 ## ROW 13 — **CREATIVE.** DOES RIGHT-CLICK-TO-OPEN BEHAVE THE SAME?
 
-**`/gamemode creative`. ITS OWN ROW, NOT A CAVEAT ON ROWS 9–12**, and it exists because **Row 8
+**`/gamemode creative`. ITS OWN ROW, NOT A CAVEAT ON ROWS 9–12b**, and it exists because **Row 8
 measured the two modes disagreeing about inventory interaction** on this very item. The register in
 `CLAUDE.md` wants its fourth entry **checked rather than assumed** — and the honest prediction is
 that this one probably agrees, which is exactly the kind of assumption Row 8 punished.
