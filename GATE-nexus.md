@@ -26,6 +26,8 @@ ships to a survival server; **a creative reading certifies creative**, and nothi
 | 6 | **SURVIVAL** | **ruled after the fact** — it was booted in creative and two readings were lost to it |
 | 7 | **SURVIVAL** | `/rpg health 300` is a command and works in either |
 | **8** | **CREATIVE** | **its own row, not a caveat on another one.** A caveat on a row is a caveat that gets forgotten |
+| **9–12** | **SURVIVAL** | slice 2, the hub. The opener is a `PlayerInteractEvent` path and nothing in it reads a game mode |
+| **13** | **CREATIVE** | slice 2's creative row, and **it exists because Row 8 taught this file not to assume the modes agree about inventory interaction** |
 
 > **CREATIVE GETS A ROW, NOT A FOOTNOTE, AND THAT IS THE WHOLE LESSON OF ROW 6.** The alternative —
 > *"row 6, but note it behaves differently in creative"* — is a sentence that survives exactly until
@@ -630,6 +632,127 @@ no ruling; it costs the test.
 **EITHER WAY THIS ROW SHIPS.** Ben's instruction was *fix it if it is cheap; gate it as survival
 either way* — 8d is that survival gate, and it is written before any fix so the fix cannot be
 back-fitted to it.
+
+---
+
+# SLICE 2 — THE HUB. ROWS 9–13
+
+**Status: NOT RUN.** Every row below was written **before any boot**, and before the branch that
+adds them was pushed. **`NexusMenuLayoutTest` covers the layout and nothing else** — three rows over
+two constants and a set. It cannot see an `InventoryView`, cannot open a menu, and cannot observe an
+event firing twice. **That gap is these five rows.**
+
+## ROW 9 — THE DOUBLE FIRE. **THE TRAP, AND EVERYTHING ELSE IN THE HANDLER IS BOOKKEEPING**
+
+**`PlayerInteractEvent` FIRES TWICE FOR ONE PHYSICAL RIGHT-CLICK**, once per hand. The guard is
+`event.getHand() == EquipmentSlot.HAND`, and it is the FIRST line of `onRightClick` — it predates
+this slice and already protects `WeaponFire` from double-spending mana.
+
+**Staging.** `/gamemode survival`. Hold the star. Right-click the air **once**, deliberately, with a
+clean pause either side.
+
+**PREDICTED:** the hub opens **ONCE**. No flicker of a close-and-reopen, no second screen behind the
+first, and Esc returns straight to the world rather than to another copy of the hub.
+
+> **WHAT A MISSING GUARD LOOKS LIKE, so the reading can name it rather than say "seemed fine":**
+> the menu opens, closes and reopens within a tick — visible as a flicker — or two opens stack and
+> the first Esc reveals the second. **A single `openInventory` on an already-open identical menu can
+> also simply LOOK correct**, which is why the row asks for a *deliberate single* click with pauses:
+> a fast double-click by hand is indistinguishable from the defect.
+
+**READING:** _(not run)_
+
+## ROW 10 — THE CANCEL. **THE CHEST MUST NOT OPEN BEHIND THE MENU**
+
+The star's branch calls `event.setCancelled(true)` unconditionally. Without it a right-click that
+lands on a block does **both** things: our menu opens *and* the block does whatever it does.
+
+**Staging.** `/gamemode survival`. Place a **chest**. Holding the star, right-click the chest.
+Then close the hub and look at what is behind it.
+
+**PREDICTED:** the hub opens and **the chest does NOT**. On closing the hub the player is in the
+world, not looking into a chest. The chest's contents are untouched and no container screen is
+underneath.
+
+> **AND THE CONTROL, WHICH IS THE ROW.** Switch to an ordinary hotbar slot — anything that is not
+> the star — and right-click the same chest. **The chest MUST open normally.** Without this, row 10
+> passing is equally consistent with the handler having broken right-click on every block in the
+> game, which is a far worse defect than the one the row is looking for and would present as
+> "chests stopped working".
+>
+> **A second control, cheap and worth it: right-click the star at a CRAFTING TABLE.** That block is
+> hijacked to `CraftingMenu`, and the star's branch is deliberately ahead of `openHijackedBlock`.
+> **PREDICTED: the NEXUS opens, not the crafting menu.** This is a ruling, not an accident — the
+> item in the player's hand is what they pressed — and it is the one behaviour in this slice a
+> reader is most likely to think is a bug.
+
+**READING:** _(not run)_
+
+## ROW 11 — CLOSE AND ESC BOTH RETURN NOTHING
+
+`inputSlots()` is empty, so `onClose` has nothing to hand back. The row exists because *"nothing to
+return"* is a claim about a code path nobody has watched.
+
+**Staging.** `/gamemode survival`, with a **known, counted inventory** — note the exact contents of
+the hotbar before opening. Open the hub and close it **twice, by different routes**: once with the
+BARRIER at slot 49, once with **Esc**.
+
+**PREDICTED:** both close the screen and **the inventory is byte-for-byte what it was** — nothing
+gained, nothing lost, nothing dropped at the player's feet. **The star is still in slot 8.**
+
+> **THE TWO ROUTES ARE NOT REDUNDANT.** The button calls `viewer.closeInventory()` and Esc raises
+> the close event directly; they meet at `onClose` only if the button is wired correctly. A button
+> that did nothing at all would be invisible to an Esc-only reading, and the screen would still
+> close — with Esc.
+
+**READING:** _(not run)_
+
+## ROW 12 — THE TORCH SAYS IT IS NOT BUILT, AND THE ROW READS THE **LORE**
+
+**THIS ROW IS SHAPED BY `Q33`'s FAILURE AND MUST NOT BE WRITTEN THE WAY `Q33` WAS.** That row named
+a notice and not its lore, so an operator would have ticked a sole witness while the screen read
+*"Not implemented yet."* over a working feature. **Naming the icon is not reading it.**
+
+**Staging.** `/gamemode survival`. Open the hub. **Hover the REDSTONE_TORCH at slot 50 and read the
+whole tooltip aloud.** Then click it.
+
+**PREDICTED:** the name is **Settings**, dark gray, and the lore is **exactly two lines** —
+*"Not implemented yet."* and *"No settings to change yet."* Clicking it does **nothing at all**: no
+message, no sound, no screen change, and the hub stays open.
+
+> **AND THE FORWARD-LOOKING HALF, RECORDED HERE BECAUSE SLICE 3 WILL BE WRITTEN BY SOMEONE WHO DID
+> NOT RUN THIS ROW.** The stats head arriving next slice must **NOT** read *"Not implemented yet."*
+> — it will carry real figures and only its click will be unbuilt. **If a future reading of this row
+> finds that string above live numbers anywhere on the hub, that is the `Q33` defect recurring**,
+> and the distinction is written up in `NexusMenu`'s class javadoc.
+
+**READING:** _(not run)_
+
+## ROW 13 — **CREATIVE.** DOES RIGHT-CLICK-TO-OPEN BEHAVE THE SAME?
+
+**`/gamemode creative`. ITS OWN ROW, NOT A CAVEAT ON ROWS 9–12**, and it exists because **Row 8
+measured the two modes disagreeing about inventory interaction** on this very item. The register in
+`CLAUDE.md` wants its fourth entry **checked rather than assumed** — and the honest prediction is
+that this one probably agrees, which is exactly the kind of assumption Row 8 punished.
+
+**Staging.** In creative, repeat **9** (one right-click on air), **10** (the chest, and its
+not-the-star control) and **11** (close by both routes).
+
+**PREDICTED:** **identical to survival in all three.** The opener reads no game mode, touches no
+inventory slot, and `PlayerInteractEvent`'s hand-pair behaviour is not a creative divergence.
+
+> **WHY IT IS STILL WORTH A BOOT SLOT, STATED SO THE ROW IS NOT DROPPED AS OBVIOUS.** Row 8's defect
+> was in `InventoryCreativeEvent`, a class that only exists because creative edits its own inventory
+> by a different route. **This path raises no inventory event at all** — which is the argument that
+> it should agree, and is precisely the shape of argument that failed for 6.4 and 6.5. **The
+> difference is that a disagreement here would be a NEW mechanism, not a known one**, so the value
+> of the row is in the surprise, not in the expected reading.
+>
+> **IF IT DIVERGES, IT IS THE REGISTER'S FOURTH ENTRY.** If it does not, **say so in the register**
+> — *"checked, agrees"* is a different and more useful record than silence, which is
+> indistinguishable from nobody having looked.
+
+**READING:** _(not run)_
 
 ---
 
