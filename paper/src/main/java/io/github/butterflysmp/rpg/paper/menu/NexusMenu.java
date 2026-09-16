@@ -116,7 +116,12 @@ public final class NexusMenu extends Menu {
     public NexusMenu(Player viewer, AdapterContext adapters, ProfileService profiles,
                      WeaponRegistry weapons, ResourcePool resources, RecipeCatalogue recipes,
                      ShieldRegistry shields, ArmorRegistry armor, ToolRegistry tools) {
-        super(viewer, NexusMenuLayout.SIZE, MenuIcons.line("Nexus Menu", NamedTextColor.DARK_GRAY));
+        // "THE NEXUS", MATCHING THE ITEM. The hub's title and the star's name are one name now:
+        // the item has always been "The Nexus", and the Back buttons on every screen that leads
+        // here already read "Back to the Nexus". "Nexus Menu" was the odd one out, and it is not a
+        // name for an item -- it was a name for a screen, which is the thing a player does not
+        // think about. The item's gradient is untouched; only this line changed.
+        super(viewer, NexusMenuLayout.SIZE, MenuIcons.line("The Nexus", NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
         this.profiles = profiles;
         this.weapons = weapons;
@@ -169,8 +174,12 @@ public final class NexusMenu extends Menu {
         if (click.slot() == NexusMenuLayout.ENCHANT_SLOT) {
             // THE NO-BLOCK CONSTRUCTOR. An unpowered table: Ben's ruling, and the bookshelf slot
             // reads 0/30 because it MEASURED zero rather than because there is nothing to measure.
+            // THE SUPPLIER IS THE BREADCRUMB, same as the crafting station above -- and it is what
+            // gives this screen its Back button, which it did not have until now.
             adapters.scheduler().onEntity(viewer, () ->
-                    new EnchantMenu(viewer, weapons, shields, armor, tools, adapters).open());
+                    new EnchantMenu(viewer, weapons, shields, armor, tools, adapters,
+                            () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
+                                    recipes, shields, armor, tools)).open());
             return;
         }
         if (click.slot() == NexusMenuLayout.SETTINGS_SLOT) {

@@ -884,8 +884,17 @@ public final class CraftingMenu extends Menu {
 
         // PAINTED ONLY WHEN THERE IS SOMEWHERE TO GO BACK TO. A back-arrow on the world-opened
         // screen would promise a destination the player never came from -- MenuIcons.close's
-        // javadoc draws that line from the other side. The world path is byte-identical to what it
-        // was before the Nexus gained a crafting station.
+        // javadoc draws that line from the other side.
+        //
+        // AND FROM A BLOCK THE CELL IS ALREADY FILLER, FROM THE BASE PASS ABOVE. That is the
+        // design, not a gap: BACK_SLOT left STATUS_SLOTS permanently, so the bar is seven cells
+        // whatever the origin, and 48 is chrome on both paths -- Back from the Nexus, filler from
+        // a block. The bottom row reads as seven bar cells plus a two-cell chrome island at 48-49.
+        //
+        // NOTHING REPAINTS 48 AFTERWARDS. render() runs once, and paintStatus iterates
+        // STATUS_SLOTS, which no longer contains this slot. Both halves are load-bearing: the
+        // filler would be clobbered by the bar on every preview refresh if the subtraction were
+        // conditional, and that failure is the quiet one -- "Back doesn't work sometimes".
         if (origin() == Origin.FROM_NEXUS) {
             getInventory().setItem(CraftingMenuLayout.BACK_SLOT,
                     MenuIcons.back(Material.ARROW, "the Nexus"));

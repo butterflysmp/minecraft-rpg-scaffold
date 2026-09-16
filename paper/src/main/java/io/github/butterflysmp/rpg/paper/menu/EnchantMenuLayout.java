@@ -84,29 +84,60 @@ public final class EnchantMenuLayout {
     /**
      * The one slot in the whole menu a player may put an item into or take one out of.
      *
-     * <p>Row 2, column 2 -- top-left, above the candidate columns.
+     * <p>Row 3, column 2 -- left of the candidate block, on its first row.
      *
-     * <h2>IT WAS BOTTOM-CENTRE, AND THAT ARGUMENT WAS SOUND. IT WAS TRADED, NOT OVERLOOKED</h2>
+     * <h2>THIS SLOT HAS BEEN RIGHT TWICE AND SUPERSEDED TWICE. THE WHOLE TRAIL IS KEPT</h2>
      *
-     * The old javadoc said: <i>"Bottom-centre, directly under the three candidate columns, and
-     * directly above the player's own inventory -- so the item travels the shortest distance and the
-     * thing being enchanted sits nearest the choices being made about it."</i>
+     * Per {@code MenuIcons.close}'s precedent: an argument can outlive the thing it argued for, and
+     * deleting it along with its position loses the only reason anyone would have to reconsider.
+     * <b>The next reader should find the trail rather than the latest state.</b>
      *
-     * <p><b>That is still true and it is what was given up.</b> From slot 10 the item genuinely
-     * travels further from the hotbar than it did from 49. The paragraph is kept per
-     * {@code MenuIcons.close}'s precedent -- an argument can outlive the thing it argued for, and
-     * deleting it with its position loses the only reason anyone would have to reconsider.
+     * <p><b>49, BOTTOM-CENTRE -- the first position.</b> Its javadoc said: <i>"Bottom-centre,
+     * directly under the three candidate columns, and directly above the player's own inventory --
+     * so the item travels the shortest distance and the thing being enchanted sits nearest the
+     * choices being made about it."</i> Still true, and still what was given up: from anywhere in
+     * the upper rows the item travels further from the hotbar than it did from 49.
      *
-     * <p><b>What replaced it, and it is two reasons:</b> the screen reads as a FORM, input first
+     * <p><b>10, TOP-LEFT -- the second.</b> Two reasons: the screen reads as a FORM, input first
      * and results below; and <b>CLOSE takes 49 because every other screen in this project has it
      * there.</b> One of the two had to move, and <b>consistency across screens outranks travel
      * within one</b> -- a player learns Close once and uses it on four screens, and learns the
-     * input slot once per screen anyway.
+     * input slot once per screen anyway. <b>Both of those reasons survive intact at 19</b>; the
+     * form still reads downwards and Close still has 49.
+     *
+     * <p><b>19, HERE -- the third, and it is a consequence rather than a new argument.</b> Ben
+     * ruled the candidate block down one row; the input keeps its place beside the block's first
+     * row and moves with it. Nothing about 10 was found wrong.
      *
      * <p>So: if someone proposes moving the input nearer the player again, the answer is that it
      * costs the Close convergence above, not that nobody thought of it.
      */
-    public static final int INPUT_SLOT = 10;
+    public static final int INPUT_SLOT = 19;
+
+    /**
+     * Back to the Nexus. <b>Slot 48, beside {@link #CLOSE_SLOT} -- 48/49, like every other
+     * screen.</b>
+     *
+     * <h2>IT WAS MISSING, NOT MISPLACED, AND NO ROW ASKED</h2>
+     *
+     * The slice that gave the Nexus a crafting station and an enchanting station gave <b>crafting
+     * a Back button and enchanting none</b>. Not a wrong position -- the constant did not exist and
+     * nothing rendered. A player who opened this screen from the hub could only reach it again by
+     * closing and re-opening the star.
+     *
+     * <p><b>What let it ship: the gate asked the crafting screen and never asked this one.</b>
+     * There was a row for Back-from-the-hub on crafting and a control for its absence from a world
+     * block; the enchant screen had no equivalent row, so the omission had nothing to fail. <b>A
+     * feature missing from one of two parallel surfaces is invisible to a gate that only stages
+     * the other.</b>
+     *
+     * <h2>FREE HERE, UNLIKE CRAFTING</h2>
+     *
+     * This screen has <b>no status bar</b>, so 48 displaces nothing and needs no exclusion set.
+     * {@code CraftingMenuLayout.BACK_SLOT} had to buy the same slot from its bottom row; here it
+     * was simply empty.
+     */
+    public static final int BACK_SLOT = 48;
 
     /** The bookshelf readout. A labelled placeholder this pass -- see EnchantMenu. */
     public static final int BOOKSHELF_SLOT = 8;
@@ -128,11 +159,17 @@ public final class EnchantMenuLayout {
     public static final int CANDIDATES = 3;
 
     /**
-     * The first row of candidates, 0-BASED -- prose row 2. Row 0 carries the hint and the bookshelf.
+     * The first row of candidates, 0-BASED -- prose row 3. Row 0 carries the hint and the
+     * bookshelf; row 1 is filler.
      *
-     * <p>The candidates share row 1 with the input slot, which sits to their left at column 1.
+     * <p>The candidates share row 2 with the input slot, which sits to their left at column 1.
+     *
+     * <p><b>It was 1, and Ben ruled the block down one row.</b> The measurable consequence is
+     * that the LOWEST candidate rank now lands in prose row 5 (indices 36-44), which is still
+     * clear of the chrome row at 45-53 -- so {@link #BACK_SLOT} and {@link #CLOSE_SLOT} are
+     * untouched by the shift, and so are {@link #INFO_SLOT} and {@link #BOOKSHELF_SLOT} above it.
      */
-    private static final int FIRST_CANDIDATE_ROW = 1;
+    private static final int FIRST_CANDIDATE_ROW = 2;
     /**
      * The leftmost enchant-slot column, 0-BASED -- prose column 4. Columns advance by
      * {@link #COLUMN_STRIDE} so they are not adjacent.
@@ -141,8 +178,8 @@ public final class EnchantMenuLayout {
     private static final int COLUMN_STRIDE = 2;
 
     /**
-     * The chest index a candidate cell occupies: slot 0 -> {12, 21, 30}, 1 -> {14, 23, 32},
-     * 2 -> {16, 25, 34}.
+     * The chest index a candidate cell occupies: slot 0 -> {21, 30, 39}, 1 -> {23, 32, 41},
+     * 2 -> {25, 34, 43}.
      */
     public static int rawSlotFor(int slot, int candidate) {
         if (slot < 0 || slot >= SLOTS) {
@@ -169,7 +206,9 @@ public final class EnchantMenuLayout {
      * {@link #FIRST_CANDIDATE_ROW}, {@link #FIRST_SLOT_COLUMN} and {@link #COLUMN_STRIDE} -- so
      * re-ruling the grid moves the forward function and this one together, by construction. The
      * 2026-09-16 move (rows 2-4 to columns 4-6-8 in prose) changed two constants and neither
-     * function body.
+     * function body, and <b>the later drop of the whole block down one row changed exactly one
+     * constant and neither function body</b> -- two independent re-rulings, no edit here for
+     * either.
      *
      * <p><b>That is a claim about today's code, not a guarantee about tomorrow's</b>, which is why
      * {@code EnchantMenuLayoutTest} round-trips all NINE positions:

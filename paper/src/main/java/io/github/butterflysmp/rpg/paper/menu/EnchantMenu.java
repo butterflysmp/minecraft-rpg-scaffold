@@ -37,7 +37,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
+import static io.github.butterflysmp.rpg.paper.menu.EnchantMenuLayout.BACK_SLOT;
 import static io.github.butterflysmp.rpg.paper.menu.EnchantMenuLayout.BOOKSHELF_SLOT;
 import static io.github.butterflysmp.rpg.paper.menu.EnchantMenuLayout.CLOSE_SLOT;
 import static io.github.butterflysmp.rpg.paper.menu.EnchantMenuLayout.INFO_SLOT;
@@ -83,6 +85,22 @@ public final class EnchantMenu extends Menu {
      */
     private final int bookshelfPower;
 
+    /**
+     * The way back to the hub, or {@code null} when this screen was opened from a world block.
+     *
+     * <p><b>The breadcrumb, exactly as {@code CraftingMenu} carries it</b>: a
+     * {@code Supplier<Menu>} capturing what the hub already holds, rather than eight services this
+     * screen would only use to rebuild the hub.
+     *
+     * <p><b>The two origins are structurally exclusive here, and that is worth more than an enum.</b>
+     * The block constructor takes a {@link Block} and no supplier; the hub constructor takes a
+     * supplier and no block. So a powered screen CANNOT have a Back button and an unpowered one
+     * CANNOT lack one -- not by convention, but because there is no constructor that would let you.
+     * {@code CraftingMenu} needs its {@code Origin} enum because both of its constructors are
+     * otherwise identical; this class gets the same guarantee from the signatures it already had.
+     */
+    private final Supplier<Menu> hub;
+
     public EnchantMenu(Player viewer, WeaponRegistry weapons, ShieldRegistry shields,
                        ArmorRegistry armor, ToolRegistry tools, AdapterContext adapters, Block table) {
         super(viewer, EnchantMenuLayout.SIZE,
@@ -95,6 +113,9 @@ public final class EnchantMenu extends Menu {
         // BEFORE render(), which paints the readout from it. Assigned after, every table on the
         // server reads 0/30 for ever, and only a boot gate with a ring built round it would notice.
         this.bookshelfPower = BookshelfPower.at(table);
+        // No way back: the player came from a block in the world, not from a screen. A back-arrow
+        // here would promise a destination they never came from.
+        this.hub = null;
         render();
     }
 
@@ -125,7 +146,8 @@ public final class EnchantMenu extends Menu {
      * parameter for one.
      */
     public EnchantMenu(Player viewer, WeaponRegistry weapons, ShieldRegistry shields,
-                       ArmorRegistry armor, ToolRegistry tools, AdapterContext adapters) {
+                       ArmorRegistry armor, ToolRegistry tools, AdapterContext adapters,
+                       Supplier<Menu> hub) {
         super(viewer, EnchantMenuLayout.SIZE,
                 MenuIcons.line("Enchantments", NamedTextColor.DARK_GRAY));
         this.weapons = weapons;
@@ -134,7 +156,20 @@ public final class EnchantMenu extends Menu {
         this.tools = tools;
         this.adapters = adapters;
         this.bookshelfPower = 0;
+        this.hub = hub;
         render();
+    }
+
+    /**
+     * Did this screen come from the hub?
+     *
+     * <p>DERIVED, never stored, for the reason {@code CraftingMenu.origin()} records: a stored
+     * origin and a stored breadcrumb can disagree, and then two readers get two answers. Consulted
+     * in exactly two places -- whether {@link EnchantMenuLayout#BACK_SLOT} is painted, and where
+     * its click goes. <b>Do not route anything else on it.</b>
+     */
+    private boolean openedFromNexus() {
+        return hub != null;
     }
 
     /** The single named exception to the menu's cancel-everything rule. */
@@ -294,6 +329,16 @@ public final class EnchantMenu extends Menu {
             return;
         }
 
+        if (click.slot() == BACK_SLOT && openedFromNexus()) {
+            // CLOSE FIRST, THEN HOP -- Menu.open's rule, and this screen is on the demanding side
+            // of it. inputSlots() is non-empty, so the explicit close is what runs onClose and
+            // returns the player's weapon BEFORE the hub replaces the screen. Hopping without
+            // closing would swap the inventory out from under a weapon still sitting in slot 19.
+            viewer.closeInventory();
+            adapters.scheduler().onEntityLater(viewer, () -> hub.get().open(), 1);
+            return;
+        }
+
         if (click.itemMoved()) {
             // The weapon has NOT landed yet: InventoryClickEvent fires before the place applies.
             // Repaint next tick, when the slot holds what the player thinks it holds. onEntityLater
@@ -328,6 +373,15 @@ public final class EnchantMenu extends Menu {
 
         getInventory().setItem(CLOSE_SLOT, MenuIcons.close());
         getInventory().setItem(BOOKSHELF_SLOT, bookshelfIcon());
+
+        // PAINTED WITH THE CHROME, AND THAT POSITION IS LOAD-BEARING. The gear == null branch below
+        // RETURNS EARLY, and an empty input slot is this screen's opening state -- so a Back button
+        // painted after it would be absent exactly until the player placed a weapon, and would
+        // appear and vanish as they took it out again. Chrome is painted before anything conditional
+        // for the same reason Close is.
+        if (openedFromNexus()) {
+            getInventory().setItem(BACK_SLOT, MenuIcons.back(Material.ARROW, "the Nexus"));
+        }
 
         ItemStack placed = getInventory().getItem(INPUT_SLOT);
         PlacedGear gear = resolveGear(placed);

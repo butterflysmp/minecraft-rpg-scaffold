@@ -168,40 +168,53 @@ public final class CraftingMenuLayout {
     public static final int BROWSER_SLOT = 26;
 
     /**
-     * Back to the Nexus. <b>Row 1, column 8 -- directly above {@link #BROWSER_SLOT}.</b>
+     * Back to the Nexus. <b>Slot 48, beside {@link #CLOSE_SLOT} -- 48/49, like every other
+     * screen.</b>
      *
-     * <h2>COLUMN 8 IS THE NAVIGATION COLUMN. THAT IS THE RULE, NOT "ABOVE THE STATUS BAR"</h2>
+     * <h2>BACK IS CHROME, AND CHROME LIVES IN THE BOTTOM ROW</h2>
      *
-     * <b>Anything on this screen that takes you to ANOTHER screen lives in column 8</b>, stacked.
-     * The browser button was already there; Back joins it directly above. <b>A fourth screen that
-     * needs a navigation button knows where to put it without asking.</b>
+     * The hub's rule, arriving here. {@code SettingsMenuLayout.BACK_SLOT} and
+     * {@code RecipeBrowserLayout.BACK_SLOT} are both 48, and that javadoc already calls the pair
+     * <b>convergence, not coincidence</b>. With this screen it is four, and the correct sentence
+     * anywhere this comes up is simply <b>"48/49, like every other screen"</b> -- there is no
+     * exception left to name.
      *
-     * <p>"Above the status bar" is also true of this slot and is an ACCIDENT -- it describes where
-     * 17 happens to be rather than why it was chosen, and a reader who learns that reason will put
-     * the next nav button anywhere in rows 1-5. The rule is the column.
+     * <h2>THE BAR GIVES UP THE CELL PERMANENTLY -- SEVEN, BOTH ORIGINS</h2>
      *
-     * <h2>NOT IN THE BOTTOM ROW, AND THE REASON IS THAT THE BOTTOM ROW IS NOT CHROME</h2>
+     * {@link #STATUS_SLOTS} now subtracts this slot as well as the close button: <b>seven cells,
+     * from a table and from the hub alike.</b>
      *
-     * Slot 48 is where Back lives on {@code SettingsMenuLayout} and {@code RecipeBrowserLayout}, and
-     * it is refused here. <b>This screen's bottom row is the STATUS BAR</b> -- read as one colour at
-     * a glance -- and {@link #STATUS_SLOTS} is the row minus the close button. <b>Eight is what is
-     * left after one subtraction, not a count of anything.</b>
+     * <p><b>A READOUT WHOSE GEOMETRY DEPENDS ON HOW YOU GOT THERE IS NOT A READOUT.</b> That
+     * sentence is why the subtraction is UNCONDITIONAL rather than applied only on the Nexus path,
+     * and it survives this ruling intact -- it was the argument for the old slot and it is the
+     * argument for the new one. A bar eight cells wide from a table and seven from the hub would
+     * ask the same eye to read a signal whose shape changes for a reason nothing on screen
+     * explains.
      *
-     * <p>Back at 48 would add a SECOND exclusion that exists ONLY SOMETIMES, because this button is
-     * drawn only when the screen was opened from the Nexus. The bar would be eight cells wide from
-     * a table and seven from the hub, gate row Q18's expected value would fork on origin, and Q22 --
-     * the bar's sole witness, which records its failure as QUIET ("the symptom is 'the X
-     * disappeared', not a broken menu") -- would have to re-prove its guarantee for a constant
-     * present on one path and absent on the other.
+     * <h2>THE HOLE THIS OPENS, AND IT IS THE DESIGN RATHER THAN A PATCH</h2>
      *
-     * <p><b>A READOUT WHOSE GEOMETRY DEPENDS ON HOW YOU GOT THERE IS NOT A READOUT.</b> Q23 exists
-     * because two grays in one screen are confusable; this would ask the same eye to read a signal
-     * whose shape changes for a reason nothing on screen explains.
+     * <b>Back renders only from the Nexus, but 48 leaves the bar ALWAYS.</b> So a world-opened
+     * screen would have an EMPTY CELL mid-bar with nothing to fill it. It gets
+     * {@code MenuIcons.filler()}, from {@code CraftingMenu.render}'s base pass.
      *
-     * <p><b>MEASURED CONSEQUENCE: Q18 needs no restaging.</b> Eight cells, both origins. That is the
-     * argument for this slot rather than a hoped-for side effect.
+     * <p>The bottom row therefore reads <b>seven bar cells plus a two-cell chrome island at
+     * 48-49</b>: Back and Close from the Nexus, filler and Close from a block. That island is the
+     * stated shape of this row, not an artefact to be tidied.
+     *
+     * <p><b>WHAT THIS COST, RECORDED BECAUSE THE PRINCIPLE HELD AND THE PRICE CHANGED.</b> The
+     * previous slot was argued for partly on "Q18 needs no restaging -- eight cells, both
+     * origins". Ben has chosen to PAY that restaging: Q18 and row 33.bar restage once, to seven,
+     * both origins. The readout principle above is untouched; only the bill moved.
+     *
+     * <h2>AND THE COLUMN-8 RULE IS GONE, NOT RENUMBERED</h2>
+     *
+     * This slot used to carry "column 8 is the navigation column -- Back directly above the recipe
+     * book". <b>48 % 9 is 3, and 26 - 9 is 17</b>, so every instance of that rule has moved. It was
+     * a design ruling, and looking at the screen overturned it; a rule none of whose instances
+     * survive is removed rather than given new numbers. {@link #BROWSER_SLOT} stays at 26 on its
+     * own merits.
      */
-    public static final int BACK_SLOT = 17;
+    public static final int BACK_SLOT = 48;
 
     private static List<Integer> suggestionSlots() {
         List<Integer> slots = new ArrayList<>();
@@ -242,12 +255,20 @@ public final class CraftingMenuLayout {
     }
 
     /**
-     * The status bar: the bottom row, MINUS the close button that sits in it.
+     * The status bar: the bottom row, MINUS the two chrome cells that sit in it.
      *
-     * <p><b>THE EXCLUSION IS STRUCTURAL, NOT A SKIP.</b> The bar spans row 5, and
-     * {@link #CLOSE_SLOT} is slot 49, inside it. Painting over the close button makes the menu
-     * unclosable except by Esc -- and <b>Esc works</b>, so the symptom is "the X disappeared", not
-     * anything obviously broken.
+     * <p><b>SEVEN CELLS, BOTH ORIGINS.</b> Row 5 is nine cells; {@link #CLOSE_SLOT} and
+     * {@link #BACK_SLOT} are both inside it, so the bar is seven. <b>Seven is what is left after
+     * two subtractions, not a count of anything</b> -- and the second subtraction is
+     * UNCONDITIONAL even though Back is drawn only from the Nexus, because a bar whose width
+     * depended on how you opened the screen would not be a readout.
+     *
+     * <p><b>THE EXCLUSION IS STRUCTURAL, NOT A SKIP.</b> Painting over the close button makes the
+     * menu unclosable except by Esc -- and <b>Esc works</b>, so the symptom is "the X
+     * disappeared", not anything obviously broken. <b>Painting over Back is the same failure with
+     * an even quieter symptom: "Back doesn't work sometimes."</b> That is the defect
+     * {@code MUTS5-BACK} found when it moved this constant to 48 against a bar that still owned
+     * the cell.
      *
      * <p>Written as a SET THAT CANNOT CONTAIN IT rather than a {@code continue} inside a 45..53
      * loop, because a {@code continue} is a line someone tidies into a clean range later and the
@@ -266,8 +287,15 @@ public final class CraftingMenuLayout {
         }
         // SET SUBTRACTION, not a skip inside the loop above. The difference is what survives a
         // later tidy-up: a per-iteration condition reads as noise and invites simplification, while
-        // "the row, minus the button" is the whole specification in one line.
+        // "the row, minus the chrome" is the whole specification in two lines.
+        //
+        // BACK_SLOT is removed UNCONDITIONALLY, though the button is painted only FROM_NEXUS. The
+        // alternative -- subtract it only when there is a button there -- is what makes the bar's
+        // width depend on the origin, and it is refused for the reason BACK_SLOT's javadoc gives.
+        // From a block the cell holds filler instead, which render() lays down and nothing here
+        // repaints.
         slots.remove(CLOSE_SLOT);
+        slots.remove(BACK_SLOT);
         return Set.copyOf(slots);
     }
 
