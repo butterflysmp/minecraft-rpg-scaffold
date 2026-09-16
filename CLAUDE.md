@@ -1786,8 +1786,37 @@ build.**
 
 > **So: REBASE AND BUILD, never rebase and read the merge.** Same family as `git diff --numstat` for
 > mutation overreach and two-dot for *what did this branch change* — **an instrument answering a
-> narrower question than the one being asked, returning a number that reads as a pass.** Third
-> member, one week.
+> narrower question than the one being asked, returning a number that reads as a pass.**
+>
+> **THE MEMBERS ARE NAMED RATHER THAN COUNTED, BECAUSE THIS ENTRY SAID *"Third member, one week"*
+> AND THE NEXT ADDITION FALSIFIED IT.** An ordinal into a growing list is a line citation wearing
+> different clothes — this page's own rule, biting the page again:
+>
+> | instrument | the narrower question it actually answers |
+> |---|---|
+> | `git diff --numstat` for mutation overreach | *what changed since HEAD*, not *what this edit changed* |
+> | two-dot `git diff` for what a branch changed | *tip vs tip*, not *what the branch contributed* |
+> | `merge-tree` / a clean rebase | *do these diffs touch the same lines*, not *does it still compile* |
+> | **`perl -i` with a `$` anchor, on this tree** | **nothing at all — see below** |
+>
+> **AND THE FOURTH IS THE PUREST OF THEM, BECAUSE IT RETURNS NO NUMBER TO MISREAD.** The other three
+> hand you a misleading figure. **This one exits 0 having changed nothing**, and silence is
+> indistinguishable from success.
+>
+> **`core.autocrlf` is `true`, so the working tree is CRLF.** Measured 2026-09-16: `EnchantMenu.java`
+> is **689 CR bytes across 689 lines**. A pattern anchored with `$` cannot match, because `\r` sits
+> between the last character and the newline — so `s{...;$}{...}` matches nothing, reports success,
+> and leaves the file byte-identical.
+>
+> **THE CONSEQUENCE THAT MAKES THIS WORTH A ROW: A MUTATION PASS CAN REPORT A FULL KILL SET WHILE
+> NEVER HAVING MUTATED ANYTHING.** Every mutation no-ops, every test stays green, and green under an
+> unapplied mutation reads exactly like green under a real one.
+>
+> **Practically: do not use `$` anchors in a scripted edit on this tree.** Match on inner text, or
+> splice by line number and print the region. **The marker grep and the line delta catch it** — both
+> halves were already mandatory for mutations, and they are what caught this. Same instruction as the
+> in-place-no-op rule above: when an edit reports success and changes nothing, **change the
+> instrument rather than retrying with a cleverer pattern.**
 
 **Practically, for a branch parked on purpose:** name the files it touches, and it is safe to sit
 until something lands on one of them. That turns *"is this stale?"* into a grep instead of a feeling.
