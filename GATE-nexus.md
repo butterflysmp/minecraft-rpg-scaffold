@@ -1,7 +1,9 @@
 # GATE — the Nexus: the six routes out, and the two things a unit test cannot see
 
 **Status: PARTIALLY RUN — ROW 6 ONLY, 2026-09-15. Rows 1–5 and 7 remain NOT RUN, and so does every
-row of SLICE 2 (8–13) and SLICE 3 (14–19)** — each block carries its own status line. Every row below
+row of SLICE 2 (8–13), SLICE 3 (14–19) and SLICE 4a (20–24)** — each block carries its own status
+line. **Nineteen of twenty-four rows have never been booted, and the file is still growing**; that
+is flagged for the operator rather than hidden in a block header. Every row below
 was written BEFORE any boot, and every expected value was recorded so that a later reading could
 disagree with it. **When a row is read, its reading is written BESIDE its prediction and the
 prediction is NOT edited.** A prediction revised after the fact proves nothing.
@@ -30,6 +32,9 @@ ships to a survival server; **a creative reading certifies creative**, and nothi
 | **9–12b** | **SURVIVAL** | slice 2, the hub. The opener is a `PlayerInteractEvent` path and nothing in it reads a game mode |
 | **13** | **CREATIVE** | slice 2's creative row, and **it exists because Row 8 taught this file not to assume the modes agree about inventory interaction** |
 | **14–17, 19** | **SURVIVAL** | slice 3, the stats head. Nothing in the head's render or its lore reads a game mode; survival is what is certified |
+| **20, 22, 23** | **SURVIVAL** | slice 4a. Joins, a hand-edited profile and a corrupt one — none of them reads a game mode, and survival is what ships |
+| **21** | **SURVIVAL**, and **21b especially** | 21b moves an ordinary item around the **player's own hotbar**, which is the surface Row 8 shows behaves differently in creative. **A creative 21b certifies creative and says nothing about the shipped path** |
+| **24** | **SURVIVAL** | it is a row about **dying**, and a creative player is hard to kill — Row 1's reason, unchanged |
 | **18** | **SURVIVAL**, and **this one is load-bearing** | it moves an item **in the player's own inventory with a menu open** — the exact surface Row 8 shows behaves differently in creative. **A creative reading of 18 certifies creative and says nothing about the shipped path** |
 
 > **CREATIVE GETS A ROW, NOT A FOOTNOTE, AND THAT IS THE WHOLE LESSON OF ROW 6.** The alternative —
@@ -953,6 +958,154 @@ gained, nothing lost, nothing dropped at your feet. **The star is still in slot 
 
 ---
 
+# SLICE 4a — THE LOCKED SLOT GOES PER-PLAYER. ROWS 20–24
+
+**Status: NOT RUN.** Every row below was written **before any boot**, and before the branch that
+adds them was pushed.
+
+**GAME MODE: `/gamemode survival` for all five**, declared here and per row.
+
+**THE DEFAULT IS STILL 8, WHICH IS WHY ROWS 1–19 ARE NOT RESTAGED.** `PlayerProfile.DEFAULT_NEXUS_SLOT`
+is 8 and **nothing in this slice lets a player change it** — the settings screen is 4b. So every
+existing row still describes what will happen, and this block adds the cases the change creates
+rather than rewriting the ones it did not touch. **The restaging this file has warned about since
+Row 8 is owed by 4b, not by 4a.**
+
+> **WHAT THE UNIT SUITE ALREADY SETTLED, SO NO ROW HERE RE-ASKS IT.** `NexusSlotsTest` pins the slot
+> bound, `NexusLockTest` pins the per-player arm and the unknown-slot window, `ProfileServiceTest`
+> pins that `whenSettled` waits for the load and still runs when it fails, and
+> `PlayerProfileMigrationTest` + `FilePlayerRepositoryTest` pin the v2 → v3 migration through real
+> Gson. **Nine mutations were applied and measured against those**, kill sets recorded in the PR
+> body.
+>
+> **What none of them can see** is a live `PlayerInventory`, a real join ordering, or a disk read
+> racing a tick. **That gap is these five rows** — and two of them cover code the suite measured as
+> having NO unit guard at all (`converge`'s use of the target, and the whole join wiring).
+
+## ROW 20 — THE ORDINARY JOIN, WHICH MUST LOOK EXACTLY AS IT DID BEFORE
+
+**The control, and it runs first.** Everything below changes how the star is placed; this row says
+that for a player who has never touched the setting — which is every player today — nothing about
+the observable behaviour moved.
+
+**Staging.** `/gamemode survival`. Join the server with a **known, counted inventory**. Watch slot 9
+of the hotbar (index 8, the rightmost) as the world loads.
+
+**PREDICTED:** the star is in the rightmost hotbar slot, exactly one of it, and the rest of the
+inventory is untouched. Right-clicking it opens the hub.
+
+> **THE STAR MAY APPEAR A FRACTION LATER THAN IT USED TO, AND THAT IS THE CHANGE.** Placement now
+> waits for the profile read instead of running on the join tick. On a local server that is
+> single-digit milliseconds and **should be invisible**. **If it is visible — a frame where the slot
+> is empty, or the star arriving after the inventory is interactable — SAY SO AND TIME IT.** That is
+> the cost of the fix and nobody has measured it on real hardware.
+
+**READING:** _(not run)_
+
+## ROW 21 — **THE RACE.** THE ROW THIS SLICE EXISTS FOR, AND IT NEEDS A HAND-EDITED FILE
+
+**There is no way to set a non-default slot in-game until 4b**, so this row edits the JSON directly.
+That is not a workaround; it is the only way to test the migration's output and the race before the
+UI that produces them exists.
+
+**Staging**, and **the order matters**:
+
+1. `/gamemode survival`. Join once so a profile file exists, then **quit**.
+2. With the player OFFLINE, open `plugins/<plugin>/players/<uuid>.json`. Confirm it reads
+   `"schemaVersion": 3` and `"nexusSlot": 8`.
+3. Edit **`"nexusSlot"` to `3`** and save. Change nothing else.
+4. Rejoin.
+
+**PREDICTED:** the star is in **hotbar slot 4** (index 3) and **nowhere else** — not in slot 9, and
+not in both. Whatever was in slot 4 has been moved elsewhere in the inventory, or dropped at the
+player's feet with a message, and **is not destroyed**.
+
+**Then, still in that session, the half that is the actual defect:**
+
+| | gesture | expected |
+|---|---|---|
+| **21a** | try to pick up / drag / Q the star in slot 4 | **REFUSED**, every route |
+| **21b** | **THE ROW.** put an ordinary item in **hotbar slot 9** (index 8), then pick it up, move it, drop it | **PERMITTED, every time.** Slot 9 is an ordinary slot for this player |
+
+> **21b IS THE ONE THAT CAN FAIL SILENTLY AND IS THE REASON THIS ROW IS WRITTEN.** The defect the
+> slice fixes places the star at the default 8 while the lock protects 3. **The star would still be
+> guarded** — the lock's second arm follows the item, so 21a passes either way and is NOT
+> discriminating — but slot 9 would be **inert for the whole session**, refusing every gesture, with
+> nothing logged and no message. A player would report "my hotbar is broken sometimes".
+>
+> **So 21a is the reassurance and 21b is the measurement.** If 21b fails, the placement is racing
+> the profile read and the fix did not take.
+
+**READING:** _(not run)_
+
+## ROW 22 — THE MIGRATION, ON A FILE THAT PREDATES THE FIELD
+
+**The first schema migration this project has ever run against real player data**, and the only row
+that reads it on a file the server itself wrote at v2.
+
+**Staging.** `/gamemode survival`. With the player OFFLINE, edit their JSON: set `"schemaVersion"`
+to **2** and **delete the `"nexusSlot"` line entirely**. Save. Rejoin, then quit, then read the file
+again.
+
+**PREDICTED:** the star is in the **rightmost hotbar slot** on rejoin, and after the quit the file
+reads `"schemaVersion": 3` with `"nexusSlot": 8`.
+
+> **THE FAILURE TO WATCH FOR IS SLOT 1, NOT AN ERROR.** An absent integer deserialises to **0**, and
+> 0 is a legal slot — the LEFTMOST hotbar cell. If the migration step were ever reduced to a stamp
+> bump, like the two steps before it, **every existing player's star would move to slot 1 and
+> nothing would throw**. That is the whole reason this row edits a file rather than trusting the
+> unit tests, which stage the zero by hand.
+>
+> **And nothing else in the file may change.** Read `level`, `experience`, `archetypeId` and
+> `elementId` before and after; a migration that resets a field it does not own is a data loss the
+> player discovers later.
+
+**READING:** _(not run)_
+
+## ROW 23 — A CORRUPT PROFILE STILL GETS A STAR
+
+**The permanent-empty arm.** A load that fails settles too, and the placement must still happen —
+otherwise the one population that cannot fix its own file also loses the only route into the hub.
+
+**Staging.** `/gamemode survival`. With the player OFFLINE, replace their JSON with `{` — a single
+brace, deliberately unparseable. Rejoin.
+
+**PREDICTED:** the star is in the **rightmost hotbar slot** (the default, because their preference
+is unreadable), the hub opens from it, and the **server log carries one SEVERE line** naming the
+player and saying their data will not be touched this session.
+
+> **AND THE FILE MUST BE UNCHANGED WHEN THEY QUIT.** Read it after. `onQuit` chains its save onto
+> the failed load, so the save never runs — that invariant predates this slice and this row is
+> checking the slice did not break it. **A profile overwritten here is a player's entire progress,
+> destroyed by the error handler meant to protect it.**
+>
+> **If no star appears at all**, the settle path is not running its failure arm and every
+> corrupt-profile player is locked out of the Nexus permanently.
+
+**READING:** _(not run)_
+
+## ROW 24 — DEATH AND RESPAWN, WHERE THE PROFILE IS ALREADY IN MEMORY
+
+Respawn converges too, and it takes the **synchronous** path — the profile is not reloaded on death,
+so the slot is known without waiting. **Different code path, same expected outcome**, which is
+exactly the shape that hides a defect in one of the two.
+
+**Staging.** `/gamemode survival`, with `nexusSlot` still edited to **3** from Row 21. Die — lava,
+fall, `/kill`. Respawn.
+
+**PREDICTED:** the star is in **hotbar slot 4** after respawning, exactly one of it. **Not slot 9.**
+
+> **SLOT 9 HERE MEANS THE RESPAWN PATH IGNORED THE SETTING**, which is a different bug from Row 21's
+> and would be invisible to it: join could be perfectly correct while respawn welds the default.
+> Two call sites, one of which waits and one of which does not.
+>
+> **Row 24 is also the only row that exercises the star being RE-placed while the player already
+> has one**, so read whether anything was displaced or duplicated.
+
+**READING:** _(not run)_
+
+---
+
 ## MUTATION EVIDENCE — WHICH ROW GUARDS WHAT, MEASURED RATHER THAN ASSUMED
 
 Run 2026-09-15 against the unit suite. Both halves of the marker grep confirmed on each (marker
@@ -991,6 +1144,25 @@ because it is untracked**.
 >
 > **Every row in this gate is staged against 8.** If the locked slot is ever re-ruled, that test
 > row goes red first and this file needs restaging.
+>
+> > ### THAT PREDICTION WAS RIGHT ABOUT THE OUTCOME AND WRONG ABOUT THE MECHANISM — CORRECTED 2026-09-16
+> >
+> > It anticipates a re-ruling **to a different constant**, where `assertEquals(8, LOCKED_SLOT)`
+> > goes red. Slice 4a did something the sentence did not consider: it made the slot a
+> > **per-player VARIABLE**. So the row did not go red — **`NexusLockTest` STOPPED COMPILING**,
+> > 108 errors across 22 rows, because `refusesClick` grew an argument.
+> >
+> > **Louder, and fine.** But a file that predicts the wrong signal teaches the next reader to
+> > watch for the wrong thing, and *"it went red"* is a sentence someone will look for and not
+> > find. **The two failures are not interchangeable**: a red row is a staging problem you fix in
+> > the gate, and a compile error is an API change you fix in the test before the gate is even
+> > reachable.
+> >
+> > **The rows themselves are still correctly staged**, which is why 4a changed no row here:
+> > `PlayerProfile.DEFAULT_NEXUS_SLOT` is **8**, so every player in an ungated boot still has
+> > their star at 8 and every prediction below still describes what will happen. **The restaging
+> > this warning promises is owed by 4b**, which is the slice that lets a player choose a
+> > different one.
 
 > ### AND THE SAME DEFECT WAS SHIPPED A SECOND TIME, IN THE SAME FILE, BY NOT SWEEPING FOR IT
 >

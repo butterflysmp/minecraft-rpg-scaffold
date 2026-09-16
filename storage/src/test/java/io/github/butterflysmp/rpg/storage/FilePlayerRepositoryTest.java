@@ -34,7 +34,7 @@ class FilePlayerRepositoryTest {
     void saveThenLoadRoundTrips() {
         var id = UUID.randomUUID();
         var profile = new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, id, "hunter", "fire",
-                7, 1234, List.of("solar_grenade"), 99L);
+                7, 1234, List.of("solar_grenade"), 99L, 3);
         var repo = repo();
 
         repo.save(profile).join();
@@ -69,6 +69,71 @@ class FilePlayerRepositoryTest {
         assertEquals(PlayerProfile.NONE, loaded.elementId(), "no elementId in old JSON -> NONE");
         assertEquals(7, loaded.level());
         assertEquals(List.of("solar_grenade"), loaded.unlockedAbilities());
+        assertEquals(PlayerProfile.DEFAULT_NEXUS_SLOT, loaded.nexusSlot(),
+                "no nexusSlot in old JSON -> the default, NOT the 0 Gson left behind");
+    }
+
+    /**
+     * The v2 -> v3 migration through REAL Gson, which is the only instrument that proves the
+     * absent-int hazard is handled.
+     *
+     * <p>{@code PlayerProfileMigrationTest} stages the zero by hand. This writes JSON that genuinely
+     * has no {@code nexusSlot} key and lets Gson produce the zero itself, so the test cannot pass
+     * because the fixture happened to be built the way the code expects.
+     *
+     * <p><b>The stamp is 2, not absent</b> -- this is a profile from the build immediately before
+     * the field existed, which is the file almost every real player currently has on disk.
+     */
+    @Test
+    void v2JsonWithNoNexusSlotKeyLoadsAtTheDefaultRatherThanSlotZero() throws Exception {
+        var id = UUID.randomUUID();
+        Files.writeString(dir.resolve(id + ".json"), """
+                {
+                  "schemaVersion": 2,
+                  "playerId": "%s",
+                  "archetypeId": "ranger",
+                  "elementId": "fire",
+                  "level": 7,
+                  "experience": 1234,
+                  "unlockedAbilities": ["solar_grenade"],
+                  "lastSeenEpochMillis": 99
+                }
+                """.formatted(id), StandardCharsets.UTF_8);
+
+        PlayerProfile loaded = repo().load(id).join().orElseThrow();
+
+        assertEquals(PlayerProfile.CURRENT_SCHEMA_VERSION, loaded.schemaVersion());
+        assertEquals(PlayerProfile.DEFAULT_NEXUS_SLOT, loaded.nexusSlot(),
+                "an absent nexusSlot key must become the default, not the 0 Gson leaves");
+        assertNotEquals(0, loaded.nexusSlot(),
+                "0 is the leftmost hotbar cell -- shipping every existing player there is the "
+                        + "defect this migration step exists to prevent");
+        // The rest of a v2 profile is untouched by the step.
+        assertEquals("ranger", loaded.archetypeId());
+        assertEquals("fire", loaded.elementId());
+        assertEquals(1234, loaded.experience());
+    }
+
+    /** And a v3 file's chosen slot round-trips through Gson, including the zero. */
+    @Test
+    void aV3JsonsChosenNexusSlotIsReadBackAsWritten() throws Exception {
+        var id = UUID.randomUUID();
+        Files.writeString(dir.resolve(id + ".json"), """
+                {
+                  "schemaVersion": 3,
+                  "playerId": "%s",
+                  "archetypeId": "ranger",
+                  "elementId": "fire",
+                  "level": 7,
+                  "experience": 1234,
+                  "unlockedAbilities": [],
+                  "lastSeenEpochMillis": 99,
+                  "nexusSlot": 0
+                }
+                """.formatted(id), StandardCharsets.UTF_8);
+
+        assertEquals(0, repo().load(id).join().orElseThrow().nexusSlot(),
+                "at v3 a zero is a CHOICE and must survive -- the stamp is what tells them apart");
     }
 
     /** Legacy JSON missing a whole field must not blow up the compact ctor. */

@@ -42,8 +42,10 @@ import io.github.butterflysmp.rpg.paper.content.RecipeRegistrar;
 import io.github.butterflysmp.rpg.paper.menu.RecipeCatalogue;
 import io.github.butterflysmp.rpg.paper.menu.RecipeProbe;
 import io.github.butterflysmp.rpg.paper.nexus.NexusCollisionNotice;
+import io.github.butterflysmp.rpg.paper.nexus.NexusLock;
 import io.github.butterflysmp.rpg.paper.nexus.NexusItems;
 import io.github.butterflysmp.rpg.paper.nexus.NexusSlots;
+import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenSystem;
@@ -432,7 +434,31 @@ public final class RpgListeners implements Listener {
         // refusals keep a correct state correct and cannot repair a wrong one, and a star stranded
         // in the backpack would be welded there by the same rule that guards the locked slot.
         // Never destroys a player's item -- the displaced occupant goes through MenuSafety.give.
-        NexusSlots.converge(event.getPlayer(), adapters.keys());
+        //
+        // *** THIS WAITS FOR THE PROFILE, AND CALLING IT HERE WOULD BE WRONG. ***
+        //
+        // The locked slot is per-player and lives in the profile, which profiles.onJoin started
+        // reading from disk twelve lines above -- ASYNCHRONOUSLY. A converge on this line reads
+        // Optional.empty() on essentially every join, falls back to the default, and places the
+        // star at 8 for a player whose slot is 3. The profile then lands carrying 3, and from that
+        // moment the two halves disagree: the star sits in 8 while the lock protects 3, so an
+        // ordinary hotbar cell is inert for the session with nothing said -- and ONLY for players
+        // who changed the setting, which is the population least likely to be tested.
+        //
+        // whenSettled runs once the load succeeds OR fails, so "empty" there means no stored
+        // preference PERMANENTLY rather than "not yet", and the default is then the right answer.
+        // It runs on the storage I/O thread, hence the hop: writing an inventory off that thread
+        // is the same violation as touching Bukkit from a packet callback.
+        // adapters.scheduler() rather than a new constructor parameter: AdapterContext already
+        // carries it, this class already holds an AdapterContext, and widening a 16-argument
+        // constructor to reach something already in scope is the worse trade.
+        Player joined = event.getPlayer();
+        profiles.whenSettled(joined.getUniqueId(), profile -> adapters.scheduler().onEntity(joined, () -> {
+            // The load can settle after they have left -- a fast join/quit, or a slow disk.
+            if (!joined.isOnline()) return;
+            NexusSlots.converge(joined, adapters.keys(),
+                    profile.map(PlayerProfile::nexusSlot).orElse(NexusLock.DEFAULT_LOCKED_SLOT));
+        }));
     }
 
     /**
@@ -929,7 +955,7 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onNexusClick(InventoryClickEvent event) {
-        if (!NexusSlots.refuses(event, adapters.keys())) return;
+        if (!NexusSlots.refuses(event, adapters.keys(), profiles)) return;
         event.setCancelled(true);
         if (event.getWhoClicked() instanceof Player player) player.updateInventory();
     }
@@ -942,7 +968,7 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onNexusDrag(InventoryDragEvent event) {
-        if (!NexusSlots.refuses(event, adapters.keys())) return;
+        if (!NexusSlots.refuses(event, adapters.keys(), profiles)) return;
         event.setCancelled(true);
         if (event.getWhoClicked() instanceof Player player) player.updateInventory();
     }
@@ -1213,7 +1239,14 @@ public final class RpgListeners implements Listener {
         // Same convergence as on join. onQuit does not run on death, and the cursor-at-death path
         // is unverified on 26.1 (GATE-nexus.md row 1), so a star lost to a death would otherwise
         // stay lost until the player's next reconnect rather than until their next respawn.
-        NexusSlots.converge(event.getPlayer(), adapters.keys());
+        //
+        // NO WAIT HERE, AND THE ASYMMETRY WITH onJoin IS CORRECT RATHER THAN AN OVERSIGHT. The
+        // profile is not reloaded on death (it persists), so by respawn it is already in memory and
+        // lockedSlotOf answers synchronously. Its NO_LOCKED_SLOT fallback would only be reached by
+        // someone respawning before their join load finished, where converge's own default is the
+        // same answer whenSettled would have given.
+        NexusSlots.converge(event.getPlayer(), adapters.keys(),
+                NexusSlots.lockedSlotOf(event.getPlayer(), profiles));
     }
 
     // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is

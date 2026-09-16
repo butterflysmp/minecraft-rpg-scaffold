@@ -49,11 +49,44 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class NexusLockTest {
 
+    /**
+     * The locked slot THIS FILE'S ROWS ARE STAGED AGAINST, as a literal.
+     *
+     * <p><b>A literal and not {@code NexusLock.DEFAULT_LOCKED_SLOT}, deliberately.</b> Naming the
+     * production constant would make every row below move with it, which is the symbolic-reference
+     * defect this file already carries two scars from -- {@code 8 -> 7} and {@code 40 -> 39} both
+     * applied cleanly and killed nothing. The rows are staged against a number; the number is
+     * written here once, and {@code theDEFAULTLockedSlotIsTheRIGHTMOSTHOTBARSLOT} is what ties it
+     * to production.
+     */
+    private static final int LOCKED = 8;
+
     /** Nothing in the inventory holds a star. The common case, and the one most rows want. */
     private static final IntPredicate NO_STARS = index -> false;
 
     /** The invariant state: the one star is in the locked slot. */
-    private static final IntPredicate STAR_IN_LOCKED_SLOT = index -> index == NexusLock.LOCKED_SLOT;
+    private static final IntPredicate STAR_IN_LOCKED_SLOT = index -> index == LOCKED;
+
+    /**
+     * Every row calls these rather than {@link NexusLock} directly, so that the locked slot is
+     * supplied in ONE place for the rows that do not care which slot it is.
+     *
+     * <p><b>This is a convenience, and it is also a hazard worth naming.</b> A row routed through
+     * here cannot see the {@code lockedSlot} argument at all, so it can neither vary it nor be
+     * blind to it being wrong -- it is pinned to {@link #LOCKED} by the helper. The rows that
+     * exercise the argument itself call {@code NexusLock.refusesClick} DIRECTLY and pass their own
+     * value; they are the per-player rows at the foot of this file.
+     */
+    private static boolean refusesClick(ClickType click, InventoryAction action, Touched clicked,
+                                        int hotbarButton, boolean cursorIsStar, IntPredicate starAt) {
+        return NexusLock.refusesClick(click, action, clicked, hotbarButton, cursorIsStar,
+                LOCKED, starAt);
+    }
+
+    private static boolean refusesDrag(Set<Touched> dragged, boolean cursorIsStar,
+                                       IntPredicate starAt) {
+        return NexusLock.refusesDrag(dragged, cursorIsStar, LOCKED, starAt);
+    }
 
     private static final int BOOTS = 36;
     private static final int A_STORAGE_SLOT = 20;
@@ -70,7 +103,7 @@ class NexusLockTest {
             for (InventoryAction action : InventoryAction.values()) {
                 for (boolean cursorIsStar : new boolean[]{true, false}) {
                     assertDoesNotThrow(
-                            () -> NexusLock.refusesClick(click, action, player(A_STORAGE_SLOT),
+                            () -> refusesClick(click, action, player(A_STORAGE_SLOT),
                                     -1, cursorIsStar, NO_STARS),
                             click + "/" + action + " threw");
                 }
@@ -88,7 +121,7 @@ class NexusLockTest {
         // nothing else reddens, because a cancel at LOWEST makes onMenuClick skip.
         for (ClickType click : ClickType.values()) {
             assertFalse(
-                    NexusLock.refusesClick(click, InventoryAction.PICKUP_ALL,
+                    refusesClick(click, InventoryAction.PICKUP_ALL,
                             player(A_STORAGE_SLOT), -1, false, STAR_IN_LOCKED_SLOT),
                     click + " on an unrelated slot must be PERMITTED");
         }
@@ -100,8 +133,8 @@ class NexusLockTest {
     void aMenusOwnSlotEightIsNotTheLockedSlotAndIsPERMITTED() {
         // playerInventory=false is the ONLY thing separating a crafting grid's slot 8 from the
         // hotbar slot the lock protects. Both are "8".
-        assertFalse(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
-                new Touched(false, NexusLock.LOCKED_SLOT), -1, false, STAR_IN_LOCKED_SLOT));
+        assertFalse(refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
+                new Touched(false, LOCKED), -1, false, STAR_IN_LOCKED_SLOT));
         // Mutation: drop the !t.playerInventory() continue in touchesTheStar -> reddens, and every
         // menu whose layout uses slot 8 becomes unclickable.
     }
@@ -110,7 +143,7 @@ class NexusLockTest {
     void theBootsSlotIsPERMITTED_theRegressionForRawEightMeaningTwoThings() {
         // In the own-inventory screen the player's boots are RAW 8. A lock that compared raw
         // numbers would refuse this click and permit the locked hotbar slot, in the same view.
-        assertFalse(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
+        assertFalse(refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
                 player(BOOTS), -1, false, STAR_IN_LOCKED_SLOT));
         // Mutation: have NexusSlots pass getRawSlot() instead of convertSlot() -> reddens only in
         // a boot gate, which is why GATE-nexus.md rows 4-5 exist as well as this row.
@@ -125,15 +158,15 @@ class NexusLockTest {
         // MenuRouting.collectToCursor's javadoc settles what similar means here -- "isSimilar
         // compares item meta, so a tagged item never matches a plain stack of the same Material".
         // A double-click holding cobblestone cannot pull a PDC-tagged nether star out of slot 8.
-        assertFalse(NexusLock.refusesClick(ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR,
-                player(NexusLock.LOCKED_SLOT), -1, false, STAR_IN_LOCKED_SLOT));
+        assertFalse(refusesClick(ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR,
+                player(LOCKED), -1, false, STAR_IN_LOCKED_SLOT));
         // Mutation: refuse every DOUBLE_CLICK outright -> reddens. That mutation is the plausible
         // over-broad version of this rule, and it would kill collect-to-cursor plugin-wide.
     }
 
     @Test
     void aCursorDropOutsideTheWindowIsPERMITTEDWhenTheCursorIsNotAStar() {
-        assertFalse(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.DROP_ALL_CURSOR,
+        assertFalse(refusesClick(ClickType.LEFT, InventoryAction.DROP_ALL_CURSOR,
                 outside(), -1, false, STAR_IN_LOCKED_SLOT));
         // Mutation: return true unconditionally from the DROP_*_CURSOR arm -> reddens, and players
         // could no longer throw anything away while a menu is open.
@@ -143,34 +176,137 @@ class NexusLockTest {
 
     @Test
     void aPlainClickOnTheLockedSlotIsREFUSED() {
-        assertTrue(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
-                player(NexusLock.LOCKED_SLOT), -1, false, STAR_IN_LOCKED_SLOT));
+        assertTrue(refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
+                player(LOCKED), -1, false, STAR_IN_LOCKED_SLOT));
         // Mutation: LOCKED_SLOT 8 -> 7 -> does NOT redden. See the row below for why, and do not
         // trust this row to guard the constant's value.
     }
 
     @Test
     void theLockedSlotIsTheRIGHTMOSTHOTBARSLOT_theONLYRowThatPinsTheVALUE() {
-        // MEASURED, AND IT IS THE REASON THIS ROW EXISTS. Every other row in this file names
-        // LOCKED_SLOT symbolically, so mutating the constant moves the code AND the expectation
+        // MEASURED, AND IT IS THE REASON THIS ROW EXISTS. Every other row in this file names the
+        // locked slot symbolically, so mutating the value moves the code AND the expectation
         // together and bites nothing: `8 -> 7` was applied -- marker present, original gone, 13-byte
         // delta -- and all twenty rows stayed GREEN.
         //
-        // That is the "applied, no bite" failure, and the constant's javadoc originally claimed the
-        // opposite ("NexusLockTest mutates it rather than asserting the literal 8"). A symbolic
-        // reference cannot pin a value. Only a literal can.
-        assertEquals(8, NexusLock.LOCKED_SLOT,
-                "the locked slot is the rightmost hotbar slot; PlayerInventory indexes the hotbar "
-                        + "0-8, so it is 8. If this is being changed deliberately, GATE-nexus.md's "
-                        + "rows are staged against 8 and need restaging.");
+        // That is the "applied, no bite" failure. A symbolic reference cannot pin a value. Only a
+        // literal can.
+        //
+        // WHAT THIS ROW PINS CHANGED WHEN THE SLOT BECAME PER-PLAYER, AND IT NEARLY BECAME HOLLOW.
+        // The old form was `assertEquals(8, NexusLock.LOCKED_SLOT)`. With that constant gone and the
+        // rows staged against this file's own LOCKED literal, the same line would read
+        // `assertEquals(8, LOCKED)` -- 8 against 8, a tautology that survives any production
+        // change whatsoever. It asserts the DEFAULT instead, which is the thing production still
+        // owns.
+        assertEquals(8, NexusLock.DEFAULT_LOCKED_SLOT,
+                "the default locked slot is the rightmost hotbar slot; PlayerInventory indexes the "
+                        + "hotbar 0-8, so it is 8. If this is being changed deliberately, "
+                        + "GATE-nexus.md's rows are staged against 8 and need restaging.");
+        assertEquals(LOCKED, NexusLock.DEFAULT_LOCKED_SLOT,
+                "and this file's rows are staged against the default, so the two must agree -- "
+                        + "otherwise every row below is testing a slot no player will ever have");
 
         // And the value expressed as behaviour, so the pin is not merely a restatement of itself:
         // literal 8 refuses, literal 7 -- an ordinary hotbar slot beside it -- does not.
-        assertTrue(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
+        assertTrue(refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
                 player(8), -1, false, NO_STARS), "slot 8 must be locked");
-        assertFalse(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
+        assertFalse(refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
                 player(7), -1, false, NO_STARS), "slot 7 is an ordinary hotbar slot");
-        // Mutation: LOCKED_SLOT 8 -> 7 -> reddens HERE, and only here.
+        // Mutation MUTDEFAULTSLOT: PlayerProfile.DEFAULT_NEXUS_SLOT 8 -> 7 -> kill set RECORDED in
+        // the PR body, not predicted here.
+    }
+
+    /**
+     * THE SLOT IS PER-PLAYER, AND THIS IS THE ROW THAT SAYS SO.
+     *
+     * <p>Every other row in this file is staged against one slot and would pass identically if the
+     * parameter were ignored and the old constant restored. <b>This one varies it</b>, which is the
+     * only way to show the argument is read at all.
+     */
+    @Test
+    void aDIFFERENTPlayersSlotIsLockedInsteadOfTheDefault() {
+        // A player whose chosen slot is 3. Slot 3 is theirs and locked; slot 8 -- the DEFAULT, and
+        // the slot every other row in this file exercises -- is an ordinary hotbar cell for them.
+        assertTrue(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
+                        player(3), -1, false, 3, NO_STARS),
+                "slot 3 is locked for a player who chose 3");
+        assertFalse(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
+                        player(8), -1, false, 3, NO_STARS),
+                "AND SLOT 8 IS NOT. If this fails, the parameter is being ignored and the default "
+                        + "is welded in -- the whole point of the change, and invisible to every "
+                        + "other row here");
+
+        // The drag path takes the same argument and must agree; they share touchesTheStar, and a
+        // caller that threaded the slot into one and not the other would pass every click row.
+        assertTrue(NexusLock.refusesDrag(Set.of(player(3)), false, 3, NO_STARS),
+                "the drag path reads the same per-player slot");
+        assertFalse(NexusLock.refusesDrag(Set.of(player(8)), false, 3, NO_STARS),
+                "and is equally not staged on the default");
+    }
+
+    /**
+     * THE PROFILE-LOAD WINDOW: the slot is not known yet, and the star is still protected.
+     *
+     * <p>This is the state between a player joining and their profile arriving from disk. The
+     * locked-slot arm is inert -- deliberately, because guessing the default here would brick an
+     * ordinary hotbar cell for anyone who chose a different slot -- and the star-follows-the-item
+     * arm carries the whole guard alone.
+     *
+     * <p><b>It is the row that refutes the obvious objection to waiting</b>, namely that the star
+     * is unguarded meanwhile. It is not.
+     */
+    @Test
+    void whileTheSlotIsUNKNOWNTheStarIsStillREFUSEDWhereverItSits() {
+        IntPredicate starInFive = index -> index == 5;
+
+        assertTrue(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
+                        player(5), -1, false, NexusLock.NO_LOCKED_SLOT, starInFive),
+                "THE STAR IS STILL GUARDED with no slot known -- the second arm follows the item");
+
+        // And nothing else is: no slot is locked by position while the answer is unknown.
+        assertFalse(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
+                        player(8), -1, false, NexusLock.NO_LOCKED_SLOT, NO_STARS),
+                "the DEFAULT slot must not be locked on a guess -- a player whose slot is 3 would "
+                        + "find slot 8 inert for no reason they could ever discover");
+        assertFalse(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
+                        player(0), -1, false, NexusLock.NO_LOCKED_SLOT, NO_STARS),
+                "nor any other slot");
+
+        assertEquals(-1, NexusLock.NO_LOCKED_SLOT,
+                "the sentinel is negative, which is what makes the >= 0 guard in touchesTheStar "
+                        + "the thing that disables the arm");
+    }
+
+    /**
+     * THE {@code >= 0} GUARD ON THE LOCKED-SLOT ARM, FED THE INPUT PRODUCTION CANNOT PRODUCE.
+     *
+     * <p><b>This row exists because the guard was measured DEAD.</b> {@code MUTARMGUARD} -- dropping
+     * {@code lockedSlot >= 0 &&} -- left the entire suite green, because nothing in production
+     * builds a player-inventory {@code Touched} at a negative index: {@code NexusSlots.touchedOf}
+     * pairs {@code -1} with {@code playerInventory=false}, and the {@code NUMBER_KEY} arm
+     * range-checks the hotbar button first.
+     *
+     * <p>A guard that cannot fire is indistinguishable from one that protects you. So this row
+     * CAUSES the condition rather than asserting the guard exists -- a {@code Touched(true, -1)}
+     * built by hand, which is legal for a test and unreachable for the server.
+     *
+     * <p><b>What it protects:</b> the day a caller does produce one -- a new {@code ClickType} arm,
+     * a changed {@code convertSlot} contract -- an unknown locked slot would otherwise match it and
+     * refuse the gesture, which at {@code LOWEST} means a silently dead menu.
+     */
+    @Test
+    void anUNKNOWNSlotDoesNotMatchANegativeTouchedIndex_theGuardThatWasMeasuredDEAD() {
+        Touched negativeInPlayerInventory = new Touched(true, -1);
+
+        assertFalse(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
+                        negativeInPlayerInventory, -1, false, NexusLock.NO_LOCKED_SLOT, NO_STARS),
+                "NO_LOCKED_SLOT is -1 and so is this index -- without the >= 0 guard they compare "
+                        + "EQUAL and the gesture is refused by a slot that does not exist");
+
+        assertFalse(NexusLock.refusesDrag(Set.of(negativeInPlayerInventory), false,
+                        NexusLock.NO_LOCKED_SLOT, NO_STARS),
+                "and the drag path shares touchesTheStar, so it shares the defect");
+        // Mutation MUTARMGUARD: drop `lockedSlot >= 0 &&` -> kill set RECORDED in the PR body.
     }
 
     @Test
@@ -192,10 +328,10 @@ class NexusLockTest {
 
         // The value expressed as behaviour, and as a DISCRIMINATING PAIR rather than one assertion:
         // a star in the offhand is reachable by F, a star in the helmet slot is not.
-        assertTrue(NexusLock.refusesClick(ClickType.SWAP_OFFHAND, InventoryAction.HOTBAR_SWAP,
+        assertTrue(refusesClick(ClickType.SWAP_OFFHAND, InventoryAction.HOTBAR_SWAP,
                         player(A_STORAGE_SLOT), -1, false, index -> index == 40),
                 "a star at index 40 IS in the offhand and F must refuse");
-        assertFalse(NexusLock.refusesClick(ClickType.SWAP_OFFHAND, InventoryAction.HOTBAR_SWAP,
+        assertFalse(refusesClick(ClickType.SWAP_OFFHAND, InventoryAction.HOTBAR_SWAP,
                         player(A_STORAGE_SLOT), -1, false, index -> index == 39),
                 "index 39 is the HELMET, not the offhand; F does not reach it");
         // Mutation: OFFHAND_SLOT 40 -> 39 -> reddens HERE, and only here.
@@ -207,9 +343,10 @@ class NexusLockTest {
         // refused because it IS the locked slot, not because of what it currently holds -- so
         // nothing can be placed into a momentarily empty one, and the slot cannot be colonised in
         // the window between a star being lost and convergence running.
-        assertTrue(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PLACE_ALL,
-                player(NexusLock.LOCKED_SLOT), -1, false, NO_STARS));
-        // Mutation: drop the `t.index() == LOCKED_SLOT` arm and keep only starAt -> reddens HERE
+        assertTrue(refusesClick(ClickType.LEFT, InventoryAction.PLACE_ALL,
+                player(LOCKED), -1, false, NO_STARS));
+        // Mutation MUTAXISLOCKED: drop the `lockedSlot >= 0 && t.index() == lockedSlot` arm and keep
+        // only starAt -> reddens HERE
         // and nowhere else, because every other refusal row has a star staged.
     }
 
@@ -218,9 +355,10 @@ class NexusLockTest {
         // The other half of the same pair: a star outside the locked slot is still not the
         // player's to move. Convergence puts it back on the next join; until then it does not
         // travel.
-        assertTrue(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
+        assertTrue(refusesClick(ClickType.LEFT, InventoryAction.PICKUP_ALL,
                 player(A_STORAGE_SLOT), -1, false, index -> index == A_STORAGE_SLOT));
-        // Mutation: drop the starAt arm and keep only LOCKED_SLOT -> reddens HERE and nowhere
+        // Mutation MUTAXISSTAR: drop the starAt arm and keep only the locked-slot arm -> reddens HERE
+        // and nowhere
         // else, because every other refusal row targets the locked slot directly.
     }
 
@@ -229,8 +367,8 @@ class NexusLockTest {
         // THE ROUTE THAT IS INVISIBLE TO THE CLICKED SLOT. Hover a crafting-grid cell, press 9:
         // MenuRouting.hotbarMove swaps hotbar index 8 into that cell, performing the write itself.
         // The clicked raw slot is in the MENU and the locked slot is never clicked at all.
-        assertTrue(NexusLock.refusesClick(ClickType.NUMBER_KEY, InventoryAction.HOTBAR_SWAP,
-                new Touched(false, 4), NexusLock.LOCKED_SLOT, false, STAR_IN_LOCKED_SLOT));
+        assertTrue(refusesClick(ClickType.NUMBER_KEY, InventoryAction.HOTBAR_SWAP,
+                new Touched(false, 4), LOCKED, false, STAR_IN_LOCKED_SLOT));
         // Mutation: drop the hotbarButton member from the NUMBER_KEY arm -> reddens. This is the
         // defect the first draft of the decision signature could not even express.
     }
@@ -240,7 +378,7 @@ class NexusLockTest {
         // getHotbarButton() is -1 when the click was not a hotbar press. Reading the inventory at a
         // negative index would throw from inside an event handler; MenuRouting guards the same
         // value the same way.
-        assertFalse(NexusLock.refusesClick(ClickType.NUMBER_KEY, InventoryAction.NOTHING,
+        assertFalse(refusesClick(ClickType.NUMBER_KEY, InventoryAction.NOTHING,
                 new Touched(false, 4), -1, false, STAR_IN_LOCKED_SLOT));
         // Mutation: drop the `hotbarButton < 0` guard -> Touched(true, -1) enters the set; reddens
         // only if -1 could match, which is why touchesTheStar also guards index >= 0.
@@ -253,8 +391,8 @@ class NexusLockTest {
         // already hovering -- which would throw from inside an event handler, on an ordinary
         // gesture, in the player's own inventory.
         assertTrue(assertDoesNotThrow(() ->
-                NexusLock.refusesClick(ClickType.NUMBER_KEY, InventoryAction.HOTBAR_SWAP,
-                        player(NexusLock.LOCKED_SLOT), NexusLock.LOCKED_SLOT, false,
+                refusesClick(ClickType.NUMBER_KEY, InventoryAction.HOTBAR_SWAP,
+                        player(LOCKED), LOCKED, false,
                         STAR_IN_LOCKED_SLOT)));
         // Mutation: Set.copyOf(List.of(..)) -> Set.of(..) -> reddens with IllegalArgumentException.
     }
@@ -262,10 +400,10 @@ class NexusLockTest {
     @Test
     void swapOffhandIsREFUSEDFromBothEnds() {
         // F is a two-way swap, so both the hovered slot and the offhand are destinations.
-        assertTrue(NexusLock.refusesClick(ClickType.SWAP_OFFHAND, InventoryAction.HOTBAR_SWAP,
-                player(NexusLock.LOCKED_SLOT), -1, false, STAR_IN_LOCKED_SLOT),
+        assertTrue(refusesClick(ClickType.SWAP_OFFHAND, InventoryAction.HOTBAR_SWAP,
+                player(LOCKED), -1, false, STAR_IN_LOCKED_SLOT),
                 "the star swapped OUT of the locked slot");
-        assertTrue(NexusLock.refusesClick(ClickType.SWAP_OFFHAND, InventoryAction.HOTBAR_SWAP,
+        assertTrue(refusesClick(ClickType.SWAP_OFFHAND, InventoryAction.HOTBAR_SWAP,
                 player(A_STORAGE_SLOT), -1, false, index -> index == NexusLock.OFFHAND_SLOT),
                 "a star resting in the OFFHAND swapped into an ordinary slot");
         // Mutation: drop the OFFHAND_SLOT member -> the second assertion reddens.
@@ -274,7 +412,7 @@ class NexusLockTest {
     @Test
     void aDoubleClickWithAStarONTheCursorIsREFUSED() {
         // The genuine second-star case, and the only way a collect can reach a star at all.
-        assertTrue(NexusLock.refusesClick(ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR,
+        assertTrue(refusesClick(ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR,
                 player(A_STORAGE_SLOT), -1, true, NO_STARS));
         // Mutation: ignore cursorIsStar on the DOUBLE_CLICK path -> reddens.
     }
@@ -288,9 +426,9 @@ class NexusLockTest {
         // Refused where a cursor PLACE is permitted, and the difference is not squeamishness: a
         // place relocates the star inside the inventory where convergence finds it; a drop puts it
         // on the ground to despawn or be taken by somebody else.
-        assertTrue(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.DROP_ALL_CURSOR,
+        assertTrue(refusesClick(ClickType.LEFT, InventoryAction.DROP_ALL_CURSOR,
                 outside(), -1, true, NO_STARS), "DROP_ALL_CURSOR");
-        assertTrue(NexusLock.refusesClick(ClickType.RIGHT, InventoryAction.DROP_ONE_CURSOR,
+        assertTrue(refusesClick(ClickType.RIGHT, InventoryAction.DROP_ONE_CURSOR,
                 outside(), -1, true, NO_STARS), "DROP_ONE_CURSOR");
         // Mutation: delete the DROP_*_CURSOR arm -> both redden, and the star goes on the floor.
     }
@@ -302,7 +440,7 @@ class NexusLockTest {
         // Refusing every placement too would wedge it on the cursor with NO legal destination,
         // which is the failure a lock is most likely to create and least likely to be blamed for.
         // Convergence is the repair; the refusals are not.
-        assertFalse(NexusLock.refusesClick(ClickType.LEFT, InventoryAction.PLACE_ALL,
+        assertFalse(refusesClick(ClickType.LEFT, InventoryAction.PLACE_ALL,
                 player(A_STORAGE_SLOT), -1, true, NO_STARS));
         // Mutation: short-circuit refusesClick on cursorIsStar -> reddens, and a star that ever
         // reached the cursor could never be put down again.
@@ -344,10 +482,11 @@ class NexusLockTest {
 
     @Test
     void aDragTouchingTheLockedSlotIsREFUSED() {
-        assertTrue(NexusLock.refusesDrag(
-                Set.of(player(A_STORAGE_SLOT), player(NexusLock.LOCKED_SLOT)),
+        assertTrue(refusesDrag(
+                Set.of(player(A_STORAGE_SLOT), player(LOCKED)),
                 false, STAR_IN_LOCKED_SLOT));
-        // Mutation: LOCKED_SLOT 8 -> 7 -> reddens.
+        // Mutation: this row is helper-routed and staged on LOCKED, so it moves with the fixture, not
+        // with the production default. Kill sets are RECORDED in the PR body, not predicted here.
     }
 
     @Test
@@ -358,7 +497,7 @@ class NexusLockTest {
         //
         // Refused rather than permitted -- unlike the click-place above -- because refusing traps
         // nobody: a plain left-click into a free slot is still available to put it down.
-        assertTrue(NexusLock.refusesDrag(
+        assertTrue(refusesDrag(
                 Set.of(player(A_STORAGE_SLOT), player(21)), true, NO_STARS));
         // Mutation: drop cursorIsStar from refusesDrag -> reddens. The click path cannot catch
         // this; a drag is a different event with a different source.
@@ -366,8 +505,8 @@ class NexusLockTest {
 
     @Test
     void aDragTouchingNothingRelevantIsPERMITTED() {
-        assertFalse(NexusLock.refusesDrag(
-                Set.of(player(A_STORAGE_SLOT), player(21), new Touched(false, NexusLock.LOCKED_SLOT)),
+        assertFalse(refusesDrag(
+                Set.of(player(A_STORAGE_SLOT), player(21), new Touched(false, LOCKED)),
                 false, STAR_IN_LOCKED_SLOT));
         // Mutation: make refusesDrag always-true -> reddens, and no drag anywhere would work while
         // a menu was open.

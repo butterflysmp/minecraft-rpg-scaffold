@@ -38,13 +38,18 @@ import org.bukkit.persistence.PersistentDataType;
  *
  * <p>This is a DIFFERENT gap from a value a test names symbolically. Those look guarded and are
  * not; these are visibly untested. The first kind cost this slice a mutation that applied cleanly
- * and killed nothing -- see {@link NexusLock#LOCKED_SLOT}.
+ * and killed nothing -- see {@link NexusLock#DEFAULT_LOCKED_SLOT}, which is what that constant
+ * became when the slot went per-player.
  */
 public final class NexusItems {
 
     private NexusItems() {}
 
-    /** Mint the Nexus star. One per player, placed and held at {@link NexusLock#LOCKED_SLOT}. */
+    /**
+     * Mint the Nexus star. One per player, placed and held at THAT PLAYER'S locked slot --
+     * {@link NexusLock#DEFAULT_LOCKED_SLOT} until they choose another. The slot is per-player and
+     * lives in their profile; {@code NexusSlots.converge} is what puts the star there.
+     */
     public static ItemStack mint(Keys keys) {
         ItemStack item = new ItemStack(Material.NETHER_STAR);
         item.editMeta(meta -> {
