@@ -1278,36 +1278,14 @@ in content, not only code comments. A developer can diff a comment against the c
 player has only the string. `emberblade.yml`'s *"Swing to cut; loose to burn"* became false the day
 melee started accruing scorch, and nothing but a person reading it would ever have said so.
 
-**AND THE THIRD MEMBER, WHICH IS NEITHER FALSE NOR STALE: A MISORDERED EXPLANATION SURVIVES EVERY
-CHECK A FALSE ONE FAILS.**
+**AND THE THIRD MEMBER, WHICH NEITHER OF THOSE SWEEPS CAN CATCH: AN EXPLANATION WHOSE EVERY
+SENTENCE IS TRUE BUT WHOSE EMPHASIS IS WRONG SURVIVES EVERY CHECK A FALSE ONE FAILS.** Nothing
+expired, so the stale-prose sweep walks past it.
 
-The two above are sweepable — something was true and stopped being true, so a diff against the code
-finds it. **This one was accurate the day it was written, is accurate now, and still misleads every
-reader**, because of which reason it puts first.
-
-> **2026-09-16, and it cost a week of a parked finding and five briefs carrying it.**
-> `CraftingMenu`'s navigation comment gives two reasons for closing before it navigates: a
-> ghost-item desync, then that `returnEverything` runs on the close. **Both true.** But the first is
-> handled by the tick hop, which the sibling path also has, and **only the second is specific to
-> this site** — the crafting grid is `inputSlots()` and the recipe browser's is empty.
->
-> So a reader comparing the two implementations finds the **leading** reason present on one and
-> absent on the other, and concludes one of them is a defect. **It was carried as one for a week.
-> Neither was wrong; they differ exactly where the rule says they should.**
->
-> **NOTHING CATCHES THIS.** A grep finds the comment, the compiler accepts it, no test can see it,
-> and a *careful* reader is misled precisely by reading carefully. It is not a stale claim, so the
-> stale-prose sweep walks past it; it is not an unswept instance, so counting instances finds
-> nothing.
->
-> **The operational form: WHEN A COMMENT GIVES TWO REASONS FOR ONE CONSTRUCT, LEAD WITH THE ONE
-> SPECIFIC TO THIS SITE.** A reason shared with every sibling goes second — or better, goes in the
-> shared place, which is where this one now lives (`Menu.open`, which had no javadoc at all).
->
-> **The tell, when auditing: a construct that appears on one path and not its sibling, justified by
-> a reason that is true of both.** Either the sibling is wrong, or the justification is
-> misordered — and the second is far more likely, because the first would usually have broken
-> something by now.
+**So: when a comment gives two reasons for one construct, LEAD WITH THE ONE SPECIFIC TO THIS SITE.**
+A reason shared with every sibling goes second, or in the shared place. **The tell when auditing: a
+construct on one path and not its sibling, justified by a reason true of both.** Account, and the
+week it cost, in `#107`'s body.
 
 ## Architecture invariants
 
@@ -1672,6 +1650,20 @@ because it is *behind*. Measured 2026-08-28: `feat/sweep-rides-vanilla`, fully a
 diffed against `master` as `24 files changed, 29 insertions(+), 1122 deletions(-)`. Every one of those
 lines was the crit commit sitting on top of it. A rule built on that check refuses to clean up
 anything except the branch merged five minutes ago.
+
+> **THIS IS A PROPERTY OF THE COMMAND, NOT OF THIS ONE USE — AND SCOPING IT TO "IS THIS BRANCH
+> ABSORBED" IS AN OVER-SCOPED CLAIM, WHICH IS A FALSE ABSENCE.** Two-dot is tip-vs-tip for **every**
+> question anyone asks with it, so it manufactures a phantom difference for any of them. **Use
+> `git diff master...<branch>` — three dots — whenever you want what the BRANCH CHANGED**: a
+> collision check before editing a file another PR touches, a review of someone else's work, a
+> "what is still outstanding on that branch".
+>
+> **2026-09-16, and the warning EXCUSED the walk-in rather than preventing it.** A collision check
+> between two doc branches read the two-dot diff and reported that the open PR would silently revert
+> a correction merged after it was branched. It would not: three-dot showed it changes two hunks and
+> never touches that text. **The warning was present, read, and concluded to be about absorption.**
+> Same failure as scoping the binary-mode artefact to one `grep` version — a tool's behaviour written
+> as one use's caveat tells every other caller it does not concern them.
 
 **The check that actually answers the question** — "is this branch's content already somewhere in
 master's history?" — compares TREES, and needs no knowledge of which commit squashed it. **Run the
