@@ -98,6 +98,45 @@ public final class EnchantMenu extends Menu {
         render();
     }
 
+    /**
+     * The enchant screen with NO TABLE BEHIND IT, opened from the Nexus hub.
+     *
+     * <h2>ZERO POWER, AND IT IS A MEASUREMENT RATHER THAN AN ABSENCE</h2>
+     *
+     * <b>Ben's ruling: the Nexus enchant screen is an UNPOWERED TABLE.</b> A real table with
+     * shelves is how a player reaches 30, and this is how they see that they have not.
+     *
+     * <p><b>The bookshelf slot therefore reads {@code 0/30}, and that wording is not a choice made
+     * here.</b> {@code MenuIcons.placeholder}'s javadoc settled this exact case as its first worked
+     * example: <i>"A placeholder became a READOUT by gaining a SCALE. The enchant table's bookshelf
+     * slot: '0/30' reads as a measurement where a bare '0%' could not."</i>
+     *
+     * <p>So it is <b>NOT</b> "no bookshelves", <b>NOT</b> "not available here", and emphatically not
+     * {@link MenuIcons#placeholder}. <b>The reading is REAL and CORRECT; it measured zero.</b> A
+     * screen that says <i>"not available"</i> where it means <i>"zero"</i> is the recipe browser's
+     * empty state wearing the placeholder's clothes -- the defect gate row Q33 would have passed on.
+     *
+     * <h2>A SECOND CONSTRUCTOR, NOT A NULLABLE BLOCK</h2>
+     *
+     * <b>Passing {@code null} would put a null {@code Block} one call away from
+     * {@code BookshelfPower.at}</b>, which dereferences it. The third caller would find a parameter
+     * that is sometimes null with nothing saying when, which is a defect waiting rather than a
+     * design. Here the absence is in the SIGNATURE: there is no block to pass, so there is no
+     * parameter for one.
+     */
+    public EnchantMenu(Player viewer, WeaponRegistry weapons, ShieldRegistry shields,
+                       ArmorRegistry armor, ToolRegistry tools, AdapterContext adapters) {
+        super(viewer, EnchantMenuLayout.SIZE,
+                MenuIcons.line("Enchantments", NamedTextColor.DARK_GRAY));
+        this.weapons = weapons;
+        this.shields = shields;
+        this.armor = armor;
+        this.tools = tools;
+        this.adapters = adapters;
+        this.bookshelfPower = 0;
+        render();
+    }
+
     /** The single named exception to the menu's cancel-everything rule. */
     @Override
     protected Set<Integer> inputSlots() {

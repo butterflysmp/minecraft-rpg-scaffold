@@ -119,10 +119,60 @@ public final class CraftingMenu extends Menu {
      */
     private final RecipeCatalogue catalogue;
 
+    /**
+     * WHERE THIS SCREEN WAS OPENED FROM. A NAVIGATION BREADCRUMB, AND NOTHING ELSE.
+     *
+     * <h2>IT IS NOT IDENTITY, AND NOTHING MAY LET IT BECOME IDENTITY</h2>
+     *
+     * <b>{@code Menu} identity is THIS OBJECT</b>, reached through {@code inventory.getHolder()} --
+     * the class javadoc argues why, and a title or a flag is not it. This enum answers exactly one
+     * question, <i>"is there somewhere to go back to"</i>, and it is consulted in exactly two
+     * places: whether {@link CraftingMenuLayout#BACK_SLOT} is painted, and where the click goes.
+     *
+     * <p><b>DO NOT ROUTE ON IT.</b> A nullable "where did I come from" field on a menu is the shape
+     * that grows into a router: first it decides a button, then it decides a behaviour, then two
+     * screens that are the same class stop behaving the same way and the holder no longer tells you
+     * which one you have. If a future screen needs to BEHAVE differently by origin, that is a
+     * different menu class, not a branch on this.
+     *
+     * <p>It is an enum rather than a nullable {@code Block} or a {@code Runnable} for that reason:
+     * an enum with two constants cannot quietly accumulate state or capture a lambda that reaches
+     * back into the screen that opened it.
+     */
+    public enum Origin {
+        /** Right-clicked a crafting table in the world. No Back button; Close returns you there. */
+        FROM_BLOCK,
+        /** Opened from the Nexus hub's crafting station. Back returns to the hub. */
+        FROM_NEXUS
+    }
+
+    /**
+     * Where this screen was opened from, and what it needs to get back there.
+     *
+     * <p><b>{@code hub} is null for {@link Origin#FROM_BLOCK} and that is the ONLY nullable thing
+     * here.</b> It is a {@code Supplier} rather than the eight services a hub needs, because
+     * threading those through this class would make its constructor ten parameters wide and would
+     * do it again for every screen that gains a Back button. <b>The supplier captures what the
+     * OPENER already had.</b>
+     *
+     * <p>It is still not identity and still must not be routed on -- see {@link Origin}. It is
+     * consulted in exactly two places, both of them about the Back button.
+     */
+    private final Origin origin;
+    private final java.util.function.Supplier<Menu> hub;
+
+    /** The world-opened screen. Unchanged by the Nexus work, and it is the common path. */
     public CraftingMenu(Player viewer, AdapterContext adapters, RecipeCatalogue catalogue) {
+        this(viewer, adapters, catalogue, Origin.FROM_BLOCK, null);
+    }
+
+    public CraftingMenu(Player viewer, AdapterContext adapters, RecipeCatalogue catalogue,
+                        Origin origin, java.util.function.Supplier<Menu> hub) {
         super(viewer, SIZE, MenuIcons.line("Crafting", NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
         this.catalogue = catalogue;
+        this.origin = origin;
+        this.hub = hub;
         this.inventoryCraft = new InventoryCraft(viewer, adapters);
         render();
         refreshPreview();
@@ -217,6 +267,15 @@ public final class CraftingMenu extends Menu {
             return;
         }
 
+        if (click.slot() == CraftingMenuLayout.BACK_SLOT && origin == Origin.FROM_NEXUS) {
+            // CLOSE FIRST, THEN HOP -- unlike the hub's own navigation, and Menu.open's javadoc is
+            // where the rule lives. THIS screen has input slots (the grid), so returnEverything
+            // must run on the close before the screen changes, or a loaded grid is stranded behind
+            // a menu the player navigated away from. Exactly the browser button's reasoning below.
+            viewer.closeInventory();
+            adapters.scheduler().onEntityLater(viewer, () -> hub.get().open(), 1);
+            return;
+        }
         if (click.slot() == CraftingMenuLayout.BROWSER_SLOT) {
             // CLOSE FIRST, OPEN AFTER. Opening an inventory from inside a click handler while
             // another is open is the classic way to end up with a desynced client holding a ghost
@@ -784,6 +843,15 @@ public final class CraftingMenu extends Menu {
             getInventory().setItem(slot, MenuIcons.filler());
         }
         getInventory().setItem(CLOSE_SLOT, MenuIcons.close());
+
+        // PAINTED ONLY WHEN THERE IS SOMEWHERE TO GO BACK TO. A back-arrow on the world-opened
+        // screen would promise a destination the player never came from -- MenuIcons.close's
+        // javadoc draws that line from the other side. The world path is byte-identical to what it
+        // was before the Nexus gained a crafting station.
+        if (origin == Origin.FROM_NEXUS) {
+            getInventory().setItem(CraftingMenuLayout.BACK_SLOT,
+                    MenuIcons.back(Material.ARROW, "the Nexus"));
+        }
 
         // The suggestion column IS painted over here, deliberately: this lays down filler as a base
         // and the constructor calls refreshSuggestions immediately afterwards. render() runs once,

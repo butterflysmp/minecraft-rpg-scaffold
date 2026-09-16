@@ -31,6 +31,8 @@ class NexusMenuLayoutTest {
                         + "move between our screens");
         assertEquals(50, NexusMenuLayout.SETTINGS_SLOT, "Settings is slot 50");
         assertEquals(54, NexusMenuLayout.SIZE, "six rows");
+        assertEquals(31, NexusMenuLayout.CRAFTING_SLOT, "crafting is row 4, column 4");
+        assertEquals(32, NexusMenuLayout.ENCHANT_SLOT, "enchanting is row 4, column 5");
         assertEquals(13, NexusMenuLayout.STATS_SLOT,
                 "the stats head is slot 13 -- the CENTRE of row 2 (slots 9-17), Ben's ruling. It "
                         + "was 20 under a withdrawn rule that made it the start of a left-to-right "
@@ -97,8 +99,19 @@ class NexusMenuLayoutTest {
         //   row 5  (36-44)  unassigned
         //   row 6  (45-53)  chrome
         assertEquals(1, NexusMenuLayout.STATS_SLOT / 9, "the head is the HEADER band, row 2");
+        assertEquals(3, NexusMenuLayout.CRAFTING_SLOT / 9,
+                "crafting is a crafting-type menu, so row 4 -- its KIND picked its band");
+        assertEquals(3, NexusMenuLayout.ENCHANT_SLOT / 9, "and so is enchanting");
         assertEquals(5, NexusMenuLayout.CLOSE_SLOT / 9, "Close is chrome, row 6");
         assertEquals(5, NexusMenuLayout.SETTINGS_SLOT / 9, "Settings is chrome, row 6");
+
+        // THE TWO STATIONS ARE ADJACENT, so a third cannot silently split them across the row.
+        // Same claim theTwoButtonsAreADJACENT makes about Close and Settings, and for the reason
+        // that row records: two literals that happen to sit together are not two that must.
+        assertEquals(1, NexusMenuLayout.ENCHANT_SLOT - NexusMenuLayout.CRAFTING_SLOT,
+                "enchanting sits immediately right of crafting");
+        assertEquals(NexusMenuLayout.CRAFTING_SLOT / 9, NexusMenuLayout.ENCHANT_SLOT / 9,
+                "adjacent IN A ROW -- consecutive indices can straddle a row boundary");
 
         // AND THE BANDS DO NOT OVERLAP, which is the half that would otherwise be vacuous: a table
         // of bands that all resolved to the same row would satisfy every assertion above.
@@ -163,14 +176,25 @@ class NexusMenuLayoutTest {
                 "filler must never cover the stats head -- a pane painted over it would hide a "
                         + "working readout behind a black square, and nothing would say so");
 
+        assertFalse(NexusMenuLayout.FILLER_SLOTS.contains(NexusMenuLayout.CRAFTING_SLOT),
+                "nor the crafting station");
+        assertFalse(NexusMenuLayout.FILLER_SLOTS.contains(NexusMenuLayout.ENCHANT_SLOT),
+                "nor the enchanting station");
+
         // AND IT COVERS EVERYTHING ELSE -- the other half, without which the assertions above are
         // equally consistent with FILLER_SLOTS being empty and the whole screen rendering blank.
-        assertEquals(NexusMenuLayout.SIZE - 3, NexusMenuLayout.FILLER_SLOTS.size(),
-                "every slot except the two buttons and the stats head is filler");
+        //
+        // THE CARDINALITY CAUGHT THE TWO NEW STATIONS BEFORE ANY OTHER ROW DID, which is what it is
+        // for: 51 against 49. The per-slot loop below would have caught it too, but the count is
+        // what fails with a number a reader can act on.
+        assertEquals(NexusMenuLayout.SIZE - 5, NexusMenuLayout.FILLER_SLOTS.size(),
+                "every slot except the two buttons, the head and the two stations is filler");
         for (int slot = 0; slot < NexusMenuLayout.SIZE; slot++) {
             boolean isButton = slot == NexusMenuLayout.CLOSE_SLOT
                     || slot == NexusMenuLayout.SETTINGS_SLOT
-                    || slot == NexusMenuLayout.STATS_SLOT;
+                    || slot == NexusMenuLayout.STATS_SLOT
+                    || slot == NexusMenuLayout.CRAFTING_SLOT
+                    || slot == NexusMenuLayout.ENCHANT_SLOT;
             assertEquals(!isButton, NexusMenuLayout.FILLER_SLOTS.contains(slot),
                     "slot " + slot + " filler membership");
         }

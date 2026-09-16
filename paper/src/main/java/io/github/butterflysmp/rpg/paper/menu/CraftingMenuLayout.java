@@ -167,6 +167,42 @@ public final class CraftingMenuLayout {
     /** The browser button: row 2, column 8, at the foot of the suggestion column it overflows. */
     public static final int BROWSER_SLOT = 26;
 
+    /**
+     * Back to the Nexus. <b>Row 1, column 8 -- directly above {@link #BROWSER_SLOT}.</b>
+     *
+     * <h2>COLUMN 8 IS THE NAVIGATION COLUMN. THAT IS THE RULE, NOT "ABOVE THE STATUS BAR"</h2>
+     *
+     * <b>Anything on this screen that takes you to ANOTHER screen lives in column 8</b>, stacked.
+     * The browser button was already there; Back joins it directly above. <b>A fourth screen that
+     * needs a navigation button knows where to put it without asking.</b>
+     *
+     * <p>"Above the status bar" is also true of this slot and is an ACCIDENT -- it describes where
+     * 17 happens to be rather than why it was chosen, and a reader who learns that reason will put
+     * the next nav button anywhere in rows 1-5. The rule is the column.
+     *
+     * <h2>NOT IN THE BOTTOM ROW, AND THE REASON IS THAT THE BOTTOM ROW IS NOT CHROME</h2>
+     *
+     * Slot 48 is where Back lives on {@code SettingsMenuLayout} and {@code RecipeBrowserLayout}, and
+     * it is refused here. <b>This screen's bottom row is the STATUS BAR</b> -- read as one colour at
+     * a glance -- and {@link #STATUS_SLOTS} is the row minus the close button. <b>Eight is what is
+     * left after one subtraction, not a count of anything.</b>
+     *
+     * <p>Back at 48 would add a SECOND exclusion that exists ONLY SOMETIMES, because this button is
+     * drawn only when the screen was opened from the Nexus. The bar would be eight cells wide from
+     * a table and seven from the hub, gate row Q18's expected value would fork on origin, and Q22 --
+     * the bar's sole witness, which records its failure as QUIET ("the symptom is 'the X
+     * disappeared', not a broken menu") -- would have to re-prove its guarantee for a constant
+     * present on one path and absent on the other.
+     *
+     * <p><b>A READOUT WHOSE GEOMETRY DEPENDS ON HOW YOU GOT THERE IS NOT A READOUT.</b> Q23 exists
+     * because two grays in one screen are confusable; this would ask the same eye to read a signal
+     * whose shape changes for a reason nothing on screen explains.
+     *
+     * <p><b>MEASURED CONSEQUENCE: Q18 needs no restaging.</b> Eight cells, both origins. That is the
+     * argument for this slot rather than a hoped-for side effect.
+     */
+    public static final int BACK_SLOT = 17;
+
     private static List<Integer> suggestionSlots() {
         List<Integer> slots = new ArrayList<>();
         for (int index = 0; index < SUGGESTIONS; index++) {
