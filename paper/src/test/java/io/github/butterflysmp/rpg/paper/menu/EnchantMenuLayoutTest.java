@@ -26,20 +26,25 @@ class EnchantMenuLayoutTest {
 
     @Test
     void theThreeColumnsSitAtTheDesignedSlots() {
-        // Columns 2, 4 and 6; rows 2, 3 and 4. Read down a column for one enchant slot's choices.
-        assertEquals(20, EnchantMenuLayout.rawSlotFor(0, 0));
-        assertEquals(29, EnchantMenuLayout.rawSlotFor(0, 1));
-        assertEquals(38, EnchantMenuLayout.rawSlotFor(0, 2));
+        // PROSE COLUMNS 4, 6 and 8; PROSE ROWS 2, 3 and 4 -- 1-based, as every layout instruction
+        // on this project is. Read down a column for one enchant slot's choices.
+        //
+        // THE OLD COMMENT HERE SAID "Columns 2, 4 and 6; rows 2, 3 and 4" AND WAS 0-BASED, which is
+        // the ambiguity this move exposed: "rows 2, 3 and 4" is legal in both conventions and names
+        // different rows in each. EnchantMenuLayout's class javadoc now states which.
+        assertEquals(12, EnchantMenuLayout.rawSlotFor(0, 0));
+        assertEquals(21, EnchantMenuLayout.rawSlotFor(0, 1));
+        assertEquals(30, EnchantMenuLayout.rawSlotFor(0, 2));
 
-        assertEquals(22, EnchantMenuLayout.rawSlotFor(1, 0));
-        assertEquals(31, EnchantMenuLayout.rawSlotFor(1, 1));
-        assertEquals(40, EnchantMenuLayout.rawSlotFor(1, 2));
+        assertEquals(14, EnchantMenuLayout.rawSlotFor(1, 0));
+        assertEquals(23, EnchantMenuLayout.rawSlotFor(1, 1));
+        assertEquals(32, EnchantMenuLayout.rawSlotFor(1, 2));
 
-        assertEquals(24, EnchantMenuLayout.rawSlotFor(2, 0));
-        assertEquals(33, EnchantMenuLayout.rawSlotFor(2, 1));
-        assertEquals(42, EnchantMenuLayout.rawSlotFor(2, 2));
-        // Mutation: COLUMN_STRIDE 2 -> 1 collapses the columns onto 2/3/4 -> reddens.
-        // Mutation: FIRST_CANDIDATE_ROW 2 -> 1 lifts every cell a row -> reddens.
+        assertEquals(16, EnchantMenuLayout.rawSlotFor(2, 0));
+        assertEquals(25, EnchantMenuLayout.rawSlotFor(2, 1));
+        assertEquals(34, EnchantMenuLayout.rawSlotFor(2, 2));
+        // Mutations on COLUMN_STRIDE, FIRST_CANDIDATE_ROW and FIRST_SLOT_COLUMN: kill sets RECORDED
+        // in the PR body, not predicted here.
     }
 
     @Test
@@ -63,12 +68,26 @@ class EnchantMenuLayoutTest {
         // Literals, like the nine cells, and for the same reason: these are design decisions, and
         // every OTHER assertion in this file reaches them through the constants -- so it would pass
         // unchanged whatever the constants said. This is the only test that can see them move.
-        assertEquals(0, EnchantMenuLayout.CLOSE_SLOT);
+        assertEquals(49, EnchantMenuLayout.CLOSE_SLOT,
+                "row 6 column 5 -- the SAME cell crafting, the hub and settings use");
         assertEquals(4, EnchantMenuLayout.INFO_SLOT, "the hint reads top-centre");
         assertEquals(8, EnchantMenuLayout.BOOKSHELF_SLOT);
-        assertEquals(49, EnchantMenuLayout.INPUT_SLOT,
-                "the weapon sits bottom-centre, nearest the player's own inventory");
+        assertEquals(10, EnchantMenuLayout.INPUT_SLOT,
+                "row 2 column 2 -- top-left. It was 49 (bottom-centre, nearest the player's own "
+                        + "inventory); that travel was traded for Close's cross-screen convergence");
         // Mutation: swap INPUT_SLOT and INFO_SLOT -> reddens HERE and nowhere else in the suite.
+    }
+
+    @Test
+    void closeIsTheSAMESlotOnEVERYScreen_andThatIsTheWholeReasonItMoved() {
+        // THE CONVERGENCE, ASSERTED RATHER THAN LEFT TO FOUR LITERALS MATCHING. CraftingMenuLayout
+        // recorded the old divergence as DELIBERATE and NexusMenuLayout deferred to that record;
+        // both paragraphs are now history. This row is what stops the four drifting apart again.
+        assertEquals(CraftingMenuLayout.CLOSE_SLOT, EnchantMenuLayout.CLOSE_SLOT,
+                "the enchant table finally agrees with the crafting table");
+        assertEquals(NexusMenuLayout.CLOSE_SLOT, EnchantMenuLayout.CLOSE_SLOT, "and with the hub");
+        assertEquals(SettingsMenuLayout.CLOSE_SLOT, EnchantMenuLayout.CLOSE_SLOT,
+                "and with settings -- a player learns Close once and uses it on four screens");
     }
 
     @Test
@@ -80,16 +99,54 @@ class EnchantMenuLayoutTest {
         assertTrue(EnchantMenuLayout.cellAt(EnchantMenuLayout.BOOKSHELF_SLOT).isEmpty());
         assertTrue(EnchantMenuLayout.cellAt(EnchantMenuLayout.INFO_SLOT).isEmpty());
 
-        // The gaps BETWEEN the columns. 21 sits between slot 0 and slot 1 on a candidate row, so a
-        // missing stride check would round it into a real cell and make filler clickable.
-        assertTrue(EnchantMenuLayout.cellAt(21).isEmpty(), "the gap between columns is not a cell");
-        assertTrue(EnchantMenuLayout.cellAt(23).isEmpty());
-        // Mutation: drop the "offset % COLUMN_STRIDE != 0" arm -> 21 becomes a cell -> reddens.
+        // The gaps BETWEEN the columns. On the first candidate row (indices 9-17) the cells are at
+        // 12, 14 and 16, so 13 and 15 are the gaps: a missing stride check would round them into
+        // real cells and make filler clickable.
+        //
+        // THESE MOVED WITH THE LAYOUT AND THE OLD NUMBERS ARE NOW CELLS. This row used to assert
+        // that 21 and 23 were gaps; both are live candidate cells today. A gap assertion that
+        // silently became a cell assertion would have been the most dangerous possible stale test
+        // here -- it would pass only while the stride check was BROKEN.
+        assertTrue(EnchantMenuLayout.cellAt(13).isEmpty(), "the gap between columns is not a cell");
+        assertTrue(EnchantMenuLayout.cellAt(15).isEmpty());
+        // Mutation: drop the "offset % COLUMN_STRIDE != 0" arm -> 13 becomes a cell -> reddens.
 
-        // The candidate rows do not run to the edges either.
-        assertTrue(EnchantMenuLayout.cellAt(18).isEmpty(), "column 0 of a candidate row is filler");
-        assertTrue(EnchantMenuLayout.cellAt(26).isEmpty(), "column 8 of a candidate row is filler");
-        // Mutation: drop the "slot >= SLOTS" arm -> 26 becomes slot 3 -> reddens.
+        // The candidate rows do not run to the edges either. Column 0 and column 8 of the first
+        // candidate row are 9 and 17.
+        assertTrue(EnchantMenuLayout.cellAt(9).isEmpty(), "column 0 of a candidate row is filler");
+        assertTrue(EnchantMenuLayout.cellAt(17).isEmpty(), "column 8 of a candidate row is filler");
+        // Mutation: drop the "slot >= SLOTS" arm -> 17 becomes slot 3 -> reddens.
+    }
+
+    @Test
+    void everyRAWSlotRoundTripsBackToItself_theOTHERDirection() {
+        // THE OPERATOR ASKED FOR THIS ONE SPECIFICALLY, and it is NOT the row above.
+        //
+        //   everyCellRoundTripsThroughItsRawSlot   cell -> raw -> cell
+        //   this row                               raw  -> cell -> raw
+        //
+        // They are different claims. The first says every cell has an index; this says every index
+        // a cell resolves FROM maps back to itself. A change that touched one direction and not the
+        // other compiles, moves the screen, and is silent -- a click landing on one cell and
+        // resolving to another selects the wrong enchant, and nothing logs it.
+        //
+        // Both directions derive from the same three constants today, so this cannot fail now.
+        // THAT IS THE POINT: it is here for the future edit that breaks the property, not for a
+        // defect that exists.
+        for (int raw = 0; raw < EnchantMenuLayout.SIZE; raw++) {
+            int finalRaw = raw;
+            EnchantMenuLayout.cellAt(raw).ifPresent(cell ->
+                    assertEquals(finalRaw,
+                            EnchantMenuLayout.rawSlotFor(cell.slot(), cell.candidate()),
+                            "raw " + finalRaw + " resolved to " + cell + " which is not that slot"));
+        }
+
+        // AND IT MUST HAVE FOUND ALL NINE -- without this the loop is satisfied by cellAt returning
+        // empty for every index in the menu, which is the silent way this row goes hollow.
+        long cells = java.util.stream.IntStream.range(0, EnchantMenuLayout.SIZE)
+                .filter(raw -> EnchantMenuLayout.cellAt(raw).isPresent())
+                .count();
+        assertEquals(9, cells, "exactly nine indices address a candidate cell");
     }
 
     @Test

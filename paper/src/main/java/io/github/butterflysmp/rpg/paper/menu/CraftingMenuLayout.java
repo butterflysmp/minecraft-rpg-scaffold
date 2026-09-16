@@ -40,11 +40,19 @@ public final class CraftingMenuLayout {
     /**
      * A barrier, centred in the bottom row.
      *
-     * <p><b>MOVED from slot 0, and the enchant table did NOT move with it.</b> This constant used to
-     * carry the line "same slot the enchant table uses, so the two agree" -- and that is now false:
-     * {@code EnchantMenuLayout.CLOSE_SLOT} is still 0. The two menus disagree about where Close
-     * lives, deliberately, because only the crafting screen was redesigned. Said out loud rather
-     * than left as a stale claim, which is the failure this repo keeps recording.
+     * <p><b>MOVED from slot 0, and for a while the enchant table did NOT move with it.</b> This
+     * constant used to carry the line "same slot the enchant table uses, so the two agree"; that
+     * became false, and was replaced by a note recording the divergence as DELIBERATE -- only the
+     * crafting screen had been redesigned.
+     *
+     * <p><b>BOTH OF THOSE ARE NOW HISTORY, AND THE SECOND IS KEPT BECAUSE ITS REASONING WAS
+     * SOUND.</b> A divergence that exists because one screen was redesigned and another was not is
+     * a reason, not an oversight, and saying so out loud is what let the next reader tell the two
+     * apart. The condition it rested on has simply expired: the enchant screen was redesigned on
+     * 2026-09-16 and {@code EnchantMenuLayout.CLOSE_SLOT} is 49.
+     *
+     * <p><b>Close is 49 on every screen in this plugin</b> -- crafting, enchant, the hub, settings.
+     * There is no longer a disagreement to record.
      *
      * <p><b>It sits INSIDE the status bar's row and the bar must never paint over it.</b> That is
      * not left to a loop remembering to skip it -- see {@link #STATUS_SLOTS}.
@@ -158,6 +166,42 @@ public final class CraftingMenuLayout {
 
     /** The browser button: row 2, column 8, at the foot of the suggestion column it overflows. */
     public static final int BROWSER_SLOT = 26;
+
+    /**
+     * Back to the Nexus. <b>Row 1, column 8 -- directly above {@link #BROWSER_SLOT}.</b>
+     *
+     * <h2>COLUMN 8 IS THE NAVIGATION COLUMN. THAT IS THE RULE, NOT "ABOVE THE STATUS BAR"</h2>
+     *
+     * <b>Anything on this screen that takes you to ANOTHER screen lives in column 8</b>, stacked.
+     * The browser button was already there; Back joins it directly above. <b>A fourth screen that
+     * needs a navigation button knows where to put it without asking.</b>
+     *
+     * <p>"Above the status bar" is also true of this slot and is an ACCIDENT -- it describes where
+     * 17 happens to be rather than why it was chosen, and a reader who learns that reason will put
+     * the next nav button anywhere in rows 1-5. The rule is the column.
+     *
+     * <h2>NOT IN THE BOTTOM ROW, AND THE REASON IS THAT THE BOTTOM ROW IS NOT CHROME</h2>
+     *
+     * Slot 48 is where Back lives on {@code SettingsMenuLayout} and {@code RecipeBrowserLayout}, and
+     * it is refused here. <b>This screen's bottom row is the STATUS BAR</b> -- read as one colour at
+     * a glance -- and {@link #STATUS_SLOTS} is the row minus the close button. <b>Eight is what is
+     * left after one subtraction, not a count of anything.</b>
+     *
+     * <p>Back at 48 would add a SECOND exclusion that exists ONLY SOMETIMES, because this button is
+     * drawn only when the screen was opened from the Nexus. The bar would be eight cells wide from
+     * a table and seven from the hub, gate row Q18's expected value would fork on origin, and Q22 --
+     * the bar's sole witness, which records its failure as QUIET ("the symptom is 'the X
+     * disappeared', not a broken menu") -- would have to re-prove its guarantee for a constant
+     * present on one path and absent on the other.
+     *
+     * <p><b>A READOUT WHOSE GEOMETRY DEPENDS ON HOW YOU GOT THERE IS NOT A READOUT.</b> Q23 exists
+     * because two grays in one screen are confusable; this would ask the same eye to read a signal
+     * whose shape changes for a reason nothing on screen explains.
+     *
+     * <p><b>MEASURED CONSEQUENCE: Q18 needs no restaging.</b> Eight cells, both origins. That is the
+     * argument for this slot rather than a hoped-for side effect.
+     */
+    public static final int BACK_SLOT = 17;
 
     private static List<Integer> suggestionSlots() {
         List<Integer> slots = new ArrayList<>();

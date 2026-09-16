@@ -1,9 +1,10 @@
 # GATE — the Nexus: the six routes out, and the two things a unit test cannot see
 
 **Status: PARTIALLY RUN — ROW 6 ONLY, 2026-09-15. Rows 1–5 and 7 remain NOT RUN, and so does every
-row of SLICE 2 (8–13), SLICE 3 (14–19), SLICE 4a (20–24) and SLICE 4b (25–30)** — each block carries
-its own status line. **Twenty-five of thirty rows have never been booted, and the file is still
-growing**; that is flagged for the operator rather than hidden in a block header.
+row of SLICE 2 (8–13), SLICE 3 (14–19), SLICE 4a (20–24), SLICE 4b (25–30) and SLICE 5 (31–34)** —
+each block carries its own status line. **Twenty-nine of thirty-four rows have never been booted,
+and the file is still growing**; that is flagged for the operator rather than hidden in a block
+header.
 
 > ### FOUR PREDICTIONS WERE RESTAGED ON 2026-09-16, AND EDITING A PREDICTION NORMALLY IS NOT ALLOWED
 >
@@ -65,6 +66,7 @@ ships to a survival server; **a creative reading certifies creative**, and nothi
 | **21** | **SURVIVAL**, and **21b especially** | 21b moves an ordinary item around the **player's own hotbar**, which is the surface Row 8 shows behaves differently in creative. **A creative 21b certifies creative and says nothing about the shipped path** |
 | **24** | **SURVIVAL** | it is a row about **dying**, and a creative player is hard to kill — Row 1's reason, unchanged |
 | **25, 27, 28, 30** | **SURVIVAL** | slice 4b. A tooltip, two menu transitions, two refusal messages and a control — none reads a game mode |
+| **31–34** | **SURVIVAL** | slice 5. Two stations, a bookshelf count and a Back button -- none reads a game mode, and 32 needs real placed blocks |
 | **26, 29** | **SURVIVAL**, and **26c especially** | 26c reads a **displaced item** surviving, and 29 counts hotbar cells. Creative makes items free, so *"the item is still there"* is satisfied for nothing — the register's own shape: **creative removes a cost, and a row whose reading is "the thing is still there" passes without exercising anything** |
 | **18** | **SURVIVAL**, and **this one is load-bearing** | it moves an item **in the player's own inventory with a menu open** — the exact surface Row 8 shows behaves differently in creative. **A creative reading of 18 certifies creative and says nothing about the shipped path** |
 
@@ -1307,6 +1309,104 @@ the hub**.
 > three things instead of two. This row says the two that already worked still do. It is Row 19
 > re-run against a changed screen, deliberately rather than by citation: **a control carried past
 > its precondition stops being a control without stopping being quotable.**
+
+**READING:** _(not run)_
+
+---
+
+# SLICE 5 — CRAFTING AND ENCHANTING FROM THE NEXUS. ROWS 31–34
+
+**Status: NOT RUN.** Every row below was written **before any boot**.
+
+**GAME MODE: `/gamemode survival` for all four.**
+
+**The two stations are at 31 and 32 — row 4, the crafting-type band.** Their band was picked by
+their KIND, not chosen; `NexusMenuLayout`'s band table is the rule.
+
+## ROW 31 — THE TWO STATIONS OPEN, AND THE ENCHANT SCREEN IS UNPOWERED
+
+**Staging.** `/gamemode survival`. Open the hub. **Read both new icons in row 4, then click each.**
+
+**PREDICTED:**
+
+| | expected |
+|---|---|
+| 31a | slot 31 is a **CRAFTING_TABLE** named *Crafting*; slot 32 is an **ENCHANTING_TABLE** named *Enchanting* |
+| 31b | the enchanting icon's lore says **"Unpowered -- no bookshelves here."** before you click it |
+| 31c | clicking 31 opens the crafting screen; clicking 32 opens the enchant screen |
+| 31d | **THE ROW.** On the enchant screen, hover the bookshelf slot at index 8. It reads **"Bookshelf Power 0/30"** |
+
+> **31d MUST NOT SAY "NOT AVAILABLE", AND MUST NOT BE A `placeholder`.** The reading is REAL and
+> CORRECT — it measured zero. `MenuIcons.placeholder`'s javadoc settled this exact case as its first
+> worked example: *"'0/30' reads as a measurement where a bare '0%' could not."* **A screen that says
+> "not available" where it means "zero" is the recipe browser's empty state wearing the placeholder's
+> clothes, and gate row `Q33` would have passed on that one too.**
+>
+> **If the lore reads *"Not implemented yet."* anywhere on this screen, that is the `Q33` defect
+> recurring for the third time.**
+
+**READING:** _(not run)_
+
+## ROW 32 — **THE CONTROL FOR 31d.** A REAL TABLE STILL COUNTS ITS SHELVES
+
+**Without this row, `0/30` passes whether or not the count is wired at all.**
+
+**Staging.** `/gamemode survival`. Place a real enchanting table with **at least one bookshelf** in
+the ring around it. Right-click it. **Hover the bookshelf slot.**
+
+**PREDICTED:** a **NON-ZERO numerator** — `Bookshelf Power N/30` where N is at least 1 — and the
+stack in that slot is **N books deep**, not one.
+
+> **THE STACK IS THE GLANCE AND THE NAME IS THE MEASUREMENT.** The amount floors at 1, because an
+> `ItemStack` of amount 0 renders as **nothing at all** and an empty cell cannot be told from a
+> feature that is not there. So power 0 and power 1 both show ONE book and are distinguished by the
+> NAME. **Read the name, not the pile.**
+>
+> **With 30 or more shelves the stack GLINTS.** That marks the ceiling, so a player can see they
+> have stopped gaining without reading the number.
+
+**READING:** _(not run)_
+
+## ROW 33 — **BACK EXISTS ONLY WHEN THERE IS SOMEWHERE TO GO BACK TO**
+
+**Staging.** `/gamemode survival`, two sub-rows, and **33b is the row**:
+
+| | staging | expected |
+|---|---|---|
+| **33a** | open crafting **FROM THE HUB** (slot 31) | an **ARROW at slot 17** named **"Back to the Nexus"**. Clicking it returns to the hub |
+| **33b** | **THE CONTROL** — right-click a crafting table **in the world** | **NO button at slot 17.** The slot is whatever it was before this slice |
+
+> **33b IS THE HALF THAT CAN FAIL SILENTLY.** A build that always paints Back passes 33a perfectly.
+> The world-opened screen would then offer to return a player to a hub they never opened — a
+> back-arrow promising a destination they did not come from, which is the line `MenuIcons.close`'s
+> javadoc draws from the other side.
+>
+> **AND THE STATUS BAR IS EIGHT GRAY CELLS IN BOTH.** Count them on each sub-row. Back is at 17,
+> not in the bottom row, precisely so the bar's width does not depend on how the screen was opened
+> — **a readout whose geometry changes by origin is not a readout.** If 33a shows seven, Back has
+> been put in the bar and row `Q18` needs restaging.
+>
+> **Load the grid before clicking Back in 33a.** The items must come back: this screen HAS input
+> slots, so it closes before it navigates, and `returnEverything` runs on that close.
+
+**READING:** _(not run)_
+
+## ROW 34 — THE NAVIGATION COLUMN, READ AS A COLUMN
+
+**Staging.** `/gamemode survival`. Open crafting **from the hub** and look at **column 8** — the
+rightmost — in rows 1 and 2. That is slots 17 and 26.
+
+**PREDICTED:** **Back at 17, the recipe book at 26, stacked.** Both are navigation; nothing else in
+that column is.
+
+> **THIS ROW EXISTS TO MAKE THE RULE VISIBLE RATHER THAN TO CATCH A DEFECT.** The rule is *column 8
+> is where you go somewhere else*, and it is the reason 17 was chosen — not "above the status bar",
+> which is true of that slot and is an accident. **A reader who learns the accidental reason will
+> put the next navigation button anywhere in rows 1-5.**
+>
+> **The recipe book must still work from the hub-opened screen.** Click it. Removing a working
+> feature conditionally is the collision notice's lesson inverted: a line of chat was added so a
+> shadowed crafting table would not be silent, and silently deleting a button is worse.
 
 **READING:** _(not run)_
 

@@ -2,6 +2,9 @@ package io.github.butterflysmp.rpg.paper.menu;
 
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
+import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
+import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
+import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheetProjection;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
@@ -69,6 +72,10 @@ public final class NexusMenu extends Menu {
     private final ProfileService profiles;
     private final WeaponRegistry weapons;
     private final ResourcePool resources;
+    private final RecipeCatalogue recipes;
+    private final ShieldRegistry shields;
+    private final ArmorRegistry armor;
+    private final ToolRegistry tools;
 
     /**
      * @param adapters  stats and keys, for the stats head's figures
@@ -76,22 +83,48 @@ public final class NexusMenu extends Menu {
      * @param weapons   the registry, for the held weapon's quiver pair
      * @param resources the mana pool
      *
+     * @param recipes   the shared catalogue, handed to the CRAFTING screen
+     * @param shields   } the three registries the ENCHANT screen needs, carried for the same reason
+     * @param armor     }
+     * @param tools     }
+     *
      * <p>The services are taken rather than a pre-built {@code StatsSheetValues} so that the slice
-     * which makes the head clickable can REPAINT it. Five parameters of five distinct types, so
+     * which makes the head clickable can REPAINT it. Nine parameters of nine distinct types, so
      * there is no transposable adjacent pair.
      *
-     * <p><b>{@code profiles} is not read by this screen at all</b> -- it is handed to
-     * {@link SettingsMenu} when the torch is clicked. Threading it through rather than reaching for
-     * a static is the third architecture invariant: no static mutable singletons holding player
-     * state.
+     * <p><b>MOST OF THESE ARE NOT READ BY THIS SCREEN AT ALL</b> -- {@code profiles} goes to
+     * {@link SettingsMenu}, {@code recipes} to {@link CraftingMenu}, and the three registries to
+     * {@link EnchantMenu}. Threading them rather than reaching for a static is the third
+     * architecture invariant: no static mutable singletons holding player state.
+     *
+     * <h2>THE THREADING STOPS HERE, AND THE BREADCRUMB IS WHY</h2>
+     *
+     * <b>This is the only screen that carries the full set.</b> A first draft of this slice was
+     * about to give {@link SettingsMenu} the same nine and {@link CraftingMenu} ten, each of them
+     * only so a Back button could rebuild the hub -- at which point a {@code MenuServices} record
+     * was the obvious next move, and Ben's instruction on this arc is explicitly not to over-design
+     * it.
+     *
+     * <p><b>A {@code Supplier<Menu>} settled it without either.</b> A screen that needs a way back
+     * takes ONE parameter -- a lambda capturing what the OPENER already had -- rather than the
+     * services to rebuild something it has no other use for. {@code SettingsMenu} lost two
+     * parameters to it and {@code CraftingMenu} gained one instead of six.
+     *
+     * <p>So the bundle is not owed: the pressure that would have created it came entirely from
+     * reconstruction, and reconstruction is now somebody else's captured variable.
      */
     public NexusMenu(Player viewer, AdapterContext adapters, ProfileService profiles,
-                     WeaponRegistry weapons, ResourcePool resources) {
+                     WeaponRegistry weapons, ResourcePool resources, RecipeCatalogue recipes,
+                     ShieldRegistry shields, ArmorRegistry armor, ToolRegistry tools) {
         super(viewer, NexusMenuLayout.SIZE, MenuIcons.line("Nexus Menu", NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
         this.profiles = profiles;
         this.weapons = weapons;
         this.resources = resources;
+        this.recipes = recipes;
+        this.shields = shields;
+        this.armor = armor;
+        this.tools = tools;
         render();
     }
 
@@ -121,13 +154,34 @@ public final class NexusMenu extends Menu {
             viewer.closeInventory();
             return;
         }
+        if (click.slot() == NexusMenuLayout.CRAFTING_SLOT) {
+            // Menu.open's rule: hop a tick, no explicit close -- the hub holds no input slots.
+            // FROM_NEXUS is what gives the crafting screen its Back button; see CraftingMenu.
+            // THE SUPPLIER IS THE BREADCRUMB, and it captures what THIS screen already holds rather
+            // than handing CraftingMenu eight services it would only use to rebuild us. A third
+            // screen with a Back button costs one lambda, not another constructor widening.
+            adapters.scheduler().onEntity(viewer, () -> new CraftingMenu(
+                    viewer, adapters, recipes,
+                    () -> new NexusMenu(viewer, adapters, profiles, weapons, resources, recipes,
+                            shields, armor, tools)).open());
+            return;
+        }
+        if (click.slot() == NexusMenuLayout.ENCHANT_SLOT) {
+            // THE NO-BLOCK CONSTRUCTOR. An unpowered table: Ben's ruling, and the bookshelf slot
+            // reads 0/30 because it MEASURED zero rather than because there is nothing to measure.
+            adapters.scheduler().onEntity(viewer, () ->
+                    new EnchantMenu(viewer, weapons, shields, armor, tools, adapters).open());
+            return;
+        }
         if (click.slot() == NexusMenuLayout.SETTINGS_SLOT) {
             // HOP A TICK, NO EXPLICIT CLOSE. Menu.open's javadoc carries the measured rule and the
             // reason: both Scheduler entity methods land on the next tick, and the close exists only
             // to run returnEverything for a menu holding the player's items. The hub holds none --
             // inputSlots() is empty -- so openInventory's implicit close is sufficient.
             adapters.scheduler().onEntity(viewer,
-                    () -> new SettingsMenu(viewer, adapters, profiles, weapons, resources).open());
+                    () -> new SettingsMenu(viewer, adapters, profiles,
+                            () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
+                                    recipes, shields, armor, tools)).open());
             return;
         }
         // Every filler pane is inert, and the stats head's click is still unbuilt -- slice 3's
@@ -157,6 +211,24 @@ public final class NexusMenu extends Menu {
         // The rule that decided it: reaching for placeholder is a claim that something is NOT BUILT.
         // A settings screen exists now, so saying "Not implemented yet." above a working button
         // would be the Q33 defect with the notice and the feature inverted.
+        // THE CRAFTING-TYPE BAND, row 4. Both are icon() and both are BUILT -- the screens behind
+        // them exist and work; only the route through the hub is new.
+        getInventory().setItem(NexusMenuLayout.CRAFTING_SLOT, MenuIcons.icon(
+                Material.CRAFTING_TABLE,
+                MenuIcons.line("Crafting", NamedTextColor.GRAY),
+                List.of(MenuIcons.line("The full grid, and the recipe book.",
+                        NamedTextColor.DARK_GRAY))));
+
+        // "Unpowered" is said HERE, on the button, and again as 0/30 on the screen itself. A player
+        // who is about to walk to a real table should be able to learn that before opening this.
+        getInventory().setItem(NexusMenuLayout.ENCHANT_SLOT, MenuIcons.icon(
+                Material.ENCHANTING_TABLE,
+                MenuIcons.line("Enchanting", NamedTextColor.GRAY),
+                List.of(MenuIcons.line("Unpowered -- no bookshelves here.",
+                                NamedTextColor.DARK_GRAY),
+                        MenuIcons.line("A real table with shelves reaches 30.",
+                                NamedTextColor.DARK_GRAY))));
+
         getInventory().setItem(NexusMenuLayout.SETTINGS_SLOT, MenuIcons.icon(
                 Material.REDSTONE_TORCH,
                 MenuIcons.line("Settings", NamedTextColor.GRAY),

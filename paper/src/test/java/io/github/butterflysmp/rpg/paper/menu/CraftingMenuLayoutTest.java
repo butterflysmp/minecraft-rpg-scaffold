@@ -198,6 +198,38 @@ class CraftingMenuLayoutTest {
     }
 
     @Test
+    void COLUMN8ISTheNavigationColumn_andBackIsPinnedToItsLITERAL() {
+        // ADDED BECAUSE A MUTATION FOUND NOTHING. MUTS5-BACK moved BACK_SLOT from 17 to 48 and the
+        // ENTIRE SUITE STAYED GREEN -- so nothing pinned this constant, and 48 is a live STATUS_SLOT
+        // that the bar would have painted straight over. An invisible button, and the only symptom
+        // is that Back "doesn't work sometimes".
+        assertEquals(17, CraftingMenuLayout.BACK_SLOT, "Back is row 1, column 8");
+
+        // THE RULE, NOT THE ACCIDENT. 17 is above the status bar and that is incidental; what was
+        // chosen is the COLUMN. Anything on this screen that takes you to another screen lives in
+        // column 8, stacked, so a fourth screen's nav button has a rule rather than two examples.
+        assertEquals(8, CraftingMenuLayout.BACK_SLOT % 9, "Back is in the navigation column");
+        assertEquals(8, CraftingMenuLayout.BROWSER_SLOT % 9,
+                "and so is the recipe book -- they are the column, not a coincidence");
+        assertEquals(CraftingMenuLayout.BROWSER_SLOT - 9, CraftingMenuLayout.BACK_SLOT,
+                "Back sits DIRECTLY above the browser button, one row up in the same column");
+
+        // AND IT IS CLEAR OF EVERYTHING FUNCTIONAL, including the bar it deliberately avoids.
+        assertFalse(CraftingMenuLayout.STATUS_SLOTS.contains(CraftingMenuLayout.BACK_SLOT),
+                "Back must NOT be in the status bar -- a readout whose width depends on how you "
+                        + "opened the screen is not a readout, and Q18 pins eight cells");
+        assertEquals(OptionalInt.empty(),
+                CraftingMenuLayout.matrixIndexOf(CraftingMenuLayout.BACK_SLOT),
+                "Back must not craft");
+        assertEquals(OptionalInt.empty(),
+                CraftingMenuLayout.suggestionIndexOf(CraftingMenuLayout.BACK_SLOT),
+                "nor be a suggestion cell");
+        assertNotEquals(CraftingMenuLayout.RESULT_SLOT, CraftingMenuLayout.BACK_SLOT);
+        assertNotEquals(CraftingMenuLayout.INDICATOR_SLOT, CraftingMenuLayout.BACK_SLOT);
+        // Mutation MUTS5-BACK: BACK_SLOT 17 -> 48 -> kill set RECORDED in the PR body.
+    }
+
+    @Test
     void everySlotInTheWholeInventoryIsEitherASuggestionOrNot() {
         // Exactly nine raw slots may resolve as suggestions, and they are exactly the nine above.
         // A widened bound would make a filler pane craft when clicked.

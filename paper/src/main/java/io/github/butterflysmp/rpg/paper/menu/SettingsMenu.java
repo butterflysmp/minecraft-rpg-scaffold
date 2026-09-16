@@ -47,25 +47,26 @@ public final class SettingsMenu extends Menu {
 
     private final AdapterContext adapters;
     private final ProfileService profiles;
-    private final WeaponRegistry weapons;
-    private final ResourcePool resources;
-
     /**
-     * @param weapons   carried only to rebuild the hub on the way back
-     * @param resources the same
+     * How to rebuild the hub for the Back button -- the breadcrumb, captured by whoever opened us.
      *
-     * <p>Both exist because {@code NexusMenu} needs them for its stats head, and the back button
-     * constructs a fresh hub. Threading them through is the cost of the back button naming a
-     * destination it can actually build.
+     * <p><b>A supplier rather than the services a hub needs.</b> This screen used to carry
+     * {@code weapons} and {@code resources} for no reason except reconstructing {@code NexusMenu},
+     * and when the hub grew four more services every screen with a Back button would have grown
+     * with it. The supplier captures what the OPENER already had.
+     *
+     * <p>It is a breadcrumb and must not become identity -- {@code CraftingMenu.Origin} carries
+     * that argument, and it applies here unchanged.
      */
+    private final java.util.function.Supplier<Menu> hub;
+
     public SettingsMenu(Player viewer, AdapterContext adapters, ProfileService profiles,
-                        WeaponRegistry weapons, ResourcePool resources) {
+                        java.util.function.Supplier<Menu> hub) {
         super(viewer, SettingsMenuLayout.SIZE,
                 MenuIcons.line("Nexus Settings", NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
         this.profiles = profiles;
-        this.weapons = weapons;
-        this.resources = resources;
+        this.hub = hub;
         render();
     }
 
@@ -102,7 +103,7 @@ public final class SettingsMenu extends Menu {
             // openInventory's implicit close is sufficient. Same shape as the recipe browser's
             // back button, which is now documented rather than merely tolerated.
             adapters.scheduler().onEntity(viewer,
-                    () -> new NexusMenu(viewer, adapters, profiles, weapons, resources).open());
+                    () -> hub.get().open());
             return;
         }
 

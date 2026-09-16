@@ -30,9 +30,11 @@ final class NexusMenuLayout {
      * Close. <b>49, the same slot the crafting menu uses</b>, so the button a player has learned
      * does not move between our screens.
      *
-     * <p>{@code EnchantMenuLayout.CLOSE_SLOT} is still 0 and the two disagree -- that divergence is
-     * recorded in {@code CraftingMenuLayout} and is not re-litigated here. This matches the newer
-     * pair, which is the majority and the one a player meets first.
+     * <p><b>ALL FOUR SCREENS NOW AGREE.</b> This paragraph used to say
+     * {@code EnchantMenuLayout.CLOSE_SLOT} was still 0 and that the divergence was recorded in
+     * {@code CraftingMenuLayout} and not re-litigated here. <b>The enchant screen was redesigned on
+     * 2026-09-16 and moved to 49</b>, so there is no divergence left to defer to -- crafting, the
+     * hub, settings and the enchant table all put Close in the same cell.
      */
     static final int CLOSE_SLOT = 49;
 
@@ -86,6 +88,23 @@ final class NexusMenuLayout {
     static final int STATS_SLOT = 13;
 
     /**
+     * Crafting. <b>Row 4, column 4 -- the CRAFTING-TYPE band.</b>
+     *
+     * <p>Its band is picked by its KIND, which is the whole point of the band table above: nobody
+     * chose between "next to the head" and "start of a row", because the row means something.
+     */
+    static final int CRAFTING_SLOT = 31;
+
+    /**
+     * Enchanting. <b>Row 4, column 5 -- beside crafting, in the same band.</b>
+     *
+     * <p>Adjacent to {@link #CRAFTING_SLOT} rather than spread across the row: they are the two
+     * members of one band today, and a player reads them as a pair. {@code NexusMenuLayoutTest}
+     * asserts the adjacency, so a third station cannot silently split them.
+     */
+    static final int ENCHANT_SLOT = 32;
+
+    /**
      * Every slot that is plain filler -- the whole menu except the two buttons.
      *
      * <p><b>Built by SET SUBTRACTION rather than by a loop with {@code continue} arms</b>, the same
@@ -103,6 +122,8 @@ final class NexusMenuLayout {
         slots.remove(CLOSE_SLOT);
         slots.remove(SETTINGS_SLOT);
         slots.remove(STATS_SLOT);
+        slots.remove(CRAFTING_SLOT);
+        slots.remove(ENCHANT_SLOT);
         return Set.copyOf(slots);
     }
 }
