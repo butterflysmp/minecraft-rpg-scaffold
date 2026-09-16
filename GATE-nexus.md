@@ -1,9 +1,10 @@
 # GATE — the Nexus: the six routes out, and the two things a unit test cannot see
 
-**Status: PARTIALLY RUN — ROW 6 ONLY, 2026-09-15. Rows 1–5 and 7 remain NOT RUN, and so does every
-row of SLICE 2 (8–13), SLICE 3 (14–19), SLICE 4a (20–24), SLICE 4b (25–30) and SLICE 5 (31–34)** —
-each block carries its own status line. **Twenty-nine of thirty-four rows have never been booted,
-and the file is still growing**; that is flagged for the operator rather than hidden in a block
+**Status: PARTIALLY RUN — ROW 6 (2026-09-15) and ROWS 8e/8f/8g (2026-09-16). Rows 1–5, 7 and
+8a–8d remain NOT RUN, and so does every row of SLICE 2 (8–13), SLICE 3 (14–19), SLICE 4a (20–24),
+SLICE 4b (25–30) and SLICE 5 (31–34)** — each block carries its own status line. **Twenty-six of
+thirty-four rows have never been booted, and the file is still growing**; that is flagged for the
+operator rather than hidden in a block
 header.
 
 > ### FOUR PREDICTIONS WERE RESTAGED ON 2026-09-16, AND EDITING A PREDICTION NORMALLY IS NOT ALLOWED
@@ -664,15 +665,95 @@ refusal.
 | **A** | `NexusLock`'s `CREATIVE` arm consults `cursorIsStar` | **unit-testable** — `NexusLockTest` can pin it, and a mutation can kill it. **But the operator has said do not touch `NexusLock`** |
 | **B** | an early return in `NexusSlots.refuses` for `InventoryCreativeEvent` | honours that instruction, **and lands in the one class this slice deliberately gave no test file.** Its only coverage would be Row 8 |
 
-**NOT BUILT, PENDING THE RULING.** The prohibition on `NexusLock` was given because the two-member
-arms are correct and must not be "fixed" — **and A does not touch them**: it adds a second axis
-(*what is being written*) to one arm, leaving every slot decision as it is. **But it is still an edit
-to a file that was named off-limits, so it is asked rather than assumed.** B is available and needs
-no ruling; it costs the test.
+> ### RULED 2026-09-15: **A**, AND THE PROHIBITION WAS LIFTED FOR THIS CHANGE ONLY.
+>
+> **The operator verified the premise from `origin` rather than adopting it**, and refused **B** for
+> the reason given above: `NexusSlots` is the class this slice deliberately left untested, and
+> putting the one genuinely unit-testable piece of the fix inside it trades a killable test for a
+> boot row.
+>
+> **AND THE RULE SHIPPED WITHOUT ITS EXEMPTION, WHICH IS A CHANGE FROM THE SENTENCE ABOVE.** *"…
+> unless its destination is the locked slot"* was **dropped**: the switch arm below already refuses
+> every gesture NAMING the locked slot, so that clause is **a branch nothing can reach.** An
+> unreachable arm is indistinguishable from one that protects you, and this file has an open finding
+> about exactly that. **The shipped guard is total —
+> `if (click == ClickType.CREATIVE && cursorIsStar) return true;`** — one line, no exemption.
+>
+> **THE SWEEP THE RULING REQUIRED FIRST, and its answer is ONE ARM.** `cursorIsStar` is consulted in
+> three places (the cursor-drop actions, `DOUBLE_CLICK`, and `refusesDrag`) and in none of the slot
+> arms. For every other `ClickType` the payload is reachable anyway: it is either **the cursor** —
+> where placing is a deliberate permit — or **the contents of a slot already in the touched set**,
+> which `starAt` reads. `ClickType.CREATIVE` is the only one whose payload is in **neither**, because
+> the client manufactures it and only `InventoryCreativeEvent.getCursor()` names it.
 
-**EITHER WAY THIS ROW SHIPS.** Ben's instruction was *fix it if it is cheap; gate it as survival
-either way* — 8d is that survival gate, and it is written before any fix so the fix cannot be
-back-fitted to it.
+### 8e AND 8f — THE FIX, IN PLAY, ON BOTH GESTURES. **THE SHIP CONDITION.**
+
+**WRITTEN BEFORE THE FIX WAS BOOTED.** The unit rows prove the decision; these prove the delivery,
+and **the ruling makes them blocking rather than confirmatory**.
+
+| | gesture, creative, own-inventory screen, **with the guard deployed** | expected |
+|---|---|---|
+| **8e** | number-key the star from slot 8 to slot 1 | `/data` shows **ONE** tagged stack, hotbar slot 8 |
+| **8f** | **F** on the star in the inventory | `/data` shows **ONE** tagged stack, hotbar slot 8, **and the OFFHAND entry holds no star** |
+| **8g** | the control: middle-click, drag and left-click ordinary items around the creative inventory | **everything still moves.** A guard that refuses every creative click reads identically to one that works, until someone tries to build |
+
+> **THESE ROWS SAY "SLOT 8" AND THEY WERE WRITTEN WHEN THAT WAS A FACT ABOUT THE CODE.** Slice 4a
+> made the locked slot per-player; this branch predates it and was rebased across it. **The rows are
+> still correct for a player who has never opened the settings screen**, which is what the default
+> makes everyone — the same precondition the masthead now carries for every row in this file.
+>
+> **So: run 8e–8g with the Nexus slot at the default 9 (index 8)**, or read "slot 8" as "whatever
+> slot the star is in" throughout. **Do NOT re-stage them against a moved slot**: the gesture being
+> measured is a creative DUPLICATION, and where the original sits is incidental to it.
+>
+> **AND ONE THING 4a ADDED THAT THESE ROWS DO NOT REACH.** The guard consults the PAYLOAD, not the
+> slot, so it holds even while a player's profile has not loaded and the locked slot is unknown —
+> a state that did not exist when these rows were written and that a creative player meets in their
+> first seconds online. `aCreativeStarWriteIsREFUSEDEvenWhenTheLockedSlotIsUNKNOWN` is the unit row
+> for it. **Not added as a gate row**: staging it needs a profile read to lose a race on purpose,
+> which is Row 28a's problem and Row 28a already says it may be unstageable by hand.
+
+**READING — 2026-09-16, booted by Ben on the dev server, by hand. CONDITIONS: `/gamemode creative`,
+own-inventory screen (E), the guard DEPLOYED, and the Nexus slot at the default 9 (index 8) as this
+block's precondition requires. INSTRUMENT: the gesture performed by hand; the stack count read with
+`/data get entity @s Inventory` from the console.** The predictions above are untouched.
+
+| | gesture | reading |
+|---|---|---|
+| **8e** | number-key the star from slot 8 to slot 1 | **GREEN** — `/data` shows **ONE** `rpg:nexus`-tagged stack, in the hotbar slot 8 entry |
+| **8f** | **F** on the star in the inventory | **GREEN** — **ONE** tagged stack, hotbar slot 8, and **the offhand entry holds no star** |
+| **8g** | middle-click, drag and left-click ordinary items around the creative inventory | **GREEN** — everything still moves |
+
+**THE SHIP CONDITION IS MET, AND 8f IS THE ROW THAT MET IT.** Its argument was one step longer than
+8e's, and that step was the unmeasured one: **the offhand residual was refused by NEITHER the
+`SWAP_OFFHAND` arm NOR `onNexusSwapHand`**, so whether the gesture raised an inventory event at all
+was genuinely open. **It does — as `ClickType.CREATIVE` — and the guard takes it.**
+
+> **THE PRE-AUTHORISED FALLBACK IS DEAD, NOT DECLINED.** *"Drop to gating it and leave the code
+> alone"* was authorised only on 8f failing. 8f passed, so the branch is not choosing between two
+> live options — **one of them stopped existing.** Recorded in those words because a fallback that
+> is merely unused reads as a decision someone made, and this one was removed by a measurement.
+
+> **8g IS WHY "TOTAL" DOES NOT MEAN TOTAL, AND DROPPING THE EXEMPTION IS WHAT MADE IT
+> LOAD-BEARING.** The guard refuses a creative write CARRYING A STAR with no exemption for the
+> locked slot — the exemption was dropped as an unreachable arm. **A guard that refused EVERY
+> creative click would pass 8e and 8f identically**, and would break creative inventory editing
+> wholesale with nothing else reddening. 8g is the only row that can tell those two apart.
+
+> **IF 8e CLOSES AND 8f DOES NOT, THE FIX DOES NOT SHIP — operator's instruction, and the fallback is
+> pre-authorised: drop to gating it and leave the code alone.** A half-fix is worse than none here,
+> because the surviving symptom then presents as a **new** bug in a path just declared guarded, and
+> the next person debugging it starts from *"but the creative arm handles this"*.
+>
+> **THE REASONING COVERS BOTH AND THAT IS PRECISELY WHY BOTH ARE MEASURED.** The argument for 8f is
+> one step longer than for 8e and the extra step is the one that could be wrong: the offhand residual
+> was **not** refused by the `SWAP_OFFHAND` arm and **not** by `onNexusSwapHand`, so it did not arrive
+> as either; if it raises an inventory event at all, `ClickType.CREATIVE` is the only remaining
+> candidate and the guard takes it. **The unmeasured case is that it raises NO event** — in which
+> case nothing in this design can refuse it and the fallback is forced.
+>
+> This is `OFFHAND_SLOT`'s lesson in its live form: **one instance reasoned about, a second instance
+> of the same shape one gesture away.**
 
 ---
 
