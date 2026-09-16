@@ -48,6 +48,39 @@ public abstract class Menu implements InventoryHolder {
         return inventory;
     }
 
+    /**
+     * Show this menu to its viewer.
+     *
+     * <h2>NAVIGATING FROM ANOTHER MENU: HOP A TICK ALWAYS, CLOSE FIRST ONLY SOMETIMES</h2>
+     *
+     * <b>Never call this directly from inside a click handler.</b> The click event has not finished
+     * being processed and the client has not applied the cancellation, which is how a desynced
+     * client ends up holding a ghost item. Go through the {@code Scheduler}.
+     *
+     * <p><b>BOTH entity methods already hop a tick, and that is MEASURED rather than assumed.</b>
+     * The pinned {@code paper-api} javadoc for {@code EntityScheduler.run} -- which is what
+     * {@code Scheduler.onEntity} calls -- reads <i>"Schedules a task to execute on the next
+     * tick."</i> So {@code onEntity} and {@code onEntityLater(..., 1)} are equivalent for this
+     * purpose; neither runs inline.
+     *
+     * <p><b>The explicit {@code closeInventory()} is a SEPARATE question, and it is about
+     * {@link #returnEverything}, not about ghosts.</b> {@code openInventory} implicitly closes
+     * whatever is open, which fires the close event and reaches {@link #onClose}. So:
+     *
+     * <pre>
+     *   departing menu has INPUT SLOTS   close explicitly FIRST, then hop -- the player's items
+     *                                    must come back before the screen changes
+     *   departing menu has NONE          hop and open; the implicit close is sufficient
+     * </pre>
+     *
+     * <p><b>THIS RESOLVES AN ASYMMETRY THAT WAS UNDOCUMENTED UNTIL 2026-09-16.</b>
+     * {@code CraftingMenu} closes then hops; {@code RecipeBrowserMenu}'s back button hops without
+     * closing, with no comment. It read as one of them being wrong. <b>Neither is</b> -- the
+     * crafting grid is {@code inputSlots()} and the browser's is empty, so they differ exactly where
+     * the rule above says they should. The forward path's comment cites ghost items, which is the
+     * half both paths already handle; its real justification is the second half it also states,
+     * that {@code returnEverything} runs on the close.
+     */
     public final void open() {
         viewer.openInventory(inventory);
     }

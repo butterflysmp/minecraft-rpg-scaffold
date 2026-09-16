@@ -1823,8 +1823,7 @@ public final class RpgCommand {
         // not urgent enough to risk letting an unloaded player through.
         PlayerProfile profile = profiles.profile(player.getUniqueId()).orElse(null);
         if (profile == null) {
-            player.sendMessage(Component.text("Your profile is still loading -- try again in a moment.",
-                    NamedTextColor.GRAY));
+            player.sendMessage(profileUnavailable(profiles, player));
             return 0;
         }
         Set<String> castable = Set.copyOf(profile.unlockedAbilities());
@@ -1921,13 +1920,31 @@ public final class RpgCommand {
         return !PlayerProfile.NONE.equals(axis);
     }
 
+    /**
+     * Why this player's profile is unusable, in the words that fit THAT reason.
+     *
+     * <h2>THIS WAS FOUR COPIES OF ONE LITERAL, AND THE LITERAL WAS WRONG A THIRD OF THE TIME</h2>
+     *
+     * All four sites said <i>"Your profile is still loading -- try again in a moment."</i> for every
+     * empty {@code profile()}. That is right for a load in flight and <b>a lie for a load that
+     * already failed</b>: nothing is still happening, so the player retries until they give up.
+     *
+     * <p>{@code ProfileService.availability} carries the distinction, and this is the one place the
+     * commands turn it into a sentence -- so the settings screen, which asks the same question a
+     * menu click later, cannot come to answer it differently.
+     */
+    private static Component profileUnavailable(ProfileService profiles, Player player) {
+        return profiles.availability(player.getUniqueId()) == ProfileService.Availability.UNREADABLE
+                ? Component.text(ProfileService.UNREADABLE_PROFILE, NamedTextColor.RED)
+                : Component.text(ProfileService.STILL_LOADING, NamedTextColor.GRAY);
+    }
+
     /** Set the class axis; the element is carried unchanged, and the kit is re-resolved. */
     private static int chooseClass(Player player, String classId, KitRegistry kits,
                                    ProfileService profiles, WeaponRegistry weapons, AdapterContext adapters) {
         PlayerProfile profile = profiles.profile(player.getUniqueId()).orElse(null);
         if (profile == null) {
-            player.sendMessage(Component.text("Your profile is still loading -- try again in a moment.",
-                    NamedTextColor.GRAY));
+            player.sendMessage(profileUnavailable(profiles, player));
             return 0;
         }
         if (!kits.classes().contains(classId)) {
@@ -1945,8 +1962,7 @@ public final class RpgCommand {
                                      WeaponRegistry weapons, AdapterContext adapters) {
         PlayerProfile profile = profiles.profile(player.getUniqueId()).orElse(null);
         if (profile == null) {
-            player.sendMessage(Component.text("Your profile is still loading -- try again in a moment.",
-                    NamedTextColor.GRAY));
+            player.sendMessage(profileUnavailable(profiles, player));
             return 0;
         }
         if (elements.find(elementId).isEmpty()) {
@@ -1974,8 +1990,7 @@ public final class RpgCommand {
 
         boolean set = profiles.setKit(player.getUniqueId(), classId, elementId, abilities);
         if (!set) {
-            player.sendMessage(Component.text("Your profile is still loading -- try again in a moment.",
-                    NamedTextColor.GRAY));
+            player.sendMessage(profileUnavailable(profiles, player));
             return 0;
         }
 

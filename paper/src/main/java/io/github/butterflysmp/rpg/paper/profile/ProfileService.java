@@ -112,6 +112,105 @@ public final class ProfileService {
                 action.accept(error == null ? Optional.ofNullable(profile) : Optional.empty()));
     }
 
+    /**
+     * WHY a read or a write was refused -- the distinction {@link #profile} throws away.
+     *
+     * <h2>TWO OF THESE ARE THE SAME EMPTY OPTIONAL AND THE PLAYER MUST BE TOLD DIFFERENT THINGS</h2>
+     *
+     * {@code profile()} answers {@code Optional.empty()} for three situations and every caller has
+     * had to guess which; they all guessed <b>LOADING</b>, and say <i>"try again in a moment"</i>.
+     *
+     * <p><b>For {@link #UNREADABLE} that sentence is a lie.</b> The load already finished and
+     * failed. Nothing will ever complete, so "in a moment" never arrives, and the player retries
+     * until they give up and report it as the feature being broken. It is the difference between
+     * <i>wait</i> and <i>this will not work today</i>, and only this type can carry it.
+     *
+     * <p><b>Note what is NOT here: a fresh player.</b> {@link #onJoin} maps a missing file to
+     * {@link PlayerProfile#fresh}, so someone with no saved data is {@link #READY} carrying
+     * defaults. "No file" is not a failure and never reaches these arms.
+     */
+    public enum Availability {
+        /** Loaded, present, writable. */
+        READY,
+        /** The disk read is still in flight. TRANSIENT -- retrying genuinely works. */
+        LOADING,
+        /** The read finished and failed: corrupt, or from a newer server. PERMANENT this session. */
+        UNREADABLE,
+        /** Not tracked at all -- never joined, or already quit. */
+        UNTRACKED
+    }
+
+    /**
+     * What every surface says while a profile is still on its way.
+     *
+     * <p>ONE constant because FOUR command sites and the settings screen say it. It was four copies
+     * of a literal before the settings screen would have made a fifth.
+     */
+    public static final String STILL_LOADING = "Your profile is still loading -- try again in a moment.";
+
+    /**
+     * What every surface says when the profile cannot be read at all.
+     *
+     * <p><b>It deliberately does NOT say "try again".</b> This is the permanent arm: the read
+     * finished and failed, so a retry is the one thing that cannot help. It names the consequence
+     * the player can act on -- their settings will not stick -- and rejoining is the only thing
+     * that re-attempts the read.
+     */
+    public static final String UNREADABLE_PROFILE =
+            "Your profile could not be read, so changes cannot be saved. Try rejoining.";
+
+    /**
+     * Why a read or write would be refused right now, without performing one.
+     *
+     * <p>The three refusal arms are the same triple {@link #profile} and {@link #setKit} guard with;
+     * this returns WHICH rather than collapsing them.
+     */
+    public Availability availability(UUID playerId) {
+        CompletableFuture<PlayerProfile> loading = profiles.get(playerId);
+        if (loading == null) return Availability.UNTRACKED;
+        if (!loading.isDone()) return Availability.LOADING;
+        if (loading.isCompletedExceptionally()) return Availability.UNREADABLE;
+        return loading.getNow(null) == null ? Availability.UNREADABLE : Availability.READY;
+    }
+
+    /**
+     * Move this player's Nexus star to a different hotbar slot, and persist it.
+     *
+     * <h2>THE SECOND WRITER, AND IT IS THE FIRST ONE A MENU DRIVES</h2>
+     *
+     * Modelled on {@link #setKit}, deliberately, down to the guard and the cache replacement: the
+     * cached future is swapped so the very next read -- which is {@code NexusSlots.lockedSlotOf},
+     * a few lines later on the click -- sees the new slot rather than the old one.
+     *
+     * <p><b>UNVALIDATED HERE.</b> The hotbar bound lives at {@code NexusSlots.validSlotOr} and the
+     * caller applies it; this class knows nothing about inventories, the same way
+     * {@code PlayerProfile.withNexusSlot} does not.
+     *
+     * <p>Touches no Bukkit API, per the class rule. <b>Re-placing the star is the caller's job</b>,
+     * on the caller's thread, after this returns -- exactly as minting weapons is
+     * {@code applyKit}'s job after {@code setKit}.
+     *
+     * @return false if the profile is not loaded or could not be read. <b>The caller must say WHICH
+     *         using {@link #availability}</b> -- "try again in a moment" is wrong for the
+     *         unreadable arm and that is the whole reason that enum exists.
+     */
+    public boolean setNexusSlot(UUID playerId, int slot) {
+        CompletableFuture<PlayerProfile> loading = profiles.get(playerId);
+        if (loading == null || !loading.isDone() || loading.isCompletedExceptionally()) {
+            return false;
+        }
+        PlayerProfile current = loading.getNow(null);
+        if (current == null) return false;
+
+        PlayerProfile updated = current.withNexusSlot(slot);
+        profiles.put(playerId, CompletableFuture.completedFuture(updated));
+        repository.save(updated).exceptionally(error -> {
+            log.log(Level.SEVERE, "Failed to persist Nexus slot change for " + playerId, error);
+            return null;
+        });
+        return true;
+    }
+
     /** The profile, if it has finished loading and did not fail. */
     public Optional<PlayerProfile> profile(UUID playerId) {
         CompletableFuture<PlayerProfile> loading = profiles.get(playerId);

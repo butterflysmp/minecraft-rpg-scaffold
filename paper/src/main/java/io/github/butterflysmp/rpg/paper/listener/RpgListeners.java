@@ -662,7 +662,7 @@ public final class RpgListeners implements Listener {
                 NexusCollisionNotice.shadowedBlock(event.getPlayer(), cooldowns);
             }
 
-            new NexusMenu(event.getPlayer(), adapters, weapons, resources).open();
+            new NexusMenu(event.getPlayer(), adapters, profiles, weapons, resources).open();
             return;
         }
 
