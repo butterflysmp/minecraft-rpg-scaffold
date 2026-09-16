@@ -198,26 +198,35 @@ class CraftingMenuLayoutTest {
     }
 
     @Test
-    void COLUMN8ISTheNavigationColumn_andBackIsPinnedToItsLITERAL() {
-        // ADDED BECAUSE A MUTATION FOUND NOTHING. MUTS5-BACK moved BACK_SLOT from 17 to 48 and the
-        // ENTIRE SUITE STAYED GREEN -- so nothing pinned this constant, and 48 is a live STATUS_SLOT
-        // that the bar would have painted straight over. An invisible button, and the only symptom
-        // is that Back "doesn't work sometimes".
-        assertEquals(17, CraftingMenuLayout.BACK_SLOT, "Back is row 1, column 8");
+    void backIsCHROMEBesideClose_andIsPinnedToItsLITERAL() {
+        // THE CONSTANT IS PINNED BECAUSE A MUTATION ONCE FOUND NOTHING. MUTS5-BACK moved BACK_SLOT
+        // from 17 to 48 and the ENTIRE SUITE STAYED GREEN. That mutation is now THE SHIPPED VALUE,
+        // and what made it dangerous then has been removed: 48 was a live STATUS_SLOT the bar would
+        // have painted straight over, and the bar has since given the cell up permanently.
+        assertEquals(48, CraftingMenuLayout.BACK_SLOT, "Back is the bottom row, beside Close");
 
-        // THE RULE, NOT THE ACCIDENT. 17 is above the status bar and that is incidental; what was
-        // chosen is the COLUMN. Anything on this screen that takes you to another screen lives in
-        // column 8, stacked, so a fourth screen's nav button has a rule rather than two examples.
-        assertEquals(8, CraftingMenuLayout.BACK_SLOT % 9, "Back is in the navigation column");
+        // 48/49, LIKE EVERY OTHER SCREEN. Settings and the recipe browser were already this pair and
+        // their javadoc calls it convergence rather than coincidence; this screen makes it four.
+        assertEquals(CraftingMenuLayout.CLOSE_SLOT - 1, CraftingMenuLayout.BACK_SLOT,
+                "Back sits immediately left of Close");
+        assertEquals(CraftingMenuLayout.BACK_SLOT / 9, CraftingMenuLayout.CLOSE_SLOT / 9,
+                "and in the SAME ROW -- consecutive indices can straddle a row boundary");
+
+        // The recipe book keeps its column on its own merits. It is no longer half of a
+        // "navigation column" rule -- that rule had two instances, Back was one of them, and it
+        // was deleted rather than renumbered when Back left.
         assertEquals(8, CraftingMenuLayout.BROWSER_SLOT % 9,
-                "and so is the recipe book -- they are the column, not a coincidence");
-        assertEquals(CraftingMenuLayout.BROWSER_SLOT - 9, CraftingMenuLayout.BACK_SLOT,
-                "Back sits DIRECTLY above the browser button, one row up in the same column");
+                "the recipe book is the rightmost column, at the foot of the suggestion column");
 
-        // AND IT IS CLEAR OF EVERYTHING FUNCTIONAL, including the bar it deliberately avoids.
+        // *** THIS ASSERTION CHANGED MEANING WITHOUT CHANGING TEXT, AND THAT IS WHY IT IS FLAGGED.
+        // At BACK_SLOT 17 it was VACUOUS -- 17 is not in the bottom row, so nothing was guarded and
+        // deleting the exclusion could not have reddened it. At 48 it is THE GUARANTEE: the bar
+        // spans the row Back now lives in, and only the subtraction keeps it off. A reader who sees
+        // an untouched line must not assume it is untouched in meaning.
         assertFalse(CraftingMenuLayout.STATUS_SLOTS.contains(CraftingMenuLayout.BACK_SLOT),
-                "Back must NOT be in the status bar -- a readout whose width depends on how you "
-                        + "opened the screen is not a readout, and Q18 pins eight cells");
+                "the status bar must NEVER paint over Back -- it spans this slot's row, and the "
+                        + "symptom of losing this is the quiet one, 'Back doesn't work sometimes'");
+
         assertEquals(OptionalInt.empty(),
                 CraftingMenuLayout.matrixIndexOf(CraftingMenuLayout.BACK_SLOT),
                 "Back must not craft");
@@ -226,7 +235,7 @@ class CraftingMenuLayoutTest {
                 "nor be a suggestion cell");
         assertNotEquals(CraftingMenuLayout.RESULT_SLOT, CraftingMenuLayout.BACK_SLOT);
         assertNotEquals(CraftingMenuLayout.INDICATOR_SLOT, CraftingMenuLayout.BACK_SLOT);
-        // Mutation MUTS5-BACK: BACK_SLOT 17 -> 48 -> kill set RECORDED in the PR body.
+        // Mutations applied and measured; kill sets RECORDED in the PR body.
     }
 
     @Test
@@ -247,29 +256,36 @@ class CraftingMenuLayoutTest {
         // Mutation: drop the `rawSlot >= SIZE` guard -> reddens on 54.
     }
 
-    // --- The status bar, and the close button inside it ---------------------------------------
+    // --- The status bar, and the two chrome cells inside it ------------------------------------
 
     @Test
-    void theStatusBarCanNEVERPaintOverTheCloseButton() {
+    void theStatusBarCanNEVERPaintOverEitherChromeButton() {
         // THE guard, and the reason STATUS_SLOTS is set subtraction rather than a loop that skips.
         //
-        // The bar spans the bottom row and CLOSE_SLOT is 49, inside it. Painting over the button
-        // leaves the menu closable ONLY by Esc -- and Esc WORKS, so the symptom is "the X
-        // disappeared", not anything that looks broken. Nothing else in the project would notice.
+        // The bar spans the bottom row and BOTH buttons are inside it. Painting over Close leaves
+        // the menu closable ONLY by Esc -- and Esc WORKS, so the symptom is "the X disappeared",
+        // not anything that looks broken. Painting over Back is quieter still: "Back doesn't work
+        // sometimes". Nothing else in the project would notice either.
         assertFalse(CraftingMenuLayout.STATUS_SLOTS.contains(CraftingMenuLayout.CLOSE_SLOT),
                 "the status bar must never paint over the close button");
-        assertEquals(8, CraftingMenuLayout.STATUS_SLOTS.size(),
-                "row 5 is nine slots; the close button is not one of them");
-        // Mutation: drop the `slots.remove(CLOSE_SLOT)` -> both assertions redden.
+        assertFalse(CraftingMenuLayout.STATUS_SLOTS.contains(CraftingMenuLayout.BACK_SLOT),
+                "nor over Back");
+
+        // SEVEN, BOTH ORIGINS. The count is the deliverable of Ben's ruling: Back renders only from
+        // the Nexus, but the cell leaves the bar ALWAYS, because a readout whose width depends on
+        // how you got there is not a readout. From a block the cell holds filler.
+        assertEquals(7, CraftingMenuLayout.STATUS_SLOTS.size(),
+                "row 5 is nine slots; neither chrome button is one of them");
+        // Mutations applied and measured; kill sets RECORDED in the PR body.
     }
 
     @Test
-    void theStatusBarIsEXACTLYTheBottomRowMinusTheButton() {
+    void theStatusBarIsEXACTLYTheBottomRowMinusTheTwoButtons() {
         // The literals, so a bar that drifted onto another row reddens here rather than being
-        // discovered in game. 45..53 is row 5; 49 is the button.
-        assertEquals(List.of(45, 46, 47, 48, 50, 51, 52, 53),
+        // discovered in game. 45..53 is row 5; 48 is Back and 49 is Close.
+        assertEquals(List.of(45, 46, 47, 50, 51, 52, 53),
                 CraftingMenuLayout.STATUS_SLOTS.stream().sorted().toList(),
-                "the bar is row 5 minus slot 49");
+                "the bar is row 5 minus slots 48 and 49");
 
         // And it must not overlap anything functional. The grid and the suggestions are three rows
         // up, but asserting it costs nothing and a future relayout is exactly when it stops holding.

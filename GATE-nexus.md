@@ -130,6 +130,34 @@ git grep -c '^## ROW' <ref> -- GATE-nexus.md
 > afterwards"*. Found by sweeping the file for the moved values rather than by trusting the three
 > rows named. **No row reads the hub's TITLE**, so change four restaged nothing.
 
+> ### AND A SECOND SET OF FOUR RULINGS RESTAGED MORE, INCLUDING ONE ROW THAT COULD NOT BE SAVED
+>
+> Ben re-ruled four more layout constants: crafting's back button **17 → 48** with the status bar
+> shrinking to **SEVEN cells permanently**, the enchant screen gaining a back button **it never had
+> at all**, the enchant candidate block dropping **one row** (input **10 → 19**), and the hub's
+> title **"Nexus Menu" → "The Nexus"**.
+>
+> **Still no row reads the hub's TITLE, so that change restaged nothing for the second time
+> running.** Swept, not assumed — but **the sweep needs its own caveat, because this paragraph is
+> now the thing it would find.** `grep -n "Nexus Menu" GATE-nexus.md` matches **only the two lines
+> immediately above and this one**: the record of the rename, never a row's expected value. The
+> checkable form that is not self-polluting is `grep -n "Nexus Menu" GATE-nexus.md | grep "^1[0-9]\{3\}:"`
+> — the row bodies, which return nothing.
+>
+> **A DOCUMENT THAT EXPLAINS WHY A STRING IS ABSENT CONTAINS THAT STRING.** Stated here rather than
+> left, because the obvious sweep now reports a hit and the obvious reading of that hit is wrong.
+>
+> **ROW 33 WAS RESTAGED IN PLACE. ROW 34 COULD NOT BE, AND IS MARKED DEAD INSTEAD** — the
+> difference is that Row 33's subject MOVED while Row 34's subject CEASED TO EXIST. A row whose
+> expected value is wrong can be re-pointed; a row whose whole premise has been withdrawn has
+> nothing to re-point at. See Row 34.
+>
+> **NOTHING HERE NAMED A CANDIDATE CELL, WHICH IS WHY THE BLOCK MOVING ONE ROW COST NO RESTAGING.**
+> Measured rather than assumed — `grep -n "candidate" GATE-nexus.md` returns exactly one hit, in
+> Row 8's prose about a guard, and Row 31d's only enchant-screen coordinate is the bookshelf at
+> index 8, which did not move. **The candidate grid's literals live in `EnchantMenuLayoutTest` and
+> nowhere else in any gate or plan file.**
+
 **AND FROM SLICE 4b THE ROWS HAVE A SHARED PRECONDITION: the player's Nexus slot must be the
 default 9 (index 8)** unless the row says otherwise. Rows **21, 24, 26 and 29 move it on purpose**
 and say so in their own staging; **put it back before running an earlier row.** That is the
@@ -1560,29 +1588,65 @@ stack in that slot is **N books deep**, not one.
 
 ## ROW 33 — **BACK EXISTS ONLY WHEN THERE IS SOMEWHERE TO GO BACK TO**
 
-**Staging.** `/gamemode survival`, two sub-rows, and **33b is the row**:
+**Staging.** `/gamemode survival`, **four sub-rows across BOTH screens**, and **33b and 33d are
+the controls**:
 
 | | staging | expected |
 |---|---|---|
-| **33a** | open crafting **FROM THE HUB** (slot 31) | an **ARROW at slot 17** named **"Back to the Nexus"**. Clicking it returns to the hub |
-| **33b** | **THE CONTROL** — right-click a crafting table **in the world** | **NO button at slot 17.** The slot is whatever it was before this slice |
+| **33a** | open crafting **FROM THE HUB** (slot 31) | an **ARROW at slot 48** named **"Back to the Nexus"**, immediately left of Close. Clicking it returns to the hub |
+| **33b** | **THE CONTROL** — right-click a crafting table **in the world** | **NO button at slot 48.** The cell is **plain filler**, and Close is still at 49 beside it |
+| **33c** | **THE ENCHANT TWIN.** Open enchanting **FROM THE HUB** (slot 32) | an **ARROW at slot 48** named **"Back to the Nexus"**. Clicking it returns to the hub |
+| **33d** | **THE TWIN'S CONTROL** — right-click an enchanting table **in the world** | **NO button at slot 48** |
 
 > **33b IS THE HALF THAT CAN FAIL SILENTLY.** A build that always paints Back passes 33a perfectly.
 > The world-opened screen would then offer to return a player to a hub they never opened — a
 > back-arrow promising a destination they did not come from, which is the line `MenuIcons.close`'s
 > javadoc draws from the other side.
 >
-> **AND THE STATUS BAR IS EIGHT GRAY CELLS IN BOTH.** Count them on each sub-row. Back is at 17,
-> not in the bottom row, precisely so the bar's width does not depend on how the screen was opened
-> — **a readout whose geometry changes by origin is not a readout.** If 33a shows seven, Back has
-> been put in the bar and row `Q18` needs restaging.
+> **33b NOW READS A FILLER PANE RATHER THAN "WHATEVER WAS THERE BEFORE".** Back left the
+> navigation column for the bottom row, and the bar gave up slot 48 **permanently** — so on the
+> world path the cell is neither bar nor button and must be explicitly filler. **An EMPTY cell mid
+> bar is the failure**: it means the subtraction happened and nothing filled the hole.
 >
-> **Load the grid before clicking Back in 33a.** The items must come back: this screen HAS input
-> slots, so it closes before it navigates, and `returnEverything` runs on that close.
+> **AND THE STATUS BAR IS SEVEN GRAY CELLS IN BOTH.** Count them on each sub-row. Back is at 48,
+> inside the bar's row, and the bar subtracts it **whether or not the button is painted** —
+> **a readout whose geometry changes by origin is not a readout.** If 33a shows seven and 33b shows
+> eight, the subtraction has been made conditional and `Q22` is the row that will fail next.
+>
+> **33c AND 33d ARE NEW, AND THEIR ABSENCE IS THE DEFECT THEY RECORD.** The enchant screen was
+> given no back button by the slice that gave crafting one, and **nothing caught it because no row
+> asked this screen the question 33a asks the crafting one.** A feature missing from one of two
+> parallel surfaces is invisible to a gate that stages only the other.
+>
+> **Load the grid before clicking Back in 33a, and put a weapon in the input slot before clicking
+> it in 33c.** The items must come back: both screens HAVE input slots, so each closes before it
+> navigates, and `returnEverything` runs on that close. **33c is the sharper of the two** — the
+> enchant screen's input slot moved to 19 in the same ruling.
 
 **READING:** _(not run)_
 
 ## ROW 34 — THE NAVIGATION COLUMN, READ AS A COLUMN
+
+> ### **DEAD. THIS ROW'S PREMISE WAS WITHDRAWN, AND IT IS DELIBERATELY NOT EDITED.**
+>
+> **The rule it reads no longer exists.** Ben moved crafting's back button from 17 to **48**, and
+> *"column 8 is where you go somewhere else"* had exactly two instances — Back and the recipe book.
+> One of them left. **A rule with one instance is not a rule**, so it was deleted from
+> `CraftingMenuLayout` rather than renumbered, and this row has nothing left to make visible.
+>
+> **WHY IT IS DEAD RATHER THAN RESTAGED, AND THE DISTINCTION IS THE POINT.** Row 33 was restaged in
+> place because its SUBJECT MOVED: Back still exists, at a different cell, so its expected value
+> could be re-pointed. **This row's subject CEASED TO EXIST.** Re-pointing it at slot 48 would
+> produce a row that reads *"Back is where Back is"* — a check that cannot fail, which is worse
+> than no check, and it would carry this row's name while testing something else entirely.
+>
+> **Read it as history.** It was correct when written, and it is falsified by the second set of
+> layout rulings rather than by any defect. **If it is ever run it will fail, and that failure is
+> the withdrawal rather than a bug** — the same treatment Row 12 has, and for the same reason.
+>
+> **ITS SUCCESSORS ARE ROWS 33a–33d**, which read Back at 48 on both screens and both origins. The
+> half of this row worth keeping is its last paragraph — *the recipe book must still work* — and
+> that is not lost: `BROWSER_SLOT` is untouched at 26, and `CraftingMenuLayoutTest` pins it.
 
 **Staging.** `/gamemode survival`. Open crafting **from the hub** and look at **column 8** — the
 rightmost — in rows 1 and 2. That is slots 17 and 26.

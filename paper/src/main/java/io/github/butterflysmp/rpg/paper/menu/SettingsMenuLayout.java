@@ -26,7 +26,7 @@ import java.util.Set;
  * {@code NexusMenuLayout} states it: chrome in the bottom row, features in the body. Close keeps
  * its slot 49 so the button a player has learned does not move between our screens, and <b>Back
  * takes 48, immediately to its left -- the same cell {@code RecipeBrowserLayout.BACK_SLOT} already
- * uses.</b> Both back buttons in the plugin now agree; see {@link #BACK_SLOT}.
+ * uses.</b> Every back button in the plugin agrees; see {@link #BACK_SLOT}.
  */
 final class SettingsMenuLayout {
 
@@ -44,15 +44,24 @@ final class SettingsMenuLayout {
      * <h2>THIS IS CONVERGENCE, NOT COINCIDENCE -- {@code RecipeBrowserLayout.BACK_SLOT} IS ALSO 48</h2>
      *
      * It was 45 -- the first slot of the chrome row -- until Ben ruled 48. <b>The recipe browser's
-     * back button was already there</b>, so after this ruling BOTH back buttons in the plugin sit in
+     * back button was already there</b>, so after this ruling BOTH back buttons in the plugin sat in
      * the same cell, and <b>the next screen that needs one has a single answer to copy rather than
      * two to choose between.</b>
      *
+     * <p><b>TWO BECAME FOUR, AND THE PREDICTION IS WHY THIS PARAGRAPH EXISTS.</b> "The next screen
+     * that needs one has a single answer to copy" was written when there were two; the next two
+     * screens copied it. {@code CraftingMenuLayout.BACK_SLOT} left column 8 for this cell, and
+     * {@code EnchantMenuLayout.BACK_SLOT} arrived here on a screen that had no back button at all.
+     * <b>48/49 is now the rule for every screen, with no exception to name.</b>
+     *
      * <p>Stated here because two literals that happen to match are indistinguishable from two that
-     * agree on purpose, and the second is worth keeping. {@code SettingsMenuLayoutTest} asserts the
-     * agreement rather than the number alone, so the two cannot drift apart silently --
-     * {@code CraftingMenuLayout.CLOSE_SLOT} records the same relationship for Close, and records
-     * that the enchant table deliberately did NOT join it.
+     * agree on purpose, and the second is worth keeping. {@code EnchantMenuLayoutTest} asserts the
+     * agreement across all four rather than the numbers alone, so they cannot drift apart silently.
+     *
+     * <p><b>A stale cross-reference was removed here.</b> This paragraph used to end by saying
+     * {@code CraftingMenuLayout.CLOSE_SLOT} "records that the enchant table deliberately did NOT
+     * join it" for Close. That stopped being true when the enchant screen moved Close to 49; all
+     * four screens have agreed on Close since, and {@code EnchantMenuLayoutTest} pins it.
      */
     static final int BACK_SLOT = 48;
 
