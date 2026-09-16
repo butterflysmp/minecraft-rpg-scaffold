@@ -1588,7 +1588,8 @@ stack in that slot is **N books deep**, not one.
 
 ## ROW 33 — **BACK EXISTS ONLY WHEN THERE IS SOMEWHERE TO GO BACK TO**
 
-**Staging.** `/gamemode survival`, two sub-rows, and **33b is the row**:
+**Staging.** `/gamemode survival`, **four sub-rows across BOTH screens**, and **33b and 33d are
+the controls**:
 
 | | staging | expected |
 |---|---|---|
