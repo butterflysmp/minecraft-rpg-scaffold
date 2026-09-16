@@ -143,15 +143,34 @@ final class NexusMenuLayout {
      */
     static final Set<Integer> FILLER_SLOTS = buildFiller();
 
+    /**
+     * Every cell {@code NexusMenu.render()} must paint individually.
+     *
+     * <h2>ONE LIST, USED TWICE -- AND IT IS ONE LIST BECAUSE IT WAS TWO AND THEY DISAGREED</h2>
+     *
+     * <b>The subtraction below and the paint list in {@code NexusMenu.render()} used to be two
+     * hand-maintained lists.</b> The grindstone was added to the first and not the second, so slot
+     * 33 was removed from the filler and then painted by nothing: <b>an invisible, clickable hole
+     * whose click handler worked perfectly.</b> It reached a screenshot.
+     *
+     * <p><b>THE INVARIANT NOTHING CHECKED: EVERY SLOT NOT IN {@link #FILLER_SLOTS} MUST BE PAINTED
+     * BY SOMETHING.</b> Set subtraction makes the filler correct by construction and says nothing
+     * at all about whether anyone paints what it left out.
+     *
+     * <p>Now {@link #buildFiller} subtracts exactly this set, and
+     * {@code NexusMenuLayoutTest} asserts the partition -- so a seventh cell cannot be subtracted
+     * without being declared here, and being declared here is what tells the next reader it needs
+     * a painter.
+     */
+    static final Set<Integer> PAINTED_SLOTS = Set.of(
+            CLOSE_SLOT, SETTINGS_SLOT, STATS_SLOT, CRAFTING_SLOT, ENCHANT_SLOT, GRINDSTONE_SLOT);
+
     private static Set<Integer> buildFiller() {
         Set<Integer> slots = new LinkedHashSet<>();
         for (int slot = 0; slot < SIZE; slot++) slots.add(slot);
-        slots.remove(CLOSE_SLOT);
-        slots.remove(SETTINGS_SLOT);
-        slots.remove(STATS_SLOT);
-        slots.remove(CRAFTING_SLOT);
-        slots.remove(ENCHANT_SLOT);
-        slots.remove(GRINDSTONE_SLOT);
+        // THE SAME SET render() PAINTS. Two lists is what produced the hole at 33.
+        slots.removeAll(Set.of(CLOSE_SLOT, SETTINGS_SLOT, STATS_SLOT,
+                CRAFTING_SLOT, ENCHANT_SLOT, GRINDSTONE_SLOT));
         return Set.copyOf(slots);
     }
 }

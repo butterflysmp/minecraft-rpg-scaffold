@@ -59,31 +59,47 @@ import java.util.List;
  *
  * <p><b>That split is structural, not stylistic.</b> Integer division floors, so
  * {@code sum(floor(c * 35 / 100))} is up to one point short PER ITEM against
- * {@code floor(sum(c) * 35 / 100)} -- over a full tray that is <b>12 points</b> taken from the
+ * {@code floor(sum(c) * 35 / 100)} -- over a full tray that is <b>18 points</b> taken from the
  * player for nothing. <b>There is no public per-item refund to sum, so that mistake cannot be made
  * here.</b>
  *
- * <h2>AND THE CONSEQUENCE OF THAT: BATCHING PAYS, BY UP TO 12 POINTS. ACCEPTED.</h2>
+ * <h2>AND THE CONSEQUENCE OF THAT: BATCHING PAYS, BY UP TO 18 POINTS. ACCEPTED.</h2>
  *
- * Stripping fourteen items in one press yields <b>up to twelve points more</b> than stripping them
- * one at a time, because the fractional remainders are kept once instead of discarded fourteen
- * times.
+ * Stripping a full tray in one press yields <b>up to eighteen points more</b> than stripping the
+ * same items one at a time, because the fractional remainders are kept once instead of discarded
+ * twenty-one times.
  *
- * <p><b>TWELVE IS MEASURED, AND THE OBVIOUS ANSWER OF THIRTEEN IS WRONG.</b> The arithmetic ceiling
- * for fourteen items is {@code n - 1} = 13, and it is <b>unreachable</b>: a per-item spend is a sum
- * of {@code 352 / 1262 / 4182}, which yields only <b>ten distinct remainders</b> under
- * {@code x * 35 mod 100}, the largest being {@code .90}. Fourteen items at {@code .90} is
- * {@code 12.6}, so the gain floors at <b>12</b>. Quoting the {@code n - 1} bound would be
- * characterising the class instead of computing it.
+ * <p><b>EIGHTEEN IS RE-DERIVED, NOT SCALED FROM THE OLD FIGURE.</b> A per-item spend is a sum of
+ * {@code 352 / 1262 / 4182}, which yields exactly <b>ten</b> distinct remainders under
+ * {@code (c * 35) mod 100} -- {@code {0,10,...,90}} -- the largest being {@code 90}. Twenty-one
+ * items at {@code 90} is {@code 1890}, and {@code floor(1890 / 100)} is <b>18</b>.
+ *
+ * <pre>
+ *   awk 'BEGIN{ for(a=0;a&lt;=9;a++) for(b=0;a+b&lt;=9;b++) for(c=0;a+b+c&lt;=9;c++)
+ *                 fr[((a*352+b*1262+c*4182)*35)%100]=1;
+ *               m=0; for(f in fr) if(f+0&gt;m) m=f+0;
+ *               printf "max remainder .%02d -> gap %d\n", m, int(21*m/100) }'
+ * </pre>
+ *
+ * <p><b>The {@code n - 1} bound -- 20 for twenty-one items -- is UNREACHABLE and must not be quoted
+ * instead.</b> It is what the quantity can never exceed, not what it is; that is its own entry in
+ * {@code CLAUDE.md}'s instrument table. <b>The figure moves whenever the tray size or the
+ * percentage does, which is why the command is here and not just the number.</b>
  *
  * <p><b>It is written down rather than left to be discovered, because an incentive nobody recorded
- * is one somebody later removes as a bug.</b> Two reasons it stands: thirteen points is noise
- * against a tray worth tens of thousands, and <b>it points the right way</b> -- it rewards using the
- * bulk feature rather than punishing it, which is the behaviour this screen exists to offer.
+ * is one somebody later removes as a bug.</b> Two reasons it stands: <b>the gap is noise against a
+ * tray worth tens of thousands</b>, and <b>it points the right way</b> -- it rewards using the bulk
+ * feature rather than punishing it, which is the behaviour this screen exists to offer.
  *
  * <p>The alternative -- flooring per item so that one-at-a-time and all-at-once agree -- buys that
- * agreement by taking the thirteen points from the player instead. <b>Neither is exact; this one
+ * agreement by taking <b>the same gap</b> from the player instead. <b>Neither is exact; this one
  * fails towards the player.</b>
+ *
+ * <p><b>THESE TWO SENTENCES NAME THE GAP RATHER THAN RESTATING IT, AND THAT IS DELIBERATE.</b> The
+ * figure appeared in FOUR places here; when the tray grew, two were updated and two were not, so
+ * the class javadoc said 12 in its heading and <i>"thirteen points"</i> two paragraphs later --
+ * both wrong, and stale from different edits. <b>A measured figure written once and referred to
+ * thereafter cannot go half-stale.</b>
  */
 public final class GrindstoneRefund {
 
@@ -155,9 +171,9 @@ public final class GrindstoneRefund {
     /**
      * How many of a tray's items would actually CHANGE -- the count the button prints.
      *
-     * <p><b>Not the tray size.</b> A fourteen-item tray holding nine enchanted weapons reads
-     * "Strip 9 weapons", because printing fourteen beside a refund invites the player to divide
-     * the refund by fourteen. The other five are untouched no-ops and saying so is not the
+     * <p><b>Not the tray size.</b> A twenty-one-item tray holding nine enchanted items reads
+     * "Strip 9 items", because printing twenty-one beside a refund invites the player to divide
+     * the refund by twenty-one. The other twelve are untouched no-ops and saying so is not the
      * button's job.
      *
      * <p>An item changes exactly when it has something to strip, which is exactly when its

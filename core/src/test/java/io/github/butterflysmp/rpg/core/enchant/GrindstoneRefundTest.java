@@ -116,9 +116,9 @@ class GrindstoneRefundTest {
         //   per item   floor(1262 * 35 / 100) = 441   ->  441 + 441 = 882
         //   per tray   floor(2524 * 35 / 100) = 883
         //
-        // One point, taken from the player, for nothing. OVER A FULL TRAY IT IS 12 -- computed, not
-        // the n-1 = 13 the shape suggests: only ten distinct remainders are reachable and the
-        // largest is .90, so fourteen of them sum to 12.6 and floor to 12. See the class javadoc.
+        // One point, taken from the player, for nothing. OVER A FULL TRAY IT IS 18 -- computed, not
+        // the n-1 = 20 the shape suggests: only ten distinct remainders are reachable and the
+        // largest is .90, so twenty-one of them sum to 18.9 and floor to 18. See the class javadoc.
         EnchantState item = oneAt(2);
         assertEquals(441, GrindstoneRefund.points(List.of(item)), "one item alone floors to 441");
         assertEquals(883, GrindstoneRefund.points(List.of(item, item)),
@@ -313,8 +313,8 @@ class GrindstoneRefundTest {
 
     @Test
     void theCountIsTheItemsThatWouldCHANGE_notTheTraySize() {
-        // A fourteen-item tray with nine enchanted reads "Strip 9 weapons". Printing 14 beside the
-        // refund invites the player to divide the refund by 14.
+        // A twenty-one-item tray with nine enchanted reads "Strip 9 items". Printing 21 beside the
+        // refund invites the player to divide the refund by 21.
         List<EnchantState> tray = List.of(oneAt(1), oneAt(0), oneAt(3), oneAt(0), oneAt(2));
 
         assertEquals(3, GrindstoneRefund.strippableCount(tray), "three of five have levels");

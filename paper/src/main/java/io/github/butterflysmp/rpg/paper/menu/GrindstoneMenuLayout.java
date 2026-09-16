@@ -24,7 +24,7 @@ public final class GrindstoneMenuLayout {
     public static final int INFO_SLOT = 4;
 
     /**
-     * The tray: rows 3 and 4, columns 2-8. <b>Fourteen cells.</b> Ben's ruling.
+     * The tray: rows 2, 3 and 4, columns 2-8. <b>Twenty-one cells.</b> Ben's ruling.
      *
      * <p><b>Column 1 and column 9 stay filler on both rows</b>, so the tray reads as a block with a
      * margin rather than running into the screen edge.
@@ -35,6 +35,23 @@ public final class GrindstoneMenuLayout {
      * that was ruled away.
      */
     public static final Set<Integer> INPUT_SLOTS = trayCells();
+
+    /**
+     * The status bar: the bottom row, MINUS the two chrome cells in it.
+     *
+     * <p><b>SEVEN CELLS, BOTH ORIGINS</b> -- 45, 46, 47, 50, 51, 52, 53. Identical to
+     * {@code CraftingMenuLayout.STATUS_SLOTS}, and subtracted the same way for the reason that file
+     * records: <b>a readout whose geometry depends on how you got there is not a readout.</b>
+     * {@link #BACK_SLOT} leaves the bar <b>permanently</b>, though Back is drawn only from the hub;
+     * from a block that cell holds filler instead.
+     *
+     * <p><b>{@code MUTS5-BACK} IS IN SCOPE AGAIN, AND THE PERMANENT SUBTRACTION IS WHAT MAKES 48
+     * SAFE.</b> A bar on the bottom row beside Back and Close is the exact arrangement that produced
+     * that defect -- a button the bar painted straight over, whose only symptom was "Back doesn't
+     * work sometimes". The subtraction is what fixed it on the crafting screen and it is what makes
+     * this screen safe by construction rather than by care.
+     */
+    public static final Set<Integer> STATUS_SLOTS = statusSlots();
 
     /**
      * Strip. <b>Row 5, dead centre -- under the tray and above the chrome.</b>
@@ -60,10 +77,11 @@ public final class GrindstoneMenuLayout {
      * </ul>
      *
      * <p><b>IT IS NOT AN INPUT SLOT, AND THAT IS LOAD-BEARING RATHER THAN INCIDENTAL.</b> The arming
-     * countdown repaints this one cell twice a second. If it were ever inside {@link #INPUT_SLOTS},
-     * that repaint would overwrite a player's weapon -- and with a full tray, up to fourteen of
-     * them, unrecoverably. {@code GrindstoneMenuLayoutTest} asserts the disjointness so the LAYOUT
-     * is off the list of ways that can happen; the tick's own discipline is the other half.
+     * countdown repaints this cell and the seven bar cells twice a second. If any of those eight
+     * were ever inside {@link #INPUT_SLOTS}, that repaint would overwrite a player's gear -- and
+     * with a full tray, <b>up to twenty-one items</b>, unrecoverably.
+     * {@code GrindstoneMenuLayoutTest} asserts the disjointness so the LAYOUT is off the list of
+     * ways that can happen; the tick's own discipline is the other half.
      */
     public static final int CONFIRM_SLOT = 40;
 
@@ -88,7 +106,7 @@ public final class GrindstoneMenuLayout {
 
     private static Set<Integer> trayCells() {
         Set<Integer> slots = new LinkedHashSet<>();
-        for (int row = 2; row <= 3; row++) {                 // 0-based rows 2 and 3 = prose 3 and 4
+        for (int row = 1; row <= 3; row++) {                 // 0-based rows 1-3 = prose rows 2-4
             for (int column = 1; column <= 7; column++) {     // 0-based 1..7 = prose columns 2..8
                 slots.add(row * COLUMNS + column);
             }
@@ -96,10 +114,33 @@ public final class GrindstoneMenuLayout {
         return Set.copyOf(slots);
     }
 
+    private static Set<Integer> statusSlots() {
+        Set<Integer> slots = new LinkedHashSet<>();
+        int firstOfBottomRow = (ROWS - 1) * COLUMNS;
+        for (int slot = firstOfBottomRow; slot < firstOfBottomRow + COLUMNS; slot++) slots.add(slot);
+        // SET SUBTRACTION, not a skip inside the loop. Both removals are UNCONDITIONAL even though
+        // Back is drawn only from the hub -- making either conditional is what makes the bar's
+        // width depend on the origin.
+        slots.remove(BACK_SLOT);
+        slots.remove(CLOSE_SLOT);
+        return Set.copyOf(slots);
+    }
+
+    /**
+     * The four cells that are neither tray, bar, nor filler -- the chrome this screen paints
+     * individually.
+     *
+     * <p>Named as a set so the coverage test can state the invariant without re-listing them, and
+     * so a fifth button cannot be added without appearing here.
+     */
+    public static final Set<Integer> CHROME_SLOTS =
+            Set.of(INFO_SLOT, CONFIRM_SLOT, BACK_SLOT, CLOSE_SLOT);
+
     private static Set<Integer> buildFiller() {
         Set<Integer> slots = new LinkedHashSet<>();
         for (int slot = 0; slot < SIZE; slot++) slots.add(slot);
         slots.removeAll(INPUT_SLOTS);
+        slots.removeAll(STATUS_SLOTS);
         slots.remove(INFO_SLOT);
         slots.remove(CONFIRM_SLOT);
         slots.remove(BACK_SLOT);

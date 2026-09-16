@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
+import io.github.butterflysmp.rpg.core.enchant.GrindstoneRefund;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
@@ -247,6 +248,17 @@ public final class NexusMenu extends Menu {
                                 NamedTextColor.DARK_GRAY),
                         MenuIcons.line("A real table with shelves reaches 30.",
                                 NamedTextColor.DARK_GRAY))));
+
+        // THE THIRD STATION. IT WAS SUBTRACTED FROM THE FILLER SET AND THEN PAINTED BY NOTHING --
+        // an invisible, clickable hole at slot 33, whose click handler worked perfectly. The
+        // set-subtraction filler has an invariant nothing checked: EVERY SLOT NOT IN FILLER_SLOTS
+        // MUST BE PAINTED BY SOMETHING. NexusMenuLayoutTest now asserts it.
+        getInventory().setItem(NexusMenuLayout.GRINDSTONE_SLOT, MenuIcons.icon(
+                Material.GRINDSTONE,
+                MenuIcons.line("Grindstone", NamedTextColor.GRAY),
+                List.of(MenuIcons.line("Strip enchants from your gear.", NamedTextColor.DARK_GRAY),
+                        MenuIcons.line("Refunds " + GrindstoneRefund.REFUND_PERCENT
+                                + "% of what they cost.", NamedTextColor.DARK_GRAY))));
 
         getInventory().setItem(NexusMenuLayout.SETTINGS_SLOT, MenuIcons.icon(
                 Material.REDSTONE_TORCH,

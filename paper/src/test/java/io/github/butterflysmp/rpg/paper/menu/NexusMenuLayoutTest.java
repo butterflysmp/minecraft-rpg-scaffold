@@ -226,4 +226,37 @@ class NexusMenuLayoutTest {
         // value the remove() line is given. It guards that the head is EXCLUDED from filler, never
         // WHERE the head is.
     }
+
+    @Test
+    void everySlotNotInTheFILLERIsDECLAREDAsPainted_theInvariantThatShippedAHole() {
+        // *** ADDED BECAUSE A SUBTRACTED CELL WITH NO PAINTER REACHED A SCREENSHOT. ***
+        //
+        // GRINDSTONE_SLOT was removed from FILLER_SLOTS and then painted by nothing. Slot 33 was an
+        // invisible, clickable hole whose click handler worked perfectly -- so every behavioural
+        // check passed and the only symptom was a gap on screen.
+        //
+        // NO EXISTING ASSERTION COULD SEE IT. The per-slot loop above asserts filler membership
+        // against a hand-written isButton expression, and that expression was updated in the same
+        // edit that added the removal -- both halves moved together, and neither is the paint list.
+        //
+        // THE INVARIANT: FILLER_SLOTS and PAINTED_SLOTS partition the screen. Every cell is filler
+        // or is declared as needing a painter; none is both and none is neither.
+        for (int slot = 0; slot < NexusMenuLayout.SIZE; slot++) {
+            boolean filler = NexusMenuLayout.FILLER_SLOTS.contains(slot);
+            boolean painted = NexusMenuLayout.PAINTED_SLOTS.contains(slot);
+            assertTrue(filler ^ painted,
+                    "slot " + slot + " must be EXACTLY ONE of filler or painted -- it is "
+                            + (filler ? "both" : "neither"));
+        }
+        assertEquals(NexusMenuLayout.SIZE,
+                NexusMenuLayout.FILLER_SLOTS.size() + NexusMenuLayout.PAINTED_SLOTS.size(),
+                "the two sets must cover the screen exactly once");
+
+        // AND THE PAINT LIST IS NOT EMPTY, without which the partition is satisfied by "everything
+        // is filler" -- the blank-screen reading the cardinality row above also guards against.
+        assertEquals(6, NexusMenuLayout.PAINTED_SLOTS.size(),
+                "Close, Settings, the head, and the three stations");
+        // Mutation: drop GRINDSTONE_SLOT from PAINTED_SLOTS -> slot 33 is neither -> reddens.
+        // THAT MUTATION IS THE SHIPPED DEFECT, and nothing in this file reddened on it before.
+    }
 }

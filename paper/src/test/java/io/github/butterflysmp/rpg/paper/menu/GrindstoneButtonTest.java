@@ -35,28 +35,30 @@ class GrindstoneButtonTest {
     }
 
     @Test
-    void theTWOGRAYStatesSayDIFFERENTThings_andTHATISRow28sRule() {
+    void theTwoNOTHINGStatesDifferInCOLOURAndTEXT_Row28sRemedyAppliedInFULL() {
         // *** ROW 46's UNIT TWIN, AND THE ROW THAT CATCHES THE COLLAPSE. ***
         //
-        // Both are gray because both are player-resolvable. The REMEDIES differ -- "put something
-        // in" against "these are the wrong items" -- so the TEXT must differ. If someone later
-        // folds these into one string, every other assertion in this file still passes: they have
-        // the same colour, the same acts() answer, and neither is READY.
+        // These two used to share GRAY and differ only by text -- Row 28's remedy applied HALFWAY,
+        // since its fix changed the COLOUR as well as the wording. Ben ruled the fourth state in:
+        // an empty tray is GRAY, a tray of already-stripped items is RED.
+        //
+        // GRAY FOR EMPTY, NOT RED, and the reason keeps red meaningful: red means something is
+        // WRONG, and an empty tray is not wrong. It also stops red doing two jobs.
         GrindstoneButton.Face empty = GrindstoneButton.faceFor(true, 0, 0, 0);
         GrindstoneButton.Face stripped = GrindstoneButton.faceFor(false, 0, 0, 0);
 
-        assertEquals(Material.GRAY_DYE, empty.material(), "both are gray");
-        assertEquals(Material.GRAY_DYE, stripped.material(), "both are gray");
+        assertEquals(Material.GRAY_DYE, empty.material(), "an EMPTY tray is gray -- not wrong");
+        assertEquals(Material.RED_DYE, stripped.material(),
+                "a tray of already-stripped items is RED -- these are the wrong items");
 
-        assertNotEquals(empty.state(), stripped.state(), "but they are DIFFERENT STATES");
-        assertNotEquals(empty.text(), stripped.text(),
-                "and they must say different things -- collapsing them is GATE-nexus Row 28's "
-                        + "defect, where one colour served a pending load and a failed one");
+        assertNotEquals(empty.state(), stripped.state(), "DIFFERENT STATES");
+        assertNotEquals(empty.material(), stripped.material(), "DIFFERENT COLOURS");
+        assertNotEquals(empty.text(), stripped.text(), "and DIFFERENT TEXT");
 
         assertEquals("Add items to strip", empty.text(), "the empty tray names the remedy");
         assertEquals("These have nothing to strip", stripped.text(),
                 "and the stripped tray names a different one");
-        // Mutation: return the same text from both arms -> the two assertNotEquals redden.
+        // Mutation: map NOTHING_STRIPPED to GRAY_DYE -> the colour assertions redden.
     }
 
     @Test
@@ -66,17 +68,49 @@ class GrindstoneButtonTest {
         assertEquals(Material.YELLOW_DYE,
                 GrindstoneButton.faceFor(false, 3, 999, 40).material(),
                 "arming is YELLOW -- it resolves itself if you wait");
-        assertEquals(Material.GRAY_DYE,
+        assertEquals(Material.RED_DYE,
                 GrindstoneButton.faceFor(false, 0, 0, 0).material(),
-                "nothing-to-strip is GRAY -- it resolves only if you act");
+                "nothing-to-strip is RED -- something is wrong with what is in the tray");
+        assertEquals(Material.GRAY_DYE,
+                GrindstoneButton.faceFor(true, 0, 0, 0).material(),
+                "an empty tray is GRAY -- nothing is wrong, you have not started");
 
-        // AND THE THREE ARE DISTINCT, which is the half that would otherwise be vacuous: three
-        // arms all returning one colour satisfies every assertion that names a colour once.
-        assertNotEquals(GrindstoneButton.faceFor(false, 3, 999, 0).material(),
-                GrindstoneButton.faceFor(false, 3, 999, 40).material(), "lime is not yellow");
-        assertNotEquals(GrindstoneButton.faceFor(false, 3, 999, 40).material(),
-                GrindstoneButton.faceFor(false, 0, 0, 0).material(), "yellow is not gray");
-        // Mutation: YELLOW_DYE -> GRAY_DYE -> the palette row and a distinctness row redden.
+        // AND ALL FOUR ARE DISTINCT, the half that would otherwise be vacuous: four arms all
+        // returning one colour satisfies every assertion that names a colour once.
+        assertEquals(4, java.util.Set.of(
+                GrindstoneButton.dyeFor(GrindstoneButton.State.READY),
+                GrindstoneButton.dyeFor(GrindstoneButton.State.ARMING),
+                GrindstoneButton.dyeFor(GrindstoneButton.State.NOTHING_STRIPPED),
+                GrindstoneButton.dyeFor(GrindstoneButton.State.NOTHING_EMPTY)).size(),
+                "four states, four DISTINCT colours");
+        // Mutation: YELLOW_DYE -> GRAY_DYE -> the palette row and the distinctness row redden.
+    }
+
+    @Test
+    void theBARRendersTheBUTTONSState_andComputesNOTHINGOfItsOwn() {
+        // ONE STATE MACHINE, TWO RENDERERS. If the bar derived its own colour, a gate row reading
+        // both surfaces would be checking one expression against a different one -- and
+        // GATE-crafting.md's Q23 is the row that exists because two surfaces on one screen
+        // disagreed about a colour.
+        //
+        // THE PANES TRACK THE DYES ONE FOR ONE, and this asserts the correspondence rather than
+        // four independent literals.
+        assertEquals(Material.LIME_STAINED_GLASS_PANE,
+                GrindstoneButton.paneFor(GrindstoneButton.State.READY));
+        assertEquals(Material.YELLOW_STAINED_GLASS_PANE,
+                GrindstoneButton.paneFor(GrindstoneButton.State.ARMING));
+        assertEquals(Material.RED_STAINED_GLASS_PANE,
+                GrindstoneButton.paneFor(GrindstoneButton.State.NOTHING_STRIPPED));
+        assertEquals(Material.GRAY_STAINED_GLASS_PANE,
+                GrindstoneButton.paneFor(GrindstoneButton.State.NOTHING_EMPTY));
+
+        // AND EVERY STATE HAS A DISTINCT PANE, so the bar can never show one colour for two states.
+        assertEquals(GrindstoneButton.State.values().length,
+                java.util.Arrays.stream(GrindstoneButton.State.values())
+                        .map(GrindstoneButton::paneFor).distinct().count(),
+                "every state gets its own pane -- two states sharing one is Row 28's defect");
+        // Mutation: map NOTHING_EMPTY to RED_STAINED_GLASS_PANE -> the literal AND the distinctness
+        // assertion redden.
     }
 
     @Test

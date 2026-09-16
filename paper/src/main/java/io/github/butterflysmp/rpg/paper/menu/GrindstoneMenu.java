@@ -209,27 +209,50 @@ public final class GrindstoneMenu extends Menu {
     }
 
     /**
-     * *** THIS METHOD TOUCHES {@link GrindstoneMenuLayout#CONFIRM_SLOT} AND NOTHING ELSE. ***
+     * *** THIS METHOD TOUCHES {@link GrindstoneMenuLayout#CONFIRM_SLOT} AND THE SEVEN BAR CELLS,
+     * AND NOTHING ELSE. ***
      *
      * <p><b>DO NOT CALL {@link #render()} FROM THE TICK.</b> A full re-render twice a second would
-     * paint filler over the tray and <b>DESTROY UP TO FOURTEEN OF THE PLAYER'S WEAPONS.</b> This is
-     * {@code MUTS5-BACK}'s shape -- a repaint clobbering a cell someone else owns -- with items in
-     * place of chrome, and the failure is <b>unrecoverable</b> rather than cosmetic: there is no
-     * output slot to take them back from and no undo.
+     * paint filler over the tray and <b>DESTROY UP TO TWENTY-ONE ITEMS OF THE PLAYER'S GEAR.</b>
+     * This is {@code MUTS5-BACK}'s shape -- a repaint clobbering a cell someone else owns -- with
+     * items in place of chrome, and the failure is <b>unrecoverable</b> rather than cosmetic: there
+     * is no output slot to take them back from and no undo.
      *
-     * <p>So the write is a single {@code setItem} to one named constant, and
-     * {@code GrindstoneMenuLayoutTest} asserts that constant is not a tray cell -- which takes the
-     * LAYOUT off the list of ways this can go wrong. This method is the other half.
+     * <p><b>THE BAR MADE THIS RULE WORSE, NOT SAFER.</b> The tick now has a SECOND writer and the
+     * tray has grown from fourteen cells to twenty-one. Both writes go to <b>named constant
+     * sets</b> -- {@code CONFIRM_SLOT} and {@code STATUS_SLOTS} -- and never to a loop over a range,
+     * because a range is what someone later widens.
      *
-     * <p><b>And it writes only when the rendered TEXT would change</b>, so an armed menu is not
-     * repainting a static icon twice a second under the player's clicks. Over one countdown that is
-     * three writes across six fires.
+     * <p>{@code GrindstoneMenuLayoutTest} asserts those eight cells are disjoint from the tray,
+     * which takes the LAYOUT off the list of ways this can go wrong. This method is the other half.
+     *
+     * <p><b>And it writes only when the STATE or the TEXT would change</b>, so an armed menu is not
+     * repainting eight static cells twice a second under the player's clicks. Over one countdown
+     * that is three writes across six fires.
      */
     private void refreshConfirm() {
         GrindstoneButton.Face face = currentFace();
         if (face.text().equals(lastConfirmText)) return;
         lastConfirmText = face.text();
         getInventory().setItem(CONFIRM_SLOT, confirmIcon(face));
+        paintStatus(face.state());
+    }
+
+    /**
+     * Repaint the bar in this state's colour.
+     *
+     * <p>Iterates {@link GrindstoneMenuLayout#STATUS_SLOTS}, which is the bottom row MINUS Back and
+     * Close. <b>There is no skip here to forget</b>: the set cannot contain 48 or 49, so this loop
+     * has no way to paint over either button however often it runs.
+     *
+     * <p><b>The colour is a LOOKUP on the button's state, not a second decision.</b> The bar and the
+     * button cannot disagree, because only one of them decides anything.
+     */
+    private void paintStatus(GrindstoneButton.State state) {
+        ItemStack pane = MenuIcons.pane(GrindstoneButton.paneFor(state));
+        for (int slot : GrindstoneMenuLayout.STATUS_SLOTS) {
+            getInventory().setItem(slot, pane.clone());
+        }
     }
 
     private GrindstoneButton.Face currentFace() {
@@ -367,15 +390,33 @@ public final class GrindstoneMenu extends Menu {
             getInventory().setItem(slot, MenuIcons.filler());
         }
         getInventory().setItem(CLOSE_SLOT, MenuIcons.close());
+
+        // BACK_SLOT IS SUBTRACTED FROM THE FILLER SET PERMANENTLY, SO SOMETHING MUST PAINT IT ON
+        // BOTH PATHS. From the hub it is the arrow; from a block it is FILLER, and that else-arm is
+        // not decoration -- without it slot 48 is an unpainted hole in the middle of the bar's row,
+        // invisible and clickable.
+        //
+        // IT SHIPPED MISSING ONCE, AND THE REASON IT TRANSFERRED BADLY IS WORTH THE LINE:
+        // CraftingMenu.render() loops over EVERY slot except the grid and the result, so its base
+        // pass covers 48 for free. This render() loops over FILLER_SLOTS, which by construction
+        // EXCLUDES 48 -- so the same argument, copied across, was false here. A comment claiming
+        // the base pass covered it was carried over with it.
         if (openedFromNexus()) {
             getInventory().setItem(BACK_SLOT, MenuIcons.back(Material.ARROW, "the Nexus"));
+        } else {
+            getInventory().setItem(BACK_SLOT, MenuIcons.filler());
         }
         getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.GRINDSTONE,
                 MenuIcons.line("Grindstone", NamedTextColor.WHITE),
                 List.of(MenuIcons.line("Place weapons, shields, armor or tools below.",
                                 NamedTextColor.GRAY),
                         MenuIcons.line("Stripping clears every enchant they carry", NamedTextColor.GRAY),
-                        MenuIcons.line("and refunds part of the XP they cost.", NamedTextColor.GRAY),
+                        // THE FIGURE IS DERIVED, NEVER TYPED. A literal "35%" here is a figure
+                        // maintained by delta in the one place a player reads it -- it would go
+                        // stale the first time the constant moved, silently, with nothing red.
+                        // The button's number already comes from the same constant.
+                        MenuIcons.line("and refunds " + GrindstoneRefund.REFUND_PERCENT
+                                + "% of the XP they cost.", NamedTextColor.GRAY),
                         MenuIcons.blank(),
                         MenuIcons.line("The slot roll is kept.", NamedTextColor.DARK_GRAY))));
 
