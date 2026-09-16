@@ -426,6 +426,24 @@ So:
   > after the last file lands fixes the second. Third in the family is the `27`-for-`29` plan count —
   > *a figure taken from a glance at something adjacent to the answer.* Full entries in `NEXT.md`.
 
+  > **AND THE FOURTH ROUTE, WHICH NO AMOUNT OF RE-READING REACHES: A FIGURE MAINTAINED BY DELTA.**
+  > The three above are each wrong **once**, at a moment you can name. This one is wrong **forever
+  > and by a growing amount**, because every edit updates it correctly and inherits the base.
+  >
+  > **SO: RECOUNT THE FIGURE FROM ITS SOURCE, NEVER ADJUST IT BY THE DELTA OF YOUR OWN CHANGE** —
+  > and **write the command that produces it beside it**, so the next editor recounts instead of
+  > adjusting. If you find yourself computing *"twenty-nine minus three"*, stop and run the count.
+  >
+  > **AND A FRACTION MUST SAY WHAT UNIT EACH SIDE COUNTS.** A numerator in sub-items over a
+  > denominator in items renders as a perfectly plausible fraction. **Prefer NAMING the items to
+  > counting them** where the list is short enough — a name carries its granularity and a number
+  > does not.
+  >
+  > **This is not hypothetical and the instance is in this repo:** `GATE-nexus.md`'s status section,
+  > which is **the account** — four commits, an inherited `−4`, a further `−2` added by the very
+  > commit whose subject was fixing that line, and a `−1` in the denominator that survived because a
+  > second error cancelled it. **Every one of those edits passed *add the parts up*.**
+
 - **A PUSH NAMES ITS BRANCH.** `git push -u origin <branch>`, always. A bare `git push` resolves
   against whatever the current branch tracks, so it can land unreviewed work on `master`; the
   explicit form fails loudly instead of guessing.

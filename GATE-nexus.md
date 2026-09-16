@@ -1,11 +1,104 @@
 # GATE — the Nexus: the six routes out, and the two things a unit test cannot see
 
-**Status: PARTIALLY RUN — ROW 6 (2026-09-15) and ROWS 8e/8f/8g (2026-09-16). Rows 1–5, 7 and
-8a–8d remain NOT RUN, and so does every row of SLICE 2 (8–13), SLICE 3 (14–19), SLICE 4a (20–24),
-SLICE 4b (25–30) and SLICE 5 (31–34)** — each block carries its own status line. **Twenty-six of
-thirty-four rows have never been booted, and the file is still growing**; that is flagged for the
-operator rather than hidden in a block
-header.
+## STATUS — WHICH ROWS HAVE BEEN READ, NAMED RATHER THAN COUNTED
+
+**AT THIS FILE'S OWN GRANULARITY, NO ROW IS FULLY BOOTED.** Two rows have partial readings and
+every other row has none:
+
+| row | readings | state |
+|---|---|---|
+| **ROW 6** | 6.1, 6.2, 6.3, 6.4, 6.4′, 6.5 — **six** | **4 PASS, 2 VOID.** Booted 2026-09-15 in CREATIVE against a row that named no mode; 6.4 and 6.5 are VOID rather than failed |
+| **ROW 8** | 8a, 8b, 8c, 8d, 8e, 8f, 8g — **seven** | **3 GREEN (8e, 8f, 8g), 4 NOT RUN.** Booted 2026-09-16; the ship condition, not the whole row |
+
+**Every other row in this file has no reading at all.**
+
+**THE DENOMINATOR IS A COMMAND, NOT A NUMBER.** Re-derive it rather than trusting this line:
+
+```
+git grep -c '^## ROW' <ref> -- GATE-nexus.md
+```
+
+**35 on `origin/master` and 35 in this working tree** — thirty-four integer-numbered rows plus **ROW
+12b**, whose ID is not an integer and which therefore **belongs to no range.**
+
+> ### THIS FIGURE IS RECOUNTED, NEVER ADJUSTED — AND THAT RULE IS THE POINT OF THIS SECTION
+>
+> **An edit that moves this count by a delta is the defect, not the maintenance.** Recount from the
+> headings every time, with the command above. If you find yourself computing *"twenty-nine minus
+> three"*, stop.
+>
+> **A SINGLE COUNT IS WHAT ROTTED, SO A BETTER COUNT IS NOT THE FIX.** The rows are named above
+> because **a name cannot silently drift by six while remaining plausible**, and a number can — and
+> did, through four revisions, in a file whose entire purpose is to record what was observed.
+
+> ### THE ACCOUNT: −4 INHERITED THROUGH FOUR COMMITS, −6 BY THE LAST, OVER A −1 THAT HID BEHIND A CANCELLING ERROR
+>
+> Each numerator recounted from that commit's own headings — **never by adjusting the one above
+> it** — with `git show <commit>:GATE-nexus.md | grep -c '^## ROW'` and the read rows named:
+>
+> | commit | said | read rows then | integer rows | never booted | offset |
+> |---|---|---|---|---|---|
+> | `d1eefe4` | nineteen of twenty-four | 6 | 24 | **23** | **−4** |
+> | `837e53d` | twenty-five of thirty | 6 | 30 | **29** | **−4** |
+> | `2bcadce` | twenty-nine of thirty-four | 6 | 34 | **33** | **−4** |
+> | `2530378` | twenty-six of thirty-four | 6, 8 | 34 | **32** | **−6** |
+>
+> **THE OFFSET WAS REPORTED AS A CONSTANT −4 AND IT IS NOT ONE.** That reading was itself taken by
+> subtracting, and the recount is what moved the last row. **An error found by arithmetic is not
+> thereby measured by arithmetic** — the first description of this defect had to be recounted for
+> the same reason the defect did.
+>
+> **THE FIRST THREE INHERITED. THE FOURTH MANUFACTURED TWO MORE.** Each of the first three moved the
+> figure by a delta that was **correct for its own edit** and carried the base forward, so each
+> author was right about the change and wrong about the base — which is why it survived three
+> revisions with nobody at fault.
+>
+> **`2530378` IS THE ONE THAT MATTERS, AND IT IS THE ONLY ONE THAT MADE THINGS WORSE.** It exists to
+> fix the status line's STALENESS, and its body says a status line that does not move when a row is
+> read is this project's recurring defect. **It preserved the error inside the fix** by computing
+> twenty-nine minus three instead of recounting — **and the three is where the extra −2 came from.**
+> At a denominator counting ROW 8 as **one** row, reading 8e, 8f and 8g subtracts **one**, not three.
+> **The category error and the arithmetic error are the same keystroke.**
+>
+> **AND THE DENOMINATOR CARRIED ITS OWN −1 FROM THE START, BY A MECHANISM THAT CONCEALED ITSELF.**
+> `ROW 12b` entered at `d60d75a`, when the masthead had **no fraction at all**; the first fraction
+> was written at `d1eefe4` against **25** headings and said *"twenty-four"*. **The count was derived
+> from RANGES, and 12b is the one row whose ID is not an integer**, so no range can contain it.
+>
+> **BUT THE RANGE WAS ALSO WRONG, AND THE TWO ERRORS CANCELLED.** The masthead says **`SLICE 2
+> (8–13)`**; that block's own heading, written in the same commit that created 12b, says **`ROWS
+> 9–13, INCLUDING 12b`**. So the masthead widened the range by one at the bottom and dropped the
+> qualifier at the top:
+>
+> ```
+> the heading    9, 10, 11, 12, 12b, 13     6 rows, and it names 12b explicitly
+> the masthead   8,  9, 10, 11,  12,  13    6 rows, and ROW 8 is standing in 12b's place
+> ```
+>
+> **THE BLOCK'S TOTAL CAME OUT RIGHT — SIX EITHER WAY — SO ADDING THE RANGES UP COULD NEVER FIND
+> IT.** `CLAUDE.md`'s *when a figure is given alongside its parts, add the parts up* is the cheapest
+> check in this repo and it **passes on this defect**, because the substitution is one-for-one.
+>
+> **AND ROW 8 IS THEN IN THE SENTENCE TWICE.** By `2530378` the same masthead reads *"8a–8d remain
+> NOT RUN"* **and** *"every row of SLICE 2 (8–13)"* — one row, two places, one sentence. **That
+> contradiction was visible without any command, on the line being edited, in the commit whose
+> subject was that line.**
+>
+> **`SLICE 2 (8–13)` IS BYTE-IDENTICAL IN ALL FOUR MASTHEADS.** Nobody re-derived it; each edit
+> extended the list of ranges and carried the existing ones through untouched — `CLAUDE.md`'s
+> *descent launders*, where **every individual step is honest** and no step is the one where the
+> error entered.
+>
+> **THE GENERAL SHAPE, AND IT IS WHY THIS SECTION NAMES ROWS INSTEAD OF COUNTING THEM: A FRACTION
+> HIDES ITS OWN UNITS.** A numerator counted in sub-rows over a denominator counted in rows is
+> **still a plausible fraction** — it renders identically to a correct one, and no reader can tell
+> from the figure which unit either side was counted in. **Named rows carry their granularity with
+> them**, which is the one property the number could not have.
+>
+> **FOUND BY A READER DOING THE ARITHMETIC. NOTHING IN THIS FILE, AND NO TEST, COULD HAVE** — the
+> figure is prose, the rows are prose, and nothing executes either. The pointer is in `CLAUDE.md`'s
+> stale-figure entry; **this is the account**, and it is the only place the mechanism is written
+> down.
 
 > ### FOUR PREDICTIONS WERE RESTAGED ON 2026-09-16, AND EDITING A PREDICTION NORMALLY IS NOT ALLOWED
 >
@@ -14,10 +107,18 @@ header.
 > Menu"**. **Rows 14, 16, 27 and 30 were staged against the old values** and would have sent an
 > operator to look at the wrong cell.
 >
-> **THE NO-EDIT RULE BINDS A PREDICTION THAT HAS BEEN READ, AND NONE OF THESE HAS BEEN.** This file
-> carries exactly ONE reading — Row 6's — so there was nothing to falsify and nothing to void.
-> **The predictions were rewritten in place**, which is the correct treatment for an unread row whose
-> subject moved; the alternative is a gate that describes a screen that no longer exists.
+> **THE NO-EDIT RULE BINDS A PREDICTION THAT HAS BEEN READ, AND NONE OF THESE HAS BEEN.** The read
+> rows are named in the status section above — **Row 6 and Row 8** — and none of the four is one of
+> them, so there was nothing to falsify and nothing to void. **The predictions were rewritten in
+> place**, which is the correct treatment for an unread row whose subject moved; the alternative is a
+> gate that describes a screen that no longer exists.
+>
+> > **THIS SAID *"exactly ONE reading — Row 6's"* UNTIL 2026-09-16, AND IT WAS THE MASTHEAD DEFECT
+> > ONE SCREEN DOWN.** Written at `9d1f5fa` and true then; falsified by `2530378`, which booted
+> > 8e/8f/8g and **updated the masthead fraction without touching the sentence that counts the same
+> > thing in words.** The argument above never depended on the number, which is exactly why nobody
+> > re-read it. **It now points at the status section instead of restating it**, so there is one
+> > place to update and no second copy to go stale.
 >
 > **HAD ANY OF THEM BEEN READ, THE TREATMENT WOULD HAVE BEEN THE OPPOSITE:** mark the reading VOID
 > with its reason and restage beneath it, the way Row 6's creative readings were handled. **A reading
@@ -412,11 +513,12 @@ the displaced 13, and the *"Count still 13"* reading is **destroyed rather than 
 > old sentence would have sent the first reading to the wrong conclusion.
 >
 > > **THAT LICENCE HAS SINCE LAPSED, 2026-09-15, AND IT IS NOTED HERE RATHER THAN LEFT TO BE
-> > RE-QUOTED.** The file is now `PARTIALLY RUN` — Row 6 has been read. The paragraph above is a
-> > correct account of a change made while nothing had been read, and it is **no longer a licence to
-> > make another one.** A precondition that lapses silently is `CLAUDE.md`'s own *control carried
-> > past its precondition*: 5c and 5d are still unread, but the sentence *"nothing has been read"* is
-> > now false of this file and cannot be cited again as written.
+> > RE-QUOTED.** Rows have since been read — **the status section at the top of this file names
+> > which, and is the only place that does.** The paragraph above is a correct account of a change
+> > made while nothing had been read, and it is **no longer a licence to make another one.** A
+> > precondition that lapses silently is `CLAUDE.md`'s own *control carried past its precondition*:
+> > 5c and 5d are still unread, but the sentence *"nothing has been read"* is now false of this file
+> > and cannot be cited again as written.
 
 **READING:** _(not run)_ — **5c and 5d are not readable without all three of: the STAGING ROUTE
 (A, B or C), the outcome of the PRE-JOIN CONTROL, and the statement that NO DEATH OCCURRED between
@@ -543,8 +645,16 @@ Nexus.
 ## ROW 8 — CREATIVE, THE OWN-INVENTORY SCREEN, AND THE STAR THAT DUPLICATES
 
 **`/gamemode creative`. THIS ROW'S MODE IS THE ROW.** It exists because Row 6's 6.4 and 6.5 were
-read here and are VOID against a survival gate. **Status: NOT RUN** — every prediction below was
-written before any boot of this row.
+read here and are VOID against a survival gate. **Status: PARTIALLY RUN — 8e, 8f and 8g were booted
+2026-09-16 and are GREEN; 8a–8d have never been booted.** Every prediction below was written before
+any boot of this row, and the readings sit beside them rather than replacing them.
+
+> **THIS SAID `Status: NOT RUN` UNTIL 2026-09-16, AFTER 8e/8f/8g HAD BEEN READ AND RECORDED IN THIS
+> SAME SECTION.** `2530378` added the three readings and moved the masthead fraction, and **left this
+> line — the one a reader hits FIRST — saying the row had never been booted.** That is the defect
+> `2530378`'s own body names: a status line that does not move when a row is read. **The readings
+> were never hidden; the header contradicted them**, and a contradiction between a header and the
+> table beneath it is resolved by whichever the reader stops at.
 
 ### WHAT IS ALREADY KNOWN, SO THE ROW DOES NOT RE-ASK IT
 
