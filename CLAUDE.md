@@ -1797,7 +1797,7 @@ build.**
 > | `git diff --numstat` for mutation overreach | *what changed since HEAD*, not *what this edit changed* |
 > | two-dot `git diff` for what a branch changed | *tip vs tip*, not *what the branch contributed* |
 > | `merge-tree` / a clean rebase | *do these diffs touch the same lines*, not *does it still compile* |
-> | **`perl -i` with a `$` anchor, on this tree** | **nothing at all — see below** |
+> | **`perl -i` with a `$` anchor, on a CRLF WORKING TREE** | **nothing at all — see below** |
 > | **a generic bound** (`n-1` for sum-of-floors vs floor-of-sum) | **what the quantity can NEVER EXCEED, not what it IS** |
 >
 > **THE BOUND IS THE MEMBER THAT NEEDS NO TOOLING TO COMMIT, AND IT IS NOT A FABRICATION.** A
@@ -1819,10 +1819,46 @@ build.**
 > hand you a misleading figure. **This one exits 0 having changed nothing**, and silence is
 > indistinguishable from success.
 >
-> **`core.autocrlf` is `true`, so the working tree is CRLF.** Measured 2026-09-16: `EnchantMenu.java`
-> is **689 CR bytes across 689 lines**. A pattern anchored with `$` cannot match, because `\r` sits
-> between the last character and the newline — so `s{...;$}{...}` matches nothing, reports success,
-> and leaves the file byte-identical.
+> **On a clone with `core.autocrlf=true` the working tree is CRLF, and a `$`-anchored pattern cannot
+> match** — `\r` sits between the last character and the newline, so `s{...;$}{...}` matches nothing,
+> reports success, and leaves the file byte-identical.
+>
+> > ### *** THIS IS A PROPERTY OF A CLONE, NOT OF THIS REPO — AND THE FIRST DRAFT SAID "on this tree" ***
+> >
+> > **EVERY COMMITTED BLOB IS LF**, because `autocrlf` normalises on the way into the index. So a
+> > seat with `core.autocrlf=false` — Linux, typically — has **ZERO CR bytes in the working tree AND
+> > in the blob**, and this hazard does not exist for them at all.
+> >
+> > **Measured 2026-09-16, both seats, same file `EnchantMenu.java`:**
+> >
+> > | seat | working tree | blob |
+> > |---|---|---|
+> > | `autocrlf=true`, MINGW64 | **743 CR** | **0 CR** |
+> > | `autocrlf=false`, Linux | **0 CR** | **0 CR** |
+> >
+> > **AND IT IS NOT EVEN UNIFORM WITHIN ONE CLONE.** A file just WRITTEN is LF until git next checks
+> > it out; measured the same day, two freshly committed files read **0 CR in the working tree** on
+> > the `autocrlf=true` seat while `EnchantMenu.java` read 743. `git add` warns *"LF will be replaced
+> > by CRLF the next time Git touches it"* — **the file is immune today and vulnerable after the next
+> > checkout.**
+> >
+> > **THE BYTE COUNT IS PERISHABLE AND THIS ENTRY ALREADY CARRIED A STALE ONE.** It said **689**,
+> > measured before a later PR added lines to that file; it is **743** now and will move again. **The
+> > count is not the finding** — the finding is CR-present-at-all.
+> >
+> > **So the durable form is the COMMAND, not the number:**
+> >
+> > ```bash
+> > tr -cd '\r' < "$F" | wc -c      # working tree: non-zero => $ anchors are dead here
+> > git show HEAD:"$F" | tr -cd '\r' | wc -c    # blob: expected 0 on every seat
+> > ```
+> >
+> > **AND A CONSEQUENCE FOR REPORTS: line endings, trailing whitespace and byte shape CANNOT BE
+> > RE-DERIVED FROM `origin` BY A SECOND PARTY.** *"Verified from origin"* never covers that class.
+> > **For byte-shape claims only, quote the measurement AND the command that produced it**, run on
+> > the tree it was measured on, so a reader can judge whether the command answers the question.
+> > **A named exception, not a general loosening** — reach for it outside byte shape and it is the
+> > wrong instrument.
 >
 > **THE CONSEQUENCE THAT MAKES THIS WORTH A ROW: A MUTATION PASS CAN REPORT A FULL KILL SET WHILE
 > NEVER HAVING MUTATED ANYTHING.** Every mutation no-ops, every test stays green, and green under an
