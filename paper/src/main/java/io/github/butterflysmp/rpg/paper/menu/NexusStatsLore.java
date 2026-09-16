@@ -1,0 +1,101 @@
+package io.github.butterflysmp.rpg.paper.menu;
+
+import io.github.butterflysmp.rpg.core.combat.StatsSheetLines;
+import io.github.butterflysmp.rpg.core.combat.StatsSheetValues;
+import io.github.butterflysmp.rpg.paper.hud.StatsSheet;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * The text on the Nexus hub's stats head: its name, and its lore.
+ *
+ * <p>Pure, and that is the whole reason it is a separate class. The head itself needs a live
+ * {@code Player}, a {@code SkullMeta} and {@code Bukkit.createInventory}, none of which exist in a
+ * unit test -- <b>but what the tooltip SAYS is a function of a {@code StatsSheetValues} and nothing
+ * else</b>, so it is tested here at the 2-second loop instead of costing a boot. Same split
+ * {@code GridClickIntent} and {@code CollectPlan} make.
+ *
+ * <h2>THIS IS NOT A THIRD STAT RENDERER, AND IT MUST NEVER BECOME ONE</h2>
+ *
+ * <b>It computes no figure.</b> Every line comes from {@link StatsSheet#statLines}, the same method
+ * {@code /rpg stats} renders to chat, fed from the same {@code StatsSheetProjection}. There is
+ * <b>one input path and one formatter</b>; this class chooses between two presentations of them and
+ * does nothing else.
+ *
+ * <p>{@code RpgCommand} calls the stat sheet <i>"the eight build stats, read-only, self-only. The
+ * ONE player-facing command in this arc"</i>. <b>That singularity is the design.</b> A head that
+ * computed its own figures would be a second answer to one question, and the drift would not
+ * present as a failure -- it would present as two screens disagreeing, months later, with no test
+ * in a position to see it.
+ *
+ * <p>So: if a future shape does not fit a tooltip, <b>adapt the PRESENTATION here. Never recompute
+ * the values.</b>
+ *
+ * <h2>WHY THERE IS NO HEADER LINE</h2>
+ *
+ * The header is chat CHROME. A chat message has no frame, so it needs a line saying where it starts
+ * and what it is; <b>a tooltip is nothing but frame</b> -- it has an edge, and the item's display
+ * name at the top already says "Your Stats". Carrying the header would make the tooltip state its
+ * own name twice.
+ *
+ * <p>The same instinct as {@code MenuIcons.close()} losing its lore line on the operator's
+ * instruction, for a quieter screen. <b>It is presentation, and Ben can overrule it in one word</b>
+ * -- it is one method.
+ */
+final class NexusStatsLore {
+
+    private NexusStatsLore() {}
+
+    /**
+     * The head's display name, which is where the header went.
+     *
+     * <p>GOLD, and {@link StatsSheetLines#HEADER} rather than a literal, so the button and the chat
+     * report cannot come to call the same screen two different things. That constant carries a note
+     * saying it is now a button name as well as a chat header -- <b>decorating it decorates this
+     * button.</b>
+     */
+    static Component name() {
+        return MenuIcons.line(StatsSheetLines.HEADER, NamedTextColor.GOLD);
+    }
+
+    /**
+     * The head's lore: the stat lines, or the untracked notice.
+     *
+     * <p><b>THE BRANCH IS IN HERE RATHER THAN AT THE CALL SITE, DELIBERATELY.</b> The empty case is
+     * a real state -- a freshly-joined player whose reconcile loop has not registered them yet, and
+     * the hub is the surface they are most likely to meet it on. Put the branch in {@code NexusMenu}
+     * and it becomes boot-gate-only; put it here and a unit test can cause it.
+     *
+     * <p><b>It must NOT render zeroes.</b> A readout showing {@code 0} when nothing was counted is
+     * indistinguishable from a working readout that measured zero -- {@code MenuIcons.placeholder}'s
+     * own argument, in a place a player can see. It says
+     * {@link StatsSheetLines#UNTRACKED}, <b>in the same words {@code /rpg stats} uses</b>, because
+     * the two surfaces agreeing about the failure matters as much as agreeing about the numbers.
+     *
+     * <p><b>The quiver pair rides along, and dropping it would be a bug.</b> It is conditional on
+     * the weapon in hand, so it is present here exactly when it is present in chat. Rendering eight
+     * of ten would reintroduce at the presentation layer the drift the projection eliminates at the
+     * data layer -- one input path and two different answers -- and the gate row comparing the two
+     * surfaces would pass whenever no quiver weapon is held, which is most of the time. <b>A
+     * conditional line is not an optional line.</b>
+     *
+     * <p><b>KNOWN STALENESS, ACCEPTED FOR THIS SLICE.</b> The menu paints once, on open. Eight of
+     * the ten lines are maxima and rates and cannot move while a screen is up; <b>the quiver pair is
+     * the exception</b>, because it is keyed to the HELD weapon and {@code MenuRouting} deliberately
+     * permits a player to move items around their own inventory with a menu open. So the head can
+     * go on showing a capacity for a weapon no longer selected. <b>Not fixed, because this button
+     * does not open anything yet</b> -- the slice that makes it clickable decides whether to
+     * repaint, and {@code CraftingMenu} already has the one-tick-on-inventory-change shape if it
+     * becomes worth it. Recorded so that slice finds the answer instead of rediscovering the
+     * question.
+     */
+    static List<Component> lore(Optional<StatsSheetValues> values) {
+        return values
+                .map(StatsSheet::statLines)
+                .orElseGet(() -> List.of(
+                        MenuIcons.line(StatsSheetLines.UNTRACKED, NamedTextColor.RED)));
+    }
+}

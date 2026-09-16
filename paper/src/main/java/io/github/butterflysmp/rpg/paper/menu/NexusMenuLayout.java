@@ -44,6 +44,25 @@ final class NexusMenuLayout {
     static final int SETTINGS_SLOT = 50;
 
     /**
+     * The stats head, and <b>the first FEATURE on this screen rather than more chrome.</b>
+     *
+     * <h2>CHROME IN THE BOTTOM ROW. FEATURES IN THE BODY, FILLING LEFT TO RIGHT FROM 20</h2>
+     *
+     * <b>Stated now, before a third button makes it accidental.</b> Close and Settings are chrome
+     * and live in the bottom row; everything a player came here to USE goes in the body and
+     * APPENDS. The alternative -- centring whatever features exist -- looks best with one icon and
+     * <b>moves every icon the moment a second one arrives</b>, which is churn in a screen players
+     * learn by position.
+     *
+     * <p>So 20 is a starting point, not a centre. The next feature is 21.
+     *
+     * <p><b>THIS IS THE ASSISTANT'S PROPOSAL, NOT BEN'S RULING</b>, unlike {@link #SIZE} and the
+     * 49/50 pair. It is a number a player experiences, so it went to him with the slice rather than
+     * being buried -- and it is one constant, so one word changes it.
+     */
+    static final int STATS_SLOT = 20;
+
+    /**
      * Every slot that is plain filler -- the whole menu except the two buttons.
      *
      * <p><b>Built by SET SUBTRACTION rather than by a loop with {@code continue} arms</b>, the same
@@ -60,6 +79,7 @@ final class NexusMenuLayout {
         for (int slot = 0; slot < SIZE; slot++) slots.add(slot);
         slots.remove(CLOSE_SLOT);
         slots.remove(SETTINGS_SLOT);
+        slots.remove(STATS_SLOT);
         return Set.copyOf(slots);
     }
 }
