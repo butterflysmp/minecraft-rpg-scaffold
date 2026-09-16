@@ -16,9 +16,9 @@ import org.bukkit.Material;
  * screen without another dialog.
  *
  * <p><b>Two GRAY states, two different texts, and that is {@code GATE-nexus.md} Row 28's rule
- * applied within one colour.</b> An empty tray and a tray of already-stripped weapons are both
+ * applied within one colour.</b> An empty tray and a tray of already-stripped items are both
  * player-resolvable -- so both are gray -- but the remedies differ ("put something in" against
- * "these are the wrong weapons"), so the text differs. Row 28 failed because one colour served a
+ * "these are the wrong items"), so the text differs. Row 28 failed because one colour served a
  * pending load and a failed one; collapsing these two would be the same defect one level down.
  *
  * <h2>PRECEDENCE: NOTHING, THEN ARMING, THEN READY</h2>
@@ -62,7 +62,7 @@ final class GrindstoneButton {
         // PRECEDENCE, and the order of these branches IS the ruling.
         if (strippable <= 0) {
             return trayEmpty
-                    ? new Face(State.NOTHING_EMPTY, Material.GRAY_DYE, "Add weapons to strip")
+                    ? new Face(State.NOTHING_EMPTY, Material.GRAY_DYE, "Add items to strip")
                     : new Face(State.NOTHING_STRIPPED, Material.GRAY_DYE,
                             "These have nothing to strip");
         }
@@ -71,10 +71,21 @@ final class GrindstoneButton {
                     "Arming... " + secondsRemaining(remainingTicks));
         }
         // THE COUNT IS THE COUNT THE REFUND CAME FROM. A fourteen-item tray with nine enchanted
-        // reads "Strip 9 weapons" -- printing fourteen beside the refund invites the player to
+        // reads "Strip 9 items" -- printing fourteen beside the refund invites the player to
         // divide one by the other.
+        //
+        // "ITEMS", NOT "WEAPONS", AND THE SCREEN HAD ALREADY CHOSEN. The tray admits weapons,
+        // shields, armor AND tools -- acceptsInput enumerates all four and the info lore promises
+        // all four -- so a button reading "Strip 9 weapons" tells a player stripping shields that
+        // the screen is doing something else. One screen, two vocabularies, with the narrower one
+        // on the cell carrying the number.
+        //
+        // Measured before changing it: this was the ONLY player-facing string on the screen using
+        // "weapon" as a category. "One item at a time.", "Strips EVERY enchant from every item
+        // here." and "Stripped N items for R XP." were already neutral, so the neutral noun was
+        // the screen's and the button was the one place that had not got it.
         return new Face(State.READY, Material.LIME_DYE,
-                "Strip " + strippable + (strippable == 1 ? " weapon" : " weapons")
+                "Strip " + strippable + (strippable == 1 ? " item" : " items")
                         + " -- +" + refund + " XP");
     }
 

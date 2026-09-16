@@ -18,8 +18,12 @@ every other row has none:
 git grep -c '^## ROW' <ref> -- GATE-nexus.md
 ```
 
-**35 on `origin/master` and 35 in this working tree** — thirty-four integer-numbered rows plus **ROW
+**35 on `origin/master` and 47 in this working tree** — forty-six integer-numbered rows plus **ROW
 12b**, whose ID is not an integer and which therefore **belongs to no range.**
+
+**Both sides RECOUNTED with the command above, not adjusted.** The working tree gained slice 6's
+twelve rows (35–46); `origin/master` is unchanged because that slice has not merged. **If you are
+reading this after it has, re-run the command rather than assuming 47.**
 
 > ### THIS FIGURE IS RECOUNTED, NEVER ADJUSTED — AND THAT RULE IS THE POINT OF THIS SECTION
 >
@@ -197,6 +201,7 @@ ships to a survival server; **a creative reading certifies creative**, and nothi
 | **24** | **SURVIVAL** | it is a row about **dying**, and a creative player is hard to kill — Row 1's reason, unchanged |
 | **25, 27, 28, 30** | **SURVIVAL** | slice 4b. A tooltip, two menu transitions, two refusal messages and a control — none reads a game mode |
 | **31–34** | **SURVIVAL** | slice 5. Two stations, a bookshelf count and a Back button -- none reads a game mode, and 32 needs real placed blocks |
+| **35–46** | **SURVIVAL**, and **seven of the twelve are VOID in creative** | slice 6, the grindstone. **Creative hides the XP bar**, so every row that reads a refund -- 35, 36, 37, 40, 41, 42 and 46 rest on it directly or on the button's figure -- has nothing on screen to read. **That is Row 6's lesson applied BEFORE the boot rather than after it cost two readings** |
 | **26, 29** | **SURVIVAL**, and **26c especially** | 26c reads a **displaced item** surviving, and 29 counts hotbar cells. Creative makes items free, so *"the item is still there"* is satisfied for nothing — the register's own shape: **creative removes a cost, and a row whose reading is "the thing is still there" passes without exercising anything** |
 | **18** | **SURVIVAL**, and **this one is load-bearing** | it moves an item **in the player's own inventory with a menu open** — the exact surface Row 8 shows behaves differently in creative. **A creative reading of 18 certifies creative and says nothing about the shipped path** |
 
@@ -1662,6 +1667,274 @@ that column is.
 > **The recipe book must still work from the hub-opened screen.** Click it. Removing a working
 > feature conditionally is the collision notice's lesson inverted: a line of chat was added so a
 > shadowed crafting table would not be silent, and silently deleting a button is worse.
+
+**READING:** _(not run)_
+
+---
+
+# SLICE 6 — THE GRINDSTONE. ROWS 35–46
+
+**Status: NOT RUN.** Every row below was written **before any boot**, and before the branch that
+adds them was pushed.
+
+**GAME MODE: `/gamemode survival` for all twelve**, declared here and repeated per row.
+
+> ### AND HERE THE MODE IS LOAD-BEARING RATHER THAN BOILERPLATE, WHICH IS NOT TRUE OF EVERY SLICE
+>
+> **Creative hides the XP bar.** Seven of these twelve rows read a refund, and in creative a
+> refund reading is **VOID rather than PASS or FAIL** — there is nothing on screen to read it off.
+>
+> **That is Row 6's lesson applied before the boot instead of after it.** Row 6 was staged without
+> a mode, booted in creative, and lost two of its six readings to exactly this; those two are still
+> VOID. **Nobody asked for this slice to declare a mode — it declares one because Row 6 already
+> paid for the alternative.**
+
+**What the unit suite already settled, so no row here re-asks it.** `GrindstoneRefundTest` pins the
+inclusive bound at all three levels, the tray-level flooring, the integer form against the
+floating-point one at a computed divergence, and the no-ledger licence over a 93-point sweep.
+`GrindstoneMenuLayoutTest` pins the fourteen cells, the margins, the filler and — the row that
+matters most — **that `CONFIRM_SLOT` is not a tray cell**. `GrindstoneButtonTest` pins the four
+faces, the palette, the precedence and the two gray texts.
+
+**What none of them can see** is a live `Inventory`, a `RepeatingTask` running against a real
+player, an item actually re-minted, or a repaint landing on a cell a player is looking at. **That
+gap is these twelve rows.**
+
+## ROW 35 — THE REFUND FIGURE, AGAINST HAND ARITHMETIC
+
+**Staging.** `/gamemode survival`. `/rpg give ironblade`, then `/rpg enchant candidate 0 sharpness`
+and unlock it to **II** at a table with no shelves. `/xp query` before opening the grindstone.
+Put the one weapon in the tray, wait for the button to arm, read it, then click.
+
+**PREDICTED:** the button reads **`Strip 1 item -- +441 XP`**, and the wallet afterwards is
+**exactly 441 points higher** than before.
+
+> **441 IS `1262 * 35 / 100`, AND THE HAND ARITHMETIC IS THE POINT.** Level II costs `352 + 910`;
+> 35% of 1262 floors to 441. **Do the multiplication yourself before reading the screen** — a row
+> that reads the button and then reads the wallet is checking one expression against itself, which
+> is what `EnchantCost.clampPower` exists to prevent.
+>
+> **If the button says 882 or 1262, the bound is exclusive or the percentage is missing.**
+
+**READING:** _(not run)_
+
+## ROW 36 — A **LEVEL-I-ONLY** ITEM. **THE ROW THE OLD REPO'S LOOP RETURNS ZERO FOR**
+
+**Staging.** `/gamemode survival`. A fresh weapon, one candidate unlocked to **I** and no further.
+One item in the tray.
+
+**PREDICTED:** **`Strip 1 item -- +123 XP`**, and 123 points arrive.
+
+> **THIS IS THE COMMONEST ITEM ON THE SERVER AND THE TRANSPLANTED BOUND PAYS NOTHING FOR IT.** The
+> predecessor's `for (lvl = 1; lvl < a.level(); lvl++)` does not execute at all at level 1 —
+> correct there, because unlocking to I was free in that project, and **100% short here**, where it
+> costs 352.
+>
+> **A ZERO ON THE BUTTON IS THE DEFECT, NOT AN EMPTY TRAY.** If the button is GRAY and reads *"These
+> have nothing to strip"* while a visibly enchanted weapon sits in the tray, the bound is exclusive.
+
+**READING:** _(not run)_
+
+## ROW 37 — A FULL TRAY OF FOURTEEN, AND **ONE** XP GRANT
+
+**Staging.** `/gamemode survival`. Fourteen enchanted items, every tray cell full. `/xp query`,
+click once, `/xp query` again.
+
+**PREDICTED:** **one** grant. The wallet moves **once**, by the figure on the button, and the chat
+line reads **`Stripped 14 items for N XP.`** — one line, not fourteen.
+
+> **FOURTEEN GRANTS WOULD LOOK ALMOST RIGHT, WHICH IS WHY THIS ROW COUNTS THE LINE.** Per-item
+> granting lands within 12 points of the correct total, so the wallet alone cannot distinguish it.
+> **The chat line can**: one line means one grant.
+>
+> **And the button's figure must equal the wallet delta exactly.** They come from one expression;
+> if they differ, they no longer do.
+
+**READING:** _(not run)_
+
+## ROW 38 — THE ROLL SURVIVES THE STRIP
+
+**Staging.** `/gamemode survival`. Before stripping, open the enchant table and **write down every
+candidate the item offers, in order, in all three slots.** Strip it. Reopen the enchant table.
+
+**PREDICTED:** **the same candidates, in the same slots, in the same order** — every one at level 0
+and none active. The item is re-rollable-looking but NOT re-rolled.
+
+> **BEN'S RULING, AND IN THIS MODEL IT IS AUTOMATIC RATHER THAN ARRANGED** — the roll IS the
+> candidate list, so a fully stripped state is the shape a fresh roll produces. **The failure to
+> watch for is a NEW set of candidates**, which would mean the strip cleared the roll flag and the
+> item re-rolled on next open. That is a player's roll destroyed, and it is invisible unless
+> somebody wrote the old one down first. **Write it down first.**
+
+**READING:** _(not run)_
+
+## ROW 39 — THE COUNTDOWN RUNS, AND **RE-ARMS ON THE FIFTEENTH CHANGE**
+
+**Staging.** `/gamemode survival`. Put one item in and **watch the button without clicking**. Then,
+with the button already LIME, **put a second item in** and watch again. Then **take one out** and
+watch a third time.
+
+**PREDICTED:**
+
+| | expected |
+|---|---|
+| 39a | the button is **YELLOW** and counts **3, 2, 1**, then turns **LIME** |
+| 39b | adding a second item turns it **YELLOW again at 3** — a placement re-arms |
+| 39c | **REMOVING one re-arms it too.** Yellow, from 3, again |
+
+> **39c IS THE ROW.** *"Removals are safe"* is the obvious exception and it was **considered and
+> refused**: an exception is a boundary, and boundaries are what this project keeps paying for. A
+> build that re-arms on placement only passes 39a and 39b perfectly.
+
+**READING:** _(not run)_
+
+## ROW 40 — A CLICK DURING THE LOCKOUT DOES NOTHING **AND SAYS NOTHING**
+
+**Staging.** `/gamemode survival`. Load the tray, and while the button is **YELLOW**, click it
+**five times**. `/xp query` before and after.
+
+**PREDICTED:** **nothing happens, five times.** No strip, no XP, **no chat line**, no sound. The
+countdown continues undisturbed and the items are untouched.
+
+> **THE SILENCE IS DELIBERATE AND IS NOT A ROW 14 VIOLATION.** Row 14 ruled *"no-op with feedback,
+> not silence"* — and its case was **a button that looked identical whether it worked or not.**
+> This one never does: the countdown is persistent visible feedback **on the button being
+> clicked.** Five chat lines here would be five lines of spam saying what the button already says.
+>
+> **If clicking during yellow strips anything, the arming delay does not exist** — it is a
+> decoration over a live button, which is worse than no delay because the player trusts it.
+
+**READING:** _(not run)_
+
+## ROW 41 — **PRECEDENCE.** AN EMPTY TRAY IS GRAY, NOT YELLOW
+
+**Staging.** `/gamemode survival`. Open the grindstone from the hub and **look at slot 40
+immediately, before touching anything.** Then click it.
+
+**PREDICTED:** **GRAY**, reading **`Add items to strip`**. **Not yellow, and not counting down** —
+even though the deadline initialises at open time and the clock is genuinely running. Clicking does
+nothing and says nothing.
+
+> **PRECEDENCE IS NOTHING, THEN ARMING, THEN READY.** A lock on an action with nothing to lose is
+> not information the player needs. **A yellow countdown on an empty tray is the failure**, and it
+> is what a build that tests the clock before the tray produces.
+
+**READING:** _(not run)_
+
+## ROW 42 — **THE CONTROL.** FOURTEEN ITEMS STILL THERE AFTER THIRTY SECONDS OF TICKING
+
+**Staging.** `/gamemode survival`. Fill all fourteen tray cells with **recognisable, individually
+identifiable** items. **Do not click anything.** Leave the screen open for **thirty seconds** —
+long enough for roughly sixty countdown fires — then close it and count what comes back.
+
+**PREDICTED:** **all fourteen items, unchanged, back in the inventory.** Same items, same enchants,
+same durability, nothing blanked and nothing duplicated.
+
+> ### *** THIS IS THE ROW THAT CATCHES THE REPAINT CLOBBER, AND WITHOUT IT A TICK THAT WIPES THE TRAY PASSES EVERY OTHER ROW IN THIS BLOCK. ***
+>
+> The arming task fires twice a second for the menu's whole life. **If it called `render()` instead
+> of writing one named slot, every fire would paint filler over all fourteen cells** — and the
+> player's items would be gone, with **no output slot to recover them from and no undo.**
+>
+> **Every other row in this block is short.** Rows 35–41 are read in a few seconds each, well
+> inside the three-second arm, so a tick that destroys the tray on its *fourth* fire never gets the
+> chance. **Thirty seconds is chosen to outlast every other row's dwell time**, not because thirty
+> is significant.
+>
+> **`MUTS5-BACK`'s shape with items in place of chrome** — and where that one cost an invisible
+> button, this costs fourteen weapons. **Unrecoverable, not cosmetic.**
+>
+> **The unit suite can see that `CONFIRM_SLOT` is not a tray cell. It cannot see what the tick
+> writes.** That is exactly the half this row exists for.
+
+**READING:** _(not run)_
+
+## ROW 43 — SHIFT-CLICK FILLS THE **FIRST FREE CELL IN INDEX ORDER**
+
+**Staging.** `/gamemode survival`. With an **empty** tray, shift-click three items in from your
+inventory one at a time, watching where each lands. Then **take the middle one out** and shift-click
+a fourth in.
+
+**PREDICTED:** the three land at **19, 20, 21** in that order. The fourth lands in the **hole at
+20**, not at 22 — the first FREE cell, not the next one along.
+
+> **NO CODE WAS WRITTEN FOR THIS, WHICH IS WHY IT IS BOOTED.** `MenuRouting.firstEmptyInput` already
+> iterates a sorted set of `inputSlots()`, and `CraftingMenu` has run nine input slots through it
+> since slice 5. **Inheriting a behaviour is not the same as observing it**, and the tray is the
+> first fourteen-slot surface in the project.
+>
+> **If the fourth lands at 22, the router is appending rather than filling** — which is invisible
+> until a tray has a hole in it.
+
+**READING:** _(not run)_
+
+## ROW 44 — THE WORLD BLOCK, AND THE TWO CONTROLS 4b AND 4c EXIST FOR
+
+**Staging.** `/gamemode survival`. Place a real grindstone.
+
+| | staging | expected |
+|---|---|---|
+| **44a** | right-click it with an **empty hand** | **our** grindstone screen opens. **Never the vanilla one** |
+| **44b** | **sneak**-right-click it with an **empty hand** | **nothing opens at all** — no vanilla screen, no menu |
+| **44c** | **sneak**-right-click it holding a **BLOCK** | the block is **NOT placed**; nothing opens |
+| **44d** | right-click it holding a weapon that binds `right_click` | the weapon's ability **fires**, and no screen opens |
+
+> **44b IS THE SHAPE THAT SHIPPED BROKEN ON THE ENCHANT TABLE.** Its cancel sat inside the
+> `!isSneaking` guard, so sneak-right-clicking with an empty hand opened **vanilla enchanting** —
+> the one screen the hijack exists to replace. **The grindstone inherits the fix** rather than
+> re-deriving it, because it is one entry in `hijackedBlocks` and the cancel lives above the guard
+> in the shared method. **Inheriting is why this row should pass; it is not why it can be skipped.**
+>
+> **44c IS THE ACCEPTED CONSEQUENCE, AND AN ACCEPTED CONSEQUENCE THAT IS NEVER OBSERVED IS AN
+> ASSUMPTION.** No block can be placed against a grindstone face while sneaking. That is the bill
+> for the unconditional cancel and it is paid knowingly.
+
+**READING:** _(not run)_
+
+## ROW 45 — CLOSE AND ESC RETURN THE WHOLE TRAY, INCLUDING THE DROP
+
+| | staging | expected |
+|---|---|---|
+| **45a** | fourteen items in the tray, click **Close** (49) | **all fourteen** back in the inventory |
+| **45b** | fourteen in the tray, press **Esc** | **all fourteen** back — the SAME path |
+| **45c** | fill your inventory to **36/36**, put items in the tray, **Esc** | they **drop at your feet** with the yellow line |
+| **45d** | an item on the **cursor** when you press Esc | returned; not lost, not duplicated |
+| **45e** | with the tray loaded, click **Back** (48) from the hub route | the tray returns **AND** the hub opens |
+
+> **45e IS THE ONE WITH AN ORDERING IN IT.** This screen HAS input slots, so Back must **close
+> first and hop second** — the close is what runs `returnEverything`. A build that hops without
+> closing swaps the inventory out from under fourteen items.
+>
+> **45c WILL PRODUCE UP TO FOURTEEN YELLOW LINES**, because `MenuSafety.give` speaks per call.
+> **That is known and is not this slice's to fix** — it is a `MenuSafety` change. Record how many
+> lines actually appear; the row passes on the items arriving, not on the line count.
+
+**READING:** _(not run)_
+
+## ROW 46 — **THE TWO GRAY TEXTS, READ AGAINST EACH OTHER**
+
+**Staging.** `/gamemode survival`, two readings **one after the other, in one sitting**, and the
+strings **written down verbatim**:
+
+| | staging | expected |
+|---|---|---|
+| **46a** | open the grindstone with an **EMPTY** tray. Read slot 40 | gray, **`Add items to strip`** |
+| **46b** | fill the tray with **fourteen ALREADY-STRIPPED** items. Read slot 40 | gray, **`These have nothing to strip`** |
+
+> **THE CONTROL IS THAT THEY DIFFER. THE FAILURE IS THAT BOTH ARE CORRECT-LOOKING AND IDENTICAL.**
+>
+> **If both gray states render the same string, EVERY OTHER ROW IN THIS BLOCK STILL PASSES.** They
+> share a colour, they share the do-nothing click, and neither is READY — so nothing else in these
+> twelve rows can tell them apart. **Row 41 reads gray against YELLOW; this is the only row that
+> reads gray against GRAY.**
+>
+> **That collapse is `GATE-nexus.md` Row 28's defect**, where every surface said *"still loading"*
+> for both a pending load and a failed one. Its fix changed the colour as well as the text; here
+> the colour is deliberately the SAME, because both states are player-resolvable — so **the text is
+> the only thing carrying the difference, and the only thing that can be got wrong.**
+>
+> **Write both strings down rather than ticking the row.** *"They looked different"* is not a
+> reading; the two texts are.
 
 **READING:** _(not run)_
 

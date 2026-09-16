@@ -39,7 +39,7 @@ class GrindstoneButtonTest {
         // *** ROW 46's UNIT TWIN, AND THE ROW THAT CATCHES THE COLLAPSE. ***
         //
         // Both are gray because both are player-resolvable. The REMEDIES differ -- "put something
-        // in" against "these are the wrong weapons" -- so the TEXT must differ. If someone later
+        // in" against "these are the wrong items" -- so the TEXT must differ. If someone later
         // folds these into one string, every other assertion in this file still passes: they have
         // the same colour, the same acts() answer, and neither is READY.
         GrindstoneButton.Face empty = GrindstoneButton.faceFor(true, 0, 0, 0);
@@ -53,7 +53,7 @@ class GrindstoneButtonTest {
                 "and they must say different things -- collapsing them is GATE-nexus Row 28's "
                         + "defect, where one colour served a pending load and a failed one");
 
-        assertEquals("Add weapons to strip", empty.text(), "the empty tray names the remedy");
+        assertEquals("Add items to strip", empty.text(), "the empty tray names the remedy");
         assertEquals("These have nothing to strip", stripped.text(),
                 "and the stripped tray names a different one");
         // Mutation: return the same text from both arms -> the two assertNotEquals redden.
@@ -82,11 +82,11 @@ class GrindstoneButtonTest {
     @Test
     void theCountOnTheButtonIsTheItemsThatCHANGE_notTheTraySize() {
         GrindstoneButton.Face face = GrindstoneButton.faceFor(false, 9, 1463, 0);
-        assertEquals("Strip 9 weapons -- +1463 XP", face.text(),
+        assertEquals("Strip 9 items -- +1463 XP", face.text(),
                 "nine of a fourteen-item tray -- printing 14 invites dividing 1463 by 14");
 
-        // AND ONE ITEM IS NOT "1 weapons".
-        assertEquals("Strip 1 weapon -- +123 XP", GrindstoneButton.faceFor(false, 1, 123, 0).text(),
+        // AND ONE ITEM IS NOT "1 items".
+        assertEquals("Strip 1 item -- +123 XP", GrindstoneButton.faceFor(false, 1, 123, 0).text(),
                 "singular when there is one");
         // Mutation: drop the plural arm -> the second reddens.
     }
