@@ -1264,8 +1264,14 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   > **Replacing it with the true count failed the same way**: the corrected sentence quoted the
   > marker twice more and was wrong before it was saved.
   >
-  > ***A COUNT OF THIS FILE'S OWN TEXT CANNOT BE WRITTEN AS A LITERAL, BECAUSE WRITING IT CHANGES
-  > IT.*** Not a hard figure to keep current — an impossible one. **Give the command and no number.**
+  > ***A COUNT OF THIS FILE'S OWN TEXT CANNOT BE WRITTEN AS A LIVE LITERAL, BECAUSE WRITING IT
+  > CHANGES IT.*** Not a hard figure to keep current — an impossible one. **Give the command and no
+  > live figure.**
+  >
+  > **A QUOTED HISTORICAL ONE IS FINE AND THIS ENTRY USES SEVERAL** — *"it used to say 0"*, *"3
+  > became 4"*. Those are records of a past state, not assertions about the current file, and
+  > nothing falsifies them. **The ban is on a number the reader would check against the file in
+  > front of them.**
   **`grep -rho` IS NOT AN EQUIVALENT, AND THE DIFFERENCE IS NOT ARITHMETIC:** it classifies any file
   holding a NUL byte as **binary** and counts **nothing** from it. `core` has one — `EnchantCodecTest`
   carries a **single** NUL inside a string literal, and **15** `@Test` that grep never sees.
@@ -1317,6 +1323,18 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   rather than asserted — two of `GATE-nexus.md` Row 6's six readings are **VOID** for want of this
   line, and `GATE-plume-release.md`'s `R-N1` **fails while testing nothing** in the wrong mode.
 
+  > **AND THIS FIGURE IS OWED A RE-MEASUREMENT, WHICH IS NOT THE SAME AS BEING WRONG.** It is
+  > anchored at `e9b3e0e` and three files have been fixed since, so the *"16 still owed"* describes
+  > a tree that has moved. **A token sweep is NOT the method** — see immediately below — so
+  > re-deriving it means opening each `GATE-*.md` and reading its header for a declared mode:
+  >
+  > ```bash
+  > grep -lE 'gamemode|survival|creative|adventure|spectator' GATE-*.md   # CANDIDATES ONLY
+  > ```
+  >
+  > **That command over-reports and must not be pasted as the answer.** Owed work, named here
+  > rather than guessed at, and deliberately not done in a slice that was not about it.
+  >
   > **THE GREP FOR THIS DEBT IS A FALSE-PRESENCE TRAP, SO THE COUNT IS STATED WITH ITS METHOD.**
   > Two more files match those tokens and declare nothing: `GATE-nexus.md`'s three hits were all
   > `InventoryCreativeEvent` as a MECHANISM, and `GATE-vanilla-damage.md`'s one hit is *"nearly
@@ -1330,11 +1348,15 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
 
   > **AND IT WAS STALE ANYWAY, WHICH IS THE POINT OF THE RULE ABOVE RATHER THAN A FAILURE OF IT.**
   > Anchoring told the reader *when* the figure was taken; it did not tell them the file had grown
-  > another **282 lines** since. **RE-DERIVE IT, DO NOT READ IT:**
+  > since. **RE-DERIVE BOTH ENDS IN LINES OF `CLAUDE.md`, AND SUBTRACT NOTHING BY HAND:**
   >
   > ```bash
-  > wc -l < CLAUDE.md        # and compare against `git show <ref>:CLAUDE.md | wc -l`
+  > wc -l < CLAUDE.md                      # lines, now
+  > git show 0dd9bbe:CLAUDE.md | wc -l     # lines, at the anchor above
   > ```
+  >
+  > **No current figure and no delta are written here on purpose** — either would be a number
+  > maintained by delta, in the entry that names that defect.
   >
   > **The growth is the debt, so the figure has to be current to mean anything** — and this is the
   > one entry in the file whose subject IS its own number.
