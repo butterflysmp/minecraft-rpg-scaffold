@@ -96,16 +96,43 @@ final class NexusMenuLayout {
     static final int CRAFTING_SLOT = 31;
 
     /**
-     * Enchanting. <b>Row 4, column 5 -- beside crafting, in the same band.</b>
+     * Enchanting. <b>Row 4, column 5 -- between crafting and the grindstone.</b>
      *
-     * <p>Adjacent to {@link #CRAFTING_SLOT} rather than spread across the row: they are the two
-     * members of one band today, and a player reads them as a pair. {@code NexusMenuLayoutTest}
-     * asserts the adjacency, so a third station cannot silently split them.
+     * <p>Adjacent to {@link #CRAFTING_SLOT} rather than spread across the row: the stations are a
+     * contiguous run and a player reads them as one. {@code NexusMenuLayoutTest} asserts the run,
+     * so a later station cannot silently split it.
      */
     static final int ENCHANT_SLOT = 32;
 
     /**
-     * Every slot that is plain filler -- the whole menu except the two buttons.
+     * The grindstone. <b>Row 4, column 6 -- the third station, and the right-hand end of the run
+     * we have built.</b> Ben's ruling, and the predecessor project had it at 33 too.
+     *
+     * <h2>THE ROW IS FIVE STATIONS WIDE AND WE HAVE THE RIGHT-HAND THREE. IT IS INCOMPLETE, NOT OFF-CENTRE</h2>
+     *
+     * The predecessor's hub row, read from its source rather than remembered:
+     *
+     * <pre>
+     *   29 ender chest   30 anvil   31 crafting   32 enchanting   33 grindstone
+     * </pre>
+     *
+     * <b>Five stations spanning 29-33, centred on 31 in a row of 27-35.</b> Ours is <b>31, 32 and
+     * 33 -- the RIGHT-HAND three</b>; the two that are missing are <b>29 and 30, both to the
+     * LEFT</b>.
+     *
+     * <p><b>So the block sits right of centre, and it will keep sitting right of centre until an
+     * ender chest and an anvil exist.</b> That is the correct appearance of an unfinished row, and
+     * <b>re-centring the three we have is a move that would have to be undone twice</b> -- once to
+     * add 30, once to add 29.
+     *
+     * <p>Recorded here so the next person to notice the asymmetry finds the answer instead of
+     * fixing it. <b>It is NOT a ruling that 29 and 30 will be built</b> -- neither has been
+     * designed -- only that the row was laid out expecting them.
+     */
+    static final int GRINDSTONE_SLOT = 33;
+
+    /**
+     * Every slot that is plain filler -- the whole menu except the buttons and the stations.
      *
      * <p><b>Built by SET SUBTRACTION rather than by a loop with {@code continue} arms</b>, the same
      * construction {@code CraftingMenuLayout.STATUS_SLOTS} and
@@ -124,6 +151,7 @@ final class NexusMenuLayout {
         slots.remove(STATS_SLOT);
         slots.remove(CRAFTING_SLOT);
         slots.remove(ENCHANT_SLOT);
+        slots.remove(GRINDSTONE_SLOT);
         return Set.copyOf(slots);
     }
 }

@@ -37,10 +37,27 @@ public final class GrindstoneMenuLayout {
     public static final Set<Integer> INPUT_SLOTS = trayCells();
 
     /**
-     * Strip. <b>Row 5, centre -- under the tray and above the chrome.</b>
+     * Strip. <b>Row 5, dead centre -- under the tray and above the chrome.</b>
      *
-     * <p><b>NOT BEN'S RULING.</b> The tray and the hub slot are his; this cell is the author's and
-     * is flagged in the PR as owed a decision.
+     * <p><b>Ben's ruling.</b> The screen reads <b>tray, then action, then chrome</b>, top to bottom.
+     *
+     * <h2>WHAT WAS REFUSED, BECAUSE THE REASONS OUTLIVE THE CHOICE</h2>
+     *
+     * <ul>
+     *   <li><b>Beside Back and Close in the chrome row -- REFUSED.</b> It would put a
+     *       <b>destructive, irreversible</b> action immediately next to the two navigation buttons.
+     *       The arming delay exists precisely because a misclick here costs a player thousands of
+     *       XP, and placing it where the hand already goes to leave the screen works against that.
+     *   <li><b>Slot 4, top centre -- REFUSED, and THIS IS THE CONSTRAINT THAT WILL STILL BIND WHEN
+     *       SOMEONE ADDS THE NEXT SCREEN.</b> <b>Every screen that uses slot 4 at all uses it for
+     *       INFORMATION</b> -- measured, it is a named constant on exactly three layouts:
+     *       {@code CraftingMenuLayout.INDICATOR_SLOT}, {@code EnchantMenuLayout.INFO_SLOT} and
+     *       {@link #INFO_SLOT} here. (The hub and the settings screen leave it filler, so they
+     *       neither support nor contradict it -- <b>stated that way rather than as "every screen",
+     *       which is what the first draft of this note claimed.</b>)
+     *       <br><b>Reusing it for an ACTION would make one cell mean two things</b>, and a player
+     *       who has learned "4 is the hint" would learn otherwise by pressing it.
+     * </ul>
      *
      * <p><b>IT IS NOT AN INPUT SLOT, AND THAT IS LOAD-BEARING RATHER THAN INCIDENTAL.</b> The arming
      * countdown repaints this one cell twice a second. If it were ever inside {@link #INPUT_SLOTS},

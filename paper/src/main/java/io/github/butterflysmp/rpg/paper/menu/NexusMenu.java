@@ -182,6 +182,16 @@ public final class NexusMenu extends Menu {
                                     recipes, shields, armor, tools)).open());
             return;
         }
+        if (click.slot() == NexusMenuLayout.GRINDSTONE_SLOT) {
+            // THE THIRD STATION, and the same breadcrumb the other two carry. Close-then-hop is
+            // NOT needed from THIS side -- the hub holds no input slots; the grindstone does its
+            // own explicit close when its Back button is pressed.
+            adapters.scheduler().onEntity(viewer, () ->
+                    new GrindstoneMenu(viewer, weapons, shields, armor, tools, adapters,
+                            () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
+                                    recipes, shields, armor, tools)).open());
+            return;
+        }
         if (click.slot() == NexusMenuLayout.SETTINGS_SLOT) {
             // HOP A TICK, NO EXPLICIT CLOSE. Menu.open's javadoc carries the measured rule and the
             // reason: both Scheduler entity methods land on the next tick, and the close exists only

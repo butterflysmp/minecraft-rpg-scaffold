@@ -35,6 +35,7 @@ import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.menu.CraftMatrixScreen;
 import io.github.butterflysmp.rpg.paper.menu.CraftingMenu;
 import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
+import io.github.butterflysmp.rpg.paper.menu.GrindstoneMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.menu.NexusMenu;
 import io.github.butterflysmp.rpg.core.recipe.RecipeRegistry;
@@ -252,7 +253,15 @@ public final class RpgListeners implements Listener {
                 Material.ENCHANTING_TABLE,
                 (player, block) -> new EnchantMenu(player, weapons, shields, armor, tools, adapters, block),
                 Material.CRAFTING_TABLE,
-                (player, block) -> new CraftingMenu(player, adapters, recipeCatalogue));
+                (player, block) -> new CraftingMenu(player, adapters, recipeCatalogue),
+                // THE GRINDSTONE IS ONE MAP ENTRY, AND THE SNEAK-GUARD BUG CANNOT REPRODUCE HERE.
+                // openHijackedBlock cancels UNCONDITIONALLY, above the isSneaking check -- the fix
+                // PLAN-enchant-table-ui rows 4b/4c paid for. A grindstone route written as its own
+                // listener method would have had to re-derive that ordering; written as a table
+                // entry it inherits it and cannot get it wrong.
+                Material.GRINDSTONE,
+                (player, block) -> new GrindstoneMenu(player, weapons, shields, armor, tools,
+                        adapters));
     }
 
     /**
