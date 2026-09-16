@@ -186,6 +186,51 @@ public final class MenuIcons {
     }
 
     /**
+     * A back button's NAME: {@code "Back to " + destination}.
+     *
+     * <h2>SPLIT FROM {@link #back} SO THE WORDING IS UNIT-TESTABLE</h2>
+     *
+     * The {@code ItemStack} half needs a running server -- {@code new ItemStack(...)} throws without
+     * one, which is why {@code MenuIconsTest} can only reach {@link #chromeOver} today. <b>The form
+     * of the name is the part the operator RULED</b>, so it is the part that gets a test rather than
+     * a gate row. Same split as {@code NexusStatsLore}.
+     *
+     * <h2>IT NAMES THE DESTINATION, AND THAT IS THE RULING</h2>
+     *
+     * <b>"Back to the Nexus", never a bare "Back".</b> Ben's form. A bare back-arrow tells a player
+     * there is somewhere to go and not where, which on a screen reachable from two places is a
+     * question the button should answer rather than pose.
+     *
+     * <p>It also keeps this distinct from the recipe browser's PAGINATION, which is the other
+     * arrow-shaped thing in this plugin. "Previous" moves within a screen; "Back to X" leaves it.
+     * A player who has learned one must not have to re-read the other.
+     *
+     * <p><b>This is NOT {@link #close}</b>, and that javadoc draws the line from the other side: a
+     * back-arrow promises somewhere to go back to, and close does not navigate. Both can appear on
+     * one screen, meaning different things.
+     */
+    public static Component backName(String destination) {
+        return line("Back to " + destination, NamedTextColor.GRAY);
+    }
+
+    /**
+     * The back button: a navigation, not a close.
+     *
+     * <p>No lore, matching {@link #close}'s ruling that chrome is name-only. The material is the
+     * caller's because a back button should look like where it GOES -- the recipe browser's points
+     * at a {@code CRAFTING_TABLE} -- and a single shared material would make every back button in
+     * the plugin identical and none of them informative.
+     *
+     * <p><b>One consumer today</b>, the settings screen. {@link #placeholder}'s javadoc records this
+     * class's precedent for that: a factory with few consumers is kept as a dated decision rather
+     * than inlined, because the alternative is the next screen minting its own chrome. The recipe
+     * browser still mints its back icon inline and is the obvious second adopter.
+     */
+    public static ItemStack back(Material material, String destination) {
+        return icon(material, backName(destination), List.of());
+    }
+
+    /**
      * A feature that is visibly not built yet.
      *
      * <p>Says "not implemented yet" rather than rendering a zero. A readout showing {@code 0%} when

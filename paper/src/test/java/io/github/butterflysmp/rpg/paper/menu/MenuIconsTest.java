@@ -31,6 +31,40 @@ class MenuIconsTest {
         return out;
     }
 
+    /**
+     * BEN'S RULED FORM FOR A BACK BUTTON, and the only part of it a unit test can reach.
+     *
+     * <p>{@code MenuIcons.back} returns an {@code ItemStack}, which needs a running server -- that
+     * is why this class can only test {@code chromeOver}. <b>The NAME is what was ruled</b>, so it
+     * was split into {@code backName} for exactly this: the wording gets a test rather than a gate
+     * row, the same split {@code NexusStatsLore} makes.
+     */
+    @Test
+    void aBackButtonNAMESItsDESTINATION_neverABareBack() {
+        assertEquals("Back to the Nexus",
+                PlainTextComponentSerializer.plainText().serialize(MenuIcons.backName("the Nexus")),
+                "Ben's form: a bare 'Back' tells a player there is somewhere to go and not where");
+        assertEquals("Back to crafting",
+                PlainTextComponentSerializer.plainText().serialize(MenuIcons.backName("crafting")),
+                "and the recipe browser's existing wording is reproducible through it, so that "
+                        + "screen can adopt the factory without its button changing");
+
+        assertTrue(PlainTextComponentSerializer.plainText()
+                        .serialize(MenuIcons.backName("anywhere")).startsWith("Back to "),
+                "the destination is APPENDED -- a caller passing a whole sentence would read wrong");
+    }
+
+    @Test
+    void aBackButtonsNameIsNONITALIC_likeEveryOtherPieceOfChrome() {
+        // Lore and display names render italic by DEFAULT. MenuIcons.line is where the explicit
+        // ITALIC=false lives, and this is the row that says backName goes through it rather than
+        // building a bare Component.text -- which would look correct in isolation and italic in game.
+        assertEquals(net.kyori.adventure.text.format.TextDecoration.State.FALSE,
+                MenuIcons.backName("the Nexus")
+                        .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC),
+                "italic must be explicitly FALSE, not NOT_SET");
+    }
+
     @Test
     void chromeGoesONTOP_SoTheRarityFooterStaysLAST() {
         // THE ordering. The footer is the tier badge and the player reads it as the last line on the

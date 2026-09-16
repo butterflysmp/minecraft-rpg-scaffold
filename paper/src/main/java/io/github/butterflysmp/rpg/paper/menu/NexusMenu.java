@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheetProjection;
+import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -11,6 +12,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -21,15 +23,22 @@ import java.util.Set;
  * Everything the hub will hold hangs off that, and none of it can be built until the route is
  * confirmed in play.
  *
- * <h2>THE SETTINGS TORCH IS A {@code placeholder}, AND THE STATS HEAD IS NOT</h2>
+ * <h2>BOTH BUTTONS ARE {@code icon} NOW -- AND THE ARGUMENT IS KEPT, NOT DELETED</h2>
  *
- * <b>Written down here one slice early, because the second half landed later -- and SLICE 3 HAS NOW
- * LANDED IT.</b> Both halves of the pair are in {@link #render()}, three lines apart, and this
- * section is the argument they both point at.
+ * <b>This section used to say the torch was a {@code placeholder} and the stats head must not be.
+ * Slice 3 landed the head; slice 4b built the settings screen, so the torch GRADUATED and the
+ * distinction no longer divides these two buttons.</b>
  *
- * <p>The settings button uses {@link MenuIcons#placeholder}, whose lore reads <i>"Not implemented
- * yet."</i> That is CORRECT here: the settings screen is <b>genuinely not built</b>. There is no
- * behaviour behind the torch, nothing to read off it, and nothing a click could do.
+ * <p>The argument is preserved rather than removed, for {@code MenuIcons.close}'s reason: an
+ * argument can outlive the thing it argued for, and deleting it with its instance loses why the
+ * instance was ever decided. <b>What follows is still the rule; what changed is that this screen no
+ * longer has an example of the left-hand column.</b>
+ *
+ * <p>The settings button used {@link MenuIcons#placeholder}, whose lore reads <i>"Not implemented
+ * yet."</i> That was CORRECT while the settings screen was <b>genuinely not built</b>: there was no
+ * behaviour behind the torch, nothing to read off it, and nothing a click could do. <b>It is
+ * correct no longer, and leaving it would be the defect below with the notice and the feature
+ * inverted.</b>
  *
  * <p><b>The stats head is the opposite case and uses {@link MenuIcons#icon}.</b> It carries REAL
  * lore -- a working readout of live figures, from {@code StatsSheetProjection} -- and only its
@@ -44,8 +53,11 @@ import java.util.Set;
  * <p>So the distinction is <b>WHETHER THE THING IS BUILT, not whether it is clickable</b>:
  *
  * <pre>
- *   settings torch   nothing behind it at all          placeholder()   "Not implemented yet."
- *   stats head       real lore, unbuilt click only     icon()          its own figures
+ *   NOTHING BEHIND IT AT ALL          placeholder()   "Not implemented yet."
+ *   real lore, unbuilt click only     icon()          its own figures
+ *
+ *   settings torch   was the first    NOW icon()      the screen exists (4b)
+ *   stats head       always icon()        icon()      live figures, click still unbuilt (3)
  * </pre>
  *
  * <p>Reaching for {@code placeholder} is a claim that something is NOT BUILT. A surface that
@@ -54,22 +66,30 @@ import java.util.Set;
 public final class NexusMenu extends Menu {
 
     private final AdapterContext adapters;
+    private final ProfileService profiles;
     private final WeaponRegistry weapons;
     private final ResourcePool resources;
 
     /**
      * @param adapters  stats and keys, for the stats head's figures
+     * @param profiles  the profile store, carried for the SETTINGS screen rather than used here
      * @param weapons   the registry, for the held weapon's quiver pair
      * @param resources the mana pool
      *
-     * <p>The three services are taken rather than a pre-built {@code StatsSheetValues} so that the
-     * slice which makes the head clickable can REPAINT it. Four parameters of four distinct types,
-     * so there is no transposable adjacent pair.
+     * <p>The services are taken rather than a pre-built {@code StatsSheetValues} so that the slice
+     * which makes the head clickable can REPAINT it. Five parameters of five distinct types, so
+     * there is no transposable adjacent pair.
+     *
+     * <p><b>{@code profiles} is not read by this screen at all</b> -- it is handed to
+     * {@link SettingsMenu} when the torch is clicked. Threading it through rather than reaching for
+     * a static is the third architecture invariant: no static mutable singletons holding player
+     * state.
      */
-    public NexusMenu(Player viewer, AdapterContext adapters, WeaponRegistry weapons,
-                     ResourcePool resources) {
+    public NexusMenu(Player viewer, AdapterContext adapters, ProfileService profiles,
+                     WeaponRegistry weapons, ResourcePool resources) {
         super(viewer, NexusMenuLayout.SIZE, MenuIcons.line("Nexus", NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
+        this.profiles = profiles;
         this.weapons = weapons;
         this.resources = resources;
         render();
@@ -101,9 +121,18 @@ public final class NexusMenu extends Menu {
             viewer.closeInventory();
             return;
         }
-        // The settings torch and every filler pane are inert. Falling through rather than branching
-        // on SETTINGS_SLOT deliberately: a no-op branch for it would read as a wired button whose
-        // body someone forgot to write, which is the opposite of what the placeholder is saying.
+        if (click.slot() == NexusMenuLayout.SETTINGS_SLOT) {
+            // HOP A TICK, NO EXPLICIT CLOSE. Menu.open's javadoc carries the measured rule and the
+            // reason: both Scheduler entity methods land on the next tick, and the close exists only
+            // to run returnEverything for a menu holding the player's items. The hub holds none --
+            // inputSlots() is empty -- so openInventory's implicit close is sufficient.
+            adapters.scheduler().onEntity(viewer,
+                    () -> new SettingsMenu(viewer, adapters, profiles, weapons, resources).open());
+            return;
+        }
+        // Every filler pane is inert, and the stats head's click is still unbuilt -- slice 3's
+        // decision, unchanged. Falling through rather than branching on STATS_SLOT deliberately: a
+        // no-op branch would read as a wired button whose body someone forgot to write.
     }
 
     @Override
@@ -120,10 +149,18 @@ public final class NexusMenu extends Menu {
         // screens reads as two different plugins, which is MenuIcons' whole reason for existing.
         getInventory().setItem(NexusMenuLayout.CLOSE_SLOT, MenuIcons.close());
 
-        // placeholder(), NOT icon(). See the class javadoc: this feature is genuinely not built,
-        // and the stats head next slice is the case that must go the other way.
-        getInventory().setItem(NexusMenuLayout.SETTINGS_SLOT, MenuIcons.placeholder(
-                Material.REDSTONE_TORCH, "Settings", "No settings to change yet."));
+        // icon() NOW, AND IT WAS placeholder() UNTIL SLICE 4b BUILT THE SCREEN BEHIND IT. The class
+        // javadoc's table is the argument; this is the graduation it predicted, and it is the THIRD
+        // instance of that distinction in this plugin -- the enchant table's bookshelf readout and
+        // the recipe browser's empty state are the other two.
+        //
+        // The rule that decided it: reaching for placeholder is a claim that something is NOT BUILT.
+        // A settings screen exists now, so saying "Not implemented yet." above a working button
+        // would be the Q33 defect with the notice and the feature inverted.
+        getInventory().setItem(NexusMenuLayout.SETTINGS_SLOT, MenuIcons.icon(
+                Material.REDSTONE_TORCH,
+                MenuIcons.line("Settings", NamedTextColor.GRAY),
+                List.of(MenuIcons.line("Choose where the Nexus sits.", NamedTextColor.DARK_GRAY))));
 
         // icon(), NOT placeholder() -- THE OTHER HALF OF THE PAIR THE TORCH ABOVE IS ONE OF, and
         // the class javadoc carries the argument. The lore below is REAL and WORKING; only the

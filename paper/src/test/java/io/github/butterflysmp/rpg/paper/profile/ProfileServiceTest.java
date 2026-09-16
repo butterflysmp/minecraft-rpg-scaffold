@@ -233,6 +233,127 @@ class ProfileServiceTest {
                 "carrying the default slot");
     }
 
+    // --- availability: the distinction profile()'s Optional throws away ---
+
+    /**
+     * THE FOUR ARMS, AND THE ONE PEOPLE ASSUME WRONG.
+     *
+     * <p>Three of them are the same empty {@code Optional} from {@code profile()}, and every caller
+     * had to guess which -- they all guessed LOADING and said "try again in a moment". For
+     * UNREADABLE that is a lie, and this enum is what lets a surface stop telling it.
+     */
+    @Test
+    void availabilityTELLSTheThreeRefusalsAPART_whichProfileCannot() {
+        assertEquals(ProfileService.Availability.UNTRACKED, service.availability(player),
+                "never joined");
+        assertTrue(service.profile(player).isEmpty(), "and profile() cannot tell you that");
+
+        repo.pendingLoad = new CompletableFuture<>();
+        service.onJoin(player);
+        assertEquals(ProfileService.Availability.LOADING, service.availability(player),
+                "in flight -- TRANSIENT, and retrying genuinely works");
+        assertTrue(service.profile(player).isEmpty(), "same empty Optional as the other two");
+
+        repo.pendingLoad.completeExceptionally(new IllegalStateException("schema version 999"));
+        assertEquals(ProfileService.Availability.UNREADABLE, service.availability(player),
+                "failed -- PERMANENT this session, so 'try again in a moment' would be a lie");
+        assertTrue(service.profile(player).isEmpty(), "and still the same empty Optional");
+    }
+
+    /**
+     * A player with NO stored file is READY, not any flavour of refusal. This is the arm that is
+     * assumed wrong: onJoin maps a missing file to PlayerProfile.fresh, so "new player" is a
+     * PRESENT profile carrying defaults.
+     */
+    @Test
+    void aPlayerWithNoFileIsREADY_becauseFreshIsAProfile() {
+        service.onJoin(player);
+        assertEquals(ProfileService.Availability.READY, service.availability(player));
+        assertEquals(PlayerProfile.DEFAULT_NEXUS_SLOT,
+                service.profile(player).orElseThrow().nexusSlot());
+    }
+
+    @Test
+    void theTwoMessagesDIFFER_andOnlyOneOffersARetry() {
+        // The whole point of carrying two strings. If these ever collapse into one, the distinction
+        // above becomes decorative and the unreadable player is told to wait again.
+        assertNotEquals(ProfileService.STILL_LOADING, ProfileService.UNREADABLE_PROFILE);
+        assertTrue(ProfileService.STILL_LOADING.contains("try again in a moment"),
+                "the transient arm offers the retry that works");
+        assertFalse(ProfileService.UNREADABLE_PROFILE.contains("in a moment"),
+                "and the PERMANENT arm must not, because nothing is still happening");
+    }
+
+    // --- setNexusSlot: the second writer, and the first one a menu drives ---
+
+    @Test
+    void setNexusSlotWritesThroughAndPersistsOnce() {
+        service.onJoin(player);
+        assertEquals(PlayerProfile.DEFAULT_NEXUS_SLOT,
+                service.profile(player).orElseThrow().nexusSlot(), "starts at the default");
+
+        assertTrue(service.setNexusSlot(player, 3));
+
+        assertEquals(3, service.profile(player).orElseThrow().nexusSlot(),
+                "THE CACHED FUTURE IS REPLACED -- the lock reads this on the player's very next "
+                        + "click, so a write that only reached disk would leave the guard stale");
+        assertEquals(3, repo.saved.get(player).nexusSlot(), "and it reached the repository");
+        assertEquals(1, repo.saveCount.get(), "exactly once");
+    }
+
+    @Test
+    void setNexusSlotCARRIESEverythingElseOnTheProfile() {
+        repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
+                "ranger", "fire", 9, 500, List.of("arc_surge"), 1L, 8));
+        service.onJoin(player);
+
+        assertTrue(service.setNexusSlot(player, 0));
+
+        var profile = service.profile(player).orElseThrow();
+        assertEquals(0, profile.nexusSlot(), "slot 0 is a legal choice");
+        assertEquals("ranger", profile.archetypeId(), "a slot change must not touch the kit");
+        assertEquals("fire", profile.elementId());
+        assertEquals(9, profile.level());
+        assertEquals(500, profile.experience());
+        assertEquals(List.of("arc_surge"), profile.unlockedAbilities());
+    }
+
+    @Test
+    void setNexusSlotIsRefusedWhileTheProfileIsStillLoading() {
+        repo.pendingLoad = new CompletableFuture<>();
+        service.onJoin(player);
+
+        assertFalse(service.setNexusSlot(player, 3),
+                "must not invent a profile out of an in-flight load");
+        assertEquals(0, repo.saveCount.get());
+        assertEquals(ProfileService.Availability.LOADING, service.availability(player),
+                "and the caller can find out it was the TRANSIENT arm");
+    }
+
+    /**
+     * THE ARM setKit HAS NEVER HAD A ROW FOR. Its guard includes isCompletedExceptionally(), and
+     * nothing asserted that branch; this writer's does, because it is the arm the settings screen
+     * must word differently.
+     */
+    @Test
+    void setNexusSlotIsRefusedAfterAFAILEDLoad_andSaysSo() {
+        repo.pendingLoad = CompletableFuture.failedFuture(
+                new IllegalStateException("schema version 999"));
+        service.onJoin(player);
+
+        assertFalse(service.setNexusSlot(player, 3));
+        assertEquals(0, repo.saveCount.get(),
+                "MUST NOT WRITE OVER THE FILE IT COULD NOT READ -- the same invariant onQuit holds");
+        assertEquals(ProfileService.Availability.UNREADABLE, service.availability(player),
+                "and the caller can tell this is permanent rather than telling them to wait");
+    }
+
+    @Test
+    void setNexusSlotIsRefusedForSomeoneWhoNeverJoined() {
+        assertFalse(service.setNexusSlot(player, 3));
+        assertEquals(0, repo.saveCount.get());
+    }
+
     @Test
     void saveAllAndClearFlushesEveryoneOnline() {
         var second = UUID.randomUUID();

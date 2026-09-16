@@ -1,9 +1,16 @@
 # GATE — the Nexus: the six routes out, and the two things a unit test cannot see
 
 **Status: PARTIALLY RUN — ROW 6 ONLY, 2026-09-15. Rows 1–5 and 7 remain NOT RUN, and so does every
-row of SLICE 2 (8–13), SLICE 3 (14–19) and SLICE 4a (20–24)** — each block carries its own status
-line. **Nineteen of twenty-four rows have never been booted, and the file is still growing**; that
-is flagged for the operator rather than hidden in a block header. Every row below
+row of SLICE 2 (8–13), SLICE 3 (14–19), SLICE 4a (20–24) and SLICE 4b (25–30)** — each block carries
+its own status line. **Twenty-five of thirty rows have never been booted, and the file is still
+growing**; that is flagged for the operator rather than hidden in a block header.
+
+**AND FROM SLICE 4b THE ROWS HAVE A SHARED PRECONDITION: the player's Nexus slot must be the
+default 9 (index 8)** unless the row says otherwise. Rows **21, 24, 26 and 29 move it on purpose**
+and say so in their own staging; **put it back before running an earlier row.** That is the
+restaging `NexusLockTest`'s pin row has warned about since slice 1, and it is a precondition rather
+than a rewrite because the rows still measure what they always did — slice 4b's block explains why.
+Every row below
 was written BEFORE any boot, and every expected value was recorded so that a later reading could
 disagree with it. **When a row is read, its reading is written BESIDE its prediction and the
 prediction is NOT edited.** A prediction revised after the fact proves nothing.
@@ -35,6 +42,8 @@ ships to a survival server; **a creative reading certifies creative**, and nothi
 | **20, 22, 23** | **SURVIVAL** | slice 4a. Joins, a hand-edited profile and a corrupt one — none of them reads a game mode, and survival is what ships |
 | **21** | **SURVIVAL**, and **21b especially** | 21b moves an ordinary item around the **player's own hotbar**, which is the surface Row 8 shows behaves differently in creative. **A creative 21b certifies creative and says nothing about the shipped path** |
 | **24** | **SURVIVAL** | it is a row about **dying**, and a creative player is hard to kill — Row 1's reason, unchanged |
+| **25, 27, 28, 30** | **SURVIVAL** | slice 4b. A tooltip, two menu transitions, two refusal messages and a control — none reads a game mode |
+| **26, 29** | **SURVIVAL**, and **26c especially** | 26c reads a **displaced item** surviving, and 29 counts hotbar cells. Creative makes items free, so *"the item is still there"* is satisfied for nothing — the register's own shape: **creative removes a cost, and a row whose reading is "the thing is still there" passes without exercising anything** |
 | **18** | **SURVIVAL**, and **this one is load-bearing** | it moves an item **in the player's own inventory with a menu open** — the exact surface Row 8 shows behaves differently in creative. **A creative reading of 18 certifies creative and says nothing about the shipped path** |
 
 > **CREATIVE GETS A ROW, NOT A FOOTNOTE, AND THAT IS THE WHOLE LESSON OF ROW 6.** The alternative —
@@ -1101,6 +1110,181 @@ fall, `/kill`. Respawn.
 >
 > **Row 24 is also the only row that exercises the star being RE-placed while the player already
 > has one**, so read whether anything was displaced or duplicated.
+
+**READING:** _(not run)_
+
+---
+
+# SLICE 4b — THE SETTINGS SCREEN. ROWS 25–30
+
+**Status: NOT RUN.** Every row below was written **before any boot**.
+
+**GAME MODE: `/gamemode survival` for all six**, declared here and per row.
+
+## THE RESTAGING THIS FILE HAS OWED SINCE ROW 8 — AND IT IS A PRECONDITION, NOT A REWRITE
+
+`NexusLockTest`'s pin row has warned since slice 1 that *"GATE-nexus.md's rows are staged against 8
+and need restaging"* if the locked slot ever moves. Slice 4a made the slot **per-player** and kept
+the default at 8, so nothing moved and no row needed touching. **4b is what lets a player move it**,
+and the debt comes due — but not as a rewrite, because the rows are not wrong.
+
+> **EVERY ROW IN THIS FILE, 1 THROUGH 30, ASSUMES THE PLAYER'S NEXUS SLOT IS THE DEFAULT 8 —
+> EXCEPT ROWS 21, 24, 26 AND 29, WHICH MOVE IT ON PURPOSE.**
+>
+> That was a fact about the code until 4b. **It is now a fact about the OPERATOR'S STATE**, and it
+> can be false without anything being broken: an operator who runs Row 26, then goes back to Row 9,
+> is reading a screen staged against a slot they personally changed three rows earlier.
+>
+> **So: after any row that moves the slot, put it back to 9 (index 8) before running an earlier
+> row** — Row 26 itself is the cheapest way, or edit the JSON as Row 21 does. **Rows that move it
+> say so in their own staging.**
+>
+> **This is the restaging, and it is a precondition rather than a rewrite because the rows measure
+> the same things they always did.** A rewrite would have been the wrong repair: it would have
+> re-staged 19 rows against a slot no default player has.
+
+**What the unit suite already settled, so no row here re-asks it.** `SettingsMenuLayoutTest` pins
+the nine choosers, the two buttons and the filler set; `MenuIconsTest` pins Ben's *"Back to
+\[destination\]"* form; `ProfileServiceTest` pins the writer, the four availability arms and that
+the two refusal messages differ. **Six mutations applied and measured**, kill sets in the PR body.
+
+**What none of them can see** is a live `InventoryView`, a menu-to-menu transition, or a star moving
+between hotbar cells while a screen is open. **That gap is these six rows.**
+
+## ROW 25 — THE TORCH GRADUATED, AND THE ROW READS THE **LORE**
+
+**Row 12's twin, and it must not be written the way `Q33` was.** Row 12 read the torch as a
+placeholder and expected *"Not implemented yet."* **That expectation is now WRONG** and this row
+replaces it.
+
+**Staging.** `/gamemode survival`. Open the hub. **Hover the REDSTONE_TORCH at slot 50 and read the
+whole tooltip aloud.** Then click it.
+
+**PREDICTED:** the name is **Settings** and the lore is **exactly one line** — *"Choose where the
+Nexus sits."* **The string "Not implemented yet." appears NOWHERE on this screen.** Clicking opens a
+six-row screen titled **Nexus Settings**.
+
+> **ROW 12 IS NOW STALE AND IS DELIBERATELY NOT EDITED.** Its prediction was correct when written
+> and is falsified by this slice; the convention in this file is that a prediction is never revised
+> after the fact. **Read Row 12 as history and this row as the live one.** If Row 12 is ever run, it
+> will fail, and that failure is the graduation rather than a defect.
+
+**READING:** _(not run)_
+
+## ROW 26 — **THE ROW.** CHOOSING A SLOT MOVES THE STAR AND THE LOCK TOGETHER
+
+**MOVES THE SLOT. Put it back to 9 before running any earlier row.**
+
+**Staging.** `/gamemode survival`, with a **known, counted hotbar** — put a recognisable item in
+**slot 4** (index 3) first. Open the hub, click the torch, and **click the fourth chooser from the
+left**.
+
+**PREDICTED, in order:**
+
+| | expected |
+|---|---|
+| 26a | one chat line: *"The Nexus now sits in slot 4."* |
+| 26b | the star is **in hotbar slot 4**, and **not** in slot 9 |
+| 26c | the item that was in slot 4 is **elsewhere in the inventory or at your feet with a message** — **not destroyed** |
+| 26d | the settings screen **repaints**: the fourth chooser is now the lime one, the ninth is not |
+| 26e | close the screen. Pick up / drag / Q the star in slot 4 → **REFUSED** |
+| 26f | **THE DISCRIMINATING HALF.** Put an ordinary item in **slot 9** and move it freely → **PERMITTED** |
+
+> **26f IS THE ONE THAT CAN FAIL SILENTLY.** If the write and the placement disagree — if the star
+> moved but the lock still protects 9, or the reverse — then 26e passes anyway, because the lock's
+> second arm follows the star wherever it sits. **Only 26f distinguishes "the setting took" from
+> "the star moved and the guard did not".** It is slice 4a's defect, reachable by hand.
+>
+> **26c is the item-safety half and it is not padding.** `converge` is the only code in the Nexus
+> that deletes anything, and a displaced occupant goes through `MenuSafety.give`. A vanished item
+> here is the worst outcome in this file.
+
+**READING:** _(not run)_
+
+## ROW 27 — BACK AND CLOSE ARE DIFFERENT INTENTS AND MUST NOT BE THE SAME BUTTON
+
+**Staging.** `/gamemode survival`. Open the hub → torch → settings. Then, from the settings screen:
+
+| | gesture | expected |
+|---|---|---|
+| 27a | click **Back** at slot 45 | the **hub** appears. Not the world, not a flicker of both |
+| 27b | reopen settings, click **Close** at slot 49 | the **world**. The hub does not reappear behind it |
+| 27c | reopen settings, press **Esc** | the world, same as 27b |
+| 27d | from the hub after 27a, press Esc | the world |
+
+**PREDICTED:** as above. **Hover Back and read its name: it says "Back to the Nexus", not "Back".**
+
+> **27a IS A MENU-TO-MENU TRANSITION AND IT IS THE FIRST ONE THE NEXUS HAS.** What a broken one
+> looks like, so the reading can name it: a **flicker** of the world between the two screens; the
+> hub opening and instantly closing; or the settings screen still being there behind the hub, so
+> the first Esc reveals it. **Any of those means the tick hop is wrong**, and `Menu.open`'s javadoc
+> is where the rule it would be violating lives.
+>
+> **27b and 27c must agree.** They are the same path — `MenuIcons.close()` calls
+> `closeInventory()` and Esc raises the close directly, meeting at `onClose`. A button that did
+> something *else* would pass 27c and fail 27b, or vice versa.
+
+**READING:** _(not run)_
+
+## ROW 28 — THE TWO REFUSALS, AND THEY MUST NOT SAY THE SAME THING
+
+**The row the write path exists for.** A menu is reachable in states a command is not: the star
+opens the hub off its PDC tag, so a player rejoining can be looking at this screen before their
+profile has loaded — or holding a profile that will never load at all.
+
+**Staging**, two sub-rows, and **28b is the row**:
+
+| | staging | expected on clicking a chooser |
+|---|---|---|
+| **28a** | rejoin and reach settings **as fast as possible**, before the profile lands. If that window cannot be hit by hand, say so and leave 28a unread | *"Your profile is still loading -- try again in a moment."* in GRAY, and **the slot does not change** |
+| **28b** | with the player OFFLINE, replace their JSON with `{`. Rejoin, open settings, click a chooser | *"Your profile could not be read, so changes cannot be saved. Try rejoining."* in RED |
+
+**PREDICTED:** as above, and in 28b **no chooser is highlighted at all** — the screen does not know
+which slot is theirs and does not claim one.
+
+> **THE TWO MESSAGES MUST DIFFER, AND THAT IS THE WHOLE ROW.** Before this slice every surface said
+> *"still loading"* for both. For 28b that is a **lie**: the load finished and failed, so nothing is
+> still happening and the player retries until they give up. **If 28b shows the GRAY "try again in a
+> moment" text, the distinction has collapsed** and `availability` is not being consulted.
+>
+> **And the file must be untouched after 28b.** Quit, then read it: still `{`. A failed load must
+> never be written over, which is the invariant `onQuit` has held since before the Nexus existed.
+
+**READING:** _(not run)_
+
+## ROW 29 — THE CHOICE SURVIVES A REJOIN, WHICH IS THE POINT OF PERSISTING IT
+
+**MOVES THE SLOT. Put it back to 9 afterwards.**
+
+**Staging.** `/gamemode survival`. Set the slot to **2** through the settings screen. **Quit.** Read
+`players/<uuid>.json` from disk. **Rejoin.**
+
+**PREDICTED:** the file reads `"nexusSlot": 1` — **index 1, the second cell, because the screen
+says "Slot 2" and the file stores the index**. On rejoin the star is in **hotbar slot 2**, the
+settings screen shows the second chooser lime, and slot 9 is an ordinary cell.
+
+> **THE OFF-BY-ONE IS THE POINT OF READING THE FILE.** The screen counts slots the way a player
+> does, from 1; the inventory indexes from 0. **If the file says `2`, the screen and the store
+> disagree by one** and every player's star will drift one cell right on their next login.
+>
+> **And this is the row that proves the write reached DISK rather than only the cache.** A write
+> that updated the in-memory profile and failed to persist looks perfect until exactly here.
+
+**READING:** _(not run)_
+
+## ROW 30 — **THE CONTROL.** THE HUB IS UNCHANGED BY ANY OF THIS
+
+**Staging.** `/gamemode survival`, slot back at the default 9. Open the hub and **do nothing except
+read it**.
+
+**PREDICTED:** the stats head is still at slot 20 wearing your skin with live figures; Close is
+still at 49 and still closes; the star is still in slot 9; and **no chat line is printed by opening
+the hub**.
+
+> **THE HUB GAINED A LIVE BUTTON AND A CONSTRUCTOR ARGUMENT THIS SLICE**, and `render()` now paints
+> three things instead of two. This row says the two that already worked still do. It is Row 19
+> re-run against a changed screen, deliberately rather than by citation: **a control carried past
+> its precondition stops being a control without stopping being quotable.**
 
 **READING:** _(not run)_
 
