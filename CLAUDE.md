@@ -434,6 +434,26 @@ So:
   > and **write the command that produces it beside it**, so the next editor recounts instead of
   > adjusting. If you find yourself computing *"twenty-nine minus three"*, stop and run the count.
   >
+  > > ### AND THAT REMEDY IS GENERAL. IT IS STATED HERE BECAUSE HERE IS WHERE IT IS INTRODUCED, NOT BECAUSE IT IS ABOUT COUNTING ROWS
+  > >
+  > > ***ANY MEASUREMENT RECORDED IN THIS FILE CARRIES THE COMMAND THAT REPRODUCES IT, OR IT IS A
+  > > CLAIM RATHER THAN A MEASUREMENT.*** Row counts, byte counts, test counts, line deltas, kill
+  > > sets, percentages — **the shape is "a number written next to an assertion", and nothing about
+  > > the remedy depends on what is being counted.**
+  > >
+  > > **EVERY MEASURED FIGURE IN THIS FILE IS A FIGURE MAINTAINED BY DELTA WAITING TO HAPPEN.** It is
+  > > right when written, nothing re-checks it, and the next reader has no way to tell a figure taken
+  > > this week from one taken six months ago.
+  > >
+  > > **THE EVIDENCE THAT INDEXING IT BY *ROW COUNTS* WAS TOO NARROW IS TWO ENTRIES BELOW THIS ONE.**
+  > > A CR-byte count was written there with no command, **went stale inside one PR** when a later
+  > > change added lines to the file it measured, and was quoted as fact in the meantime. **The rule
+  > > it needed was already on this page** — it was filed under counting rows, and nobody connects a
+  > > byte count to that heading.
+  > >
+  > > **The cheap form, when no single command produces it:** name the tree or revision it was taken
+  > > at, and the event that invalidates it. **A bare number is the one thing that must not appear.**
+  >
   > **AND A FRACTION MUST SAY WHAT UNIT EACH SIDE COUNTS.** A numerator in sub-items over a
   > denominator in items renders as a perfectly plausible fraction. **Prefer NAMING the items to
   > counting them** where the list is short enough — a name carries its granularity and a number
@@ -1235,8 +1255,17 @@ the point. **An empty-looking register means nobody has looked, not that the mod
 **STANDING DEBT — OTHER RULES CURRENTLY CARRIED ONLY BY CONVENTION.** Named, not fixed; each is a
 candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
 
-- **The test-count instrument.** `@Test` appears **0** times here. The rule is
+- **The test-count instrument.** This file states the rule **nowhere but in this debt entry** — every
+  occurrence of the marker in this file is one of the lines you are reading. The rule is
   `git grep -ho '@Test' <ref> -- '<module>/src/test/**/*.java' | wc -l`, and *say which instrument*.
+
+  > **NO NUMBER IS GIVEN HERE, AND THAT IS THE FIX RATHER THAN AN OMISSION.** This bullet used to
+  > say the marker appeared **0** times — false, because the line asserting it contained the marker.
+  > **Replacing it with the true count failed the same way**: the corrected sentence quoted the
+  > marker twice more and was wrong before it was saved.
+  >
+  > ***A COUNT OF THIS FILE'S OWN TEXT CANNOT BE WRITTEN AS A LITERAL, BECAUSE WRITING IT CHANGES
+  > IT.*** Not a hard figure to keep current — an impossible one. **Give the command and no number.**
   **`grep -rho` IS NOT AN EQUIVALENT, AND THE DIFFERENCE IS NOT ARITHMETIC:** it classifies any file
   holding a NUL byte as **binary** and counts **nothing** from it. `core` has one — `EnchantCodecTest`
   carries a **single** NUL inside a string literal, and **15** `@Test` that grep never sees.
@@ -1268,8 +1297,11 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   > > A claim about a tool's behaviour is a claim about **a build of that tool**, and it is worth
   > > exactly nothing to a reader on a different one unless the version is in the sentence. Print
   > > `--version` beside the reading, not in a footnote.
-- **Reason from `origin/<ref>`, never a local ref.** `origin/master` appears **0** times here;
-  `ls-remote` appears 7, but only about pushes.
+- **Reason from `origin/<ref>`, never a local ref.** Stated nowhere but here, and every mention of
+  the remote ref in this file is either this bullet or an instruction about **pushing** rather than
+  about reasoning from it. **Counts deliberately omitted — see the bullet above for why a count of
+  this file's own text cannot be written down.** *(Both figures were previously bare, and both had
+  drifted.)*
 - ~~**A squash body must carry the DEFECTS FOUND, not only what worked.**~~ **PAID** — it is now
   stated under *Squash-merge bodies*, with the `#92` instance. **Left struck rather than deleted, so
   the list records that the debt was paid rather than silently shortening**; a debt list that only
@@ -1295,6 +1327,17 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   **`618bc9e` 1377 → `0dd9bbe` 1620 — +243 lines, +17.6%, in one week, across four commits**
   (`#91`, `#94`, `#95`, `#98`). **Anchored to `0dd9bbe` because this entry cost 19 more: a line that
   carries a count is itself a line, and an unanchored figure here would be stale on arrival.**
+
+  > **AND IT WAS STALE ANYWAY, WHICH IS THE POINT OF THE RULE ABOVE RATHER THAN A FAILURE OF IT.**
+  > Anchoring told the reader *when* the figure was taken; it did not tell them the file had grown
+  > another **282 lines** since. **RE-DERIVE IT, DO NOT READ IT:**
+  >
+  > ```bash
+  > wc -l < CLAUDE.md        # and compare against `git show <ref>:CLAUDE.md | wc -l`
+  > ```
+  >
+  > **The growth is the debt, so the figure has to be current to mean anything** — and this is the
+  > one entry in the file whose subject IS its own number.
 
   > **THE CAUSE IS A MISSING DESTINATION, NOT CARELESSNESS.** `NEXT.md` has not been written since
   > `2b41c62` (`#71`, 2026-09-13). **Every account since has had nowhere to go** — the squash bodies
