@@ -70,22 +70,42 @@ class NexusMenuLayoutTest {
                         || NexusMenuLayout.STATS_SLOT == NexusMenuLayout.SETTINGS_SLOT,
                 "and it must not collide with either button");
 
-        // ROW 2, AND CENTRED IN IT. Asserted as arithmetic rather than as the literal 13, so this
-        // row says WHY 13 and the literal row says WHICH -- the pair the adjacency row and the
-        // button-literal row already form for Close and Settings.
+        // THE HEADER BAND. Row 2 is indices 9-17, and the head is centred in it.
         assertEquals(1, NexusMenuLayout.STATS_SLOT / 9,
-                "row 2 -- slots 9-17, the first body row under the top one");
+                "row 2 -- the HEADER band. The player head is not the first feature; it is the "
+                        + "header, which is why it sits alone");
         assertEquals(4, NexusMenuLayout.STATS_SLOT % 9,
-                "and the CENTRE column: a nine-wide row's middle cell is column 4, counting from 0. "
-                        + "Ben ruled a centred single feature, not the start of a run");
+                "and centred in it: a nine-wide row's middle cell is column 4, counting from 0");
 
         // Mutation MUTSTATSBOTTOM: STATS_SLOT -> 51 -> kill set RECORDED in the PR body.
         //
-        // NOTE FOR WHOEVER ADDS THE SECOND FEATURE: this row asserts that ONE feature is centred.
-        // It will be WRONG the moment a second arrives, whichever way that is ruled -- centred
-        // growth moves this one, and appending right leaves the pair off-centre. That is not a
-        // defect in the row; it is the unruled question, and the row going red is how the next
-        // person is made to ask it rather than pick.
+        // THIS ROW STOPPED BEING A TRIPWIRE. It previously carried a note saying it would go red
+        // the moment a second feature arrived, because the rule for that was unruled. IT IS RULED:
+        // the hub is BANDS, each with a meaning, so a second feature goes in the band its KIND
+        // names and this row is untouched by it. See the band table on STATS_SLOT.
+    }
+
+    @Test
+    void theHUBISBANDS_andEachBandHasAMeaningRatherThanAFillOrder() {
+        // THE RULE, GUARDED. Without it the band table is prose and the next person adding a
+        // feature has nothing mechanical objecting when they drop it in the header row beside the
+        // player head -- which is the one placement the bands exist to prevent.
+        //
+        //   row 2  ( 9-17)  HEADER -- the player head alone
+        //   row 3  (18-26)  other features
+        //   row 4  (27-35)  crafting-type menus
+        //   row 5  (36-44)  unassigned
+        //   row 6  (45-53)  chrome
+        assertEquals(1, NexusMenuLayout.STATS_SLOT / 9, "the head is the HEADER band, row 2");
+        assertEquals(5, NexusMenuLayout.CLOSE_SLOT / 9, "Close is chrome, row 6");
+        assertEquals(5, NexusMenuLayout.SETTINGS_SLOT / 9, "Settings is chrome, row 6");
+
+        // AND THE BANDS DO NOT OVERLAP, which is the half that would otherwise be vacuous: a table
+        // of bands that all resolved to the same row would satisfy every assertion above.
+        assertTrue(NexusMenuLayout.STATS_SLOT / 9 < NexusMenuLayout.CLOSE_SLOT / 9,
+                "the HEADER band is above the CHROME band -- a player reads the screen downwards");
+        assertEquals(45, NexusMenuLayout.BOTTOM_ROW_START,
+                "and the chrome band starts at 45, which is row 6 index 0");
     }
 
     @Test
