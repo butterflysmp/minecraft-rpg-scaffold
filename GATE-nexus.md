@@ -696,6 +696,22 @@ and **the ruling makes them blocking rather than confirmatory**.
 | **8f** | **F** on the star in the inventory | `/data` shows **ONE** tagged stack, hotbar slot 8, **and the OFFHAND entry holds no star** |
 | **8g** | the control: middle-click, drag and left-click ordinary items around the creative inventory | **everything still moves.** A guard that refuses every creative click reads identically to one that works, until someone tries to build |
 
+> **THESE ROWS SAY "SLOT 8" AND THEY WERE WRITTEN WHEN THAT WAS A FACT ABOUT THE CODE.** Slice 4a
+> made the locked slot per-player; this branch predates it and was rebased across it. **The rows are
+> still correct for a player who has never opened the settings screen**, which is what the default
+> makes everyone — the same precondition the masthead now carries for every row in this file.
+>
+> **So: run 8e–8g with the Nexus slot at the default 9 (index 8)**, or read "slot 8" as "whatever
+> slot the star is in" throughout. **Do NOT re-stage them against a moved slot**: the gesture being
+> measured is a creative DUPLICATION, and where the original sits is incidental to it.
+>
+> **AND ONE THING 4a ADDED THAT THESE ROWS DO NOT REACH.** The guard consults the PAYLOAD, not the
+> slot, so it holds even while a player's profile has not loaded and the locked slot is unknown —
+> a state that did not exist when these rows were written and that a creative player meets in their
+> first seconds online. `aCreativeStarWriteIsREFUSEDEvenWhenTheLockedSlotIsUNKNOWN` is the unit row
+> for it. **Not added as a gate row**: staging it needs a profile read to lose a race on purpose,
+> which is Row 28a's problem and Row 28a already says it may be unstageable by hand.
+
 **READING:** _(not run)_
 
 > **IF 8e CLOSES AND 8f DOES NOT, THE FIX DOES NOT SHIP — operator's instruction, and the fallback is
