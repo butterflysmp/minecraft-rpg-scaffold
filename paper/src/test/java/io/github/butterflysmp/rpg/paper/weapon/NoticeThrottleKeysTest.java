@@ -56,7 +56,14 @@ class NoticeThrottleKeysTest {
      */
     private static final List<Class<?>> NOTICE_CLASSES =
             List.of(PlumeNotice.class, QuiverNotice.class, BrokenNotice.class,
-                    ShieldBrokenNotice.class);
+                    ShieldBrokenNotice.class,
+                    // NOT IN THIS PACKAGE, AND THAT IS THE POINT OF A NAMED LIST RATHER THAN A
+                    // PACKAGE SCAN. NexusCollisionNotice lives in ...paper.nexus beside the rest of
+                    // the Nexus; a scan of ...paper.weapon would have missed it entirely and the
+                    // count below would still have read 7 -- passing, over a set that had silently
+                    // stopped being complete. The class javadoc's "a list that must be edited is a
+                    // list whose staleness is visible in a diff" is what caught this.
+                    io.github.butterflysmp.rpg.paper.nexus.NexusCollisionNotice.class);
 
     /**
      * The keys that exist today, counted. <b>This is the positive control</b>, and it is also the
@@ -69,8 +76,15 @@ class NoticeThrottleKeysTest {
      * counted. <b>Grepping a string finds the commentary as well as the code</b>, which this repo
      * records as a false PRESENCE, and the reflective count is immune to it because it reads fields
      * rather than text. Corrected to 7 by running it.</blockquote>
+     *
+     * <blockquote><b>7 -&gt; 8 on 2026-09-15, for {@code NexusCollisionNotice}, and the bump was
+     * WATCHED RATHER THAN ASSUMED.</b> The class was added to {@link #NOTICE_CLASSES} first and this
+     * number left at 7 on purpose, to see the row go red: it reported <i>"the scan found 8 throttle
+     * keys, not 7"</i> and listed all eight, which is what confirms the new key is both SEEN and
+     * DISTINCT. Editing both in one go would have produced the same green suite whether the scan
+     * had found the key or not.</blockquote>
      */
-    private static final int KEYS_TODAY = 7;
+    private static final int KEYS_TODAY = 8;
 
     @Test
     void everyThrottleKeyInTheProjectIsItsOwn() {

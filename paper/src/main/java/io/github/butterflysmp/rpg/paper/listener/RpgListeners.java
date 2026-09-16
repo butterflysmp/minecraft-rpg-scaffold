@@ -36,10 +36,12 @@ import io.github.butterflysmp.rpg.paper.menu.CraftMatrixScreen;
 import io.github.butterflysmp.rpg.paper.menu.CraftingMenu;
 import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
+import io.github.butterflysmp.rpg.paper.menu.NexusMenu;
 import io.github.butterflysmp.rpg.core.recipe.RecipeRegistry;
 import io.github.butterflysmp.rpg.paper.content.RecipeRegistrar;
 import io.github.butterflysmp.rpg.paper.menu.RecipeCatalogue;
 import io.github.butterflysmp.rpg.paper.menu.RecipeProbe;
+import io.github.butterflysmp.rpg.paper.nexus.NexusCollisionNotice;
 import io.github.butterflysmp.rpg.paper.nexus.NexusItems;
 import io.github.butterflysmp.rpg.paper.nexus.NexusSlots;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
@@ -559,16 +561,84 @@ public final class RpgListeners implements Listener {
      * present). ironblade has no right_click, so its right-click passes through and doors and
      * chests still work with it in hand; only a weapon that uses the input consumes it.
      *
-     * The exceptions are the HIJACKED BLOCKS -- today an enchanting table and a crafting table,
-     * listed in {@link #hijackedBlocks}. Each is cancelled unconditionally whatever is held and
-     * whether or not you are sneaking, because our menu replaces that block's vanilla screen
-     * outright and it must never open. See {@link #openHijackedBlock}.
+     * There are now TWO exceptions to that fall-through, and they are cancelled for different
+     * reasons -- one keyed on WHAT IS HELD, the other on WHAT IS CLICKED:
+     *
+     * <ul>
+     *   <li><b>The NEXUS STAR, checked FIRST.</b> Holding it, a right-click opens the hub and is
+     *       cancelled unconditionally, whether it landed on air or on a block. It precedes the
+     *       hijacked blocks deliberately: a crafting table right-clicked with the star in hand
+     *       opens the NEXUS, because the item in the player's hand is what they pressed.
+     *   <li><b>The HIJACKED BLOCKS</b> -- today an enchanting table and a crafting table, listed in
+     *       {@link #hijackedBlocks}. Each is cancelled unconditionally whatever is held and whether
+     *       or not you are sneaking, because our menu replaces that block's vanilla screen outright
+     *       and it must never open. See {@link #openHijackedBlock}.
+     * </ul>
+     *
+     * <p><b>The star's branch has no sneak escape hatch and does not need one.</b> The hijacked
+     * blocks have one so a Mage can still cast while standing at an enchanting table; the star
+     * binds no {@code right_click} and there is no cast to preserve.
      */
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) return; // FIRST: main hand only, or one click double-spends
         Action action = event.getAction();
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+
+        // THE NEXUS STAR OPENS THE HUB, AND IT WINS OVER EVERYTHING BELOW.
+        //
+        // Placed here -- after the two guards above, before the hijacked blocks and before
+        // WeaponFire -- because all three of those would otherwise fire on the same press:
+        //
+        //   ahead of openHijackedBlock  so right-clicking a crafting table while holding the star
+        //                               opens the NEXUS, not the crafting menu. Two menus cannot
+        //                               both open; the item in the player's hand is what they
+        //                               pressed, so it decides.
+        //   ahead of WeaponFire.attempt so the hub can never cost mana. The star binds no
+        //                               right_click and attempt would return empty, but the
+        //                               ordering is the guarantee rather than the coincidence.
+        //
+        // IT IS CANCELLED UNCONDITIONALLY, and that is not tidiness. Without it, right-clicking a
+        // block while holding the star ALSO does whatever that block does -- a chest opens behind
+        // our menu, a button presses, a nether star is placed into an item frame. The menu would
+        // look right and the world would have changed underneath it.
+        //
+        // KEYED BY keys.nexus THROUGH NexusItems.isNexus, NEVER BY MATERIAL.
+        // HealthModifierItems.mint still mints a plain NETHER_STAR for health_boost_TEMP, and a
+        // Material check here would make that dev item open the hub -- row 7 of GATE-nexus.md is
+        // the same collision from the other side.
+        //
+        // OPENING AN INVENTORY DIRECTLY FROM AN EVENT HANDLER IS FINE HERE, AND THE CEREMONY
+        // CraftingMenu USES DOES NOT APPLY. That close-then-hop-through-the-scheduler dance exists
+        // for MENU-TO-MENU navigation, where a container is already open and openInventory during
+        // the close would race. No container is open on a right-click in the world, so there is
+        // nothing to close and nothing to hop for. Do not copy the dance in.
+        if (NexusItems.isNexus(event.getPlayer().getInventory().getItemInMainHand(),
+                adapters.keys())) {
+            event.setCancelled(true);
+
+            // THE COLLISION SPEAKS; THE ORDINARY OPEN DOES NOT. Scoped to the shadowed block and
+            // NOT to the open, because the usual way to reach the hub is right-clicking AIR and a
+            // line of chat every time a player opens their menu is MenuSafety's "no message
+            // repeated sixty-four times helps" objection, earned every session.
+            //
+            // hijackedBlocks.containsKey IS A MAP LOOKUP WITH NO SIDE EFFECT, and that is why it is
+            // asked rather than openHijackedBlock being called to find out: that method CANCELS and
+            // OPENS, so using it as a predicate would open the very screen being shadowed.
+            //
+            // Why this speaks at all when the Nexus lock is silent: the lock refuses a GESTURE and
+            // the player can SEE the star did not move, so chat would repeat what is on screen.
+            // This SHADOWS something else, and the evidence is the thing that did NOT happen --
+            // nothing to see, so something to say. Full boundary in NexusCollisionNotice's javadoc.
+            Block clicked = event.getClickedBlock();
+            if (action == Action.RIGHT_CLICK_BLOCK && clicked != null
+                    && hijackedBlocks.containsKey(clicked.getType())) {
+                NexusCollisionNotice.shadowedBlock(event.getPlayer(), cooldowns);
+            }
+
+            new NexusMenu(event.getPlayer()).open();
+            return;
+        }
 
         // THE VANILLA SCREEN NEVER OPENS ON A HIJACKED BLOCK, sneaking or not. Our menus replace
         // those screens outright, so suppressing them is unconditional and sneaking only decides
