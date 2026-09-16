@@ -1749,6 +1749,31 @@ Then `git branch -D <branch>`, `git push origin --delete <branch>` if it exists 
 `git fetch --prune` to drop the stale tracking ref. **List `git ls-remote --heads origin` before and
 after** — the wire, not a local ref, is what says the remote branch is gone.
 
+### A LONG-LIVED BRANCH: DISTANCE IS NOT THE PREDICTOR OF ROT. OVERLAP IS
+
+**A branch does not decay with time. It decays when something lands on the files it touches.**
+
+> **2026-09-16, and the numbers run the wrong way round.** One branch was rebased twice.
+> **SIX merges behind: 16 compile errors** — a slice had turned `NexusLock.LOCKED_SLOT` from a
+> `static final` into a per-player parameter. **EIGHT merges behind: CLEAN**, because the
+> re-derivation held and the two intervening PRs touched other files.
+>
+> **The instinct that fails here is "this is old, rebase it again"** — which would have re-derived
+> work that was already correct. **Ask which FILES have changed, not how many commits have.**
+
+**AND A CLEAN MERGE STILL PROVES NOTHING — `merge-tree` ANSWERS A NARROWER QUESTION.** Zero conflict
+markers means *these diffs do not touch the same lines*. It cannot mean *this still compiles against
+a signature that moved underneath it*. **Both rebases above merged clean; one of them did not
+build.**
+
+> **So: REBASE AND BUILD, never rebase and read the merge.** Same family as `git diff --numstat` for
+> mutation overreach and two-dot for *what did this branch change* — **an instrument answering a
+> narrower question than the one being asked, returning a number that reads as a pass.** Third
+> member, one week.
+
+**Practically, for a branch parked on purpose:** name the files it touches, and it is safe to sit
+until something lands on one of them. That turns *"is this stale?"* into a grep instead of a feeling.
+
 ## Working with me
 
 - I am rusty at Java. If you use a language feature I may not know — sealed
