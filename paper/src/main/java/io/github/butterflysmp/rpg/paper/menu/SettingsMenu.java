@@ -149,7 +149,7 @@ public final class SettingsMenu extends Menu {
 
         getInventory().setItem(SettingsMenuLayout.CLOSE_SLOT, MenuIcons.close());
         getInventory().setItem(SettingsMenuLayout.BACK_SLOT,
-                MenuIcons.back(Material.NETHER_STAR, "the Nexus"));
+                MenuIcons.back(Material.ARROW, "the Nexus"));
 
         // THE CURRENT CHOICE IS READ, NEVER REMEMBERED. lockedSlotOf answers NO_LOCKED_SLOT while
         // the profile is unreadable or still loading, and then nothing is highlighted -- which is

@@ -31,9 +31,10 @@ class NexusMenuLayoutTest {
                         + "move between our screens");
         assertEquals(50, NexusMenuLayout.SETTINGS_SLOT, "Settings is slot 50");
         assertEquals(54, NexusMenuLayout.SIZE, "six rows");
-        assertEquals(20, NexusMenuLayout.STATS_SLOT,
-                "the stats head is slot 20 -- the first slot of the FEATURE body, so the next "
-                        + "feature appends at 21 rather than every icon re-centring");
+        assertEquals(13, NexusMenuLayout.STATS_SLOT,
+                "the stats head is slot 13 -- the CENTRE of row 2 (slots 9-17), Ben's ruling. It "
+                        + "was 20 under a withdrawn rule that made it the start of a left-to-right "
+                        + "run; where a SECOND feature goes is now UNRULED, see the constant");
         // Mutation MUTCLOSE: CLOSE_SLOT 49 -> 48   -> reddens HERE, and only here.
         // Mutation MUTSETTINGS: SETTINGS_SLOT 50 -> 51 -> reddens HERE, and only here.
         //
@@ -57,27 +58,34 @@ class NexusMenuLayoutTest {
 
     @Test
     void theStatsHeadIsInTheBODY_notInTheChromeRowWithTheTwoButtons() {
-        // THE STANDING LAYOUT RULE, GUARDED RATHER THAN ONLY JAVADOC'D: chrome in the bottom row,
-        // features in the body. Without this, "slot 20" is just a number someone picked, and the
-        // next person adding a feature has nothing to object to when they drop it at 51.
+        // THE LAYOUT RULE, GUARDED RATHER THAN ONLY JAVADOC'D. Without it, "slot 13" is a number
+        // someone picked and the next person adding a feature has nothing to object to at 51.
         //
-        // This is the STATS_SLOT twin of theTwoButtonsAreADJACENTInTheBottomRow, and it has the
-        // same property: no mutation can kill it alone, because the literal row pins 20 exactly.
-        // What is lost if it goes is the RULE -- re-rule the head to slot 24 and the literal row is
-        // simply rewritten, with nothing left objecting to 51.
+        // REWRITTEN FOR BEN'S RULING. It used to assert only "not in the chrome row", which was the
+        // whole of the withdrawn left-to-right rule's content. The live rule is stronger and says
+        // something checkable: the head is the MIDDLE CELL OF ROW 2.
         assertTrue(NexusMenuLayout.STATS_SLOT < NexusMenuLayout.BOTTOM_ROW_START,
                 "a FEATURE must not sit in the chrome row");
         assertFalse(NexusMenuLayout.STATS_SLOT == NexusMenuLayout.CLOSE_SLOT
                         || NexusMenuLayout.STATS_SLOT == NexusMenuLayout.SETTINGS_SLOT,
                 "and it must not collide with either button");
-        // Mutation MUTSTATSBOTTOM: STATS_SLOT 20 -> 51 -> reddens HERE and the literal row.
-        // APPLIED AND MEASURED. It has no unique kill, for the adjacency row's reason: the literal
-        // row pins 20 exactly, so any move fails there first. What is lost if this row goes is the
-        // RULE -- re-rule the head to 24 and the literal row is simply rewritten, with nothing left
-        // objecting to 51.
+
+        // ROW 2, AND CENTRED IN IT. Asserted as arithmetic rather than as the literal 13, so this
+        // row says WHY 13 and the literal row says WHICH -- the pair the adjacency row and the
+        // button-literal row already form for Close and Settings.
+        assertEquals(1, NexusMenuLayout.STATS_SLOT / 9,
+                "row 2 -- slots 9-17, the first body row under the top one");
+        assertEquals(4, NexusMenuLayout.STATS_SLOT % 9,
+                "and the CENTRE column: a nine-wide row's middle cell is column 4, counting from 0. "
+                        + "Ben ruled a centred single feature, not the start of a run");
+
+        // Mutation MUTSTATSBOTTOM: STATS_SLOT -> 51 -> kill set RECORDED in the PR body.
         //
-        // MUTSTATS19 and MUTSTATS21 do NOT redden this row, correctly: 19 and 21 are both in the
-        // body, which is all this row claims.
+        // NOTE FOR WHOEVER ADDS THE SECOND FEATURE: this row asserts that ONE feature is centred.
+        // It will be WRONG the moment a second arrives, whichever way that is ruled -- centred
+        // growth moves this one, and appending right leaves the pair off-centre. That is not a
+        // defect in the row; it is the unruled question, and the row going red is how the next
+        // person is made to ask it rather than pick.
     }
 
     @Test

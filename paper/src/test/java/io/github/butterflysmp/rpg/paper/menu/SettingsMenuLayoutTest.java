@@ -25,7 +25,10 @@ class SettingsMenuLayoutTest {
         // THE LITERALS AS LITERALS, for the reason NexusMenuLayoutTest carries three scars from: a
         // constant that is only ever named symbolically has no guard at all, because a mutation
         // moves the code and the expectation together.
-        assertEquals(45, SettingsMenuLayout.BACK_SLOT, "Back is the first slot of the chrome row");
+        assertEquals(48, SettingsMenuLayout.BACK_SLOT,
+                "Back is 48, immediately left of Close -- Ben's ruling. It was 45 (the first slot "
+                        + "of the chrome row) until he moved it onto the cell the recipe browser "
+                        + "already used");
         assertEquals(49, SettingsMenuLayout.CLOSE_SLOT,
                 "Close is 49 -- the SAME slot the crafting menu and the hub use, so the one button "
                         + "a player has learned does not move between our screens");
@@ -124,5 +127,13 @@ class SettingsMenuLayoutTest {
                 "and the hub agrees too -- this screen is reached from it");
         assertTrue(SettingsMenuLayout.BACK_SLOT != SettingsMenuLayout.CLOSE_SLOT,
                 "Back and Close are different intents and must be different slots");
+
+        // THE BACK BUTTONS CONVERGED, AND THAT IS A DECISION RATHER THAN TWO LITERALS MATCHING.
+        // RecipeBrowserLayout.BACK_SLOT was already 48 when Ben moved this one there, so the plugin
+        // now has ONE answer for where a back button lives. Asserted so the two cannot drift apart
+        // silently -- the same reason Close is asserted against the other screens above.
+        assertEquals(RecipeBrowserLayout.BACK_SLOT, SettingsMenuLayout.BACK_SLOT,
+                "both back buttons in the plugin sit in the same cell -- the next screen that needs "
+                        + "one has a single answer to copy rather than two to choose between");
     }
 }

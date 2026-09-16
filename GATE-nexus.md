@@ -5,6 +5,28 @@ row of SLICE 2 (8–13), SLICE 3 (14–19), SLICE 4a (20–24) and SLICE 4b (25�
 its own status line. **Twenty-five of thirty rows have never been booted, and the file is still
 growing**; that is flagged for the operator rather than hidden in a block header.
 
+> ### FOUR PREDICTIONS WERE RESTAGED ON 2026-09-16, AND EDITING A PREDICTION NORMALLY IS NOT ALLOWED
+>
+> Ben re-ruled four layout constants: the stats head **20 → 13**, the settings back button
+> **45 → 48**, back's material **NETHER_STAR → ARROW**, and the hub's title **"Nexus" → "Nexus
+> Menu"**. **Rows 14, 16, 27 and 30 were staged against the old values** and would have sent an
+> operator to look at the wrong cell.
+>
+> **THE NO-EDIT RULE BINDS A PREDICTION THAT HAS BEEN READ, AND NONE OF THESE HAS BEEN.** This file
+> carries exactly ONE reading — Row 6's — so there was nothing to falsify and nothing to void.
+> **The predictions were rewritten in place**, which is the correct treatment for an unread row whose
+> subject moved; the alternative is a gate that describes a screen that no longer exists.
+>
+> **HAD ANY OF THEM BEEN READ, THE TREATMENT WOULD HAVE BEEN THE OPPOSITE:** mark the reading VOID
+> with its reason and restage beneath it, the way Row 6's creative readings were handled. **A reading
+> is scoped to the conditions it was taken under, and a re-ruling is exactly a change of those
+> conditions** — a stale pass on Row 30 in particular would be a CONTROL THAT STOPPED CONTROLLING,
+> since its whole job is to say the hub is unchanged by everything else.
+>
+> **ROW 16 WAS NOT ON THE LIST AND NEEDED IT ANYWAY** — it ends *"the head is still in slot 13
+> afterwards"*. Found by sweeping the file for the moved values rather than by trusting the three
+> rows named. **No row reads the hub's TITLE**, so change four restaged nothing.
+
 **AND FROM SLICE 4b THE ROWS HAVE A SHARED PRECONDITION: the player's Nexus slot must be the
 default 9 (index 8)** unless the row says otherwise. Rows **21, 24, 26 and 29 move it on purpose**
 and say so in their own staging; **put it back before running an earlier row.** That is the
@@ -833,8 +855,8 @@ actually agree on screen. **That gap is these six rows.**
 head renders as the default skin and nothing is logged. That is indistinguishable from a head that
 was never given an owner at all.
 
-**Staging.** `/gamemode survival`. Right-click the star to open the hub. **Look at slot 20 — the
-third slot of the third row.** Then have a second player open their own hub and look at theirs.
+**Staging.** `/gamemode survival`. Right-click the star to open the hub. **Look at slot 13 — the
+MIDDLE slot of the second row.** Then have a second player open their own hub and look at theirs.
 
 **PREDICTED:** the head is **your own skin**, recognisably, and the second player's is **theirs**.
 Not Steve, not Alex, and not each other's.
@@ -891,7 +913,7 @@ all**, deliberately: a no-op branch would read as a wired button whose body some
 shift-click it. Then number-key over it.**
 
 **PREDICTED:** on all four — **nothing.** No chat line, no sound, no screen change, no item moves to
-the cursor, and the hub stays open. The head is still in slot 20 afterwards.
+the cursor, and the hub stays open. The head is still in slot 13 afterwards.
 
 > **THE FOUR GESTURES ARE NOT ONE GESTURE REPEATED.** Shift-click and the number key are the
 > **performed** routes — the ones `MenuRouting` writes directly rather than merely permitting — and
@@ -1207,7 +1229,7 @@ left**.
 
 | | gesture | expected |
 |---|---|---|
-| 27a | click **Back** at slot 45 | the **hub** appears. Not the world, not a flicker of both |
+| 27a | click **Back** at slot 48 -- an ARROW, immediately left of Close | the **hub** appears. Not the world, not a flicker of both |
 | 27b | reopen settings, click **Close** at slot 49 | the **world**. The hub does not reappear behind it |
 | 27c | reopen settings, press **Esc** | the world, same as 27b |
 | 27d | from the hub after 27a, press Esc | the world |
@@ -1277,7 +1299,7 @@ settings screen shows the second chooser lime, and slot 9 is an ordinary cell.
 **Staging.** `/gamemode survival`, slot back at the default 9. Open the hub and **do nothing except
 read it**.
 
-**PREDICTED:** the stats head is still at slot 20 wearing your skin with live figures; Close is
+**PREDICTED:** the stats head is still at slot 13 wearing your skin with live figures; Close is
 still at 49 and still closes; the star is still in slot 9; and **no chat line is printed by opening
 the hub**.
 

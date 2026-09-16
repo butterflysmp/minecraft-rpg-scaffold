@@ -46,21 +46,33 @@ final class NexusMenuLayout {
     /**
      * The stats head, and <b>the first FEATURE on this screen rather than more chrome.</b>
      *
-     * <h2>CHROME IN THE BOTTOM ROW. FEATURES IN THE BODY, FILLING LEFT TO RIGHT FROM 20</h2>
+     * <h2>CHROME IN THE BOTTOM ROW. FEATURES IN THE BODY. 13 IS THE CENTRE OF ROW 2</h2>
      *
-     * <b>Stated now, before a third button makes it accidental.</b> Close and Settings are chrome
-     * and live in the bottom row; everything a player came here to USE goes in the body and
-     * APPENDS. The alternative -- centring whatever features exist -- looks best with one icon and
-     * <b>moves every icon the moment a second one arrives</b>, which is churn in a screen players
-     * learn by position.
+     * Close and Settings are chrome and live in the bottom row; everything a player came here to
+     * USE goes in the body. <b>Row 2 is slots 9-17, so 13 is its middle cell</b>, and a single
+     * feature sits there.
      *
-     * <p>So 20 is a starting point, not a centre. The next feature is 21.
+     * <h2>WHERE THE SECOND FEATURE GOES IS UNRULED, AND THAT IS RECORDED RATHER THAN GUESSED</h2>
      *
-     * <p><b>THIS IS THE ASSISTANT'S PROPOSAL, NOT BEN'S RULING</b>, unlike {@link #SIZE} and the
-     * 49/50 pair. It is a number a player experiences, so it went to him with the slice rather than
-     * being buried -- and it is one constant, so one word changes it.
+     * <b>Ben ruled ONE number: this one.</b> Nothing has been decided about what happens when a
+     * second feature arrives, and <b>this javadoc previously invented an answer and was
+     * overruled</b> -- it said <i>"features fill left to right from 20; the next feature is 21"</i>,
+     * an assistant proposal that 13 falsifies, since 13 is a centre and not the start of a run.
+     *
+     * <p>So it is named as OPEN rather than closed. The trade, for whoever rules it:
+     *
+     * <pre>
+     *   centred growth   12, 14, ...   stays visually centred at every count
+     *                                  -- but MOVES EVERY EXISTING ICON on each addition
+     *   append right     14, 15, ...   nothing ever moves once placed
+     *                                  -- but the group drifts right of centre as it grows
+     * </pre>
+     *
+     * <p><b>The churn in the left column is real and is what the withdrawn rule existed to
+     * prevent</b>, in a screen players learn by position. It is stated so the next person adding a
+     * feature asks rather than picks -- <b>an unruled case recorded as unruled, not as excluded.</b>
      */
-    static final int STATS_SLOT = 20;
+    static final int STATS_SLOT = 13;
 
     /**
      * Every slot that is plain filler -- the whole menu except the two buttons.
