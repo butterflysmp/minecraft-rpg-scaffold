@@ -135,9 +135,27 @@ public final class CraftingMenu extends Menu {
      * which one you have. If a future screen needs to BEHAVE differently by origin, that is a
      * different menu class, not a branch on this.
      *
-     * <p>It is an enum rather than a nullable {@code Block} or a {@code Runnable} for that reason:
-     * an enum with two constants cannot quietly accumulate state or capture a lambda that reaches
-     * back into the screen that opened it.
+     * <h2>IT IS DERIVED, NOT STORED, AND THE FIRST DRAFT STORED IT</h2>
+     *
+     * <b>There is exactly ONE field: the supplier.</b> This enum is computed from it by
+     * {@link #origin()}.
+     *
+     * <p>The first draft took {@code Origin} as a constructor parameter beside the supplier, which
+     * made {@code FROM_NEXUS} and {@code hub != null} <b>the same fact stored twice, in a public
+     * constructor, with nothing correlating them.</b> This compiled:
+     *
+     * <pre>
+     *   new CraftingMenu(viewer, adapters, catalogue, Origin.FROM_NEXUS, null)
+     * </pre>
+     *
+     * <p>— a screen claiming Nexus origin with no way back, whose Back button is drawn or not drawn
+     * depending on which of the two fields the reader happened to consult. <b>TWO REPRESENTATIONS
+     * THAT CAN DISAGREE, and the authoritative one is whichever you read first.</b>
+     *
+     * <p><b>The fix was to delete a field, not to add a check.</b> The invalid state is now
+     * unconstructible rather than asserted against -- the same instinct as {@code CollectPlan} and
+     * {@code GridClickIntent}: <b>derive the view, store the fact.</b> The enum stays because it
+     * reads better than {@code hub != null} at the two places that ask.
      */
     public enum Origin {
         /** Right-clicked a crafting table in the world. No Back button; Close returns you there. */
@@ -157,21 +175,41 @@ public final class CraftingMenu extends Menu {
      *
      * <p>It is still not identity and still must not be routed on -- see {@link Origin}. It is
      * consulted in exactly two places, both of them about the Back button.
+     *
+     * <h2>IT REBUILDS THE HUB. IT DOES NOT RESTORE THE ONE YOU LEFT</h2>
+     *
+     * <b>Back CONSTRUCTS A FRESH hub, and that is deliberate because every readout on it is live.</b>
+     * The stats head re-reads the projection; the settings chooser re-reads the profile. A restored
+     * screen would show whatever those said when it was first opened.
+     *
+     * <p><b>Said out loud because it is not what "Back" means in most software, and it is invisible
+     * at the call site.</b> The consequence to know: <b>if the hub ever holds TRANSIENT state, Back
+     * discards it silently.</b> It holds none today -- {@code inputSlots()} is empty and every cell
+     * is painted from a live read -- and the day that stops being true, this is the sentence saying
+     * the cost was known rather than missed.
      */
-    private final Origin origin;
     private final java.util.function.Supplier<Menu> hub;
+
+    /**
+     * Where this screen was opened from, DERIVED from whether it was given a way back.
+     *
+     * <p>One fact, one field. See {@link Origin} for why this is a method rather than a stored
+     * constructor parameter.
+     */
+    private Origin origin() {
+        return hub == null ? Origin.FROM_BLOCK : Origin.FROM_NEXUS;
+    }
 
     /** The world-opened screen. Unchanged by the Nexus work, and it is the common path. */
     public CraftingMenu(Player viewer, AdapterContext adapters, RecipeCatalogue catalogue) {
-        this(viewer, adapters, catalogue, Origin.FROM_BLOCK, null);
+        this(viewer, adapters, catalogue, null);
     }
 
     public CraftingMenu(Player viewer, AdapterContext adapters, RecipeCatalogue catalogue,
-                        Origin origin, java.util.function.Supplier<Menu> hub) {
+                        java.util.function.Supplier<Menu> hub) {
         super(viewer, SIZE, MenuIcons.line("Crafting", NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
         this.catalogue = catalogue;
-        this.origin = origin;
         this.hub = hub;
         this.inventoryCraft = new InventoryCraft(viewer, adapters);
         render();
@@ -267,7 +305,7 @@ public final class CraftingMenu extends Menu {
             return;
         }
 
-        if (click.slot() == CraftingMenuLayout.BACK_SLOT && origin == Origin.FROM_NEXUS) {
+        if (click.slot() == CraftingMenuLayout.BACK_SLOT && origin() == Origin.FROM_NEXUS) {
             // CLOSE FIRST, THEN HOP -- unlike the hub's own navigation, and Menu.open's javadoc is
             // where the rule lives. THIS screen has input slots (the grid), so returnEverything
             // must run on the close before the screen changes, or a loaded grid is stranded behind
@@ -848,7 +886,7 @@ public final class CraftingMenu extends Menu {
         // screen would promise a destination the player never came from -- MenuIcons.close's
         // javadoc draws that line from the other side. The world path is byte-identical to what it
         // was before the Nexus gained a crafting station.
-        if (origin == Origin.FROM_NEXUS) {
+        if (origin() == Origin.FROM_NEXUS) {
             getInventory().setItem(CraftingMenuLayout.BACK_SLOT,
                     MenuIcons.back(Material.ARROW, "the Nexus"));
         }

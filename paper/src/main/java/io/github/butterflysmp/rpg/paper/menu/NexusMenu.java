@@ -161,7 +161,7 @@ public final class NexusMenu extends Menu {
             // than handing CraftingMenu eight services it would only use to rebuild us. A third
             // screen with a Back button costs one lambda, not another constructor widening.
             adapters.scheduler().onEntity(viewer, () -> new CraftingMenu(
-                    viewer, adapters, recipes, CraftingMenu.Origin.FROM_NEXUS,
+                    viewer, adapters, recipes,
                     () -> new NexusMenu(viewer, adapters, profiles, weapons, resources, recipes,
                             shields, armor, tools)).open());
             return;
