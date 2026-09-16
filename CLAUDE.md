@@ -426,6 +426,24 @@ So:
   > after the last file lands fixes the second. Third in the family is the `27`-for-`29` plan count —
   > *a figure taken from a glance at something adjacent to the answer.* Full entries in `NEXT.md`.
 
+  > **AND THE FOURTH ROUTE, WHICH NO AMOUNT OF RE-READING REACHES: A FIGURE MAINTAINED BY DELTA.**
+  > The three above are each wrong **once**, at a moment you can name. This one is wrong **forever
+  > and by a growing amount**, because every edit updates it correctly and inherits the base.
+  >
+  > **SO: RECOUNT THE FIGURE FROM ITS SOURCE, NEVER ADJUST IT BY THE DELTA OF YOUR OWN CHANGE** —
+  > and **write the command that produces it beside it**, so the next editor recounts instead of
+  > adjusting. If you find yourself computing *"twenty-nine minus three"*, stop and run the count.
+  >
+  > **AND A FRACTION MUST SAY WHAT UNIT EACH SIDE COUNTS.** A numerator in sub-items over a
+  > denominator in items renders as a perfectly plausible fraction. **Prefer NAMING the items to
+  > counting them** where the list is short enough — a name carries its granularity and a number
+  > does not.
+  >
+  > **This is not hypothetical and the instance is in this repo:** `GATE-nexus.md`'s status section,
+  > which is **the account** — four commits, an inherited `−4`, a further `−2` added by the very
+  > commit whose subject was fixing that line, and a `−1` in the denominator that survived because a
+  > second error cancelled it. **Every one of those edits passed *add the parts up*.**
+
 - **A PUSH NAMES ITS BRANCH.** `git push -u origin <branch>`, always. A bare `git push` resolves
   against whatever the current branch tracks, so it can land unreviewed work on `master`; the
   explicit form fails loudly instead of guessing.
@@ -1748,6 +1766,31 @@ empty proves the same thing. That is what was used before the general check exis
 Then `git branch -D <branch>`, `git push origin --delete <branch>` if it exists remotely, and
 `git fetch --prune` to drop the stale tracking ref. **List `git ls-remote --heads origin` before and
 after** — the wire, not a local ref, is what says the remote branch is gone.
+
+### A LONG-LIVED BRANCH: DISTANCE IS NOT THE PREDICTOR OF ROT. OVERLAP IS
+
+**A branch does not decay with time. It decays when something lands on the files it touches.**
+
+> **2026-09-16, and the numbers run the wrong way round.** One branch was rebased twice.
+> **SIX merges behind: 16 compile errors** — a slice had turned `NexusLock.LOCKED_SLOT` from a
+> `static final` into a per-player parameter. **EIGHT merges behind: CLEAN**, because the
+> re-derivation held and the two intervening PRs touched other files.
+>
+> **The instinct that fails here is "this is old, rebase it again"** — which would have re-derived
+> work that was already correct. **Ask which FILES have changed, not how many commits have.**
+
+**AND A CLEAN MERGE STILL PROVES NOTHING — `merge-tree` ANSWERS A NARROWER QUESTION.** Zero conflict
+markers means *these diffs do not touch the same lines*. It cannot mean *this still compiles against
+a signature that moved underneath it*. **Both rebases above merged clean; one of them did not
+build.**
+
+> **So: REBASE AND BUILD, never rebase and read the merge.** Same family as `git diff --numstat` for
+> mutation overreach and two-dot for *what did this branch change* — **an instrument answering a
+> narrower question than the one being asked, returning a number that reads as a pass.** Third
+> member, one week.
+
+**Practically, for a branch parked on purpose:** name the files it touches, and it is safe to sit
+until something lands on one of them. That turns *"is this stale?"* into a grep instead of a feeling.
 
 ## Working with me
 
