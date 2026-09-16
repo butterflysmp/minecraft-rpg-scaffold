@@ -785,15 +785,45 @@ passed when it never ran — this file's own headline defect, one level up.
 **The operational form, which generalises past these three:**
 
 - **A scripted edit** must be followed by something that must be present if it worked — `grep` for a
-  marker, **AND** a measured line/byte delta (`before`/`after`, `git diff --numstat`). Zero-exit is
-  not evidence. For a mutation, assert **both** directions: the marker landed **and** the original is
-  gone.
+  marker, **AND** a measured line/byte delta **against the file as it was immediately before the
+  edit** (`diff` against a scratchpad copy). Zero-exit is not evidence. For a mutation, assert
+  **both** directions: the marker landed **and** the original is gone.
 
   > **THOSE TWO ARE NOT ALTERNATIVES, AND THIS USED TO SAY "OR".** Measured 2026-09-10: a
   > `perl -i -pe 's{A}g; s{B}g if $. >= L && $. <= L+35'` rewrote **forty other sites** while
   > **both halves of the marker grep passed** — marker present at the target, original gone at the
   > target. **The grep proves an edit LANDED and says nothing about WHERE ELSE.** Only a line/byte
-  > delta or `--numstat` sees the overreach. See the sixth row of the mutation-lies table below.
+  > delta sees the overreach. See the sixth row of the mutation-lies table below.
+
+  > ### AND THE DELTA MUST BE TAKEN AGAINST THE RIGHT BASELINE — THIS BULLET SAID `git diff --numstat` UNTIL 2026-09-15
+  >
+  > **`--numstat`'s baseline is HEAD, and in a mutation pass HEAD ALREADY HOLDS THE SLICE.** So it
+  > reports **the slice's** delta, not the mutation's, and **returns the same number whether the
+  > mutation touched one line or forty** — which is precisely the discrimination the sixth row of
+  > the table exists to make. **A prescribed instrument that cannot distinguish the thing it exists
+  > to detect**, in the file people follow instead of remembering around.
+  >
+  > **2026-09-15, the instance.** `MUTSTATS19` changed **one line** in `NexusMenuLayout.java`, a
+  > file that slice had already added 20 lines to. `git diff --numstat` printed **`20  0`** — the
+  > slice's own addition — and would have printed `20  0` for a mutation that rewrote the whole
+  > file. It read as a clean pass.
+  >
+  > **The correct baseline is the file immediately before the mutation, which is the scratchpad copy
+  > the restore rule already requires you to make.** It costs nothing extra:
+  >
+  > ```bash
+  > cp "$F" "$SCRATCH/$(basename $F).orig"        # the restore copy, per the never-checkout rule
+  > # ... apply the mutation ...
+  > diff "$SCRATCH/$(basename $F).orig" "$F" | grep -c '^<'   # must equal the lines you meant to change
+  > ```
+  >
+  > Reported `1` for every one of eight mutations in that pass, including the one `--numstat` had
+  > called `20  0`.
+  >
+  > **`--numstat` IS STILL CORRECT WHERE IT IS PRESCRIBED ELSEWHERE ON THIS PAGE** — the file-list
+  > reconciliation under *Report the FILE LIST*, and the byte-identity argument under *AN INTEGRITY
+  > FIGURE*. **Those want the HEAD baseline; a mutation does not.** Same command, two baselines, and
+  > only one of them is HEAD. **Do not "fix" the other sites.**
 - **A grep filter over tool output** must be proven capable of matching a failure *before* its
   silence is read as success. Run it once against a known-bad input and require the hit. A filter
   that has only ever been run against passing output has never been tested.
@@ -824,7 +854,7 @@ halves, and no amount of care with `perl` reaches the second.
 | **THE MARKER BROKE THE EDIT** | the replacement text was `/* MUT_MARK */`, and its slashes **terminated `perl`'s `s///` early** — so the edit landed as a bare *deletion* and the marker never went in. Original gone, marker absent | the marker grep, **"marker present" half — the other one** |
 | **applied, no bite** | the edit landed and the test stayed green — the assertion matched a *duplicate* of the mutated token | **nothing mechanical** — only reading the red you expected and not getting it |
 | **applied, wrong side** | the test passed on an accident (a floating-point coincidence; an undefended victim where `dealt == amount`) rather than on the thing it guards | **nothing at all** — only designing the fixture so the two values differ |
-| **APPLIED TOO WIDELY** | a scope guard that **silently did not bind**: `perl -i -pe 's{A}g; s{B}g if $. >= L && $. <= L+35'` — **the `if` binds ONLY to the last statement in the chain**, so `s{A}` ran over the whole file | **NOTHING in the marker grep — BOTH halves pass.** Only a measured line/byte delta, or `git diff --numstat`, sees it |
+| **APPLIED TOO WIDELY** | a scope guard that **silently did not bind**: `perl -i -pe 's{A}g; s{B}g if $. >= L && $. <= L+35'` — **the `if` binds ONLY to the last statement in the chain**, so `s{A}` ran over the whole file | **NOTHING in the marker grep — BOTH halves pass.** Only a measured line/byte delta **against a pristine copy of the file taken before the edit** sees it — **NOT `git diff --numstat`**, whose baseline is HEAD and which therefore reports the slice rather than the mutation. Account in the *scripted edit* bullet above |
 | **APPLIED, BIT, AND CERTIFIED ONE AXIS OF TWO** | the expression had **more than one degree of freedom** and the mutation moved one. `now - lastTick` names two: *which endpoint* (first/last) and *which reference* (now/last event). One splice reddened rows and proved only its own axis | **nothing mechanical, and the RED makes it worse** — only counting the axes in the expression before counting the mutations |
 
 > **THE SIXTH ROW IS THE MIRROR IMAGE OF THE FIRST, AND ONE INSTRUMENT CANNOT COVER BOTH.**
