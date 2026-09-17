@@ -321,6 +321,54 @@ public final class ProfileService {
         return true;
     }
 
+    /**
+     * Switch a player's Nexus star on or off, and persist it.
+     *
+     * <p><b>Writes through on every call</b>, like {@link #setNexusSlot} and for its reason: a
+     * setting is rare and deliberate, and the value must be on disk before the player quits or the
+     * star comes back on their next join.
+     *
+     * <p><b>It takes a PRIMITIVE and never writes {@code null} back.</b> The null on
+     * {@code PlayerProfile.starEnabledOrNull} is a fact about a FILE that has never carried the
+     * key; it is not a state anyone chooses, and letting a caller set one would reintroduce the
+     * ambiguity the boxed component exists to resolve.
+     *
+     * @return false if the profile is not loaded or could not be read, so the caller can say which.
+     */
+    public boolean setStarEnabled(UUID playerId, boolean enabled) {
+        CompletableFuture<PlayerProfile> loading = profiles.get(playerId);
+        if (loading == null || !loading.isDone() || loading.isCompletedExceptionally()) {
+            return false;
+        }
+        PlayerProfile current = loading.getNow(null);
+        if (current == null) return false;
+
+        PlayerProfile updated = current.withStarEnabled(enabled);
+        profiles.put(playerId, CompletableFuture.completedFuture(updated));
+        repository.save(updated).exceptionally(error -> {
+            log.log(Level.SEVERE, "Failed to persist Nexus star toggle for " + playerId, error);
+            return null;
+        });
+        return true;
+    }
+
+    /**
+     * Is this player's Nexus star switched on? <b>Unknown reads as ON.</b>
+     *
+     * <h2>THE DEFAULT IS THE SHIPPED BEHAVIOUR, AND THAT IS WHY UNKNOWN LEANS THIS WAY</h2>
+     *
+     * A profile still loading or unreadable is not an instruction to remove anything. <b>Reading
+     * unknown as OFF would strip the star from every player whose profile failed to load</b>, which
+     * is indistinguishable from the feature being broken -- and it would do it on the join path,
+     * where nobody is watching.
+     *
+     * <p>The mirror risk is smaller and self-correcting: a player who HAS turned it off and whose
+     * profile fails to load sees it briefly return, and it goes again on the next successful read.
+     */
+    public boolean starEnabled(UUID playerId) {
+        return profile(playerId).map(PlayerProfile::starEnabled).orElse(true);
+    }
+
     /** The profile, if it has finished loading and did not fail. */
     public Optional<PlayerProfile> profile(UUID playerId) {
         CompletableFuture<PlayerProfile> loading = profiles.get(playerId);

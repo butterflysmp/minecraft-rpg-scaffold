@@ -491,6 +491,11 @@ public final class RpgListeners implements Listener {
         profiles.whenSettled(joined.getUniqueId(), profile -> adapters.scheduler().onEntity(joined, () -> {
             // The load can settle after they have left -- a fast join/quit, or a slow disk.
             if (!joined.isOnline()) return;
+            // *** A SWITCHED-OFF STAR MUST NOT BE RE-MINTED. *** converge MINTS when it finds none,
+            // so without this guard the toggle would last exactly until the player's next join and
+            // read as the setting not sticking. ABSENT PROFILE READS AS ON -- the shipped default,
+            // and the direction that cannot strip a star from someone whose disk read failed.
+            if (!profile.map(PlayerProfile::starEnabled).orElse(true)) return;
             NexusSlots.converge(joined, adapters.keys(),
                     profile.map(PlayerProfile::nexusSlot).orElse(NexusLock.DEFAULT_LOCKED_SLOT));
         }));
@@ -1380,6 +1385,10 @@ public final class RpgListeners implements Listener {
         // lockedSlotOf answers synchronously. Its NO_LOCKED_SLOT fallback would only be reached by
         // someone respawning before their join load finished, where converge's own default is the
         // same answer whenSettled would have given.
+        // THE SAME SWITCHED-OFF GUARD AS onJoin, AND IT IS NEEDED SEPARATELY. Respawn is the other
+        // path that mints, so guarding only the join would leave the star coming back on death --
+        // which is a stranger bug report than it not sticking across a session.
+        if (!profiles.starEnabled(event.getPlayer().getUniqueId())) return;
         NexusSlots.converge(event.getPlayer(), adapters.keys(),
                 NexusSlots.lockedSlotOf(event.getPlayer(), profiles));
     }

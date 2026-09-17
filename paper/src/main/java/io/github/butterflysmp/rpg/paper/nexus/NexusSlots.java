@@ -79,6 +79,35 @@ public final class NexusSlots {
      * slots and the offhand are still out.
      */
     public static int lockedSlotOf(Player player, ProfileService profiles) {
+        // *** A SWITCHED-OFF STAR LOCKS NOTHING. THIS IS THE OTHER HALF OF THE TOGGLE. ***
+        //
+        // NexusLock refuses the locked slot WHETHER OR NOT IT HOLDS A STAR -- deliberately, so a
+        // star that has been lost cannot have its slot taken before the next join restores it. That
+        // is right while the feature is ON and exactly wrong while it is off: the player would be
+        // left a cell they can neither fill nor use, containing nothing, with no explanation.
+        //
+        // Gating HERE rather than at each of the lock's call sites, because this is the one place
+        // that already answers "which slot is protected" and a second copy of the condition is how
+        // the lock and the picker come to disagree.
+        if (!profiles.starEnabled(player.getUniqueId())) return NexusLock.NO_LOCKED_SLOT;
+        return chosenSlotOf(player, profiles);
+    }
+
+    /**
+     * The slot the player has CHOSEN, whether or not the star is currently switched on.
+     *
+     * <h2>NOT THE SAME QUESTION AS {@link #lockedSlotOf}, AND THE DIFFERENCE IS THE TOGGLE</h2>
+     *
+     * {@code lockedSlotOf} answers <i>"which slot does the lock protect"</i> and is
+     * {@code NO_LOCKED_SLOT} while the star is off. <b>This answers "where would it go", which the
+     * settings screen and the picker both need while it IS off</b> -- to name the cell in a message,
+     * to highlight it, and to know where to put the star back when it is switched on again.
+     *
+     * <p><b>Using {@code lockedSlotOf} for that would make the toggle un-re-enableable</b>: it would
+     * report no slot, the enable arm would refuse as though the profile were unreadable, and the
+     * player would be stuck off. That is a real bug this split exists to prevent, not a tidy-up.
+     */
+    public static int chosenSlotOf(Player player, ProfileService profiles) {
         return profiles.profile(player.getUniqueId())
                 .map(PlayerProfile::nexusSlot)
                 .map(slot -> validSlotOr(slot, NexusLock.NO_LOCKED_SLOT))
@@ -313,6 +342,32 @@ public final class NexusSlots {
      * keepInventory failure, a cursor drop at death, or any future death path that loses the star
      * would otherwise leave the player without one until their next reconnect.
      */
+    /**
+     * Delete every Nexus star this player is carrying. <b>The other half of switching it off.</b>
+     *
+     * <h2>REMOVING THE ITEM IS ONLY HALF, AND THE HALF ON ITS OWN IS A BUG REPORT</h2>
+     *
+     * <b>{@code NexusLock} refuses the locked slot whether or not it holds a star</b> -- its own
+     * javadoc says so. So deleting the item while the profile still says the slot is locked leaves
+     * the player a <b>permanently unusable empty cell</b> with nothing on screen to explain it.
+     * <b>The caller must write {@code starEnabled = false} too</b>, which is what takes the lock
+     * off; {@code SettingsMenu.setStar} does both and says why.
+     *
+     * <p><b>Deleting a star is not destroying the player's property</b> -- the same argument
+     * {@link #converge} makes about surplus stars. It is ours, plugin-minted, worth nothing, and
+     * re-minted free the moment they switch it back on. <b>Nothing else in the inventory is
+     * touched</b>, which is what separates this from a clear.
+     */
+    public static void removeStars(Player player, Keys keys) {
+        PlayerInventory inventory = player.getInventory();
+        // THE WHOLE INVENTORY, not just the locked slot. A star can sit anywhere -- carried from a
+        // previous slot choice, or duplicated by a path converge has not run since -- and leaving
+        // one behind would let a player open the hub from an item the setting says is gone.
+        for (int index = 0; index < inventory.getSize(); index++) {
+            if (NexusItems.isNexus(inventory.getItem(index), keys)) inventory.setItem(index, null);
+        }
+    }
+
     public static void converge(Player player, Keys keys, int lockedSlot) {
         PlayerInventory inventory = player.getInventory();
 

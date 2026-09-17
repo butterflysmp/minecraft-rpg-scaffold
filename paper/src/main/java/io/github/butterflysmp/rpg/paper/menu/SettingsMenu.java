@@ -1,10 +1,9 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
-import io.github.butterflysmp.rpg.core.combat.ResourcePool;
-import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.nexus.NexusSlots;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
+import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
@@ -13,56 +12,56 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
-import java.util.OptionalInt;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
- * The Nexus settings screen: choose which INVENTORY slot the Nexus star lives in -- any of the 36
- * main cells, hotbar or storage.
+ * The Nexus settings screen: <b>a hub of settings, not a picker.</b>
  *
- * <p>Reached from the redstone torch on the hub, and the torch stopped being a
- * {@link MenuIcons#placeholder} the moment this existed -- the third instance of that distinction,
- * and {@code NexusMenu}'s class javadoc is where the pair is argued.
+ * <p>Two of them today -- which inventory slot the star lives in, and whether it exists at all:
  *
- * <h2>THE FIRST MENU IN THIS PLUGIN THAT WRITES TO A PROFILE</h2>
+ * <pre>
+ *   Nexus  ->  Settings  ->  Nexus Slot
+ *              Settings  ->  (the toggle, in place)
+ * </pre>
  *
- * Every other profile write is a command. That matters because a menu is reachable in states a
- * command is not: <b>a player rejoining with last session's star already in their inventory can
- * open the hub, and this screen, before their profile has finished loading.</b> The star's
- * right-click handler keys on the item's PDC tag and asks nothing about the profile.
+ * <p>It WAS the picker until slice 10. The thirty-six choosers moved to
+ * {@link NexusSlotPickerMenu}; {@code SettingsMenuLayout}'s javadoc records why they were moved
+ * rather than left beside the buttons.
  *
- * <p>So this screen must answer the question {@code RpgListeners.onJoin} answers by waiting, and it
- * cannot wait -- the player is looking at it. It ASKS INSTEAD, through
- * {@link ProfileService#availability}, and says which of the two refusals applies. <b>"Try again in
- * a moment" is correct for a load in flight and a lie for one that already failed</b>; the second
- * player would retry forever.
+ * <h2>THE FIRST MENU IN THIS PLUGIN THAT WRITES TO A PROFILE, AND THAT IS STILL TRUE</h2>
  *
- * <h2>WHAT IT DOES NOT DO: WAIT, GUESS, OR HIDE</h2>
+ * Every other profile write is a command. A menu is reachable in states a command is not: <b>a
+ * player rejoining with last session's star already in their inventory can open the hub, and this
+ * screen, before their profile has finished loading.</b> The star's right-click handler keys on the
+ * item's PDC tag and asks nothing about the profile.
  *
- * The choosers are always painted, even when unwritable. A screen that changed shape depending on a
- * disk read would be a second thing to explain, and a torch that opened nothing would be the defect
- * {@code BrokenNotice} exists for -- <i>doing nothing without an explanation reads as a defect.</i>
- * The click is where the refusal is spoken, because that is when the player has asked a question.
+ * <p>So this screen answers by ASKING -- {@link ProfileService#availability} -- and says which of
+ * the two refusals applies. <b>"Try again in a moment" is correct for a load in flight and a lie
+ * for one that already failed.</b>
+ *
+ * <h2>*** DISABLING REMOVES THE STAR AND TURNS THE LOCK OFF. BOTH HALVES. ***</h2>
+ *
+ * {@code NexusLock} refuses the locked slot <b>whether or not it holds a star</b> -- its own
+ * javadoc says so. So removing the item while leaving the slot locked hands the player a
+ * <b>permanently unusable empty cell</b>, and they will report it as an inventory bug, correctly.
+ * See {@link #setStar}.
  */
 public final class SettingsMenu extends Menu {
 
     private final AdapterContext adapters;
     private final ProfileService profiles;
+
     /**
      * How to rebuild the hub for the Back button -- the breadcrumb, captured by whoever opened us.
      *
-     * <p><b>A supplier rather than the services a hub needs.</b> This screen used to carry
-     * {@code weapons} and {@code resources} for no reason except reconstructing {@code NexusMenu},
-     * and when the hub grew four more services every screen with a Back button would have grown
-     * with it. The supplier captures what the OPENER already had.
-     *
-     * <p>It is a breadcrumb and must not become identity -- {@code CraftingMenu.Origin} carries
-     * that argument, and it applies here unchanged.
+     * <p><b>A supplier rather than the services a hub needs.</b> It is a breadcrumb and must not
+     * become identity; {@code CraftingMenu.Origin} carries that argument and it applies unchanged.
      */
-    private final java.util.function.Supplier<Menu> hub;
+    private final Supplier<Menu> hub;
 
     public SettingsMenu(Player viewer, AdapterContext adapters, ProfileService profiles,
-                        java.util.function.Supplier<Menu> hub) {
+                        Supplier<Menu> hub) {
         super(viewer, SettingsMenuLayout.SIZE,
                 MenuIcons.line("Nexus Settings", NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
@@ -71,14 +70,6 @@ public final class SettingsMenu extends Menu {
         render();
     }
 
-    /**
-     * Nothing. Every slot is chrome or a button.
-     *
-     * <p>Same property the hub and the recipe browser rely on: with no input slots the router
-     * performs no moves, the drag handler permits nothing, and there is no state a close could
-     * strand -- which is also what makes {@link #onClose} a no-op and lets the back button navigate
-     * without an explicit close. {@code Menu.open}'s javadoc is where that rule lives.
-     */
     @Override
     protected Set<Integer> inputSlots() {
         return Set.of();
@@ -95,35 +86,56 @@ public final class SettingsMenu extends Menu {
             viewer.closeInventory();
             return;
         }
-
         if (click.slot() == SettingsMenuLayout.BACK_SLOT) {
-            // HOP A TICK, DO NOT CLOSE FIRST. Menu.open's javadoc carries the measured rule: both
-            // Scheduler entity methods land on the NEXT tick -- the pinned paper-api's own javadoc
-            // for EntityScheduler.run says so -- and the explicit close exists only to run
-            // returnEverything for a menu holding the player's items. This one holds none, so
-            // openInventory's implicit close is sufficient. Same shape as the recipe browser's
-            // back button, which is now documented rather than merely tolerated.
-            adapters.scheduler().onEntity(viewer,
-                    () -> hub.get().open());
+            // HOP A TICK, DO NOT CLOSE FIRST. Menu.open's measured rule; this screen holds no
+            // input slots, so openInventory's implicit close is sufficient.
+            adapters.scheduler().onEntity(viewer, () -> hub.get().open());
             return;
         }
+        if (click.slot() == SettingsMenuLayout.SLOT_SETTING_SLOT) {
+            // THE BREADCRUMB POINTS BACK HERE, not to the hub -- the picker's Back is one step up.
+            // It captures THIS screen's own hub supplier, so the chain stays three deep and the
+            // picker never has to know what a Nexus hub needs.
+            adapters.scheduler().onEntity(viewer, () -> new NexusSlotPickerMenu(
+                    viewer, adapters, profiles,
+                    () -> new SettingsMenu(viewer, adapters, profiles, hub)).open());
+            return;
+        }
+        if (click.slot() == SettingsMenuLayout.TOGGLE_SETTING_SLOT) {
+            setStar(!starEnabled());
+        }
+        // Filler is inert and deliberately has no branch of its own.
+    }
 
-        OptionalInt chosen = SettingsMenuLayout.chooserFor(click.slot());
-        if (chosen.isEmpty()) return;   // filler; inert, and deliberately without a branch of its own
-        choose(chosen.getAsInt());
+    /** Is the star on? An unavailable profile reads as ON, which is the shipped default. */
+    private boolean starEnabled() {
+        return profiles.profile(viewer.getUniqueId())
+                .map(PlayerProfile::starEnabled)
+                .orElse(true);
     }
 
     /**
-     * Write the new slot, move the star to it, and repaint.
+     * Switch the star on or off.
      *
-     * <p><b>ORDER MATTERS AND IT IS WRITE-THEN-PLACE.</b> {@code setNexusSlot} replaces the cached
-     * profile, so the {@code converge} below -- and the lock, on the player's very next click --
-     * read the new value rather than the old. Placing first would move the star to a slot the lock
-     * is not yet protecting, which is slice 4a's defect re-created by hand.
+     * <h2>*** OFF IS TWO WRITES AND ON IS A REFUSAL, AND NEITHER IS SYMMETRIC WITH THE OTHER ***</h2>
+     *
+     * <b>DISABLING removes the star AND clears the lock.</b> Both halves, because
+     * {@code NexusLock} refuses the locked slot <b>whether or not it holds a star</b>: leaving the
+     * slot locked over an empty cell gives the player a cell they can neither fill nor use, with
+     * nothing on screen to explain it. <b>The lock going off is not tidying -- it is the other half
+     * of the same setting.</b>
+     *
+     * <p><b>ENABLING refuses if the target slot is occupied</b>, naming it. That arm is LIVE for
+     * us, unlike the predecessor's "reserved" branch: the slot is a stored preference that may
+     * have been filled by anything since. <b>The alternative is displacing an item the player did
+     * not ask us to move</b>, at a moment they were pressing a button about something else.
+     *
+     * <p>{@code converge} would happily displace the occupant -- that is right on JOIN, where the
+     * player is not watching and the star must exist. It is wrong here.
      */
-    private void choose(int inventorySlot) {
-        if (!profiles.setNexusSlot(viewer.getUniqueId(), inventorySlot)) {
-            // REFUSED, AND THE REASON IS SAID. Not one message for both arms: see the class javadoc.
+    private void setStar(boolean enabled) {
+        int slot = NexusSlots.chosenSlotOf(viewer, profiles);
+        if (slot == io.github.butterflysmp.rpg.paper.nexus.NexusLock.NO_LOCKED_SLOT) {
             viewer.sendMessage(
                     profiles.availability(viewer.getUniqueId()) == ProfileService.Availability.UNREADABLE
                             ? Component.text(ProfileService.UNREADABLE_PROFILE, NamedTextColor.RED)
@@ -131,12 +143,39 @@ public final class SettingsMenu extends Menu {
             return;
         }
 
-        // The star follows immediately rather than on next join. converge is the same call the join
-        // and respawn paths make, so there is one placement rule and not a second one here.
-        NexusSlots.converge(viewer, adapters.keys(), inventorySlot);
+        if (enabled) {
+            // READ THE OCCUPANT BEFORE WRITING ANYTHING. While the star is off the lock is off too,
+            // so this cell is an ordinary one and may hold anything.
+            ItemStack occupant = viewer.getInventory().getItem(slot);
+            if (!MenuSafety.isEmpty(occupant)) {
+                viewer.sendMessage(Component.text(
+                        NexusSlotPickerLayout.slotName(slot)
+                                + " is occupied. Clear it or use the slot picker first.",
+                        NamedTextColor.RED));
+                return;
+            }
+        }
+
+        if (!profiles.setStarEnabled(viewer.getUniqueId(), enabled)) {
+            viewer.sendMessage(Component.text(ProfileService.STILL_LOADING, NamedTextColor.GRAY));
+            return;
+        }
+
+        if (enabled) {
+            // The profile is written first, so converge and the lock read the new value -- the same
+            // write-then-place ordering the picker uses.
+            NexusSlots.converge(viewer, adapters.keys(), slot);
+            viewer.sendMessage(Component.text(
+                    "The Nexus is back, in " + NexusSlotPickerLayout.slotName(slot) + ".",
+                    NamedTextColor.AQUA));
+        } else {
+            NexusSlots.removeStars(viewer, adapters.keys());
+            viewer.sendMessage(Component.text(
+                    "The Nexus is off. " + NexusSlotPickerLayout.slotName(slot)
+                            + " is yours to use; open this menu again with /menu.",
+                    NamedTextColor.AQUA));
+        }
         render();
-        viewer.sendMessage(Component.text("The Nexus now sits in " + slotName(inventorySlot) + ".",
-                NamedTextColor.AQUA));
     }
 
     @Override
@@ -148,49 +187,37 @@ public final class SettingsMenu extends Menu {
         for (int slot : SettingsMenuLayout.FILLER_SLOTS) {
             getInventory().setItem(slot, MenuIcons.filler());
         }
-
         getInventory().setItem(SettingsMenuLayout.CLOSE_SLOT, MenuIcons.close());
         getInventory().setItem(SettingsMenuLayout.BACK_SLOT,
                 MenuIcons.back(Material.ARROW, "the Nexus"));
 
-        // THE CURRENT CHOICE IS READ, NEVER REMEMBERED. lockedSlotOf answers NO_LOCKED_SLOT while
-        // the profile is unreadable or still loading, and then nothing is highlighted -- which is
-        // the honest picture: we do not know which slot is theirs, so we do not claim one.
-        int current = NexusSlots.lockedSlotOf(viewer, profiles);
+        int current = NexusSlots.chosenSlotOf(viewer, profiles);
+        String where = current == io.github.butterflysmp.rpg.paper.nexus.NexusLock.NO_LOCKED_SLOT
+                ? "not known yet"
+                : NexusSlotPickerLayout.slotName(current);
 
-        // THREE GREYS ARE ALREADY SPOKEN FOR AND NONE OF THEM MEANS THIS. MenuIcons.FILLER is
-        // BLACK, MenuIcons.EMPTY_SUGGESTION is LIGHT_GRAY, and plain GRAY is CraftStatus.EMPTY --
-        // whose javadoc says collapsing it with the others is "a REGRESSION, not a simplification".
-        // WHITE is unspoken, so an unchosen slot cannot be read as any of them.
-        // ITERATE THE MENU SLOTS AND CONVERT, RATHER THAN INDEXING BY INVENTORY SLOT. This loop used
-        // to read SLOT_CHOOSERS.get(i) with i as the hotbar slot, which was correct only while the
-        // mapping was the identity over nine cells. It is now a MIRROR over thirty-six, and the list
-        // index is not the inventory slot -- chooserFor is the one place that knows.
-        for (int menuSlot : SettingsMenuLayout.SLOT_CHOOSERS) {
-            int inventorySlot = SettingsMenuLayout.chooserFor(menuSlot).orElseThrow();
-            boolean selected = inventorySlot == current;
-            getInventory().setItem(menuSlot, MenuIcons.icon(
-                    selected ? Material.LIME_STAINED_GLASS_PANE : Material.WHITE_STAINED_GLASS_PANE,
-                    MenuIcons.line(slotName(inventorySlot),
-                            selected ? NamedTextColor.GREEN : NamedTextColor.GRAY),
-                    selected
-                            ? List.of(MenuIcons.line("The Nexus sits here.", NamedTextColor.DARK_GRAY))
-                            : List.of()));
-        }
-    }
+        getInventory().setItem(SettingsMenuLayout.SLOT_SETTING_SLOT, MenuIcons.icon(
+                Material.ITEM_FRAME,
+                MenuIcons.line("Nexus Slot", NamedTextColor.GRAY),
+                List.of(MenuIcons.line("Currently: " + where, NamedTextColor.DARK_GRAY),
+                        MenuIcons.line("Click to choose a different cell.",
+                                NamedTextColor.DARK_GRAY))));
 
-    /**
-     * What to call an inventory slot on screen.
-     *
-     * <p><b>The hotbar is numbered the way the player's keyboard numbers it</b> -- 1 to 9 -- and
-     * storage is numbered separately rather than continuing to 36, because <i>"slot 28"</i> means
-     * nothing to anyone. A player looking for their star reads a row and a position, not an index.
-     */
-    private static String slotName(int inventorySlot) {
-        if (inventorySlot < SettingsMenuLayout.HOTBAR_SIZE) {
-            return "Hotbar " + (inventorySlot + 1);
-        }
-        int storageIndex = inventorySlot - SettingsMenuLayout.HOTBAR_SIZE;
-        return "Row " + (storageIndex / 9 + 1) + ", slot " + (storageIndex % 9 + 1);
+        boolean enabled = starEnabled();
+        // LIME for on, GRAY for off -- the grindstone's palette rule: GRAY is a state that resolves
+        // only if you ACT, which is exactly what a switched-off star is. Not RED: nothing is wrong.
+        getInventory().setItem(SettingsMenuLayout.TOGGLE_SETTING_SLOT, MenuIcons.icon(
+                enabled ? Material.LIME_DYE : Material.GRAY_DYE,
+                MenuIcons.line(enabled ? "Nexus Star: ON" : "Nexus Star: OFF",
+                        enabled ? NamedTextColor.GREEN : NamedTextColor.GRAY),
+                enabled
+                        ? List.of(MenuIcons.line("Click to remove it and free the slot.",
+                                NamedTextColor.DARK_GRAY))
+                        // BOTH FACTS, the same requirement the hub's locked stations carry: what
+                        // clicking does, AND that the menu is still reachable without the item.
+                        : List.of(MenuIcons.line("Click to put it back in " + where + ".",
+                                        NamedTextColor.DARK_GRAY),
+                                MenuIcons.line("/menu opens this hub either way.",
+                                        NamedTextColor.DARK_GRAY))));
     }
 }
