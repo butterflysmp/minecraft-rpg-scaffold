@@ -74,7 +74,7 @@ class ProfileServiceTest {
     @Test
     void joinLoadsAnExistingProfile() {
         repo.saved.put(player,
-                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of("x"), 1L, 3, 4_200L));
+                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of("x"), 1L, 3, 4_200L, null));
 
         service.onJoin(player);
 
@@ -115,7 +115,7 @@ class ProfileServiceTest {
 
         // The read finally lands.
         repo.pendingLoad.complete(Optional.of(
-                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of(), 1L, 3, 4_200L)));
+                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of(), 1L, 3, 4_200L, null)));
 
         assertEquals(1, repo.saveCount.get());
         assertEquals(9, repo.saved.get(player).level());
@@ -164,7 +164,7 @@ class ProfileServiceTest {
     @Test
     void whenSettledDoesNotRunUntilTheLoadCompletes_andThenSeesTheRealProfile() {
         repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
-                "hunter", "fire", 9, 500, List.of(), 1L, 3, 4_200L));
+                "hunter", "fire", 9, 500, List.of(), 1L, 3, 4_200L, null));
         repo.pendingLoad = new CompletableFuture<>();
         service.onJoin(player);
 
@@ -305,7 +305,7 @@ class ProfileServiceTest {
     @Test
     void setNexusSlotCARRIESEverythingElseOnTheProfile() {
         repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
-                "ranger", "fire", 9, 500, List.of("arc_surge"), 1L, 8, 4_200L));
+                "ranger", "fire", 9, 500, List.of("arc_surge"), 1L, 8, 4_200L, null));
         service.onJoin(player);
 
         assertTrue(service.setNexusSlot(player, 0));
@@ -515,7 +515,7 @@ class ProfileServiceTest {
         // start from zero -- which is the failure that would look correct for a fresh player and
         // wipe every returning one.
         repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
-                "ranger", "fire", 9, 500, List.of(), 1L, 8, 4_200L));
+                "ranger", "fire", 9, 500, List.of(), 1L, 8, 4_200L, null));
         service.onJoin(player);
 
         assertEquals(4_700L, service.addLifetimeXp(player, 500L).orElseThrow(),
@@ -528,10 +528,105 @@ class ProfileServiceTest {
         // reaches this method, and a wrap would read back as level 1, which is the worst possible
         // failure for a progression number: total loss that looks like a new player.
         repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
-                "ranger", "fire", 9, 500, List.of(), 1L, 8, Long.MAX_VALUE - 5L));
+                "ranger", "fire", 9, 500, List.of(), 1L, 8, Long.MAX_VALUE - 5L, null));
         service.onJoin(player);
 
         assertEquals(Long.MAX_VALUE, service.addLifetimeXp(player, 1_000L).orElseThrow(),
                 "clamped at the top, never wrapped");
+    }
+
+    // ------------------------------------------------------------ the Nexus star toggle (slice 10)
+
+    @Test
+    void anUNTOUCHEDToggleReadsENABLED_whichEveryExistingProfileIs() {
+        service.onJoin(player);
+
+        assertTrue(service.starEnabled(player), "a fresh profile has the star ON");
+        assertNull(service.profile(player).orElseThrow().starEnabledOrNull(),
+                "and it is NULL rather than TRUE -- the key is absent, which is what keeps a new "
+                        + "file the same shape as every existing one");
+        // Mutation MUTSTAR-DEFAULTFALSE: accessor returns `starEnabledOrNull != null &&
+        // starEnabledOrNull` -> kill set RECORDED in the PR body.
+    }
+
+    @Test
+    void theToggleWritesTHROUGHOnEveryCall_unlikeXp() {
+        // A SETTING IS RARE AND DELIBERATE -- setNexusSlot's argument. The value must be on disk
+        // before the player quits, or the star comes back on their next join and the toggle reads
+        // as not sticking. Contrast onlyALEVELCHANGEWritesToDisk above, which is the other policy
+        // and is right for its own reason.
+        service.onJoin(player);
+        int afterJoin = repo.saveCount.get();
+
+        assertTrue(service.setStarEnabled(player, false));
+        assertEquals(afterJoin + 1, repo.saveCount.get(), "off is persisted immediately");
+        assertFalse(repo.saved.get(player).starEnabled(), "and it is the OFF value that landed");
+
+        assertTrue(service.setStarEnabled(player, true));
+        assertEquals(afterJoin + 2, repo.saveCount.get(), "and so is on");
+        assertTrue(repo.saved.get(player).starEnabled());
+        // Mutation MUTSTAR-NOSAVE: drop the repository.save call -> kill set RECORDED in the PR body.
+    }
+
+    @Test
+    void theToggleSurvivesAReloadInBOTHDirections() {
+        // BOTH DIRECTIONS, because `false` and "absent" are different values that an accessor bug
+        // would collapse into one. Asserting only the OFF case passes on a build where everything
+        // reads false; asserting only ON passes on a build where everything reads true.
+        service.onJoin(player);
+        service.setStarEnabled(player, false);
+        service.onQuit(player);
+        service.onJoin(player);
+        assertFalse(service.starEnabled(player), "a deliberate OFF survives a rejoin");
+
+        service.setStarEnabled(player, true);
+        service.onQuit(player);
+        service.onJoin(player);
+        assertTrue(service.starEnabled(player), "and so does switching it back ON");
+    }
+
+    @Test
+    void anUNAVAILABLEProfileReadsENABLED_theDirectionThatCannotSTRIPAStar() {
+        // *** THE DEFAULT LEANS ON PURPOSE AND THE TWO ERRORS ARE NOT SYMMETRIC. ***
+        // Reading unknown as OFF would strip the star from every player whose profile failed to
+        // load -- silently, on the join path, where nobody is watching, and indistinguishable from
+        // the feature being broken. The mirror risk is self-correcting: someone who HAS turned it
+        // off sees it briefly return and it goes again on the next good read.
+        repo.pendingLoad = new CompletableFuture<>();
+        service.onJoin(player);
+        assertTrue(service.starEnabled(player), "still loading reads ENABLED");
+
+        assertTrue(service.starEnabled(UUID.randomUUID()), "and so does never tracked");
+        // Mutation MUTSTAR-UNKNOWNOFF: orElse(false) -> kill set RECORDED in the PR body.
+    }
+
+    @Test
+    void theToggleIsRefusedWhileLoadingAndForSomeoneWhoNeverJoined() {
+        repo.pendingLoad = new CompletableFuture<>();
+        service.onJoin(player);
+        assertFalse(service.setStarEnabled(player, false),
+                "must not invent a profile out of an in-flight load");
+        assertEquals(0, repo.saveCount.get());
+
+        assertFalse(service.setStarEnabled(UUID.randomUUID(), false));
+    }
+
+    @Test
+    void theToggleLeavesTheCHOSENSlotAlone_soTurningItBackOnRestoresTheSamePlace() {
+        // The two settings are independent and the picker's javadoc says so: a player switching the
+        // star off has said nothing about WHERE. If the toggle cleared the slot, re-enabling would
+        // silently relocate their star to the default.
+        repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
+                "ranger", "fire", 9, 500, List.of(), 1L, 17, 4_200L, null));
+        service.onJoin(player);
+
+        service.setStarEnabled(player, false);
+        assertEquals(17, service.profile(player).orElseThrow().nexusSlot(),
+                "the chosen slot survives being switched off");
+        service.setStarEnabled(player, true);
+        assertEquals(17, service.profile(player).orElseThrow().nexusSlot(),
+                "and survives being switched back on");
+        assertEquals(4_200L, service.profile(player).orElseThrow().lifetimeXp(),
+                "and the toggle touches no other field either");
     }
 }

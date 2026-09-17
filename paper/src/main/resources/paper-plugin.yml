@@ -39,3 +39,7 @@ permissions:
   rpg.command.dev:
     description: Apply any status to a mob for testing.
     default: op
+  rpg.command.menu:
+    description: Open the Nexus hub with /menu. Everyone -- it is the door to the game,
+      and it is the ONLY route once a player turns the Nexus star off.
+    default: true

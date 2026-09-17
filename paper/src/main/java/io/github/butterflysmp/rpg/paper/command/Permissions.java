@@ -26,4 +26,15 @@ public final class Permissions {
     /** Apply any status to a mob for testing. Operators only; it mutates the world, bypassing
         the class/element/kit gate -- a dev instrument, not a game feature. */
     public static final String DEV = "rpg.command.dev";
+
+    /**
+     * Open the Nexus hub with {@code /menu}. <b>Granted to everyone by default -- it is the door to
+     * the game.</b>
+     *
+     * <p><b>DECLARED RATHER THAN OMITTED, AND THAT IS THE POINT OF HAVING A NODE AT ALL.</b> The
+     * command is not op-gated, so {@code requires()} could simply have been left off. A declared
+     * {@code default: true} node behaves identically for every player <b>and can be revoked</b>; an
+     * absent one cannot be taken away, only worked around.
+     */
+    public static final String MENU = "rpg.command.menu";
 }

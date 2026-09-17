@@ -34,7 +34,7 @@ class FilePlayerRepositoryTest {
     void saveThenLoadRoundTrips() {
         var id = UUID.randomUUID();
         var profile = new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, id, "hunter", "fire",
-                7, 1234, List.of("solar_grenade"), 99L, 3, 56_780L);
+                7, 1234, List.of("solar_grenade"), 99L, 3, 56_780L, null);
         var repo = repo();
 
         repo.save(profile).join();
@@ -191,6 +191,80 @@ class FilePlayerRepositoryTest {
         assertEquals(1234L, loaded.experience(), "the dead field keeps its own value");
         assertNotEquals(loaded.experience(), loaded.lifetimeXp(),
                 "if these two ever read the same, the row can no longer see a swap");
+    }
+
+    /**
+     * *** THE TOGGLE'S ABSENT KEY MEANS ENABLED, CAUSED AGAINST A REAL FILE. ***
+     *
+     * <p><b>This is the row that says the deploy is safe.</b> Every profile on disk today lacks
+     * {@code starEnabled}, so this fixture is not a hypothetical -- it is what the server reads on
+     * the first join after the merge, for every player.
+     *
+     * <p><b>A primitive {@code boolean} would have read FALSE here and switched off the star of
+     * every player who has one.</b> The boxed type is what makes absence representable, and this
+     * row is where that claim is executed rather than argued.
+     */
+    @Test
+    void aProfileWithNoStarEnabledKeyIsENABLED_whichEveryExistingFileIs() throws Exception {
+        var id = UUID.randomUUID();
+        Files.writeString(dir.resolve(id + ".json"), """
+                {
+                  "schemaVersion": 3,
+                  "playerId": "%s",
+                  "archetypeId": "ranger",
+                  "elementId": "fire",
+                  "level": 7,
+                  "experience": 1234,
+                  "unlockedAbilities": ["solar_grenade"],
+                  "lastSeenEpochMillis": 99,
+                  "nexusSlot": 17,
+                  "lifetimeXp": 56780
+                }
+                """.formatted(id), StandardCharsets.UTF_8);
+
+        PlayerProfile loaded = repo().load(id).join().orElseThrow();
+
+        assertTrue(loaded.starEnabled(), "an absent starEnabled key means ENABLED");
+        assertNull(loaded.starEnabledOrNull(),
+                "and it arrives as NULL rather than false -- which is the whole reason the "
+                        + "component is boxed. A primitive would read false and disable everyone");
+        assertEquals(3, loaded.schemaVersion(), "no stamp bump: absence needs no migration");
+
+        // THE FIXTURE IS A POPULATED v3 FILE, not a parse failure yielding a blank profile --
+        // which would satisfy the assertions above for free.
+        assertEquals(17, loaded.nexusSlot());
+        assertEquals(56_780L, loaded.lifetimeXp());
+    }
+
+    /**
+     * An EXPLICIT {@code false} survives, and a {@code true} written back leaves NO KEY.
+     *
+     * <p>The second half is the {@code serializeNulls} property, executed: a player who has never
+     * touched the toggle never gains the key on any number of saves, so <b>absence here is the
+     * steady state rather than a window the deploy passes through.</b>
+     */
+    @Test
+    void anEXPLICITFalseSurvives_andTheDefaultWritesNOKEYAtAll() throws Exception {
+        var id = UUID.randomUUID();
+        var repo = repo();
+
+        repo.save(PlayerProfile.fresh(id).withStarEnabled(false)).join();
+        assertFalse(repo.load(id).join().orElseThrow().starEnabled(),
+                "a deliberate disable is not absence and must survive a reload");
+        assertTrue(Files.readString(dir.resolve(id + ".json"), StandardCharsets.UTF_8)
+                        .contains("\"starEnabled\": false"),
+                "and it is written under the key `starEnabled`, not the component's own name");
+
+        // AND A PROFILE NOBODY HAS TOGGLED WRITES NOTHING. `fresh` carries null, serializeNulls is
+        // off, so the key is absent on disk -- which keeps the absent-means-enabled path the ONE
+        // path forever rather than a transitional fallback.
+        var untouched = UUID.randomUUID();
+        repo.save(PlayerProfile.fresh(untouched)).join();
+        String json = Files.readString(dir.resolve(untouched + ".json"), StandardCharsets.UTF_8);
+        assertFalse(json.contains("starEnabled"),
+                "an untouched toggle stores NO KEY: " + json);
+        assertTrue(repo.load(untouched).join().orElseThrow().starEnabled(),
+                "and reads back enabled");
     }
 
     /** And a written lifetimeXp round-trips -- the absent case above is not the only one. */
