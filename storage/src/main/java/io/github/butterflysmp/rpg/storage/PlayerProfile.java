@@ -23,7 +23,24 @@ public record PlayerProfile(
         List<String> unlockedAbilities,
         long lastSeenEpochMillis,
         int nexusSlot,
-        long lifetimeXp
+        long lifetimeXp,
+        /**
+         * <b>NAMED {@code ...OrNull} AND KEYED {@code starEnabled}, AND BOTH HALVES ARE DELIBERATE.</b>
+         *
+         * <p>A record's generated accessor must return the COMPONENT'S type, so a component called
+         * {@code starEnabled} would force {@code starEnabled()} to return a nullable
+         * {@code Boolean} -- <b>handing every caller the null this design exists to absorb</b>, and
+         * an unboxing NPE on the first one who forgets. The component therefore carries a name that
+         * <i>reads as a warning</i>, and {@link #starEnabled()} is an ordinary method returning a
+         * plain {@code boolean}.
+         *
+         * <p>{@code @SerializedName} keeps the ON-DISK key {@code starEnabled} regardless.
+         * <b>MEASURED against this project's own Gson instance on {@code gson-2.11.0}</b>, with the
+         * control that matters: a JSON key of {@code starEnabledOrNull} is <b>IGNORED</b>, so the
+         * component name is not a second accepted spelling.
+         */
+        @com.google.gson.annotations.SerializedName("starEnabled")
+        Boolean starEnabledOrNull
 ) {
     /** Bump when the on-disk shape changes, and add a ProfileMigrations step. */
     public static final int CURRENT_SCHEMA_VERSION = 3;
@@ -57,16 +74,22 @@ public record PlayerProfile(
         elementId = elementId == null ? NONE : elementId;
         unlockedAbilities = unlockedAbilities == null ? List.of() : List.copyOf(unlockedAbilities);
 
-        // NEITHER PRIMITIVE IS DEFAULTED HERE, AND THE TWO HAVE OPPOSITE REASONS. Read both
-        // accessors' javadocs before adding a third; the answers do not generalise from each other.
+        // NONE OF THE THREE NON-STRING FIELDS IS DEFAULTED HERE, AND ALL THREE HAVE DIFFERENT
+        // REASONS. Read each accessor's javadoc before adding a fourth; the answers do NOT
+        // generalise from one another, and the thing that differs is the VALUE SPACE, never the
+        // type.
         //
-        //   nexusSlot   CANNOT be defaulted here -- zero is a legal slot, so absence is
-        //               indistinguishable from choice, and only the v2 -> v3 migration can tell
-        //               them apart.
-        //   lifetimeXp  NEED NOT be defaulted here -- Gson's absent-long zero is already the
-        //               correct value, so there is nothing for a default to do.
+        //   nexusSlot    IMPOSSIBLE here -- 0 is a legal slot, so absence is indistinguishable
+        //                from choice, and only the v2 -> v3 migration can tell them apart.
+        //   lifetimeXp   UNNECESSARY here -- Gson's absent-long 0 is already the correct value,
+        //                so there is nothing for a default to do.
+        //   starEnabled  DELIBERATELY NOT DONE here -- it is boxed, so null survives to the
+        //                ACCESSOR, which is the one place absence is interpreted. Defaulting it
+        //                here would write `true` into the record and thereby into the FILE,
+        //                destroying the property that an untouched setting stores no key at all.
         //
-        // One is impossible and one is unnecessary. Both look like the same blank line.
+        // Impossible, unnecessary, and deliberately deferred. All three look like the same blank
+        // line, which is why they are named rather than left to be inferred.
     }
 
     /**
@@ -133,19 +156,83 @@ public record PlayerProfile(
         return lifetimeXp;
     }
 
+    /**
+     * Is this player's Nexus star switched on? <b>Absent means YES.</b>
+     *
+     * <h2>*** A BOXED {@code Boolean}, AND THE BOX IS THE WHOLE DESIGN ***</h2>
+     *
+     * The three primitives in this record differ in their VALUE SPACE, not their type, and that is
+     * what decides how each handles absence:
+     *
+     * <pre>
+     *   nexusSlot    int      0 is a LEGAL VALUE        -> absent and chosen are the same bytes
+     *   lifetimeXp   long     0 is the CORRECT answer   -> nothing to distinguish
+     *   starEnabled  boolean  false is a legal value AND THE WRONG ANSWER for absent
+     * </pre>
+     *
+     * <b>A primitive {@code boolean} has NO ROOM for "absent"</b>, and its Java default is
+     * {@code false} -- so an absent key would read as DISABLED and <b>switch off the star of every
+     * player who has one</b>. So it is given room: a boxed {@code Boolean} deserialises to
+     * {@code null}, and the accessor below is the single place that null is interpreted.
+     *
+     * <p><b>NO STAMP, and not because a stamp would not work.</b> A stamp is a second field that
+     * must stay consistent with the first; {@code nexusSlot} needed one only because an {@code int}
+     * has no spare value. A boxed type has one. <b>And {@code starDisabled} was refused too</b>: it
+     * is correct and costs a negation at every read forever -- a name you must invert to understand
+     * is a tax on every future line, paid to save one accessor now.
+     *
+     * <h2>*** ABSENCE IS PERMANENT HERE, NOT A TRANSITION STATE. MEASURED. ***</h2>
+     *
+     * {@code FilePlayerRepository}'s Gson is {@code new GsonBuilder().setPrettyPrinting().create()}
+     * -- <b>{@code serializeNulls} is OFF</b>, so a null field <b>writes no key at all</b>.
+     * Measured 2026-09-17 against that exact instance on {@code gson-2.11.0}:
+     *
+     * <pre>
+     *   absent key      -> boxed = null    accessor -> true     (primitive control: false)
+     *   explicit false  -> boxed = false   accessor -> false
+     *   write null      -> {"id":"p"}      the key is OMITTED
+     * </pre>
+     *
+     * <b>So a player who never touches the toggle NEVER GAINS THE KEY, on any number of saves.</b>
+     * "Every existing profile is missing this" is not a state the deploy passes through -- it is
+     * the steady state for everyone who leaves the setting alone.
+     *
+     * <p><b>Two consequences worth having: the accessor is LOAD-BEARING FOREVER</b>, not just
+     * across one migration window -- and <b>a stamp would have had to fire on a file that never
+     * changes</b>, which is the sharpest argument against it.
+     */
+    public boolean starEnabled() {
+        return starEnabledOrNull == null || starEnabledOrNull;
+    }
+
     public static PlayerProfile fresh(UUID id) {
+        // null, NOT Boolean.TRUE. A fresh profile is written with serializeNulls off, so it gains
+        // no key either -- which keeps a brand-new file byte-identical in shape to every existing
+        // one, and keeps the absent-means-enabled path the ONE path rather than a fallback.
         return new PlayerProfile(CURRENT_SCHEMA_VERSION, id, NONE, NONE, 1, 0, List.of(),
-                System.currentTimeMillis(), DEFAULT_NEXUS_SLOT, 0L);
+                System.currentTimeMillis(), DEFAULT_NEXUS_SLOT, 0L, null);
+    }
+
+    /**
+     * Switch the Nexus star on or off.
+     *
+     * <p>Takes a primitive: <b>a caller always knows which it means.</b> The {@code null} is a
+     * fact about the FILE, not a state anyone sets, and letting a caller write one back would
+     * reintroduce the ambiguity the box exists to resolve.
+     */
+    public PlayerProfile withStarEnabled(boolean enabled) {
+        return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, enabled);
     }
 
     public PlayerProfile withSchemaVersion(int version) {
         return new PlayerProfile(version, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull);
     }
 
     public PlayerProfile withLastSeen(long epochMillis) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, epochMillis, nexusSlot, lifetimeXp);
+                unlockedAbilities, epochMillis, nexusSlot, lifetimeXp, starEnabledOrNull);
     }
 
     /**
@@ -159,7 +246,7 @@ public record PlayerProfile(
      */
     public PlayerProfile withNexusSlot(int slot) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, slot, lifetimeXp);
+                unlockedAbilities, lastSeenEpochMillis, slot, lifetimeXp, starEnabledOrNull);
     }
 
     /**
@@ -175,7 +262,7 @@ public record PlayerProfile(
      */
     public PlayerProfile withLifetimeXp(long xp) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot, xp);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, xp, starEnabledOrNull);
     }
 
     /**
@@ -187,6 +274,6 @@ public record PlayerProfile(
      */
     public PlayerProfile withKit(String classId, String elementId, List<String> unlockedAbilities) {
         return new PlayerProfile(schemaVersion, playerId, classId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull);
     }
 }

@@ -106,6 +106,20 @@ public final class ProfileMigrations {
         // at the top of this method exists to stop exactly that and CANNOT FIRE HERE. Ben ruled no
         // stamp; this is what no stamp costs, and it costs it only on a rollback.
 
+        // *** starEnabled ALSO NEEDS NO STEP, AND FOR A DIFFERENT REASON AGAIN. ***
+        //
+        // lifetimeXp needs none because absent and 0 mean the same thing. starEnabled needs none
+        // because IT IS BOXED: an absent key deserialises to null, which is a value the primitive
+        // did not have, and PlayerProfile.starEnabled() turns null into ENABLED. The distinction
+        // absence carries is preserved in the TYPE rather than reconstructed from a stamp.
+        //
+        // AND A STAMP WOULD HAVE HAD TO FIRE ON A FILE THAT NEVER CHANGES. serializeNulls is off,
+        // so a player who never touches the toggle never gains the key on any number of saves --
+        // absence here is the STEADY STATE, not a window the deploy passes through.
+        //
+        // So the three primitives now answer absence three different ways, and the chain has ONE
+        // step. Adding a fourth field: ask what the absent value MEANS, not what type it is.
+
         // v3 -> v4: add the next step here.
 
         return profile;

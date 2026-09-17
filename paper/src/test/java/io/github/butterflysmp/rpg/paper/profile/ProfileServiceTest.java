@@ -74,7 +74,7 @@ class ProfileServiceTest {
     @Test
     void joinLoadsAnExistingProfile() {
         repo.saved.put(player,
-                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of("x"), 1L, 3, 4_200L));
+                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of("x"), 1L, 3, 4_200L, null));
 
         service.onJoin(player);
 
@@ -115,7 +115,7 @@ class ProfileServiceTest {
 
         // The read finally lands.
         repo.pendingLoad.complete(Optional.of(
-                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of(), 1L, 3, 4_200L)));
+                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of(), 1L, 3, 4_200L, null)));
 
         assertEquals(1, repo.saveCount.get());
         assertEquals(9, repo.saved.get(player).level());
@@ -164,7 +164,7 @@ class ProfileServiceTest {
     @Test
     void whenSettledDoesNotRunUntilTheLoadCompletes_andThenSeesTheRealProfile() {
         repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
-                "hunter", "fire", 9, 500, List.of(), 1L, 3, 4_200L));
+                "hunter", "fire", 9, 500, List.of(), 1L, 3, 4_200L, null));
         repo.pendingLoad = new CompletableFuture<>();
         service.onJoin(player);
 
@@ -305,7 +305,7 @@ class ProfileServiceTest {
     @Test
     void setNexusSlotCARRIESEverythingElseOnTheProfile() {
         repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
-                "ranger", "fire", 9, 500, List.of("arc_surge"), 1L, 8, 4_200L));
+                "ranger", "fire", 9, 500, List.of("arc_surge"), 1L, 8, 4_200L, null));
         service.onJoin(player);
 
         assertTrue(service.setNexusSlot(player, 0));
@@ -515,7 +515,7 @@ class ProfileServiceTest {
         // start from zero -- which is the failure that would look correct for a fresh player and
         // wipe every returning one.
         repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
-                "ranger", "fire", 9, 500, List.of(), 1L, 8, 4_200L));
+                "ranger", "fire", 9, 500, List.of(), 1L, 8, 4_200L, null));
         service.onJoin(player);
 
         assertEquals(4_700L, service.addLifetimeXp(player, 500L).orElseThrow(),
@@ -528,7 +528,7 @@ class ProfileServiceTest {
         // reaches this method, and a wrap would read back as level 1, which is the worst possible
         // failure for a progression number: total loss that looks like a new player.
         repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
-                "ranger", "fire", 9, 500, List.of(), 1L, 8, Long.MAX_VALUE - 5L));
+                "ranger", "fire", 9, 500, List.of(), 1L, 8, Long.MAX_VALUE - 5L, null));
         service.onJoin(player);
 
         assertEquals(Long.MAX_VALUE, service.addLifetimeXp(player, 1_000L).orElseThrow(),
