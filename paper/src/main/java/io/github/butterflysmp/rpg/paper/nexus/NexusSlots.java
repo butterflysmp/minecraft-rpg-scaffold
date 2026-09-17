@@ -72,10 +72,11 @@ public final class NexusSlots {
      * <p><b>Out of range is treated as NOT CHOSEN, not as an error.</b> The alternative -- passing
      * it through -- puts an arbitrary integer into {@code inventory.setItem} inside a join handler,
      * where the throw takes out every listener after it. Falling back is also the honest reading:
-     * a slot that is not a hotbar cell is not a slot this feature can mean.
+     * a slot that is not a main inventory cell is not a slot this feature can mean.
      *
-     * <p>The bound is the HOTBAR, {@code 0..8}, not the whole inventory. The star is a held item;
-     * putting it in the backpack or on the player's head would be a different feature.
+     * <p>The bound is the 36 MAIN SLOTS, {@code 0..35} -- hotbar and storage. It was the hotbar
+     * alone until the star was allowed anywhere in the inventory; see {@link #MAX_SLOT}. The armour
+     * slots and the offhand are still out.
      */
     public static int lockedSlotOf(Player player, ProfileService profiles) {
         return profiles.profile(player.getUniqueId())
@@ -85,7 +86,7 @@ public final class NexusSlots {
     }
 
     /**
-     * A stored slot if it is a hotbar cell, otherwise the caller's fallback.
+     * A stored slot if it is a main inventory cell, otherwise the caller's fallback.
      *
      * <h2>ONE HOME FOR THE BOUND, AND IT WAS WRITTEN TWICE BEFORE THIS EXISTED</h2>
      *
@@ -101,12 +102,38 @@ public final class NexusSlots {
      * needs a live {@code Player}. Extracting it was not tidying: a mutation removing the range
      * check killed NOTHING while it was inline, measured, because no test could get at it.
      *
-     * <p>The bound is the HOTBAR, {@code 0..8}. The star is a held item; the backpack, the armour
-     * slots and the offhand are not places this feature can mean.
+     * <p>The bound is the 36 MAIN SLOTS, {@code 0..35}, and it lives in {@link #MAX_SLOT} -- ONE
+     * constant, which is what let "the star goes anywhere in the inventory" be a one-line change.
+     * The armour slots and the offhand are not places this feature can mean.
      */
     static int validSlotOr(int slot, int fallback) {
-        return slot >= 0 && slot <= 8 ? slot : fallback;
+        return slot >= 0 && slot <= MAX_SLOT ? slot : fallback;
     }
+
+    /**
+     * The highest inventory index the star may live in: <b>35, the last storage cell.</b>
+     *
+     * <h2>THIS ONE CONSTANT IS THE WHOLE OF "THE NEXUS GOES ANYWHERE"</h2>
+     *
+     * It was {@code 8} -- the hotbar only -- and widening it to 35 is the entire coordinate change.
+     * <b>Nothing else had to move</b>, because slice 4a already put {@link NexusLock} in
+     * {@code PlayerInventory} index space, where <b>0-8 is the hotbar and 9-35 is storage</b>. The
+     * lock, the convergence and the raw-slot conversion were all written against that space and
+     * never against the hotbar.
+     *
+     * <p><b>36 MAIN SLOTS ONLY -- no armour (36-39), no offhand (40).</b> The star has no business
+     * in an armour slot, and the predecessor's picker drew the same line.
+     *
+     * <h2>NO MIGRATION, AND THAT IS A PROPERTY OF THE WIDENING RATHER THAN A DECISION</h2>
+     *
+     * <b>Every stored value today is 0-8, and every one of them is still legal in 0-35.</b> A widened
+     * bound cannot invalidate anything it previously accepted. <b>Do not write a migration for
+     * this</b> -- there is no value that needs rewriting and no version that needs stamping.
+     *
+     * <p>The reverse would not be true: narrowing this back would strand every player who had chosen
+     * a storage slot, and {@link #validSlotOr} would hand them the fallback without saying so.
+     */
+    static final int MAX_SLOT = 35;
 
     /** Would this click move the Nexus star? Pure translation; it changes nothing. */
     public static boolean refuses(InventoryClickEvent event, Keys keys, ProfileService profiles) {

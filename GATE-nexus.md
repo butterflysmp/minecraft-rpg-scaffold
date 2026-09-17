@@ -2,14 +2,15 @@
 
 ## STATUS — WHICH ROWS HAVE BEEN READ, NAMED RATHER THAN COUNTED
 
-**AT THIS FILE'S OWN GRANULARITY, NO ROW IS FULLY BOOTED.** Four have partial
-readings and every other row has none:
+**NINE ROWS ARE FULLY BOOTED — ALL OF SLICE 7, AND IT IS THE FIRST BLOCK IN THIS FILE TO BE.**
+Four other rows have partial readings and every remaining row has none:
 
 | row | readings | state |
 |---|---|---|
 | **ROW 6** | 6.1, 6.2, 6.3, 6.4, 6.4′, 6.5 — **six** | **4 PASS, 2 VOID.** Booted 2026-09-15 in CREATIVE against a row that named no mode; 6.4 and 6.5 are VOID rather than failed |
 | **ROW 8** | 8a, 8b, 8c, 8d, 8e, 8f, 8g — **seven** | **3 GREEN (8e, 8f, 8g), 4 NOT RUN.** Booted 2026-09-16; the ship condition, not the whole row |
 | **ROW 46** | 46a, 46b — **two** | **46a PASS; 46b NOT RUN.** Booted 2026-09-17. Superseded by a ruling the same day and UN-superseded when that ruling was reverted -- the restaging was withdrawn unread, and 46a's reading is about the shipped colour again |
+| **ROWS 49–57** | ten readings over nine rows | **ALL PASS.** Run 2026-09-17, 03:58–04:00. **The first fully-booted BLOCK in this file**, and 56b turned Row 6.1's continued truth from an argument into an observation |
 | **ROW 47** | one, then restaged | **PASS then SUPERSEDED BY RULING**, both 2026-09-17. It surfaced the ruling that superseded 46a while passing itself, and was then superseded by a second ruling about its own cell. **No row in this file is fully booted again** |
 
 **Every other row in this file has no reading at all.**
@@ -26,12 +27,12 @@ readings and every other row has none:
 git grep -c '^## ROW' <ref> -- GATE-nexus.md
 ```
 
-**48 on `origin/master` and 57 in this working tree** — fifty-six integer-numbered rows plus **ROW
+**57 on `origin/master` and 65 in this working tree** — sixty-four integer-numbered rows plus **ROW
 12b**, whose ID is not an integer and which therefore **belongs to no range.**
 
-**Both sides RECOUNTED with the command above, not adjusted.** `origin/master` is 48 because slice 6
-has merged; the working tree gained slice 7's nine rows (49–57). **If you are reading this after
-that slice merges, re-run the command rather than assuming 57.**
+**Both sides RECOUNTED with the command above, not adjusted.** `origin/master` is 57 because slice 7
+has merged; the working tree gained slice 8's eight rows (58–65). **If you are reading this after
+that slice merges, re-run the command rather than assuming 65.**
 
 > ### THIS FIGURE IS RECOUNTED, NEVER ADJUSTED — AND THAT RULE IS THE POINT OF THIS SECTION
 >
@@ -209,6 +210,7 @@ ships to a survival server; **a creative reading certifies creative**, and nothi
 | **24** | **SURVIVAL** | it is a row about **dying**, and a creative player is hard to kill — Row 1's reason, unchanged |
 | **25, 27, 28, 30** | **SURVIVAL** | slice 4b. A tooltip, two menu transitions, two refusal messages and a control — none reads a game mode |
 | **31–34** | **SURVIVAL** | slice 5. Two stations, a bookshelf count and a Back button -- none reads a game mode, and 32 needs real placed blocks |
+| **58–65** | **SURVIVAL** for all eight | slice 8, the star goes anywhere. **64 is the CONTROL and the reason the slice is safe to ship** -- a star in a storage cell is invisible to a world right-click, so slice 7's inventory click is the only way to open the hub from one |
 | **35–47** | **SURVIVAL**, and **seven of the thirteen are VOID in creative** |
 | **49–57** | **SURVIVAL**, except **56 which stages BOTH** | slice 7, the star click. **56b is the creative half and is the row that keeps 6.1 honest** -- the arm is keyed LEFT/RIGHT and creative clicks arrive as ClickType.CREATIVE, so creative refuses BY CONSTRUCTION. That is true and unobserved until 56b is read | slice 6, the grindstone. **Creative hides the XP bar**, so every row that reads a refund -- 35, 36, 37, 40, 41, 42 and 46 rest on it directly or on the button's figure -- has nothing on screen to read. **That is Row 6's lesson applied BEFORE the boot rather than after it cost two readings** |
 | **26, 29** | **SURVIVAL**, and **26c especially** | 26c reads a **displaced item** surviving, and 29 counts hotbar cells. Creative makes items free, so *"the item is still there"* is satisfied for nothing — the register's own shape: **creative removes a cost, and a row whose reading is "the thing is still there" passes without exercising anything** |
@@ -1993,6 +1995,18 @@ ruling that required it was reverted before anyone reached a keyboard.
 >
 > **46a DOES NOT NEED RE-READING.** The colour it was read against is the colour that ships.
 
+> ### AND A **FAIL** WAS TICKED AGAINST THE RESTAGED 46a ON THE PAGE. IT IS NOT RECORDED AS ONE, AND THE REASON IS THE WHOLE DISTINCTION THIS ROW HAS BEEN TEACHING
+>
+> **The restaged row predicted LIGHT GRAY and the screen showed LIGHT GRAY. The prediction matched.**
+> What was rejected was **the RULING**, not the build.
+>
+> **A FAIL HERE WOULD SAY THE BUILD WAS BROKEN, AND IT WAS NOT.** It did exactly what it had been
+> told to do, and the instruction was withdrawn — which is the difference between
+> `SUPERSEDED BY RULING` and `FAIL`, and the reason this file now distinguishes them.
+>
+> **Recorded rather than dropped**, because a tick on a page is an observation too, and a reader who
+> hears about it later with no entry here would reasonably conclude a failure was buried.
+
 ## ROW 47 — **FROM A BLOCK, SLOT 48 IS PLAIN FILLER.** THE ROW THAT WOULD HAVE CAUGHT THE HOLE
 
 **Staging.** `/gamemode survival`. Open the grindstone **from a world block** — NOT from the hub —
@@ -2089,8 +2103,21 @@ from 45–47.**
 
 # SLICE 7 — THE STAR OPENS THE HUB FROM YOUR INVENTORY. ROWS 49–57
 
-**Status: NOT RUN.** Every row below was written **before any boot**, and before the branch that
-adds them was pushed.
+**Status: RUN 2026-09-17, 03:58–04:00, booted by Ben. ALL TEN READINGS PASS** — 49, 50, 51, 52,
+53, 54, 55, 56a, 56b, 57. **Every row below was written before that boot**, and before the branch
+that adds them was pushed; **no prediction was edited afterwards.**
+
+> **TEN READINGS FROM NINE ROWS** — Row 56 is the creative control and was read on both sides.
+>
+> **56b IS THE ONE THAT MATTERED AND IT PASSED**: in creative, the star's slot refused silently and
+> nothing opened. **That turns Row 6.1's continued truth from an argument about click types into an
+> observation** — the whole reason the row exists. The day someone widens the arm to include
+> `ClickType.CREATIVE`, this is what goes red.
+>
+> **53, 55 and 57 were the other three that could have failed alone**: a build opening on any touch
+> of the star breaks four of Row 6's readings while passing 49 and 50; a build keyed on *"is this
+> slot in the player's half"* opens the hub from inside every chest; and a build refusing or
+> hijacking every inventory click passes the whole block except 57.
 
 **GAME MODE: `/gamemode survival` for all nine unless the row says otherwise.** **Row 56 stages
 BOTH modes and the creative half is the point of it.**
@@ -2151,7 +2178,7 @@ those things.
 > **WATCH THE SLOT AS WELL AS THE SCREEN.** A build that opened the hub by *picking the star up
 > first* would look identical for the first frame and leave the star on the cursor underneath.
 
-**READING:** _(not run)_
+**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 50 — **RIGHT-CLICK DOES THE SAME**
 
@@ -2163,7 +2190,7 @@ those things.
 > `InventoryAction` from left-click's *take all*, and the rule is keyed on `ClickType` rather than
 > action precisely so the two agree. A build keyed on the action passes one of these rows.
 
-**READING:** _(not run)_
+**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 51 — **A LOADED CURSOR DOES NOT OPEN. IT IS AN ATTEMPTED PLACE.**
 
@@ -2180,7 +2207,7 @@ move, the held item stays on the cursor, no chat line.
 >
 > **MINE, NOT BEN'S** — flag it. The narrower rule widens later without a migration.
 
-**READING:** _(not run)_
+**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 52 — **A DRAG ACROSS THE STAR'S CELL DOES NOT OPEN**
 
@@ -2194,7 +2221,7 @@ slots INCLUDING the star's**, and release elsewhere.
 > as well — which a reasonable person might do for symmetry, and which would open the hub every time
 > a player swept a stack across their hotbar.
 
-**READING:** _(not run)_
+**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 53 — **Q, F AND NUMBER-KEY STILL REFUSE SILENTLY. THE FOUR OLD ROWS STILL HOLD.**
 
@@ -2213,7 +2240,7 @@ appears to leave its slot.
 > **Note 6.4 and 6.5 are VOID in creative and this row is SURVIVAL**, so a survival reading here is
 > new information about them either way.
 
-**READING:** _(not run)_
+**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 54 — **A NON-DEFAULT SLOT. THE WHOLE REASON THIS SLICE EXISTS.**
 
@@ -2235,7 +2262,7 @@ an ordinary empty cell — opens NOTHING.**
 > **MINE, NOT BEN'S**: his brief said *"the star's OWN slot"*, and requiring the star to actually be
 > there is the reading that stops an empty cell opening a menu.
 
-**READING:** _(not run)_
+**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 55 — **ANOTHER SCREEN REFUSES. A CHEST IS NOT YOUR INVENTORY.**
 
@@ -2253,7 +2280,7 @@ that view. **Left-click it.**
 > hub must not open, because that is a nested transition out of a menu with `returnEverything`
 > obligations. **MINE, NOT BEN'S** — flag it.
 
-**READING:** _(not run)_
+**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 56 — **THE CREATIVE CONTROL. SURVIVAL OPENS, CREATIVE DOES NOT.**
 
@@ -2282,7 +2309,7 @@ that view. **Left-click it.**
 > **56b is also a direct re-read of Row 6.1 under its own conditions**, so if it fails, 6.1 has been
 > falsified and this block is what says so.
 
-**READING:** _(not run)_
+**READING — 2026-09-17, booted by Ben. 56a PASS, 56b PASS.** Survival opened the hub; **creative refused silently and nothing opened.** The prediction above is untouched.
 
 ## ROW 57 — **THE CONTROL. AN ORDINARY ITEM STILL JUST PICKS UP.**
 
@@ -2298,6 +2325,182 @@ nothing about the click is refused.
 >
 > **The handler runs at `LOWEST` on EVERY `InventoryClickEvent` on the server**, so the cost of
 > getting it wrong is not confined to the star — it is every click by every player.
+
+**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
+
+---
+
+# SLICE 8 — THE NEXUS GOES IN ANY OF THE 36 INVENTORY SLOTS. ROWS 58–65
+
+**Status: NOT RUN.** Every row below was written **before any boot**.
+
+**GAME MODE: `/gamemode survival` for all eight.**
+
+## THE CODE CHANGE IS ONE CONSTANT, AND THE ROWS ARE WHERE THAT CLAIM IS TESTED
+
+`NexusSlots.MAX_SLOT` went from **8** to **35**. Nothing else in the lock, the convergence or the
+raw-slot conversion moved — **slice 4a had already put `NexusLock` in `PlayerInventory` index space,
+where 0-8 is the hotbar and 9-35 is storage**, so the coordinate work was done two slices ago.
+
+**THE PICKER IS THE INVENTORY, MIRRORED:** menu `9..35` → inventory `9..35` (identity), menu
+`36..44` → inventory `0..8` (the hotbar, on the bottom row).
+
+> **NO MIGRATION, AND THESE ROWS ARE WHY THAT IS SAFE RATHER THAN HOPED.** Every stored value today
+> is 0-8 and every one stays legal in 0-35 — a widened bound cannot invalidate what it already
+> accepted. **Row 61 is the rejoin that proves a stored value survives**, and Row 58 is the one that
+> proves a NEW value outside the old range persists at all.
+
+**What the unit suite already settled.** `NexusSlotsTest` pins the bound at both ends — 35 in, 36
+out — and pins that 8 and 9 are now BOTH in, which is the pair that reddens on an un-widened build.
+`SettingsMenuLayoutTest` pins the mirror at both seams and asserts it is a **bijection onto 0..35**,
+so no cell is unreachable and none is reachable twice.
+
+**What none of them can see** is a real `PlayerInventory`, an item being displaced, or a profile
+surviving a disconnect. **That gap is these eight rows.**
+
+## ROW 58 — **A STORAGE SLOT. THE ROW THE WHOLE SLICE EXISTS FOR.**
+
+**MOVES THE SLOT. Put it back to hotbar 9 before running any earlier row in this file.**
+
+**Staging.** `/gamemode survival`. Open the hub → settings. **Click a cell in the middle of the
+picker** — one clearly in the storage rows, not the bottom row. Note which.
+
+**PREDICTED:** the star **moves there immediately**, the chat line names that cell, and the picker
+repaints with **that** cell lime and the old one white.
+
+> **THE PICKER IS THE INVENTORY MIRRORED, so the cell you clicked is the cell the star appears in.**
+> Close the screen and look: it must be in the position the picker showed, not nine cells away.
+>
+> **AN OFF-BY-NINE IS THE FAILURE TO WATCH FOR**, and it is invisible in the storage rows because
+> that half of the mapping is the IDENTITY. **If the star lands nine cells off, you clicked a hotbar
+> cell and got storage, or the reverse** — which is Row 59's job to separate.
+
+**READING:** _(not run)_
+
+## ROW 59 — **A HOTBAR SLOT STILL WORKS, AND IT IS THE HALF THAT IS NOT THE IDENTITY**
+
+**Staging.** `/gamemode survival`. In the picker, click a cell on the **BOTTOM ROW** — the hotbar.
+Say the **third** one.
+
+**PREDICTED:** the star moves to **hotbar slot 3**, the chat line says so, and it is on the hotbar
+where the player can hold it.
+
+> ### *** THIS IS THE ONLY HALF OF THE MAPPING THAT CAN BE WRONG QUIETLY ***
+>
+> Menu `9..35` → inventory `9..35` is the **identity**: twenty-seven of the thirty-six cells map to
+> themselves, and **a build with the translation missing entirely passes Row 58.** The nine hotbar
+> cells are the only ones where the arithmetic does anything.
+>
+> **If the star lands in a storage cell instead, the mirror is not being applied** — and the screen
+> will look almost right, because the cell it lands in is the one directly above where you clicked.
+
+**READING:** _(not run)_
+
+## ROW 60 — **THE DISPLACED ITEM COMES BACK**
+
+**Staging.** `/gamemode survival`. Put a **recognisable, countable** stack — 17 cobblestone — in a
+storage cell. With inventory space free, choose **that cell** in the picker.
+
+**PREDICTED:** the star takes the cell, and the **17 cobblestone are still in the inventory**,
+somewhere else, **all seventeen**. Nothing is destroyed and nothing is duplicated.
+
+> **COUNT THEM.** A displaced stack that comes back as 16 or 34 is the failure, and "the cobblestone
+> is still there" does not distinguish those from the pass.
+>
+> **`converge` already routes the occupant through `MenuSafety.give`**, which is the shared
+> give-or-drop path — this row is confirming that in play rather than asserting the call exists.
+
+**READING:** _(not run)_
+
+## ROW 61 — **A FULL INVENTORY DROPS IT, AND SAYS SO**
+
+**Staging.** `/gamemode survival`. Fill the inventory to **36/36**, with a recognisable stack in the
+cell you are about to choose. Choose it.
+
+**PREDICTED:** the star takes the cell, the displaced stack **drops at your feet**, and the
+**yellow line** appears: *"Your inventory was full -- dropped at your feet."*
+
+> **THE LINE IS THE ROW, NOT THE DROP.** The predecessor project dropped it **silently**, and Row 10b
+> ruled that a full-inventory drop is SAID OUT LOUD. **A silent drop looks identical to a deleted
+> item from the player's side**, and the only difference is whether they think to look down.
+>
+> **Watch the ground as well as the chat** — a line with no item, or an item with no line, are
+> different defects.
+
+**READING:** _(not run)_
+
+## ROW 62 — **THE CHOICE SURVIVES A REJOIN**
+
+**Staging.** `/gamemode survival`. Choose a **storage** cell. **Quit the server entirely and
+rejoin.**
+
+**PREDICTED:** the star is in **that storage cell**, not the default hotbar slot, and the picker
+shows it lime.
+
+> **THIS IS WHERE A MISSING PERSIST OR AN OVER-EAGER VALIDATOR SHOWS.** A stored 20 that fails
+> validation on load comes back as the DEFAULT, silently — `validSlotOr` hands out the fallback and
+> says nothing, which is correct behaviour for a corrupt value and indistinguishable from this
+> defect.
+>
+> **If the star is back on the hotbar, read the JSON before concluding anything**: the value being
+> 20 on disk and 8 in play is a validator bug; the value being 8 on disk is a persist bug. **They
+> look the same in game.**
+
+**READING:** _(not run)_
+
+## ROW 63 — **THE PICKER HIGHLIGHTS THE CURRENT SLOT, AND ONLY THAT ONE**
+
+**Staging.** `/gamemode survival`. With the star in a known storage cell, open settings and
+**look at the whole picker**.
+
+**PREDICTED:** **exactly one** cell is lime and reads *"The Nexus sits here."*; **the other
+thirty-five are white.** The lime one is the cell the star is actually in.
+
+> **COUNT THE LIME CELLS.** A picker that highlights the right cell AND a second one — the old
+> default, say — is a build reading two sources for one fact, and "my slot is highlighted" passes it.
+>
+> **The old screen had nine cells and a wrong highlight was obvious. Thirty-six is where one extra
+> lime cell stops being obvious.**
+
+**READING:** _(not run)_
+
+## ROW 64 — **THE CONTROL. THE STAR IN SLOT 27 STILL OPENS THE HUB ON LEFT-CLICK.**
+
+**Staging.** `/gamemode survival`. Put the star in a **storage** cell — slot 27, the middle of the
+backpack. Press **E** and **left-click it**.
+
+**PREDICTED:** the **hub opens**, exactly as it does from the hotbar. The star does not move; no
+chat line, no sound.
+
+> ### *** THIS IS SLICE 7's WHOLE REASON FOR EXISTING, AND THE REASON THIS SLICE IS SAFE TO SHIP ***
+>
+> **A star in slot 27 is invisible** — it is not on the hotbar, so right-clicking it in the world is
+> not available. **Without slice 7's inventory click there would be no way to open the hub at all**
+> from a storage cell, and this slice would be shipping a setting that can strand a player.
+>
+> **Rows 49–57 read that gesture at the DEFAULT slot on 2026-09-17.** This row reads it at a slot
+> that did not exist as a choice when they were run. **If this fails, slice 8 must not ship** —
+> not because the picker is wrong, but because the escape hatch is.
+>
+> **AND THE SECOND HALF: press E and left-click an ORDINARY item beside it.** It must still just
+> pick up. Row 57's control, re-read in the one place this slice could have broken it.
+
+**READING:** _(not run)_
+
+## ROW 65 — **THE ARMOUR SLOTS AND THE OFFHAND ARE STILL OUT**
+
+**Staging.** `/gamemode survival`. Look at the picker. Then, with the star in a storage cell, try to
+**drag or shift-click it into an armour slot or the offhand** from your own inventory.
+
+**PREDICTED:** the picker offers **no cell for armour or the offhand** — thirty-six choosers and no
+more — and the lock **refuses** the move, silently, as it does today.
+
+> **THE PICKER IS THE FIRST HALF AND THE LOCK IS THE SECOND, AND THEY ARE DIFFERENT GUARDS.** The
+> picker not offering a cell is a layout fact; the lock refusing the gesture is behaviour that
+> predates this slice. **A build that widened `MAX_SLOT` to 40 would pass every other row in this
+> block** — the picker would still show 36 cells, because its size is its own constant.
+>
+> **`MAX_SLOT` is what this row is really reading**, one layer down.
 
 **READING:** _(not run)_
 

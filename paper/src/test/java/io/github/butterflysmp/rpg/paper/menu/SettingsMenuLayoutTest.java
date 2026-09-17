@@ -32,40 +32,60 @@ class SettingsMenuLayoutTest {
         assertEquals(49, SettingsMenuLayout.CLOSE_SLOT,
                 "Close is 49 -- the SAME slot the crafting menu and the hub use, so the one button "
                         + "a player has learned does not move between our screens");
-        assertEquals(18, SettingsMenuLayout.FIRST_SLOT_CHOOSER, "the choosers start row 3");
+        assertEquals(9, SettingsMenuLayout.FIRST_SLOT_CHOOSER,
+                "the choosers start at menu 9 -- row 2, the top-left of the mirrored inventory");
         assertEquals(54, SettingsMenuLayout.SIZE, "six rows");
-        assertEquals(9, SettingsMenuLayout.HOTBAR_SIZE, "nine, because the hotbar is nine");
+        assertEquals(36, SettingsMenuLayout.MAIN_INVENTORY_SIZE, "hotbar and storage, no armour");
+        assertEquals(9, SettingsMenuLayout.HOTBAR_SIZE, "nine, the bottom ROW of the picker");
     }
 
     @Test
-    void theNineChoosersAreACONTIGUOUSROW_inHotbarOrder() {
-        // THE MAPPING IS THE WHOLE DESIGN: chooser n is hotbar slot n, left to right, so the player
-        // points rather than reads. A set would lose the order and a non-contiguous run would make
-        // the screen stop looking like a hotbar.
-        assertEquals(9, SettingsMenuLayout.SLOT_CHOOSERS.size());
-        for (int i = 0; i < 9; i++) {
-            assertEquals(18 + i, SettingsMenuLayout.SLOT_CHOOSERS.get(i),
-                    "chooser " + i + " must be the " + i + "th cell of the row");
+    void theChoosersAreTHIRTYSIXContiguousCells_theInventoryMirrored() {
+        // THE MAPPING IS STILL THE WHOLE DESIGN -- what changed is what it mirrors. This row used to
+        // assert NINE choosers in hotbar order, on the argument that the screen was choosing a
+        // HOTBAR slot and the hotbar is nine in a row. The screen now chooses an INVENTORY slot, so
+        // the picker is the inventory.
+        assertEquals(36, SettingsMenuLayout.SLOT_CHOOSERS.size(), "the 36 main cells");
+        for (int i = 0; i < 36; i++) {
+            assertEquals(9 + i, SettingsMenuLayout.SLOT_CHOOSERS.get(i),
+                    "chooser list entry " + i + " is menu slot " + (9 + i));
         }
-        // And they are all in ONE row: 18..26 is row 3 entire. 26/9 == 18/9 == 2.
-        assertEquals(SettingsMenuLayout.SLOT_CHOOSERS.get(0) / 9,
-                SettingsMenuLayout.SLOT_CHOOSERS.get(8) / 9,
-                "all nine in a single row -- a run that straddled a boundary would read as two "
-                        + "groups, which is what CraftingMenuLayout's adjacency row guards against");
+        // FOUR FULL ROWS, 9..44 -- rows 2 through 5, with row 1 and the chrome row clear.
+        assertEquals(1, SettingsMenuLayout.SLOT_CHOOSERS.get(0) / 9, "the block starts in row 2");
+        assertEquals(4, SettingsMenuLayout.SLOT_CHOOSERS.get(35) / 9, "and ends in row 5");
+        assertTrue(SettingsMenuLayout.SLOT_CHOOSERS.get(35) < SettingsMenuLayout.BOTTOM_ROW_START,
+                "the last chooser must stay clear of the chrome row");
     }
 
     @Test
-    void chooserForIsTheINVERSEOfTheSlotList_andRefusesEverythingElse() {
-        for (int i = 0; i < 9; i++) {
-            assertEquals(OptionalInt.of(i),
-                    SettingsMenuLayout.chooserFor(SettingsMenuLayout.SLOT_CHOOSERS.get(i)),
-                    "round trip for chooser " + i);
+    void chooserForIsTheMIRROR_identityForStorageAndTheHotbarOnTheBottomRow() {
+        // *** THE ONLY ARITHMETIC ON THIS SCREEN, AND IT IS ALMOST THE IDENTITY, WHICH IS THE RISK.
+        //
+        //   menu  9..35  ->  inventory  9..35   IDENTITY -- 27 of 36
+        //   menu 36..44  ->  inventory  0..8    the hotbar, on the bottom row
+        //
+        // A plausible off-by-nine passes every case staged in the identity half, so the hotbar half
+        // and BOTH seams are asserted individually rather than by a loop alone.
+        assertEquals(OptionalInt.of(9), SettingsMenuLayout.chooserFor(9), "first storage cell");
+        assertEquals(OptionalInt.of(35), SettingsMenuLayout.chooserFor(35), "last storage cell");
+        assertEquals(OptionalInt.of(0), SettingsMenuLayout.chooserFor(36), "THE SEAM: menu 36 is hotbar 1");
+        assertEquals(OptionalInt.of(8), SettingsMenuLayout.chooserFor(44), "last hotbar cell");
+
+        // AND IT IS A BIJECTION ONTO 0..35 -- every inventory slot reachable, none twice. Without
+        // this, a mapping that skipped one cell and doubled another satisfies all four above.
+        boolean[] seen = new boolean[36];
+        for (int menuSlot : SettingsMenuLayout.SLOT_CHOOSERS) {
+            int inv = SettingsMenuLayout.chooserFor(menuSlot).orElseThrow();
+            assertFalse(seen[inv], "inventory slot " + inv + " is reachable from two choosers");
+            seen[inv] = true;
+        }
+        for (int inv = 0; inv < 36; inv++) {
+            assertTrue(seen[inv], "inventory slot " + inv + " is reachable from no chooser");
         }
 
-        // THE BOUNDARIES, both of them, because an off-by-one here makes a filler pane writable or
-        // a live chooser inert.
-        assertEquals(OptionalInt.empty(), SettingsMenuLayout.chooserFor(17), "one before the row");
-        assertEquals(OptionalInt.empty(), SettingsMenuLayout.chooserFor(27), "one after the row");
+        // THE BOUNDARIES, because an off-by-one here makes a filler pane writable or a chooser inert.
+        assertEquals(OptionalInt.empty(), SettingsMenuLayout.chooserFor(8), "one before the block");
+        assertEquals(OptionalInt.empty(), SettingsMenuLayout.chooserFor(45), "one after the block");
         assertEquals(OptionalInt.empty(), SettingsMenuLayout.chooserFor(0));
         assertEquals(OptionalInt.empty(), SettingsMenuLayout.chooserFor(SettingsMenuLayout.CLOSE_SLOT),
                 "Close must never resolve to a chooser -- it would silently move the star");
@@ -88,8 +108,8 @@ class SettingsMenuLayoutTest {
 
         // AND IT COVERS EVERYTHING ELSE -- without this the assertions above are equally consistent
         // with FILLER_SLOTS being empty and the whole screen rendering blank.
-        assertEquals(54 - 9 - 2, SettingsMenuLayout.FILLER_SLOTS.size(),
-                "every slot except the nine choosers and the two buttons");
+        assertEquals(54 - 36 - 2, SettingsMenuLayout.FILLER_SLOTS.size(),
+                "every slot except the 36 choosers and the two buttons -- 16");
         for (int slot = 0; slot < SettingsMenuLayout.SIZE; slot++) {
             boolean live = slot == SettingsMenuLayout.CLOSE_SLOT
                     || slot == SettingsMenuLayout.BACK_SLOT
