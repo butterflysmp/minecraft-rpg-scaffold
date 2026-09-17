@@ -105,13 +105,25 @@ class NexusMenuLayoutTest {
         assertEquals(5, NexusMenuLayout.CLOSE_SLOT / 9, "Close is chrome, row 6");
         assertEquals(5, NexusMenuLayout.SETTINGS_SLOT / 9, "Settings is chrome, row 6");
 
-        // THE TWO STATIONS ARE ADJACENT, so a third cannot silently split them across the row.
+        // THE STATIONS ARE A CONTIGUOUS RUN, so a later one cannot silently split it.
         // Same claim theTwoButtonsAreADJACENT makes about Close and Settings, and for the reason
-        // that row records: two literals that happen to sit together are not two that must.
+        // that row records: literals that happen to sit together are not literals that must.
+        //
+        // THE THIRD STATION ARRIVED AND THIS ROW DID NOT REDDEN, which is why it is EXTENDED here
+        // rather than left. 33 kept 31 and 32 adjacent, so the pair assertion stayed green while
+        // its comment -- "so a third cannot silently split them" -- stopped describing anything
+        // the row checked. A row whose comment outlives what it asserts is the stale-prose defect
+        // with a green tick beside it.
         assertEquals(1, NexusMenuLayout.ENCHANT_SLOT - NexusMenuLayout.CRAFTING_SLOT,
                 "enchanting sits immediately right of crafting");
+        assertEquals(1, NexusMenuLayout.GRINDSTONE_SLOT - NexusMenuLayout.ENCHANT_SLOT,
+                "and the grindstone immediately right of enchanting");
         assertEquals(NexusMenuLayout.CRAFTING_SLOT / 9, NexusMenuLayout.ENCHANT_SLOT / 9,
                 "adjacent IN A ROW -- consecutive indices can straddle a row boundary");
+        assertEquals(NexusMenuLayout.CRAFTING_SLOT / 9, NexusMenuLayout.GRINDSTONE_SLOT / 9,
+                "all three in ONE row, for the same reason");
+        assertEquals(3, NexusMenuLayout.GRINDSTONE_SLOT / 9,
+                "and that row is the crafting-type band, row 4 -- their KIND picked it");
 
         // AND THE BANDS DO NOT OVERLAP, which is the half that would otherwise be vacuous: a table
         // of bands that all resolved to the same row would satisfy every assertion above.
@@ -180,6 +192,8 @@ class NexusMenuLayoutTest {
                 "nor the crafting station");
         assertFalse(NexusMenuLayout.FILLER_SLOTS.contains(NexusMenuLayout.ENCHANT_SLOT),
                 "nor the enchanting station");
+        assertFalse(NexusMenuLayout.FILLER_SLOTS.contains(NexusMenuLayout.GRINDSTONE_SLOT),
+                "nor the grindstone");
 
         // AND IT COVERS EVERYTHING ELSE -- the other half, without which the assertions above are
         // equally consistent with FILLER_SLOTS being empty and the whole screen rendering blank.
@@ -187,14 +201,18 @@ class NexusMenuLayoutTest {
         // THE CARDINALITY CAUGHT THE TWO NEW STATIONS BEFORE ANY OTHER ROW DID, which is what it is
         // for: 51 against 49. The per-slot loop below would have caught it too, but the count is
         // what fails with a number a reader can act on.
-        assertEquals(NexusMenuLayout.SIZE - 5, NexusMenuLayout.FILLER_SLOTS.size(),
-                "every slot except the two buttons, the head and the two stations is filler");
+        //
+        // IT DID IT AGAIN FOR THE THIRD STATION -- 49 against 48 -- and that was the ONLY row that
+        // reddened when the grindstone was added, exactly as designed.
+        assertEquals(NexusMenuLayout.SIZE - 6, NexusMenuLayout.FILLER_SLOTS.size(),
+                "every slot except the two buttons, the head and the three stations is filler");
         for (int slot = 0; slot < NexusMenuLayout.SIZE; slot++) {
             boolean isButton = slot == NexusMenuLayout.CLOSE_SLOT
                     || slot == NexusMenuLayout.SETTINGS_SLOT
                     || slot == NexusMenuLayout.STATS_SLOT
                     || slot == NexusMenuLayout.CRAFTING_SLOT
-                    || slot == NexusMenuLayout.ENCHANT_SLOT;
+                    || slot == NexusMenuLayout.ENCHANT_SLOT
+                    || slot == NexusMenuLayout.GRINDSTONE_SLOT;
             assertEquals(!isButton, NexusMenuLayout.FILLER_SLOTS.contains(slot),
                     "slot " + slot + " filler membership");
         }
@@ -207,5 +225,38 @@ class NexusMenuLayoutTest {
         // STATS_SLOT's VALUE. It names the constant symbolically everywhere, so it passes for any
         // value the remove() line is given. It guards that the head is EXCLUDED from filler, never
         // WHERE the head is.
+    }
+
+    @Test
+    void everySlotNotInTheFILLERIsDECLAREDAsPainted_theInvariantThatShippedAHole() {
+        // *** ADDED BECAUSE A SUBTRACTED CELL WITH NO PAINTER REACHED A SCREENSHOT. ***
+        //
+        // GRINDSTONE_SLOT was removed from FILLER_SLOTS and then painted by nothing. Slot 33 was an
+        // invisible, clickable hole whose click handler worked perfectly -- so every behavioural
+        // check passed and the only symptom was a gap on screen.
+        //
+        // NO EXISTING ASSERTION COULD SEE IT. The per-slot loop above asserts filler membership
+        // against a hand-written isButton expression, and that expression was updated in the same
+        // edit that added the removal -- both halves moved together, and neither is the paint list.
+        //
+        // THE INVARIANT: FILLER_SLOTS and PAINTED_SLOTS partition the screen. Every cell is filler
+        // or is declared as needing a painter; none is both and none is neither.
+        for (int slot = 0; slot < NexusMenuLayout.SIZE; slot++) {
+            boolean filler = NexusMenuLayout.FILLER_SLOTS.contains(slot);
+            boolean painted = NexusMenuLayout.PAINTED_SLOTS.contains(slot);
+            assertTrue(filler ^ painted,
+                    "slot " + slot + " must be EXACTLY ONE of filler or painted -- it is "
+                            + (filler ? "both" : "neither"));
+        }
+        assertEquals(NexusMenuLayout.SIZE,
+                NexusMenuLayout.FILLER_SLOTS.size() + NexusMenuLayout.PAINTED_SLOTS.size(),
+                "the two sets must cover the screen exactly once");
+
+        // AND THE PAINT LIST IS NOT EMPTY, without which the partition is satisfied by "everything
+        // is filler" -- the blank-screen reading the cardinality row above also guards against.
+        assertEquals(6, NexusMenuLayout.PAINTED_SLOTS.size(),
+                "Close, Settings, the head, and the three stations");
+        // Mutation: drop GRINDSTONE_SLOT from PAINTED_SLOTS -> slot 33 is neither -> reddens.
+        // THAT MUTATION IS THE SHIPPED DEFECT, and nothing in this file reddened on it before.
     }
 }

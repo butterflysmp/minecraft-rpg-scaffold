@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
+import io.github.butterflysmp.rpg.core.enchant.GrindstoneRefund;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
@@ -182,6 +183,16 @@ public final class NexusMenu extends Menu {
                                     recipes, shields, armor, tools)).open());
             return;
         }
+        if (click.slot() == NexusMenuLayout.GRINDSTONE_SLOT) {
+            // THE THIRD STATION, and the same breadcrumb the other two carry. Close-then-hop is
+            // NOT needed from THIS side -- the hub holds no input slots; the grindstone does its
+            // own explicit close when its Back button is pressed.
+            adapters.scheduler().onEntity(viewer, () ->
+                    new GrindstoneMenu(viewer, weapons, shields, armor, tools, adapters,
+                            () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
+                                    recipes, shields, armor, tools)).open());
+            return;
+        }
         if (click.slot() == NexusMenuLayout.SETTINGS_SLOT) {
             // HOP A TICK, NO EXPLICIT CLOSE. Menu.open's javadoc carries the measured rule and the
             // reason: both Scheduler entity methods land on the next tick, and the close exists only
@@ -237,6 +248,17 @@ public final class NexusMenu extends Menu {
                                 NamedTextColor.DARK_GRAY),
                         MenuIcons.line("A real table with shelves reaches 30.",
                                 NamedTextColor.DARK_GRAY))));
+
+        // THE THIRD STATION. IT WAS SUBTRACTED FROM THE FILLER SET AND THEN PAINTED BY NOTHING --
+        // an invisible, clickable hole at slot 33, whose click handler worked perfectly. The
+        // set-subtraction filler has an invariant nothing checked: EVERY SLOT NOT IN FILLER_SLOTS
+        // MUST BE PAINTED BY SOMETHING. NexusMenuLayoutTest now asserts it.
+        getInventory().setItem(NexusMenuLayout.GRINDSTONE_SLOT, MenuIcons.icon(
+                Material.GRINDSTONE,
+                MenuIcons.line("Grindstone", NamedTextColor.GRAY),
+                List.of(MenuIcons.line("Strip enchants from your gear.", NamedTextColor.DARK_GRAY),
+                        MenuIcons.line("Refunds " + GrindstoneRefund.REFUND_PERCENT
+                                + "% of what they cost.", NamedTextColor.DARK_GRAY))));
 
         getInventory().setItem(NexusMenuLayout.SETTINGS_SLOT, MenuIcons.icon(
                 Material.REDSTONE_TORCH,

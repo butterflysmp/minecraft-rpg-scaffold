@@ -96,16 +96,43 @@ final class NexusMenuLayout {
     static final int CRAFTING_SLOT = 31;
 
     /**
-     * Enchanting. <b>Row 4, column 5 -- beside crafting, in the same band.</b>
+     * Enchanting. <b>Row 4, column 5 -- between crafting and the grindstone.</b>
      *
-     * <p>Adjacent to {@link #CRAFTING_SLOT} rather than spread across the row: they are the two
-     * members of one band today, and a player reads them as a pair. {@code NexusMenuLayoutTest}
-     * asserts the adjacency, so a third station cannot silently split them.
+     * <p>Adjacent to {@link #CRAFTING_SLOT} rather than spread across the row: the stations are a
+     * contiguous run and a player reads them as one. {@code NexusMenuLayoutTest} asserts the run,
+     * so a later station cannot silently split it.
      */
     static final int ENCHANT_SLOT = 32;
 
     /**
-     * Every slot that is plain filler -- the whole menu except the two buttons.
+     * The grindstone. <b>Row 4, column 6 -- the third station, and the right-hand end of the run
+     * we have built.</b> Ben's ruling, and the predecessor project had it at 33 too.
+     *
+     * <h2>THE ROW IS FIVE STATIONS WIDE AND WE HAVE THE RIGHT-HAND THREE. IT IS INCOMPLETE, NOT OFF-CENTRE</h2>
+     *
+     * The predecessor's hub row, read from its source rather than remembered:
+     *
+     * <pre>
+     *   29 ender chest   30 anvil   31 crafting   32 enchanting   33 grindstone
+     * </pre>
+     *
+     * <b>Five stations spanning 29-33, centred on 31 in a row of 27-35.</b> Ours is <b>31, 32 and
+     * 33 -- the RIGHT-HAND three</b>; the two that are missing are <b>29 and 30, both to the
+     * LEFT</b>.
+     *
+     * <p><b>So the block sits right of centre, and it will keep sitting right of centre until an
+     * ender chest and an anvil exist.</b> That is the correct appearance of an unfinished row, and
+     * <b>re-centring the three we have is a move that would have to be undone twice</b> -- once to
+     * add 30, once to add 29.
+     *
+     * <p>Recorded here so the next person to notice the asymmetry finds the answer instead of
+     * fixing it. <b>It is NOT a ruling that 29 and 30 will be built</b> -- neither has been
+     * designed -- only that the row was laid out expecting them.
+     */
+    static final int GRINDSTONE_SLOT = 33;
+
+    /**
+     * Every slot that is plain filler -- the whole menu except the buttons and the stations.
      *
      * <p><b>Built by SET SUBTRACTION rather than by a loop with {@code continue} arms</b>, the same
      * construction {@code CraftingMenuLayout.STATUS_SLOTS} and
@@ -116,14 +143,34 @@ final class NexusMenuLayout {
      */
     static final Set<Integer> FILLER_SLOTS = buildFiller();
 
+    /**
+     * Every cell {@code NexusMenu.render()} must paint individually.
+     *
+     * <h2>ONE LIST, USED TWICE -- AND IT IS ONE LIST BECAUSE IT WAS TWO AND THEY DISAGREED</h2>
+     *
+     * <b>The subtraction below and the paint list in {@code NexusMenu.render()} used to be two
+     * hand-maintained lists.</b> The grindstone was added to the first and not the second, so slot
+     * 33 was removed from the filler and then painted by nothing: <b>an invisible, clickable hole
+     * whose click handler worked perfectly.</b> It reached a screenshot.
+     *
+     * <p><b>THE INVARIANT NOTHING CHECKED: EVERY SLOT NOT IN {@link #FILLER_SLOTS} MUST BE PAINTED
+     * BY SOMETHING.</b> Set subtraction makes the filler correct by construction and says nothing
+     * at all about whether anyone paints what it left out.
+     *
+     * <p>Now {@link #buildFiller} subtracts exactly this set, and
+     * {@code NexusMenuLayoutTest} asserts the partition -- so a seventh cell cannot be subtracted
+     * without being declared here, and being declared here is what tells the next reader it needs
+     * a painter.
+     */
+    static final Set<Integer> PAINTED_SLOTS = Set.of(
+            CLOSE_SLOT, SETTINGS_SLOT, STATS_SLOT, CRAFTING_SLOT, ENCHANT_SLOT, GRINDSTONE_SLOT);
+
     private static Set<Integer> buildFiller() {
         Set<Integer> slots = new LinkedHashSet<>();
         for (int slot = 0; slot < SIZE; slot++) slots.add(slot);
-        slots.remove(CLOSE_SLOT);
-        slots.remove(SETTINGS_SLOT);
-        slots.remove(STATS_SLOT);
-        slots.remove(CRAFTING_SLOT);
-        slots.remove(ENCHANT_SLOT);
+        // THE SAME SET render() PAINTS. Two lists is what produced the hole at 33.
+        slots.removeAll(Set.of(CLOSE_SLOT, SETTINGS_SLOT, STATS_SLOT,
+                CRAFTING_SLOT, ENCHANT_SLOT, GRINDSTONE_SLOT));
         return Set.copyOf(slots);
     }
 }
