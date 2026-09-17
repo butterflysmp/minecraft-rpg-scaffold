@@ -9,22 +9,48 @@ import org.bukkit.Material;
  * decidable part. A {@code Material} is a plain enum that loads without a server, so the whole
  * state machine is unit-testable and the boot gate only has to confirm it reached the screen.
  *
- * <h2>THE PALETTE IS A RULE, NOT THREE CHOICES</h2>
+ * <h2>THE PALETTE IS A RULE, NOT FOUR CHOICES</h2>
  *
- * <b>YELLOW is a state that resolves itself if you WAIT. GRAY is a state that resolves only if you
- * ACT. LIME is ready.</b> That sentence decides the colour of the next state anyone adds to this
- * screen without another dialog.
+ * <b>YELLOW resolves itself if you WAIT. LIGHT GRAY and RED resolve only if you ACT. LIME is
+ * ready.</b> That sentence decides the colour of the next state anyone adds to this screen without
+ * another dialog.
+ *
+ * <p><b>The two act-states are one rule and two causes</b>, which is why they share the axis and not
+ * the colour: light gray means <i>put something in</i>, red means <i>these are the wrong things</i>.
  *
  * <h2>FOUR STATES, FOUR COLOURS -- AND THE TWO "NOTHING" ARMS NOW SEPARATE BY COLOUR TOO</h2>
  *
  * <pre>
- *   READY              GREEN    ready to strip
- *   ARMING             YELLOW   the delay is running
- *   NOTHING_STRIPPED   RED      the tray holds items with nothing to strip
- *   NOTHING_EMPTY      GRAY     the tray is empty
+ *   READY              LIME         ready to strip
+ *   ARMING             YELLOW       the delay is running
+ *   NOTHING_STRIPPED   RED          the tray holds items with nothing to strip
+ *   NOTHING_EMPTY      LIGHT_GRAY   the tray is empty
  * </pre>
  *
- * <b>GRAY FOR EMPTY, NOT RED. Ben's ruling, and the reason is what keeps red meaningful:</b> red
+ * <h2>LIGHT GRAY FOR EMPTY, NOT GRAY -- AND NOT BECAUSE GRAY LOOKED WRONG</h2>
+ *
+ * <b>The bar's empty state was GRAY, and the chrome beside it is BLACK.</b> In a 16-pixel slot
+ * black against gray is not a distinction a player can make -- which is {@code GATE-crafting.md}'s
+ * <b>Q23 finding arriving one shade over</b>: <i>"two grays in one screen are confusable"</i>, here
+ * as a gray that is confusable with the furniture rather than with another readout.
+ *
+ * <p><b>THE FIX IS ON THE BAR, NOT ON THE CHROME, AND THAT IS THE LOAD-BEARING HALF.</b>
+ * {@code MenuIcons.FILLER} is {@code BLACK_STAINED_GLASS_PANE} on <b>every screen in this
+ * plugin</b>. Lightening it at one slot would make one screen's furniture differ from every other
+ * screen's, which is the thing {@code MenuIcons} exists to prevent. <b>Slot 48 from a world block
+ * is correct and was verified correct; nothing about the chrome changes.</b>
+ *
+ * <p><b>LIGHT GRAY IS NOT A NEW COLOUR -- IT IS THE EXISTING ONE FOR THIS EXACT MEANING.</b>
+ * {@code MenuIcons.EMPTY_SUGGESTION} is {@code LIGHT_GRAY_STAINED_GLASS_PANE}, and its javadoc says
+ * why: <i>"Not a second filler -- a cell that is waiting to hold something."</i> <b>An empty tray is
+ * the same statement.</b> So the palette stays four wide and none of it is black:
+ *
+ * <pre>
+ *   light gray  nothing      yellow  wait
+ *   lime        go           red     wrong
+ * </pre>
+ *
+ * <b>LIGHT GRAY FOR EMPTY, NOT RED. Ben's ruling, and the reason is what keeps red meaningful:</b> red
  * means something is WRONG, and an empty tray is not wrong. It also stops red doing two jobs --
  * <i>"these are the wrong items"</i> and <i>"you have not started"</i> -- which is the collapse
  * {@code GATE-nexus.md} Row 28 exists to record.
@@ -42,7 +68,7 @@ import org.bukkit.Material;
  *
  * <h2>PRECEDENCE: NOTHING, THEN ARMING, THEN READY</h2>
  *
- * <b>An empty tray shows gray whatever the clock says.</b> A lock on an action with nothing to lose
+ * <b>An empty tray shows light gray whatever the clock says.</b> A lock on an action with nothing to lose
  * is not information the player needs, and a freshly opened menu would otherwise be both "nothing
  * to strip" and "arming" at once.
  *
@@ -97,7 +123,7 @@ final class GrindstoneButton {
             case READY -> Material.LIME_DYE;
             case ARMING -> Material.YELLOW_DYE;
             case NOTHING_STRIPPED -> Material.RED_DYE;
-            case NOTHING_EMPTY -> Material.GRAY_DYE;
+            case NOTHING_EMPTY -> Material.LIGHT_GRAY_DYE;
         };
     }
 
@@ -113,7 +139,7 @@ final class GrindstoneButton {
             case READY -> Material.LIME_STAINED_GLASS_PANE;
             case ARMING -> Material.YELLOW_STAINED_GLASS_PANE;
             case NOTHING_STRIPPED -> Material.RED_STAINED_GLASS_PANE;
-            case NOTHING_EMPTY -> Material.GRAY_STAINED_GLASS_PANE;
+            case NOTHING_EMPTY -> Material.LIGHT_GRAY_STAINED_GLASS_PANE;
         };
     }
 
@@ -174,7 +200,7 @@ final class GrindstoneButton {
      * because <b>the button IS the feedback and the player is clicking it.</b> Row 14's case was a
      * button that looked identical whether it worked or not; this one never does.
      *
-     * <p>It is also why neither silence is spammable: twenty clicks on a gray button produce twenty
+     * <p>It is also why neither silence is spammable: twenty clicks on a non-LIME button produce twenty
      * nothings, where twenty chat lines would be twenty lines.
      */
     static boolean acts(Face face) {
