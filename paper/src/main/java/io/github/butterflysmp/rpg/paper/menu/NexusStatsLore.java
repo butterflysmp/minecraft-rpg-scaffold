@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.combat.StatsSheetLines;
 import io.github.butterflysmp.rpg.core.combat.StatsSheetValues;
 import io.github.butterflysmp.rpg.core.progression.PlayerLevel;
 import io.github.butterflysmp.rpg.core.progression.PlayerLevelLines;
+import io.github.butterflysmp.rpg.core.weapon.GearLoreLines;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheet;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -11,6 +12,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 /**
@@ -96,8 +98,10 @@ final class NexusStatsLore {
      * becomes worth it. Recorded so that slice finds the answer instead of rediscovering the
      * question.
      */
-    static List<Component> lore(Optional<StatsSheetValues> values, OptionalLong lifetimeXp) {
+    static List<Component> lore(Optional<StatsSheetValues> values, OptionalLong lifetimeXp,
+                                OptionalInt averageScore) {
         List<Component> lines = new ArrayList<>(progressionLines(lifetimeXp));
+        lines.addAll(gearScoreLines(averageScore));
         lines.addAll(values
                 .map(StatsSheet::statLines)
                 .orElseGet(() -> List.of(
@@ -149,7 +153,40 @@ final class NexusStatsLore {
         return lines;
     }
 
-    /** Label padded through the stat sheet's own padder, then the value. One column, one owner. */
+    /**
+     * The AVERAGE gear score across the six slots -- one line, between progression and the combat
+     * stats.
+     *
+     * <h2>IT SITS BETWEEN THE TWO BLOCKS BECAUSE IT BELONGS TO BOTH</h2>
+     *
+     * A level is what the player has EARNED and the eight stats are what they currently ARE; the
+     * average gear score is what their EQUIPMENT is worth, which drives the next of the first and
+     * scales two of the second. Under the level, above the stats.
+     *
+     * <h2>*** AN ABSENT AVERAGE RENDERS NOTHING, AND A ZERO AVERAGE RENDERS ZERO ***</h2>
+     *
+     * These are two different states and the distinction is the same one the untracked notice makes
+     * one method up. <b>Empty means nobody could read the inventory</b> -- no line, because a readout
+     * showing 0 when nothing was counted is indistinguishable from a working readout of a naked
+     * player. <b>Zero means the read SUCCEEDED and the player is wearing nothing scored</b>, which is
+     * a true and useful fact and is printed.
+     *
+     * <p>So the { OptionalInt} is carrying the read FAILING, not the value being uninteresting --
+     * exactly as { progressionLines} treats an unreadable profile, and for the same reason.
+     *
+     * <p><b>KNOWN STALENESS, same as the quiver pair.</b> The menu paints once, on open, and
+     * { MenuRouting} deliberately permits a player to move items around their own inventory with
+     * a menu open -- so swapping a weapon while this screen is up leaves the average as it was. Not
+     * fixed for the same reason the quiver pair is not: the slice that makes this button clickable
+     * decides whether to repaint.
+     */
+    private static List<Component> gearScoreLines(OptionalInt averageScore) {
+        if (averageScore.isEmpty()) return List.of();
+        return List.of(statLine(GearLoreLines.SCORE_NOUN,
+                GearLoreLines.scoreValue(averageScore.getAsInt()), NamedTextColor.AQUA));
+    }
+
+    /** Label padded through the stat sheet.s own padder, then the value. One column, one owner. */
     private static Component statLine(String label, String value, NamedTextColor valueColor) {
         return MenuIcons.line(StatsSheetLines.label(label), NamedTextColor.DARK_GRAY)
                 .append(MenuIcons.line(value, valueColor));

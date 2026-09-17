@@ -236,7 +236,8 @@ public final class WeaponItems {
         // so this reads the CARRIED count and not the freshly minted full one.
         List<Component> base = WeaponLore.build(weapon, adapters.elements(),
                 QuiverItems.loadedInMeta(meta, adapters.keys()),
-                QuiverItems.capacityInMeta(meta, adapters.keys()));
+                QuiverItems.capacityInMeta(meta, adapters.keys()),
+                GearScoreItems.readMeta(meta, adapters.keys()));
         EnchantState state = EnchantItems.read(meta, adapters.keys());
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
 

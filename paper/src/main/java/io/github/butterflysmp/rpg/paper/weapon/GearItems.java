@@ -183,9 +183,13 @@ public final class GearItems {
     }
 
     /**
-     * The FOUR things a re-mint carries forward, in the order all three kinds carried them: the id
-     * tag, then wear, then the enchant container, then the quiver. Everything NOT copied here is
-     * DISPLAY and is rebuilt from current content.
+     * The FIVE things a re-mint carries forward, in the order all three kinds carried them: the id
+     * tag, then wear, then the enchant container, then the quiver, then the gear score. Everything
+     * NOT copied here is DISPLAY and is rebuilt from current content.
+     *
+     * <p>(It said FOUR until the gear-score slice. <b>A line that carries a count is itself a line</b>
+     * -- the count and the list move in the same edit or the file contradicts itself, which is this
+     * project's own rule about self-describing text.)
      *
      * <p><b>This method is the whole carry.</b> Every re-mint in the plugin reaches it -- the join
      * refresh, {@code /rpg refresh}, {@code /rpg enchant} and every enchant-table click, through the
@@ -196,6 +200,14 @@ public final class GearItems {
      * <p>The quiver joined for that reason. Losing a magazine here would be a relog-to-refill
      * exploit, exactly as losing the enchant blob would be a relog-to-unlock one, and
      * {@link #carryWear} already records the same hazard for durability in the same words.
+     *
+     * <p><b>And the gear score joined for the same reason, with the quietest failure of the four.</b>
+     * Losing it is a <b>relog-to-downgrade</b>: every scored item in the game reverts to
+     * {@code GearScore.ABSENT} on the player's next login. Nothing throws, nothing is red, and the
+     * reverted value is a LEGAL score -- so unlike a lost magazine (which reads as an unstamped
+     * defect) or lost enchants (which a player notices immediately), this one looks exactly like
+     * working code. It is the line most likely to be dropped by a future tidy-up and the hardest to
+     * notice afterwards.
      */
     public static void carryInstanceData(ItemMeta from, ItemMeta to, NamespacedKey idKey,
                                          Keys keys, Material material) {
@@ -203,5 +215,6 @@ public final class GearItems {
         carryWear(from, to, material);
         carryEnchants(from, to, keys);
         QuiverItems.carry(from, to, keys);
+        GearScoreItems.carry(from, to, keys);
     }
 }

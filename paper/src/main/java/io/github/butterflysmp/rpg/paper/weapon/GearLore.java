@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.weapon.ArmorLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
+import io.github.butterflysmp.rpg.core.weapon.GearLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -9,6 +10,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.OptionalInt;
 
 /**
  * The tooltip pieces every gear kind builds out of. One copy of what {@link WeaponLore},
@@ -35,6 +37,39 @@ import java.util.Locale;
 public final class GearLore {
 
     private GearLore() {}
+
+    /**
+     * The gear-score line, at the very top of a scoreable item's tooltip. Adds NOTHING when absent.
+     *
+     * <h2>*** ABSENT RENDERS NO LINE, AND IT MUST NOT RENDER 100 ***</h2>
+     *
+     * <p>An item with no stamp BEHAVES as {@code GearScore.ABSENT} -- that is the whole of the
+     * no-migration property -- but it must not SAY so. Two different things reach this method with no
+     * stamp, and only one of them is an item:
+     *
+     * <ul>
+     *   <li>a DEFINITIONS-ONLY rendering -- a recipe-browser icon, the golden-lore harness -- where
+     *       there is no item and therefore no score to state. Printing 100 there would put a power
+     *       rating on a preview of a thing that does not exist yet.
+     *   <li>a REAL item minted before this slice, which is genuinely a baseline item. Printing 100 on
+     *       it would be true, and it would also silently retrofit a rating onto every legacy item in
+     *       the game -- the visible half of a migration this slice deliberately does not perform.
+     * </ul>
+     *
+     * <p>So absence renders nothing, and the tooltip distinguishes scored gear from legacy gear by eye.
+     * The same reasoning {@code WeaponLoreLines.quiverLine} applies to an unstamped magazine, with the
+     * opposite outcome, and the difference is worth naming: a quiver renders {@code --/N} because an
+     * unstamped count is a DEFECT that must look wrong. An unstamped score is CORRECT, so it is quiet.
+     *
+     * <p>AQUA for the value, which no other stat line on any gear tooltip uses -- damage is RED,
+     * defense is the defense colour, the reduction percent is its own. A score is not a stat of the
+     * same kind as those; it is the multiplier over them, and it reads as a different sort of number.
+     */
+    public static void appendScore(List<Component> lore, OptionalInt score) {
+        if (score.isEmpty()) return;
+        lore.add(plain(GearLoreLines.SCORE_LABEL, NamedTextColor.GRAY)
+                .append(plain(GearLoreLines.scoreValue(score.getAsInt()), NamedTextColor.AQUA)));
+    }
 
     /** A non-italic coloured line. The default state for everything but flavour. */
     public static Component plain(String text, NamedTextColor color) {

@@ -10,6 +10,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.OptionalInt;
 
 /**
  * The shield tooltip: a stat block, optional flavour, and the "&lt;Rarity&gt; Shield" footer.
@@ -52,7 +53,7 @@ public final class ShieldLore {
      * separated from. Starting the tooltip with an empty line would read as a rendering bug.
      */
     public static List<Component> build(ShieldDefinition shield) {
-        return build(shield, Bulwark.NONE);
+        return build(shield, Bulwark.NONE, OptionalInt.empty());
     }
 
     /**
@@ -68,8 +69,15 @@ public final class ShieldLore {
      * cannot drift. {@code Bulwark.NONE} makes the unenchanted case an exact identity.
      *
      */
-    public static List<Component> build(ShieldDefinition shield, double bulwarkPercent) {
+    public static List<Component> build(ShieldDefinition shield, double bulwarkPercent,
+                                        OptionalInt score) {
         List<Component> lore = new ArrayList<>();
+
+        // THE GEAR SCORE, ABOVE THE STAT BLOCK. A shield is SCOREABLE and nothing on it scales --
+        // it carries no attack_damage and no armour points -- so this number is here purely because
+        // the shield feeds its wielder AVERAGE, which bands their next drop. That is why the label
+        // promises no damage; see GearLoreLines.SCORE_LABEL.
+        GearLore.appendScore(lore, score);
 
         // The stat block. One line, unconditionally -- including for a shield that declares no
         // reduction at all, which then honestly reads "Damage Reduction: 0%". Hiding the line at
@@ -93,4 +101,16 @@ public final class ShieldLore {
         return lore;
     }
 
+
+    /**
+     * The same tooltip for a shield with no ITEM behind it -- a definitions-only rendering.
+     *
+     * <p>Kept as its own overload for the reason {@code ArmorLore} states at length: a recipe-browser
+     * icon holds a DEFINITION and has no stack to read a score off, and an empty there is honest
+     * where the same empty inside {@code ShieldItems.applyLore} would be a bug. An exact IDENTITY
+     * with the pre-gear-score renderer, so the golden is unchanged.
+     */
+    public static List<Component> build(ShieldDefinition shield, double bulwarkPercent) {
+        return build(shield, bulwarkPercent, OptionalInt.empty());
+    }
 }

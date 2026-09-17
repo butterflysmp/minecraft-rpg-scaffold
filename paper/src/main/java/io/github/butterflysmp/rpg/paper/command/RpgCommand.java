@@ -77,6 +77,9 @@ import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
 import io.github.butterflysmp.rpg.paper.weapon.ToolItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearItems;
+import io.github.butterflysmp.rpg.core.weapon.GearScore;
+import io.github.butterflysmp.rpg.paper.weapon.GearScoreDevCommand;
+import io.github.butterflysmp.rpg.paper.weapon.GearScoreItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearRefresher;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.github.butterflysmp.rpg.core.progression.PlayerLevel;
@@ -471,6 +474,38 @@ public final class RpgCommand {
                         .then(Commands.literal("set")
                                 .executes(ctx -> playerXpUsage(ctx))
                                 .then(playerXpTarget(XpGrant.Op.SET, profiles))))
+                // *** /rpg gearscore <show|set|clear> -- SLICE 12's ONLY WITNESS. ***
+                //
+                // Permissions.DEV, like playerxp and vault. `set` multiplies a weapon's damage by up
+                // to 5x on whatever the player is holding, which is a damage cheat ungated -- a
+                // narrower exposure than the vault's item duplicator, the same kind, the same node.
+                // GearScoreWiringSignatureTest asserts this gate.
+                //
+                // WITHOUT THESE THREE, NOT ONE GATE ROW IN THE SLICE IS STAGEABLE. Every claim is
+                // about a real ItemStack with a real PDC integer, and no unit test in any module can
+                // build one -- there is no MockBukkit. Worse, two of the rows need states no
+                // acquisition path can now produce: a CHOSEN pair of scores on one definition (the
+                // roll bands on the average, so it cannot be asked for one) and an item with NO STAMP
+                // AT ALL (nothing mints unstamped gear any more). `set` and `clear` are those two.
+                //
+                // The score argument is bounded by GearScore's own constants rather than by literals,
+                // so Brigadier's refusal cannot drift from the arithmetic -- the same rule the vault's
+                // page and slot arguments follow through VaultShape.
+                .then(Commands.literal("gearscore")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(GearScoreDevCommand::usage)
+                        .then(Commands.literal("show")
+                                .executes(ctx -> GearScoreDevCommand.show(ctx, adapters)))
+                        .then(Commands.literal("clear")
+                                .executes(ctx -> GearScoreDevCommand.clear(ctx, adapters,
+                                        gearScoreRemint(weapons, shields, armor, tools))))
+                        .then(Commands.literal("set")
+                                .executes(GearScoreDevCommand::usage)
+                                .then(Commands.argument("score", IntegerArgumentType.integer(
+                                                GearScore.MIN, GearScore.HARD_CAP))
+                                        .executes(ctx -> GearScoreDevCommand.set(ctx, adapters,
+                                                gearScoreRemint(weapons, shields, armor, tools),
+                                                IntegerArgumentType.getInteger(ctx, "score"))))))
                 // *** /rpg vault <dump|store|take> -- OPERATOR TOOLING, AND PR 1's ONLY WITNESS. ***
                 //
                 // Permissions.DEV, like playerxp, and for a sharper reason: `store` takes an item
@@ -1321,6 +1356,13 @@ public final class RpgCommand {
         // would re-roll on every join, refresh and enchant click. See EnchantRollItems.
         ItemStack item = GearItems.mint(definition, adapters);
         EnchantRollItems.rollOnAcquire(item, GearItems.gearClassOf(definition), adapters);
+        // AND THE GEAR SCORE, banded on the average THIS PLAYER HAS RIGHT NOW. Same acquisition-path
+        // rule as the roll above, and for the same reason -- in mint() it would re-band on every join.
+        //
+        // BEFORE addItem BELOW, WHICH IS LOAD-BEARING RATHER THAN INCIDENTAL: the average reads the
+        // hotbar, so an item stamped after it landed would be in its OWN pool and would help set its
+        // own band. Stamping first means a drop is banded on the gear the player HAD.
+        GearScoreItems.stampOnAcquire(item, GearItems.gearClassOf(definition), player, adapters);
         Component name = WeaponItems.displayName(definition.displayName(), definition.rarity());
 
         player.getInventory().addItem(item);
@@ -1729,6 +1771,33 @@ public final class RpgCommand {
      * is now a COMPILE ERROR rather than four silent behaviours, and {@link #displayName} is not a
      * dispatch at all -- it is the interface member.
      */
+    /**
+     * How {@code /rpg gearscore} re-mints the item it just stamped.
+     *
+     * <p><b>It reuses {@link #resolveHeldGear}, which is the whole reason this lives here and not in
+     * {@code GearScoreDevCommand}.</b> That resolver is the single place a held stack becomes a
+     * {@code GearDefinition} of the right kind, and it needs all four registries -- which are already
+     * in scope here and would be a four-parameter detour into another class.
+     *
+     * <p><b>The re-mint is not cosmetic, and skipping it was the first draft's bug.</b> A per-item
+     * value that is RENDERED has to be re-rendered wherever it is WRITTEN, or the display is correct
+     * only at mint -- boot row V1's failure for the quiver count, in this codebase. Without this,
+     * {@code set} would move the damage and leave the tooltip stating the old score, and a gate row
+     * that reads the number off the screen would read a lie.
+     *
+     * <p>Silent on an item of no known kind: {@code resolveHeldGear} has already told the player why,
+     * and the PDC write happened regardless. There is nothing to render a score line onto.
+     */
+    private static GearScoreDevCommand.GearLookup gearScoreRemint(
+            WeaponRegistry weapons, ShieldRegistry shields, ArmorRegistry armor, ToolRegistry tools) {
+        return (player, held, adapters) -> {
+            HeldGear gear = resolveHeldGear(player, held, weapons, shields, armor, tools, adapters);
+            if (gear == null) return;   // resolveHeldGear has already said why
+            player.getInventory().setItemInMainHand(gear.remint(held, adapters));
+            player.updateInventory();
+        };
+    }
+
     private record HeldGear(String id, GearDefinition gear) {
 
         boolean isShield() {
@@ -2095,6 +2164,10 @@ public final class RpgCommand {
             ItemStack item = WeaponItems.mint(weapon, adapters);
             // Inside the loop: each kit weapon is its own instance and rolls its own candidates.
             EnchantRollItems.rollOnAcquire(item, GearItems.gearClassOf(weapon), adapters);
+            // And its score, banded on the average as it stands at THIS iteration -- so the second
+            // weapon in a kit bands against an average the first has already moved. Ben ruled the band
+            // is on the CURRENT average; a kit grant is where that reading first has consequences.
+            GearScoreItems.stampOnAcquire(item, GearItems.gearClassOf(weapon), player, adapters);
 
             int hotbar = grant.equip() ? firstEmptyHotbarSlot(player) : -1;
             if (hotbar >= 0) {

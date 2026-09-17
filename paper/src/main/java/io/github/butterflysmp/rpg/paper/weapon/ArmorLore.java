@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.weapon;
 import io.github.butterflysmp.rpg.core.enchant.Protection;
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorLoreLines;
+import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import net.kyori.adventure.text.Component;
 import io.github.butterflysmp.rpg.paper.hud.StatsBarText;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -11,6 +12,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.OptionalInt;
 
 /**
  * The armor tooltip: a stat block, optional flavour, and the "&lt;Rarity&gt; &lt;SlotNoun&gt;" footer.
@@ -68,7 +70,7 @@ public final class ArmorLore {
      * nothing above it to be separated from.
      */
     public static List<Component> build(ArmorDefinition armor) {
-        return build(armor, Protection.NONE);
+        return build(armor, Protection.NONE, List.of(), OptionalInt.empty());
     }
 
     /**
@@ -102,7 +104,7 @@ public final class ArmorLore {
      * one-argument overload above changes nothing and the golden stays green.
      */
     public static List<Component> build(ArmorDefinition armor, double protectionPoints) {
-        return build(armor, protectionPoints, List.of());
+        return build(armor, protectionPoints, List.of(), OptionalInt.empty());
     }
 
     /**
@@ -123,8 +125,11 @@ public final class ArmorLore {
      * {@link #build(ArmorDefinition, double)} an exact identity and the golden green.
      */
     public static List<Component> build(ArmorDefinition armor, double protectionPoints,
-                                        List<StatBonus> bonuses) {
+                                        List<StatBonus> bonuses, OptionalInt score) {
         List<Component> lore = new ArrayList<>();
+
+        // THE GEAR SCORE, ABOVE THE STAT BLOCK, exactly as on a weapon and a shield.
+        GearLore.appendScore(lore, score);
 
         // The stat block. One line, unconditionally -- including for a piece that declares no
         // defense at all, which then honestly reads "Defense: 0". Hiding the line at zero would
@@ -137,7 +142,9 @@ public final class ArmorLore {
         // makes that true rather than merely true today.
         lore.add(GearLore.plain(ArmorLoreLines.DEFENSE_LABEL, NamedTextColor.GRAY)
                 .append(GearLore.plain(ArmorLoreLines.defenseValue(
-                        Protection.effectiveDefense(armor.defense(), protectionPoints)),
+                        Protection.effectiveDefense(
+                                GearScore.scaledDefense(armor.defense(), GearScore.orAbsent(score)),
+                                protectionPoints)),
                         StatsBarText.DEFENSE_COLOR)));
 
         for (StatBonus bonus : bonuses) {
@@ -156,4 +163,21 @@ public final class ArmorLore {
         return lore;
     }
 
+
+    /**
+     * The tooltip for a piece with no ITEM behind it -- a definitions-only rendering.
+     *
+     * <p>Kept as its own overload rather than folded into the widened one, because the two callers are
+     * different in kind: a recipe-browser icon and the golden-lore harness hold a DEFINITION and have
+     * no stack to read a score off, while {@code ArmorItems.applyLore} holds meta and always has one.
+     * Passing {@code OptionalInt.empty()} is the honest answer for the first and would be a bug in the
+     * second, so the empty lives here, once, instead of at every definitions-only call site.
+     *
+     * <p>An exact IDENTITY with the pre-gear-score renderer: no stamp renders no score line, so every
+     * existing expectation over this path -- {@code golden-lore.txt} included -- is unchanged.
+     */
+    public static List<Component> build(ArmorDefinition armor, double protectionPoints,
+                                        List<StatBonus> bonuses) {
+        return build(armor, protectionPoints, bonuses, OptionalInt.empty());
+    }
 }
