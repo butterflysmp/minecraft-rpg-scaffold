@@ -37,21 +37,61 @@ public final class GrindstoneMenuLayout {
     public static final Set<Integer> INPUT_SLOTS = trayCells();
 
     /**
-     * The status bar: the bottom row, MINUS the two chrome cells in it.
+     * The status bar: the bottom row, minus whichever chrome cells are actually drawn in it.
      *
-     * <p><b>SEVEN CELLS, BOTH ORIGINS</b> -- 45, 46, 47, 50, 51, 52, 53. Identical to
-     * {@code CraftingMenuLayout.STATUS_SLOTS}, and subtracted the same way for the reason that file
-     * records: <b>a readout whose geometry depends on how you got there is not a readout.</b>
-     * {@link #BACK_SLOT} leaves the bar <b>permanently</b>, though Back is drawn only from the hub;
-     * from a block that cell holds filler instead.
+     * <pre>
+     *   from the HUB     45 46 47       50 51 52 53     SEVEN   Back at 48, Close at 49
+     *   from a BLOCK     45 46 47 48    50 51 52 53     EIGHT   Close at 49
+     * </pre>
      *
-     * <p><b>{@code MUTS5-BACK} IS IN SCOPE AGAIN, AND THE PERMANENT SUBTRACTION IS WHAT MAKES 48
-     * SAFE.</b> A bar on the bottom row beside Back and Close is the exact arrangement that produced
-     * that defect -- a button the bar painted straight over, whose only symptom was "Back doesn't
-     * work sometimes". The subtraction is what fixed it on the crafting screen and it is what makes
-     * this screen safe by construction rather than by care.
+     * <h2>*** THE GEOMETRY FORKS BY ORIGIN, AND THAT OVERTURNS AN ARGUMENT MADE AT LENGTH HERE ***</h2>
+     *
+     * <b>This javadoc used to read "SEVEN CELLS, BOTH ORIGINS", on the argument that <i>a readout
+     * whose geometry depends on how you got there is not a readout</i></b> -- borrowed from
+     * {@code CraftingMenuLayout.STATUS_SLOTS}, where it is still true and still the rule.
+     *
+     * <p><b>Ben agreed to seven-both-origins on that argument BEFORE HE HAD SEEN IT, and ruled the
+     * other way once he had.</b> From a world block there is no Back button, so 48 was a black
+     * filler pane sitting in the middle of a row of colour-changing ones. <b>The argument was about
+     * a reader comparing two screens; what a player actually sees is one screen with a hole in its
+     * readout.</b>
+     *
+     * <p><b>OVERTURNED BY LOOKING, and it is the second layout rule of mine to die that way</b> --
+     * the first was <i>"column 8 is the navigation column"</i>, which had two instances until Ben
+     * moved one of them. <b>Kept rather than deleted, because the argument is sound and will be
+     * made again by anyone comparing this file to {@code CraftingMenuLayout}.</b>
+     *
+     * <p><b>{@code MUTS5-BACK} IS STILL OUT OF SCOPE, AND THE FORK IS WHY RATHER THAN IN SPITE OF
+     * IT.</b> That defect was a bar painting over a button that was there. <b>Here the bar takes 48
+     * only on the path where no button is drawn</b> -- the two are mutually exclusive by
+     * construction, not by care, and {@code GrindstoneMenuLayoutTest} asserts the exclusion on both
+     * origins.
+     *
+     * @param fromHub was this screen opened from the Nexus? If so, Back occupies 48 and the bar
+     *                does not.
      */
-    public static final Set<Integer> STATUS_SLOTS = statusSlots();
+    public static Set<Integer> statusSlots(boolean fromHub) {
+        return fromHub ? STATUS_FROM_HUB : STATUS_FROM_BLOCK;
+    }
+
+    /** Seven cells: the bottom row less Back and Close. */
+    public static final Set<Integer> STATUS_FROM_HUB = buildStatus(true);
+
+    /** Eight cells: the bottom row less Close. From a block, 48 is bar rather than chrome. */
+    public static final Set<Integer> STATUS_FROM_BLOCK = buildStatus(false);
+
+    /**
+     * The cells this screen paints INDIVIDUALLY -- neither tray, bar, nor filler.
+     *
+     * <p><b>Forks with the bar, and the two are complements within the bottom row.</b> From the hub
+     * that row is {@code bar(7) + Back + Close}; from a block it is {@code bar(8) + Close}. Nine
+     * either way, which is why {@link #FILLER_SLOTS} does not fork.
+     */
+    public static Set<Integer> chromeSlots(boolean fromHub) {
+        return fromHub
+                ? Set.of(INFO_SLOT, CONFIRM_SLOT, BACK_SLOT, CLOSE_SLOT)
+                : Set.of(INFO_SLOT, CONFIRM_SLOT, CLOSE_SLOT);
+    }
 
     /**
      * Strip. <b>Row 5, dead centre -- under the tray and above the chrome.</b>
@@ -114,37 +154,37 @@ public final class GrindstoneMenuLayout {
         return Set.copyOf(slots);
     }
 
-    private static Set<Integer> statusSlots() {
+    private static Set<Integer> buildStatus(boolean fromHub) {
         Set<Integer> slots = new LinkedHashSet<>();
         int firstOfBottomRow = (ROWS - 1) * COLUMNS;
         for (int slot = firstOfBottomRow; slot < firstOfBottomRow + COLUMNS; slot++) slots.add(slot);
-        // SET SUBTRACTION, not a skip inside the loop. Both removals are UNCONDITIONAL even though
-        // Back is drawn only from the hub -- making either conditional is what makes the bar's
-        // width depend on the origin.
-        slots.remove(BACK_SLOT);
+        // SET SUBTRACTION, not a skip inside the loop. Close always leaves the bar; Back leaves it
+        // ONLY when Back is actually drawn, which is the fork Ben ruled after seeing the screen.
         slots.remove(CLOSE_SLOT);
+        if (fromHub) slots.remove(BACK_SLOT);
         return Set.copyOf(slots);
     }
 
     /**
-     * The four cells that are neither tray, bar, nor filler -- the chrome this screen paints
-     * individually.
+     * Every slot that is plain filler.
      *
-     * <p>Named as a set so the coverage test can state the invariant without re-listing them, and
-     * so a fifth button cannot be added without appearing here.
+     * <p><b>IT DOES NOT FORK, AND THAT IS ARITHMETIC RATHER THAN A DECISION.</b> The whole bottom
+     * row is bar-or-chrome on both paths -- nine cells either way -- so what the filler excludes is
+     * the same set regardless of origin. <b>Subtracting the ROW rather than the individual buttons
+     * is what makes that true by construction</b>, and it is why 48 can move between bar and chrome
+     * without this set noticing.
      */
-    public static final Set<Integer> CHROME_SLOTS =
-            Set.of(INFO_SLOT, CONFIRM_SLOT, BACK_SLOT, CLOSE_SLOT);
-
     private static Set<Integer> buildFiller() {
         Set<Integer> slots = new LinkedHashSet<>();
         for (int slot = 0; slot < SIZE; slot++) slots.add(slot);
         slots.removeAll(INPUT_SLOTS);
-        slots.removeAll(STATUS_SLOTS);
+
+        int firstOfBottomRow = (ROWS - 1) * COLUMNS;
+        for (int slot = firstOfBottomRow; slot < firstOfBottomRow + COLUMNS; slot++) {
+            slots.remove(slot);
+        }
         slots.remove(INFO_SLOT);
         slots.remove(CONFIRM_SLOT);
-        slots.remove(BACK_SLOT);
-        slots.remove(CLOSE_SLOT);
         return Set.copyOf(slots);
     }
 }

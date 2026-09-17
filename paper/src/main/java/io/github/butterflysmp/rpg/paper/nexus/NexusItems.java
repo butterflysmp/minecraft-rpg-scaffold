@@ -54,7 +54,7 @@ public final class NexusItems {
         ItemStack item = new ItemStack(Material.NETHER_STAR);
         item.editMeta(meta -> {
             meta.displayName(MiniMessage.miniMessage()
-                    .deserialize("<gradient:#8be9fd:#bd93f9>The Nexus</gradient>")
+                    .deserialize("<gradient:#8be9fd:#bd93f9>Nexus Menu</gradient>")
                     .decoration(TextDecoration.ITALIC, false));
 
             // A BYTE whose VALUE is never read. Presence is the whole tag -- isNexus asks

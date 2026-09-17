@@ -117,12 +117,19 @@ public final class NexusMenu extends Menu {
     public NexusMenu(Player viewer, AdapterContext adapters, ProfileService profiles,
                      WeaponRegistry weapons, ResourcePool resources, RecipeCatalogue recipes,
                      ShieldRegistry shields, ArmorRegistry armor, ToolRegistry tools) {
-        // "THE NEXUS", MATCHING THE ITEM. The hub's title and the star's name are one name now:
-        // the item has always been "The Nexus", and the Back buttons on every screen that leads
-        // here already read "Back to the Nexus". "Nexus Menu" was the odd one out, and it is not a
-        // name for an item -- it was a name for a screen, which is the thing a player does not
-        // think about. The item's gradient is untouched; only this line changed.
-        super(viewer, NexusMenuLayout.SIZE, MenuIcons.line("The Nexus", NamedTextColor.DARK_GRAY));
+        // "NEXUS MENU", MATCHING THE ITEM -- and the ITEM was renamed to match this, not the other
+        // way round. Ben ruled "both, they should match" WITHOUT giving the string; the string was
+        // then picked here rather than asked for, and "The Nexus" went onto the item. He has now
+        // given it. THIS IS AN OVERTURNED RULING, NOT A DEFECT: the code did what the brief said.
+        //
+        // THE ARGUMENT THAT LOST, KEPT BECAUSE IT IS THE ONE ANYONE WILL MAKE AGAIN: that "Nexus
+        // Menu" is a name for a SCREEN rather than for an item, and a player holding a nether star
+        // does not think about menus. It is a reasonable case and it was not the one asked for.
+        //
+        // THE BACK BUTTONS STAY "Back to the Nexus" on all four screens. Not "Back to the Nexus
+        // Menu", which is clunky. THAT IS A GUESS AT AN UNASKED QUESTION rather than a decision --
+        // flagged so it costs one word to correct instead of being found a fourth time.
+        super(viewer, NexusMenuLayout.SIZE, MenuIcons.line("Nexus Menu", NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
         this.profiles = profiles;
         this.weapons = weapons;
