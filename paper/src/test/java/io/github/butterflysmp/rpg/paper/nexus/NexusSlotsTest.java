@@ -29,10 +29,19 @@ class NexusSlotsTest {
     private static final int FALLBACK = 99;
 
     @Test
-    void everyHOTBARSlotIsAccepted_allNineOfThem() {
+    void everyMAININVENTORYSlotIsAccepted_allTHIRTYSIXOfThem() {
+        // WIDENED FROM THE HOTBAR. This loop ran 0..8 while the star was a held item only; the
+        // star now lives anywhere in the main inventory, and THIS ONE BOUND is the whole of that
+        // change -- slice 4a had already put NexusLock in PlayerInventory index space.
+        for (int slot = 0; slot <= 35; slot++) {
+            assertEquals(slot, NexusSlots.validSlotOr(slot, FALLBACK),
+                    "inventory slot " + slot + " is a legal choice and must be returned unchanged");
+        }
+        // AND THE OLD RANGE IS STILL ACCEPTED, WHICH IS WHY THERE IS NO MIGRATION. Every stored
+        // value today is 0-8; a widened bound cannot invalidate anything it previously accepted.
         for (int slot = 0; slot <= 8; slot++) {
             assertEquals(slot, NexusSlots.validSlotOr(slot, FALLBACK),
-                    "hotbar slot " + slot + " is a legal choice and must be returned unchanged");
+                    "a slot stored before the widening is still legal after it");
         }
         // SLOT 0 IS THE ONE WORTH NAMING. It is what Gson leaves for an absent int, so it is also
         // the value a pre-v3 profile would carry if the migration ever stopped setting it -- and it
@@ -41,12 +50,12 @@ class NexusSlotsTest {
     }
 
     @Test
-    void anythingOUTSIDETheHotbarFallsBack() {
+    void anythingOUTSIDETheMainInventoryFallsBack() {
         assertEquals(FALLBACK, NexusSlots.validSlotOr(-1, FALLBACK),
                 "NO_LOCKED_SLOT itself -- an unknown slot is not a slot");
-        assertEquals(FALLBACK, NexusSlots.validSlotOr(9, FALLBACK),
-                "9 is the first STORAGE index, not a hotbar cell -- the off-by-one that matters");
-        assertEquals(FALLBACK, NexusSlots.validSlotOr(36, FALLBACK), "boots");
+        assertEquals(FALLBACK, NexusSlots.validSlotOr(36, FALLBACK),
+                "36 is BOOTS, the first armour cell -- the off-by-one that matters now that "
+                        + "storage is legal. The star has no business in an armour slot");
         assertEquals(FALLBACK, NexusSlots.validSlotOr(40, FALLBACK), "the offhand");
         assertEquals(FALLBACK, NexusSlots.validSlotOr(41, FALLBACK),
                 "one past the end of the inventory -- setItem would throw from a join handler");
@@ -60,11 +69,18 @@ class NexusSlotsTest {
     @Test
     void theBOUNDARIESAreInclusive_bothOfThem() {
         // Stated separately from the loop above because an off-by-one at either end is the whole
-        // failure mode, and a loop that happens to cover 0..8 does not SAY that 8 is the last one.
-        assertEquals(8, NexusSlots.validSlotOr(8, FALLBACK), "8 is IN -- it is the default");
-        assertEquals(FALLBACK, NexusSlots.validSlotOr(9, FALLBACK), "9 is OUT");
+        // failure mode, and a loop that happens to cover 0..35 does not SAY that 35 is the last one.
+        assertEquals(35, NexusSlots.validSlotOr(35, FALLBACK), "35 is IN -- the last storage cell");
+        assertEquals(FALLBACK, NexusSlots.validSlotOr(36, FALLBACK), "36 is OUT -- boots");
         assertEquals(0, NexusSlots.validSlotOr(0, FALLBACK), "0 is IN");
         assertEquals(FALLBACK, NexusSlots.validSlotOr(-1, FALLBACK), "-1 is OUT");
+
+        // THE OLD BOUNDARY IS NOW INTERIOR, AND SAYING SO IS THE POINT: 8 and 9 used to be the
+        // in/out pair, and a build that had not been widened would still pass every assertion above
+        // that names 0 or -1. This is the pair that reddens on it.
+        assertEquals(8, NexusSlots.validSlotOr(8, FALLBACK), "8 is IN -- it is still the default");
+        assertEquals(9, NexusSlots.validSlotOr(9, FALLBACK),
+                "and 9, the first STORAGE cell, is IN NOW -- it was the boundary before the widening");
     }
 
     @Test

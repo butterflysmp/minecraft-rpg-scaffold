@@ -17,7 +17,8 @@ import java.util.OptionalInt;
 import java.util.Set;
 
 /**
- * The Nexus settings screen: choose which hotbar slot the Nexus star lives in.
+ * The Nexus settings screen: choose which INVENTORY slot the Nexus star lives in -- any of the 36
+ * main cells, hotbar or storage.
  *
  * <p>Reached from the redstone torch on the hub, and the torch stopped being a
  * {@link MenuIcons#placeholder} the moment this existed -- the third instance of that distinction,
@@ -120,8 +121,8 @@ public final class SettingsMenu extends Menu {
      * read the new value rather than the old. Placing first would move the star to a slot the lock
      * is not yet protecting, which is slice 4a's defect re-created by hand.
      */
-    private void choose(int hotbarSlot) {
-        if (!profiles.setNexusSlot(viewer.getUniqueId(), hotbarSlot)) {
+    private void choose(int inventorySlot) {
+        if (!profiles.setNexusSlot(viewer.getUniqueId(), inventorySlot)) {
             // REFUSED, AND THE REASON IS SAID. Not one message for both arms: see the class javadoc.
             viewer.sendMessage(
                     profiles.availability(viewer.getUniqueId()) == ProfileService.Availability.UNREADABLE
@@ -132,9 +133,9 @@ public final class SettingsMenu extends Menu {
 
         // The star follows immediately rather than on next join. converge is the same call the join
         // and respawn paths make, so there is one placement rule and not a second one here.
-        NexusSlots.converge(viewer, adapters.keys(), hotbarSlot);
+        NexusSlots.converge(viewer, adapters.keys(), inventorySlot);
         render();
-        viewer.sendMessage(Component.text("The Nexus now sits in slot " + (hotbarSlot + 1) + ".",
+        viewer.sendMessage(Component.text("The Nexus now sits in " + slotName(inventorySlot) + ".",
                 NamedTextColor.AQUA));
     }
 
@@ -161,15 +162,35 @@ public final class SettingsMenu extends Menu {
         // BLACK, MenuIcons.EMPTY_SUGGESTION is LIGHT_GRAY, and plain GRAY is CraftStatus.EMPTY --
         // whose javadoc says collapsing it with the others is "a REGRESSION, not a simplification".
         // WHITE is unspoken, so an unchosen slot cannot be read as any of them.
-        for (int i = 0; i < SettingsMenuLayout.HOTBAR_SIZE; i++) {
-            boolean selected = i == current;
-            getInventory().setItem(SettingsMenuLayout.SLOT_CHOOSERS.get(i), MenuIcons.icon(
+        // ITERATE THE MENU SLOTS AND CONVERT, RATHER THAN INDEXING BY INVENTORY SLOT. This loop used
+        // to read SLOT_CHOOSERS.get(i) with i as the hotbar slot, which was correct only while the
+        // mapping was the identity over nine cells. It is now a MIRROR over thirty-six, and the list
+        // index is not the inventory slot -- chooserFor is the one place that knows.
+        for (int menuSlot : SettingsMenuLayout.SLOT_CHOOSERS) {
+            int inventorySlot = SettingsMenuLayout.chooserFor(menuSlot).orElseThrow();
+            boolean selected = inventorySlot == current;
+            getInventory().setItem(menuSlot, MenuIcons.icon(
                     selected ? Material.LIME_STAINED_GLASS_PANE : Material.WHITE_STAINED_GLASS_PANE,
-                    MenuIcons.line("Slot " + (i + 1),
+                    MenuIcons.line(slotName(inventorySlot),
                             selected ? NamedTextColor.GREEN : NamedTextColor.GRAY),
                     selected
                             ? List.of(MenuIcons.line("The Nexus sits here.", NamedTextColor.DARK_GRAY))
                             : List.of()));
         }
+    }
+
+    /**
+     * What to call an inventory slot on screen.
+     *
+     * <p><b>The hotbar is numbered the way the player's keyboard numbers it</b> -- 1 to 9 -- and
+     * storage is numbered separately rather than continuing to 36, because <i>"slot 28"</i> means
+     * nothing to anyone. A player looking for their star reads a row and a position, not an index.
+     */
+    private static String slotName(int inventorySlot) {
+        if (inventorySlot < SettingsMenuLayout.HOTBAR_SIZE) {
+            return "Hotbar " + (inventorySlot + 1);
+        }
+        int storageIndex = inventorySlot - SettingsMenuLayout.HOTBAR_SIZE;
+        return "Row " + (storageIndex / 9 + 1) + ", slot " + (storageIndex % 9 + 1);
     }
 }
