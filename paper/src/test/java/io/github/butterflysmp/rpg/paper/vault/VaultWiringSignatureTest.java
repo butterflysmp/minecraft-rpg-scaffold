@@ -265,6 +265,128 @@ class VaultWiringSignatureTest {
         return trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*");
     }
 
+    // --- PR 2: the screen, the hijack and the migration ---------------------------------------
+
+    private static final Path VAULT_MENU = Path.of(
+            "src", "main", "java", "io", "github", "butterflysmp", "rpg", "paper", "menu",
+            "NexusVaultMenu.java");
+
+    /**
+     * *** THE ENDER CHEST IS HIJACKED, AND NOTHING ELSE IN THE SUITE CAN SEE IT. ***
+     *
+     * <p>Delete this map entry and the vault still works from the hub, every unit row stays green,
+     * and the only symptom is that a right-clicked ender chest opens the VANILLA screen -- into
+     * which a player then puts items that the migration has already copied. <b>Two containers, both
+     * writable, holding the same stacks.</b>
+     *
+     * <p>Anchored on the {@code Material.ENDER_CHEST} line and the opener directly beneath it,
+     * because a bare {@code ENDER_CHEST} matches this slice's own commentary about the block.
+     */
+    @Test
+    void theEnderChestIsHIJACKEDIntoTheVaultScreen() throws IOException {
+        List<String> lines = read(LISTENERS, 2000);
+
+        int material = indexOfLineContaining(lines, "Material.ENDER_CHEST,");
+        assertTrue(material > 0,
+                "the ender chest must be in hijackedBlocks, or the vanilla chest stays reachable"
+                        + " beside a vault that has already copied its contents");
+
+        int opener = indexOfLineContaining(lines, "new NexusVaultMenu(", material);
+        assertTrue(opener > material && opener <= material + 2,
+                "the opener must sit directly under the material it is keyed to; a NexusVaultMenu"
+                        + " built somewhere else in the file is a different route");
+    }
+
+    /**
+     * *** THE WRITE HOPS. NOTHING IN onClick MAY WRITE SYNCHRONOUSLY. ***
+     *
+     * <p>This is the slice's headline defect and it is invisible to every unit row: a synchronous
+     * write reads the cells one tick early, which DESTROYS on a put-in and DUPLICATES on a
+     * take-out. The screen cannot be constructed in a test, so the scan pins the shape instead --
+     * {@code scheduleWrite} is reached from {@code onClick}, and the only call to
+     * {@code writeCurrentPage} in that method is inside a scheduled task.
+     */
+    @Test
+    void theClickPathSchedulesTheWriteRatherThanWritingInline() throws IOException {
+        List<String> lines = read(VAULT_MENU, 400);
+
+        int onClick = indexOfLineContaining(lines, "protected void onClick(MenuClick click) {");
+        assertTrue(onClick > 0, "onClick must exist");
+
+        int scheduled = indexOfLineContaining(lines, "scheduleWrite();", onClick);
+        assertTrue(scheduled > onClick && scheduled < onClick + 20,
+                "onClick must hand off to scheduleWrite before any button branch");
+
+        int inside = indexOfLineContaining(lines, "scheduleWrite()", 0);
+        int declaration = indexOfLineContaining(lines, "private void scheduleWrite() {");
+        int hop = indexOfLineContaining(lines, "adapters.scheduler().onEntity(viewer", declaration);
+        int write = indexOfLineContaining(lines, "writeCurrentPage()", declaration);
+        assertTrue(inside > 0 && declaration > 0, "scheduleWrite must be declared and called");
+        assertTrue(hop > declaration && hop < write,
+                "the scheduler hop must come BEFORE the write inside scheduleWrite -- a write above"
+                        + " it reads the slots one tick early, which is the whole defect");
+    }
+
+    /** The drag path is the same defect, and the draft that was withdrawn did not mention it. */
+    @Test
+    void theDragPathSchedulesTheWriteToo() throws IOException {
+        List<String> lines = read(VAULT_MENU, 400);
+
+        int hook = indexOfLineContaining(lines, "protected void onDragPermitted() {");
+        assertTrue(hook > 0, "onDragPermitted must be overridden: a permitted drag changes the"
+                + " contents and dispatches nothing else");
+
+        int scheduled = indexOfLineContaining(lines, "scheduleWrite();", hook);
+        assertTrue(scheduled > hook && scheduled < hook + 4,
+                "and it must schedule, not write inline -- that hook's own javadoc says the"
+                        + " contents have NOT changed yet when it is called");
+    }
+
+    /**
+     * *** THE MIGRATION STAMPS ONLY AFTER THE ITEMS ARE WRITTEN. ***
+     *
+     * <p>Reverse these two and a crash in between leaves a player stamped as migrated with an empty
+     * page 1 -- their chest still full, and <b>nothing will ever copy it again.</b> The order is the
+     * whole guarantee, and it is one line's distance from being wrong.
+     */
+    @Test
+    void theMigrationWritesTheItemsBeforeItStampsTheProfile() throws IOException {
+        List<String> lines = read(VAULT_MENU, 400);
+
+        int method = indexOfLineContaining(lines, "private void migrateIfDue() {");
+        assertTrue(method > 0, "migrateIfDue must exist");
+
+        int write = indexOfLineContaining(lines, "writeCurrentPage()", method);
+        int stamp = indexOfLineContaining(lines, "profiles.setVaultMigrated(", method);
+
+        assertTrue(write > method, "the migration must write the page");
+        assertTrue(stamp > method, "and must stamp the profile");
+        assertTrue(write < stamp,
+                "THE WRITE MUST COME FIRST. Stamping first and crashing leaves a player marked"
+                        + " migrated with an empty page 1 and a full ender chest they cannot open");
+    }
+
+    /**
+     * The opt-out is CONDITIONAL, and the condition is delegated to something testable.
+     *
+     * <p>{@code returnedSlots} is what stops the vault handing its contents back, and the degraded
+     * arm is what stops it being a shredder when a write fails. Neither can be executed here, so
+     * this pins that the decision is not inlined -- {@code VaultReturnPolicy} is where both answers
+     * are actually exercised.
+     */
+    @Test
+    void theReturnOptOutDelegatesToThePolicyRatherThanInliningIt() throws IOException {
+        List<String> lines = read(VAULT_MENU, 400);
+
+        int override = indexOfLineContaining(lines, "protected Set<Integer> returnedSlots() {");
+        assertTrue(override > 0, "the vault must override returnedSlots, or it hands storage back");
+
+        int delegate = indexOfLineContaining(lines, "VaultReturnPolicy.returnedSlots(", override);
+        assertTrue(delegate > override && delegate < override + 8,
+                "the answer must come from VaultReturnPolicy, which is the only place both the"
+                        + " healthy and the degraded answer can be run in a unit test");
+    }
+
     /** Guards the helper itself: a needle that is certainly absent must report -1, not 0. */
     @Test
     void theScannerReportsAbsenceAsMinusOneRatherThanZero() {

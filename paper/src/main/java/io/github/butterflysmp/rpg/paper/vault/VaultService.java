@@ -1,9 +1,12 @@
 package io.github.butterflysmp.rpg.paper.vault;
 
+import io.github.butterflysmp.rpg.core.vault.VaultCell;
 import io.github.butterflysmp.rpg.core.vault.VaultShape;
+import io.github.butterflysmp.rpg.core.vault.VaultWriteFailure;
 import io.github.butterflysmp.rpg.storage.PlayerVault;
 import io.github.butterflysmp.rpg.storage.VaultRepository;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -152,20 +155,49 @@ public final class VaultService {
      * live inventory cells. A per-slot API would invite writing only the cell that changed, which is
      * right until a gesture moves two and a drag moves nine.
      *
-     * <h2>OWED TO PR 2, NAMED HERE RATHER THAN PRE-BUILT</h2>
+     * <h2>*** THE ASYNCHRONOUS FAILURE IS NOW SURFACED, AND PR 1's JAVADOC OWED IT ***</h2>
      *
-     * This reports a SYNCHRONOUS refusal (the vault is not loaded) and logs an ASYNCHRONOUS failure
-     * (the disk write threw). <b>The screen will need the second one surfaced</b>, so that a failed
-     * write can put the menu into a degraded state that hands the page back to the player instead of
-     * holding items it has not persisted. That hook is not written here because PR 1 has no caller
-     * for it, and a guard nothing exercises is a guard nobody maintains.
+     * Two failures live here and they are not the same event:
      *
-     * @param contents slot index to encoded item text. Empty and blank values are dropped; an empty
-     *                 map clears the page, which is how the last item leaves it.
-     * @return false if the vault is not loaded or could not be read -- in which case <b>nothing was
-     *         written and nothing was cached</b>, so the caller still holds the only copy.
+     * <pre>
+     *   SYNCHRONOUS   the vault is not loaded          -> returns false, NOTHING was cached
+     *   ASYNCHRONOUS  the disk write threw             -> {@code onFailure}, and the vault is POISONED
+     * </pre>
+     *
+     * <h2>*** WHY A FAILED WRITE POISONS THE CACHE, WHICH IS THE HALF THE FIRST DESIGN MISSED ***</h2>
+     *
+     * The cache is swapped <b>before</b> the save is issued, and {@code repository.save} writes the
+     * <b>whole vault</b>. So after a failed write the cache is AHEAD of disk, and two ordinary
+     * events then republish it:
+     *
+     * <ol>
+     *   <li>any later successful write of <b>any other page</b> -- {@code withPage} carries every
+     *       other page's entries forward, so the failed page rides along;</li>
+     *   <li>{@link #saveAllAndClear} at {@code /stop}, which writes the cache.</li>
+     * </ol>
+     *
+     * <b>Combine either with a degraded close that hands the page back and the failure path is a
+     * duplicator</b> -- the fix for one arm building the other. Poisoning closes both: every later
+     * write is refused, the shutdown flush skips this player, and the file on disk stays at its last
+     * good state.
+     *
+     * <p>It is the same policy {@link #onJoin} already applies to an unreadable FILE -- <i>"stays
+     * that way for the session, so every write is refused and nothing saves over it"</i> -- reached
+     * from the write side rather than the read side.
+     *
+     * @param cells    slot index to cell. Empty and blank items are dropped; an empty map clears the
+     *                 page, which is how the last item leaves it. The {@code description} on each
+     *                 cell is never stored -- it exists so {@link VaultWriteFailure} can name what
+     *                 did not reach disk in a form an operator can match.
+     * @param onFailure run when the disk write completes EXCEPTIONALLY, <b>on the I/O thread</b>.
+     *                 A caller that needs the Bukkit API hops inside it, and must re-check that the
+     *                 player is still online. Never called for the synchronous refusal below, which
+     *                 the {@code false} return already reports.
+     * @return false if the vault is not loaded, unreadable or poisoned -- in which case <b>nothing
+     *         was written and nothing was cached</b>, so the caller still holds the only copy.
      */
-    public boolean writePage(UUID playerId, int page, Map<Integer, String> contents) {
+    public boolean writePage(UUID playerId, int page, Map<Integer, VaultCell> cells,
+                             Runnable onFailure) {
         VaultShape.requirePage(page);
 
         CompletableFuture<PlayerVault> loading = vaults.get(playerId);
@@ -175,14 +207,64 @@ public final class VaultService {
         PlayerVault current = loading.getNow(null);
         if (current == null) return false;
 
+        // The stored shape is text. The descriptions stay here, in the failure closure below, and
+        // never reach the record -- which is why VaultCell is a write-time type and VaultEntry is
+        // the persisted one.
+        Map<Integer, String> contents = new LinkedHashMap<>();
+        for (Map.Entry<Integer, VaultCell> cell : cells.entrySet()) {
+            if (cell.getValue() == null || cell.getValue().isEmpty()) continue;
+            contents.put(cell.getKey(), cell.getValue().item());
+        }
+
         PlayerVault updated = current.withPage(page, contents);
         vaults.put(playerId, CompletableFuture.completedFuture(updated));
         repository.save(updated).exceptionally(error -> {
-            log.log(Level.SEVERE, "Failed to persist vault page " + page + " for " + playerId
-                    + "; the items in that page are NOT on disk", error);
+            // ORDER MATTERS: poison BEFORE the callback. The callback hops to the main thread and
+            // may write, message or close a screen, and every one of those must find a vault that
+            // already refuses writes.
+            poison(playerId, error);
+            log.log(Level.SEVERE, VaultWriteFailure.report(playerId, page, cells), error);
+            onFailure.run();
             return null;
         });
         return true;
+    }
+
+    /**
+     * Mark this player's vault untouchable for the rest of the session.
+     *
+     * <h2>*** A FAILED FUTURE RATHER THAN A SECOND Set&lt;UUID&gt;, AND THE REASON IS REUSE ***</h2>
+     *
+     * Every refusal this needs already exists and is already tested: {@link #vault} and
+     * {@link #writePage} both check {@code isCompletedExceptionally}, and {@link #whenSettled}
+     * already reports a failed load as empty. A parallel "poisoned" set would be a second condition
+     * that every one of those call sites would have to learn about, and <b>the one that forgot would
+     * be the one that wrote over the file.</b>
+     *
+     * <p>So a poisoned vault is <b>exactly</b> a vault whose load failed, as far as every reader is
+     * concerned. The only place the two must differ is {@link #saveAllAndClear}, whose message says
+     * which happened.
+     *
+     * <p>Package-private and called from the failure closure above; there is no route to it from
+     * outside, because a caller deciding to poison a vault is a caller that should have failed a
+     * write.
+     */
+    void poison(UUID playerId, Throwable cause) {
+        vaults.put(playerId, CompletableFuture.failedFuture(
+                new IllegalStateException("vault write failed for " + playerId
+                        + "; this vault is poisoned for the session", cause)));
+    }
+
+    /**
+     * Is this player's vault poisoned or unreadable? <b>Collapses the two deliberately.</b>
+     *
+     * <p>For the screen, which needs to know whether to stay degraded across a page flip, and for
+     * the dev command, which should say so rather than reporting an ordinary refusal. A caller that
+     * needs to tell a failed LOAD from a failed WRITE has the log, which says which.
+     */
+    public boolean unusable(UUID playerId) {
+        CompletableFuture<PlayerVault> loading = vaults.get(playerId);
+        return loading != null && loading.isDone() && loading.isCompletedExceptionally();
     }
 
     /**
@@ -206,6 +288,28 @@ public final class VaultService {
                 .map(id -> {
                     CompletableFuture<PlayerVault> loading = vaults.remove(id);
                     if (loading == null) return CompletableFuture.completedFuture(null);
+
+                    // *** A POISONED VAULT IS SKIPPED EXPLICITLY, AND NOT BECAUSE thenCompose WOULD
+                    // SKIP IT ANYWAY. ***
+                    //
+                    // thenCompose does short-circuit on a failed future, so deleting these four
+                    // lines leaves the behaviour correct and the MESSAGE wrong: the flush would log
+                    // "Failed to save vault ... during shutdown", which reads as the shutdown
+                    // having broken something. The real event is that this vault was ALREADY
+                    // abandoned, minutes earlier, by a write whose report named the page and the
+                    // items. An operator chasing the wrong message is chasing the wrong incident.
+                    //
+                    // It is also the arm that makes the poison load-bearing rather than incidental:
+                    // if the cache were ever poisoned by something that left the future INTACT,
+                    // this is the line that still refuses to write it.
+                    if (loading.isDone() && loading.isCompletedExceptionally()) {
+                        log.log(Level.WARNING, "Vault for " + id + " was not written at shutdown:"
+                                + " it is poisoned or was never readable. The file on disk keeps"
+                                + " its last good contents; see the earlier SEVERE report for what"
+                                + " is missing from it.");
+                        return CompletableFuture.completedFuture(null);
+                    }
+
                     return loading
                             .thenCompose(repository::save)
                             .exceptionally(error -> {

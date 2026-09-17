@@ -88,7 +88,8 @@ class NexusStationGateTest {
 
         // AND EVERY OTHER SLOT ON THE SCREEN IS EMPTY -- without this, the four above are equally
         // consistent with at() returning a station for half the filler.
-        Set<Integer> stationSlots = Set.of(NexusMenuLayout.CRAFTING_SLOT,
+        Set<Integer> stationSlots = Set.of(NexusMenuLayout.VAULT_SLOT,
+                NexusMenuLayout.CRAFTING_SLOT,
                 NexusMenuLayout.ENCHANT_SLOT, NexusMenuLayout.GRINDSTONE_SLOT);
         int resolved = 0;
         for (int slot = 0; slot < NexusMenuLayout.SIZE; slot++) {
@@ -96,7 +97,11 @@ class NexusStationGateTest {
             assertEquals(stationSlots.contains(slot), isStation, "slot " + slot + " station-ness");
             if (isStation) resolved++;
         }
-        assertEquals(3, resolved, "exactly three stations, and the sweep actually ran");
+        // COUNTED AGAINST THE ENUM, not against a literal. The literal was `3` and the vault made it
+        // wrong; a count taken from Station.values() cannot go stale when a fifth station lands, and
+        // it still fails if at() stops resolving one of them.
+        assertEquals(NexusStationGate.Station.values().length, resolved,
+                "every station has a slot and nothing else does, and the sweep actually ran");
         // Mutation MUTAT-ALWAYS: return CRAFTING for any slot -> kill set RECORDED in the PR body.
     }
 
@@ -158,12 +163,31 @@ class NexusStationGateTest {
         assertTrue(refusal.contains(". A grindstone"), "the third sentence opens in upper case");
 
         // BOTH FACTS, as a property, so the message cannot be edited down to one of them.
+        //
+        // *** THE THIRD CLAUSE IS CHECKED AGAINST EACH STATION'S OWN SENTENCE, AND IT USED TO BE
+        // CHECKED AGAINST THE LITERAL "still works". ***
+        //
+        // That literal was true of all three stations because the sentence was DERIVED from the
+        // block's name -- and the vault is the station for which "an ender chest in the world still
+        // works" is FALSE, because the hijack takes the vanilla chest away. A property pinned to
+        // the shared wording would have forced the vault to lie in order to stay green.
+        //
+        // Checking worldRoute() is the stronger claim anyway: it says the refusal carries the third
+        // fact, whatever that station's third fact is.
         for (NexusStationGate.Station station : NexusStationGate.Station.values()) {
             String text = NexusStationGate.refusal(station, 2);
             assertTrue(text.contains("level " + station.unlockLevel()), "names the unlock level");
-            assertTrue(text.contains("still works"), "and names the world-block escape");
+            assertTrue(text.contains(station.worldRoute()),
+                    "and names this station's own world route: " + text);
             assertTrue(text.contains("You are level 2."), "and where the player stands");
         }
+
+        // AND THE VAULT'S SENTENCE IS PINNED, because it is the one the derivation could not have
+        // produced. A build that re-derived it would say "An ender chest in the world still works"
+        // -- which reads perfectly and promises storage the hijack has taken away.
+        assertEquals("Vault unlocks at level 20. You are level 2. "
+                        + "An ender chest opens this same vault.",
+                NexusStationGate.refusal(NexusStationGate.Station.VAULT, 2));
         // Mutation MUTREFUSAL-ONEFACT: drop the "still works" clause -> kill set RECORDED in the
         // PR body.
     }

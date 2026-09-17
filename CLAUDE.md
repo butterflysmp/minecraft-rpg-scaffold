@@ -827,6 +827,30 @@ passed when it never ran — this file's own headline defect, one level up.
   edit** (`diff` against a scratchpad copy). Zero-exit is not evidence. For a mutation, assert
   **both** directions: the marker landed **and** the original is gone.
 
+  > ### THREE WAYS A `perl` EDIT REPORTS SUCCESS AND CHANGES NOTHING — THE POINTER, BECAUSE THE ACCOUNTS ARE ELSEWHERE AND NOBODY FINDS THEM
+  >
+  > **Each of these has cost a mutation on this project, and all three accounts live somewhere a
+  > person about to WRITE an edit is not reading** — one inside the mutation-lies table's
+  > commentary, one inside *A LONG-LIVED BRANCH*'s instrument table, and one in no repo file at all.
+  > **A trap whose account is three sections away is a trap nobody is warned about.** So the
+  > operational form is here, where the edit is about to be written:
+  >
+  > | trap | what to do instead |
+  > |---|---|
+  > | **THE DELIMITER.** A `/` — or your own delimiter — anywhere in the replacement closes `s///` early, so the edit lands as a bare deletion | `s{...}{...}`, and **`s#...#...#` the moment the replacement contains a brace.** A marker with no punctuation at all |
+  > | **THE `$` ANCHOR ON A CRLF FILE.** `\r` sits between the last character and the newline, so a `$`-anchored pattern matches nothing and exits 0 | match on inner text, or splice by line number (`if $. == N`) and **print the region afterwards** |
+  > | **`\Q...\E` AROUND AN EMBEDDED `\n`.** `\Q` escapes the backslash, so the pattern hunts a literal backslash-n and never matches a real newline | keep newlines OUTSIDE the `\Q...\E`, or splice by line number |
+  >
+  > **The delimiter account is in the mutation-lies table's third row; the CRLF account is under
+  > *A LONG-LIVED BRANCH*. The `\Q` one has no account in this repo** — it is carried in a memory
+  > file, which is not greppable by whoever next opens the file it will bite. **That is the standing
+  > `NEXT.md` debt, and it is named here rather than paid by growing this pointer into an account.**
+  >
+  > **Two of the three fired during the slice that wrote this entry**, on 2026-09-17: a `$` anchor
+  > silently skipped an import insertion, and a `{` in a replacement aborted `perl` at parse time.
+  > **The second failed LOUDLY and the first did not**, which is the whole reason the table is
+  > ordered this way.
+
   > **THOSE TWO ARE NOT ALTERNATIVES, AND THIS USED TO SAY "OR".** Measured 2026-09-10: a
   > `perl -i -pe 's{A}g; s{B}g if $. >= L && $. <= L+35'` rewrote **forty other sites** while
   > **both halves of the marker grep passed** — marker present at the target, original gone at the
@@ -1303,11 +1327,22 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   > > A claim about a tool's behaviour is a claim about **a build of that tool**, and it is worth
   > > exactly nothing to a reader on a different one unless the version is in the sentence. Print
   > > `--version` beside the reading, not in a footnote.
-- **Reason from `origin/<ref>`, never a local ref.** Stated nowhere but here, and every mention of
-  the remote ref in this file is either this bullet or an instruction about **pushing** rather than
-  about reasoning from it. **Counts deliberately omitted — see the bullet above for why a count of
-  this file's own text cannot be written down.** *(Both figures were previously bare, and both had
-  drifted.)*
+- **Reason from `origin/<ref>`, never a local ref — and RECORD from a SHA, never from `origin/<ref>`.**
+  The remote ref is the authority on what is on the wire **now**, and a moving target the moment it
+  is written down. Stated nowhere but here, and every mention of the remote ref in this file is
+  either this bullet or an instruction about **pushing** rather than about reasoning from it.
+  **Counts deliberately omitted — see the bullet above for why a count of this file's own text
+  cannot be written down.** *(Both figures were previously bare, and both had drifted.)*
+
+  > **THE SECOND HALF WAS ADDED 2026-09-17, BECAUSE THE BULLET SCOPED ITS RULE BACKWARDS.** As
+  > written it said *prefer the remote ref*, full stop — and `GATE-nexus.md` states the opposite for
+  > the other half of the job: **a recorded count names the ref it was taken against, and the ref is
+  > a SHA**, because a count against `origin/master` stays correct of a tree the sentence no longer
+  > names. **Two rules, one axis, and the pointer carried only one end of it.**
+  >
+  > Reading it and recording it are different acts with opposite requirements: *is this merged* wants
+  > the wire, *how many rows were there* wants a SHA. **A reader who obeyed this bullet literally
+  > while writing a figure down did the wrong thing and had a rule telling them to.**
 - ~~**A squash body must carry the DEFECTS FOUND, not only what worked.**~~ **PAID** — it is now
   stated under *Squash-merge bodies*, with the `#92` instance. **Left struck rather than deleted, so
   the list records that the debt was paid rather than silently shortening**; a debt list that only
@@ -1865,6 +1900,41 @@ build.**
 > | **`perl -i` with a `$` anchor, on a CRLF WORKING TREE** | **nothing at all — see below** |
 > | **a generic bound** (`n-1` for sum-of-floors vs floor-of-sum) | **what the quantity can NEVER EXCEED, not what it IS** |
 > | **a MARKER GREP**, after a scripted edit | **whether that string EXISTS in the file, never whether YOUR EDIT is what put it there** |
+> | **a count taken in the WRONG SCOPE** | *how many are in the place I looked*, not *how many exist* |
+>
+> > ### *** A ZERO IN THE WRONG SCOPE IS INDISTINGUISHABLE FROM AN ABSENCE ***
+> >
+> > **The other members hand you a misleading NUMBER, and a number invites a second look. This one
+> > hands you a ZERO** — and zero does not read as a measurement at all. It reads as *the thing is
+> > not there*, in every instrument, in every language, with no further inference required. **It
+> > needs no misreading to do its damage.**
+> >
+> > **2026-09-17, and the instance is the reviewer's own.** Checking whether `GATE-nexus.md`'s rows
+> > carried a status, `Status: NOT RUN` was grepped **inside the ROW 92+ range** and returned **0** —
+> > one sentence away from being reported as *the rows carry no status*. **The string was there.**
+> > **The block label sits ABOVE the rows and the row label is a different string entirely** —
+> > `**Status: NOT RUN.**` against `**READING:** _(not run)_`. The scope was wrong, not the file.
+> >
+> > ```
+> > git grep -c '^\*\*READING:\*\*' 0735c69 -- GATE-nexus.md      # 99, every reading line, one shape
+> > ```
+> >
+> > **The reviewer's own count of the row label was 64 and is NOT reproduced here** — no pattern or
+> > ref tried gives that number (60 at `0735c69`, 65 at `185bc15`, 66 for a looser match). **It is
+> > quoted as his reading rather than restated as a measurement**, which is the whole of this page's
+> > rule about figures: the instance stands on what happened, not on a number a later reader would
+> > check against the file in front of them and find wrong.
+> >
+> > **WHY IT IS NOT THE FALSE-ABSENCE RULE ALREADY ON THIS PAGE.** Those four are *your word vs the
+> > author's*, *a broken instrument*, *a pattern that cannot match*, and *a tool that normalises*.
+> > **All four are answered by searching better.** This one is a perfectly good pattern, a perfectly
+> > good tool, and a correct answer — **to a question about a region rather than about the
+> > document.** Widening the search is not "searching better"; it is asking a different question.
+> >
+> > **Practically: before believing a zero, run the same count over a scope you KNOW is non-empty.**
+> > The positive control costs one command and turns *"it is not there"* into *"it is not there, and
+> > my instrument can find it when it is."* Same discipline as `check-absorbed.sh`'s control line,
+> > pointed at a grep.
 >
 > **THE BOUND IS THE MEMBER THAT NEEDS NO TOOLING TO COMMIT, AND IT IS NOT A FABRICATION.** A
 > fabricated quote has no source and is caught by reading the line. **A bound HAS a source and is

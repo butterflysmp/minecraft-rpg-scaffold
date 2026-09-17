@@ -1,5 +1,7 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
+import io.github.butterflysmp.rpg.core.vault.VaultPageGate;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -19,9 +21,25 @@ import java.util.Optional;
  * and no check was added to it.
  *
  * <p><b>That is why the locked lore must say BOTH facts.</b> A player told only "unlocks at level
- * 13" concludes the feature is unavailable to them, when in fact it is twenty blocks away in their
- * base. Saying only "use the block" would hide that the hub route is coming. <b>Neither sentence is
- * sufficient and the omission is silent either way.</b>
+ * 13" concludes the feature is unavailable to them, when in fact the block still works. Saying only
+ * "use the block" would hide that the hub route is coming. <b>Neither sentence is sufficient and the
+ * omission is silent either way.</b>
+ *
+ * <h2>*** THE RATIONALE ABOVE USED TO SAY "IT IS TWENTY BLOCKS AWAY IN THEIR BASE", AND THE VAULT
+ * FALSIFIED THAT HALF WITHOUT TOUCHING THE HEADING ***</h2>
+ *
+ * <b>The heading still holds, literally and for every station including the vault:</b> the ender
+ * chest opens our screen at every level, exactly as the crafting table does. <b>What stopped being
+ * true is the reason the third lore line gave</b> -- "the feature is twenty blocks away in your
+ * base" -- because walking to an ender chest does not get a sub-20 player storage. It gets them this
+ * same locked screen.
+ *
+ * <p>So the third line is no longer DERIVED from the block's name. Each station
+ * {@linkplain Station#worldRoute() authors its own sentence}, and the vault's says what its block
+ * actually does rather than promising vanilla behaviour it took away.
+ *
+ * <p><b>The heading is deliberately NOT amended</b>, per the 2026-09-17 ruling: amending a heading
+ * that is still true, because a paragraph under it went stale, loses the ruling the heading records.
  *
  * <p><b>{@code CraftingMenu}, {@code EnchantMenu} and {@code GrindstoneMenu} are UNTOUCHED by this
  * slice.</b> Putting the check in them would gate the world blocks too -- the opposite of the
@@ -32,7 +50,7 @@ final class NexusStationGate {
     private NexusStationGate() {}
 
     /**
-     * The three stations, each with the level that opens it.
+     * The stations, each with the level that opens it.
      *
      * <h2>THE THRESHOLDS ARE BEN'S, NOT DERIVED FROM THE CURVE</h2>
      *
@@ -40,28 +58,60 @@ final class NexusStationGate {
      * do not "regularise" them into a progression, and do not re-derive them from the XP totals.
      * {@code PlayerLevelTest} pins the totals those levels correspond to
      * ({@code 2,090 / 12,940 / 19,980}) so a curve retune moves the XP and never the levels.
+     *
+     * <p><b>The VAULT's threshold is the exception and is READ rather than authored</b>: it is
+     * {@code VaultPageGate}'s page-1 level, because the hub cell and the page button must open on
+     * the same day. This javadoc said "the three stations" until the vault arrived -- a count in a
+     * heading cannot be raised by appending.
      */
     enum Station {
-        CRAFTING(3, "Crafting", "A crafting table"),
-        ENCHANTING(10, "Enchanting", "An enchanting table"),
-        GRINDSTONE(13, "Grindstone", "A grindstone");
+        CRAFTING(3, "Crafting", "A crafting table in the world still works."),
+        ENCHANTING(10, "Enchanting", "An enchanting table in the world still works."),
+        GRINDSTONE(13, "Grindstone", "A grindstone in the world still works."),
+
+        /**
+         * The vault, and <b>the one station whose world block does not give the vanilla thing.</b>
+         *
+         * <p>{@code 20} is page 1's threshold and it is read from {@code VaultPageGate} rather than
+         * written here, so the hub cell and the page button cannot disagree about when the vault
+         * opens. The other three stations' levels are literals because nothing else holds them.
+         *
+         * <p><b>Its sentence is the whole reason this field stopped being derived.</b> "An ender
+         * chest in the world still works" would be FALSE -- the hijack takes the vanilla chest away
+         * at every level -- so it says what the block really does instead.
+         */
+        VAULT(VaultPageGate.unlockLevel(0), "Vault", "An ender chest opens this same vault.");
 
         private final int unlockLevel;
         private final String displayName;
-        private final String blockPhrase;
+        private final String worldRoute;
 
-        Station(int unlockLevel, String displayName, String blockPhrase) {
+        Station(int unlockLevel, String displayName, String worldRoute) {
             this.unlockLevel = unlockLevel;
             this.displayName = displayName;
-            this.blockPhrase = blockPhrase;
+            this.worldRoute = worldRoute;
         }
 
         int unlockLevel() { return unlockLevel; }
 
         String displayName() { return displayName; }
 
-        /** How the second lore line names this station's world block. */
-        String blockPhrase() { return blockPhrase; }
+        /**
+         * The third lore line: what this station's world block does for a player who cannot reach
+         * the hub route yet.
+         *
+         * <h2>*** A WHOLE SENTENCE, AUTHORED PER STATION. IT USED TO BE A NOUN PHRASE. ***</h2>
+         *
+         * <p>This was {@code blockPhrase()} -- {@code "A grindstone"} -- and both call sites
+         * appended {@code " in the world still works."} to it. That derivation made the three
+         * sentences consistent and made a FOURTH station impossible to word truthfully: the
+         * vault's block does not leave vanilla behaviour in place, it replaces it.
+         *
+         * <p><b>The three original sentences are byte-identical to what the derivation produced</b>,
+         * including the capital "A" that {@code refusal}'s own comment records a draft getting
+         * wrong by lower-casing.
+         */
+        String worldRoute() { return worldRoute; }
     }
 
     /**
@@ -75,6 +125,7 @@ final class NexusStationGate {
         if (slot == NexusMenuLayout.CRAFTING_SLOT) return Optional.of(Station.CRAFTING);
         if (slot == NexusMenuLayout.ENCHANT_SLOT) return Optional.of(Station.ENCHANTING);
         if (slot == NexusMenuLayout.GRINDSTONE_SLOT) return Optional.of(Station.GRINDSTONE);
+        if (slot == NexusMenuLayout.VAULT_SLOT) return Optional.of(Station.VAULT);
         return Optional.empty();
     }
 
@@ -108,7 +159,7 @@ final class NexusStationGate {
         return List.of(
                 "Locked -- unlocks at level " + station.unlockLevel(),
                 "You are level " + level + ".",
-                station.blockPhrase() + " in the world still works.");
+                station.worldRoute());
     }
 
     /**
@@ -159,6 +210,6 @@ final class NexusStationGate {
         // reading the asserted string, which is why the draft was asserted at all.
         return station.displayName() + " unlocks at level " + station.unlockLevel()
                 + ". You are level " + level + ". "
-                + station.blockPhrase() + " in the world still works.";
+                + station.worldRoute();
     }
 }

@@ -39,6 +39,7 @@ import io.github.butterflysmp.rpg.paper.menu.GrindstoneMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.menu.MenuSafety;
 import io.github.butterflysmp.rpg.paper.menu.NexusMenu;
+import io.github.butterflysmp.rpg.paper.menu.NexusVaultMenu;
 import io.github.butterflysmp.rpg.core.recipe.RecipeRegistry;
 import io.github.butterflysmp.rpg.paper.content.RecipeRegistrar;
 import io.github.butterflysmp.rpg.paper.menu.RecipeCatalogue;
@@ -300,7 +301,24 @@ public final class RpgListeners implements Listener {
                 // entry it inherits it and cannot get it wrong.
                 Material.GRINDSTONE,
                 (player, block) -> new GrindstoneMenu(player, weapons, shields, armor, tools,
-                        adapters));
+                        adapters),
+                // *** THE ENDER CHEST, AND IT IS THE ONLY HIJACK THAT TAKES SOMETHING AWAY. ***
+                //
+                // The other three replace a screen with a better screen. This one replaces the
+                // player's 27 vanilla stacks with our own storage, so their things are behind a
+                // container they can no longer open until the migration copies them -- which is why
+                // the migration is part of THIS PR and not a later one.
+                //
+                // NO BREADCRUMB. Opened from the block there is no hub in the story, so the vault's
+                // Back cell is filler -- CraftingMenuLayout.BACK_SLOT's rule, which the crafting
+                // table's entry above relies on in exactly the same way.
+                //
+                // AND IT OPENS AT EVERY LEVEL, per NexusStationGate's heading: a sub-20 player gets
+                // the screen with seven locked pages. That is what makes the third locked lore line
+                // "An ender chest opens this same vault" true rather than a promise of vanilla
+                // storage that is no longer there.
+                Material.ENDER_CHEST,
+                (player, block) -> new NexusVaultMenu(player, adapters, profiles, vaults));
     }
 
     /**
@@ -719,7 +737,7 @@ public final class RpgListeners implements Listener {
             }
 
             new NexusMenu(event.getPlayer(), adapters, profiles, weapons, resources,
-                    recipeCatalogue, shields, armor, tools).open();
+                    recipeCatalogue, shields, armor, tools, vaults).open();
             return;
         }
 
@@ -1052,7 +1070,7 @@ public final class RpgListeners implements Listener {
         // returnEverything: the own-inventory screen is not one of our menus and holds no input
         // slots of ours, so openInventory's implicit close is sufficient.
         adapters.scheduler().onEntity(player, () -> new NexusMenu(player, adapters, profiles,
-                weapons, resources, recipeCatalogue, shields, armor, tools).open());
+                weapons, resources, recipeCatalogue, shields, armor, tools, vaults).open());
     }
 
     /**

@@ -25,6 +25,8 @@ has none:
 
 | **ROWS 92–96** | five | **2 PASS, 2 PARTIAL, 1 VOID.** Run 2026-09-17, Slice 11 PR 1, the vault's storage layer. **Rows 92 and 94 are the SOLE WITNESSES and both are FULLY witnessed** — 94 including its empty-vault control, the half most likely to be skipped. The PDC round trip and the shutdown flush have no unit rows anywhere in the project, because no module can construct an `ItemStack`. **93 and 95 are PARTIAL**: the directory check and the `/rpg stats` control were not run, and both stand NOT RUN in their rows. **96 is VOID** — no second account was online — and it was never a sole witness |
 
+| **ROWS 97–110** | fourteen | **ALL NOT RUN.** Slice 11 PR 2, the vault screen, the hijack and the migration. **Rows 102 and 103 are SOLE WITNESSES** — the migration needs a real ender chest and a real `ItemStack`, and **row 103 is the only row in this file whose failure mode is a GAIN**, so no loss row can fail on it |
+
 **Every other row in this file has no reading at all.**
 
 > **AND A DISCHARGED FLAG IS RECORDED AS DISCHARGED, BECAUSE IT READS IDENTICALLY TO AN OPEN ONE.**
@@ -3867,3 +3869,369 @@ NOT deferred.**
 > per-UUID keying is not left unwitnessed by this: `FileVaultRepositoryTest` writes `<uuid>.json`
 > and `VaultServiceTest` keys its map by UUID. That is what makes a VOID here survivable, and it is
 > the whole difference between this row and 92 or 94, whose claims no module can construct at all.
+
+---
+
+# SLICE 11, PR 2 — THE VAULT SCREEN, THE HIJACK AND THE MIGRATION. ROWS 97–110.
+
+**Status: NOT RUN.** Every row below was written **before any boot**, and before the branch that
+adds them was pushed.
+
+## GAME MODE
+
+**EVERY ROW IN THIS BLOCK IS `/gamemode survival` UNLESS ITS OWN HEADING SAYS OTHERWISE.** Row 109
+is the creative control and stages creative on purpose.
+
+> **AND CREATIVE HOLLOWS OUT THIS BLOCK HARDER THAN ANY BEFORE IT.** The register's rule is that
+> *creative removes a cost*, and a row whose reading is **"the item is still there"** is satisfied
+> for free once the cost is gone. **Eleven of these fourteen rows read exactly that way.** In
+> creative a player can conjure a second Boltor between the store and the take, so even row 103 --
+> the duplication row -- would not distinguish a duplicate from a spawn.
+
+## *** THE TWO SOLE WITNESSES, AND WHY THEY ARE THESE TWO ***
+
+| row | claim | why nothing else can see it |
+|---|---|---|
+| **102** | **MIGRATION** copies the ender chest into page 1 **and leaves the chest holding it** | needs a real `getEnderChest()`, a real `ItemStack`, and a profile stamp that survives a restart. `VaultMigrationPlan` tests the PLAN over slot indices; **no test in any module can move an item** |
+| **103** | **take an item OUT, close, rejoin -- EXACTLY ONE copy exists** | **no LOSS row can fail on it.** Every other row here asserts something is still there, and a duplicate satisfies all of them. This is the only row in the file whose failure mode is a GAIN |
+
+> **ROW 103 IS THE ROW THIS ENTIRE SLICE WAS RE-PLANNED AROUND.** The withdrawn PR 2 draft wrote
+> the page synchronously, which duplicates on every take-out -- and **the draft's own gate block
+> would have passed**, because it was written against loss. Skipping 103 is zero confidence in the
+> hop, not less.
+
+## WHAT THE UNIT SUITE ALREADY SETTLES, SO THESE ROWS DO NOT RE-READ IT
+
+`VaultPageGateTest` pins the seven thresholds and the inclusive boundary; `NexusVaultLayoutTest`
+pins the seven-buttons-for-seven-pages equality, the 36 storage cells, the three-way partition and
+the screen-to-vault conversion in both directions; `VaultReturnPolicyTest` exercises **both** answers
+of the close opt-out; `VaultServiceTest` pins the poison, the refusal of every later write and the
+shutdown skip; `VaultMigrationPlanTest` pins slot-for-slot placement and the occupied-cell skip;
+`PlayerProfileMigrationTest` pins the v3 → v4 stamp and that it sets no value.
+
+**What none of them can see** is a router, a real `ItemStack`, an ender chest, a hijacked block, a
+page flip, a close, or a restart. **That gap is these fourteen rows.**
+
+---
+
+## ROW 97 — THE ENDER CHEST OPENS THE VAULT, AT EVERY LEVEL
+
+**CONDITIONS:** survival, a player **below level 20** (`/rpg playerxp set 0`). Place an ender chest.
+
+**STAGE:** right-click it. Then sneak-right-click it.
+
+**PREDICTED:** **our screen opens both times** -- title `Vault`, seven page buttons in the top row,
+**all seven gray and named `Page N -- locked`**, the 36 storage cells filled with gray panes reading
+`Locked`. **The vanilla ender chest screen never appears.** No Back button (opened from the block).
+
+> **THE SNEAK IS NOT A SECOND WAY OF SAYING THE SAME THING.** `openHijackedBlock` cancels
+> UNCONDITIONALLY, above the `isSneaking` check -- the fix the enchanting table's sneak-guard bug
+> paid for. A build that put the cancel inside the sneak guard opens the VANILLA chest on the second
+> click, which is the one screen the hijack exists to replace.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 98 — THE HUB CELL AT 29, AND ITS THIRD LORE LINE IS NOT THE OTHER THREE
+
+**CONDITIONS:** survival, operator, below level 20, star enabled.
+
+**STAGE:** open the hub. Hover slot 29. Click it. Then hover slot 31 (crafting) for comparison.
+
+**PREDICTED:** slot 29 is an **ender chest** icon, name `Vault` dimmed, **three** lore lines:
+
+```
+Locked -- unlocks at level 20
+You are level <N>.
+An ender chest opens this same vault.        <- NOT "in the world still works"
+```
+
+The click sends `Vault unlocks at level 20. You are level <N>. An ender chest opens this same vault.`
+Slot 31's third line still reads `A crafting table in the world still works.`
+
+> **THE COMPARISON IS THE ROW.** The other three stations promise the world block **still works**,
+> which is true of them and FALSE of the vault -- the hijack took the vanilla chest away. A build
+> that re-derived the sentence from the block's name reads perfectly and promises storage that is
+> gone. **The two cells must not say the same shape of thing.**
+
+**READING:** _(not run)_
+
+---
+
+## ROW 99 — PAGE 1 OPENS AT EXACTLY 20, AND IS LOCKED AT 19
+
+**CONDITIONS:** survival, operator.
+
+**STAGE:** `/rpg playerxp setlevel 19` (or the XP equivalent), open the vault, read page 1's button
+and the storage cells. Then set level **20** and reopen.
+
+**PREDICTED:** at 19 the button is gray, `Page 1 -- locked`, storage is panes, **and no item can be
+placed** -- a click with an item on the cursor does nothing and the item stays on the cursor. At 20
+the button is **LIME**, named `Page 1`, storage is **empty cells**, and an item can be placed.
+
+> **19 AND 20, NOT 1 AND 50.** The boundary is the whole content of this row, and it is inclusive:
+> level 20 opens the level-20 page. A row staged at 1 and 50 passes on a build that compares `>`.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 100 — A LOCKED PAGE BUTTON SAYS WHY AND DOES NOT FLIP
+
+**CONDITIONS:** survival, operator, **level 20 exactly** -- page 1 open, pages 2-7 locked.
+
+**STAGE:** put a recognisable item in page 1. Click the **page 4** button. Then the right arrow.
+
+**PREDICTED:** chat reads `Vault page 4 unlocks at level 35. You are level 20.` -- **page 4, not
+page 3**. **The screen does not change**: the item is still in the same cell, the page 1 button is
+still lime.
+
+> **THE ITEM IS THE INSTRUMENT.** A refusal that still repainted would clear the storage cells, and
+> an empty screen after a refused click is indistinguishable from a working refusal unless something
+> was in it.
+
+> **AND `page 4` IS THE 0-BASED/1-BASED CHECK.** Page index 3 renders as `Page 4`; a build that
+> dropped the conversion says `page 3`, which is a real page and reads as correct.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 101 — AN ITEM PUT IN IS THERE AFTER A REJOIN
+
+**CONDITIONS:** survival, operator, level 50 (all pages open).
+
+**STAGE:** `/rpg give boltor`. Open the vault from the hub. Put the Boltor in **page 3, the cell in
+the second row, fifth column**. Close with the button. `/rpg vault dump`. Quit. Rejoin. Open the
+vault, flip to page 3.
+
+**PREDICTED:** dump reads `page 3: 1 item(s)`. After the rejoin the Boltor is **in the same cell**,
+with its name, rarity colour, lore and enchants. **Nothing was handed back on close** -- the player's
+inventory does not contain it.
+
+> **"NOTHING WAS HANDED BACK" IS THE HALF THAT IS NEW.** Every other input menu in this plugin
+> returns its contents on close. This is the row that reads the opt-out, and the failure it detects
+> is the vault behaving like a workbench -- which looks like "my item came back", not like a bug.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 102 — *** MIGRATION: THE CHEST IS COPIED, AND THE CHEST STILL HAS IT. SOLE WITNESS. ***
+
+**CONDITIONS:** survival, operator. **A player who has NEVER opened the vault** -- verify
+`vaultMigrated` is absent or false in their `profiles/<uuid>.json` before starting. **Below level 20
+at the start.**
+
+**STAGE:**
+
+1. **Before this build is deployed**, or with the plugin disabled: put **three** distinguishable
+   stacks in a vanilla ender chest, at chest slots **0, 13 and 26**. Write down what they are.
+2. Boot this build. Join. Confirm level < 20.
+3. Open the vault (block or hub). **Confirm page 1 is locked and holds nothing.**
+4. `/rpg playerxp setlevel 20`. **Close and reopen the vault.**
+5. `/rpg vault dump`.
+6. `/stop`, restart, rejoin, open the vault.
+
+**PREDICTED:** at step 4 chat says `3 item(s) from your ender chest are now on vault page 1. The
+ender chest still holds them too.` Page 1 shows the three stacks **in the same arrangement** --
+first cell, second row centre, third row last cell. Dump reads `page 1: 3 item(s)`. After the restart
+they are **still there**, and `vaultMigrated` is `true` in the profile JSON.
+
+**AND THE HALF THAT IS THE WHOLE POINT:** the **vanilla ender chest still contains all three**.
+Check it with `/data get entity @s EnderItems` or by disabling the hijack; **do not** check it by
+right-clicking the block, which now opens our screen.
+
+> **THE COPY IS DELIBERATE AND IS NOT A DUPLICATION BUG.** The chest is unreachable once the block
+> is hijacked, so the copy is not something anybody can spend -- and if the hijack is rolled back,
+> the player's things are still where they left them. **A clear-on-migrate would have made that
+> unrecoverable**, which is the standing ruling this row reads.
+
+> **STEP 3 IS NOT OPTIONAL.** Without it, "the items are on page 1 at step 4" is equally consistent
+> with a build that migrates on the FIRST OPEN at any level -- which would put items on a page the
+> player cannot see, at a moment nobody is watching.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 103 — *** TAKE ONE OUT, REJOIN, AND COUNT. EXACTLY ONE. SOLE WITNESS. ***
+
+**CONDITIONS:** survival, operator, level 50. **One** Boltor in the world, in page 5, cell 31.
+
+**STAGE:**
+
+1. Confirm with `/rpg vault dump`: `page 5: 1 item(s)`, and your inventory is **empty of Boltors**.
+2. Open the vault, flip to page 5, **take the Boltor out** into your inventory.
+3. **Immediately** -- same second -- close the screen with the button.
+4. `/rpg vault dump`.
+5. Quit. Rejoin. `/rpg vault dump` again, and count the Boltors in your inventory.
+
+**PREDICTED:** after step 3 the dump reads **`Vault: 0 occupied slot(s)`** -- page 5 is gone from the
+listing entirely. Your inventory holds **exactly one** Boltor. After the rejoin: **still zero in the
+vault, still exactly one in the inventory.**
+
+> **THE NUMBER TO WRITE DOWN IS ONE, AND THE FAILURE IS TWO.** A synchronous write persists the page
+> **with the item still resting in it**, because `InventoryClickEvent` fires before the click
+> applies -- so the file keeps a copy while the player walks away with another. **The dump would read
+> `page 5: 1 item(s)` and look perfectly healthy.**
+>
+> **EVERY OTHER ROW IN THIS BLOCK PASSES ON THAT BUILD.** Nothing is lost, nothing errors, and the
+> only symptom is one extra weapon in the world.
+
+> **THE IMMEDIACY AT STEP 3 IS THE FIXTURE.** The write hops one tick; closing within the same second
+> is what makes a missing hop visible rather than papered over by the next gesture.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 104 — A DRAG ACROSS THE PAGE, THEN AN IMMEDIATE `/stop`
+
+**CONDITIONS:** survival, operator, level 50.
+
+**STAGE:** hold a stack of **64** of something. Open the vault at page 2. **Drag** across **nine**
+empty cells to spread it. **Immediately** `/stop`. Restart, rejoin, open page 2, and count.
+
+**PREDICTED:** **nine cells hold 7, 7, 7, 7, 7, 7, 7, 7, 8** (vanilla's own spread arithmetic, which
+we do not do) -- or whatever vanilla produced, **and the same arrangement after the restart**. The
+total is still 64. Nothing is on the cursor and nothing was handed back.
+
+> **THE DRAG PATH IS A SECOND CODE PATH AND THE WITHDRAWN PLAN DID NOT MENTION IT AT ALL.**
+> `onDragPermitted` dispatches nothing else and its own javadoc says the contents have not changed
+> yet. A build that wrote synchronously here persists the page as it was **before** the spread -- and
+> then the close hands back nothing, so all 64 are gone.
+
+> **COUNT THE CELLS, NOT THE ITEMS.** The prediction is a count the screen reports; a reading of
+> "the stack is still there" is satisfied by one cell holding 64.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 105 — A PAGE FLIP WITH ITEMS IN THE ROWS LOSES NOTHING
+
+**CONDITIONS:** survival, operator, level 50.
+
+**STAGE:** put item **A** in page 2 cell 0. Flip to page 6. Put item **B** in page 6 cell 35. Flip
+back to page 2. Flip to page 6. Quit, rejoin, and read both pages.
+
+**PREDICTED:** A is in page 2 cell 0 and B is in page 6 cell 35, on every flip and after the rejoin.
+`/rpg vault dump` reads **two pages, one item each**.
+
+> **A FLIP REPAINTS THE STORAGE CELLS, WHICH DISCARDS WHATEVER IS IN THEM.** That is only safe if the
+> page was written first. **Pages 2 and 6, cells 0 and 35** -- the two ends of both ranges, so a
+> flip that wrote the TARGET page instead of the CURRENT one puts A where B belongs and the row
+> reads it.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 106 — THE FOUR CLOSE PATHS ALL KEEP THE ITEMS
+
+**CONDITIONS:** survival, operator, level 50.
+
+**STAGE:** four separate readings, each starting with one item in page 1 cell 4:
+
+- **106a** close with the button
+- **106b** press Esc
+- **106c** quit while the screen is open
+- **106d** `/stop` while the screen is open, then restart
+
+**PREDICTED:** in **all four**, the item is **still in page 1 cell 4** and is **NOT** in the
+player's inventory. Four readings, four PASSes, recorded separately.
+
+> **NOT COLLAPSIBLE INTO ONE ROW.** The button and Esc reach `onClose` by different routes, a quit
+> races the profile save, and `/stop` may not deliver a close event at all -- which is why
+> `returnEverything` is public and shutdown calls it directly. A build that returned the page on one
+> of the four is a build that empties a vault on one specific gesture.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 107 — AN UNREADABLE ENTRY IS SHOWN, REFUSED, AND KEPT
+
+**CONDITIONS:** survival, operator, level 50. **Hand-edit the vault file with the server stopped:**
+put `"item": "not-base64-at-all"` in a page 4 cell, beside one real item.
+
+**STAGE:** boot, open the vault, flip to page 4. Try to take the barrier. Try to place an item on it.
+Flip away and back. Quit, rejoin, and read the file again.
+
+**PREDICTED:** the cell shows a **BARRIER** named `Unreadable item`, lore `This server cannot read
+it.` / `It is KEPT, not deleted.` **Neither gesture does anything** -- the barrier does not move and
+nothing lands on it. After the flips and the rejoin, **the file still contains the exact string
+`not-base64-at-all`**, byte for byte, and the real item beside it is untouched.
+
+> **THIS IS THE ROW THAT READS PR 1's PROMISE THROUGH PR 2's SCREEN.** The vault writes a page by
+> encoding the 36 live cells -- and an entry that cannot be DECODED cannot be rendered into a cell to
+> be re-encoded. **Without the opaque map it would simply be absent from the snapshot, and the first
+> write after opening that page would delete it silently.** The player would never know; the file
+> would just get shorter.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 108 — THE MIGRATION RUNS ONCE, NOT ON EVERY OPEN
+
+**CONDITIONS:** survival, operator. Immediately after **row 102**, same player, same session.
+
+**STAGE:** close and reopen the vault three times. Move one migrated stack from page 1 to page 3.
+Close, reopen. `/rpg vault dump`. Quit, rejoin, reopen, dump again.
+
+**PREDICTED:** the migration message appears **exactly once, in row 102, and never again.** The total
+occupied slot count **never rises above 3**. After moving one to page 3 the dump reads `page 1: 2
+item(s)` and `page 3: 1 item(s)` -- **and page 1 does NOT regain a third.**
+
+> **THE MOVE IS WHAT MAKES THIS ROW ABLE TO FAIL.** A build that re-migrates on every open would be
+> invisible while page 1 still holds everything -- `VaultMigrationPlan` skips occupied cells, so the
+> second run is a no-op. **Empty a cell and the re-run has somewhere to land**, which is the only way
+> a missing stamp shows itself.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 109 — *** THE CREATIVE CONTROL. ITS OWN ROW, NOT A CAVEAT ON ANOTHER. ***
+
+**CONDITIONS:** **`/gamemode creative`**, operator, level 50.
+
+**STAGE:** open the vault from the hub. Put a creative-spawned item in page 1 cell 0. Close. Reopen.
+Then open it from an ender chest block.
+
+**PREDICTED:** **the screen opens and behaves**, the item persists, and both routes work.
+
+> **THIS ROW CERTIFIES CREATIVE AND NOTHING ELSE, WHICH IS THE POINT OF HAVING IT.** The register's
+> rule: a creative reading certifies creative. **It is here to record a KNOWN divergence if one
+> appears**, not to stand in for any survival row -- and if it diverges, the divergence goes in the
+> creative-divergence register in `CLAUDE.md` with the mechanism named.
+
+> **AND THE OWN-INVENTORY DECOMPOSITION IS THE ONE TO WATCH FOR.** `InventoryCreativeEvent`
+> decomposes a gesture into independent single-slot writes, which is what duplicated the Nexus star
+> in Row 8. **A vault cell is an input slot, so the same shape is reachable here.**
+
+**READING:** _(not run)_
+
+---
+
+## ROW 110 — THE CONTROL. EVERYTHING ELSE STILL WORKS.
+
+**CONDITIONS:** survival, operator, level 50.
+
+**STAGE:** from the hub: open crafting, enchanting and the grindstone, and come back with each Back
+button. Confirm the star still opens the hub from its slot (slice 7), still works from a non-hotbar
+slot (slice 8), and that `/menu` opens the hub (slice 10).
+
+**PREDICTED:** **all six behave exactly as they did**, and the Back buttons return to a hub that now
+shows **four** stations.
+
+> **THIS SLICE EDITED SHARED CODE, WHICH IS WHY THE CONTROL IS LARGER THAN USUAL.** `Menu` gained a
+> hook that `returnEverything` now iterates, `NexusMenuLayout`'s filler is built by a different
+> mechanism, `NexusStationGate`'s third lore line stopped being derived, and `NexusMenu` gained a
+> parameter at **seven** construction sites. **A mistake in any of those shows up in a screen this
+> slice is not about.**
+
+**READING:** _(not run)_
