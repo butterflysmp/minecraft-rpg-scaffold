@@ -61,10 +61,19 @@ git grep -c '^## ROW' origin/master -- GATE-nexus.md   # true until the next mer
 > says *what it was produced from*. **A command without a ref is reproducible and unfalsifiable** —
 > you can re-run it forever and never learn that the sentence is about something else now.
 
-**77 at `d89cc2d`** — seventy-six integer-numbered rows plus **ROW 12b**, whose ID is not an
-integer and which therefore **belongs to no range.** (`d89cc2d` is `#118`'s squash, and was
-`origin/master` when this was written — **named by SHA rather than by that branch, per the rule
-above**.)
+**77 at `79a64a3`** (`#119`'s squash) — seventy-six integer-numbered rows plus **ROW 12b**, whose ID
+is not an integer and which therefore **belongs to no range.** <b>91 in this working tree</b>, which
+gained slice 10's fourteen (78–91).
+
+> **BOTH FIGURES ARE RECOUNTED, AND THE FIRST ONE NAMES A SHA WHILE THE SECOND CANNOT.**
+> `79a64a3` is checkable forever; *"this working tree"* is the one phrase this rule cannot fix,
+> because a working tree has no name. **So the working-tree figure is the perishable half and
+> `79a64a3`'s is the durable one** — and when slice 10 merges, re-run the command against the new
+> squash rather than assuming 91.
+>
+> This paragraph named `d89cc2d` until `#119` merged and moved the referent — <b>the fourth-turn
+> defect it exists to describe, demonstrated on itself one merge later.</b> That is not a failure of
+> the rule; it is the rule being followed: the figure was re-derived and the SHA moved with it.
 
 **RECOUNTED with the command above, not adjusted.** It read *"65 on `origin/master` and 77 in this
 working tree"* until 2026-09-17 — **true when written and falsified by slice 9's own merge**, which
@@ -3063,6 +3072,422 @@ and **the level does not move**. `set` is accepted.
 > never decreases and every other writer obeys it. An operator's hand on the dial is not the game.
 
 **READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
+
+---
+
+# SLICE 10 — /menu, AND THE SETTINGS MENU BECOMES A HUB. ROWS 78–91
+
+**Status: NOT RUN.** Every row below was written **before any boot**.
+
+**GAME MODE: `/gamemode survival` for all fourteen.**
+
+> **SURVIVAL IS LOAD-BEARING FOR THREE OF THEM, NOT BOILERPLATE.** Rows 83, 84 and 85 read whether a
+> CLONE CAN LEAVE THE PICKER. **Creative removes the cost of having an item at all** — a player can
+> conjure the same stack from the creative menu, so *"there is now an extra one"* is satisfied for
+> free and the row passes without exercising anything. That is the creative-divergence register's
+> own shape: **creative removes a cost, and a row whose reading is "the thing is there" then tests
+> nothing.**
+
+## *** THE DENOMINATOR, AND IT NAMES A SHA ***
+
+**77 at `79a64a3`** (`#119`'s squash), before this block. Recounted, not adjusted, and the ref is a
+SHA rather than `origin/master` — see the rule in the STATUS section: a count against a moving ref
+stays correct while its referent moves out from under it.
+
+```
+git grep -c '^## ROW' 79a64a3 -- GATE-nexus.md
+```
+
+## EVERY READING LINE BELOW BEGINS `**READING:**`
+
+**This is the first block written since `#119` fixed the vocabulary, so it is the one that says
+whether the fix held.** No `READING — <date>` variant, no `READING (restaged N)` variant. If a row
+here is ever restaged, the restaging goes AFTER the prefix.
+
+## *** WHAT THIS SLICE PUTS AT RISK, AND IT IS NOT THE MENU ***
+
+**The picker now contains CLONES OF EVERY ITEM THE PLAYER OWNS.** If any route lets one leave that
+screen, it is free duplication of anything in their inventory — **an economy hole, not a display
+bug**, and one that scales with how much they are carrying.
+
+**Rows 83, 84 and 85 are that risk, read three times, and they MUST NOT BE COLLAPSED INTO ONE.**
+`MenuRouting` handles shift-click, the number keys and F on **three different code paths**, and
+**two of them act on the HOVERED slot rather than on a declared input** — so a build that refuses
+one can permit another. **One row passing says nothing about the other two.**
+
+**What the unit suite already settled.** `NexusSlotPickerLayoutTest` pins the mirror at both seams,
+the bijection onto 0..35, the filler by subtraction, the unique slot names, and the chrome agreeing
+with the screen one click up; `SettingsMenuLayoutTest` pins the two buttons, the deliberate gap at
+23, and `SETTING_SLOTS` as one list used twice; `FilePlayerRepositoryTest` pins that an absent
+`starEnabled` key reads as ENABLED against a real v3 file, and that an untouched toggle writes no
+key at all.
+
+**What none of them can see** is a router, a real `PlayerInventory`, a cloned `ItemStack`, a join,
+a respawn, or a command typed by a player who is not an operator. **That gap is these fourteen
+rows.**
+
+---
+
+## ROW 78 — `/menu` OPENS THE HUB
+
+**CONDITIONS:** survival, operator, star present and enabled.
+
+**STAGE:** type `/menu`.
+
+**PREDICTED:** the **Nexus hub opens** — the same screen the star opens, with the stats head at 13,
+the three stations at 31/32/33 and the settings torch at 50. No chat line.
+
+> **THE SAME SCREEN, NOT A SECOND ONE.** `MenuCommand` builds a `NexusMenu` with the services the
+> plugin already holds, including **the one shared `RecipeCatalogue`** — a second instance would be
+> a second lifetime cache, and the two would agree until one had seen a recipe the other had not.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 79 — `/menu` WORKS FOR A NON-OPERATOR
+
+**CONDITIONS:** survival. **A player who is NOT op** — `/deop <them>` first, and confirm with a
+command they should be refused, e.g. `/rpg playerxp add <them> 1 xp`, which must say they lack
+permission.
+
+**STAGE:** as that player, type `/menu`.
+
+**PREDICTED:** **the hub opens.** No permission error.
+
+> **`rpg.command.menu` IS DECLARED `default: true`**, like `cast`, `class` and `stats`. It is
+> declared rather than left off `requires()` **so an admin can revoke it** — an undeclared node
+> cannot be taken away, only worked around.
+>
+> **THE `/deop` HALF IS THE CONTROL AND IT IS NOT OPTIONAL.** Run as an operator, this row passes
+> on a build where the node defaults to `op` and proves nothing. **The refused command is what says
+> the player really is unprivileged**; without it, the row is measuring the fixture.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 80 — *** `/menu` WITH THE STAR DISABLED. THE ROW THE WHOLE ORDERING EXISTS FOR. ***
+
+**CONDITIONS:** survival. Open the hub, go to Settings, **switch the Nexus star OFF**, and confirm
+it is gone from the inventory.
+
+**STAGE:** with **no star anywhere in the inventory**, type `/menu`.
+
+**PREDICTED:** **the hub opens.**
+
+> ***THIS IS WHY `/menu` AND THE TOGGLE SHIP IN THE SAME SLICE.*** The toggle deletes the star.
+> Without a second route to the hub, **that switch is a ONE-WAY DOOR**: a player turns the star off,
+> and the screen that would turn it back on is the screen they can no longer reach.
+>
+> **If this row fails, the slice must not ship** — not because the toggle is wrong, but because the
+> escape hatch is. Same shape as Row 64 for slice 8, and **it is a SHIP CONDITION, so its reading is
+> written into this file BEFORE the merge it gates**, which is the lesson Row 64 cost.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 81 — THREE SCREENS, TWO BACKS, ONE CLOSE CELL — AND THE LABELS DIFFER
+
+**CONDITIONS:** survival, star enabled.
+
+**STAGE:** `/menu` → click Settings (50) → click **Nexus Slot** (22). Then press **Back** (48) once,
+and again. Then re-enter and press **Close** (49) on each of the three screens.
+
+**PREDICTED:** the chain is `Nexus → Settings → Nexus Slot`. **Back on the picker reads "Back to
+Settings"** and lands on Settings; **Back on Settings reads "Back to the Nexus"** and lands on the
+hub. **Close is 49 on all three** and closes outright.
+
+> **THE PREDECESSOR GOT THIS EXACTLY WRONG AND THIS ROW IS AIMED AT ITS DEFECT.** Its picker used
+> **back 49 / close 53** while its own settings screen used **48/49** — so **49 meant "back" on one
+> screen and "close" on the very next one.** A player who had learned either had learned a trap.
+>
+> **Same slot, same shape, DIFFERENT WORD is the convention working, not a collision.** The label
+> names the DESTINATION, and the two destinations genuinely differ — one step up versus two.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 82 — THE PICKER SHOWS REAL ITEMS, AND EXACTLY ONE CELL IS LIME
+
+**CONDITIONS:** survival. Put **at least six distinguishable items** in scattered cells — hotbar and
+storage both — and leave several cells empty. Star enabled, in a known slot.
+
+**STAGE:** `/menu` → Settings → Nexus Slot. Read the grid.
+
+**PREDICTED:**
+
+- every occupied cell renders **the player's own item**, recognisable, with its own name;
+- every empty cell is a **LIGHT GRAY** pane reading `Empty (Row 2, slot 4)` and
+  `Click to move the Nexus here.`;
+- **exactly ONE cell is LIME**, reading `Current slot (Hotbar 9)` — and it is the star's cell;
+- the hotbar is the **bottom row** of the picker, and storage is above it, in the player's own
+  order.
+
+> **COUNT THE LIME CELLS RATHER THAN CONFIRMING THE EXPECTED ONE IS LIME.** *"Slot 9 is lime"* is
+> satisfied by a build that paints every cell lime. **Exactly one** is the claim.
+>
+> **AND THE CURRENT CELL SHOWS THE PANE, NOT THE STAR IT CONTAINS.** Rendering the occupant there
+> would paint a second Nexus star onto the screen — the shape `converge`'s surplus deletion exists
+> to stop people creating.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 83 — *** SHIFT-CLICK A CLONED CELL. NOTHING LEAVES. ***
+
+**CONDITIONS:** survival. **Count the target stack first** — hold it, read the number, write it
+down. Leave at least one free inventory cell.
+
+**STAGE:** in the picker, **shift-click a cell showing a real item.**
+
+**PREDICTED:** **nothing moves.** No item appears in the inventory, the picker cell is unchanged,
+and the screen stays open. **Close the picker and RE-COUNT the stack: the number is the same.**
+
+> **THE RE-COUNT IS THE READING, NOT THE SCREEN.** A clone that left would land in the inventory
+> behind the open menu, where it is invisible until the screen closes. *"Nothing happened on
+> screen"* is not the same claim.
+>
+> **THIS IS THE DECLARED-INPUT PATH.** The picker declares `inputSlots()` empty, so `MenuRouting`
+> should have no destination to move to. **Rows 84 and 85 are the other two paths and are NOT
+> covered by this one.**
+
+**READING:** _(not run)_
+
+---
+
+## ROW 84 — *** NUMBER-KEY A CLONED CELL. NOTHING LEAVES. ***
+
+**CONDITIONS:** survival. **Empty hotbar slot 1**, and the count of the target stack written down.
+
+**STAGE:** in the picker, **hover a cell showing a real item and press `1`.**
+
+**PREDICTED:** **nothing moves.** Hotbar slot 1 is still empty after closing, and the stack count is
+unchanged.
+
+> ***A SEPARATE ROW BECAUSE THIS PATH ASKS A DIFFERENT QUESTION.*** `hotbarMove` acts on the
+> **HOVERED** slot, not on a declared input — so a build with no input slots can still be asked to
+> move the hovered cell into hotbar 1. **Row 83 passing says nothing about this.**
+>
+> **HOTBAR 1 MUST BE EMPTY FIRST.** Pressing `1` over a cell while hotbar 1 is occupied can be a
+> SWAP, and *"nothing arrived"* would then be satisfied by a swap that failed for an unrelated
+> reason.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 85 — *** PRESS F ON A CLONED CELL. NOTHING LEAVES. ***
+
+**CONDITIONS:** survival. **Empty offhand**, and the count of the target stack written down.
+
+**STAGE:** in the picker, **hover a cell showing a real item and press `F`.**
+
+**PREDICTED:** **nothing moves.** The offhand is still empty after closing, and the stack count is
+unchanged.
+
+> **THE THIRD PATH.** `offhandMove` is its own arm and also reads the **HOVERED** slot. Three
+> gestures, three arms, three rows — **and the reason they cannot be one row is that they are not
+> one code path.** A single "extraction" row would pass on a build that refuses two of three, and
+> the third is a duplication hole.
+>
+> **EMPTY OFFHAND FIRST**, for Row 84's reason: F is a swap, and a full offhand makes "nothing
+> arrived" ambiguous.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 86 — THE TOGGLE OFF REMOVES THE STAR **AND FREES THE SLOT**
+
+**CONDITIONS:** survival. Star enabled and in a known slot — say Hotbar 9. Have a spare ordinary
+item to hand.
+
+**STAGE:** `/menu` → Settings → click the toggle (24). Then **close everything and try to put the
+ordinary item into Hotbar 9**, and to pick it back out.
+
+**PREDICTED:** the star **disappears from the inventory**; the toggle reads **`Nexus Star: OFF`** in
+gray with lore naming `/menu`; and **Hotbar 9 accepts the ordinary item and gives it back
+normally.**
+
+> ***BOTH HALVES, AND THE SECOND IS THE ONE THAT WOULD BE MISSED.*** `NexusLock` refuses the locked
+> slot **whether or not it holds a star** — deliberately, so a lost star cannot have its cell taken
+> before the next join restores it. **Right while the feature is ON and exactly wrong while it is
+> off:** removing the item and leaving the slot locked hands the player a cell they can neither fill
+> nor use, containing nothing, with nothing on screen to explain it.
+>
+> **A build that only deletes the item passes the first half of this row and fails the second.**
+> That is why the item test is in the prediction rather than a follow-up.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 87 — A JOIN DOES NOT RE-MINT WHILE DISABLED
+
+**CONDITIONS:** survival, star already switched OFF (Row 86).
+
+**STAGE:** quit and rejoin. Read the inventory.
+
+**PREDICTED:** **no star.** The chosen cell is still ordinary.
+
+> **`converge` MINTS WHEN IT FINDS NONE**, so without a guard the toggle would last exactly until
+> the next join and read as *the setting not sticking*. **This row is that guard.**
+
+**READING:** _(not run)_
+
+---
+
+## ROW 88 — A RESPAWN DOES NOT RE-MINT WHILE DISABLED
+
+**CONDITIONS:** survival, star OFF, and a way to die that is quick — a fall, or `/kill`.
+
+**STAGE:** die, respawn. Read the inventory.
+
+**PREDICTED:** **no star.**
+
+> ***SEPARATE FROM ROW 87 BECAUSE IT IS A SEPARATE CALL SITE.*** Join and respawn each call
+> `converge` and each needed its own guard. **Guarding only the join would leave the star returning
+> on death** — a stranger report than it not sticking across a session, and one nobody would connect
+> to a setting.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 89 — THE TOGGLE ON REFUSES AN OCCUPIED SLOT, AND NAMES IT
+
+**CONDITIONS:** survival, star OFF, chosen cell known — say Hotbar 9.
+
+**STAGE:** **put an ordinary item into Hotbar 9** (legal now — the lock is off). Then `/menu` →
+Settings → click the toggle.
+
+**PREDICTED:** **no star appears, the item is untouched**, the toggle still reads OFF, and a red
+chat line names the cell:
+
+```
+Hotbar 9 is occupied. Clear it or use the slot picker first.
+```
+
+Then clear the cell, click the toggle again: **the star arrives in Hotbar 9.**
+
+> **THE ALTERNATIVE IS DISPLACING AN ITEM THE PLAYER DID NOT ASK US TO MOVE**, at the moment they
+> pressed a button about something else. `converge` would happily displace it — **right on JOIN,
+> where nobody is watching and the star must exist; wrong here.**
+>
+> **THE SECOND HALF IS NOT OPTIONAL.** Without clearing and re-clicking, this row is equally
+> satisfied by a build where the toggle never turns on at all.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 90 — PICKING A SLOT DOES **NOT** SWITCH THE STAR BACK ON
+
+**CONDITIONS:** survival, star OFF.
+
+**STAGE:** `/menu` → Settings → Nexus Slot → click a different, **empty** cell.
+
+**PREDICTED:** **no star appears.** The message names the new cell and says it arrives once the
+player switches it back on. The lime cell moves to the new choice. Then switch the toggle on: **the
+star appears in the NEW cell**, not the old one.
+
+> **THE PREDECESSOR'S PICKER SILENTLY RE-ENABLED THE ITEM.** One setting changed by a different
+> setting's button is a surprise, and there is a dedicated toggle one screen up. **A player picking
+> a cell has expressed something about WHERE, not about WHETHER.**
+>
+> **The second half proves the preference was actually stored** rather than merely not acted on —
+> without it, "no star appeared" is equally consistent with the click doing nothing at all.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 91 — *** THE CONTROL. WITH THE STAR ENABLED, SLICES 7 AND 8 STILL WORK. ***
+
+**CONDITIONS:** survival, star **ENABLED**.
+
+**STAGE:** four gestures, in order:
+
+1. put the star in a **storage** cell via the picker — say Row 2, slot 4;
+2. press **E** and **left-click the star** in that storage cell;
+3. press **E** and **left-click an ordinary item** beside it;
+4. try to **drag the star out** of its cell.
+
+**PREDICTED:** **(1)** the star moves and the picker's lime cell follows; **(2)** the hub opens —
+slice 7's gesture, at a slice 8 slot; **(3)** the ordinary item just picks up, normally;
+**(4)** refused, silently, as before.
+
+> **THE WHOLE POINT OF A CONTROL IS THAT THIS SLICE TOUCHED THE THINGS IT DEPENDS ON.**
+> `lockedSlotOf` was **split in two** this slice — it now answers `NO_LOCKED_SLOT` while the star is
+> off, and `chosenSlotOf` answers the stored preference. **Every refusal in slices 7 and 8 reads
+> `lockedSlotOf`**, so a mistake in that split takes the lock off for everyone rather than only for
+> a disabled star.
+>
+> **Gesture (3) is Row 57's control, re-read**, because a lock that refuses everything is as broken
+> as one that refuses nothing and passes every other row here.
+
+**READING:** _(not run)_
+
+---
+
+## MUTATION EVIDENCE — SLICE 10. RUN 2026-09-17
+
+**Six mutations, every one applied and measured, NO KILL SET PREDICTED, no zero-kill results.**
+
+| mutation | file | rows killed | what it proves |
+|---|---|---|---|
+| `MUTPICK-OFFBYNINE` identity arm → `menuSlot - 9` | `NexusSlotPickerLayout` | 1 | the mirror's identity half |
+| `MUTPICK-BACK49` `BACK_SLOT 48 → 49` | `NexusSlotPickerLayout` | **3** | **the predecessor's exact defect** |
+| `MUTSETTINGS-HOLE` drop the toggle from `SETTING_SLOTS` | `SettingsMenuLayout` | 1 | the painted-hole guard |
+| `MUTSTAR-DEFAULTFALSE` accessor → `!= null &&` | `PlayerProfile` | **3** | absent means ENABLED |
+| `MUTSTAR-UNKNOWNOFF` `orElse(true) → orElse(false)` | `ProfileService` | 1 | unknown cannot strip a star |
+| `MUTSTAR-INVERT` `withStarEnabled(!enabled)` | `ProfileService` | 2 | the toggle writes what was asked |
+
+> **`MUTPICK-BACK49` IS THE PREDECESSOR'S DEFECT RE-CREATED ON PURPOSE.** Its picker used back 49 —
+> which is our Close — while its own settings screen used 48/49. The mutation kills **three** rows,
+> including the one that asserts the two screens agree, so the shape cannot come back silently.
+
+---
+
+## *** A CORRECTION TO THE SLICE 9 TABLE BELOW: EVERY CORE-SCOPED KILL SET IN IT IS A LOWER BOUND ***
+
+**Found 2026-09-17, while running slice 10's pass, and it falsifies numbers already merged.**
+
+**A mutation upstream kills tests in its own module, which FAILS that module — and `rpg-paper`
+DEPENDS ON `rpg-storage`, so Maven SKIPS it.** The runner then reported a kill set with an entire
+module never executed, and **nothing in the output said so**: a truncated set and a complete one are
+the same list of names.
+
+```
+[INFO] rpg-storage ........ FAILURE
+[INFO] rpg-paper .......... SKIPPED      <- the kill set is a lower bound, and reads as complete
+```
+
+**`-fae` DOES NOT FIX IT.** `--fail-at-end` still skips modules whose **dependencies** failed, which
+is exactly this case — measured both ways, same `SKIPPED`. The fix is
+`-Dmaven.test.failure.ignore=true`, which makes surefire RECORD failures without failing the module,
+so every module runs. **The build then exits 0 even when rows died, so the KILL COUNT rather than
+the exit status is the result** — and the runner now prints a `module control` line that refuses to
+let a `SKIPPED` pass unremarked.
+
+**MEASURED MAGNITUDE, on one re-run rather than estimated:**
+
+| mutation | recorded below | re-measured with every module running |
+|---|---|---|
+| `MUTLEVELFOR-STRICT` | **9** | **12** — three `NexusStatsLoreTest` rows it never reached |
+
+**Every `-pl core` row in the slice 9 table is understated the same way**, because `paper` holds
+tests that read `PlayerLevel` through the progression block. **The table is left as it was recorded
+and this note sits above it**, rather than the numbers being edited: they are what that run
+measured, and a reading is not improved by rewriting it — it is corrected by saying what was wrong
+with the instrument.
+
+> **AND THE SLICE 10 TABLE ABOVE IS CLEAN**, because it was measured after the fix; each of its rows
+> carries `every module ran (no SKIPPED in the reactor)`.
 
 ---
 
