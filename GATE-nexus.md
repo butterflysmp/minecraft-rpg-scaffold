@@ -2,8 +2,9 @@
 
 ## STATUS — WHICH ROWS HAVE BEEN READ, NAMED RATHER THAN COUNTED
 
-**NINE ROWS ARE FULLY BOOTED — ALL OF SLICE 7, AND IT IS THE FIRST BLOCK IN THIS FILE TO BE.**
-Four other rows have partial readings and every remaining row has none:
+**TWENTY-NINE ROWS ARE FULLY BOOTED — ALL OF SLICES 7, 8 AND 9.** Three blocks, three consecutive
+days, and **the count of fully-booted rows has more than tripled**. Four other rows have partial
+readings and every remaining row has none:
 
 | row | readings | state |
 |---|---|---|
@@ -12,8 +13,16 @@ Four other rows have partial readings and every remaining row has none:
 | **ROW 46** | 46a, 46b — **two** | **46a PASS; 46b NOT RUN.** Booted 2026-09-17. Superseded by a ruling the same day and UN-superseded when that ruling was reverted -- the restaging was withdrawn unread, and 46a's reading is about the shipped colour again |
 | **ROWS 49–57** | ten readings over nine rows | **ALL PASS.** Run 2026-09-17, 03:58–04:00. **The first fully-booted BLOCK in this file**, and 56b turned Row 6.1's continued truth from an argument into an observation |
 | **ROW 47** | one, then restaged | **PASS then SUPERSEDED BY RULING**, both 2026-09-17. It surfaced the ruling that superseded 46a while passing itself, and was then superseded by a second ruling about its own cell. **No row in this file is fully booted again** |
+| **ROWS 58–65** | eight | **ALL PASS.** Run 2026-09-17, 05:25–05:27. **ROW 64 IS THE SHIP CONDITION AND ITS READING PREDATES THE MERGE IT AUTHORISED** — `#117` merged while this file still said `_(not run)_`. The decision was sound; the writing down was late, and the row carries the account |
+| **ROWS 66–77** | twelve | **ALL PASS.** Run 2026-09-17, 06:48–06:52. **Row 67 is the mob row** — the only row in this file touching the real player path, and what stops a listener-less build passing the block. **Row 74's provenance flag is DISCHARGED**: its ruling was made from the javadoc, the screen agreed |
 
 **Every other row in this file has no reading at all.**
+
+> **AND A DISCHARGED FLAG IS RECORDED AS DISCHARGED, BECAUSE IT READS IDENTICALLY TO AN OPEN ONE.**
+> Row 74 invited being overruled by the first person to open the hub at level 1. Somebody has, and
+> it held. **Left unmarked, a caveat that has done its job is indistinguishable from one nobody has
+> reached** — and the next reader either treats a settled question as open or re-opens it on the
+> strength of a warning that is spent.
 
 > **THREE OUTCOMES NOW APPEAR IN THIS FILE, AND THE THIRD IS NEW.** `VOID` means the conditions were
 > wrong (Row 6). `FAIL` means the build was wrong (none yet). **`SUPERSEDED BY RULING` means the
@@ -2367,7 +2376,16 @@ nothing about the click is refused.
 
 # SLICE 8 — THE NEXUS GOES IN ANY OF THE 36 INVENTORY SLOTS. ROWS 58–65
 
-**Status: NOT RUN.** Every row below was written **before any boot**.
+**Status: RUN 2026-09-17, 05:25-05:27. ALL EIGHT PASS.**
+
+> **Every row below was still written BEFORE any boot, and no prediction was edited after a reading
+> was taken.** That is the property the old `NOT RUN` line was carrying, and it survives the status
+> flipping — the readings were appended beside the predictions, never over them.
+>
+> **ROW 64 IS THIS BLOCK'S SHIP CONDITION AND ITS READING PREDATES THE MERGE IT AUTHORISED.**
+> See the note under that row: the operator had read it before `#117` merged, but it was not
+> written down until now, and **a ship condition with no recorded reading is indistinguishable from
+> one nobody checked.**
 
 **GAME MODE: `/gamemode survival` for all eight.**
 
@@ -2410,7 +2428,7 @@ repaints with **that** cell lime and the old one white.
 > that half of the mapping is the IDENTITY. **If the star lands nine cells off, you clicked a hotbar
 > cell and got storage, or the reverse** — which is Row 59's job to separate.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 05:25-05:27, with the SLICE 8 block.
 
 ## ROW 59 — **A HOTBAR SLOT STILL WORKS, AND IT IS THE HALF THAT IS NOT THE IDENTITY**
 
@@ -2429,7 +2447,7 @@ where the player can hold it.
 > **If the star lands in a storage cell instead, the mirror is not being applied** — and the screen
 > will look almost right, because the cell it lands in is the one directly above where you clicked.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 05:25-05:27, with the SLICE 8 block.
 
 ## ROW 60 — **THE DISPLACED ITEM COMES BACK**
 
@@ -2445,7 +2463,7 @@ somewhere else, **all seventeen**. Nothing is destroyed and nothing is duplicate
 > **`converge` already routes the occupant through `MenuSafety.give`**, which is the shared
 > give-or-drop path — this row is confirming that in play rather than asserting the call exists.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 05:25-05:27, with the SLICE 8 block.
 
 ## ROW 61 — **A FULL INVENTORY DROPS IT, AND SAYS SO**
 
@@ -2462,7 +2480,7 @@ cell you are about to choose. Choose it.
 > **Watch the ground as well as the chat** — a line with no item, or an item with no line, are
 > different defects.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 05:25-05:27, with the SLICE 8 block.
 
 ## ROW 62 — **THE CHOICE SURVIVES A REJOIN**
 
@@ -2481,7 +2499,7 @@ shows it lime.
 > 20 on disk and 8 in play is a validator bug; the value being 8 on disk is a persist bug. **They
 > look the same in game.**
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 05:25-05:27, with the SLICE 8 block.
 
 ## ROW 63 — **THE PICKER HIGHLIGHTS THE CURRENT SLOT, AND ONLY THAT ONE**
 
@@ -2497,7 +2515,7 @@ thirty-five are white.** The lime one is the cell the star is actually in.
 > **The old screen had nine cells and a wrong highlight was obvious. Thirty-six is where one extra
 > lime cell stops being obvious.**
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 05:25-05:27, with the SLICE 8 block.
 
 ## ROW 64 — **THE CONTROL. THE STAR IN SLOT 27 STILL OPENS THE HUB ON LEFT-CLICK.**
 
@@ -2520,7 +2538,25 @@ chat line, no sound.
 > **AND THE SECOND HALF: press E and left-click an ORDINARY item beside it.** It must still just
 > pick up. Row 57's control, re-read in the one place this slice could have broken it.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 05:25-05:27, with the SLICE 8 block.
+
+> ### *** THIS READING PREDATES THE MERGE IT AUTHORISED, AND THAT IS WHY IT IS SAID OUT LOUD ***
+>
+> This row says **"if this fails, slice 8 must not ship"**. It did not fail — but **`#117` merged
+> with this file still reading `_(not run)_`**, and for a day the record showed a slice shipped
+> against an unmet ship condition.
+>
+> **NOTHING WAS WRONG WITH THE DECISION. THE OPERATOR HAD READ THIS ROW BEFORE MERGING.** What was
+> missing was the WRITING DOWN, and **a ship condition with no recorded reading is
+> indistinguishable from one nobody checked** — which is the single thing this row exists to say.
+>
+> **The gap is the gap this file's own rule names:** a finding that lives only in the conversation
+> is not recorded. The reading existed, in a person's memory, where nothing can grep it and nothing
+> can fail.
+>
+> **Practically, and it is the transferable part: a row marked as a SHIP CONDITION should be
+> written in before the merge it gates, not after.** The reading is the authorisation; the merge is
+> what it authorises, and they went in the wrong order.
 
 ## ROW 65 — **THE ARMOUR SLOTS AND THE OFFHAND ARE STILL OUT**
 
@@ -2537,13 +2573,22 @@ more — and the lock **refuses** the move, silently, as it does today.
 >
 > **`MAX_SLOT` is what this row is really reading**, one layer down.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 05:25-05:27, with the SLICE 8 block.
 
 ---
 
 # SLICE 9 — PLAYER LEVEL. ROWS 66–77
 
-**Status: NOT RUN.** Every row below was written **before any boot**.
+**Status: RUN 2026-09-17, 06:48-06:52. ALL TWELVE PASS.**
+
+> **Every row below was still written BEFORE any boot**, and no prediction was edited once a
+> reading was taken — the readings sit beside them.
+>
+> **THE TWO ROWS THAT WERE CARRYING MORE THAN A PREDICTION BOTH HELD.** Row 67, the mob row, is the
+> only row in this file that touches the real player path, and it is what stops a build with the
+> listener deleted passing the block. Row 74 carried a provenance flag saying its ruling was made
+> from the javadoc rather than the screen; **the screen agreed, and the flag is discharged** in a
+> note under that row rather than left reading as open.
 
 **GAME MODE: `/gamemode survival` for all twelve.**
 
@@ -2627,7 +2672,7 @@ To Next      2,770
 > **2,770 IS RUNG 13 AND IS NOT 3,020.** That literal was typed from memory once and
 > `PlayerLevelLinesTest` caught it; 3,020 is rung 14.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
 
 ---
 
@@ -2652,7 +2697,7 @@ award, and `Lifetime XP` on the head rises by **the same number**, one for one.
 > **Do not stage this at a level boundary.** Crossing one triggers the disk write, which is Row 76's
 > subject; keeping them apart means neither row can pass on the other's mechanism.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
 
 ---
 
@@ -2677,7 +2722,7 @@ Nexus and read the head.
 > player's level:** both are wallet-symmetric `setLevel`/`setExp` writes, and `CraftPlayer` is not
 > one of the two classes that reference the event.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
 
 ---
 
@@ -2706,7 +2751,7 @@ A crafting table in the world still works.
 > **The settings torch (50) and the stats head (13) are NOT gated** — a locked-out player must still
 > be able to move their star and read the level they need. Check both are undimmed while here.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
 
 ---
 
@@ -2726,7 +2771,7 @@ screen opens.
 > **`set N levels` lands on the threshold with zero progress**, so "level 3" here means exactly
 > 2,090 lifetime — the tightest staging available.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
 
 ---
 
@@ -2742,7 +2787,7 @@ screen opens.
 > independent literals and a single row staged at one level cannot distinguish "the gate works" from
 > "all three share one number".
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
 
 ---
 
@@ -2755,7 +2800,7 @@ screen opens.
 **PREDICTED:** locked at **12**, opens at **13** — the tray, and the gray *"Add weapons to strip"*
 button.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
 
 ---
 
@@ -2777,7 +2822,7 @@ behind them.
 > **THIS ROW IS THE ONE THAT FAILS IF SOMEBODY "TIDIES" THE GATE INTO THE MENUS.** Nothing else in
 > the block would notice, because every other row reaches those screens through the hub.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
 
 ---
 
@@ -2826,7 +2871,21 @@ Grindstone unlocks at level 13. You are level 1. A grindstone in the world still
 > screen** — nobody had opened the hub at level 1 when it was made. **Overrule it in one word the
 > first time you do.** Recorded because a call made without looking should be visible as one.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
+
+> ### *** THE PROVENANCE FLAG IS DISCHARGED. THE SCREEN AGREED WITH THE JAVADOC. ***
+>
+> The ruling above was made without opening the hub at level 1, and said so, and invited being
+> overruled by the first person who did. **Somebody has now done that and it held.**
+>
+> **RECORDED RATHER THAN LEFT STANDING, BECAUSE AN OPEN FLAG AND A DISCHARGED ONE READ IDENTICALLY.**
+> A caveat that has been checked looks exactly like one nobody has got to yet, and the next reader
+> would otherwise treat a settled question as still open — or, worse, re-open it on the strength of
+> a warning that has already done its job.
+>
+> **What is discharged is narrow: that the message is right FOR THIS SCREEN AS IT RENDERS TODAY.**
+> It is still coupled to the icon keeping the station's material. **Change that and the question
+> comes back**, and `NexusStationGate.refusal`'s four-combination table is what it comes back to.
 
 ---
 
@@ -2855,7 +2914,7 @@ return.**
 > **The 98 half is what stops "two lines" being equally consistent with the line having been dropped
 > everywhere.**
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
 
 ---
 
@@ -2891,7 +2950,7 @@ crossing a level boundary writes through immediately.
 > **Part B is deliberately a HARD KILL.** A clean quit persists everything and would pass whether
 > the level-change write exists or not — **a control that succeeds for the wrong reason.**
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
 
 ---
 
@@ -2918,7 +2977,7 @@ and **the level does not move**. `set` is accepted.
 > **`set` IS THE SANCTIONED EXCEPTION TO THE MONOTONIC INVARIANT** — `PlayerLevel` says lifetime XP
 > never decreases and every other writer obeys it. An operator's hand on the dial is not the game.
 
-**READING:** _(not run)_
+**READING:** **PASS.** Read 2026-09-17, 06:48-06:52, with the SLICE 9 block.
 
 ---
 
