@@ -125,6 +125,45 @@ class ProgressionWiringSignatureTest {
                         + "found instead: " + lines.get(literal + 1).trim());
     }
 
+    /**
+     * *** THE COUPLING BETWEEN THE LOCKED ICON AND THE LOCKED CLICK. ***
+     *
+     * <p>Only three of four combinations are coherent, and the incoherent one is
+     * <b>material unchanged + silent click</b> — a crafting table that looks normal, does nothing,
+     * and explains nothing. This row is the guard on that pair, because <b>neither half is wrong
+     * on its own</b> and no other test relates them.
+     *
+     * <p>Source-scanned for {@code ProgressionWiringSignatureTest}'s usual reason: {@code NexusMenu}
+     * needs a live {@code Player} and {@code Bukkit.createInventory}, so the wiring is otherwise
+     * boot-gate-only.
+     */
+    @Test
+    void aLockedStationSPEAKS_forAsLongAsTheLockedIconKEEPSTheStationsMaterial() throws IOException {
+        List<String> lines = Files.readAllLines(
+                Path.of("src", "main", "java", "io", "github", "butterflysmp", "rpg", "paper",
+                        "menu", "NexusMenu.java"), StandardCharsets.UTF_8);
+        assertTrue(lines.size() > 200, "the scan must have read NexusMenu");
+
+        int refusal = indexOfLineContaining(lines, "NexusStationGate.refusal(");
+        assertTrue(refusal > 0,
+                "A LOCKED STATION MUST SAY WHY. Without this the locked click is silent, and "
+                        + "because the icon keeps the station's own material an un-hovered locked "
+                        + "station is pixel-identical to an open one -- a crafting table that does "
+                        + "nothing. If you are deliberately changing the locked MATERIAL, this row "
+                        + "may be relaxed; read NexusStationGate.refusal's table first");
+        assertTrue(indexOfLineContaining(lines, "viewer.sendMessage(") > 0,
+                "and the refusal must actually be SENT, not merely built -- it sat unsent, "
+                        + "asserted-but-inert, for exactly one slice");
+
+        // THE OTHER HALF OF THE PAIR: the locked arm is handed the SAME `material` the open arm is.
+        // If someone swaps in a BARRIER here, the message becomes redundant rather than wrong --
+        // that direction is safe, and this assertion is what makes the swap visible when it happens.
+        int lockedReturn = indexOfLineContaining(lines, "return MenuIcons.icon(material,");
+        assertTrue(lockedReturn > 0,
+                "the locked icon still renders the station's OWN material; if this changed, "
+                        + "re-read the coupling before relaxing the row above");
+    }
+
     @Test
     void bothUNITSAreRegistered_becauseTheAmountIsMeaninglessWithoutOne() throws IOException {
         List<String> lines = Files.readAllLines(COMMAND, StandardCharsets.UTF_8);

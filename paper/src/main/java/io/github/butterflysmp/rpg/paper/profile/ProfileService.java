@@ -238,8 +238,17 @@ public final class ProfileService {
      *
      * <p>The cache is persisted by {@link #onQuit} and {@link #saveAllAndClear}, exactly as
      * {@code lastSeenEpochMillis} always has been. <b>The accepted cost, said out loud: a server
-     * that dies without running either loses this session's progress since the last level-up</b> --
-     * bounded by one level, never by a whole session, which is what the level-change write buys.
+     * that dies without running either loses whatever has been earned since the last level-up.</b>
+     *
+     * <p><b>THE BOUND IS ONE RUNG OF THE CURVE, AND NEAR THE CAP THAT IS NOT SMALL.</b> An earlier
+     * draft of this sentence said <i>"bounded by one level, never by a whole session"</i>, and the
+     * second half is <b>false</b>: rung 98 is <b>400,000 XP</b>, which can span several sessions of
+     * play. <b>The write-on-level-change bounds the loss in LEVELS, not in TIME</b>, and the two
+     * diverge exactly where a player has the most to lose.
+     *
+     * <p>It is still the right trade against a file write per orb per player -- but the cost is
+     * stated honestly so the next person can re-rule it rather than inheriting a comfortable
+     * number.
      *
      * @return the new lifetime total, or empty if the profile is not loaded or could not be read.
      *         <b>Empty is not an error the caller should report</b>: an orb picked up during the

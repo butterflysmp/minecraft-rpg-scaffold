@@ -141,21 +141,30 @@ class NexusStationGateTest {
     }
 
     @Test
-    void theDRAFTEDChatRefusalSaysBothFactsToo_andIsNotSentYet() {
-        // *** DRAFTED, FLAGGED, AND DELIBERATELY UNUSED BY NexusMenu. *** The brief said
-        // "locked icon/lore/refusal"; the grindstone's ruling one slice ago says a click on a
-        // button that has already explained itself says NOTHING. This row exists so the draft
-        // cannot rot before Ben rules, which is what separates it from dead code.
-        String refusal = NexusStationGate.draftedChatRefusal(NexusStationGate.Station.GRINDSTONE, 7);
+    void theChatRefusalSaysBOTHFactsToo_andIsSENTBecauseTheIconKeepsTheMaterial() {
+        // *** SENT, NOT DRAFTED. RULED 2026-09-17, AND THE REASON IS THE ICON. ***
+        // A dimmed name lives in the hover tooltip, so an un-hovered locked station is
+        // PIXEL-IDENTICAL to an open one. Silence there is a crafting table that does nothing --
+        // and it lands on the player least able to interpret it, someone at level 1 opening the
+        // hub for the first time. The grindstone's silence ruling does not transfer: what THAT
+        // button says unasked is COLOUR, at a glance, on the cell being clicked.
+        String refusal = NexusStationGate.refusal(NexusStationGate.Station.GRINDSTONE, 7);
         assertEquals("Grindstone unlocks at level 13. You are level 7. "
-                + "a grindstone in the world still works.", refusal);
+                + "A grindstone in the world still works.", refusal);
 
-        // IT CARRIES BOTH FACTS, the same requirement the lore has -- checked as a property so the
-        // draft cannot be edited into naming only one of them.
+        // CAPITAL "A", AND THE DRAFT HAD A LOWER-CASE ONE. It lower-cased blockPhrase(), opening a
+        // sentence in lower case mid-message. It was never sent, so only reading the asserted
+        // string could have caught it -- which is the argument for asserting a draft at all.
+        assertTrue(refusal.contains(". A grindstone"), "the third sentence opens in upper case");
+
+        // BOTH FACTS, as a property, so the message cannot be edited down to one of them.
         for (NexusStationGate.Station station : NexusStationGate.Station.values()) {
-            String text = NexusStationGate.draftedChatRefusal(station, 2);
+            String text = NexusStationGate.refusal(station, 2);
             assertTrue(text.contains("level " + station.unlockLevel()), "names the unlock level");
             assertTrue(text.contains("still works"), "and names the world-block escape");
+            assertTrue(text.contains("You are level 2."), "and where the player stands");
         }
+        // Mutation MUTREFUSAL-ONEFACT: drop the "still works" clause -> kill set RECORDED in the
+        // PR body.
     }
 }

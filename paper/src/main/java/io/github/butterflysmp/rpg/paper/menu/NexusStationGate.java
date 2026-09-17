@@ -112,25 +112,53 @@ final class NexusStationGate {
     }
 
     /**
-     * <b>THE DRAFTED CHAT REFUSAL, AND IT IS DELIBERATELY NOT SENT. FLAGGED FOR BEN.</b>
+     * What a locked station says when it is clicked. <b>SENT. It is not optional.</b>
      *
-     * <p>The brief said <i>"locked icon/lore/refusal"</i>. A chat line is one reading of "refusal"
-     * and <b>the grindstone's ruling one slice ago says the opposite</b>, in those words: <i>"A
-     * click on a button that is not LIME does nothing and says nothing, because the button has
-     * already said it."</i> A locked station's lore has already said it, three ways.
+     * <h2>*** THE MESSAGE IS MANDATORY **BECAUSE** THE ICON KEEPS THE STATION'S MATERIAL ***</h2>
      *
-     * <p>So the click refuses <b>silently</b>, consistent with that ruling, and this string exists
-     * so switching it on costs one line rather than a redesign. <b>It is not dead code being kept
-     * for symmetry</b> -- it is a drafted decision with a named owner, and
-     * {@code NexusStationGateTest} asserts its text so the draft cannot rot before it is ruled on.
+     * {@code NexusMenu.station} renders a locked station with <b>its own material</b> and dims only
+     * the display NAME. That is a good call on its own terms -- the player sees what the station
+     * will be, rather than a barrier standing where it will go -- and <b>it is exactly what makes
+     * silence unacceptable</b>:
      *
-     * <p>If Ben rules for the chat line, the tension to resolve is whether the grindstone's silence
-     * rule is hub-wide or was only ever about that button.
+     * <p><b>A dimmed name lives in the HOVER TOOLTIP. Without hovering, a locked crafting station
+     * is PIXEL-IDENTICAL to an unlocked one.</b> So a player clicks a normal-looking crafting
+     * table, nothing happens, and nothing explains why -- indistinguishable from a broken menu, and
+     * <b>most likely to happen to the player least equipped to interpret it</b>: someone at level 1
+     * opening the hub for the first time.
+     *
+     * <h2>THE TWO DECISIONS ARE COUPLED, AND ONLY THREE OF THE FOUR COMBINATIONS ARE COHERENT</h2>
+     *
+     * <pre>
+     *   material changes + silent    you can SEE it is locked before you click
+     *   material same    + SPEAKS    you find out by clicking, the only gesture you have   &lt;-- OURS
+     *   material changes + speaks    coherent, mildly redundant
+     *   material same    + silent    A CRAFTING TABLE THAT DOES NOTHING                    &lt;-- avoid
+     * </pre>
+     *
+     * <p><b>If anyone ever changes the locked material to a barrier or a pane, this message becomes
+     * merely redundant rather than wrong</b> -- so the coupling is safe in that direction. The
+     * direction that breaks is deleting this call while keeping the material.
+     * {@code ProgressionWiringSignatureTest} is what goes red.
+     *
+     * <h2>THE GRINDSTONE'S SILENCE RULING DOES NOT TRANSFER, AND THE PREMISE IS WHY</h2>
+     *
+     * That ruling reads <i>"a click on a button that is not LIME does nothing and says nothing,
+     * because the button has already said it."</i> <b>What that button says without being asked is
+     * COLOUR</b> -- lime, yellow, red, gray, visible at a glance, on the cell being clicked.
+     * <b>A locked station says nothing without a hover.</b> Same shape of rule, different premise,
+     * opposite answer.
+     *
+     * <p><b>BOTH FACTS, per Row 28</b> -- the unlock level AND that the world block still works.
+     * <i>"Unlocks at level 10."</i> alone is the dead end that rule exists to name.
      */
-    static String draftedChatRefusal(Station station, int level) {
+    static String refusal(Station station, int level) {
+        // blockPhrase() AS AUTHORED, not lower-cased. The draft lower-cased it and produced
+        // "... You are level 7. a grindstone in the world still works." -- a sentence opening in
+        // lower case, mid-message. It was never sent, so nothing could have caught it except
+        // reading the asserted string, which is why the draft was asserted at all.
         return station.displayName() + " unlocks at level " + station.unlockLevel()
                 + ". You are level " + level + ". "
-                + station.blockPhrase().toLowerCase(java.util.Locale.ROOT)
-                + " in the world still works.";
+                + station.blockPhrase() + " in the world still works.";
     }
 }

@@ -191,11 +191,22 @@ public final class NexusMenu extends Menu {
         // A per-station guard would be three places for one rule, and the fourth station added
         // later is the one that would be missed -- which is the hole slot 33 already cost once.
         //
-        // SILENT. No chat line, per the grindstone's ruling: a click on a button that has already
-        // said why it will not work says nothing. The locked lore says it three ways.
-        // NexusStationGate.draftedChatRefusal carries the alternative, flagged for Ben.
+        // *** IT SPEAKS, AND THAT IS COUPLED TO station() KEEPING THE MATERIAL. ***
+        //
+        // A dimmed name lives in the HOVER TOOLTIP, so without hovering a locked crafting station
+        // is PIXEL-IDENTICAL to an unlocked one. Refusing silently would give a first-time player
+        // at level 1 a normal-looking crafting table that does nothing and explains nothing --
+        // indistinguishable from a broken menu.
+        //
+        // THE GRINDSTONE'S SILENCE RULING DOES NOT TRANSFER: what ITS button says unasked is
+        // COLOUR, at a glance, on the cell being clicked. This one says nothing without a hover.
+        // Same shape of rule, different premise, opposite answer. NexusStationGate.refusal carries
+        // the full argument and the four-combination table.
+        int level = viewerLevel();
         var station = NexusStationGate.at(click.slot());
-        if (station.isPresent() && !NexusStationGate.unlocked(station.get(), viewerLevel())) {
+        if (station.isPresent() && !NexusStationGate.unlocked(station.get(), level)) {
+            viewer.sendMessage(MenuIcons.line(
+                    NexusStationGate.refusal(station.get(), level), NamedTextColor.GRAY));
             return;
         }
         if (click.slot() == NexusMenuLayout.CLOSE_SLOT) {
@@ -351,8 +362,15 @@ public final class NexusMenu extends Menu {
      * material stays, the display name drops from {@code GRAY} to {@code DARK_GRAY}, and the lore
      * carries the three sentences.
      *
-     * <p><b>PRESENTATION, AND BEN CAN OVERRULE IT IN ONE WORD</b> -- it is this method and one test
-     * row. The same note {@code NexusStatsLore} carries about its missing header.
+     * <p><b>*** THIS CHOICE IS WHAT MAKES THE CLICK'S MESSAGE MANDATORY. THEY ARE COUPLED. ***</b>
+     * A dimmed name lives in the hover tooltip, so an un-hovered locked station is pixel-identical
+     * to an open one. <b>Change the material here and the message becomes redundant; delete the
+     * message and leave the material and you have shipped a crafting table that does nothing.</b>
+     * {@code NexusStationGate.refusal} carries the four-combination table, and
+     * {@code ProgressionWiringSignatureTest} fails if the pair comes apart.
+     *
+     * <p><b>PRESENTATION, AND IT CAN BE OVERRULED IN ONE WORD</b> -- it is this method, one test
+     * row, and the coupling above. The same note {@code NexusStatsLore} carries about its header.
      *
      * <p>{@code icon()} and not {@code placeholder()} in both arms: a locked station is <b>built and
      * gated</b>, not unbuilt, and {@code placeholder}'s <i>"Not implemented yet."</i> would be the

@@ -232,6 +232,25 @@ ships to a survival server; **a creative reading certifies creative**, and nothi
 | **26, 29** | **SURVIVAL**, and **26c especially** | 26c reads a **displaced item** surviving, and 29 counts hotbar cells. Creative makes items free, so *"the item is still there"* is satisfied for nothing — the register's own shape: **creative removes a cost, and a row whose reading is "the thing is still there" passes without exercising anything** |
 | **18** | **SURVIVAL**, and **this one is load-bearing** | it moves an item **in the player's own inventory with a menu open** — the exact surface Row 8 shows behaves differently in creative. **A creative reading of 18 certifies creative and says nothing about the shipped path** |
 
+> ### THIS TABLE WAS MALFORMED FOR A SLICE AND RENDERED WITHOUT COMPLAINT
+>
+> **Found 2026-09-17.** The `35–47` row had **two** cells and the `49–57` row had **four**: slice 6's
+> explanation was sitting on slice 7's line, pasted in by an earlier splice. **Nothing objected.** A
+> markdown table with the wrong cell count renders — short rows get blank cells, long rows get their
+> tail dropped or shown, and either way the page looks fine.
+>
+> **That is the same family as a grep that reads commentary as content: THE INSTRUMENT ACCEPTS WHAT
+> IT SHOULD REJECT AND SAYS NOTHING.** The renderer is not broken; it is lenient, and leniency is a
+> default far more often than anyone assumes.
+>
+> **The check costs one line and needs no tool:** count the pipes per row and require them equal.
+>
+> ```bash
+> awk '/^\|/ {n=gsub(/\|/,"|"); if (n-1 != 3) print NR": "(n-1)" cells"}' GATE-nexus.md
+> ```
+>
+> Every other row in this table reported **3**. Those two reported **2** and **4**.
+
 > **CREATIVE GETS A ROW, NOT A FOOTNOTE, AND THAT IS THE WHOLE LESSON OF ROW 6.** The alternative —
 > *"row 6, but note it behaves differently in creative"* — is a sentence that survives exactly until
 > someone reads row 6 and boots it. **A mode that changes the answer is a different row.**
@@ -2762,30 +2781,50 @@ behind them.
 
 ---
 
-## ROW 74 — A LOCKED STATION'S CLICK DOES NOTHING **AND SAYS NOTHING**
+## ROW 74 — A LOCKED STATION'S CLICK REFUSES **AND SAYS WHY**, WITH BOTH FACTS
 
 **CONDITIONS:** survival, level 1, chat visible and clear.
 
 **STAGE:** open the hub and click all three locked stations, several times each.
+**Do NOT hover first** — that is the condition this row exists for.
 
-**PREDICTED:** **no screen change, no chat line, no sound, no title.** The hub stays open and the
-icons do not flicker.
+**PREDICTED:** no screen change and no sound; the hub stays open. **One gray chat line per click**,
+naming the station, its unlock level, the player's level, and the world block:
 
-> **THE SILENCE IS THE GRINDSTONE'S RULING APPLIED HERE:** *"A click on a button that is not LIME
-> does nothing and says nothing, because the button has already said it."* The locked lore has said
-> it three ways.
+```
+Crafting unlocks at level 3. You are level 1. A crafting table in the world still works.
+Enchanting unlocks at level 10. You are level 1. An enchanting table in the world still works.
+Grindstone unlocks at level 13. You are level 1. A grindstone in the world still works.
+```
+
+> ***THIS ROW WAS WRITTEN AS "DOES NOTHING AND SAYS NOTHING" AND WAS INVERTED BY RULING BEFORE
+> ANY BOOT.*** It is restaged rather than edited-in-place-and-forgotten, and the reason it flipped
+> is worth more than either prediction:
 >
-> ***FLAGGED FOR BEN, AND THIS ROW INVERTS IF HE RULES THE OTHER WAY.*** The brief said "locked
-> icon/lore/**refusal**", and a chat line is one reading of "refusal".
-> `NexusStationGate.draftedChatRefusal` carries the wording, tested and deliberately unsent:
+> **THE MESSAGE IS MANDATORY BECAUSE THE ICON KEEPS THE STATION'S MATERIAL.** A locked station
+> renders as its own crafting table / enchanting table / grindstone, dimmed only in its NAME — and
+> **a name lives in the hover tooltip.** Without hovering, a locked station is **pixel-identical**
+> to an open one. Silence there is a normal-looking crafting table that does nothing and explains
+> nothing: indistinguishable from a broken menu, and **it lands on the player least equipped to
+> interpret it** — someone at level 1 opening the hub for the first time.
 >
-> > `Grindstone unlocks at level 13. You are level 7. a grindstone in the world still works.`
+> **THE GRINDSTONE'S SILENCE RULING DOES NOT TRANSFER, AND THE PREMISE IS WHY.** It reads *"the
+> button has already said it"* — and what THAT button says without being asked is **COLOUR**: lime,
+> yellow, red, gray, at a glance, on the cell being clicked. This one says nothing without a hover.
+> **Same shape of rule, different premise, opposite answer.**
 >
-> **Switching it on is one line and this row's prediction becomes its opposite.** Recorded as a
-> drafted decision with a named owner rather than settled by me.
+> **ONLY THREE OF THE FOUR COMBINATIONS ARE COHERENT:**
 >
-> **AND IT IS NOT SPAMMABLE EITHER WAY**, which is the reason the silence is safe: the icon never
-> looks identical whether it worked or not.
+> | icon | click | |
+> |---|---|---|
+> | material CHANGES | silent | you can see it is locked before you click |
+> | **material SAME** | **SPEAKS** | **you find out by clicking, the only gesture you have** ← ours |
+> | material changes | speaks | coherent, mildly redundant |
+> | material SAME | silent | **a crafting table that does nothing** ← the one to avoid |
+>
+> **PROVENANCE, AND IT IS PART OF THE ROW.** This ruling was made **from the javadoc, not from the
+> screen** — nobody had opened the hub at level 1 when it was made. **Overrule it in one word the
+> first time you do.** Recorded because a call made without looking should be visible as one.
 
 **READING:** _(not run)_
 
@@ -2840,8 +2879,14 @@ crossing a level boundary writes through immediately.
 > one-player one.
 >
 > **The accepted cost, stated so part B is read as the bound and not as a guarantee:** a server that
-> dies without quitting loses progress **since the last level-up** — bounded by one level, never by
-> a whole session.
+> dies without quitting loses whatever has been earned **since the last level-up**.
+>
+> **THE BOUND IS ONE RUNG OF THE CURVE, AND NEAR THE CAP THAT IS NOT SMALL.** This sentence said
+> *"bounded by one level, never by a whole session"* until 2026-09-17, and **the second half was
+> false**: rung 98 is **400,000 XP**, which can span several sessions. **The write-on-level-change
+> bounds the loss in LEVELS, not in TIME**, and the two diverge exactly where a player has most to
+> lose. Still the right trade against a file write per orb per player — but the cost is now stated
+> honestly rather than inherited as a comfortable number.
 >
 > **Part B is deliberately a HARD KILL.** A clean quit persists everything and would pass whether
 > the level-change write exists or not — **a control that succeeds for the wrong reason.**
@@ -2899,8 +2944,16 @@ delta against a pristine scratchpad copy, and a `test-compile` gate have all pas
 | `MUTCAP-ALWAYS` render "To Next" at the cap | `NexusStatsLore` | 1 | the absent line at 99 |
 | `MUTXP-REPLACE` accumulate → replace | `ProfileService` | 4 | a gain adds to the stored total |
 | `MUTXP-ALWAYSSAVE` drop the level comparison | `ProfileService` | 1 | the persistence policy |
+| `MUTLOCKED-SILENT` delete the refusal send | `NexusMenu` | 1 | **the icon/click coupling** |
+| `MUTREFUSAL-ONEFACT` drop the world-block clause | `NexusStationGate` | 1 | the message carries both facts |
 
-**No mutation in this pass killed zero rows.**
+**Fifteen mutations. No mutation in this pass killed zero rows.**
+
+> **`MUTLOCKED-SILENT` IS A DELETION, SO THE MARKER COUNT DOES NOT APPLY TO IT** — the replacement
+> text is a SUBSTRING of what it replaces, which is CLAUDE.md's eighth row. Measured: `marker
+> present: 6` and `markers left: 6`, where a working edit gives `1` and `0`. **Neither number is a
+> bug; both count text that is legitimately still there.** The runner warned about the substring
+> before applying, and **the line delta of `2` is the whole verification.**
 
 > ### TWO INSTRUMENT FAILURES IN THIS PASS, AND THE RUNNER CAUGHT BOTH BY REFUSING TO REPORT
 >
