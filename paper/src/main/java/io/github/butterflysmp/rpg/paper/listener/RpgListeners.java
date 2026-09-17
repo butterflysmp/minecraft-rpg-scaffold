@@ -163,6 +163,29 @@ public final class RpgListeners implements Listener {
      */
     private final RecipeCatalogue recipeCatalogue;
 
+    /**
+     * The one {@link RecipeCatalogue} on this server.
+     *
+     * <h2>*** SHARED, NOT SHAREABLE. A SECOND INSTANCE IS A SECOND CACHE. ***</h2>
+     *
+     * This class builds it and every hub route reaches the crafting screen through here, so it was
+     * private until {@code /menu} needed to open the hub without going through a listener at all.
+     *
+     * <p><b>The obvious alternative -- {@code new RecipeCatalogue(adapters)} in {@code RpgPlugin}
+     * for the command -- is wrong, and quietly.</b> This class caches for the server's lifetime by
+     * design (see {@code onRecipeChange}'s javadoc on why invalidation is NOT wanted). Two
+     * instances would be two caches warming independently, and they would agree right up until one
+     * of them had seen a recipe the other had not -- which presents as a hub route showing a
+     * different catalogue from a block route, months later, with no test in a position to see it.
+     *
+     * <p>Exposed rather than hoisted into {@code RpgPlugin} because <b>this class's constructor is
+     * where its lifetime is already decided</b>, and moving ownership would widen a constructor
+     * that is already fifteen parameters wide for the sake of one reader.
+     */
+    public RecipeCatalogue recipeCatalogue() {
+        return recipeCatalogue;
+    }
+
     /** Held for {@link #onResourcesReloaded}: re-registering recipes needs the plugin and the content. */
     private final Plugin plugin;
     private final RecipeRegistry recipes;

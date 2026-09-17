@@ -26,6 +26,7 @@ import io.github.butterflysmp.rpg.core.weapon.WeaponService;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import io.github.butterflysmp.rpg.paper.command.MenuCommand;
 import io.github.butterflysmp.rpg.paper.command.RpgCommand;
 import io.github.butterflysmp.rpg.paper.content.AbilityLoader;
 import io.github.butterflysmp.rpg.paper.content.KitLoader;
@@ -500,10 +501,13 @@ public final class RpgPlugin extends JavaPlugin {
         this.profiles = new ProfileService(repository, getLogger(), System::currentTimeMillis);
 
         // The one and only registerEvents call. Keep it that way.
-        getServer().getPluginManager().registerEvents(
-                new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
-                        healthSystem, nameplates, statsBar, healthRegen,
-                        this, recipes), this);
+        //
+        // HELD IN A LOCAL SINCE SLICE 10, because /menu needs the SAME RecipeCatalogue this builds.
+        // A second instance would be a second lifetime cache -- see recipeCatalogue()'s javadoc.
+        RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
+                healthSystem, nameplates, statsBar, healthRegen,
+                this, recipes);
+        getServer().getPluginManager().registerEvents(listeners, this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
         // paper-plugin.yml. We do NOT call PacketEvents.setAPI() or .load()
@@ -523,10 +527,19 @@ public final class RpgPlugin extends JavaPlugin {
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new VanillaCritParticleListener());
 
-        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
-                event.registrar().register(
-                        RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence),
-                        "RPG commands"));
+        // ONE handler, two nodes. A second registerEventHandler would be the sprawl the
+        // banned-patterns table names; a second node inside this one is not.
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+            event.registrar().register(
+                    RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence),
+                    "RPG commands");
+            // /menu, NOT /rpg menu -- Ben's ruling, for reach. It is the door to the hub and the
+            // ONLY route to it once a player turns the Nexus star off, which is why it ships in
+            // the same slice as the toggle rather than after it.
+            event.registrar().register(
+                    MenuCommand.build(adapters, profiles, weapons, resources, listeners.recipeCatalogue(), shields, armor, tools),
+                    "Open the Nexus hub");
+        });
     }
 
     /**

@@ -1962,7 +1962,10 @@ public final class RpgCommand {
      * commands turn it into a sentence -- so the settings screen, which asks the same question a
      * menu click later, cannot come to answer it differently.
      */
-    private static Component profileUnavailable(ProfileService profiles, Player player) {
+    // PACKAGE-VISIBLE, NOT PRIVATE, SINCE SLICE 10. MenuCommand asks the same question and must
+    // not answer it differently -- which is this method's own argument, now with a second caller.
+    // Widened rather than copied; a second copy is exactly the four-literals defect it replaced.
+    static Component profileUnavailable(ProfileService profiles, Player player) {
         return profiles.availability(player.getUniqueId()) == ProfileService.Availability.UNREADABLE
                 ? Component.text(ProfileService.UNREADABLE_PROFILE, NamedTextColor.RED)
                 : Component.text(ProfileService.STILL_LOADING, NamedTextColor.GRAY);
