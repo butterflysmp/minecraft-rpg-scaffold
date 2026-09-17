@@ -55,6 +55,7 @@ import io.github.butterflysmp.rpg.paper.health.HealthRegenSystem;
 import io.github.butterflysmp.rpg.paper.health.VanillaDamagePolicy;
 import io.github.butterflysmp.rpg.paper.health.VanillaHealPolicy;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
+import io.github.butterflysmp.rpg.paper.vault.VaultService;
 import io.github.butterflysmp.rpg.core.combat.AttackCharge;
 import io.github.butterflysmp.rpg.paper.weapon.MeleeHits;
 import io.github.butterflysmp.rpg.paper.weapon.PlumeDraw;
@@ -146,6 +147,16 @@ public final class RpgListeners implements Listener {
     private final FireCadence fireCadence;
     private final ResourcePool resources;
     private final ProfileService profiles;
+
+    /**
+     * The vault cache.
+     *
+     * <p>A 17th constructor parameter rather than something reached through {@code plugin}: the
+     * plugin arrives here as {@code Plugin}, not {@code RpgPlugin}, so {@code vaults()} is not in
+     * scope without a cast. That is the case this class's "do not widen the constructor" note
+     * explicitly does not cover -- it refuses widening to reach something ALREADY in scope.
+     */
+    private final VaultService vaults;
     private final WeaponRegistry weapons;
     private final ShieldRegistry shields;
     private final ArmorRegistry armor;
@@ -255,8 +266,10 @@ public final class RpgListeners implements Listener {
                         AdapterContext adapters,
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
                         StatsBarSystem statsBar, HealthRegenSystem healthRegen,
-                        Plugin plugin, RecipeRegistry recipes) {
+                        Plugin plugin, RecipeRegistry recipes,
+                        VaultService vaults) {
         this.plugin = plugin;
+        this.vaults = vaults;
         this.recipes = recipes;
         this.cooldowns = cooldowns;
         this.fireCadence = fireCadence;
@@ -458,6 +471,9 @@ public final class RpgListeners implements Listener {
         GearRefresher.refresh(event.getPlayer(), weapons, shields, armor, tools, adapters);
         // Returns immediately; the read happens on the storage I/O thread.
         profiles.onJoin(event.getPlayer().getUniqueId());
+        // And their vault, the same way and on the same thread. A missing file becomes an EMPTY
+        // vault; an unreadable one stays failed for the session so nothing writes over it.
+        vaults.onJoin(event.getPlayer().getUniqueId());
         // Register custom health at base 100, render the heart bar, and start the equip reconcile loop.
         healthSystem.onJoin(event.getPlayer());
         // Start this viewer's per-viewer mob-nameplate LOS loop.
@@ -1321,6 +1337,10 @@ public final class RpgListeners implements Listener {
         adapters.scorch().forget(playerId);   // and their burn
         resources.clear(playerId);
         profiles.onQuit(playerId);
+        // Drop the cached vault. DELIBERATELY DOES NOT SAVE -- write-through already put every page
+        // on disk, and a save here would mask a broken write-through by making an ordinary quit look
+        // correct on a build whose per-mutation write did nothing. See VaultService.onQuit.
+        vaults.onQuit(playerId);
         // Drop custom-health state so no modifier or entry leaks across sessions.
         healthSystem.onQuit(playerId);
         // And drop the armor-bar override with it. API-added attribute modifiers persist in player

@@ -62,6 +62,8 @@ import io.github.butterflysmp.rpg.paper.hud.StatsSheetProjection;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
+import io.github.butterflysmp.rpg.paper.vault.VaultDevCommand;
+import io.github.butterflysmp.rpg.paper.vault.VaultService;
 import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.DashAim;
@@ -78,6 +80,7 @@ import io.github.butterflysmp.rpg.paper.weapon.GearItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearRefresher;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.github.butterflysmp.rpg.core.progression.PlayerLevel;
+import io.github.butterflysmp.rpg.core.vault.VaultShape;
 import io.github.butterflysmp.rpg.core.progression.XpGrant;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -144,7 +147,8 @@ public final class RpgCommand {
                                                                MobRegistry mobs,
                                                                MobNameplateManager nameplates,
                                                                ResourcePool resources,
-                                                               FireCadence fireCadence) {
+                                                               FireCadence fireCadence,
+                                                               VaultService vaults) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
                         // requires() gates the whole branch: an unpermitted sender
@@ -467,6 +471,33 @@ public final class RpgCommand {
                         .then(Commands.literal("set")
                                 .executes(ctx -> playerXpUsage(ctx))
                                 .then(playerXpTarget(XpGrant.Op.SET, profiles))))
+                // *** /rpg vault <dump|store|take> -- OPERATOR TOOLING, AND PR 1's ONLY WITNESS. ***
+                //
+                // Permissions.DEV, like playerxp, and for a sharper reason: `store` takes an item
+                // out of the world into a file and `take` puts one back. Ungated that is an item
+                // duplicator. VaultWiringSignatureTest asserts this gate.
+                //
+                // THE SCREEN DOES NOT EXIST YET. PR 1 ships the storage layer with no player-visible
+                // change, so without these three the PDC round trip and the shutdown flush would be
+                // witnessable only by a unit test that CANNOT BE WRITTEN -- encoding an ItemStack
+                // needs Bukkit.getUnsafe() and there is no MockBukkit. This is what makes PR 1's
+                // gate block non-empty.
+                //
+                // PAGES ARE 1-BASED AS TYPED AND ZERO-BASED IN STORAGE, converted at this seam and
+                // nowhere else -- the same split PageMath states, for the same reason.
+                .then(Commands.literal("vault")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(VaultDevCommand::usage)
+                        .then(Commands.literal("dump")
+                                .executes(ctx -> VaultDevCommand.dump(ctx, vaults)))
+                        .then(Commands.literal("store")
+                                .executes(VaultDevCommand::usage)
+                                .then(vaultCell((ctx, page, slot) ->
+                                        VaultDevCommand.store(ctx, vaults, page, slot))))
+                        .then(Commands.literal("take")
+                                .executes(VaultDevCommand::usage)
+                                .then(vaultCell((ctx, page, slot) ->
+                                        VaultDevCommand.take(ctx, vaults, page, slot)))))
                 // Mint a mana_regen_boost_TEMP. Same reason as the health-regen fixture: no content
                 // grants mana regen yet, so without this the reconcile surface is provable only by
                 // unit test. Hold it and a bare bar fills in ~50s instead of 100; drop it and the rate
@@ -2090,6 +2121,35 @@ public final class RpgCommand {
             if (existing == null || existing.getType().isAir()) return slot;
         }
         return -1;
+    }
+
+    // ------------------------------------------------------------------ /rpg vault
+
+    /** What {@link #vaultCell} calls once both coordinates have been parsed. */
+    @FunctionalInterface
+    private interface VaultCellAction {
+        int apply(CommandContext<CommandSourceStack> ctx, int page, int slot);
+    }
+
+    /**
+     * The shared tail of {@code store} and {@code take}: {@code <page> <slot>}.
+     *
+     * <p>Built once and attached under each, for {@link #playerXpTarget}'s reason -- two arms that
+     * restate one argument list are two lists that can come to disagree.
+     *
+     * <p><b>The bounds come from {@code VaultShape}, not from literals</b>, so Brigadier refuses an
+     * out-of-range cell before any handler runs and the refusal cannot drift from the storage layer's
+     * own validation. The page is converted from the 1-based number an operator types to the
+     * zero-based index everything else uses, <b>here and nowhere else</b>.
+     */
+    private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, ?>
+            vaultCell(VaultCellAction action) {
+        return Commands.argument("page", IntegerArgumentType.integer(1, VaultShape.PAGE_COUNT))
+                .then(Commands.argument("slot",
+                                IntegerArgumentType.integer(0, VaultShape.SLOTS_PER_PAGE - 1))
+                        .executes(ctx -> action.apply(ctx,
+                                IntegerArgumentType.getInteger(ctx, "page") - 1,
+                                IntegerArgumentType.getInteger(ctx, "slot"))));
     }
 
     // ------------------------------------------------------------------ /rpg playerxp
