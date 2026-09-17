@@ -36,9 +36,35 @@ readings and every remaining row has none:
 git grep -c '^## ROW' <ref> -- GATE-nexus.md
 ```
 
-**77 at `d89cc2d`, on `origin/master` and in this working tree alike** — seventy-six
-integer-numbered rows plus **ROW 12b**, whose ID is not an integer and which therefore **belongs to
-no range.**
+## *** AND THE COMMAND IS NOT ENOUGH: EVERY RECORDED COUNT NAMES THE REF IT WAS TAKEN AGAINST, AND THE REF IS A SHA ***
+
+**A count against `origin/master`, or against "this working tree", is a count against a MOVING
+TARGET and is stale the moment anything merges** — while the number itself stays correct, of a tree
+the sentence no longer names.
+
+```
+git grep -c '^## ROW' d89cc2d -- GATE-nexus.md         # checkable forever
+git grep -c '^## ROW' origin/master -- GATE-nexus.md   # true until the next merge
+```
+
+> **THIS IS THE FOURTH TURN OF THE *figure maintained by delta* WHEEL AND THE FIRST ONE RE-READING
+> CANNOT REACH.** The other three are each wrong at a moment you can name, and **recounting fixes
+> all three**. This one survives a recount: **re-running the command would have CONFIRMED the
+> figure.**
+>
+> **The proof is the paragraph directly below.** It read *"65 on `origin/master` and 77 in this
+> working tree"*, and `65` was a correct count — **of a tree that stopped being `origin/master`
+> when slice 9 merged.** Nothing touched the number. **The figure did not go stale; its REFERENT
+> MOVED UNDERNEATH IT.**
+>
+> **So the two halves are one rule:** the command says *how* the number was produced and the SHA
+> says *what it was produced from*. **A command without a ref is reproducible and unfalsifiable** —
+> you can re-run it forever and never learn that the sentence is about something else now.
+
+**77 at `d89cc2d`** — seventy-six integer-numbered rows plus **ROW 12b**, whose ID is not an
+integer and which therefore **belongs to no range.** (`d89cc2d` is `#118`'s squash, and was
+`origin/master` when this was written — **named by SHA rather than by that branch, per the rule
+above**.)
 
 **RECOUNTED with the command above, not adjusted.** It read *"65 on `origin/master` and 77 in this
 working tree"* until 2026-09-17 — **true when written and falsified by slice 9's own merge**, which
