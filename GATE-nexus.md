@@ -27,12 +27,27 @@ Four other rows have partial readings and every remaining row has none:
 git grep -c '^## ROW' <ref> -- GATE-nexus.md
 ```
 
-**57 on `origin/master` and 65 in this working tree** — sixty-four integer-numbered rows plus **ROW
+**65 on `origin/master` and 77 in this working tree** — seventy-six integer-numbered rows plus **ROW
 12b**, whose ID is not an integer and which therefore **belongs to no range.**
 
-**Both sides RECOUNTED with the command above, not adjusted.** `origin/master` is 57 because slice 7
-has merged; the working tree gained slice 8's eight rows (58–65). **If you are reading this after
-that slice merges, re-run the command rather than assuming 65.**
+**Both sides RECOUNTED with the command above, not adjusted.** `origin/master` is 65 because slice 8
+has merged; the working tree gained slice 9's twelve rows (66–77). **If you are reading this after
+that slice merges, re-run the command rather than assuming 77.**
+
+> ### AND THE HIGHEST ID IS 77 WHILE THERE ARE ONLY 76 INTEGER ROWS, BECAUSE **THERE IS NO ROW 48**
+>
+> Slice 6 ended at **47** and slice 7 opened at **49**. Nothing was deleted; 48 was simply never
+> written. **Enumerated rather than inferred**, on 2026-09-17, because a maximum that exceeds a
+> count is exactly the shape of a row someone has removed:
+>
+> ```
+> for n in $(seq 1 77); do grep -q "^## ROW $n\b" GATE-nexus.md || echo "$n"; done   # -> 48
+> ```
+>
+> **This is the second ID irregularity in this file and it is the opposite kind to the first.**
+> `12b` is an ID that belongs to no range; `48` is a range position that has no ID. **Both break
+> the same assumption — that the count and the highest number are the same fact** — and the
+> masthead has already paid for that assumption once, in the inherited `−1` recorded below.
 
 > ### THIS FIGURE IS RECOUNTED, NEVER ADJUSTED — AND THAT RULE IS THE POINT OF THIS SECTION
 >
@@ -211,8 +226,9 @@ ships to a survival server; **a creative reading certifies creative**, and nothi
 | **25, 27, 28, 30** | **SURVIVAL** | slice 4b. A tooltip, two menu transitions, two refusal messages and a control — none reads a game mode |
 | **31–34** | **SURVIVAL** | slice 5. Two stations, a bookshelf count and a Back button -- none reads a game mode, and 32 needs real placed blocks |
 | **58–65** | **SURVIVAL** for all eight | slice 8, the star goes anywhere. **64 is the CONTROL and the reason the slice is safe to ship** -- a star in a storage cell is invisible to a world right-click, so slice 7's inventory click is the only way to open the hub from one |
-| **35–47** | **SURVIVAL**, and **seven of the thirteen are VOID in creative** |
-| **49–57** | **SURVIVAL**, except **56 which stages BOTH** | slice 7, the star click. **56b is the creative half and is the row that keeps 6.1 honest** -- the arm is keyed LEFT/RIGHT and creative clicks arrive as ClickType.CREATIVE, so creative refuses BY CONSTRUCTION. That is true and unobserved until 56b is read | slice 6, the grindstone. **Creative hides the XP bar**, so every row that reads a refund -- 35, 36, 37, 40, 41, 42 and 46 rest on it directly or on the button's figure -- has nothing on screen to read. **That is Row 6's lesson applied BEFORE the boot rather than after it cost two readings** |
+| **35–47** | **SURVIVAL**, and **seven of the thirteen are VOID in creative** | slice 6, the grindstone. **Creative hides the XP bar**, so every row that reads a refund -- 35, 36, 37, 40, 41, 42 and 46 rest on it directly or on the button's figure -- has nothing on screen to read. **That is Row 6's lesson applied BEFORE the boot rather than after it cost two readings** |
+| **49–57** | **SURVIVAL**, except **56 which stages BOTH** | slice 7, the star click. **56b is the creative half and is the row that keeps 6.1 honest** -- the arm is keyed LEFT/RIGHT and creative clicks arrive as ClickType.CREATIVE, so creative refuses BY CONSTRUCTION. That is true and unobserved until 56b is read |
+| **66–77** | **SURVIVAL** for all twelve | slice 9, player level. **67 and 68 read the vanilla XP BAR against the player level**, and creative hides the bar — so both would be **VOID rather than failed**, which is Row 6's lesson for the second block running. The other ten stage with `/rpg playerxp`, which needs no mode, and are declared survival because **that is what ships** rather than because they read one |
 | **26, 29** | **SURVIVAL**, and **26c especially** | 26c reads a **displaced item** surviving, and 29 counts hotbar cells. Creative makes items free, so *"the item is still there"* is satisfied for nothing — the register's own shape: **creative removes a cost, and a row whose reading is "the thing is still there" passes without exercising anything** |
 | **18** | **SURVIVAL**, and **this one is load-bearing** | it moves an item **in the player's own inventory with a menu open** — the exact surface Row 8 shows behaves differently in creative. **A creative reading of 18 certifies creative and says nothing about the shipped path** |
 
@@ -2503,6 +2519,409 @@ more — and the lock **refuses** the move, silently, as it does today.
 > **`MAX_SLOT` is what this row is really reading**, one layer down.
 
 **READING:** _(not run)_
+
+---
+
+# SLICE 9 — PLAYER LEVEL. ROWS 66–77
+
+**Status: NOT RUN.** Every row below was written **before any boot**.
+
+**GAME MODE: `/gamemode survival` for all twelve.**
+
+> **SURVIVAL IS LOAD-BEARING HERE, NOT BOILERPLATE, AND IT IS THE SAME REASON SLICE 6 GAVE.**
+> **Creative hides the XP bar.** Rows 67 and 68 read the vanilla bar and the player level *against
+> each other* — that comparison is the whole content of both — so in creative they would be
+> **VOID rather than failed**, which is what `GATE-nexus.md` Row 6 cost a boot to learn.
+
+## *** STAGING PREAMBLE: `/xp` DOES NOT FIRE `PlayerExpChangeEvent`. MEASURED, NOT ASSUMED. ***
+
+**This was measured before these rows were written, because the answer decides how every one of
+them stages.** Instrument: `javap` over the pinned `run/versions/26.1.2/paper-26.1.2.jar`
+(19,635 entries, 10,178 classes), 2026-09-17.
+
+**Exactly two classes in the whole server jar reference `PlayerExpChangeEvent`:**
+
+```
+$ grep -rla "PlayerExpChangeEvent" --include='*.class' .
+./net/minecraft/world/entity/ExperienceOrb.class            <- raises it
+./org/bukkit/craftbukkit/event/CraftEventFactory.class      <- builds it
+```
+
+**Positive control, identical search:** `PlayerJoinEvent` → 2 classes. The search can find things.
+
+The factory settles it: `callPlayerExpChangeEvent(Player, ExperienceOrb, int)` — **it requires an
+orb and there is no orbless overload.** `/xp`'s four arms resolve, from `ExperienceCommand$Type`'s
+BootstrapMethods table, to `Player.giveExperiencePoints`, `ServerPlayer.giveExperienceLevels`,
+`setExperiencePoints` and `setExperienceLevels`. **No orb among them**, and
+`giveExperiencePoints` raises no Bukkit event at all.
+
+**SO: NO ROW MAY STAGE PLAYER XP WITH `/xp`.** Every row that needs a level stages with
+**`/rpg playerxp`**, which writes the profile directly. **Row 67 is the sole exception and stages
+from a REAL ORB PICKUP**, and Row 68 reads the `/xp` divergence deliberately.
+
+> **AND `/rpg playerxp` MAKES EVERY THRESHOLD A ONE-LINER, WHICH IS EXACTLY THE HAZARD.** The
+> command bypasses `PlayerExpChangeEvent` entirely, so **a build with the listener deleted passes
+> every command-staged row in this block.** Row 67 is the only row in the file that touches the real
+> player path, and it is mandatory for that reason alone.
+>
+> `ProgressionWiringSignatureTest` is the two-second half of the same guard — it fails if the
+> handler is missing, is not at `LOWEST`, or grows a multiplier — but **a source scan cannot
+> witness an orb**, which is why both exist.
+
+## THE CHEAP STAGING INSTRUMENT, IF A ROW NEEDS REAL ORBS
+
+**A bottle o' enchanting produces real `ExperienceOrb` entities** — measured the same way:
+`ThrownExperienceBottle` calls `ExperienceOrb.awardWithDirection`. It is `/give`-able, throwable in
+survival, and repeatable, so **Row 67 does not need a mob farm** if a mob is inconvenient. The row
+is written for a mob because that is the path players actually walk.
+
+**What the unit suite already settled.** `PlayerLevelTest` pins the curve, both clamps and every
+boundary; `XpGrantTest` pins the four `add|set × levels|xp` arms and the negative refusal;
+`PlayerLevelLinesTest` pins the three rendered lines including the cap; `NexusStationGateTest` pins
+`3 / 10 / 13` inclusively and both locked-lore facts; `NexusStatsLoreTest` pins the block's position
+and the missing "To Next" line at 99; `ProfileServiceTest` pins accumulation and the level-change
+write; `FilePlayerRepositoryTest` pins the absent-`lifetimeXp` zero against a real v3 JSON file.
+
+**What none of them can see** is an orb, a vanilla XP bar, a hijacked world block, or a rendered
+tooltip. **That gap is these twelve rows.**
+
+---
+
+## ROW 66 — `/rpg playerxp set` LANDS EXACTLY ON A THRESHOLD, AND THE HEAD SAYS SO
+
+**CONDITIONS:** survival, operator. Fresh or arbitrary starting level.
+
+**STAGE:** `/rpg playerxp set <you> 13 levels`, then open the Nexus and hover the stats head.
+
+**PREDICTED:** the command replies naming **level 13** and **19,980 lifetime**. The head reads:
+
+```
+Level        13
+Lifetime XP  19,980
+To Next      2,770
+```
+
+> **`set N levels` IS A LOOKUP HERE AND WAS A DIRECT FIELD WRITE IN THE PREDECESSOR.** We store
+> lifetime XP and derive the level, so it resolves through the prefix-sum table.
+> **Zero progress into 13 is the point** — an operator staging a threshold wants to be ON it.
+>
+> **2,770 IS RUNG 13 AND IS NOT 3,020.** That literal was typed from memory once and
+> `PlayerLevelLinesTest` caught it; 3,020 is rung 14.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 67 — *** THE MOB ROW. THE ONLY ROW THAT TOUCHES THE REAL PLAYER PATH. ***
+
+**CONDITIONS:** survival. **Not creative — the bar is the point.**
+
+**STAGE:** `/rpg playerxp set <you> 0 xp` first, so the starting total is known. Note the vanilla
+XP bar. **Kill one mob.** Read the bar, then open the Nexus and read the head.
+
+**PREDICTED:** **BOTH NUMBERS MOVE, FROM ONE GESTURE.** The vanilla bar rises by the mob's own
+award, and `Lifetime XP` on the head rises by **the same number**, one for one.
+
+> **THIS ROW IS WHY THE BLOCK IS NOT SELF-SATISFYING.** Every other row stages with
+> `/rpg playerxp`, which writes the profile and never raises `PlayerExpChangeEvent`. **Delete
+> `RpgListeners.onPlayerExpChange` and every other row here still passes.** This one goes red.
+>
+> **READ THE TWO NUMBERS AGAINST EACH OTHER, not just that each moved.** A zombie awards 5; if the
+> bar moves 5 and lifetime moves 5, the 1:1 claim is tested. If they move by *different* amounts a
+> multiplier has appeared between the event and the profile.
+>
+> **Do not stage this at a level boundary.** Crossing one triggers the disk write, which is Row 76's
+> subject; keeping them apart means neither row can pass on the other's mechanism.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 68 — `/xp` MOVES THE BAR AND NOT THE LEVEL, AND THAT IS RECORDED RATHER THAN DISCOVERED
+
+**CONDITIONS:** survival, operator.
+
+**STAGE:** note the head's `Lifetime XP`. Run `/xp add 5000 points`. Read the bar, then re-open the
+Nexus and read the head.
+
+**PREDICTED:** **the vanilla XP bar jumps. `Lifetime XP` and `Level` DO NOT MOVE AT ALL.**
+
+> **THIS IS THE BYTECODE MEASUREMENT IN THE PREAMBLE, CONFIRMED IN PLAY.** It gets its own row
+> because **an operator granting XP by command is a thing that will happen again**, and *"the level
+> did not move"* deserves a recorded answer instead of a second investigation.
+>
+> **It is a CONSEQUENCE OF THE HOOK, NOT A GUARD.** There is no check anywhere that refuses `/xp`;
+> the event simply is not raised. Nothing goes red if someone adds a third wallet writer — which is
+> exactly why it is written down.
+>
+> **The same mechanism is why the enchant table's spend and the grindstone's refund cannot move a
+> player's level:** both are wallet-symmetric `setLevel`/`setExp` writes, and `CraftPlayer` is not
+> one of the two classes that reference the event.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 69 — A NEW PLAYER'S HUB HAS THREE LOCKED STATIONS, AND THE LORE SAYS BOTH FACTS
+
+**CONDITIONS:** survival. `/rpg playerxp set <you> 0 xp` — level 1.
+
+**STAGE:** open the Nexus. Hover each of crafting (31), enchanting (32) and the grindstone (33).
+
+**PREDICTED:** all three are **dimmed** — the name in dark gray rather than gray — and each keeps
+**its own material and its own name**, so the player can still tell which is which. Each reads:
+
+```
+Locked -- unlocks at level 3        (10 for enchanting, 13 for the grindstone)
+You are level 1.
+A crafting table in the world still works.
+```
+
+> **BOTH FACTS OR THE LORE IS USELESS.** Line 1 alone tells a player the feature is unavailable,
+> which is **false** — it is twenty blocks away in their base. Line 3 alone hides that the hub route
+> is coming.
+>
+> **CRAFTING IS LOCKED AT LEVEL 1 TOO**, and that is deliberate rather than an oversight: 3 is not 1.
+> "The first station is effectively open" is the assumption someone will make when trimming this.
+>
+> **The settings torch (50) and the stats head (13) are NOT gated** — a locked-out player must still
+> be able to move their star and read the level they need. Check both are undimmed while here.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 70 — CRAFTING OPENS AT EXACTLY 3
+
+**CONDITIONS:** survival, operator.
+
+**STAGE:** `/rpg playerxp set <you> 2 levels`, open the hub, click crafting. Then
+`/rpg playerxp set <you> 3 levels`, re-open, click crafting.
+
+**PREDICTED:** at **2** the click does **nothing** and the icon is dimmed. At **3** the crafting
+screen opens.
+
+> **THE BOUNDARY, BOTH SIDES, BECAUSE AN OFF-BY-ONE HERE IS INVISIBLE IN PLAY.** A gate that fired
+> at 4 instead of 3 would never be noticed by anyone who did not stand exactly on the threshold.
+>
+> **`set N levels` lands on the threshold with zero progress**, so "level 3" here means exactly
+> 2,090 lifetime — the tightest staging available.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 71 — ENCHANTING OPENS AT EXACTLY 10
+
+**CONDITIONS:** survival, operator.
+
+**STAGE:** `/rpg playerxp set <you> 9 levels`, click enchanting. Then `set 10 levels`, click again.
+
+**PREDICTED:** locked at **9**, opens at **10** — an unpowered table reading **0/30**.
+
+> **SEPARATE FROM ROW 70 RATHER THAN FOLDED INTO IT**, because the three thresholds are three
+> independent literals and a single row staged at one level cannot distinguish "the gate works" from
+> "all three share one number".
+
+**READING:** _(not run)_
+
+---
+
+## ROW 72 — THE GRINDSTONE OPENS AT EXACTLY 13
+
+**CONDITIONS:** survival, operator.
+
+**STAGE:** `/rpg playerxp set <you> 12 levels`, click the grindstone. Then `set 13 levels`, again.
+
+**PREDICTED:** locked at **12**, opens at **13** — the tray, and the gray *"Add weapons to strip"*
+button.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 73 — *** THE WORLD BLOCKS ARE NOT GATED. AT LEVEL 1, ALL THREE OPEN. ***
+
+**CONDITIONS:** survival. `/rpg playerxp set <you> 0 xp` — level 1, every hub station locked.
+
+**STAGE:** place a crafting table, an enchanting table and a grindstone. Right-click each,
+**not sneaking**.
+
+**PREDICTED:** **all three of our screens open normally**, at level 1, with every hub station locked
+behind them.
+
+> **BEN'S RULING, AND IT IS THE HALF THE IMPLEMENTATION HAD TO BE SHAPED AROUND.** The gate lives in
+> `NexusStationGate`, consulted by `NexusMenu` alone. **`CraftingMenu`, `EnchantMenu` and
+> `GrindstoneMenu` were not touched by this slice** — putting the check in them would have gated the
+> blocks too, and would have put one rule in three places.
+>
+> **THIS ROW IS THE ONE THAT FAILS IF SOMEBODY "TIDIES" THE GATE INTO THE MENUS.** Nothing else in
+> the block would notice, because every other row reaches those screens through the hub.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 74 — A LOCKED STATION'S CLICK DOES NOTHING **AND SAYS NOTHING**
+
+**CONDITIONS:** survival, level 1, chat visible and clear.
+
+**STAGE:** open the hub and click all three locked stations, several times each.
+
+**PREDICTED:** **no screen change, no chat line, no sound, no title.** The hub stays open and the
+icons do not flicker.
+
+> **THE SILENCE IS THE GRINDSTONE'S RULING APPLIED HERE:** *"A click on a button that is not LIME
+> does nothing and says nothing, because the button has already said it."* The locked lore has said
+> it three ways.
+>
+> ***FLAGGED FOR BEN, AND THIS ROW INVERTS IF HE RULES THE OTHER WAY.*** The brief said "locked
+> icon/lore/**refusal**", and a chat line is one reading of "refusal".
+> `NexusStationGate.draftedChatRefusal` carries the wording, tested and deliberately unsent:
+>
+> > `Grindstone unlocks at level 13. You are level 7. a grindstone in the world still works.`
+>
+> **Switching it on is one line and this row's prediction becomes its opposite.** Recorded as a
+> drafted decision with a named owner rather than settled by me.
+>
+> **AND IT IS NOT SPAMMABLE EITHER WAY**, which is the reason the silence is safe: the icon never
+> looks identical whether it worked or not.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 75 — AT THE CAP THERE IS NO "TO NEXT" LINE, AND THE LEVEL CARRIES THE MARKER
+
+**CONDITIONS:** survival, operator.
+
+**STAGE:** `/rpg playerxp set <you> 99 levels`. Open the Nexus, hover the head.
+
+**PREDICTED:** two progression lines, **not three**:
+
+```
+Level        99 (MAX)
+Lifetime XP  11,642,250
+```
+
+**No "To Next" line at all.** Then `/rpg playerxp set <you> 98 levels` and re-open: **three lines
+return.**
+
+> ***THE PREDECESSOR RETURNED `Long.MAX_VALUE` HERE AND IT RENDERED.*** The tempting fix is a word
+> in the same column — `To Next      MAX` — and it is the same defect in better clothes: that
+> column's subject is an **amount remaining**, and there is none. So the line is **absent** and the
+> marker goes on the level line, where it is a fact about a state rather than a number in a column
+> that should be empty.
+>
+> **The 98 half is what stops "two lines" being equally consistent with the line having been dropped
+> everywhere.**
+
+**READING:** _(not run)_
+
+---
+
+## ROW 76 — LIFETIME XP SURVIVES A DISCONNECT, AND A LEVEL-UP IS WRITTEN IMMEDIATELY
+
+**CONDITIONS:** survival, operator. Two parts, both needed.
+
+**STAGE, part A:** `/rpg playerxp set <you> 800 xp` (level 1, below the 1,000 boundary). **Quit and
+rejoin.** Read the head.
+
+**STAGE, part B:** `/rpg playerxp set <you> 800 xp` again, then **kill mobs until the head shows
+level 2**, then **kill the server process without quitting cleanly**. Restart, rejoin, read the head.
+
+**PREDICTED:** **A** — 800 lifetime, level 1, unchanged. **B** — **level 2 survives**, because
+crossing a level boundary writes through immediately.
+
+> **THE PERSISTENCE POLICY, AND IT IS THE ONE JUDGEMENT CALL IN THIS SLICE THAT WAS MINE.** Every
+> gain updates the cache; **only a level change writes to disk.** `setNexusSlot` writes through on
+> every call and is right to — it is rare and deliberate. **This fires once per orb**, so the same
+> policy would be a file write per orb per player, which is a forty-player problem rather than a
+> one-player one.
+>
+> **The accepted cost, stated so part B is read as the bound and not as a guarantee:** a server that
+> dies without quitting loses progress **since the last level-up** — bounded by one level, never by
+> a whole session.
+>
+> **Part B is deliberately a HARD KILL.** A clean quit persists everything and would pass whether
+> the level-change write exists or not — **a control that succeeds for the wrong reason.**
+
+**READING:** _(not run)_
+
+---
+
+## ROW 77 — `add` REFUSES A NEGATIVE, IN BOTH UNITS, AND NAMES THE COMMAND THAT DOES NOT
+
+**CONDITIONS:** survival, operator.
+
+**STAGE:** `/rpg playerxp add <you> -100 xp`, then `/rpg playerxp add <you> -1 levels`. Then
+`/rpg playerxp set <you> 5 levels` to confirm `set` is not refused.
+
+**PREDICTED:** both `add` forms print, in red:
+
+```
+'add' requires a non-negative amount; use 'set' for absolute values.
+```
+
+and **the level does not move**. `set` is accepted.
+
+> **BOTH UNITS, BECAUSE THE PREDECESSOR ONLY REFUSED ONE.** Its check sat inside the `xp` branch, so
+> `add -3 levels` there **quietly demoted a player** through the very command that refuses
+> `add -3 xp`. The message is about `add`, so it binds `add`; this is a **tightening**, and it is the
+> defect the port found in its own source.
+>
+> **`set` IS THE SANCTIONED EXCEPTION TO THE MONOTONIC INVARIANT** — `PlayerLevel` says lifetime XP
+> never decreases and every other writer obeys it. An operator's hand on the dial is not the game.
+
+**READING:** _(not run)_
+
+---
+
+## MUTATION EVIDENCE — SLICE 9, PLAYER LEVEL. RUN 2026-09-17
+
+**Thirteen mutations, every one applied and measured, and NO KILL SET WAS PREDICTED.** The runner
+refuses to report a test result until the substring check, both halves of the marker count, the line
+delta against a pristine scratchpad copy, and a `test-compile` gate have all passed.
+
+| mutation | file | rows killed | what it proves |
+|---|---|---|---|
+| `MUTXPPRIO` `LOWEST -> NORMAL` | `RpgListeners` | 1 | the hook's priority has a guard at all |
+| `MUTPLUS-RAW` saturating add → `sum` | `PlayerLevel` | 3 | an overflow reads as level 1, and three rows see it |
+| `MUTLEVELFOR-STRICT` `>=` → `>` | `PlayerLevel` | **9** | every boundary in the curve, across three test classes |
+| `MUTREFUSE-XPONLY` scope the refusal to `xp` | `XpGrant` | 1 | **the predecessor's own defect, re-introduced** |
+| `MUTADD-THRESHOLD` delta → new threshold | `XpGrant` | 3 | `add N levels` keeps partial progress |
+| `MUTCLAMP-INT` saturating → `from + levels` | `XpGrant` | 1 | **the bug I actually shipped in the first draft** |
+| `MUTMAX-ALWAYS` drop the `isMaxed` branch | `PlayerLevelLines` | 1 | the `(MAX)` marker |
+| `MUTGATE-STRICT` `>=` → `>` | `NexusStationGate` | 1 | the gate opens AT the level, not after |
+| `MUTAT-TRANSPOSE` grindstone slot → `ENCHANTING` | `NexusStationGate` | 1 | slot→station is a bijection |
+| `MUTLORE-ONEFACT` drop the third lore line | `NexusStationGate` | 1 | the world-block sentence is required |
+| `MUTBLOCK-APPEND` progression lines dropped | `NexusStatsLore` | 4 | the block's position AND its content |
+| `MUTCAP-ALWAYS` render "To Next" at the cap | `NexusStatsLore` | 1 | the absent line at 99 |
+| `MUTXP-REPLACE` accumulate → replace | `ProfileService` | 4 | a gain adds to the stored total |
+| `MUTXP-ALWAYSSAVE` drop the level comparison | `ProfileService` | 1 | the persistence policy |
+
+**No mutation in this pass killed zero rows.**
+
+> ### TWO INSTRUMENT FAILURES IN THIS PASS, AND THE RUNNER CAUGHT BOTH BY REFUSING TO REPORT
+>
+> **1. `MUTBLOCK-APPEND` silently did not apply.** A multi-line search pattern typed with `\n`
+> **cannot match a CRLF file**, and `core.autocrlf=true` on this clone means the working tree is
+> CRLF — measured, `GATE-nexus.md` carries one CR per line. The `perl` substitution exited 0 and
+> changed nothing. **`line delta: 0` is what caught it**, exactly as the sixth and eighth rows of
+> CLAUDE.md's table predict; the marker count could not have.
+>
+> **2. The `original gone` count was itself wrong, for a different reason.** It used `grep -F`,
+> which is **LINE-BASED**, so a multi-line needle is read as several independent patterns and the
+> number means nothing — it reported `2` for a pattern that had not been removed at all.
+>
+> **Both were fixed in the INSTRUMENT, not worked around in the pattern:** newlines in the pattern
+> now compile to `\r?\n`, and both counts are taken with `perl -0777` so they can see across lines.
+> **Then the instrument's own positive control was re-run** — a pattern that cannot match must be
+> REFUSED — before any further result was believed.
+>
+> **The control also demonstrates which guard is load-bearing:** it reported `marker present: 45`,
+> because the one-character replacement text occurs all over the file. **Only the line delta said
+> no.**
 
 ---
 

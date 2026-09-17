@@ -73,7 +73,8 @@ class ProfileServiceTest {
 
     @Test
     void joinLoadsAnExistingProfile() {
-        repo.saved.put(player, new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of("x"), 1L, 3));
+        repo.saved.put(player,
+                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of("x"), 1L, 3, 4_200L));
 
         service.onJoin(player);
 
@@ -114,7 +115,7 @@ class ProfileServiceTest {
 
         // The read finally lands.
         repo.pendingLoad.complete(Optional.of(
-                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of(), 1L, 3)));
+                new PlayerProfile(1, player, "hunter", "none", 9, 500, List.of(), 1L, 3, 4_200L)));
 
         assertEquals(1, repo.saveCount.get());
         assertEquals(9, repo.saved.get(player).level());
@@ -163,7 +164,7 @@ class ProfileServiceTest {
     @Test
     void whenSettledDoesNotRunUntilTheLoadCompletes_andThenSeesTheRealProfile() {
         repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
-                "hunter", "fire", 9, 500, List.of(), 1L, 3));
+                "hunter", "fire", 9, 500, List.of(), 1L, 3, 4_200L));
         repo.pendingLoad = new CompletableFuture<>();
         service.onJoin(player);
 
@@ -304,7 +305,7 @@ class ProfileServiceTest {
     @Test
     void setNexusSlotCARRIESEverythingElseOnTheProfile() {
         repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
-                "ranger", "fire", 9, 500, List.of("arc_surge"), 1L, 8));
+                "ranger", "fire", 9, 500, List.of("arc_surge"), 1L, 8, 4_200L));
         service.onJoin(player);
 
         assertTrue(service.setNexusSlot(player, 0));
@@ -416,5 +417,121 @@ class ProfileServiceTest {
     void setKitIsRefusedForSomeoneWhoNeverJoined() {
         assertFalse(service.setKit(player, "ranger", "fire", List.of("arc_surge")));
         assertEquals(0, repo.saveCount.get());
+    }
+
+    // ---------------------------------------------------------------- lifetime XP
+    //
+    // The impure half of the progression hook. PlayerLevel owns the curve and is tested in core;
+    // what is decidable here is ACCUMULATION and WHEN A DISK WRITE HAPPENS.
+
+    @Test
+    void xpACCUMULATESAcrossGains_andTheProfileCarriesTheRunningTotal() {
+        service.onJoin(player);
+
+        assertEquals(400L, service.addLifetimeXp(player, 400L).orElseThrow());
+        assertEquals(550L, service.addLifetimeXp(player, 150L).orElseThrow(),
+                "the second gain adds to the first rather than replacing it");
+        assertEquals(550L, service.profile(player).orElseThrow().lifetimeXp());
+        // Mutation MUTXP-REPLACE: `before + amount` -> `amount` -> kill set RECORDED in the PR body.
+    }
+
+    @Test
+    void onlyALEVELCHANGEWritesToDisk_notEveryOrb() {
+        // *** THE PERSISTENCE POLICY, AND IT IS THE ONE THING HERE THAT IS A JUDGEMENT CALL. ***
+        // setNexusSlot writes through on every call; this fires once per orb, so it does not.
+        // 1000 is the level-2 total, so the third gain below is the one that crosses.
+        service.onJoin(player);
+        int afterJoin = repo.saveCount.get();
+
+        service.addLifetimeXp(player, 400L);
+        service.addLifetimeXp(player, 400L);
+        assertEquals(afterJoin, repo.saveCount.get(),
+                "800 XP is still level 1 -- two orbs, no write");
+
+        service.addLifetimeXp(player, 400L);
+        assertEquals(afterJoin + 1, repo.saveCount.get(),
+                "1200 crosses the level-2 boundary at 1000, and THAT is what gets persisted");
+        assertEquals(1_200L, repo.saved.get(player).lifetimeXp(),
+                "and the saved profile carries the whole total, not just the crossing gain");
+
+        service.addLifetimeXp(player, 400L);
+        assertEquals(afterJoin + 1, repo.saveCount.get(),
+                "1600 is still level 2 -- back to no write");
+        // Mutation MUTXP-ALWAYSSAVE: drop the level comparison and save unconditionally ->
+        // kill set RECORDED in the PR body.
+    }
+
+    @Test
+    void theCACHEIsUpdatedEvenWhenNoWriteHappens_whichIsWhatQuitPersists() {
+        // WITHOUT THIS ROW THE ONE ABOVE IS SATISFIED BY A METHOD THAT DROPS SUB-LEVEL GAINS
+        // ENTIRELY -- it counts writes, and zero writes is zero writes whether the XP was kept or
+        // thrown away. This is the row that says the number survived.
+        service.onJoin(player);
+        service.addLifetimeXp(player, 800L);
+
+        assertEquals(800L, service.profile(player).orElseThrow().lifetimeXp(),
+                "held in the cache with no disk write");
+
+        service.onQuit(player);
+
+        assertEquals(800L, repo.saved.get(player).lifetimeXp(),
+                "and quit is what puts it on disk -- the same path lastSeenEpochMillis uses");
+    }
+
+    @Test
+    void aNonPositiveAmountIsIgnoredRatherThanApplied() {
+        // setAmount(-1) from another plugin is reachable; losing progression to it is worse than
+        // dropping it. Zero is refused too -- an empty return says "nothing happened" honestly.
+        service.onJoin(player);
+        service.addLifetimeXp(player, 500L);
+
+        assertTrue(service.addLifetimeXp(player, -100L).isEmpty(), "negative is ignored");
+        assertTrue(service.addLifetimeXp(player, 0L).isEmpty(), "and so is zero");
+        assertEquals(500L, service.profile(player).orElseThrow().lifetimeXp(),
+                "the total did not move in either direction");
+    }
+
+    @Test
+    void xpIsDroppedWhileTheProfileIsStillLoading_andThatIsNotAnError() {
+        // An orb picked up on the join tick, before the disk read settles. Refused the same way
+        // setNexusSlot and setKit are -- the alternative is inventing a profile over an in-flight
+        // load, which is the race onJoin's future-keying exists to prevent.
+        repo.pendingLoad = new CompletableFuture<>();
+        service.onJoin(player);
+
+        assertTrue(service.addLifetimeXp(player, 500L).isEmpty());
+        assertEquals(0, repo.saveCount.get(), "and nothing was written");
+    }
+
+    @Test
+    void xpIsDroppedForSomeoneWhoNeverJoined() {
+        assertTrue(service.addLifetimeXp(player, 500L).isEmpty());
+        assertEquals(0, repo.saveCount.get());
+    }
+
+    @Test
+    void aLoadedProfilesSTOREDTotalIsTheBaseAndIsNotOverwritten() {
+        // 4_200L is what this file's fixtures carry. A gain must ADD TO the stored number, not
+        // start from zero -- which is the failure that would look correct for a fresh player and
+        // wipe every returning one.
+        repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
+                "ranger", "fire", 9, 500, List.of(), 1L, 8, 4_200L));
+        service.onJoin(player);
+
+        assertEquals(4_700L, service.addLifetimeXp(player, 500L).orElseThrow(),
+                "4200 stored plus 500 earned");
+    }
+
+    @Test
+    void theTotalSATURATESRatherThanWrappingNegative() {
+        // Unreachable in play -- the level-99 total is 11,642,250 -- but a hand-edited profile
+        // reaches this method, and a wrap would read back as level 1, which is the worst possible
+        // failure for a progression number: total loss that looks like a new player.
+        repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
+                "ranger", "fire", 9, 500, List.of(), 1L, 8, Long.MAX_VALUE - 5L));
+        service.onJoin(player);
+
+        assertEquals(Long.MAX_VALUE, service.addLifetimeXp(player, 1_000L).orElseThrow(),
+                "clamped at the top, never wrapped");
     }
 }

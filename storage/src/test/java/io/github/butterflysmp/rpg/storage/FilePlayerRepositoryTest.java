@@ -34,7 +34,7 @@ class FilePlayerRepositoryTest {
     void saveThenLoadRoundTrips() {
         var id = UUID.randomUUID();
         var profile = new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, id, "hunter", "fire",
-                7, 1234, List.of("solar_grenade"), 99L, 3);
+                7, 1234, List.of("solar_grenade"), 99L, 3, 56_780L);
         var repo = repo();
 
         repo.save(profile).join();
@@ -134,6 +134,76 @@ class FilePlayerRepositoryTest {
 
         assertEquals(0, repo().load(id).join().orElseThrow().nexusSlot(),
                 "at v3 a zero is a CHOICE and must survive -- the stamp is what tells them apart");
+    }
+
+    /**
+     * *** THE ABSENT-{@code long} ZERO, CAUSED RATHER THAN ASSERTED. ***
+     *
+     * <p>Every profile on disk today is a v3 file with no {@code lifetimeXp} key, and this is that
+     * file. <b>Gson leaves the absent long at 0, and 0 is the answer we want</b> -- a player with no
+     * record has earned no XP -- so unlike {@code nexusSlot} there is no migration step, no stamp
+     * bump and no sentinel. {@code PlayerProfile.lifetimeXp()} carries the argument.
+     *
+     * <p><b>The stamp assertion is the one that makes the ruling falsifiable.</b> "No migration"
+     * is otherwise an absence, and an absence in {@code ProfileMigrations} is indistinguishable
+     * from a step someone forgot to write. If a later slice bumps the schema for this field, THIS
+     * ROW REDDENS and points at the note that says why it was not bumped.
+     *
+     * <p>The surviving v3 keys are asserted too, so the row cannot pass on a fixture that failed to
+     * parse at all and handed back a blank profile -- which would satisfy the zero for free.
+     */
+    @Test
+    void aV3JsonWithNoLifetimeXpKeyLoadsAtZERO_withNoMigrationAndNoStampBump() throws Exception {
+        var id = UUID.randomUUID();
+        Files.writeString(dir.resolve(id + ".json"), """
+                {
+                  "schemaVersion": 3,
+                  "playerId": "%s",
+                  "archetypeId": "ranger",
+                  "elementId": "fire",
+                  "level": 7,
+                  "experience": 1234,
+                  "unlockedAbilities": ["solar_grenade"],
+                  "lastSeenEpochMillis": 99,
+                  "nexusSlot": 17
+                }
+                """.formatted(id), StandardCharsets.UTF_8);
+
+        PlayerProfile loaded = repo().load(id).join().orElseThrow();
+
+        assertEquals(0L, loaded.lifetimeXp(),
+                "an absent lifetimeXp is zero, and zero is CORRECT -- level 1 is where a player "
+                        + "with no record belongs");
+        assertEquals(3, loaded.schemaVersion(),
+                "AND THE STAMP DOES NOT MOVE. Adding this field needed no migration, so it needed "
+                        + "no version; if you are here because this went red, read the note at the "
+                        + "end of ProfileMigrations.migrate before raising it");
+
+        // THE FIXTURE REALLY IS A POPULATED v3 FILE -- without these, a parse failure yielding a
+        // blank profile would satisfy the zero above and read as a pass.
+        assertEquals(17, loaded.nexusSlot(), "the v3 field that DID need a migration is untouched");
+        assertEquals("ranger", loaded.archetypeId());
+        assertEquals(99L, loaded.lastSeenEpochMillis());
+
+        // AND 1234 IS THE DEAD `experience` FIELD, WHICH IS NOT THIS ONE. Two longs, adjacent in
+        // the record, and only one of them carries progression. Staged unequal on purpose so a
+        // transposition between them cannot pass.
+        assertEquals(1234L, loaded.experience(), "the dead field keeps its own value");
+        assertNotEquals(loaded.experience(), loaded.lifetimeXp(),
+                "if these two ever read the same, the row can no longer see a swap");
+    }
+
+    /** And a written lifetimeXp round-trips -- the absent case above is not the only one. */
+    @Test
+    void aWrittenLifetimeXpSurvivesSaveAndLoad() {
+        var id = UUID.randomUUID();
+        var repo = repo();
+
+        repo.save(PlayerProfile.fresh(id).withLifetimeXp(12_940L)).join();
+
+        assertEquals(12_940L, repo.load(id).join().orElseThrow().lifetimeXp(),
+                "12,940 is the level-10 total -- a real curve value, not a round number that "
+                        + "would also match a field left at its default");
     }
 
     /** Legacy JSON missing a whole field must not blow up the compact ctor. */

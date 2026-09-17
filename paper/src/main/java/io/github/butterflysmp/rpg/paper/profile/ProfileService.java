@@ -1,11 +1,13 @@
 package io.github.butterflysmp.rpg.paper.profile;
 
+import io.github.butterflysmp.rpg.core.progression.PlayerLevel;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.github.butterflysmp.rpg.storage.PlayerRepository;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -206,6 +208,105 @@ public final class ProfileService {
         profiles.put(playerId, CompletableFuture.completedFuture(updated));
         repository.save(updated).exceptionally(error -> {
             log.log(Level.SEVERE, "Failed to persist Nexus slot change for " + playerId, error);
+            return null;
+        });
+        return true;
+    }
+
+    /**
+     * Add earned XP to a player's lifetime total, and say whether that crossed a level boundary.
+     *
+     * <p>Called from the {@code PlayerExpChangeEvent} handler in {@code RpgListeners}, on the main
+     * thread, once per orb picked up. Touches no Bukkit API, like everything else here.
+     *
+     * <h2>*** THIS IS THE ONLY WRITER OF {@code lifetimeXp}, AND IT ONLY EVER ADDS. ***</h2>
+     *
+     * The monotonicity {@code PlayerLevel} relies on is a property of this method, not of the
+     * record -- {@code PlayerProfile.withLifetimeXp} would happily take a smaller number.
+     * <b>A negative or zero amount is ignored</b> rather than refused: {@code setAmount(-1)} from
+     * another plugin is a thing that can happen, and losing progression to it is worse than
+     * dropping it on the floor.
+     *
+     * <h2>WHEN IT WRITES TO DISK, AND THE COST OF THE ANSWER</h2>
+     *
+     * <b>Every gain updates the cache; only a LEVEL CHANGE writes to disk.</b>
+     *
+     * <p>{@link #setNexusSlot} writes through on every call and is right to -- it is a deliberate,
+     * rare choice. <b>This fires once per orb</b>, so the same policy would be a file write per orb
+     * per player, which is the shape of thing this project is told to treat as a forty-player
+     * problem rather than a one-player one.
+     *
+     * <p>The cache is persisted by {@link #onQuit} and {@link #saveAllAndClear}, exactly as
+     * {@code lastSeenEpochMillis} always has been. <b>The accepted cost, said out loud: a server
+     * that dies without running either loses this session's progress since the last level-up</b> --
+     * bounded by one level, never by a whole session, which is what the level-change write buys.
+     *
+     * @return the new lifetime total, or empty if the profile is not loaded or could not be read.
+     *         <b>Empty is not an error the caller should report</b>: an orb picked up during the
+     *         join-tick load window is a normal event, and the alternative is a chat line nobody
+     *         can act on.
+     */
+    public OptionalLong addLifetimeXp(UUID playerId, long amount) {
+        if (amount <= 0) return OptionalLong.empty();
+
+        CompletableFuture<PlayerProfile> loading = profiles.get(playerId);
+        if (loading == null || !loading.isDone() || loading.isCompletedExceptionally()) {
+            return OptionalLong.empty();
+        }
+        PlayerProfile current = loading.getNow(null);
+        if (current == null) return OptionalLong.empty();
+
+        long before = current.lifetimeXp();
+        long after = PlayerLevel.plus(before, amount);
+
+        PlayerProfile updated = current.withLifetimeXp(after);
+        profiles.put(playerId, CompletableFuture.completedFuture(updated));
+
+        if (PlayerLevel.levelFor(before) != PlayerLevel.levelFor(after)) {
+            repository.save(updated).exceptionally(error -> {
+                log.log(Level.SEVERE, "Failed to persist level-up for " + playerId, error);
+                return null;
+            });
+        }
+        return OptionalLong.of(after);
+    }
+
+    /**
+     * Set a player's lifetime XP to an absolute value. <b>Operator tooling only.</b>
+     *
+     * <h2>*** THIS IS THE ONE PLACE THE MONOTONIC INVARIANT CAN BE BROKEN, AND IT IS DELIBERATE ***</h2>
+     *
+     * {@code PlayerLevel} states that lifetime XP never decreases, and every other writer obeys it:
+     * {@link #addLifetimeXp} only adds, the enchant table and the grindstone cannot reach the field
+     * at all, and {@code PlayerExpChangeEvent} only ever carries an earned amount.
+     * <b>{@code /rpg playerxp set} can lower it, on purpose.</b>
+     *
+     * <p><b>Read that as an OPERATOR EXCEPTION, not as the invariant being false.</b> The rule is
+     * what the GAME does; this is a hand on the dial. A reader who finds the invariant asserted in
+     * {@code PlayerLevel} and contradicted here has found this sentence, which is the point --
+     * without it the natural move is to "fix" one of the two, and either fix is wrong.
+     *
+     * <p><b>Writes through on every call</b>, unlike {@link #addLifetimeXp}. A command is rare and
+     * deliberate, which is exactly {@link #setNexusSlot}'s argument; and an operator staging a gate
+     * row wants the value on disk before they do anything else with it.
+     *
+     * <p>Negative input is floored at zero -- below zero is not a lower level, it is the same
+     * level 1 with a number that reads as corrupt to the next person who opens the file.
+     *
+     * @return false if the profile is not loaded or could not be read, so the command can say so.
+     */
+    public boolean setLifetimeXp(UUID playerId, long lifetimeXp) {
+        CompletableFuture<PlayerProfile> loading = profiles.get(playerId);
+        if (loading == null || !loading.isDone() || loading.isCompletedExceptionally()) {
+            return false;
+        }
+        PlayerProfile current = loading.getNow(null);
+        if (current == null) return false;
+
+        PlayerProfile updated = current.withLifetimeXp(Math.max(0L, lifetimeXp));
+        profiles.put(playerId, CompletableFuture.completedFuture(updated));
+        repository.save(updated).exceptionally(error -> {
+            log.log(Level.SEVERE, "Failed to persist lifetime XP change for " + playerId, error);
             return null;
         });
         return true;

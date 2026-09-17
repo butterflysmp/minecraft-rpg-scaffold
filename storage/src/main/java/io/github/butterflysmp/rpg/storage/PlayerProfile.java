@@ -22,7 +22,8 @@ public record PlayerProfile(
         long experience,
         List<String> unlockedAbilities,
         long lastSeenEpochMillis,
-        int nexusSlot
+        int nexusSlot,
+        long lifetimeXp
 ) {
     /** Bump when the on-disk shape changes, and add a ProfileMigrations step. */
     public static final int CURRENT_SCHEMA_VERSION = 3;
@@ -56,11 +57,16 @@ public record PlayerProfile(
         elementId = elementId == null ? NONE : elementId;
         unlockedAbilities = unlockedAbilities == null ? List.of() : List.copyOf(unlockedAbilities);
 
-        // NOTE THAT nexusSlot IS NOT DEFAULTED HERE, AND THAT IS NOT AN OVERSIGHT. See its
-        // accessor's javadoc: an int has no absent value to test for, so the defaulting this
-        // constructor does for elementId and unlockedAbilities is IMPOSSIBLE for it. The v2 -> v3
-        // migration does that job instead, which is the only place that can tell "absent" from
-        // "chosen".
+        // NEITHER PRIMITIVE IS DEFAULTED HERE, AND THE TWO HAVE OPPOSITE REASONS. Read both
+        // accessors' javadocs before adding a third; the answers do not generalise from each other.
+        //
+        //   nexusSlot   CANNOT be defaulted here -- zero is a legal slot, so absence is
+        //               indistinguishable from choice, and only the v2 -> v3 migration can tell
+        //               them apart.
+        //   lifetimeXp  NEED NOT be defaulted here -- Gson's absent-long zero is already the
+        //               correct value, so there is nothing for a default to do.
+        //
+        // One is impossible and one is unnecessary. Both look like the same blank line.
     }
 
     /**
@@ -85,19 +91,61 @@ public record PlayerProfile(
         return nexusSlot;
     }
 
+    /**
+     * Total XP this player has ever earned. <b>Monotonic: nothing decreases it.</b>
+     *
+     * <p>The player's LEVEL is computed from this on read, through {@code PlayerLevel.levelFor}.
+     * The level is never stored; that class's javadoc carries the argument.
+     *
+     * <h2>*** THE ABSENT-FIELD ZERO IS CORRECT HERE. NO MIGRATION, NO STAMP, NO SENTINEL. ***</h2>
+     *
+     * Gson leaves an absent {@code long} as <b>0</b>, so a profile written before this field
+     * existed reads back as zero lifetime XP -- and <b>that is the right answer</b>: a player with
+     * no record has earned none, and {@code PlayerLevel.levelFor(0)} is level 1, which is where
+     * they belong. <b>Absence and zero mean the same thing for this quantity</b>, so there is
+     * nothing for a migration step to decide.
+     *
+     * <h2>AND THE OPPOSITE PRECEDENT IS ONE FIELD AWAY, WHICH IS WHY THIS PARAGRAPH EXISTS</h2>
+     *
+     * <b>{@link #nexusSlot()} needed a stamped migration for what looks like the identical
+     * situation</b> -- an absent primitive defaulting to 0. The difference is not the type and not
+     * Gson's behaviour, which are the same in both cases. <b>It is that ZERO IS A LEGAL SLOT.</b>
+     * "Never set" and "chose the leftmost hotbar cell" are the same bytes on disk, so only the
+     * schema stamp could separate them, and only at the one instant before it was raised.
+     *
+     * <p><b>Nothing here is ambiguous, because zero is not a choice a player can make.</b> You
+     * cannot elect to have earned no XP in a way that differs from never having earned any.
+     *
+     * <p><b>{@code ProfileMigrations}' v2 -> v3 step ends by saying "Do not copy the two steps
+     * above when adding a primitive. Copy this one." THAT INSTRUCTION IS WRONG FOR THIS FIELD</b>,
+     * and it is wrong for exactly the reason it was written: it generalised from the type when the
+     * real premise was the VALUE SPACE. See the note at that step's end.
+     *
+     * <h2>THIS IS NOT THE DEAD {@code experience} FIELD TWO COMPONENTS UP</h2>
+     *
+     * <b>{@code level} and {@code experience} are unread.</b> Measured 2026-09-17 across
+     * {@code core}, {@code storage} and {@code paper}: <b>zero production call sites</b> for either
+     * accessor, against 2 for {@code archetypeId()} as a control. They are original-schema
+     * scaffolding, they serialise, and nothing consumes them. <b>Do not write progression into
+     * them and do not read progression out of them.</b>
+     */
+    public long lifetimeXp() {
+        return lifetimeXp;
+    }
+
     public static PlayerProfile fresh(UUID id) {
         return new PlayerProfile(CURRENT_SCHEMA_VERSION, id, NONE, NONE, 1, 0, List.of(),
-                System.currentTimeMillis(), DEFAULT_NEXUS_SLOT);
+                System.currentTimeMillis(), DEFAULT_NEXUS_SLOT, 0L);
     }
 
     public PlayerProfile withSchemaVersion(int version) {
         return new PlayerProfile(version, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp);
     }
 
     public PlayerProfile withLastSeen(long epochMillis) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, epochMillis, nexusSlot);
+                unlockedAbilities, epochMillis, nexusSlot, lifetimeXp);
     }
 
     /**
@@ -111,7 +159,23 @@ public record PlayerProfile(
      */
     public PlayerProfile withNexusSlot(int slot) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, slot);
+                unlockedAbilities, lastSeenEpochMillis, slot, lifetimeXp);
+    }
+
+    /**
+     * Set this player's lifetime XP.
+     *
+     * <p><b>NOT VALIDATED AS MONOTONIC HERE, AND THAT IS THE SAME TRADE {@link #withNexusSlot}
+     * MAKES.</b> This record is a data carrier; a refusal here would still leave the caller holding
+     * the decision, and a hand-edited JSON file reaches {@code PlayerLevel.levelFor} without
+     * passing through this method at all -- which is why that function clamps rather than throws.
+     *
+     * <p>The monotonicity is a property of <b>the one writer</b>: {@code PlayerLevelListener} only
+     * ever adds a positive amount. Nothing else writes this field.
+     */
+    public PlayerProfile withLifetimeXp(long xp) {
+        return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, xp);
     }
 
     /**
@@ -123,6 +187,6 @@ public record PlayerProfile(
      */
     public PlayerProfile withKit(String classId, String elementId, List<String> unlockedAbilities) {
         return new PlayerProfile(schemaVersion, playerId, classId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp);
     }
 }

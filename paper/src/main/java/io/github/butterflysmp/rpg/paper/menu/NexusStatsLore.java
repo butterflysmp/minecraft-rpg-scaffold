@@ -2,12 +2,16 @@ package io.github.butterflysmp.rpg.paper.menu;
 
 import io.github.butterflysmp.rpg.core.combat.StatsSheetLines;
 import io.github.butterflysmp.rpg.core.combat.StatsSheetValues;
+import io.github.butterflysmp.rpg.core.progression.PlayerLevel;
+import io.github.butterflysmp.rpg.core.progression.PlayerLevelLines;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheet;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * The text on the Nexus hub's stats head: its name, and its lore.
@@ -92,10 +96,62 @@ final class NexusStatsLore {
      * becomes worth it. Recorded so that slice finds the answer instead of rediscovering the
      * question.
      */
-    static List<Component> lore(Optional<StatsSheetValues> values) {
-        return values
+    static List<Component> lore(Optional<StatsSheetValues> values, OptionalLong lifetimeXp) {
+        List<Component> lines = new ArrayList<>(progressionLines(lifetimeXp));
+        lines.addAll(values
                 .map(StatsSheet::statLines)
                 .orElseGet(() -> List.of(
-                        MenuIcons.line(StatsSheetLines.UNTRACKED, NamedTextColor.RED)));
+                        MenuIcons.line(StatsSheetLines.UNTRACKED, NamedTextColor.RED))));
+        return List.copyOf(lines);
+    }
+
+    /**
+     * The progression block: level, lifetime XP, and XP to the next level.
+     *
+     * <h2>IT GOES FIRST, ABOVE THE EIGHT COMBAT STATS</h2>
+     *
+     * A level is the coarsest thing on the tooltip and the one a player checks most often; the
+     * eight stats are the detail underneath it. The column is shared -- both blocks pad through
+     * {@code StatsSheetLines.label}, which is why {@code PlayerLevelLines} deliberately has no
+     * padder of its own.
+     *
+     * <h2>*** TWO SOURCES, TWO INDEPENDENT EMPTY CASES, AND THEY MUST NOT BE MERGED ***</h2>
+     *
+     * The stat lines come from {@code CombatantStats}; this comes from the PROFILE. <b>Either can
+     * be absent without the other</b> -- a registered player whose profile failed to read, or a
+     * loaded profile for someone the reconcile loop has not registered yet -- so the head renders
+     * whichever halves it has.
+     *
+     * <p><b>An absent profile renders NOTHING here rather than "Level 1".</b> Same argument as the
+     * untracked notice one method up: a readout showing level 1 when nothing was read is
+     * indistinguishable from a working readout of a genuinely new player, and this one is worse,
+     * because a level-40 player would be told they are level 1 by a screen that looks fine.
+     *
+     * <h2>NO "To Next" LINE AT THE CAP</h2>
+     *
+     * {@code PlayerLevelLines.toNext} THROWS there, on purpose, so this branch is not optional --
+     * see that class on why a word in that column would restate the predecessor's
+     * {@code Long.MAX_VALUE} defect.
+     */
+    private static List<Component> progressionLines(OptionalLong lifetimeXp) {
+        if (lifetimeXp.isEmpty()) return List.of();
+        long total = lifetimeXp.getAsLong();
+
+        List<Component> lines = new ArrayList<>();
+        lines.add(statLine(PlayerLevelLines.LEVEL_LABEL, PlayerLevelLines.level(total),
+                NamedTextColor.GOLD));
+        lines.add(statLine(PlayerLevelLines.LIFETIME_LABEL, PlayerLevelLines.lifetime(total),
+                NamedTextColor.GRAY));
+        if (!PlayerLevel.isMaxed(total)) {
+            lines.add(statLine(PlayerLevelLines.TO_NEXT_LABEL, PlayerLevelLines.toNext(total),
+                    NamedTextColor.GRAY));
+        }
+        return lines;
+    }
+
+    /** Label padded through the stat sheet's own padder, then the value. One column, one owner. */
+    private static Component statLine(String label, String value, NamedTextColor valueColor) {
+        return MenuIcons.line(StatsSheetLines.label(label), NamedTextColor.DARK_GRAY)
+                .append(MenuIcons.line(value, valueColor));
     }
 }
