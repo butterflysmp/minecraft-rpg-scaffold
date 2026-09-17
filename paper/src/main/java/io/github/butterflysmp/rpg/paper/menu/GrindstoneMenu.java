@@ -250,7 +250,10 @@ public final class GrindstoneMenu extends Menu {
      */
     private void paintStatus(GrindstoneButton.State state) {
         ItemStack pane = MenuIcons.pane(GrindstoneButton.paneFor(state));
-        for (int slot : GrindstoneMenuLayout.STATUS_SLOTS) {
+        // THE SET FORKS BY ORIGIN: seven cells from the hub, EIGHT from a block, where 48 has no
+        // Back button on it and is part of the readout instead. The fork is in the layout, not
+        // here -- this loop asks for the right set and paints it.
+        for (int slot : GrindstoneMenuLayout.statusSlots(openedFromNexus())) {
             getInventory().setItem(slot, pane.clone());
         }
     }
@@ -391,20 +394,18 @@ public final class GrindstoneMenu extends Menu {
         }
         getInventory().setItem(CLOSE_SLOT, MenuIcons.close());
 
-        // BACK_SLOT IS SUBTRACTED FROM THE FILLER SET PERMANENTLY, SO SOMETHING MUST PAINT IT ON
-        // BOTH PATHS. From the hub it is the arrow; from a block it is FILLER, and that else-arm is
-        // not decoration -- without it slot 48 is an unpainted hole in the middle of the bar's row,
-        // invisible and clickable.
+        // SLOT 48 IS PAINTED ON BOTH PATHS, BY DIFFERENT THINGS, AND NEITHER IS FILLER ANY MORE.
         //
-        // IT SHIPPED MISSING ONCE, AND THE REASON IT TRANSFERRED BADLY IS WORTH THE LINE:
-        // CraftingMenu.render() loops over EVERY slot except the grid and the result, so its base
-        // pass covers 48 for free. This render() loops over FILLER_SLOTS, which by construction
-        // EXCLUDES 48 -- so the same argument, copied across, was false here. A comment claiming
-        // the base pass covered it was carried over with it.
+        //   from the hub     the Back arrow, here
+        //   from a block     a BAR CELL, by paintStatus -- Ben's ruling after seeing the screen
+        //
+        // It used to be filler on the block path, and before that it was painted by nothing at all
+        // (an invisible, clickable hole). The filler arm is gone rather than kept as a fallback:
+        // with 48 inside STATUS_FROM_BLOCK, a filler write here would be overpainted by the first
+        // bar repaint anyway, and a line that is overwritten a tick later is worse than absent --
+        // it reads as the thing responsible for the cell.
         if (openedFromNexus()) {
             getInventory().setItem(BACK_SLOT, MenuIcons.back(Material.ARROW, "the Nexus"));
-        } else {
-            getInventory().setItem(BACK_SLOT, MenuIcons.filler());
         }
         getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.GRINDSTONE,
                 MenuIcons.line("Grindstone", NamedTextColor.WHITE),

@@ -29,8 +29,9 @@ class GrindstoneMenuLayoutTest {
             19, 20, 21, 22, 23, 24, 25,
             28, 29, 30, 31, 32, 33, 34);
 
-    /** The bar, by hand: the bottom row minus Back and Close. */
-    private static final List<Integer> EXPECTED_BAR = List.of(45, 46, 47, 50, 51, 52, 53);
+    // THE BAR HAS NO SHARED FIXTURE, DELIBERATELY. It used to be one seven-cell list, and a single
+    // constant cannot describe a set that forks by origin without implying the fork is not there.
+    // Both literals are written out at their assertion instead.
 
     @Test
     void theTrayIsTheTWENTYONECellsAndNothingElse() {
@@ -124,32 +125,46 @@ class GrindstoneMenuLayoutTest {
     }
 
     @Test
-    void theBarIsTheBottomRowMinusBOTHChromeCells() {
-        assertEquals(EXPECTED_BAR, GrindstoneMenuLayout.STATUS_SLOTS.stream().sorted().toList(),
-                "45-47 and 50-53 -- the bottom row minus 48 and 49");
-        assertEquals(7, GrindstoneMenuLayout.STATUS_SLOTS.size(), "SEVEN cells, both origins");
+    void theBarFORKSByOrigin_sevenFromTheHubAndEIGHTFromABlock() {
+        // *** THE GEOMETRY FORKS, AND THIS FILE USED TO ASSERT THAT IT MUST NOT. ***
+        //
+        // It read "SEVEN cells, both origins", on the argument that a readout whose geometry
+        // depends on how you got there is not a readout. Ben agreed to that BEFORE seeing it and
+        // ruled the other way after: from a block there is no Back button, so 48 was a black filler
+        // pane sitting in the middle of a row of colour-changing ones.
+        assertEquals(List.of(45, 46, 47, 50, 51, 52, 53),
+                GrindstoneMenuLayout.statusSlots(true).stream().sorted().toList(),
+                "from the HUB: the bottom row minus Back and Close");
+        assertEquals(List.of(45, 46, 47, 48, 50, 51, 52, 53),
+                GrindstoneMenuLayout.statusSlots(false).stream().sorted().toList(),
+                "from a BLOCK: 48 joins the bar, because no Back button is drawn on it");
 
-        // *** MUTS5-BACK IS IN SCOPE AGAIN, AND THIS IS WHAT MAKES 48 SAFE. ***
-        // A bar across the bottom row beside Back and Close is the exact arrangement that produced
-        // that defect: the bar painted over the button, and the only symptom was "Back doesn't work
-        // sometimes". The subtraction is UNCONDITIONAL, so it holds on the block path too -- where
-        // there is no Back button at all and the cell holds filler.
-        assertFalse(GrindstoneMenuLayout.STATUS_SLOTS.contains(GrindstoneMenuLayout.BACK_SLOT),
-                "the bar must NEVER paint over Back");
-        assertFalse(GrindstoneMenuLayout.STATUS_SLOTS.contains(GrindstoneMenuLayout.CLOSE_SLOT),
+        assertEquals(7, GrindstoneMenuLayout.statusSlots(true).size(), "seven from the hub");
+        assertEquals(8, GrindstoneMenuLayout.statusSlots(false).size(), "EIGHT from a block");
+
+        // *** MUTS5-BACK IS STILL OUT OF SCOPE, AND THE FORK IS WHY RATHER THAN IN SPITE OF IT. ***
+        // That defect was a bar painting over a button that was THERE. The bar takes 48 only on the
+        // path where no button is drawn, so the two are mutually exclusive BY CONSTRUCTION.
+        assertFalse(GrindstoneMenuLayout.statusSlots(true).contains(GrindstoneMenuLayout.BACK_SLOT),
+                "where Back IS drawn, the bar must never paint over it");
+        assertFalse(GrindstoneMenuLayout.statusSlots(true).contains(GrindstoneMenuLayout.CLOSE_SLOT),
                 "nor over Close");
-        // Mutation: drop slots.remove(BACK_SLOT) -> 8 cells, the literal list, and the Back
-        // assertion all redden.
+        assertFalse(GrindstoneMenuLayout.statusSlots(false).contains(GrindstoneMenuLayout.CLOSE_SLOT),
+                "and Close is never a bar cell on either path");
+        // Mutation: drop the `if (fromHub)` so Back always leaves the bar -> the block literal and
+        // the EIGHT reddens.
     }
 
     @Test
-    void theBarNeverTouchesTheTRAY_theOTHERWriterTheTickNowHas() {
-        // The countdown repaints CONFIRM_SLOT **and the seven bar cells** twice a second. The bar
-        // is a SECOND writer on the tick, so it needs the same disjointness the button has -- and
-        // the tray is now twenty-one cells of the player's gear rather than fourteen.
-        for (int slot : GrindstoneMenuLayout.STATUS_SLOTS) {
-            assertFalse(GrindstoneMenuLayout.INPUT_SLOTS.contains(slot),
-                    "bar cell " + slot + " must never be a tray cell");
+    void theBarNeverTouchesTheTRAY_onEITHEROrigin() {
+        // The countdown repaints CONFIRM_SLOT **and the bar** twice a second. The bar is a SECOND
+        // writer on the tick, so it needs the same disjointness the button has -- and it is now
+        // eight cells on one path, so BOTH are checked rather than the one that used to exist.
+        for (boolean fromHub : new boolean[] {true, false}) {
+            for (int slot : GrindstoneMenuLayout.statusSlots(fromHub)) {
+                assertFalse(GrindstoneMenuLayout.INPUT_SLOTS.contains(slot),
+                        "bar cell " + slot + " (fromHub=" + fromHub + ") must never be a tray cell");
+            }
         }
         // Mutation: build the bar from row 4 instead of row 6 -> every assertion reddens.
     }
@@ -169,33 +184,53 @@ class GrindstoneMenuLayoutTest {
         //
         // Neither is visible to any assertion that checks one set at a time, and the first reached
         // a screenshot.
-        for (int slot = 0; slot < GrindstoneMenuLayout.SIZE; slot++) {
-            int roles = 0;
-            if (GrindstoneMenuLayout.FILLER_SLOTS.contains(slot)) roles++;
-            if (GrindstoneMenuLayout.INPUT_SLOTS.contains(slot)) roles++;
-            if (GrindstoneMenuLayout.STATUS_SLOTS.contains(slot)) roles++;
-            if (GrindstoneMenuLayout.CHROME_SLOTS.contains(slot)) roles++;
-            assertEquals(1, roles, "slot " + slot + " must belong to EXACTLY ONE set, not " + roles);
+        // AND IT IS CHECKED ON BOTH ORIGINS NOW, because the bar and the chrome fork. 48 moves
+        // between them and must be in EXACTLY ONE on each path -- a slot that fell out of both on
+        // the block path is precisely the hole that shipped.
+        for (boolean fromHub : new boolean[] {true, false}) {
+            for (int slot = 0; slot < GrindstoneMenuLayout.SIZE; slot++) {
+                int roles = 0;
+                if (GrindstoneMenuLayout.FILLER_SLOTS.contains(slot)) roles++;
+                if (GrindstoneMenuLayout.INPUT_SLOTS.contains(slot)) roles++;
+                if (GrindstoneMenuLayout.statusSlots(fromHub).contains(slot)) roles++;
+                if (GrindstoneMenuLayout.chromeSlots(fromHub).contains(slot)) roles++;
+                assertEquals(1, roles, "slot " + slot + " (fromHub=" + fromHub
+                        + ") must belong to EXACTLY ONE set, not " + roles);
+            }
+            assertEquals(GrindstoneMenuLayout.SIZE,
+                    GrindstoneMenuLayout.FILLER_SLOTS.size()
+                            + GrindstoneMenuLayout.INPUT_SLOTS.size()
+                            + GrindstoneMenuLayout.statusSlots(fromHub).size()
+                            + GrindstoneMenuLayout.chromeSlots(fromHub).size(),
+                    "the four sets cover the screen exactly once, fromHub=" + fromHub);
         }
-        assertEquals(GrindstoneMenuLayout.SIZE,
-                GrindstoneMenuLayout.FILLER_SLOTS.size()
-                        + GrindstoneMenuLayout.INPUT_SLOTS.size()
-                        + GrindstoneMenuLayout.STATUS_SLOTS.size()
-                        + GrindstoneMenuLayout.CHROME_SLOTS.size(),
-                "22 + 21 + 7 + 4 = 54, exactly once each");
-        // Mutation: drop removeAll(STATUS_SLOTS) from buildFiller -> seven slots have two roles.
+
+        // THE FILLER DOES NOT FORK, AND THAT IS ARITHMETIC RATHER THAN A DECISION: the whole bottom
+        // row is bar-or-chrome on both paths, nine cells either way.
+        assertEquals(22, GrindstoneMenuLayout.FILLER_SLOTS.size(),
+                "54 - 21 tray - 9 bottom row - info - confirm = 22, on both origins");
+        // Mutation: subtract the individual buttons instead of the ROW in buildFiller -> 48 lands
+        // in the filler AND the block bar -> two roles -> reddens on the fromHub=false pass.
     }
 
     @Test
-    void theCHROMESetIsTheFourCellsRenderPaintsIndividually() {
-        // SUPERSEDED IN PART: this row used to walk the whole surface over THREE sets and is now
-        // the four-way partition below, which the status bar made necessary. What survives here is
-        // the CHROME set's own contents -- the four cells render() paints one at a time, named as a
-        // set so a fifth button cannot be added without appearing in it.
+    void theCHROMESetForksWithTheBar_andTheTwoAreCOMPLEMENTSInTheBottomRow() {
         assertEquals(List.of(4, 40, 48, 49),
-                GrindstoneMenuLayout.CHROME_SLOTS.stream().sorted().toList(),
-                "the hint, the button, Back and Close");
-        assertEquals(4, GrindstoneMenuLayout.CHROME_SLOTS.size(), "four, and no more");
+                GrindstoneMenuLayout.chromeSlots(true).stream().sorted().toList(),
+                "from the HUB: the hint, the button, Back and Close");
+        assertEquals(List.of(4, 40, 49),
+                GrindstoneMenuLayout.chromeSlots(false).stream().sorted().toList(),
+                "from a BLOCK: no Back, so 48 is not chrome -- it is a bar cell");
+
+        // THE COMPLEMENT PROPERTY, which is what makes the filler origin-independent: bar plus the
+        // chrome cells IN THE BOTTOM ROW is the whole bottom row, nine cells, on both paths.
+        for (boolean fromHub : new boolean[] {true, false}) {
+            long chromeInBottomRow = GrindstoneMenuLayout.chromeSlots(fromHub).stream()
+                    .filter(slot -> slot >= 45).count();
+            assertEquals(9, GrindstoneMenuLayout.statusSlots(fromHub).size() + chromeInBottomRow,
+                    "bar + bottom-row chrome = the whole row, fromHub=" + fromHub);
+        }
+        // Mutation: drop CLOSE_SLOT from chromeSlots -> the complement row reddens on both passes.
     }
 
     @Test

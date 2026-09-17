@@ -2,15 +2,15 @@
 
 ## STATUS — WHICH ROWS HAVE BEEN READ, NAMED RATHER THAN COUNTED
 
-**AT THIS FILE'S OWN GRANULARITY, ONE ROW IS FULLY BOOTED.** Row 47 is; three others have partial
+**AT THIS FILE'S OWN GRANULARITY, NO ROW IS FULLY BOOTED.** Four have partial
 readings and every other row has none:
 
 | row | readings | state |
 |---|---|---|
 | **ROW 6** | 6.1, 6.2, 6.3, 6.4, 6.4′, 6.5 — **six** | **4 PASS, 2 VOID.** Booted 2026-09-15 in CREATIVE against a row that named no mode; 6.4 and 6.5 are VOID rather than failed |
 | **ROW 8** | 8a, 8b, 8c, 8d, 8e, 8f, 8g — **seven** | **3 GREEN (8e, 8f, 8g), 4 NOT RUN.** Booted 2026-09-16; the ship condition, not the whole row |
-| **ROW 46** | 46a, 46b — **two** | **46a PASS then SUPERSEDED BY RULING; 46b NOT RUN.** Booted 2026-09-17. The reading was right and the ruling moved underneath it — restaged beneath the original, which is not edited |
-| **ROW 47** | one | **PASS.** Booted 2026-09-17. **The only fully-booted row in this file** — and it surfaced the ruling that superseded 46a while passing itself |
+| **ROW 46** | 46a, 46b — **two** | **46a PASS; 46b NOT RUN.** Booted 2026-09-17. Superseded by a ruling the same day and UN-superseded when that ruling was reverted -- the restaging was withdrawn unread, and 46a's reading is about the shipped colour again |
+| **ROW 47** | one, then restaged | **PASS then SUPERSEDED BY RULING**, both 2026-09-17. It surfaced the ruling that superseded 46a while passing itself, and was then superseded by a second ruling about its own cell. **No row in this file is fully booted again** |
 
 **Every other row in this file has no reading at all.**
 
@@ -1810,12 +1810,12 @@ countdown continues and the items are untouched.
 
 **READING:** _(not run)_
 
-## ROW 41 — **PRECEDENCE.** AN EMPTY TRAY IS LIGHT GRAY, NOT YELLOW
+## ROW 41 — **PRECEDENCE.** AN EMPTY TRAY IS GRAY, NOT YELLOW
 
 **Staging.** `/gamemode survival`. Open the grindstone and **look at slot 40 and the bottom row
 immediately, before touching anything.** Then click the button.
 
-**PREDICTED:** button **LIGHT GRAY**, reading **`Add items to strip`**; bar **LIGHT GRAY**. **Not yellow and not
+**PREDICTED:** button **GRAY**, reading **`Add items to strip`**; bar **GRAY**. **Not yellow and not
 counting down**, though the deadline initialises at open and the clock is genuinely running.
 Clicking does nothing and says nothing.
 
@@ -1969,7 +1969,29 @@ it** — that difference IS the ruling, and a reading that cannot tell them apar
 > touches red. **Row 41 restages with 46a** — its prose says GRAY for the same state — and **Row 47
 > is unaffected**, because it is about the BLACK filler, which did not move.
 
-**READING (restaged 46a):** _(not run)_
+**READING (restaged 46a):** _(never run — see below)_
+
+### *** THE SUPERSESSION WAS ITSELF REVERTED, THE SAME DAY, AND THE ORIGINAL READING IS TRUE AGAIN ***
+
+**Ben ruled the empty state back to GRAY.** He had asked for grey twice; the light-gray version was
+the second time the code shipped something else, and the argument for it — that
+`MenuIcons.EMPTY_SUGGESTION` already means *"a cell waiting to hold something"* — **was a real
+precedent and was not what he asked for.**
+
+**SO THE RESTAGED 46a ABOVE IS WITHDRAWN, NOT READ AND NOT FAILED.** It was never booted; the
+ruling that required it was reverted before anyone reached a keyboard.
+
+> **AND THE ORIGINAL PREDICTION AND READING ARE ONCE AGAIN ABOUT THE SHIPPED BEHAVIOUR.** 46a
+> predicted **GRAY on both surfaces** and read **PASS**; the build is gray again. **That reading is
+> not re-instated by fiat — it is simply no longer superseded**, because the thing that superseded
+> it is gone.
+>
+> **NOTHING IS EDITED, IN EITHER DIRECTION.** The original prediction, the original reading, the
+> supersession note and the withdrawn restaging all stand as written. **A file that records what was
+> observed must also record what was decided and undecided**, and collapsing this back to *"46a
+> PASS"* would delete a day in which the shipped screen was something else.
+>
+> **46a DOES NOT NEED RE-READING.** The colour it was read against is the colour that ships.
 
 ## ROW 47 — **FROM A BLOCK, SLOT 48 IS PLAIN FILLER.** THE ROW THAT WOULD HAVE CAUGHT THE HOLE
 
@@ -2016,7 +2038,52 @@ reads **BLACK STAINED GLASS PANE**. Not empty, not an arrow, and it does not cha
 > Row 46's supersession note. **A row that passes and still surfaces a defect one cell over is the
 > argument for reading a screen rather than ticking it.**
 
-**READING:** _(see above)_
+### *** SUPERSEDED BY RULING, 2026-09-17. NOT VOID, NOT FAILED. ***
+
+**The reading above was correct when taken and is falsified by a later decision** — the second time
+this file has used that outcome, after Row 46a.
+
+**THE RULING:** Ben, having seen the screen, ruled that **from a world block slot 48 is a BAR CELL
+and changes colour with the rest of the readout.** From the hub it is still the Back arrow.
+
+```
+from the hub     bar = 45,46,47,   50,51,52,53     SEVEN   Back at 48, Close at 49
+from a block     bar = 45,46,47,48,50,51,52,53     EIGHT   Close at 49
+```
+
+**THIS ROW'S PREDICTION IS NOW WRONG IN THE ONE CLAUSE IT WAS BUILT ON** — *"never a bar cell — it
+does not change colour as the bar does"* — and it is **not edited**, per the no-edit rule, which
+binds because this row has been read.
+
+> **AND IT OVERTURNS AN ARGUMENT MADE AT LENGTH IN THIS REPO.** `GrindstoneMenuLayout` said SEVEN
+> CELLS, BOTH ORIGINS, on the borrowed rule that *"a readout whose geometry depends on how you got
+> there is not a readout"*. **Ben agreed to that before he had seen it and ruled the other way once
+> he had.** The argument is about a reader comparing two screens; what a player sees is one screen
+> with a black hole in its readout.
+>
+> **SECOND LAYOUT RULE TO DIE BY LOOKING** — the first was *"column 8 is the navigation column"*,
+> killed when Back moved to 48 in `#112`. **Both were well-argued and both were overturned by the
+> person in front of the screen.**
+
+**RESTAGED 47 — and its SUBJECT changes, not just its expected value.** The old row asked *is 48
+painted at all*; the new one asks *does 48 move with the bar*.
+
+**Staging.** `/gamemode survival`. Open the grindstone **from a world block**. Drive the tray
+through **empty → loaded → armed → ready**, and after each step read **48 together with 45, 46 and
+47**.
+
+**PREDICTED:** slot 48 is a **coloured pane that changes with its neighbours at every step** —
+gray, then yellow, then lime — and is **never black, never an arrow, and never a different colour
+from 45–47.**
+
+> **THE DISCRIMINATING HALF IS READING IT *WITH* ITS NEIGHBOURS.** A build that painted 48 from the
+> bar's colour but on a stale state would pass a glance at 48 alone. **Read the run of four.**
+>
+> **AND THE HUB PATH IS THE CONTROL:** open from the hub, drive the same states, and 48 must be the
+> **ARROW throughout** — never a pane, never changing colour. If 48 changes colour from the hub,
+> the bar is painting over Back and `MUTS5-BACK` has returned by a new route.
+
+**READING (restaged 47):** _(not run)_
 
 ---
 

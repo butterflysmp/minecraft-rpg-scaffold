@@ -633,7 +633,9 @@ public final class CraftingMenu extends Menu {
      */
     private void paintStatus(CraftStatus status) {
         ItemStack pane = MenuIcons.pane(status.material());
-        for (int slot : CraftingMenuLayout.STATUS_SLOTS) {
+        // THE SET FORKS BY ORIGIN: seven cells from the Nexus, EIGHT from a table, where 48 carries
+        // no Back button and is part of the readout instead. The fork is in the layout, not here.
+        for (int slot : CraftingMenuLayout.statusSlots(origin() == Origin.FROM_NEXUS)) {
             getInventory().setItem(slot, pane.clone());
         }
     }
