@@ -2,6 +2,8 @@ package io.github.butterflysmp.rpg.paper.menu;
 
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.enchant.GrindstoneRefund;
+import io.github.butterflysmp.rpg.core.progression.PlayerLevel;
+import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
@@ -17,6 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.Set;
 
 /**
@@ -159,8 +162,53 @@ public final class NexusMenu extends Menu {
         return false;
     }
 
+    /**
+     * This viewer's player level, as the hub sees it.
+     *
+     * <h2>AN UNAVAILABLE PROFILE READS AS LEVEL 1, WHICH LOCKS EVERYTHING. DELIBERATE, AND FLAGGED</h2>
+     *
+     * {@code profile()} is empty for a load still in flight and for one that failed. <b>Neither is
+     * a level</b>, so the hub has to pick a direction, and it picks the conservative one: an unknown
+     * level opens nothing.
+     *
+     * <p><b>The alternative -- treating unknown as unlocked -- fails towards the player and is
+     * still wrong</b>, because it would open all three stations for anyone whose profile failed to
+     * read, which is indistinguishable from the gate not existing.
+     *
+     * <p>In practice the window is tiny: the hub is reached by clicking a star that
+     * {@code NexusSlots.converge} only places after the profile has SETTLED. A player who does see
+     * everything locked has an unreadable profile, and {@code /rpg stats} says so in words.
+     */
+    private int viewerLevel() {
+        return profiles.profile(viewer.getUniqueId())
+                .map(profile -> PlayerLevel.levelFor(profile.lifetimeXp()))
+                .orElse(1);
+    }
+
     @Override
     protected void onClick(MenuClick click) {
+        // *** THE GATE, AND IT IS ONE CHECK IN FRONT OF THREE BRANCHES RATHER THAN THREE CHECKS. ***
+        // A per-station guard would be three places for one rule, and the fourth station added
+        // later is the one that would be missed -- which is the hole slot 33 already cost once.
+        //
+        // *** IT SPEAKS, AND THAT IS COUPLED TO station() KEEPING THE MATERIAL. ***
+        //
+        // A dimmed name lives in the HOVER TOOLTIP, so without hovering a locked crafting station
+        // is PIXEL-IDENTICAL to an unlocked one. Refusing silently would give a first-time player
+        // at level 1 a normal-looking crafting table that does nothing and explains nothing --
+        // indistinguishable from a broken menu.
+        //
+        // THE GRINDSTONE'S SILENCE RULING DOES NOT TRANSFER: what ITS button says unasked is
+        // COLOUR, at a glance, on the cell being clicked. This one says nothing without a hover.
+        // Same shape of rule, different premise, opposite answer. NexusStationGate.refusal carries
+        // the full argument and the four-combination table.
+        int level = viewerLevel();
+        var station = NexusStationGate.at(click.slot());
+        if (station.isPresent() && !NexusStationGate.unlocked(station.get(), level)) {
+            viewer.sendMessage(MenuIcons.line(
+                    NexusStationGate.refusal(station.get(), level), NamedTextColor.GRAY));
+            return;
+        }
         if (click.slot() == NexusMenuLayout.CLOSE_SLOT) {
             // Closes, and nothing else -- the same shape CraftingMenu uses, so the button and the
             // escape key cannot drift apart. There is nothing to hand back either way.
@@ -238,19 +286,22 @@ public final class NexusMenu extends Menu {
         // The rule that decided it: reaching for placeholder is a claim that something is NOT BUILT.
         // A settings screen exists now, so saying "Not implemented yet." above a working button
         // would be the Q33 defect with the notice and the feature inverted.
+        // READ ONCE. Three stations asking profiles.profile() separately would be three reads of
+        // one value inside one paint, and a level that could differ between two cells of the same
+        // screen if the load settled mid-render.
+        int level = viewerLevel();
+
         // THE CRAFTING-TYPE BAND, row 4. Both are icon() and both are BUILT -- the screens behind
         // them exist and work; only the route through the hub is new.
-        getInventory().setItem(NexusMenuLayout.CRAFTING_SLOT, MenuIcons.icon(
-                Material.CRAFTING_TABLE,
-                MenuIcons.line("Crafting", NamedTextColor.GRAY),
+        getInventory().setItem(NexusMenuLayout.CRAFTING_SLOT, station(
+                NexusStationGate.Station.CRAFTING, level, Material.CRAFTING_TABLE,
                 List.of(MenuIcons.line("The full grid, and the recipe book.",
                         NamedTextColor.DARK_GRAY))));
 
         // "Unpowered" is said HERE, on the button, and again as 0/30 on the screen itself. A player
         // who is about to walk to a real table should be able to learn that before opening this.
-        getInventory().setItem(NexusMenuLayout.ENCHANT_SLOT, MenuIcons.icon(
-                Material.ENCHANTING_TABLE,
-                MenuIcons.line("Enchanting", NamedTextColor.GRAY),
+        getInventory().setItem(NexusMenuLayout.ENCHANT_SLOT, station(
+                NexusStationGate.Station.ENCHANTING, level, Material.ENCHANTING_TABLE,
                 List.of(MenuIcons.line("Unpowered -- no bookshelves here.",
                                 NamedTextColor.DARK_GRAY),
                         MenuIcons.line("A real table with shelves reaches 30.",
@@ -260,9 +311,8 @@ public final class NexusMenu extends Menu {
         // an invisible, clickable hole at slot 33, whose click handler worked perfectly. The
         // set-subtraction filler has an invariant nothing checked: EVERY SLOT NOT IN FILLER_SLOTS
         // MUST BE PAINTED BY SOMETHING. NexusMenuLayoutTest now asserts it.
-        getInventory().setItem(NexusMenuLayout.GRINDSTONE_SLOT, MenuIcons.icon(
-                Material.GRINDSTONE,
-                MenuIcons.line("Grindstone", NamedTextColor.GRAY),
+        getInventory().setItem(NexusMenuLayout.GRINDSTONE_SLOT, station(
+                NexusStationGate.Station.GRINDSTONE, level, Material.GRINDSTONE,
                 List.of(MenuIcons.line("Strip enchants from your gear.", NamedTextColor.DARK_GRAY),
                         MenuIcons.line("Refunds " + GrindstoneRefund.REFUND_PERCENT
                                 + "% of what they cost.", NamedTextColor.DARK_GRAY))));
@@ -276,9 +326,16 @@ public final class NexusMenu extends Menu {
         // the class javadoc carries the argument. The lore below is REAL and WORKING; only the
         // click is unbuilt. placeholder() would print "Not implemented yet." above live stat
         // figures, which is the Q33 defect with the readout and the notice inverted.
+        // THE PROGRESSION BLOCK RIDES ON THE SAME HEAD, above the eight combat stats. Its source is
+        // the PROFILE, not StatsSheetValues -- a different store and a different formatter -- which
+        // is why it is a second parameter rather than two more fields on the projection.
         ItemStack head = MenuIcons.icon(Material.PLAYER_HEAD, NexusStatsLore.name(),
                 NexusStatsLore.lore(
-                        StatsSheetProjection.of(viewer, adapters, weapons, resources)));
+                        StatsSheetProjection.of(viewer, adapters, weapons, resources),
+                        profiles.profile(viewer.getUniqueId())
+                                .map(PlayerProfile::lifetimeXp)
+                                .map(OptionalLong::of)
+                                .orElseGet(OptionalLong::empty)));
 
         // THE SKIN. Cheap HERE AND ONLY HERE: the viewer is online, so their profile is already
         // resolved and nothing fetches.
@@ -293,5 +350,42 @@ public final class NexusMenu extends Menu {
         head.editMeta(SkullMeta.class, meta -> meta.setOwningPlayer(viewer));
 
         getInventory().setItem(NexusMenuLayout.STATS_SLOT, head);
+    }
+
+    /**
+     * One station icon, locked or open.
+     *
+     * <h2>THE MATERIAL DOES NOT CHANGE WHEN LOCKED, AND THE NAME DIMS INSTEAD</h2>
+     *
+     * A locked crafting station is still a crafting table, and swapping it for a barrier or a gray
+     * pane would cost the player the one cue that says <b>what they are waiting for</b>. So the
+     * material stays, the display name drops from {@code GRAY} to {@code DARK_GRAY}, and the lore
+     * carries the three sentences.
+     *
+     * <p><b>*** THIS CHOICE IS WHAT MAKES THE CLICK'S MESSAGE MANDATORY. THEY ARE COUPLED. ***</b>
+     * A dimmed name lives in the hover tooltip, so an un-hovered locked station is pixel-identical
+     * to an open one. <b>Change the material here and the message becomes redundant; delete the
+     * message and leave the material and you have shipped a crafting table that does nothing.</b>
+     * {@code NexusStationGate.refusal} carries the four-combination table, and
+     * {@code ProgressionWiringSignatureTest} fails if the pair comes apart.
+     *
+     * <p><b>PRESENTATION, AND IT CAN BE OVERRULED IN ONE WORD</b> -- it is this method, one test
+     * row, and the coupling above. The same note {@code NexusStatsLore} carries about its header.
+     *
+     * <p>{@code icon()} and not {@code placeholder()} in both arms: a locked station is <b>built and
+     * gated</b>, not unbuilt, and {@code placeholder}'s <i>"Not implemented yet."</i> would be the
+     * Q33 defect for a third time on this screen.
+     */
+    private ItemStack station(NexusStationGate.Station station, int level, Material material,
+                              List<net.kyori.adventure.text.Component> openLore) {
+        if (NexusStationGate.unlocked(station, level)) {
+            return MenuIcons.icon(material,
+                    MenuIcons.line(station.displayName(), NamedTextColor.GRAY), openLore);
+        }
+        return MenuIcons.icon(material,
+                MenuIcons.line(NexusStationGate.lockedName(station), NamedTextColor.DARK_GRAY),
+                NexusStationGate.lockedLore(station, level).stream()
+                        .map(text -> MenuIcons.line(text, NamedTextColor.DARK_GRAY))
+                        .toList());
     }
 }

@@ -109,6 +109,7 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
+import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -1205,6 +1206,67 @@ public final class RpgListeners implements Listener {
         if (WeaponDurability.maxOf(event.getResult()).isPresent()) {
             event.setCancelled(true);
         }
+    }
+
+    /**
+     * Earned vanilla XP becomes player XP, one for one.
+     *
+     * <p>The whole of the progression hook. {@code ProfileService.addLifetimeXp} does the
+     * arithmetic and {@code PlayerLevel} owns the curve; this method's only job is to turn an event
+     * into a number.
+     *
+     * <h2>*** WHAT FIRES THIS EVENT IS NARROWER THAN ITS NAME, AND IT WAS MEASURED ***</h2>
+     *
+     * <b>{@code PlayerExpChangeEvent} is raised from exactly ONE place in the server.</b> Measured
+     * 2026-09-17 against the pinned {@code run/versions/26.1.2/paper-26.1.2.jar}: only two classes
+     * in the whole jar reference it -- {@code net.minecraft.world.entity.ExperienceOrb}, which
+     * raises it, and {@code CraftEventFactory}, which builds it. The factory method's signature is
+     * {@code callPlayerExpChangeEvent(Player, ExperienceOrb, int)}: <b>it requires an orb, and
+     * there is no orbless overload.</b>
+     *
+     * <p><b>So this fires on ORB PICKUP and on nothing else</b>, and three consequences follow that
+     * would each otherwise need a guard:
+     *
+     * <ul>
+     *   <li><b>{@code setLevel}/{@code setExp} do not reach it.</b> {@code CraftPlayer} is not one
+     *       of the two referencing classes. So the enchant table's spend and the grindstone's
+     *       refund -- which are wallet-symmetric {@code setLevel}/{@code setExp} writes, by
+     *       {@code EnchantMenu}'s ruling -- <b>cannot move a player's level.</b> That is a
+     *       CONSEQUENCE OF THE HOOK, NOT A GUARD: there is no check here to delete, and nothing
+     *       goes red if someone adds a third wallet writer. Lifetime XP counts what a player
+     *       EARNED, and spending is not earning.</li>
+     *   <li><b>{@code /xp} does not reach it either.</b> {@code ExperienceCommand$Type}'s bootstrap
+     *       table resolves its four arms to {@code Player.giveExperiencePoints},
+     *       {@code ServerPlayer.giveExperienceLevels}, {@code setExperiencePoints} and
+     *       {@code setExperienceLevels} -- no orb among them -- and
+     *       {@code giveExperiencePoints} raises no Bukkit event at all. <b>An operator granting XP
+     *       by command moves the vanilla bar and NOT the player level.</b> Recorded because it will
+     *       be rediscovered otherwise; see {@code GATE-nexus.md}'s SLICE 9 preamble.</li>
+     *   <li><b>A bottle o' enchanting DOES reach it</b>, because
+     *       {@code ThrownExperienceBottle} calls {@code ExperienceOrb.awardWithDirection}. That is
+     *       the cheap survival-legal staging instrument for the gate rows.</li>
+     * </ul>
+     *
+     * <h2>LOWEST, AND NO {@code ignoreCancelled} -- THE FLAG WOULD BE INERT</h2>
+     *
+     * <b>LOWEST</b> is Ben's ruling: we read the amount the server produced, before any other
+     * plugin's multiplier. Progression is then a function of what the player did, not of what else
+     * is installed.
+     *
+     * <p><b>{@code ignoreCancelled = true} was briefed and is NOT written here, because
+     * {@code PlayerExpChangeEvent} IS NOT {@code Cancellable}.</b> Measured against the pinned
+     * {@code paper-api-26.1.2.build.74-stable}: the chain is {@code PlayerExpChangeEvent ->
+     * PlayerEvent -> Event} and none of the three implements it, against
+     * {@code PlayerItemConsumeEvent} on the same instrument, which prints
+     * {@code implements org.bukkit.event.Cancellable}. Bukkit only consults the flag for a
+     * {@code Cancellable}, so writing it would have been <b>a control credited with protecting
+     * something it does not touch</b> -- readable, plausible, and doing nothing forever.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerExpChange(PlayerExpChangeEvent event) {
+        // ONE FOR ONE. No multiplier, no curve applied here -- PlayerLevel turns the total into a
+        // level, and keeping the stored number raw is what makes a retune cost nothing.
+        profiles.addLifetimeXp(event.getPlayer().getUniqueId(), event.getAmount());
     }
 
     /**

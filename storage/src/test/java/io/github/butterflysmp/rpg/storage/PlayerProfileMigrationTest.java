@@ -18,7 +18,7 @@ class PlayerProfileMigrationTest {
      */
     private static PlayerProfile at(int schemaVersion) {
         return new PlayerProfile(schemaVersion, UUID.randomUUID(), "hunter", "fire", 7, 1234,
-                List.of("solar_grenade"), 99L, 3);
+                List.of("solar_grenade"), 99L, 3, 56_780L);
     }
 
     @Test
@@ -61,7 +61,7 @@ class PlayerProfileMigrationTest {
     void versionOneGainsAnElementOfNoneAndKeepsTheRest() {
         // A v1 JSON has no elementId -> null on read -> NONE via the compact constructor.
         PlayerProfile v1 = new PlayerProfile(1, UUID.randomUUID(), "hunter", null, 7, 1234,
-                List.of("solar_grenade"), 99L, 3);
+                List.of("solar_grenade"), 99L, 3, 56_780L);
         assertEquals(PlayerProfile.NONE, v1.elementId(), "absent elementId defaults to NONE");
 
         PlayerProfile migrated = ProfileMigrations.migrate(v1);
@@ -83,7 +83,7 @@ class PlayerProfileMigrationTest {
     @Test
     void versionTwoGainsTheDefaultNexusSlot_andZeroIsNOTTreatedAsAChoice() {
         PlayerProfile v2 = new PlayerProfile(2, UUID.randomUUID(), "hunter", "fire", 7, 1234,
-                List.of("solar_grenade"), 99L, 0);
+                List.of("solar_grenade"), 99L, 0, 56_780L);
         assertEquals(0, v2.nexusSlot(), "the constructor leaves it alone -- it cannot tell 0 from 0");
 
         PlayerProfile migrated = ProfileMigrations.migrate(v2);
@@ -115,7 +115,7 @@ class PlayerProfileMigrationTest {
                 "already at v3: the step must not run, so a chosen slot is untouched");
 
         PlayerProfile chose0 = new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION,
-                UUID.randomUUID(), "hunter", "fire", 7, 1234, List.of(), 99L, 0);
+                UUID.randomUUID(), "hunter", "fire", 7, 1234, List.of(), 99L, 0, 56_780L);
         assertEquals(0, ProfileMigrations.migrate(chose0).nexusSlot(),
                 "SLOT ZERO IS A LEGAL CHOICE at v3 and must survive -- this is the case the "
                         + "stamp is what distinguishes, and the whole reason the default is not "
@@ -143,20 +143,20 @@ class PlayerProfileMigrationTest {
     /** Legacy JSON has no unlockedAbilities key at all; it must not NPE. */
     @Test
     void nullUnlockedAbilitiesBecomesEmptyList() {
-        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, null, 0L, 3);
+        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, null, 0L, 3, 0L);
         assertEquals(List.of(), profile.unlockedAbilities());
     }
 
     @Test
     void nullElementIdBecomesNone() {
-        var profile = new PlayerProfile(2, UUID.randomUUID(), "ranger", null, 1, 0, List.of(), 0L, 3);
+        var profile = new PlayerProfile(2, UUID.randomUUID(), "ranger", null, 1, 0, List.of(), 0L, 3, 0L);
         assertEquals(PlayerProfile.NONE, profile.elementId());
     }
 
     @Test
     void unlockedAbilitiesIsDefensivelyCopied() {
         var mutable = new java.util.ArrayList<>(List.of("a"));
-        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, mutable, 0L, 3);
+        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, mutable, 0L, 3, 0L);
 
         mutable.add("b");
 

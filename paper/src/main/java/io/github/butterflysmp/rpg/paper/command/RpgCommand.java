@@ -2,8 +2,10 @@ package io.github.butterflysmp.rpg.paper.command;
 
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
@@ -75,8 +77,12 @@ import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearRefresher;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
+import io.github.butterflysmp.rpg.core.progression.PlayerLevel;
+import io.github.butterflysmp.rpg.core.progression.XpGrant;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
+import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -438,6 +444,29 @@ public final class RpgCommand {
                 .then(Commands.literal("stats")
                         .requires(source -> source.getSender().hasPermission(Permissions.STATS))
                         .executes(ctx -> stats(ctx, adapters, weapons, resources)))
+                // *** /rpg playerxp <add|set> <player> <amount> <levels|xp> -- OPERATOR TOOLING. ***
+                //
+                // Permissions.DEV, which is `default: op` in paper-plugin.yml. Ben ruled "op-gated,
+                // unlike /menu"; DEV is this project's spelling of that, and it already carries the
+                // "a dev instrument, not a game feature" line this wants.
+                //
+                // THE ARITHMETIC IS NOT HERE. XpGrant resolves all four combinations in core; this
+                // parses, calls it, and prints. That split is why the levels/xp translation and the
+                // negative refusal have unit rows at all.
+                //
+                // *** IT MOVES THE LEVEL AND NOT THE VANILLA BAR, AND THE HELP TEXT SAYS SO. ***
+                // It writes the profile directly, so it raises no PlayerExpChangeEvent and never
+                // touches the vanilla wallet. An operator who grants themselves 5,000 and watches
+                // the XP bar sit still will otherwise report it as a bug.
+                .then(Commands.literal("playerxp")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> playerXpUsage(ctx))
+                        .then(Commands.literal("add")
+                                .executes(ctx -> playerXpUsage(ctx))
+                                .then(playerXpTarget(XpGrant.Op.ADD, profiles)))
+                        .then(Commands.literal("set")
+                                .executes(ctx -> playerXpUsage(ctx))
+                                .then(playerXpTarget(XpGrant.Op.SET, profiles))))
                 // Mint a mana_regen_boost_TEMP. Same reason as the health-regen fixture: no content
                 // grants mana regen yet, so without this the reconcile surface is provable only by
                 // unit test. Hold it and a bare bar fills in ~50s instead of 100; drop it and the rate
@@ -2058,6 +2087,117 @@ public final class RpgCommand {
             if (existing == null || existing.getType().isAir()) return slot;
         }
         return -1;
+    }
+
+    // ------------------------------------------------------------------ /rpg playerxp
+
+    /**
+     * The shared tail of both operations: {@code <player> <amount> <levels|xp>}.
+     *
+     * <p>Built once and attached under each of {@code add} and {@code set}, so the two arms cannot
+     * come to disagree about their own argument list -- the same reason {@code PAINTED_SLOTS} is
+     * one list used twice rather than two lists checked against each other.
+     *
+     * <p>{@code ArgumentTypes.player()} rather than a name string: it is the first target-player
+     * argument in this plugin, and it brings selector support ({@code @p}, {@code @s}) and
+     * tab-completion that a hand-rolled {@code getPlayerExact} does not. The predecessor's
+     * "Player not found" arm has no analogue -- Brigadier refuses an unresolvable selector before
+     * the handler runs.
+     */
+    private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, ?>
+            playerXpTarget(XpGrant.Op op, ProfileService profiles) {
+        return Commands.argument("player", ArgumentTypes.player())
+                .then(Commands.argument("amount", LongArgumentType.longArg())
+                        // The unit is REQUIRED, as it was in the predecessor. A default would make
+                        // `/rpg playerxp set bob 13` mean one of two wildly different things -- 13
+                        // XP or level 13 -- and the operator would find out afterwards.
+                        .then(Commands.literal("xp")
+                                .executes(ctx -> playerXp(ctx, op, XpGrant.Unit.XP, profiles)))
+                        .then(Commands.literal("levels")
+                                .executes(ctx -> playerXp(ctx, op, XpGrant.Unit.LEVELS, profiles)))
+                        // Singular accepted, as the predecessor did -- it is what people type.
+                        .then(Commands.literal("level")
+                                .executes(ctx -> playerXp(ctx, op, XpGrant.Unit.LEVELS, profiles))));
+    }
+
+    /**
+     * Usage, printed for any incomplete form.
+     *
+     * <p><b>The second line is not decoration.</b> The level/bar split is the one thing about this
+     * command that surprises people, and a javadoc cannot reach the operator standing in the world
+     * watching their XP bar not move.
+     */
+    private static int playerXpUsage(CommandContext<CommandSourceStack> ctx) {
+        var sender = ctx.getSource().getSender();
+        sender.sendMessage(Component.text(
+                "Usage: /rpg playerxp <add|set> <player> <amount> <levels|xp>", NamedTextColor.RED));
+        sender.sendMessage(Component.text(
+                "This moves the RPG level only. The vanilla XP bar does NOT move -- "
+                        + "earning XP from a mob or an orb moves both.", NamedTextColor.GRAY));
+        return 0;
+    }
+
+    /**
+     * Apply one {@code /rpg playerxp} invocation.
+     *
+     * <h2>*** `set` CAN LOWER LIFETIME XP, AND THAT BREAKS THE MONOTONIC INVARIANT ON PURPOSE ***</h2>
+     *
+     * {@code PlayerLevel} states that lifetime XP never decreases, and the whole of slice 9 leans
+     * on it. <b>This command is the single sanctioned exception</b>, and it is an OPERATOR one:
+     * the rule describes what the game does to a player, not what a hand on the dial can do.
+     *
+     * <p>Recorded here and in {@code ProfileService.setLifetimeXp} because <b>a reader who finds
+     * the invariant asserted in one file and contradicted in another will fix one of them</b>, and
+     * either fix is wrong -- removing the exception costs the staging instrument, and softening the
+     * invariant licenses a second writer that should not exist.
+     */
+    private static int playerXp(CommandContext<CommandSourceStack> ctx, XpGrant.Op op,
+                                XpGrant.Unit unit, ProfileService profiles) {
+        var sender = ctx.getSource().getSender();
+        Player target;
+        try {
+            target = ctx.getArgument("player", PlayerSelectorArgumentResolver.class)
+                    .resolve(ctx.getSource()).getFirst();
+        } catch (CommandSyntaxException error) {
+            sender.sendMessage(Component.text(error.getMessage(), NamedTextColor.RED));
+            return 0;
+        }
+        long amount = LongArgumentType.getLong(ctx, "amount");
+
+        PlayerProfile profile = profiles.profile(target.getUniqueId()).orElse(null);
+        if (profile == null) {
+            sender.sendMessage(profileUnavailable(profiles, target));
+            return 0;
+        }
+
+        OptionalLong resolved = XpGrant.targetLifetimeXp(op, unit, amount, profile.lifetimeXp());
+        if (resolved.isEmpty()) {
+            sender.sendMessage(Component.text(XpGrant.ADD_REFUSES_NEGATIVE, NamedTextColor.RED));
+            return 0;
+        }
+
+        // ONE WRITE, NOT A LOOP. The predecessor chunked by Integer.MAX_VALUE because its
+        // addPlayerXp took an int; XpGrant's javadoc records why that loop existed and why it is
+        // gone. setLifetimeXp writes through, so the value is on disk before this returns.
+        long after = resolved.getAsLong();
+        if (!profiles.setLifetimeXp(target.getUniqueId(), after)) {
+            sender.sendMessage(profileUnavailable(profiles, target));
+            return 0;
+        }
+
+        int level = PlayerLevel.levelFor(after);
+        String progress = PlayerLevel.isMaxed(after)
+                ? "MAX"
+                : PlayerLevel.intoCurrentLevel(after) + "/"
+                        + (PlayerLevel.intoCurrentLevel(after) + PlayerLevel.xpToNextLevel(after).orElseThrow());
+        sender.sendMessage(Component.text(
+                (op == XpGrant.Op.ADD ? "Added " : "Set ") + amount + " "
+                        + (unit == XpGrant.Unit.LEVELS ? "level(s) " : "XP ")
+                        + (op == XpGrant.Op.ADD ? "to " : "for ") + target.getName()
+                        + " (now level " + level + ", " + progress + " into it, "
+                        + after + " lifetime).",
+                NamedTextColor.GREEN));
+        return 1;
     }
 
     private static Vec3 toVec3(Location location) {

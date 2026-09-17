@@ -74,6 +74,38 @@ public final class ProfileMigrations {
             profile = profile.withNexusSlot(PlayerProfile.DEFAULT_NEXUS_SLOT).withSchemaVersion(3);
         }
 
+        // *** lifetimeXp WAS ADDED WITH NO STEP AND NO STAMP BUMP, ON PURPOSE. ***
+        //
+        // Recorded here because AN ABSENT STEP IS INDISTINGUISHABLE FROM A FORGOTTEN ONE. The
+        // profile gained a `long lifetimeXp` and this chain did not grow; without this note the
+        // next reader has to decide whether that was a decision or an oversight, and the cheapest
+        // way to resolve it looks like adding the step.
+        //
+        // Gson leaves an absent long as 0, and ZERO IS THE CORRECT VALUE: a player with no record
+        // has earned no XP, and PlayerLevel.levelFor(0) is level 1. There is nothing to decide, so
+        // there is nothing for a step to do.
+        //
+        // *** AND THE v2 -> v3 STEP ABOVE ENDS WITH ADVICE THAT IS WRONG FOR THIS FIELD. ***
+        //
+        // It says: "Do not copy the two steps above when adding a primitive. Copy this one." That
+        // sentence is true of nexusSlot and false here, and the reason is worth more than the rule:
+        // IT GENERALISED FROM THE TYPE WHEN THE REAL PREMISE WAS THE VALUE SPACE.
+        //
+        //   nexusSlot   0 is a LEGAL CHOICE, so absence and choice are the same bytes -> needs the
+        //               stamp, and only at the one instant before it is raised.
+        //   lifetimeXp  0 is NOT a choice anyone can make differently from absence -> needs nothing.
+        //
+        // The v2 -> v3 comment is itself an account of a precondition quietly leaving -- it says so,
+        // about the v1 -> v2 comment it replaced. THIS IS THE THIRD TURN OF THE SAME WHEEL, and the
+        // advice in question is the correction from the second. A rule right twice can be wrong the
+        // third time; a rule written BECAUSE of that can be too.
+        //
+        // The bill this leaves, named rather than paid: the stamp does not move, so a profile
+        // written by this build is stamped 3 and an OLDER build will load it without complaint,
+        // drop the key it does not know, and write that loss back on quit. The newer-server refusal
+        // at the top of this method exists to stop exactly that and CANNOT FIRE HERE. Ben ruled no
+        // stamp; this is what no stamp costs, and it costs it only on a rollback.
+
         // v3 -> v4: add the next step here.
 
         return profile;
