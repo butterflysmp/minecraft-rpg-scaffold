@@ -63,7 +63,10 @@ import io.github.butterflysmp.rpg.paper.packet.WeaponSwingListener;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.scheduler.PaperScheduler;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
+import io.github.butterflysmp.rpg.paper.vault.VaultService;
 import io.github.butterflysmp.rpg.storage.FilePlayerRepository;
+import io.github.butterflysmp.rpg.storage.FileVaultRepository;
+import io.github.butterflysmp.rpg.storage.VaultRepository;
 import io.github.butterflysmp.rpg.storage.PlayerRepository;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
@@ -170,6 +173,8 @@ public final class RpgPlugin extends JavaPlugin {
     private ExecutorService storageIo;
     private PlayerRepository repository;
     private ProfileService profiles;
+    private VaultRepository vaultRepository;
+    private VaultService vaults;
 
     @Override
     public void onEnable() {
@@ -500,13 +505,24 @@ public final class RpgPlugin extends JavaPlugin {
                 new File(getDataFolder(), "players").toPath(), storageIo);
         this.profiles = new ProfileService(repository, getLogger(), System::currentTimeMillis);
 
+        // The vault rides the SAME storageIo, and that is the design rather than reuse for its own
+        // sake. One serialised queue means a player's profile write and their vault write cannot
+        // race each other, and the existing drain below already waits for both -- so the vault needs
+        // no shutdown machinery of its own.
+        //
+        // Its own DIRECTORY, beside players/ rather than inside it: a vault is a separate file with
+        // a separate schema line, and anything that ever scans players/ should not have to filter.
+        this.vaultRepository = new FileVaultRepository(
+                new File(getDataFolder(), "vaults").toPath(), storageIo);
+        this.vaults = new VaultService(vaultRepository, getLogger());
+
         // The one and only registerEvents call. Keep it that way.
         //
         // HELD IN A LOCAL SINCE SLICE 10, because /menu needs the SAME RecipeCatalogue this builds.
         // A second instance would be a second lifetime cache -- see recipeCatalogue()'s javadoc.
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                 healthSystem, nameplates, statsBar, healthRegen,
-                this, recipes);
+                this, recipes, vaults);
         getServer().getPluginManager().registerEvents(listeners, this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
@@ -531,7 +547,7 @@ public final class RpgPlugin extends JavaPlugin {
         // banned-patterns table names; a second node inside this one is not.
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(
-                    RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence),
+                    RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults),
                     "RPG commands");
             // /menu, NOT /rpg menu -- Ben's ruling, for reach. It is the door to the hub and the
             // ONLY route to it once a player turns the Nexus star off, which is why it ships in
@@ -718,6 +734,30 @@ public final class RpgPlugin extends JavaPlugin {
             }
         }
 
+        // *** AND THE VAULTS, BEFORE THE EXECUTOR DRAINS. ***
+        //
+        // Write-through means every page is already on disk, so this normally writes contents
+        // identical to what is there. It is NOT therefore redundant: what it guarantees is that the
+        // last write has been ISSUED and awaited before storageIo is shut down below. A vault whose
+        // final write were still queued when the executor stopped would lose a page.
+        //
+        // Said plainly because "write-through makes the shutdown flush unnecessary" is a
+        // true-sounding sentence that would justify deleting the one step that makes the last write
+        // survive a /stop.
+        //
+        // After the profile flush rather than before: the two files are independent, and both must
+        // land before the drain. Blocking is correct here for the same reason it is above.
+        if (vaults != null) {
+            try {
+                vaults.saveAllAndClear().get(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                getLogger().warning("Interrupted while saving vaults on shutdown");
+            } catch (Exception e) {
+                getLogger().log(Level.SEVERE, "Failed to save all vaults on shutdown", e);
+            }
+        }
+
         if (storageIo != null) {
             storageIo.shutdown();
             try {
@@ -751,6 +791,7 @@ public final class RpgPlugin extends JavaPlugin {
     public CombatantStats stats() { return stats; }
     public PlayerRepository repository() { return repository; }
     public ProfileService profiles() { return profiles; }
+    public VaultService vaults() { return vaults; }
 
     /**
      * cast() only decides; the caller must run the returned effects on a region

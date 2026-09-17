@@ -2,9 +2,16 @@
 
 ## STATUS — WHICH ROWS HAVE BEEN READ, NAMED RATHER THAN COUNTED
 
-**TWENTY-NINE ROWS ARE FULLY BOOTED — ALL OF SLICES 7, 8 AND 9.** Three blocks, three consecutive
-days, and **the count of fully-booted rows has more than tripled**. Four other rows have partial
-readings and every remaining row has none:
+**THIRTY-ONE ROWS ARE FULLY BOOTED — ALL OF SLICES 7, 8 AND 9, PLUS ROWS 92 AND 94.** Recounted
+rather than adjusted, with an instrument validated against the figure it replaces: it reproduces
+the `29` this line carried before rows 92 and 94 were read.
+
+```
+awk '/^## ROW/{r=$3} /^\*\*READING:\*\*/{if($0 ~ /PASS/ && $0 !~ /not run|VOID|PARTIAL|SUPERSEDED/) g[r]=1; else b[r]=1} END{n=0; for(k in g) if(!(k in b)) n++; print n}' GATE-nexus.md
+```
+
+**Six rows have partial readings, one row is VOID for want of staging**, and every remaining row
+has none:
 
 | row | readings | state |
 |---|---|---|
@@ -15,6 +22,8 @@ readings and every remaining row has none:
 | **ROW 47** | one, then restaged | **PASS then SUPERSEDED BY RULING**, both 2026-09-17. It surfaced the ruling that superseded 46a while passing itself, and was then superseded by a second ruling about its own cell. **No row in this file is fully booted again** |
 | **ROWS 58–65** | eight | **ALL PASS.** Run 2026-09-17, 05:25–05:27. **ROW 64 IS THE SHIP CONDITION AND ITS READING PREDATES THE MERGE IT AUTHORISED** — `#117` merged while this file still said `_(not run)_`. The decision was sound; the writing down was late, and the row carries the account |
 | **ROWS 66–77** | twelve | **ALL PASS.** Run 2026-09-17, 06:48–06:52. **Row 67 is the mob row** — the only row in this file touching the real player path, and what stops a listener-less build passing the block. **Row 74's provenance flag is DISCHARGED**: its ruling was made from the javadoc, the screen agreed |
+
+| **ROWS 92–96** | five | **2 PASS, 2 PARTIAL, 1 VOID.** Run 2026-09-17, Slice 11 PR 1, the vault's storage layer. **Rows 92 and 94 are the SOLE WITNESSES and both are FULLY witnessed** — 94 including its empty-vault control, the half most likely to be skipped. The PDC round trip and the shutdown flush have no unit rows anywhere in the project, because no module can construct an `ItemStack`. **93 and 95 are PARTIAL**: the directory check and the `/rpg stats` control were not run, and both stand NOT RUN in their rows. **96 is VOID** — no second account was online — and it was never a sole witness |
 
 **Every other row in this file has no reading at all.**
 
@@ -29,6 +38,11 @@ readings and every remaining row has none:
 > reading was CORRECT and a later decision falsified it** — Row 46a. It is not a failure of the row,
 > the reader, or the build, and collapsing it into either of the other two loses which of the three
 > happened.
+
+> **AND `PARTIAL` IS NOT A FOURTH MEMBER OF THAT LIST. IT IS A ROW WITH A HALF STILL `NOT RUN`** —
+> rows 93 and 95. **A PARTIAL is not a VOID**: the conditions were right, the build answered, and a
+> *second* check the row itself demanded was not made. Collapsing it into PASS claims evidence that
+> was never taken; collapsing it into VOID discards evidence that was.
 
 **THE DENOMINATOR IS A COMMAND, NOT A NUMBER.** Re-derive it rather than trusting this line:
 
@@ -62,8 +76,13 @@ git grep -c '^## ROW' origin/master -- GATE-nexus.md   # true until the next mer
 > you can re-run it forever and never learn that the sentence is about something else now.
 
 **77 at `79a64a3`** (`#119`'s squash) — seventy-six integer-numbered rows plus **ROW 12b**, whose ID
-is not an integer and which therefore **belongs to no range.** <b>91 in this working tree</b>, which
-gained slice 10's fourteen (78–91).
+is not an integer and which therefore **belongs to no range.** <b>96 in this working tree</b>, which
+gained slice 10's fourteen (78–91) and slice 11 PR 1's five (92–96).
+
+> **RECOUNTED WITH THE COMMAND, NOT ADJUSTED BY THE DELTA OF THE CHANGE THAT MOVED IT.** This line
+> read `91` until slice 11 PR 1, and the temptation is to write `91 + 5`. The figure above came from
+> `grep -c '^## ROW' GATE-nexus.md` run after the last row landed — which is the only form that
+> survives someone else having added a row in between.
 
 > **BOTH FIGURES ARE RECOUNTED, AND THE FIRST ONE NAMES A SHA WHILE THE SECOND CANNOT.**
 > `79a64a3` is checkable forever; *"this working tree"* is the one phrase this rule cannot fix,
@@ -3661,3 +3680,190 @@ because it is untracked**.
 > The row was replaced with one that claims only what it can show — the single branch of
 > `touchedOf` that returns before the view is consulted, which a plausible reordering would turn
 > into an NPE inside an event handler. **Rows 4–5 below carry the conversion, alone.**
+
+---
+
+# SLICE 11, PR 1 — THE VAULT'S STORAGE LAYER. ROWS 92–96.
+
+**Status: RUN 2026-09-17, booted by Ben. 2 PASS, 2 PARTIAL, 1 VOID** — 92 PASS, 93 PARTIAL, 94 PASS,
+95 PARTIAL, 96 VOID. **Every row below was still written before that boot**, and before the branch
+that adds them was pushed; **no prediction was edited afterwards.**
+
+> **THE TWO ROWS THAT WERE THE ENTIRE EVIDENCE FOR THIS PR ARE THE TWO THAT ARE FULLY WITNESSED.**
+> 92 and 94 are the sole witnesses, and 94's empty-vault control — the half most likely to be
+> skipped — was run. The two PARTIALs are on rows with other coverage, and the VOID is on a row with
+> unit coverage by construction. **That, and only that, is why the block shipped at two full rows of
+> five.**
+>
+> **THIS BLOCK IS NOT 5/5 AND MUST NOT BE READ AS 5/5.** Two halves are still `NOT RUN` and are left
+> that way in their own rows: row 93's `ls` of the vault directory, and row 95's `/rpg stats`
+> control. **Neither was scheduled and neither blocked the merge.** A block recorded as finished when
+> it was 2 full, 2 partial and 1 void is worth less than nothing, because the next person reads it as
+> evidence.
+
+**THIS PR SHIPS NO PLAYER-VISIBLE CHANGE AT ALL**, which is why these rows exist and why they are
+staged through `/rpg vault`. The storage layer lands and is witnessed here; the seven-page screen,
+the ender-chest hijack and the migration are **PR 2** and have no rows in this block.
+
+> **THE TWO CLAIMS THIS BLOCK EXISTS FOR CANNOT BE UNIT-TESTED IN ANY MODULE.** Encoding an
+> `ItemStack` routes through `Bukkit.getUnsafe()`, and `new ItemStack(...)` throws *"No RegistryAccess
+> implementation found"* without a running server — **the project has no MockBukkit.** So the PDC
+> round trip and the shutdown flush have no unit rows anywhere, by construction, and **rows 92 and 94
+> are their only witnesses in the entire project.**
+>
+> The suite passes with either deleted. Measured: `1931` tests green (core 1052 / storage 57 /
+> paper 822) with the vault never having held a real item.
+
+## GAME MODE
+
+**EVERY ROW IN THIS BLOCK IS `/gamemode survival` UNLESS ITS OWN HEADING SAYS OTHERWISE.**
+
+> **AND CREATIVE WOULD HOLLOW OUT ROW 92 IN PARTICULAR.** Creative removes a cost, and a row whose
+> reading is *"the item is still there"* is satisfied for free once the cost is gone. Row 92 asserts
+> a specific enchanted, damaged instance survives a restart — in creative, an identically-named item
+> is one click away and the reading would not distinguish a working codec from a convincing coincidence.
+
+---
+
+## ROW 92 — *** A MINTED WEAPON SURVIVES A RESTART WITH ITS PDC INTACT. SOLE WITNESS. ***
+
+**CONDITIONS:** survival, operator (`rpg.command.dev`). A fresh `plugins/Rpg/vaults/` — delete it
+first, so the absent-file path is exercised on the way in.
+
+**STAGE:**
+
+1. `/rpg give boltor` — a weapon with PDC, lore and an attribute modifier.
+2. Enchant it so `enchant_data` and `enchant_rolled` are both non-trivial, and damage it so
+   `Damageable.getDamage()` is non-zero: `/rpg enchant ...`, then `/rpg durability damage 7`.
+3. **Write down what the tooltip says** — name, rarity colour, every lore line, the durability bar.
+4. `/rpg vault store 3 17` — the item leaves your hand.
+5. `/rpg vault dump` — confirm `page 3: 1 item(s)` and `slot 17: <MATERIAL> x1`.
+6. `/stop`. Restart. Rejoin.
+7. `/rpg vault dump`, then `/rpg vault take 3 17`.
+
+**PREDICTED:** the item returns **byte-identical in every way the player can see**: the same display
+name and rarity colour, the same lore lines in the same order, the same durability (damage 7, not a
+fresh item), the same glint state, and its enchants still active. `/rpg enchant show` reads what it
+read at step 2.
+
+> **PAGE 3 SLOT 17, AND NEITHER NUMBER IS AN ACCIDENT.** Not page 1, not slot 0, and `3 != 17` — a
+> row staged at `page 1 slot 1` cannot detect a transposition between the two coordinates, and one
+> staged at page 1 passes whether the page index is read at all.
+
+> **THE DURABILITY AND THE ENCHANT ARE THE DISCRIMINATING HALF, NOT THE MATERIAL.** A codec that
+> stored only the material and amount would pass any reading phrased *"a Boltor came back"*. Wear and
+> `enchant_data` are the fields a naive key-by-key projection drops, and they are invisible in a
+> screenshot of the after state unless they were written down at step 3.
+
+**READING:** **2026-09-17, booted by Ben. PASS. SOLE WITNESS, FULLY WITNESSED.** Boltor stored at
+page 3 slot 17, `/stop`, restart, `/rpg vault take 3 17`. The item returned matching the step-3
+note: name, rarity colour and lore lines the same, **the damage-7 durability intact and the enchants
+still reading what they read before the restart** — both checked, not eyeballed. **The codec
+preserves PDC across a real restart.**
+
+---
+
+## ROW 93 — AN ABSENT VAULT FILE IS AN EMPTY VAULT, NOT AN ERROR
+
+**CONDITIONS:** survival, operator. **A player who has never opened a vault**, and a
+`plugins/Rpg/vaults/` directory containing no file for them — verify with `ls` before joining.
+
+**STAGE:** join, then `/rpg vault dump`.
+
+**PREDICTED:** `Vault: 0 occupied slot(s), schema v1`. **No** error, **no** stack trace in the
+console, and **no file is created by the read** — `ls plugins/Rpg/vaults/` still shows nothing for
+that player.
+
+> **THE "NO FILE IS CREATED" HALF IS THE ONE WITH TEETH.** A load that wrote an empty vault on first
+> read would look identical in chat and would mean every player who has ever joined owns a file.
+> Check the directory, not the message.
+
+> **AND `0 occupied slot(s)` IS NOT THE SAME MESSAGE AS THE FAILURE ARM.** An unloaded or unreadable
+> vault says *"No vault is loaded for you"* in RED. If that is what appears, the row has NOT passed —
+> it has found the thing the two messages were deliberately separated to distinguish.
+
+**READING:** **2026-09-17, booted by Ben. PARTIAL — DO NOT RECORD THIS AS A CLEAN PASS.** The
+message half PASSES: `Vault: 0 occupied slot(s), schema v1`, no error, no stack trace. **THE
+DIRECTORY WAS NOT CHECKED**, so the *"no file is created by the read"* half is **NOT RUN** — the
+half this row's own note above calls the one with teeth. Row stands PARTIAL.
+
+---
+
+## ROW 94 — *** THE LAST WRITE SURVIVES A `/stop`. SOLE WITNESS. ***
+
+**CONDITIONS:** survival, operator.
+
+**STAGE:** `/rpg give ember_staff`, then `/rpg vault store 5 31`, and **immediately** `/stop` — within
+a second, without disconnecting first. Restart, rejoin, `/rpg vault dump`.
+
+**PREDICTED:** `page 5: 1 item(s)`. The staff is there.
+
+> **WHAT THIS ROW ACTUALLY TESTS IS AN ORDERING, AND ONLY A REAL `/stop` EXERCISES IT.** Write-through
+> means the write was already issued; the question is whether it had *drained* before `storageIo`
+> was shut down. `onDisable` flushes the vaults and waits, **then** shuts the executor down. Reverse
+> those two and the final write is queued onto a stopped executor: it never runs, the future never
+> completes, and the shutdown looks perfectly clean.
+>
+> **Quitting first would NOT test this** — a quit gives the executor all the time it needs. The
+> immediacy is the fixture.
+
+> **A CONTROL, AND IT IS THE ROW:** repeat with the store **omitted** — `/stop` with an empty vault,
+> restart, dump. It must read `0 occupied slot(s)` rather than erroring. A shutdown path that throws
+> on an empty vault would look like a pass in the main reading, because nobody checks the console
+> when the item is there.
+
+**READING:** **2026-09-17, booted by Ben. PASS, BOTH ARMS. SOLE WITNESS, FULLY WITNESSED.** Ember
+staff stored at page 5 slot 31, immediate `/stop`, restart, rejoin — `page 5: 1 item(s)`. **AND THE
+CONTROL WAS RUN:** `/stop` on an empty vault, restart, dump reads `0 occupied slot(s)` with no
+error. The flush-then-shutdown ordering holds in both directions.
+
+---
+
+## ROW 95 — `/rpg vault` IS REFUSED WITHOUT `rpg.command.dev`
+
+**CONDITIONS:** survival. **A player who is NOT an operator** — `/deop <them>` first.
+
+**STAGE:** as that player: `/rpg vault dump`, then `/rpg vault store 3 17` holding an item.
+
+**PREDICTED:** **both are refused** — the subcommand does not appear in tab-completion and typing it
+gives the unknown-command error. The item stays in their hand.
+
+> **THE CONTROL IS NOT OPTIONAL AND IT IS `/rpg stats`.** Run as an operator this row passes on a
+> build with no gate at all. The same player must be able to run `/rpg stats`, which is
+> `default: true` — that is what says they are a real unprivileged player rather than someone the
+> server is refusing everything.
+
+> **UNGATED, THESE THREE ARE AN ITEM DUPLICATOR**: `store` moves an item out of the world into a file
+> and `take` puts one back. That is why this row is in the block rather than left to the signature
+> test, which can only see the source.
+
+**READING:** **2026-09-17, booted by Ben. PARTIAL.** The refusal PASSES: as a deopped player,
+`/rpg vault dump` and `/rpg vault store 3 17` were both refused and the item stayed in hand. **THE
+`/rpg stats` CONTROL WAS NOT RUN**, so this reading does not yet distinguish the gate working from
+the server refusing that player everything. Row stands PARTIAL.
+
+---
+
+## ROW 96 — TWO PLAYERS DO NOT SHARE A VAULT
+
+**CONDITIONS:** survival, two operator accounts online at once.
+
+**STAGE:** player A: `/rpg give boltor`, `/rpg vault store 2 24`. Player B: `/rpg vault dump`, then
+`/rpg vault store 2 24` with a **different** item (`/rpg give emberblade`). Both `/rpg vault dump`.
+
+**PREDICTED:** B's first dump reads `0 occupied slot(s)` — **A's item is not in it.** After both
+stores, A's dump shows the Boltor at page 2 slot 24 and B's shows the emberblade at the same
+coordinates. `ls plugins/Rpg/vaults/` shows **two** files, named for the two UUIDs.
+
+> **THE SAME CELL FOR BOTH IS THE POINT.** Staging them at different pages would pass against a
+> single shared vault keyed by nothing, because the two items would not collide. Identical
+> coordinates is what makes a shared-state bug produce a visible wrong answer rather than a
+> coincidentally correct one.
+
+**READING:** **2026-09-17. VOID — could not be staged, no second account online.** **NOT a pass,
+NOT deferred.**
+
+> **WHY A VOID HERE WAS SURVIVABLE, AND IT IS WHY THIS ROW WAS NEVER MARKED A SOLE WITNESS.** The
+> per-UUID keying is not left unwitnessed by this: `FileVaultRepositoryTest` writes `<uuid>.json`
+> and `VaultServiceTest` keys its map by UUID. That is what makes a VOID here survivable, and it is
+> the whole difference between this row and 92 or 94, whose claims no module can construct at all.
