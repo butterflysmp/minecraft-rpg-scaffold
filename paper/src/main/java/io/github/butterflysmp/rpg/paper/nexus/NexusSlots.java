@@ -7,6 +7,7 @@ import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
@@ -164,6 +165,40 @@ public final class NexusSlots {
         // instanceof, matching MenuRouting's own `clicked.equals(getView().getTopInventory())`.
         boolean isPlayers = inventory.equals(view.getBottomInventory());
         return new NexusLock.Touched(isPlayers, view.convertSlot(rawSlot));
+    }
+
+    /**
+     * Is the OPEN SCREEN the player's own inventory, as opposed to a chest or one of our menus?
+     *
+     * <h2>THIS PREDICATE DID NOT EXIST IN THE PROJECT BEFORE, AND THE THREE NEAR-MISSES ARE WHY IT
+     * HAD TO BE WRITTEN RATHER THAN REUSED</h2>
+     *
+     * Measured before adding it: {@code InventoryType} appeared <b>nowhere</b> in {@code paper/} or
+     * {@code core/}. Three adjacent predicates exist and <b>none of them answers this question</b>:
+     *
+     * <pre>
+     *   touchedOf's `inventory.equals(view.getBottomInventory())`
+     *       "is this SLOT in the player's half" -- TRUE for a chest's bottom half too
+     *   MenuRouting's `clicked.equals(view.getTopInventory())`
+     *       the same shape from the other side, and only reached when a Menu is open
+     *   RpgListeners.onMenuClick's `getHolder() instanceof Menu`
+     *       distinguishes OUR menus from everything else -- not own-inventory from chest
+     * </pre>
+     *
+     * <p><b>The distinction matters here and nowhere else so far</b>, which is why it was never
+     * needed: every other caller asks about a SLOT, and this asks about the SCREEN.
+     *
+     * <p><b>{@code InventoryType.CRAFTING} is the player's own screen</b> -- the 2x2 grid at the top
+     * of it -- and it is the top inventory only when nothing else is open. A chest view's top is
+     * {@code CHEST}; ours is {@code CHEST} as well, and is additionally caught by the holder test
+     * above.
+     *
+     * <p><b>Row 6's account is the only other place in this repo that names this distinction</b>,
+     * and it names it in prose: 6.4 and 6.5 reproduce in the own-inventory screen and <i>"with a
+     * CHEST open they do not reproduce at all"</i>.
+     */
+    public static boolean isOwnInventoryScreen(InventoryView view) {
+        return view != null && view.getTopInventory().getType() == InventoryType.CRAFTING;
     }
 
     /**

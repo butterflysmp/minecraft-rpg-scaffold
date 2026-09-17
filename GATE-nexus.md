@@ -26,12 +26,12 @@ readings and every other row has none:
 git grep -c '^## ROW' <ref> -- GATE-nexus.md
 ```
 
-**35 on `origin/master` and 48 in this working tree** — forty-seven integer-numbered rows plus **ROW
+**48 on `origin/master` and 57 in this working tree** — fifty-six integer-numbered rows plus **ROW
 12b**, whose ID is not an integer and which therefore **belongs to no range.**
 
-**Both sides RECOUNTED with the command above, not adjusted.** The working tree gained slice 6's
-thirteen rows (35–47); `origin/master` is unchanged because that slice has not merged. **If you are
-reading this after it has, re-run the command rather than assuming 48.**
+**Both sides RECOUNTED with the command above, not adjusted.** `origin/master` is 48 because slice 6
+has merged; the working tree gained slice 7's nine rows (49–57). **If you are reading this after
+that slice merges, re-run the command rather than assuming 57.**
 
 > ### THIS FIGURE IS RECOUNTED, NEVER ADJUSTED — AND THAT RULE IS THE POINT OF THIS SECTION
 >
@@ -209,7 +209,8 @@ ships to a survival server; **a creative reading certifies creative**, and nothi
 | **24** | **SURVIVAL** | it is a row about **dying**, and a creative player is hard to kill — Row 1's reason, unchanged |
 | **25, 27, 28, 30** | **SURVIVAL** | slice 4b. A tooltip, two menu transitions, two refusal messages and a control — none reads a game mode |
 | **31–34** | **SURVIVAL** | slice 5. Two stations, a bookshelf count and a Back button -- none reads a game mode, and 32 needs real placed blocks |
-| **35–47** | **SURVIVAL**, and **seven of the thirteen are VOID in creative** | slice 6, the grindstone. **Creative hides the XP bar**, so every row that reads a refund -- 35, 36, 37, 40, 41, 42 and 46 rest on it directly or on the button's figure -- has nothing on screen to read. **That is Row 6's lesson applied BEFORE the boot rather than after it cost two readings** |
+| **35–47** | **SURVIVAL**, and **seven of the thirteen are VOID in creative** |
+| **49–57** | **SURVIVAL**, except **56 which stages BOTH** | slice 7, the star click. **56b is the creative half and is the row that keeps 6.1 honest** -- the arm is keyed LEFT/RIGHT and creative clicks arrive as ClickType.CREATIVE, so creative refuses BY CONSTRUCTION. That is true and unobserved until 56b is read | slice 6, the grindstone. **Creative hides the XP bar**, so every row that reads a refund -- 35, 36, 37, 40, 41, 42 and 46 rest on it directly or on the button's figure -- has nothing on screen to read. **That is Row 6's lesson applied BEFORE the boot rather than after it cost two readings** |
 | **26, 29** | **SURVIVAL**, and **26c especially** | 26c reads a **displaced item** surviving, and 29 counts hotbar cells. Creative makes items free, so *"the item is still there"* is satisfied for nothing — the register's own shape: **creative removes a cost, and a row whose reading is "the thing is still there" passes without exercising anything** |
 | **18** | **SURVIVAL**, and **this one is load-bearing** | it moves an item **in the player's own inventory with a menu open** — the exact surface Row 8 shows behaves differently in creative. **A creative reading of 18 certifies creative and says nothing about the shipped path** |
 
@@ -2016,6 +2017,222 @@ reads **BLACK STAINED GLASS PANE**. Not empty, not an arrow, and it does not cha
 > argument for reading a screen rather than ticking it.**
 
 **READING:** _(see above)_
+
+---
+
+# SLICE 7 — THE STAR OPENS THE HUB FROM YOUR INVENTORY. ROWS 49–57
+
+**Status: NOT RUN.** Every row below was written **before any boot**, and before the branch that
+adds them was pushed.
+
+**GAME MODE: `/gamemode survival` for all nine unless the row says otherwise.** **Row 56 stages
+BOTH modes and the creative half is the point of it.**
+
+## THIS IS NOT "UNLOCK THE STAR". `NexusLock` IS UNTOUCHED
+
+**The star still does not move.** No chat line, no sound, no title — **Ben's silence ruling survives
+whole**, and every refusal refuses exactly what it refused before. **What changes is that ONE
+already-refused gesture gains a SIDE EFFECT.**
+
+The hook goes where the refusal already lives, which is the design rather than a convenience: the
+star's slot is **the one cell in a player's inventory where a click is already guaranteed to be
+intercepted.**
+
+```
+OPENS     LEFT or RIGHT click, on the star's OWN slot, with an EMPTY CURSOR,
+          in the OWN-INVENTORY SCREEN
+REFUSES   everything else, silently, exactly as today -- drag, Q, F, number-key,
+          creative, and any click with an item on the cursor
+```
+
+## *** ROW 6.1 IS NOT SUPERSEDED BY THIS SLICE, AND THAT WAS CHECKED RATHER THAN ASSUMED ***
+
+**The brief for this slice said 6.1 would be falsified. It is not.**
+
+Row 6's reading is scoped **`CONDITIONS: CREATIVE mode, own-inventory screen (E)`** — the line two
+above the readings table. **In creative, a click on an own-inventory slot arrives as
+`ClickType.CREATIVE`**, not `LEFT` or `RIGHT`; that is the whole basis of `NexusLock`'s step 2b
+payload guard. **So this arm never fires in creative, and 6.1's reading — *pick up the star →
+silent refusal* — is still true.**
+
+**What Row 6 does NOT have is a SURVIVAL reading of any kind.** It named no game mode and was
+booted creative-only. **So this slice changes a gesture the file has never read**, which is a gap
+Row 6 always had rather than a supersession — and these rows are where it is closed.
+
+> **THE RULE THIS EARNED: A READING IS NEVER CITED WITHOUT ITS CONDITIONS LINE.** The conditions are
+> **part of** the reading, not context around it. A reading quoted bare has been promoted from
+> *"true here"* to *"true"*, by whoever quoted it, silently.
+
+## What the unit suite already settled, so no row here re-asks it
+
+`NexusOpenGestureTest` pins the rule itself over the **whole `ClickType` enum** — exactly two open —
+and over **all eight combinations** of the three booleans, of which exactly one opens.
+
+**What it cannot see** is whether those four booleans are computed from the right things: whether
+*"the own-inventory screen"* really excludes a chest, whether *"the star's own slot"* really tracks a
+re-chosen slot, and whether the open lands on the next tick rather than inline. **That gap is these
+nine rows.**
+
+## ROW 49 — **LEFT-CLICK THE STAR. THE HUB OPENS.**
+
+**Staging.** `/gamemode survival`. Press **E**. **Left-click the star**, once, with an empty cursor.
+
+**PREDICTED:** the **Nexus hub opens**. The star **does not move** and is still in its slot when you
+close the hub. **No chat line, no sound, no title** — the ruling is unchanged; a screen is none of
+those things.
+
+> **WATCH THE SLOT AS WELL AS THE SCREEN.** A build that opened the hub by *picking the star up
+> first* would look identical for the first frame and leave the star on the cursor underneath.
+
+**READING:** _(not run)_
+
+## ROW 50 — **RIGHT-CLICK DOES THE SAME**
+
+**Staging.** `/gamemode survival`, **E**, **right-click the star** with an empty cursor.
+
+**PREDICTED:** identical to Row 49. The hub opens; the star does not move.
+
+> **BOTH, NOT EITHER.** Right-click on an occupied slot is vanilla's *take half*, a different
+> `InventoryAction` from left-click's *take all*, and the rule is keyed on `ClickType` rather than
+> action precisely so the two agree. A build keyed on the action passes one of these rows.
+
+**READING:** _(not run)_
+
+## ROW 51 — **A LOADED CURSOR DOES NOT OPEN. IT IS AN ATTEMPTED PLACE.**
+
+**Staging.** `/gamemode survival`, **E**. **Pick up any ordinary item** so it is on the cursor. Now
+**left-click the star's slot**.
+
+**PREDICTED:** **nothing opens.** The click is refused silently, exactly as today: the star does not
+move, the held item stays on the cursor, no chat line.
+
+> **THIS IS THE ROW THAT KEEPS ROW 10c's PROBLEM OUT OF THE HUB.** A click with something on the
+> cursor is the player trying to PUT IT DOWN. Opening a menu there drops them into the hub **holding
+> an item**, and the hub has no input slots and no `returnEverything` obligation to hand it back —
+> `PLAN-enchant-table-ui`'s cursor branch arriving somewhere it was never solved.
+>
+> **MINE, NOT BEN'S** — flag it. The narrower rule widens later without a migration.
+
+**READING:** _(not run)_
+
+## ROW 52 — **A DRAG ACROSS THE STAR'S CELL DOES NOT OPEN**
+
+**Staging.** `/gamemode survival`, **E**. With an ordinary item on the cursor, **drag across several
+slots INCLUDING the star's**, and release elsewhere.
+
+**PREDICTED:** **nothing opens**, and the drag is refused as today — the star is untouched.
+
+> **A DRAG IS A DIFFERENT EVENT AND MUST NOT BE MADE TO LOOK LIKE A CLICK.** `InventoryDragEvent`
+> never reaches the click handler, so this row is confirming the arm was not added to the drag guard
+> as well — which a reasonable person might do for symmetry, and which would open the hub every time
+> a player swept a stack across their hotbar.
+
+**READING:** _(not run)_
+
+## ROW 53 — **Q, F AND NUMBER-KEY STILL REFUSE SILENTLY. THE FOUR OLD ROWS STILL HOLD.**
+
+**Staging.** `/gamemode survival`, **E**, on the star's slot, in order: press **Q**; press **F**;
+**number-key** it to slot 1. Then **drag from it** (Row 6.2's gesture).
+
+**PREDICTED:** **all four refuse, silently, and NOTHING OPENS on any of them.** The star never
+appears to leave its slot.
+
+> ### *** THE ROW THAT CATCHES THE OBVIOUS WRONG IMPLEMENTATION ***
+>
+> **A build that opens the hub on ANY touch of the star passes Rows 49 and 50 perfectly and breaks
+> four readings this file already has.** Rows 6.2, 6.3, 6.4 and 6.5 are not restaged by this slice —
+> they must simply still be true — and nothing in Rows 49–52 would notice if they stopped being.
+>
+> **Note 6.4 and 6.5 are VOID in creative and this row is SURVIVAL**, so a survival reading here is
+> new information about them either way.
+
+**READING:** _(not run)_
+
+## ROW 54 — **A NON-DEFAULT SLOT. THE WHOLE REASON THIS SLICE EXISTS.**
+
+**MOVES THE SLOT. Put it back to 9 (index 8) before running any earlier row.**
+
+**Staging.** `/gamemode survival`. Open the hub the old way, choose a **different** hotbar slot in
+settings — say **slot 1 (index 0)** — and confirm the star has moved there. Now press **E** and
+**left-click the star in its NEW slot**.
+
+**PREDICTED:** the hub opens. **And left-clicking slot 9 (index 8) — where the star used to be, now
+an ordinary empty cell — opens NOTHING.**
+
+> **BEN'S ANSWER TO "A STAR IN SLOT 27 IS INVISIBLE" IS THIS SLICE, SO THIS IS THE ROW IT EXISTS
+> FOR.** A build that hardcoded the default slot passes every other row in this block, because every
+> other row leaves the star at the default.
+>
+> **THE SECOND HALF IS THE DISCRIMINATING ONE.** The arm requires the star to be PRESENT in the
+> clicked slot, not merely that the slot is the locked one — so an empty locked slot opens nothing.
+> **MINE, NOT BEN'S**: his brief said *"the star's OWN slot"*, and requiring the star to actually be
+> there is the reading that stops an empty cell opening a menu.
+
+**READING:** _(not run)_
+
+## ROW 55 — **ANOTHER SCREEN REFUSES. A CHEST IS NOT YOUR INVENTORY.**
+
+**Staging.** `/gamemode survival`. Open a **chest**. The star's slot is visible in the bottom half of
+that view. **Left-click it.**
+
+**PREDICTED:** **nothing opens**, and the click is refused as today.
+
+> **THE NEAR-MISS THIS ROW EXISTS FOR IS A PREDICATE THAT ALREADY EXISTED AND ANSWERS A DIFFERENT
+> QUESTION.** `NexusSlots.touchedOf` asks *"is this SLOT in the player's half"*, which is **true of a
+> chest's bottom half too**. A build using it would open the hub from inside every chest on the
+> server, and **Rows 49–54 would all still pass.**
+>
+> **Also stage it with one of OUR menus open** — the grindstone, say, with items in the tray. The
+> hub must not open, because that is a nested transition out of a menu with `returnEverything`
+> obligations. **MINE, NOT BEN'S** — flag it.
+
+**READING:** _(not run)_
+
+## ROW 56 — **THE CREATIVE CONTROL. SURVIVAL OPENS, CREATIVE DOES NOT.**
+
+**Staging.** Two readings, **in one sitting**, the same gesture in both:
+
+| | staging | expected |
+|---|---|---|
+| **56a** | `/gamemode survival`, **E**, left-click the star | the hub **OPENS** |
+| **56b** | `/gamemode creative`, **E**, left-click the star | **NOTHING OPENS.** Silent refusal, star unmoved |
+
+> ### *** THIS IS THE ROW THAT KEEPS ROW 6.1 HONEST, AND IT IS WHY IT IS A ROW RATHER THAN AN ARGUMENT ***
+>
+> **6.1's reading stays true only because the arm is keyed `LEFT`/`RIGHT` and creative clicks arrive
+> as `ClickType.CREATIVE`.** That is a true statement about click types and **it is not observed
+> anywhere until this row is read.**
+>
+> **THE DAY SOMEONE WIDENS THE ARM TO INCLUDE `CREATIVE`, 6.1's READING BECOMES FALSE WITH NOTHING
+> GOING RED.** And it is a perfectly reasonable thing to want — **a creative player probably does
+> want the hub.** This row makes that widening a **visible change** instead of a silent
+> contradiction somebody finds in a month.
+>
+> **Whether creative SHOULD open is Ben's question and is deliberately not asked here.** The narrow
+> arm plus this control is the version where asking it later costs a ruling and a row rather than a
+> quiet contradiction.
+>
+> **56b is also a direct re-read of Row 6.1 under its own conditions**, so if it fails, 6.1 has been
+> falsified and this block is what says so.
+
+**READING:** _(not run)_
+
+## ROW 57 — **THE CONTROL. AN ORDINARY ITEM STILL JUST PICKS UP.**
+
+**Staging.** `/gamemode survival`, **E**. **Left-click an ordinary item** elsewhere in the inventory
+— a stack of cobblestone in slot 20, say. Then put it back.
+
+**PREDICTED:** it **behaves exactly as vanilla**: it lifts onto the cursor. **No menu opens**, and
+nothing about the click is refused.
+
+> **WITHOUT THIS ROW, A BUILD THAT REFUSED OR HIJACKED EVERY INVENTORY CLICK PASSES THIS ENTIRE
+> BLOCK.** Every other row stages the star's slot; this is the only one that stages a cell the
+> feature must not touch.
+>
+> **The handler runs at `LOWEST` on EVERY `InventoryClickEvent` on the server**, so the cost of
+> getting it wrong is not confined to the star — it is every click by every player.
+
+**READING:** _(not run)_
 
 ---
 
