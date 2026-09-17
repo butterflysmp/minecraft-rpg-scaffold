@@ -37,6 +37,7 @@ import io.github.butterflysmp.rpg.paper.menu.CraftingMenu;
 import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
 import io.github.butterflysmp.rpg.paper.menu.GrindstoneMenu;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
+import io.github.butterflysmp.rpg.paper.menu.MenuSafety;
 import io.github.butterflysmp.rpg.paper.menu.NexusMenu;
 import io.github.butterflysmp.rpg.core.recipe.RecipeRegistry;
 import io.github.butterflysmp.rpg.paper.content.RecipeRegistrar;
@@ -45,6 +46,7 @@ import io.github.butterflysmp.rpg.paper.menu.RecipeProbe;
 import io.github.butterflysmp.rpg.paper.nexus.NexusCollisionNotice;
 import io.github.butterflysmp.rpg.paper.nexus.NexusLock;
 import io.github.butterflysmp.rpg.paper.nexus.NexusItems;
+import io.github.butterflysmp.rpg.paper.nexus.NexusOpenGesture;
 import io.github.butterflysmp.rpg.paper.nexus.NexusSlots;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
@@ -967,7 +969,45 @@ public final class RpgListeners implements Listener {
     public void onNexusClick(InventoryClickEvent event) {
         if (!NexusSlots.refuses(event, adapters.keys(), profiles)) return;
         event.setCancelled(true);
-        if (event.getWhoClicked() instanceof Player player) player.updateInventory();
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        player.updateInventory();
+
+        // THE SIDE EFFECT ON AN ALREADY-REFUSED GESTURE. The refusal above is untouched -- the star
+        // does not move, and there is no chat line, sound or title. What is added is that ONE of the
+        // gestures this method already refuses now also opens the hub.
+        //
+        // THE HOOK GOES WHERE THE REFUSAL ALREADY LIVES, and that is the design rather than a
+        // convenience: the star's slot is the one cell in a player's inventory where a click is
+        // already guaranteed to be intercepted, so nothing new has to reach in.
+        //
+        // THE FOUR BOOLEANS ARE DERIVED HERE AND THE RULE IS DECIDED IN NexusOpenGesture, which is
+        // unit-testable without a server. Two of these predicates did not exist in this project
+        // before -- "is the open SCREEN the own inventory" and "is the cursor empty" -- and both are
+        // measured rather than approximated; see NexusSlots.isOwnInventoryScreen for the three
+        // near-misses that do not answer the first.
+        NexusLock.Touched touched = NexusSlots.touchedOf(event.getView(), event.getRawSlot());
+        boolean starsOwnSlot = touched.playerInventory()
+                && touched.index() == NexusSlots.lockedSlotOf(player, profiles)
+                && NexusSlots.starAt(player, adapters.keys()).test(touched.index());
+
+        if (!NexusOpenGesture.opensHub(event.getClick(),
+                NexusSlots.isOwnInventoryScreen(event.getView()),
+                starsOwnSlot,
+                MenuSafety.isEmpty(event.getCursor()))) {
+            return;
+        }
+
+        // A SCHEDULER HOP, NOT A DIRECT open(). The click event has not finished being processed
+        // and the client has not applied the cancellation; opening inline is how a desynced client
+        // ends up holding a ghost item. Menu.open's javadoc carries the measured rule --
+        // EntityScheduler.run "schedules a task to execute on the next tick", read off the pinned
+        // paper-api -- so onEntity is already the hop and onEntityLater(.., 1) would be the same.
+        //
+        // NO EXPLICIT closeInventory() FIRST. That is a separate question and it is about
+        // returnEverything: the own-inventory screen is not one of our menus and holds no input
+        // slots of ours, so openInventory's implicit close is sufficient.
+        adapters.scheduler().onEntity(player, () -> new NexusMenu(player, adapters, profiles,
+                weapons, resources, recipeCatalogue, shields, armor, tools).open());
     }
 
     /**
