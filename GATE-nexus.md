@@ -36,12 +36,71 @@ readings and every remaining row has none:
 git grep -c '^## ROW' <ref> -- GATE-nexus.md
 ```
 
-**65 on `origin/master` and 77 in this working tree** — seventy-six integer-numbered rows plus **ROW
-12b**, whose ID is not an integer and which therefore **belongs to no range.**
+**77 at `d89cc2d`, on `origin/master` and in this working tree alike** — seventy-six
+integer-numbered rows plus **ROW 12b**, whose ID is not an integer and which therefore **belongs to
+no range.**
 
-**Both sides RECOUNTED with the command above, not adjusted.** `origin/master` is 65 because slice 8
-has merged; the working tree gained slice 9's twelve rows (66–77). **If you are reading this after
-that slice merges, re-run the command rather than assuming 77.**
+**RECOUNTED with the command above, not adjusted.** It read *"65 on `origin/master` and 77 in this
+working tree"* until 2026-09-17 — **true when written and falsified by slice 9's own merge**, which
+is this file's own *figure maintained by delta* defect arriving through the one route re-reading
+cannot reach: **the number did not change, the TREE did.** Re-run the command rather than trusting
+either figure.
+
+## *** EVERY READING LINE BEGINS `**READING:**` AND NOTHING ELSE ***
+
+**Date, booter, outcome, conditions, restaging — ALL of it goes AFTER that prefix:**
+
+```
+  **READING:** _(not run)_
+  **READING:** restaged 47 — _(not run)_
+  **READING:** **2026-09-17, 03:58–04:00, booted by Ben. PASS.**
+```
+
+> **THE THREE EXAMPLES ABOVE ARE INDENTED TWO SPACES, AND THAT IS LOAD-BEARING.** Written flush
+> left they **start with the prefix**, so the counting command below counts them — and the block
+> explaining how to count reading lines silently added three, two of them unread. **Measured: 80
+> became 83 and 47 became 49.** Caught before it shipped, by running the count over the file
+> containing the new block.
+>
+> **Third instance in this file of prose being read as the thing it describes**, after the masthead
+> cell and Row 64's note. **Do not un-indent them, and do not write a flush-left example of a
+> reading line anywhere in this file.**
+
+**THEN ONE PATTERN FINDS EVERY READING LINE FOREVER**, and `_(not run)_` / `_(never run` separates
+unread from read:
+
+```
+grep -c '^\*\*READING:\*\*' GATE-nexus.md                                    # every reading line
+grep '^\*\*READING:\*\*' GATE-nexus.md | grep -c '_(not run)_\|_(never run'  # the unread ones
+```
+
+At `4a7a648`: **80 reading lines, 47 unread, 33 read.** The parts add up, in one unit, on one tree.
+
+> ### WHY THIS IS A VOCABULARY RULE AND NOT A BETTER REGEX
+>
+> **Measured 2026-09-17 before the pass: EIGHT distinct label shapes on one concept**, seven of
+> them written in the last week — `**READING — <date>, booted by Ben. PASS.**`,
+> `**READING (restaged 47):**`, and five more. **A pattern anchored on any one shape misses the
+> rest, and THE SET GROWS EVERY TIME A ROW IS READ**, because a reading with history in it gets an
+> elaborated label. So the next count is wrong again, by a different amount, for the same reason —
+> **and the rows it misses are systematically the ones carrying the most history.**
+>
+> **That is exactly what happened.** A count of `^**READING:**` lines reported **45** unread; the
+> true figure was **47**. The two it could not see were `restaged 46a` and `restaged 47` — *the two
+> rows a ruling had already disturbed once*, which are the two least affordable to lose.
+>
+> **AND THE ENUMERATION COMMAND HAD THE SAME DISEASE.** `grep -o '^\*\*READING[^*]*\*\*' | sort |
+> uniq -c` reports **seven** shapes and there were **eight**: the 2026-09-16 reading's closing `**`
+> is on the *next* line, so the pattern cannot match it. **The instrument for counting the variants
+> was itself defeated by a variant.**
+>
+> **SO THE FIX IS NOT A STRICTER DETECTOR — IT IS REMOVING THE THING BEING DETECTED.** Same move as
+> `PAINTED_SLOTS`: one list used twice rather than two lists checked against each other. A regex
+> is a detector and stays one boot behind; **a fixed prefix makes the class of error
+> unrepresentable.**
+>
+> **The pass was mechanical, over 15 lines, and added and removed nothing** — 80 reading lines
+> before and after, line count and CR count unchanged at 3153.
 
 > ### AND THE HIGHEST ID IS 77 WHILE THERE ARE ONLY 76 INTEGER ROWS, BECAUSE **THERE IS NO ROW 48**
 >
@@ -638,7 +697,7 @@ on it; press F on it; number-key it to slot 1. Watch the slot, not the chat.
 title. **If a flicker is visible on any of the five, name which** — the resync is per-path and a
 flicker on one is not a flicker on all.
 
-**READING — 2026-09-15, booted by Ben. CONDITIONS: CREATIVE mode, own-inventory screen (E).**
+**READING:** **2026-09-15, booted by Ben. CONDITIONS: CREATIVE mode, own-inventory screen (E).**
 The prediction above is untouched.
 
 | | gesture | reading |
@@ -911,7 +970,7 @@ and **the ruling makes them blocking rather than confirmatory**.
 > for it. **Not added as a gate row**: staging it needs a profile read to lose a race on purpose,
 > which is Row 28a's problem and Row 28a already says it may be unstageable by hand.
 
-**READING — 2026-09-16, booted by Ben on the dev server, by hand. CONDITIONS: `/gamemode creative`,
+**READING:** **2026-09-16, booted by Ben on the dev server, by hand. CONDITIONS: `/gamemode creative`,
 own-inventory screen (E), the guard DEPLOYED, and the Nexus slot at the default 9 (index 8) as this
 block's precondition requires. INSTRUMENT: the gesture performed by hand; the stack count read with
 `/data get entity @s Inventory` from the console.** The predictions above are untouched.
@@ -1983,7 +2042,7 @@ the button **and the bar** read each time, and the strings written down **verbat
 > **Write both strings and both colours down rather than ticking the row.** *"They looked different"*
 > is not a reading.
 
-**READING — 2026-09-17, booted by Ben. 46a PASS, 46b not run.** The button and the bar both read
+**READING:** **2026-09-17, booted by Ben. 46a PASS, 46b not run.** The button and the bar both read
 **GRAY** with `Add items to strip`, as predicted. **The prediction above is untouched.**
 
 ### *** 46a IS SUPERSEDED BY RULING. NOT VOID, NOT FAILED. ***
@@ -2015,7 +2074,7 @@ it** — that difference IS the ruling, and a reading that cannot tell them apar
 > touches red. **Row 41 restages with 46a** — its prose says GRAY for the same state — and **Row 47
 > is unaffected**, because it is about the BLACK filler, which did not move.
 
-**READING (restaged 46a):** _(never run — see below)_
+**READING:** restaged 46a — _(never run — see below)_
 
 ### *** THE SUPERSESSION WAS ITSELF REVERTED, THE SAME DAY, AND THE ORIGINAL READING IS TRUE AGAIN ***
 
@@ -2082,7 +2141,7 @@ and **never a bar cell** — it does not change colour as the bar does.
 > conditional** — and the bar's width now forks on origin, which is what the permanent subtraction
 > exists to prevent.
 
-**READING — 2026-09-17, booted by Ben. PASS.** Slot 48 from a world block holds a pane; the tooltip
+**READING:** **2026-09-17, booted by Ben. PASS.** Slot 48 from a world block holds a pane; the tooltip
 reads **BLACK STAINED GLASS PANE**. Not empty, not an arrow, and it does not change with the bar.
 **The prediction above is untouched.**
 
@@ -2141,7 +2200,7 @@ from 45–47.**
 > **ARROW throughout** — never a pane, never changing colour. If 48 changes colour from the hub,
 > the bar is painting over Back and `MUTS5-BACK` has returned by a new route.
 
-**READING (restaged 47):** _(not run)_
+**READING:** restaged 47 — _(not run)_
 
 ---
 
@@ -2222,7 +2281,7 @@ those things.
 > **WATCH THE SLOT AS WELL AS THE SCREEN.** A build that opened the hub by *picking the star up
 > first* would look identical for the first frame and leave the star on the cursor underneath.
 
-**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
+**READING:** **2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 50 — **RIGHT-CLICK DOES THE SAME**
 
@@ -2234,7 +2293,7 @@ those things.
 > `InventoryAction` from left-click's *take all*, and the rule is keyed on `ClickType` rather than
 > action precisely so the two agree. A build keyed on the action passes one of these rows.
 
-**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
+**READING:** **2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 51 — **A LOADED CURSOR DOES NOT OPEN. IT IS AN ATTEMPTED PLACE.**
 
@@ -2251,7 +2310,7 @@ move, the held item stays on the cursor, no chat line.
 >
 > **MINE, NOT BEN'S** — flag it. The narrower rule widens later without a migration.
 
-**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
+**READING:** **2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 52 — **A DRAG ACROSS THE STAR'S CELL DOES NOT OPEN**
 
@@ -2265,7 +2324,7 @@ slots INCLUDING the star's**, and release elsewhere.
 > as well — which a reasonable person might do for symmetry, and which would open the hub every time
 > a player swept a stack across their hotbar.
 
-**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
+**READING:** **2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 53 — **Q, F AND NUMBER-KEY STILL REFUSE SILENTLY. THE FOUR OLD ROWS STILL HOLD.**
 
@@ -2284,7 +2343,7 @@ appears to leave its slot.
 > **Note 6.4 and 6.5 are VOID in creative and this row is SURVIVAL**, so a survival reading here is
 > new information about them either way.
 
-**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
+**READING:** **2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 54 — **A NON-DEFAULT SLOT. THE WHOLE REASON THIS SLICE EXISTS.**
 
@@ -2306,7 +2365,7 @@ an ordinary empty cell — opens NOTHING.**
 > **MINE, NOT BEN'S**: his brief said *"the star's OWN slot"*, and requiring the star to actually be
 > there is the reading that stops an empty cell opening a menu.
 
-**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
+**READING:** **2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 55 — **ANOTHER SCREEN REFUSES. A CHEST IS NOT YOUR INVENTORY.**
 
@@ -2324,7 +2383,7 @@ that view. **Left-click it.**
 > hub must not open, because that is a nested transition out of a menu with `returnEverything`
 > obligations. **MINE, NOT BEN'S** — flag it.
 
-**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
+**READING:** **2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ## ROW 56 — **THE CREATIVE CONTROL. SURVIVAL OPENS, CREATIVE DOES NOT.**
 
@@ -2353,7 +2412,7 @@ that view. **Left-click it.**
 > **56b is also a direct re-read of Row 6.1 under its own conditions**, so if it fails, 6.1 has been
 > falsified and this block is what says so.
 
-**READING — 2026-09-17, booted by Ben. 56a PASS, 56b PASS.** Survival opened the hub; **creative refused silently and nothing opened.** The prediction above is untouched.
+**READING:** **2026-09-17, booted by Ben. 56a PASS, 56b PASS.** Survival opened the hub; **creative refused silently and nothing opened.** The prediction above is untouched.
 
 ## ROW 57 — **THE CONTROL. AN ORDINARY ITEM STILL JUST PICKS UP.**
 
@@ -2370,7 +2429,7 @@ nothing about the click is refused.
 > **The handler runs at `LOWEST` on EVERY `InventoryClickEvent` on the server**, so the cost of
 > getting it wrong is not confined to the star — it is every click by every player.
 
-**READING — 2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
+**READING:** **2026-09-17, 03:58–04:00, booted by Ben. PASS.** The prediction above is untouched.
 
 ---
 
