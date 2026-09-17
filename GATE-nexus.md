@@ -2,15 +2,23 @@
 
 ## STATUS — WHICH ROWS HAVE BEEN READ, NAMED RATHER THAN COUNTED
 
-**AT THIS FILE'S OWN GRANULARITY, NO ROW IS FULLY BOOTED.** Two rows have partial readings and
-every other row has none:
+**AT THIS FILE'S OWN GRANULARITY, ONE ROW IS FULLY BOOTED.** Row 47 is; three others have partial
+readings and every other row has none:
 
 | row | readings | state |
 |---|---|---|
 | **ROW 6** | 6.1, 6.2, 6.3, 6.4, 6.4′, 6.5 — **six** | **4 PASS, 2 VOID.** Booted 2026-09-15 in CREATIVE against a row that named no mode; 6.4 and 6.5 are VOID rather than failed |
 | **ROW 8** | 8a, 8b, 8c, 8d, 8e, 8f, 8g — **seven** | **3 GREEN (8e, 8f, 8g), 4 NOT RUN.** Booted 2026-09-16; the ship condition, not the whole row |
+| **ROW 46** | 46a, 46b — **two** | **46a PASS then SUPERSEDED BY RULING; 46b NOT RUN.** Booted 2026-09-17. The reading was right and the ruling moved underneath it — restaged beneath the original, which is not edited |
+| **ROW 47** | one | **PASS.** Booted 2026-09-17. **The only fully-booted row in this file** — and it surfaced the ruling that superseded 46a while passing itself |
 
 **Every other row in this file has no reading at all.**
+
+> **THREE OUTCOMES NOW APPEAR IN THIS FILE, AND THE THIRD IS NEW.** `VOID` means the conditions were
+> wrong (Row 6). `FAIL` means the build was wrong (none yet). **`SUPERSEDED BY RULING` means the
+> reading was CORRECT and a later decision falsified it** — Row 46a. It is not a failure of the row,
+> the reader, or the build, and collapsing it into either of the other two loses which of the three
+> happened.
 
 **THE DENOMINATOR IS A COMMAND, NOT A NUMBER.** Re-derive it rather than trusting this line:
 
@@ -1801,12 +1809,12 @@ countdown continues and the items are untouched.
 
 **READING:** _(not run)_
 
-## ROW 41 — **PRECEDENCE.** AN EMPTY TRAY IS GRAY, NOT YELLOW
+## ROW 41 — **PRECEDENCE.** AN EMPTY TRAY IS LIGHT GRAY, NOT YELLOW
 
 **Staging.** `/gamemode survival`. Open the grindstone and **look at slot 40 and the bottom row
 immediately, before touching anything.** Then click the button.
 
-**PREDICTED:** button **GRAY**, reading **`Add items to strip`**; bar **GRAY**. **Not yellow and not
+**PREDICTED:** button **LIGHT GRAY**, reading **`Add items to strip`**; bar **LIGHT GRAY**. **Not yellow and not
 counting down**, though the deadline initialises at open and the clock is genuinely running.
 Clicking does nothing and says nothing.
 
@@ -1928,7 +1936,39 @@ the button **and the bar** read each time, and the strings written down **verbat
 > **Write both strings and both colours down rather than ticking the row.** *"They looked different"*
 > is not a reading.
 
-**READING:** _(not run)_
+**READING — 2026-09-17, booted by Ben. 46a PASS, 46b not run.** The button and the bar both read
+**GRAY** with `Add items to strip`, as predicted. **The prediction above is untouched.**
+
+### *** 46a IS SUPERSEDED BY RULING. NOT VOID, NOT FAILED. ***
+
+**The reading was correct when taken and was falsified afterwards by a decision**, which is a third
+outcome this file has not had before in this block:
+
+```
+VOID        the CONDITIONS were wrong      -- Row 6.4, booted in creative against a row naming no mode
+FAIL        the BUILD was wrong            -- nothing here
+SUPERSEDED  the reading was right and the RULING moved underneath it
+```
+
+**THE RULING:** the bar's and button's empty state moved **GRAY → LIGHT GRAY**. Ben reported slot 48
+as *"gray glass"* from a world block; measured, that cell is `BLACK_STAINED_GLASS_PANE` via
+`MenuIcons.filler()` and **is correct** — what he was seeing is **black chrome against gray bar
+cells**, which at 16 pixels is not a distinction a player can make. **That is `Q23`'s two-grays
+finding arriving one shade over**, and the fix is on the BAR rather than the chrome, because
+`MenuIcons.FILLER` is black on every screen in the plugin.
+
+**THE ORIGINAL PREDICTION AND ITS READING ARE NOT EDITED.** The no-edit rule binds from the moment a
+row is read, and this one has been. Read them as history; the live staging is below.
+
+**RESTAGED 46a:** open with an **EMPTY** tray. **PREDICTED:** button **LIGHT GRAY**,
+`Add items to strip`; bar **LIGHT GRAY**. **It must be visibly lighter than the black filler beside
+it** — that difference IS the ruling, and a reading that cannot tell them apart is a fail.
+
+> **46b IS UNAFFECTED AND IS NOT RESTAGED.** It is RED on both surfaces, and nothing in this ruling
+> touches red. **Row 41 restages with 46a** — its prose says GRAY for the same state — and **Row 47
+> is unaffected**, because it is about the BLACK filler, which did not move.
+
+**READING (restaged 46a):** _(not run)_
 
 ## ROW 47 — **FROM A BLOCK, SLOT 48 IS PLAIN FILLER.** THE ROW THAT WOULD HAVE CAUGHT THE HOLE
 
@@ -1961,7 +2001,21 @@ and **never a bar cell** — it does not change colour as the bar does.
 > conditional** — and the bar's width now forks on origin, which is what the permanent subtraction
 > exists to prevent.
 
-**READING:** _(not run)_
+**READING — 2026-09-17, booted by Ben. PASS.** Slot 48 from a world block holds a pane; the tooltip
+reads **BLACK STAINED GLASS PANE**. Not empty, not an arrow, and it does not change with the bar.
+**The prediction above is untouched.**
+
+> **AND THIS ROW PRODUCED A FINDING BY BEING READ CORRECTLY, WHICH IS WORTH MORE THAN THE PASS.**
+> The cell was reported as *"gray glass"* and looked wrong. **Measured, it is black and it is
+> right** — `GrindstoneMenu` paints `MenuIcons.filler()` there and `MenuIcons.FILLER` is
+> `BLACK_STAINED_GLASS_PANE`, the same furniture every screen in the plugin uses.
+>
+> **What was actually wrong was the cell NEXT to it.** Black chrome against GRAY bar cells is not a
+> distinction a player can make at 16 pixels, so the bar's empty state moved to LIGHT GRAY — see
+> Row 46's supersession note. **A row that passes and still surfaces a defect one cell over is the
+> argument for reading a screen rather than ticking it.**
+
+**READING:** _(see above)_
 
 ---
 
