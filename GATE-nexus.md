@@ -2,9 +2,16 @@
 
 ## STATUS — WHICH ROWS HAVE BEEN READ, NAMED RATHER THAN COUNTED
 
-**TWENTY-NINE ROWS ARE FULLY BOOTED — ALL OF SLICES 7, 8 AND 9.** Three blocks, three consecutive
-days, and **the count of fully-booted rows has more than tripled**. Four other rows have partial
-readings and every remaining row has none:
+**THIRTY-ONE ROWS ARE FULLY BOOTED — ALL OF SLICES 7, 8 AND 9, PLUS ROWS 92 AND 94.** Recounted
+rather than adjusted, with an instrument validated against the figure it replaces: it reproduces
+the `29` this line carried before rows 92 and 94 were read.
+
+```
+awk '/^## ROW/{r=$3} /^\*\*READING:\*\*/{if($0 ~ /PASS/ && $0 !~ /not run|VOID|PARTIAL|SUPERSEDED/) g[r]=1; else b[r]=1} END{n=0; for(k in g) if(!(k in b)) n++; print n}' GATE-nexus.md
+```
+
+**Six rows have partial readings, one row is VOID for want of staging**, and every remaining row
+has none:
 
 | row | readings | state |
 |---|---|---|
@@ -16,7 +23,7 @@ readings and every remaining row has none:
 | **ROWS 58–65** | eight | **ALL PASS.** Run 2026-09-17, 05:25–05:27. **ROW 64 IS THE SHIP CONDITION AND ITS READING PREDATES THE MERGE IT AUTHORISED** — `#117` merged while this file still said `_(not run)_`. The decision was sound; the writing down was late, and the row carries the account |
 | **ROWS 66–77** | twelve | **ALL PASS.** Run 2026-09-17, 06:48–06:52. **Row 67 is the mob row** — the only row in this file touching the real player path, and what stops a listener-less build passing the block. **Row 74's provenance flag is DISCHARGED**: its ruling was made from the javadoc, the screen agreed |
 
-| **ROWS 92–96** | five | **ALL NOT RUN.** Slice 11 PR 1, the vault's storage layer. **Rows 92 and 94 are SOLE WITNESSES** — the PDC round trip and the shutdown flush have no unit rows anywhere in the project, because no module can construct an `ItemStack` |
+| **ROWS 92–96** | five | **2 PASS, 2 PARTIAL, 1 VOID.** Run 2026-09-17, Slice 11 PR 1, the vault's storage layer. **Rows 92 and 94 are the SOLE WITNESSES and both are FULLY witnessed** — 94 including its empty-vault control, the half most likely to be skipped. The PDC round trip and the shutdown flush have no unit rows anywhere in the project, because no module can construct an `ItemStack`. **93 and 95 are PARTIAL**: the directory check and the `/rpg stats` control were not run, and both stand NOT RUN in their rows. **96 is VOID** — no second account was online — and it was never a sole witness |
 
 **Every other row in this file has no reading at all.**
 
@@ -31,6 +38,11 @@ readings and every remaining row has none:
 > reading was CORRECT and a later decision falsified it** — Row 46a. It is not a failure of the row,
 > the reader, or the build, and collapsing it into either of the other two loses which of the three
 > happened.
+
+> **AND `PARTIAL` IS NOT A FOURTH MEMBER OF THAT LIST. IT IS A ROW WITH A HALF STILL `NOT RUN`** —
+> rows 93 and 95. **A PARTIAL is not a VOID**: the conditions were right, the build answered, and a
+> *second* check the row itself demanded was not made. Collapsing it into PASS claims evidence that
+> was never taken; collapsing it into VOID discards evidence that was.
 
 **THE DENOMINATOR IS A COMMAND, NOT A NUMBER.** Re-derive it rather than trusting this line:
 
@@ -3673,8 +3685,21 @@ because it is untracked**.
 
 # SLICE 11, PR 1 — THE VAULT'S STORAGE LAYER. ROWS 92–96.
 
-**Status: NOT RUN.** Every row below was written **before any boot**, and before the branch that
-adds them was pushed.
+**Status: RUN 2026-09-17, booted by Ben. 2 PASS, 2 PARTIAL, 1 VOID** — 92 PASS, 93 PARTIAL, 94 PASS,
+95 PARTIAL, 96 VOID. **Every row below was still written before that boot**, and before the branch
+that adds them was pushed; **no prediction was edited afterwards.**
+
+> **THE TWO ROWS THAT WERE THE ENTIRE EVIDENCE FOR THIS PR ARE THE TWO THAT ARE FULLY WITNESSED.**
+> 92 and 94 are the sole witnesses, and 94's empty-vault control — the half most likely to be
+> skipped — was run. The two PARTIALs are on rows with other coverage, and the VOID is on a row with
+> unit coverage by construction. **That, and only that, is why the block shipped at two full rows of
+> five.**
+>
+> **THIS BLOCK IS NOT 5/5 AND MUST NOT BE READ AS 5/5.** Two halves are still `NOT RUN` and are left
+> that way in their own rows: row 93's `ls` of the vault directory, and row 95's `/rpg stats`
+> control. **Neither was scheduled and neither blocked the merge.** A block recorded as finished when
+> it was 2 full, 2 partial and 1 void is worth less than nothing, because the next person reads it as
+> evidence.
 
 **THIS PR SHIPS NO PLAYER-VISIBLE CHANGE AT ALL**, which is why these rows exist and why they are
 staged through `/rpg vault`. The storage layer lands and is witnessed here; the seven-page screen,
@@ -3730,7 +3755,11 @@ read at step 2.
 > `enchant_data` are the fields a naive key-by-key projection drops, and they are invisible in a
 > screenshot of the after state unless they were written down at step 3.
 
-**READING:** _(not run)_
+**READING:** **2026-09-17, booted by Ben. PASS. SOLE WITNESS, FULLY WITNESSED.** Boltor stored at
+page 3 slot 17, `/stop`, restart, `/rpg vault take 3 17`. The item returned matching the step-3
+note: name, rarity colour and lore lines the same, **the damage-7 durability intact and the enchants
+still reading what they read before the restart** — both checked, not eyeballed. **The codec
+preserves PDC across a real restart.**
 
 ---
 
@@ -3753,7 +3782,10 @@ that player.
 > vault says *"No vault is loaded for you"* in RED. If that is what appears, the row has NOT passed —
 > it has found the thing the two messages were deliberately separated to distinguish.
 
-**READING:** _(not run)_
+**READING:** **2026-09-17, booted by Ben. PARTIAL — DO NOT RECORD THIS AS A CLEAN PASS.** The
+message half PASSES: `Vault: 0 occupied slot(s), schema v1`, no error, no stack trace. **THE
+DIRECTORY WAS NOT CHECKED**, so the *"no file is created by the read"* half is **NOT RUN** — the
+half this row's own note above calls the one with teeth. Row stands PARTIAL.
 
 ---
 
@@ -3780,7 +3812,10 @@ a second, without disconnecting first. Restart, rejoin, `/rpg vault dump`.
 > on an empty vault would look like a pass in the main reading, because nobody checks the console
 > when the item is there.
 
-**READING:** _(not run)_
+**READING:** **2026-09-17, booted by Ben. PASS, BOTH ARMS. SOLE WITNESS, FULLY WITNESSED.** Ember
+staff stored at page 5 slot 31, immediate `/stop`, restart, rejoin — `page 5: 1 item(s)`. **AND THE
+CONTROL WAS RUN:** `/stop` on an empty vault, restart, dump reads `0 occupied slot(s)` with no
+error. The flush-then-shutdown ordering holds in both directions.
 
 ---
 
@@ -3802,7 +3837,10 @@ gives the unknown-command error. The item stays in their hand.
 > and `take` puts one back. That is why this row is in the block rather than left to the signature
 > test, which can only see the source.
 
-**READING:** _(not run)_
+**READING:** **2026-09-17, booted by Ben. PARTIAL.** The refusal PASSES: as a deopped player,
+`/rpg vault dump` and `/rpg vault store 3 17` were both refused and the item stayed in hand. **THE
+`/rpg stats` CONTROL WAS NOT RUN**, so this reading does not yet distinguish the gate working from
+the server refusing that player everything. Row stands PARTIAL.
 
 ---
 
@@ -3822,4 +3860,10 @@ coordinates. `ls plugins/Rpg/vaults/` shows **two** files, named for the two UUI
 > coordinates is what makes a shared-state bug produce a visible wrong answer rather than a
 > coincidentally correct one.
 
-**READING:** _(not run)_
+**READING:** **2026-09-17. VOID — could not be staged, no second account online.** **NOT a pass,
+NOT deferred.**
+
+> **WHY A VOID HERE WAS SURVIVABLE, AND IT IS WHY THIS ROW WAS NEVER MARKED A SOLE WITNESS.** The
+> per-UUID keying is not left unwitnessed by this: `FileVaultRepositoryTest` writes `<uuid>.json`
+> and `VaultServiceTest` keys its map by UUID. That is what makes a VOID here survivable, and it is
+> the whole difference between this row and 92 or 94, whose claims no module can construct at all.
