@@ -179,25 +179,48 @@ public final class CraftingMenuLayout {
      * anywhere this comes up is simply <b>"48/49, like every other screen"</b> -- there is no
      * exception left to name.
      *
-     * <h2>THE BAR GIVES UP THE CELL PERMANENTLY -- SEVEN, BOTH ORIGINS</h2>
+     * <h2>THE BAR GIVES UP THE CELL ONLY WHERE THE BUTTON IS DRAWN -- SEVEN FROM THE HUB, EIGHT FROM A TABLE</h2>
      *
-     * {@link #STATUS_SLOTS} now subtracts this slot as well as the close button: <b>seven cells,
-     * from a table and from the hub alike.</b>
+     * <pre>
+     *   from the HUB     45 46 47       50 51 52 53     SEVEN   Back at 48, Close at 49
+     *   from a TABLE     45 46 47 48    50 51 52 53     EIGHT   Close at 49
+     * </pre>
      *
-     * <p><b>A READOUT WHOSE GEOMETRY DEPENDS ON HOW YOU GOT THERE IS NOT A READOUT.</b> That
-     * sentence is why the subtraction is UNCONDITIONAL rather than applied only on the Nexus path,
-     * and it survives this ruling intact -- it was the argument for the old slot and it is the
-     * argument for the new one. A bar eight cells wide from a table and seven from the hub would
-     * ask the same eye to read a signal whose shape changes for a reason nothing on screen
-     * explains.
+     * <h2>*** THE SENTENCE THAT USED TO BE HERE IS GONE, AND IT HAD DIED ONCE ALREADY ***</h2>
      *
-     * <h2>THE HOLE THIS OPENS, AND IT IS THE DESIGN RATHER THAN A PATCH</h2>
+     * This javadoc carried <i>"A READOUT WHOSE GEOMETRY DEPENDS ON HOW YOU GOT THERE IS NOT A
+     * READOUT"</i>, as the reason the subtraction was unconditional. <b>Ben overruled it by looking
+     * at the screen</b>: from a table, 48 was a black filler pane sitting in the middle of a row of
+     * colour-changing ones, and what a player sees is one screen with a hole in its readout rather
+     * than two screens to compare.
      *
-     * <b>Back renders only from the Nexus, but 48 leaves the bar ALWAYS.</b> So a world-opened
-     * screen would have an EMPTY CELL mid-bar with nothing to fill it. It gets
-     * {@code MenuIcons.filler()}, from {@code CraftingMenu.render}'s base pass.
+     * <p><b>IT IS REMOVED RATHER THAN KEPT AS OVERTURNED PROSE, BECAUSE IT WOULD SIT ON THE FILE
+     * THAT CONTRADICTS IT.</b> The argument is recorded where it lost -- {@code #116}'s body, with
+     * the grindstone's identical fork.
      *
-     * <p>The bottom row therefore reads <b>seven bar cells plus a two-cell chrome island at
+     * <p><b>THAT IS TWICE THIS CELL'S BEHAVIOUR HAS HAD A STATED REASON THAT TURNED OUT TO BE
+     * WRONG</b>, and a reader deciding what 48 should do is owed both:
+     *
+     * <ol>
+     *   <li><i>"Column 8 is the navigation column"</i> -- died in {@code #112} when Ben moved Back
+     *       to 48, leaving the rule with one instance.
+     *   <li><i>"A readout whose geometry depends on how you got there is not a readout"</i> -- died
+     *       here, when Ben saw the black cell.
+     * </ol>
+     *
+     * <b>Both were well-argued and both were overturned by the person in front of the screen.</b>
+     * A third argument about this cell should be treated as a hypothesis until it has been looked
+     * at.
+     *
+     * <h2>NO HOLE TO FILL ANY MORE, AND THAT IS WHAT THE FORK BOUGHT</h2>
+     *
+     * <b>Back renders only from the Nexus, and 48 leaves the bar only there too.</b> From a table
+     * the bar owns the cell and paints it; from the hub the arrow does. <b>Neither path has an
+     * unpainted or inert cell</b>, and the filler that used to stand in from a table is no longer
+     * reached -- {@code CraftingMenu.render}'s base pass still lays it down, and
+     * {@code paintStatus} paints over it on the first refresh.
+     *
+     * <p>From the hub the bottom row reads <b>seven bar cells plus a two-cell chrome island at
      * 48-49</b>: Back and Close from the Nexus, filler and Close from a block. That island is the
      * stated shape of this row, not an artefact to be tidied.
      *
@@ -257,11 +280,19 @@ public final class CraftingMenuLayout {
     /**
      * The status bar: the bottom row, MINUS the two chrome cells that sit in it.
      *
-     * <p><b>SEVEN CELLS, BOTH ORIGINS.</b> Row 5 is nine cells; {@link #CLOSE_SLOT} and
-     * {@link #BACK_SLOT} are both inside it, so the bar is seven. <b>Seven is what is left after
-     * two subtractions, not a count of anything</b> -- and the second subtraction is
-     * UNCONDITIONAL even though Back is drawn only from the Nexus, because a bar whose width
-     * depended on how you opened the screen would not be a readout.
+     * <p><b>SEVEN FROM THE HUB, EIGHT FROM A TABLE.</b> Row 5 is nine cells; {@link #CLOSE_SLOT}
+     * always leaves it, and {@link #BACK_SLOT} leaves it <b>only where the Back button is actually
+     * drawn</b>. <b>Neither number is a count of anything</b> -- each is what is left after the
+     * subtractions that apply on that path.
+     *
+     * <p><b>THE FORK IS BEN'S RULING AND IT REPLACED THE OPPOSITE ONE</b>; see {@link #BACK_SLOT}
+     * for the argument that lost and for the fact that this cell has now had two stated reasons
+     * that turned out to be wrong.
+     *
+     * <p><b>MUTS5-BACK IS STILL OUT OF SCOPE, AND THE FORK IS WHY RATHER THAN IN SPITE OF IT.</b>
+     * The bar takes 48 <b>only on the path where no button is drawn on it</b>, so a bar cell and a
+     * Back button can never occupy 48 at the same time -- mutually exclusive by construction, and
+     * asserted on both origins.
      *
      * <p><b>THE EXCLUSION IS STRUCTURAL, NOT A SKIP.</b> Painting over the close button makes the
      * menu unclosable except by Esc -- and <b>Esc works</b>, so the symptom is "the X
@@ -277,9 +308,17 @@ public final class CraftingMenuLayout {
      * <p>Pinned by {@code CraftingMenuLayoutTest} -- a unit witness rather than a boot-gate-only
      * one, because this class is pure and that is the cheapest guard available for it.
      */
-    public static final Set<Integer> STATUS_SLOTS = statusSlots();
+    public static Set<Integer> statusSlots(boolean fromNexus) {
+        return fromNexus ? STATUS_FROM_NEXUS : STATUS_FROM_BLOCK;
+    }
 
-    private static Set<Integer> statusSlots() {
+    /** Seven cells: the bottom row less Back and Close. */
+    public static final Set<Integer> STATUS_FROM_NEXUS = buildStatus(true);
+
+    /** Eight cells: the bottom row less Close. From a table, 48 is bar rather than chrome. */
+    public static final Set<Integer> STATUS_FROM_BLOCK = buildStatus(false);
+
+    private static Set<Integer> buildStatus(boolean fromNexus) {
         Set<Integer> slots = new LinkedHashSet<>();
         int firstOfBottomRow = (ROWS - 1) * COLUMNS;
         for (int slot = firstOfBottomRow; slot < firstOfBottomRow + COLUMNS; slot++) {
@@ -289,13 +328,12 @@ public final class CraftingMenuLayout {
         // later tidy-up: a per-iteration condition reads as noise and invites simplification, while
         // "the row, minus the chrome" is the whole specification in two lines.
         //
-        // BACK_SLOT is removed UNCONDITIONALLY, though the button is painted only FROM_NEXUS. The
-        // alternative -- subtract it only when there is a button there -- is what makes the bar's
-        // width depend on the origin, and it is refused for the reason BACK_SLOT's javadoc gives.
-        // From a block the cell holds filler instead, which render() lays down and nothing here
-        // repaints.
+        // CLOSE always leaves the bar. BACK leaves it ONLY where the button is drawn -- Ben's
+        // ruling after seeing the screen, replacing the unconditional subtraction and the argument
+        // that justified it. From a table the bar OWNS 48 and paints it; there is no filler
+        // standing in any more.
         slots.remove(CLOSE_SLOT);
-        slots.remove(BACK_SLOT);
+        if (fromNexus) slots.remove(BACK_SLOT);
         return Set.copyOf(slots);
     }
 

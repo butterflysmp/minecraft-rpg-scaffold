@@ -488,6 +488,66 @@ things, so bring a way to count.
 | Q22 | **BOTH CHROME CELLS SURVIVE REPAINTS, and the SEQUENCE is the point.** Open the table **FROM THE HUB**. Lay a valid recipe (**LIME**). Break it (**RED**). Clear it (**GRAY**). **NOW** look at 48 and click the X. | Back is **still an ARROW at 48** after three repaints, and the menu **closes and the grid comes back** — the same path Esc uses | **discriminating · sole witness** for the `STATUS_SLOTS` exclusions surviving in play. The bar repaints on EVERY state change, so checking only on open would pass on a build where every repaint clobbers. **And both failures are quiet**: Esc still works, so losing Close reads as "the X disappeared", and losing Back reads as "Back doesn't work sometimes" — which is exactly what `MUTS5-BACK` found |
 | Q22b | **THE WORLD-OPENED TWIN, AND IT READS THE FILLER.** Right-click a crafting table. Run the same LIME → RED → GRAY sequence. Look at **48** after each. | slot 48 is **plain filler throughout**, never a bar cell and never empty | **discriminating** · the arm Q22 cannot see. With no Back button painted, only the filler stands between the subtraction and **an empty hole mid-bar** that three repaints would not fill. A build whose subtraction is conditional on origin shows **eight bar cells here** and passes Q22 perfectly |
 
+### *** Q18 AND Q22b ARE SUPERSEDED BY RULING, 2026-09-17. BOTH WERE READ AND BOTH WERE GREEN. ***
+
+**Neither row failed and neither build was wrong.** Both readings were correct when taken and are
+falsified by a later decision — the same treatment `GATE-nexus.md` Row 47 has, and for the same
+ruling.
+
+**THE RULING:** Ben, having seen the screen, ruled that **from a world block slot 48 is a BAR CELL
+and changes colour with the rest of the readout.** From the Nexus it is still the Back arrow.
+
+```
+from the Nexus   bar = 45,46,47,   50,51,52,53   SEVEN   Back at 48, Close at 49
+from a TABLE     bar = 45,46,47,48,50,51,52,53   EIGHT   Close at 49
+```
+
+**The rows above are NOT edited.** Read them as history; the live staging is here.
+
+> **THIS OVERTURNS THE ARGUMENT THAT JUSTIFIED THE OLD BEHAVIOUR, AND THAT ARGUMENT IS NOW DELETED
+> FROM `CraftingMenuLayout` RATHER THAN KEPT.** It was *"a readout whose geometry depends on how you
+> got there is not a readout"*. It did not survive as prose on the file that now contradicts it.
+>
+> **THAT IS TWICE THIS ONE CELL HAS HAD A STATED REASON THAT TURNED OUT TO BE WRONG** — first
+> *"column 8 is the navigation column"*, killed in `#112`; now this. Both well-argued, both
+> overturned by the person in front of the screen.
+
+**RESTAGED Q18.** Open the table with an **empty grid** and look at the bottom row, from **each**
+origin:
+
+| | staging | expected |
+|---|---|---|
+| **Q18a** | from a **TABLE** | **GRAY, EIGHT cells** — 45-48 and 50-53. Close still at 49; nothing at 48 but bar |
+| **Q18b** | from the **NEXUS** | **GRAY, SEVEN cells** — 45-47 and 50-53. **Back is an ARROW at 48** |
+
+**RESTAGED Q22b.** Right-click a crafting table, run the same **LIME → RED → GRAY** sequence, and
+look at **48** after each.
+
+**PREDICTED:** slot 48 **changes colour with 45, 46 and 47 at every step** — never black, never an
+arrow, and never a different colour from its neighbours.
+
+> ### *** Q22b DOES NOT MOVE. IT INVERTS. ***
+>
+> The row looks at the same cell through the same sequence. **What changed is which answer is
+> correct.** Its own note above reads:
+>
+> > *"A build whose subtraction is conditional on origin shows **eight bar cells** here and passes
+> > `Q22` perfectly."*
+>
+> **That sentence was written to describe a FAILURE. It is now the SPECIFICATION.** Eight bar cells
+> from a table is what this row must see.
+>
+> **Stated explicitly because a reader who finds the old note and the new prediction together will
+> otherwise conclude one of them is a mistake.** Neither is: the note was right about the build it
+> was written against, and the ruling changed which build is wanted.
+>
+> **`Q22` IS UNCHANGED AND IS THE CONTROL.** From the Nexus, 48 must be the **ARROW throughout** the
+> same sequence. **If 48 changes colour from the Nexus, `MUTS5-BACK` has returned by a new route** —
+> the bar painting over the Back arrow, which the unconditional subtraction used to prevent and
+> which the fork now has to prevent conditionally.
+
+**READING (restaged Q18 and Q22b):** _(not run)_
+
 ## The consume path
 
 | # | action | expected | notes |

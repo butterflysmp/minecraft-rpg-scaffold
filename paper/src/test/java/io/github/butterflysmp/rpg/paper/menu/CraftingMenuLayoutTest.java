@@ -218,14 +218,14 @@ class CraftingMenuLayoutTest {
         assertEquals(8, CraftingMenuLayout.BROWSER_SLOT % 9,
                 "the recipe book is the rightmost column, at the foot of the suggestion column");
 
-        // *** THIS ASSERTION CHANGED MEANING WITHOUT CHANGING TEXT, AND THAT IS WHY IT IS FLAGGED.
-        // At BACK_SLOT 17 it was VACUOUS -- 17 is not in the bottom row, so nothing was guarded and
-        // deleting the exclusion could not have reddened it. At 48 it is THE GUARANTEE: the bar
-        // spans the row Back now lives in, and only the subtraction keeps it off. A reader who sees
-        // an untouched line must not assume it is untouched in meaning.
-        assertFalse(CraftingMenuLayout.STATUS_SLOTS.contains(CraftingMenuLayout.BACK_SLOT),
-                "the status bar must NEVER paint over Back -- it spans this slot's row, and the "
-                        + "symptom of losing this is the quiet one, 'Back doesn't work sometimes'");
+        // *** THIS ASSERTION HAS NOW CHANGED MEANING TWICE, AND ONLY ONCE DID ITS TEXT MOVE. ***
+        // At BACK_SLOT 17 it was VACUOUS -- 17 is not in the bottom row, so nothing was guarded.
+        // At 48 with an unconditional subtraction it was THE GUARANTEE. It is now scoped to the
+        // origin where Back is actually DRAWN, which is the only path on which it can be violated:
+        // from a table there is no button at 48 for the bar to cover.
+        assertFalse(CraftingMenuLayout.statusSlots(true).contains(CraftingMenuLayout.BACK_SLOT),
+                "where Back IS drawn, the bar must NEVER paint over it -- the symptom of losing "
+                        + "this is the quiet one, 'Back doesn't work sometimes'");
 
         assertEquals(OptionalInt.empty(),
                 CraftingMenuLayout.matrixIndexOf(CraftingMenuLayout.BACK_SLOT),
@@ -266,37 +266,51 @@ class CraftingMenuLayoutTest {
         // the menu closable ONLY by Esc -- and Esc WORKS, so the symptom is "the X disappeared",
         // not anything that looks broken. Painting over Back is quieter still: "Back doesn't work
         // sometimes". Nothing else in the project would notice either.
-        assertFalse(CraftingMenuLayout.STATUS_SLOTS.contains(CraftingMenuLayout.CLOSE_SLOT),
-                "the status bar must never paint over the close button");
-        assertFalse(CraftingMenuLayout.STATUS_SLOTS.contains(CraftingMenuLayout.BACK_SLOT),
-                "nor over Back");
+        // CLOSE leaves the bar on BOTH paths -- it is drawn on both.
+        assertFalse(CraftingMenuLayout.statusSlots(true).contains(CraftingMenuLayout.CLOSE_SLOT),
+                "the status bar must never paint over the close button, from the Nexus");
+        assertFalse(CraftingMenuLayout.statusSlots(false).contains(CraftingMenuLayout.CLOSE_SLOT),
+                "nor from a table");
 
-        // SEVEN, BOTH ORIGINS. The count is the deliverable of Ben's ruling: Back renders only from
-        // the Nexus, but the cell leaves the bar ALWAYS, because a readout whose width depends on
-        // how you got there is not a readout. From a block the cell holds filler.
-        assertEquals(7, CraftingMenuLayout.STATUS_SLOTS.size(),
-                "row 5 is nine slots; neither chrome button is one of them");
+        // BACK leaves it only where Back is drawn, which is the fork Ben ruled after seeing the
+        // screen. The old assertion here was "SEVEN, BOTH ORIGINS", on the argument that a readout
+        // whose width depends on how you got there is not a readout -- overruled by looking, and
+        // the second stated reason about this cell to die that way.
+        assertFalse(CraftingMenuLayout.statusSlots(true).contains(CraftingMenuLayout.BACK_SLOT),
+                "from the Nexus, where the arrow IS drawn, the bar must not cover it");
+        assertTrue(CraftingMenuLayout.statusSlots(false).contains(CraftingMenuLayout.BACK_SLOT),
+                "from a table, where nothing is drawn there, 48 IS a bar cell");
+
+        assertEquals(7, CraftingMenuLayout.statusSlots(true).size(), "seven from the Nexus");
+        assertEquals(8, CraftingMenuLayout.statusSlots(false).size(), "EIGHT from a table");
         // Mutations applied and measured; kill sets RECORDED in the PR body.
     }
 
     @Test
-    void theStatusBarIsEXACTLYTheBottomRowMinusTheTwoButtons() {
+    void theStatusBarIsEXACTLYTheBottomRowMinusWhicheverChromeIsDrawn() {
         // The literals, so a bar that drifted onto another row reddens here rather than being
         // discovered in game. 45..53 is row 5; 48 is Back and 49 is Close.
         assertEquals(List.of(45, 46, 47, 50, 51, 52, 53),
-                CraftingMenuLayout.STATUS_SLOTS.stream().sorted().toList(),
-                "the bar is row 5 minus slots 48 and 49");
+                CraftingMenuLayout.statusSlots(true).stream().sorted().toList(),
+                "from the Nexus: row 5 minus 48 and 49");
+        assertEquals(List.of(45, 46, 47, 48, 50, 51, 52, 53),
+                CraftingMenuLayout.statusSlots(false).stream().sorted().toList(),
+                "from a table: row 5 minus 49 only");
 
-        // And it must not overlap anything functional. The grid and the suggestions are three rows
-        // up, but asserting it costs nothing and a future relayout is exactly when it stops holding.
-        for (int slot : CraftingMenuLayout.STATUS_SLOTS) {
-            assertFalse(CraftingMenuLayout.GRID_SLOTS.contains(slot), "slot " + slot + " is a grid cell");
-            assertEquals(OptionalInt.empty(), CraftingMenuLayout.suggestionIndexOf(slot),
-                    "slot " + slot + " is a suggestion cell");
-            assertNotEquals(CraftingMenuLayout.RESULT_SLOT, slot);
-            assertNotEquals(CraftingMenuLayout.BROWSER_SLOT, slot);
+        // And it must not overlap anything functional, on EITHER path. The grid and the suggestions
+        // are three rows up, but asserting it costs nothing and a future relayout is exactly when
+        // it stops holding.
+        for (boolean fromNexus : new boolean[] {true, false}) {
+            for (int slot : CraftingMenuLayout.statusSlots(fromNexus)) {
+                assertFalse(CraftingMenuLayout.GRID_SLOTS.contains(slot),
+                        "slot " + slot + " is a grid cell");
+                assertEquals(OptionalInt.empty(), CraftingMenuLayout.suggestionIndexOf(slot),
+                        "slot " + slot + " is a suggestion cell");
+                assertNotEquals(CraftingMenuLayout.RESULT_SLOT, slot);
+                assertNotEquals(CraftingMenuLayout.BROWSER_SLOT, slot);
+            }
         }
-        // Mutation: build the bar from row 4 -> the literal list reddens.
+        // Mutation: build the bar from row 4 -> both literal lists redden.
     }
 
     @Test
