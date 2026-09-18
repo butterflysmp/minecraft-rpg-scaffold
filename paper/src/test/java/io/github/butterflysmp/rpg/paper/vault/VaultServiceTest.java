@@ -416,6 +416,57 @@ class VaultServiceTest {
                         + " screen for anyone whose load has not started");
     }
 
+    /**
+     * *** THE PERSISTED VIEW IS WHAT IS ON DISK, NOT WHAT THE CACHE INTENDS. ***
+     *
+     * <p>It exists so a degraded close can hand back the DIFFERENCE rather than the whole page.
+     * After a failed write the cache holds the new contents and the file holds the old ones; this
+     * row pins that the two have actually diverged, which is the premise the subtraction rests on.
+     */
+    @Test
+    void thePersistedViewStaysAtTheLASTGOODWriteWhileTheCacheMovesOn() {
+        service.onJoin(player);
+        write(3, Map.of(17, "first"));
+        assertEquals("first", service.persistedPage(player, 3).get(17),
+                "a successful write advances the persisted view");
+
+        repo.saveFailure = new IllegalStateException("disk full");
+        write(3, Map.of(17, "first", 24, "never reached disk"));
+
+        assertEquals(Map.of(17, "first"), service.persistedPage(player, 3),
+                "the failed write must NOT advance it -- slot 24 is not in the file");
+    }
+
+    /** An absent file seeds an EMPTY persisted view, which is the correct baseline rather than none. */
+    @Test
+    void aPlayerWithNoFileStartsWithNothingKnownToBeOnDisk() {
+        service.onJoin(player);
+
+        assertEquals(Map.of(), service.persistedPage(player, 3));
+    }
+
+    /** A loaded file seeds the persisted view with exactly what was loaded. */
+    @Test
+    void anExistingFileSeedsThePersistedViewWithItsContents() {
+        repo.saved.put(player, PlayerVault.empty(player).withPage(5, Map.of(31, "on disk")));
+
+        service.onJoin(player);
+
+        assertEquals("on disk", service.persistedPage(player, 5).get(31),
+                "what we loaded IS what is on disk, so a close before any write hands back nothing");
+    }
+
+    /**
+     * An untracked player knows nothing, and that is the SAFE direction.
+     *
+     * <p>Empty means "no cell is known to be on disk", so a degraded close hands everything back.
+     * Wrong that way costs a duplicate; wrong the other way costs the item.
+     */
+    @Test
+    void anUntrackedPlayerHasNothingKnownToBeOnDisk() {
+        assertEquals(Map.of(), service.persistedPage(player, 3));
+    }
+
     /** The description on a cell is a log-time concern and must never reach the file. */
     @Test
     void theCellDescriptionIsNotStored() {

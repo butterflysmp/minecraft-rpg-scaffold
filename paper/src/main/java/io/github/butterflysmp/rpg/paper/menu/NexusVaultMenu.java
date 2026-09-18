@@ -190,7 +190,43 @@ public final class NexusVaultMenu extends Menu {
         // DELEGATED TO core, so both answers are exercised by a unit test rather than read off this
         // method. VaultReturnPolicy's javadoc carries the argument; this class cannot be constructed
         // without a server, so a test here could only assert the method exists.
-        return VaultReturnPolicy.returnedSlots(degraded, storageCells());
+        return VaultReturnPolicy.returnedSlots(degraded, storageCells(), alreadyOnDisk());
+    }
+
+    /**
+     * The storage cells whose CURRENT contents are already in the file.
+     *
+     * <h2>*** COMPARED BY CONTENT, NOT BY SLOT, AND THE BIAS IS DELIBERATE ***</h2>
+     *
+     * Slot presence alone is not enough: the file can hold item X at cell 5 while the screen holds
+     * item Y there -- an unpersisted swap. <b>Handing back nothing for that cell would destroy Y</b>
+     * while the player keeps an X they never took.
+     *
+     * <p>So each live cell is encoded and compared against the persisted text for the same slot.
+     * <b>The comparison is biased towards handing back</b>: anything that does not match exactly is
+     * treated as unpersisted. If {@code VaultCodec.encode} were ever non-deterministic for one
+     * stack, this degrades into the single-cursor duplication the design already accepts -- whereas
+     * the opposite bias would destroy an item. <b>Wrong one way costs a duplicate, wrong the other
+     * way costs the thing itself.</b>
+     *
+     * <p>Empty while healthy is never asked for -- {@link #returnedSlots()} short-circuits -- so this
+     * only runs on a close that is already handing a page back.
+     */
+    private Set<Integer> alreadyOnDisk() {
+        if (!degraded) return Set.of();
+
+        Map<Integer, String> onDisk = vaults.persistedPage(viewer.getUniqueId(), page);
+        Set<Integer> matching = new HashSet<>();
+
+        for (int screenSlot : NexusVaultLayout.STORAGE_SLOTS) {
+            int vaultSlot = NexusVaultLayout.storageSlotAt(screenSlot);
+            String persisted = onDisk.get(vaultSlot);
+            if (persisted == null) continue;               // nothing in the file: hand it back
+
+            String live = VaultCodec.encode(getInventory().getItem(screenSlot));
+            if (persisted.equals(live)) matching.add(screenSlot);
+        }
+        return matching;
     }
 
     /** A vanilla-feeling grid in the storage cells, and today's conservative rule everywhere else. */
@@ -291,6 +327,43 @@ public final class NexusVaultMenu extends Menu {
      */
     @Override
     protected void onClose(InventoryCloseEvent.Reason reason) {
+        // *** THE SYNCHRONOUS FLUSH, AND IT IS THE ONLY THING THAT COVERS A QUIT. ***
+        //
+        // A gesture schedules its write for the next tick. If the player DISCONNECTS inside that
+        // tick, the task never runs at all -- PaperScheduler passes `retired` as null, so Paper
+        // drops an entity task whose entity is gone. Measured, not assumed: "if the entity is gone
+        // before the delay, do nothing", in that class's own comment.
+        //
+        // An earlier draft guarded the scheduled task with `viewer.isOnline()` and claimed
+        // returnEverything had already handed the items back. THAT WAS FALSE AND THIS FILE
+        // CONTRADICTED IT TWO METHODS UP: returnedSlots() is EMPTY while healthy, so
+        // returnEverything hands back the cursor and nothing else. Place an item, disconnect inside
+        // the tick, and it was written nowhere and returned to nobody.
+        //
+        // WHY A SYNCHRONOUS WRITE IS CORRECT HERE AND NOWHERE ELSE: the hop exists because
+        // InventoryClickEvent fires BEFORE the click applies. A close is not a gesture -- it arrives
+        // after the click that preceded it has been fully applied -- so the cells are settled and
+        // there is nothing to wait for. This is the one place the rule does not bite.
+        //
+        // ORDER: write FIRST, then hand back. returnEverything CLEARS the cells it returns, so the
+        // reverse would write an empty page over a full one. It only matters while degraded, which
+        // is exactly when a mistake here is unrecoverable.
+        //
+        // *** UNWITNESSED BY THE GATE BLOCK, AND SAID SO RATHER THAN LEFT TO BE ASSUMED. ***
+        //
+        // The case this exists for -- a permitted gesture, then a DISCONNECT INSIDE THE SAME TICK --
+        // cannot be staged by hand: it needs the quit packet to arrive between the click and the
+        // next tick, and no row in GATE-nexus.md can produce that reliably. So this path is covered
+        // by VaultWiringSignatureTest (the write exists and precedes the return) and BY NOTHING
+        // ELSE. It has never been observed working.
+        //
+        // Kept and flagged, not deleted: the same shape as the nativeArmor guard. A guard nobody has
+        // watched fire is worth having and is NOT worth believing in, and the difference between
+        // those two is written down here so the next reader does not have to guess which it is.
+        if (!degraded && VaultPageGate.unlocked(page, viewerLevel()) && !writeCurrentPage()) {
+            degrade();
+        }
+
         returnEverything();
     }
 
@@ -311,10 +384,19 @@ public final class NexusVaultMenu extends Menu {
         adapters.scheduler().onEntity(viewer, () -> {
             writeQueued = false;
 
-            // A player can log out inside the tick. The items went with them -- vanilla returns the
-            // open screen's contents on disconnect via the close event, which has already run
-            // returnEverything -- so there is nothing to persist and nothing to report.
-            if (!viewer.isOnline()) return;
+            // *** NO isOnline GUARD, AND THE ONE THAT WAS HERE CARRIED A FALSE JUSTIFICATION. ***
+            //
+            // It read: "the items went with them -- vanilla returns the open screen's contents on
+            // disconnect via the close event, which has already run returnEverything". That is
+            // wrong twice over. returnedSlots() is EMPTY while healthy, so returnEverything hands
+            // back the cursor and NOTHING ELSE; and this task does not even reach the guard on a
+            // quit, because Paper drops an entity task whose entity is gone.
+            //
+            // A FALSE JUSTIFICATION IS WORSE THAN A BARE GUARD: it stops the next reader looking.
+            //
+            // The quit case is covered by the synchronous flush in onClose. The write below needs
+            // no live player -- encoding reads the Inventory, which is still valid -- so if this
+            // task ever does run for an offline viewer, writing is the right thing to do.
 
             // A LOCKED page is never written. Its cells are PANES, not items, and encoding them
             // would store chrome over whatever the page really holds. Input is refused there too, so

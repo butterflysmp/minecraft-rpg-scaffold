@@ -1915,15 +1915,41 @@ build.**
 > > **The block label sits ABOVE the rows and the row label is a different string entirely** —
 > > `**Status: NOT RUN.**` against `**READING:** _(not run)_`. The scope was wrong, not the file.
 > >
+> > ### AND THE SECOND HALF, WHICH IS THE SAME MISTAKE FROM THE OTHER SIDE
+> >
+> > ***A COUNT FROM A PATTERN WHOSE SHAPE WAS NEVER STATED IS INDISTINGUISHABLE FROM A CENSUS.***
+> > The same reviewer, in the same slice, produced a `64` for that row label — and **the pattern was
+> > the variable, not the ref**, which is why nobody could reproduce it from the number alone. One
+> > file, one moment, three answers:
+> >
 > > ```
-> > git grep -c '^\*\*READING:\*\*' 0735c69 -- GATE-nexus.md      # 99, every reading line, one shape
+> > # all three: git show 1c030e2:GATE-nexus.md | <pattern>      REPRODUCED, at that SHA
+> > grep -c '^\*\*READING:\*\* _(not run)_$'            58   bare, one shape
+> > grep -coiE '^\*\*READING:\*\* *_?\(not run\)_?'     59   + one trailing-clause line
+> > grep -ci 'not run'                                  89   + prose, headers, commentary
 > > ```
 > >
-> > **The reviewer's own count of the row label was 64 and is NOT reproduced here** — no pattern or
-> > ref tried gives that number (60 at `0735c69`, 65 at `185bc15`, 66 for a looser match). **It is
-> > quoted as his reading rather than restated as a measurement**, which is the whole of this page's
-> > rule about figures: the instance stands on what happened, not on a number a later reader would
-> > check against the file in front of them and find wrong.
+> > **SHA-ANCHORED, NOT `origin/master`** — the file grows, and the same three commands over this
+> > branch's working tree give `72 / 73 / 105`. **A count against a moving ref stays correct of a
+> > tree the sentence no longer names**, which is the rule two bullets down from here, and the one
+> > this very entry would have broken by quoting three bare numbers.
+> >
+> > **AND THE LOOSE TAIL FOLDED A VARIANT INTO THE FIGURE THAT WAS USED TO DENY VARIANTS EXIST.**
+> > The claim attached to the count was *"one shape, zero variants"*. It is false, and the known
+> > variant is this line, whose reading continues past the marker:
+> >
+> > ```
+> > **READING:** _(not run)_ — **5c and 5d are not readable without all three of: the STAGING ROUTE
+> > ```
+> >
+> > **The pattern that hid the variant is the pattern the no-variants claim was made from.** A strict
+> > anchored count and a loose one differ by exactly the thing being asserted about.
+> >
+> > **Practically: a count ships with the pattern that produced it, or it is not a count.** Two
+> > readings of one file that differ by 31 are both correct and answer different questions, and the
+> > number alone cannot say which was asked. **Before believing a zero, run the same pattern over a
+> > scope you KNOW is non-empty; before believing a total, print the pattern beside it.** Same
+> > discipline as `check-absorbed.sh`'s control line, pointed at a grep.
 > >
 > > **WHY IT IS NOT THE FALSE-ABSENCE RULE ALREADY ON THIS PAGE.** Those four are *your word vs the
 > > author's*, *a broken instrument*, *a pattern that cannot match*, and *a tool that normalises*.

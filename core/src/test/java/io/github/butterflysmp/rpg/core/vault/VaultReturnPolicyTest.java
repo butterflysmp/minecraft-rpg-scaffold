@@ -22,6 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>Ben's condition when he accepted that design, 2026-09-17: <i>"the override is no longer a
  * constant and the 'opt-out is load-bearing' test must exercise BOTH answers."</i> A test that only
  * ever saw the empty answer could not tell a working degrade path from one that never fires.
+ *
+ * <h2>*** AND THE DEGRADED ANSWER WAS "EVERYTHING" UNTIL IT WAS READ AS A DUPLICATOR ***</h2>
+ *
+ * Returning every cell hands the player a page the FILE STILL HOLDS -- poisoning leaves disk at its
+ * last good copy. The rows below now pin the DIFFERENCE, and the overlap case is the one that was
+ * missing entirely.
  */
 class VaultReturnPolicyTest {
 
@@ -34,43 +40,87 @@ class VaultReturnPolicyTest {
     /** HEALTHY: nothing comes back, because the items are on disk. */
     @Test
     void aHealthyVaultReturnsNothing() {
-        assertEquals(Set.of(), VaultReturnPolicy.returnedSlots(false, CELLS));
+        assertEquals(Set.of(), VaultReturnPolicy.returnedSlots(false, CELLS, Set.of()));
     }
 
-    /** DEGRADED: everything comes back, because the items are in no file. */
+    /**
+     * HEALTHY beats everything else, including a disk view that disagrees.
+     *
+     * <p>Staged with an {@code alreadyOnDisk} that is deliberately WRONG -- empty, while the cells
+     * are in fact persisted. A build that computed the difference first and checked {@code degraded}
+     * second would hand a healthy vault's entire page back on every close.
+     */
     @Test
-    void aDegradedVaultReturnsEveryInputCell() {
-        assertEquals(CELLS, VaultReturnPolicy.returnedSlots(true, CELLS));
+    void aHealthyVaultReturnsNothingEvenWhenNothingLooksPersisted() {
+        assertEquals(Set.of(), VaultReturnPolicy.returnedSlots(false, CELLS, Set.of()));
+        assertEquals(Set.of(), VaultReturnPolicy.returnedSlots(false, CELLS, CELLS));
+    }
+
+    /** DEGRADED with nothing on disk: everything comes back, because nothing else has it. */
+    @Test
+    void aDegradedVaultWithNothingPersistedReturnsEveryCell() {
+        assertEquals(CELLS, VaultReturnPolicy.returnedSlots(true, CELLS, Set.of()));
+    }
+
+    /**
+     * *** THE OVERLAP CASE: ONLY THE CELLS THE FILE DOES NOT HAVE. ***
+     *
+     * <p>Cell 24 is on disk; 17 and 31 are not. A build that returned the whole page would hand back
+     * a cell the vault still holds -- **the player has two, and the count of duplicated stacks is the
+     * size of the page.**
+     */
+    @Test
+    void aDegradedVaultReturnsOnlyWhatIsNotAlreadyOnDisk() {
+        assertEquals(Set.of(17, 31), VaultReturnPolicy.returnedSlots(true, CELLS, Set.of(24)));
+    }
+
+    /**
+     * Fully persisted: nothing comes back, even degraded.
+     *
+     * <p>This is the common shape of a failed write that changed ONE cell -- the other thirty-five
+     * are exactly as the file has them, and handing them over would duplicate every one.
+     */
+    @Test
+    void aDegradedVaultWhoseCellsAreAllPersistedReturnsNothing() {
+        assertEquals(Set.of(), VaultReturnPolicy.returnedSlots(true, CELLS, CELLS));
+    }
+
+    /**
+     * A disk view naming cells that are not inputs changes nothing.
+     *
+     * <p>It happens: a cell holding an entry this server cannot decode is on disk and is NOT an
+     * input slot. Subtracting it must not remove anything else, and must not throw.
+     */
+    @Test
+    void persistedCellsOutsideTheInputSetAreIgnored() {
+        assertEquals(CELLS, VaultReturnPolicy.returnedSlots(true, CELLS, Set.of(4, 9, 44)));
     }
 
     /**
      * The two answers DIFFER, asserted as one claim.
      *
-     * <p>The two rows above are both satisfied by a policy that ignores {@code degraded} and returns
-     * whatever its second argument is -- <b>pass {@code Set.of()} as the cells and they both pass on
-     * a build with no conditional at all.</b> This row is what makes the boolean load-bearing.
+     * <p>Without it, the rows above are satisfied by a policy that ignores {@code degraded} and
+     * returns whatever the subtraction produces. <b>This row is what makes the boolean
+     * load-bearing.</b>
      */
     @Test
     void theTwoAnswersAreNotTheSame() {
-        Set<Integer> healthy = VaultReturnPolicy.returnedSlots(false, CELLS);
-        Set<Integer> degraded = VaultReturnPolicy.returnedSlots(true, CELLS);
+        Set<Integer> healthy = VaultReturnPolicy.returnedSlots(false, CELLS, Set.of());
+        Set<Integer> degraded = VaultReturnPolicy.returnedSlots(true, CELLS, Set.of());
 
         assertTrue(healthy.isEmpty(), "healthy must be empty");
-        assertEquals(3, degraded.size(), "degraded must be the whole page");
+        assertEquals(3, degraded.size(), "degraded with nothing persisted must be the whole page");
     }
 
     /**
      * An empty input is not a special case, in either state.
      *
-     * <p>It is a real one: every cell of the page is opaque, or the page is genuinely empty. A
-     * degraded empty page returns nothing because there is nothing to return -- which must not be
-     * confused with the healthy answer, and is why the row above compares the two on a NON-empty
-     * input.
+     * <p>It is a real one: every cell of the page is opaque, or the page is genuinely empty.
      */
     @Test
     void anEmptyPageReturnsNothingWhicheverStateItIsIn() {
-        assertEquals(Set.of(), VaultReturnPolicy.returnedSlots(false, Set.of()));
-        assertEquals(Set.of(), VaultReturnPolicy.returnedSlots(true, Set.of()));
+        assertEquals(Set.of(), VaultReturnPolicy.returnedSlots(false, Set.of(), Set.of()));
+        assertEquals(Set.of(), VaultReturnPolicy.returnedSlots(true, Set.of(), Set.of()));
     }
 
     /**
@@ -85,7 +135,7 @@ class VaultReturnPolicyTest {
     void theReturnedSetIsACopyAndIsImmutable() {
         Set<Integer> live = new LinkedHashSet<>(Set.of(17, 24, 31));
 
-        Set<Integer> returned = VaultReturnPolicy.returnedSlots(true, live);
+        Set<Integer> returned = VaultReturnPolicy.returnedSlots(true, live, Set.of());
 
         live.clear();
         assertEquals(3, returned.size(), "clearing the caller's set must not empty the answer");

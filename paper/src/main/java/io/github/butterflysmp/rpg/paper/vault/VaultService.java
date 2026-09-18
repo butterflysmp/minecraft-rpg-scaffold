@@ -60,6 +60,24 @@ public final class VaultService {
     private final Logger log;
     private final Map<UUID, CompletableFuture<PlayerVault>> vaults = new ConcurrentHashMap<>();
 
+    /**
+     * The last vault this service has seen <b>actually reach disk</b>, per player.
+     *
+     * <h2>*** NOT THE CACHE. THE CACHE IS WHAT WE INTEND; THIS IS WHAT IS THERE. ***</h2>
+     *
+     * The two agree on every successful write and diverge on exactly one event: a write that
+     * completes exceptionally. {@link #vaults} is swapped BEFORE the save is issued, so after a
+     * failure it holds contents no file has.
+     *
+     * <p><b>It exists because the degraded close needs to hand back the DIFFERENCE.</b> Returning
+     * the whole page would hand the player every stack on it while the file still holds its last
+     * good copy of the same page -- a full-page duplicator, and a far larger one than the
+     * single-cursor residual the design accepts as irreducible.
+     *
+     * <p>Seeded on LOAD, because what we loaded is by definition what was on disk.
+     */
+    private final Map<UUID, PlayerVault> persisted = new ConcurrentHashMap<>();
+
     public VaultService(VaultRepository repository, Logger log) {
         this.repository = repository;
         this.log = log;
@@ -76,6 +94,12 @@ public final class VaultService {
     public void onJoin(UUID playerId) {
         CompletableFuture<PlayerVault> loading = repository.load(playerId)
                 .thenApply(found -> found.orElseGet(() -> PlayerVault.empty(playerId)));
+
+        // SEEDED HERE, and an absent file seeds an EMPTY vault rather than nothing. What we loaded
+        // is by definition what is on disk, and "nothing is on disk" is the correct baseline for a
+        // player whose file does not exist -- every cell they then fill is unpersisted until a write
+        // succeeds, which is exactly what the degraded close needs to know.
+        loading.thenAccept(vault -> persisted.put(playerId, vault));
 
         loading.exceptionally(error -> {
             // A corrupt file, or one from a newer server. Leave it alone: the player has no vault
@@ -106,6 +130,7 @@ public final class VaultService {
      * the I/O executor finishes what it was given.
      */
     public void onQuit(UUID playerId) {
+        persisted.remove(playerId);
         vaults.remove(playerId);
     }
 
@@ -218,16 +243,46 @@ public final class VaultService {
 
         PlayerVault updated = current.withPage(page, contents);
         vaults.put(playerId, CompletableFuture.completedFuture(updated));
-        repository.save(updated).exceptionally(error -> {
+        repository.save(updated).whenComplete((ignored, error) -> {
+            if (error == null) {
+                // IT REACHED DISK. This is the only place that may advance the persisted view, and
+                // it is deliberately NOT beside the cache swap above -- the whole point of the two
+                // maps is that one moves when we decide and the other when the disk agrees.
+                persisted.put(playerId, updated);
+                return;
+            }
             // ORDER MATTERS: poison BEFORE the callback. The callback hops to the main thread and
             // may write, message or close a screen, and every one of those must find a vault that
             // already refuses writes.
             poison(playerId, error);
             log.log(Level.SEVERE, VaultWriteFailure.report(playerId, page, cells), error);
             onFailure.run();
-            return null;
         });
         return true;
+    }
+
+    /**
+     * One page of the last vault that actually reached disk, or an empty map if none has.
+     *
+     * <h2>*** THIS IS WHAT A DEGRADED CLOSE SUBTRACTS, AND IT IS THE FIX FOR A FULL-PAGE DUPLICATOR ***</h2>
+     *
+     * A poisoned vault's file keeps its LAST GOOD copy of the page. A close that handed back every
+     * cell would therefore give the player twenty stacks while the file still holds the same twenty
+     * -- <b>a duplicator the size of the page</b>, not the single-cursor residual the design accepts
+     * as irreducible.
+     *
+     * <p>So the screen hands back only the DIFFERENCE: the cells whose current contents are not in
+     * this map. That is exactly the set that would otherwise be destroyed, and the minimum that has
+     * to come back.
+     *
+     * <p><b>Empty means "nothing is known to be on disk", which is the SAFE direction</b> -- every
+     * cell then counts as unpersisted and is handed back. Wrong that way costs a duplicate; wrong
+     * the other way costs the item.
+     */
+    public Map<Integer, String> persistedPage(UUID playerId, int page) {
+        VaultShape.requirePage(page);
+        PlayerVault known = persisted.get(playerId);
+        return known == null ? Map.of() : known.page(page);
     }
 
     /**
@@ -286,6 +341,7 @@ public final class VaultService {
         CompletableFuture<?>[] pending = vaults.keySet().stream()
                 .toList().stream()
                 .map(id -> {
+                    persisted.remove(id);
                     CompletableFuture<PlayerVault> loading = vaults.remove(id);
                     if (loading == null) return CompletableFuture.completedFuture(null);
 

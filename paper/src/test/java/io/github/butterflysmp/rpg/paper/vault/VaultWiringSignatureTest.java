@@ -387,6 +387,75 @@ class VaultWiringSignatureTest {
                         + " healthy and the degraded answer can be run in a unit test");
     }
 
+    /**
+     * *** onClose FLUSHES SYNCHRONOUSLY, AND IT IS THE ONLY PATH THAT SURVIVES A QUIT. ***
+     *
+     * <p>A gesture schedules its write for the next tick. **{@code PaperScheduler.onEntity} passes
+     * `retired` as null**, so Paper drops an entity task whose entity is gone -- a player who
+     * disconnects inside that tick never has the task run at all. Without this flush the item is
+     * written nowhere, and {@code returnedSlots()} is empty while healthy, so it is handed back to
+     * nobody either.
+     *
+     * <p><b>The ORDER is the other half.</b> {@code returnEverything} CLEARS the cells it returns,
+     * so a flush after it would write an empty page over a full one.
+     */
+    @Test
+    void theCloseFlushesBEFOREItHandsAnythingBack() throws IOException {
+        List<String> lines = read(VAULT_MENU, 400);
+
+        int onClose = indexOfLineContaining(lines, "protected void onClose(InventoryCloseEvent");
+        assertTrue(onClose > 0, "onClose must exist");
+
+        int write = indexOfLineContaining(lines, "writeCurrentPage()", onClose);
+        int giveBack = indexOfLineContaining(lines, "returnEverything();", onClose);
+
+        // THE WINDOW IS GENEROUS ON PURPOSE, AND IT WAS 30 UNTIL IT FAILED ON A COMMENT. This
+        // method's body is four lines of code under thirty of javadoc explaining why a synchronous
+        // write is correct HERE and nowhere else. A tight window in this file measures comment
+        // density rather than structure, and it fails on the next paragraph somebody adds.
+        //
+        // What the row actually claims is the ORDER, asserted below against returnEverything; the
+        // bound only says "inside this method rather than somewhere else in the file".
+        assertTrue(write > onClose && write < onClose + 60,
+                "onClose must flush the page synchronously -- the scheduled write is DROPPED on a"
+                        + " quit, so this is the only path that covers it");
+        assertTrue(giveBack > onClose && giveBack < onClose + 60,
+                "and it must still hand back what it owes, in the same method");
+        assertTrue(write < giveBack,
+                "THE WRITE MUST COME FIRST. returnEverything clears the cells it returns, so"
+                        + " flushing afterwards writes an empty page over a full one.");
+    }
+
+    /**
+     * The degraded close hands back the DIFFERENCE, not the page.
+     *
+     * <p>Poisoning leaves the file at its last good copy, so returning every cell duplicates
+     * whatever the file still has -- **a full-page duplicator**, not the single-cursor residual the
+     * design argues is irreducible. The subtraction runs in {@code VaultReturnPolicy}, which is
+     * where both answers are executed; this pins that the screen actually supplies the second set
+     * rather than passing an empty one.
+     */
+    @Test
+    void theDegradedReturnSubtractsWhatIsAlreadyOnDisk() throws IOException {
+        List<String> lines = read(VAULT_MENU, 400);
+
+        int override = indexOfLineContaining(lines, "protected Set<Integer> returnedSlots() {");
+        assertTrue(override > 0, "the vault must override returnedSlots");
+
+        int delegate = indexOfLineContaining(lines, "VaultReturnPolicy.returnedSlots(", override);
+        assertTrue(delegate > override && delegate < override + 8, "and must delegate the decision");
+        assertTrue(lines.get(delegate).contains("alreadyOnDisk()"),
+                "the THIRD argument must be the live disk comparison, not an empty set: "
+                        + lines.get(delegate));
+
+        int compare = indexOfLineContaining(lines, "private Set<Integer> alreadyOnDisk() {");
+        assertTrue(compare > 0, "and that comparison must exist");
+        int persisted = indexOfLineContaining(lines, "vaults.persistedPage(", compare);
+        assertTrue(persisted > compare && persisted < compare + 12,
+                "it must read what is ON DISK, not the cache -- the cache is what the failed write"
+                        + " intended and is exactly the thing that is wrong");
+    }
+
     /** Guards the helper itself: a needle that is certainly absent must report -1, not 0. */
     @Test
     void theScannerReportsAbsenceAsMinusOneRatherThanZero() {

@@ -25,7 +25,7 @@ has none:
 
 | **ROWS 92–96** | five | **2 PASS, 2 PARTIAL, 1 VOID.** Run 2026-09-17, Slice 11 PR 1, the vault's storage layer. **Rows 92 and 94 are the SOLE WITNESSES and both are FULLY witnessed** — 94 including its empty-vault control, the half most likely to be skipped. The PDC round trip and the shutdown flush have no unit rows anywhere in the project, because no module can construct an `ItemStack`. **93 and 95 are PARTIAL**: the directory check and the `/rpg stats` control were not run, and both stand NOT RUN in their rows. **96 is VOID** — no second account was online — and it was never a sole witness |
 
-| **ROWS 97–110** | fourteen | **ALL NOT RUN.** Slice 11 PR 2, the vault screen, the hijack and the migration. **Rows 102 and 103 are SOLE WITNESSES** — the migration needs a real ender chest and a real `ItemStack`, and **row 103 is the only row in this file whose failure mode is a GAIN**, so no loss row can fail on it |
+| **ROWS 97–111** | fifteen | **ALL NOT RUN.** Slice 11 PR 2, the vault screen, the hijack and the migration. **Rows 102, 103 and 111 are SOLE WITNESSES.** 102 needs a real ender chest and a real `ItemStack`; **103 and 111 are the only rows in this file whose failure mode is a GAIN**, so no loss row can fail on either. **111 was added after 97–110 were written**, because none of them can fail on the degrade path — a write failure has to be FORCED, and a normal boot never produces one |
 
 **Every other row in this file has no reading at all.**
 
@@ -4235,3 +4235,82 @@ shows **four** stations.
 > slice is not about.**
 
 **READING:** _(not run)_
+
+---
+
+## ROW 111 — *** FORCE A REAL WRITE FAILURE. THE DEGRADED CLOSE HANDS BACK ONLY WHAT IS NOT ON DISK. SOLE WITNESS. ***
+
+**CONDITIONS:** survival, operator, level 50. **This row needs filesystem permissions, not just a
+client** — it is the only row in this file that reaches outside the game.
+
+> **THIS ROW EXISTS BECAUSE ROWS 97–110 CANNOT FAIL ON THE DEFECT IT CATCHES.** The degrade path
+> fires only on a WRITE FAILURE, and a normal boot never produces one. **Row 103 -- the duplication
+> sole witness -- passes green with a full-page duplicator in the code**, because a healthy session
+> never enters the state that duplicator lives in. A fully green fourteen-row block would have
+> certified a screen that still had it.
+
+**STAGE:**
+
+1. Level 50, vault loaded. Put **four** distinguishable stacks on **page 3**, in cells 0, 8, 17 and
+   31. Close the screen. `/rpg vault dump` — confirm `page 3: 4 item(s)`. **These four are now ON
+   DISK.**
+2. Reopen the vault at page 3. **Add a fifth stack**, in cell 26, and let the write land — dump
+   again and confirm **5**.
+3. **With the server still running**, make `plugins/Rpg/vaults/` **read-only** (`chmod a-w` on Linux,
+   or clear Write for the service account on Windows).
+4. In the screen, **add a sixth stack** in cell 35.
+5. Read the console, read the chat, and **close the screen**.
+6. Restore write permission. Quit, rejoin, open page 3, and `/rpg vault dump`.
+
+**PREDICTED, as counts:**
+
+- **Step 4/5 console:** one `SEVERE` naming this player's UUID, `storage page 2 (page 3 as the
+  player sees it)`, the word `POISONED`, and **six** `slot N: <MATERIAL> xN` lines — one per
+  occupied cell, with the sixth among them.
+- **Step 5 chat:** `Vault page 3 could not be saved. CLOSE THIS SCREEN and your items will be handed
+  back to you.`
+- **Step 5 close:** **EXACTLY ONE stack comes back to the player -- the sixth.** The five already on
+  disk **do not**.
+- **Step 6, and this is the whole row:** the vault holds **5** on page 3, the player's inventory
+  holds **1**, and **the total is 6** — which is what they had. `/rpg vault dump` reads
+  `page 3: 5 item(s)`.
+
+> **THE NUMBER TO WRITE DOWN IS 5 + 1 = 6, AND THE FAILURE IS 5 + 6 = 11.** Before the fix,
+> `returnedSlots()` answered with the whole page while the file kept its last good copy of the same
+> page: **every stack already persisted came back as well, and the vault still had it.** Not the
+> single-cursor residual the design argues is irreducible — **a duplicator the size of the page.**
+
+> **AND THE OPPOSITE FAILURE IS 5 + 0 = 5.** A build that handed back nothing would leave the sixth
+> stack in no file and in nobody's hands. **This row distinguishes three outcomes, not two**, which
+> is why the counts are written as an addition rather than as "the items come back".
+
+> **STEP 2 IS NOT DECORATION.** It is what makes step 6's `5` a number the row can read: without a
+> write that SUCCEEDED between the first four and the failure, "what is on disk" and "what the
+> player put in" are the same set, and the subtraction has nothing to subtract.
+
+> **RESTORE THE PERMISSIONS BEFORE STEP 6.** A still-read-only directory fails the rejoin's load as
+> well, which is a different defect and would read as this one.
+
+**READING:** _(not run)_
+
+---
+
+## *** AND THE CASE THAT GETS NO ROW: A DISCONNECT INSIDE THE WRITE TICK ***
+
+**DELIBERATELY UNWITNESSED. It is not a row and must not be invented as one.**
+
+A permitted gesture schedules its write for the next tick. If the player's quit packet arrives
+between the click and that tick, **Paper drops the task entirely** — `PaperScheduler.onEntity`
+passes `retired` as `null`, and its own comment says *"if the entity is gone before the delay, do
+nothing"*. The fix is a synchronous flush in `onClose`.
+
+**The condition cannot be staged by hand**: it needs the disconnect inside one tick of the click, and
+nothing a person can do at a keyboard makes that reliable.
+
+> **SO IT IS NAMED AS UNWITNESSED IN `NexusVaultMenu.onClose`'s OWN COMMENT, AND COVERED BY
+> `VaultWiringSignatureTest` ALONE** — the flush exists and precedes `returnEverything`. **It has
+> never been observed working.** Kept and flagged rather than believed in, which is the shape this
+> project already uses for the `nativeArmor` guard.
+>
+> **Writing a row for it would be worse than having none**: a row nobody can stage is a row that
+> gets marked PASS on the strength of a reading nobody took.
