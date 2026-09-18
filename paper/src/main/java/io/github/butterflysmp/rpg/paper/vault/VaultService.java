@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.vault;
 
 import io.github.butterflysmp.rpg.core.vault.VaultCell;
+import io.github.butterflysmp.rpg.core.vault.VaultPageDiff;
 import io.github.butterflysmp.rpg.core.vault.VaultShape;
 import io.github.butterflysmp.rpg.core.vault.VaultWriteFailure;
 import io.github.butterflysmp.rpg.storage.PlayerVault;
@@ -9,6 +10,7 @@ import io.github.butterflysmp.rpg.storage.VaultRepository;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -222,7 +224,7 @@ public final class VaultService {
      *         was written and nothing was cached</b>, so the caller still holds the only copy.
      */
     public boolean writePage(UUID playerId, int page, Map<Integer, VaultCell> cells,
-                             Runnable onFailure) {
+                             Consumer<Set<Integer>> onFailure) {
         VaultShape.requirePage(page);
 
         CompletableFuture<PlayerVault> loading = vaults.get(playerId);
@@ -241,6 +243,12 @@ public final class VaultService {
             contents.put(cell.getKey(), cell.getValue().item());
         }
 
+        // CAPTURED BEFORE THE SAVE IS ISSUED, and it is a VALUE rather than a lookup. By the time
+        // the failure arm runs, the player may have quit -- and onQuit clears the persisted map. A
+        // lookup there would find nothing, report every cell as unpersisted, and hand the caller a
+        // page to drop that the file already has: the duplicator, rebuilt inside the fix for it.
+        Map<Integer, String> onDiskBefore = persistedPage(playerId, page);
+
         PlayerVault updated = current.withPage(page, contents);
         vaults.put(playerId, CompletableFuture.completedFuture(updated));
         repository.save(updated).whenComplete((ignored, error) -> {
@@ -256,7 +264,14 @@ public final class VaultService {
             // already refuses writes.
             poison(playerId, error);
             log.log(Level.SEVERE, VaultWriteFailure.report(playerId, page, cells), error);
-            onFailure.run();
+
+            // *** THE CALLER IS TOLD EXACTLY WHICH CELLS REACHED NOBODY. ***
+            //
+            // Not "a write failed" -- the SET, computed against what was on disk before this
+            // attempt. A caller whose screen is already torn down has no other way to know which of
+            // its cells are the only copy, and handing back all of them would duplicate everything
+            // the file still holds.
+            onFailure.accept(VaultPageDiff.unpersisted(contents, onDiskBefore));
         });
         return true;
     }
@@ -283,6 +298,28 @@ public final class VaultService {
         VaultShape.requirePage(page);
         PlayerVault known = persisted.get(playerId);
         return known == null ? Map.of() : known.page(page);
+    }
+
+    /**
+     * Record that a caller put unpersisted items on the ground rather than losing them.
+     *
+     * <h2>*** THE SERVICE OWNS THE VAULT'S LOGGING VOICE, SO THIS SENTENCE LIVES HERE ***</h2>
+     *
+     * The screen has no logger -- {@code AdapterContext} exposes none, deliberately -- and routing
+     * this through it would be the second place vault failures are reported. <b>An operator reading
+     * a log needs the SEVERE that named the page and the cells, and this line saying what became of
+     * them, adjacent and in the same voice.</b>
+     *
+     * <p>{@code WARNING} rather than {@code SEVERE}: the items were SAVED, on the floor. The severe
+     * event -- the write that failed -- has already been reported above it.
+     *
+     * @param where a place an operator can walk to, formatted by the caller, which is the only side
+     *              that knows what a {@code Location} is.
+     */
+    public void reportDropped(UUID playerId, int page, int count, String where) {
+        log.log(Level.WARNING, "Vault page " + VaultShape.requirePage(page) + " for " + playerId
+                + " failed to save after its screen had closed: " + count + " item(s) were DROPPED"
+                + " at " + where + " rather than discarded. They are NOT in the vault file.");
     }
 
     /**

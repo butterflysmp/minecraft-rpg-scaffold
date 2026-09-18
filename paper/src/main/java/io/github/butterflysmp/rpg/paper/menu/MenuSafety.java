@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.menu;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -40,6 +41,33 @@ public final class MenuSafety {
         }
         player.sendMessage(Component.text("Your inventory was full -- dropped at your feet.",
                 NamedTextColor.YELLOW));
+    }
+
+    /**
+     * Put an item on the GROUND at a location, with no inventory involved at all.
+     *
+     * <h2>*** THE ONLY ROUTE THAT WORKS WHEN THERE IS NOBODY TO HAND IT TO ***</h2>
+     *
+     * {@link #give} needs a player whose inventory can be written. This is for the case where the
+     * item's owner may be <b>offline</b>, or online and mid-save, and the alternative is deleting
+     * it: a vault write that failed after its screen was already torn down.
+     *
+     * <p><b>DROP, NOT {@code addItem}, AND THAT IS A RULING RATHER THAN A CONVENIENCE.</b> An item
+     * on the ground is visible and recoverable. An item pushed into an inventory that may be
+     * mid-save is neither -- it can be written over by the save that was already in flight, which
+     * turns a recoverable failure into a silent one.
+     *
+     * <p><b>The caller must already be on the thread that owns this location.</b> This does no
+     * scheduling of its own: a drop is a world write, and deciding WHERE it is safe to run is the
+     * caller's problem -- they are the one who knows whether the owner is still online.
+     *
+     * <p>Null and air are no-ops, so a caller iterating a page does not have to filter.
+     */
+    public static void drop(Location location, ItemStack item) {
+        if (location == null || location.getWorld() == null) return;
+        if (item == null || item.getType().isAir()) return;
+
+        location.getWorld().dropItemNaturally(location, item);
     }
 
     /**

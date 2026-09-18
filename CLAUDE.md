@@ -1901,6 +1901,29 @@ build.**
 > | **a generic bound** (`n-1` for sum-of-floors vs floor-of-sum) | **what the quantity can NEVER EXCEED, not what it IS** |
 > | **a MARKER GREP**, after a scripted edit | **whether that string EXISTS in the file, never whether YOUR EDIT is what put it there** |
 > | **a count taken in the WRONG SCOPE** | *how many are in the place I looked*, not *how many exist* |
+> | **a PROXIMITY BOUND in a source scan** (`within N lines`) | *are these two statements CLOSE*, not *are they in the same method* — and in a file whose methods carry thirty lines of javadoc, that is a question about PROSE |
+>
+> > ### AND THE PROXIMITY BOUND IS THE ONE WHERE THE INSTRUMENT IS CORRECT AND ITS SCOPE DRIFTS UNDER IT
+> >
+> > **Every other row in this table is an instrument that was wrong from the start.** This one is
+> > right when written and becomes wrong **without anybody touching it** — the code it measures does
+> > not move, the *commentary around it* grows, and a bound of "within 30 lines" silently becomes an
+> > assertion about comment length.
+> >
+> > **2026-09-17, three times in one slice.** `VaultWiringSignatureTest` asserted that `onClose`'s
+> > write sits within 30 lines of the declaration. It failed when an UNWITNESSED note was added,
+> > was widened to 60, and failed again when a disconnect branch was documented. **Neither failure
+> > was a defect**, and the first arrived DURING a mutation run, where it was nearly attributed to
+> > the mutation — a false red charged to the wrong cause, which is the one thing a mutation pass
+> > cannot afford.
+> >
+> > **Practically: bound a source scan STRUCTURALLY, never by a line count.** The claim is almost
+> > always *in the same method, in this order* — so find the next member declaration and bound on
+> > that. It costs one helper, it needs its own control (a helper that returns `from + 1` makes every
+> > ordering assertion vacuous), and it cannot drift.
+> >
+> > **The tell that you have one:** an assertion whose failure message is about structure and whose
+> > expression contains a number nobody chose on purpose.
 >
 > > ### *** A ZERO IN THE WRONG SCOPE IS INDISTINGUISHABLE FROM AN ABSENCE ***
 > >

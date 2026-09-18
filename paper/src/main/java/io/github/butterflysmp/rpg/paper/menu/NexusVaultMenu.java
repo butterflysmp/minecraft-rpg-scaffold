@@ -15,6 +15,7 @@ import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.github.butterflysmp.rpg.storage.PlayerVault;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 /**
@@ -124,6 +126,47 @@ public final class NexusVaultMenu extends Menu {
      * nothing can be placed on top of them, and written back from this map.
      */
     private final Map<Integer, String> opaque = new HashMap<>();
+
+    /**
+     * Has {@link #onClose} run? <b>Volatile: written on the main thread, read from a write callback.</b>
+     *
+     * <h2>*** THE DEGRADE MACHINERY ONLY PROTECTS A SCREEN THAT IS STILL OPEN ***</h2>
+     *
+     * A failure observed while the screen is up degrades it, and the eventual close hands back the
+     * difference. <b>A failure that arrives AFTER the close has nothing left to degrade</b> -- the
+     * close already returned nothing, because at that moment the write had only been ISSUED and the
+     * screen was still healthy.
+     *
+     * <p>So the unpersisted cells would be in a poisoned cache, never on disk, never handed back,
+     * and discarded at {@code /stop} because the shutdown flush deliberately skips a poisoned
+     * vault. <b>Destruction, on the one path where the net was absent.</b> This flag is what routes
+     * that case to the drop instead.
+     */
+    private volatile boolean closed;
+
+    /**
+     * Has something already taken responsibility for the unpersisted cells?
+     *
+     * <h2>*** EXACTLY ONE OF TWO PATHS MAY HAND THEM OVER, AND BOTH CAN BE IN FLIGHT ***</h2>
+     *
+     * The degraded close hands back the difference; the drop arm puts it on the ground. <b>If both
+     * ran, every unpersisted stack would exist twice</b> -- the fix for a destruction turned into a
+     * duplication, which is the shape this slice has already corrected twice.
+     *
+     * <p>A plain boolean is not enough: the close runs on the main thread and the drop arm on a
+     * region task, and the failure can arrive on either side of the close. {@code compareAndSet} is
+     * what makes "first one wins" true rather than likely.
+     */
+    private final AtomicBoolean unpersistedHandled = new AtomicBoolean();
+
+    /**
+     * Where to drop items whose owner may already be gone.
+     *
+     * <p>Captured on the main thread while the player is demonstrably present -- at every write and
+     * again at the close -- because by the time a failed save is observed, {@code viewer.getLocation()}
+     * may be a call on an offline player.
+     */
+    private Location lastKnownLocation;
 
     public NexusVaultMenu(Player viewer, AdapterContext adapters, ProfileService profiles,
                           VaultService vaults) {
@@ -360,11 +403,66 @@ public final class NexusVaultMenu extends Menu {
         // Kept and flagged, not deleted: the same shape as the nativeArmor guard. A guard nobody has
         // watched fire is worth having and is NOT worth believing in, and the difference between
         // those two is written down here so the next reader does not have to guess which it is.
+        lastKnownLocation = viewer.getLocation();
+
         if (!degraded && VaultPageGate.unlocked(page, viewerLevel()) && !writeCurrentPage()) {
             degrade();
         }
 
+        // *** ON A DISCONNECT, A DEGRADED PAGE IS DROPPED RATHER THAN HANDED BACK. ***
+        //
+        // returnEverything goes through MenuSafety.give, which is addItem-first and reaches the
+        // ground ONLY when the inventory is full. That preference is right for every other caller
+        // and four menus depend on it -- IT IS NOT CHANGED HERE.
+        //
+        // It is wrong on THIS path for one reason: a quit's addItem races the player-data save, so
+        // an item pushed in can vanish with no error anywhere. And this is the path where handing
+        // back is the LAST copy -- the vault is poisoned, the file does not have these cells, and
+        // there is no next session to fix it in. An item on the ground is visible and recoverable;
+        // an item written into an inventory that is mid-save is neither.
+        //
+        // A documented exception on one path, with the reason beside it -- not a change to a shared
+        // rule to suit one consumer.
+        //
+        // DEATH IS DELIBERATELY NOT INCLUDED, AND IS UNRULED RATHER THAN EXCLUDED. Vanilla death
+        // handling drops the inventory at the death location, so addItem there is still
+        // recoverable -- but nobody has measured the ordering against a poisoned vault, and
+        // claiming it is safe would be asserting something unmeasured. Say so rather than picking.
+        if (degraded && reason == InventoryCloseEvent.Reason.DISCONNECT
+                && unpersistedHandled.compareAndSet(false, true)) {
+            dropOwedOnDisconnect();
+        }
+
         returnEverything();
+
+        // LAST, so that anything reading it is reading a close that has finished. The async drop arm
+        // takes `closed` as its licence to act, and a failure observed mid-close must not find a
+        // half-returned page.
+        if (degraded) unpersistedHandled.set(true);
+        closed = true;
+    }
+
+    /**
+     * Put the owed cells on the ground instead of into an inventory that is about to be saved.
+     *
+     * <p>Clears each cell as it goes, so {@link #returnEverything} -- which runs immediately after --
+     * finds air and hands nothing over a second time. Same clear-then-give ordering that method uses,
+     * and for the same reason: the reverse duplicates if anything throws.
+     */
+    private void dropOwedOnDisconnect() {
+        int dropped = 0;
+        for (int screenSlot : returnedSlots()) {
+            ItemStack item = getInventory().getItem(screenSlot);
+            if (MenuSafety.isEmpty(item)) continue;
+
+            getInventory().setItem(screenSlot, null);
+            MenuSafety.drop(lastKnownLocation, item);
+            dropped++;
+        }
+
+        if (dropped > 0) {
+            vaults.reportDropped(viewer.getUniqueId(), page, dropped, describe(lastKnownLocation));
+        }
     }
 
     // ------------------------------------------------------------------ the write path
@@ -448,8 +546,10 @@ public final class NexusVaultMenu extends Menu {
 
         // CAPTURED, not read inside the callback. The callback fires on the I/O thread, possibly
         // after a page flip, and it must report the page it actually failed to write.
+        lastKnownLocation = viewer.getLocation();
         int written = page;
-        return vaults.writePage(viewer.getUniqueId(), written, cells, () -> onWriteFailed(written));
+        return vaults.writePage(viewer.getUniqueId(), written, cells,
+                owed -> onWriteFailed(written, owed));
     }
 
     /**
@@ -458,15 +558,84 @@ public final class NexusVaultMenu extends Menu {
      * <p>{@code VaultService} has already poisoned the vault and logged the report naming the page
      * and every item; what is left is the part that touches Bukkit.
      */
-    private void onWriteFailed(int failedPage) {
+    private void onWriteFailed(int failedPage, Set<Integer> unpersisted) {
+        // PATH ONE: the screen, if it is still up. Entity-scheduled, so it lands where the viewer
+        // is -- and if the viewer is gone the task is DROPPED, which is correct: there is no screen
+        // to degrade and nobody to tell. Path two is what covers that case.
         adapters.scheduler().onEntity(viewer, () -> {
-            if (!viewer.isOnline()) return;
+            if (closed || !viewer.isOnline()) return;
             degrade();
             viewer.sendMessage(MenuIcons.line(
                     "Vault page " + PageMath.displayPage(failedPage) + " could not be saved."
                             + " CLOSE THIS SCREEN and your items will be handed back to you.",
                     NamedTextColor.RED));
         });
+
+        // PATH TWO: the items, when nothing will ever hand them back.
+        //
+        // *** REGION-SCHEDULED, NOT ENTITY-SCHEDULED, AND THAT IS THE SAME LESSON AGAIN. ***
+        // An entity task for a player who has quit is dropped -- which is exactly what made the
+        // close flush necessary. A task keyed to a LOCATION still runs.
+        adapters.scheduler().onRegion(lastKnownLocation, () -> {
+            // The screen is still open: its close owns these cells and will hand them back.
+            if (!closed) return;
+
+            // FIRST ONE WINS. If the close already handed them back -- degraded, difference
+            // returned -- this must not put a second copy on the floor.
+            if (!unpersistedHandled.compareAndSet(false, true)) return;
+
+            dropUnpersisted(failedPage, unpersisted);
+        });
+    }
+
+    /**
+     * Put the cells that reached nobody on the ground, at the player's last known position.
+     *
+     * <h2>*** THIS IS THE ARM FOR A FAILURE OBSERVED AFTER THE SCREEN IS GONE ***</h2>
+     *
+     * The close issued the last write and then removed the thing that would have caught its failure.
+     * Everything else in this class assumes a screen is there to degrade; here there is not one, so
+     * the only remaining choice is the ground or the bin.
+     *
+     * <p><b>The items come from THIS MENU'S inventory, which still exists.</b> A closed
+     * {@code Inventory} is a live object as long as something references it, and the storage cells
+     * still hold what they held -- {@code returnEverything} cleared only {@link #returnedSlots()},
+     * which was empty because the screen was healthy at that moment.
+     *
+     * <p><b>Only the cells the SERVICE said were unpersisted.</b> Not the page: the file keeps its
+     * last good copy, and dropping a cell it already has is the full-page duplicator in a different
+     * costume.
+     */
+    private void dropUnpersisted(int failedPage, Set<Integer> unpersisted) {
+        int dropped = 0;
+        for (int vaultSlot : unpersisted) {
+            ItemStack item = getInventory().getItem(NexusVaultLayout.screenSlotFor(vaultSlot));
+            if (MenuSafety.isEmpty(item)) continue;
+
+            MenuSafety.drop(lastKnownLocation, item);
+            getInventory().setItem(NexusVaultLayout.screenSlotFor(vaultSlot), null);
+            dropped++;
+        }
+
+        if (dropped == 0) return;
+
+        // SAID IN THE LOG, because the player may be offline and will otherwise find items on the
+        // ground with no explanation -- or never find them at all. The SEVERE report from the write
+        // already named the page and the cells; this says what was done about them.
+        vaults.reportDropped(viewer.getUniqueId(), failedPage, dropped, describe(lastKnownLocation));
+
+        if (viewer.isOnline()) {
+            viewer.sendMessage(MenuIcons.line(
+                    "Your vault could not be saved. " + dropped + " item(s) were dropped where you"
+                            + " were standing rather than lost.", NamedTextColor.RED));
+        }
+    }
+
+    /** A location an operator can walk to, for the one log line that has to name a place. */
+    private static String describe(Location where) {
+        if (where == null || where.getWorld() == null) return "an unknown location";
+        return where.getWorld().getName() + " " + where.getBlockX() + "," + where.getBlockY()
+                + "," + where.getBlockZ();
     }
 
     /**

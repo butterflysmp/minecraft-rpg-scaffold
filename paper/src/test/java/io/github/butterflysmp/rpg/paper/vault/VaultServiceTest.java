@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,6 +48,16 @@ class VaultServiceTest {
         /** When set, save() returns a future already failed with this. */
         RuntimeException saveFailure;
 
+        /**
+         * When set, save() returns THIS future instead of completing -- so a test can decide when,
+         * and after which other events, the failure arrives.
+         *
+         * <p>The hand-cranked counterpart of {@code pendingLoad}, and it exists for one row: a
+         * failure that lands AFTER the player has quit, which is the ordering the owed-set capture
+         * is there to survive.
+         */
+        CompletableFuture<Void> pendingSave;
+
         @Override public CompletableFuture<Optional<PlayerVault>> load(UUID playerId) {
             if (pendingLoad != null) return pendingLoad;
             return CompletableFuture.completedFuture(Optional.ofNullable(saved.get(playerId)));
@@ -54,6 +65,7 @@ class VaultServiceTest {
 
         @Override public CompletableFuture<Void> save(PlayerVault vault) {
             saveCount.incrementAndGet();
+            if (pendingSave != null) return pendingSave;
             if (saveFailure != null) return CompletableFuture.failedFuture(saveFailure);
             saved.put(vault.playerId(), vault);
             savedInOrder.add(vault);
@@ -128,8 +140,20 @@ class VaultServiceTest {
     private boolean write(int page, Map<Integer, String> items) {
         Map<Integer, VaultCell> cells = new LinkedHashMap<>();
         items.forEach((slot, item) -> cells.put(slot, new VaultCell(item, "TEST " + item)));
-        return service.writePage(player, page, cells, failures::incrementAndGet);
+        return service.writePage(player, page, cells, owed -> {
+            failures.incrementAndGet();
+            lastOwed = owed;
+        });
     }
+
+    /**
+     * The unpersisted set from the most recent failure.
+     *
+     * <p>The callback's ARGUMENT is what a caller with no screen left uses to decide which cells to
+     * drop, so a test that only counted the callback could not tell a correct set from an empty one
+     * -- and an empty one silently destroys, while a full one silently duplicates.
+     */
+    private Set<Integer> lastOwed;
 
     // --- loading -----------------------------------------------------------------------------
 
@@ -435,6 +459,71 @@ class VaultServiceTest {
 
         assertEquals(Map.of(17, "first"), service.persistedPage(player, 3),
                 "the failed write must NOT advance it -- slot 24 is not in the file");
+    }
+
+    /**
+     * *** THE FAILURE CALLBACK NAMES THE CELLS THAT REACHED NOBODY, NOT THE PAGE. ***
+     *
+     * <p>This is what a caller whose screen is already torn down acts on: those cells are dropped on
+     * the ground, and the ones the file still holds are not. <b>Hand it the whole page and every
+     * persisted stack is duplicated; hand it nothing and the new one is destroyed.</b>
+     */
+    @Test
+    void theFailureCallbackReportsONLYTheCellsThatDidNotReachDisk() {
+        service.onJoin(player);
+        write(3, Map.of(17, "first", 31, "second"));
+        assertEquals(0, failures.get(), "the baseline write must succeed for this row to mean anything");
+
+        repo.saveFailure = new IllegalStateException("disk full");
+        write(3, Map.of(17, "first", 24, "the new one", 31, "second"));
+
+        assertEquals(1, failures.get());
+        assertEquals(Set.of(24), lastOwed,
+                "slot 24 alone: 17 and 31 are byte-identical to what the file already holds");
+    }
+
+    /**
+     * A cell whose CONTENTS changed is owed, even though the file has that slot.
+     *
+     * <p>The swap case. A comparison by slot presence would call 17 persisted and destroy the item
+     * the player actually put there.
+     */
+    @Test
+    void aSwappedCellIsReportedEvenThoughTheFileHasThatSlot() {
+        service.onJoin(player);
+        write(3, Map.of(17, "original"));
+
+        repo.saveFailure = new IllegalStateException("disk full");
+        write(3, Map.of(17, "swapped in"));
+
+        assertEquals(Set.of(17), lastOwed);
+    }
+
+    /**
+     * *** THE OWED SET IS COMPUTED AGAINST THE DISK VIEW AS IT WAS AT WRITE TIME. ***
+     *
+     * <p>By the time the failure arrives the player may have QUIT, and {@code onQuit} clears the
+     * persisted map. A callback that looked the view up at failure time would find nothing, report
+     * every cell as unpersisted, and hand the caller a page to drop that the file already has --
+     * <b>the duplicator, rebuilt inside the fix for it.</b>
+     */
+    @Test
+    void theOwedSetSurvivesThePlayerQuittingBeforeTheFailureArrives() {
+        service.onJoin(player);
+        write(3, Map.of(17, "on disk"));
+
+        // A save that never completes, so the failure can be fired AFTER the quit.
+        CompletableFuture<Void> hanging = new CompletableFuture<>();
+        repo.pendingSave = hanging;
+        write(3, Map.of(17, "on disk", 24, "not on disk"));
+
+        service.onQuit(player);
+        assertEquals(Map.of(), service.persistedPage(player, 3), "the quit cleared the view");
+
+        hanging.completeExceptionally(new IllegalStateException("disk full"));
+
+        assertEquals(Set.of(24), lastOwed,
+                "the view was CAPTURED before the save, so slot 17 is still known to be on disk");
     }
 
     /** An absent file seeds an EMPTY persisted view, which is the correct baseline rather than none. */

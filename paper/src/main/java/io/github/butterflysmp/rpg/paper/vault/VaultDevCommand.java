@@ -162,7 +162,7 @@ public final class VaultDevCommand {
                 updated.put(cell, new VaultCell(item, VaultCell.UNDESCRIBED)));
         updated.put(slot, new VaultCell(encoded, held.getType() + " x" + held.getAmount()));
 
-        if (!vaults.writePage(player.getUniqueId(), page, updated, () -> onWriteFailed(player))) {
+        if (!vaults.writePage(player.getUniqueId(), page, updated, owed -> onWriteFailed(player, owed))) {
             player.sendMessage(Component.text("The vault write was refused; you still hold it.",
                     NamedTextColor.RED));
             return 0;
@@ -190,11 +190,24 @@ public final class VaultDevCommand {
      * documented thread-safe on Paper -- so the message goes out directly and <b>nothing else here
      * may follow it.</b> A second line of Bukkit work in this method is a bug, not an extension.
      */
-    private static void onWriteFailed(Player player) {
+    private static void onWriteFailed(Player player, java.util.Set<Integer> owed) {
+        // *** THE OWED SET IS DELIBERATELY NOT ACTED ON HERE, AND THAT IS A DIFFERENCE FROM THE
+        // SCREEN RATHER THAN AN OVERSIGHT. ***
+        //
+        // The screen DROPS its owed cells, because it still holds the ItemStacks and it has a
+        // Scheduler to reach a region thread with. This class has neither: it is a static command
+        // handler with no AdapterContext, and the item left the player's hand ticks ago.
+        //
+        // Wiring a scheduler through RpgCommand to close a window on a DEV-gated instrument would
+        // widen this slice into the command tree for a path only an operator can reach -- and the
+        // operator is the one person who will read the SEVERE report naming the page and the item.
+        //
+        // The count is named in the message so the size of the loss is not left to be inferred.
+        String scale = owed.isEmpty() ? "" : " " + owed.size() + " cell(s) are affected.";
         player.sendMessage(Component.text(
                 "That vault write FAILED to reach disk. This vault will accept no further writes"
-                        + " this session, and the file keeps its last good contents. See the server"
-                        + " log for the page and the items.", NamedTextColor.RED));
+                        + " this session, and the file keeps its last good contents." + scale
+                        + " See the server log for the page and the items.", NamedTextColor.RED));
     }
 
     /**
@@ -241,7 +254,7 @@ public final class VaultDevCommand {
                 updated.put(cell, new VaultCell(item, VaultCell.UNDESCRIBED)));
         updated.remove(slot);
 
-        if (!vaults.writePage(player.getUniqueId(), page, updated, () -> onWriteFailed(player))) {
+        if (!vaults.writePage(player.getUniqueId(), page, updated, owed -> onWriteFailed(player, owed))) {
             player.sendMessage(Component.text(
                     "The vault write was refused; the item is still in the vault.",
                     NamedTextColor.RED));

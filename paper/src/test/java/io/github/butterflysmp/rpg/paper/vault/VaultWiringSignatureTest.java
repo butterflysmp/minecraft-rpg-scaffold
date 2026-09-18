@@ -409,17 +409,22 @@ class VaultWiringSignatureTest {
         int write = indexOfLineContaining(lines, "writeCurrentPage()", onClose);
         int giveBack = indexOfLineContaining(lines, "returnEverything();", onClose);
 
-        // THE WINDOW IS GENEROUS ON PURPOSE, AND IT WAS 30 UNTIL IT FAILED ON A COMMENT. This
-        // method's body is four lines of code under thirty of javadoc explaining why a synchronous
-        // write is correct HERE and nowhere else. A tight window in this file measures comment
-        // density rather than structure, and it fails on the next paragraph somebody adds.
+        // *** BOUNDED BY THE NEXT MEMBER DECLARATION, NOT BY A LINE COUNT. ***
         //
-        // What the row actually claims is the ORDER, asserted below against returnEverything; the
-        // bound only says "inside this method rather than somewhere else in the file".
-        assertTrue(write > onClose && write < onClose + 60,
+        // This assertion was `onClose + 30`, then `+ 60`, and failed BOTH times on a comment rather
+        // than on a defect -- once when the UNWITNESSED note was added, once when the disconnect
+        // drop was. A proximity bound in this codebase silently becomes a COMMENT-LENGTH assertion:
+        // the instrument is correct and its SCOPE drifts under it as prose accumulates.
+        //
+        // What the row claims is structural -- these two statements are in THIS method, in THIS
+        // order -- so it is measured structurally.
+        int endOfMethod = indexOfMemberDeclarationAfter(lines, onClose);
+        assertTrue(endOfMethod > onClose, "onClose must be followed by another member to bound it");
+
+        assertTrue(write > onClose && write < endOfMethod,
                 "onClose must flush the page synchronously -- the scheduled write is DROPPED on a"
                         + " quit, so this is the only path that covers it");
-        assertTrue(giveBack > onClose && giveBack < onClose + 60,
+        assertTrue(giveBack > onClose && giveBack < endOfMethod,
                 "and it must still hand back what it owes, in the same method");
         assertTrue(write < giveBack,
                 "THE WRITE MUST COME FIRST. returnEverything clears the cells it returns, so"
@@ -454,6 +459,56 @@ class VaultWiringSignatureTest {
         assertTrue(persisted > compare && persisted < compare + 12,
                 "it must read what is ON DISK, not the cache -- the cache is what the failed write"
                         + " intended and is exactly the thing that is wrong");
+    }
+
+    /**
+     * The next member declaration after {@code from} -- a method or field at class-body indentation.
+     *
+     * <h2>*** THE STRUCTURAL REPLACEMENT FOR A PROXIMITY BOUND, AND IT EXISTS BECAUSE ONE DRIFTED ***</h2>
+     *
+     * A bound of "within N lines" answers <i>are these close together</i>, which in a file whose
+     * methods carry thirty lines of javadoc each is a question about PROSE. It failed twice on
+     * comments that were added, both times reporting a defect that was not there -- and once during
+     * a mutation run, where it was nearly attributed to the mutation.
+     *
+     * <p>Four spaces then a modifier is the class-body member indentation this project uses
+     * throughout. Comments are skipped by {@link #isComment}, so a javadoc line beginning with
+     * {@code *} cannot end a method early.
+     */
+    private static int indexOfMemberDeclarationAfter(List<String> lines, int from) {
+        for (int i = from + 1; i < lines.size(); i++) {
+            if (isComment(lines.get(i))) continue;
+            String line = lines.get(i);
+            if (line.startsWith("    private ") || line.startsWith("    protected ")
+                    || line.startsWith("    public ") || line.startsWith("    static ")) {
+                return i;
+            }
+        }
+        return lines.size();
+    }
+
+    /**
+     * The bound helper finds the next member and is not fooled by a javadoc line.
+     *
+     * <p>A control on the instrument, for the reason the whole file exists: a helper that returned
+     * {@code from + 1} for everything would make every ordering assertion above vacuous.
+     */
+    @Test
+    void theMemberBoundSkipsCommentsAndFindsTheNextDeclaration() {
+        List<String> source = List.of(
+                "    protected void first() {",
+                "        doThing();",
+                "    }",
+                "",
+                "    /**",
+                "     * private void notReallyADeclaration()",
+                "     */",
+                "    private void second() {");
+
+        assertEquals(7, indexOfMemberDeclarationAfter(source, 0),
+                "the javadoc line quoting a declaration must not end the method early");
+        assertEquals(source.size(), indexOfMemberDeclarationAfter(source, 7),
+                "and running off the end reports the end, rather than -1 into an assertion");
     }
 
     /** Guards the helper itself: a needle that is certainly absent must report -1, not 0. */

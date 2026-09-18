@@ -25,7 +25,7 @@ has none:
 
 | **ROWS 92–96** | five | **2 PASS, 2 PARTIAL, 1 VOID.** Run 2026-09-17, Slice 11 PR 1, the vault's storage layer. **Rows 92 and 94 are the SOLE WITNESSES and both are FULLY witnessed** — 94 including its empty-vault control, the half most likely to be skipped. The PDC round trip and the shutdown flush have no unit rows anywhere in the project, because no module can construct an `ItemStack`. **93 and 95 are PARTIAL**: the directory check and the `/rpg stats` control were not run, and both stand NOT RUN in their rows. **96 is VOID** — no second account was online — and it was never a sole witness |
 
-| **ROWS 97–111** | fifteen | **ALL NOT RUN.** Slice 11 PR 2, the vault screen, the hijack and the migration. **Rows 102, 103 and 111 are SOLE WITNESSES.** 102 needs a real ender chest and a real `ItemStack`; **103 and 111 are the only rows in this file whose failure mode is a GAIN**, so no loss row can fail on either. **111 was added after 97–110 were written**, because none of them can fail on the degrade path — a write failure has to be FORCED, and a normal boot never produces one |
+| **ROWS 97–113** | seventeen | **ALL NOT RUN.** Slice 11 PR 2, the vault screen, the hijack and the migration. **Rows 102, 103, 111 and 112 are SOLE WITNESSES.** 102 needs a real ender chest and a real `ItemStack`; **103 and 111 are the only rows whose failure mode is a GAIN**; **112's failure mode is SILENT DESTRUCTION** and no other row reaches it. **111–113 were added after 97–110 were written**, because none of those can fail on the degrade path — a write failure has to be FORCED, and a normal boot never produces one. 111 forces a failure the screen SEES; 112 forces one that arrives after it has gone; 113 reads the quit path's drop |
 
 **Every other row in this file has no reading at all.**
 
@@ -4314,3 +4314,87 @@ nothing a person can do at a keyboard makes that reliable.
 >
 > **Writing a row for it would be worse than having none**: a row nobody can stage is a row that
 > gets marked PASS on the strength of a reading nobody took.
+
+---
+
+## ROW 112 — *** A FAILURE THAT LANDS AFTER THE SCREEN IS GONE PUTS THE ITEMS ON THE GROUND. SOLE WITNESS. ***
+
+**CONDITIONS:** survival, operator, level 50. Filesystem permissions again.
+
+> **ROW 111 DOES NOT COVER THIS AND CANNOT.** 111 reads the arm where the failure is observed
+> **while the screen is open** -- it degrades, and the close hands back the difference. **This row is
+> the other side of the close.** `writeCurrentPage` returns true when the write is *issued*, not
+> confirmed, so the close can finish healthy and the failure arrive afterwards: the delta is then in
+> a poisoned cache, never on disk, never handed back, and **discarded at `/stop`, because the
+> shutdown flush deliberately skips a poisoned vault.** Destruction, on the one path where the net
+> was absent.
+
+**STAGE:**
+
+1. Level 50, vault loaded. Put **two** distinguishable stacks on **page 4**, cells 0 and 17. Close.
+   `/rpg vault dump` — confirm `page 4: 2 item(s)`. **Both are on disk.**
+2. Make `plugins/Rpg/vaults/` **read-only**.
+3. Open the vault at page 4. **Add a third stack** in cell 26 **and close the screen immediately** --
+   with the close button, in the same breath, before any message appears.
+4. **Stand still.** Read chat and console.
+5. Restore write permission. Quit, rejoin, open page 4, `/rpg vault dump`, and look at the floor
+   where you were standing.
+
+**PREDICTED, as counts:**
+
+- **Console:** the `SEVERE` write report, **and then a `WARNING`** naming this player's UUID,
+  `Vault page 4`, `1 item(s) were DROPPED at <world> <x>,<y>,<z>`, and the words
+  `They are NOT in the vault file.`
+- **Chat:** `Your vault could not be saved. 1 item(s) were dropped where you were standing rather
+  than lost.`
+- **On the floor: EXACTLY ONE item entity**, the third stack.
+- **Step 5:** the vault holds **2** on page 4 — the two that were already on disk, untouched — and
+  the third is the one on the ground. **2 + 1 = 3**, which is what the player had.
+
+> **THE FAILURE THIS ROW CATCHES IS 2 + 0 = 2, AND IT IS SILENT.** No error reaches the player, the
+> vault looks healthy, and the third stack is simply not anywhere. **That is what shipped on
+> `247fd6bf`** and it is why this row exists.
+
+> **AND THE OPPOSITE FAILURE IS 2 + 3 = 5 -- THREE ITEMS ON THE FLOOR.** A drop arm that dropped the
+> PAGE rather than the difference would put the two persisted stacks on the ground as well, while the
+> file still holds them. **Count the entities, not "did something land".**
+
+> **STEP 3'S IMMEDIACY IS THE FIXTURE.** The close must happen before the I/O thread reports the
+> failure. If a red message appears BEFORE the screen shuts, this row has staged row 111 instead --
+> discard the reading and restage.
+
+**READING:** _(not run)_
+
+---
+
+## ROW 113 — *** A DEGRADED SCREEN CLOSED BY A DISCONNECT DROPS RATHER THAN HANDS BACK ***
+
+**CONDITIONS:** survival, operator, level 50. Filesystem permissions.
+
+**STAGE:**
+
+1. Put one stack on **page 6** cell 8 and let it write. Confirm `page 6: 1 item(s)`.
+2. Make `plugins/Rpg/vaults/` **read-only**.
+3. Open page 6, add a second stack in cell 35, and **wait for the red degraded message**.
+4. **Disconnect with the screen still open** — close the client, or `/kick` yourself from console.
+   Do NOT press Escape first.
+5. Restore permission. Rejoin, look at the floor where you were standing, and `/rpg vault dump`.
+
+**PREDICTED:** the second stack is **an item entity on the ground**, not in the player's inventory.
+The vault holds **1** on page 6. Console carries the `WARNING` naming the drop and the location.
+
+> **WHY THE GROUND IS CORRECT HERE AND THE INVENTORY IS NOT.** `returnEverything` goes through
+> `MenuSafety.give`, which is `addItem`-first and reaches the ground only when the inventory is full.
+> **On a quit that ordering races the player-data save**, so an item pushed in can vanish with no
+> error anywhere — and this is the path where the handed-back copy is the LAST one, because the
+> vault is poisoned and the file does not have it.
+>
+> **`MenuSafety.give` IS NOT CHANGED.** Four menus depend on its `addItem`-first preference and it is
+> right for all of them. This is a documented exception on one path, in `onClose`, with the reason
+> beside it.
+
+> **THE READING TO WRITE DOWN IS WHERE IT IS, NOT WHETHER IT SURVIVED.** An item in the inventory
+> after the rejoin is a PASS for "nothing was lost" and a FAIL for this row -- it means the drop
+> branch did not fire and the survival was luck of the ordering. **Look at the floor first.**
+
+**READING:** _(not run)_
