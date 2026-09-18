@@ -3,10 +3,12 @@ package io.github.butterflysmp.rpg.paper.health;
 import com.google.common.collect.Multimap;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.Protection;
+import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantItems;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantValues;
+import io.github.butterflysmp.rpg.paper.weapon.GearScoreItems;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
@@ -118,15 +120,44 @@ public final class DefenseModifierItems {
             // The material's own points. This -- and ONLY this -- is what the vanilla attribute
             // holds, so it is what the bar has to cancel.
             double vanilla = armorOf(piece, slot);
+
+            // *** THE NATIVE SUM IS THE UNSCALED ONE, AND GETTING THIS WRONG EMPTIES THE ARMOR BAR ***
+            //
+            // It accumulates BEFORE the gear score is applied below, because it is not a statement
+            // about how much mitigation this piece buys -- it is a statement about what the vanilla
+            // `armor` attribute LITERALLY HOLDS, which the gear score does not touch. ArmorBarOverride
+            // cancels exactly this sum before refilling the bar from damage reduction.
+            //
+            // Feed it the SCALED number and the cancellation over-subtracts by the scaling, the
+            // attribute lands negative, and Minecraft clamps it to zero: THE BAR READS EMPTY ON THE
+            // MOST-ARMORED PLAYER IN THE GAME, while the stat, the mitigation and the tooltip all stay
+            // correct. Nothing throws and no unit test can see it -- the class javadoc above records
+            // the same failure arriving the first time, through Protection rather than through this.
             nativeArmor += vanilla;
+
+            // THE PIECE'S OWN SCORE SCALES THE MATERIAL'S POINTS, AND NOTHING ELSE ON THIS LINE.
+            //
+            // Per PIECE, not per player: a 340 chestplate over a 100 helmet contributes its own
+            // multiple, so the four slots are four independent readings. The weapon side is the same
+            // ruling seen from the other end -- WeaponAttackItems scales the authored attack_damage by
+            // the score of the stack in hand.
+            double scaled = GearScore.scaledDefense(vanilla,
+                    GearScore.orAbsent(GearScoreItems.read(piece, keys)));
 
             // Plus whatever this piece's own Protection grants. ONE decode per slot, the hoist
             // ShieldBlock.resolve already models, and the reason the enchant registry is a
             // parameter rather than something read per-enchant.
+            //
+            // THE BONUS ARRIVES UNSCALED, DELIBERATELY, AND IT IS THE SAME SYMMETRY AS THE WEAPON
+            // SIDE. Gear score multiplies the AUTHORED figure; an enchant is a separate source on a
+            // separate axis. WeaponAttackItems scales attack_damage and never reaches
+            // DamageEnchantItems' percent, so scaling Protection here would make armour the one place
+            // where a score multiplies an enchant -- two multiplicative axes on one slot, and the
+            // tooltip would have to explain which composed first.
             double bonus = EnchantValues.totalFor(
                     EnchantItems.read(piece, keys), enchants, EnchantEffect.DEFENSE);
 
-            double contributed = Protection.effectiveDefense(vanilla, bonus);
+            double contributed = Protection.effectiveDefense(scaled, bonus);
             if (contributed > 0) defense.put(slot.name(), contributed);
         }
         return new Worn(defense, nativeArmor);

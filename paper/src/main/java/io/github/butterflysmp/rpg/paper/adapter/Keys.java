@@ -56,6 +56,33 @@ public final class Keys {
 
     public final NamespacedKey abilityId;
 
+    /**
+     * An item's gear score (an INTEGER): its power rating, {@code 100..500}, rolled once at
+     * acquisition and carried forever after. Per ITEM, like {@link #enchantData} -- the score is on
+     * the gear, not on whoever holds it.
+     *
+     * <p><b>ABSENCE IS NOT A DEFECT, AND THAT IS THE WHOLE REASON THIS SLICE NEEDS NO MIGRATION.</b>
+     * {@code GearScore.ABSENT} is 100, which is exactly the baseline -- so an item minted before this
+     * key existed <b>deals precisely the damage it dealt yesterday</b> and simply sits at the bottom
+     * of the ladder. Compare {@link #quiverLoaded}, where absence IS a defect because an unstamped
+     * magazine and an empty one must never resolve alike: there the default would hide a failed mint,
+     * here the default is the right answer. Same call, same reasoning, as {@code lifetimeXp}.
+     *
+     * <p><b>Only WEAPONS, ARMOUR AND SHIELDS ever carry it. A TOOL MUST NOT.</b> Ben's ruling, and
+     * the reason is specific: a pickaxe carrying a score could become one of the two hands feeding a
+     * player's average and raise the level of every drop they take without contributing anything to a
+     * fight. The refusal is {@code GearScore.scoreable}, in core, where a unit test reddens it; the
+     * stamp sites ask it before writing, and {@code GearScoreItems.candidateScore} reads only the
+     * three scoreable tags so an unstamped tool cannot be read as a baseline item either.
+     *
+     * <p>Carried across a re-mint by {@code GearItems.carryInstanceData}. <b>Losing it would be a
+     * relog-to-downgrade</b> -- every scored item in the game silently reverting to 100 on the
+     * player's next login, with nothing red and no error anywhere -- which is the same hazard
+     * {@link #quiverLoaded} names as relog-to-refill and {@link #enchantData} as relog-to-unlock.
+     * A re-mint happens on every join.
+     */
+    public final NamespacedKey gearScore;
+
     /** Identity of the attack-damage modifier that cancels a weapon's vanilla melee. */
     public final NamespacedKey meleeSuppressor;
 
@@ -327,6 +354,7 @@ public final class Keys {
         this.armorId = new NamespacedKey(plugin, "armor_id");
         this.toolId = new NamespacedKey(plugin, "tool_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
+        this.gearScore = new NamespacedKey(plugin, "gear_score");
         this.meleeSuppressor = new NamespacedKey(plugin, "vanilla_melee_suppressor");
         this.soaked = new NamespacedKey(plugin, "soaked_slow");
         this.rooted = new NamespacedKey(plugin, "rooted_immobilize");

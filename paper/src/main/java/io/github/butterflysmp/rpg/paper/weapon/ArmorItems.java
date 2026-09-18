@@ -141,7 +141,8 @@ public final class ArmorItems {
 
         List<Component> base = ArmorLore.build(armor,
                 EnchantValues.totalFor(state, adapters.enchants(), EnchantEffect.DEFENSE),
-                bonuses);
+                bonuses,
+                GearScoreItems.readMeta(meta, adapters.keys()));
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
         meta.setEnchantmentGlintOverride(!state.effective().isEmpty());
     }

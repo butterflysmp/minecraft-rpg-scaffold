@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
@@ -11,7 +12,8 @@ import java.util.Map;
 /**
  * Reading a player's main-hand weapon attack-damage as a reconcile "desired" modifier -- the attack
  * analogue of {@link io.github.butterflysmp.rpg.paper.health.HealthModifierItems}. The held weapon's
- * declared {@code attack_damage} becomes a single MAIN_HAND modifier on the player's ATTACK_DAMAGE
+ * declared {@code attack_damage}, SCALED BY THE HELD ITEM'S GEAR SCORE, becomes a single MAIN_HAND
+ * modifier on the player's ATTACK_DAMAGE
  * stat, which the basic melee hit (a {@code weapon_damage} effect) reads back. This is the real-weapon
  * replacement HealthModifierItems foretold: the same slot-keyed, diff-converged lifecycle, now sourcing
  * a stat from actual content instead of a _TEMP fixture.
@@ -36,10 +38,21 @@ public final class WeaponAttackItems {
      */
     public static Map<String, Double> desiredAttackModifiers(Player player, Keys keys, WeaponRegistry weapons) {
         Map<String, Double> desired = new HashMap<>();
+        // THE GEAR SCORE OF THE ITEM IN HAND, read once, outside the optional -- it is a property of
+        // the STACK, not of the definition, so two copies of one weapon scale differently. Read here
+        // rather than inside the lambda because it is the same hand either way and a second read
+        // would be a second chance for the two to disagree.
+        int score = GearScoreItems.heldScore(player, keys);
         WeaponItems.heldWeaponId(player, keys)
                 .flatMap(weapons::find)
+                // The gate is on the AUTHORED figure, deliberately, and not on the scaled one. They
+                // agree at every score -- scaling is multiplication by a positive factor, so it can
+                // neither create nor destroy a positive damage -- and asking the authored question
+                // keeps "does this weapon have a melee hit at all" a property of the CONTENT rather
+                // than of the stack a player happens to be holding.
                 .filter(weapon -> weapon.attackDamage() > 0)
-                .ifPresent(weapon -> desired.put(MAIN_HAND_SOURCE, weapon.attackDamage()));
+                .ifPresent(weapon -> desired.put(MAIN_HAND_SOURCE,
+                        GearScore.scaledDamage(weapon.attackDamage(), score)));
         return desired;
     }
 

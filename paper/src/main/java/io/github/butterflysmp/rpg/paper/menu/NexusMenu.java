@@ -11,6 +11,7 @@ import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheetProjection;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
+import io.github.butterflysmp.rpg.paper.weapon.GearScoreItems;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -19,6 +20,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 
@@ -335,7 +337,13 @@ public final class NexusMenu extends Menu {
                         profiles.profile(viewer.getUniqueId())
                                 .map(PlayerProfile::lifetimeXp)
                                 .map(OptionalLong::of)
-                                .orElseGet(OptionalLong::empty)));
+                                .orElseGet(OptionalLong::empty),
+                        // THE AVERAGE, read from the live inventory HERE rather than computed in the
+                        // pure renderer -- NexusStatsLore cannot see a PlayerInventory and must not
+                        // learn to. Present rather than empty because the viewer is online and their
+                        // inventory is readable by construction at this point; empty is reserved for a
+                        // read that could not happen, which on this path cannot arise.
+                        OptionalInt.of(GearScoreItems.averageOf(viewer, adapters.keys()))));
 
         // THE SKIN. Cheap HERE AND ONLY HERE: the viewer is online, so their profile is already
         // resolved and nothing fetches.

@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearItems;
+import io.github.butterflysmp.rpg.paper.weapon.GearScoreItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -316,6 +317,10 @@ final class InventoryCraft {
         GearDefinition definition = claimed.get();
         ItemStack minted = GearItems.mint(definition, adapters);
         EnchantRollItems.rollOnAcquire(minted, GearItems.gearClassOf(definition), adapters);
+        // And its score. The crafted item is not in an inventory yet -- it is returned in the outcome
+        // below -- so it cannot be in its own average, which is the same property the give path buys by
+        // stamping before addItem.
+        GearScoreItems.stampOnAcquire(minted, GearItems.gearClassOf(definition), viewer, adapters);
         return new CraftOutcome(minted, result.getResultingMatrix());
     }
 

@@ -55,7 +55,7 @@ public final class WeaponLore {
      * when there is no item to read a count from.
      */
     public static List<Component> build(WeaponDefinition weapon, ElementRegistry elements) {
-        return build(weapon, elements, OptionalInt.empty(), OptionalInt.empty());
+        return build(weapon, elements, OptionalInt.empty(), OptionalInt.empty(), OptionalInt.empty());
     }
 
     /**
@@ -72,8 +72,15 @@ public final class WeaponLore {
      * instead of looking like a spent magazine.
      */
     public static List<Component> build(WeaponDefinition weapon, ElementRegistry elements,
-                                        OptionalInt loaded, OptionalInt stampedCapacity) {
+                                        OptionalInt loaded, OptionalInt stampedCapacity,
+                                        OptionalInt score) {
         List<Component> lore = new ArrayList<>();
+
+        // THE GEAR SCORE, ABOVE EVERYTHING. It is the item POWER rating -- the number a player
+        // compares two drops of the same weapon by -- so it outranks the element, which is identity
+        // rather than power. Absent on an unstamped item and on every definitions-only rendering; see
+        // GearLore.appendScore for why it must not print 100 there.
+        GearLore.appendScore(lore, score);
 
         // Element on its own line at the very top, in the ELEMENT's own colour -- not the rarity's.
         lore.add(elementLine(weapon.element(), elements));
@@ -213,5 +220,20 @@ public final class WeaponLore {
     /** A stat number with the trailing ".0" dropped: 8.0 -> "8", 7.5 -> "7.5". */
     private static String number(double n) {
         return GearLoreLines.trimNumber(n);
+    }
+
+    /**
+     * The tooltip with a magazine but no gear score -- a rendering driven by a DEFINITION plus a
+     * stamped count, with no stack to read a score off.
+     *
+     * <p>Kept as its own overload for the reason {@code ArmorLore} states: the empty belongs in one
+     * place rather than at every definitions-only call site, and an empty inside
+     * {@code WeaponItems.applyLore} -- which always holds meta -- would be a bug rather than an
+     * honest absence. An exact IDENTITY with the pre-gear-score renderer, which is why
+     * {@code golden-lore.txt} is byte-identical across this slice.
+     */
+    public static List<Component> build(WeaponDefinition weapon, ElementRegistry elements,
+                                        OptionalInt loaded, OptionalInt stampedCapacity) {
+        return build(weapon, elements, loaded, stampedCapacity, OptionalInt.empty());
     }
 }
