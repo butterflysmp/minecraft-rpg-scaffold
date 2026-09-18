@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.menu;
 
 import io.github.butterflysmp.rpg.core.progression.PlayerLevel;
 import io.github.butterflysmp.rpg.core.vault.VaultCell;
+import io.github.butterflysmp.rpg.core.vault.VaultCloseDisposal;
 import io.github.butterflysmp.rpg.core.vault.VaultMigrationPlan;
 import io.github.butterflysmp.rpg.core.vault.VaultPageGate;
 import io.github.butterflysmp.rpg.core.vault.VaultReturnPolicy;
@@ -428,17 +429,44 @@ public final class NexusVaultMenu extends Menu {
         // handling drops the inventory at the death location, so addItem there is still
         // recoverable -- but nobody has measured the ordering against a poisoned vault, and
         // claiming it is safe would be asserting something unmeasured. Say so rather than picking.
-        if (degraded && reason == InventoryCloseEvent.Reason.DISCONNECT
-                && unpersistedHandled.compareAndSet(false, true)) {
-            dropOwedOnDisconnect();
+        // *** THE CLAIM IS ON `degraded` ALONE. THE DISCONNECT ONLY PICKS THE DESTINATION. ***
+        //
+        // This was an &&-chain with DISCONNECT inside the claim, plus a separate
+        // `if (degraded) unpersistedHandled.set(true)` after returnEverything. That was CORRECT --
+        // the flag was claimed on every degraded close, and it was set before the `closed` write the
+        // drop arm gates on, so the arm could never win the CAS.
+        //
+        // IT WAS ALSO UNREADABLE, AND A REVIEWER READ IT AS BROKEN. They walked the four paths and
+        // reported the degraded-Esc case as leaving the flag free for a later callback to drop cells
+        // this close had already handed back. The report was wrong and the reasoning was not: the
+        // condition beside the drop named DISCONNECT, and the claim for the other case was eleven
+        // lines further down, behind returnEverything.
+        //
+        // AN INVARIANT WHOSE CORRECTNESS RESTS ON THE ORDER OF TWO STATEMENTS AT THE END OF A LONG
+        // METHOD IS A LATENT DEFECT WHILE IT IS STILL RIGHT. The next person to reorder them gets no
+        // warning, and a reviewer who suspects it has nothing to be shown.
+        //
+        // So the decision is VaultCloseDisposal, where both halves are one expression and both are
+        // exercised by a test -- and the rule it states is the one that matters: WHOEVER DISPOSES OF
+        // THE CELLS CLAIMS THEM. returnEverything disposes of them just as surely as a drop does.
+        VaultCloseDisposal disposal = VaultCloseDisposal.of(
+                degraded, reason == InventoryCloseEvent.Reason.DISCONNECT);
+
+        // NESTED, NOT A THREE-TERM &&-CHAIN. The CAS has a SIDE EFFECT, and burying it mid-chain
+        // beside a test that decides something else is how the first version became unreadable.
+        // The outer test is "does this close dispose of the cells"; the inner one is "where do they
+        // go". Two questions, two lines.
+        if (disposal.claimsTheCells() && unpersistedHandled.compareAndSet(false, true)) {
+            if (disposal == VaultCloseDisposal.DROP) dropOwedOnDisconnect();
+            // HAND_BACK: returnEverything below does it, and the claim is already made.
         }
 
         returnEverything();
 
-        // LAST, so that anything reading it is reading a close that has finished. The async drop arm
-        // takes `closed` as its licence to act, and a failure observed mid-close must not find a
-        // half-returned page.
-        if (degraded) unpersistedHandled.set(true);
+        // LAST, and still last on purpose: the async drop arm takes `closed` as its licence to act,
+        // so a failure observed mid-close must not find a half-returned page. The claim above no
+        // longer depends on this ordering -- it is made before anything is disposed of -- but the
+        // arm's OTHER gate still does.
         closed = true;
     }
 
