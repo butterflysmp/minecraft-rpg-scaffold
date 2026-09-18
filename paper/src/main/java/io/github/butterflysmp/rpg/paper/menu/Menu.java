@@ -94,6 +94,37 @@ public abstract class Menu implements InventoryHolder {
     }
 
     /**
+     * The slots {@link #returnEverything} hands back on close. <b>Defaults to {@link #inputSlots()},
+     * which is the answer for every menu shipped before the vault.</b>
+     *
+     * <h2>*** THE ONE OPT-OUT IN THIS CLASS, AND IT INVERTS THE INVARIANT THE BASE IS BUILT ON ***</h2>
+     *
+     * Every other input menu in this plugin is a workbench: the player's items are in it
+     * temporarily and the close gives them back. <b>The vault is storage</b> -- its whole purpose is
+     * that the items stay -- so it answers {@code Set.of()} and the close hands back nothing.
+     *
+     * <p><b>It is a SECOND method rather than a flag on {@link #inputSlots()} because the two
+     * questions have different answers for the same slot.</b> A vault cell IS an input slot -- the
+     * router must permit moves into and out of it, the drag handler must vet it, the shift-move must
+     * find it -- and is NOT a returned slot. Collapsing them would either strand the vault's cells
+     * outside the router's protection or hand the vault's contents back on every close.
+     *
+     * <h2>*** OVERRIDING THIS IS A PROMISE THAT THE ITEMS ARE SOMEWHERE ELSE ***</h2>
+     *
+     * A menu that returns nothing has taken responsibility for what it holds. <b>The vault's claim
+     * is that every cell is already on disk</b>, which is what write-through buys -- and the moment
+     * that claim fails, the override must go back to returning everything. That is not hypothetical
+     * bookkeeping: {@code NexusVaultMenu} answers {@link #inputSlots()} again while DEGRADED, and
+     * without that arm a failed disk write would end with the items in neither place.
+     *
+     * <p>So: <b>do not override this to return an empty set unless you can say where the items are,
+     * and what happens when that stops being true.</b>
+     */
+    protected Set<Integer> returnedSlots() {
+        return inputSlots();
+    }
+
+    /**
      * How one input slot accepts items. Asked only about slots in {@link #inputSlots()}.
      *
      * <p>Defaults to {@link SlotPolicy#EXCLUSIVE}, which is today's rule and the conservative one:
@@ -265,9 +296,14 @@ public abstract class Menu implements InventoryHolder {
      *
      * <p>Public so shutdown can call it DIRECTLY rather than relying on a close event still being
      * routed while the plugin is disabling.
+     *
+     * <p><b>ITERATES {@link #returnedSlots()}, NOT {@link #inputSlots()}</b>, which for every menu
+     * but the vault are the same set. The CURSOR branch below is deliberately outside that opt-out:
+     * an item on the cursor is in flight and belongs to the player whatever the menu thinks about
+     * its own cells, so a vault still hands a cursor item back.
      */
     public final void returnEverything() {
-        for (int slot : inputSlots()) {
+        for (int slot : returnedSlots()) {
             ItemStack held = inventory.getItem(slot);
             inventory.setItem(slot, null);
             MenuSafety.give(viewer, held);

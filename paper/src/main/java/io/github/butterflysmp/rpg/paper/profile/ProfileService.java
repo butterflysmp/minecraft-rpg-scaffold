@@ -335,6 +335,46 @@ public final class ProfileService {
      *
      * @return false if the profile is not loaded or could not be read, so the caller can say which.
      */
+    /**
+     * Record that this player's ender chest has been copied into the vault.
+     *
+     * <h2>*** THE STAMP IS WRITTEN AFTER THE ITEMS, NEVER BEFORE, AND THE ORDER IS THE WHOLE
+     * GUARANTEE ***</h2>
+     *
+     * The caller ({@code NexusVaultMenu}) writes the vault page first and only calls this if that
+     * write was ACCEPTED. Reverse the two and a crash in between leaves a player stamped as migrated
+     * with an empty page 1 -- their chest is still full, and <b>nothing will ever copy it again</b>,
+     * because the flag says it already happened. Items they can see in no container.
+     *
+     * <p>The opposite order is survivable and is the one chosen: items copied, stamp not written,
+     * so the next open copies again -- into cells that are now OCCUPIED, which
+     * {@code VaultMigrationPlan} skips. The failure repeats harmlessly instead of hiding.
+     *
+     * <p>Same shape as {@link #setNexusSlot}: cache first, then the save, and a failed save logs
+     * rather than throwing. <b>A failed stamp write is the survivable direction</b> -- it re-runs a
+     * skip-everything migration on the next open.
+     *
+     * @return false if the profile is not loaded, in which case nothing was cached or written.
+     */
+    public boolean setVaultMigrated(UUID playerId) {
+        CompletableFuture<PlayerProfile> loading = profiles.get(playerId);
+        if (loading == null || !loading.isDone() || loading.isCompletedExceptionally()) {
+            return false;
+        }
+        PlayerProfile current = loading.getNow(null);
+        if (current == null) return false;
+
+        PlayerProfile updated = current.withVaultMigrated(true);
+        profiles.put(playerId, CompletableFuture.completedFuture(updated));
+        repository.save(updated).exceptionally(error -> {
+            log.log(Level.SEVERE, "Failed to persist the vault migration stamp for " + playerId
+                    + "; their ender chest was copied and the migration will run again next time,"
+                    + " skipping the cells it already filled", error);
+            return null;
+        });
+        return true;
+    }
+
     public boolean setStarEnabled(UUID playerId, boolean enabled) {
         CompletableFuture<PlayerProfile> loading = profiles.get(playerId);
         if (loading == null || !loading.isDone() || loading.isCompletedExceptionally()) {

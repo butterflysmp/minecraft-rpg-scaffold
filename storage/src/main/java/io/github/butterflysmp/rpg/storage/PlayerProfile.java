@@ -40,10 +40,44 @@ public record PlayerProfile(
          * component name is not a second accepted spelling.
          */
         @com.google.gson.annotations.SerializedName("starEnabled")
-        Boolean starEnabledOrNull
+        Boolean starEnabledOrNull,
+
+        /**
+         * Has this player's vanilla ender chest been copied into vault page 1 yet?
+         *
+         * <h2>*** A PRIMITIVE, AND THE FOURTH FIELD ANSWERS ABSENCE A FOURTH WAY ***</h2>
+         *
+         * <p>The compact constructor's note says to ask what an absent value MEANS rather than what
+         * type it is. <b>Absent means "not migrated", which is exactly right</b> for every profile
+         * written before this field existed -- nobody's chest had been copied, because the copy did
+         * not exist. So Gson's absent-boolean {@code false} is the correct value and no constructor
+         * default, no boxing and no fix-up step is needed.
+         *
+         * <p>That is {@code lifetimeXp}'s case, not {@code starEnabled}'s: {@code false} is a legal
+         * value AND the right reading of absence, so the primitive has nothing to disambiguate.
+         *
+         * <h2>*** BUT THE STAMP MOVED ANYWAY, AND THE REASON IS THE ROLLBACK, NOT THE FIELD ***</h2>
+         *
+         * {@code lifetimeXp} shipped with <b>no</b> stamp bump on Ben's ruling, and
+         * {@code ProfileMigrations} names the bill: an older build loads the profile, drops the key
+         * it does not know, and writes the loss back. <b>There it costs a rollback some XP. Here it
+         * costs the player a SECOND COPY OF THEIR ENDER CHEST</b> -- the flag reverts to false, the
+         * migration runs again, and page 1's free cells take another copy of a chest that was never
+         * cleared.
+         *
+         * <p>So this field <b>does</b> bump the stamp, purely so the newer-server refusal at the top
+         * of {@code ProfileMigrations} can fire. See the v3 -&gt; v4 step: it sets no value.
+         */
+        boolean vaultMigrated
 ) {
-    /** Bump when the on-disk shape changes, and add a ProfileMigrations step. */
-    public static final int CURRENT_SCHEMA_VERSION = 3;
+    /**
+     * Bump when the on-disk shape changes, and add a ProfileMigrations step.
+     *
+     * <p><b>4 since the vault migration stamp.</b> The bump buys the newer-server refusal for
+     * {@code vaultMigrated}; it fixes up no field. That is the first time a step has existed for
+     * the refusal alone, and the step says so rather than looking forgotten.
+     */
+    public static final int CURRENT_SCHEMA_VERSION = 4;
 
     /**
      * Where the Nexus star sits for a player who has never chosen: the rightmost hotbar slot.
@@ -74,22 +108,29 @@ public record PlayerProfile(
         elementId = elementId == null ? NONE : elementId;
         unlockedAbilities = unlockedAbilities == null ? List.of() : List.copyOf(unlockedAbilities);
 
-        // NONE OF THE THREE NON-STRING FIELDS IS DEFAULTED HERE, AND ALL THREE HAVE DIFFERENT
-        // REASONS. Read each accessor's javadoc before adding a fourth; the answers do NOT
+        // NONE OF THE FOUR NON-STRING FIELDS IS DEFAULTED HERE, AND ALL FOUR HAVE DIFFERENT
+        // REASONS. Read each accessor's javadoc before adding a fifth; the answers do NOT
         // generalise from one another, and the thing that differs is the VALUE SPACE, never the
         // type.
         //
-        //   nexusSlot    IMPOSSIBLE here -- 0 is a legal slot, so absence is indistinguishable
-        //                from choice, and only the v2 -> v3 migration can tell them apart.
-        //   lifetimeXp   UNNECESSARY here -- Gson's absent-long 0 is already the correct value,
-        //                so there is nothing for a default to do.
-        //   starEnabled  DELIBERATELY NOT DONE here -- it is boxed, so null survives to the
-        //                ACCESSOR, which is the one place absence is interpreted. Defaulting it
-        //                here would write `true` into the record and thereby into the FILE,
-        //                destroying the property that an untouched setting stores no key at all.
+        //   nexusSlot      IMPOSSIBLE here -- 0 is a legal slot, so absence is indistinguishable
+        //                  from choice, and only the v2 -> v3 migration can tell them apart.
+        //   lifetimeXp     UNNECESSARY here -- Gson's absent-long 0 is already the correct value,
+        //                  so there is nothing for a default to do.
+        //   starEnabled    DELIBERATELY NOT DONE here -- it is boxed, so null survives to the
+        //                  ACCESSOR, which is the one place absence is interpreted. Defaulting it
+        //                  here would write `true` into the record and thereby into the FILE,
+        //                  destroying the property that an untouched setting stores no key at all.
+        //   vaultMigrated  UNNECESSARY here, for lifetimeXp's reason -- absent means "not
+        //                  migrated", which is the correct reading for every profile written before
+        //                  the vault existed. THIS IS THE ONE WHERE THE VALUE SPACE AND THE STAMP
+        //                  DISAGREE: nothing needs a fix-up step, and the stamp moved anyway, for
+        //                  the ROLLBACK refusal. See its accessor and the v3 -> v4 step.
         //
-        // Impossible, unnecessary, and deliberately deferred. All three look like the same blank
-        // line, which is why they are named rather than left to be inferred.
+        // Impossible, unnecessary, deliberately deferred, and unnecessary-but-stamped. All four
+        // look like the same blank line, which is why they are named rather than left to be
+        // inferred -- and the fourth is the one that shows the absent-value question and the
+        // schema-stamp question are TWO questions, not one asked twice.
     }
 
     /**
@@ -210,7 +251,7 @@ public record PlayerProfile(
         // no key either -- which keeps a brand-new file byte-identical in shape to every existing
         // one, and keeps the absent-means-enabled path the ONE path rather than a fallback.
         return new PlayerProfile(CURRENT_SCHEMA_VERSION, id, NONE, NONE, 1, 0, List.of(),
-                System.currentTimeMillis(), DEFAULT_NEXUS_SLOT, 0L, null);
+                System.currentTimeMillis(), DEFAULT_NEXUS_SLOT, 0L, null, false);
     }
 
     /**
@@ -222,17 +263,17 @@ public record PlayerProfile(
      */
     public PlayerProfile withStarEnabled(boolean enabled) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, enabled);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, enabled, vaultMigrated);
     }
 
     public PlayerProfile withSchemaVersion(int version) {
         return new PlayerProfile(version, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated);
     }
 
     public PlayerProfile withLastSeen(long epochMillis) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, epochMillis, nexusSlot, lifetimeXp, starEnabledOrNull);
+                unlockedAbilities, epochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated);
     }
 
     /**
@@ -246,7 +287,7 @@ public record PlayerProfile(
      */
     public PlayerProfile withNexusSlot(int slot) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, slot, lifetimeXp, starEnabledOrNull);
+                unlockedAbilities, lastSeenEpochMillis, slot, lifetimeXp, starEnabledOrNull, vaultMigrated);
     }
 
     /**
@@ -262,7 +303,28 @@ public record PlayerProfile(
      */
     public PlayerProfile withLifetimeXp(long xp) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot, xp, starEnabledOrNull);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, xp, starEnabledOrNull, vaultMigrated);
+    }
+
+    /**
+     * Record that this player's ender chest has been copied into the vault.
+     *
+     * <h2>*** TAKES A PRIMITIVE AND IS MEANT TO BE CALLED WITH {@code true}, ONCE, FOREVER ***</h2>
+     *
+     * <b>It accepts {@code false} deliberately, and that is not symmetry for its own sake.</b> An
+     * operator re-running a migration for one player -- because it was interrupted, or because a
+     * restore put an old chest back -- is a real support action, and the alternative is hand-editing
+     * JSON on a live server. {@code withStarEnabled} takes a primitive for the same reason.
+     *
+     * <p><b>WHAT SETTING IT BACK TO {@code false} COSTS, because the caller must know:</b> the next
+     * open at level 20+ copies the chest again, into whatever cells of page 1 are free. The chest is
+     * never cleared, so nothing is lost -- but anything the player has since MOVED OFF page 1 is
+     * copied a second time. That is the duplication arm, reachable by hand and only by hand.
+     */
+    public PlayerProfile withVaultMigrated(boolean migrated) {
+        return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull,
+                migrated);
     }
 
     /**
@@ -274,6 +336,6 @@ public record PlayerProfile(
      */
     public PlayerProfile withKit(String classId, String elementId, List<String> unlockedAbilities) {
         return new PlayerProfile(schemaVersion, playerId, classId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated);
     }
 }

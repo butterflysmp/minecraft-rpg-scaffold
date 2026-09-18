@@ -204,12 +204,13 @@ class NexusMenuLayoutTest {
         //
         // IT DID IT AGAIN FOR THE THIRD STATION -- 49 against 48 -- and that was the ONLY row that
         // reddened when the grindstone was added, exactly as designed.
-        assertEquals(NexusMenuLayout.SIZE - 6, NexusMenuLayout.FILLER_SLOTS.size(),
-                "every slot except the two buttons, the head and the three stations is filler");
+        assertEquals(NexusMenuLayout.SIZE - 7, NexusMenuLayout.FILLER_SLOTS.size(),
+                "every slot except the two buttons, the head and the FOUR stations is filler");
         for (int slot = 0; slot < NexusMenuLayout.SIZE; slot++) {
             boolean isButton = slot == NexusMenuLayout.CLOSE_SLOT
                     || slot == NexusMenuLayout.SETTINGS_SLOT
                     || slot == NexusMenuLayout.STATS_SLOT
+                    || slot == NexusMenuLayout.VAULT_SLOT
                     || slot == NexusMenuLayout.CRAFTING_SLOT
                     || slot == NexusMenuLayout.ENCHANT_SLOT
                     || slot == NexusMenuLayout.GRINDSTONE_SLOT;
@@ -254,8 +255,8 @@ class NexusMenuLayoutTest {
 
         // AND THE PAINT LIST IS NOT EMPTY, without which the partition is satisfied by "everything
         // is filler" -- the blank-screen reading the cardinality row above also guards against.
-        assertEquals(6, NexusMenuLayout.PAINTED_SLOTS.size(),
-                "Close, Settings, the head, and the three stations");
+        assertEquals(7, NexusMenuLayout.PAINTED_SLOTS.size(),
+                "Close, Settings, the head, and the four stations");
         // Mutation: drop GRINDSTONE_SLOT from PAINTED_SLOTS -> slot 33 is neither -> reddens.
         // THAT MUTATION IS THE SHIPPED DEFECT, and nothing in this file reddened on it before.
     }

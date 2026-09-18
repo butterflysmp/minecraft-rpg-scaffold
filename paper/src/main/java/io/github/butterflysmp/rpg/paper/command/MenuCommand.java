@@ -9,6 +9,7 @@ import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.menu.NexusMenu;
 import io.github.butterflysmp.rpg.paper.menu.RecipeCatalogue;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
+import io.github.butterflysmp.rpg.paper.vault.VaultService;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
@@ -61,7 +62,7 @@ public final class MenuCommand {
     /**
      * Build the {@code /menu} node.
      *
-     * <p><b>Nine services, threaded rather than reached for</b>, because {@link NexusMenu} is the
+     * <p><b>Ten services, threaded rather than reached for</b>, because {@link NexusMenu} is the
      * one screen that carries the full set -- see its constructor's javadoc on why the bundle is
      * not owed. This command is a second door onto that same screen and takes the same key.
      *
@@ -72,7 +73,7 @@ public final class MenuCommand {
     public static LiteralCommandNode<CommandSourceStack> build(
             AdapterContext adapters, ProfileService profiles, WeaponRegistry weapons,
             ResourcePool resources, RecipeCatalogue recipes, ShieldRegistry shields,
-            ArmorRegistry armor, ToolRegistry tools) {
+            ArmorRegistry armor, ToolRegistry tools, VaultService vaults) {
 
         return Commands.literal("menu")
                 .requires(source -> source.getSender().hasPermission(Permissions.MENU))
@@ -92,7 +93,7 @@ public final class MenuCommand {
                     // first -- Menu.open's tick-hop rule is about not racing an inventory close,
                     // and a command is not inside one.
                     new NexusMenu(player, adapters, profiles, weapons, resources, recipes,
-                            shields, armor, tools).open();
+                            shields, armor, tools, vaults).open();
                     return 1;
                 })
                 .build();
