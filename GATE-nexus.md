@@ -25,7 +25,7 @@ has none:
 
 | **ROWS 92–96** | five | **2 PASS, 2 PARTIAL, 1 VOID.** Run 2026-09-17, Slice 11 PR 1, the vault's storage layer. **Rows 92 and 94 are the SOLE WITNESSES and both are FULLY witnessed** — 94 including its empty-vault control, the half most likely to be skipped. The PDC round trip and the shutdown flush have no unit rows anywhere in the project, because no module can construct an `ItemStack`. **93 and 95 are PARTIAL**: the directory check and the `/rpg stats` control were not run, and both stand NOT RUN in their rows. **96 is VOID** — no second account was online — and it was never a sole witness |
 
-| **ROWS 97–113** | seventeen | **ALL NOT RUN.** Slice 11 PR 2, the vault screen, the hijack and the migration. **Rows 102, 103, 111 and 112 are SOLE WITNESSES.** 102 needs a real ender chest and a real `ItemStack`; **103 and 111 are the only rows whose failure mode is a GAIN**; **112's failure mode is SILENT DESTRUCTION** and no other row reaches it. **111–113 were added after 97–110 were written**, because none of those can fail on the degrade path — a write failure has to be FORCED, and a normal boot never produces one. 111 forces a failure the screen SEES; 112 forces one that arrives after it has gone; 113 reads the quit path's drop |
+| **ROWS 97–114** | eighteen | **ALL NOT RUN.** Slice 11 PR 2, the vault screen, the hijack and the migration. **Rows 102, 103, 111, 112 and 114 are SOLE WITNESSES.** 102 needs a real ender chest and a real `ItemStack`; **103 and 111 are the only rows whose failure mode is a GAIN**; **112's failure mode is SILENT DESTRUCTION** and no other row reaches it; **114 is the whole of the free-page-1 ruling** and reads the block route below every threshold. **111–113 were added after 97–110 were written**, because none of those can fail on the degrade path — a write failure has to be FORCED. **97, 99, 102 and 108 were AMENDED on 2026-09-18** by the ruling that made page 1 free: 97's prediction inverted, 99 was withdrawn and replaced one rung up at page 2 / level 25, 102's fixture lost two steps it can no longer perform, and 108's stage moved because its destination page became unreachable at the level 102 now stages |
 
 **Every other row in this file has no reading at all.**
 
@@ -3872,10 +3872,28 @@ NOT deferred.**
 
 ---
 
-# SLICE 11, PR 2 — THE VAULT SCREEN, THE HIJACK AND THE MIGRATION. ROWS 97–110.
+# SLICE 11, PR 2 — THE VAULT SCREEN, THE HIJACK AND THE MIGRATION. ROWS 97–114.
 
 **Status: NOT RUN.** Every row below was written **before any boot**, and before the branch that
 adds them was pushed.
+
+> ### *** AMENDED 2026-09-18, BEFORE ANY BOOT, BY THE RULING THAT MADE PAGE 1 FREE ***
+>
+> **Five rows changed and one was added, and no reading had been taken against any of them.** That
+> is the only reason this is an amendment rather than a rewrite of a block with readings in it:
+>
+> | row | what happened |
+> |---|---|
+> | **97** | **prediction INVERTED** — page 1 lime and usable below 20, six buttons dimmed, where it predicted seven gray buttons and 36 gray panes |
+> | **99** | **WITHDRAWN and replaced one rung up** — its whole claim was the page-1-at-20 boundary, which no longer exists. Now page 2 at 25 / locked at 24 |
+> | **100** | **survives unchanged, RE-DERIVED rather than assumed** — page 4 is index 3, still 35 on the new ladder, and "level 20 exactly, pages 2-7 locked" is still true |
+> | **102** | **fixture lost two steps it can no longer perform** — page 1 is never locked, so "confirm page 1 is locked" and the `setlevel 20` reopen are gone. Migration fires on the first open |
+> | **108** | **stage moved** — it said "move a stack to page 3", and page 3 needs level 30 while 102 now stages at level 1. The stack comes OUT of the vault instead |
+> | **114** | **NEW** — a level-1 player stores through the block and it survives a rejoin, while slot 29 stays locked in the same reading |
+>
+> **The rows that did not move are as load-bearing as the ones that did**, and 100 is the one worth
+> naming: it looked like a casualty and is not, because the six page thresholds never moved. **Only
+> page 1's left.**
 
 ## GAME MODE
 
@@ -3884,16 +3902,23 @@ is the creative control and stages creative on purpose.
 
 > **AND CREATIVE HOLLOWS OUT THIS BLOCK HARDER THAN ANY BEFORE IT.** The register's rule is that
 > *creative removes a cost*, and a row whose reading is **"the item is still there"** is satisfied
-> for free once the cost is gone. **Eleven of these fourteen rows read exactly that way.** In
-> creative a player can conjure a second Boltor between the store and the take, so even row 103 --
-> the duplication row -- would not distinguish a duplicate from a spawn.
+> for free once the cost is gone. **Most of these rows read exactly that way.** In creative a player
+> can conjure a second Boltor between the store and the take, so even row 103 -- the duplication row
+> -- would not distinguish a duplicate from a spawn.
+>
+> **The fraction is deliberately not counted.** It said *"eleven of these fourteen"* and the block
+> has since gained four rows; a ratio in prose is a figure maintained by delta, and the claim does
+> not need it.
 
-## *** THE TWO SOLE WITNESSES, AND WHY THEY ARE THESE TWO ***
+## *** THE FIVE SOLE WITNESSES, AND WHY THEY ARE THESE FIVE ***
 
 | row | claim | why nothing else can see it |
 |---|---|---|
 | **102** | **MIGRATION** copies the ender chest into page 1 **and leaves the chest holding it** | needs a real `getEnderChest()`, a real `ItemStack`, and a profile stamp that survives a restart. `VaultMigrationPlan` tests the PLAN over slot indices; **no test in any module can move an item** |
-| **103** | **take an item OUT, close, rejoin -- EXACTLY ONE copy exists** | **no LOSS row can fail on it.** Every other row here asserts something is still there, and a duplicate satisfies all of them. This is the only row in the file whose failure mode is a GAIN |
+| **103** | **take an item OUT, close, rejoin -- EXACTLY ONE copy exists** | **no LOSS row can fail on it.** Every other row here asserts something is still there, and a duplicate satisfies all of them. Its failure mode is a GAIN |
+| **111** | a **FORCED** write failure the screen SEES: the close hands back only what is not on disk | the degrade path fires on a write failure, which **no normal boot produces**. 5 + 1 = 6 correct, 5 + 6 the duplicator, 5 + 0 the shredder |
+| **112** | a forced failure that arrives **AFTER the close**: the items reach the ground | **silent destruction** — no error, no message, the vault looks healthy and the stack is simply nowhere. Nothing else in the file reaches it |
+| **114** | a **level-1** player stores through the block, and slot 29 stays locked in the same reading | **the whole of the 2026-09-18 ruling.** Row 101 is level 50 through the hub; 97 proves the screen renders. Neither puts an item in and takes it back out below a threshold, and neither reads the two routes as SEPARATED |
 
 > **ROW 103 IS THE ROW THIS ENTIRE SLICE WAS RE-PLANNED AROUND.** The withdrawn PR 2 draft wrote
 > the page synchronously, which duplicates on every take-out -- and **the draft's own gate block
@@ -3920,14 +3945,28 @@ page flip, a close, or a restart. **That gap is these fourteen rows.**
 
 **STAGE:** right-click it. Then sneak-right-click it.
 
-**PREDICTED:** **our screen opens both times** -- title `Vault`, seven page buttons in the top row,
-**all seven gray and named `Page N -- locked`**, the 36 storage cells filled with gray panes reading
-`Locked`. **The vanilla ender chest screen never appears.** No Back button (opened from the block).
+**PREDICTED:** **our screen opens both times** -- title `Vault`, seven page buttons in the top row.
+**Page 1's button is LIME and named `Page 1`; the other six are gray and named `Page N -- locked`.**
+The 36 storage cells are **EMPTY AND USABLE** -- an item can be placed in them at this level. **The
+vanilla ender chest screen never appears.** No Back button (opened from the block).
+
+> ### *** THIS PREDICTION INVERTED ON 2026-09-18, AND THE OLD ONE IS QUOTED BECAUSE THE INVERSION IS THE RULING ***
+>
+> It read: *"all seven gray and named `Page N -- locked`, the 36 storage cells filled with gray panes
+> reading `Locked`"*. **Page 1 is now free at every level via the block.** What level 20 buys is the
+> HUB SHORTCUT at slot 29 and nothing else.
+>
+> **So the row's claim moved from "the screen opens and is empty" to "the screen opens and WORKS".**
+> A reading taken against the old prediction would have marked a working build as broken.
+
+> **SIX DIMMED BUTTONS ARE THE POINT OF THE SCREEN, NOT LEFTOVERS.** One layout, one code path, both
+> routes -- so a level-1 player sees the whole ladder on day one and learns it exists. A build that
+> hid the locked buttons would pass "page 1 works" and lose that.
 
 > **THE SNEAK IS NOT A SECOND WAY OF SAYING THE SAME THING.** `openHijackedBlock` cancels
 > UNCONDITIONALLY, above the `isSneaking` check -- the fix the enchanting table's sneak-guard bug
 > paid for. A build that put the cancel inside the sneak guard opens the VANILLA chest on the second
-> click, which is the one screen the hijack exists to replace.
+> click, which is the one screen the hijack exists to replace. **Untouched by the ruling.**
 
 **READING:** _(not run)_
 
@@ -3959,19 +3998,33 @@ Slot 31's third line still reads `A crafting table in the world still works.`
 
 ---
 
-## ROW 99 — PAGE 1 OPENS AT EXACTLY 20, AND IS LOCKED AT 19
+## ROW 99 — PAGE 2 OPENS AT EXACTLY 25, AND IS LOCKED AT 24
 
 **CONDITIONS:** survival, operator.
 
-**STAGE:** `/rpg playerxp setlevel 19` (or the XP equivalent), open the vault, read page 1's button
-and the storage cells. Then set level **20** and reopen.
+> ### *** THIS ROW WAS WITHDRAWN AND REPLACED ONE RUNG UP, 2026-09-18 ***
+>
+> It read *"PAGE 1 OPENS AT EXACTLY 20, AND IS LOCKED AT 19"*, and **its entire claim was that
+> boundary.** Page 1 is now free at every level, so there is no boundary there to read -- the row
+> was not weakened by the ruling, it was emptied by it.
+>
+> **Replaced rather than deleted, because the SHAPE was right**: the first earned page, read at the
+> two levels either side of its threshold. That is now page 2 at 25.
 
-**PREDICTED:** at 19 the button is gray, `Page 1 -- locked`, storage is panes, **and no item can be
-placed** -- a click with an item on the cursor does nothing and the item stays on the cursor. At 20
-the button is **LIME**, named `Page 1`, storage is **empty cells**, and an item can be placed.
+**STAGE:** `/rpg playerxp setlevel 24` (or the XP equivalent), open the vault, read page 2's button
+and try to flip to it with an item on the cursor. Then set level **25** and reopen.
 
-> **19 AND 20, NOT 1 AND 50.** The boundary is the whole content of this row, and it is inclusive:
-> level 20 opens the level-20 page. A row staged at 1 and 50 passes on a build that compares `>`.
+**PREDICTED:** at 24 the button is gray, `Page 2 -- locked`, the click says
+`Vault page 2 unlocks at level 25. You are level 24.` and **the screen does not change**. At 25 the
+button is **WHITE** (unlocked, not current), clicking it flips to page 2, and the 36 cells are
+**empty and usable**.
+
+> **24 AND 25, NOT 1 AND 50.** The inclusive boundary is the whole content of this row: level 25
+> opens the level-25 page. A row staged at 1 and 50 passes on a build that compares `>`.
+
+> **AND PAGE 1 MUST BE LIME IN BOTH READINGS.** It is free, so it is open at 24 as well -- which is
+> what distinguishes this row from the one it replaced. If page 1 is gray at level 24, the ruling did
+> not land and the rest of this block is reading the wrong build.
 
 **READING:** _(not run)_
 
@@ -4021,20 +4074,31 @@ inventory does not contain it.
 ## ROW 102 — *** MIGRATION: THE CHEST IS COPIED, AND THE CHEST STILL HAS IT. SOLE WITNESS. ***
 
 **CONDITIONS:** survival, operator. **A player who has NEVER opened the vault** -- verify
-`vaultMigrated` is absent or false in their `profiles/<uuid>.json` before starting. **Below level 20
-at the start.**
+`vaultMigrated` is absent or false in their `profiles/<uuid>.json` before starting. **Level is
+irrelevant; stage it LOW (level 1) on purpose.**
+
+> ### *** THE FIXTURE SIMPLIFIED ON 2026-09-18, AND THE TWO REMOVED STEPS ARE WHY ***
+>
+> It used to require *"confirm page 1 is locked and holds nothing"*, then `setlevel 20` and a reopen,
+> because migration waited for page 1 to unlock. **Migration now runs on the FIRST vault open, at any
+> level**, so those two steps are not merely unnecessary -- **they cannot be performed**: page 1 is
+> never locked.
+>
+> **And the deferral would now be the defect rather than the safety.** A level-5 player fills page 1
+> and plays for weeks; a migration deferred to 20 then copies 27 stacks into a page that is no longer
+> empty, and `VaultMigrationPlan` skips occupied cells -- so most of the chest is silently left in a
+> container the hijack has made unreachable.
 
 **STAGE:**
 
 1. **Before this build is deployed**, or with the plugin disabled: put **three** distinguishable
    stacks in a vanilla ender chest, at chest slots **0, 13 and 26**. Write down what they are.
-2. Boot this build. Join. Confirm level < 20.
-3. Open the vault (block or hub). **Confirm page 1 is locked and holds nothing.**
-4. `/rpg playerxp setlevel 20`. **Close and reopen the vault.**
-5. `/rpg vault dump`.
-6. `/stop`, restart, rejoin, open the vault.
+2. Boot this build. Join. **Confirm level 1** -- the point is that it does not matter.
+3. Open the vault **from the ender chest block**. This is the first open.
+4. `/rpg vault dump`.
+5. `/stop`, restart, rejoin, open the vault.
 
-**PREDICTED:** at step 4 chat says `3 item(s) from your ender chest are now on vault page 1. The
+**PREDICTED:** at step 3 chat says `3 item(s) from your ender chest are now on vault page 1. The
 ender chest still holds them too.` Page 1 shows the three stacks **in the same arrangement** --
 first cell, second row centre, third row last cell. Dump reads `page 1: 3 item(s)`. After the restart
 they are **still there**, and `vaultMigrated` is `true` in the profile JSON.
@@ -4048,9 +4112,21 @@ right-clicking the block, which now opens our screen.
 > the player's things are still where they left them. **A clear-on-migrate would have made that
 > unrecoverable**, which is the standing ruling this row reads.
 
-> **STEP 3 IS NOT OPTIONAL.** Without it, "the items are on page 1 at step 4" is equally consistent
-> with a build that migrates on the FIRST OPEN at any level -- which would put items on a page the
-> player cannot see, at a moment nobody is watching.
+> ### *** THE OLD "STEP 3 IS NOT OPTIONAL" NOTE IS WITHDRAWN, AND IT WAS ARGUING FOR THE DEFECT ***
+>
+> It read: *"without it, 'the items are on page 1 at step 4' is equally consistent with a build that
+> migrates on the FIRST OPEN at any level -- which would put items on a page the player cannot
+> see."* **Migrating on the first open at any level is now the REQUIREMENT**, and the page is one the
+> player can see, so the note was defending a deferral that has since been ruled harmful.
+>
+> **Quoted rather than deleted because the note was CORRECT under its own ruling.** A row's
+> justification can outlive the rule it justified, and this one would have read as a live argument
+> against the very behaviour the row is now checking.
+
+> **WHAT REPLACES IT AS THE THING THAT MAKES THIS ROW ABLE TO FAIL:** the player is at level **1**.
+> A build that kept any level gate migrates NOTHING here, chat is silent, and `/rpg vault dump`
+> reads `0 occupied slot(s)` -- while the ender chest still holds all three and the player cannot
+> open it. **Stage it low, and the absence of the message is the failure.**
 
 **READING:** _(not run)_
 
@@ -4179,17 +4255,36 @@ nothing lands on it. After the flips and the rejoin, **the file still contains t
 
 **CONDITIONS:** survival, operator. Immediately after **row 102**, same player, same session.
 
-**STAGE:** close and reopen the vault three times. Move one migrated stack from page 1 to page 3.
-Close, reopen. `/rpg vault dump`. Quit, rejoin, reopen, dump again.
+**STAGE:** close and reopen the vault three times. **Take one migrated stack OUT of page 1 into your
+own inventory.** Close, reopen. `/rpg vault dump`. Quit, rejoin, reopen, dump again.
+
+> ### *** THE MOVE DESTINATION CHANGED ON 2026-09-18, BECAUSE THE OLD ONE BECAME UNREACHABLE ***
+>
+> It read *"move one migrated stack from page 1 to page 3"*. **Row 102 now stages at level 1, and
+> page 3 needs level 30** -- so the step could not be performed at all, and a reader following it
+> would have had to improvise the fixture or restage the whole pair at a level the ruling no longer
+> requires.
+>
+> **Taking the stack OUT of the vault does the same job**: it empties a page-1 cell, which is the
+> only property the row needs. It also keeps the pair at one level, which is what row 102's own
+> simplification bought.
+>
+> **This is the row Ben said to re-read rather than assume, and re-reading it found this.** Its
+> CONDITIONS were untouched by the ruling and its STAGE was falsified by a change two rows away.
 
 **PREDICTED:** the migration message appears **exactly once, in row 102, and never again.** The total
-occupied slot count **never rises above 3**. After moving one to page 3 the dump reads `page 1: 2
-item(s)` and `page 3: 1 item(s)` -- **and page 1 does NOT regain a third.**
+occupied slot count **never rises above 3**, and after the take-out the dump reads
+`page 1: 2 item(s)` with **exactly one stack in the player's inventory** -- **and page 1 does NOT
+regain a third.**
 
-> **THE MOVE IS WHAT MAKES THIS ROW ABLE TO FAIL.** A build that re-migrates on every open would be
-> invisible while page 1 still holds everything -- `VaultMigrationPlan` skips occupied cells, so the
-> second run is a no-op. **Empty a cell and the re-run has somewhere to land**, which is the only way
-> a missing stamp shows itself.
+> **THE EMPTIED CELL IS WHAT MAKES THIS ROW ABLE TO FAIL.** A build that re-migrates on every open
+> would be invisible while page 1 still holds everything -- `VaultMigrationPlan` skips occupied
+> cells, so the second run is a no-op. **Empty a cell and the re-run has somewhere to land**, which
+> is the only way a missing stamp shows itself.
+
+> **AND THE TOTAL IS THE READING, NOT THE PAGE.** 2 in the vault + 1 in the inventory = 3. A
+> re-migration reads `page 1: 3 item(s)` with 1 in the inventory: **four stacks from a chest that
+> held three.**
 
 **READING:** _(not run)_
 
@@ -4396,5 +4491,58 @@ The vault holds **1** on page 6. Console carries the `WARNING` naming the drop a
 > **THE READING TO WRITE DOWN IS WHERE IT IS, NOT WHETHER IT SURVIVED.** An item in the inventory
 > after the rejoin is a PASS for "nothing was lost" and a FAIL for this row -- it means the drop
 > branch did not fire and the survival was luck of the ordering. **Look at the floor first.**
+
+**READING:** _(not run)_
+
+---
+
+## ROW 114 — *** A LEVEL-1 PLAYER STORES AN ITEM THROUGH THE BLOCK AND IT SURVIVES A REJOIN. SOLE WITNESS. ***
+
+**CONDITIONS:** survival, operator. **LEVEL 1** -- `/rpg playerxp set 0`, confirmed with
+`/rpg stats` before starting. An ender chest placed in the world. **Star enabled**, so the hub is
+reachable in the same reading.
+
+> ### *** THIS IS THE ENTIRE CONTENT OF THE 2026-09-18 RULING, AND NOTHING ELSE COVERS IT ***
+>
+> **Row 101 is level 50 through the hub.** Row 97 proves the screen OPENS at a low level and that
+> page 1 renders usable. **Neither one puts an item in and takes it back out again** below a
+> threshold, which is the claim the ruling actually makes: page 1 is *real storage*, not a screen
+> that looks open.
+>
+> **And it is staged at 1 rather than 19 deliberately.** 19 is one below the OLD threshold, so a
+> build that merely lowered the number by one would pass there. **1 is below anything anybody could
+> have written.**
+
+**STAGE:**
+
+1. `/rpg stats` -- confirm **level 1**.
+2. `/rpg give boltor`.
+3. **Right-click the ender chest block.** Put the Boltor in **page 1, cell 17**.
+4. **In the same reading, open the hub** (`/menu` or the star) and **hover slot 29**.
+5. Close everything. `/rpg vault dump`.
+6. Quit. Rejoin. Right-click the block, read page 1.
+
+**PREDICTED:**
+
+- Step 3: the item goes in and **stays in** -- the cell holds it, the cursor is empty.
+- **Step 4: slot 29 is STILL LOCKED** -- dimmed `Vault`, lore `Locked -- unlocks at level 20`,
+  `You are level 1.` Clicking it refuses and says so.
+- Step 5: `page 1: 1 item(s)`, `slot 17: <MATERIAL> x1`. **Nothing was handed back** -- the Boltor is
+  not in the player's inventory.
+- Step 6: the Boltor is **in page 1 cell 17**, with its name, rarity colour, lore and enchants.
+
+> **STEP 4 IS HALF THE ROW AND IS NOT A CONTROL ON THE OTHER HALF -- IT IS THE SECOND CLAIM.** The
+> ruling separated *the storage* from *the shortcut to it*. A build that freed page 1 by freeing the
+> whole vault would pass steps 1-3, 5 and 6 and **open slot 29 at level 1**, and every other row in
+> this block would still be green. **The two must be read in ONE session on ONE player**, or the
+> separation is being assumed rather than observed.
+
+> **AND THE ROUTE MATTERS: THE BLOCK, NOT THE HUB.** At level 1 the hub cell is locked, so the block
+> is the only way in. A reading taken through `/menu` at level 50 is row 101 and says nothing about
+> this.
+
+> **PAGE 1 CELL 17, NOT CELL 0.** `0` is the cell a build that ignored the slot index would write to,
+> and `page 1` is index 0 -- so `1 / 17` keeps the two coordinates distinguishable and makes a
+> page/slot transposition visible.
 
 **READING:** _(not run)_

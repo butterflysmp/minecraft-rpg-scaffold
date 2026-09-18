@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -364,6 +365,43 @@ class VaultWiringSignatureTest {
         assertTrue(write < stamp,
                 "THE WRITE MUST COME FIRST. Stamping first and crashing leaves a player marked"
                         + " migrated with an empty page 1 and a full ender chest they cannot open");
+    }
+
+    /**
+     * *** THE MIGRATION IS NOT LEVEL-GATED, AND THE ABSENCE IS THE RULING. ***
+     *
+     * <p>Page 1 became free on 2026-09-18, so there is nothing left to wait for -- and <b>deferring
+     * would now be actively harmful rather than merely pointless.</b> A level-5 player fills page 1,
+     * plays for weeks, and a migration deferred to level 20 then copies 27 stacks into a page that
+     * is no longer empty: {@code VaultMigrationPlan} skips occupied cells, so most of the chest
+     * would be silently left behind in a container the hijack has made unreachable.
+     *
+     * <p><b>An absent guard cannot be asserted by behaviour here</b> -- the screen needs a server --
+     * so the scan pins that {@code migrateIfDue} consults no threshold. Re-adding one is the kind of
+     * edit that reads like tightening a check.
+     */
+    @Test
+    void theMigrationConsultsNoLevelThreshold() throws IOException {
+        List<String> lines = read(VAULT_MENU, 400);
+
+        int method = indexOfLineContaining(lines, "private void migrateIfDue() {");
+        assertTrue(method > 0, "migrateIfDue must exist");
+        int end = indexOfMemberDeclarationAfter(lines, method);
+
+        for (int i = method; i < end; i++) {
+            assertFalse(lines.get(i).contains("VaultPageGate.unlocked")
+                            || lines.get(i).contains("VaultPageGate.isFree")
+                            || lines.get(i).contains("HUB_SHORTCUT_LEVEL"),
+                    "migrateIfDue must consult NO threshold -- page 1 is free and a deferred"
+                            + " migration copies into a page the player has already filled. Found: "
+                            + lines.get(i).trim());
+        }
+
+        // AND THE STAMP IS STILL THERE, because it is still the whole mechanism: an empty page 1 is
+        // indistinguishable from a migrated-empty ender chest.
+        int stamp = indexOfLineContaining(lines, "profiles.setVaultMigrated(", method);
+        assertTrue(stamp > method && stamp < end,
+                "the stamp stays -- without it the copy re-runs on every open");
     }
 
     /**

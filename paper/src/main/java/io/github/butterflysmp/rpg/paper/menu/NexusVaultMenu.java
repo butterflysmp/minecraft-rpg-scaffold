@@ -777,9 +777,23 @@ public final class NexusVaultMenu extends Menu {
         Optional<PlayerProfile> profile = profiles.profile(viewer.getUniqueId());
         if (profile.isEmpty() || profile.get().vaultMigrated()) return;
 
-        int level = PlayerLevel.levelFor(profile.get().lifetimeXp());
-        if (!VaultPageGate.unlocked(0, level)) return;
-
+        // *** NO LEVEL GATE. IT IS NOT MISSING -- IT WAS REMOVED, AND DEFERRING WOULD NOW BE WRONG.
+        // ***
+        //
+        // The old ruling opened page 1 at level 20, so migration waited for it: copying earlier
+        // would have put items on a page the player could not see. Page 1 is free as of 2026-09-18,
+        // so there is nothing left to wait for.
+        //
+        // AND WAITING WOULD HAVE BECOME ACTIVELY HARMFUL RATHER THAN MERELY POINTLESS. A level-5
+        // player now opens page 1, fills it, and plays for weeks. A migration deferred to level 20
+        // would then copy 27 stacks into a page that is NO LONGER EMPTY -- and
+        // VaultMigrationPlan skips occupied cells, so most of the chest would be silently left
+        // behind in a container the hijack has made unreachable.
+        //
+        // THE STAMP STAYS AND IS STILL THE WHOLE MECHANISM: an empty page 1 is indistinguishable
+        // from a migrated-empty ender chest, so nothing but the flag can say whether the copy has
+        // happened.
+        //
         // The vault must be readable before anything is copied INTO it: a write would be refused,
         // and a refused migration write with the stamp already set would strand the chest.
         if (!writable()) return;

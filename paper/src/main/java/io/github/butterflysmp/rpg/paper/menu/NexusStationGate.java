@@ -29,17 +29,29 @@ import java.util.Optional;
  * FALSIFIED THAT HALF WITHOUT TOUCHING THE HEADING ***</h2>
  *
  * <b>The heading still holds, literally and for every station including the vault:</b> the ender
- * chest opens our screen at every level, exactly as the crafting table does. <b>What stopped being
- * true is the reason the third lore line gave</b> -- "the feature is twenty blocks away in your
- * base" -- because walking to an ender chest does not get a sub-20 player storage. It gets them this
- * same locked screen.
+ * chest opens our screen at every level, exactly as the crafting table does.
  *
  * <p>So the third line is no longer DERIVED from the block's name. Each station
- * {@linkplain Station#worldRoute() authors its own sentence}, and the vault's says what its block
- * actually does rather than promising vanilla behaviour it took away.
+ * {@linkplain Station#worldRoute() authors its own sentence}.
  *
  * <p><b>The heading is deliberately NOT amended</b>, per the 2026-09-17 ruling: amending a heading
  * that is still true, because a paragraph under it went stale, loses the ruling the heading records.
+ *
+ * <h2>*** AND THE PARAGRAPH THAT REPLACED THE RATIONALE WAS ITSELF FALSIFIED ON 2026-09-18 ***</h2>
+ *
+ * It read: <i>"walking to an ender chest does not get a sub-20 player storage. It gets them this
+ * same locked screen."</i> <b>Page 1 is now free, so walking to an ender chest gets them REAL
+ * STORAGE at level 1</b> -- and the migration puts their old chest contents into it.
+ *
+ * <p><b>THE RATIONALE THE VAULT BROKE IS THEREFORE BACK TO HOLDING, AND THE EXCEPTION IT BOUGHT MAY
+ * NO LONGER BE NEEDED.</b> "An ender chest in the world still works" is substantially true again.
+ * <b>The wording is Ben's to settle</b> -- {@code lockedLore} is marked DRAFTED, NOT SETTLED, and
+ * proposals are in the PR conversation rather than here.
+ *
+ * <p><b>Two corrections, two days, one paragraph.</b> That is the shape this file keeps producing: a
+ * heading that survives every ruling, and a rationale under it that is falsified by each one. The
+ * per-station sentence stays regardless -- it is now the mechanism by which a FIFTH station can say
+ * something the other four cannot, which is worth more than the one case that forced it.
  *
  * <p><b>{@code CraftingMenu}, {@code EnchantMenu} and {@code GrindstoneMenu} are UNTOUCHED by this
  * slice.</b> Putting the check in them would gate the world blocks too -- the opposite of the
@@ -60,9 +72,14 @@ final class NexusStationGate {
      * ({@code 2,090 / 12,940 / 19,980}) so a curve retune moves the XP and never the levels.
      *
      * <p><b>The VAULT's threshold is the exception and is READ rather than authored</b>: it is
-     * {@code VaultPageGate}'s page-1 level, because the hub cell and the page button must open on
-     * the same day. This javadoc said "the three stations" until the vault arrived -- a count in a
-     * heading cannot be raised by appending.
+     * {@code VaultPageGate.HUB_SHORTCUT_LEVEL}. This javadoc said "the three stations" until the
+     * vault arrived -- a count in a heading cannot be raised by appending.
+     *
+     * <p><b>IT SAID "page-1 level, because the hub cell and the page button must open on the same
+     * day", AND BOTH HALVES DIED ON 2026-09-18.</b> Page 1 is free, so it has no level; and the two
+     * deliberately do NOT open on the same day any more -- that separation is the entire ruling.
+     * The threshold is still read rather than written, because 20 lives on the ladder with the six
+     * page thresholds as one of Ben's seven numbers.
      */
     enum Station {
         CRAFTING(3, "Crafting", "A crafting table in the world still works."),
@@ -70,17 +87,35 @@ final class NexusStationGate {
         GRINDSTONE(13, "Grindstone", "A grindstone in the world still works."),
 
         /**
-         * The vault, and <b>the one station whose world block does not give the vanilla thing.</b>
+         * The vault, and <b>the station that gates a ROUTE rather than a feature.</b>
          *
-         * <p>{@code 20} is page 1's threshold and it is read from {@code VaultPageGate} rather than
-         * written here, so the hub cell and the page button cannot disagree about when the vault
-         * opens. The other three stations' levels are literals because nothing else holds them.
+         * <h2>*** IT READS {@code HUB_SHORTCUT_LEVEL}, AND IT USED TO READ {@code unlockLevel(0)} ***</h2>
          *
-         * <p><b>Its sentence is the whole reason this field stopped being derived.</b> "An ender
-         * chest in the world still works" would be FALSE -- the hijack takes the vanilla chest away
-         * at every level -- so it says what the block really does instead.
+         * <p>Under the old ruling page 1 opened at 20 and the hub cell opened with it, so reading
+         * page 1's threshold kept the two from disagreeing. <b>The 2026-09-18 ruling made page 1
+         * free</b> -- so {@code unlockLevel(0)} is now {@link VaultPageGate#FREE}, and a station
+         * still reading it would have opened the shortcut at level 1. <b>Not a compile error and not
+         * an exception: a silently free station cell.</b>
+         *
+         * <p>Still READ rather than written: 20 lives on the ladder with the six page thresholds,
+         * because it is one of Ben's seven numbers and the reason it exists is the same.
+         *
+         * <p><b>The other three stations' levels are literals because nothing else holds them.</b>
+         *
+         * <h2>ITS THIRD LINE IS NOW SUBSTANTIALLY TRUE, WHICH IS WHY THE EXCEPTION MAY BE RETIRED</h2>
+         *
+         * The per-station sentence exists because <i>"An ender chest in the world still works"</i>
+         * was FALSE when the hijack took the vanilla chest away and gave nothing back until level
+         * 20. <b>It is now nearly right</b>: the block gives real storage at any level, and the
+         * migration puts the player's old contents into it.
+         *
+         * <p><b>The wording is BEN'S and is deliberately unchanged here.</b> {@code lockedLore} is
+         * marked DRAFTED, NOT SETTLED, and this is the kind of sentence this project has got wrong
+         * three times. The current line is not false -- it tells a level-19 player the block route
+         * works while the hub cell does not, which is exactly what they need -- so leaving it is
+         * safe. Proposals are in the PR conversation, not here.
          */
-        VAULT(VaultPageGate.unlockLevel(0), "Vault", "An ender chest opens this same vault.");
+        VAULT(VaultPageGate.HUB_SHORTCUT_LEVEL, "Vault", "An ender chest opens this same vault.");
 
         private final int unlockLevel;
         private final String displayName;
