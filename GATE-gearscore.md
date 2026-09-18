@@ -17,16 +17,24 @@ seventeenth.
 
 ---
 
-## What is owed before this gate can be completed
+## The band is RULED, and this gate is completable
 
-**R6 IS UNSTAGEABLE TODAY AND THAT IS NOT A DEFECT.** `GearScoreBand.SPREAD_OWED` and `SKEW_OWED`
-both ship **0**, because they are Ben's numbers and a plausible-looking spread would become a
-precedent (see that class). With a zero-width band every roll lands exactly on the centre, so
-*"a drop rolls somewhere inside the band"* has no band to land inside.
+**Ben ruled the band while the slice was being built: a drop rolls uniformly over `average - 5` to
+`average + 15`.** In `GearScoreBand`'s own parameterisation that is **SPREAD 10, SKEW 5** --
+`skew - spread = -5`, `skew + spread = +15`, both endpoints exact.
 
-**What R6 CAN witness today** is the half that does not need a width: a drop bands on the average and
-**clamps at 400**. That is written as R6 and is stageable. The spread half is **R6b, marked OWED**,
-and is the one row in this file that cannot be run until Ben rules two numbers.
+**So nothing in this file is owed any more.** R6b was marked OWED and UNSTAGEABLE in the first
+draft of this gate, because a zero-width band has no inside to land in; it is now a full row with
+predictions, and the constants are named `SPREAD` and `SKEW` rather than `SPREAD_OWED` and
+`SKEW_OWED`. **The zero was discharged by a ruling, not deleted because someone tired of it** --
+`GearScoreBand`'s javadoc keeps that history, since the next person to meet an owed number in this
+codebase should be able to see what the placeholder bought.
+
+**HOW LONG THE CLIMB TAKES -- SIMULATED BY THE OPERATOR, NOT DERIVED HERE: median 182 scored drops**
+from the floor to the 400 soft cap over 400 simulated players, min 150, max 216. **A later tuning
+pass RE-RUNS that simulation rather than adjusting the figure**, and its invalidator is an event:
+any change to SPREAD, SKEW, or `averageOf`'s denominator or floor. No row below measures it -- the
+suite asserts the band's arithmetic and says nothing about the length of the walk.
 
 ---
 
@@ -132,21 +140,28 @@ contributing anything to a fight.**
 | | |
 |---|---|
 | **Setup** | Equip four armour pieces and two weapons, all at `set 400`. Confirm `Gear Score: 400`. Then `/rpg give` a fresh weapon and read its score. |
-| **Predict** | The fresh weapon rolls **400**, not 401 and not 500. With the band at zero width the roll lands on the centre, and `clampDrop` holds it at the soft cap regardless. |
-| **Predict** | `show` reports `Next drop would roll: 400` and names the band as `spread 0, skew 0 -- BOTH OWED`. |
-| **Predict** | With everything stripped instead, a fresh `/rpg give` rolls **100** — the 0-average player's whole band is under the floor. This is the *new player holding one sword* consequence Ben accepted, observed directly. |
+| **Predict** | The unclamped band at a 400 average is `395..415`. The fresh weapon rolls somewhere in **395..400** — never 401, never 415, never 500. The soft cap truncates the top half of the band, which is exactly what `clampDrop` is for. |
+| **Predict** | `show` reports `Next drop rolls in: 395..400` — **both ends printed already clamped**, so the cap is visible in the readout before a single drop is taken. |
+| **Predict** | With everything stripped instead, the average is 0, the unclamped band is `-5..15`, and a fresh `/rpg give` rolls **exactly 100** — `show` reports `100..100`. The whole band is under the floor. |
 | **READ** | |
 
-### R6b — A drop rolls somewhere INSIDE the band — ***OWED, UNSTAGEABLE***
+### R6b — A drop rolls somewhere INSIDE the band, and the band is 21 values wide
 
-**Cannot be run until `GearScoreBand.SPREAD_OWED` and `SKEW_OWED` are ruled.** With both at 0 the
-band is a point, so there is no inside. Left in the file rather than omitted, so the gate records
-that the coverage is *owed* rather than *absent* — an unruled case must read as unruled.
+**STAGEABLE AS OF BEN'S RULING.** This row was OWED and unstageable in the first draft of this gate;
+with SPREAD 10 and SKEW 5 there is now an inside to land in.
+
+**Staged at a 250 average, deliberately: both clamps are far away**, so the endpoints observed are
+the BAND's and not the floor's or the cap's. At 400 the cap supplies the top and the row would be
+measuring `clampDrop` again — which R6 already does.
 
 | | |
 |---|---|
-| **Predict** | (unwritable until the two numbers exist) |
-| **READ** | ***OWED*** |
+| **Setup** | Six slots all at `set 250` — four armour, two hands. Confirm `Gear Score: 250`. Then `/rpg give boltor` **twenty times**, reading each score. |
+| **Predict** | `show` reports `Next drop rolls in: 245..265`. |
+| **Predict** | Every one of the twenty lands in **245..265 inclusive**. None below 245, none above 265. |
+| **Predict** | **They are NOT all the same number.** A band 21 values wide over twenty draws that all agreed would mean the draw is being ignored — the defect a single-drop reading cannot see, which is why this row takes twenty. |
+| **Predict** | Their mean sits **above 250**, because the skew is +5 and not 0. A mean at 250 means the band is centred and the ladder converges instead of climbing. *(Twenty draws is a small sample — a mean landing a little either side of 255 is noise; a mean at or below 250 is not.)* |
+| **READ** | |
 
 ---
 
@@ -250,29 +265,57 @@ only protection available, and `GearScore`'s class javadoc says so at the top.
 
 ---
 
-## A measured finding this slice did not fix: three mage weapons do not scale
+## SEVEN of thirteen weapons do not scale — and Ben has RULED that trigger damage does
 
-**Measured at the slice's own HEAD, over `paper/src/main/resources/content/weapons/` — DURABLE as a
-mechanism, PERISHABLE as a file list (the next weapon that ships changes it).**
+**The first draft of this section said THREE, and it was narrower than the truth.** It named the three
+staves and stopped, because those were the weapons whose damage I had traced. Re-measured across all
+thirteen weapon files:
 
-Gear score scales the **`ATTACK_DAMAGE` stat**, which is fed from a weapon's authored
-`attack_damage`. Six shipped weapons declare a positive one and therefore scale: `boltor` (19),
-`dragons_plume` (34), `locust` (26), `ironblade` (8), `emberblade` (7), `hunters_bow` (6).
+| | weapons | `attack_damage` |
+|---|---|---|
+| **SCALE (6)** | boltor 19 · dragons_plume 34 · locust 26 · ironblade 8 · emberblade 7 · hunters_bow 6 | authored, positive |
+| **DO NOT (4)** | ember_staff · flint_staff · lapis_staff · ability_stone | **no key at all** |
+| **DO NOT (3)** | cursed_emerald · quiver_stone · volley_stone | **authored `0`** |
 
-**`ember_staff`, `flint_staff` and `lapis_staff` declare none.** Their damage is authored as a literal
-`type: damage / amount:` inside the weapon's own trigger — `ember_staff` is `amount: 16` — which never
-reads the stat. So **a scored staff shows a number on its tooltip and its damage does not move.**
+Instrument: `grep -c '^attack_damage:'` and `grep -m1 '^attack_damage:'` over each of the thirteen
+files, anchored at column 0 so a prose mention cannot be counted as the key. PERISHABLE — the next
+weapon that ships changes both the counts and the lists.
 
-> **This is the ELIGIBILITY half of CLAUDE.md's own rule, arriving a fifth time**, and it is reported
-> rather than patched because the fix is a **ruling, not a mechanism**: a staff's trigger damage is
-> the weapon's damage in every sense a player cares about, but the effect type carrying it
-> (`type: damage`) is the same one **class abilities** use, and Ben ruled that *weapon damage and
-> armour defense* scale and **nothing else**. Scaling at that seam would scale ability damage too,
-> which is outside what was ruled.
->
-> **The tooltip is NOT dishonest today**, and that is deliberate: `GearLoreLines.SCORE_LABEL` promises
-> nothing about damage, because a shield is scoreable and scales nothing either. A staff's score still
-> does real work — it feeds the wielder's average, which bands their next drop.
->
-> **What is owed is Ben's answer to one question:** should a `type: projectile` MAGE weapon's authored
-> trigger damage scale with gear score? **Unruled, not excluded** — the question has never been put.
+**The "six scale" figure was exact. The complement was not**, and the two failures are different:
+four weapons author no `attack_damage` key, and three author it as `0`. **`cursed_emerald`'s `0` is
+not a bug** — it is authored deliberately, and its own file says so: there is no basic attack on that
+weapon, the volley is the whole thing, and that is a choice. Its damage is six shots of 27 in
+`on_hit`.
+
+### Ben has ruled: TRIGGER DAMAGE SCALES. That is slice 12b, not a patch to this one.
+
+**Four of the seven become scaling weapons under that ruling** — the three staves and
+`cursed_emerald`. **It is a SLICE and not an amendment**, because it is a second scaling site in a
+different subsystem: `EffectApplier`'s damage path, which already threads `enchantDamagePercent`,
+`classDamageBonus`, `chargeScale` and `critMultiplier`. Bolting a fifth factor onto a branch that is
+built, measured and verified is how one clean slice becomes two half-slices. **12b comes off 12's
+squash.**
+
+> **THE OLD REPO ALREADY DID THIS, AND THE FILE SAYS SO:** `GearScore.scalePower(42, level)` — with
+> the note *"no item levels here, which is why 27 had to be re-decided by the operator rather than
+> ported"*. **42 was the pre-scaling authored value; 27 is what it became with nothing to scale it.**
+> So this ruling reconnects the weapon to the system it was written against.
+> 
+> **The 27 is to be RE-EXAMINED against 42 when scaling lands — not silently reverted.** The operator
+> ruled 27 on its own terms, and a revert would be a derivation replacing a ruling, which is the
+> descent defect `GearScoreBand` names.
+
+### STILL UNRULED, AND NOT MINE TO DECIDE: the three stones can be a top-two hotbar slot
+
+**`ability_stone`, `quiver_stone` and `volley_stone` remain unscaling after the trigger ruling** —
+and all three are in the WEAPONS registry, so all three **carry a gear score and can occupy one of
+the two hand seats.** A high-rolled stone therefore raises the level of every drop the player takes
+while contributing nothing to a fight.
+
+**That is precisely the exploit Ben closed for TOOLS, and the tools ruling does not reach items in
+the weapons registry** — `GearScore.scoreable` gates on `GearClass`, and all three stones present a
+fighting class (`volley_stone`'s own file calls it **a test instrument**; `ability_stone`'s says its
+`class: mage` is arbitrary — *"a dev tool; class is required, mage is as good as any here"*).
+
+**PUT IT TO BEN IN 12b. DO NOT EXCLUDE THEM ON MY OWN AUTHORITY.** An exclusion invented here would
+be a ruling with no author, which is the failure the *unruled, not excluded* rule exists to stop.

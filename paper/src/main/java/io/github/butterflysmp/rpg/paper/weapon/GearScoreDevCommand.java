@@ -114,15 +114,17 @@ public final class GearScoreDevCommand {
                 .append(Component.text("  average over " + GearScore.AVERAGE_SLOTS + " slots",
                         NamedTextColor.DARK_GRAY)));
 
-        // THE BAND IS REPORTED BECAUSE IT IS OWED. While GearScoreBand ships zero, every roll lands
-        // on the centre -- so an operator who stages a drop and sees no variation is looking at the
-        // owed number, not at a broken roll. Printing it is what tells those two apart.
-        player.sendMessage(Component.text("Next drop would roll: ", NamedTextColor.AQUA)
-                .append(Component.text(String.valueOf(GearScore.roll(average,
-                                GearScoreBand.SPREAD_OWED, GearScoreBand.SKEW_OWED, 0.5)),
+        // THE WHOLE BAND IS REPORTED, NOT ONE DRAW FROM IT -- the range is what a gate row predicts
+        // against, and a single sampled roll could not be told from a band that collapsed. Ben ruled
+        // average-5 to average+15; both ends print clamped, so the floor and the soft cap are visible
+        // exactly where they start to bite.
+        player.sendMessage(Component.text("Next drop rolls in: ", NamedTextColor.AQUA)
+                .append(Component.text(GearScore.roll(average, GearScoreBand.SPREAD,
+                                GearScoreBand.SKEW, 0.0) + ".." + GearScore.roll(average,
+                                GearScoreBand.SPREAD, GearScoreBand.SKEW, Math.nextDown(1.0)),
                         NamedTextColor.WHITE))
-                .append(Component.text("  (band spread " + GearScoreBand.SPREAD_OWED + ", skew "
-                                + GearScoreBand.SKEW_OWED + " -- BOTH OWED, so the band is a point)",
+                .append(Component.text("  (band spread " + GearScoreBand.SPREAD + ", skew "
+                                + GearScoreBand.SKEW + " -- RULED: average-5 to average+15, clamped)",
                         NamedTextColor.DARK_GRAY)));
         return 1;
     }

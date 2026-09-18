@@ -161,7 +161,7 @@ public final class GearScoreItems {
         if (read(item, adapters.keys()).isPresent()) return;
 
         int rolled = GearScore.roll(averageOf(player, adapters.keys()),
-                GearScoreBand.SPREAD_OWED, GearScoreBand.SKEW_OWED,
+                GearScoreBand.SPREAD, GearScoreBand.SKEW,
                 ThreadLocalRandom.current().nextDouble());
         item.editMeta(meta -> write(meta, rolled, adapters.keys()));
     }

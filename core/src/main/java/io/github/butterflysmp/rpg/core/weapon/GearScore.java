@@ -60,7 +60,7 @@ import java.util.OptionalInt;
  * pressure to gear every slot, not a defect. Asserted as a row in {@code GearScoreTest} so nobody
  * "fixes" it into a threshold rule.
  *
- * @see GearScoreBand for the roll's two OWED numbers, which are Ben's and are not invented here
+ * @see GearScoreBand for the two RULED band numbers -- the band is average-5 to average+15
  */
 public final class GearScore {
 
@@ -314,6 +314,33 @@ public final class GearScore {
      * there</b>: putting an empty slot through the read clamp would raise it to 100 and silently
      * delete the ruling above. A negative or absurd stamp off a hand-edited PDC is still refused.
      *
+     * <h2>*** THE UNFLOORED AVERAGE IS RULED. A FLOOR WAS PROPOSED AND BEN OVERRULED IT. ***</h2>
+     *
+     * <p>The proposal was {@code average = max(MIN, sum / AVERAGE_SLOTS)}, on the argument that <b>the
+     * average is itself a gear score and 16 is outside its own scale</b> -- which is a real
+     * inconsistency, not a misreading. <b>Ben ruled: LEAVE IT. THE DEAD ZONE IS THE EARLY GAME.</b>
+     *
+     * <p>So the consequence is intended, and it is larger than the one number the class javadoc
+     * quotes. With every filled slot at {@link #MIN}, the WHOLE ruled band lies below the floor for
+     * one through FIVE filled slots, so <b>every drop lands at exactly 100 until the sixth slot
+     * fills</b>:
+     *
+     * <pre>
+     *   filled   average   band top (avg + 15)   every drop 100?
+     *     1         16              31                  yes
+     *     5         83              98                  yes   &lt;- clears MIN by TWO
+     *     6        100             115                  no
+     * </pre>
+     *
+     * <p><b>MEASURED, not derived: {@code GearScoreTest.everyDropLandsAtTheFloorUntilTheSixthSlotFills}
+     * sweeps all six and is the instrument.</b> The five-slot margin is two points, so a one-point
+     * change to the skew, the spread or this denominator moves the opening phase from six slots to
+     * five -- and nothing else in the suite would notice.
+     *
+     * <p><b>This note exists because an unfloored average with no note reads as an oversight, and the
+     * next person will "fix" it.</b> It is a ruling, and the row above is what makes the ruling fail
+     * loudly if anyone floors it.
+     *
      * @param sixSlots exactly {@link #AVERAGE_SLOTS} entries, as {@link #sixSlots} builds them
      */
     public static int averageOf(int[] sixSlots) {
@@ -340,7 +367,8 @@ public final class GearScore {
      *
      * <p><b>The band's two numbers are NOT defaulted here.</b> They are parameters, so this
      * arithmetic is reddened at any spread a test cares to stage, and the only place a value is
-     * written down is {@link GearScoreBand} -- where both are marked OWED. See that class.
+     * written down is {@link GearScoreBand} -- RULED by Ben as average-5 to average+15, which that
+     * class stores as a spread of 10 and a skew of 5.
      *
      * @param average the player's current average, from {@link #averageOf}
      * @param spread  half-width. {@code 0} is a degenerate band: every roll lands on the centre

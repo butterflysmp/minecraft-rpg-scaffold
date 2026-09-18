@@ -1,46 +1,62 @@
 package io.github.butterflysmp.rpg.core.weapon;
 
 /**
- * *** THE ROLL BAND'S TWO NUMBERS. BOTH ARE OWED, AND NEITHER IS INVENTED HERE. ***
+ * The roll band: a drop rolls uniformly over {@code average - 5} to {@code average + 15}.
  *
- * <p>Ben ruled that a drop's score is <b>rolled at mint, banded on the player's CURRENT AVERAGE</b>,
- * and that <b>rarity does not affect the band at all</b>. He has not given the SPREAD or the SKEW.
- * They are the same kind of number as the enchant rungs and the Boltor's {@code 19}: <b>his to rule,
- * and not derivable from the material.</b>
+ * <h2>*** RULED BY BEN. THIS WAS OWED AND IS NOW DISCHARGED. ***</h2>
  *
- * <h2>WHY THE SHIPPED VALUES ARE ZERO, AND WHY THAT IS NOT A DEFAULT</h2>
+ * <p>Ben ruled the band <b>{@code average - 5} to {@code average + 15}</b>. Expressed in this class's
+ * own parameterisation -- {@code [average + SKEW - SPREAD, average + SKEW + SPREAD]} -- that is
+ * {@link #SPREAD} 10 and {@link #SKEW} 5, and both endpoints land exactly:
  *
- * A plausible-looking spread -- {@code 25}, {@code 50}, a tenth of the average -- <b>would be
- * indistinguishable from a ruling.</b> The next reader finds a number in a constant, in a file with
- * this much commentary around it, and derives the next one from it. That is CLAUDE.md's descent rule:
- * <i>"a number derived from a placeholder becomes a precedent"</i>, and the Boltor's
- * {@code attack_damage} is this project's own instance -- {@code 19} was ruled OUTRIGHT precisely
- * because deriving it from a dev weapon would have outlived the dev weapon.
+ * <pre>
+ *   low   = skew - spread =  5 - 10 =  -5
+ *   high  = skew + spread =  5 + 10 = +15
+ *   width = 2 * spread + 1 = 21 integer values, inclusive at both ends
+ * </pre>
  *
- * <p><b>Zero cannot be mistaken for tuning.</b> A band of zero width is visibly degenerate: every
- * roll lands exactly on the centre, which no designer would choose and no reader will quote as a
- * precedent. It is the one value that reads as ABSENT rather than as CHOSEN.
+ * <h2>THE BAND SKEWS UPWARD, SO IT CLIMBS RATHER THAN CONVERGING</h2>
  *
- * <p><b>And it ships a WORKING mechanism, not a stub.</b> With both at zero the whole ladder is live
- * and observable -- a drop still bands on the average, still clamps at {@link GearScore#SOFT_CAP},
- * and still floors at {@link GearScore#MIN}, which is what makes the 16-average new player's first
- * drop land at 100. {@code GearScore.roll} takes the two as PARAMETERS, so the arithmetic is reddened
- * across real spreads in {@code GearScoreTest} today and Ben's numbers are a one-line change here
- * with no code to write.
+ * A band centred exactly on the average converges: the expected roll equals what you already have,
+ * and progression comes only from keeping the better roll and discarding the worse. <b>A positive
+ * {@link #SKEW} is what makes the ladder climb on its own</b> -- the expected drop is 5 points above
+ * the wearer's current average -- and the question of whether it should was put to Ben rather than
+ * answered by whoever picked the spread. It skews.
  *
- * <h2>*** THE SHAPE IS A DESIGN QUESTION, NOT A TUNING ONE, AND IT NEEDS SAYING ***</h2>
+ * <h2>*** HOW LONG THE CLIMB TAKES -- SIMULATED, NOT DERIVED ***</h2>
  *
- * <b>A band centred exactly on the average CONVERGES rather than climbs.</b> Progression then comes
- * entirely from the player KEEPING THE BETTER ROLL AND DISCARDING THE WORSE -- selection, not the
- * band. That works, it is how Destiny works, and <b>it is slow</b>.
+ * <b>MEDIAN 182 SCORED DROPS</b> from the floor to the {@link GearScore#SOFT_CAP}, over <b>400
+ * simulated players</b>. Min <b>150</b>, max <b>216</b>.
  *
- * <p>If Ben wants a felt climb, the band skews upward: {@link #SKEW_OWED} is the number that does it,
- * and it is a separate decision from how WIDE the band is. Recorded here so the question is put
- * rather than answered by whoever happens to pick the spread.
+ * <p><b>Instrument: a simulation of this exact band, 400 players, run by the operator.</b> Named
+ * because the figure cannot be reproduced by reading this file -- the walk is a random process over a
+ * six-slot average that feeds its own next draw, and there is no closed form here to check it
+ * against.
  *
- * <p><b>A gate row cannot witness the spread while it is zero.</b> Stated in {@code GATE-gearscore.md}
- * rather than left for someone to discover: the row that watches a drop land somewhere inside a band
- * is unstageable until these two numbers exist, and it is marked OWED there for the same reason.
+ * <p><b>SO A LATER TUNING PASS RE-RUNS IT RATHER THAN REASONING ABOUT IT.</b> Change either constant
+ * below and this figure is stale in a way no test will catch: the suite asserts the band's
+ * ARITHMETIC, and nothing in it measures how many drops the climb takes. Adjusting 182 by hand to
+ * match a new spread would be a figure maintained by delta, in the file that names the band.
+ *
+ * <p>These numbers are PERISHABLE and their invalidator is an event, not a date: <b>any change to
+ * {@link #SPREAD} or {@link #SKEW}, and any change to {@link GearScore#averageOf}'s denominator or
+ * floor.</b> All three are inputs to the walk.
+ *
+ * <h2>WHAT THE ZERO USED TO BE FOR, KEPT BECAUSE THE ARGUMENT WAS DISCHARGED RATHER THAN WRONG</h2>
+ *
+ * <p>Both constants shipped as <b>0</b> in the slice that introduced them, under the name
+ * {@code SPREAD_OWED} / {@code SKEW_OWED}, because a plausible-looking spread <b>would have been
+ * indistinguishable from a ruling</b> -- and the next author would have derived from it rather than
+ * re-deciding it. That is CLAUDE.md's descent rule, whose instance in this project is the Boltor's
+ * {@code attack_damage}: {@code 19} was ruled outright precisely so a dev weapon's arbitrariness
+ * would not outlive the dev weapon.
+ *
+ * <p><b>The condition that argument named was "until Ben rules", and he has.</b> So the zero is
+ * discharged, not deleted -- recorded here so the next person to meet an owed number in this codebase
+ * can see what the placeholder was for and that it was retired by a ruling rather than by someone
+ * getting tired of it. <b>The mechanism it bought is still load-bearing:</b> both numbers are
+ * PARAMETERS to {@code GearScore.roll}, never read from here by the arithmetic, so the band is
+ * reddened across widths this file does not ship and Ben's next revision stays a one-line change.
  */
 public final class GearScoreBand {
 
@@ -48,18 +64,21 @@ public final class GearScoreBand {
 
     /**
      * Half-width of the band, in score points. A roll is uniform over
-     * {@code [average + skew - spread, average + skew + spread]}.
+     * {@code [average + SKEW - SPREAD, average + SKEW + SPREAD]} -- 21 integer values.
      *
-     * <p><b>OWED -- BEN'S NUMBER.</b> Zero is not a choice about width; see the class javadoc. Do not
-     * replace it with a guess, and do not derive anything from it.
+     * <p><b>RULED: 10.</b> With {@link #SKEW} 5 this is Ben's {@code -5 / +15}. Moving it invalidates
+     * the simulated 182-drop climb in the class javadoc, which must then be re-run rather than
+     * adjusted.
      */
-    public static final int SPREAD_OWED = 0;
+    public static final int SPREAD = 10;
 
     /**
-     * How far the band's centre sits ABOVE the player's average. Zero centres it.
+     * How far the band's centre sits ABOVE the player's average.
      *
-     * <p><b>OWED -- BEN'S NUMBER, AND IT IS THE DESIGN HALF RATHER THAN THE TUNING HALF.</b> Zero
-     * converges; positive climbs. See the class javadoc: this is the question, not the answer.
+     * <p><b>RULED: 5.</b> Strictly positive, and that is the design half rather than the tuning half:
+     * a zero here would make the band converge on what the player already has, and progression would
+     * come only from selection. <b>The expected drop is 5 points above the wearer's current
+     * average</b>, which is the climb.
      */
-    public static final int SKEW_OWED = 0;
+    public static final int SKEW = 5;
 }

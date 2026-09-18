@@ -1864,6 +1864,7 @@ build.**
 > | `merge-tree` / a clean rebase | *do these diffs touch the same lines*, not *does it still compile* |
 > | **`perl -i` with a `$` anchor, on a CRLF WORKING TREE** | **nothing at all — see below** |
 > | **a generic bound** (`n-1` for sum-of-floors vs floor-of-sum) | **what the quantity can NEVER EXCEED, not what it IS** |
+> | **a MARKER GREP**, after a scripted edit | **whether that string EXISTS in the file, never whether YOUR EDIT is what put it there** |
 >
 > **THE BOUND IS THE MEMBER THAT NEEDS NO TOOLING TO COMMIT, AND IT IS NOT A FABRICATION.** A
 > fabricated quote has no source and is caught by reading the line. **A bound HAS a source and is

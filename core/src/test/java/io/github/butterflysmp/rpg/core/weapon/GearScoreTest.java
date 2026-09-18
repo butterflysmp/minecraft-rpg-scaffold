@@ -325,9 +325,10 @@ class GearScoreTest {
     /**
      * The band is centred on the average and uniform across it, inclusive at both ends.
      *
-     * <p>Staged at a spread the shipped constant does not carry, deliberately: {@link GearScoreBand}
-     * ships zero because the number is OWED, and the arithmetic must be reddened at a real width
-     * regardless. The band is a PARAMETER for exactly this reason.
+     * <p>Staged at a spread and skew the SHIPPED constants do not carry -- 50 and 0 against the ruled
+     * 10 and 5 -- deliberately. The band is a PARAMETER precisely so the arithmetic is reddened across
+     * widths Ben has not ruled, which is what keeps his next revision a one-line change. The ruled
+     * values have their own row: {@link #theRuledBandRunsFromFiveBelowTheAverageToFifteenAbove}.
      */
     @Test
     void aRollIsUniformAcrossTheBandAndInclusiveAtBothEnds() {
@@ -384,14 +385,77 @@ class GearScoreTest {
         assertEquals(100, GearScore.roll(16, 0, 0, 0.5), "and the floor still applies");
     }
 
+    /**
+     * *** THE RULED BAND: average-5 to average+15, EXPRESSED IN THE PARAMETERS THAT SHIP. ***
+     *
+     * <p>Ben ruled the band as a RANGE; {@code GearScoreBand} stores it as a spread and a skew. This
+     * row is the translation, and it asserts the two ENDPOINTS rather than the two constants -- so it
+     * fails if either constant moves AND if the parameterisation is ever mis-derived from a future
+     * ruling. Asserting {@code SPREAD == 10} alone would pass a skew of 0, which is a band that
+     * converges instead of climbing.
+     */
     @Test
-    void theShippedBandIsTheOWEDZeroRatherThanAGuess() {
-        assertEquals(0, GearScoreBand.SPREAD_OWED,
-                "OWED -- Ben's number. A plausible spread here would become a precedent; see"
-                        + " GearScoreBand on why zero is the only value that reads as absent.");
-        assertEquals(0, GearScoreBand.SKEW_OWED);
+    void theRuledBandRunsFromFiveBelowTheAverageToFifteenAbove() {
+        assertEquals(10, GearScoreBand.SPREAD);
+        assertEquals(5, GearScoreBand.SKEW);
+
+        // Staged at 250, comfortably inside both clamps, so the endpoints are the BAND's and not the
+        // clamp's -- a fixture at 100 or 400 would have the floor or the cap supply the answer.
+        int average = 250;
+        assertEquals(average - 5, GearScore.roll(average, GearScoreBand.SPREAD,
+                GearScoreBand.SKEW, 0.0), "Ben ruled the low end at average-5");
+        assertEquals(average + 15, GearScore.roll(average, GearScoreBand.SPREAD,
+                GearScoreBand.SKEW, Math.nextDown(1.0)), "and the high end at average+15");
+        assertEquals(average + 5, GearScore.roll(average, GearScoreBand.SPREAD,
+                GearScoreBand.SKEW, 0.5), "the centre sits SKEW above the average, so it climbs");
     }
 
+    /**
+     * *** THE EARLY DEAD ZONE IS RULED, NOT A DEFECT. BEN OVERRULED A FLOOR ON THE AVERAGE. ***
+     *
+     * <p>The proposal was {@code average = max(MIN, sum/6)}, on the argument that the average is itself
+     * a gear score and 16 is outside its own scale. <b>Ben ruled: LEAVE IT. The dead zone IS the early
+     * game.</b>
+     *
+     * <p>So this row MEASURES the dead zone rather than describing it. With every filled slot at the
+     * floor, the whole ruled band lies below {@link GearScore#MIN} for one through five filled slots --
+     * so every drop lands at exactly 100 -- and clears it only when the sixth fills:
+     *
+     * <pre>
+     *   filled   average   band top (avg+15)   every drop 100?
+     *     1         16            31                 yes
+     *     5         83            98                 yes   &lt;- 98, and the margin is TWO
+     *     6        100           115                 no
+     * </pre>
+     *
+     * <p><b>The five-slot case clears MIN by two points, which is why this is a swept row and not a
+     * spot check.</b> A one-point change to the skew, the spread or the denominator moves the opening
+     * phase from six slots to five, and nothing else in the suite would notice.
+     */
+    @Test
+    void everyDropLandsAtTheFloorUntilTheSixthSlotFills() {
+        for (int filled = 1; filled <= GearScore.AVERAGE_SLOTS; filled++) {
+            int[] six = new int[GearScore.AVERAGE_SLOTS];
+            for (int i = 0; i < filled; i++) six[i] = GearScore.MIN;
+            int average = GearScore.averageOf(six);
+
+            int low = GearScore.roll(average, GearScoreBand.SPREAD, GearScoreBand.SKEW, 0.0);
+            int high = GearScore.roll(average, GearScoreBand.SPREAD, GearScoreBand.SKEW,
+                    Math.nextDown(1.0));
+
+            if (filled < GearScore.AVERAGE_SLOTS) {
+                assertEquals(GearScore.MIN, low, "filled=" + filled + ": the band is under the floor");
+                assertEquals(GearScore.MIN, high,
+                        "filled=" + filled + " (average " + average + "): the WHOLE band is under the"
+                                + " floor, so every drop is exactly 100. This is the ruled opening"
+                                + " phase -- do not 'fix' it with a floor on the average.");
+            } else {
+                assertTrue(high > GearScore.MIN,
+                        "at six filled slots the band finally clears the floor -- average " + average
+                                + ", top " + high + ". If this fails the dead zone never ends.");
+            }
+        }
+    }
     /** A draw outside {@code [0, 1)} is a programming error and is refused loudly. */
     @Test
     void aDrawOutsideTheUnitIntervalIsRefused() {
