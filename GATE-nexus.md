@@ -3874,8 +3874,57 @@ NOT deferred.**
 
 # SLICE 11, PR 2 — THE VAULT SCREEN, THE HIJACK AND THE MIGRATION. ROWS 97–114.
 
-**Status: NOT RUN.** Every row below was written **before any boot**, and before the branch that
-adds them was pushed.
+**Status: READINGS IN -- AND THIS BLOCK IS NOT 18/18.** Every row below was written **before any
+boot**, and before the branch that adds them was pushed. **No prediction has been edited since a
+row was read.**
+
+## *** BLOCK VERDICT -- READ 2026-09-19 BY BEN, RELAYED ***
+
+```
+PASS       97-101, 104-110, 114      13 rows   (5 + 7 + 1)
+PARTIAL    102 -- the chest half NOT RUN
+OWED       103 -- Ben's count has not reached this file
+NOT RUN    111, 112, 113 -- BY RULING
+```
+
+*** THIS IS NOT 18/18 AND THIS FILE MUST NOT BE READ AS THOUGH IT IS. *** **A block recorded green
+when two of its five sole witnesses were never run is worth LESS THAN NO BLOCK**, because the next
+person reads it as evidence.
+
+> **THE PASSES ARE RELAYED VERDICTS, NOT TRANSCRIBED OBSERVATIONS.** Ben booted 97-110 and 114 and
+> reported a verdict per row. **No per-observation detail was relayed for the twelve plain PASSes**
+> (97-101 and 104-110), and none is invented here. Rows 102 and 114 carry detail because he gave
+> detail.
+
+### *** ROWS 111 AND 112 WERE WRITTEN BECAUSE ROWS 97-110 PASS GREEN ON BUILDS THAT HAVE THE DUPLICATOR AND THE SHREDDER IN THEM ***
+
+**THAT IS MEASURED, NOT ARGUED, AND IT IS TWO BUILDS RATHER THAN ONE:**
+
+| defect | shipped on | fixed by | measured how |
+|---|---|---|---|
+| **the full-page duplicator** | **`74cd2e4`** (pre-rebase `00eae559`) | `247fd6bf` | `returnedSlots(degraded, inputSlots)` -- **two** arguments, no disk view to subtract |
+| **the after-close shredder** | **`247fd6bf`** | `f08b5556` | the drop arm is absent; `DROPPED` appears **1** time in `NexusVaultMenu`, **3** after the fix |
+
+**AND EVERY OTHER ROW PASSED ON BOTH OF THEM.** So this block being green from 97-110 **is exactly
+the state those two rows exist to distinguish from a correct one.** Row 103 -- the duplication sole
+witness -- passes green with a full-page duplicator in the code, because a healthy session never
+enters the state that duplicator lives in.
+
+**The two behaviours that remain UNWITNESSED ON A LIVE SERVER:**
+
+- **the degraded close handing back ONLY the unpersisted difference** -- `5 + 1 = 6`, against the
+  duplicator's `5 + 6 = 11` and the shredder's `5 + 0 = 5`
+- **the after-close failure dropping that difference ON THE GROUND** -- `2 + 1 = 3`, against the
+  silent `2 + 0 = 2`
+
+**`VaultReturnPolicy`, `VaultCloseDisposal` and `VaultWriteFailure` are pure and their tests
+execute -- so the DECISIONS are witnessed and the PATHS are not.** Both halves are stated on
+purpose: ***"unit tested" alone would read as coverage this does not have.***
+
+*** THE SOLE-WITNESS RULE SAYS SKIPPING ONE IS ZERO CONFIDENCE, NOT LESS. *** That is the sentence
+for these two, and a softer one would be wrong. **Nothing else in this file can fail on either
+path**, so there is no partial credit to award: the live behaviour of the degraded close and of the
+after-close drop is **unknown**.
 
 > ### *** AMENDED 2026-09-18, BEFORE ANY BOOT, BY THE RULING THAT MADE PAGE 1 FREE ***
 >
@@ -3968,7 +4017,8 @@ vanilla ender chest screen never appears.** No Back button (opened from the bloc
 > paid for. A build that put the cancel inside the sneak guard opens the VANILLA chest on the second
 > click, which is the one screen the hijack exists to replace. **Untouched by the ruling.**
 
-**READING:** _(not run)_
+**READING:** **PASS.** 2026-09-19, booted by Ben; relayed as a verdict. The prediction above is
+untouched.
 
 ---
 
@@ -3994,7 +4044,8 @@ Slot 31's third line still reads `A crafting table in the world still works.`
 > that re-derived the sentence from the block's name reads perfectly and promises storage that is
 > gone. **The two cells must not say the same shape of thing.**
 
-**READING:** _(not run)_
+**READING:** **PASS.** 2026-09-19, booted by Ben; relayed as a verdict. The prediction above is
+untouched.
 
 ---
 
@@ -4026,7 +4077,8 @@ button is **WHITE** (unlocked, not current), clicking it flips to page 2, and th
 > what distinguishes this row from the one it replaced. If page 1 is gray at level 24, the ruling did
 > not land and the rest of this block is reading the wrong build.
 
-**READING:** _(not run)_
+**READING:** **PASS.** 2026-09-19, booted by Ben; relayed as a verdict. The prediction above is
+untouched.
 
 ---
 
@@ -4047,7 +4099,8 @@ still lime.
 > **AND `page 4` IS THE 0-BASED/1-BASED CHECK.** Page index 3 renders as `Page 4`; a build that
 > dropped the conversion says `page 3`, which is a real page and reads as correct.
 
-**READING:** _(not run)_
+**READING:** **PASS.** 2026-09-19, booted by Ben; relayed as a verdict. The prediction above is
+untouched.
 
 ---
 
@@ -4067,7 +4120,8 @@ inventory does not contain it.
 > returns its contents on close. This is the row that reads the opt-out, and the failure it detects
 > is the vault behaving like a workbench -- which looks like "my item came back", not like a bug.
 
-**READING:** _(not run)_
+**READING:** **PASS.** 2026-09-19, booted by Ben; relayed as a verdict. The prediction above is
+untouched.
 
 ---
 
@@ -4128,7 +4182,21 @@ right-clicking the block, which now opens our screen.
 > reads `0 occupied slot(s)` -- while the ender chest still holds all three and the player cannot
 > open it. **Stage it low, and the absence of the message is the failure.**
 
-**READING:** _(not run)_
+**READING:** *** PARTIAL -- ONE HALF READ, ONE HALF NOT RUN. *** 2026-09-19, booted by Ben;
+relayed. The prediction above is untouched.
+
+**THE HALF THAT WAS READ, AND IT PASSES:** the copy landed. Page 1 held **the three stacks in the
+right arrangement**, the message appeared, and the stamp **survived the restart**.
+
+*** THE HALF THAT WAS NOT: THE VANILLA CHEST WAS NOT CHECKED. *** *"...and the chest still has
+it"* -- **the half this row exists for** -- stands **NOT RUN**. This row is **not a PASS**, and the
+arrangement/restart half does not stand in for it: a build that MOVED the chest's contents instead
+of copying them satisfies everything that was read.
+
+> **RECOVERABLE WITHOUT A RESTAGE, WHICH IS WHY IT IS LEFT OPEN RATHER THAN RESTAGED.** Migration
+> **copies and never clears**, and the block is **hijacked** -- so **nothing can have touched that
+> chest since**. `/data get entity @s EnderItems` on that player closes this **at any time**, with
+> no fixture to rebuild. **Left open for now.**
 
 ---
 
@@ -4159,7 +4227,14 @@ vault, still exactly one in the inventory.**
 > **THE IMMEDIACY AT STEP 3 IS THE FIXTURE.** The write hops one tick; closing within the same second
 > is what makes a missing hop visible rather than papered over by the next gesture.
 
-**READING:** _(not run)_
+**READING:** *** OWED FROM BEN -- ONE LINE, THE COUNT. NOT READ HERE. ***
+
+**The number is not written in this file, and it must NOT be inferred from "the block passed".**
+This is the sole witness whose failure mode is a **GAIN**, and **every other row in this block is
+green on the build it exists to catch** -- so the block's own greenness is worth nothing here.
+
+**THE NUMBER TO WRITE DOWN IS ONE.** Until Ben's line is in, **this row is UNREAD** and the block
+is not complete. The prediction above is untouched.
 
 ---
 
@@ -4182,7 +4257,8 @@ total is still 64. Nothing is on the cursor and nothing was handed back.
 > **COUNT THE CELLS, NOT THE ITEMS.** The prediction is a count the screen reports; a reading of
 > "the stack is still there" is satisfied by one cell holding 64.
 
-**READING:** _(not run)_
+**READING:** **PASS.** 2026-09-19, booted by Ben; relayed as a verdict. The prediction above is
+untouched.
 
 ---
 
@@ -4201,7 +4277,8 @@ back to page 2. Flip to page 6. Quit, rejoin, and read both pages.
 > flip that wrote the TARGET page instead of the CURRENT one puts A where B belongs and the row
 > reads it.
 
-**READING:** _(not run)_
+**READING:** **PASS.** 2026-09-19, booted by Ben; relayed as a verdict. The prediction above is
+untouched.
 
 ---
 
@@ -4224,7 +4301,8 @@ player's inventory. Four readings, four PASSes, recorded separately.
 > `returnEverything` is public and shutdown calls it directly. A build that returned the page on one
 > of the four is a build that empties a vault on one specific gesture.
 
-**READING:** _(not run)_
+**READING:** **PASS.** 2026-09-19, booted by Ben; relayed as a verdict -- **all four close paths**.
+The prediction above is untouched.
 
 ---
 
@@ -4247,7 +4325,8 @@ nothing lands on it. After the flips and the rejoin, **the file still contains t
 > write after opening that page would delete it silently.** The player would never know; the file
 > would just get shorter.
 
-**READING:** _(not run)_
+**READING:** **PASS.** 2026-09-19, booted by Ben; relayed as a verdict. The prediction above is
+untouched.
 
 ---
 
@@ -4286,7 +4365,8 @@ regain a third.**
 > re-migration reads `page 1: 3 item(s)` with 1 in the inventory: **four stacks from a chest that
 > held three.**
 
-**READING:** _(not run)_
+**READING:** **PASS.** 2026-09-19, booted by Ben; relayed as a verdict. The prediction above is
+untouched.
 
 ---
 
@@ -4308,7 +4388,9 @@ Then open it from an ender chest block.
 > decomposes a gesture into independent single-slot writes, which is what duplicated the Nexus star
 > in Row 8. **A vault cell is an input slot, so the same shape is reachable here.**
 
-**READING:** _(not run)_
+**READING:** **PASS.** 2026-09-19, booted by Ben; relayed as a verdict. **This certifies creative
+and nothing else**, per the row's own note and the creative-divergence register. **No divergence
+was reported**, so nothing is added to the register. The prediction above is untouched.
 
 ---
 
@@ -4329,7 +4411,8 @@ shows **four** stations.
 > parameter at **seven** construction sites. **A mistake in any of those shows up in a screen this
 > slice is not about.**
 
-**READING:** _(not run)_
+**READING:** **PASS.** 2026-09-19, booted by Ben; relayed as a verdict. The prediction above is
+untouched.
 
 ---
 
@@ -4386,7 +4469,16 @@ client** — it is the only row in this file that reaches outside the game.
 > **RESTORE THE PERMISSIONS BEFORE STEP 6.** A still-read-only directory fails the rejoin's load as
 > well, which is a different defect and would read as this one.
 
-**READING:** _(not run)_
+**READING:** *** NOT RUN. BEN'S RULING, MADE WITH THE CONSEQUENCE IN FRONT OF HIM. ***
+
+**Not deferred, not scheduled, and NOT "covered by the unit tests".** `VaultReturnPolicy`,
+`VaultCloseDisposal` and `VaultWriteFailure` are pure and their tests execute, so **the DECISION is
+witnessed and the PATH is not.**
+
+> *** THE SOLE-WITNESS RULE SAYS SKIPPING ONE IS ZERO CONFIDENCE, NOT LESS. *** **`5 + 1 = 6` has
+> never been observed on a live server.** The duplicator's `5 + 6 = 11` and the shredder's
+> `5 + 0 = 5` are what this row distinguishes it from, and **nothing else in this file can fail on
+> any of the three.** The prediction above is untouched.
 
 ---
 
@@ -4458,7 +4550,17 @@ nothing a person can do at a keyboard makes that reliable.
 > failure. If a red message appears BEFORE the screen shuts, this row has staged row 111 instead --
 > discard the reading and restage.
 
-**READING:** _(not run)_
+**READING:** *** NOT RUN. BEN'S RULING, MADE WITH THE CONSEQUENCE IN FRONT OF HIM. ***
+
+**Not deferred, not scheduled, and NOT "covered by the unit tests".** The disposal decision is
+`VaultCloseDisposal` and it executes; **the drop itself -- a region-scheduled task putting item
+entities on the ground at a quit player's last location -- has never run outside a unit fixture.**
+
+> *** THE SOLE-WITNESS RULE SAYS SKIPPING ONE IS ZERO CONFIDENCE, NOT LESS. *** The failure this
+> row catches is **`2 + 0 = 2` and it is SILENT** -- no error, no message, the vault looks healthy
+> and the stack is nowhere. **That is what shipped on `247fd6bf`.** Skipping the row leaves the
+> fix in exactly the state the defect was in: **believed, and unobserved.** The prediction above is
+> untouched.
 
 ---
 
@@ -4492,7 +4594,16 @@ The vault holds **1** on page 6. Console carries the `WARNING` naming the drop a
 > after the rejoin is a PASS for "nothing was lost" and a FAIL for this row -- it means the drop
 > branch did not fire and the survival was luck of the ordering. **Look at the floor first.**
 
-**READING:** _(not run)_
+**READING:** *** NOT RUN. BEN'S RULING, MADE WITH THE CONSEQUENCE IN FRONT OF HIM. ***
+
+**Not deferred, not scheduled, and NOT "covered by the unit tests".** This row is not one of the
+five sole witnesses -- it is the **quit arm** of the same degrade machinery rows 111 and 112 leave
+unwitnessed, and **all three go unread together**, so there is no reading anywhere in this file of
+what a degraded vault does on a real close.
+
+> **THE READING THIS ROW WANTED WAS *WHERE*, NOT *WHETHER*.** An item in the inventory after the
+> rejoin passes *"nothing was lost"* and **fails this row**. Nothing in the unit suite can tell the
+> two apart, because neither has an inventory or a floor. The prediction above is untouched.
 
 ---
 
@@ -4545,4 +4656,15 @@ reachable in the same reading.
 > and `page 1` is index 0 -- so `1 / 17` keeps the two coordinates distinguishable and makes a
 > page/slot transposition visible.
 
-**READING:** _(not run)_
+**READING:** *** PASS -- BOTH HALVES, IN ONE READING ON ONE PLAYER. *** 2026-09-19, booted by Ben;
+relayed. The prediction above is untouched.
+
+- **The storage half:** the Boltor went into **page 1 from the BLOCK at level 1**, and **survived
+  the rejoin**.
+- **The shortcut half, in the SAME reading:** **slot 29 was still dimmed**, `Locked -- unlocks at
+  level 20`.
+
+*** THE TWO ROUTES ARE SEPARATED, AND THAT IS OBSERVED RATHER THAN ASSUMED. *** Storage below the
+threshold **and** the shortcut still locked, on one player in one session -- which is the whole of
+the 2026-09-18 ruling and the only thing that distinguishes it from a build that freed the entire
+vault. **Sole witness, fully witnessed.**
