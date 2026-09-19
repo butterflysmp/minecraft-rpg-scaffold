@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.menu;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.enchant.GrindstoneRefund;
 import io.github.butterflysmp.rpg.core.progression.PlayerLevel;
+import io.github.butterflysmp.rpg.core.vault.VaultShape;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
@@ -12,6 +13,7 @@ import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheetProjection;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.GearScoreItems;
+import io.github.butterflysmp.rpg.paper.vault.VaultService;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -82,6 +84,7 @@ public final class NexusMenu extends Menu {
     private final ShieldRegistry shields;
     private final ArmorRegistry armor;
     private final ToolRegistry tools;
+    private final VaultService vaults;
 
     /**
      * @param adapters  stats and keys, for the stats head's figures
@@ -94,9 +97,13 @@ public final class NexusMenu extends Menu {
      * @param armor     }
      * @param tools     }
      *
+     * @param vaults    the vault store, handed to the VAULT screen -- this one is not read here
+     *                  either
+     *
      * <p>The services are taken rather than a pre-built {@code StatsSheetValues} so that the slice
-     * which makes the head clickable can REPAINT it. Nine parameters of nine distinct types, so
-     * there is no transposable adjacent pair.
+     * which makes the head clickable can REPAINT it. <b>Ten parameters of ten distinct types</b>, so
+     * there is still no transposable adjacent pair -- which is the property that matters, not the
+     * count. It said "nine" until the vault arrived.
      *
      * <p><b>MOST OF THESE ARE NOT READ BY THIS SCREEN AT ALL</b> -- {@code profiles} goes to
      * {@link SettingsMenu}, {@code recipes} to {@link CraftingMenu}, and the three registries to
@@ -121,7 +128,8 @@ public final class NexusMenu extends Menu {
      */
     public NexusMenu(Player viewer, AdapterContext adapters, ProfileService profiles,
                      WeaponRegistry weapons, ResourcePool resources, RecipeCatalogue recipes,
-                     ShieldRegistry shields, ArmorRegistry armor, ToolRegistry tools) {
+                     ShieldRegistry shields, ArmorRegistry armor, ToolRegistry tools,
+                     VaultService vaults) {
         // "NEXUS MENU", MATCHING THE ITEM -- and the ITEM was renamed to match this, not the other
         // way round. Ben ruled "both, they should match" WITHOUT giving the string; the string was
         // then picked here rather than asked for, and "The Nexus" went onto the item. He has now
@@ -143,6 +151,7 @@ public final class NexusMenu extends Menu {
         this.shields = shields;
         this.armor = armor;
         this.tools = tools;
+        this.vaults = vaults;
         render();
     }
 
@@ -217,6 +226,19 @@ public final class NexusMenu extends Menu {
             viewer.closeInventory();
             return;
         }
+        if (click.slot() == NexusMenuLayout.VAULT_SLOT) {
+            // *** CLOSE FIRST IS NOT NEEDED HERE AND THE ASYMMETRY IS WORTH READING. ***
+            //
+            // Menu.open's rule is about the DEPARTING menu: close explicitly only when it holds
+            // input slots, so returnEverything runs before the screen changes. The hub holds none.
+            // The VAULT does -- which is why its own Back button closes first, and why this
+            // direction does not have to.
+            adapters.scheduler().onEntity(viewer, () ->
+                    new NexusVaultMenu(viewer, adapters, profiles, vaults,
+                            () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
+                                    recipes, shields, armor, tools, vaults)).open());
+            return;
+        }
         if (click.slot() == NexusMenuLayout.CRAFTING_SLOT) {
             // Menu.open's rule: hop a tick, no explicit close -- the hub holds no input slots.
             // FROM_NEXUS is what gives the crafting screen its Back button; see CraftingMenu.
@@ -226,7 +248,7 @@ public final class NexusMenu extends Menu {
             adapters.scheduler().onEntity(viewer, () -> new CraftingMenu(
                     viewer, adapters, recipes,
                     () -> new NexusMenu(viewer, adapters, profiles, weapons, resources, recipes,
-                            shields, armor, tools)).open());
+                            shields, armor, tools, vaults)).open());
             return;
         }
         if (click.slot() == NexusMenuLayout.ENCHANT_SLOT) {
@@ -237,7 +259,7 @@ public final class NexusMenu extends Menu {
             adapters.scheduler().onEntity(viewer, () ->
                     new EnchantMenu(viewer, weapons, shields, armor, tools, adapters,
                             () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
-                                    recipes, shields, armor, tools)).open());
+                                    recipes, shields, armor, tools, vaults)).open());
             return;
         }
         if (click.slot() == NexusMenuLayout.GRINDSTONE_SLOT) {
@@ -247,7 +269,7 @@ public final class NexusMenu extends Menu {
             adapters.scheduler().onEntity(viewer, () ->
                     new GrindstoneMenu(viewer, weapons, shields, armor, tools, adapters,
                             () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
-                                    recipes, shields, armor, tools)).open());
+                                    recipes, shields, armor, tools, vaults)).open());
             return;
         }
         if (click.slot() == NexusMenuLayout.SETTINGS_SLOT) {
@@ -258,7 +280,7 @@ public final class NexusMenu extends Menu {
             adapters.scheduler().onEntity(viewer,
                     () -> new SettingsMenu(viewer, adapters, profiles,
                             () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
-                                    recipes, shields, armor, tools)).open());
+                                    recipes, shields, armor, tools, vaults)).open());
             return;
         }
         // Every filler pane is inert, and the stats head's click is still unbuilt -- slice 3's
@@ -292,6 +314,18 @@ public final class NexusMenu extends Menu {
         // one value inside one paint, and a level that could differ between two cells of the same
         // screen if the load settled mid-render.
         int level = viewerLevel();
+
+        // THE VAULT, row 4 column 2. The cell 29 that GRINDSTONE_SLOT's javadoc says the row was
+        // laid out expecting, filled at last -- and the gap at 30 is the anvil's, left open.
+        //
+        // ITS THIRD LOCKED LINE IS NOT LIKE THE OTHER THREE. "An ender chest in the world still
+        // works" would be false, because the hijack replaces the vanilla chest at every level. The
+        // sentence each station authors is NexusStationGate.Station.worldRoute().
+        getInventory().setItem(NexusMenuLayout.VAULT_SLOT, station(
+                NexusStationGate.Station.VAULT, level, Material.ENDER_CHEST,
+                List.of(MenuIcons.line("Seven pages, " + VaultShape.TOTAL_SLOTS + " slots.",
+                                NamedTextColor.DARK_GRAY),
+                        MenuIcons.line("Pages open as you level.", NamedTextColor.DARK_GRAY))));
 
         // THE CRAFTING-TYPE BAND, row 4. Both are icon() and both are BUILT -- the screens behind
         // them exist and work; only the route through the hub is new.

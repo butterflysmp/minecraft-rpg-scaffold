@@ -34,7 +34,7 @@ class FilePlayerRepositoryTest {
     void saveThenLoadRoundTrips() {
         var id = UUID.randomUUID();
         var profile = new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, id, "hunter", "fire",
-                7, 1234, List.of("solar_grenade"), 99L, 3, 56_780L, null);
+                7, 1234, List.of("solar_grenade"), 99L, 3, 56_780L, null, false);
         var repo = repo();
 
         repo.save(profile).join();
@@ -174,10 +174,22 @@ class FilePlayerRepositoryTest {
         assertEquals(0L, loaded.lifetimeXp(),
                 "an absent lifetimeXp is zero, and zero is CORRECT -- level 1 is where a player "
                         + "with no record belongs");
-        assertEquals(3, loaded.schemaVersion(),
-                "AND THE STAMP DOES NOT MOVE. Adding this field needed no migration, so it needed "
-                        + "no version; if you are here because this went red, read the note at the "
-                        + "end of ProfileMigrations.migrate before raising it");
+        // *** THIS WENT RED WHEN vaultMigrated BUMPED THE STAMP TO 4, AND THE NOTE IT TOLD YOU TO
+        // READ IS WHY THE FIX IS A CHANGED NUMBER RATHER THAN A RAISED OBJECTION. ***
+        //
+        // The row's claim was "adding lifetimeXp needed no migration, so it needed no version", and
+        // THAT IS STILL TRUE: no step touches lifetimeXp, and an absent key still reads as zero,
+        // asserted two lines up. What moved is a different field's stamp, taken for the rollback
+        // refusal rather than for a fix-up.
+        //
+        // The row's name keeps "NoStampBump" and is left alone, because it names what is true of
+        // THIS FIELD -- which is the thing the row exists to pin. Renaming it to follow the schema
+        // number would make it a row about the schema, and there is one of those in
+        // PlayerProfileMigrationTest.
+        assertEquals(4, loaded.schemaVersion(),
+                "restamped to 4 by the vaultMigrated step. lifetimeXp itself still needs no "
+                        + "migration -- see the note at the end of ProfileMigrations.migrate, and "
+                        + "the v3 -> v4 step directly beneath it");
 
         // THE FIXTURE REALLY IS A POPULATED v3 FILE -- without these, a parse failure yielding a
         // blank profile would satisfy the zero above and read as a pass.
@@ -228,12 +240,97 @@ class FilePlayerRepositoryTest {
         assertNull(loaded.starEnabledOrNull(),
                 "and it arrives as NULL rather than false -- which is the whole reason the "
                         + "component is boxed. A primitive would read false and disable everyone");
-        assertEquals(3, loaded.schemaVersion(), "no stamp bump: absence needs no migration");
+        // *** THIS ASSERTION READ `3` UNTIL THE VAULT MIGRATION STAMP LANDED, AND THE CHANGE IS
+        // NOT A WEAKENING. *** The original claim -- "no stamp bump: absence needs no migration" --
+        // was about starEnabled and is still true of starEnabled: no step touches it, and the
+        // absent key still arrives as null.
+        //
+        // What moved is a DIFFERENT field's stamp. vaultMigrated bumped the schema to 4 purely to
+        // arm the newer-server refusal, so every v3 file is now restamped on load. The row goes red
+        // on that bump, correctly -- it is the only row in the suite that loads a REAL v3 file --
+        // and the honest fix is to say what the stamp is now and why, not to loosen it to
+        // CURRENT_SCHEMA_VERSION, which would stop noticing the next one.
+        assertEquals(4, loaded.schemaVersion(),
+                "restamped to 4 by the vaultMigrated step, which sets no value and exists for the "
+                        + "rollback refusal. starEnabled itself still needs no migration");
 
         // THE FIXTURE IS A POPULATED v3 FILE, not a parse failure yielding a blank profile --
         // which would satisfy the assertions above for free.
         assertEquals(17, loaded.nexusSlot());
         assertEquals(56_780L, loaded.lifetimeXp());
+    }
+
+    /**
+     * *** THE MIGRATION FLAG'S ABSENT KEY MEANS NOT MIGRATED, CAUSED AGAINST A REAL FILE. ***
+     *
+     * <p><b>The other direction from the row above, and the contrast is the reason both exist.</b>
+     * An absent {@code starEnabled} must read as {@code true}, so it is boxed; an absent
+     * {@code vaultMigrated} must read as {@code false}, so it is a primitive. <b>The same absence,
+     * in the same file, correctly answered two opposite ways</b> -- which is only checkable by
+     * loading a file that has neither key.
+     *
+     * <p>If this ever read {@code true}, every existing player would be treated as already
+     * migrated and <b>their ender chest would never be copied at all</b> -- a silent, permanent
+     * loss of access to items that are still sitting in a container they can no longer open.
+     */
+    @Test
+    void aProfileWithNoVaultMigratedKeyIsNOTMigrated_whichEveryExistingFileIs() throws Exception {
+        var id = UUID.randomUUID();
+        Files.writeString(dir.resolve(id + ".json"), """
+                {
+                  "schemaVersion": 3,
+                  "playerId": "%s",
+                  "archetypeId": "ranger",
+                  "elementId": "fire",
+                  "level": 7,
+                  "experience": 1234,
+                  "unlockedAbilities": ["solar_grenade"],
+                  "lastSeenEpochMillis": 99,
+                  "nexusSlot": 17,
+                  "lifetimeXp": 56780
+                }
+                """.formatted(id), StandardCharsets.UTF_8);
+
+        PlayerProfile loaded = repo().load(id).join().orElseThrow();
+
+        assertFalse(loaded.vaultMigrated(), "an absent vaultMigrated key means NOT migrated");
+        assertTrue(loaded.starEnabled(),
+                "and the SAME absence still means ENABLED for the boxed field beside it");
+
+        // The fixture is a populated file rather than a parse failure yielding a blank profile,
+        // which would satisfy a false-reading assertion for free.
+        assertEquals(17, loaded.nexusSlot());
+        assertEquals(56_780L, loaded.lifetimeXp());
+    }
+
+    /**
+     * A migrated profile round-trips, and the key is WRITTEN rather than omitted.
+     *
+     * <p><b>The second half is the one that matters and it is the opposite of {@code starEnabled}'s
+     * property.</b> {@code serializeNulls} is off, so a null field writes no key -- but this field
+     * is a primitive, so {@code false} is a value and Gson writes it. That is what makes the flag
+     * survive a save: an omitted {@code true} would read back as false on the next login and
+     * re-run the migration.
+     */
+    @Test
+    void aMigratedProfileRoundTripsAndTheKeyIsActuallyWritten() throws Exception {
+        var id = UUID.randomUUID();
+        var repo = repo();
+
+        repo.save(PlayerProfile.fresh(id).withVaultMigrated(true)).join();
+
+        String json = Files.readString(dir.resolve(id + ".json"), StandardCharsets.UTF_8);
+        assertTrue(json.contains("\"vaultMigrated\": true"),
+                "a primitive true is written, not omitted: " + json);
+        assertTrue(repo.load(id).join().orElseThrow().vaultMigrated(),
+                "and it reads back migrated, so the copy does not run a second time");
+
+        // AND THE FALSE CASE IS WRITTEN TOO, which is what makes the flag readable rather than
+        // inferred from absence on a file this build wrote.
+        var notMigrated = UUID.randomUUID();
+        repo.save(PlayerProfile.fresh(notMigrated)).join();
+        assertTrue(Files.readString(dir.resolve(notMigrated + ".json"), StandardCharsets.UTF_8)
+                .contains("\"vaultMigrated\": false"));
     }
 
     /**

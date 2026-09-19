@@ -132,6 +132,28 @@ final class NexusMenuLayout {
     static final int GRINDSTONE_SLOT = 33;
 
     /**
+     * The vault. <b>Row 4, column 2 -- and it is 29, which the row above says was reserved for it.</b>
+     *
+     * <h2>THE ROW IS NOW FOUR OF FIVE, AND THE HOLE THAT IS LEFT IS 30</h2>
+     *
+     * The predecessor's row, quoted in {@link #GRINDSTONE_SLOT}'s javadoc:
+     *
+     * <pre>
+     *   29 ender chest   30 anvil   31 crafting   32 enchanting   33 grindstone
+     *                    ^^^^^^^^ still missing
+     * </pre>
+     *
+     * <b>So the block is no longer contiguous: 29, then a gap at 30, then 31-33.</b> That reads as
+     * an unfinished row with a hole in it, and it is correct -- {@code GRINDSTONE_SLOT}'s note says
+     * the row "was laid out expecting them" and that re-centring is a move that would have to be
+     * undone twice. <b>Do not close the gap by moving the vault to 30</b>: the anvil's cell is 30,
+     * and a vault sitting in it would have to move the day an anvil ships.
+     *
+     * <p><b>It is NOT a ruling that the anvil will be built.</b> Neither has been designed.
+     */
+    static final int VAULT_SLOT = 29;
+
+    /**
      * Every slot that is plain filler -- the whole menu except the buttons and the stations.
      *
      * <p><b>Built by SET SUBTRACTION rather than by a loop with {@code continue} arms</b>, the same
@@ -141,7 +163,7 @@ final class NexusMenuLayout {
      * {@link #CLOSE_SLOT} makes the menu unclosable except with Esc. Adding a third button later
      * means adding one line to the removal list, not remembering to extend a skip condition.
      */
-    static final Set<Integer> FILLER_SLOTS = buildFiller();
+    static final Set<Integer> FILLER_SLOTS;
 
     /**
      * Every cell {@code NexusMenu.render()} must paint individually.
@@ -163,14 +185,31 @@ final class NexusMenuLayout {
      * a painter.
      */
     static final Set<Integer> PAINTED_SLOTS = Set.of(
-            CLOSE_SLOT, SETTINGS_SLOT, STATS_SLOT, CRAFTING_SLOT, ENCHANT_SLOT, GRINDSTONE_SLOT);
+            CLOSE_SLOT, SETTINGS_SLOT, STATS_SLOT,
+            VAULT_SLOT, CRAFTING_SLOT, ENCHANT_SLOT, GRINDSTONE_SLOT);
 
-    private static Set<Integer> buildFiller() {
+    /**
+     * *** THE SUBTRACTION READS {@link #PAINTED_SLOTS}. IT USED TO RESTATE IT BY HAND. ***
+     *
+     * <p>{@code FILLER_SLOTS}' javadoc has claimed since slice 6 that <i>"{@code buildFiller}
+     * subtracts exactly this set"</i>. <b>It did not.</b> It subtracted a second
+     * {@code Set.of(...)} literal listing the same six constants -- the two-hand-maintained-lists
+     * shape whose autopsy is in that very javadoc, rebuilt one line below the account of it.
+     *
+     * <p>It was never wrong, because the two literals agreed. <b>Adding the vault is the first edit
+     * that had to change both</b>, which is exactly the moment the defect was designed to bite, and
+     * it is why this is fixed here rather than left as a tidy-up.
+     *
+     * <p><b>The declaration order is load-bearing now.</b> A static field initialises in source
+     * order, so {@code PAINTED_SLOTS} must be declared ABOVE the block that reads it or the
+     * subtraction would see {@code null}. {@code FILLER_SLOTS} is therefore declared uninitialised
+     * above and assigned here, which keeps it where a reader expects to find it while making the
+     * dependency explicit rather than positional.
+     */
+    static {
         Set<Integer> slots = new LinkedHashSet<>();
         for (int slot = 0; slot < SIZE; slot++) slots.add(slot);
-        // THE SAME SET render() PAINTS. Two lists is what produced the hole at 33.
-        slots.removeAll(Set.of(CLOSE_SLOT, SETTINGS_SLOT, STATS_SLOT,
-                CRAFTING_SLOT, ENCHANT_SLOT, GRINDSTONE_SLOT));
-        return Set.copyOf(slots);
+        slots.removeAll(PAINTED_SLOTS);
+        FILLER_SLOTS = Set.copyOf(slots);
     }
 }

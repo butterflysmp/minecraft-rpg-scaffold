@@ -18,7 +18,7 @@ class PlayerProfileMigrationTest {
      */
     private static PlayerProfile at(int schemaVersion) {
         return new PlayerProfile(schemaVersion, UUID.randomUUID(), "hunter", "fire", 7, 1234,
-                List.of("solar_grenade"), 99L, 3, 56_780L, null);
+                List.of("solar_grenade"), 99L, 3, 56_780L, null, false);
     }
 
     @Test
@@ -61,7 +61,7 @@ class PlayerProfileMigrationTest {
     void versionOneGainsAnElementOfNoneAndKeepsTheRest() {
         // A v1 JSON has no elementId -> null on read -> NONE via the compact constructor.
         PlayerProfile v1 = new PlayerProfile(1, UUID.randomUUID(), "hunter", null, 7, 1234,
-                List.of("solar_grenade"), 99L, 3, 56_780L, null);
+                List.of("solar_grenade"), 99L, 3, 56_780L, null, false);
         assertEquals(PlayerProfile.NONE, v1.elementId(), "absent elementId defaults to NONE");
 
         PlayerProfile migrated = ProfileMigrations.migrate(v1);
@@ -83,7 +83,7 @@ class PlayerProfileMigrationTest {
     @Test
     void versionTwoGainsTheDefaultNexusSlot_andZeroIsNOTTreatedAsAChoice() {
         PlayerProfile v2 = new PlayerProfile(2, UUID.randomUUID(), "hunter", "fire", 7, 1234,
-                List.of("solar_grenade"), 99L, 0, 56_780L, null);
+                List.of("solar_grenade"), 99L, 0, 56_780L, null, false);
         assertEquals(0, v2.nexusSlot(), "the constructor leaves it alone -- it cannot tell 0 from 0");
 
         PlayerProfile migrated = ProfileMigrations.migrate(v2);
@@ -107,19 +107,98 @@ class PlayerProfileMigrationTest {
      * The other half, and without it the row above is equally consistent with the step CLOBBERING
      * every profile's slot on every load -- which would silently undo the setting for everyone who
      * ever changes it.
+     *
+     * <h2>*** RENAMED FROM {@code aV3Profiles...} WHEN THE STAMP WENT TO 4, AND THE RENAME IS THE
+     * POINT ***</h2>
+     *
+     * <p>This row stages {@code CURRENT_SCHEMA_VERSION}, symbolically -- which is correct for what
+     * it tests (at the current stamp, no step runs) and means <b>it stopped being about v3 the
+     * instant the constant moved.</b> The name said v3 and the fixture said 4; nothing went red,
+     * because the row was still true of whatever it now staged.
+     *
+     * <p><b>A FIXTURE PINNED TO A MOVING CONSTANT SILENTLY CHANGES WHAT IT TESTS.</b> The coverage
+     * that quietly vanished -- a profile at the PREVIOUS version keeping its chosen slot across a
+     * real bump -- is restored below by a row staged on the literal {@code 3}.
      */
     @Test
-    void aV3ProfilesCHOSENSlotSurvivesMigration_includingSlotZero() {
+    void aCurrentProfilesCHOSENSlotSurvivesMigration_includingSlotZero() {
         PlayerProfile chose3 = at(PlayerProfile.CURRENT_SCHEMA_VERSION);
         assertEquals(3, ProfileMigrations.migrate(chose3).nexusSlot(),
-                "already at v3: the step must not run, so a chosen slot is untouched");
+                "already at the current stamp: no step runs, so a chosen slot is untouched");
 
         PlayerProfile chose0 = new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION,
-                UUID.randomUUID(), "hunter", "fire", 7, 1234, List.of(), 99L, 0, 56_780L, null);
+                UUID.randomUUID(), "hunter", "fire", 7, 1234, List.of(), 99L, 0, 56_780L, null, false);
         assertEquals(0, ProfileMigrations.migrate(chose0).nexusSlot(),
                 "SLOT ZERO IS A LEGAL CHOICE at v3 and must survive -- this is the case the "
                         + "stamp is what distinguishes, and the whole reason the default is not "
                         + "applied in the compact constructor");
+    }
+
+    /**
+     * The v3 -&gt; v4 step: <b>it stamps and sets nothing</b>, and both halves are asserted.
+     *
+     * <p>Staged on the LITERAL 3 rather than {@code CURRENT_SCHEMA_VERSION - 1}, so this row cannot
+     * drift when the constant moves again -- the row above is the account of what that drift costs.
+     *
+     * <p><b>The {@code nexusSlot} assertion is the one that matters and it is not about the vault.</b>
+     * A v3 profile's slot is a real CHOICE, and the new step runs over it. A step that reached for
+     * {@code withNexusSlot} by copy-paste -- the shape of the step directly above it -- would reset
+     * every existing player's star to slot 8 on their next login, with nothing going red.
+     */
+    @Test
+    void versionThreeIsStampedToFourAndSetsNothing() {
+        PlayerProfile v3 = new PlayerProfile(3, UUID.randomUUID(), "hunter", "fire", 7, 1234,
+                List.of("solar_grenade"), 99L, 3, 56_780L, null, false);
+
+        PlayerProfile migrated = ProfileMigrations.migrate(v3);
+
+        assertEquals(4, migrated.schemaVersion());
+        assertFalse(migrated.vaultMigrated(),
+                "the step sets no value -- absent already means NOT MIGRATED, which is correct");
+        assertEquals(3, migrated.nexusSlot(),
+                "a v3 slot is a CHOICE and the v3 -> v4 step must not touch it");
+        assertEquals("hunter", migrated.archetypeId());
+        assertEquals(56_780L, migrated.lifetimeXp());
+        assertTrue(migrated.starEnabled(), "an absent starEnabled still reads as ENABLED at v4");
+    }
+
+    /**
+     * An already-migrated profile keeps the flag across a load.
+     *
+     * <p><b>The mirror of the row above, and without it that row is equally consistent with the step
+     * CLEARING the flag</b> -- which would re-run every player's migration on every login, copying
+     * their ender chest into page 1 again on each one. The most expensive possible version of this
+     * bug, and a stamp-only step passes the row above whether it clears the flag or not.
+     */
+    @Test
+    void anAlreadyMigratedProfileStaysMigrated() {
+        PlayerProfile migratedAtV3 = new PlayerProfile(3, UUID.randomUUID(), "hunter", "fire", 7,
+                1234, List.of("solar_grenade"), 99L, 3, 56_780L, null, true);
+
+        PlayerProfile after = ProfileMigrations.migrate(migratedAtV3);
+
+        assertEquals(4, after.schemaVersion());
+        assertTrue(after.vaultMigrated(), "the flag is data, not something a stamp step rewrites");
+    }
+
+    /** {@code withVaultMigrated} carries every other field, both ways. */
+    @Test
+    void withVaultMigratedCarriesTheRestAndGoesBothWays() {
+        PlayerProfile before = at(PlayerProfile.CURRENT_SCHEMA_VERSION);
+        assertFalse(before.vaultMigrated());
+
+        PlayerProfile after = before.withVaultMigrated(true);
+
+        assertTrue(after.vaultMigrated());
+        assertEquals(before.playerId(), after.playerId());
+        assertEquals(before.nexusSlot(), after.nexusSlot());
+        assertEquals(before.lifetimeXp(), after.lifetimeXp());
+        assertEquals(before.schemaVersion(), after.schemaVersion());
+        assertEquals(before.unlockedAbilities(), after.unlockedAbilities());
+
+        // BOTH WAYS, because an operator re-running one player's migration is a supported action
+        // and the accessor's javadoc prices what it costs.
+        assertFalse(after.withVaultMigrated(false).vaultMigrated());
     }
 
     @Test
@@ -143,20 +222,20 @@ class PlayerProfileMigrationTest {
     /** Legacy JSON has no unlockedAbilities key at all; it must not NPE. */
     @Test
     void nullUnlockedAbilitiesBecomesEmptyList() {
-        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, null, 0L, 3, 0L, null);
+        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, null, 0L, 3, 0L, null, false);
         assertEquals(List.of(), profile.unlockedAbilities());
     }
 
     @Test
     void nullElementIdBecomesNone() {
-        var profile = new PlayerProfile(2, UUID.randomUUID(), "ranger", null, 1, 0, List.of(), 0L, 3, 0L, null);
+        var profile = new PlayerProfile(2, UUID.randomUUID(), "ranger", null, 1, 0, List.of(), 0L, 3, 0L, null, false);
         assertEquals(PlayerProfile.NONE, profile.elementId());
     }
 
     @Test
     void unlockedAbilitiesIsDefensivelyCopied() {
         var mutable = new java.util.ArrayList<>(List.of("a"));
-        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, mutable, 0L, 3, 0L, null);
+        var profile = new PlayerProfile(2, UUID.randomUUID(), "none", "none", 1, 0, mutable, 0L, 3, 0L, null, false);
 
         mutable.add("b");
 

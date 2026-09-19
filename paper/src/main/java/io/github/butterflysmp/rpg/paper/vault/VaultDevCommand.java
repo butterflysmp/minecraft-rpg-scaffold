@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.vault;
 
 import com.mojang.brigadier.context.CommandContext;
+import io.github.butterflysmp.rpg.core.vault.VaultCell;
 import io.github.butterflysmp.rpg.core.vault.VaultShape;
 import io.github.butterflysmp.rpg.paper.menu.MenuSafety;
 import io.github.butterflysmp.rpg.storage.PlayerVault;
@@ -33,15 +34,21 @@ import java.util.Optional;
  * <b>Ungated, that is an item duplicator</b> -- the same exposure {@code /rpg playerxp} has, which
  * is why it carries the same node. The gate is asserted by {@code VaultWiringSignatureTest}.
  *
- * <h2>THE ASYNC WINDOW IS ACCEPTED HERE AND MUST NOT BE IN PR 2</h2>
+ * <h2>THE ASYNC WINDOW: PR 2 PAID THE HOOK, AND THIS COMMAND STILL CANNOT UNDO ITS OWN WRITE</h2>
  *
  * {@code store} clears the player's hand when {@link VaultService#writePage} returns {@code true},
  * which reports only that the write was ISSUED. If the disk write then fails, the item is gone from
  * the hand and never reached the file.
  *
- * <p><b>That is tolerable for an operator instrument and is not tolerable for the screen</b>, which
- * is exactly the degraded-menu hook PR 2 owes. Written down here rather than left as a difference
- * somebody notices later.
+ * <p><b>This section used to say the hook was OWED TO PR 2. It is built</b>: {@code writePage} now
+ * takes a failure callback, poisons the vault and logs a report naming the page and every cell, and
+ * the screen degrades so its close hands the page back.
+ *
+ * <p><b>The window itself is NOT closed here, and that is the honest difference rather than an
+ * oversight.</b> The screen can hand items back because it still holds them; this command handed
+ * them over ticks ago. So {@link #onWriteFailed} tells the operator what happened and does not
+ * pretend to repair it -- <b>which is why an operator instrument is allowed this window and the
+ * screen is not.</b>
  */
 public final class VaultDevCommand {
 
@@ -146,9 +153,16 @@ public final class VaultDevCommand {
             return 0;
         }
 
-        Map<Integer, String> updated = new LinkedHashMap<>(found.get().page(page));
-        updated.put(slot, encoded);
-        if (!vaults.writePage(player.getUniqueId(), page, updated)) {
+        // THE CELLS THE PAGE ALREADY HOLDS ARE CARRIED WITH NO DESCRIPTION. They came off disk as
+        // text and this command has not decoded them, so there is no ItemStack to name -- and
+        // inventing one would put a guess in a log line an operator is meant to act on. Only the
+        // cell being written can be described, which is the one this command knows about.
+        Map<Integer, VaultCell> updated = new LinkedHashMap<>();
+        found.get().page(page).forEach((cell, item) ->
+                updated.put(cell, new VaultCell(item, VaultCell.UNDESCRIBED)));
+        updated.put(slot, new VaultCell(encoded, held.getType() + " x" + held.getAmount()));
+
+        if (!vaults.writePage(player.getUniqueId(), page, updated, owed -> onWriteFailed(player, owed))) {
             player.sendMessage(Component.text("The vault write was refused; you still hold it.",
                     NamedTextColor.RED));
             return 0;
@@ -158,6 +172,42 @@ public final class VaultDevCommand {
         player.sendMessage(Component.text(
                 "Stored in page " + (page + 1) + " slot " + slot + ".", NamedTextColor.AQUA));
         return 1;
+    }
+
+    /**
+     * A write this command issued completed exceptionally.
+     *
+     * <h2>*** IT TELLS THE OPERATOR, AND IT DOES NOT PRETEND TO FIX ANYTHING ***</h2>
+     *
+     * {@code VaultService} has already poisoned the vault and logged the report naming the page and
+     * every cell. There is nothing this command can repair: the item has already left the hand (for
+     * {@code store}) or been handed over (for {@code take}), a tick or more ago. <b>So this says so,
+     * in the same words the screen uses</b>, rather than being an empty callback that makes the
+     * failure look handled.
+     *
+     * <p><b>ARRIVES ON THE I/O THREAD</b>, so it must not touch the Bukkit API directly. There is no
+     * {@code Scheduler} in this class, and {@code Player.sendMessage} is the one Bukkit call that is
+     * documented thread-safe on Paper -- so the message goes out directly and <b>nothing else here
+     * may follow it.</b> A second line of Bukkit work in this method is a bug, not an extension.
+     */
+    private static void onWriteFailed(Player player, java.util.Set<Integer> owed) {
+        // *** THE OWED SET IS DELIBERATELY NOT ACTED ON HERE, AND THAT IS A DIFFERENCE FROM THE
+        // SCREEN RATHER THAN AN OVERSIGHT. ***
+        //
+        // The screen DROPS its owed cells, because it still holds the ItemStacks and it has a
+        // Scheduler to reach a region thread with. This class has neither: it is a static command
+        // handler with no AdapterContext, and the item left the player's hand ticks ago.
+        //
+        // Wiring a scheduler through RpgCommand to close a window on a DEV-gated instrument would
+        // widen this slice into the command tree for a path only an operator can reach -- and the
+        // operator is the one person who will read the SEVERE report naming the page and the item.
+        //
+        // The count is named in the message so the size of the loss is not left to be inferred.
+        String scale = owed.isEmpty() ? "" : " " + owed.size() + " cell(s) are affected.";
+        player.sendMessage(Component.text(
+                "That vault write FAILED to reach disk. This vault will accept no further writes"
+                        + " this session, and the file keeps its last good contents." + scale
+                        + " See the server log for the page and the items.", NamedTextColor.RED));
     }
 
     /**
@@ -199,9 +249,12 @@ public final class VaultDevCommand {
             return 0;
         }
 
-        Map<Integer, String> updated = new LinkedHashMap<>(found.get().page(page));
+        Map<Integer, VaultCell> updated = new LinkedHashMap<>();
+        found.get().page(page).forEach((cell, item) ->
+                updated.put(cell, new VaultCell(item, VaultCell.UNDESCRIBED)));
         updated.remove(slot);
-        if (!vaults.writePage(player.getUniqueId(), page, updated)) {
+
+        if (!vaults.writePage(player.getUniqueId(), page, updated, owed -> onWriteFailed(player, owed))) {
             player.sendMessage(Component.text(
                     "The vault write was refused; the item is still in the vault.",
                     NamedTextColor.RED));

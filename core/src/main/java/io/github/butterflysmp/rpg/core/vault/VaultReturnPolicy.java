@@ -1,0 +1,79 @@
+package io.github.butterflysmp.rpg.core.vault;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+/**
+ * What the vault hands back when its screen closes.
+ *
+ * <h2>*** ONE TERNARY, IN {@code core}, BECAUSE THE ALTERNATIVE CANNOT BE EXECUTED ***</h2>
+ *
+ * This is the {@code Menu.returnedSlots()} decision, and it is a decision the vault's whole safety
+ * argument rests on:
+ *
+ * <pre>
+ *   HEALTHY    return NOTHING           the items are on disk; that is what makes it storage
+ *   DEGRADED   return THE DIFFERENCE    only the cells that are NOT already on disk
+ * </pre>
+ *
+ * <h2>*** THE DEGRADED ANSWER WAS "EVERYTHING" AND THAT WAS A FULL-PAGE DUPLICATOR ***</h2>
+ *
+ * Poisoning leaves the file holding its <b>last good copy of the same page</b>. So returning every
+ * cell hands a player twenty stacks while the vault still holds the same twenty -- <b>a duplicator
+ * the size of the page</b>, and the design only ever argued that a SINGLE-CURSOR residual was
+ * irreducible. That one is; this one was not.
+ *
+ * <p>The difference is the minimum that has to come back: exactly the cells that would otherwise be
+ * destroyed, and nothing the file already has.
+ *
+ * <p><b>It is extracted rather than inlined because the override is no longer a constant, and a
+ * conditional safety hook has to be EXERCISED rather than read.</b> {@code Menu} cannot be
+ * constructed without a running server -- {@code Bukkit.createInventory} -- so a test of
+ * {@code NexusVaultMenu.returnedSlots} could only assert that the method exists, by scanning source.
+ * That is the shape this project files under <i>a guard that cannot fire is indistinguishable from
+ * one that protects you</i>.
+ *
+ * <p>Here both answers run in a unit test, which was Ben's condition on accepting the degraded
+ * design: <i>"the override is no longer a constant and the 'opt-out is load-bearing' test must
+ * exercise BOTH answers."</i> {@code GridClickIntent} was carved out of {@code MenuRouting} for the
+ * identical reason.
+ *
+ * <h2>THE CURSOR IS NOT IN HERE, AND THAT IS NOT AN OMISSION</h2>
+ *
+ * {@code Menu.returnEverything} hands a cursor item back unconditionally, outside this policy. An
+ * item on the cursor is in flight and is the player's whatever the menu believes about its own
+ * cells, so it is not a decision to make per state.
+ */
+public final class VaultReturnPolicy {
+
+    private VaultReturnPolicy() {}
+
+    /**
+     * The cells to hand back on close.
+     *
+     * @param degraded     has a write failed this session? Once true it stays true: the vault is
+     *                     poisoned, so no later gesture could persist anything.
+     * @param inputSlots   the cells that hold the player's items -- the storage cells minus any
+     *                     holding an entry this server could not decode, which never became items on
+     *                     screen and must not be handed to anybody.
+     * @param alreadyOnDisk the cells whose CURRENT contents are already in the file. Determined by
+     *                     the caller, which is the only side that can encode an {@code ItemStack}
+     *                     and compare it. <b>Wrong in the "not on disk" direction costs a duplicate;
+     *                     wrong the other way costs the item</b>, so a caller that cannot tell must
+     *                     pass an empty set.
+     * @return while healthy, an EMPTY set. While degraded, {@code inputSlots} MINUS
+     *         {@code alreadyOnDisk}.
+     */
+    public static Set<Integer> returnedSlots(boolean degraded, Set<Integer> inputSlots,
+                                             Set<Integer> alreadyOnDisk) {
+        if (!degraded) return Set.of();
+
+        // A COPY, NOT A VIEW. returnEverything iterates this while CLEARING the cells it names, and
+        // the caller's set is the menu's live view of its own contents. An aliased view that
+        // recomputed itself mid-iteration is a ConcurrentModificationException at best and a
+        // half-returned page at worst.
+        Set<Integer> owed = new LinkedHashSet<>(inputSlots);
+        owed.removeAll(alreadyOnDisk);
+        return Set.copyOf(owed);
+    }
+}

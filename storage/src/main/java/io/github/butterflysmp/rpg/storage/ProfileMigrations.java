@@ -120,7 +120,43 @@ public final class ProfileMigrations {
         // So the three primitives now answer absence three different ways, and the chain has ONE
         // step. Adding a fourth field: ask what the absent value MEANS, not what type it is.
 
-        // v3 -> v4: add the next step here.
+        // v3 -> v4: added vaultMigrated (has this player's ender chest been copied into the vault).
+        //
+        // *** A BARE STAMP, AND IT IS THE FIRST STEP HERE THAT EXISTS FOR THE REFUSAL ALONE. ***
+        //
+        // THE FIX-UP IS GENUINELY EMPTY, and that is not an oversight: an absent boolean reads as
+        // false, and false -- "not migrated" -- is the correct value for every profile written
+        // before the vault existed, because nobody's chest had been copied. That is lifetimeXp's
+        // case exactly, and lifetimeXp needed NO STEP AT ALL.
+        //
+        // *** SO WHY IS THERE A STEP? BECAUSE THE STAMP AND THE VALUE ARE TWO QUESTIONS. ***
+        //
+        // The three notes above all answer ONE question -- what does an absent value mean -- and all
+        // three then treat the stamp as a consequence of the answer. It is not. The stamp's only
+        // job is the refusal at the top of this method, and the refusal protects against a
+        // DIFFERENT event: an older build reading a file this build wrote.
+        //
+        // lifetimeXp declined that protection on Ben's ruling, and the note above prices it: a
+        // rollback loses some XP. THE SAME ROLLBACK PRICES DIFFERENTLY HERE. vaultMigrated would
+        // revert to false, the migration would run a second time, and page 1's free cells would
+        // take another copy of an ender chest that is NEVER CLEARED -- so anything the player had
+        // moved off page 1 in the meantime exists twice. A duplicate is an economy hole; re-earned
+        // XP is an evening.
+        //
+        // The step therefore bumps and sets nothing. Written out at this length because AN EMPTY
+        // STEP IS INDISTINGUISHABLE FROM A HALF-WRITTEN ONE, and the next reader's cheapest
+        // resolution would be to add the fix-up that does not belong.
+        //
+        // AND THE PRICE OF THE BUMP, NAMED RATHER THAN LEFT TO BE DISCOVERED: every profile is
+        // rewritten to 4 on first load, so an older build refuses EVERY profile, not just a
+        // migrated one. That is a loud, total, roll-forward-able failure, which is the direction
+        // this refusal was built to fail in -- and it is the opposite trade from lifetimeXp's.
+        // Ben's to overrule, and overruling it is deleting this step and restoring the 3.
+        if (profile.schemaVersion() < 4) {
+            profile = profile.withSchemaVersion(4);
+        }
+
+        // v4 -> v5: add the next step here.
 
         return profile;
     }

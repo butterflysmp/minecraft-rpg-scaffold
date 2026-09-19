@@ -553,7 +553,7 @@ public final class RpgPlugin extends JavaPlugin {
             // ONLY route to it once a player turns the Nexus star off, which is why it ships in
             // the same slice as the toggle rather than after it.
             event.registrar().register(
-                    MenuCommand.build(adapters, profiles, weapons, resources, listeners.recipeCatalogue(), shields, armor, tools),
+                    MenuCommand.build(adapters, profiles, weapons, resources, listeners.recipeCatalogue(), shields, armor, tools, vaults),
                     "Open the Nexus hub");
         });
     }
