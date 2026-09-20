@@ -35,7 +35,8 @@ public record WeaponDefinition(
         int reloadTicks,
         List<TriggerBinding> triggers,
         List<String> flavor,
-        Optional<String> craftResult
+        Optional<String> craftResult,
+        boolean unscored
 ) implements GearDefinition {
     /** The item a weapon renders as when its content does not say otherwise: a sword. */
     public static final String DEFAULT_MATERIAL = "iron_sword";
@@ -134,7 +135,7 @@ public record WeaponDefinition(
                             double attackSpeed, double sweep, List<TriggerBinding> triggers,
                             List<String> flavor) {
         this(id, displayName, element, rarity, weaponClass, material, attackDamage, attackSpeed,
-                sweep, NO_QUIVER, 0, triggers, flavor, Optional.empty());
+                sweep, NO_QUIVER, 0, triggers, flavor, Optional.empty(), false);
     }
 
     /**
@@ -150,7 +151,7 @@ public record WeaponDefinition(
                             double attackSpeed, double sweep, int quiverSize, int reloadTicks,
                             List<TriggerBinding> triggers, List<String> flavor) {
         this(id, displayName, element, rarity, weaponClass, material, attackDamage, attackSpeed,
-                sweep, quiverSize, reloadTicks, triggers, flavor, Optional.empty());
+                sweep, quiverSize, reloadTicks, triggers, flavor, Optional.empty(), false);
     }
 
     /** A sword-shaped MELEE weapon with no declared attack damage: the shape older tests use. */

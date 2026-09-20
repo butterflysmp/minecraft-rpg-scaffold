@@ -44,6 +44,31 @@ material: echo_shard      # distinct from ability_stone's amethyst_shard so the 
 # and it hides a decision. There is no basic attack here. Both triggers are the whole instrument.
 attack_damage: 0
 
+# *** THIS STONE CARRIES NO GEAR SCORE AT ALL. Ben's ruling, 2026-09-19. ***
+#
+# A FIXTURE'S NUMBERS MUST NOT MOVE WITH THE HOLDER'S WARDROBE. Both triggers below author
+# `amount: 4`, and that 4 is a LEGIBILITY measurement -- it is what makes "eight shots landed"
+# something a person can count on screen. Scale it by a 400-score chestplate and the instrument is
+# reading the observer instead of the mechanism.
+#
+# AND IT IS THE ONE WEAPON THE EXPLOIT REACHES. Every stone sits in the WEAPONS registry and
+# presents a fighting class -- `class: mage` above says in its own comment that the class is
+# arbitrary -- so GearScore.scoreable, which gates on KIND, cannot refuse it. Without this line a
+# high-rolled stone occupies one of the two hand seats and raises the level of every drop the
+# player takes while contributing nothing to a fight. That is precisely the exploit Ben closed for
+# TOOLS, and the tools ruling does not reach the weapons registry.
+#
+# *** DECLARED, NOT ABSENT, AND THAT IS THE WHOLE DESIGN. *** Slice 12 shipped "no gear_score key in
+# the PDC means 100", which is what lets every pre-slice-12 item behave exactly as it did. So
+# "unscored" and "predates the gear score" would be THE SAME BYTES, and an exclusion resting on
+# absence would be silently inert, with nothing red. Worse: volley_stones minted since slice 12
+# ALREADY carry a score in their PDC, so absence is not even true of them. This flag is read from
+# the DEFINITION and overrides whatever the item holds.
+#
+# TWO REFUSALS, AND BOTH ARE REQUIRED: the STAMP must decline to write a score onto a new stone, and
+# the READ must decline to count one that is already there. Either alone looks like it works.
+unscored: true
+
 flavor:
   - "An instrument, not a weapon."
   - "It measures how many of a thing you can see at once."

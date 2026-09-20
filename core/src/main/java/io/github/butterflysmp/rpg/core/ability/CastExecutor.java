@@ -177,7 +177,11 @@ public final class CastExecutor {
         // it as its CAP. Frozen here with everything else: a projectile is capped by what it was
         // fired with, not by what the caster holds when it lands.
         Caster source = Caster.of(caster)
-                .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), caster.attackDamage()));
+                .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), caster.attackDamage()))
+                // The held weapon's gear score, frozen here with everything else, for the same reason:
+                // a staff's bolt is priced by the staff that FIRED it, not by what is in hand when it
+                // lands. It scales the authored literal in EffectApplier's Damage arm.
+                .withTriggerScore(world.triggerScoreOf(caster.id()));
 
         // WHAT YOU HEAR WHEN YOU PRESS THE BUTTON. Fired here, before the switch, so it is
         // independent of cast shape and lands on the frame the cast was committed -- a projectile
@@ -281,8 +285,13 @@ public final class CastExecutor {
      */
     public void landBasicMelee(AbilityDefinition ability, CombatantSnapshot caster,
                                Combatant target, double chargeScale) {
+        // The score is set here too, even though the WeaponDamage arm a basic melee usually lands
+        // IGNORES it -- the stat already carries it. A melee weapon's ability can still author a
+        // LITERAL Damage effect, and a site that silently carried BASELINE would price that literal
+        // as unscored while every other route scaled it.
         detonate(ability, Caster.of(caster, chargeScale)
-                .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), caster.attackDamage())),
+                .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), caster.attackDamage()))
+                .withTriggerScore(world.triggerScoreOf(caster.id())),
                 target, target.state().position());
         if (DamagePayload.isBasicAttack(ability.onHit())) onBasicAttackUse.run();
     }
@@ -659,8 +668,20 @@ public final class CastExecutor {
         Aim live = world.aimOf(casterId).orElse(null);
         if (live == null) return;                            // same condition, same answer
 
-        Caster source = Caster.of(self.state()).withPayloadDamage(
-                DamagePayload.headlineDamage(ability.onHit(), self.state().attackDamage()));
+        // *** THIS IS WHERE A VOLLEY RE-PRICES, AND IT IS THIS LOOP THAT DOES IT -- NOT A LIVE FIELD.
+        // *** Each shot rebuilds the WHOLE Caster from a fresh snapshot, an aim read this tick and a
+        // gear score read this tick, so a player who swaps weapons mid-burst has the remaining shots
+        // priced off whatever is now in hand. Every component of the Caster is still FROZEN once
+        // built; what moves is that there is a new Caster per shot.
+        //
+        // INHERITED, NOT INTRODUCED. cursed_emerald.yml already documents exactly this for
+        // enchantDamagePercent, classDamageBonus, chargeScale and critMultiplier -- "a player who
+        // swaps weapons mid-burst has shots 4-6 priced off whatever is in hand at that tick". The
+        // gear score joins a chain that already behaves this way. It is a volley-wrapper question and
+        // it is UNRULED; do not "fix" it here.
+        Caster source = Caster.of(self.state())
+                .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), self.state().attackDamage()))
+                .withTriggerScore(world.triggerScoreOf(casterId));
 
         fireInner(ability, source, live, spec.of());
 

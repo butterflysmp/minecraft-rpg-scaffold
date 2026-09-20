@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.core.combat.AttackCharge;
 import io.github.butterflysmp.rpg.core.combat.Crit;
 import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
+import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -1046,5 +1047,128 @@ class EffectApplierTest {
         // Mutation: report the element from a later accept than the amount -- e.g. keep the amount
         // first-wins and let the element overwrite -> "water" != "fire" -> reddens. That is the
         // unpaired-slots bug, and it is invisible to every other row in this file.
+    }
+
+    // --- gear score on trigger damage (slice 12b) -------------------------------------------
+
+    /**
+     * *** BEN RULED TRIGGER DAMAGE SCALES, AND THIS IS THE ARM IT REACHES. ***
+     *
+     * <p>A staff authors its bolt as a LITERAL {@code type: damage / amount:}, which never reads the
+     * ATTACK_DAMAGE stat -- so slice 12 left every mage weapon unscaled. This row is that gap closed.
+     *
+     * <p>Staged at 250 rather than 200 or 400: not a clean doubling, and far from both clamps, so
+     * neither the floor nor the soft cap can supply the answer.
+     */
+    @Test
+    void aLiteralTriggerDamageScalesByTheWeaponsGearScore() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        caster.triggerScore = 250;
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(16, "fire")),
+                caster.asCaster(), pair(target), Vec3.ZERO);
+
+        // ember_staff authors 16. 16 * 250 / 100 = 40, exactly.
+        assertEquals(60, target.health, 1e-9,
+                "the authored 16 must arrive as 40 at GS 250");
+    }
+
+    /**
+     * A BASELINE score -- every mob in the game, an empty hand, an unstamped item -- deals the
+     * authored number and nothing else.
+     *
+     * <p><b>The default is asserted as {@link GearScore#BASELINE}, not as 0.</b> {@code clamp} would
+     * floor a 0 back to the same 100, so the damage would be right either way -- which is exactly why
+     * the FIELD is checked here rather than only the number. A fixture holding 0 while behaving as 100
+     * is honest to {@code scaledDamage} and to nothing else.
+     */
+    @Test
+    void aBaselineTriggerScoreDealsTheAuthoredAmount() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+
+        assertEquals(GearScore.BASELINE, caster.triggerScore,
+                "the dummy default must BE the baseline, not merely behave like it");
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(16, "fire")),
+                caster.asCaster(), pair(target), Vec3.ZERO);
+
+        assertEquals(84, target.health, 1e-9,
+                "BASELINE scales nothing -- an unreconciled mob deals its authored 16. If this reads"
+                        + " 100 the identity inverted and every mob in the game deals nothing.");
+    }
+
+    /**
+     * *** THE ROW THAT STOPS THE DOUBLE SCALE, AND IT IS THE ONE A REFACTOR NEEDS. ***
+     *
+     * <p>{@code WeaponDamage} reads {@code caster.attackDamage()} -- the ATTACK_DAMAGE stat, which
+     * {@code WeaponAttackItems} has ALREADY scaled by the held item's score. Applying the score
+     * again in that arm would make a GS 400 weapon deal <b>16x rather than 4x</b>.
+     *
+     * <p><b>Nothing else would look wrong.</b> Both factors are individually correct and each has
+     * its own passing test; the defect exists only in their composition. So this row holds the
+     * attack damage FIXED while the trigger score moves, and asserts the number does not budge.
+     */
+    @Test
+    void aWeaponDamageArmIgnoresTheTriggerScoreBecauseTheStatAlreadyCarriesIt() {
+        var world = new FakeWorld();
+        var unscored = new FakeWorld.Dummy(Vec3.ZERO);
+        unscored.attackDamage = 19;
+        var scored = new FakeWorld.Dummy(Vec3.ZERO);
+        scored.attackDamage = 19;
+        scored.triggerScore = 400;   // a maximal drop score
+
+        var a = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+        var b = new FakeWorld.Dummy(new Vec3(2, 0, 0));
+
+        var applier = new EffectApplier(world);
+        applier.applyAll(List.of(new EffectSpec.WeaponDamage("kinetic")),
+                unscored.asCaster(), pair(a), Vec3.ZERO);
+        applier.applyAll(List.of(new EffectSpec.WeaponDamage("kinetic")),
+                scored.asCaster(), pair(b), Vec3.ZERO);
+
+        assertEquals(a.health, b.health, 1e-9,
+                "THE SCORE MUST NOT REACH THIS ARM. The stat already carries it, so a second"
+                        + " application is 16x at GS 400. If these differ, the scale was copied"
+                        + " into the WeaponDamage arm.");
+        assertEquals(81, b.health, 1e-9, "and the figure is the authored 19, unscaled here");
+    }
+
+    /**
+     * *** THE ORDER ROW: THE SCORE SCALES THE WEAPON'S LITERAL, NOT THE PLAYER'S GEAR BONUS. ***
+     *
+     * <p>{@code HitDamage.hitBase} ADDS {@code classDamageBonus} to the scaled base. Applying the
+     * score around the whole {@code hitBase(...)} call instead of to its first argument would
+     * multiply the player's {@code +Melee} grant by the weapon's score as well -- the 14.2-vs-14.95
+     * hazard {@code HitDamage} exists to own, one factor further out.
+     *
+     * <p><b>None of the three rows above can see it</b>, because every one of them stages
+     * {@code classDamageBonus} at its neutral 0.0, where the two orderings are numerically identical.
+     * That is the whole reason this row exists.
+     *
+     * <p>No two staged quantities are equal, so a transposition has nowhere to hide: amount 16,
+     * score 250, bonus 5, and the three results 40 / 45 / 55 are all distinct.
+     */
+    @Test
+    void theScoreScalesTheLiteralBeforeTheClassBonusIsAdded() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        caster.triggerScore = 250;
+        caster.classDamageBonus = 5.0;     // +5 Mage gear
+        var target = new FakeWorld.Dummy(new Vec3(1, 0, 0));
+
+        new EffectApplier(world).applyAll(
+                List.of(new EffectSpec.Damage(16, "fire")),
+                caster.asCaster(), pair(target), Vec3.ZERO);
+
+        // 16 * 250/100 = 40, then + 5 = 45.   Scaling outside the addend gives (16 + 5) * 2.5 = 52.5.
+        assertEquals(55, target.health, 1e-9,
+                "40 + 5 = 45, NOT (16 + 5) * 2.5 = 52.5. The score scales the WEAPON's authored"
+                        + " literal; it must not multiply the player's class-damage gear grant.");
     }
 }

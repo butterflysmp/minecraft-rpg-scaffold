@@ -109,6 +109,41 @@ public interface CombatWorld {
      */
     Optional<Aim> aimOf(UUID combatantId);
 
+    /**
+     * The GEAR SCORE of the weapon this combatant is holding RIGHT NOW, as a whole number where
+     * {@link io.github.butterflysmp.rpg.core.weapon.GearScore#BASELINE} scales nothing.
+     *
+     * <p>A READ, like {@link #aimOf} above: only legal on the thread that owns this combatant.
+     *
+     * <p><b>It is not on {@link CombatantSnapshot}, and that is a decision -- the same one
+     * {@link #aimOf} records, reached by a different route.</b> A held item's score is a property of
+     * the ITEM, not of the combatant, and that record is shared with every mob in the game; a
+     * component meaningless for half its users acquires a meaning by accident. A score resolved as a
+     * {@code Stat} would be worse still: a stat is {@code base + SIGMA(modifiers)}, so the day anything
+     * adds a gear-score modifier it would move the TRIGGER path and not the ATTACK path, at the same
+     * score, on the same weapon.
+     *
+     * <h2>*** TOTAL. EVERY ID THIS PORT CAN RESOLVE HAS AN ANSWER, AND THE ANSWER IS WRITTEN DOWN ***</h2>
+     *
+     * <p><b>{@code GearScore.BASELINE} is the defined answer for a caster with no held gear</b> -- a
+     * mob, an empty hand, a vanilla item, an item minted before the score existed. It is stated here
+     * in the PORT rather than discovered in an implementation, so the two implementors cannot answer
+     * differently and so the decision has somewhere to be revisited the day mob gear arrives. It
+     * returns an {@code int} rather than an {@code OptionalInt} for exactly that reason: there is no
+     * absent case, only a baseline one.
+     *
+     * <p><b>Abstract rather than {@code default}.</b> A default returning the baseline would let a
+     * test fixture stay silent and still compile -- the blind-fixture shape, where a scan that
+     * discovers nothing is indistinguishable from one that found everything in order. Both
+     * implementors answer on purpose.
+     *
+     * <p><b>Re-read per shot, which is a property of the CALLER and not of this method.</b>
+     * {@code CastExecutor.volley} calls it once per shot because it rebuilds the whole {@code Caster}
+     * each time; a projectile calls it once, at the muzzle. See {@code Caster.withTriggerScore} for
+     * why the value is frozen once it is in hand.
+     */
+    int triggerScoreOf(UUID combatantId);
+
     /** Fire-and-forget presentation hook. Particles, sounds, damage numbers. */
     void present(Vec3 at, String visualId);
 

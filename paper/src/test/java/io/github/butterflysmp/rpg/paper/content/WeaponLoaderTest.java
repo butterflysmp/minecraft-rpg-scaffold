@@ -1114,4 +1114,45 @@ class WeaponLoaderTest {
         assertEquals(copied, registry.size(), "every shipped weapon must load, or the silence below is free");
         assertTrue(warnings.isEmpty(), "shipped content must not warn: " + warningText());
     }
+
+    /**
+     * *** THE unscored DECLARATION ROUND-TRIPS FROM YAML INTO THE DEFINITION, AND BOTH ANSWERS ARE
+     * READ FROM SHIPPED CONTENT. ***
+     *
+     * <p><b>Until the consumers land, {@code WeaponDefinition.unscored()} has NO production
+     * callers</b> -- the flag is authored, parsed, stored, and read by nobody. A field in that state
+     * is indistinguishable from one the loader silently drops: {@code volley_stone.yml} could say
+     * {@code unscored: true}, {@code parse} could forget to pass it, and every row in this file and
+     * every row in {@code GearScoreTest} would still be green.
+     *
+     * <p><b>So the round trip is witnessed here, on the real shipped files, rather than assumed from
+     * the two halves being present.</b> {@code knownKeysAndTheKeysParseActuallyReadsAreTheSameSet}
+     * proves the key is READ; it cannot prove the value REACHES the record.
+     *
+     * <p><b>Both answers, deliberately.</b> A row asserting only {@code true} passes on a loader that
+     * hardcoded {@code true}; a row asserting only {@code false} passes on one that dropped the read
+     * entirely. The pair is what makes either mistake red. {@code boltor} is the negative because it
+     * is a real shipped weapon that scores, and it is the new-content reference this project cites.
+     */
+    @Test
+    void theUnscoredDeclarationReachesTheDefinitionAndOnlyVolleyStoneCarriesIt() throws IOException {
+        for (String id : new String[] {"volley_stone", "boltor"}) {
+            try (var in = getClass().getResourceAsStream("/content/weapons/" + id + ".yml")) {
+                assertNotNull(in, "bundled " + id + " is missing from the classpath");
+                Files.write(dir.resolve(id + ".yml"), in.readAllBytes());
+            }
+        }
+
+        WeaponRegistry registry = load();
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(2, registry.size(), "both fixtures loaded -- a scan of one proves nothing");
+
+        assertTrue(registry.find("volley_stone").orElseThrow().unscored(),
+                "VOLLEY_STONE MUST DECLARE ITSELF UNSCORED. If this reads false the declaration was"
+                        + " dropped between the YAML and the record, and the exclusion is inert --"
+                        + " the stone re-enters the top two and raises every drop the player takes.");
+        assertFalse(registry.find("boltor").orElseThrow().unscored(),
+                "AND ABSENT MUST MEAN SCORED. If this reads true the default inverted and every"
+                        + " weapon in the game silently stopped carrying a score.");
+    }
 }

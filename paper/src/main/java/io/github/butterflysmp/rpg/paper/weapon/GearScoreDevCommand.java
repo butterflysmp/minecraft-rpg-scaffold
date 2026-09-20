@@ -96,8 +96,8 @@ public final class GearScoreDevCommand {
                                 : "no stamp (reads " + GearScore.ABSENT + ")",
                         NamedTextColor.WHITE)));
 
-        int[] armor = GearScoreItems.armorScores(player, adapters.keys());
-        int[] hands = GearScoreItems.handScores(player, adapters.keys());
+        int[] armor = GearScoreItems.armorScores(player, adapters.keys(), adapters.weapons());
+        int[] hands = GearScoreItems.handScores(player, adapters.keys(), adapters.weapons());
         int[] six = GearScore.sixSlots(armor, hands);
         int average = GearScore.averageOf(six);
 

@@ -1362,7 +1362,7 @@ public final class RpgCommand {
         // BEFORE addItem BELOW, WHICH IS LOAD-BEARING RATHER THAN INCIDENTAL: the average reads the
         // hotbar, so an item stamped after it landed would be in its OWN pool and would help set its
         // own band. Stamping first means a drop is banded on the gear the player HAD.
-        GearScoreItems.stampOnAcquire(item, GearItems.gearClassOf(definition), player, adapters);
+        GearScoreItems.stampOnAcquire(item, definition, player, adapters);
         Component name = WeaponItems.displayName(definition.displayName(), definition.rarity());
 
         player.getInventory().addItem(item);
@@ -2167,7 +2167,7 @@ public final class RpgCommand {
             // And its score, banded on the average as it stands at THIS iteration -- so the second
             // weapon in a kit bands against an average the first has already moved. Ben ruled the band
             // is on the CURRENT average; a kit grant is where that reading first has consequences.
-            GearScoreItems.stampOnAcquire(item, GearItems.gearClassOf(weapon), player, adapters);
+            GearScoreItems.stampOnAcquire(item, weapon, player, adapters);
 
             int hotbar = grant.equip() ? firstEmptyHotbarSlot(player) : -1;
             if (hotbar >= 0) {

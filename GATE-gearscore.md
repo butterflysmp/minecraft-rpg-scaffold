@@ -1,6 +1,21 @@
-# GATE — Gear Score (Slice 12)
+# GATE — Gear Score (Slices 12 and 12b)
 
-**Status: NOT RUN.**
+**Status: NOT RUN. NOT ONE OF THE SEVENTEEN ROWS IN THIS FILE HAS EVER BEEN READ.**
+
+> ### *** AND SLICE 12 MERGED THAT WAY. THAT WAS AN OVERSIGHT, NOT A DECISION. ***
+>
+> **Rows R1–R9 belong to slice 12, which merged as `1c030e2` with all ten of its `READ` cells
+> empty.** Gear score scaling has been live on `master` since that commit **with nothing having
+> watched it work** — and R1 and R2 are its only sole witnesses, neither visible to any module,
+> because no test can construct an `ItemStack`.
+>
+> **Nobody decided to ship it unread.** The file existing read as the gate being handled. It is
+> named here, at the top, rather than only in a merge description — **a PR body is read once and
+> this file is read every time someone opens it.**
+>
+> **12b READS TEN ROWS AND LEAVES SIX**, and that scope, its reason, and the fact that it grew from
+> seven to ten during the slice are recorded under *THE BOOT SCOPE* below. **This line is the
+> pointer; that section is the account.**
 
 **Every prediction below was written BEFORE any boot, and no prediction is edited once a row has been
 read.** Readings go in the `READ` column beside the prediction they answer, never over it.
@@ -319,3 +334,267 @@ fighting class (`volley_stone`'s own file calls it **a test instrument**; `abili
 
 **PUT IT TO BEN IN 12b. DO NOT EXCLUDE THEM ON MY OWN AUTHORITY.** An exclusion invented here would
 be a ruling with no author, which is the failure the *unruled, not excluded* rule exists to stop.
+
+---
+
+# SLICE 12b — TRIGGER DAMAGE SCALES. ROWS TO FOLLOW.
+
+**Status: NOT RUN.** Ben ruled on 2026-09-19 that trigger damage scales everywhere it appears, and
+that **`volley_stone` carries no gear score at all** — a content declaration, not an id check.
+
+## *** DISCHARGED: THE volley_stone EXCLUSION IS WIRED. ALL SIX ITEMS LANDED. ***
+
+**This block was opened mid-slice, while the exclusion was half-built, and it is discharged rather
+than deleted — a list that only ever loses rows cannot be told from one nobody is maintaining.**
+
+**What it recorded while it was open**, and it was true for several commits:
+`PaperCombatWorld.triggerScoreOf` called `heldScore(player, keys)` with no weapon registry, so it
+could not consult a definition — and **`volley_stone`'s two `amount: 4` payloads scaled with the
+holder's gear score like every other trigger weapon.** Nothing was red, nothing was missing from a
+diff, and a reader opening `triggerScoreOf` saw a correct-looking method. **That is why an
+INCOMPLETENESS was written into the repo rather than left in a conversation: it is exactly as
+transcript-fragile as a finding, and harder to spot.**
+
+**All six, each verified present rather than assumed:**
+
+| # | item | landed as |
+|---|---|---|
+| 1 | `boolean unscored` on `WeaponDefinition`; `unscored: true` in `volley_stone.yml` | the record's 15th component, and the YAML declaration with its own note |
+| 2 | the composed predicate, kind AND instance, asked once | `GearScore.carriesScore(GearClass, boolean)` |
+| 3 | `triggerScoreOf` refusing **before** the `heldScore` read | the door is inside `heldScore` itself, ahead of `orAbsent` |
+| 4 | `candidateScore` returning `OptionalInt.empty()`, **not** `EMPTY`/0 | so the stone is not a candidate for the top-two pool at all |
+| 5 | `stampOnAcquire` widened to carry the declaration | takes a `GearDefinition`; both facts from one object, no boolean to default |
+| 6 | `GearScore.scoreable(GearClass)` made **package-private**, in the same commit as 5 | `paper` can no longer ask the kind-level question alone |
+
+> **ITEM 6 WAS PROVED, NOT CLAIMED.** A deliberate `GearScore.scoreable(null)` was inserted into
+> `WeaponAttackItems` and the compiler refused it — *"scoreable(GearClass) is not public in
+> GearScore; cannot be accessed from outside package"* — then removed byte-identical. **A
+> compile-enforced rule has no test to redden, so its positive control is a violation that must fail
+> to build.**
+
+**AND THE STAMP REFUSES AS WELL AS THE READ, WHICH WAS THE POINT OF 5 AND 6 SHIPPING TOGETHER.** Had
+5 landed alone, a freshly minted `volley_stone` would still have taken a score in its PDC while only
+the read refused — **two independent refusals collapsing into one, silently.**
+
+> ***AND THAT COLLAPSE WAS MEASURED, NOT FEARED.*** `MUT12B-STAMPFALSE` — the stamp passing a
+> hardcoded `false` — was applied to the finished tree and **the entire suite stayed GREEN at 2070
+> tests, 0 failures.** The average stays correct under it because `candidateScore` refuses
+> independently; only the bytes in a minted stone's PDC differ, and no module can construct an
+> `ItemStack` to look. A signature row now bans the literal and reddens under the same mutation, and
+> **R14 is the sole behavioural witness.**
+
+## *** OWED TO THE PR BODY. NOT BLOCKERS, AND NOT OMISSIONS EITHER. ***
+
+**Recorded here because they were asked for twice in conversation and did not reach the repo, which
+is the exact condition this project rules against.** Neither gates the code; both must appear in the
+PR body before it can be called complete.
+
+### (a) THE 52.5 / 47.5 FIGURES — an arithmetic gap in a slice about arithmetic, so it is a DEFECT entry
+
+`MUT12BORDER` reported `expected: <55.0> but was: <47.5>`, and the report of it said *"the predicted
+52.5"* — three figures, with no statement of which was which.
+
+**RESOLVED, AND THE RESOLUTION IS THAT THERE WAS NO GAP: `52.5` is DAMAGE, `47.5` is HEALTH.**
+
+```
+correct   16 * 250/100 = 40      40 + 5 = 45        health 100 - 45   = 55.0    <- expected
+mutant    hitBase(16,0,5) = 21   21 * 250/100 = 52.5  health 100 - 52.5 = 47.5  <- actual
+```
+
+**The mutant landed exactly where predicted; the model of the chain was off by nothing.** The defect
+was a report quoting two figures from different UNITS in one sentence without labelling either —
+this file's own *a fraction must say what unit each side counts* rule, applied to a mutation reading.
+**It belongs in the defects section rather than being dropped**, because an unexplained arithmetic
+gap in an ordering slice is indistinguishable from an ordering defect until someone checks.
+
+### (b) THE FOUR JOINTS — MEASURED, and the answer is a NAMED FINDING rather than a coverage gap
+
+`HitDamage.hitBase` threads four factors. `MUT12BORDER` guards the score's position against exactly
+one of them. **Does any row stage the other three non-neutral?**
+
+**Measured in `EffectApplierTest`:** `enchantDamagePercent` **8**, `classDamageBonus` **11**,
+`critMultiplier` **4**, `chargeScale` **1** — all four are staged non-neutral somewhere. **Rows
+staging a score ALONGSIDE another non-neutral factor: 1** — `theScoreScalesTheLiteralBeforeTheClass
+BonusIsAdded`, and it is new in this slice.
+
+***BUT THE COVERAGE QUESTION IS THE WRONG ONE, BECAUSE ONLY ONE JOINT EXISTS.*** The chain is
+
+```
+((base * M) + B) * C * R        M enchant   B class bonus   C charge   R crit
+```
+
+**`B` is the only ADDEND.** The score's position relative to a MULTIPLIER is not a distinguishable
+position at all. Measured rather than reasoned — a sweep of **5040** combinations of realistic bases,
+scores, percents, charges and crits:
+
+| | |
+|---|---|
+| combinations where crossing a multiplier changes the double | **926 / 5040** |
+| max ABSOLUTE difference | **1.137e-13** |
+| max RELATIVE difference | **2.114e-16** |
+| the suite's assertion delta | `1e-9` |
+
+**So the differences are real and four orders of magnitude below anything a row could assert.**
+
+***THE FINDING: ONE OF ONE REAL JOINTS IS GUARDED. THE OTHER THREE ARE UNGUARDABLE, NOT
+UNGUARDED.*** Stated in those words on purpose — **the danger is a later reader "fixing" the gap
+with three rows that cannot fail**, which is this file's own dead-guard shape. The instinct that
+multiplication commutes is also wrong here (926 cases differ bitwise); it is the MAGNITUDE that
+settles it, not the algebra, and only execution shows that.
+
+---
+
+## THE ROWS — R10 to R15. Status: NOT RUN, every prediction written before any boot.
+
+### *** THE BOOT SCOPE IS TEN ROWS, AND IT IS STATED SO IT CANNOT DRIFT BY ADDITION ***
+
+**READ IN THIS SLICE — ten:** `R1 · R2 · R6b · R10 · R10b · R11 · R12 · R13 · R14 · R15`
+
+**LEFT UNREAD — six, with the reason:** `R3 · R4 · R5 · R7 · R8 · R9`. Their claims are arithmetic
+and `GearScoreTest` executes them at the two-second loop; they buy redundancy, where the ten above
+buy the only evidence that exists.
+
+> **THE FIRST THREE ARE SLICE 12's, AND THEY ARE HERE BECAUSE SLICE 12 MERGED WITH ITS ENTIRE GATE
+> BLOCK UNBOOTED.** Ten `READ` cells, all empty, on code that has been live on `master` since
+> `1c030e2`. **That was an oversight, not a decision** — the file existing read as the gate being
+> handled. **R1** (the ratio) and **R2** (absent = 100) are slice 12's only sole witnesses and
+> nothing in any module can see either; **R6b** is different again — it was OWED and UNSTAGEABLE
+> while the band was unruled, because a zero-width band has no inside to land in, so it was
+> **blocked rather than skipped** and is newly readable now that SPREAD and SKEW are ruled.
+>
+> **The count moved from seven to ten during this slice** — `R10b` split the GS-100 identity out of
+> `R10`, and `R14` was added when a review found that every planned row was READ-side and the
+> write-side refusal had no behavioural witness at all. **Both additions are recorded here rather
+> than left to be inferred from the row list**, because a scope that grows silently is
+> indistinguishable from one nobody agreed.
+
+**GAME MODE: SURVIVAL**, per this file's header. No row below is satisfied for free by a removed
+cost — scaling multiplies a number rather than spending anything — and none reads an armour bar.
+
+### *** THE STAGING DEPARTS FROM THE 12b BRIEF, AND THIS FILE'S OWN R1 IS WHY ***
+
+The brief states the claim as *"a GS 100 and a GS 400 cursed emerald ... in exactly the ratio
+100:400"*. **R1 above already refused that staging for slice 12 and gave the reason: 100:400 is a
+clean 4x, satisfied by a defect that doubles twice, by one that squares the ratio of the hundreds
+digits, and by several other wrong arithmetics.** Restaging it here would reintroduce a weakness
+this file has already ruled against, two hundred lines below the ruling.
+
+**So R10 is staged at 175 and 340, exactly as R1 is — and the GS 100 identity, which the brief's
+staging DOES buy, is not lost: it gets its own row (R10b) where it can fail on its own.** One row,
+one claim.
+
+---
+
+### R10 — Trigger damage scales, and the ratio is the scores' ratio
+
+**SOLE WITNESS.** `EffectApplierTest` asserts the arithmetic at the two-second loop; **no test in any
+module can construct an `ItemStack`**, so nothing but a boot shows a real score reaching a real
+trigger payload. This is the whole of Ben's *trigger damage scales* ruling, observed.
+
+**`cursed_emerald` on purpose: its damage is SIX shots of an authored 27 through `on_hit`, and it
+declares `attack_damage: 0`.** A weapon with a real `attack_damage` could not distinguish this from
+slice 12's already-shipped attack-path scaling.
+
+| | |
+|---|---|
+| **Setup** | `/rpg give cursed_emerald` twice. `/rpg gearscore set 175` on the first, `set 340` on the second. Confirm with `/rpg enchant show` that neither carries an ACTIVE damage enchant, or the ratio is measuring Attunement. Same mob for both, full mana. |
+| **Predict** | Authored 27. The 175 emerald deals **47.25** per shot; the 340 emerald deals **91.8** per shot. Cross-multiplied: `47.25 x 340 = 16065 = 91.8 x 175`. |
+| **Predict** | **SIX shots each, counted on screen.** Six is the fixture: a build that scaled the volley's shot COUNT instead of its damage would show the same total and a different count. |
+| **Predict** | Both tooltips read their `Gear Score:` line BEFORE either is fired, so the row is falsifiable ahead of the hit rather than after it. |
+| **READ** | |
+
+### R10b — At GS 100 the emerald deals exactly its authored 27
+
+**The IDENTITY, which is the whole reason this slice needs no content re-tuning.** Separated from R10
+because it fails for a different reason: R10 catches a wrong RATIO, this catches a scale applied
+where none was asked for.
+
+| | |
+|---|---|
+| **Setup** | `/rpg give cursed_emerald`, `/rpg gearscore set 100`. |
+| **Predict** | Each of the six shots deals **exactly 27** — the number the weapon dealt before 12b existed. |
+| **Predict** | **If it reads anything else, GS 100 is not the identity** and every content number in the game has silently changed meaning. |
+| **READ** | |
+
+### R11 — A staff scales too, through a DIFFERENT trigger shape
+
+**Not a duplicate of R10.** `cursed_emerald` is a `volley` of direct `on_hit` damage;
+`ember_staff` authors its 16 inside a **`burst`** nested under `on_hit`. Those are different paths to
+`EffectSpec.Damage`, and a build that scaled one and not the other passes R10.
+
+| | |
+|---|---|
+| **Setup** | `/rpg give ember_staff` twice, `set 175` and `set 340`. |
+| **Predict** | Authored 16 → **28** and **54.4**. Cross-multiplied: `28 x 340 = 9520 = 54.4 x 175`. |
+| **READ** | |
+
+---
+
+## The volley_stone exclusion — three rows, and they are three because they fail independently
+
+### R12 — A volley_stone shows NO gear score line, and its damage does not move between two players
+
+**READ side, BOTH HALVES, and they are recorded as two readings in one row on purpose: the tooltip
+alone passes on a build that HIDES THE LINE AND SCALES ANYWAY.**
+
+| | |
+|---|---|
+| **Setup** | Two players at clearly different averages — one stripped (average near 0), one in `set 400` armour. `/rpg give volley_stone` to each. |
+| **Predict** | **(i)** Neither tooltip carries a `Gear Score:` line at all. |
+| **Predict** | **(ii)** Both stones deal the **same** damage: `amount: 4` per shot, 3 shots on right-click and 8 on left-click. **Count the shots as well as the number** — the authored 4 is a legibility figure and the count is what makes it readable. |
+| **Predict** | **If (i) passes and (ii) fails, the line is hidden and the scaling is live** — which is the precise defect this row is split to catch. |
+| **READ** | |
+
+### R13 — A volley_stone that ALREADY carries a score in its PDC is still unscored
+
+**ABSENCE IS NOT THE TEST, and this row is the whole reason the exclusion is a DECLARATION rather
+than a missing key.** Slice 12 shipped *no key means 100*, so "unscored" and "predates the score"
+would otherwise be the same bytes — **and stones minted since slice 12 already carry a real score.**
+
+| | |
+|---|---|
+| **Setup** | `/rpg give volley_stone`, then **`/rpg gearscore set 400`** on it — this manufactures exactly the item a player minted last week already holds. |
+| **Predict** | `/rpg gearscore show` reports the stamp is **present and 400** — the PDC genuinely holds it. |
+| **Predict** | And the stone **still deals 4 per shot**, unchanged. The declaration overrides the stamp. |
+| **Predict** | **If the damage moves to 16, the exclusion is reading the PDC instead of the definition** and is inert for every stone already in the world. |
+| **READ** | |
+
+### R14 — *** A volley_stone MINTED ON THIS BUILD CARRIES NO gear_score KEY AT ALL. SOLE WITNESS. ***
+
+**THE WRITE SIDE, AND NOTHING ELSE IN THE PROJECT CAN SEE IT — MEASURED, NOT ASSUMED.**
+
+> **`MUT12B-STAMPFALSE` -- the stamp path passing a hardcoded `false` -- was applied to the tree and
+> THE ENTIRE SUITE STAYED GREEN AT 2070 TESTS, 0 FAILURES.** The average stays correct under it,
+> because `candidateScore` refuses independently; the read path stays correct, because it consults
+> the definition. **Only the bytes in a freshly minted stone's PDC differ**, and no module can
+> construct an `ItemStack` to look.
+>
+> A signature row (`theStampAsksTheCOMPOSEDDoorWithTheDerivedFlagAndNotALiteral`) now bans the
+> literal and reddens under that mutation — **but that is a source scan, not a behaviour.** This row
+> is the only thing that observes the stamp actually declining to write.
+
+**AND IT MUST NOT BE READ OFF THE AVERAGE.** A stone excluded from the top two proves the READ
+refused, which R12 and R13 already cover. **The claim here is about the item's own bytes.**
+
+| | |
+|---|---|
+| **Setup** | On this build, freshly: `/rpg give volley_stone`. Do NOT `set` anything on it. |
+| **Predict** | `/rpg gearscore show` reports **`Held: no stamp (reads 100)`** — the wording R2 relies on, which distinguishes an ABSENT key from a stored 100. |
+| **Predict** | **NOT `Held: 100`.** A stored 100 means the stamp fired and wrote a baseline — the refusal did not happen, and the two independent refusals have collapsed into one. |
+| **Predict** | For contrast in the same reading: `/rpg give boltor` and confirm it **does** report a rolled score. **A row where nothing is stamped proves nothing if the stamp is broken for everything.** |
+| **READ** | |
+
+---
+
+### R15 — CONTROL: everything slice 12 shipped still behaves
+
+**This slice edited the scoring path, the stamp signature, `AdapterContext`, and `scoreable`'s
+visibility. A mistake in any of those shows up in a screen this slice is not about.**
+
+| | |
+|---|---|
+| **Setup** | `/rpg give boltor`, `set 175`. Then open the Nexus hub, the vault, the enchant table and the grindstone. |
+| **Predict** | The Boltor's `attack_damage: 19` still scales on the ATTACK path: **33.25** at 175, exactly as R1 predicts. **12b must not have moved the attack path at all.** |
+| **Predict** | The hub's stats screen still shows a gear score average; the vault, enchant table and grindstone all open and behave. |
+| **Predict** | `/rpg gearscore show` still reports six slots, a hand pool and a band. |
+| **READ** | |
