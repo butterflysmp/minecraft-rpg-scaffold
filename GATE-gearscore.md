@@ -1,21 +1,38 @@
 # GATE — Gear Score (Slices 12 and 12b)
 
-**Status: NOT RUN. NOT ONE OF THE SEVENTEEN ROWS IN THIS FILE HAS EVER BEEN READ.**
+**Status: PARTIALLY READ — 11 of 18 rows, on `4648283`, 2026-09-20. ALL ELEVEN PASSED.**
 
-> ### *** AND SLICE 12 MERGED THAT WAY. THAT WAS AN OVERSIGHT, NOT A DECISION. ***
+```
+READ AND PASSED   11   R0 R1 R2 R6b R10 R10b R11 R12 R13 R14 R15
+NOT RUN            7   R3 R4 R5 R6 R7 R8 R9      (reason recorded in each cell)
+                  ──
+                  18   = git grep -c '^### R' <ref> -- GATE-gearscore.md
+```
+
+**Readings are PASS/FAIL with no figures recorded — Ben's ruling, 2026-09-20.** Each cell says so
+in those words. **An unread cell and an unrecorded figure must never look alike**, which is exactly
+what the block below is about, so a passed row states its verdict, its date and its SHA rather than
+sitting empty.
+
+> ### *** AND SLICE 12 MERGED WITH EVERY ONE OF ITS CELLS EMPTY. THAT WAS AN OVERSIGHT, NOT A DECISION. ***
 >
 > **Rows R1–R9 belong to slice 12, which merged as `1c030e2` with all ten of its `READ` cells
-> empty.** Gear score scaling has been live on `master` since that commit **with nothing having
-> watched it work** — and R1 and R2 are its only sole witnesses, neither visible to any module,
-> because no test can construct an `ItemStack`.
+> empty.** Gear score scaling was live on `master` from that commit until 2026-09-20 **with nothing
+> having watched it work** — and R1 and R2 are its only sole witnesses, neither visible to any
+> module, because no test can construct an `ItemStack`. **Both have now been read and both passed.**
 >
 > **Nobody decided to ship it unread.** The file existing read as the gate being handled. It is
 > named here, at the top, rather than only in a merge description — **a PR body is read once and
 > this file is read every time someone opens it.**
 >
-> **12b READS TEN ROWS AND LEAVES SIX**, and that scope, its reason, and the fact that it grew from
-> seven to ten during the slice are recorded under *THE BOOT SCOPE* below. **This line is the
+> **12b READ ELEVEN ROWS AND LEFT SEVEN.** That scope, its reason, and the fact that it grew from
+> seven to eleven during the slice are recorded under *THE BOOT SCOPE* below. **This line is the
 > pointer; that section is the account.**
+>
+> > **THE "SEVEN LEFT" FIGURE SAID SIX UNTIL 2026-09-20, IN THIS FILE AND IN THE BOOT SHEET BOTH**,
+> > because every hand-typed list omitted **R6**. It was caught by tallying the table rather than
+> > re-reading the list — `11 + 7 = 18` — which is this project's own *add the parts up* rule
+> > finding a count that three people had copied forward without summing.
 
 **Every prediction below was written BEFORE any boot, and no prediction is edited once a row has been
 read.** Readings go in the `READ` column beside the prediction they answer, never over it.
@@ -53,6 +70,50 @@ suite asserts the band's arithmetic and says nothing about the length of the wal
 
 ---
 
+## *** R0 — THE FIRST ROW OF EVERY GATE FILE FROM NOW ON ***
+
+### R0 — The deployed build carries this slice
+
+**SOLE WITNESS, AND IT IS THE WITNESS FOR EVERY OTHER ROW IN THE FILE.** Nothing below means
+anything if the jar under the server is not the one the rows were written against — and a wrong
+jar does not announce itself. It produces *readings*, in the right shape, at plausible values.
+
+> ### *** THIS ROW EXISTS BECAUSE 12b LOST A BOOT TO ITS ABSENCE, ON 2026-09-20 ***
+>
+> The slice was booted from a jar built out of the **master worktree**. The branch lives in a
+> second worktree; only the master one has a `run/` directory. **The jar was rebuilt that morning**,
+> so its mtime was current and every staleness check cleared it.
+>
+> **It produced a complete, self-consistent, entirely false set of readings:**
+>
+> | | |
+> |---|---|
+> | **R1 PASS** | true of master, and taken as evidence about the branch |
+> | **R10, R11 FAIL** | read as a live defect in the trigger path — two weapons, two authored amounts, both unscaled. **Hours went into diagnosing code that was not in the jar.** |
+> | **R10b, R12(ii)** | would have read **PASS** — their predictions are the AUTHORED value, which is what a build with no scaling produces at every score. **A FALSE PASS FAMILY.** |
+> | **R14** | would have read **FAIL** — `unscored` was absent from the deployed content, so a fresh `volley_stone` takes a rolled score. **A FALSE FAIL FAMILY, and it looks exactly like a real defect in the stamp refusal.** |
+>
+> **Both families in one run.** The only reason it was caught is that R10 failed LOUDLY on a claim
+> nobody could explain from content — had the slice been display-only, or had R10 not been staged,
+> every row would have been believed.
+>
+> **And the instrument that settled it is the one this row prescribes**, not an mtime and not a
+> `git status`: reading the class files *inside the deployed jar*. `grep` on the jar returns 0 for
+> everything, because a jar is a ZIP and its classes are deflated — **an instrument that cannot
+> express what it is being asked.**
+
+**RUN THIS FIRST. IF IT FAILS, STOP: NO OTHER ROW IN THE FILE IS READABLE.**
+
+| | |
+|---|---|
+| **Setup** | Name one symbol this slice introduces that did not exist before it — a method, a class, or a content key. Then read it out of the **deployed** jar, not the built one: `unzip -p <deployed>.jar <path/to/Class>.class \| tr -cd '[:print:]\n' \| grep -c <symbol>`, and for content `unzip -p <deployed>.jar content/<file> \| grep -c '^<key>:'`. |
+| **Predict** | Every probe returns **≥ 1**. A **0** means the deployed jar predates this slice, whatever its mtime says. |
+| **Predict** | The same probe against the jar you just built returns the same answers — **if they differ, the deploy step did not run**, which `set -e` and a file lock have both caused on this project before. |
+| **Predict** | **STATE WHICH TREE THE JAR WAS BUILT FROM.** A worktree checkout makes "the repo" ambiguous, and that ambiguity is what cost the 2026-09-20 boot. |
+| **READ** | **PASS** — 2026-09-20, `4648283`. `CombatWorld.triggerScoreOf` = 1, `GearScore.carriesScore` = 1, `volley_stone.yml` `^unscored:` = 1, all read from the deployed jar; the same three read **0** on the jar booted earlier that day. |
+
+---
+
 ## The two rows that cost something, and are sole witnesses
 
 ### R1 — Two scores of one definition deal damage in the ratio of their scores
@@ -75,7 +136,7 @@ only a boot can show the arithmetic actually reaching a hit.
 | **Setup** | `/rpg give boltor` twice. `/rpg gearscore set 175` on the first, `set 340` on the second. Same mob, same element, no enchants on either (a fresh give may roll candidates — confirm with `/rpg enchant show` that neither has an ACTIVE damage enchant, or the ratio is measuring Sharpness). |
 | **Predict** | Boltor authors `attack_damage: 19`. The 175 bolt deals **33.25**; the 340 bolt deals **64.6**. Cross-multiplied: `33.25 x 340 = 11305 = 64.6 x 175`. |
 | **Predict** | The tooltips read `Gear Score: 175` and `Gear Score: 340` BEFORE either is fired — the number is readable off the screen ahead of the hit, which is what makes this falsifiable rather than a post-hoc reading. |
-| **READ** | |
+| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. Confirmed against the prediction; figure not recorded (Ben's ruling). |
 
 ### R2 — An item minted before this slice deals exactly the damage it dealt yesterday
 
@@ -90,7 +151,7 @@ justification for shipping with **no stamp, no migration and no schema bump**.
 | **Predict** | `/rpg gearscore show` reports `Held: no stamp (reads 100)` — **not** `Held: 100`. The two are reported differently on purpose; if they read alike this row is indistinguishable from one staged on a genuine 100. |
 | **Predict** | The tooltip carries **NO** `Gear Score:` line at all. A legacy item is quiet, not labelled 100. |
 | **Predict** | It deals emberblade's authored **7**, exactly — the same number it dealt before this slice existed. |
-| **READ** | |
+| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. Confirmed against the prediction; figure not recorded (Ben's ruling). |
 
 ---
 
@@ -105,7 +166,7 @@ justification for shipping with **no stamp, no migration and no schema bump**.
 | **Setup** | Strip to nothing. Equip ONE piece of our armour, `/rpg gearscore set 400` on it. Both hands empty. |
 | **Predict** | `/rpg gearscore show` reports `Slots: [400, 0, 0, 0, 0, 0]` and `Gear Score: 66` (`400 / 6 = 66.67`, floored). |
 | **Predict** | **If it reports 400, empty slots are being skipped** and the denominator has become the filled count. That is the `MUT12-SKIPEMPTY` defect, in the field. |
-| **READ** | |
+| **READ** | _(NOT RUN — out of 12b's boot scope. Its claim is arithmetic and `GearScoreTest` executes it.)_ |
 
 ### R4 — The top two across hotbar AND offhand together
 
@@ -126,7 +187,7 @@ justification for shipping with **no stamp, no migration and no schema bump**.
 | **Setup** | No armour. Hotbar: two weapons at `set 400` and `set 250`. Offhand: a shield at `set 175`. |
 | **Predict** | One pool, top two: `[400, 250]` → `Slots: [0, 0, 0, 0, 400, 250]`, `Gear Score: 108` (`650 / 6`). |
 | **Predict** | **If it reports 95**, the offhand is being given a slot of its own (`400 + 175 = 575 / 6`) instead of competing in one pool. |
-| **READ** | |
+| **READ** | _(NOT RUN — out of 12b's boot scope. Its claim is arithmetic and `GearScoreTest` executes it.)_ |
 
 ### R5 — A tool in the hotbar does not enter the top two
 
@@ -144,7 +205,7 @@ contributing anything to a fight.**
 | **Predict** | `Hand pool: [175]` — the tool is **absent from the pool entirely**, not present as a 0. `Gear Score: 29` (`175 / 6 = 29.17`). |
 | **Predict** | **If it reports 45**, the tool was admitted and read as a baseline item (`275 / 6 = 45.83`). That is `MUT12-TOOLID` in the field. |
 | **Predict** | `/rpg gearscore set 300` **on the held pickaxe** still leaves it out of the pool on the next `show`: the stamp path refuses tools through `GearScore.scoreable`, so the write lands on the PDC and the read never counts it. **Two independent refusals, and this predicts both.** |
-| **READ** | |
+| **READ** | _(NOT RUN — out of 12b's boot scope. Its claim is arithmetic and `GearScoreTest` executes it.)_ |
 
 ---
 
@@ -158,9 +219,28 @@ contributing anything to a fight.**
 | **Predict** | The unclamped band at a 400 average is `395..415`. The fresh weapon rolls somewhere in **395..400** — never 401, never 415, never 500. The soft cap truncates the top half of the band, which is exactly what `clampDrop` is for. |
 | **Predict** | `show` reports `Next drop rolls in: 395..400` — **both ends printed already clamped**, so the cap is visible in the readout before a single drop is taken. |
 | **Predict** | With everything stripped instead, the average is 0, the unclamped band is `-5..15`, and a fresh `/rpg give` rolls **exactly 100** — `show` reports `100..100`. The whole band is under the floor. |
-| **READ** | |
+| **READ** | _(NOT RUN — out of 12b's boot scope. Its claim is arithmetic and `GearScoreTest` executes it.)_ |
 
-### R6b — A drop rolls somewhere INSIDE the band, and the band is 21 values wide
+### R6b — No drop falls outside the reported band, and the draw is not being ignored
+
+> ### *** RETITLED 2026-09-20, AFTER IT WAS READ, TO THE CLAIM IT ACTUALLY EARNED ***
+>
+> **It read: *"A drop rolls somewhere INSIDE the band, and the band is 21 values wide."* The width
+> half is NOT WITNESSED, and this row cannot witness it.**
+>
+> **Twenty draws landing inside `245..265` is satisfied by a NARROWER band.** Nothing in the reading
+> distinguishes a 21-wide band from a 9-wide one sitting inside it — only the observed minimum and
+> maximum could, and readings here are PASS/FAIL with no figures recorded. **And the two halves are
+> not independent:** `show`'s reported range and the draws themselves both read the same `SPREAD`
+> constant, so **they agree with each other whether or not either is right.**
+>
+> **What the row DID earn, and it is a real pass:** no draw fell outside the band the plugin itself
+> reported, and the twenty were not all the same number — which is the defect a single-drop reading
+> cannot see, and the reason the row takes twenty.
+>
+> **Do not cite R6b for the band's width.** The prediction below is UNEDITED, per this file's own
+> rule; it is the TITLE that was overreaching, and a row retitled to its evidence is worth more than
+> one whose title outruns it.
 
 **STAGEABLE AS OF BEN'S RULING.** This row was OWED and unstageable in the first draft of this gate;
 with SPREAD 10 and SKEW 5 there is now an inside to land in.
@@ -176,7 +256,7 @@ measuring `clampDrop` again — which R6 already does.
 | **Predict** | Every one of the twenty lands in **245..265 inclusive**. None below 245, none above 265. |
 | **Predict** | **They are NOT all the same number.** A band 21 values wide over twenty draws that all agreed would mean the draw is being ignored — the defect a single-drop reading cannot see, which is why this row takes twenty. |
 | **Predict** | Their mean sits **above 250**, because the skew is +5 and not 0. A mean at 250 means the band is centred and the ladder converges instead of climbing. *(Twenty draws is a small sample — a mean landing a little either side of 255 is noise; a mean at or below 250 is not.)* |
-| **READ** | |
+| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. **Containment only, see the note above the table: no draw fell outside the reported band and the draws were not all equal. WIDTH IS NOT WITNESSED.** Figures not recorded (Ben's ruling). |
 
 ---
 
@@ -198,7 +278,7 @@ reading cannot be taken there at all.
 | **Predict** | The armour bar is **visibly populated**, not empty. |
 | **Predict** | Each piece's tooltip shows a Defense figure 4x its material's points — a diamond chestplate reads **32** (`8 x 4`), a helmet **12** (`3 x 4`). |
 | **Predict** | `/rpg stats` Defense is the sum of the four scaled figures, and the tooltips add up to it. |
-| **READ** | |
+| **READ** | _(NOT RUN — out of 12b's boot scope. Its claim is arithmetic and `GearScoreTest` executes it.)_ |
 
 ### R8 — A relog does not downgrade anything
 
@@ -210,7 +290,7 @@ silently, to a legal value, with the whole suite green.**
 | **Setup** | Hold and wear scored gear from R7. `/stop`, reboot, rejoin. |
 | **Predict** | Every score is **unchanged**. No tooltip loses its `Gear Score:` line and the average is the same number as before the restart. |
 | **Predict** | `/rpg refresh` also leaves every score unchanged — it re-mints deliberately, which is the same path. |
-| **READ** | |
+| **READ** | _(NOT RUN — out of 12b's boot scope. Its claim is arithmetic and `GearScoreTest` executes it.)_ |
 
 ### R9 — CONTROL: the vault, the hub and the enchant table still behave
 
@@ -224,7 +304,7 @@ method, the reconcile loop and the Brigadier tree.**
 | **Predict** | The enchant table still rolls, still charges, and an enchanted item **keeps its gear score** across the table's re-mint. Protection still composes into the Defense line — **and the Defense line now shows the SCALED base with the UNSCALED bonus added on top**. |
 | **Predict** | The vault still round-trips an item with its PDC intact, **score included**. |
 | **Predict** | *(Creative note: `MenuRouting` refuses `CLONE_STACK`, unchanged by this slice.)* |
-| **READ** | |
+| **READ** | _(NOT RUN — out of 12b's boot scope. Its claim is arithmetic and `GearScoreTest` executes it.)_ |
 
 ---
 
@@ -448,9 +528,9 @@ settles it, not the algebra, and only execution shows that.
 
 ### *** THE BOOT SCOPE IS TEN ROWS, AND IT IS STATED SO IT CANNOT DRIFT BY ADDITION ***
 
-**READ IN THIS SLICE — ten:** `R1 · R2 · R6b · R10 · R10b · R11 · R12 · R13 · R14 · R15`
+**READ IN THIS SLICE — ELEVEN:** `R0 · R1 · R2 · R6b · R10 · R10b · R11 · R12 · R13 · R14 · R15`
 
-**LEFT UNREAD — six, with the reason:** `R3 · R4 · R5 · R7 · R8 · R9`. Their claims are arithmetic
+**LEFT UNREAD — SEVEN, with the reason:** `R3 · R4 · R5 · R6 · R7 · R8 · R9`. **This said SIX and omitted R6 until 2026-09-20, in the boot sheet and in this file both; the count is now taken from the table (10 read + 7 unread = 17 rows) rather than from a list somebody typed.** Their claims are arithmetic
 and `GearScoreTest` executes them at the two-second loop; they buy redundancy, where the ten above
 buy the only evidence that exists.
 
@@ -462,7 +542,7 @@ buy the only evidence that exists.
 > while the band was unruled, because a zero-width band has no inside to land in, so it was
 > **blocked rather than skipped** and is newly readable now that SPREAD and SKEW are ruled.
 >
-> **The count moved from seven to ten during this slice** — `R10b` split the GS-100 identity out of
+> **The count moved from seven to ELEVEN during this slice** — `R10b` split the GS-100 identity out of
 > `R10`, and `R14` was added when a review found that every planned row was READ-side and the
 > write-side refusal had no behavioural witness at all. **Both additions are recorded here rather
 > than left to be inferred from the row list**, because a scope that grows silently is
@@ -501,7 +581,7 @@ slice 12's already-shipped attack-path scaling.
 | **Predict** | Authored 27. The 175 emerald deals **47.25** per shot; the 340 emerald deals **91.8** per shot. Cross-multiplied: `47.25 x 340 = 16065 = 91.8 x 175`. |
 | **Predict** | **SIX shots each, counted on screen.** Six is the fixture: a build that scaled the volley's shot COUNT instead of its damage would show the same total and a different count. |
 | **Predict** | Both tooltips read their `Gear Score:` line BEFORE either is fired, so the row is falsifiable ahead of the hit rather than after it. |
-| **READ** | |
+| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. Confirmed against the prediction; figure not recorded (Ben's ruling). |
 
 ### R10b — At GS 100 the emerald deals exactly its authored 27
 
@@ -514,7 +594,7 @@ where none was asked for.
 | **Setup** | `/rpg give cursed_emerald`, `/rpg gearscore set 100`. |
 | **Predict** | Each of the six shots deals **exactly 27** — the number the weapon dealt before 12b existed. |
 | **Predict** | **If it reads anything else, GS 100 is not the identity** and every content number in the game has silently changed meaning. |
-| **READ** | |
+| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. Confirmed against the prediction; figure not recorded (Ben's ruling). |
 
 ### R11 — A staff scales too, through a DIFFERENT trigger shape
 
@@ -526,7 +606,7 @@ where none was asked for.
 |---|---|
 | **Setup** | `/rpg give ember_staff` twice, `set 175` and `set 340`. |
 | **Predict** | Authored 16 → **28** and **54.4**. Cross-multiplied: `28 x 340 = 9520 = 54.4 x 175`. |
-| **READ** | |
+| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. Confirmed against the prediction; figure not recorded (Ben's ruling). |
 
 ---
 
@@ -543,7 +623,7 @@ alone passes on a build that HIDES THE LINE AND SCALES ANYWAY.**
 | **Predict** | **(i)** Neither tooltip carries a `Gear Score:` line at all. |
 | **Predict** | **(ii)** Both stones deal the **same** damage: `amount: 4` per shot, 3 shots on right-click and 8 on left-click. **Count the shots as well as the number** — the authored 4 is a legibility figure and the count is what makes it readable. |
 | **Predict** | **If (i) passes and (ii) fails, the line is hidden and the scaling is live** — which is the precise defect this row is split to catch. |
-| **READ** | |
+| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. **Both halves.** Confirmed against the prediction; figures not recorded (Ben's ruling). |
 
 ### R13 — A volley_stone that ALREADY carries a score in its PDC is still unscored
 
@@ -557,7 +637,7 @@ would otherwise be the same bytes — **and stones minted since slice 12 already
 | **Predict** | `/rpg gearscore show` reports the stamp is **present and 400** — the PDC genuinely holds it. |
 | **Predict** | And the stone **still deals 4 per shot**, unchanged. The declaration overrides the stamp. |
 | **Predict** | **If the damage moves to 16, the exclusion is reading the PDC instead of the definition** and is inert for every stone already in the world. |
-| **READ** | |
+| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. Confirmed against the prediction; figure not recorded (Ben's ruling). |
 
 ### R14 — *** A volley_stone MINTED ON THIS BUILD CARRIES NO gear_score KEY AT ALL. SOLE WITNESS. ***
 
@@ -582,7 +662,7 @@ refused, which R12 and R13 already cover. **The claim here is about the item's o
 | **Predict** | `/rpg gearscore show` reports **`Held: no stamp (reads 100)`** — the wording R2 relies on, which distinguishes an ABSENT key from a stored 100. |
 | **Predict** | **NOT `Held: 100`.** A stored 100 means the stamp fired and wrote a baseline — the refusal did not happen, and the two independent refusals have collapsed into one. |
 | **Predict** | For contrast in the same reading: `/rpg give boltor` and confirm it **does** report a rolled score. **A row where nothing is stamped proves nothing if the stamp is broken for everything.** |
-| **READ** | |
+| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. **Including the `/rpg give boltor` control in the same reading.** Confirmed against the prediction; figure not recorded (Ben's ruling). |
 
 ---
 
@@ -597,4 +677,4 @@ visibility. A mistake in any of those shows up in a screen this slice is not abo
 | **Predict** | The Boltor's `attack_damage: 19` still scales on the ATTACK path: **33.25** at 175, exactly as R1 predicts. **12b must not have moved the attack path at all.** |
 | **Predict** | The hub's stats screen still shows a gear score average; the vault, enchant table and grindstone all open and behave. |
 | **Predict** | `/rpg gearscore show` still reports six slots, a hand pool and a band. |
-| **READ** | |
+| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. Confirmed against the prediction; figure not recorded (Ben's ruling). |

@@ -1492,6 +1492,33 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   reading written *beside* the prediction, and the prediction not edited once a row has been read.
   Stated in each `GATE-*.md` header and nowhere central; this file's one *NOT RUN* mention is an
   anecdote about a splice, not the rule.
+
+  > ### *** AND EVERY GATE FILE'S FIRST ROW IS NOW R0: THE DEPLOYED BUILD CARRIES THIS SLICE ***
+  >
+  > **It is the sole witness for every other row in the file, and a wrong jar does not announce
+  > itself** — it produces readings, in the right shape, at plausible values.
+  >
+  > **2026-09-20 paid for this.** Slice 12b was booted from a jar built out of the **master
+  > worktree** while the branch lived in a second worktree; only master's had a `run/`. **The jar
+  > had been rebuilt that morning**, so its mtime was current and every staleness check cleared it.
+  > The run produced **both** failure families at once: rows whose prediction is the AUTHORED value
+  > would have read **PASS** on a build with no scaling at all, and the exclusion row would have read
+  > **FAIL** because the content key was absent. *Hours went into diagnosing code that was not in
+  > the jar.*
+  >
+  > **The instrument is the deployed jar's own bytes, not an mtime and not `git status`:**
+  >
+  > ```bash
+  > unzip -p <deployed>.jar path/to/Class.class | tr -cd '[:print:]\n' | grep -c <newSymbol>
+  > unzip -p <deployed>.jar content/<file>.yml | grep -c '^<newKey>:'
+  > ```
+  >
+  > **`grep` on the jar itself returns 0 for everything** — a jar is a ZIP and its classes are
+  > deflated, so it is an instrument that cannot express what it is being asked. **And R0 states
+  > WHICH TREE the jar was built from**, because a worktree checkout makes *"the repo"* ambiguous
+  > and that ambiguity is what cost the boot.
+  >
+  > **If R0 fails, STOP. No other row in the file is readable.**
 - **A GATE FILE DECLARES ITS GAME MODE, in the header and per row.** Measured across all 19
   `GATE-*.md` at `e9b3e0e` for `gamemode|survival|creative|adventure|spectator`: **only
   `GATE-quiver-ammo.md` and `GATE-crafting.md` declare one.** `GATE-nexus.md` and the two Plume files
