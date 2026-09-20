@@ -14,6 +14,7 @@ import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantHandle;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.RayHit;
+import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import java.util.*;
 
 /**
@@ -266,6 +267,21 @@ public final class FakeWorld implements CombatWorld {
                 .map(d -> new Aim(d.position().add(new Vec3(0, d.eyeHeight, 0)), d.facing));
     }
 
+    /**
+     * The held weapon's gear score, read LIVE off the dummy -- which is what lets a volley test move
+     * it between shots and prove the later shots re-price.
+     *
+     * <p>An id this world does not know answers {@link GearScore#BASELINE}, which is the port's own
+     * stated total-function answer rather than a convenience of this fixture.
+     */
+    @Override public int triggerScoreOf(UUID combatantId) {
+        return entities.stream()
+                .filter(d -> d.id().equals(combatantId))
+                .findFirst()
+                .map(d -> d.triggerScore)
+                .orElse(GearScore.BASELINE);
+    }
+
     @Override public void present(Vec3 at, String visualId) {
         presented.add(visualId);
         presentedAt.add(at);
@@ -470,6 +486,22 @@ public final class FakeWorld implements CombatWorld {
          */
         public double critMultiplier = Crit.NO_CRIT;
 
+        /**
+         * The GEAR SCORE of the weapon this dummy is deemed to be holding, as {@code Caster} carries
+         * it. Defaults to {@link GearScore#BASELINE}, an exact identity in
+         * {@link GearScore#scaledDamage}, so every test written before trigger scaling existed reads
+         * the number it always read.
+         *
+         * <p><b>BASELINE and not 0, even though {@code clamp} would floor 0 back to the same value.</b>
+         * That floor is honest only to {@code scaledDamage}; a field holding 0 while behaving as 100
+         * lies to every other reader, and a fixture that lies is the one thing a fixture must not do.
+         *
+         * <p>On the DUMMY rather than the world, like {@code attackDamage} and
+         * {@code enchantDamagePercent} above, so a test can change it MID-FLIGHT and prove a
+         * projectile still lands the value frozen at launch.
+         */
+        public int triggerScore = GearScore.BASELINE;
+
         /** Whether the last applyDamage was flagged a crit. The seam bit, as the port delivered it. */
         public boolean lastDamageWasCrit = false;
 
@@ -571,7 +603,7 @@ public final class FakeWorld implements CombatWorld {
          * accidentally hand an effect a value the snapshot would not have carried.
          */
         public Caster asCaster() {
-            return Caster.of(snapshot());
+            return Caster.of(snapshot()).withTriggerScore(triggerScore);
         }
 
         /**
@@ -580,7 +612,7 @@ public final class FakeWorld implements CombatWorld {
          * the point it builds the source and cannot leave a stale one lying on the dummy.
          */
         public Caster asCaster(double chargeScale) {
-            return Caster.of(snapshot(), chargeScale);
+            return Caster.of(snapshot(), chargeScale).withTriggerScore(triggerScore);
         }
 
         @Override public UUID id() { return id; }

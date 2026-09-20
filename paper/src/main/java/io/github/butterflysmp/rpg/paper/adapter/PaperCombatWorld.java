@@ -6,6 +6,8 @@ import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.BeamSamples;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.RayHit;
+import io.github.butterflysmp.rpg.core.weapon.GearScore;
+import io.github.butterflysmp.rpg.paper.weapon.GearScoreItems;
 import io.github.butterflysmp.rpg.paper.content.VisualDefinition;
 import io.github.butterflysmp.rpg.paper.content.VisualSpec;
 import org.bukkit.FluidCollisionMode;
@@ -17,6 +19,7 @@ import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.RayTraceResult;
@@ -203,6 +206,41 @@ public final class PaperCombatWorld implements CombatWorld {
         return Optional.of(new Aim(
                 new Vec3(eye.getX(), eye.getY(), eye.getZ()),
                 new Vec3(direction.getX(), direction.getY(), direction.getZ())));
+    }
+
+    /**
+     * The held weapon's gear score. {@link GearScore#BASELINE} for anything that is not a player --
+     * the PORT's stated total-function answer, quoted here rather than invented here.
+     *
+     * <p><b>A NON-PLAYER IS EVERY MOB IN THE GAME, and BASELINE is the answer that leaves them
+     * dealing exactly their authored damage.</b> Getting it backwards -- a 0 that scaled DOWN rather
+     * than clamping back to the baseline -- would quietly reduce every hit every mob in the game
+     * lands, and nothing in any suite would go red. This is also the line where the decision gets
+     * revisited the day mob gear arrives.
+     *
+     * <p>A READ on the owning thread, like {@link #aimOf} above.
+     *
+     * <h2>THE {@code volley_stone} EXCLUSION IS WIRED, AND IT IS WIRED INSIDE {@code heldScore}</h2>
+     *
+     * <p>{@code heldScore} resolves the held weapon's DEFINITION from the registry and returns
+     * {@link GearScore#BASELINE} for one that declares itself unscored, <b>before</b> it reads the
+     * PDC. That ordering is forced rather than stylistic: {@code heldScore}'s own body is
+     * {@code GearScore.orAbsent(read(...))}, which resolves an absent stamp to {@code ABSENT} (100) --
+     * so by the time a caller holds an {@code int} it has <b>collapsed "declared unscored" with
+     * "carries no stamp"</b>, and the exclusion lives on exactly that difference. A filter on the
+     * returned value could not tell them apart.
+     *
+     * <p><b>This javadoc recorded the gap while it was open, and that entry is discharged rather than
+     * deleted:</b> between the port landing and the registry reaching {@code AdapterContext}, a
+     * {@code volley_stone}'s payloads DID scale like every other trigger weapon. It was tracked in
+     * {@code GATE-gearscore.md} under <i>SLICE 12b</i> because a comment cannot fail and this method
+     * read as finished throughout.
+     */
+    @Override
+    public int triggerScoreOf(UUID combatantId) {
+        if (!(world.getEntity(combatantId) instanceof Player player)) return GearScore.BASELINE;
+        Regions.requireOwned(player);
+        return GearScoreItems.heldScore(player, ctx.keys(), ctx.weapons());
     }
 
     /**

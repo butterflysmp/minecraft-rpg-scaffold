@@ -7,6 +7,7 @@ import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.combat.HitDamage;
+import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import java.util.List;
 
 import java.util.UUID;
@@ -132,9 +133,27 @@ public final class EffectApplier {
                 // here rather than pre-baking it at projection: d.amount() is not known until the
                 // effect fires, so a multiplier folded into the Caster's attackDamage could never
                 // have touched the staff's authored bolt. This is what makes Attunement work.
+                //
+                // *** THE GEAR SCORE REACHES THE LITERAL HERE, AND THE ENCHANT NOTE ABOVE IS THE
+                // ARGUMENT FOR IT, UNCHANGED. *** d.amount() is not known until the effect fires, so
+                // a score folded into the Caster's attackDamage could never have touched the staff's
+                // bolt either. Ben ruled trigger damage scales; this is the one place it can.
+                //
+                // *** IT IS INSIDE hitBase's FIRST ARGUMENT, NOT AROUND THE WHOLE CALL, AND THAT IS
+                // ARITHMETIC RATHER THAN STYLE. *** hitBase ADDS classDamageBonus, so scaling outside
+                // would multiply the player's +Melee gear grant by the weapon's score as well. That is
+                // the 14.2-vs-14.95 hazard HitDamage exists to own, one factor further out. Nothing in
+                // this chain truncates -- it is double end to end -- so the ADDEND is the only thing
+                // that makes the order matter, along with clamp() being non-linear.
+                //
+                // *** AND IT MUST NOT BE COPIED INTO THE WeaponDamage ARM BELOW. *** That arm reads
+                // caster.attackDamage(), which IS the ATTACK_DAMAGE stat -- and WeaponAttackItems has
+                // ALREADY scaled the score into that stat at mint. Applying it again there makes a
+                // score-400 weapon deal 16x instead of 4x, and NOTHING IN THE SUITE WOULD LOOK WRONG:
+                // both factors are individually correct and each has its own passing test.
                 double amount = HitDamage.dealt(
-                        HitDamage.hitBase(d.amount(), caster.enchantDamagePercent(),
-                                caster.classDamageBonus()),
+                        HitDamage.hitBase(GearScore.scaledDamage(d.amount(), caster.triggerScore()),
+                                caster.enchantDamagePercent(), caster.classDamageBonus()),
                         caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
                     target.handle().applyDamage(amount, caster.id(), CritState.of(caster.critMultiplier()),

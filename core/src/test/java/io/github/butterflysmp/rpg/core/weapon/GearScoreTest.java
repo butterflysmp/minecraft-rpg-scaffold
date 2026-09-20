@@ -199,6 +199,54 @@ class GearScoreTest {
                         + " no is what the missing default arm exists to stop.");
     }
 
+    /**
+     * *** THE COMPOSED DOOR: KIND AND INSTANCE, BOTH ASKED. ***
+     *
+     * <p>The truth table is four cells and all four are staged, because the interesting one is
+     * {@code (MELEE, true)} -- a fighting class that declares itself unscored. That is
+     * {@code volley_stone}, and it is the only cell the kind-level rule alone gets wrong.
+     */
+    @Test
+    void aFightingClassThatDECLARESItselfUnscoredDoesNotCarryAScore() {
+        assertTrue(GearScore.carriesScore(GearClass.MELEE, false),
+                "an ordinary weapon scores");
+        assertFalse(GearScore.carriesScore(GearClass.MELEE, true),
+                "A DECLARED EXCEPTION BEATS ITS KIND. volley_stone presents a fighting class and"
+                        + " carries no score; if this returns true the stone re-enters the top two"
+                        + " and raises every drop the player takes while contributing nothing.");
+        assertFalse(GearScore.carriesScore(GearClass.TOOL, false),
+                "a pickaxe still does not score, declaration or not");
+        assertFalse(GearScore.carriesScore(GearClass.TOOL, true),
+                "and the two refusals do not cancel out");
+        assertFalse(GearScore.carriesScore(null, false),
+                "an item that is none of ours scores nothing, same as the kind-level door");
+    }
+
+    /**
+     * *** THE COMPOSED DOOR IS EXHAUSTIVE TOO, AND THIS IS THE SIBLING OF THE ROW ABOVE IT. ***
+     *
+     * <p>{@code everyGearClassIsAnsweredWithoutADefaultArm} walks {@code GearClass.values()} for the
+     * kind-level door. Adding a second door without a second walk would leave a new
+     * {@link GearClass} answered by one and not the other.
+     *
+     * <p><b>It also pins that the declaration is not merely consulted but DECISIVE</b>: with
+     * {@code declaredUnscored} true, NOTHING scores, whatever its kind.
+     */
+    @Test
+    void theComposedDoorAnswersEveryGearClassAndADeclarationOverridesAllOfThem() {
+        int scoringWhenNotDeclared = 0;
+        int scoringWhenDeclared = 0;
+        for (GearClass kind : GearClass.values()) {
+            if (GearScore.carriesScore(kind, false)) scoringWhenNotDeclared++;
+            if (GearScore.carriesScore(kind, true)) scoringWhenDeclared++;
+        }
+        assertEquals(GearClass.values().length - 1, scoringWhenNotDeclared,
+                "undeclared, the composed door must agree with the kind-level one exactly -- if these"
+                        + " diverge there are two rules about scoring and one of them will be forgotten");
+        assertEquals(0, scoringWhenDeclared,
+                "A DECLARATION IS DECISIVE FOR EVERY KIND. Any non-zero here means some class can"
+                        + " out-rank its own content file.");
+    }
     // --- the hand pool -------------------------------------------------------------------------
 
     /**
@@ -428,9 +476,24 @@ class GearScoreTest {
      *     6        100           115                 no
      * </pre>
      *
-     * <p><b>The five-slot case clears MIN by two points, which is why this is a swept row and not a
-     * spot check.</b> A one-point change to the skew, the spread or the denominator moves the opening
-     * phase from six slots to five, and nothing else in the suite would notice.
+     * <p><b>The five-slot case FALLS TWO SHORT of MIN -- 98 against 100 -- and falling short is the
+     * whole reason it still clamps to 100.</b> An earlier draft of this note said it "clears MIN by
+     * two points", which states the opposite of what the row is evidence for: right number, inverted
+     * verb.
+     *
+     * <p><b>AND THE THREE MARGINS ARE NOT THE SAME, WHICH THE SAME DRAFT GOT WRONG BY A FACTOR OF
+     * THREE.</b> It read "a one-point change to the skew, the spread or the denominator" -- true of
+     * exactly one of them. Computed by search over each quantity rather than asserted:
+     *
+     * <pre>
+     *   SKEW          5 -> 8     +3   before a five-slot roll can exceed MIN
+     *   SPREAD       10 -> 13    +3   same
+     *   denominator   6 -> 5     +1   500/5 = 100, band [95,115], above MIN at once
+     * </pre>
+     *
+     * <p><b>Only the DENOMINATOR is one point.</b> Quoting the tightest of three margins as though it
+     * covered all three is the generic-bound family -- the same shape as the {@code n-1} tray
+     * batching bound: always safe to say, and almost never the number.
      */
     @Test
     void everyDropLandsAtTheFloorUntilTheSixthSlotFills() {

@@ -1,7 +1,10 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.weapon.GearClass;
+import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.GearScore;
+import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
+import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.weapon.GearScoreBand;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
@@ -140,7 +143,8 @@ public final class GearScoreItems {
      * {@link EnchantRollItems#rollOnAcquire} makes for the rolled flag: <b>a dev-assigned score must
      * not be re-rolled out from under the gate row it was staged for.</b>
      *
-     * <p>A no-op on a TOOL, through {@link GearScore#scoreable}. The kind comes from
+     * <p>A no-op on a TOOL, and on a definition that DECLARES itself unscored, through
+     * {@link GearScore#carriesScore} -- the composed door, which asks both. The kind comes from
      * {@code GearItems.gearClassOf}, so the caller passes the definition's own class rather than
      * guessing from the material.
      *
@@ -154,13 +158,19 @@ public final class GearScoreItems {
      * already moved. That is Ben's ruling read literally ("banded on the player's CURRENT AVERAGE")
      * and it is the reason this takes a live {@code Player} rather than a precomputed figure.
      */
-    public static void stampOnAcquire(ItemStack item, GearClass kind, Player player,
+    public static void stampOnAcquire(ItemStack item, GearDefinition definition, Player player,
                                       AdapterContext adapters) {
         if (item == null || player == null) return;
-        if (!GearScore.scoreable(kind)) return;
+        // *** THE DEFINITION, NOT A GearClass AND NOT A BOOLEAN. ***
+        // Both facts are derived from the ONE object here, so no caller can hand this a naked
+        // `false` for the instance half. A boolean parameter would be defaulted to false by any
+        // caller that did not know about the flag -- and that caller is the one this refusal exists
+        // for. There is no type that makes the hazard impossible, so the shape removes the argument
+        // instead.
+        if (!GearScore.carriesScore(GearItems.gearClassOf(definition), declaredUnscored(definition))) return;
         if (read(item, adapters.keys()).isPresent()) return;
 
-        int rolled = GearScore.roll(averageOf(player, adapters.keys()),
+        int rolled = GearScore.roll(averageOf(player, adapters.keys(), adapters.weapons()),
                 GearScoreBand.SPREAD, GearScoreBand.SKEW,
                 ThreadLocalRandom.current().nextDouble());
         item.editMeta(meta -> write(meta, rolled, adapters.keys()));
@@ -180,9 +190,9 @@ public final class GearScoreItems {
      * the minimum any item can roll, so their first drops sit at 100 until their slots fill. Ben has
      * seen that and accepted it as the pressure to gear every slot.
      */
-    public static int averageOf(Player player, Keys keys) {
-        return GearScore.averageOf(GearScore.sixSlots(armorScores(player, keys),
-                handScores(player, keys)));
+    public static int averageOf(Player player, Keys keys, WeaponRegistry weapons) {
+        return GearScore.averageOf(GearScore.sixSlots(armorScores(player, keys, weapons),
+                handScores(player, keys, weapons)));
     }
 
     /**
@@ -197,12 +207,12 @@ public final class GearScoreItems {
      * ladder, and reading it as a baseline item would put every player who ever equipped vanilla
      * diamond at an average of 100 before acquiring a single scored piece.
      */
-    static int[] armorScores(Player player, Keys keys) {
+    static int[] armorScores(Player player, Keys keys, WeaponRegistry weapons) {
         int[] scores = new int[GearScore.ARMOR_SLOTS];
         EntityEquipment equipment = player.getEquipment();
         if (equipment == null) return scores;
         for (int i = 0; i < ARMOR_SLOTS.length; i++) {
-            scores[i] = candidateScore(equipment.getItem(ARMOR_SLOTS[i]), keys)
+            scores[i] = candidateScore(equipment.getItem(ARMOR_SLOTS[i]), keys, weapons)
                     .orElse(GearScore.EMPTY);
         }
         return scores;
@@ -218,19 +228,19 @@ public final class GearScoreItems {
      *
      * <p>Unscoreable occupants -- a tool, a stack of dirt, a vanilla sword -- are simply not
      * candidates, so they cannot displace a real weapon from the top two. That is the pickaxe ruling
-     * enforced at the gather; {@link GearScore#scoreable} enforces it at the stamp, and the two
+     * enforced at the gather; {@link GearScore#carriesScore} enforces it at the stamp, and the two
      * together are why a pickaxe can neither carry a score nor be read as having one.
      *
      * <p>Length is whatever the inventory holds, including zero. {@link GearScore#topTwo} pads, so a
      * player holding one weapon still averages over six slots rather than five.
      */
-    static int[] handScores(Player player, Keys keys) {
+    static int[] handScores(Player player, Keys keys, WeaponRegistry weapons) {
         PlayerInventory inventory = player.getInventory();
         List<Integer> pool = new ArrayList<>();
         for (int slot = 0; slot < HOTBAR_SLOTS; slot++) {
-            candidateScore(inventory.getItem(slot), keys).ifPresent(pool::add);
+            candidateScore(inventory.getItem(slot), keys, weapons).ifPresent(pool::add);
         }
-        candidateScore(inventory.getItemInOffHand(), keys).ifPresent(pool::add);
+        candidateScore(inventory.getItemInOffHand(), keys, weapons).ifPresent(pool::add);
 
         int[] scores = new int[pool.size()];
         for (int i = 0; i < scores.length; i++) scores[i] = pool.get(i);
@@ -256,13 +266,66 @@ public final class GearScoreItems {
      * walk turns into {@link GearScore#EMPTY} and the hand walk drops entirely. Those two readings are
      * 100 and 0 and must never be confused; {@link #armorScores} records why.
      */
-    static OptionalInt candidateScore(ItemStack item, Keys keys) {
+    static OptionalInt candidateScore(ItemStack item, Keys keys, WeaponRegistry weapons) {
         if (item == null || item.getType().isAir() || !item.hasItemMeta()) return OptionalInt.empty();
         boolean scoreable = GearItems.idOf(item, keys.weaponId).isPresent()
                 || GearItems.idOf(item, keys.shieldId).isPresent()
                 || GearItems.idOf(item, keys.armorId).isPresent();
         if (!scoreable) return OptionalInt.empty();
+        if (declaredUnscored(item, keys, weapons)) return OptionalInt.empty();
         return OptionalInt.of(GearScore.orAbsent(read(item, keys)));
+    }
+
+    /**
+     * Does this DEFINITION declare that it carries no score? The primitive both doors resolve to.
+     *
+     * <p><b>Only a {@code WeaponDefinition} can declare it</b> -- armour and shields have no such
+     * field, and tools are refused a rung up by {@link GearScore#carriesScore}'s kind-level half. A
+     * definition of any other type is therefore {@code false} by pattern-match rather than by a
+     * default, which is why widening the flag to {@code GearDefinition} later would be a visible
+     * compile error at four implementors instead of a silent behaviour change here.
+     *
+     * <p>A {@code null} definition is {@code false}: not declared, so not excluded. Same direction as
+     * the missing-definition rule below -- <b>only a positive declaration removes anything.</b>
+     */
+    private static boolean declaredUnscored(GearDefinition definition) {
+        return definition instanceof WeaponDefinition weapon && weapon.unscored();
+    }
+
+    /**
+     * Does this item's own DEFINITION declare that it carries no score? The instance-level half of
+     * {@link GearScore#carriesScore}, resolved from the weapon registry.
+     *
+     * <h2>*** A DEFINITION THAT CANNOT BE FOUND MEANS SCORED. THE {@code orElse(false)} IS THE RULING. ***</h2>
+     *
+     * <p><b>That line looks exactly like the bare-{@code false} bug it is the opposite of</b>, which
+     * is why it is written out rather than left to read as an oversight. A weapon whose content file
+     * was removed or renamed keeps the score already in its PDC: <b>only an explicit declaration
+     * removes anything.</b>
+     *
+     * <p>The other default is SILENT and worse in every way -- the item would drop out of the
+     * average, the player's drop band would fall, and nothing would report it. An over-inclusive
+     * answer costs a score that should not be there and is visible on a tooltip; an over-exclusive
+     * one costs a band nobody can see.
+     *
+     * <p><b>Only WEAPONS can declare it.</b> Armour and shields have no such flag -- shields score by
+     * Ben's explicit ruling, and tools are refused a rung up by {@link GearScore#carriesScore}'s
+     * kind-level half. So a shield or an armour id resolves to {@code false} here by never matching
+     * the weapon lookup at all, which is correct rather than incidental.
+     *
+     * <p><b>Declared BELOW {@code candidateScore} on purpose, and brace-free above.</b>
+     * {@code GearScoreWiringSignatureTest} extracts that method's body by scanning to the first line
+     * that trims to {@code "}"}; a braced block inside it would truncate the window and make the
+     * {@code toolId} ban pass VACUOUSLY. The guard clause is the shape the three lines above it
+     * already use -- this is the surrounding idiom, not a concession to the scanner -- but the
+     * HELPER's placement is, and it is recorded here so the next reader knows the constraint exists.
+     */
+    private static boolean declaredUnscored(ItemStack item, Keys keys, WeaponRegistry weapons) {
+        if (weapons == null) return false;
+        return GearItems.idOf(item, keys.weaponId)
+                .flatMap(weapons::find)
+                .map(WeaponDefinition::unscored)
+                .orElse(false);
     }
 
     // ---------------------------------------------------------------- the held weapon
@@ -280,7 +343,14 @@ public final class GearScoreItems {
      * tool in the main hand is correctly refused there and would be wrongly refused here -- a tool
      * deals no {@code attack_damage} anyway, so there is nothing for its refusal to protect.
      */
-    public static int heldScore(Player player, Keys keys) {
-        return GearScore.orAbsent(read(player.getInventory().getItemInMainHand(), keys));
+    public static int heldScore(Player player, Keys keys, WeaponRegistry weapons) {
+        ItemStack held = player.getInventory().getItemInMainHand();
+        // *** THE DOOR IS BEFORE THE READ, NOT A FILTER AFTER IT, AND THAT IS FORCED. ***
+        // GearScore.orAbsent resolves an absent stamp to ABSENT (100), so by the time this method has
+        // an int it has COLLAPSED "declared unscored" with "carries no stamp" -- and the exclusion
+        // lives on exactly that difference. A volley_stone minted since slice 12 carries a real score
+        // in its PDC; filtering the returned value could not tell it from an ordinary scored weapon.
+        if (declaredUnscored(held, keys, weapons)) return GearScore.BASELINE;
+        return GearScore.orAbsent(read(held, keys));
     }
 }

@@ -137,7 +137,7 @@ public final class WeaponLoader {
     static final java.util.Set<String> KNOWN_KEYS = java.util.Set.of(
             "id", "display_name", "element", "rarity", "class", "material",
             "attack_damage", "attack_speed", "sweep", "quiver_size", "reload_ticks",
-            "flavor", "triggers", "craft_result");
+            "flavor", "triggers", "craft_result", "unscored");
 
     /**
      * Every key a single {@code triggers:} entry may author -- a SEPARATE namespace from
@@ -320,6 +320,12 @@ public final class WeaponLoader {
         // it lives in core.weapon.Quiver.applyPercent and is not re-expressed at this boundary.
         int quiverSize = s.getInt("quiver_size", WeaponDefinition.NO_QUIVER);
         int reloadTicks = s.getInt("reload_ticks", 0);
+        // DOES THIS WEAPON CARRY A GEAR SCORE AT ALL? Absent -> false -> it does, which is what every
+        // shipped weapon wants and is why this needed no migration. Only volley_stone declares it: a
+        // dev fixture whose class is a fighting one, so the KIND-level rule cannot refuse it and a
+        // per-definition declaration is the only thing that can. GearScore.carriesScore composes the
+        // two; nothing may ask the kind-level question alone.
+        boolean unscored = s.getBoolean("unscored", false);
         // Authored tooltip prose. Optional; absent -> empty list. MUST be a YAML list: getStringList
         // returns [] for a scalar (flavor: "one line" would vanish silently -- the "finds nothing"
         // trap). So warn, loudly and named, when someone writes it as a scalar, and don't skip the
@@ -390,7 +396,7 @@ public final class WeaponLoader {
 
         return new WeaponDefinition(id, displayName, element, rarity, weaponClass, material,
                 attackDamage, attackSpeed, sweep, quiverSize, reloadTicks, bindings, flavor,
-                craftResult);
+                craftResult, unscored);
     }
 
     private static Rarity rarity(String raw) {

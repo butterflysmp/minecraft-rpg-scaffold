@@ -840,16 +840,29 @@ passed when it never ran — this file's own headline defect, one level up.
   > | **THE DELIMITER.** A `/` — or your own delimiter — anywhere in the replacement closes `s///` early, so the edit lands as a bare deletion | `s{...}{...}`, and **`s#...#...#` the moment the replacement contains a brace.** A marker with no punctuation at all |
   > | **THE `$` ANCHOR ON A CRLF FILE.** `\r` sits between the last character and the newline, so a `$`-anchored pattern matches nothing and exits 0 | match on inner text, or splice by line number (`if $. == N`) and **print the region afterwards** |
   > | **`\Q...\E` AROUND AN EMBEDDED `\n`.** `\Q` escapes the backslash, so the pattern hunts a literal backslash-n and never matches a real newline | keep newlines OUTSIDE the `\Q...\E`, or splice by line number |
+  > | **ANY BACKSLASH ESCAPE INSIDE `\Q...\E`** — the general form of the row above. `\Q` makes a backslash LITERAL, so `\[` hunts backslash-bracket. Exits 0, changes nothing | write the character plainly inside `\Q...\E`; it is already literal |
+  > | *** **`@` INSIDE `\Q...\E`. `\Q` DOES NOT STOP INTERPOLATION** — `@link` parses as an array variable and interpolates to EMPTY. And `\@` inside `\Q...\E` becomes a literal backslash, so **THERE IS NO CORRECT `\Q` FORM AT ALL** *** | do not use `\Q...\E` on text containing `@`. Use a literal-match editor, or splice by line number |
   >
   > **The delimiter account is in the mutation-lies table's third row; the CRLF account is under
   > *A LONG-LIVED BRANCH*. The `\Q` one has no account in this repo** — it is carried in a memory
   > file, which is not greppable by whoever next opens the file it will bite. **That is the standing
   > `NEXT.md` debt, and it is named here rather than paid by growing this pointer into an account.**
   >
-  > **Two of the three fired during the slice that wrote this entry**, on 2026-09-17: a `$` anchor
-  > silently skipped an import insertion, and a `{` in a replacement aborted `perl` at parse time.
-  > **The second failed LOUDLY and the first did not**, which is the whole reason the table is
-  > ordered this way.
+  > **The table was THREE rows when this note was written and is five now** — the live count is not
+  > restated here, because a line carrying a count is itself a line, and this sentence has already
+  > been falsified once by the table growing under it.
+  >
+  > **Two rows fired on 2026-09-17**, the slice that opened this entry: a `$` anchor silently skipped
+  > an import insertion, and a `{` in a replacement aborted `perl` at parse time. **The second failed
+  > LOUDLY and the first did not**, which is the whole reason the table is ordered this way.
+  >
+  > **Three more fired on 2026-09-19, and the ORDER OF DISCOVERY is the lesson.** A `{` in an
+  > `s{}{}` replacement, and a `#` delimiter colliding with `{@link X#y}`, both aborted at parse time
+  > — **loud, free, fixed in a minute each.** The `@` interpolation cost **four silent no-ops and a
+  > bisect**, because the pattern did not fail outright: `through {@link` still MATCHED, having
+  > quietly become `through {`. ***A pattern that FAILS is a tripwire; a pattern that HALF-MATCHES is
+  > an investigation.*** The silent rows are the ones worth reading; the loud ones are in the table
+  > only for completeness.
 
   > **THOSE TWO ARE NOT ALTERNATIVES, AND THIS USED TO SAY "OR".** Measured 2026-09-10: a
   > `perl -i -pe 's{A}g; s{B}g if $. >= L && $. <= L+35'` rewrote **forty other sites** while
@@ -895,6 +908,134 @@ passed when it never ran — this file's own headline defect, one level up.
 
 The rule underneath all three: **silence is not a result.** An instrument that outputs nothing has
 either found nothing or done nothing, and those are the same picture.
+
+> ### *** AND A ZERO IS NOT A FAILURE, WHICH IS WHY THE CHECK THAT DIES IS THE ONE THAT SUCCEEDED ***
+>
+> **`grep -c` returning `0` EXITS 1.** So `cmd | grep -c X && next` aborts the chain precisely when
+> the count is zero — and **zero is the answer a removal-check wants.** Every *"did I delete it"*
+> verification is wired to kill the script at the moment it passes.
+>
+> **That is worse than `tee` eating `$?`, and the difference is the reusable part: `tee`'s hazard is
+> CONSTANT, this one is CORRELATED WITH THE GOOD OUTCOME.** It bites only on the success path; on the
+> failure path everything runs and looks fine. So it reads as a tooling flake rather than a defect.
+>
+> **2026-09-19.** A verification chain printed *"orAbsentStat gone: 0"* and then silently skipped
+> every remaining check in the `&&` chain. **Operationally: `|| true` on the count, or capture and
+> compare — never let a count decide control flow.**
+>
+> **AND THE SECOND MEMBER, SAME FAMILY, THREE LAYERS DEEP.** `./mvnw -pl paper test` without `-am`
+> produces **NO OUTPUT AT ALL** when the reactor aborts on a stale installed jar; a `grep` filter
+> turns no-output into no-match; and no-match reads as no-problem. **Three individually reasonable
+> layers stacking into a pass.** Measured the same day: the identical command with `-am` reported the
+> failure immediately. **Run the unfiltered tail, or check the command's own status — the filter is
+> never allowed to be the witness.**
+
+> ### *** A GREP COUNT THAT ANSWERS A DIFFERENT QUESTION THAN THE ONE ASKED — THREE MECHANISMS, ONE SHAPE ***
+>
+> *"Who calls this?"* is the cheapest question in a codebase and it has three ways of lying, all
+> measured in one slice (2026-09-19):
+>
+> | | what the count said | what was true |
+> |---|---|---|
+> | **ZERO CALLERS ON A NEW ACCESSOR** | nothing reads it | **the feature does not exist yet.** `WeaponDefinition.unscored()` was authored in YAML, parsed, stored — and read by nobody. **A value authored, parsed, stored and read by nobody is INDISTINGUISHABLE FROM ONE THE LOADER SILENTLY DROPS**, and every row in both suites stays green either way |
+> | **A PREFIX NEEDLE** | the guard is present | **it survived the change it exists to detect.** `heldScore(player, keys)` is a PREFIX of `heldScore(player, keys, weapons)`, so a signature-test needle kept MATCHING after the widening — green, and no longer checking the thing it names |
+> | **PROSE COUNTED AS CALLERS** | four callers outside the package | **all four were javadoc**, and two named a method that was no longer the enforcer |
+>
+> **THE ZERO-CALLER ONE HAS A HABIT ATTACHED: AFTER ADDING AN ACCESSOR, GREP ITS CALLERS BEFORE
+> MOVING ON.** Zero means the wiring is not built, and it is the one answer nothing reports.
+>
+> **AND THE EXISTING GUARD COVERED AN ADJACENT CLAIM, WHICH IS THE FALSE-PRESENCE FAMILY WITH A NEW
+> MECHANISM.** `knownKeysAndTheKeysParseActuallyReadsAreTheSameSet` proves **the key is READ**; nothing
+> proved **the value ARRIVES**. Two different claims that look like one, and the real, passing guard
+> was about the other one. **The round-trip row must assert BOTH answers** — a true-only row passes on
+> a loader that hardcoded true, a false-only row passes on one that dropped the read. *Neither
+> direction alone is a round trip.*
+>
+> **THE PREFIX ONE HAS AN OPERATIONAL FIX: ANCHOR A SIGNATURE NEEDLE AT BOTH ENDS** — include the
+> closing paren or the terminating semicolon, so a widening cannot extend past the match. **Widening a
+> signature is the single most likely edit to a scanned call site**, which is exactly when a prefix
+> needle goes blind. It only failed here by luck: the closing paren happened to be inside it.
+>
+> **AND NARROWING VISIBILITY IS WHAT MAKES THE THIRD FINDABLE.** Making a method package-private turns
+> *"who calls this"* into a question with a **checkable** answer, and everything left over is prose
+> claiming to be code.
+
+> ### *** THE LINE DELTA IS NOT A WARRANT AND IS NOT WORTHLESS. IT IS THE SOLE INSTRUMENT FOR THE ONE CLASS THE BUILD CANNOT SEE. ***
+>
+> Both halves were measured on 2026-09-19, and they point opposite ways:
+>
+> | the edit | the warrant | why the other instrument is blind |
+> |---|---|---|
+> | **A SPLICE into brace-delimited code** | **THE BUILD** | the delta lies in BOTH directions — it reported **18 removed** where 1 was predicted (`diff` realigned on a matching `}`, all 18 still present), and reported **exactly the predicted 555 lines** on the edit that had put a DUPLICATE BRACE in the file. Every figure agreed and the file was wrong |
+> | **A SUBSTITUTION that may no-op** | **THE PREDICTED-COUNT DELTA** | the result COMPILES. 3 of 10 substitutions silently no-opped, `perl` exited 0, printed nothing, and **the build was green.** Only the count fired |
+>
+> **So do not drop the delta and do not trust it alone.** A splice's real check is reading the region
+> and compiling; a substitution's real check is a count you predicted **before** running it.
+>
+> **AND A LINE-NUMBER SPLICE IS A CLAIM ABOUT WHAT IS AT THAT LINE, WHICH NOTHING IN THE CHAIN
+> CHECKS.** The duplicate brace came from targeting line 201 believing it was the closing brace; it
+> was the blank line after it. **Print the target line before splicing** — the count agrees whether or
+> not you hit the line you meant.
+
+> ### *** A FIXTURE STAGING A FACTOR AT ITS IDENTITY VALUE CANNOT DISTINGUISH ORDERINGS INVOLVING IT ***
+>
+> An addend at `0.0` or a multiplier at `1.0` makes *before* and *after* **numerically identical**, so
+> the row passes under either and the mutation that swaps them finds nothing to bite.
+>
+> **THIS IS HARDER TO SEE THAN A HOLLOW FIXTURE, WHICH IS WHY IT IS ITS OWN ENTRY.** A hollow row
+> never presents its condition. These rows were **not hollow** — every assertion in them was real and
+> meaningful FOR ITS OWN CLAIM. They were **DEGENERATE ON EXACTLY THE AXIS UNDER TEST**: correct rows,
+> blind at one joint.
+>
+> **2026-09-19.** Three rows guarding gear-score scaling all staged `classDamageBonus` at its neutral
+> `0.0`. A mutation moving the scale across that addend reddened **only** a fourth row written for it.
+> **Had the three been accepted and the pass stopped there, the ordering axis would have shipped with
+> a FULL-LOOKING KILL SET AND NO GUARD** — and that is the danger: not a missing row, but a kill set
+> that looks complete.
+>
+> **Operationally: ANY ROW THAT STAGES A CHAIN FACTOR AT ITS NEUTRAL VALUE IS BLIND TO WHERE THAT
+> FACTOR SITS.** Count the axes in the expression, then ask which of them each fixture can actually
+> see.
+>
+> > **AND THE COMPANION QUESTION, ASKED AND CLOSED RATHER THAN LEFT OPEN.** `HitDamage` threads four
+> > factors, so *"are the other three joints unguarded?"* looks like an obvious follow-up. **Measured:
+> > NO — there is ONE joint, not four.** The chain is `((base * M) + B) * C * R` and **`B` is the only
+> > ADDEND**; a factor's position relative to a MULTIPLIER is not a distinguishable position. A sweep
+> > of 5040 realistic combinations found crossing a multiplier changes the double in **926** of them,
+> > by at most **1.137e-13** against a `1e-9` delta. **The other three are UNGUARDABLE, NOT
+> > UNGUARDED** — and saying so in those words is the point, because the alternative is three rows
+> > that cannot fail. *The instinct that multiplication commutes is also wrong; it is the MAGNITUDE
+> > that settles it, and only execution shows that.*
+
+> ### *** MUTATION AS A PROBE: WHEN A DEFECT IS SUSPECTED, RUN THE MUTATION BEFORE WRITING THE GUARD ***
+>
+> **THE FIRST RUN IS THE MEASUREMENT. THE SECOND IS THE RECEIPT.** Most mutation work only ever does
+> the second, which tells you a guard fires and **nothing about whether it existed before you wrote
+> it** — so it cannot distinguish *"I added a row that catches this"* from *"a row already caught this
+> and I added a duplicate."*
+>
+> **A GREEN FIRST RUN IS THE FINDING.** 2026-09-19: the stamp path passing a hardcoded `false` was
+> applied to a finished tree and **the entire suite stayed green at 2070 tests.** The guard was then
+> written, the identical mutation re-applied — same marker figures both times — and it reddened. Two
+> runs, one edit, and the pair is what makes the claim *"nothing else could see this"* a measurement
+> rather than an assertion.
+
+> ### *** A COMPILE-ENFORCED RULE'S POSITIVE CONTROL IS A DELIBERATE VIOLATION THAT MUST FAIL TO BUILD ***
+>
+> A visibility narrowing, a sealed hierarchy, an abstract method with no `default` — **none of them
+> has a test to redden**, so *"the compiler enforces it"* otherwise has the same standing as a javadoc.
+>
+> **2026-09-19.** `GearScore.scoreable` was made package-private so `paper` could not ask the
+> kind-level question without the instance-level one. The control: insert `GearScore.scoreable(null)`
+> into a paper class, read the refusal — *"scoreable(GearClass) is not public in GearScore; cannot be
+> accessed from outside package"* — and remove it **byte-identical**.
+>
+> **The same shape paid on an abstract port method the week before**: `CombatWorld.triggerScoreOf` was
+> declared abstract rather than `default`, and the first full-reactor build failed naming the
+> implementor that had not answered. **A `default` would have let a test fixture stay silent and still
+> compile**, which is the blind-fixture shape this page records elsewhere. **Prefer the compile error
+> to the scanner: a caller who forgets cannot build, where a source scan only notices if its needle
+> still matches.**
 
 
 ### THE EIGHT WAYS A MUTATION LIES, AND EACH GUARD IS BLIND TO THE NEXT
@@ -1351,6 +1492,33 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   reading written *beside* the prediction, and the prediction not edited once a row has been read.
   Stated in each `GATE-*.md` header and nowhere central; this file's one *NOT RUN* mention is an
   anecdote about a splice, not the rule.
+
+  > ### *** AND EVERY GATE FILE'S FIRST ROW IS NOW R0: THE DEPLOYED BUILD CARRIES THIS SLICE ***
+  >
+  > **It is the sole witness for every other row in the file, and a wrong jar does not announce
+  > itself** — it produces readings, in the right shape, at plausible values.
+  >
+  > **2026-09-20 paid for this.** Slice 12b was booted from a jar built out of the **master
+  > worktree** while the branch lived in a second worktree; only master's had a `run/`. **The jar
+  > had been rebuilt that morning**, so its mtime was current and every staleness check cleared it.
+  > The run produced **both** failure families at once: rows whose prediction is the AUTHORED value
+  > would have read **PASS** on a build with no scaling at all, and the exclusion row would have read
+  > **FAIL** because the content key was absent. *Hours went into diagnosing code that was not in
+  > the jar.*
+  >
+  > **The instrument is the deployed jar's own bytes, not an mtime and not `git status`:**
+  >
+  > ```bash
+  > unzip -p <deployed>.jar path/to/Class.class | tr -cd '[:print:]\n' | grep -c <newSymbol>
+  > unzip -p <deployed>.jar content/<file>.yml | grep -c '^<newKey>:'
+  > ```
+  >
+  > **`grep` on the jar itself returns 0 for everything** — a jar is a ZIP and its classes are
+  > deflated, so it is an instrument that cannot express what it is being asked. **And R0 states
+  > WHICH TREE the jar was built from**, because a worktree checkout makes *"the repo"* ambiguous
+  > and that ambiguity is what cost the boot.
+  >
+  > **If R0 fails, STOP. No other row in the file is readable.**
 - **A GATE FILE DECLARES ITS GAME MODE, in the header and per row.** Measured across all 19
   `GATE-*.md` at `e9b3e0e` for `gamemode|survival|creative|adventure|spectator`: **only
   `GATE-quiver-ammo.md` and `GATE-crafting.md` declare one.** `GATE-nexus.md` and the two Plume files
@@ -2010,9 +2178,36 @@ build.**
 >
 > > ### *** THIS IS A PROPERTY OF A CLONE, NOT OF THIS REPO — AND THE FIRST DRAFT SAID "on this tree" ***
 > >
-> > **EVERY COMMITTED BLOB IS LF**, because `autocrlf` normalises on the way into the index. So a
-> > seat with `core.autocrlf=false` — Linux, typically — has **ZERO CR bytes in the working tree AND
-> > in the blob**, and this hazard does not exist for them at all.
+> > ### *** FIRST, THE HALF THAT IS TRUE UNDER EVERY CONFIGURATION: A MIXED TREE POISONS EVERY LATER CR COUNT ***
+> >
+> > **A file that is part CRLF and part LF breaks the INSTRUMENT, not the history**, and it does so
+> > on every seat, under every setting. `tr -cd '\r' | wc -c` against the line count is how this page
+> > tells CRLF from LF; against a mixed file it returns a number that is neither, and every reading
+> > taken with it afterwards is untrustworthy. **2026-09-19: `AdapterContext.java` ended 68 lines /
+> > 67 CR** — one LF line from a `\n` in a `perl` replacement — in a slice that took many CR
+> > readings. **Fix a mixed file the moment the count disagrees with the line count, whatever you
+> > believe about the blob.**
+> >
+> > ### AND THE BLOB CLAIM, WHICH IS CONDITIONAL AND USED TO BE STATED AS IF IT WERE NOT
+> >
+> > **EVERY COMMITTED BLOB IS LF *WHILE COMMIT-TIME NORMALISATION IS ON*.** It holds under
+> > `core.autocrlf=true`, under `input`, and under a `.gitattributes` carrying `* text=auto`.
+> > ***IT IS FALSE UNDER `core.autocrlf=false` WITH NO MATCHING `.gitattributes` RULE — there mixed
+> > endings go into the blob verbatim.***
+> >
+> > **THIS REPO RESTS ON THE PER-CLONE CONFIG, NOT ON ANYTHING COMMITTED, AND THAT IS MEASURED.**
+> > Read 2026-09-19: `core.autocrlf` is `true` in this clone's LOCAL config, global unset — and
+> > `.gitattributes` exists but does **not** carry `* text=auto`. It names three paths only:
+> > `mvnw text eol=lf`, `*.sh text eol=lf`, `mvnw.cmd text eol=crlf`. **So for a `.java` file the
+> > protection is one uncommitted setting on one machine.**
+> >
+> > **So do not carry the conclusion, carry the condition:** the two commands that answer it are
+> > `git config core.autocrlf` and reading `.gitattributes`. **A reader who inherits the bare
+> > reassurance on a differently-configured clone skips the sweep and commits the mixed file** —
+> > which is the same shape as a control credited with protecting something it does not touch.
+> >
+> > So a seat with `core.autocrlf=false` — Linux, typically — has **ZERO CR bytes in the working tree
+> > AND in the blob**, and the WORKING-TREE hazard does not exist for them at all.
 > >
 > > **Measured 2026-09-16, both seats, same file `EnchantMenu.java`:**
 > >

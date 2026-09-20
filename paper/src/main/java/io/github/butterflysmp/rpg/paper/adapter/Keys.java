@@ -71,7 +71,8 @@ public final class Keys {
      * <p><b>Only WEAPONS, ARMOUR AND SHIELDS ever carry it. A TOOL MUST NOT.</b> Ben's ruling, and
      * the reason is specific: a pickaxe carrying a score could become one of the two hands feeding a
      * player's average and raise the level of every drop they take without contributing anything to a
-     * fight. The refusal is {@code GearScore.scoreable}, in core, where a unit test reddens it; the
+     * fight. The refusal is {@code GearScore.carriesScore}, in core, where a unit test reddens it --
+     * it composes that KIND-level rule with a per-definition {@code unscored} declaration; the
      * stamp sites ask it before writing, and {@code GearScoreItems.candidateScore} reads only the
      * three scoreable tags so an unstamped tool cannot be read as a baseline item either.
      *

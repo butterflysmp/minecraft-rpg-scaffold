@@ -377,7 +377,7 @@ public final class NexusMenu extends Menu {
                         // learn to. Present rather than empty because the viewer is online and their
                         // inventory is readable by construction at this point; empty is reserved for a
                         // read that could not happen, which on this path cannot arise.
-                        OptionalInt.of(GearScoreItems.averageOf(viewer, adapters.keys()))));
+                        OptionalInt.of(GearScoreItems.averageOf(viewer, adapters.keys(), adapters.weapons()))));
 
         // THE SKIN. Cheap HERE AND ONLY HERE: the viewer is online, so their profile is already
         // resolved and nothing fetches.

@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core.combat;
 
+import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import java.util.UUID;
 
 /**
@@ -55,7 +56,7 @@ import java.util.UUID;
  */
 public record Caster(UUID id, double attackDamage, double classDamageBonus,
                      double enchantDamagePercent, double chargeScale, double critMultiplier,
-                     double payloadDamage) {
+                     double payloadDamage, int triggerScore) {
 
     /**
      * This cast's payload with its HEADLINE DAMAGE attached -- {@code DamagePayload.headlineDamage},
@@ -77,7 +78,46 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      */
     public Caster withPayloadDamage(double payloadDamage) {
         return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
-                chargeScale, critMultiplier, payloadDamage);
+                chargeScale, critMultiplier, payloadDamage, triggerScore);
+    }
+
+    /**
+     * The GEAR SCORE of the weapon this cast was fired from, as a whole number where
+     * {@link GearScore#BASELINE} scales nothing.
+     *
+     * <h2>IT SCALES THE AUTHORED LITERAL, WHICH IS THE ONE THING {@code attackDamage} CANNOT REACH</h2>
+     *
+     * <p>{@code WeaponAttackItems} already folds the score into the ATTACK_DAMAGE stat at mint, so the
+     * {@code WeaponDamage} arm arrives pre-scaled. A {@code Damage} effect's {@code amount} is authored
+     * in content and is not known until the effect fires, so no stat can have touched it. <b>This is
+     * the only place a staff's bolt, an emerald's shot or a stone's burst can be scaled at all</b> --
+     * the same argument the enchant percentage already makes one line away in {@code EffectApplier}.
+     *
+     * <p><b>It must therefore NEVER be applied on the {@code WeaponDamage} arm.</b> Both factors are
+     * individually correct and each has its own passing test, so applying it twice makes a score-400
+     * weapon deal SIXTEEN times rather than four, with nothing in the suite looking wrong.
+     *
+     * <h2>FROZEN AT CAST TIME, LIKE EVERY OTHER COMPONENT OF THIS RECORD</h2>
+     *
+     * <p>Read once, when the {@code Caster} is built, and never re-read. A projectile's {@code Caster}
+     * is built at the muzzle and flies for up to a hundred ticks; it prices its impact off the weapon
+     * that FIRED it, not off whatever is in hand when it lands -- which is the same freeze
+     * {@code payloadDamage} above depends on, and for the same cross-region reason.
+     *
+     * <p><b>A volley re-prices its later shots, and that is NOT this field being live.</b>
+     * {@code CastExecutor.volley} builds a WHOLE NEW {@code Caster} for each shot, so the re-read is a
+     * property of that loop and is documented there. Two different facts, and conflating them would
+     * make a projectile weapon read as violating a rule it obeys.
+     *
+     * <p>{@link GearScore#BASELINE} is the defined value for a caster with no scored weapon in hand --
+     * a mob, an empty hand, an unstamped item. It is stated explicitly rather than left as {@code 0},
+     * because {@code 0} is honest only to {@link GearScore#scaledDamage}, whose {@code clamp} floors it
+     * back to the baseline. <b>Any other reader -- a tooltip, a log line, a dev command -- would get
+     * {@code 0} and print it.</b>
+     */
+    public Caster withTriggerScore(int triggerScore) {
+        return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
+                chargeScale, critMultiplier, payloadDamage, triggerScore);
     }
 
     /**
@@ -122,7 +162,12 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      * scale by it.
      */
     public static Caster of(CombatantSnapshot snapshot, double chargeScale) {
+        // triggerScore is BASELINE here, and it is NOT read off the snapshot -- deliberately.
+        // A held item's score is a property of the ITEM, not of the combatant, and this snapshot is
+        // shared with every mob in the game; a component meaningless for half its users acquires a
+        // meaning by accident. Callers that know the weapon set it with withTriggerScore.
         return new Caster(snapshot.id(), snapshot.attackDamage(), snapshot.classDamageBonus(),
-                snapshot.enchantDamagePercent(), chargeScale, snapshot.critMultiplier(), 0.0);
+                snapshot.enchantDamagePercent(), chargeScale, snapshot.critMultiplier(), 0.0,
+                GearScore.BASELINE);
     }
 }

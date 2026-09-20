@@ -100,7 +100,15 @@ class GearScoreWiringSignatureTest {
                 "the MAIN_HAND modifier must be the SCALED damage. Without this the stat converges to"
                         + " the authored figure and no weapon in the game scales, while the tooltip"
                         + " says it does.");
-        assertTrue(indexOf(lines, "GearScoreItems.heldScore(player, keys)") > 0,
+        // NEEDLE WIDENED IN 12b: heldScore gained a WeaponRegistry so it can resolve the held
+        // weapon's DEFINITION and refuse a declared-unscored one BEFORE orAbsent collapses "declared
+        // unscored" with "carries no stamp".
+        //
+        // THE CLOSING PAREN IS LOAD-BEARING. "heldScore(player, keys)" is a PREFIX of
+        // "heldScore(player, keys, weapons)", so leaving the old needle would have kept MATCHING
+        // after the widening -- green, and no longer checking the thing it names. A needle that
+        // survives the change it was meant to notice is worse than one that breaks.
+        assertTrue(indexOf(lines, "GearScoreItems.heldScore(player, keys, weapons)") > 0,
                 "and the score must come from the item in hand, not from the definition");
     }
 
@@ -170,7 +178,7 @@ class GearScoreWiringSignatureTest {
      * *** A TOOL IS NOT A CANDIDATE FOR THE AVERAGE. ADDING {@code toolId} ADMITS EVERY PICKAXE. ***
      *
      * <p>Ben's ruling: a pickaxe must never become one of the top two and raise a drop level without
-     * contributing anything to a fight. {@code GearScore.scoreable} enforces it at the STAMP, where a
+     * contributing anything to a fight. {@code GearScore.carriesScore} enforces it at the STAMP, where a
      * core row reddens it; this scan is the only mechanical guard on the READ side, because
      * {@code candidateScore} needs a live {@code ItemStack}.
      */
@@ -225,14 +233,14 @@ class GearScoreWiringSignatureTest {
         List<String> command = read(COMMAND, 2000);
         List<String> craft = read(CRAFT, 300);
 
-        int give = indexOf(command, "GearScoreItems.stampOnAcquire(item, GearItems.gearClassOf(definition)");
+        int give = indexOf(command, "GearScoreItems.stampOnAcquire(item, definition, player, adapters);");
         assertTrue(give > 0, "/rpg give must stamp -- it is the path every gate row uses");
 
-        int kit = indexOf(command, "GearScoreItems.stampOnAcquire(item, GearItems.gearClassOf(weapon)");
+        int kit = indexOf(command, "GearScoreItems.stampOnAcquire(item, weapon, player, adapters);");
         assertTrue(kit > 0, "the kit grant must stamp, or a kit weapon is permanently unscoreable"
                 + " -- gear is never scored retroactively");
 
-        assertTrue(indexOf(craft, "GearScoreItems.stampOnAcquire(minted,") > 0,
+        assertTrue(indexOf(craft, "GearScoreItems.stampOnAcquire(minted, definition, viewer, adapters);") > 0,
                 "a crafted item must stamp, for the same reason");
     }
 
@@ -247,7 +255,7 @@ class GearScoreWiringSignatureTest {
     void theStampHappensBeforeTheItemEntersTheInventory() throws IOException {
         List<String> lines = read(COMMAND, 2000);
 
-        int stamp = indexOf(lines, "GearScoreItems.stampOnAcquire(item, GearItems.gearClassOf(definition)");
+        int stamp = indexOf(lines, "GearScoreItems.stampOnAcquire(item, definition, player, adapters);");
         assertTrue(stamp > 0, "the give path's stamp must exist for this ordering to be checkable");
 
         int add = indexOf(lines, "player.getInventory().addItem(item);", stamp);
@@ -413,5 +421,51 @@ class GearScoreWiringSignatureTest {
                 List.of("        GearScoreItems.carry(from, to, keys);"),
                 "GearScoreItems.carry(from, to, keys);"),
                 "while the real statement is still found");
+    }
+
+    /**
+     * *** THE STAMP ASKS THE COMPOSED DOOR, AND PASSES THE DERIVED FLAG RATHER THAN A LITERAL. ***
+     *
+     * <h2>WHY THIS ROW EXISTS: THE MUTATION IT CATCHES LEFT THE WHOLE SUITE GREEN</h2>
+     *
+     * <p>Measured, not supposed. Replacing {@code declaredUnscored(definition)} with a hardcoded
+     * {@code false} in {@code stampOnAcquire} was applied and the full reactor stayed green at
+     * <b>2070 tests, 0 failures</b>. The defect it represents is the one the design exists to
+     * prevent: <b>the STAMP would keep writing a score onto a freshly minted {@code volley_stone}
+     * while only the READ refused -- two independent refusals collapsing into one, silently.</b>
+     *
+     * <p><b>The average stays CORRECT under that mutation</b>, because {@code candidateScore} refuses
+     * independently. So a row reading the average cannot see it, and the only behavioural witness is
+     * a boot reading the PDC of a minted stone. This scan is the mechanical half, standing in until
+     * that gate row is read.
+     *
+     * <h2>ANCHORED AT BOTH ENDS, FOR THE REASON THIS FILE LEARNED THE HARD WAY</h2>
+     *
+     * <p>The needle carries its CLOSING PAREN. A needle that stops at
+     * {@code carriesScore(GearItems.gearClassOf(definition)} is a PREFIX of the correct call and of
+     * every future widening of it, so it would keep matching after the edit it exists to notice --
+     * <b>green, and no longer checking the thing it names.</b> Widening a signature is the single
+     * most likely edit to a scanned call site, which is exactly when a prefix needle goes blind.
+     *
+     * <p>The second assertion bans the literal outright, so a caller cannot satisfy the first by
+     * calling the composed door with a constant.
+     */
+    @Test
+    void theStampAsksTheCOMPOSEDDoorWithTheDerivedFlagAndNotALiteral() throws IOException {
+        List<String> lines = read(SCORE_ITEMS, 150);
+
+        int declaration = indexOf(lines, "public static void stampOnAcquire(");
+        assertTrue(declaration > 0, "the one stamp method must exist");
+
+        int composed = indexOf(lines,
+                "GearScore.carriesScore(GearItems.gearClassOf(definition), declaredUnscored(definition))");
+        assertTrue(composed > declaration,
+                "THE STAMP MUST ASK THE COMPOSED DOOR. Asking the kind-level rule alone lets a"
+                        + " volley_stone be minted WITH a gear score in its PDC while only the read"
+                        + " refuses -- and the average stays correct, so nothing else can see it.");
+
+        assertTrue(indexOf(lines, "GearScore.carriesScore(GearItems.gearClassOf(definition), false)") < 0,
+                "AND IT MUST NOT PASS A LITERAL. A hardcoded false satisfies the composed signature"
+                        + " while restoring exactly the defect it was introduced to prevent.");
     }
 }

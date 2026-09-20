@@ -42,7 +42,7 @@ public final class WeaponAttackItems {
         // the STACK, not of the definition, so two copies of one weapon scale differently. Read here
         // rather than inside the lambda because it is the same hand either way and a second read
         // would be a second chance for the two to disagree.
-        int score = GearScoreItems.heldScore(player, keys);
+        int score = GearScoreItems.heldScore(player, keys, weapons);
         WeaponItems.heldWeaponId(player, keys)
                 .flatMap(weapons::find)
                 // The gate is on the AUTHORED figure, deliberately, and not on the scaled one. They

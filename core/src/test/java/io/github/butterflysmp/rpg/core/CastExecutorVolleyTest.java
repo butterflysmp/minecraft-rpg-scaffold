@@ -212,6 +212,42 @@ class CastExecutorVolleyTest {
         // all three shots deal 10 and both later assertions redden.
     }
 
+    /**
+     * *** THE GEAR SCORE RE-READS WITH EVERYTHING ELSE, AND THAT IS INHERITED RATHER THAN NEW. ***
+     *
+     * <p>{@code cursed_emerald.yml} already records that a mid-burst weapon swap prices shots 4-6 off
+     * whatever is in hand at that tick, for {@code enchantDamagePercent}, {@code classDamageBonus},
+     * {@code chargeScale} and {@code critMultiplier}. Trigger scaling joins that chain; it does not
+     * change its shape. <b>This row pins that it joined, so nobody later "fixes" the volley by
+     * freezing the score alone and leaving the other four live.</b>
+     *
+     * <p><b>The score is NOT a live field -- {@code volley()} rebuilds the whole {@code Caster} each
+     * shot.</b> Every component is frozen once built; what moves is that there is a new one per shot.
+     * The distinction matters because a projectile's {@code Caster} is built once and must NOT
+     * re-read, which {@code ProjectileFlightTest} holds from the other side.
+     *
+     * <p>Staged 100 -> 250, so the authored 10 becomes 25: no two quantities in the row are equal, and
+     * the shot-1 reading is a real baseline rather than a coincidence with the authored number.
+     */
+    @Test
+    void eachShotREREADSTheGearScoreSoAMidVolleySwapREPRICESTheRest() {
+        var world = new FakeWorld();
+        var caster = casterIn(world);
+        var victim = victimAt(world, 5);
+
+        cast(world, caster, volleyOfRays(0, 3, 4, 10));
+        assertEquals(90, victim.health, EPS, "shot 1: the authored 10 at BASELINE, unscaled");
+
+        caster.triggerScore = 250;                   // the player swaps to a 250-score weapon
+        world.advanceTicks(4);
+        assertEquals(65, victim.health, EPS, "shot 2 is priced off the NEW score: 10 * 250/100 = 25");
+        world.advanceTicks(4);
+        assertEquals(40, victim.health, EPS, "and so is shot 3");
+
+        // Mutation: read the score ONCE, in commit(), and pass it down instead of re-reading in
+        // volley() -> shots 2 and 3 stay at 10 and both later assertions redden. That is MUT12B-FROZEN.
+    }
+
     @Test
     void eachShotREREADSTheCritRollToo() {
         var world = new FakeWorld();

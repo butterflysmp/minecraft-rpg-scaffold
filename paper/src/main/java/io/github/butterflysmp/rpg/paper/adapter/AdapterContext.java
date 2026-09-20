@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.weapon.CraftResultIndex;
+import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
 import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
@@ -45,16 +46,16 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              ImmobilizeStatus immobilize, SoakedStatus soaked,
                              ImmobilizeStatus freeze, ScorchStatus scorch,
                              CombatantStats stats, double anchorDrift,
-                             CraftResultIndex craftResults) {
+                             CraftResultIndex craftResults, WeaponRegistry weapons) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
                           EnchantRegistry enchants, Logger log,
                           CombatantStats stats, double anchorDrift,
-                          CraftResultIndex craftResults) {
+                          CraftResultIndex craftResults, WeaponRegistry weapons) {
         this(scheduler, keys, visuals, statuses, elements, enchants, log, ConcurrentHashMap.newKeySet(),
                 new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), new ScorchStatus(),
-                stats, anchorDrift, craftResults);
+                stats, anchorDrift, craftResults, weapons);
     }
 
     /**

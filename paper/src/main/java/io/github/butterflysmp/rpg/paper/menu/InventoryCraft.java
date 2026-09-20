@@ -320,7 +320,7 @@ final class InventoryCraft {
         // And its score. The crafted item is not in an inventory yet -- it is returned in the outcome
         // below -- so it cannot be in its own average, which is the same property the give path buys by
         // stamping before addItem.
-        GearScoreItems.stampOnAcquire(minted, GearItems.gearClassOf(definition), viewer, adapters);
+        GearScoreItems.stampOnAcquire(minted, definition, viewer, adapters);
         return new CraftOutcome(minted, result.getResultingMatrix());
     }
 

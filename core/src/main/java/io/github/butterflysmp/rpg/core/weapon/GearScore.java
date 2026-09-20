@@ -230,7 +230,7 @@ public final class GearScore {
      * <p>A {@code null} kind -- an item that is none of ours -- scores nothing. Same
      * null-means-no-gate convention {@code GearClass.of} and {@code DamageEnchants.matching} share.
      */
-    public static boolean scoreable(GearClass kind) {
+    static boolean scoreable(GearClass kind) {
         if (kind == null) return false;
         return switch (kind) {
             case MELEE, RANGER, MAGE -> true;
@@ -238,6 +238,58 @@ public final class GearScore {
             case ARMOR -> true;
             case TOOL -> false;
         };
+    }
+
+    /**
+     * *** THE ONE DOOR. Does THIS item carry a score -- kind AND instance together? ***
+     *
+     * <h2>TWO INDEPENDENT REFUSALS, AND ASKING ONLY ONE OF THEM IS THE DEFECT</h2>
+     *
+     * <p>{@link #scoreable} is the KIND-level rule: a pickaxe is not gear, whatever its content file
+     * says. {@code declaredUnscored} is the INSTANCE-level exception: {@code volley_stone} is a dev
+     * fixture and carries no score although its class is a fighting one. <b>They are different
+     * questions with different authors, and every caller must ask BOTH.</b>
+     *
+     * <p><b>THE FAILURE THIS EXISTS TO PREVENT IS A SILENT COLLAPSE FROM TWO REFUSALS TO ONE.</b> The
+     * READ path and the STAMP path refuse independently today. If the stamp keeps asking
+     * {@code scoreable(kind)} alone, a freshly minted {@code volley_stone} still gets a score written
+     * into its PDC and only the read refuses -- so the exclusion still LOOKS to work, the average is
+     * still correct, and the stamp half is gone with nothing red. The number in the PDC is the only
+     * witness, and no unit test can construct an {@code ItemStack} to see it.
+     *
+     * <p><b>A definition that cannot be found means SCORED, not unscored.</b> A weapon whose content
+     * file was removed or renamed must keep the score already in its PDC: only an explicit
+     * declaration removes anything. The opposite default is silent -- the item leaves the average, the
+     * drop band falls, and nothing reports it. Callers resolve that to {@code false} at the lookup,
+     * and the ruling is written at the lookup site rather than assumed here.
+     *
+     * <h2>*** WHY THIS TAKES A BARE BOOLEAN AND NOT A {@link GearDefinition}. DO NOT "SIMPLIFY" IT
+     * WITHOUT READING THIS. ***</h2>
+     *
+     * <p><b>A definition would be strictly better and is not available.</b> Both call sites now hold
+     * one, so the obvious improvement is to take the definition and derive both facts here --
+     * deleting the parameter that reads wrong when defaulted, rather than merely warning about it.
+     *
+     * <p><b>It is blocked on ONE missing accessor:</b> {@code GearDefinition} declares
+     * {@code id, displayName, rarity, material, flavor, craftResult} and <b>no gear kind at all</b>.
+     * The mapping is {@code GearItems.gearClassOf}, which lives in {@code paper} -- and it is a PURE
+     * switch over this very sealed hierarchy, with no Bukkit in it, so <b>it could move here</b>.
+     *
+     * <p><b>What stops that being this slice's job:</b> measured at 12b, it has FIVE production
+     * callers -- mostly {@code EnchantRollItems.rollOnAcquire} and {@code EnchantMenu} -- and its own
+     * {@code GearClassOfTest}. Moving it is an enchant-subsystem refactor with its own review, not a
+     * tidy-up inside a damage-scaling slice.
+     *
+     * <p><b>So the condition for deleting this parameter is exact:</b> when the kind mapping reaches
+     * core, change this to {@code carriesScore(GearDefinition)} and the hazard disappears instead of
+     * being documented. Until then the boolean is load-bearing, and
+     * {@code GearScoreWiringSignatureTest} bans a literal at the one call site that could default it.
+     *
+     * @param kind             the gear kind, or {@code null} for an item that is none of ours
+     * @param declaredUnscored whether the item's own DEFINITION declares it carries no score
+     */
+    public static boolean carriesScore(GearClass kind, boolean declaredUnscored) {
+        return scoreable(kind) && !declaredUnscored;
     }
 
     // ---------------------------------------------------------------- the average
@@ -328,14 +380,21 @@ public final class GearScore {
      * <pre>
      *   filled   average   band top (avg + 15)   every drop 100?
      *     1         16              31                  yes
-     *     5         83              98                  yes   &lt;- clears MIN by TWO
+     *     5         83              98                  yes   &lt;- FALLS two SHORT of MIN
      *     6        100             115                  no
      * </pre>
      *
-     * <p><b>MEASURED, not derived: {@code GearScoreTest.everyDropLandsAtTheFloorUntilTheSixthSlotFills}
-     * sweeps all six and is the instrument.</b> The five-slot margin is two points, so a one-point
-     * change to the skew, the spread or this denominator moves the opening phase from six slots to
-     * five -- and nothing else in the suite would notice.
+     * <p><b>MEASURED, not derived -- AND THE MEASUREMENT IS DELIBERATELY NOT RESTATED HERE.</b>
+     * {@code GearScoreTest.everyDropLandsAtTheFloorUntilTheSixthSlotFills} sweeps all six and is the
+     * instrument. It answers <i>how far each of the skew, the spread and this denominator must move
+     * before the opening phase ends at five slots instead of six</i> -- and the three answers are not
+     * the same, which is precisely what a sentence here would get wrong.
+     *
+     * <p><b>This is a POINTER, and it states no margin on purpose.</b> A margin written in prose is a
+     * figure nothing can falsify; in the sweep it executes and reddens when a constant moves. <b>This
+     * very paragraph carried such a figure, wrong in BOTH halves, for two days, with a green suite
+     * the whole time.</b> If it reads as thin, that is the point -- read the sweep rather than
+     * helpfully inlining the numbers back.
      *
      * <p><b>This note exists because an unfloored average with no note reads as an oversight, and the
      * next person will "fix" it.</b> It is a ruling, and the row above is what makes the ruling fail
