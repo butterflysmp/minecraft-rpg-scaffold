@@ -963,16 +963,17 @@ either found nothing or done nothing, and those are the same picture.
 > failure immediately. **Run the unfiltered tail, or check the command's own status — the filter is
 > never allowed to be the witness.**
 
-> ### *** A GREP COUNT THAT ANSWERS A DIFFERENT QUESTION THAN THE ONE ASKED — THREE MECHANISMS, ONE SHAPE ***
+> ### *** A GREP COUNT THAT ANSWERS A DIFFERENT QUESTION THAN THE ONE ASKED — FOUR MECHANISMS, ONE SHAPE ***
 >
-> *"Who calls this?"* is the cheapest question in a codebase and it has three ways of lying, all
-> measured in one slice (2026-09-19):
+> *"Who calls this?"* is the cheapest question in a codebase and it has four ways of lying -- the
+> first three measured in one slice (2026-09-19), the fourth on 2026-09-21:
 >
 > | | what the count said | what was true |
 > |---|---|---|
 > | **ZERO CALLERS ON A NEW ACCESSOR** | nothing reads it | **the feature does not exist yet.** `WeaponDefinition.unscored()` was authored in YAML, parsed, stored — and read by nobody. **A value authored, parsed, stored and read by nobody is INDISTINGUISHABLE FROM ONE THE LOADER SILENTLY DROPS**, and every row in both suites stays green either way |
 > | **A PREFIX NEEDLE** | the guard is present | **it survived the change it exists to detect.** `heldScore(player, keys)` is a PREFIX of `heldScore(player, keys, weapons)`, so a signature-test needle kept MATCHING after the widening — green, and no longer checking the thing it names |
 > | **PROSE COUNTED AS CALLERS** | four callers outside the package | **all four were javadoc**, and two named a method that was no longer the enforcer |
+> | **A NEEDLE ANCHORED TO A DELIMITER THE INSTANCES DO NOT CARRY** | one site, nothing to consolidate | **three sites, and the two it missed were the ones that would have gone red.** `"  x ` is anchored to the opening quote, so it found the render literal and could not match either `WeaponLoreTest` assertion, where the same text sits MID-LITERAL inside `"Kinetic Damage: 4  x 3"`. **Anchor to the syntax only where the instances actually carry it** |
 >
 > **THE ZERO-CALLER ONE HAS A HABIT ATTACHED: AFTER ADDING AN ACCESSOR, GREP ITS CALLERS BEFORE
 > MOVING ON.** Zero means the wiring is not built, and it is the one answer nothing reports.
