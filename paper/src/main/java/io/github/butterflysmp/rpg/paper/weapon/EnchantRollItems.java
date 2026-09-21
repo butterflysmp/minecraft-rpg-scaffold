@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.enchant.EnchantRoll;
 import io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Rollable;
 import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.core.weapon.GearClass;
+import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import org.bukkit.inventory.ItemStack;
@@ -69,13 +70,33 @@ public final class EnchantRollItems {
      * "this item's slots have been decided, and they came to nothing" must not read as "this item
      * has never been through the process", or the next acquisition path would roll it again.
      */
-    public static void rollOnAcquire(ItemStack item, GearClass gearClass, AdapterContext adapters) {
-        if (item == null || gearClass == null) return;
+    public static void rollOnAcquire(ItemStack item, GearDefinition definition, AdapterContext adapters) {
+        if (item == null || definition == null) return;
+        GearClass gearClass = GearItems.gearClassOf(definition);
+        if (gearClass == null) return;
         if (EnchantItems.isRolled(item, adapters.keys())) return;
 
         EnchantState rolled = EnchantRoll.roll(gearClass, roster(adapters),
                 () -> ThreadLocalRandom.current().nextDouble());
-        item.editMeta(meta -> EnchantItems.write(meta, rolled, adapters.keys()));
+
+        // *** WRITE AND RE-RENDER IN ONE editMeta, for the reason GearScoreItems.stampOnAcquire
+        // states at length: a per-item value that is RENDERED has to be re-rendered wherever it is
+        // WRITTEN. *** mint() already ran and read an empty container, so without the second line a
+        // freshly acquired item carries rolled enchants its tooltip does not show.
+        //
+        // THE SIGNATURE WIDENED FROM GearClass TO GearDefinition TO MAKE THIS POSSIBLE, and it is a
+        // simplification rather than a cost: all three call sites were already passing
+        // GearItems.gearClassOf(definition), so deriving it here removes a caller obligation instead
+        // of adding one.
+        //
+        // AND IT CANNOT BE LEFT TO stampOnAcquire'S RE-RENDER, which runs immediately after this at
+        // every call site. That method returns EARLY for anything unscoreable -- a TOOL, or a weapon
+        // declaring unscored -- and a tool still rolls from the universal pool. Relying on the
+        // neighbour would have worked for three gear kinds and silently skipped the fourth.
+        item.editMeta(meta -> {
+            EnchantItems.write(meta, rolled, adapters.keys());
+            GearItems.refreshLore(meta, definition, adapters);
+        });
     }
 
     /**

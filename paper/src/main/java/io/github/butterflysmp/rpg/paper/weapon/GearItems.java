@@ -137,6 +137,42 @@ public final class GearItems {
     }
 
     /**
+     * Re-render any gear's DISPLAY onto meta ALREADY BEING EDITED -- {@link #remint}'s in-place
+     * sibling, dispatched the same way and for the same reason.
+     *
+     * <h2>*** THE DOOR WHOSE ABSENCE WAS A DOCUMENTED HAZARD FOR TWO SLICES ***</h2>
+     *
+     * {@code GearScoreDevCommand}'s javadoc states the rule this exists to make followable:
+     * <b><i>"A per-item value that is RENDERED has to be re-rendered wherever it is WRITTEN."</i></b>
+     * It then says why it could not follow it cheaply -- <i>"{@code refreshLore} directly would work
+     * for weapons and silently skip armour and shields"</i> -- because {@code WeaponItems} was the
+     * only kind with such a door. <b>That sentence described a hazard in PROSE; this switch makes it
+     * a COMPILE ERROR.</b>
+     *
+     * <p><b>Why not {@link #remint} at the acquisition sites.</b> {@code remint} returns a FRESH
+     * stack, so a caller holding an {@code ItemStack} it is about to put in an inventory cannot use
+     * it without swapping the reference -- and one that forgets the swap gets a silent no-op.
+     * {@code QuiverItems}' own note makes the same call one layer down: <i>refreshLore, NOT remint,
+     * and the reason is correctness before cost.</i>
+     *
+     * <p><b>EXHAUSTIVE, LIKE {@code remint} ABOVE, AND THAT IS THE LOAD-BEARING PART.</b> A fifth
+     * gear kind stops compiling here until someone says how it re-renders. A {@code default} arm
+     * would let it fall through silently and keep stale lore forever -- which is precisely the
+     * defect this door was added to fix, so reintroducing it in the fix would be the joke.
+     *
+     * <p>{@code ToolDefinition}'s arm renders nothing a tool's acquisition can change (tools are
+     * unscoreable). It exists so the switch is exhaustive, not because a tool needs it.
+     */
+    public static void refreshLore(ItemMeta meta, GearDefinition definition, AdapterContext adapters) {
+        switch (definition) {
+            case WeaponDefinition weapon -> WeaponItems.refreshLore(meta, weapon, adapters);
+            case ShieldDefinition shield -> ShieldItems.refreshLore(meta, shield, adapters);
+            case ArmorDefinition armor -> ArmorItems.refreshLore(meta, armor, adapters);
+            case ToolDefinition tool -> ToolItems.refreshLore(meta, tool, adapters);
+        }
+    }
+
+    /**
      * Mint a fresh item from any gear definition, dispatched on the definition's own type.
      *
      * <p>{@link #remint}'s missing sibling, added when mint-on-craft needed a caller that holds a

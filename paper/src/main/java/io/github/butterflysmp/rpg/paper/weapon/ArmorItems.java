@@ -125,6 +125,15 @@ public final class ArmorItems {
      * The glint is driven by the same {@code state.effective()} list the lore renders, so an
      * enchanted piece shimmers and an unenchanted one does not, and the two cannot disagree.
      */
+    /**
+     * Re-render this piece's DISPLAY onto meta already being edited. {@code WeaponItems}' door of the
+     * same name, and the second of four that {@link GearItems#refreshLore} dispatches to. Renders
+     * lore only -- it stamps nothing and rolls nothing.
+     */
+    public static void refreshLore(ItemMeta meta, ArmorDefinition armor, AdapterContext adapters) {
+        applyLore(meta, armor, adapters);
+    }
+
     private static void applyLore(ItemMeta meta, ArmorDefinition armor, AdapterContext adapters) {
         EnchantState state = EnchantItems.read(meta, adapters.keys());
         // The tooltip shows the EFFECTIVE Defense, composed from the same state the enchant block

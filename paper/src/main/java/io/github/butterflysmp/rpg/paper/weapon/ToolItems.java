@@ -83,6 +83,19 @@ public final class ToolItems {
      * <p>The glint is driven by the same {@code state.effective()} list the lore renders, so an
      * enchanted tool shimmers and an unenchanted one does not, and the two can never disagree.
      */
+    /**
+     * Re-render this tool's DISPLAY onto meta already being edited. The fourth arm of
+     * {@link GearItems#refreshLore}.
+     *
+     * <p><b>A tool is UNSCOREABLE and rolls no enchants beyond the universal pool, so nothing an
+     * acquisition writes changes what this renders</b> -- this door exists so the dispatch can be
+     * EXHAUSTIVE rather than because a tool needs it. That is the point of the exhaustive switch:
+     * the compiler, not a reader, is what guarantees no kind was forgotten.
+     */
+    public static void refreshLore(ItemMeta meta, ToolDefinition tool, AdapterContext adapters) {
+        applyLore(meta, tool, adapters);
+    }
+
     private static void applyLore(ItemMeta meta, ToolDefinition tool, AdapterContext adapters) {
         EnchantState state = EnchantItems.read(meta, adapters.keys());
         List<Component> base = ToolLore.build(tool);
