@@ -2,3 +2,62 @@
 mvnw        text eol=lf
 *.sh        text eol=lf
 mvnw.cmd    text eol=crlf
+
+# *** SOURCE AND CONTENT ARE TEXT BY DECLARATION, NOT BY AUTO-DETECTION. ***
+#
+# Without these lines, "every committed blob is LF" rests on core.autocrlf -- a
+# PER-CLONE setting nobody can see in review. Measured 2026-09-20: it is `true`
+# in this clone's LOCAL config, global unset, so for a .java file the protection
+# was one uncommitted setting on one machine.
+#
+# `text`, NOT `text eol=lf`, and the difference is the point: `text` pins the
+# INDEX to LF and leaves the working tree to the platform, which is what keeps
+# CRLF checkouts on Windows and LF on Linux. The three rules above use `eol=lf`
+# because their WORKING TREE shape is what matters -- a CRLF shebang does not run.
+#
+# MEASURED BEFORE PINNING, so none of these carries a renormalisation commit.
+# `git ls-files --eol` over the whole repo at `6c4a563`:
+#
+#       698  i/lf
+#         1  i/-text        <- the fixture below, excluded on the next line
+#         0  i/crlf         <- nothing to renormalise
+#
+# Reported as the WHOLE distribution rather than as an lf-vs-crlf pair: the
+# instrument is THREE-valued, and reading it as two is exactly what would have
+# renormalised the fixture without anyone noticing.
+#
+# `*.yml` and `*.md` are in scope because they were measured, not because they
+# seemed safe. A type nobody has read does not get a line here.
+#
+# EIGHT TRACKED FILES ARE LEFT UNPINNED, AND THAT IS UNRULED RATHER THAN
+# EXCLUDED: the four `pom.xml`, `.gitignore`, this file, `maven-wrapper.properties`
+# and `golden-lore.txt`. All eight measure `i/lf` today, so pinning them would be
+# safe -- nobody has decided whether to, and the question is open rather than
+# closed. `git ls-files --eol | awk '{print $3}' | sort | uniq -c` lists them as
+# `attr/`.
+*.java      text
+*.yml       text
+*.md        text
+
+# *** AND THE ONE FILE WHOSE BYTE SHAPE IS LOAD-BEARING. THIS LINE IS THE SAME
+# FIX, NOT AN EXCEPTION CARVED OUT OF IT. ***
+#
+# EnchantCodecTest carries a deliberate NUL byte inside a string literal, so git
+# auto-detects it as binary (`i/-text`). That is CORRECT, and it is the fixture
+# CLAUDE.md's `grep -rho` entry rests on. Measured on this file, 2026-09-20:
+#
+#     git grep -c '@Test'   ->  15      (git reads the index, sees the text)
+#     grep -rho  '@Test'    ->   1      (GNU grep 3.0's "Binary file ... matches"
+#                                        notice, written to stdout and counted)
+#     grep -rhoa '@Test'    ->  15      (-a forces text; the 15 reappear)
+#
+# `*.java text` above would force text handling onto it and destroy that.
+#
+# *** THE LINE CHANGES NOTHING TODAY, AND THAT IS WHY IT IS WORTH HAVING. *** It
+# writes down a property currently held by a HEURISTIC: auto-detection scans only
+# about the first 8000 bytes, so an edit that pushes the NUL past that window
+# would silently reclassify the file as text -- no error, nothing in a diff, and
+# the `grep -rho` entry quietly stops being reproducible.
+#
+# Last match wins in this file, so this MUST stay below `*.java text`.
+core/src/test/java/io/github/butterflysmp/rpg/core/enchant/EnchantCodecTest.java -text
