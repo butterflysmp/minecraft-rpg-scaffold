@@ -5,6 +5,70 @@ after each commit.
 
 ## Where this stands
 
+> ### RE-DERIVED 2026-09-21 AT `2cb97d9` — WHICH IS `master`, AND THE WIRE AGREED
+>
+> **What stood here was written in July and was still describing Commit D.** It had contradicted the
+> four headings directly beneath it for two months: it said *"D3 and D4 remain"* while `### D3` reads
+> **DONE** and `### D4` reads **guard DONE / bot DECLINED**. **A summary that disagrees with the
+> sections it summarises is the cheapest positive control on this page, and nobody ran it** — the
+> refutation was four headings away the whole time.
+>
+> The July text is **kept below, demoted**, because the correction attached to it is a finding and
+> the finding is still good.
+
+**Slices 1 through 13 have shipped, and the plan below this section is COMPLETE.** D1 `b296f9b` · D2
+`d101dd5`, corrected by `2b22522` · D3 `f57536d`, guarded by `7b1ce26` · D4's guard `b2aaa44`, with
+the **bot declined by decision** · E shipped as the three abilities · F `4f3032a`.
+
+**PERISHABLE. Re-run these; never adjust them by the delta of your own change:**
+
+```bash
+git rev-parse master                                  # 2cb97d9
+git ls-remote --heads origin master                   # the wire
+git rev-list --count master                           # 318
+for m in core storage paper; do git grep -ho '@Test' master -- "$m/src/test/**/*.java" | wc -l; done
+git ls-tree --name-only master | grep -c '^GATE-'     # 20
+```
+
+At `2cb97d9`: **core 1146 / storage 62 / paper 877 = 2085 tests**, **318** commits, **20 `GATE-*.md`**
+and **40 `PLAN-*.md`** at the root.
+
+**IN FLIGHT, and none of it is on `master`:** **#131** (12c's boot readings), **#132** (slice 13a, the
+anvil screen) and **#133** (slice 13b, the anvil's confirm). **#132 and #133 do not merge alone** —
+`GATE-anvil.md` is one file spanning both slices, and its 32 rows are read once, on 13b's tree.
+
+### THE FOUR UNVERIFIED CODE PATHS ARE ALL REACHABLE FROM SHIPPED CONTENT NOW
+
+**Measured at `2cb97d9`, anchored to the key so prose cannot match it:**
+
+```bash
+grep -rhoE '^\s+type:\s*(ray|melee|projectile|self)\s*$' \
+  --include='*.yml' paper/src/main/resources/content | sed 's/^ *//' | sort | uniq -c
+#   10 type: projectile      7 type: ray      3 type: melee      1 type: self
+```
+
+| July's claim | measured 2026-09-21 |
+|---|---|
+| the stepped ray — *"No `Ray` ability ships"* | **seven** files carry a `type: ray` cast: `boltor`, `cursed_emerald`, `lapis_staff`, `locust`, `quiver_stone`, `volley_stone`, `solar_lance` |
+| `combatant(UUID)` — *"no `Self` ability ships"* | **`abilities/arc_surge.yml`**, the one `type: self` — the very weapon the correction below named as the thing that would walk it |
+| `CastSpec.Melee` — *"unit-tested, never cast"* | **three** `type: melee` casts, `emberblade` among them |
+| `StatusDefinition.Potion` — *"no content uses it"* | **`statuses/surge.yml` authors `potion_type: speed`** |
+
+> **SHIPPING CONTENT IS NOT A BOOT READING, AND THE TWO ARE SEPARATED HERE ON PURPOSE.** The table
+> says each path is now REACHABLE from content, which is precisely what the July list denied. **What
+> was actually observed on a server lives in the twenty `GATE-*.md` files**, per row, each with its
+> prediction written before the boot. **Do not upgrade this table into a claim that all four were
+> watched.**
+
+> **AND THE CONTENT ROOT IS `paper/src/main/resources/content`, NOT `content/`.** Commands in this
+> file written against `content/` do not run — they fail loudly, which is the one mercy, so no false
+> absence was manufactured. At `2cb97d9` the string `content/` appears **45** times in this file and
+> they have **NOT** been swept. Named as owed rather than fixed inside a commit that was not about it.
+
+### THE JULY STATE, KEPT — the text is superseded, the correction under it is not
+
+**Everything from here to the end of this section is the July 2026 wording, left exactly as written.**
+
 Done and pushed: `1901981` through `45b4f05`. Commit D items D1 and D2 are complete;
 D3 and D4 remain. The repo now lives at `butterflysmp/minecraft-rpg-scaffold`.
 
@@ -591,6 +655,130 @@ The Ignite-denominator debt is **not** repeated here, and it is no longer a debt
 that **any mob that dies while scorched ignites**, binary, with no count. It is recorded where it was
 raised, in *THE RULING: ANY MOB THAT DIES WHILE SCORCHED IGNITES*, with the arithmetic that refused
 the threshold shape. **It is settled and it does not block slice 2.**
+
+#### THE SCORCH CROSSOVER HEALTHS — MEASURED 2026-09-21, HAVING BEEN CLAIMED AND NEVER RUN
+
+**Three figures were carried in the record as the healths at which scorch's percent-of-max arm stops
+binding: `emberblade 120`, `flint_staff 200`, `solar_grenade 20`. They were claims.** They have now
+been executed.
+
+> **DURABLE — the mechanism.** The burn is
+> `damagePerTick(max, cap) = min(RATE_PER_SECOND * max, cap)`, and accrual builds the cap as
+> `declaredMagnitude * CAP_FRACTION`. So the percent arm binds below
+> `max = cap / RATE_PER_SECOND`, which is **ten times the hit's magnitude**. This holds until one of
+> those two constants moves.
+>
+> **PERISHABLE — every number below.** Invalidated by: any new or re-authored fire damage site, any
+> change to `RATE_PER_SECOND` or `CAP_FRACTION`, and any change to `GearScore.BASELINE`. Taken
+> against `master` `2cb97d9`.
+
+**THE METHOD, because "computed" and "executed" are different claims.** A throwaway probe parsed the
+shipped content with SnakeYAML, took every effect wearing `element: fire`, and for each one **swept
+victim max-health through the live `Scorch.damagePerTick`** to find the health at which the cap arm
+takes over — rather than evaluating the formula and calling it a measurement. The analytic
+`cap / RATE_PER_SECOND` was then compared against each swept value as a control (agreed at all 12),
+and a **negative control** confirmed the comparison could still report a mismatch. **The probe was
+not committed**; it is reproducible from this paragraph, and the census it walks is already guarded
+by `ScorchContentInvariantTest.KNOWN_FIRE_DAMAGE_SITES`, which independently says **12**.
+
+> **AND THE CENSUS MUST BE PARSED, NOT GREPPED — MEASURED, NOT ASSUMED.** A line-anchored
+> `grep -B3 '^\s\+element: fire$'` over the content tree returns **10 of the 12 sites**. The two it
+> cannot see are authored as **inline flow maps** — `- { type: damage, amount: 8, element: fire }` in
+> `rekindle.yml` and `ability_stone.yml` — where the key does not end its line. This is why
+> `ScorchContentInvariantTest`'s regex carries a second alternative for the `}` form, and why the
+> instrument here is a YAML parser. **A grep would have undercounted by two and said nothing.**
+
+> ### *** EVERY CROSSOVER IS A RANGE, NOT A POINT, AND A BARE FIGURE IS TRUE AT ONE SCORE IN FIVE ***
+>
+> **The cap basis is the SCALED amount**, so `crossover = authored × score / 10` and the legal score
+> band is `[GearScore.MIN 100, GearScore.HARD_CAP 500]`. **A crossover quoted without its anchor is a
+> point on a five-fold range presented as the answer.** Both columns below are executed, not scaled by
+> hand.
+
+**ALL TWELVE SITES:**
+
+| authored | crossover at **GS 100** | at **GS 500** | site |
+|---|---|---|---|
+| 20 | **200** | **1000** | `flint_staff` — the bolt |
+| 16 | **160** | **800** | `ember_staff` |
+| 12 | **120** | **600** | `solar_lance` · **`emberblade`'s fireball burst** |
+| 8 | **80** | **400** | `ember_step` · `rekindle` · **`solar_grenade`'s direct hit** · `ability_stone` |
+| 7 | **70** | **350** | **`emberblade`'s melee swing** (`weapon_damage`, from `attack_damage: 7`) |
+| 6 | **60** | **300** | **`solar_grenade`'s burst** · `hunters_bow` (`weapon_damage`) |
+| 2 | **20** | **100** | **`solar_grenade`'s residual field tick** |
+
+##### THE VERDICT: ALL THREE ARE ARITHMETICALLY CORRECT, ALL THREE ARE MISSING AN ANCHOR, AND TWO ARE ALSO POINTED AT THE WRONG SITE
+
+**Two independent defects, and the first one reaches every figure in the set:**
+
+| claimed | the SCORE anchor it never carried | the SITE it never named |
+|---|---|---|
+| `flint_staff 200` | true at **GS 100**; the range is **200 → 1000** | — its only fire site, so this half is clean |
+| `emberblade 120` | true at **GS 100**; the range is **120 → 600** | the **fireball burst**. The **melee swing** is a separate site at **70 → 350** |
+| `solar_grenade 20` | true at **GS 100**; the range is **20 → 100** | the **residual field tick**, smallest of three. Direct hit **80 → 400**, burst **60 → 300** |
+
+- **The anchor defect is total** — every one of the three is a single point on a five-fold range, so
+  each is true at one legal score out of five hundred and silently wrong at the rest.
+- **The site defect hits two of the three**, and in both cases the quoted site is **not the headline
+  one**: `emberblade` is `class: melee` and the figure names its costed special rather than its
+  swing; `solar_grenade`'s figure names the part of the grenade a target meets **last**.
+
+> **THE DEFECT IS NOT THE ARITHMETIC, IT IS THAT A FIGURE DID NOT SAY WHAT IT MEASURED**, and the
+> table above is the whole account of it — **it is not restated here, because two accounts of one
+> finding drift and neither is then trustworthy.**
+>
+> **The generalisable half is a rule and it lives in `CLAUDE.md`**, consolidated onto the
+> anchored-figures entry rather than given a section of its own: *a measurement's anchor is not only
+> a revision — it is every parameter the figure is a function of, and the identity of the one site
+> among several that it measures.* **This is the pointer; that is the rule.**
+
+##### THE OPERATOR'S PREMISE IS CONFIRMED, AND NOW HAS A NUMBER UNDER IT
+
+*"Gear score contributes nothing on a low-HP mob."* **True, and stronger than it sounds.** The
+lowest crossover in the whole table is **20**, so against a 20-max-health target **every one of the
+twelve sites is at or below its crossover at every legal score** — the percent arm binds, the burn
+is 5% of max per second, and raising gear score from 100 to 500 changes it by **nothing**. Gear
+score only reaches the burn on targets above ten times the hit's magnitude.
+
+> **THIS ALSO FALSIFIED THE WORKED TABLE IN `Scorch`'s OWN CLASS JAVADOC, which is where the
+> mechanism is now corrected — that is the account, this is the census.** It quoted `cap 20` for a
+> 20-damage staff, i.e. the **pre-halving** cap, and two of its three rows were false: the 360 HP row
+> said *"barely binds"* where at `cap 20` the cap did not bind at all, and the 5000 HP row quoted a
+> ceiling of 20 where the code produces 10. **Its arithmetic went on evaluating correctly for a cap
+> the code had stopped using** — the same shape as the dead rule recorded in
+> `ScorchContentInvariantTest`, one file away, which is the second instance of that failure in this
+> mechanism.
+
+##### *** DEFERRED FIX — A DOCUMENTED HAZARD THAT KEEPS FIRING IS A DEFERRED FIX WEARING A HAZARD'S CLOTHES ***
+
+**Ben's standing feedback, applied to this mechanism on 2026-09-21.** The numbers in `Scorch`'s
+worked table have now been hand-corrected **once**, and the dead rule in `ScorchContentInvariantTest`
+was the **first** instance of the same shape — prose arithmetic that keeps evaluating for a constant
+the code has stopped using. **Correcting the numbers a second time queues up a third**, because
+nothing in the build can tell that the javadoc and `CAP_FRACTION` have parted company.
+
+> **THE TRIGGER: the next change to `CAP_FRACTION`, `RATE_PER_SECOND` or the cap basis.** At that
+> moment this is a **scheduled fix**, not a discovery — which is the entire reason it is written
+> down rather than left as a third incident waiting to happen.
+
+**Two remedies, and they are alternatives rather than steps:**
+
+| | what it does | what it costs |
+|---|---|---|
+| **A PIN TEST** | reddens when `CAP_FRACTION` moves and the javadoc does not — a source scan over `Scorch.java`'s table, asserting each quoted row against a live `damagePerTick` call | it is a **needle**, so it needs its own positive control; a scan that stops matching the table reads exactly like a scan that found it correct |
+| **DERIVED FIGURES** | the table stops being hand-written — the numbers move out of the javadoc and into a test that computes and prints them | **the worked example leaves the file a reader opens.** The mechanism is easiest to understand from three concrete rows sitting beside the constant |
+
+> **THE PICK, STATED SO THE NEXT PERSON INHERITS A DECISION RATHER THAN A CHOICE: the PIN TEST**, in
+> this repo's existing signature-scan idiom (`AnvilWiringSignatureTest`, `GearScoreWiringSignatureTest`).
+> **It is the only one of the two that REDDENS**, and it keeps the account where the two-homes
+> convention already puts it — in the javadoc beside the constant, not in a test nobody opens while
+> tuning scorch.
+>
+> **Its hazard is named with it, because that is the half a pin test usually ships without:** the
+> scan's needle must be proven able to MISS — break one quoted row on purpose and watch it go red —
+> or it joins the list of instruments that report success without having checked anything.
+
+**NOT BUILT HERE.** Naming it is the deliverable; scheduling it is Ben's.
 
 #### THE RULING DELETED THE COUNT'S ONLY CONSUMER, SO SCORCH STOPS BEING A STACKING STATUS
 
@@ -10713,14 +10901,43 @@ than a conversation.**
 
 > ### TRIGGER: THE FIRST RANGER-CLASS WEAPON WITH `type: projectile`.
 
-An **event**, not a date, and checkable in one command:
+An **event**, not a date, and checkable in one command — **and the path in the original was wrong;
+this repo's content root is `paper/src/main/resources/content`, not `content/`:**
 
 ```bash
-grep -l "^class: ranger" content/weapons/*.yml | xargs grep -l "type: projectile"
+grep -l "^class: ranger" paper/src/main/resources/content/weapons/*.yml \
+  | xargs grep -l "type: projectile"
 ```
 
-Today that returns `hunters_bow.yml` alone — **which is in the dev-weapon deletion set**, so after
-that deletion it returns nothing. **The trigger is a weapon that does not exist yet.**
+~~Today that returns `hunters_bow.yml` alone — **which is in the dev-weapon deletion set**, so after
+that deletion it returns nothing. **The trigger is a weapon that does not exist yet.**~~
+
+> ### *** THE TRIGGER FIRED. 2026-09-21, ON `dragons_plume`. ***
+>
+> The command above now returns **two** files — `dragons_plume.yml` and `hunters_bow.yml` — and
+> **`dragons_plume` is NOT in the dev-weapon deletion set.** So this firing is durable: unlike
+> `hunters_bow`, the weapon does not evaporate when the deletion lands. `class: ranger`,
+> `rarity: legendary`, `element: void`, four `type: projectile` triggers.
+>
+> **NOTHING IS BUILT HERE. Punch remains parked and the schedule is Ben's.** This entry records that
+> the precondition it was waiting on has been met, which is the only thing it was waiting for.
+>
+> #### AND THE WEAPON THAT FIRED THE TRIGGER LANDS IN THIS ENTRY'S OWN GAP ROW
+>
+> **`dragons_plume` authors no knockback** — measured, `grep -n "type: knockback"` over the file
+> returns nothing. So the trigger is satisfied and **Punch still could not roll on it**, because the
+> roll gate keys on an authored `EffectSpec.Knockback` and there is none.
+>
+> That is exactly the row two tables below: *a `projectile` whose author forgot → refuses Punch,
+> **silently wrong***. **BUT WHETHER `dragons_plume` FORGOT IS UNRULED, AND IS RECORDED AS UNRULED
+> RATHER THAN AS THE GAP.** The authoring rule says a travelling ranged weapon declares knockback;
+> the Plume is travelling and declares none. **Nobody has put the question**, and writing "it forgot"
+> here would convert an omission into a finding nobody made — the same keystroke this file already
+> warns about for exclusions.
+>
+> **So Ben has two decisions, not one, and they are separable:** whether the Plume authors knockback
+> at all, and — only if it does — whether Punch ships. **The second is meaningless without the
+> first**, which is why the trigger firing did not unpark the enchant by itself.
 
 ### WHY IT IS PARKED, AND IT IS TESTABILITY RATHER THAN DOUBT
 
