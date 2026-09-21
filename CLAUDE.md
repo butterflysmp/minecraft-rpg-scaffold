@@ -1493,6 +1493,15 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   Stated in each `GATE-*.md` header and nowhere central; this file's one *NOT RUN* mention is an
   anecdote about a splice, not the rule.
 
+  > ### *** AND A GATE SHEET CHECKS EACH ROW AGAINST REALITY, NEVER THE ROWS AGAINST EACH OTHER ***
+  >
+  > **WHEN TWO ROWS IN ONE FILE TOUCH ONE MECHANISM FROM DIFFERENT SIDES, WRITE DOWN WHAT THEIR
+  > CONJUNCTION IMPLIES — in one of the two rows, not in a summary nobody re-reads.**
+  >
+  > **Two PASSING rows can imply a defect that neither one reports**, and the cross-check is free:
+  > both readings already exist and neither costs another boot. Nothing in the process takes it.
+  > Account, and the withdrawn reading it cost, in `GATE-gearscore.md`'s *ONE READING WITHDRAWN*.
+
   > ### *** AND EVERY GATE FILE'S FIRST ROW IS NOW R0: THE DEPLOYED BUILD CARRIES THIS SLICE ***
   >
   > **It is the sole witness for every other row in the file, and a wrong jar does not announce

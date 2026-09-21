@@ -1,9 +1,11 @@
 # GATE — Gear Score (Slices 12 and 12b)
 
-**Status: PARTIALLY READ — 11 of 18 rows, on `4648283`, 2026-09-20. ALL ELEVEN PASSED.**
+**Status: PARTIALLY READ — 11 of 18 rows, on `4648283`, 2026-09-20. TEN PASSED OUTRIGHT. R12 PASSED ON
+(ii) AND ITS (i) READING IS WITHDRAWN — see *ONE READING WITHDRAWN* below. R2 is NARROWED, not voided.**
 
 ```
-READ AND PASSED   11   R0 R1 R2 R6b R10 R10b R11 R12 R13 R14 R15
+READ AND PASSED   10   R0 R1 R2 R6b R10 R10b R11 R13 R14 R15
+READ, PART VOID    1   R12   (ii) PASSED; (i) reading WITHDRAWN 2026-09-20
 NOT RUN            7   R3 R4 R5 R6 R7 R8 R9      (reason recorded in each cell)
                   ──
                   18   = git grep -c '^### R' <ref> -- GATE-gearscore.md
@@ -151,7 +153,7 @@ justification for shipping with **no stamp, no migration and no schema bump**.
 | **Predict** | `/rpg gearscore show` reports `Held: no stamp (reads 100)` — **not** `Held: 100`. The two are reported differently on purpose; if they read alike this row is indistinguishable from one staged on a genuine 100. |
 | **Predict** | The tooltip carries **NO** `Gear Score:` line at all. A legacy item is quiet, not labelled 100. |
 | **Predict** | It deals emberblade's authored **7**, exactly — the same number it dealt before this slice existed. |
-| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. Confirmed against the prediction; figure not recorded (Ben's ruling). |
+| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. Confirmed against the prediction; figure not recorded (Ben's ruling). **NARROWED, NOT VOIDED, 2026-09-20:** the tooltip prediction detects a build that renders an ABSENT score as `100` — that mutation puts a line on the tooltip and reddens this row. It is blind only to `clear` FAILING TO RE-RENDER, because `/rpg give` left no line for `clear` to remove. **A real guard over a smaller claim than it reads.** The other two predictions are unaffected. Account below R12. |
 
 ---
 
@@ -623,7 +625,57 @@ alone passes on a build that HIDES THE LINE AND SCALES ANYWAY.**
 | **Predict** | **(i)** Neither tooltip carries a `Gear Score:` line at all. |
 | **Predict** | **(ii)** Both stones deal the **same** damage: `amount: 4` per shot, 3 shots on right-click and 8 on left-click. **Count the shots as well as the number** — the authored 4 is a legibility figure and the count is what makes it readable. |
 | **Predict** | **If (i) passes and (ii) fails, the line is hidden and the scaling is live** — which is the precise defect this row is split to catch. |
-| **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. **Both halves.** Confirmed against the prediction; figures not recorded (Ben's ruling). |
+| **READ** | **(i) VOID — the reading is WITHDRAWN, 2026-09-20. (ii) PASS** — booted by Ben on `4648283`, confirmed against the prediction; figures not recorded (Ben's ruling). **(i) could not have failed:** `stampOnAcquire` writes the PDC and nothing re-renders, so NO freshly given weapon of any kind carries a `Gear Score:` line — (i) passes identically on a build with no exclusion at all. **It measured the give path, not the exclusion.** Account immediately below. (ii) is untouched and stands. |
+
+## *** ONE READING WITHDRAWN — R12(i), AND THE FAMILY ENTRY IT EARNED ***
+
+**R12(i) carried a PASS at `6c4a563` that it could not have failed.** `GearScoreItems.stampOnAcquire`
+writes the score into the PDC and **nothing re-renders** — `mint` has already run, against a
+still-empty container. `RpgCommand.java:1357-1368` is mint → roll → stamp → `addItem` with no refresh;
+the kit grant (`:2164`) and `InventoryCraft.java:320` are the same three steps. So **no freshly given
+weapon of any kind carries a `Gear Score:` line**, and R12(i) reads identically on a build with the
+exclusion deleted outright. **It measured the give path, not the exclusion.**
+
+**THE SWEEP SHIPS WITH THE PATTERN THAT PRODUCED IT.** Every `**Predict**` cell in this file touching a
+tooltip score line, classified by whether its staging RE-MINTS:
+
+```
+grep -nE '^\| \*\*(Predict|Setup)\*\*' GATE-gearscore.md | grep -iE 'tooltip|gear score|score line|lore'
+```
+
+| row | staging | verdict |
+|---|---|---|
+| **R12(i)** | `/rpg give` alone | **VOID** — blind to its own subject |
+| **R2**, 2nd predict | `give` then `clear` | **NARROWED** — detects *absent rendered as 100*, blind to *`clear` not re-rendering* |
+| R1, R10 | `set`, which re-mints | real, read, unaffected |
+| R7, R8 | `set`, which re-mints | real, NOT RUN |
+
+**R2 IS NARROWED AND NOT VOIDED, AND THAT DIFFERENCE IS THE DISCIPLINE.** Voiding both would have
+discarded a real guard: R2's tooltip line still reddens under a build that renders an ABSENT score as
+`100`. ***"Every row staged on `give`" was a CHARACTERISATION and it is wrong about one of the two.***
+Compute the class.
+
+> ### *** A GATE SHEET CHECKS EACH ROW AGAINST REALITY AND NEVER CHECKS THE ROWS AGAINST EACH OTHER ***
+>
+> **R14 passed: the PDC gets a score at `give`. R12(i) passed: no fresh item shows a score line. BOTH
+> READINGS ARE HONEST, BOTH ROWS ARE CORRECT, AND TOGETHER THEY IMPLY A DEFECT NEITHER ONE REPORTS** —
+> the stamp works and the render does not.
+>
+> **Every row here is checked against the game. No row is checked against its neighbour.** That is the
+> whole gap: **two rows whose claims overlap are a free cross-check nobody is taking**, free precisely
+> because both readings already exist and neither costs another boot.
+>
+> **Practically: when two rows in one file touch one mechanism from different sides, write down what
+> their CONJUNCTION implies** — in one of the two rows, not in a summary nobody re-reads. Neither row
+> above is wrong, and no amount of care with either would have found this.
+
+**The defect is fixed in 12c**, which pairs every write-at-acquisition with a re-render.
+
+**R12(i) IS NOT RE-PREDICTED HERE.** A prediction is not edited once its row has been read — the
+reading is withdrawn and the prediction stands as written. 12c adds a new row staged on a **freshly
+acquired, never-set** item, carrying R14's control structure.
+
+---
 
 ### R13 — A volley_stone that ALREADY carries a score in its PDC is still unscored
 
