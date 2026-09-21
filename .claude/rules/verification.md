@@ -1162,6 +1162,32 @@ together: **each guard catches the previous failure and cannot see the one below
 > — luck of the fixture, the same *"by luck of ordering, not by design"* that caught the third
 > instrument in the table above. Restored byte-identical from a scratchpad copy and redone with an
 > editor on the specific lines.
+>
+> > ### *** AND IT IS SHARPER THAN "BLIND": THE `ORIGINAL GONE` HALF CANNOT SEE OVERREACH AT ALL ***
+> >
+> > The row above says the marker grep is blind to overreach *because at the target site both halves
+> > read correctly*. **That understates it, and the understatement is what makes the grep look
+> > salvageable.** The `original gone` half is not merely uninformative here — **it is satisfied
+> > MORE emphatically the worse the overreach gets.**
+> >
+> > ```
+> > removing ONE site   ->  original gone: 0      the answer a correct edit gives
+> > removing FORTY      ->  original gone: 0      the identical answer
+> > ```
+> >
+> > **A count of zero cannot distinguish "the one I meant" from "every one there was", because zero
+> > is the floor.** No amount of care with the needle changes that; it is arithmetic, not anchoring.
+> > **The `marker present` half is the only one with any signal** — a correct edit gives `1` and an
+> > overreaching one gives `N` — and it is the half most people skip once `original gone` reads `0`.
+> >
+> > **2026-09-21.** A mutation pattern matched `AnvilDecision current = decide(target, donor);` at
+> > **both** its call sites — the repaint's and the confirm's. `marker present: 2`, `original gone:
+> > 0`, `delta: 2`. **The zero was the correct answer to the wrong question**, and the two non-`1`
+> > figures beside it are what reported the overreach. Re-done scoped by line number, region printed.
+> >
+> > **Practically: predict BOTH figures before running, and `1` and `0` are the only pair that means
+> > a single-site edit landed.** Then the line delta against the pristine copy, which is the
+> > instrument that does not depend on either.
 
 > **THE SEVENTH ROW IS ONE OF TWO WHERE THE MUTATION WORKED PERFECTLY, AND THAT IS WHAT MAKES IT
 > HARD TO SEE.** (It said *"the ONLY one"* until the eighth row was added on 2026-09-16 — **a claim
