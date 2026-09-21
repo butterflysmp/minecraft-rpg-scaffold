@@ -24,7 +24,7 @@
    "Cursed Volley" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
    "Channel, then loose six" color=#AAAAAA O=. B=. S=. U=. I=F
    "bolts down your line of sight." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["27  x 6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["27 x 6" color=#FF5555 O=. B=. S=. U=. I=F ]
    "Cooldown: 1.5s | Mana Cost: 40" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Nine facets, and every one of them looking back." color=#AAAAAA O=. B=. S=. U=. I=T
@@ -149,13 +149,13 @@
    "" color=- O=. B=. S=. U=. I=F
    "Scatter" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
    "Three shards, half a second apart." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["4  x 3" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["4 x 3" color=#FF5555 O=. B=. S=. U=. I=F ]
    "Cooldown: 2.0s" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Rake" color=#FFAA00 O=. B=. S=. U=. I=F ["  Left-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
    "Eight beams, one tick apart." color=#AAAAAA O=. B=. S=. U=. I=F
    "Deliberately too many." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["4  x 8" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["4 x 8" color=#FF5555 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "An instrument, not a weapon." color=#AAAAAA O=. B=. S=. U=. I=T
    "It measures how many of a thing you can see at once." color=#AAAAAA O=. B=. S=. U=. I=T

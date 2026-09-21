@@ -204,7 +204,7 @@ public final class WeaponLore {
                 // in. A single figure of 162 would be true of the volley and false of every shot,
                 // and a player comparing two weapons needs the per-hit number to compare AT ALL.
                 OptionalInt shots = WeaponLoreLines.deliveredShots(ability.cast());
-                String shotsLabel = shots.isPresent() ? "  x " + shots.getAsInt() : "";
+                String shotsLabel = shots.isPresent() ? " x " + shots.getAsInt() : "";
                 lore.add(GearLore.plain(elementName(d.element(), elements) + " Damage: ", NamedTextColor.GRAY)
                         .append(GearLore.plain(number(shown(d.amount(), scored, score)) + shotsLabel,
                                 NamedTextColor.RED)));

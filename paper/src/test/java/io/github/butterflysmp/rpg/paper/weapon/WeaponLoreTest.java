@@ -582,7 +582,7 @@ class WeaponLoreTest {
                 OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(400)));
 
         // 4 authored, score 400, and 16 is the number a missing door produces. All three distinct.
-        assertTrue(lines.contains("Kinetic Damage: 4  x 3"),
+        assertTrue(lines.contains("Kinetic Damage: 4 x 3"),
                 () -> "an unscored weapon shows what it deals: the AUTHORED 4; got " + lines);
         assertFalse(lines.stream().anyMatch(l -> l.contains("16")),
                 () -> "16 is scaledDamage(4, 400) -- the door did not fire; got " + lines);
@@ -597,7 +597,7 @@ class WeaponLoreTest {
                 OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(250)));
 
         // 4 authored x 250/100 = 10, three shots. Four distinct numbers: 4, 250, 10, 3.
-        assertTrue(lines.contains("Kinetic Damage: 10  x 3"),
+        assertTrue(lines.contains("Kinetic Damage: 10 x 3"),
                 () -> "per-shot figure scaled, count beside it -- never multiplied together; got " + lines);
         assertFalse(lines.stream().anyMatch(l -> l.contains("30")),
                 () -> "30 would be the volley total, which is true of no single hit; got " + lines);
