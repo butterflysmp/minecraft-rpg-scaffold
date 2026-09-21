@@ -495,6 +495,47 @@ class WeaponLoreTest {
     }
 
     /**
+     * *** THE ORDER OF THE ELEMENT AND SCORE LINES, AND IT IS THE ONLY ROW THAT CAN SEE IT. ***
+     *
+     * <p>Ben ruled on 2026-09-21 that the score sits BELOW the element. {@code WeaponLore} keeps the
+     * overturned power-vs-identity argument beside the call; this row is what makes the order a
+     * GUARANTEE rather than a comment somebody can reason their way back out of.
+     *
+     * <p><b>Measured as a mutation-as-probe, BEFORE this row existed:</b> the reorder was applied to
+     * a finished tree and the full suite stayed GREEN at <b>2084</b>. The position was unguarded
+     * outright -- not weakly covered, not covered by accident.
+     *
+     * <p><b>Why nothing else could see it, which is the part worth keeping:</b>
+     * {@code golden-lore.txt} carries <b>zero</b> {@code Gear Score} lines, so it is blind by
+     * construction -- the same definitions-only blindness slice 12c recorded for scaled damage. And
+     * the four {@code lore.get(0)} rows above call the two-argument {@code build}, where no score
+     * line prints at all: the element sits at index 0 under BOTH orders, so every one of them
+     * passes either way. <i>A row that passes under both orders is not a test of this change.</i>
+     *
+     * <p>So this row stages a REAL score, which is the only condition under which both lines print
+     * and an order exists to be wrong.
+     */
+    @Test
+    void theScoreLineRendersBelowTheElementLineNotAboveIt() {
+        List<String> lines = textLines(WeaponLore.build(rareFireSword(), elementsWithFire(),
+                OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(340)));
+
+        int element = lines.indexOf("Fire");
+        int score = lines.indexOf("Gear Score: 340");
+
+        // BOTH MUST PRINT, or the comparison below is vacuous: a missing line yields -1, and -1 is
+        // less than every index, so an absent score line would satisfy the order assertion for the
+        // one reason that is not an order at all.
+        assertTrue(element >= 0,
+                () -> "the element line must print for this row to mean anything; got " + lines);
+        assertTrue(score >= 0,
+                () -> "the score line must print for this row to mean anything; got " + lines);
+
+        assertTrue(element < score,
+                () -> "Ben's ruling of 2026-09-21: the element leads and the score sits under it; got " + lines);
+    }
+
+    /**
      * NOT ROUNDED, and the fixture is chosen so rounding would be visible.
      *
      * <p>{@code 23.8} is exactly what {@code WeaponAttackItems} writes onto the attribute. Rounding
