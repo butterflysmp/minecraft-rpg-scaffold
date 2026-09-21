@@ -1,19 +1,39 @@
 # GATE — Gear Score (Slices 12 and 12b)
 
-**Status: PARTIALLY READ — 11 of 24 rows, on `4648283`, 2026-09-20. TEN PASSED OUTRIGHT. R12 PASSED ON
-(ii) AND ITS (i) READING IS WITHDRAWN — see *ONE READING WITHDRAWN* below. R2 is NARROWED, not voided.**
+**Status: PARTIALLY READ — 17 of 24 rows. Slice 12b's eleven on `4648283`, 2026-09-20; slice 12c's
+six on `593e6a7`, 2026-09-21. R12 PASSED ON (ii) AND ITS (i) READING IS WITHDRAWN — see *ONE READING
+WITHDRAWN* below. R2 is NARROWED, not voided.**
 
-**SLICE 12c ADDED R16–R21 AND NONE HAS BEEN BOOTED.** The file now spans three slices; the block
-below says which rows belong to which.
+> ### *** THIS FILE SAID "SLICE 12c … NONE HAS BEEN BOOTED" WHILE 12c WAS MERGED AND SHIPPED ***
+>
+> **12c was booted on 2026-09-21 and all six rows passed. The readings existed only in a chat log
+> for a day**, so `master` carried a gate file asserting that a shipped slice had never been read.
+> **That is the exact failure this file's own opening records for slice 12** — *"the file existing
+> read as the gate being handled"* — arriving a second time, one slice later, in the same file.
+>
+> **A chat transcript is not a record.** It is not greppable by whoever next opens the file, it does
+> not survive the session, and it cannot fail. The readings are written in below.
 
 ```
-READ AND PASSED   10   R0 R1 R2 R6b R10 R10b R11 R13 R14 R15
+READ AND PASSED   16   R0 R1 R2 R6b R10 R10b R11 R13 R14 R15          (12 / 12b, on 4648283)
+                       R16 R17 R18 R19 R20 R21                        (12c, on 593e6a7)
 READ, PART VOID    1   R12   (ii) PASSED; (i) reading WITHDRAWN 2026-09-20
 NOT RUN            7   R3 R4 R5 R6 R7 R8 R9      (reason recorded in each cell)
-NOT RUN, 12c       6   R16 R17 R18 R19 R20 R21   (the tooltip; none has been booted)
                   ──
-                  24   = git grep -c '^### R' <ref> -- GATE-gearscore.md
+                  24   = git grep -c '^### R[0-9]' <ref> -- GATE-gearscore.md
 ```
+
+> ***THE NEEDLE GAINED ITS `[0-9]` ON 2026-09-21, AND IT WAS NOT COSMETIC.*** It was `^### R`, which
+> matches **any** heading beginning with R — and this file now has prose headings that do. Writing
+> one took the count to **25 against a block claiming 24**, with no row added. **A row-count
+> instrument that counts prose is the file's own figure disagreeing with itself**, and the
+> disagreement is the only thing that would have reported it. `[0-9]` is what makes the needle match
+> rows and nothing else.
+
+**R0 IS READ TWICE, AND THE TWO READINGS SIT BESIDE EACH OTHER RATHER THAN ONE OVER THE OTHER.**
+A different jar and a different slice are different subjects; overwriting 12b's reading would delete
+the only record that 12b's jar was ever confirmed. The file's convention — *readings beside
+predictions, never over* — applies to readings against each other for the same reason.
 
 **Readings are PASS/FAIL with no figures recorded — Ben's ruling, 2026-09-20.** Each cell says so
 in those words. **An unread cell and an unrecorded figure must never look alike**, which is exactly
@@ -116,7 +136,28 @@ jar does not announce itself. It produces *readings*, in the right shape, at pla
 | **Predict** | Every probe returns **≥ 1**. A **0** means the deployed jar predates this slice, whatever its mtime says. |
 | **Predict** | The same probe against the jar you just built returns the same answers — **if they differ, the deploy step did not run**, which `set -e` and a file lock have both caused on this project before. |
 | **Predict** | **STATE WHICH TREE THE JAR WAS BUILT FROM.** A worktree checkout makes "the repo" ambiguous, and that ambiguity is what cost the 2026-09-20 boot. |
-| **READ** | **PASS** — 2026-09-20, `4648283`. `CombatWorld.triggerScoreOf` = 1, `GearScore.carriesScore` = 1, `volley_stone.yml` `^unscored:` = 1, all read from the deployed jar; the same three read **0** on the jar booted earlier that day. |
+| **READ, 12b** | **PASS** — 2026-09-20, `4648283`. `CombatWorld.triggerScoreOf` = 1, `GearScore.carriesScore` = 1, `volley_stone.yml` `^unscored:` = 1, all read from the deployed jar; the same three read **0** on the jar booted earlier that day. |
+| **READ, 12c** | **PASS** — 2026-09-21, `593e6a7`. Deployed jar `run/plugins/rpg-0.1.0-SNAPSHOT.jar`, sha256 `39ABF8E3…`, written 02:37:13, server up 02:37:14. **474 class files scanned**; `deliveredShots` present in exactly `core/weapon/WeaponLoreLines.class` (the declaration) and `paper/weapon/WeaponLore.class` (the call site). Built from the `minecraft-rpg-scaffold` worktree on `feat/12c-display-truthfulness` @ `593e6a7`, **whose `run/` is the one booted**; the second worktree `rpg-12b` @ `905fcf8` was not involved. `carriesScore` not probed — redundant once both hits landed. |
+
+> ***THE CLASS COUNT IS IN THAT CELL BECAUSE IT IS THE NO-OP VALUE.*** `474 scanned` is what makes
+> "present in exactly two classes" a measurement; **`0 scanned` would make the same sentence a
+> reading of an empty directory**, and the two are indistinguishable without it.
+
+> ### *** AND THE BOOT FOUND A DEFECT IN THE INSTRUMENT NEXT TO THIS ONE ***
+>
+> **`dev-server.sh`'s `Jar OK` line cannot fail under the rival hypothesis, and is therefore not
+> evidence.** The hypothesis R0 exists to refute is *"the deployed jar is the wrong build"* — and
+> measured on 2026-09-21, **`master` and `12c` carry the same `0.1.0-SNAPSHOT`, the same
+> `finalName`, and the same interpolated `paper-plugin.yml` version.**
+>
+> **So neither the jar's NAME nor the version Paper prints at startup can discriminate between
+> them.** A wrong-build boot produces a `Jar OK` line and a plugin-enabled line that are
+> byte-identical to a right-build boot.
+>
+> **It is the passing twin of this row's own autopsy**: 12b lost a boot to a jar whose mtime was
+> current and whose every staleness check cleared it. *A control that succeeds for the wrong reason
+> needs no explanation, because nothing looks wrong.* **Only the class-file probe in this row
+> discriminates**, which is why it is the row and the script's line is not.
 
 ---
 
@@ -150,6 +191,26 @@ only a boot can show the arithmetic actually reaching a hit.
 asserts that `ABSENT` is the identity *in the arithmetic*; it cannot assert that a real unstamped
 `ItemStack` reaches that arithmetic at all. This is the absent-equals-100 claim, and it is the whole
 justification for shipping with **no stamp, no migration and no schema bump**.
+
+> ### *** THE POPULATION THIS ROW DEFENDS DOES NOT EXIST. RECORDED 2026-09-21. ***
+>
+> This row's stated rationale is that *every item predating the system is unchanged*. **Ben has
+> ruled there are ZERO deployed versions of this plugin**, so there is no population of pre-system
+> items and **there never was one.** The row was written to defend nobody.
+>
+> **`GearScore.ABSENT` DOES NOT CHANGE, AND THAT IS NOT A CONCESSION.** It is a sound identity
+> default on its own terms — an unstamped item genuinely *is* a baseline item, which is why absence
+> has a correct reading rather than a missing one. What is withdrawn is the *migration* argument,
+> not the constant.
+>
+> **Why one line is worth spending here:** the sentence above reads as a compatibility guarantee,
+> and a reader six weeks out would cite it as load-bearing — then hesitate to touch `ABSENT`
+> because "legacy items depend on it". **Nothing depends on it.** The `clear` path in the Setup
+> cell is the only way to manufacture the state this row reads, and it says so.
+>
+> The row is **kept and still passing**: `clear` is a real command, the three predictions are real
+> claims about it, and R2 is the only witness that an unstamped stack reaches the identity at all.
+> **What it is not is a bridge from an older build.**
 
 | | |
 |---|---|
@@ -406,7 +467,7 @@ squash.**
 > ruled 27 on its own terms, and a revert would be a derivation replacing a ruling, which is the
 > descent defect `GearScoreBand` names.
 
-### STILL UNRULED, AND NOT MINE TO DECIDE: the three stones can be a top-two hotbar slot
+### THE THREE STONES STAY SCORED — RULED 2026-09-21. THEY ARE DEV WEAPONS ON THEIR WAY OUT.
 
 **`ability_stone`, `quiver_stone` and `volley_stone` remain unscaling after the trigger ruling** —
 and all three are in the WEAPONS registry, so all three **carry a gear score and can occupy one of
@@ -420,6 +481,37 @@ fighting class (`volley_stone`'s own file calls it **a test instrument**; `abili
 
 **PUT IT TO BEN IN 12b. DO NOT EXCLUDE THEM ON MY OWN AUTHORITY.** An exclusion invented here would
 be a ruling with no author, which is the failure the *unruled, not excluded* rule exists to stop.
+
+> ### *** IT WAS PUT TO HIM AND HE RULED. 2026-09-21: LEAVE THEM SCORED. ***
+>
+> **Ben's words: they are dev weapons on their way out.** The exploit is real and is accepted for as
+> long as the stones exist, because the fix is deletion rather than an exclusion — and an exclusion
+> added now would be a rule outliving the three items it was written for.
+>
+> **The heading above is rewritten and the body is kept**, so the next reader finds the argument
+> *and* the answer. This question has been raised twice; without the ruling written in, it would be
+> raised a third time.
+>
+> ### AND THE RULING LEANS ON SOMETHING THAT IS NOT QUEUED ANYWHERE — BEN'S CALL, NOT MINE
+>
+> **`ability_stone` is NOT in the dev-weapon deletion set.** That set names exactly three, measured
+> in `CLAUDE.md`'s *Standing decisions*: **`hunters_bow`, `ironblade` and `quiver_stone`.**
+> `volley_stone` is separately excluded by content (`unscored: true`), so it does not depend on this
+> ruling at all.
+>
+> **So "on their way out" is true of `quiver_stone`, already true by another mechanism for
+> `volley_stone`, and QUEUED NOWHERE for `ability_stone`.** Its removal is not scheduled, not
+> triggered and not written down — which means the ruling's premise holds for two of the three
+> stones and is an assumption for the third.
+>
+> **TWO WAYS TO CLOSE IT, AND CHOOSING BETWEEN THEM IS BEN'S:**
+>
+> 1. **Add `ability_stone` to the deletion set**, and the premise becomes true of all three.
+> 2. **Record that the ruling stands on its own merits** — that a scored dev stone is acceptable
+>    regardless of when or whether it is deleted — and the premise stops being load-bearing.
+>
+> **Neither is chosen here.** Writing either one in would be inventing the second ruling to prop up
+> the first, which is the same defect as an exclusion with no author, one level up.
 
 ---
 
@@ -777,7 +869,7 @@ then left alone**, which is the state every real drop is in.
 | **Predict** | `Ranged Damage:` reads `19 × N / 100`, not `19`. |
 | **Predict** | A hit deals that same number. **Tooltip, stamp and dealt damage are three readings of one fact.** |
 | **Predict** | **CONTROL, in the same reading:** `/rpg give volley_stone` shows **no** score line and `Kinetic Damage: 4  x 3`. Without it this row cannot tell *the render is fixed* from *every weapon now renders a line regardless*. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- 2026-09-21, `593e6a7`. Confirmed against the prediction. **FIGURES NOT CAPTURED, AND THAT IS A RULING RATHER THAN AN OVERSIGHT** -- Ben, 2026-09-21, the same ruling 12b's rows carry. The verdict is the whole reading: neither the tooltip string nor the dealt number was written down. |
 
 > **THE ONE-SECOND WAIT IS A STAGING INSTRUCTION, NOT A COURTESY.** The main-hand attack damage is
 > not written at mint and is not cached: it is reconciled from the held stack's stamp by
@@ -798,7 +890,7 @@ A build that scales the display while the exclusion holds at runtime satisfies R
 | **Predict** | The damage line reads `Kinetic Damage: 4  x 3` on right-click's trigger and `4  x 8` on left-click's. **The authored 4, unscaled.** |
 | **Predict** | **NOT `16`.** `scaledDamage(4, 400)` is 16, and 16 is what a build asking `orAbsent` alone renders. |
 | **Predict** | The tooltip carries **NO** `Gear Score:` line, though `/rpg gearscore show` reports the stamp present at 400. **The stamp is real; the display refuses it.** |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- 2026-09-21, `593e6a7`. The excluded weapon rendered its authored number. **FIGURES NOT CAPTURED (Ben's ruling, 2026-09-21).** As a SOLE WITNESS this row's verdict is now the only surviving evidence that the exclusion reaches the tooltip, and it rests on the reader rather than on a recorded string. |
 
 ### R18 — A cleared weapon's damage line reverts WITH its score line
 
@@ -812,7 +904,7 @@ anyone who does not know the weapon.
 | **Predict** | Before: `Gear Score: 340` and `Ranged Damage: 64.6`. |
 | **Predict** | After: **no score line AND `Ranged Damage: 19`.** Both move together or the row fails. |
 | **Predict** | The hit then deals 19. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- 2026-09-21, `593e6a7`. Both lines reverted together. **FIGURES NOT CAPTURED (Ben's ruling, 2026-09-21)** -- what is recorded is that the two lines moved TOGETHER, which is the claim; the values they moved between are not. |
 
 ### R19 — The rendered number equals the dealt number, on BOTH render sites, at one non-identity score
 
@@ -826,7 +918,7 @@ ATTACK_DAMAGE stat that `WeaponAttackItems` folds the score into; an ability lit
 | **Predict** | Boltor: tooltip `Ranged Damage: 33.25`, and a hit deals **33.25**. |
 | **Predict** | Flint Staff: tooltip `Fire Damage: 35`, and a bolt deals **35** (`20 × 175/100`). |
 | **Predict** | **175 is chosen so the product is not a round multiple of the authored figure** — `33.25` cannot be reached by doubling, and `19`, `175` and `33.25` are three different numbers. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- 2026-09-21, `593e6a7`. Both sites agreed: the rendered number equalled the dealt number on the basic attack and on the ability literal. **FIGURES NOT CAPTURED (Ben's ruling, 2026-09-21) -- AND THIS ROW IS THE ONE THAT PAID FOR IT.** Its whole purpose was the cross-multiplication `33.25 x 340 = 11305 = 64.6 x 175`, and **that ratio can no longer be re-derived from this file.** What survives is a verdict that two numbers matched, on the word of the person who read them; a future drift in the scale factor cannot be located by reading this cell. |
 
 ### R20 — The longest line this change can produce still reads
 
@@ -838,7 +930,7 @@ prediction. So this is an eyeball reading, and it is the only kind available.
 | **Setup** | `/rpg give cursed_emerald`, `set 340`. Its element line is the longest label in shipped content and its volley renders a multiplier. |
 | **Predict** | The line reads `Kinetic Damage: 91.8  x 6` and is **not truncated, not wrapped, and does not push the tooltip off-screen**. |
 | **Predict** | The fraction renders as a fraction. **No rounding to `92`** — rounding is the same lie one decimal place smaller. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- 2026-09-21, `593e6a7`. The longest line read without truncation or wrapping, and the fraction rendered as a fraction. **FIGURES NOT CAPTURED (Ben's ruling, 2026-09-21)** -- and this row was always an eyeball reading, so the ruling costs it least of the six. |
 
 ### R21 — CROSS-CHECK: the rendered shot count equals the observed shot count
 
@@ -855,4 +947,4 @@ boot sheet are two independent sources rather than one copied twice.
 | **Predict** | The tooltip says `x 3` on right-click and `x 8` on left-click. |
 | **Predict** | **The observed counts are 3 and 8, matching what the tooltip claims.** A disagreement means the criterion reads a different field from the one the cast executes. |
 | **Predict** | `cursed_emerald` likewise renders `x 6` and fires six. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- 2026-09-21, `593e6a7`. Rendered counts and observed counts agreed on both weapons. **FIGURES NOT CAPTURED (Ben's ruling, 2026-09-21)** -- the AGREEMENT is recorded and the counts are not, so the cross-check against R12 is no longer re-runnable from this file alone. |
