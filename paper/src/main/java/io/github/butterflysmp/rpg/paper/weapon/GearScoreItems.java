@@ -173,7 +173,25 @@ public final class GearScoreItems {
         int rolled = GearScore.roll(averageOf(player, adapters.keys(), adapters.weapons()),
                 GearScoreBand.SPREAD, GearScoreBand.SKEW,
                 ThreadLocalRandom.current().nextDouble());
-        item.editMeta(meta -> write(meta, rolled, adapters.keys()));
+        // *** WRITE AND RE-RENDER IN ONE editMeta. THE PAIRING IS THE POINT. ***
+        //
+        // mint() already ran and applyLore read a STILL-EMPTY container, so without the second line
+        // a freshly given, granted or crafted item carries a real score in its PDC and shows NO
+        // "Gear Score:" line until its next re-mint (a join refresh, /rpg refresh, the enchant table
+        // or the grindstone). That shipped in slice 12 and survived 12b.
+        //
+        // IT ALSO MADE A GATE ROW UNFALSIFIABLE. GATE-gearscore.md R12(i) predicted that a fresh
+        // volley_stone shows no score line, to witness the unscored exclusion -- and NO fresh weapon
+        // of any kind showed one, so the row passed on a build with no exclusion at all. Its reading
+        // is withdrawn; see that file's ONE READING WITHDRAWN section.
+        //
+        // GearItems.refreshLore, not remint: remint returns a FRESH stack and this method holds an
+        // ItemStack its caller is about to put in an inventory, so a returned copy would be dropped
+        // silently. The dispatch is exhaustive, so a fifth gear kind cannot skip this.
+        item.editMeta(meta -> {
+            write(meta, rolled, adapters.keys());
+            GearItems.refreshLore(meta, definition, adapters);
+        });
     }
 
     // ---------------------------------------------------------------- the average

@@ -431,6 +431,17 @@ So:
   never from the run that was green when the paragraph was written. Quote the breakdown with it
   (`853 / 17 / 597`), so the total is checkable by addition rather than on trust.
 
+  > **AND ON THE RED SIDE: READ THE FIRST FAILURE, NOT THE COUNT. A TOTAL EXAGGERATES AS EASILY AS
+  > IT EXPOSES.** **2026-09-20:** a static test fixture threw in `<clinit>` and surefire reported
+  > **26 errors in one class** — 22 of them rows that predate the change. **ONE report named the
+  > cause; the other 25 read `NoClassDefFoundError`, which names nothing.** A count of 26 reads as
+  > catastrophe and was one bad fixture.
+  >
+  > **Practically: a class-initialiser failure inflates the count by the size of the class**, so the
+  > number carries no information about severity. **And prefer factory METHODS to `static final`
+  > fixtures** — a method throws only for the rows that call it, where a field takes the whole class
+  > down with it.
+
   > **A FIGURE WRITTEN MID-COMMIT DESCRIBES THE TREE BEFORE THE COMMIT, AND NOTHING RE-CHECKS IT.**
   > `GATE-volley.md` opened with *"1462 tests"*. The suite was **1467**, and the five that made the
   > difference were `VolleyFixtureTest`'s — **shipped in the same commit as the file that undercounted
@@ -1550,6 +1561,31 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   > and that ambiguity is what cost the boot.
   >
   > **If R0 fails, STOP. No other row in the file is readable.**
+  >
+  > > ### *** AND THE RULE UNDERNEATH R0 IS NOT ABOUT JARS. IT IS ABOUT BINDING. ***
+  > >
+  > > ***A READING IS BOUND TO A SUBJECT, AND THE BINDING IS A SEPARATE FACT FROM THE READING.***
+  > > **Every asynchronous verification must PIN its subject, not merely request it.**
+  > >
+  > > **NEITHER INSTANCE WAS A FALSE POSITIVE, AND THAT IS WHY THIS IS ITS OWN RULE.** Both were
+  > > **true readings bound to the wrong subject** — which is worse, because **a false positive can
+  > > be caught by distrusting the answer, and this cannot.** Nothing about the reading looks off.
+  > >
+  > > | | the reading | what it was true OF |
+  > > |---|---|---|
+  > > | **the wrong jar**, 2026-09-20 | R1 PASSED | the **master** jar, not the branch's |
+  > > | **the wrong CI run**, 2026-09-20 | `build` SUCCEEDED | the **pre-rebase** tip, not the pushed one |
+  > >
+  > > The second: after a force-push, `gh run list --limit 1` returned the *previous* run, and
+  > > `gh run watch` reported *"has already completed with 'success'"* — **a correct sentence about
+  > > a commit that no longer existed on the branch.** The fix is one field:
+  > > `gh run list --json databaseId,headSha` and wait only on runs whose `headSha` is the head you
+  > > pushed.
+  > >
+  > > **THE GAP BETWEEN ASKING AND READING IS WHERE THE SUBJECT CHANGES**, so this covers every
+  > > member of that shape — a backgrounded build, a deploy, a remote query, a scheduled job. R0 is
+  > > this rule's instrument for jars; a `headSha` filter is its instrument for CI. **Same rule, two
+  > > instruments, one entry.**
 - **A GATE FILE DECLARES ITS GAME MODE, in the header and per row.** Measured across all 19
   `GATE-*.md` at `e9b3e0e` for `gamemode|survival|creative|adventure|spectator`: **only
   `GATE-quiver-ammo.md` and `GATE-crafting.md` declare one.** `GATE-nexus.md` and the two Plume files

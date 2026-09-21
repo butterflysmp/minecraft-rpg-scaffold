@@ -316,7 +316,7 @@ final class InventoryCraft {
         // an empty container, so a roll written first would be discarded by it.
         GearDefinition definition = claimed.get();
         ItemStack minted = GearItems.mint(definition, adapters);
-        EnchantRollItems.rollOnAcquire(minted, GearItems.gearClassOf(definition), adapters);
+        EnchantRollItems.rollOnAcquire(minted, definition, adapters);
         // And its score. The crafted item is not in an inventory yet -- it is returned in the outcome
         // below -- so it cannot be in its own average, which is the same property the give path buys by
         // stamping before addItem.

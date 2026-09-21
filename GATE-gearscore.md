@@ -1,14 +1,18 @@
 # GATE — Gear Score (Slices 12 and 12b)
 
-**Status: PARTIALLY READ — 11 of 18 rows, on `4648283`, 2026-09-20. TEN PASSED OUTRIGHT. R12 PASSED ON
+**Status: PARTIALLY READ — 11 of 24 rows, on `4648283`, 2026-09-20. TEN PASSED OUTRIGHT. R12 PASSED ON
 (ii) AND ITS (i) READING IS WITHDRAWN — see *ONE READING WITHDRAWN* below. R2 is NARROWED, not voided.**
+
+**SLICE 12c ADDED R16–R21 AND NONE HAS BEEN BOOTED.** The file now spans three slices; the block
+below says which rows belong to which.
 
 ```
 READ AND PASSED   10   R0 R1 R2 R6b R10 R10b R11 R13 R14 R15
 READ, PART VOID    1   R12   (ii) PASSED; (i) reading WITHDRAWN 2026-09-20
 NOT RUN            7   R3 R4 R5 R6 R7 R8 R9      (reason recorded in each cell)
+NOT RUN, 12c       6   R16 R17 R18 R19 R20 R21   (the tooltip; none has been booted)
                   ──
-                  18   = git grep -c '^### R' <ref> -- GATE-gearscore.md
+                  24   = git grep -c '^### R' <ref> -- GATE-gearscore.md
 ```
 
 **Readings are PASS/FAIL with no figures recorded — Ben's ruling, 2026-09-20.** Each cell says so
@@ -730,3 +734,125 @@ visibility. A mistake in any of those shows up in a screen this slice is not abo
 | **Predict** | The hub's stats screen still shows a gear score average; the vault, enchant table and grindstone all open and behave. |
 | **Predict** | `/rpg gearscore show` still reports six slots, a hand pool and a band. |
 | **READ** | **PASS** — 2026-09-20, booted by Ben on `4648283`. Confirmed against the prediction; figure not recorded (Ben's ruling). |
+
+---
+
+## SLICE 12c — THE TOOLTIP. Rows R16–R21, all NOT RUN.
+
+**GAME MODE: SURVIVAL**, per this file's header. **No row below has been read, and every prediction
+was written before any 12c boot.**
+
+**Why they are here and not in a new file:** same subsystem, and one tally. The R6 omission — a row
+lost from every hand-typed list until the table was summed — is the argument for one count rather
+than two.
+
+> ### *** WHAT SLICE 12c CLAIMS, IN ONE SENTENCE, SO A FAILING ROW CAN BE ATTRIBUTED ***
+>
+> **The number a player SEES equals the number the system PRODUCES.** Since `1c030e2` it has not: a
+> weapon's real damage became a function of its gear-score stamp and the tooltip kept rendering the
+> authored figure. A Boltor at GS 340 read `Ranged Damage: 19` and hit for `64.6`.
+>
+> **THE UNIT SUITE CANNOT WITNESS ANY OF THIS.** No module can construct an `ItemStack`, and
+> `golden-lore.txt` renders through the definitions-only overloads where the score is empty and
+> scaling is the identity — **measured: it did not redden under any of the four mutations run
+> against the render sites.** Five new `WeaponLoreTest` rows stage a non-identity score and do guard
+> the arithmetic; what no test reaches is a real item, a real stamp and a real acquisition.
+
+### R16 — *** A FRESHLY ACQUIRED, NEVER-SET WEAPON SHOWS ITS SCORE AND ITS SCALED DAMAGE. SOLE WITNESS. ***
+
+**NEVER-SET IS THE WHOLE STAGING.** Every reading that has ever confirmed scaled damage — R1, R10,
+R15 — staged through `set`, which re-mints. **Nobody has ever measured a weapon that was given and
+then left alone**, which is the state every real drop is in.
+
+> **IT IS ALSO THE ONLY WITNESS FOR A SOURCE TRACE.** `stampOnAcquire` wrote the PDC and nothing
+> re-rendered, so a fresh item carried a score and showed no line. That is fixed in 12c through
+> `GearItems.refreshLore`, and **no unit test can see it** — the same blind spot that let
+> `MUT12B-STAMPFALSE` leave 2070 tests green.
+
+| | |
+|---|---|
+| **Setup** | On this build, freshly: `/rpg give boltor`. **Do NOT `set` anything on it.** Hold it in the main hand and **wait one second before reading the damage** — see the clock note below. |
+| **Predict** | The tooltip carries a `Gear Score: N` line, with N the rolled score. **Before 12c it carried none at all**, whatever the PDC held. |
+| **Predict** | `/rpg gearscore show` reports the same N. **The tooltip and the PDC agree** — that is the claim. |
+| **Predict** | `Ranged Damage:` reads `19 × N / 100`, not `19`. |
+| **Predict** | A hit deals that same number. **Tooltip, stamp and dealt damage are three readings of one fact.** |
+| **Predict** | **CONTROL, in the same reading:** `/rpg give volley_stone` shows **no** score line and `Kinetic Damage: 4  x 3`. Without it this row cannot tell *the render is fixed* from *every weapon now renders a line regardless*. |
+| **READ** | _(NOT RUN)_ |
+
+> **THE ONE-SECOND WAIT IS A STAGING INSTRUCTION, NOT A COURTESY.** The main-hand attack damage is
+> not written at mint and is not cached: it is reconciled from the held stack's stamp by
+> `PlayerHealthSystem`'s repeating task every **`RECONCILE_PERIOD_TICKS = 5`** — one writer, one
+> clock, no cache (recorded at `CombatantStats.reconcileAttackModifiers`). **For up to 250 ms after
+> the hand changes, the stat still describes the previous item.** No one types a command and reads a
+> tooltip that fast, so this is not a hazard for a hand-run row — **it is written into the staging so
+> an automated reading later cannot produce a false FAIL nobody can explain.**
+
+### R17 — *** A STAMPED, EXCLUDED WEAPON RENDERS ITS AUTHORED NUMBER. SOLE WITNESS. ***
+
+***R13 CANNOT SEE THIS. R13 READS DAMAGE; THIS IS DISPLAY, AND R13 PASSES WHILE THE TOOLTIP LIES.***
+A build that scales the display while the exclusion holds at runtime satisfies R13 completely.
+
+| | |
+|---|---|
+| **Setup** | `/rpg give volley_stone`, then **`/rpg gearscore set 400`** on it — the same manufactured item R13 uses, read on the SCREEN rather than at the target. |
+| **Predict** | The damage line reads `Kinetic Damage: 4  x 3` on right-click's trigger and `4  x 8` on left-click's. **The authored 4, unscaled.** |
+| **Predict** | **NOT `16`.** `scaledDamage(4, 400)` is 16, and 16 is what a build asking `orAbsent` alone renders. |
+| **Predict** | The tooltip carries **NO** `Gear Score:` line, though `/rpg gearscore show` reports the stamp present at 400. **The stamp is real; the display refuses it.** |
+| **READ** | _(NOT RUN)_ |
+
+### R18 — A cleared weapon's damage line reverts WITH its score line
+
+**`clear` is the quiet one.** It drops the score line and could leave a stale scaled figure beside
+it — a tooltip with no score showing a scaled number is indistinguishable from an authored one to
+anyone who does not know the weapon.
+
+| | |
+|---|---|
+| **Setup** | `/rpg give boltor`, `set 340`, read the tooltip. Then **`/rpg gearscore clear`** and read it again. |
+| **Predict** | Before: `Gear Score: 340` and `Ranged Damage: 64.6`. |
+| **Predict** | After: **no score line AND `Ranged Damage: 19`.** Both move together or the row fails. |
+| **Predict** | The hit then deals 19. |
+| **READ** | _(NOT RUN)_ |
+
+### R19 — The rendered number equals the dealt number, on BOTH render sites, at one non-identity score
+
+**Two sites, two arms, and they scale through different code.** A basic attack reads the
+ATTACK_DAMAGE stat that `WeaponAttackItems` folds the score into; an ability literal is scaled by
+`EffectApplier` at cast. **One weapon cannot exercise both**, so this row uses two.
+
+| | |
+|---|---|
+| **Setup** | `/rpg give boltor`, `set 175` (basic attack). `/rpg give flint_staff`, `set 175` (ability literal). |
+| **Predict** | Boltor: tooltip `Ranged Damage: 33.25`, and a hit deals **33.25**. |
+| **Predict** | Flint Staff: tooltip `Fire Damage: 35`, and a bolt deals **35** (`20 × 175/100`). |
+| **Predict** | **175 is chosen so the product is not a round multiple of the authored figure** — `33.25` cannot be reached by doubling, and `19`, `175` and `33.25` are three different numbers. |
+| **READ** | _(NOT RUN)_ |
+
+### R20 — The longest line this change can produce still reads
+
+**There is no width test in this repo** — measured; the only `91.8` in the tree is this file's R10
+prediction. So this is an eyeball reading, and it is the only kind available.
+
+| | |
+|---|---|
+| **Setup** | `/rpg give cursed_emerald`, `set 340`. Its element line is the longest label in shipped content and its volley renders a multiplier. |
+| **Predict** | The line reads `Kinetic Damage: 91.8  x 6` and is **not truncated, not wrapped, and does not push the tooltip off-screen**. |
+| **Predict** | The fraction renders as a fraction. **No rounding to `92`** — rounding is the same lie one decimal place smaller. |
+| **READ** | _(NOT RUN)_ |
+
+### R21 — CROSS-CHECK: the rendered shot count equals the observed shot count
+
+**R12 predicted the counts from a document. This reads them off the weapon**, so the plugin and the
+boot sheet are two independent sources rather than one copied twice.
+
+> **R12's OWN PREDICTIONS ARE NOT EDITED.** That row has been read, and a prediction is not edited
+> once a row has been read — so the cross-check is a NEW row that cites it rather than an amendment
+> to it. The convention is the reason, not tidiness.
+
+| | |
+|---|---|
+| **Setup** | `/rpg give volley_stone`. Read the two damage lines, then fire each trigger and count the projectiles. |
+| **Predict** | The tooltip says `x 3` on right-click and `x 8` on left-click. |
+| **Predict** | **The observed counts are 3 and 8, matching what the tooltip claims.** A disagreement means the criterion reads a different field from the one the cast executes. |
+| **Predict** | `cursed_emerald` likewise renders `x 6` and fires six. |
+| **READ** | _(NOT RUN)_ |

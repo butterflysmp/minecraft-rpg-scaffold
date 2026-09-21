@@ -74,6 +74,15 @@ public final class ShieldItems {
      * The glint is driven by the same {@code state.effective()} list the lore renders, so an
      * enchanted shield shimmers and an unenchanted one does not, and the two can never disagree.
      */
+    /**
+     * Re-render this shield's DISPLAY onto meta already being edited. {@code WeaponItems}' door of
+     * the same name, for the same reason, and the third of four that {@link GearItems#refreshLore}
+     * dispatches to. Renders lore and glint only -- it stamps nothing and rolls nothing.
+     */
+    public static void refreshLore(ItemMeta meta, ShieldDefinition shield, AdapterContext adapters) {
+        applyLore(meta, shield, adapters);
+    }
+
     private static void applyLore(ItemMeta meta, ShieldDefinition shield, AdapterContext adapters) {
         EnchantState state = EnchantItems.read(meta, adapters.keys());
         // The tooltip shows the EFFECTIVE block, composed from the same state the enchant block

@@ -1355,7 +1355,7 @@ public final class RpgCommand {
         // THE ROLL FIRES AT ACQUISITION, NEVER IN MINT -- remint calls mint, so a roll placed there
         // would re-roll on every join, refresh and enchant click. See EnchantRollItems.
         ItemStack item = GearItems.mint(definition, adapters);
-        EnchantRollItems.rollOnAcquire(item, GearItems.gearClassOf(definition), adapters);
+        EnchantRollItems.rollOnAcquire(item, definition, adapters);
         // AND THE GEAR SCORE, banded on the average THIS PLAYER HAS RIGHT NOW. Same acquisition-path
         // rule as the roll above, and for the same reason -- in mint() it would re-band on every join.
         //
@@ -2163,7 +2163,7 @@ public final class RpgCommand {
             if (weapon == null) continue; // validated at boot; skip a dangling grant
             ItemStack item = WeaponItems.mint(weapon, adapters);
             // Inside the loop: each kit weapon is its own instance and rolls its own candidates.
-            EnchantRollItems.rollOnAcquire(item, GearItems.gearClassOf(weapon), adapters);
+            EnchantRollItems.rollOnAcquire(item, weapon, adapters);
             // And its score, banded on the average as it stands at THIS iteration -- so the second
             // weapon in a kit bands against an average the first has already moved. Ben ruled the band
             // is on the CURRENT average; a kit grant is where that reading first has consequences.

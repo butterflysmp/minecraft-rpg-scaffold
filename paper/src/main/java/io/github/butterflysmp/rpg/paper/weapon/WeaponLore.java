@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.weapon.GearLoreLines;
+import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.ability.BasicMelee;
@@ -27,8 +28,11 @@ import java.util.Locale;
  * owns. Pure Adventure, no Bukkit / no ItemStack -- mirrors {@code NameplateText} -- so the string
  * logic stays reddening-tested in core and only the look-at-it layout is boot-witnessed.
  *
- * Every number here is the weapon's STATIC content (declared attack_damage, or an ability's literal
- * Damage amount), never the holder's resolved stat, so the lore is mint-time only and cannot drift.
+ * <b>Every number here is a function of the DEFINITION and the ITEM'S OWN STORED STATE, and never of
+ * whoever is holding it.</b> This is the POINTER; the account -- what the invariant used to be, why
+ * slice 12c retired it, and what the weaker form protects -- is {@link WeaponLoreLines}' class
+ * javadoc. <b>It said "STATIC content ... mint-time only and cannot drift" until 2026-09-21</b>, and
+ * that was surrendered on purpose rather than falsified by accident.
  * Layout top to bottom: element, the basic-attack STAT BLOCK, one ABILITY BLOCK per remaining
  * trigger (name+input, authored description, element-typed damage, cadence), the weapon-level
  * flavour, and the "<Rarity> <Class> Weapon" footer.
@@ -76,11 +80,30 @@ public final class WeaponLore {
                                         OptionalInt score) {
         List<Component> lore = new ArrayList<>();
 
+        // *** THE COMPOSED DOOR, ASKED ONCE AND USED THREE TIMES: the score line, the class-damage
+        // number and the element-damage number. *** A weapon that declares itself unscored must
+        // render its AUTHORED damage and NO score line -- and neither falls out of scaledDamage,
+        // which is honest arithmetic on whatever score it is handed.
+        //
+        // IT CANNOT BE `orAbsent` ALONE, AND THAT IS THE WHOLE POINT. Slice 12 shipped "absent key
+        // means 100", so orAbsent collapses "declared unscored" with "carries no stamp" -- and the
+        // exclusion lives on exactly that difference. A volley_stone minted since slice 12 carries
+        // a REAL score in its PDC; scaledDamage(4, 400) is 16, and the stone deals 4.
+        //
+        // Same door the stamp and the average ask (GearScore.carriesScore), so a weapon cannot come
+        // to render as one thing and behave as the other. scoreable() is package-private in core on
+        // purpose, so this is the only question paper is able to ask.
+        boolean scored = GearScore.carriesScore(GearItems.gearClassOf(weapon), weapon.unscored());
+
         // THE GEAR SCORE, ABOVE EVERYTHING. It is the item POWER rating -- the number a player
         // compares two drops of the same weapon by -- so it outranks the element, which is identity
         // rather than power. Absent on an unstamped item and on every definitions-only rendering; see
         // GearLore.appendScore for why it must not print 100 there.
-        GearLore.appendScore(lore, score);
+        //
+        // AND ABSENT ON AN UNSCORED WEAPON EVEN WHEN THE PDC HOLDS ONE. The label promises a
+        // contribution to the wearer's average, and candidateScore refuses this item there, so
+        // printing the number would advertise something the item does not do.
+        GearLore.appendScore(lore, scored ? score : OptionalInt.empty());
 
         // Element on its own line at the very top, in the ELEMENT's own colour -- not the rarity's.
         lore.add(elementLine(weapon.element(), elements));
@@ -127,7 +150,8 @@ public final class WeaponLore {
                 statBlockPlaced = true;
                 lore.add(GearLore.blank());
                 lore.add(GearLore.plain(WeaponClassLabel.of(weapon.weaponClass()) + " Damage: ", NamedTextColor.GRAY)
-                        .append(GearLore.plain(number(damage.get().amount()), NamedTextColor.RED)));
+                        .append(GearLore.plain(number(shown(damage.get().amount(), scored, score)),
+                                NamedTextColor.RED)));
 
                 // Which number paces THIS basic attack? A vanilla-driven melee hit is paced by the
                 // authored attack_speed written onto the wielder's vanilla attribute; a ranged one
@@ -161,8 +185,18 @@ public final class WeaponLore {
             // modifier can reach it and claiming otherwise would be a lie the tooltip tells.
             if (damage.isPresent()) {
                 DamagePayload.TriggerDamage d = damage.get();
+                // "x N" ONLY WHEN ONE PRESS DELIVERS N PAYLOADS SEQUENTIALLY. The criterion, its
+                // interruption caveat and the reason a fan is excluded all live in
+                // WeaponLoreLines.deliveredShots -- this is the pointer, that is the account.
+                //
+                // THE NUMBER STAYS PER-SHOT and the count is rendered beside it rather than folded
+                // in. A single figure of 162 would be true of the volley and false of every shot,
+                // and a player comparing two weapons needs the per-hit number to compare AT ALL.
+                OptionalInt shots = WeaponLoreLines.deliveredShots(ability.cast());
+                String shotsLabel = shots.isPresent() ? "  x " + shots.getAsInt() : "";
                 lore.add(GearLore.plain(elementName(d.element(), elements) + " Damage: ", NamedTextColor.GRAY)
-                        .append(GearLore.plain(number(d.amount()), NamedTextColor.RED)));
+                        .append(GearLore.plain(number(shown(d.amount(), scored, score)) + shotsLabel,
+                                NamedTextColor.RED)));
             }
 
             String cadence = WeaponLoreLines.cadenceLine(ability.cooldownTicks(), ability.cost());
@@ -220,6 +254,38 @@ public final class WeaponLore {
     /** A stat number with the trailing ".0" dropped: 8.0 -> "8", 7.5 -> "7.5". */
     private static String number(double n) {
         return GearLoreLines.trimNumber(n);
+    }
+
+    /**
+     * The damage figure a player should SEE: the authored number scaled by this item's own score,
+     * or the authored number untouched on a weapon that declares itself unscored.
+     *
+     * <h2>*** THE POINT OF THE WHOLE SLICE: THIS MUST EQUAL WHAT THE SYSTEM PRODUCES ***</h2>
+     *
+     * Both runtime arms scale by the same factor from the same source -- {@code WeaponAttackItems}
+     * folds it into the ATTACK_DAMAGE stat for a basic hit, {@code EffectApplier} applies it to the
+     * literal amount at cast -- so rendering the authored figure showed one number while the weapon
+     * dealt another, from the day slice 12 merged.
+     *
+     * <p><b>It cannot double-scale, and that was MEASURED rather than assumed.</b> The lore reads
+     * {@code WeaponDefinition.attackDamage()} / {@code EffectSpec.Damage.amount()} -- the raw
+     * authored fields -- and each runtime arm multiplies a fresh local copy. There is no shared
+     * mutated value, so this multiplication is the first one applied to what the tooltip shows.
+     *
+     * <h2>NO ROUNDING, DELIBERATELY</h2>
+     *
+     * {@code scaledDamage(19, 175)} is {@code 33.25} and {@code 33.25} is what the attribute
+     * carries. <b>Rounding here would reintroduce the exact dishonesty this slice removes</b>, one
+     * decimal place smaller. {@code trimNumber} drops a trailing {@code .0} and keeps a real
+     * fraction, which is the honest rendering of both cases.
+     *
+     * <p><b>{@code orAbsent} is correct HERE and would be wrong as the only question.</b> An
+     * unstamped item and a definitions-only rendering both resolve to the baseline, so the authored
+     * number renders unchanged -- which is why {@code golden-lore.txt}'s damage figures do not move.
+     * The exclusion is asked separately, by the caller, for the reason its comment gives.
+     */
+    private static double shown(double authored, boolean scored, OptionalInt score) {
+        return scored ? GearScore.scaledDamage(authored, GearScore.orAbsent(score)) : authored;
     }
 
     /**
