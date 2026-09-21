@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core.weapon;
 
+import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
@@ -179,6 +180,60 @@ public final class WeaponLoreLines {
     public static String meleeAttackSpeedLabel(double attackSpeed) {
         if (attackSpeed <= 0) return "";
         return String.format(Locale.ROOT, "%.1f", attackSpeed);
+    }
+
+    /**
+     * How many payloads ONE PRESS of this cast delivers, or empty when there is no multiplier worth
+     * printing.
+     *
+     * <h2>*** THE CRITERION IS SEQUENTIAL-VS-SIMULTANEOUS, NOT FIXED-VS-TRACKING AIM ***</h2>
+     *
+     * <b>Render {@code x N} when the cast declares a shot count that is DELIVERED IN FULL, one
+     * payload at a time, from one press.</b> A {@link CastSpec.Volley} fires its shots one after
+     * another and <b>re-reads the caster's aim per shot, deliberately</b>, so a player tracking a
+     * moving target lands all of them. {@code x 6} therefore states what that press delivers.
+     *
+     * <p><b>An earlier draft of this rule said "delivered to a single aim point" and was FALSE about
+     * the one shape it existed to include</b> -- a volley does not hold its aim. The property being
+     * named is that the payloads arrive one at a time, each individually aimable, not that they
+     * arrive at one place.
+     *
+     * <h2>A FAN OR A SPREAD IS EXCLUDED, AND NOT FOR WANT OF A COUNT</h2>
+     *
+     * {@code EffectSpec.ThrowEmbers} releases its payloads AT ONCE across fixed angles -- its count
+     * is the length of {@code angles_degrees} -- and {@code DrawFan} does the same with a count that
+     * varies by charge step. <b>No single target receives them in full</b>, so {@code x 3} there
+     * would promise damage the player will not receive.
+     *
+     * <h2>"DELIVERED IN FULL" IS TRUE BY DEFAULT AND FALSE ON INTERRUPTION, AND THAT IS ACCEPTED</h2>
+     *
+     * A dead caster, a dead target, a weapon swap or exhausted mana all cut a volley short. <b>The
+     * line is then wrong BY ACCIDENT, where a fan's would be wrong BY DESIGN.</b> That is the whole
+     * distinction, and it is recorded here so the objection is not re-raised later as a defect.
+     *
+     * <h2>AN EXHAUSTIVE SWITCH, SO A SEVENTH SHAPE CANNOT SKIP THE QUESTION</h2>
+     *
+     * {@code Volley} is the only {@link CastSpec} member carrying a count today, so this is
+     * currently equivalent to an {@code instanceof} check -- <b>and is deliberately not written as
+     * one.</b> {@code CastSpec} is sealed, so listing every member makes a new shape a COMPILE ERROR
+     * here, which forces the next author to apply the criterion above instead of inheriting a
+     * silent {@code 1}. Prefer the compile error to the scanner.
+     *
+     * <p>Empty rather than {@code 1}: the renderer's question is "is there a multiplier to print",
+     * and a literal {@code x 1} on every single-shot weapon in the game is noise. {@code Volley}'s
+     * own compact constructor already refuses {@code shots < 1}, so the {@code > 1} here is about
+     * what is worth SAYING, not about defending against a bad count.
+     */
+    public static OptionalInt deliveredShots(CastSpec cast) {
+        int shots = switch (cast) {
+            case CastSpec.Volley volley -> volley.shots();
+            case CastSpec.Self ignored -> 1;
+            case CastSpec.Melee ignored -> 1;
+            case CastSpec.Ray ignored -> 1;
+            case CastSpec.Projectile ignored -> 1;
+            case CastSpec.Dash ignored -> 1;
+        };
+        return shots > 1 ? OptionalInt.of(shots) : OptionalInt.empty();
     }
 
     private static boolean isFree(ResourceCost cost) {

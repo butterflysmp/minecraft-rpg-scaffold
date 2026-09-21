@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core;
 
+import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
@@ -11,6 +12,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -215,5 +217,89 @@ class WeaponLoreLinesTest {
     @Test
     void anAbsentCountRendersDashesRatherThanZero() {
         assertEquals("Quiver: --/9", WeaponLoreLines.quiverLine(OptionalInt.empty(), 9));
+    }
+
+    // --- deliveredShots: the "x N" criterion. Redden by returning 1 for a Volley. ---
+
+    /**
+     * EVERY FIXTURE STAGES windup, shots AND interval AT DIFFERENT VALUES, DELIBERATELY.
+     *
+     * <p>{@code Volley(windupTicks, shots, intervalTicks, of)} is three ints in a row, so a fixture
+     * that staged any two of them equal could not detect a transposition -- the row would pass while
+     * reading the wrong field. Staged `20/6/2`, `10/3/5`, `20/8/1` and `7/1/4`, no two equal within
+     * a row.
+     *
+     * <p><b>METHODS, NOT STATIC FIELDS, AND THAT IS A SCAR.</b> These began as
+     * {@code private static final} fixtures, and an invalid one -- a {@code Projectile} declaring
+     * both {@code item} and {@code body}, which its constructor refuses -- threw in {@code <clinit>}
+     * and errored <b>all 26 tests in this class</b>, including the 22 that predate this section.
+     * Only the FIRST report named the real cause; the other 25 read {@code NoClassDefFoundError}.
+     * A factory method throws only for the rows that call it.
+     */
+    private static CastSpec.Ray ray() {
+        return new CastSpec.Ray(32.0, "beam");
+    }
+
+    private static CastSpec.Projectile bolt() {
+        // item and body are MUTUALLY EXCLUSIVE -- a projectile declares ONE body.
+        return new CastSpec.Projectile(1.4, 0.0, 60, "trail", "ARROW", null, null);
+    }
+
+    /** The shipped counts, read off content rather than invented: cursed_emerald authors 6. */
+    @Test
+    void aVolleyRendersItsAuthoredShotCount() {
+        assertEquals(OptionalInt.of(6), WeaponLoreLines.deliveredShots(
+                        new CastSpec.Volley(20, 6, 2, ray())),
+                "cursed_emerald: shots 6, NOT windup 20 or interval 2");
+        assertEquals(OptionalInt.of(3), WeaponLoreLines.deliveredShots(
+                        new CastSpec.Volley(10, 3, 5, bolt())),
+                "volley_stone right-click: shots 3");
+        assertEquals(OptionalInt.of(8), WeaponLoreLines.deliveredShots(
+                        new CastSpec.Volley(20, 8, 1, ray())),
+                "volley_stone left-click: shots 8");
+    }
+
+    /**
+     * A ONE-SHOT VOLLEY RENDERS NOTHING, AND THIS IS THE ONLY ROW THAT GUARDS THE {@code > 1}.
+     *
+     * <p>It is legal content -- {@code Volley}'s constructor refuses only {@code shots < 1} -- and
+     * the question the renderer asks is "is there a multiplier worth printing", not "is this a
+     * volley". A literal {@code x 1} on a weapon is noise.
+     */
+    @Test
+    void aSingleShotVolleyRendersNoMultiplier() {
+        assertEquals(OptionalInt.empty(), WeaponLoreLines.deliveredShots(
+                new CastSpec.Volley(7, 1, 4, ray())));
+    }
+
+    /**
+     * EVERY OTHER SHAPE IS ONE PAYLOAD, so none renders a multiplier.
+     *
+     * <p><b>This row is the criterion, not a completeness exercise.</b> A fan or a spread is
+     * excluded because its payloads arrive AT ONCE across fixed angles -- no single target receives
+     * them in full -- and neither {@code ThrowEmbers} nor {@code DrawFan} is a {@code CastSpec} at
+     * all, which is why they cannot reach this method to be wrongly counted.
+     */
+    @Test
+    void everySingleShotShapeRendersNoMultiplier() {
+        assertEquals(OptionalInt.empty(), WeaponLoreLines.deliveredShots(ray()));
+        assertEquals(OptionalInt.empty(), WeaponLoreLines.deliveredShots(bolt()));
+        assertEquals(OptionalInt.empty(), WeaponLoreLines.deliveredShots(new CastSpec.Self()));
+        assertEquals(OptionalInt.empty(), WeaponLoreLines.deliveredShots(new CastSpec.Melee(3.5, 60.0)));
+        assertEquals(OptionalInt.empty(), WeaponLoreLines.deliveredShots(
+                new CastSpec.Dash(8.0, 1.2, 0.3, CastSpec.DashDirection.REVERSE_FACING)));
+    }
+
+    /**
+     * A VOLLEY OF A VOLLEY CANNOT BE AUTHORED, so nothing here has to decide what it would mean.
+     *
+     * <p>Recorded as a row rather than as a comment because it is the one case where "how many does
+     * one press deliver" would need multiplying, and the reason it never arises is a refusal in
+     * {@code Volley}'s own compact constructor rather than anything this method does.
+     */
+    @Test
+    void aVolleyOfAVolleyIsRefusedByTheCastItself() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new CastSpec.Volley(20, 6, 2, new CastSpec.Volley(10, 3, 5, ray())));
     }
 }
