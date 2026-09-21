@@ -79,6 +79,35 @@ import static io.github.butterflysmp.rpg.paper.menu.AnvilMenuLayout.TARGET_SLOT;
  *   <li>{@link #refreshPreview} is the <b>sole writer</b> of the cell.
  * </ul>
  *
+ * <h2>*** THE SPEC ASKED FOR AN OUTPUT SLOT WITH A PREVIEW ITEM. THIS IS A PREVIEW PANE. ***</h2>
+ *
+ * <b>The difference is where the result appears.</b> This screen mutates the target IN PLACE, so a
+ * player who confirms finds their upgraded item in slot 20 — <b>the cell they loaded</b> — and not
+ * in slot 24, <b>the cell they were watching</b>. The lore names the destination for exactly that
+ * reason; it is the half a player needs at the moment they press confirm.
+ *
+ * <p><b>MAKING 24 TAKEABLE IS A SLICE, NOT A PATCH, AND THE REASONS ARE STRUCTURAL.</b> Recorded
+ * here because the spec says otherwise and the next reader will notice the same gap:
+ *
+ * <ul>
+ *   <li><b>{@code returnedSlots()} defaults to {@code inputSlots()}.</b> A takeable result must be
+ *       handed back on close, death, disconnect and shutdown <b>without being placeable</b> — so
+ *       the two sets stop being equal <b>for the first time in this codebase</b>. Only
+ *       {@code NexusVaultMenu} has ever separated them, and it did so in the other direction.
+ *   <li><b>The cell becomes two-state: not-cargo before confirm, cargo after.</b> Duplication bugs
+ *       live exactly there, and this repo has shipped one already.
+ *   <li><b>The transfer stops being an in-place mutation</b> and becomes remove-from-20,
+ *       write-to-24, consume, deduct — <b>FOUR writes</b>, where the three-write ordering argument
+ *       in {@link #attemptTransfer} was already the first of its kind here, and with a window in
+ *       which the result exists in <b>neither</b> slot.
+ *   <li><b>Every row of {@code GATE-anvil.md}'s never-cargo section inverts</b> for the post-confirm
+ *       state, and R17's six gestures each need a second reading.
+ * </ul>
+ *
+ * <p><b>So it is 13c with its own gate if it is wanted, and a lore line until then.</b> The lore
+ * fix costs one string and changes no mechanism; the alternative changes the base class's oldest
+ * invariant.
+ *
  * <h2>THE REFUSAL IS A BARRIER THAT IS ALL LORE. CLOSE IS A BARRIER WITH NO LORE AT ALL.</h2>
  *
  * <b>This screen carries TWO barriers, and the differentiator is stated because a boot row reads
@@ -607,7 +636,19 @@ public final class AnvilMenu extends Menu {
             lore.add(MenuIcons.line(ready.sentence(), AnvilFace.nameColorFor(state)));
             lore.add(MenuIcons.line("Costs " + ready.xpPoints() + " XP.", NamedTextColor.GRAY));
             lore.add(MenuIcons.blank());
+            // *** THE DESTINATION, AND IT IS NOT DECORATION. ***
+            //
+            // Ben's spec asked for "an output slot with a preview item", and what this screen
+            // actually does is mutate the TARGET in place: the result appears in the slot the
+            // player LOADED, not the one they were WATCHING. Saying "you cannot take this" names
+            // what the cell is NOT and leaves where the upgrade goes unstated, which is the half a
+            // player needs at the moment they press confirm.
+            //
+            // THE LORE IS THE FIX, NOT THE MECHANISM. Making 24 takeable is a slice, not a patch --
+            // see the class javadoc and GATE-anvil.md's never-cargo section.
             lore.add(MenuIcons.line("Preview only -- you cannot take this.",
+                    NamedTextColor.DARK_GRAY));
+            lore.add(MenuIcons.line("Confirm upgrades the item on the LEFT.",
                     NamedTextColor.DARK_GRAY));
             meta.lore(lore);
         });

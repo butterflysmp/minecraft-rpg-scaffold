@@ -11,7 +11,7 @@ says which rows belong to which.
 NOT RUN, 13a   22   R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R12b R13 R14 R15 R16 R17 R18 R19 R20
 NOT RUN, 13b   10   R21 R22 R23 R24 R25 R26 R27 R28 R29 R30
                ──
-               32   = git grep -c '^### R' <ref> -- GATE-anvil.md
+               32   = git grep -c '^### R[0-9]' <ref> -- GATE-anvil.md
 ```
 
 > ***THE 13b ROWS ARE THE DESTRUCTIVE ONES, AND THEY ARE WHAT THE SPLIT BOUGHT.*** Every 13a row
@@ -257,9 +257,16 @@ transfer is the armour split.
 |---|---|
 | **Setup** | Two items of the same kind, donor **strictly higher**. |
 | **Predict** | Bar **LIME**. Slot 24 shows **the target item itself** — same name, same material — carrying **the donor's** gear score on its tooltip. |
-| **Predict** | Lore ends with `Sacrifice to raise this to <donor score>.`, then `Costs <N> XP.`, then `Preview only -- you cannot take this.` |
+| **Predict** | Lore ends with `Sacrifice to raise this to <donor score>.`, then `Costs <N> XP.`, then `Preview only -- you cannot take this.`, then `Confirm upgrades the item on the LEFT.` |
 | **Predict** | **The cost is in XP POINTS and the LEVEL figure appears nowhere.** A RARE target reads **910**, an EPIC **2920**. |
+| **Predict** | **THE LAST LINE NAMES THE DESTINATION, AND THAT IS THE POINT OF READING IT.** This screen mutates the target IN PLACE, so the result appears in slot **20** — the cell the player loaded — and **not** in slot 24, the cell they were watching. A player who presses confirm and looks at 24 sees the preview redraw as GRAY and their upgraded item nowhere in sight unless they know to look left. |
 | **READ** | _(not run)_ |
+
+> ***THIS PREDICTION WAS EDITED ON 2026-09-21, BEFORE ANY BOOT, AND THAT IS THE ONLY CONDITION
+> UNDER WHICH IT MAY BE.*** The rule is that a prediction is not edited **once a row has been
+> read**; R15's `READ` cell is empty, so nothing is being retro-fitted to a result. The edit added
+> the fourth lore line and the destination paragraph. **Recorded here rather than left silent,
+> because an edited prediction with no note is indistinguishable from one written after the fact.**
 
 ### R16 — The cost keys on the TARGET's rarity
 
