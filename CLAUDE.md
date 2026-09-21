@@ -401,6 +401,29 @@ So:
   > **RUN IT AFTER the scripted edits, not only before quoting.** The reading describes the tree
   > those edits left behind, so a run beforehand certifies nothing.
   >
+  > > ### *** AND THE SAME MECHANISM THAT BLINDS `--numstat` HERE IS WHAT KEEPS IT TRUSTWORTHY EVERYWHERE ELSE ***
+  > >
+  > > The paragraph above reads as a warning about `--numstat`, and the warning is narrow: it is
+  > > blind to **working-tree line endings**, and to nothing else. **Stated on its own it invites the
+  > > opposite conclusion — that a file whose endings a tool has mangled has a `--numstat` reading
+  > > that cannot be trusted. It does not.**
+  > >
+  > > **Commit-time normalisation is what makes the file-list reconciliation immune.** Under
+  > > `core.autocrlf` or a `text` attribute, git compares the NORMALISED blob, so a `sed -i` or a
+  > > `perl -i` that rewrites every line ending produces **no diff at all** — not a whole-file
+  > > rewrite, and not a wrong insertion count. `--numstat` reports the CONTENT that changed, which
+  > > is exactly what the reconciliation rule asks it for.
+  > >
+  > > **Measured 2026-09-21, twice, both ways round:** a committed, unmodified file deleted and
+  > > checked out went `CR=0` → `CR=69` across 69 unchanged lines with `git status` **clean
+  > > throughout**; and a `perl` insert that put two CRLF lines into an otherwise-LF file was
+  > > invisible to `--numstat` while `tr -cd '\r' | wc -c` reported it immediately.
+  > >
+  > > **So the two instruments do not overlap and neither substitutes for the other.**
+  > > `--numstat` answers *what changed*; the CR byte count answers *what shape the working tree is
+  > > in*. **A report needs both, and it needs them for different claims** — which is why this sweep
+  > > is a separate obligation rather than something the diff could have covered.
+  >
   > **Quote the `control:` line with the verdict.** The sweep refuses a verdict when its own
   > controls fail (`BLIND`, exit 3), and **a bare CLEAN is indistinguishable from a classifier that
   > always says CLEAN** — measured: mutating one comparison left it reporting CLEAN on a mixed tree
@@ -771,6 +794,23 @@ So:
   > was lost to an unescaped quote before either of the two instances in this session.
   >
   > Two occurrences is a convention forming by accident, so it is stated rather than left.
+  >
+  > ### *** AND THE BAN RUNS ONE STEP UPSTREAM OF `--body-file`, WHICH IS WHERE IT IS EASIEST TO DEFEAT ***
+  >
+  > **The rule is satisfied by the command that CONSUMES the file and defeated by the command that
+  > BUILDS it.** `gh pr create --body-file body.md` is safe; `printf '...' >> body.md` with the prose
+  > inline is the identical hazard one line earlier, and it looks like compliance because the flag
+  > is right there.
+  >
+  > **2026-09-21, and it is this file's own author doing it.** A PR body was assembled by appending
+  > a shell-quoted `printf` to a file that had been written properly, then passed to
+  > `--body-file`. **The prose still travelled through shell quoting**; the file was a staging post,
+  > not a barrier.
+  >
+  > ***THE CARRIER IS NOT THE FLAG, IT IS THE LAST POINT AT WHICH PROSE IS A SHELL WORD.*** Ask where
+  > the bytes came from, not which option they were handed to. **Write the whole file with a file
+  > tool, then pass it** — `-F`, `--body-file`, `--body-file` again for a merge. A `printf`, an
+  > `echo` or a heredoc anywhere in the chain puts the quote break back.
 
 
 ### A PREDICTION THAT SEVERAL OUTCOMES SATISFY IS NOT A CONTROL, IT IS A RANGE
@@ -963,16 +1003,17 @@ either found nothing or done nothing, and those are the same picture.
 > failure immediately. **Run the unfiltered tail, or check the command's own status — the filter is
 > never allowed to be the witness.**
 
-> ### *** A GREP COUNT THAT ANSWERS A DIFFERENT QUESTION THAN THE ONE ASKED — THREE MECHANISMS, ONE SHAPE ***
+> ### *** A GREP COUNT THAT ANSWERS A DIFFERENT QUESTION THAN THE ONE ASKED — FOUR MECHANISMS, ONE SHAPE ***
 >
-> *"Who calls this?"* is the cheapest question in a codebase and it has three ways of lying, all
-> measured in one slice (2026-09-19):
+> *"Who calls this?"* is the cheapest question in a codebase and it has four ways of lying -- the
+> first three measured in one slice (2026-09-19), the fourth on 2026-09-21:
 >
 > | | what the count said | what was true |
 > |---|---|---|
 > | **ZERO CALLERS ON A NEW ACCESSOR** | nothing reads it | **the feature does not exist yet.** `WeaponDefinition.unscored()` was authored in YAML, parsed, stored — and read by nobody. **A value authored, parsed, stored and read by nobody is INDISTINGUISHABLE FROM ONE THE LOADER SILENTLY DROPS**, and every row in both suites stays green either way |
 > | **A PREFIX NEEDLE** | the guard is present | **it survived the change it exists to detect.** `heldScore(player, keys)` is a PREFIX of `heldScore(player, keys, weapons)`, so a signature-test needle kept MATCHING after the widening — green, and no longer checking the thing it names |
 > | **PROSE COUNTED AS CALLERS** | four callers outside the package | **all four were javadoc**, and two named a method that was no longer the enforcer |
+> | **A NEEDLE ANCHORED TO A DELIMITER THE INSTANCES DO NOT CARRY** | one site, nothing to consolidate | **three sites, and the two it missed were the ones that would have gone red.** `"  x ` is anchored to the opening quote, so it found the render literal and could not match either `WeaponLoreTest` assertion, where the same text sits MID-LITERAL inside `"Kinetic Damage: 4  x 3"`. **Anchor to the syntax only where the instances actually carry it** |
 >
 > **THE ZERO-CALLER ONE HAS A HABIT ATTACHED: AFTER ADDING AN ACCESSOR, GREP ITS CALLERS BEFORE
 > MOVING ON.** Zero means the wiring is not built, and it is the one answer nothing reports.

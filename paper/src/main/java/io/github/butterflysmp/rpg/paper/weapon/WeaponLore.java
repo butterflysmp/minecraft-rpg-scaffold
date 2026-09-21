@@ -95,9 +95,21 @@ public final class WeaponLore {
         // purpose, so this is the only question paper is able to ask.
         boolean scored = GearScore.carriesScore(GearItems.gearClassOf(weapon), weapon.unscored());
 
-        // THE GEAR SCORE, ABOVE EVERYTHING. It is the item POWER rating -- the number a player
-        // compares two drops of the same weapon by -- so it outranks the element, which is identity
-        // rather than power. Absent on an unstamped item and on every definitions-only rendering; see
+        // Element on its own line at the very top, in the ELEMENT's own colour -- not the rarity's.
+        lore.add(elementLine(weapon.element(), elements));
+
+        // THE GEAR SCORE, BELOW THE ELEMENT -- Ben's ruling, 2026-09-21.
+        //
+        // THE REASONING THAT WAS OVERTURNED, KEPT RATHER THAN DELETED BECAUSE A CALL WAS MADE HERE
+        // AND A NEUTRAL COMMENT WOULD READ AS THOUGH THE ORDER HAD ALWAYS BEEN THIS WAY: the line
+        // sat ABOVE EVERYTHING, on the argument that the score is the item POWER rating -- the
+        // number a player compares two drops of the same weapon by -- so it outranked the element,
+        // which is identity rather than power. That argument still describes what the score IS. It
+        // was overruled on where the line BELONGS, not refuted. DO NOT RE-DERIVE THE OLD ORDER
+        // FROM IT: reasoning from power-vs-identity reaches the pre-12d layout every time, which is
+        // exactly why the argument is recorded here instead of being left to be rediscovered.
+        //
+        // Absent on an unstamped item and on every definitions-only rendering; see
         // GearLore.appendScore for why it must not print 100 there.
         //
         // AND ABSENT ON AN UNSCORED WEAPON EVEN WHEN THE PDC HOLDS ONE. The label promises a
@@ -105,10 +117,9 @@ public final class WeaponLore {
         // printing the number would advertise something the item does not do.
         GearLore.appendScore(lore, scored ? score : OptionalInt.empty());
 
-        // Element on its own line at the very top, in the ELEMENT's own colour -- not the rarity's.
-        lore.add(elementLine(weapon.element(), elements));
-
-        // THE MAGAZINE, directly under the element and above the stat/ability blocks. It is the
+        // THE MAGAZINE, above the stat/ability blocks -- directly under the GEAR SCORE when one
+        // prints, and under the ELEMENT when it does not, because that line is conditional. (It read
+        // "directly under the element" until 12d moved the score between them.) It is the
         // weapon's most volatile number and the one a player checks mid-fight, so it goes where the
         // eye lands first rather than below prose. Empty string for a weapon with no quiver, which
         // is every weapon but quiver_stone (the fixture) and boltor (the first shipped one).
@@ -193,7 +204,7 @@ public final class WeaponLore {
                 // in. A single figure of 162 would be true of the volley and false of every shot,
                 // and a player comparing two weapons needs the per-hit number to compare AT ALL.
                 OptionalInt shots = WeaponLoreLines.deliveredShots(ability.cast());
-                String shotsLabel = shots.isPresent() ? "  x " + shots.getAsInt() : "";
+                String shotsLabel = shots.isPresent() ? " x " + shots.getAsInt() : "";
                 lore.add(GearLore.plain(elementName(d.element(), elements) + " Damage: ", NamedTextColor.GRAY)
                         .append(GearLore.plain(number(shown(d.amount(), scored, score)) + shotsLabel,
                                 NamedTextColor.RED)));
