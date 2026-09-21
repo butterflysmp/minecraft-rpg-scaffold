@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,15 +64,10 @@ class AimWiringSignatureTest {
             "src", "main", "java", "io", "github", "butterflysmp", "rpg", "paper", "weapon",
             "ViewAim.java");
 
-    /**
-     * Every file in {@code paper} that may construct an {@link io.github.butterflysmp.rpg.core.combat.Aim}.
-     *
-     * <p>A NAMED LIST rather than a directory walk, deliberately: a walk that found nothing would
-     * pass, and this file's whole subject is a control that must not be satisfiable by finding
-     * nothing. The list is short because the sites are few, and a new one is a deliberate addition
-     * that arrives with a reason.
-     */
-    private static final List<Path> AIM_SITES = List.of(WEAPON_FIRE, COMBAT_WORLD, COMMAND, VIEW_AIM);
+    /** Both modules' main sources. The walk's roots, not a list of suspects. */
+    private static final List<Path> MAIN_ROOTS = List.of(
+            Path.of("src", "main", "java"),
+            Path.of("..", "core", "src", "main", "java"));
 
     // --- the three production sites -------------------------------------------------------------
 
@@ -126,27 +122,47 @@ class AimWiringSignatureTest {
     // --- the absence, which is the half that actually guards -------------------------------------
 
     /**
-     * *** NO PRODUCTION SITE MAY USE THE TWO-ARGUMENT CONSTRUCTOR. THIS IS THE ROW THAT GUARDS. ***
+     * *** NO MAIN SOURCE MAY CONSTRUCT A TWO-ARGUMENT {@code Aim}. THIS IS THE ROW THAT GUARDS. ***
      *
-     * <p>The three presence rows above would all pass on a file that ALSO built a two-argument
-     * {@code Aim} somewhere else -- presence and absence are different claims, and only this one
-     * closes the trapdoor.
+     * <p>The three presence rows above would all pass on a build that ALSO constructed a
+     * two-argument {@code Aim} somewhere else -- presence and absence are different claims, and
+     * only this one closes the trapdoor. <b>{@link ViewAim} removes the opportunity rather than
+     * watching it; this row is what guards the funnel itself.</b>
      *
-     * <p>The needle is {@code new Aim(} anchored at BOTH ENDS of the token, and the row then reads
-     * the whole call to count its arguments. A prefix needle would keep matching after a widening,
-     * which is precisely how a signature scan goes blind: {@code heldScore(player, keys)} stayed a
-     * prefix of {@code heldScore(player, keys, weapons)} and kept matching after the change it
-     * existed to detect.
+     * <h2>*** IT WALKS EVERY MAIN SOURCE, AND A NAMED LIST IS WHY IT HAD TO ***</h2>
      *
-     * <p><b>{@code ViewAim} itself is exempt and is the ONLY exemption</b>, because it is the one
-     * place that supplies the third argument.
+     * <p>This scanned a NAMED LIST of four files until 2026-09-21, justified on the grounds that a
+     * walk finding nothing would pass. <b>Widening it to a walk immediately found a FIFTH site the
+     * list did not contain</b> -- {@code DashAim.resolve}, which built
+     * {@code new Aim(success.aim().origin(), direction)} and discarded the shooter's right that
+     * {@code ViewAim} had just read off the yaw.
+     *
+     * <p><b>That is the exact failure a named list has: it can only ever check the sites somebody
+     * already thought of</b>, and the site that matters is the one nobody did. The
+     * finding-nothing objection was real and is answered by a CONTROL rather than by a shorter
+     * scan -- the row asserts a plausible number of files were read AND that at least one
+     * construction was inspected, so an empty walk fails loudly.
+     *
+     * <p>The needle is {@code new Aim(} and the row then reads the WHOLE CALL, across line wraps,
+     * to count its arguments. A prefix needle would keep matching after a widening, which is
+     * precisely how a signature scan goes blind: {@code heldScore(player, keys)} stayed a prefix of
+     * {@code heldScore(player, keys, weapons)} and kept matching after the change it existed to
+     * detect.
      */
     @Test
-    void noProductionSiteConstructsAnAimWithoutTheShootersRight() throws IOException {
-        int inspected = 0;
+    void noMainSourceConstructsAnAimWithoutTheShootersRight() throws IOException {
+        List<Path> sources = mainSources();
 
-        for (Path site : AIM_SITES) {
-            List<String> lines = read(site, 50);
+        // THE SANITY CHECK, and it is two claims rather than one. A walk that read three files is
+        // as blind as a walk that read none, and a walk that read 300 files but matched no
+        // construction has not exercised the assertion at all.
+        assertTrue(sources.size() > 200,
+                "the walk read only " + sources.size() + " main sources -- it is not walking the"
+                        + " tree, and an absence row over an empty walk passes by default");
+
+        int inspected = 0;
+        for (Path source : sources) {
+            List<String> lines = Files.readAllLines(source, StandardCharsets.UTF_8);
             for (int i = 0; i < lines.size(); i++) {
                 String line = lines.get(i);
                 if (isComment(line)) continue;
@@ -155,19 +171,38 @@ class AimWiringSignatureTest {
 
                 inspected++;
                 String call = callFrom(lines, i, at + "new Aim(".length());
-                assertEquals(3, argumentsIn(call), site + ":" + (i + 1)
+                assertEquals(3, argumentsIn(call), source + ":" + (i + 1)
                         + " constructs an Aim with " + argumentsIn(call) + " arguments."
                         + " The two-argument form derives the shooter's right from the DIRECTION,"
-                        + " which is zero at pitch +/-90 -- so a spread fired straight up collapses"
+                        + " which is ZERO at pitch +/-90 -- so a spread fired straight up collapses"
                         + " onto its aim vector while the tooltip still promises a ring."
-                        + " Use ViewAim.of(location). Found: " + call);
+                        + " Use ViewAim.of(location) to build one, or aim.pointing(direction) to"
+                        + " re-point an existing one. Found: " + call);
             }
         }
 
         assertTrue(inspected > 0,
-                "THE SCAN FOUND NO Aim CONSTRUCTION AT ALL, so it proved nothing. Either the"
-                        + " paths in AIM_SITES have moved or the needle no longer matches --"
-                        + " a scan that discovers nothing must fail loudly, not read as clean.");
+                "THE SCAN INSPECTED NO Aim CONSTRUCTION AT ALL, so it proved nothing. The needle"
+                        + " 'new Aim(' no longer matches anything in main source -- a scan that"
+                        + " discovers nothing must fail loudly, not read as clean.");
+    }
+
+    /**
+     * Every {@code .java} under both modules' main source roots.
+     *
+     * <p>{@code storage} is deliberately absent: it has no dependency on {@code core.combat} and
+     * cannot name {@code Aim}. Adding it would cost a walk and could never find anything, which is
+     * the kind of reach that makes a scan look thorough while changing nothing.
+     */
+    private static List<Path> mainSources() throws IOException {
+        List<Path> out = new ArrayList<>();
+        for (Path root : MAIN_ROOTS) {
+            if (!Files.isDirectory(root)) continue;
+            try (var walk = Files.walk(root)) {
+                walk.filter(p -> p.toString().endsWith(".java")).forEach(out::add);
+            }
+        }
+        return out;
     }
 
     /**

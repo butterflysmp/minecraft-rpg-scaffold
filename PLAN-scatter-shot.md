@@ -88,15 +88,26 @@ unique to COLLAPSE everyRingBodySitsAtTheAuthoredAngleFromTheAim
                    theRingIsEvenlySpacedIntoAHexagon
                    theRingHoldsItsShapeApproachingThePole
                    theSmallestLegalSpreadStillPlacesItsOneRingBody
-unique to WORLDUP  aRightParallelToTheAimIsRefused
+unique to WORLDUP  theBasisIsBuiltFromTheRightParameterSoAParallelOneIsRefused
 ```
 
 **So the two axes do NOT certify each other — each has a unique kill.** But the finding underneath
 is sharper: **the three pole rows cannot distinguish them**, because the geometry mutation kills
 those too. The only row that dies under a basis mutation and survives a geometry one is
-`aRightParallelToTheAimIsRefused`, **which is named for something else entirely.** That row's
-javadoc now says so, per `CLAUDE.md`'s rule that a row can be the only guard of something it does
-not mention.
+`theBasisIsBuiltFromTheRightParameterSoAParallelOneIsRefused`.
+
+> **AND THAT ROW WAS RENAMED RATHER THAN ANNOTATED, WHICH IS THE PART TO COPY.** It was
+> `aRightParallelToTheAimIsRefused` — accurate about its MECHANISM and silent about its VALUE, so
+> it read as a routine validation row while being the sole witness of an axis.
+>
+> **The first fix was a javadoc saying so. That was the wrong fix.** A javadoc explaining that a
+> differently-named row is an axis's only guard is **one tidy-up away from deletion by someone who
+> reads only the name** — and a pruner reading names is exactly the reader it needs to survive.
+>
+> `CLAUDE.md` records the shape as *a row can be the only guard of something it does not mention*
+> and prescribes marking it **in its own row**. **The stronger remedy is to stop it being unmentioned:
+> name the row for what it GUARDS and leave the mechanism to the javadoc.** The account stays; the
+> name now carries the load.
 
 **And the near-pole row survived `MUT14WORLDUP`.** Swept at 80, 89, 89.9, 89.99, 89.999 degrees, a
 world-up basis is still correct. **The defect is AT the pole, not near it** — a distinction that
@@ -321,3 +332,40 @@ absence*, arriving through the build tool.
   full-reactor run — which is what the constant is for.
 - **Punch's roll condition is now SATISFIED by a shipped weapon** for the first time. Recorded,
   dated, in `PLAN-enchants-ranged.md`. **Nothing built.**
+- **`DashAim.resolve` was discarding the shooter's right**, and a NAMED LIST is why nobody saw it.
+  See below.
+
+---
+
+## 10. *** A NAMED LIST CAN ONLY CHECK THE SITES SOMEBODY ALREADY THOUGHT OF ***
+
+`AimWiringSignatureTest` shipped scanning **four named files** for two-argument `Aim`
+constructions, justified on the grounds that *a walk finding nothing would pass*. **Widened to a
+walk over every main source in both modules, it immediately found a FIFTH site the list did not
+contain:**
+
+```java
+// DashAim.resolve, before
+Aim dashAim = new Aim(success.aim().origin(), direction);
+```
+
+**It threw away the right vector `ViewAim` had just read off the yaw**, one call earlier, and
+rebuilt it from the direction it was handed.
+
+**Harmless today and fixed anyway.** A spread is a field on `Projectile`, so no Dash can carry one,
+and a dash direction is yaw-only besides. But *"the shape that needs the basis cannot reach this
+path"* is a fact about **today's content**, not about the method — and this is a site that hands an
+`Aim` onward. `aim.pointing(direction)` carries the field and costs nothing.
+
+> **THE OBJECTION THAT JUSTIFIED THE NAMED LIST WAS REAL AND IS ANSWERED BY A CONTROL, NOT BY A
+> SHORTER SCAN.** A walk that finds nothing must not pass — so the row asserts **two** things: that
+> a plausible number of files were read (`> 200`, against 325 today), **and** that at least one
+> construction was actually inspected. An empty walk and a walk whose needle stopped matching both
+> fail loudly, and the scan still reaches everywhere.
+>
+> **Verified by causing it:** reverting `DashAim` to the two-argument form reddens the row, naming
+> the file and line. The guard was shown able to fire on the very site that motivated it.
+
+**The general form: a scan bounded by a list of suspects is bounded by the author's imagination.**
+Bound it structurally — a walk plus a size control — and the control does the job the list was
+being asked to do.

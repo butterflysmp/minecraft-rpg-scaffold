@@ -11375,3 +11375,72 @@ player comparing two crossbows sees two labels for one idea.** Not fixed: the la
 mechanism, and rendering "Ranged" over a literal effect would be the tooltip describing something
 other than what produced it. **TRIGGER: the second weapon that ships a literal payload in a class
 whose other weapons are basic attacks** — one is an outlier, two is a rendering rule nobody chose.
+
+## *** THE BOTH-ENDS FAMILY: EVERY END GUARDED, THE JOIN UNGUARDED ***
+
+**TWO INSTANCES, ONE SHAPE, OPPOSITE REMEDIES.** Recorded together because either alone reads as a
+one-off, and because recording only the SHAPE would send the next reader to a gate file when a unit
+row would do — or the reverse, which is worse.
+
+**THE SHAPE:** a feature is split across several components, **each component is genuinely tested
+in its own natural home**, and the WIRING between them is tested by nothing. Every end-test passes
+under a mutation at the join, each for a different and individually respectable reason. **It looks
+like thorough coverage and it is a feature that does not work.**
+
+| | slice 13a — the anvil transfer | slice 14 — the Scatter Shot |
+|---|---|---|
+| end A | `TransferKey` derivation, guarded | `SpreadPattern` geometry, guarded |
+| end B | `AnvilTransfer` comparison, guarded | `scatter_shot.yml` content, guarded |
+| end C | — | the `x 7` tooltip, guarded |
+| **the join** | **applying a transfer to a real item** | **`CastExecutor.launch` calling `SpreadPattern`** |
+| **why it was unguarded** | **UNREACHABLE — no test can construct an `ItemStack`** | **REACHABLE, and simply nobody wrote it** |
+| **the remedy** | **a boot row, FOREVER: `GATE-anvil.md` R12b** | **a unit row, written the same day: `CastExecutorSpreadTest`** |
+
+> **CITATION WARNING, because the halves live in different places right now.** The 13a names —
+> `TransferKey`, `AnvilTransfer`, `GATE-anvil.md` R12b — are **on PRs #132/#133 and NOT on
+> `master`** at the time of writing. A grep of `master` for them returns nothing, and **that
+> absence is about the merge queue, not about this entry being wrong.**
+
+### THE REMEDIES ARE OPPOSITE, AND THAT IS THE WHOLE REASON TO RECORD BOTH
+
+- **An UNREACHABLE join earns a boot row, permanently.** R12b is not a stopgap awaiting a clever
+  test — no module can build an `ItemStack`, so there will never be one. **The row must say it is
+  permanent**, or the next person reads it as unfinished work and goes looking for the unit test
+  that was never possible.
+- **A REACHABLE join earns a unit row AND a note saying why nobody wrote it.** The row alone fixes
+  this instance; the note is what stops the next one.
+
+**Slice 14's note, since it is the generalisable half:** the join had **no natural home**.
+`SpreadPatternTest` is a geometry test and geometry tests do not ask who calls them;
+`ScatterShotContentTest` is a content test and content parses either way; the tooltip tests read a
+different method entirely. **Each end sat in the obvious file for its end, and the join needed a
+THIRD file that nobody would think to create.** Coverage grew along the components and not across
+the seam between them.
+
+### *** THE DIAGNOSTIC, WHICH IS THE PART THAT GENERALISES ***
+
+**WHEN A MUTATION AT THE WIRING LEAVES EVERY END-TEST GREEN, ASK OF EACH SURVIVING TEST WHICH END
+IT SITS ON.**
+
+**FOUR PASSES WITH FOUR DIFFERENT REASONS IS NOT FOUR GUARDS.** It is one uncovered seam with four
+witnesses to something else. The tell is that the reasons do not rhyme: if you can write down why
+each test survived and the four sentences are unrelated, none of them was watching the join.
+
+Worked, from `MUT14NOSPREAD` — the spread branch disabled, suite **green at 2148**:
+
+```
+SpreadPatternTest        calls SpreadPattern DIRECTLY        -> end A
+ScatterShotContentTest   reads the YAML, which parses        -> end B
+WeaponLoreLinesTest      a DIFFERENT method entirely         -> end C
+GoldenLoreTest           renders that different method       -> end C again
+                                                             -> the JOIN: nobody
+```
+
+**Four green, four reasons, zero coverage of the thing that was mutated.** The same table drawn for
+13a's transfer has the identical shape and a different last line — *the join: unreachable* — which
+is what decides whether the answer is a test or a gate row.
+
+**Practically: the question is cheap and it is the one nobody asks.** A green mutation prompts
+*"which test should have caught this?"*, and the useful question is the inverse — *"of the tests
+that DID pass, which one was even looking here?"* If the answer is none, the count of passing tests
+is not evidence of anything.

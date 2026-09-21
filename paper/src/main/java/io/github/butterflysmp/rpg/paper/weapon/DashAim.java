@@ -3,7 +3,6 @@ package io.github.butterflysmp.rpg.paper.weapon;
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
-import io.github.butterflysmp.rpg.core.combat.Aim;
 import org.bukkit.Input;
 import org.bukkit.entity.Player;
 
@@ -36,8 +35,22 @@ public final class DashAim {
             case MOVEMENT_ELSE_FORWARD -> movementDirection(player);
             case REVERSE_FACING -> reverseFacing(player.getLocation().getYaw());
         };
-        Aim dashAim = new Aim(success.aim().origin(), direction);
-        return new CastResult.Success(success.ability(), success.caster(), dashAim);
+        // `pointing` rather than `new Aim(origin, direction)`, and it is not cosmetic: the
+        // two-argument constructor RE-DERIVES the shooter's right from the direction it is given
+        // and throws away the one ViewAim read off the yaw. That derivation is the zero vector at
+        // pitch +/-90, so it is a silent loss for any cast shape that reads the view plane.
+        //
+        // INERT TODAY AND WIRED ANYWAY. A spread is a field on Projectile, so no Dash can carry
+        // one, and the direction here is yaw-only besides. But this line is a site that hands an
+        // Aim onward, and "the shape that needs the basis cannot reach this path" is a fact about
+        // today's content rather than about this method. Carrying the field costs nothing and
+        // removes the question.
+        //
+        // FOUND 2026-09-21 by widening AimWiringSignatureTest from a NAMED LIST of Aim sites to a
+        // walk over every main source. The named list had four entries and this was not one of
+        // them -- which is the defect a named list has, and the reason the scan is now a walk.
+        return new CastResult.Success(success.ability(), success.caster(),
+                success.aim().pointing(direction));
     }
 
     /**

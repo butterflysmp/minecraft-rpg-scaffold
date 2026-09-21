@@ -89,7 +89,7 @@ any range short of point blank the total will not be 63 anyway. **Count the bodi
 
 ---
 
-### R3 — *** THE HEXAGON SURVIVES BEING AIMED STRAIGHT UP AND STRAIGHT DOWN ***
+### R3 — *** THE HEXAGON SURVIVES AT PITCH EXACTLY +90 AND EXACTLY −90 ***
 
 **THIS IS THE ROW THE WHOLE BASIS DESIGN EXISTS FOR, AND IT IS THE ONE A PLAYER MEETS BY ACCIDENT.**
 It is not an edge case anyone has to look for: it is what happens the first time someone shoots at
@@ -99,14 +99,31 @@ a bird.
 > these two**, where the look vector IS world up and the cross product is zero. So this row and its
 > twin are the only readings in the file that can see the basis at all.
 
+> ### *** THE PITCH MUST BE EXACTLY +/-90. "STEEP" AND "NEARLY VERTICAL" ARE NOT THIS ROW. ***
+>
+> **MEASURED, which is why this is stated as a requirement rather than a preference.**
+> `SpreadPatternTest.theRingHoldsItsShapeApproachingThePole` sweeps **80, 89, 89.9, 89.99 and
+> 89.999 degrees** against a world-up basis and **every one of them PASSES.** The defect is **AT**
+> the pole, not near it: the cross product gets small approaching the pole and normalises perfectly
+> well, and is the zero vector only when the look vector IS world up.
+>
+> **So a reading taken at "almost straight up" is GREEN AGAINST A BROKEN BASIS.** It is not a weak
+> reading of this row — it is a reading of a different row, and reporting it here would be a false
+> PASS on the one axis nothing else in the file can see.
+>
+> **Practically: push the pitch to the stop.** Minecraft clamps at exactly +/-90, so hold the mouse
+> hard up (or hard down) until the view stops moving, and only then fire. If the crosshair can
+> still move in that direction, the row has not been staged yet.
+
 | | |
 |---|---|
-| **Setup** | Pitch **+90**, straight up, in the open. Fire one press and watch the arrows leave. Then pitch **−90**, straight down, standing on a flat floor, and fire again. |
+| **Setup** | Pitch **exactly +90** — mouse held up until the view STOPS moving — in the open. Fire one press and watch the arrows leave. Then **exactly −90**, view held hard down, standing on a flat floor, and fire again. |
 | **Predict** | **Straight up: seven arrows, still a hexagon**, opening out as they rise. Same apparent shape as R2 from the shooter's point of view. |
 | **Predict** | **Straight down: seven impacts on the floor**, a hexagon around a centre, roughly **1.7 blocks** across if fired from eye height onto the floor beneath. |
 | **Predict** | **If the arrows collapse into a LINE, or into ONE arrow, the basis degenerated** — a world-up derivation, or `Aim`'s two-argument constructor reaching production. |
 | **Predict** | **If the server logs `spread basis is degenerate`**, the guard fired: something built an `Aim` without the shooter's right. That is a defect in the wiring, not in the geometry, and `AimWiringSignatureTest` should have caught it at build time. |
 | **Predict** | **Both poles, not one.** A sign error reaches one and not the other. |
+| **Predict** | **THE READING STATES THE PITCH IT WAS TAKEN AT, and the only acceptable values are +90 and −90.** A reading with no pitch recorded is indistinguishable from one taken at 89, which passes against a broken basis — so an unanchored PASS here is worth nothing, and must not be written as one. |
 | **READ** | _(NOT RUN)_ |
 
 ---

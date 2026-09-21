@@ -284,14 +284,25 @@ class SpreadPatternTest {
     }
 
     /**
-     * A RIGHT PARALLEL TO THE AIM IS THE SAME DEFECT, ARRIVED AT DIFFERENTLY.
+     * *** THE BASIS IS BUILT FROM THE {@code right} PARAMETER, NOT FROM A DERIVATION -- AND THIS IS
+     * THE ONLY ROW IN THE FILE THAT CAN SEE THAT. ***
      *
-     * <p>Not reachable from {@code ViewAim}, which is why it is stated: a future caller computing a
-     * basis by hand can produce a non-zero right that is useless, and "not zero" is the check they
-     * would write.
+     * <p>The mechanism is a refusal: a right PARALLEL to the aim leaves no view plane, so the
+     * degeneracy guard fires. <b>It fires only if the parameter is what builds the basis.</b> Any
+     * implementation that ignores {@code right} and derives its own axes accepts this input
+     * happily, and that is exactly what makes this row the axis's witness.
      *
-     * <h2>*** AND IT IS THE SOLE ROW THAT DISTINGUISHES THE BASIS AXIS. THE NAME DOES NOT SAY SO,
-     * WHICH IS WHY THIS PARAGRAPH DOES. ***</h2>
+     * <p>Not reachable from {@code ViewAim}, which is why the refusal is stated at all: a future
+     * caller computing a basis by hand can produce a non-zero right that is useless, and "not zero"
+     * is the check they would write.
+     *
+     * <h2>THE NAME SAYS WHAT IT GUARDS. IT USED TO SAY WHAT IT DOES, AND THAT WAS THE HAZARD</h2>
+     *
+     * <p>This was {@code aRightParallelToTheAimIsRefused} until 2026-09-21 -- accurate about its
+     * mechanism and silent about its value, which made it read as a routine validation row. <b>A
+     * javadoc explaining that a differently-named row is an axis's sole guard is one tidy-up away
+     * from deletion by someone who reads only the name.</b> Renamed rather than annotated; the
+     * account stays here.
      *
      * <p>Measured 2026-09-21 by comparing two mutation kill sets over the whole reactor:
      *
@@ -315,7 +326,7 @@ class SpreadPatternTest {
      * while tidying. It reads as a validation row. It is also the basis row.
      */
     @Test
-    void aRightParallelToTheAimIsRefused() {
+    void theBasisIsBuiltFromTheRightParameterSoAParallelOneIsRefused() {
         assertThrows(IllegalArgumentException.class,
                 () -> SpreadPattern.directionsFor(SOUTH, SOUTH, shipped()));
         assertThrows(IllegalArgumentException.class,
