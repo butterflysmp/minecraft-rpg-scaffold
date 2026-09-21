@@ -688,39 +688,49 @@ by `ScorchContentInvariantTest.KNOWN_FIRE_DAMAGE_SITES`, which independently say
 > `ScorchContentInvariantTest`'s regex carries a second alternative for the `}` form, and why the
 > instrument here is a YAML parser. **A grep would have undercounted by two and said nothing.**
 
-**ALL TWELVE SITES, at `GearScore.BASELINE` (score 100):**
-
-| authored | crossover | site |
-|---|---|---|
-| 20 | **200** | `flint_staff` — the bolt |
-| 16 | **160** | `ember_staff` |
-| 12 | **120** | `solar_lance` · **`emberblade`'s fireball burst** |
-| 8 | **80** | `ember_step` · `rekindle` · **`solar_grenade`'s direct hit** · `ability_stone` |
-| 7 | **70** | **`emberblade`'s melee swing** (`weapon_damage`, from `attack_damage: 7`) |
-| 6 | **60** | **`solar_grenade`'s burst** · `hunters_bow` (`weapon_damage`) |
-| 2 | **20** | **`solar_grenade`'s residual field tick** |
-
-##### THE VERDICT ON THE THREE: NONE IS ARITHMETICALLY WRONG, AND TWO ARE UNDERSPECIFIED IN A WAY THAT MATTERS
-
-- **`flint_staff 200` is exactly right and unambiguous.** It is the weapon's only fire site.
-- **`emberblade 120` is right about the FIREBALL and silent about the SWING.** The weapon is
-  `class: melee`; its `left_click` `weapon_damage` site crosses over at **70**. The figure names the
-  costed special, not the trigger the weapon is built around.
-- **`solar_grenade 20` is right about the RESIDUAL FIELD and is the smallest of its three sites.**
-  The direct hit crosses at **80** and the burst at **60** — so the quoted figure describes the part
-  of the grenade a target meets **last**.
-
-> **THE DEFECT IS NOT THE ARITHMETIC, IT IS THAT A FIGURE DID NOT SAY WHAT IT MEASURED.** Two of the
-> three name a WEAPON and quote ONE of its several sites, and in both cases the quoted site is not
-> the headline one. **Nothing in the record distinguished "the emberblade's crossover" from "one of
-> the emberblade's two crossovers"** — the same failure as a hash that does not say what it hashed,
-> and it survives every check, because each figure is true.
+> ### *** EVERY CROSSOVER IS A RANGE, NOT A POINT, AND A BARE FIGURE IS TRUE AT ONE SCORE IN FIVE ***
 >
-> **AND THE WHOLE SET WAS MISSING ITS SCORE ANCHOR.** The cap basis is the **scaled** amount —
-> `EffectApplier` feeds `GearScore.scaledDamage(amount, score)` in — so every crossover multiplies by
-> `score / 100`. At the hard cap of 500 they are five times higher; `flint_staff`'s is **1000**.
-> Three bare numbers read as properties of three weapons, and they are properties of three weapons
-> **at baseline score**.
+> **The cap basis is the SCALED amount**, so `crossover = authored × score / 10` and the legal score
+> band is `[GearScore.MIN 100, GearScore.HARD_CAP 500]`. **A crossover quoted without its anchor is a
+> point on a five-fold range presented as the answer.** Both columns below are executed, not scaled by
+> hand.
+
+**ALL TWELVE SITES:**
+
+| authored | crossover at **GS 100** | at **GS 500** | site |
+|---|---|---|---|
+| 20 | **200** | **1000** | `flint_staff` — the bolt |
+| 16 | **160** | **800** | `ember_staff` |
+| 12 | **120** | **600** | `solar_lance` · **`emberblade`'s fireball burst** |
+| 8 | **80** | **400** | `ember_step` · `rekindle` · **`solar_grenade`'s direct hit** · `ability_stone` |
+| 7 | **70** | **350** | **`emberblade`'s melee swing** (`weapon_damage`, from `attack_damage: 7`) |
+| 6 | **60** | **300** | **`solar_grenade`'s burst** · `hunters_bow` (`weapon_damage`) |
+| 2 | **20** | **100** | **`solar_grenade`'s residual field tick** |
+
+##### THE VERDICT: ALL THREE ARE ARITHMETICALLY CORRECT, ALL THREE ARE MISSING AN ANCHOR, AND TWO ARE ALSO POINTED AT THE WRONG SITE
+
+**Two independent defects, and the first one reaches every figure in the set:**
+
+| claimed | the SCORE anchor it never carried | the SITE it never named |
+|---|---|---|
+| `flint_staff 200` | true at **GS 100**; the range is **200 → 1000** | — its only fire site, so this half is clean |
+| `emberblade 120` | true at **GS 100**; the range is **120 → 600** | the **fireball burst**. The **melee swing** is a separate site at **70 → 350** |
+| `solar_grenade 20` | true at **GS 100**; the range is **20 → 100** | the **residual field tick**, smallest of three. Direct hit **80 → 400**, burst **60 → 300** |
+
+- **The anchor defect is total** — every one of the three is a single point on a five-fold range, so
+  each is true at one legal score out of five hundred and silently wrong at the rest.
+- **The site defect hits two of the three**, and in both cases the quoted site is **not the headline
+  one**: `emberblade` is `class: melee` and the figure names its costed special rather than its
+  swing; `solar_grenade`'s figure names the part of the grenade a target meets **last**.
+
+> **THE DEFECT IS NOT THE ARITHMETIC, IT IS THAT A FIGURE DID NOT SAY WHAT IT MEASURED**, and the
+> table above is the whole account of it — **it is not restated here, because two accounts of one
+> finding drift and neither is then trustworthy.**
+>
+> **The generalisable half is a rule and it lives in `CLAUDE.md`**, consolidated onto the
+> anchored-figures entry rather than given a section of its own: *a measurement's anchor is not only
+> a revision — it is every parameter the figure is a function of, and the identity of the one site
+> among several that it measures.* **This is the pointer; that is the rule.**
 
 ##### THE OPERATOR'S PREMISE IS CONFIRMED, AND NOW HAS A NUMBER UNDER IT
 
@@ -738,6 +748,37 @@ score only reaches the burn on targets above ten times the hit's magnitude.
 > the code had stopped using** — the same shape as the dead rule recorded in
 > `ScorchContentInvariantTest`, one file away, which is the second instance of that failure in this
 > mechanism.
+
+##### *** DEFERRED FIX — A DOCUMENTED HAZARD THAT KEEPS FIRING IS A DEFERRED FIX WEARING A HAZARD'S CLOTHES ***
+
+**Ben's standing feedback, applied to this mechanism on 2026-09-21.** The numbers in `Scorch`'s
+worked table have now been hand-corrected **once**, and the dead rule in `ScorchContentInvariantTest`
+was the **first** instance of the same shape — prose arithmetic that keeps evaluating for a constant
+the code has stopped using. **Correcting the numbers a second time queues up a third**, because
+nothing in the build can tell that the javadoc and `CAP_FRACTION` have parted company.
+
+> **THE TRIGGER: the next change to `CAP_FRACTION`, `RATE_PER_SECOND` or the cap basis.** At that
+> moment this is a **scheduled fix**, not a discovery — which is the entire reason it is written
+> down rather than left as a third incident waiting to happen.
+
+**Two remedies, and they are alternatives rather than steps:**
+
+| | what it does | what it costs |
+|---|---|---|
+| **A PIN TEST** | reddens when `CAP_FRACTION` moves and the javadoc does not — a source scan over `Scorch.java`'s table, asserting each quoted row against a live `damagePerTick` call | it is a **needle**, so it needs its own positive control; a scan that stops matching the table reads exactly like a scan that found it correct |
+| **DERIVED FIGURES** | the table stops being hand-written — the numbers move out of the javadoc and into a test that computes and prints them | **the worked example leaves the file a reader opens.** The mechanism is easiest to understand from three concrete rows sitting beside the constant |
+
+> **THE PICK, STATED SO THE NEXT PERSON INHERITS A DECISION RATHER THAN A CHOICE: the PIN TEST**, in
+> this repo's existing signature-scan idiom (`AnvilWiringSignatureTest`, `GearScoreWiringSignatureTest`).
+> **It is the only one of the two that REDDENS**, and it keeps the account where the two-homes
+> convention already puts it — in the javadoc beside the constant, not in a test nobody opens while
+> tuning scorch.
+>
+> **Its hazard is named with it, because that is the half a pin test usually ships without:** the
+> scan's needle must be proven able to MISS — break one quoted row on purpose and watch it go red —
+> or it joins the list of instruments that report success without having checked anything.
+
+**NOT BUILT HERE.** Naming it is the deliverable; scheduling it is Ben's.
 
 #### THE RULING DELETED THE COUNT'S ONLY CONSUMER, SO SCORCH STOPS BEING A STACKING STATUS
 

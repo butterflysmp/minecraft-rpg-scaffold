@@ -738,6 +738,31 @@ So:
   > invalidator is usually an *event*, not a date — "the next weapon that ships" is checkable;
   > "probably stale by next week" is not.
 
+  > ### *** AND THE ANCHOR IS NOT ONLY A REVISION. IT IS EVERY PARAMETER THE FIGURE IS A FUNCTION OF, AND WHICH OF SEVERAL SITES IT MEASURES ***
+  >
+  > **The entry above anchors on TIME, and time is one axis of three.** A figure can be perfectly
+  > current and still unusable, because it never said **what it is a function of** or **which thing
+  > it measured** — and both failures read exactly like a figure that needed no anchor at all.
+  >
+  > **2026-09-21, one set of three figures failing both of the new axes at once.** The scorch
+  > crossover healths — `emberblade 120`, `flint_staff 200`, `solar_grenade 20` — were **every one
+  > arithmetically correct** and survived every check:
+  >
+  > | axis | what was missing | consequence |
+  > |---|---|---|
+  > | **PARAMETER** | the cap basis is the **scaled** damage, so each crossover is `x score/100` over a legal band of `100..500` | each figure is **one point on a five-fold range**, presented as the answer |
+  > | **SITE** | two of the three name a **weapon** and quote one of its **several** fire sites | `emberblade 120` is the **fireball**; its **melee swing** crosses at **70** |
+  >
+  > **THE ASYMMETRY THAT MAKES THIS WORSE THAN A STALE NUMBER: a stale figure is eventually
+  > contradicted by a re-measurement. A figure with no parameter anchor is NEVER contradicted**,
+  > because it is true wherever anyone happens to check it against the value it was taken at.
+  >
+  > **Practically: before writing a figure down, ask what it is a FUNCTION of and how many things
+  > could answer to its name.** If the answer to the first is "something that varies", quote a
+  > **range with its anchor** rather than a point. If the answer to the second is "more than one",
+  > **name the one** — `emberblade`'s *swing*, not `emberblade`. Neither costs a command; both are
+  > invisible to every check in this file.
+
 - **A MEASUREMENT OUTLIVES ITS FIXTURE, BUT ONLY IF THE RECORD SAYS THE FIXTURE IS GONE.** Deleting
   the thing a reading was taken on does not falsify the reading — it makes the reading
   **unverifiable, and indistinguishable from a stale one.** Restate the reading before removing its
