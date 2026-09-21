@@ -112,10 +112,37 @@ package io.github.butterflysmp.rpg.core.combat;
  * stronger fire weapon buys more scorch damage:
  *
  * <pre>
- *   100 HP player, 20-dmg staff -&gt; 5% = 5    cap 20 -&gt; cap NEVER binds
- *   360 HP Knell,  20-dmg staff -&gt; 5% = 18   cap 20 -&gt; barely binds
- *   5000 HP boss,  20-dmg staff -&gt; 5% = 250  cap 20 -&gt; CAP HOLDS IT TO 20
+ *   100 HP player, 20-dmg staff -&gt; 5% = 5    cap 10 -&gt; cap NEVER binds
+ *   360 HP Knell,  20-dmg staff -&gt; 5% = 18   cap 10 -&gt; CAP HOLDS IT TO 10
+ *   5000 HP boss,  20-dmg staff -&gt; 5% = 250  cap 10 -&gt; CAP HOLDS IT TO 10
  * </pre>
+ *
+ * <h2>THIS TABLE SAID {@code cap 20} UNTIL 2026-09-21, AND TWO OF ITS THREE ROWS WERE FALSE</h2>
+ *
+ * {@link #CAP_FRACTION} halves the hit's magnitude, so a 20-damage staff buys a cap of <b>10</b>.
+ * The table was written against the PRE-halving cap and was never re-run: <b>its arithmetic went on
+ * evaluating correctly for a cap the code had stopped using.</b> Re-executed row by row against
+ * {@link #damagePerTick} on 2026-09-21 --
+ *
+ * <ul>
+ *   <li>the <b>100 HP</b> row SURVIVES unchanged: {@code min(5, 10) == min(5, 20) == 5};</li>
+ *   <li>the <b>360 HP</b> row read <i>"barely binds"</i> where at {@code cap 20} the cap did not
+ *       bind AT ALL -- {@code min(18, 20) = 18} is the percent arm. At the live cap it binds
+ *       decisively, to 10;</li>
+ *   <li>the <b>5000 HP</b> row quoted 20 where the code produces 10.</li>
+ * </ul>
+ *
+ * <p><b>THE CROSSOVER IS THE FIGURE THIS TABLE WAS REACHING FOR, so it is stated outright rather
+ * than left to be inferred from three points:</b> the 5% arm binds below
+ * {@code max = cap / RATE_PER_SECOND}, which after halving is <b>TEN TIMES the hit's magnitude</b>.
+ * For this staff that is <b>max 200</b> -- so the Knell at 360 is well past it, which is the whole
+ * reason its row moved.
+ *
+ * <p><b>AND THE MAGNITUDE IS THE SCALED ONE, so a crossover is anchored to a gear score.</b>
+ * {@code EffectApplier} feeds {@code GearScore.scaledDamage(amount, score)} into the cap basis, so
+ * every figure above is <b>at score 100</b> ({@code GearScore.BASELINE}) and multiplies by
+ * {@code score / 100} -- five times higher at the hard cap of 500. <b>Below the crossover the burn
+ * is 5% of max per second and gear score changes it by nothing at all.</b>
  *
  * <b>AT MAX 100 THE CAP NEVER BINDS, WHICH IS WHY EVERY TEST AT THE DEFAULT MAX IS BLIND TO IT.</b> A
  * working cap and a cap deleted entirely are the same number there. {@code ScorchTest} pins it at a
