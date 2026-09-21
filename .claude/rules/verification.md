@@ -1586,6 +1586,39 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   >
   > **If R0 fails, STOP. No other row in the file is readable.**
   >
+  > > ### *** AND THE SAME INSTRUMENT FAILURE ARRIVES WITHOUT A JAR: A CHARACTER CLASS THE TOOL DOES NOT READ AS ONE ***
+  > >
+  > > **The jar case is easy to believe because the input is obviously binary.** The general form is
+  > > not about binaries at all: **an instrument that cannot express what it is being asked does not
+  > > say so — it answers something else, in the right shape.**
+  > >
+  > > **2026-09-21.** `grep -c '[^\x00-\x7F]' <file>` was run to find non-ASCII characters in a Java
+  > > source file and reported **163** — of roughly 170 lines. The pattern was not being read as a
+  > > byte range at all, so what executed matched essentially every line. The file's true count was
+  > > **one**: a zero-width non-joiner inside a method name.
+  > >
+  > > **IT FAILED IN THE OPPOSITE DIRECTION FROM THE JAR, WHICH IS WHY IT IS WORTH RECORDING
+  > > BESIDE IT.** The jar returns **0 for everything** and reads as *"the symbol is absent"*; this
+  > > returned **almost everything** and reads as *"the file is full of them"*. **Both are the same
+  > > defect** — the instrument cannot express the question — and **neither announces itself**,
+  > > because a count is a count.
+  > >
+  > > **The tell was the RATIO, not the value.** 163 out of ~170 is not a plausible answer to
+  > > *"which lines contain a non-ASCII character"* for a file of ordinary Java. **A number that is
+  > > implausible for the quantity claimed is the only warning either case gives** — and the NUL
+  > > entry above records the mirror image, a figure that was plausible and therefore survived.
+  > >
+  > > **Practically: the same one-line control the NUL entry prescribes, pointed at a class instead
+  > > of a byte.** Feed the instrument an input you KNOW contains the thing, and require the hit:
+  > >
+  > > ```bash
+  > > printf 'plain\nzw\xe2\x80\x8cjoin\n' | perl -ne 'print "line $.\n" if /[^\x00-\x7f]/'
+  > > ```
+  > >
+  > > It prints `line 2` and nothing else, which is what licenses believing the run over the real
+  > > file. **`perl` was not chosen because it is more thorough** — it was chosen because it reads
+  > > the escape, and the control is what established that.
+  >
   > > ### *** AND THE RULE UNDERNEATH R0 IS NOT ABOUT JARS. IT IS ABOUT BINDING. ***
   > >
   > > ***A READING IS BOUND TO A SUBJECT, AND THE BINDING IS A SEPARATE FACT FROM THE READING.***

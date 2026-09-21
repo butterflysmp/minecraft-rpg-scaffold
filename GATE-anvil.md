@@ -5,10 +5,15 @@ edited once a row has been read.** Readings go in the `READ` cell beside the pre
 never over it.
 
 ```
-NOT RUN   21   R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14 R15 R16 R17 R18 R19 R20
+NOT RUN   22   R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R12b R13 R14 R15 R16 R17 R18 R19 R20
           ──
-          21   = git grep -c '^### R' <ref> -- GATE-anvil.md
+          22   = git grep -c '^### R' <ref> -- GATE-anvil.md
 ```
+
+**R12b is a SOLE WITNESS and is marked as one in its own row.** It is the only end-to-end reading of
+the armour split anywhere — the composition it covers has no unit guard and cannot have one, because
+no test in this project can construct an `ItemStack`. **If one row in this file is going to be run,
+it is R0; if two, the second is R12b.**
 
 **GAME MODE: SURVIVAL, for every row unless the row says otherwise.**
 
@@ -180,6 +185,44 @@ distinguishes them.
 | **Predict** | Bar **RED**. Sentence: `Both items must be helmets.` — the **TARGET's** kind, plural. |
 | **Predict** | Swap them: sentence becomes `Both items must be boots.` |
 | **READ** | _(not run)_ |
+
+### R12b — SOLE WITNESS: a real helmet derives ARMOR_HEAD, and that key drives the refusal
+
+**THIS ROW EXISTS BECAUSE A MUTATION KILLED FEWER TESTS THAN PREDICTED, AND THE GAP IT EXPOSED IS
+WIDER THAN THE ONE GUARD.**
+
+`MUT13A-KEYARMOR` collapses all four arms of `TransferKey.ofArmor` to `ARMOR_HEAD`. It was predicted
+to redden two rows and reddened **one** — `TransferKeyTest.ARMOURSplitsFOURWays`. The other,
+`AnvilTransferTest.BOOTSCannotFeedAHELMET`, stages its two sides as `TransferKey` constants
+**directly** and never calls `of()`, so it tests the COMPARISON and is blind to the DERIVATION.
+
+> **THE COMPOSITION HAS NO UNIT GUARD ANYWHERE, AND CANNOT HAVE ONE.** The two halves are each
+> covered — the derivation by `TransferKeyTest`, the comparison by `AnvilTransferTest` — and
+> **nothing tests them joined**: that a REAL helmet, read off a REAL `ItemStack`, resolves to
+> `ARMOR_HEAD`, and that THAT key is what refuses. **No unit test can construct an `ItemStack`**
+> (`new ItemStack(...)` throws without a `RegistryAccess`, and there is no MockBukkit), so this is
+> not an omission that a better test would close. **This row is the only end-to-end witness that
+> exists.**
+
+**R12 IS NOT A SUBSTITUTE, AND THE DIFFERENCE IS THE DONOR'S SCORE.** R12 leaves the two scores
+unstaged, so it cannot say WHICH rule refused — with a lower-scored donor the pair would be refused
+by `DonorNotHigher` whether or not the key rule exists. **Staging the donor STRICTLY HIGHER removes
+every other reason to refuse**, so the only thing standing between these two items and a completed
+transfer is the armour split.
+
+| | |
+|---|---|
+| **Setup** | A **helmet** in slot 20 and a **pair of boots** in slot 22. **Both must be OURS and both must carry a score** — check each tooltip reads a `Gear Score:` line before starting; an unstamped item reads 100 and is still scored, but an item that is none of ours is `Unscoreable` and refuses for a different reason entirely. |
+| **Setup** | **Stamp the BOOTS strictly higher than the helmet**, and not by one — e.g. helmet **140**, boots **310**. Two numbers that cannot be confused for each other, and far enough apart that a misread is obvious. |
+| **Predict** | The bar is **RED** and slot 24 reads `Both items must be helmets.` |
+| **Predict** | ***IT MUST NOT BE LIME.*** A LIME face here means the four armour keys have collapsed and **a pair of boots is about to hand its roll to a helmet** — which is the half of Ben's rule `GearClass` cannot express, arriving in the one place nothing else can see it. |
+| **Predict** | **It must not read `The sacrifice must score above 140.`** either. That sentence means the key rule never ran and the refusal came from the score comparison instead — the pair would then be refused today and legal the moment somebody raised the helmet's score. |
+| **READ** | _(not run)_ |
+
+> **WHAT TO DO IF THIS ROW FAILS:** do not look at the screen code. The suspects are
+> `TransferKey.ofArmor` (four arms collapsed), `AnvilMenu.armorSlotOf` (returning the wrong slot or
+> `null`), and `GearItems.gearClassOf` (armour not resolving to `ARMOR`). The unit rows for each are
+> green, so a failure here is in the JOIN.
 
 ### R13 — Equal scores: RED, and it names both numbers
 
