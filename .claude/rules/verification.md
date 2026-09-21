@@ -927,6 +927,35 @@ passed when it never ran — this file's own headline defect, one level up.
 The rule underneath all three: **silence is not a result.** An instrument that outputs nothing has
 either found nothing or done nothing, and those are the same picture.
 
+> ### *** AND A NEEDLE IS A FILTER. THE RULE ABOVE ALREADY COVERS EVERY SEARCH THIS PAGE RECORDS. ***
+>
+> **A grep needle is a filter over a document exactly as a grep over tool output is a filter over a
+> stream**, and it fails the same way: *"it is not there"* and *"I cannot see it"* produce the same
+> sentence. **The positive control is the same one line — run the needle over a scope you KNOW
+> contains the thing, and require the hit.**
+>
+> ***THE SCOPE OF THE NEEDLE AND THE SCOPE OF THE THING ARE TWO DIFFERENT SETS, AND EITHER CAN BE
+> THE LARGER.*** That is the whole family, and it has been met in both directions and in the
+> middle — three times on 2026-09-21 alone:
+>
+> | | the mismatch | what it produced |
+> |---|---|---|
+> | **too NARROW** | anchored to a delimiter the instances do not carry | found 1 of 3 sites; the two it missed were the two that mattered |
+> | **too BROAD** | bare enough to match the prose describing the code | reported a perfectly-applied mutation as surviving |
+> | **too BROAD, on a COUNT** | `^### R` matching a `### RULED…` heading | a gate file's row count read 25 against its own block's 24 |
+>
+> **Three instances is a mechanism, and the mechanism is already stated at the top of this section.
+> DO NOT ADD A FOURTH INSTANCE ROW ANYWHERE.** The instances are indexed under *A GREP COUNT THAT
+> ANSWERS A DIFFERENT QUESTION THAN THE ONE ASKED*, below; **this is the rule, that is the
+> catalogue**, and the two-homes convention says the catalogue must not grow a second copy of the
+> rule.
+>
+> **The third one is worth one extra sentence, because it is the only one nothing had to look at.**
+> It was caught by **two figures disagreeing** — a block claiming 24 beside an instrument answering
+> 25 — with nobody inspecting the needle at all. ***A COUNT STATED TWICE, FROM TWO SOURCES, IS A
+> POSITIVE CONTROL THAT RUNS ITSELF***, and it is the cheapest one on this page: it costs writing
+> the number down in the file whose figure it is.
+
 > ### *** AND A ZERO IS NOT A FAILURE, WHICH IS WHY THE CHECK THAT DIES IS THE ONE THAT SUCCEEDED ***
 >
 > **`grep -c` returning `0` EXITS 1.** So `cmd | grep -c X && next` aborts the chain precisely when
@@ -949,6 +978,15 @@ either found nothing or done nothing, and those are the same picture.
 > never allowed to be the witness.**
 
 > ### *** A GREP COUNT THAT ANSWERS A DIFFERENT QUESTION THAN THE ONE ASKED — FOUR MECHANISMS, ONE SHAPE ***
+>
+> ***THIS IS THE CATALOGUE. THE RULE IS `EVERY FILTER AND EVERY SCRIPTED EDIT NEEDS A POSITIVE
+> CONTROL`, TWO SECTIONS UP — a needle is a filter, and the scope of the needle and the scope of the
+> thing are two different sets.*** Read that section for the general form and the one-line control;
+> the rows below are worked instances of it.
+>
+> **DO NOT ADD A FIFTH ROW.** Four mechanisms is already more than enough to recognise the shape,
+> and a catalogue that grows an instance per encounter stops being read. If a new one arrives, check
+> it against the rule up there and leave this table alone.
 >
 > *"Who calls this?"* is the cheapest question in a codebase and it has four ways of lying -- the
 > first three measured in one slice (2026-09-19), the fourth on 2026-09-21:
