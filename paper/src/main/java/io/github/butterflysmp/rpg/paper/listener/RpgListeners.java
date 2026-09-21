@@ -32,6 +32,7 @@ import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.health.ArmorBarOverride;
 import io.github.butterflysmp.rpg.paper.health.AttackSpeedAttributeOverride;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
+import io.github.butterflysmp.rpg.paper.menu.AnvilMenu;
 import io.github.butterflysmp.rpg.paper.menu.CraftMatrixScreen;
 import io.github.butterflysmp.rpg.paper.menu.CraftingMenu;
 import io.github.butterflysmp.rpg.paper.menu.EnchantMenu;
@@ -302,6 +303,31 @@ public final class RpgListeners implements Listener {
                 Material.GRINDSTONE,
                 (player, block) -> new GrindstoneMenu(player, weapons, shields, armor, tools,
                         adapters),
+                // *** THE ANVIL IS THREE MATERIALS, AND TWO OF THEM ARE THE TRAP. ***
+                //
+                // ANVIL, CHIPPED_ANVIL and DAMAGED_ANVIL are separate Material constants -- an
+                // anvil degrades as it is used, so the chipped and damaged states are what a
+                // lived-in world mostly contains. Hijacking only the pristine one leaves the
+                // OTHER TWO OPENING VANILLA, which is the one screen this entry exists to replace,
+                // and it would look like a bug that "sometimes" happens.
+                //
+                // Verified against the pinned paper-api rather than remembered: all three exist on
+                // 26.1.2.build.74-stable.
+                //
+                // BEN'S RULING, SLICE 13a: vanilla rename and vanilla repair are BOTH GONE, and
+                // there is no fallthrough for either. Renaming has no place in this project;
+                // repair is a later conversation and is parked in NEXT.md with its trigger. So
+                // after this entry NOTHING in the game restores durability except /rpg durability,
+                // which is a dev route -- that is the ruling, not a regression.
+                //
+                // NO BREADCRUMB, like the grindstone and the crafting table: opened from the block
+                // there is no hub in the story, so the anvil's Back cell is bar rather than button.
+                Material.ANVIL,
+                (player, block) -> new AnvilMenu(player, weapons, shields, armor, tools, adapters),
+                Material.CHIPPED_ANVIL,
+                (player, block) -> new AnvilMenu(player, weapons, shields, armor, tools, adapters),
+                Material.DAMAGED_ANVIL,
+                (player, block) -> new AnvilMenu(player, weapons, shields, armor, tools, adapters),
                 // *** THE ENDER CHEST, AND IT IS THE ONLY HIJACK THAT TAKES SOMETHING AWAY. ***
                 //
                 // The other three replace a screen with a better screen. This one replaces the

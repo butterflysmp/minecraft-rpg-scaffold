@@ -22,6 +22,10 @@ class PlayerLevelTest {
 
     // Verified against the predecessor's table by summing it, not by quoting its comments.
     private static final long LEVEL_3 = 2_090L;
+    // The anvil's gate, slice 13a. Summed from XP_TO_NEXT[1..6] -- 1000 + 1090 + 1190 + 1290 +
+    // 1400 + 1530 -- and NOT re-derived through totalForLevel, which would make this file agree
+    // with a mutated table. Same rule the three around it were written under.
+    private static final long LEVEL_7 = 7_500L;
     private static final long LEVEL_10 = 12_940L;
     private static final long LEVEL_13 = 19_980L;
     private static final long LEVEL_25 = 75_330L;
@@ -33,6 +37,7 @@ class PlayerLevelTest {
         assertEquals(0L, PlayerLevel.totalForLevel(1), "level 1 is where everyone starts");
         assertEquals(1_000L, PlayerLevel.totalForLevel(2), "the first rung is 1000");
         assertEquals(LEVEL_3, PlayerLevel.totalForLevel(3), "crafting's gate");
+        assertEquals(LEVEL_7, PlayerLevel.totalForLevel(7), "the anvil's gate");
         assertEquals(LEVEL_10, PlayerLevel.totalForLevel(10), "enchanting's gate");
         assertEquals(LEVEL_13, PlayerLevel.totalForLevel(13), "the grindstone's gate");
         assertEquals(LEVEL_25, PlayerLevel.totalForLevel(25));
@@ -74,15 +79,28 @@ class PlayerLevelTest {
     }
 
     @Test
-    void theTHREEGateThresholdsAreTheLEVELSBenNamed() {
+    void theAUTHOREDStationGatesAreTheLEVELSBenNamed_craftingAnvilEnchantingGrindstone() {
+        // *** NAMED, NOT COUNTED. THIS WAS theTHREEGateThresholds... AND THE ANVIL FALSIFIED IT. ***
+        //
+        // The name and its first comment both said THREE, so adding a fourth row made the method
+        // name a claim about its own body that was wrong -- and an ordinal or a count in a name is
+        // a line citation in different clothes: falsified by any insertion, silently, and invisible
+        // to every test including this one. Naming the stations costs four words and cannot rot.
+        //
+        // THE VAULT IS ABSENT ON PURPOSE. Its threshold is not authored on Station at all; it is
+        // read from VaultPageGate.HUB_SHORTCUT_LEVEL, so it is pinned where that constant lives and
+        // not here. This method is about the levels typed as literals into the gate.
+        //
         // THE CONTENT DECISION, pinned as levels AND as totals. Either alone is half the claim: the
         // level is what Ben ruled, and the total is what the listener actually compares against.
         assertEquals(3, PlayerLevel.levelFor(LEVEL_3), "crafting unlocks at 3");
+        assertEquals(7, PlayerLevel.levelFor(LEVEL_7), "the anvil at 7");
         assertEquals(10, PlayerLevel.levelFor(LEVEL_10), "enchanting at 10");
         assertEquals(13, PlayerLevel.levelFor(LEVEL_13), "the grindstone at 13");
 
         // AND ONE XP SHORT OF EACH IS STILL LOCKED -- the half that catches an off-by-one gate.
         assertEquals(2, PlayerLevel.levelFor(LEVEL_3 - 1));
+        assertEquals(6, PlayerLevel.levelFor(LEVEL_7 - 1));
         assertEquals(9, PlayerLevel.levelFor(LEVEL_10 - 1));
         assertEquals(12, PlayerLevel.levelFor(LEVEL_13 - 1));
     }

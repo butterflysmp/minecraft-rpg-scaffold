@@ -26,15 +26,36 @@ class NexusStationGateTest {
     void theTHRESHOLDSAreBENSLiterals_notDerivedFromAnything() {
         // LITERALS, for NexusMenuLayoutTest's reason: a constant only ever named symbolically has
         // no guard, because a mutation moves the code and the expectation together. There is no
-        // formula behind 3/10/13 and nothing here should suggest one.
+        // formula behind these and nothing here should suggest one.
         assertEquals(3, NexusStationGate.Station.CRAFTING.unlockLevel(), "crafting at 3");
+        assertEquals(7, NexusStationGate.Station.ANVIL.unlockLevel(), "the anvil at 7");
         assertEquals(10, NexusStationGate.Station.ENCHANTING.unlockLevel(), "enchanting at 10");
         assertEquals(13, NexusStationGate.Station.GRINDSTONE.unlockLevel(), "the grindstone at 13");
 
-        // ALL THREE DIFFER, so no two can be transposed without a row seeing it -- and they are
-        // STRICTLY INCREASING in the order the stations sit on the row, left to right.
-        assertEquals(3, new HashSet<>(List.of(3, 10, 13)).size());
+        // ALL OF THEM DIFFER, so no two can be transposed without a row seeing it.
+        //
+        // *** THE DISTINCTNESS ROW IS COMPUTED OVER THE ENUM AND IT USED TO BE A HAND-WRITTEN SET
+        // LITERAL. *** It read `new HashSet<>(List.of(3, 10, 13)).size()` -- a set built from three
+        // literals typed HERE, asserted against a literal 3, and it therefore said nothing about
+        // Station at all. It would have stayed green with two stations sharing a level, which is
+        // the one thing it is named for.
+        Set<Integer> levels = new HashSet<>();
+        for (NexusStationGate.Station station : NexusStationGate.Station.values()) {
+            levels.add(station.unlockLevel());
+        }
+        assertEquals(NexusStationGate.Station.values().length, levels.size(),
+                "no two stations share an unlock level: " + levels);
+
+        // AND THEY ARE STRICTLY INCREASING IN THE ORDER THE STATIONS SIT ON THE ROW, left to right,
+        // which is the vault at 29, the anvil, crafting, enchanting, the grindstone.
+        //
+        // THE VAULT IS DELIBERATELY NOT IN THIS CHAIN. Its threshold is 20 -- read from
+        // VaultPageGate.HUB_SHORTCUT_LEVEL rather than authored here -- so it is the leftmost cell
+        // and the HIGHEST level, and the run is not monotonic across all five. That is Ben's
+        // ladder, not a defect, and stating it is what stops the next person "fixing" the order.
         assertTrue(NexusStationGate.Station.CRAFTING.unlockLevel()
+                < NexusStationGate.Station.ANVIL.unlockLevel());
+        assertTrue(NexusStationGate.Station.ANVIL.unlockLevel()
                 < NexusStationGate.Station.ENCHANTING.unlockLevel());
         assertTrue(NexusStationGate.Station.ENCHANTING.unlockLevel()
                 < NexusStationGate.Station.GRINDSTONE.unlockLevel());
@@ -70,6 +91,8 @@ class NexusStationGateTest {
 
     @Test
     void everySTATIONSlotResolves_andNothingElseDoes() {
+        assertEquals(Optional.of(NexusStationGate.Station.ANVIL),
+                NexusStationGate.at(NexusMenuLayout.ANVIL_SLOT));
         assertEquals(Optional.of(NexusStationGate.Station.CRAFTING),
                 NexusStationGate.at(NexusMenuLayout.CRAFTING_SLOT));
         assertEquals(Optional.of(NexusStationGate.Station.ENCHANTING),
@@ -89,7 +112,7 @@ class NexusStationGateTest {
         // AND EVERY OTHER SLOT ON THE SCREEN IS EMPTY -- without this, the four above are equally
         // consistent with at() returning a station for half the filler.
         Set<Integer> stationSlots = Set.of(NexusMenuLayout.VAULT_SLOT,
-                NexusMenuLayout.CRAFTING_SLOT,
+                NexusMenuLayout.ANVIL_SLOT, NexusMenuLayout.CRAFTING_SLOT,
                 NexusMenuLayout.ENCHANT_SLOT, NexusMenuLayout.GRINDSTONE_SLOT);
         int resolved = 0;
         for (int slot = 0; slot < NexusMenuLayout.SIZE; slot++) {
@@ -122,6 +145,8 @@ class NexusStationGateTest {
                 NexusStationGate.lockedLore(NexusStationGate.Station.CRAFTING, 1).get(2));
         assertEquals("An enchanting table in the world still works.",
                 NexusStationGate.lockedLore(NexusStationGate.Station.ENCHANTING, 1).get(2));
+        assertEquals("An anvil in the world still works.",
+                NexusStationGate.lockedLore(NexusStationGate.Station.ANVIL, 1).get(2));
 
         // AND EVERY STATION'S LORE CARRIES ITS OWN THRESHOLD AND THE PLAYER'S OWN LEVEL.
         for (NexusStationGate.Station station : NexusStationGate.Station.values()) {
@@ -139,6 +164,7 @@ class NexusStationGateTest {
         assertEquals("Crafting", NexusStationGate.lockedName(NexusStationGate.Station.CRAFTING));
         assertEquals("Enchanting", NexusStationGate.lockedName(NexusStationGate.Station.ENCHANTING));
         assertEquals("Grindstone", NexusStationGate.lockedName(NexusStationGate.Station.GRINDSTONE));
+        assertEquals("Anvil", NexusStationGate.lockedName(NexusStationGate.Station.ANVIL));
         for (NexusStationGate.Station station : NexusStationGate.Station.values()) {
             assertEquals(station.displayName(), NexusStationGate.lockedName(station),
                     "locked and open render the SAME name -- only the colour dims");
@@ -188,6 +214,13 @@ class NexusStationGateTest {
         assertEquals("Vault unlocks at level 20. You are level 2. "
                         + "An ender chest opens this same vault.",
                 NexusStationGate.refusal(NexusStationGate.Station.VAULT, 2));
+
+        // AND THE ANVIL'S, PINNED AT THE BOUNDARY IT IS MOST LIKELY TO BE READ AT. Level 6 is one
+        // short of 7, which is the only level at which a player sees this sentence and could
+        // reasonably believe the feature is out of reach -- the next level opens it.
+        assertEquals("Anvil unlocks at level 7. You are level 6. "
+                        + "An anvil in the world still works.",
+                NexusStationGate.refusal(NexusStationGate.Station.ANVIL, 6));
         // Mutation MUTREFUSAL-ONEFACT: drop the "still works" clause -> kill set RECORDED in the
         // PR body.
     }

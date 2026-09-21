@@ -239,6 +239,16 @@ public final class NexusMenu extends Menu {
                                     recipes, shields, armor, tools, vaults)).open());
             return;
         }
+        if (click.slot() == NexusMenuLayout.ANVIL_SLOT) {
+            // THE FIFTH STATION, and the same breadcrumb the other four carry. Close-then-hop is
+            // NOT needed from THIS side -- the hub holds no input slots; the anvil does its own
+            // explicit close when its Back button is pressed, because it holds two.
+            adapters.scheduler().onEntity(viewer, () ->
+                    new AnvilMenu(viewer, weapons, shields, armor, tools, adapters,
+                            () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
+                                    recipes, shields, armor, tools, vaults)).open());
+            return;
+        }
         if (click.slot() == NexusMenuLayout.CRAFTING_SLOT) {
             // Menu.open's rule: hop a tick, no explicit close -- the hub holds no input slots.
             // FROM_NEXUS is what gives the crafting screen its Back button; see CraftingMenu.
@@ -310,13 +320,17 @@ public final class NexusMenu extends Menu {
         // The rule that decided it: reaching for placeholder is a claim that something is NOT BUILT.
         // A settings screen exists now, so saying "Not implemented yet." above a working button
         // would be the Q33 defect with the notice and the feature inverted.
-        // READ ONCE. Three stations asking profiles.profile() separately would be three reads of
-        // one value inside one paint, and a level that could differ between two cells of the same
-        // screen if the load settled mid-render.
+        // READ ONCE. Every station asking profiles.profile() separately would be one read per cell
+        // inside one paint, and a level that could differ between two cells of the same screen if
+        // the load settled mid-render.
+        //
+        // NAMED, NOT COUNTED. This said "Three stations" and was falsified twice without anyone
+        // touching it -- once by the vault and once by the anvil. The rule the comment carries is
+        // about the READ, and it does not depend on how many cells there are.
         int level = viewerLevel();
 
         // THE VAULT, row 4 column 2. The cell 29 that GRINDSTONE_SLOT's javadoc says the row was
-        // laid out expecting, filled at last -- and the gap at 30 is the anvil's, left open.
+        // laid out expecting, filled at last.
         //
         // ITS THIRD LOCKED LINE IS NOT LIKE THE OTHER THREE. "An ender chest in the world still
         // works" would be false, because the hijack replaces the vanilla chest at every level. The
@@ -326,6 +340,19 @@ public final class NexusMenu extends Menu {
                 List.of(MenuIcons.line("Seven pages, " + VaultShape.TOTAL_SLOTS + " slots.",
                                 NamedTextColor.DARK_GRAY),
                         MenuIcons.line("Pages open as you level.", NamedTextColor.DARK_GRAY))));
+
+        // THE FIFTH STATION, AND THE ROW IS NOW CONTIGUOUS 29-33. The gap at 30 was held open by
+        // VAULT_SLOT's javadoc against exactly this day, and nothing had to move to fill it.
+        //
+        // PAINTED HERE BECAUSE IT IS SUBTRACTED FROM THE FILLER. That invariant -- every slot not
+        // in FILLER_SLOTS must be painted by something -- is the one slot 33 shipped a hole
+        // through, and PAINTED_SLOTS plus NexusMenuLayoutTest is what now makes the two lists one.
+        getInventory().setItem(NexusMenuLayout.ANVIL_SLOT, station(
+                NexusStationGate.Station.ANVIL, level, Material.ANVIL,
+                List.of(MenuIcons.line("Move a gear score onto a better item.",
+                                NamedTextColor.DARK_GRAY),
+                        MenuIcons.line("Same kind only, and the sacrifice must score higher.",
+                                NamedTextColor.DARK_GRAY))));
 
         // THE CRAFTING-TYPE BAND, row 4. Both are icon() and both are BUILT -- the screens behind
         // them exist and work; only the route through the hub is new.
