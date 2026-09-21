@@ -314,9 +314,24 @@ public final class RpgListeners implements Listener {
                 // table's entry above relies on in exactly the same way.
                 //
                 // AND IT OPENS AT EVERY LEVEL, per NexusStationGate's heading: a sub-20 player gets
-                // the screen with seven locked pages. That is what makes the third locked lore line
-                // "An ender chest opens this same vault" true rather than a promise of vanilla
-                // storage that is no longer there.
+                // the screen with PAGE 1 OPEN and the other six locked. That is what makes the
+                // third locked lore line "An ender chest opens this same vault" true rather than a
+                // promise of vanilla storage that is no longer there.
+                //
+                // *** THIS READ "seven locked pages" UNTIL 2026-09-20, AND IT WAS TRUE WHEN
+                // WRITTEN. *** Page 1 cost level 20 under the old ruling, so a sub-20 player really
+                // did get seven locked pages and the block really did give them nothing. The
+                // 2026-09-18 page-1-free ruling moved that 20 onto the HUB SHORTCUT and left page 1
+                // at VaultPageGate.FREE, so the block now gives real storage immediately --
+                // unlockedPageCount is "1 for a new player, never 0", and every level below 20 has
+                // exactly that one page, since the next threshold is 25.
+                //
+                // *** THE STALENESS RAN THE SAFE WAY AND IS FIXED ANYWAY, WHICH IS THE POINT. ***
+                // The ruling made the lore line MORE true, not less. But this is the sentence that
+                // JUSTIFIES that line, and a stale justification is worse than none: the next
+                // reader checks the count, finds it wrong, and has no way to tell whether the claim
+                // it defends is wrong too. A queued work item to reword the lore was refuted by
+                // exactly that route -- see this commit's message.
                 Material.ENDER_CHEST,
                 (player, block) -> new NexusVaultMenu(player, adapters, profiles, vaults));
     }
