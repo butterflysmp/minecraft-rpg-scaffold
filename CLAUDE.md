@@ -11,11 +11,9 @@ Read this before writing any code in this repository.
 ./scripts/check-crlf.sh  # is any file mixed CRLF/LF? RUN BEFORE TAKING CR READINGS
 ```
 
-`check-crlf.sh` guards the instrument, not the repo. A file that is part CRLF and part LF makes
-`tr -cd '\r' | wc -c` return a number that is neither, so **every CR reading taken afterwards is
-untrustworthy** — and scripted edits produce exactly that, silently. **Run it after any pass of
-`perl`/`sed` edits and before quoting a byte-shape figure.** It exits `0` CLEAN, `1` MIXED, `3`
-BLIND, and it refuses to render a verdict unless its own controls pass.
+`check-crlf.sh` guards the INSTRUMENT, not the repo: a part-CRLF/part-LF file makes
+`tr -cd '\r' | wc -c` return a number that is neither. **It is a REQUIRED STEP, not a tool that
+exists** — *VERIFICATION* says when to run it and what to report.
 
 Always use the wrapper, never a system `mvn`. It pins Maven 3.9.9 so the build is
 reproducible; there is no system Maven on this machine.
@@ -390,6 +388,23 @@ So:
   > file rather than only the tracked ones.** `cp` works on both, needs no knowledge of what git
   > knows, and is the instrument the rule already names.
 - When you report something as verified, **say what you executed** and what it printed.
+- **ANY REPORT QUOTING A BYTE-SHAPE FIGURE CARRIES `./scripts/check-crlf.sh`'s READING**, the way a
+  mutation pass carries its marker grep. **A step, not a tool that exists** — its line goes in the
+  report: `control: PASS …`, the file count, and `CLEAN`.
+
+  > **A CR COUNT TAKEN ON A MIXED TREE IS A NUMBER THAT IS NEITHER**, and **nothing else in the
+  > chain can see it.** The blob is clean under `core.autocrlf=true`, so `--numstat` is silent, the
+  > build is green, and CI has no working tree to look at. **A green CI check here would be a
+  > control that cannot fail**; the obligation is therefore procedural, which is why it lives in
+  > this list rather than in a workflow file.
+  >
+  > **RUN IT AFTER the scripted edits, not only before quoting.** The reading describes the tree
+  > those edits left behind, so a run beforehand certifies nothing.
+  >
+  > **Quote the `control:` line with the verdict.** The sweep refuses a verdict when its own
+  > controls fail (`BLIND`, exit 3), and **a bare CLEAN is indistinguishable from a classifier that
+  > always says CLEAN** — measured: mutating one comparison left it reporting CLEAN on a mixed tree
+  > until the control caught it.
 - **Report the FILE LIST from `git diff --numstat` AND from what you touched, and RECONCILE THEM.**
   **A row in one and not the other is the interesting one.** Account for every row, in both
   directions. The two diverge exactly when something interesting happened — a file you edited
