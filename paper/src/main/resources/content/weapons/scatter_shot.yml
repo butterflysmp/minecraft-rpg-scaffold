@@ -1,0 +1,318 @@
+# THE SCATTER SHOT -- the Ranger's fourth weapon, and the first in this project whose ONE PRESS
+# PUTS SEVEN BODIES IN THE AIR AT ONCE.
+#
+# Nothing in the cast grammar could express this before. CastSpec.Volley repeats a cast over TIME;
+# DrawFan fans over YAW and is not a CastSpec at all. Neither is a pattern in the shooter's view
+# plane. This weapon ships with the grammar it needs: a `spread:` block on a projectile cast.
+#
+# ================== EVERY NUMBER HERE WAS RULED BY THE OPERATOR ==================
+#
+#   quiver_size 4     cooldown_ticks 32     damage 9 per arrow     spread count 7
+#   spread angle_degrees 5                  element kinetic        rarity rare
+#   class ranger
+#
+# NOT RULED, and flagged at their own keys rather than presented as part of the set:
+# `reload_ticks` (PROPOSED, see its key), `material`, the knockback STRENGTH (the rule that it
+# exists IS ruled -- see on_hit), and the absent `name:`.
+#
+# ================== THE ARITHMETIC, WITH ITS FENCEPOST WRITTEN OUT ==================
+#
+# Four shots span THREE intervals -- 3 x 32 = 96t firing, 4.80s -- because eight shots span seven
+# intervals and this project has paid for that fencepost twice on this weapon family.
+#
+#   magazine     4 x 63                    = 252 damage
+#   burst        252 / 4.80s               = 52.50 DPS
+#
+# *** 63 IS A POINT-BLANK NUMBER BY CONSTRUCTION, NOT A HEADLINE. *** It is what SEVEN arrows deal,
+# and seven arrows reach one target only at close range -- see the spread block, which carries the
+# geometry. A reader quoting 63 as this weapon's damage is quoting its best case.
+#
+# *** AND EVERY DAMAGE FIGURE ON THIS PAGE IS AT GEAR SCORE 100. *** The authored 9 is a LITERAL, so
+# GearScore.scaledDamage multiplies it by score/100 over the legal band 100..500:
+#
+#   GS 100    9 per arrow     63 a full hit
+#   GS 500   45 per arrow    315 a full hit        <- the hard cap, stated so nobody meets it first
+#
+# A figure with no score anchor is one point on a five-fold range presented as the answer.
+
+id: scatter_shot
+display_name: "Scatter Shot"
+
+# KINETIC. The Ranger's identity in this project is CADENCE and this weapon's is GEOMETRY; neither
+# is an element. kinetic is what a hit wears when it wears nothing, and the anchored sweep
+# `grep -n "^applies_status" content/elements/*.yml` returns fire.yml ALONE -- so the worry a
+# seven-body burst raises, a status accruing seven times in one frame, DOES NOT ARISE. That is a
+# discharged concern, not an overlooked one.
+#
+#   AND THE GREP THAT ANSWERS IT HAS A TRAP IN IT, recorded at locust.yml: the UNANCHORED form
+#   returns kinetic.yml too, because kinetic.yml's COMMENT says "It declares no applies_status".
+#   A substring match finds the prose DENYING the key and reports it as the key.
+#
+# kinetic's damage_symbol is "", so these seven numbers come up bare where a nature weapon's would
+# each draw a green flower. Seven glyphs in one frame is a thing nobody has seen; this weapon does
+# not produce it.
+element: kinetic
+
+# RULED. It sits above the Boltor (uncommon) and level with the Locust (rare), which is the order
+# the numbers already imply: this weapon's magazine is 252 against the Boltor's 152, and its burst
+# is 52.50 DPS against 27.14.
+rarity: rare
+
+# The Ranger's fourth weapon. The quiver is the class's brake.
+#
+# *** AND IT MAKES Expanded Quiver LAND HARDER HERE THAN THAT ENCHANT'S OWN FILE CLAIMS. ***
+# expanded_quiver.yml argues its flat +1/2/3 is "nearly uniform in effect" across the live range,
+# and prints the two weapons it was measured on:
+#
+#   Boltor  (8)     +12.5% / +25%   / +37.5%
+#   Locust  (12)    +8.3%  / +16.7% / +25%
+#   THIS    (4)     +25%   / +50%   / +75%        <- not nearly uniform with either
+#
+# The enchant is NOT changed by this file and neither is its gate; what is changed is that the
+# uniformity argument now has a counter-example, and that comment is updated to print this row
+# rather than left to read as though the range were still 8..12. A finding this weapon CREATES.
+class: ranger
+
+# NOT RULED. crossbow, which is ALREADY boltor's, locust's AND quiver_stone's -- so four crossbows
+# now sit indistinguishable in a hotbar, and this file is the fourth offender rather than the first.
+# Flagged rather than solved: custom model data is not in this slice.
+#
+# It is chosen rather than defaulted. A crossbow binds right_click and therefore cancels vanilla
+# exactly as those three do, which is what makes Q7's held-input reading transfer here instead of
+# being a fact about some other material.
+material: crossbow
+
+# ================== THE MAGAZINE ==================
+#
+# 4 -- RULED. AN AUTHORED BASE, NOT THE VALUE THE GAME USES: the capacity a wielder packs at is
+# QuiverSize.resolve(quiver_size, their gear). A GATE ROW MUST READ WHAT IS ON SCREEN, NEVER THIS
+# LINE.
+#
+# 4 IS DELIBERATELY NOT 1, AND THE REASON IS AN INSTRUMENT RATHER THAN A FEEL. /rpg firerate's
+# COOLDOWN-LIMITED caution discharges on `FIRES mean == min`, which is sound because a magazine
+# normally interposes on SOME intervals and not others. At quiver_size 1 every shot is followed by
+# a reload, so the gate interposes on EVERY interval, the sample is perfectly regular, and the
+# caution DISCHARGES ITSELF ON THE CONFOUND IT EXISTS TO CATCH. Four gives three short intervals
+# and one long: mean > min, the readout lands on INCONCLUSIVE, which is the correct branch.
+#
+# Stated here so nobody re-derives it, and so nobody "simplifies" this weapon to a single-shot
+# magazine without meeting the consequence. RpgCommand.verdictLine carries the account.
+#
+# 4 is also unlike every other magazine in the project -- 8, 9, 12 and 25 -- so a gate row reading
+# a capacity cannot be measuring the fixture by coincidence.
+quiver_size: 4
+
+# *** 40 IS A PROPOSAL, NOT A RULING, AND IT IS THE ONLY NUMBER IN THIS FILE THAT IS. ***
+#
+# The brief left it unspecified and it is not picked silently. 2.00s. The argument is the project's
+# own ammunition metric -- ticks per round, which dragons_plume.yml uses to price a magazine:
+#
+#                reload  quiver   ticks/round     cycle      sustained (full hits)
+#   boltor           60       8          7.50
+#   locust           60      12          5.00
+#   dragons_plume    60      25          2.40
+#   quiver_stone     34       9          3.78
+#   THIS at 60       60       4         15.00     7.80s          32.31 DPS
+#   THIS at 40       40       4         10.00     6.80s          37.06 DPS   <- proposed
+#   THIS at 32       32       4          8.00     6.40s          39.38 DPS
+#
+# AT 60 -- the ruled 3.0s that boltor, locust and the Plume all carry -- THIS WEAPON'S AMMUNITION
+# WOULD BE TWICE AS EXPENSIVE PER ROUND AS ANYTHING SHIPPED. That is the whole argument for 40: a
+# four-round magazine pays the same wall-clock reload as a twenty-five-round one, so the per-round
+# price is what moves, and it moves a long way.
+#
+# NOT ON THE TOOLTIP. WeaponLore renders a quiver line and NO RELOAD LINE AT ALL, so this number
+# reaches a player only as the wait itself -- which is why a feel judgement is the right kind of
+# support for it and why no arithmetic here can settle it. Ben rules.
+reload_ticks: 40
+
+# THE FLAVOUR NAMES NO NUMBER AND NOTHING A STAT CAN MOVE, which is locust.yml's rule rather than
+# boltor.yml's. "Eight bolts, then three seconds" quotes a quiver_size that QuiverSize.resolve can
+# change for a wielder carrying the right gear -- and this weapon's magazine of 4 is the one most
+# easily moved in the project, since Expanded Quiver III is +75% of it. A FALSIFIED COMMENT MISLEADS
+# A READER WHO CAN CHECK IT; A FALSIFIED FLAVOUR LINE MISLEADS A PLAYER WHO CANNOT.
+#
+# Both lines below are permanently true of the ruled design.
+flavor:
+  - "It does not pick a target."
+  - "It picks a direction."
+
+triggers:
+  # THE ONLY TRIGGER. left_click is absent BY REFUSAL, not by choice: WeaponDefinition rejects a
+  # weapon that declares both a quiver and a left_click trigger, because a quiver spends left-click
+  # on its reload and two owners for one press would race silently.
+  #
+  # *** NO `name:`, AND THAT IS FLAGGED RATHER THAN RULED. *** WeaponLoader falls back to the
+  # weapon's display name, so the ability block reads "Scatter Shot  Right-Click". The Plume ships
+  # the plain label by an OPERATOR RULING taken on that weapon; nothing rules it here, and applying
+  # it would be extending a ruling rather than taking one. If a name of its own reads better that is
+  # a one-word change and Ben's to make.
+  right_click:
+    description:
+      - "A hexagon of arrows, loosed at once."
+      - "Close range is the whole weapon."
+
+    # ================== 32: RULED, AND IT IS EXACT ==================
+    #
+    # 1.60s. On the 4-tick input grid, so the tooltip is honest by construction: held right-click
+    # quantises an authored cooldown UP to the next multiple of 4 (Q7, WeaponLoader's
+    # cooldown_ticks section), and a value off the grid delivers an interval the tooltip does not
+    # say.
+    #
+    # *** AND IT IS EXACT FOR A SECOND REASON THAT IS THIS WEAPON'S OWN. *** AbilityService scales
+    # an authored cooldown by the caster's attack speed ONLY for a basic attack:
+    #
+    #   isBasicAttack(on_hit) ? AttackSpeed.effectiveCooldownTicks(authored, speed) : authored
+    #
+    # This weapon's on_hit is a LITERAL `damage`, not `weapon_damage`, so it is NOT a basic attack
+    # and this number is used verbatim at every attack speed. Under the weapon_damage shape 1.60s
+    # would have been 1.60s only at attack speed exactly 1.0 -- and rangedAttackSpeedLabel computes
+    # from the AUTHORED cooldown, so the tooltip would have described the base while the weapon
+    # delivered something else. See on_hit below, where that choice is recorded in full.
+    #
+    # CONSEQUENCE ON THE TOOLTIP: no "Attack Speed" line is rendered at all, which is correct --
+    # there is no attack speed to state. This weapon renders an ABILITY block, not a stat block.
+    cooldown_ticks: 32
+    cast:
+      type: projectile
+
+      # THE SAME FLIGHT AS THE PLUME'S ARROWS, AND THAT IS A DERIVATION RATHER THAN A RULING.
+      # speed 2.5 / gravity 0.05 / max_lifetime_ticks 120 are the Plume's, which are in turn
+      # hunters_bow's gravity and the only BOW precedents in the project -- the 0.03 figures belong
+      # to staves. Labelled a derivation so nobody later cites it as a decision Ben made.
+      speed: 2.5
+      gravity: 0.05
+      max_lifetime_ticks: 120
+
+      # A real arrow, oriented along its travel, inert in every other way -- and mutually exclusive
+      # with `item:`, which the loader refuses rather than resolves. Seven of them, point-first.
+      body: arrow
+
+      # ================== THE SPREAD: THE GRAMMAR THIS WEAPON SHIPS ==================
+      #
+      # count is the TOTAL. ONE body flies down the aim vector and the remaining SIX are spaced
+      # evenly around a ring 5 degrees off-axis -- so the hexagon falls out of 7 - 1 = 6 rather
+      # than being a second number that could disagree with the first.
+      #
+      # *** THE RING IS BUILT IN THE SHOOTER'S VIEW PLANE -- RULED. *** It looks identical from the
+      # shooter's side at every angle, INCLUDING STRAIGHT UP. SpreadPattern carries the account and
+      # the reason a world-up basis is wrong; the short version is that forward x worldUp equals the
+      # shooter's own right at every pitch EXCEPT +/-90, where it is the zero vector and the hexagon
+      # flattens into a line or vanishes. That is not an edge case a player has to look for: it is
+      # what happens the first time someone shoots at a bird.
+      #
+      # ================== 5 DEGREES: RULED, AND IT IS LOAD-BEARING FOR THE TOOLTIP ==================
+      #
+      # The angle decides whether "63 if all seven land" is reachable at all. Off-axis offset is
+      # d * tan(angle), and a player-sized target is about 0.6 blocks wide:
+      #
+      #   d =  5 blocks     spread 0.87 blocks     all seven can land
+      #   d = 10 blocks     spread 1.75 blocks     centre and one or two
+      #   d = 20 blocks     spread 3.50 blocks     centre only
+      #
+      # *** THIS IS WHY THE TOOLTIP IS ALLOWED TO SAY `x 7`. *** WeaponLoreLines.deliveredShots used
+      # to exclude a spread BY NAME, on the ground that "no single target receives them in full, so
+      # x 3 would promise damage the player will not receive". That rule was OVERTURNED on
+      # 2026-09-21 -- and the 5 degrees is the ANSWER to it rather than a separate decision. The
+      # angle was chosen so a full seven-arrow hit EXISTS.
+      #
+      # DrawFan's ruled 10 degrees was REJECTED for this weapon for exactly that reason: at 10
+      # degrees the full hit is unreachable at any range and the old objection would still stand.
+      # SO DO NOT WIDEN THIS NUMBER WITHOUT RE-OPENING THE TOOLTIP QUESTION. They are one decision.
+      spread:
+        count: 7
+        angle_degrees: 5
+
+      # ================== NO homing BLOCK, AND ITS ABSENCE IS THE RULING ==================
+      #
+      # "NOT homing" was ruled outright. AbilitySchema maps a missing section to null and a null
+      # Seek makes ProjectileFlight.steer return the velocity untouched on its first line, so this
+      # needs no mechanism -- the absence IS the mechanism.
+      #
+      # DO NOT "COMPLETE" THIS BY COPYING THE BLOCK FROM dragons_plume.yml, which is the only
+      # content in the tree that authors one. A spread of seeking arrows is EXPRESSIBLE -- the two
+      # blocks are orthogonal by design -- which is precisely why the absence has to be written
+      # down rather than left to look like an oversight.
+    on_hit:
+      # ============ A LITERAL, NOT weapon_damage -- AND IT IS MEASURED, NOT PREFERRED ============
+      #
+      # Every other Ranger weapon authors attack_damage + weapon_damage and renders a STAT BLOCK
+      # ("Ranged Damage: 19"). This one authors a literal and renders an ABILITY block
+      # ("Kinetic Damage: 9 x 7"). That is a real divergence and it is chosen for two reasons:
+      #
+      #   1. THE COOLDOWN. AbilityService divides a BASIC ATTACK's authored cooldown by the caster's
+      #      attack speed. Under weapon_damage both of Ben's ruled numbers -- 9 damage and a 1.6s
+      #      rate -- would become BASE values, true only at attack speed exactly 1.0.
+      #
+      #   2. THE TOOLTIP WOULD LIE. rangedAttackSpeedLabel computes from the AUTHORED cooldown, not
+      #      the effective one, so under weapon_damage the Attack Speed line would state a rate the
+      #      weapon does not fire at for every player off 1.0 -- the exact defect class slice 12c
+      #      closed. Its own javadoc measures the neighbouring case: across authored 4..40, 18 of 37
+      #      values print a rate the weapon does not deliver.
+      #
+      #   AND `x 7` IS ONLY RENDERABLE ON THIS SHAPE AT ALL. The shot count is emitted in the
+      #   ability block; the stat block has no slot for it.
+      #
+      # WHAT IT COSTS, SAID RATHER THAN HIDDEN:
+      #   - NO DURABILITY WEAR per shot. Not a basic attack, so CastExecutor's use listener never
+      #     fires. flint_staff is the precedent, so this is a choice with a sibling.
+      #   - NO "Attack Speed" LINE, and no "Ranged Damage" line. attack_damage is not authored at
+      #     all: this weapon has no basic attack, so there is no stat for one to grip.
+      #   - A PLAYER COMPARING TWO CROSSBOWS SEES TWO DIFFERENT LABELS FOR ONE IDEA. The Ranger
+      #     class now has two damage-rendering shapes. NOT FIXED HERE -- the label follows the
+      #     mechanism, and rendering "Ranged" over a literal effect would be the tooltip describing
+      #     something other than what produced it. Recorded as an owed finding.
+      #
+      # CRIT STILL REACHES IT, AND THAT WAS CHECKED RATHER THAN ASSUMED. EffectApplier's Damage arm
+      # passes caster.critMultiplier() into HitDamage.dealt and CritState.of(...) into applyDamage,
+      # identically to the weapon_damage arm. So Ben's "ONE damage roll for the shot, crit included"
+      # holds on this shape: the roll is frozen into the snapshot once per press and all seven
+      # arrows inherit it.
+      - type: damage
+        amount: 9
+        element: kinetic
+
+      # ============ KNOCKBACK: THE RULE IS RULED, THE MAGNITUDE IS NOT ============
+      #
+      # CLAUDE.md, 2026-09-13: "A TRAVELLING RANGED WEAPON AUTHORS KNOCKBACK; AN INSTANT-HITTING ONE
+      # DOES NOT." This is type: projectile and class: ranger, so the rule REACHES it and silence
+      # would be an exception nobody ruled. It is authored on that basis.
+      #
+      # *** 0.1 IS A PROPOSAL AND IT DEPENDS ON A FACT MEASURED AT THE BOOT. *** Seven arrows land
+      # in ONE frame, so everything turns on whether seven applications SUM or whether the last one
+      # WINS. The static read says SUM -- BukkitCombatant.applyKnockback is
+      # `entity.setVelocity(entity.getVelocity().add(v))`, and its own sibling applyImpulse
+      # documents the contrast: "REPLACES velocity rather than adding to it (unlike knockback)".
+      # GATE-scatter-shot.md R7 and R7b measure it, with a SINGLE-ARROW control at the same strength
+      # so "seven pushes" and "one push" cannot read alike.
+      #
+      #   sums        7 x 0.1 = 0.7 on a full hit; 0.4 each would be 2.8, which launches the target
+      #   overwrites  7 x 0.1 behaves as ONE 0.1 push and this weapon has no knockback worth the key
+      #
+      # AND THE TENSION NO SINGLE NUMBER RESOLVES, because the arrow count varies from 1 to 7 with
+      # range: "a full point-blank hit pushes like one ordinary shot" and "a single arrow at range
+      # pushes like one ordinary shot" are JOINTLY UNSATISFIABLE. 0.1 chooses a light single push
+      # and a strong point-blank shove, which is what a shotgun ought to feel like. Ben rules on
+      # feel, on the reading.
+      #
+      # *** AND THIS WEAPON IS NOW THE FIRST THAT SATISFIES THE PARKED Punch ENCHANT'S ROLL
+      # CONDITION. *** Punch must not roll on a weapon that authors no knockback; dragons_plume
+      # fired Punch's trigger and authors none, which is why it is still unruled. RECORDED, dated,
+      # in PLAN-enchants-ranged.md. NOTHING IS BUILT HERE -- this slice is not the one where Punch
+      # quietly ships.
+      - type: knockback
+        strength: 0.1
+
+# ================ NOT AUTHORED BY THIS COMMIT, AND SAID SO RATHER THAN LEFT BLANK ================
+#
+# NO RECIPE. The Scatter Shot is in neither content/recipes/ nor content/kits/, so it is reachable
+# only through /rpg give and its rpg.command.give permission. Kits are being removed by an operator
+# ruling, so "no kit" is the normal state rather than a gap; a RECIPE is what acquisition means once
+# they are gone, and it is owed to the content pass.
+#
+# NO pierce, and no pierce needs no code: each of the seven bodies resolves on the first thing it
+# hits. Damage is priced PER BODY PER TARGET, which is what makes the spread a range mechanic rather
+# than a multiplier.
+#
+# THE MAIN-HAND GUARD APPLIES. WeaponFire reads getItemInMainHand, so a Scatter Shot held ONLY in
+# the off-hand does not fire at all.

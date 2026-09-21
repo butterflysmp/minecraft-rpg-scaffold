@@ -8,6 +8,7 @@ import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.RayHit;
 import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import io.github.butterflysmp.rpg.paper.weapon.GearScoreItems;
+import io.github.butterflysmp.rpg.paper.weapon.ViewAim;
 import io.github.butterflysmp.rpg.paper.content.VisualDefinition;
 import io.github.butterflysmp.rpg.paper.content.VisualSpec;
 import org.bukkit.FluidCollisionMode;
@@ -201,11 +202,11 @@ public final class PaperCombatWorld implements CombatWorld {
     public Optional<Aim> aimOf(UUID combatantId) {
         if (!(world.getEntity(combatantId) instanceof LivingEntity living)) return Optional.empty();
         Regions.requireOwned(living);
-        Location eye = living.getEyeLocation();
-        Vector direction = eye.getDirection();
-        return Optional.of(new Aim(
-                new Vec3(eye.getX(), eye.getY(), eye.getZ()),
-                new Vec3(direction.getX(), direction.getY(), direction.getZ())));
+        // Through ViewAim, like every other production aim, so the live re-read carries the
+        // shooter's RIGHT as well as their direction. A volley of a spread re-aims per shot, and
+        // rebuilding the pair by hand here would have handed those shots a basis derived from the
+        // direction -- correct at every pitch but the two that matter.
+        return Optional.of(ViewAim.of(living.getEyeLocation()));
     }
 
     /**

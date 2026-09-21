@@ -70,6 +70,7 @@ import io.github.butterflysmp.rpg.paper.weapon.DashAim;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantEffectLine;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantItems;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems;
+import io.github.butterflysmp.rpg.paper.weapon.ViewAim;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponClassLabel;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import io.github.butterflysmp.rpg.paper.weapon.ArmorItems;
@@ -1218,10 +1219,26 @@ public final class RpgCommand {
      * <p>{@code quiver_size: 2} is safe: intervals alternate, {@code mean > min}, and the readout
      * lands on {@code INCONCLUSIVE}, which is the correct branch. <b>Only 1 is invisible.</b>
      *
-     * <p><b>INSTANCES: ZERO.</b> Measured — only {@code boltor} (8) and {@code quiver_stone} (9)
-     * carry {@code quiver_size} at all. <b>DORMANT, NOT ABSENT:</b> a guard with no instances is not
-     * a guard that cannot fire, and a heavy single-shot weapon is a design a later slice may well
+     * <p><b>INSTANCES: ZERO.</b> <b>DORMANT, NOT ABSENT:</b> a guard with no instances is not a
+     * guard that cannot fire, and a heavy single-shot weapon is a design a later slice may well
      * produce. Registered with the other dormant findings in {@code NEXT.md}.
+     *
+     * <p><b>THE FIGURE IS NOT WRITTEN DOWN, AND THAT IS THE FIX RATHER THAN AN OMISSION.</b> This
+     * said <i>"Measured — only {@code boltor} (8) and {@code quiver_stone} (9) carry
+     * {@code quiver_size} at all"</i>, which was true when written and went stale twice without
+     * anyone touching this file: {@code locust} (12), {@code dragons_plume} (25) and
+     * {@code scatter_shot} (4) have shipped since. <b>A list of instances maintained by hand in the
+     * javadoc of the guard is a figure maintained by delta.</b> The count that matters is ZERO
+     * INSTANCES OF THE HAZARD, which is a different question from how many magazines exist:
+     *
+     * <pre>
+     * grep -c '^quiver_size: 1$' content/weapons/*.yml      the hazard -- expected: no file
+     * grep -h  '^quiver_size:'   content/weapons/*.yml      the population, if you want it
+     * </pre>
+     *
+     * <p><b>{@code scatter_shot} is the closest any shipped weapon has come</b>, at 4, and its own
+     * file records that 4 was chosen partly to stay off this trap. That is the useful fact; the
+     * roster is not.
      *
      * <p><b>It is the second case in one slice of BLINDNESS THROUGH UNIFORMITY rather than
      * magnitude</b> — the first was {@code INPUT_FLOOR_TICKS} {@code 4 -> 2} in
@@ -1958,7 +1975,11 @@ public final class RpgCommand {
         Set<String> castable = Set.copyOf(profile.unlockedAbilities());
 
         Location eye = player.getEyeLocation();
-        Aim aim = new Aim(toVec3(eye), toVec3(eye.getDirection()));
+        // ViewAim, so /rpg cast is a faithful test instrument for a spread too -- the same
+        // reasoning /rpg apply's comment gives for reusing BukkitCombatant.applyStatus rather than
+        // a parallel path. A dev command that built a weaker aim would be unable to reproduce the
+        // one bug this basis exists to prevent.
+        Aim aim = ViewAim.of(eye);
 
         // Photograph the caster HERE, on the caster's own thread, before the hop below.
         // Taken after the hop it would be the same cross-region read wearing a new type --

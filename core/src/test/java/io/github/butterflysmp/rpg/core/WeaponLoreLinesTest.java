@@ -273,21 +273,113 @@ class WeaponLoreLinesTest {
     }
 
     /**
-     * EVERY OTHER SHAPE IS ONE PAYLOAD, so none renders a multiplier.
+     * EVERY SHAPE THAT DELIVERS ONE PAYLOAD RENDERS NO MULTIPLIER.
      *
-     * <p><b>This row is the criterion, not a completeness exercise.</b> A fan or a spread is
-     * excluded because its payloads arrive AT ONCE across fixed angles -- no single target receives
-     * them in full -- and neither {@code ThrowEmbers} nor {@code DrawFan} is a {@code CastSpec} at
-     * all, which is why they cannot reach this method to be wrongly counted.
+     * <p><b>This row is the criterion, not a completeness exercise.</b>
+     *
+     * <p><b>ITS JAVADOC USED TO SAY MORE THAN THIS, AND THE EXTRA CLAUSE WAS FALSIFIED BY THE
+     * SPREAD.</b> It read: <i>"A fan or a spread is excluded because its payloads arrive AT ONCE
+     * across fixed angles -- no single target receives them in full -- and neither
+     * {@code ThrowEmbers} nor {@code DrawFan} is a {@code CastSpec} at all, <b>which is why they
+     * cannot reach this method to be wrongly counted</b>."</i>
+     *
+     * <p>The last clause was true and stopped being true: {@link CastSpec.Spread} is a FIELD on
+     * {@link CastSpec.Projectile}, so a fan reaches this method now. The criterion was overturned
+     * on 2026-09-21 -- see {@code WeaponLoreLines.deliveredShots}, which carries the account and
+     * the geometry that justified it.
+     *
+     * <p><b>{@code bolt()} keeps its place here and is now load-bearing for a narrower claim</b>:
+     * a projectile with NO spread block still renders nothing. That is what stops the overturn
+     * from becoming "every projectile counts as one".
      */
     @Test
     void everySingleShotShapeRendersNoMultiplier() {
         assertEquals(OptionalInt.empty(), WeaponLoreLines.deliveredShots(ray()));
-        assertEquals(OptionalInt.empty(), WeaponLoreLines.deliveredShots(bolt()));
+        assertEquals(OptionalInt.empty(), WeaponLoreLines.deliveredShots(bolt()),
+                "a projectile with no spread block is still one payload");
         assertEquals(OptionalInt.empty(), WeaponLoreLines.deliveredShots(new CastSpec.Self()));
         assertEquals(OptionalInt.empty(), WeaponLoreLines.deliveredShots(new CastSpec.Melee(3.5, 60.0)));
         assertEquals(OptionalInt.empty(), WeaponLoreLines.deliveredShots(
                 new CastSpec.Dash(8.0, 1.2, 0.3, CastSpec.DashDirection.REVERSE_FACING)));
+    }
+
+    // --- the spread: the 2026-09-21 overturn ---------------------------------------------------
+
+    /**
+     * A SPREAD RENDERS ITS AUTHORED BODY COUNT -- the overturn, in one row.
+     *
+     * <p>{@code scatter_shot} authors {@code count: 7} and the tooltip reads
+     * {@code Kinetic Damage: 9 x 7}. Before 2026-09-21 this method returned empty for any
+     * projectile, so <b>this row is the one that would go red if the overturn were reverted.</b>
+     *
+     * <p>Staged at 7 against an angle of 5 against a lifetime of 120 and a speed of 2.5: no two
+     * quantities the row reads are equal, so a transposition between the spread's two fields has
+     * nowhere to hide.
+     */
+    @Test
+    void aSpreadRendersItsAuthoredBodyCount() {
+        assertEquals(OptionalInt.of(7), WeaponLoreLines.deliveredShots(spreadBolt(7, 5)),
+                "scatter_shot: count 7, NOT the angle 5");
+        assertEquals(OptionalInt.of(3), WeaponLoreLines.deliveredShots(spreadBolt(3, 12.5)));
+    }
+
+    /**
+     * A SPREAD OF TWO RENDERS {@code x 2}, WHICH IS THE {@code > 1} BOUNDARY ON THE NEW AXIS.
+     *
+     * <p>{@code Spread} refuses a count below 2, so 2 is the smallest renderable multiplier and
+     * there is no spread that renders nothing. Worth a row because the volley axis has the opposite
+     * shape -- {@code shots: 1} is legal and renders nothing -- and a reader could reasonably
+     * assume the two behave alike.
+     */
+    @Test
+    void theSmallestLegalSpreadStillRendersAMultiplier() {
+        assertEquals(OptionalInt.of(2), WeaponLoreLines.deliveredShots(spreadBolt(2, 30)));
+    }
+
+    /**
+     * *** A VOLLEY OF A SPREAD MULTIPLIES, AND NOTHING IN SHIPPED CONTENT DOES IT. ***
+     *
+     * <p>{@code AbilitySchema.innerCast} admits a projectile as a volley's inner cast, so this is
+     * authorable today. Reading only the outer count would render {@code x 3} on a weapon that
+     * delivers 21 payloads -- <b>the same class of lie this method exists to prevent, arriving
+     * through COMPOSITION rather than through a new shape.</b>
+     *
+     * <p>Staged {@code 3 x 7 = 21} with a windup of 10 and an interval of 5, so the product shares
+     * no value with any input: a row staged {@code 2 x 3 = 6} could not tell a product from a sum
+     * of the wrong pair.
+     */
+    @Test
+    void aVolleyOfASpreadMultipliesTheTwoCounts() {
+        assertEquals(OptionalInt.of(21), WeaponLoreLines.deliveredShots(
+                        new CastSpec.Volley(10, 3, 5, spreadBolt(7, 5))),
+                "3 shots x 7 bodies, not 3 and not 7");
+    }
+
+    /** A volley of a PLAIN projectile is unchanged by the multiplication -- the control. */
+    @Test
+    void aVolleyOfAPlainProjectileStillRendersOnlyItsShotCount() {
+        assertEquals(OptionalInt.of(3), WeaponLoreLines.deliveredShots(
+                        new CastSpec.Volley(10, 3, 5, bolt())),
+                "multiplying by an absent spread must be multiplying by one");
+    }
+
+    /**
+     * A ONE-SHOT VOLLEY OF A SPREAD STILL RENDERS THE SPREAD.
+     *
+     * <p>The interesting corner of the product: {@code 1 x 7} is 7, so the multiplier survives an
+     * outer count that would itself render nothing. An implementation that short-circuited on
+     * {@code shots == 1} would drop it silently.
+     */
+    @Test
+    void aSingleShotVolleyOfASpreadStillRendersTheSpread() {
+        assertEquals(OptionalInt.of(7), WeaponLoreLines.deliveredShots(
+                new CastSpec.Volley(7, 1, 4, spreadBolt(7, 5))));
+    }
+
+    /** A projectile carrying a spread, built through the full constructor. */
+    private static CastSpec.Projectile spreadBolt(int count, double angleDegrees) {
+        return new CastSpec.Projectile(2.5, 0.05, 120, null, null, null, "arrow",
+                new CastSpec.Spread(count, angleDegrees));
     }
 
     /**

@@ -11319,3 +11319,59 @@ consumable are all live. **This entry parks the QUESTION and does not pre-answer
 and the only restore, `WeaponItems` mints with vanilla durability, and `GearItems.carryWear` moves
 it across a re-mint. Measured at slice 13a; re-check before designing, because `carryWear`'s
 behaviour is what decides whether a repaired item keeps its enchants.
+
+---
+
+# SLICE 14 — THE SCATTER SHOT. TWO GREEN MUTATIONS, AND A PARKED ENCHANT'S TRIGGER FIRED.
+
+**POINTER. The account is `PLAN-scatter-shot.md`; the rows are `GATE-scatter-shot.md`.** Kept short
+on purpose — this file is read on demand and the findings below each have a home that is read at
+the point they bite.
+
+## THE TWO MUTATIONS THAT CAME BACK GREEN
+
+**Both are the same shape and it is this project's oldest one: a thing that is authored, parsed,
+stored, and READ BY NOBODY looks exactly like a thing that works.**
+
+| | the mutation | suite at the time | what would have shipped |
+|---|---|---|---|
+| `MUT14NOSPREAD` | the spread branch in `CastExecutor.launch` disabled | **GREEN at 2148** | the weapon firing **ONE** arrow while its tooltip promised **seven** |
+| `MUT14QUIVER7` | `WeaponFire`'s round spend `1` -> `7` | **GREEN at 2147** | a seven-round bill for one press |
+
+**Each got its guard written afterwards and the identical mutation re-applied — same marker
+figures, same line delta — and each reddened.** `CastExecutorSpreadTest` (3 rows) and
+`QuiversSignatureTest.onePressSpendsOneRoundUnlessItIsAYawFan` (1 row).
+
+> **THE FIRST ONE IS THE WARNING WORTH CARRYING.** Four separate checks kept passing under it, each
+> for a reason that made it useless: the geometry test calls `SpreadPattern` **directly** and never
+> asks whether anything calls it; the content test reads the **YAML**, which parses either way; the
+> tooltip tests read a **different method**. **A feature can be fully tested at both ends and
+> unwired in the middle.**
+
+## AN INSTRUMENT FINDING: A FAILING `core` HIDES THE WHOLE OF `paper`
+
+**`./mvnw test` stops at the first failing module, and `paper` depends on `core`** — so a mutation
+that reddens a core row leaves `paper` **never executed**, and its kill set reads as empty.
+**`-fae` does NOT help**: the skip is a dependency skip, not a failure skip.
+
+**Only `-Dmaven.test.failure.ignore=true` produces a true cross-module kill set.** Two kill sets in
+this slice were measured wrongly before this was noticed and were re-measured. *A zero in the wrong
+scope is indistinguishable from an absence*, arriving through the build tool.
+
+**Practically: quote the per-module `Tests run:` line with any cross-module mutation claim**, so a
+reader can see that every module actually ran.
+
+## PUNCH'S TRIGGER IS SATISFIED — RECORDED, NOT BUILT
+
+**`scatter_shot` is the first shipped weapon that authors knockback**, so §4.4's roll gate has a
+live candidate for the first time. Full entry, with the two things an unparker needs to know first,
+in `PLAN-enchants-ranged.md` §4.5. **Nothing was built; this slice is not the one where an enchant
+quietly ships.**
+
+## OWED — THE RANGER CLASS NOW HAS TWO DAMAGE-RENDERING SHAPES
+
+`boltor` and `locust` render `Ranged Damage: 19`; `scatter_shot` renders `Kinetic Damage: 9`. **A
+player comparing two crossbows sees two labels for one idea.** Not fixed: the label follows the
+mechanism, and rendering "Ranged" over a literal effect would be the tooltip describing something
+other than what produced it. **TRIGGER: the second weapon that ships a literal payload in a class
+whose other weapons are basic attacks** — one is an outlier, two is a rendering rule nobody chose.
