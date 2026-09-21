@@ -1016,6 +1016,29 @@ either found nothing or done nothing, and those are the same picture.
 > **AND NARROWING VISIBILITY IS WHAT MAKES THE THIRD FINDABLE.** Making a method package-private turns
 > *"who calls this"* into a question with a **checkable** answer, and everything left over is prose
 > claiming to be code.
+>
+> > ### *** ROWS THREE AND FOUR ARE ONE FAMILY SEEN FROM OPPOSITE SIDES, AND BOTH WERE MET IN ONE SESSION ***
+> >
+> > They read as separate mechanisms and they are not. **The needle's scope and the code's scope
+> > differ — and it can differ in either direction:**
+> >
+> > | | the needle | what it did |
+> > |---|---|---|
+> > | **TOO NARROW** (row four) | `"  x ` — anchored to an opening quote the instances do not carry | **missed two real sites**, both of them the ones that would have gone red |
+> > | **TOO BROAD** (row three) | `GearScore.carriesScore` — bare, matching prose as well as code | **found a site that was not there**, reporting a perfectly-applied mutation as surviving |
+> >
+> > **2026-09-21, both in one session, one slice apart.** The narrow one reported *"one site, nothing
+> > to consolidate"*; the broad one reported *"original gone: 1"* for an edit that had landed
+> > cleanly. **Neither looked like a mistake: each returned a small, plausible integer.**
+> >
+> > ***THE FALSE ABSENCE AND THE FALSE PRESENCE ARE THE SAME DEFECT WEARING OPPOSITE SIGNS, AND THE
+> > FIX IS ONE QUESTION, NOT TWO:*** **does this needle's anchoring hold for every instance I expect
+> > to find, and for nothing else?** Anchor to the syntax only where the instances actually carry it
+> > — and where they do not, filter the commentary out instead of loosening the needle.
+> >
+> > **The cheapest control covers both directions at once:** run the needle over a scope you KNOW
+> > contains the thing and require the hit, then read the hits rather than counting them. A count
+> > alone cannot distinguish three of the right sites from one right and two wrong.
 
 > ### *** THE LINE DELTA IS NOT A WARRANT AND IS NOT WORTHLESS. IT IS THE SOLE INSTRUMENT FOR THE ONE CLASS THE BUILD CANNOT SEE. ***
 >
