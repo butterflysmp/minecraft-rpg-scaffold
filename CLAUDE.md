@@ -8,7 +8,14 @@ Read this before writing any code in this repository.
 ./mvnw clean package     # build all modules
 ./mvnw -pl core test     # unit tests (fast, no server)
 ./scripts/dev-server.sh  # build + deploy + boot a local Paper server
+./scripts/check-crlf.sh  # is any file mixed CRLF/LF? RUN BEFORE TAKING CR READINGS
 ```
+
+`check-crlf.sh` guards the instrument, not the repo. A file that is part CRLF and part LF makes
+`tr -cd '\r' | wc -c` return a number that is neither, so **every CR reading taken afterwards is
+untrustworthy** — and scripted edits produce exactly that, silently. **Run it after any pass of
+`perl`/`sed` edits and before quoting a byte-shape figure.** It exits `0` CLEAN, `1` MIXED, `3`
+BLIND, and it refuses to render a verdict unless its own controls pass.
 
 Always use the wrapper, never a system `mvn`. It pins Maven 3.9.9 so the build is
 reproducible; there is no system Maven on this machine.
