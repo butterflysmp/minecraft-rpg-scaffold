@@ -462,4 +462,130 @@ class WeaponLoreTest {
         assertTrue(lines.contains("Quiver: 8/9"),
                 () -> "no item to read, so the weapon's own number is the true answer; got " + lines);
     }
+
+    // ---------------------------------------------------------------- gear score on the tooltip
+
+    /**
+     * *** EVERY ROW ABOVE THIS LINE RENDERS AT NO SCORE, AND THAT IS WHY NONE OF THEM COULD SEE
+     * THIS DEFECT. ***
+     *
+     * <p>The thirteen rows that predate slice 12c all call the two-argument {@code build}, which
+     * passes {@code OptionalInt.empty()}. {@code GearScore.orAbsent(empty)} is the baseline, and
+     * scaling by the baseline is the identity -- so <b>the entire existing surface is numerically
+     * blind to the score axis, and stayed green while the tooltip under-reported for two slices.</b>
+     * {@code golden-lore.txt} is blind for the same reason: it renders through the definitions-only
+     * overloads.
+     *
+     * <p>So these rows stage a NON-IDENTITY score, and every one of them chooses its numbers so
+     * that <b>no two quantities the row reads are equal</b> -- the authored figure, the score and
+     * the product are three different numbers in each, so a row cannot pass by reading the wrong one.
+     */
+    @Test
+    void aScoredWeaponRendersItsClassDamageScaledByTheItemsOwnScore() {
+        List<String> lines = textLines(WeaponLore.build(rareFireSword(), elementsWithFire(),
+                OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(340)));
+
+        // 7.0 authored x 340/100 = 23.8. Three distinct numbers: 7, 340, 23.8.
+        assertTrue(lines.contains("Melee Damage: 23.8"),
+                () -> "the stat block must show what the weapon DEALS at this score; got " + lines);
+        assertFalse(lines.contains("Melee Damage: 7"),
+                () -> "7 is the authored figure and is what this slice exists to stop showing; got " + lines);
+        assertTrue(lines.contains("Gear Score: 340"),
+                () -> "the score line explains the damage line, so both or neither; got " + lines);
+    }
+
+    /**
+     * NOT ROUNDED, and the fixture is chosen so rounding would be visible.
+     *
+     * <p>{@code 23.8} is exactly what {@code WeaponAttackItems} writes onto the attribute. Rounding
+     * to {@code 24} on the tooltip would reintroduce this slice's own defect one decimal place
+     * smaller -- a number the player sees that the system does not produce.
+     */
+    @Test
+    void aScaledDamageFigureKeepsItsFractionRatherThanRounding() {
+        List<String> lines = textLines(WeaponLore.build(rareFireSword(), elementsWithFire(),
+                OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(340)));
+
+        assertFalse(lines.contains("Melee Damage: 24"),
+                () -> "rounding is the same lie, smaller; got " + lines);
+    }
+
+    /** The OTHER render site: an ability's literal payload, scaled by the same score. */
+    @Test
+    void aScoredWeaponRendersItsAbilityDamageScaledToo() {
+        List<String> lines = textLines(WeaponLore.build(swordWithFireball(), elementsWithFire(),
+                OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(175)));
+
+        // 12 authored x 175/100 = 21. Three distinct numbers: 12, 175, 21.
+        assertTrue(lines.contains("Fire Damage: 21"),
+                () -> "the ability block reads the literal amount, scaled; got " + lines);
+        assertFalse(lines.contains("Fire Damage: 12"),
+                () -> "12 is the authored literal; got " + lines);
+    }
+
+    /**
+     * *** THE EXCLUSION, AND IT IS THE ROW R13 CANNOT SEE. ***
+     *
+     * <p>R13 boots a stamped {@code volley_stone} and reads its DAMAGE, which is correct and says
+     * nothing about the tooltip. <b>A build that scales the display while the exclusion holds at
+     * runtime passes R13 and lies on the screen</b> -- so this is the display half, and the two
+     * together are what make the claim whole.
+     *
+     * <p><b>The stamp is REAL and present.</b> Stones minted between slice 12 and 12b carry one, so
+     * {@code orAbsent} alone cannot distinguish "declared unscored" from "carries no stamp" -- and
+     * {@code scaledDamage(4, 400)} is {@code 16}, which is what a build without the door renders.
+     */
+    @Test
+    void anUnscoredWeaponRendersItsAuthoredDamageEvenWithARealStamp() {
+        List<String> lines = textLines(WeaponLore.build(unscoredStone(), elementsWithFire(),
+                OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(400)));
+
+        // 4 authored, score 400, and 16 is the number a missing door produces. All three distinct.
+        assertTrue(lines.contains("Kinetic Damage: 4  x 3"),
+                () -> "an unscored weapon shows what it deals: the AUTHORED 4; got " + lines);
+        assertFalse(lines.stream().anyMatch(l -> l.contains("16")),
+                () -> "16 is scaledDamage(4, 400) -- the door did not fire; got " + lines);
+        assertFalse(lines.stream().anyMatch(l -> l.startsWith("Gear Score:")),
+                () -> "the label promises a contribution to the average, which this item is refused; got " + lines);
+    }
+
+    /** The multiplier and the scaling are independent, so one row stages BOTH moving at once. */
+    @Test
+    void aScoredVolleyRendersBothItsScaledNumberAndItsShotCount() {
+        List<String> lines = textLines(WeaponLore.build(scoredVolley(), elementsWithFire(),
+                OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(250)));
+
+        // 4 authored x 250/100 = 10, three shots. Four distinct numbers: 4, 250, 10, 3.
+        assertTrue(lines.contains("Kinetic Damage: 10  x 3"),
+                () -> "per-shot figure scaled, count beside it -- never multiplied together; got " + lines);
+        assertFalse(lines.stream().anyMatch(l -> l.contains("30")),
+                () -> "30 would be the volley total, which is true of no single hit; got " + lines);
+    }
+
+    /** A three-shot volley of a literal payload, DECLARED UNSCORED: the volley_stone shape. */
+    private static WeaponDefinition unscoredStone() {
+        return volleyStone(true);
+    }
+
+    /** The same shape WITHOUT the declaration, so the only difference between the two rows is it. */
+    private static WeaponDefinition scoredVolley() {
+        return volleyStone(false);
+    }
+
+    /**
+     * One builder, one flag. <b>The two fixtures differ in exactly the field under test</b>, so a
+     * row that passes for the wrong reason cannot be explained by any other difference between them.
+     */
+    private static WeaponDefinition volleyStone(boolean unscored) {
+        AbilityDefinition scatter = new AbilityDefinition(
+                "volley_stone/right_click", "Scatter", "kinetic", "none",
+                20, ResourceCost.FREE,
+                new CastSpec.Volley(10, 3, 5, new CastSpec.Ray(32.0, "beam")),
+                List.of(new EffectSpec.Damage(4, "kinetic")), List.of("Three bolts."));
+        return new WeaponDefinition("volley_stone", "Volley Stone", "kinetic", Rarity.RARE,
+                WeaponClass.RANGER, "prismarine_shard", 0.0, 0.0, SweepShare.NONE,
+                WeaponDefinition.NO_QUIVER, 0,
+                List.of(new TriggerBinding("right_click", scatter)), List.of("Flavour."),
+                java.util.Optional.empty(), unscored);
+    }
 }
