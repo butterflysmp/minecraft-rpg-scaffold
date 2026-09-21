@@ -148,9 +148,23 @@ public final class EffectApplier {
                 //
                 // *** AND IT MUST NOT BE COPIED INTO THE WeaponDamage ARM BELOW. *** That arm reads
                 // caster.attackDamage(), which IS the ATTACK_DAMAGE stat -- and WeaponAttackItems has
-                // ALREADY scaled the score into that stat at mint. Applying it again there makes a
+                // ALREADY scaled the score into that stat. Applying it again there makes a
                 // score-400 weapon deal 16x instead of 4x, and NOTHING IN THE SUITE WOULD LOOK WRONG:
                 // both factors are individually correct and each has its own passing test.
+                //
+                // *** THIS SAID "at mint" UNTIL 2026-09-21 AND THAT WAS THE WRONG MECHANISM. ***
+                // The warning above is correct and unchanged; only the explanation of WHERE the
+                // scaling happens was wrong, which is the more dangerous half to get wrong because
+                // nothing contradicts it. NOTHING WRITES THAT STAT AT MINT. It is reconciled by
+                // PlayerHealthSystem's repeating task every RECONCILE_PERIOD_TICKS = 5, from the
+                // gear-score stamp on the stack currently in hand -- one writer, one clock, no
+                // cache. See CombatantStats.reconcileAttackModifiers, which now records that as an
+                // architectural fact rather than an incidental one.
+                //
+                // The cost of the wrong mechanism was not a bug: this phrasing was inherited into a
+                // commit body and then into a slice plan, where it implied a freshly given weapon
+                // must carry an unscaled attribute, and very nearly bought a re-scoping of 12c to
+                // fix a defect that does not exist.
                 double amount = HitDamage.dealt(
                         HitDamage.hitBase(GearScore.scaledDamage(d.amount(), caster.triggerScore()),
                                 caster.enchantDamagePercent(), caster.classDamageBonus()),

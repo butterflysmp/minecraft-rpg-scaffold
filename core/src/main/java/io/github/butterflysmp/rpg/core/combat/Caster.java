@@ -5,7 +5,26 @@ import java.util.UUID;
 
 /**
  * The caster as a SOURCE of effects: an identity, plus the stats an effect needs when it lands.
- * Frozen at cast time, on the caster's own thread.
+ * <b>Its DAMAGE INPUTS are frozen at cast time, on the caster's own thread; AIM IS NOT PART OF THIS
+ * RECORD and a volley re-reads it per shot.</b>
+ *
+ * <h2>*** NAME WHAT IS FROZEN. "FROZEN AT CAST TIME" HAS NOW MISLED TWICE, IN OPPOSITE DIRECTIONS. ***</h2>
+ *
+ * This line read simply <i>"Frozen at cast time"</i> until 2026-09-21, and the phrase is memorable
+ * enough to stand in for things it does not govern:
+ *
+ * <ul>
+ *   <li><b>Slice 12b:</b> {@code triggerScore} was documented as frozen and defaulting to the
+ *       baseline, which made a field <b>nothing ever wrote</b> look correct at the call site.</li>
+ *   <li><b>Slice 12c:</b> the same phrase, accurately recalled, made a volley's <b>AIM</b> read as
+ *       fixed -- and {@code CastExecutor.volley} re-reads aim per shot, deliberately, so a player
+ *       can track a moving target mid-burst. A criterion was written on that false premise.</li>
+ * </ul>
+ *
+ * <b>A documented property, correctly remembered, applied to the adjacent thing it does not
+ * govern.</b> The generalisation is cheap and is the whole fix: <b>name WHAT is frozen, never that
+ * the record is.</b> "Damage inputs frozen; aim re-read per shot" cannot be stretched the way
+ * "frozen at cast time" can.
  *
  * This deliberately is NOT a {@link CombatantSnapshot}, though it is projected from one. A snapshot
  * describes a combatant as a TARGET -- where it is, whether it is alive, whether it is a player --

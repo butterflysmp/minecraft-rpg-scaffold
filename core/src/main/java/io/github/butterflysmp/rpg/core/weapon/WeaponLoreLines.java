@@ -16,10 +16,38 @@ import java.util.OptionalInt;
  * No Adventure, no Bukkit -- lives in core so it runs in the 2-second test loop, and the paper
  * {@code WeaponLore} builder only wraps these in colour/layout with the class label it owns.
  *
- * Every damage number the tooltip shows comes from the {@link WeaponDefinition} statically -- the
- * declared {@code attackDamage} for a basic (weapon_damage) hit, or an ability's literal
- * {@code Damage.amount} for a costed payload -- never the holder's resolved ATTACK_DAMAGE stat.
- * The tooltip describes the weapon, not whoever swings it, so it is mint-time only and cannot drift.
+ * <h2>*** AN INVARIANT RETIRED 2026-09-21, AND THE WEAKER ONE THAT REPLACES IT ***</h2>
+ *
+ * <b>This class used to promise:</b> <i>"Every damage number the tooltip shows comes from the
+ * {@link WeaponDefinition} STATICALLY -- never the holder's resolved ATTACK_DAMAGE stat. The tooltip
+ * describes the weapon, not whoever swings it, so it is mint-time only and cannot drift."</i>
+ *
+ * <p><b>Slice 12c gave that up ON PURPOSE. It is not a stale comment and it was not edited like a
+ * typo</b> -- a guarantee was surrendered, and recording it as a correction would hide that. The
+ * reason: slices 12 and 12b made a weapon's real damage a function of its gear-score STAMP, so a
+ * definition-only tooltip was showing one number while the weapon dealt another. <b>The static
+ * promise was being kept by a tooltip that lied.</b> Truthfulness won.
+ *
+ * <h2>THE REPLACEMENT, AND IT IS THE HALF THAT MATTERS</h2>
+ *
+ * <b>Every number this tooltip shows is a function of the DEFINITION and the ITEM'S OWN STORED
+ * STATE, and of NOTHING ELSE. In particular, never of whoever is holding it.</b>
+ *
+ * <p>The surviving axis is <b>item-vs-holder</b>, not definition-vs-item -- and it is the one that
+ * was always doing the work. Two consequences, both still true and both worth being able to cite:
+ * rendering needs no {@code Player}, and <b>two people looking at the same item see the same
+ * number.</b> A holder-dependent line would break both, and that is what may not creep in next.
+ *
+ * <p>The quiver count was the first line to cross from definition to item (see its own section
+ * below, which argued the case before there was a second). <b>Gear score is the second, so this is
+ * now the rule rather than an exception</b>, which is why the invariant is restated here instead of
+ * a third exception being carved out.
+ *
+ * <p><b>What a damage number is made of, concretely:</b> the declared {@code attackDamage} for a
+ * basic {@code weapon_damage} hit, or an ability's literal {@code Damage.amount} for a costed
+ * payload -- each then scaled by the item's own stamped score at the paper render site. <b>Still
+ * never the holder's resolved ATTACK_DAMAGE stat</b>, which carries enchant and class bonuses that
+ * belong to the player rather than to the item.
  *
  * {@link DamagePayload.DamageSource} is the load-bearing distinction here: it is what lets the
  * tooltip render a basic attack as a STAT BLOCK (class-labelled damage + attack speed, no prose) and

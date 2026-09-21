@@ -356,6 +356,38 @@ public final class CombatantStats {
      * the combatant's equipped weapon). Same leak-proof diff as {@link #reconcileMaxModifiers}, on the
      * attack stat. SILENT: attack damage has no display seam (no heart bar, no nameplate) -- the tooltip
      * reads it on demand -- so this emits no {@link HealthChange}. No-op on an untracked combatant.
+     *
+     * <h2>*** ONE WRITER, ONE CLOCK, NO CACHE. AN ARCHITECTURAL FACT, MEASURED 2026-09-20. ***</h2>
+     *
+     * <b>A player's main-hand attack damage has exactly one producer and exactly one caller</b>, and
+     * the gear-score feature depends on that being true:
+     *
+     * <pre>
+     *   producer   WeaponAttackItems.desiredAttackModifiers   -- the ONLY site writing MAIN_HAND
+     *   caller     PlayerHealthSystem's RepeatingTask         -- the ONLY caller of this method
+     *   clock      RECONCILE_PERIOD_TICKS = 5
+     * </pre>
+     *
+     * The producer computes {@code GearScore.scaledDamage(authored, heldScore(player))} from the
+     * stack in hand <b>on every scan</b>. <b>Nothing writes this stat at mint, and nothing caches
+     * it</b>, so an item's attack damage cannot go stale with respect to its own gear-score stamp:
+     * a freshly acquired, never-edited weapon is correct within one scan of being held.
+     *
+     * <p><b>THIS WAS PREDICTED TO BE A DEFECT AND MEASURED NOT TO BE.</b> Reading the acquisition
+     * ordering -- mint, then roll, then stamp -- suggests the attribute must have been written
+     * before the score existed. It suggests that because {@code EffectApplier}'s own comment said
+     * the score was folded in <i>"at mint"</i>, which is wrong about the mechanism. <b>There is no
+     * mint-time write to be stale.</b>
+     *
+     * <p><b>So the next person to add a second writer to this stat is breaking something, and it
+     * will not announce itself:</b> a cached or mint-time value is correct on every item that has
+     * never changed hands and wrong only on the ones that have. <b>If a second producer is needed,
+     * it has to answer how it stays in step with a stamp that can change under it.</b>
+     *
+     * <p>The one residue is a timing precondition rather than a hazard: <b>up to 5 ticks</b>
+     * (250 ms) after the hand's contents change, this stat still describes the previous item. That
+     * is invisible to a person and visible to an automated reading, which is why any gate row
+     * reading it states the wait in its staging.
      */
     public void reconcileAttackModifiers(UUID id, Map<String, Double> desired) {
         HealthState state = states.get(id);
