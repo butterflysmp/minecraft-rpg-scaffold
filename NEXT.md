@@ -11279,10 +11279,37 @@ those is a slice-13a question.
 > - **A player reports a worn or broken item they cannot fix** — the first real report is the
 >   strongest possible argument for a design, and it is what says the gap is reached in practice
 >   rather than in principle.
-> - **13b lands**, at which point the anvil has a confirm button, an XP spend and a consumption
->   path — i.e. every mechanism repair would need, already built and already gated.
-> - **Anything proposes a second use for the anvil screen.** The cell at 31 is 13b's; a third
->   function would need a layout conversation, and repair should be in the room for it.
+> - ~~**13b lands**, at which point the anvil has a confirm button, an XP spend and a consumption
+>   path — i.e. every mechanism repair would need, already built and already gated.~~
+>   ***FIRED. 13b has landed.*** Struck rather than deleted, so the list records that a trigger
+>   fired rather than silently losing one — the same reason the standing-debt list keeps its paid
+>   rows struck.
+> - **A player reports a worn or broken item they cannot fix.** *(still open — see above)*
+> - **Anything proposes a second use for the anvil screen.** The cell at 31 is **taken** — it is
+>   13b's confirm — so a third function now needs a layout conversation for real, and repair should
+>   be in the room for it.
+
+> ### *** WHAT 13b ACTUALLY BUILT, SO THE DESIGN DOES NOT START FROM NOTHING ***
+>
+> **Every mechanism repair would need now exists and is gated:**
+>
+> | mechanism | where |
+> |---|---|
+> | a confirm button with a three-second arm | `AnvilButton`, `AnvilMenuLayout.CONFIRM_SLOT` |
+> | an XP spend, points-symmetric | `AnvilMenu.attemptTransfer`'s third write |
+> | an item consumed from a menu slot | the second write — **the first deliberate deletion in `paper/menu/`** |
+> | a re-evaluation at the moment of the click | `AnvilReconcile` |
+> | a cost table keyed on rarity | `AnvilCost` — **the first consumer of `Rarity` as a cost axis** |
+>
+> **THE QUESTION IS STILL NOT ANSWERED AND THIS ENTRY STILL DOES NOT ANSWER IT.** Whether repair is
+> the anvil's job, what it costs, what it costs it IN, and whether a *broken* item can be repaired
+> at all or only a worn one — none of those is settled by 13b having shipped. **What changed is that
+> the argument "we would have to build the machinery first" is no longer available.**
+>
+> **And the gap got slightly worse, which is worth saying plainly.** 13b hijacks `ANVIL`,
+> `CHIPPED_ANVIL` and `DAMAGED_ANVIL`, so **the vanilla repair a player might still have reached by
+> accident is now gone on all three**. Nothing in the game restores durability except
+> `/rpg durability`.
 
 **What is deliberately NOT decided here:** whether repair is the anvil's job at all. It is the
 obvious home and that is not the same as the right one — a grindstone, a material cost, or a

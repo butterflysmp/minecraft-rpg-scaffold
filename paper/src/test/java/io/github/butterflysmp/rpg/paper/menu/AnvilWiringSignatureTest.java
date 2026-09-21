@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -168,6 +169,195 @@ class AnvilWiringSignatureTest {
         assertEquals(-1, indexOf(lines, "new AnvilMenu(player, weapons, shields, armor, tools, adapters, () ->"),
                 "a world anvil must not be given a hub supplier -- the constructor signature IS the "
                         + "origin discriminator");
+    }
+
+    // --- 13b: the confirm path -------------------------------------------------------------------
+    //
+    // *** EVERYTHING BELOW IS A SCAN, AND THE CLASS JAVADOC'S WARNING APPLIES TO ALL OF IT. ***
+    // These rows prove the CALLS ARE WRITTEN. The behavioural guards are AnvilDecisionTest,
+    // AnvilReconcileTest and AnvilButtonTest. They are here because AnvilMenu cannot be constructed
+    // without a server, so the ORDER and PLACEMENT of statements inside it is reachable by nothing
+    // else at all.
+
+    /**
+     * *** THE CONFIRM RECOMPUTES. IT DOES NOT SPEND WHAT WAS RENDERED. ***
+     *
+     * <p>The wallet is the only input to the decision that is not an input slot: XP can move while
+     * the menu is open and nothing about that re-arms anything. <b>Re-evaluation is its only
+     * guard.</b>
+     */
+    @Test
+    void theConfirmRECOMPUTESTheDecisionAndReconcilesItAgainstWhatWasDisplayed() throws IOException {
+        List<String> lines = read(ANVIL_MENU, 400);
+
+        int confirm = indexOf(lines, "private void attemptTransfer()");
+        assertTrue(confirm > 0, "the confirm handler must exist");
+
+        int recompute = indexOf(lines, "AnvilDecision current = decide(target, donor);", confirm);
+        assertTrue(recompute > confirm,
+                "IT MUST RECOMPUTE. Spending the displayed decision makes the rendered preview the "
+                        + "authority, and the wallet can have moved since it was drawn.");
+
+        int reconcile = indexOf(lines, "AnvilReconcile.of(displayedDecision, current)", recompute);
+        assertTrue(reconcile > recompute,
+                "and it must RECONCILE the two, in that order -- displayed against current");
+
+        // AND IT MUST NOT COMPARE THE RENDERED TEXT. lastConfirmText is a repaint-suppression cache
+        // sitting in the same class; two different decisions can format identically.
+        assertEquals(-1, indexOf(lines, "lastConfirmText.equals", confirm),
+                "THE COMPARISON IS OVER THE DECISION, NEVER THE DISPLAY. Same target rarity means "
+                        + "the same price, so a donor swapped for one of a different score renders "
+                        + "the same string -- a false negative on the only irreversible action.");
+    }
+
+    /**
+     * *** THE DEADLINE HAS TWO TRIGGERS AND EACH IS SCANNED SEPARATELY. ***
+     *
+     * <p>Dropping one leaves the other intact, so a single "is rearm called" row would vouch for
+     * whichever half it happened to find.
+     */
+    @Test
+    void theDeadlineReArmsOnAnINPUTChange_bothGestures() throws IOException {
+        List<String> lines = read(ANVIL_MENU, 400);
+
+        int moved = indexOf(lines, "if (click.itemMoved())");
+        assertTrue(moved > 0, "the item-moved arm must exist");
+        int armedOnClick = indexOf(lines, "rearm();", moved);
+        assertTrue(armedOnClick > moved && armedOnClick < moved + 12,
+                "a placement or a removal must restart the countdown, inside that arm");
+
+        int drag = indexOf(lines, "protected void onDragPermitted()");
+        assertTrue(drag > 0, "the drag hook must exist");
+        int armedOnDrag = indexOf(lines, "rearm();", drag);
+        assertTrue(armedOnDrag > drag && armedOnDrag < drag + 5,
+                "and a permitted drag is an input change like any other");
+
+        // AND rearm() IS SYNCHRONOUS, NOT INSIDE THE DEFERRED REPAINT. It touches an int and needs
+        // no knowledge of the new contents; deferring it would let a click in that tick act on a
+        // stale deadline.
+        int deferred = indexOf(lines, "onEntityLater(viewer, this::refreshPreview, 1)", moved);
+        assertTrue(armedOnClick < deferred,
+                "rearm must come BEFORE the deferred repaint, not inside it");
+    }
+
+    /**
+     * *** THE SECOND TRIGGER: A FACE THAT BECOMES ACTIONABLE STARTS THE CLOCK FROM ZERO. ***
+     *
+     * <p>Without it, a player looking at a RED cannot-afford button who kills a mob sees the face
+     * become <b>LIME with no countdown</b>, and a click already in flight lands on an irreversible
+     * action the arm never watched.
+     *
+     * <p><b>And it must be one-directional.</b> If a decision getting WORSE also re-armed, the
+     * re-arm would catch the wallet-drop case as well as re-evaluation, and the two guards would
+     * stop being separable.
+     */
+    @Test
+    void theDeadlineReArmsWhenTheFaceBecomesACTIONABLE_andOnlyInThatDirection() throws IOException {
+        List<String> lines = read(ANVIL_MENU, 400);
+
+        int repaint = indexOf(lines, "private void refreshPreview()");
+        assertTrue(repaint > 0, "the repaint must exist");
+
+        int transition = indexOf(lines,
+                "if (current.actionable() && (displayedDecision == null || !displayedDecision.actionable()))",
+                repaint);
+        assertTrue(transition > repaint,
+                "ONE-DIRECTIONAL, AND THE CONDITION IS THE RULING. It must test that the NEW "
+                        + "decision is actionable and the OLD one was not -- a symmetric test would "
+                        + "re-arm on a decision getting worse and entangle the two guards.");
+
+        int armed = indexOf(lines, "rearm();", transition);
+        assertTrue(armed > transition && armed < transition + 4,
+                "and the branch must actually restart the clock");
+    }
+
+    /**
+     * *** THE WALLET IS POINTS-SYMMETRIC: READ ONCE, COMPUTE ONCE, WRITE ONCE. ***
+     *
+     * <p>Both existing spenders say why {@code giveExp(-n)} is banned -- it walks the levels down
+     * through float accumulation inside NMS and bumps the EXPERIENCE scoreboard criterion -- and
+     * {@code setLevel(getLevel() - levels)} silently discards the part-full bar.
+     */
+    @Test
+    void theWalletWriteIsTheSYMMETRICPair_andTheBannedFormsAreAbsent() throws IOException {
+        List<String> lines = read(ANVIL_MENU, 400);
+
+        int confirm = indexOf(lines, "private void attemptTransfer()");
+        int read = indexOf(lines, "XpCurve.totalPoints(viewer.getLevel(), viewer.getExp())", confirm);
+        assertTrue(read > confirm, "the wallet is read from the two numbers on the player's screen");
+
+        int level = indexOf(lines, "viewer.setLevel(XpCurve.levelFor(remaining));", read);
+        int exp = indexOf(lines, "viewer.setExp(XpCurve.progressFor(remaining));", read);
+        assertTrue(level > read, "and written back through XpCurve's exact inverse");
+        assertTrue(exp == level + 1,
+                "BOTH HALVES, ADJACENT. Writing the level without the bar loses the fraction, "
+                        + "which is a point-per-purchase leak that nothing reports.");
+
+        assertEquals(-1, indexOf(lines, "giveExp"), "giveExp is banned -- see both spenders");
+        assertEquals(-1, indexOf(lines, "getTotalExperience"),
+                "and getTotalExperience is never the input: it does not track spends");
+        assertEquals(-1, indexOf(lines, "viewer.setLevel(viewer.getLevel()"),
+                "nor setLevel(getLevel() - n), which discards the part-full bar");
+    }
+
+    /**
+     * *** THE THREE WRITES ARE ADJACENT, AND NOTHING HOPS A SCHEDULER BETWEEN THEM. ***
+     *
+     * <p>{@code CraftingMenu} states the rule this rests on: an ordering argument is correct
+     * <i>"only because nothing hops a scheduler in between … so nothing can move underneath
+     * them."</i> A deferred call inserted between the stamp and the deduct would make the residual
+     * table a work of fiction.
+     */
+    @Test
+    void theTHREEWritesAreAdjacentWithNoSchedulerHopBetweenThem() throws IOException {
+        List<String> lines = read(ANVIL_MENU, 400);
+
+        int confirm = indexOf(lines, "private void attemptTransfer()");
+        int stamp = indexOf(lines, "GearScoreItems.write(meta, ready.newScore()", confirm);
+        int consume = indexOf(lines, "getInventory().setItem(DONOR_SLOT, null);", stamp);
+        int deduct = indexOf(lines, "viewer.setLevel(XpCurve.levelFor(remaining));", consume);
+
+        assertTrue(stamp > confirm, "1. the target is stamped");
+        assertTrue(consume > stamp, "2. THEN the donor is consumed -- consume-first destroys an "
+                + "item and upgrades nothing, which is the one residual with no visible trace");
+        assertTrue(deduct > consume, "3. AND THE WALLET IS LAST -- the anvil CHARGES, so it takes "
+                + "EnchantMenu's ordering, not the grindstone's refund ordering");
+
+        // NOTHING FALLIBLE OR DEFERRED BETWEEN THEM.
+        for (int i = stamp; i <= deduct; i++) {
+            if (isComment(lines.get(i))) continue;
+            assertFalse(lines.get(i).contains("onEntityLater") || lines.get(i).contains("onEntity("),
+                    "NO SCHEDULER HOP between the three writes -- line " + (i + 1) + ": "
+                            + lines.get(i).trim());
+            assertFalse(lines.get(i).contains("say("),
+                    "and nothing that can throw on a player's connection -- line " + (i + 1));
+        }
+
+        // AND THE RE-RENDER RIDES THE SAME editMeta AS THE WRITE, which is slice 12c's door: a
+        // per-item value that is RENDERED has to be re-rendered wherever it is WRITTEN.
+        int refresh = indexOf(lines, "GearItems.refreshLore(meta, definition, adapters);", stamp);
+        assertTrue(refresh == stamp + 1,
+                "the lore refresh must be the very next line, inside one editMeta");
+    }
+
+    /**
+     * *** THE PREVIEW CELL IS WRITTEN AND NEVER READ. ***
+     *
+     * <p>13a's javadoc promised <i>"13b will not transfer by moving it"</i>. This is the slice that
+     * could have falsified it, so the absence is asserted rather than assumed.
+     */
+    @Test
+    void theOUTPUTCellIsNeverREADByTheConfirm_theClaim13aMade() throws IOException {
+        List<String> lines = read(ANVIL_MENU, 400);
+
+        assertEquals(-1, indexOf(lines, "getItem(OUTPUT_SLOT)"),
+                "NOTHING READS THE PREVIEW. It is a readout that never becomes cargo, and a "
+                        + "transfer that moved it would be handing the player a minted copy.");
+
+        int confirm = indexOf(lines, "private void attemptTransfer()");
+        int target = indexOf(lines, "getInventory().getItem(TARGET_SLOT);", confirm);
+        assertTrue(target > confirm,
+                "the confirm reads the TARGET cell -- the item it mutates in place");
     }
 
     // --- helpers, and their own controls ---------------------------------------------------------

@@ -1,14 +1,23 @@
-# GATE — The anvil screen (Slice 13a)
+# GATE — The anvil screen (Slices 13a and 13b)
 
 **Status: NOT RUN.** Every prediction below was written BEFORE any boot, and **no prediction is
 edited once a row has been read.** Readings go in the `READ` cell beside the prediction they answer,
 never over it.
 
+**SLICE 13b ADDED R21–R30 AND NONE HAS BEEN BOOTED.** The file now spans two slices; the block below
+says which rows belong to which.
+
 ```
-NOT RUN   22   R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R12b R13 R14 R15 R16 R17 R18 R19 R20
-          ──
-          22   = git grep -c '^### R' <ref> -- GATE-anvil.md
+NOT RUN, 13a   22   R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R12b R13 R14 R15 R16 R17 R18 R19 R20
+NOT RUN, 13b   10   R21 R22 R23 R24 R25 R26 R27 R28 R29 R30
+               ──
+               32   = git grep -c '^### R' <ref> -- GATE-anvil.md
 ```
+
+> ***THE 13b ROWS ARE THE DESTRUCTIVE ONES, AND THEY ARE WHAT THE SPLIT BOUGHT.*** Every 13a row
+> could be read with nothing at stake. From R21 down, **a wrong reading costs the player an item and
+> some XP with no undo and no output slot to take anything back from.** Read R0 first, and read it
+> against a 13b symbol — the probe below has moved.
 
 **R12b is a SOLE WITNESS and is marked as one in its own row.** It is the only end-to-end reading of
 the armour split anywhere — the composition it covers has no unit guard and cannot have one, because
@@ -43,7 +52,8 @@ the wrong worktree whose mtime was current and which passed every staleness chec
 
 | | |
 |---|---|
-| **Setup** | <pre>Copy-Item run/plugins/rpg-0.1.0-SNAPSHOT.jar "$env:TEMP\deployed.zip" -Force<br>Expand-Archive "$env:TEMP\deployed.zip" -DestinationPath "$env:TEMP\deployed" -Force<br>$classes = Get-ChildItem "$env:TEMP\deployed\io\github\butterflysmp\rpg" -Recurse -Filter *.class<br>Write-Host "$($classes.Count) class files scanned"<br>$classes \| Select-String -Pattern ARMOR_HEAD -Encoding ascii \| Select-Object -ExpandProperty Path</pre> |
+| **Setup** | <pre>Copy-Item run/plugins/rpg-0.1.0-SNAPSHOT.jar "$env:TEMP\deployed.zip" -Force<br>Expand-Archive "$env:TEMP\deployed.zip" -DestinationPath "$env:TEMP\deployed" -Force<br>$classes = Get-ChildItem "$env:TEMP\deployed\io\github\butterflysmp\rpg" -Recurse -Filter *.class<br>Write-Host "$($classes.Count) class files scanned"<br>$classes \| Select-String -Pattern CANNOT_AFFORD -Encoding ascii \| Select-Object -ExpandProperty Path</pre> |
+| **Predict** | **THE SYMBOL MOVED WITH THE SLICE.** It was `ARMOR_HEAD` through 13a; a 13a jar carries that and none of 13b, so probing it now would clear a build with no confirm button in it. `CANNOT_AFFORD` exists only from 13b, and the hit should name `AnvilFace$State.class`. |
 | **Predict** | **The class count is non-zero**, and it is RECORDED in the reading. **`0 scanned` means the unpack failed, and an absence underneath a zero means nothing at all.** |
 | **Predict** | At least one path is printed, and it includes `TransferKey.class`. A **zero-match** result means the deployed jar predates this slice, whatever its mtime says. |
 | **Predict** | **STATE WHICH TREE THE JAR WAS BUILT FROM.** A worktree checkout makes "the repo" ambiguous, and that ambiguity is what cost slice 12b a boot. |
@@ -306,4 +316,114 @@ is also a BARRIER, so a refused screen carries two.
 | **Setup** | With a RED face showing, hover slot **49**, then slot **24**. One screenshot reads both. |
 | **Predict** | **49 is a barrier with NO LORE AT ALL** — its whole content is its name. **24 is a barrier that is ALL LORE** — the instruction as its name, plus `Nothing is spent until you confirm.` |
 | **Predict** | **Neither reads "Not implemented yet."** That string belongs to `MenuIcons.placeholder`, which means NOT BUILT; a refusal is a working readout and this project has shipped a working readout in placeholder clothes once already. |
+| **READ** | _(not run)_ |
+
+---
+
+# SLICE 13b — THE DESTRUCTIVE ROWS
+
+**Nothing below can be read twice from one staging.** Every row that confirms consumes an item and
+spends XP, so each needs its own `/rpg give` and its own `/xp query` before and after.
+
+> ***COUNT THE ITEMS AND THE XP BEFORE AND AFTER EVERY ROW.*** A gesture that DUPLICATES and a
+> gesture that STEALS look identical in a screenshot of the after state, and **every row here is
+> written against loss while a duplicate satisfies all of them.** The vault's ROW 103 is the
+> precedent: *"the number to write down is ONE, and the failure is TWO."*
+
+### R21 — The confirm cell exists, is armed, and counts down
+
+| | |
+|---|---|
+| **Setup** | Open the screen from the hub. Put a legal, affordable pair in 20 and 22. Watch slot **31** and the bottom row. |
+| **Predict** | 31 holds a dye reading **`Arming... 3`**, then `2`, then `1`, then **`Raise to <N> -- <C> XP`**. The bar is **YELLOW** while it counts and **LIME** when it lands. |
+| **Predict** | **The bar and the button move together, always.** They are two lookups on one state; a screenshot showing a lime bar under a yellow button is a defect regardless of which looks right. |
+| **READ** | _(not run)_ |
+
+### R22 — A click during the lockout does NOTHING and SAYS nothing
+
+| | |
+|---|---|
+| **Setup** | `/xp query` first. Place the pair, then click 31 **five times** while the bar is yellow. `/xp query` again. |
+| **Predict** | Nothing is consumed, nothing is stamped, **the XP figure is identical**, and **no chat line appears at all** — not even a refusal. The countdown is the feedback. |
+| **Predict** | **If clicking during yellow transfers anything, the arming delay does not exist** — it is a decoration over a live button, which is worse than no delay because the player trusts it. |
+| **READ** | _(not run)_ |
+
+### R23 — *** THE DONOR IS CONSUMED EXACTLY ONCE. SOLE WITNESS. ***
+
+| | |
+|---|---|
+| **Setup** | **One** target and **one** donor in the world, both ours, both scored, donor higher. `/xp query`. Wait for LIME. Click 31 **once**. |
+| **Predict** | Slot 22 is **EMPTY**. Slot 20 holds **exactly one** item. **Your inventory gains nothing.** The XP figure drops by exactly the number the button displayed. |
+| **Predict** | Now click 31 **four more times, fast**. **Still nothing** — the donor slot is empty so the face is GRAY, and a GRAY click is silent. The XP figure does not move again. |
+| **Predict** | ***THE NUMBER TO WRITE DOWN IS ONE DONOR CONSUMED AND ONE CHARGE MADE.*** A build that consumed twice, or charged twice, passes every other row in this block. |
+| **READ** | _(not run)_ |
+
+### R24 — The target keeps everything except its score
+
+| | |
+|---|---|
+| **Setup** | Use a target that is **enchanted**, **damaged** (swing it at something first) and carries its normal name. Note all three. Transfer onto it. |
+| **Predict** | Same name, same enchant lines, **same durability bar**, and the `Gear Score:` line is now the donor's number. |
+| **Predict** | **Losing durability here would be a relog-to-repair exploit and losing the enchants a relog-to-unlock one** — both are carried by `carryInstanceData`, and this row is what reads that the in-place write did not bypass it. |
+| **READ** | _(not run)_ |
+
+### R25 — The XP deducted equals the figure the button displayed
+
+| | |
+|---|---|
+| **Setup** | `/xp query`. Note the button's number. Confirm. `/xp query`. |
+| **Predict** | `before − after` equals the button's number **exactly**. Not approximately, and not off by one. |
+| **Predict** | **Check at a part-full bar, not on a round level.** The wallet is read and written in points through the curve's exact inverse; a build using `setLevel(getLevel() − n)` loses the fraction and is invisible at a full bar. |
+| **READ** | _(not run)_ |
+
+### R26 — *** CONFIRM AFTER SWAPPING AN INPUT MID-ARM. THE ROW THIS SLICE EXISTS FOR. ***
+
+| | |
+|---|---|
+| **Setup** | Get to LIME. **Swap the donor for a different item** and click 31 **immediately**. |
+| **Predict** | **Nothing happens, NO MESSAGE appears, and the countdown is visibly back at 3.** The restarting countdown IS the feedback; this row reads it. |
+| **Predict** | Wait for LIME again and click: **now** it transfers, using the NEW donor's score. |
+| **Predict** | **A build that transferred on the first click has used the score of an item that is no longer in the slot.** Silent, plausible and permanent. |
+| **READ** | _(not run)_ |
+
+### R27 — Spend XP elsewhere while the face is LIME, then confirm
+
+**THE OTHER HALF OF THE WALLET, AND IT MUST NOT BE MERGED WITH R26.** One reads a re-arm; this reads
+a spoken refusal. They are different mechanisms and neither can pass for the other.
+
+| | |
+|---|---|
+| **Setup** | Get to LIME with a wallet **barely** above the cost. **Without touching either slot**, spend XP elsewhere — a second player, a command block, or `/xp set` from another account. Click 31. |
+| **Predict** | Refused **WITH a chat line**: `This transfer costs <C> XP; you have <W>.` Nothing consumed, nothing stamped. |
+| **Predict** | **THE WINDOW IS HALF A SECOND AND THAT IS NOT A DEFECT.** The repaint re-decides every ten ticks, so after that the face is already RED and the click is silent. **If the row is hard to stage, say so and rely on `AnvilReconcileTest` — the unit rows are the primary witness here and this boot row is best-effort by construction.** |
+| **READ** | _(not run)_ |
+
+### R28 — Gain XP while the face is RED: it must go YELLOW, never straight to LIME
+
+| | |
+|---|---|
+| **Setup** | Stage a legal pair you **cannot afford**. The bar is RED and 31 reads `This transfer costs … you have …`. **Without touching either slot**, gain XP until you cross the price. |
+| **Predict** | The moment it crosses, the cell goes **YELLOW at 3 seconds** — a fresh countdown — and only then LIME. |
+| **Predict** | ***IT MUST NOT ARRIVE LIME.*** A face that becomes actionable with no countdown is a click already in flight landing on an irreversible action through the one path the arm does not otherwise watch. |
+| **READ** | _(not run)_ |
+
+### R29 — Close, death and disconnect mid-arm return both items and consume nothing
+
+| | |
+|---|---|
+| **Setup** | Both slots full, countdown running. (i) **Esc**. (ii) re-stage, **`/kill`**. (iii) re-stage, **disconnect and rejoin**. (iv) re-stage, **`stop` the server** and restart. |
+| **Predict** | **Exactly two items** back each time, unchanged, and the XP figure never moves. No third item, and no copy of the preview. |
+| **READ** | _(not run)_ |
+
+### R30 — THE CONTROL: thirty seconds of ticking destroys nothing
+
+**The grindstone gate's Row 42 twin, and it exists for the same reason.** Every other row in this
+block is read inside a few seconds — well inside one or two countdowns — so **a repaint that
+clobbers an input cell on its tenth fire never gets the chance to show itself.**
+
+| | |
+|---|---|
+| **Setup** | Put both items in and **walk away for thirty seconds** without clicking anything. |
+| **Predict** | Both items are still in 20 and 22, unchanged. The preview still shows the result. The bar is LIME and the button reads its ready text. |
+| **Predict** | Thirty seconds is chosen to **outlast every other row's dwell time**, not because thirty is significant. |
 | **READ** | _(not run)_ |

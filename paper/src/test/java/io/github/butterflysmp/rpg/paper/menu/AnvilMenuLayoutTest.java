@@ -122,9 +122,13 @@ class AnvilMenuLayoutTest {
         }
 
         // THE FILLER DOES NOT FORK: the whole bottom row is bar-or-chrome on both paths, nine cells
-        // either way. 54 - 2 inputs - 1 preview - 9 bottom row - 1 info = 41.
-        assertEquals(41, AnvilMenuLayout.FILLER_SLOTS.size(),
-                "54 - 2 inputs - preview - 9 bottom row - info = 41, on both origins");
+        // either way. 54 - 2 inputs - 1 preview - 1 confirm - 9 bottom row - 1 info = 40.
+        //
+        // IT WAS 41 THROUGH 13a, and the confirm cell is the one that moved. A literal, not a
+        // derivation from the other sets: this is the row that forces somebody to look at a NUMBER
+        // when the screen's shape changes, and it is the only row here that can disagree with them.
+        assertEquals(40, AnvilMenuLayout.FILLER_SLOTS.size(),
+                "54 - 2 inputs - preview - confirm - 9 bottom row - info = 40, on both origins");
     }
 
     @Test
@@ -153,20 +157,34 @@ class AnvilMenuLayoutTest {
     }
 
     /**
-     * *** SLOT 31 IS 13b's CONFIRM CELL AND IT MUST BE ORDINARY FILLER TODAY. ***
+     * *** THE CELL 13a RESERVED IN PROSE IS NOW A REAL BUTTON, AND THIS ROW INVERTED TO SAY SO. ***
      *
-     * <p>Ben has ruled where the confirm button goes. Reserving it in CODE -- a constant subtracted
-     * from the filler with nothing painting it -- is the hub's own shipped defect: <b>an invisible,
+     * <p>Through 13a this row read <i>"slot 31 … must be FILLER"</i>, because a constant subtracted
+     * from the filler with nothing painting it is the hub's own shipped defect: <b>an invisible,
      * clickable hole whose click handler worked perfectly</b>, at slot 33, which reached a
-     * screenshot. This row is what stops the reservation being half-implemented.
+     * screenshot. <b>The reservation held, and honouring it cost one line.</b>
+     *
+     * <p><b>The inversion is the interesting part and it is why the row is kept rather than
+     * deleted.</b> It guarded the reservation while the cell was empty; it now guards the opposite
+     * fact with the same argument underneath — <b>31 is subtracted from the filler AND painted</b>,
+     * and a build that did only the first would be the hole this row has always been about.
      */
     @Test
-    void theCellRESERVEDFor13bIsPlainFILLER_becauseAReservationWithNoPainterIsAHole() {
-        assertTrue(AnvilMenuLayout.FILLER_SLOTS.contains(31),
-                "slot 31 is 13b's confirm cell. Until 13b paints it, it must be FILLER -- a cell "
-                        + "subtracted from the filler and painted by nothing is an invisible, "
-                        + "clickable hole, which is exactly what shipped on the hub at slot 33.");
-        assertFalse(AnvilMenuLayout.INPUT_SLOTS.contains(31), "and it takes no item today");
+    void theCONFIRMCellIsSubtractedFromFillerANDPainted_theHoleThisRowHasAlwaysGuarded() {
+        assertFalse(AnvilMenuLayout.FILLER_SLOTS.contains(AnvilMenuLayout.CONFIRM_SLOT),
+                "the confirm cell must NOT be filler -- a pane painted over a live button is "
+                        + "invisible until someone clicks it, and this button spends XP");
+        assertTrue(AnvilMenuLayout.chromeSlots(true).contains(AnvilMenuLayout.CONFIRM_SLOT),
+                "SUBTRACTED IS ONLY HALF. It must also be declared as a cell something paints, "
+                        + "from the hub");
+        assertTrue(AnvilMenuLayout.chromeSlots(false).contains(AnvilMenuLayout.CONFIRM_SLOT),
+                "and from a world block -- the confirm exists on both origins");
+
+        assertFalse(AnvilMenuLayout.INPUT_SLOTS.contains(AnvilMenuLayout.CONFIRM_SLOT),
+                "AND IT IS NOT AN INPUT SLOT. The countdown repaints this cell twice a second; if "
+                        + "it were an input, that repaint would destroy the player's gear.");
+        assertEquals(31, AnvilMenuLayout.CONFIRM_SLOT,
+                "and it is the cell 13a held open, unmoved");
     }
 
     @Test
@@ -178,12 +196,13 @@ class AnvilMenuLayoutTest {
         int checked = 0;
         for (int cell : new int[] {AnvilMenuLayout.INFO_SLOT, AnvilMenuLayout.TARGET_SLOT,
                 AnvilMenuLayout.DONOR_SLOT, AnvilMenuLayout.OUTPUT_SLOT,
+                AnvilMenuLayout.CONFIRM_SLOT,
                 AnvilMenuLayout.BACK_SLOT, AnvilMenuLayout.CLOSE_SLOT}) {
             cells.add(cell);
             checked++;
         }
-        assertEquals(6, checked, "the sweep has to have actually run");
-        assertEquals(6, cells.size(), "six named cells, six distinct values: " + cells);
+        assertEquals(7, checked, "the sweep has to have actually run");
+        assertEquals(7, cells.size(), "seven named cells, seven distinct values: " + cells);
 
         // AND EVERY ONE IS ON THE SCREEN.
         for (int cell : cells) {

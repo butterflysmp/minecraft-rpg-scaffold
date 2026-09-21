@@ -16,27 +16,28 @@ import java.util.Set;
  *    0  1  2  3 [i] 5  6  7  8      [i]  4  the screen's own icon
  *    9 10 11 12 13 14 15 16 17
  *   18 19 [T]21 [D]23 [O]25 26      [T] 20  target, the item being upgraded
- *   27 28 29 30 31 32 33 34 35      [D] 22  donor, the item sacrificed
+ *   27 28 29 30 [X]32 33 34 35      [D] 22  donor, the item sacrificed
  *   36 37 38 39 40 41 42 43 44      [O] 24  the preview. NEVER TAKEABLE.
- *   45 46 47 [B][C]50 51 52 53      [B] 48  back to the Nexus, hub origin only
- *            ^^^^^                  [C] 49  close
+ *   45 46 47 [B][C]50 51 52 53      [X] 31  confirm. The irreversible one.
+ *            ^^^^^                  [B] 48  back to the Nexus, hub origin only
+ *                                   [C] 49  close
  * </pre>
  *
  * <b>Ben's ruling: the three cells are centred on 22, the screen's midline, one gap between each.</b>
  * They read left to right the way the vanilla anvil does -- what you have, what you give up, what
  * you get -- and the gaps stop three item icons reading as one row of inventory.
  *
- * <h2>*** SLOT 31 IS 13b's CONFIRM CELL, AND IT IS ORDINARY FILLER TODAY ***</h2>
+ * <h2>*** SLOT 31 IS THE CONFIRM CELL, AND IN 13a IT WAS DELIBERATELY NOT A CONSTANT ***</h2>
  *
- * Ben has ruled where the confirm button goes. <b>It is recorded here in prose and NOWHERE in
- * code</b>: there is no {@code CONFIRM_SLOT} constant and nothing paints 31, so it is in
- * {@link #FILLER_SLOTS} like any other empty cell and the filler loop covers it.
+ * <b>13b made it one.</b> Until then this javadoc read <i>"it is recorded here in prose and NOWHERE
+ * in code"</i>, and that was the point: a constant reserved with no painter is the hub's own shipped
+ * defect -- {@code NexusMenuLayout} subtracted slot 33 from its filler set and painted it with
+ * nothing, leaving <b>an invisible, clickable hole whose click handler worked perfectly.</b>
  *
- * <p><b>The alternative would ship the hub's own defect.</b> {@code NexusMenuLayout} subtracted slot
- * 33 from its filler set and then painted it with nothing -- <b>an invisible, clickable hole whose
- * click handler worked perfectly.</b> A constant reserved here with no painter is that failure
- * exactly, and it would be introduced on purpose. {@code AnvilMenuLayoutTest} asserts 31 IS filler,
- * so the reservation cannot become a hole by being half-implemented.
+ * <p><b>The reservation cost one line to honour, which is the argument paying off.</b> A cell held
+ * by prose, with a test asserting it stayed filler, became a real constant in a single edit and
+ * nothing moved around it. <b>Kept rather than deleted</b>, because the next person to reserve a
+ * cell for a later slice should find that this is how it is done.
  *
  * @see AnvilMenu for what paints each of these
  */
@@ -91,6 +92,30 @@ final class AnvilMenuLayout {
      */
     static final Set<Integer> INPUT_SLOTS = Set.of(TARGET_SLOT, DONOR_SLOT);
 
+    /**
+     * Confirm. <b>Row 4, dead centre -- under the pair and above the chrome.</b> Ben's ruling.
+     *
+     * <p>The screen reads <b>pair, then result, then action, then chrome</b>, top to bottom, which
+     * is {@code GrindstoneMenuLayout.CONFIRM_SLOT}'s arrangement one row up.
+     *
+     * <h2>WHAT ITS PLACEMENT REFUSES, INHERITED RATHER THAN RE-ARGUED</h2>
+     *
+     * <ul>
+     *   <li><b>Beside Back and Close -- REFUSED.</b> It would put a <b>destructive, irreversible</b>
+     *       action next to the two navigation buttons. <b>The arming delay exists precisely because
+     *       a misclick here costs a player thousands of XP</b>, and putting it where the hand
+     *       already goes to leave the screen works against that.
+     *   <li><b>Slot 4 -- REFUSED.</b> Every screen that uses slot 4 uses it for INFORMATION.
+     * </ul>
+     *
+     * <p><b>IT IS NOT AN INPUT SLOT, AND THAT IS LOAD-BEARING.</b> The arming countdown repaints
+     * this cell and the bar twice a second. If either were inside {@link #INPUT_SLOTS}, that repaint
+     * would overwrite the player's gear -- and with no output slot to take it back from, that is
+     * unrecoverable rather than cosmetic. The four-set partition row asserts the disjointness, which
+     * takes the LAYOUT off the list of ways it can happen.
+     */
+    static final int CONFIRM_SLOT = 31;
+
     /** Back to the Nexus. 48, beside Close -- like every other screen. */
     static final int BACK_SLOT = 48;
 
@@ -139,8 +164,8 @@ final class AnvilMenuLayout {
      */
     static Set<Integer> chromeSlots(boolean fromHub) {
         return fromHub
-                ? Set.of(INFO_SLOT, OUTPUT_SLOT, BACK_SLOT, CLOSE_SLOT)
-                : Set.of(INFO_SLOT, OUTPUT_SLOT, CLOSE_SLOT);
+                ? Set.of(INFO_SLOT, OUTPUT_SLOT, CONFIRM_SLOT, BACK_SLOT, CLOSE_SLOT)
+                : Set.of(INFO_SLOT, OUTPUT_SLOT, CONFIRM_SLOT, CLOSE_SLOT);
     }
 
     /**
@@ -180,6 +205,9 @@ final class AnvilMenuLayout {
         for (int slot = 0; slot < SIZE; slot++) slots.add(slot);
         slots.removeAll(INPUT_SLOTS);
         slots.remove(OUTPUT_SLOT);
+        // SET SUBTRACTION, never a skip inside the paint loop: a filler pane painted over a live
+        // button is invisible until someone clicks it -- and this one spends the player's XP.
+        slots.remove(CONFIRM_SLOT);
 
         int firstOfBottomRow = (ROWS - 1) * COLUMNS;
         for (int slot = firstOfBottomRow; slot < firstOfBottomRow + COLUMNS; slot++) {
