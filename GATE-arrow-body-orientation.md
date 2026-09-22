@@ -63,7 +63,7 @@ is a JRE shim with no `javap`.
 |---|---|
 | **Setup** | `/rpg give dragons_plume`. Put a plain arrow in the off-hand (R5's workaround — the bow will not draw without one). Fire a **tap** (held 3–8 ticks) while aimed roughly **EAST or WEST**, and watch the arrow at the muzzle. |
 | **Predict** | **The arrow points along its travel from the instant it appears.** No visible flick, snap or quarter-turn in the first moments of flight. |
-| **Predict** | **EAST or WEST, and that is the whole staging.** The old rotation was yaw 0 = **due SOUTH**, so a shot fired south is **correct under the defect** and reads as a pass. A row staged facing south measures nothing. |
+| **Predict** | **EAST or WEST, AND THAT IS THE WHOLE STAGING — SOUTH IS THE NO-OP VALUE OF THIS ROW.** The old rotation was yaw 0 = **due SOUTH**, so a shot fired south is **CORRECT UNDER THE DEFECT** and reads as a clean pass. <br><br>**This is the hollow-fixture rule, and the direction is not a convenience.** Ask what this row does if the fix is reverted: facing east it fails, facing south it passes, and *the row is the same row*. A staging that cannot fail is measuring the fixture. <br><br>**DO NOT "SIMPLIFY" THIS TO WHATEVER DIRECTION YOU HAPPEN TO BE FACING.** It reads like an arbitrary compass bearing and it is the only thing making the row falsifiable. |
 | **Predict** | **CONTROL, in the same session:** fire once facing **SOUTH** as well. It looked right before the fix and must still look right after — if the south shot now looks wrong, the rotation is being taken from something other than the velocity. |
 | **Predict** | **If the flick is still there**, the deployed jar predates the fix (see R0) or the rotation is being overwritten after spawn. |
 | **READ** | _(NOT RUN)_ |

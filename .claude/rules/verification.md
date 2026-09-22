@@ -1787,3 +1787,31 @@ A reason shared with every sibling goes second, or in the shared place. **The te
 construct on one path and not its sibling, justified by a reason true of both.** Account, and the
 week it cost, in `#107`'s body.
 
+**AND THE FOURTH, WHICH IS THE WORST OF THEM: A COMMENT THAT NAMES A HAZARD READS AS A GUARD
+AGAINST IT.** The three above are prose that is stale, or player-facing, or mis-emphasised.
+**This one is ACCURATE, CURRENT, and describes the defect the code still has** — and it is read as
+the fix, by everyone, including the person auditing for exactly this.
+
+> **A stale comment is refuted by the code beside it. A comment that correctly names the problem is
+> CONFIRMED by the code beside it**, because the problem is there to be seen. Nothing about reading
+> it more carefully helps; the sentence is true.
+>
+> **2026-09-22, `PaperCombatWorld.spawnBoltMarker`.** The launch velocity is set at creation, and
+> the comment explaining why read: *"An arrow's rotation is derived from its own deltaMovement
+> inside its own tick, so a body spawned still has no direction on its first frame and visibly
+> snaps into line a tick later."* **Every word true.** It was offered as the REASON that line sits
+> there — and it does not remove the snap, because the rotation is derived a tick LATER than the
+> velocity is set. The arrow spawned facing due south for one frame, on every `body: arrow` weapon
+> in the tree, for as long as the arrow body has existed. **It was found by a player looking at it,
+> not by anybody reading the file.**
+>
+> **THE SHAPE, NAMED SO IT CAN BE LOOKED FOR: TWO QUANTITIES ARE SET AND ONLY ONE OF THEM IS THE
+> ONE THAT RENDERS — AND THE COMMENT DISCUSSES THE ONE THAT WAS SET.** Motion and rotation here;
+> elsewhere it will be a value and its cache, a field and its index, a model and its view.
+>
+> **Practically, and it is one question: does this comment DESCRIBE the mechanism, or does it
+> assert an OUTCOME?** *"An arrow derives its rotation in tick()"* is a description and proves
+> nothing. *"So the body points where it is going on the first frame"* is an outcome and is
+> checkable. **A comment that never states the outcome has not claimed the bug is fixed, and must
+> not be read as though it had.**
+
