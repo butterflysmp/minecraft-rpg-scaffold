@@ -54,9 +54,10 @@ display_name: "Dragon's Breath"
 # Three properties of scorch, none of them a property of this weapon, and together they make the
 # seven-fold delivery worth nothing at all in accrual:
 #
-#   stacks   Scorch.stacksFor(dealt) -- and the count HAS NO CONSUMER. scorch.yml says so in its
-#            own words: "read ONLY as a yes/no gate ... Stacks do NOT scale the damage and are NOT
-#            accumulated". Seven applications buy 28 stacks and 28 does nothing.
+#   stacks   THE COUNT HAS NO CONSUMER, and that is a RULING rather than a discovery here: NEXT.md,
+#            "THE RULING DELETED THE COUNT'S ONLY CONSUMER, SO SCORCH STOPS BEING A STACKING
+#            STATUS", 2026-09-09. Seven applications buy 28 stacks and 28 does nothing. Not
+#            re-derived in this file -- the ruling is the account and this is a weapon meeting it.
 #   cap      ScorchStatus: "most recent applier owns the cap". Seven identical arrows overwrite it
 #            with the same number six times.
 #   window   refreshed by each application. Seven refreshes in ONE tick is one refresh.
@@ -329,6 +330,15 @@ triggers:
       # holds on this shape: the roll is frozen into the snapshot once per press and all seven
       # arrows inherit it.
       - type: damage
+        # *** THIS NUMBER IS THE WHOLE SCORCH LEVER, AND LOWERING IT FOR THE ARROW COUNT IS
+        # *** BACKWARDS. Seven arrows burn EXACTLY as much as one -- measured, SevenArrowScorchTest
+        # -- so a balance pass that "compensates for seven hits" by cutting the 9 weakens a burn
+        # that is already the weakest of the three fire weapons (27 against the Flint Staff's 60 on
+        # a knell). The cap is half of ONE payload, so this raises the burn linearly and the arrow
+        # count does not raise it at all. The element section at the top of this file has the
+        # figures; NEXT.md's "THE RULING DELETED THE COUNT'S ONLY CONSUMER, SO SCORCH STOPS BEING A
+        # STACKING STATUS" (ruled 2026-09-09) has the reason, and this weapon is that consequence
+        # biting a second time on something designed after it.
         amount: 9
         element: fire
 

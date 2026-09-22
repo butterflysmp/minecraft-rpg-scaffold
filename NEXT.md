@@ -11459,6 +11459,17 @@ Three properties of scorch, none of them a property of the weapon — the stack 
 consumer**, the cap is **overwritten by the most recent applier** with the same number six times,
 and the window is merely **refreshed**. The burn reads the cap and nothing else.
 
+> **THE FIRST OF THOSE IS NOT A DISCOVERY AND IS NOT RE-RECORDED HERE.** It is the ruling of
+> **2026-09-09** — *THE RULING DELETED THE COUNT'S ONLY CONSUMER, SO SCORCH STOPS BEING A STACKING
+> STATUS*, in this file — and **this entry is that consequence biting a SECOND time, on a weapon
+> designed seven months after it.**
+>
+> **That is the part worth having twice: not the mechanism, but the fact that it caught somebody
+> again.** A ruling whose consequence is invisible at authoring time will keep producing this
+> question, because the weapon author is reasoning about *their* weapon and the answer lives in a
+> status's history. The remedy is not a better memory — it is the sentence now sitting beside
+> `dragons_breath.yml`'s `amount: 9`, where the decision actually gets made.
+
 **AND THE COUNTER-INTUITIVE HALF, which is the part worth carrying:** the cap is HALF OF ONE
 PAYLOAD, so **a weapon firing seven small payloads burns WEAKER than one firing a single large
 one.** Measured against a knell at GS 100 — Dragon's Breath **27**, Emberblade **21**, Flint Staff
