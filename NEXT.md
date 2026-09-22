@@ -64,6 +64,27 @@ grep -rhoE '^\s+type:\s*(ray|melee|projectile|self)\s*$' \
 > file written against `content/` do not run — they fail loudly, which is the one mercy, so no false
 > absence was manufactured. At `2cb97d9` the string `content/` appears **45** times in this file and
 > they have **NOT** been swept. Named as owed rather than fixed inside a commit that was not about it.
+>
+> > ### *** GIVEN A HOME 2026-09-22: THEY RIDE PASS 2 OF THE `CLAUDE.md` SPLIT. ***
+> >
+> > **This sweep was parked beside the `.gitattributes` item, and that item has now been struck as
+> > false — so the pairing that gave this one a place to sit is gone.** A parked item whose
+> > neighbour is deleted becomes an item nobody is carrying, which is how owed work turns into
+> > forgotten work without anyone deciding.
+> >
+> > **It rides PASS 2 of the split (`#138`), because that pass is already rewriting this file.**
+> > `#138` moved `CLAUDE.md`'s `## VERIFICATION` into `.claude/rules/verification.md` and left two
+> > editorial passes owed, in a fixed order: **pass 1 NAMES the 721 unheaded lines, pass 2 TRIMS and
+> > consolidates, with `NEXT.md` as the account file per the 2026-09-10 convention.** Pass 2 opens
+> > this file anyway, so the sweep costs one `perl` run inside an edit that is happening regardless.
+> >
+> > **THE FIGURE IS RE-COUNTED AT THAT POINT, NOT CARRIED.** `45` is anchored to `2cb97d9` and this
+> > file has grown since; the count is `grep -o 'content/' NEXT.md | wc -l`, which is **not** the
+> > same question as *how many are wrong* — some are prose about the directory rather than commands
+> > against it. **Read the hits; do not replace by count.**
+> >
+> > **Neither pass runs until `#131`, `#132`, `#133` and `#136` land**, because both rewrite text
+> > those four insert into.
 
 ### THE JULY STATE, KEPT — the text is superseded, the correction under it is not
 
@@ -7423,13 +7444,49 @@ a melee basic, where nothing read it any more.
   > the no-clobber default is unchanged. The tuning loop now actually works: edit source,
   > `dev-server.sh --refresh-content`, and the running server loads what you wrote.
 
-- **`*.gitattributes` does not pin `*.yml` to LF**, and `core.autocrlf=true` on the
+- ~~**`*.gitattributes` does not pin `*.yml` to LF**, and `core.autocrlf=true` on the
   dev machine. So a fresh clone checks `paper-plugin.yml` out as CRLF, `main:` carries
   a `\r`, and `check-jar.sh` goes red locally while staying green on `ubuntu-latest`.
   `tr -d '\r'` guards the jar's bytes, which is the check's job — but the source is
   unfixed. Three sightings now: the `main:` parse, and git's own
   `LF will be replaced by CRLF` warning on `build.yml` and on 70 files during the
-  rename. `*.yml text eol=lf` as its own commit; not folded into a rename diff.
+  rename. `*.yml text eol=lf` as its own commit; not folded into a rename diff.~~
+
+  > ### *** STRUCK 2026-09-22. THE FILE ALREADY EXISTS AND DID BEFORE THIS ITEM WAS LAST RESTATED. ***
+  >
+  > **`afa00f3`, 2026-09-20, *"Pin source and content as text, and pin the NUL fixture as
+  > not-text"*, `+59` lines.** `.gitattributes` pins `*.java text`, **`*.yml text`**, `*.md text`,
+  > the three `eol=` rules for `mvnw` / `*.sh` / `mvnw.cmd`, and `EnchantCodecTest.java -text`.
+  > `grep -c '^\*\.yml' .gitattributes` returns **1**. **The bullet's premise is false and was false
+  > when it was written.**
+  >
+  > **HOW IT SURVIVED, NAMED BECAUSE THE MECHANISM IS THE REUSABLE PART: THE CONCLUSION WAS
+  > RE-DERIVED FROM A CONSEQUENCE OF THE FIX.** The reasoning ran *"every committed blob is LF"* →
+  > *"so nothing declares it"*. **The blobs are LF BECAUSE of that file.** The evidence for the fix
+  > was read as evidence of its absence, which is why four restatements of the item did not catch
+  > it — each one re-derived the same wrong conclusion from the same true observation, and **nobody
+  > opened the file.**
+  >
+  > **Same shape as the `flint_staff` stacking note under `CLAUDE.md`'s *Standing decisions*:**
+  > correct reasoning from the material, about a decision already taken elsewhere. *Open the file
+  > the claim is about* is the remedy in both, and it is cheaper than the reasoning it replaces.
+  >
+  > **WHAT IS ACTUALLY TRUE, AND IT IS NOT THE SAME PROBLEM.** Every line-ending incident this repo
+  > has recorded is a **WORKING-TREE** event, and commit-time normalisation does not address those
+  > **by design** — it normalises on the way into the index and reconstructs CRLF on checkout, so a
+  > CRLF working tree is the *intended* state on this seat:
+  >
+  > | date | incident |
+  > |---|---|
+  > | 2026-09-13 | `grep -c -v $'\r$'` reported **every line** of a wholly-CRLF file as lacking CRLF — `sed` and `grep` strip CR before matching |
+  > | 2026-09-14 | `sed -i` in Git Bash silently rewrote `RpgCommand.java` from CRLF to LF, reporting nothing |
+  > | 2026-09-17 | a `$`-anchored `perl` pattern matched nothing and exited 0 — `\r` sits between the last character and the newline |
+  > | 2026-09-19 | `AdapterContext.java` ended **68 lines / 67 CR**, one LF line from a `\n` inside a `perl` replacement, during a slice taking many CR readings |
+  >
+  > **`.gitattributes` is blind to all four and correctly so** — every one of them is about bytes in
+  > the working tree, which it does not govern. **`./scripts/check-crlf.sh` is the remedy**, it
+  > exists, it runs its own three-way control, and it refuses a verdict when the control fails.
+  > **Nothing further is owed here.**
 - **`check-jar.sh`'s `GROUP_ID` validation has never fired.** Maven's four JVM
   `WARNING:` blocks go to stderr, so the `$( )` capture stayed clean and the
   `case "$GROUP_ID" in ''|*[!a-z0-9.]*)` arm guarded correctly without ever being
