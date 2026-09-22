@@ -650,6 +650,39 @@ So:
   > **name the one** — `emberblade`'s *swing*, not `emberblade`. Neither costs a command; both are
   > invisible to every check in this file.
 
+- **AND WHEN YOU SET YOUR OWN TOLERANCE, YOU CHOOSE THE AXIS YOU WILL PASS ON. STATE THE PREDICTION
+  IN THE UNIT THE REQUIREMENT WAS STATED IN.** The two entries above are about a figure going
+  **stale**, or carrying the wrong **parameter** or **site**. This one is neither: the figure is
+  current, correctly scoped, honestly anchored — **and reported on an axis nobody asked about.**
+  *The measurer picked the ruler.*
+
+  > **A SUBSTITUTED AXIS IS NOT A LIE AND DOES NOT READ AS ONE, BECAUSE THE TWO AXES ARE
+  > CORRELATED.** Lines track characters closely enough that a line count is a perfectly plausible
+  > proxy — **and a proxy that is right most of the time is exactly what carries a miss through.**
+  > The substituted axis passes and fails *independently* of the one that was asked for, so a
+  > comfortable pass on it is not weak evidence about the real requirement. It is **no evidence**.
+  >
+  > **2026-09-22, `#138`.** The brief budgeted a new index block at **`~2k chars`**. The prediction
+  > was written as **30 lines, ±5**. It came out **34 lines — inside tolerance, a pass** — and
+  > **3,078 chars, 54% over, which the line reading cannot see.** Both numbers are correct and both
+  > were measured. Only one of them answers the question that was put, and it is not the one that
+  > got a tolerance.
+  >
+  > **THE REMEDY IS NOT A TIGHTER TOLERANCE.** A tighter tolerance on the wrong axis is still on
+  > the wrong axis, and all it buys is a more confident pass. **Copy the requirement's unit into
+  > the prediction verbatim.** Where a second axis is genuinely useful, **predict BOTH and report
+  > BOTH**, so neither can stand in for the other.
+  >
+  > **AND THE SELECTION EFFECT IS WHY THIS NEEDS A RULE RATHER THAN CARE.** Nobody substitutes the
+  > axis at random. You reach for the unit that is easiest to predict — and the unit that is
+  > easiest to predict is the one whose variance you already control, which is the one you will
+  > pass on. **The bias runs one way, and it runs toward the measurer.**
+  >
+  > **The tell costs no command and is available before you run anything: the requirement and the
+  > prediction name different nouns.** Characters against lines, rows against files, bytes against
+  > commits, tests against classes. **If you have to convert to compare them, you have substituted
+  > an axis.**
+
 - **A MEASUREMENT OUTLIVES ITS FIXTURE, BUT ONLY IF THE RECORD SAYS THE FIXTURE IS GONE.** Deleting
   the thing a reading was taken on does not falsify the reading — it makes the reading
   **unverifiable, and indistinguishable from a stale one.** Restate the reading before removing its
