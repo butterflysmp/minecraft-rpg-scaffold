@@ -1,0 +1,61 @@
+# The Dragon's Breath's arrows in flight: one flame per tick at each bolt's live position, drawn
+# SEVEN TIMES OVER because a press puts seven bolts in the air. Id is the filename:
+# dragons_breath_trail.
+#
+# ================== AUTHORED AGAINST flint_trail, AND DELIBERATELY THINNER ==================
+#
+# NOT flint_trail itself, and the reason is the one flint_trail's own file gives about ember_trail:
+# "A SHARED VISUAL IS A COUPLING AND THE COUPLING IS INVISIBLE AT BOTH ENDS." flint_trail's numbers
+# were tuned around ONE bolt on a 24-tick cooldown. Borrowing them would make this weapon the second
+# depending on numbers tuned for the first -- which is precisely the trap ember_burst sprang on the
+# Flint Staff, whose count went 30 -> 10 for the Ability Stone and silently took the staff with it.
+#
+# ================== THE DENSITY, AS A NUMBER, BOTH WAYS ==================
+#
+#                          per bolt per tick     a whole press in flight
+#   flint_trail            3  (FLAME 2, SMOKE 1)          3   (one bolt)
+#   dragons_breath_trail   1  (FLAME 1)                   7   (seven bolts)
+#
+#   per bolt:   ONE THIRD of flint_trail's
+#   per press:  2.33x flint_staff's, because there are seven of them
+#
+# *** SEVEN CONCURRENT TRAILS IS THE CASE flint_trail NEVER HAD TO SURVIVE, and that is the whole
+# *** reason this file exists rather than a `trail: flint_trail` line. At flint_trail's density a
+# *** press would draw 21 particles per tick in a cone a few degrees wide -- not a stream of seven
+# *** arrows but a single bright smear, in which the individual bolts stop being visible at all.
+#
+# THE SMOKE IS DROPPED, AND THAT IS THE DECISION RATHER THAN AN OMISSION. flint_trail draws one
+# SMOKE beside its two FLAME. Seven smoke streams overlapping inside a 3-degree cone grey out the
+# middle of the pattern -- the arrows would be legible at the edges and lost in the centre, which is
+# the opposite of what a spread needs to show. A single flame per bolt keeps each arrow its own
+# line.
+#
+# ================== THE DENSITY IS PROVISIONAL AND THE QUESTION IS OPEN ==================
+#
+# *** DO NOT TUNE THE BODY AROUND THIS UNTIL SOMEBODY HAS WATCHED IT. *** flint_staff.yml records
+# the convention this follows -- "the trail first, deliberately, so the body could be authored
+# against a stream somebody had actually watched" -- and the whole point of authoring the trail
+# first is that the reading comes before the tuning.
+#
+# It is a number chosen from arithmetic, not from a boot. It may well read THIN: one flame per tick
+# is the sparsest trail in the project, and the seven-fold overlap that justifies it is exactly the
+# thing arithmetic cannot show you. Raising FLAME to 2 doubles a press to 14/tick, which is still
+# under flint_trail's 21 and is the obvious next value if it reads thin.
+#
+# `speed` is Bukkit's `extra`, authored EXPLICITLY as 0.0 -- the particles sit where they are put and
+# each bolt's own motion draws its line. The schema default is 1.0, which would be a fast outward
+# spray and would blur seven adjacent lines into one cloud, so the explicit 0.0 matters more here
+# than it does on a single-bolt weapon.
+#
+# The trail's FIRST puff is drawn one tick AFTER launch, not on the launch frame -- see
+# ProjectileFlight.step. On the launch frame each bolt's position IS the caster's eye, so drawing
+# there would put seven flames inside the shooter's own camera.
+
+steps:
+  - type: particle
+    particle: FLAME
+    count: 1
+    # Tighter than flint_trail's 0.05, for the same reason the smoke is gone: seven lines three
+    # degrees apart need to stay separable, and spread is what blurs them together.
+    spread: 0.03
+    speed: 0.0

@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * does not occur in shipped content: <i>write the test that makes the guard fire, and watch it
  * fire.</i>
  *
- * <p><b>Bundled content reaches none of these arms.</b> {@code scatter_shot} authors {@code (7, 5)}
+ * <p><b>Bundled content reaches none of these arms.</b> {@code dragons_breath} authors {@code (7, 3)}
  * and every other weapon authors no spread block at all, so <b>this file is their only
  * exercise</b>, and the record's javadoc says so.
  *
@@ -31,21 +31,21 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>A validator that refuses everything passes every refusal row on this page. The shipped pair
  * and BOTH BOUNDARIES of the angle band are constructed and kept, so a guard widened by one
- * comparison goes red here rather than silently taking the Scatter Shot out of the language.
+ * comparison goes red here rather than silently taking the Dragon's Breath out of the language.
  */
 class CastSpecSpreadTest {
 
     /**
      * THE SHIPPED PAIR, and the control for every refusal below.
      *
-     * <p>{@code scatter_shot.yml}'s own numbers, read off the file rather than invented, so this
+     * <p>{@code dragons_breath.yml}'s own numbers, read off the file rather than invented, so this
      * row fails if the guard ever stops admitting the one weapon that uses it.
      */
     @Test
     void theShippedPairIsAccepted() {
-        CastSpec.Spread spread = new CastSpec.Spread(7, 5);
+        CastSpec.Spread spread = new CastSpec.Spread(7, 3);
         assertEquals(7, spread.count());
-        assertEquals(5, spread.angleDegrees(), 1e-9);
+        assertEquals(3, spread.angleDegrees(), 1e-9);
         assertEquals(6, spread.ringCount(), "seven bodies is one down the aim and SIX on the ring");
     }
 
@@ -58,7 +58,7 @@ class CastSpecSpreadTest {
      */
     @Test
     void theRingIsEverythingButTheBodyOnTheAimVector() {
-        assertEquals(6, new CastSpec.Spread(7, 5).ringCount(), "the shipped hexagon");
+        assertEquals(6, new CastSpec.Spread(7, 3).ringCount(), "the shipped hexagon");
         assertEquals(1, new CastSpec.Spread(2, 30).ringCount(), "the smallest legal spread");
         assertEquals(11, new CastSpec.Spread(12, 2.5).ringCount());
     }
@@ -174,13 +174,13 @@ class CastSpecSpreadTest {
      * on {@code Projectile} composes with everything already there; a member would have had to
      * re-express speed, gravity, trail, body AND homing to say the same thing.
      *
-     * <p>No shipped content authors both -- {@code scatter_shot} is ruled NOT homing -- so this row
+     * <p>No shipped content authors both -- {@code dragons_breath} is ruled NOT homing -- so this row
      * is the only thing establishing that the combination is representable at all.
      */
     @Test
     void aSpreadOfHomingBodiesIsExpressible() {
         CastSpec.Projectile projectile = new CastSpec.Projectile(2.5, 0.05, 120, null, null,
-                new CastSpec.Homing(0.65, 15, 10), "arrow", new CastSpec.Spread(7, 5));
+                new CastSpec.Homing(0.65, 15, 10), "arrow", new CastSpec.Spread(7, 3));
 
         assertNotNull(projectile.homing(), "the two blocks are orthogonal");
         assertNotNull(projectile.spread());
@@ -221,6 +221,6 @@ class CastSpecSpreadTest {
     void theOneBodyRuleSurvivesTheNewField() {
         assertThrows(IllegalArgumentException.class,
                 () -> new CastSpec.Projectile(2.5, 0.05, 120, null, "ARROW", null, "arrow",
-                        new CastSpec.Spread(7, 5)));
+                        new CastSpec.Spread(7, 3)));
     }
 }

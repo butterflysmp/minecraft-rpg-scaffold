@@ -83,7 +83,7 @@ public sealed interface CastSpec {
 
         /**
          * A projectile that fires ONE body down the aim vector -- every projectile in this repo
-         * before the Scatter Shot, and the shape any weapon keeps by simply not authoring a
+         * before the Dragon's Breath, and the shape any weapon keeps by simply not authoring a
          * {@code spread} block.
          *
          * <p>THE NEW FIELD WENT ON THE END, WHICH IS THE LADDER'S OWN RULE rather than a
@@ -238,7 +238,7 @@ public sealed interface CastSpec {
     /**
      * A projectile that leaves the muzzle as SEVERAL bodies at once, in a ring around the aim.
      * Null on a {@link Projectile} means one body down the aim vector, which is every projectile
-     * this repo shipped before the Scatter Shot.
+     * this repo shipped before the Dragon's Breath.
      *
      * <p>{@code count} is the TOTAL number of payloads. One flies down the aim vector; the
      * remaining {@code count - 1} are spaced evenly around a ring {@code angleDegrees} off-axis,
@@ -290,7 +290,7 @@ public sealed interface CastSpec {
      * without a server.
      *
      * <p><b>NO BUNDLED CONTENT REACHES ANY OF THESE ARMS, AND IT IS SAID HERE SO THE NEXT READER
-     * DOES NOT ASSUME PRODUCTION COVERS THEM.</b> {@code scatter_shot} authors two sane numbers and
+     * DOES NOT ASSUME PRODUCTION COVERS THEM.</b> {@code dragons_breath} authors two sane numbers and
      * every other weapon authors no spread block at all. <b>The only exercise these arms get is
      * {@code CastSpecSpreadTest}, which CAUSES each condition</b>, and {@code AbilityLoaderTest},
      * which causes them through a real YAML walk and reads the named, skipped file back out of the

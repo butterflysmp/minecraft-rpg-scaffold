@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.content;
 
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
+import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
@@ -17,10 +18,10 @@ import java.util.logging.Logger;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * <b>THE SCATTER SHOT ACTUALLY LOADS, AND THE VALUES IT WAS RULED AT ARRIVE INTACT.</b>
+ * <b>THE DRAGON'S BREATH ACTUALLY LOADS, AND THE VALUES IT WAS RULED AT ARRIVE INTACT.</b>
  *
  * <p>Written in {@link VolleyFixtureTest}'s shape and for its reason: the loaders are FAIL-SOFT, so
- * a typo in {@code scatter_shot.yml} surfaces as a named, skipped file at boot and is <b>silent to
+ * a typo in {@code dragons_breath.yml} surfaces as a named, skipped file at boot and is <b>silent to
  * every other test in the suite.</b> The suite stays green with this weapon entirely absent --
  * <i>a scan that finds nothing reads like a scan that found nothing wrong</i> -- which is why the
  * first row asserts the weapon is there at all.
@@ -37,18 +38,18 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>Every geometric and visual question. Whether seven arrows read as seven, whether the hexagon
  * survives being aimed at the sky, whether an arrow curves toward a mob it passes. None of that is
- * reachable from here -- it is {@code GATE-scatter-shot.md}'s job, and a green run of this file is
+ * reachable from here -- it is {@code GATE-dragons-breath.md}'s job, and a green run of this file is
  * not evidence for any of it.
  *
  * <p><b>This file is the only suite-side witness of the ABSENT HOMING BLOCK</b>, which is a ruling
  * rather than an omission. Mutation {@code MUT14-HOMING} authors one and its entire kill set is
  * {@link #theArrowsDoNotSeekAndTheAbsenceIsTheRuling}.
  */
-class ScatterShotContentTest {
+class DragonsBreathContentTest {
 
     /** Quiet: these loaders are fail-soft and log warnings, and the rows below assert on state. */
     private static Logger quiet() {
-        Logger log = Logger.getLogger("ScatterShotContentTest-" + System.nanoTime());
+        Logger log = Logger.getLogger("DragonsBreathContentTest-" + System.nanoTime());
         log.setUseParentHandlers(false);
         log.setLevel(Level.OFF);
         return log;
@@ -56,7 +57,7 @@ class ScatterShotContentTest {
 
     private static Path contentRoot() {
         try {
-            var url = ScatterShotContentTest.class.getResource("/content");
+            var url = DragonsBreathContentTest.class.getResource("/content");
             assertNotNull(url, "bundled content is missing from the test classpath entirely");
             return Path.of(url.toURI());
         } catch (URISyntaxException e) {
@@ -75,21 +76,21 @@ class ScatterShotContentTest {
      * errored all 26 rows of {@code WeaponLoreLinesTest} with only the first report naming the
      * cause; a factory throws for the rows that call it.
      */
-    private static WeaponDefinition scatterShot() {
-        return shippedWeapons().find("scatter_shot")
+    private static WeaponDefinition dragonsBreath() {
+        return shippedWeapons().find("dragons_breath")
                 .orElseThrow(() -> new AssertionError(
-                        "scatter_shot did not load. The loaders are fail-soft, so this is what a"
-                                + " typo in scatter_shot.yml looks like from the suite: silence."));
+                        "dragons_breath did not load. The loaders are fail-soft, so this is what a"
+                                + " typo in dragons_breath.yml looks like from the suite: silence."));
     }
 
     private static TriggerBinding rightClick() {
-        return scatterShot().trigger("right_click")
-                .orElseThrow(() -> new AssertionError("scatter_shot has no right_click trigger"));
+        return dragonsBreath().trigger("right_click")
+                .orElseThrow(() -> new AssertionError("dragons_breath has no right_click trigger"));
     }
 
     private static CastSpec.Projectile cast() {
         return assertInstanceOf(CastSpec.Projectile.class, rightClick().ability().cast(),
-                "the Scatter Shot is a projectile cast; a spread is a field on one");
+                "the Dragon's Breath is a projectile cast; a spread is a field on one");
     }
 
     // --- the weapon exists and is what it says --------------------------------------------------
@@ -101,23 +102,23 @@ class ScatterShotContentTest {
      * when the file is malformed rather than wrong.
      */
     @Test
-    void theScatterShotLoadsAsARangerCrossbow() {
-        WeaponDefinition weapon = scatterShot();
+    void theDragonsBreathLoadsAsARangerCrossbow() {
+        WeaponDefinition weapon = dragonsBreath();
 
-        assertEquals("Scatter Shot", weapon.displayName());
-        assertEquals("kinetic", weapon.element());
+        assertEquals("Dragon's Breath", weapon.displayName());
+        assertEquals("fire", weapon.element());
         assertEquals("crossbow", weapon.material().toLowerCase(java.util.Locale.ROOT));
     }
 
     // --- the spread, both directions --------------------------------------------------------
 
     /**
-     * *** SEVEN BODIES AT FIVE DEGREES -- THE RULED PAIR, READ BACK OFF THE FILE. ***
+     * *** SEVEN BODIES AT THREE DEGREES -- THE RULED PAIR, READ BACK OFF THE FILE. ***
      *
      * <p>Both numbers, because <b>a round trip that asserts only presence passes on a loader that
-     * hardcoded the value.</b> The two are staged at different values on purpose -- 7 against 5 --
+     * hardcoded the value.</b> The two are staged at different values on purpose -- 7 against 3 --
      * so a transposition between {@code count} and {@code angle_degrees} cannot survive: a loader
-     * that read them the wrong way round would report a count of 5 and an angle of 7.
+     * that read them the wrong way round would report a count of 3 and an angle of 7.
      *
      * <p>Mutation {@code MUT14-COUNT} (7 -> 1) and {@code MUT14-ANGLE} both redden here.
      */
@@ -125,9 +126,9 @@ class ScatterShotContentTest {
     void theSpreadCarriesTheRuledCountAndAngle() {
         CastSpec.Spread spread = cast().spread();
 
-        assertNotNull(spread, "scatter_shot's whole design is the spread block");
-        assertEquals(7, spread.count(), "count 7, NOT the angle 5");
-        assertEquals(5.0, spread.angleDegrees(), 1e-9, "angle 5, NOT the count 7");
+        assertNotNull(spread, "dragons_breath's whole design is the spread block");
+        assertEquals(7, spread.count(), "count 7, NOT the angle 3");
+        assertEquals(3.0, spread.angleDegrees(), 1e-9, "angle 3, NOT the count 7");
         assertEquals(6, spread.ringCount(), "one down the aim vector and SIX on the ring");
     }
 
@@ -147,7 +148,7 @@ class ScatterShotContentTest {
 
         for (WeaponDefinition weapon : shippedWeapons().all()) {
             for (TriggerBinding binding : weapon.triggers()) {
-                if (weapon.id().equals("scatter_shot")) continue;
+                if (weapon.id().equals("dragons_breath")) continue;
                 if (binding.ability().cast() instanceof CastSpec.Projectile projectile) {
                     assertNull(projectile.spread(),
                             weapon.id() + "/" + binding.input() + " grew a spread block");
@@ -162,7 +163,7 @@ class ScatterShotContentTest {
      * *** THE ARROWS DO NOT SEEK, AND THE ABSENT BLOCK IS THE RULING RATHER THAN AN OMISSION. ***
      *
      * <p><b>THIS ROW IS THE ONLY SUITE-SIDE WITNESS OF THAT RULING.</b> Nothing else in either
-     * module can tell a Scatter Shot that homes from one that does not -- the flight's steer is a
+     * module can tell a Dragon's Breath that homes from one that does not -- the flight's steer is a
      * no-op on a null {@code Seek}, so a homing block would change no count, no tooltip and no
      * damage figure. It would change where the arrows GO, and only a boot can see that.
      *
@@ -177,7 +178,7 @@ class ScatterShotContentTest {
     @Test
     void theArrowsDoNotSeekAndTheAbsenceIsTheRuling() {
         assertNull(cast().homing(),
-                "scatter_shot was ruled NOT homing; dragons_plume is the only content that may"
+                "dragons_breath was ruled NOT homing; dragons_plume is the only content that may"
                         + " author a homing block");
     }
 
@@ -208,7 +209,7 @@ class ScatterShotContentTest {
      */
     @Test
     void theMagazineAndCooldownAreTheRuledValues() {
-        assertEquals(4, scatterShot().quiverSize(), "quiver_size 4");
+        assertEquals(5, dragonsBreath().quiverSize(), "quiver_size 5");
         assertEquals(32, rightClick().ability().cooldownTicks(), "cooldown_ticks 32");
         assertEquals(0, 32 % 4, "32 must stay on the 4-tick input grid or the tooltip lies");
     }
@@ -234,12 +235,77 @@ class ScatterShotContentTest {
                 .map(EffectSpec.Damage.class::cast)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError(
-                        "scatter_shot must author a LITERAL damage effect, not weapon_damage"));
+                        "dragons_breath must author a LITERAL damage effect, not weapon_damage"));
 
         assertEquals(9.0, damage.amount(), 1e-9, "9 per arrow, at gear score 100");
-        assertEquals("kinetic", damage.element());
+        assertEquals("fire", damage.element());
         assertTrue(onHit.stream().noneMatch(EffectSpec.WeaponDamage.class::isInstance),
                 "a weapon_damage effect would make this a basic attack and un-fix the cooldown");
+    }
+
+    /**
+     * *** THE ELEMENT IS AUTHORED IN TWO PLACES AND THEY MUST AGREE. ***
+     *
+     * <p>The weapon header names the element the TOOLTIP wears; the damage effect names the element
+     * the HIT carries, and it is the second that reaches {@code ElementAccrual} and buys scorch.
+     *
+     * <p><b>A DISAGREEMENT IS INVISIBLE TO golden-lore, BECAUSE BOTH RENDER.</b> The header colours
+     * the top line and the effect labels the damage line, so a weapon whose header said
+     * {@code fire} and whose payload said {@code kinetic} would render two correct-LOOKING lines --
+     * a red "Fire" at the top and "Kinetic Damage: 9 x 7" below it -- and burn nothing. The golden
+     * would be updated to match and nobody would blink.
+     *
+     * <p>Asserted as EQUALITY rather than against the literal {@code "fire"} twice, so the row
+     * survives the element being re-ruled and still catches the two sites drifting apart. The
+     * literal is pinned once, in the row above, where it belongs.
+     */
+    @Test
+    void theHeaderElementAndThePayloadElementAreTheSameElement() {
+        String header = dragonsBreath().element();
+        String payload = rightClick().ability().onHit().stream()
+                .filter(EffectSpec.Damage.class::isInstance)
+                .map(EffectSpec.Damage.class::cast)
+                .findFirst()
+                .orElseThrow()
+                .element();
+
+        assertEquals(header, payload,
+                "the weapon header says '" + header + "' and the payload says '" + payload
+                        + "'. The header is what the tooltip wears; the PAYLOAD is what accrues."
+                        + " Both render, so golden-lore cannot see this -- it would show a Fire"
+                        + " weapon dealing Kinetic damage and burning nothing.");
+    }
+
+    /**
+     * IT IS LEGENDARY, AND THE RARITY IS A PRICE RATHER THAN A COLOUR.
+     *
+     * <p>{@code AnvilCost} bands on the TARGET's rarity, so this weapon costs <b>60 levels / 8670
+     * XP</b> to transfer an enchant onto, against a rare weapon's 25 / 910. Pinned because the
+     * rarity reads as cosmetic and is not: a drift back to {@code rare} would quietly make the
+     * project's second legendary nine and a half times cheaper to enchant.
+     */
+    @Test
+    void itIsLegendaryWhichIsAnAnvilPriceAndNotJustAColour() {
+        assertEquals(Rarity.LEGENDARY, dragonsBreath().rarity(),
+                "legendary bands AnvilCost at 60 levels / 8670 XP; rare is 25 / 910");
+    }
+
+    /**
+     * THE TRAIL IS ITS OWN VISUAL, NOT A BORROWED ONE.
+     *
+     * <p>{@code flint_trail}'s numbers were tuned around ONE bolt on a 24-tick cooldown. Seven
+     * concurrent trails is the case it never had to survive, and borrowing it would make this the
+     * second weapon depending on numbers tuned for the first — the coupling {@code flint_trail}'s
+     * own file warns about, having been bitten by it from {@code ember_burst}.
+     *
+     * <p>Asserted by NAME rather than by density, because the density is PROVISIONAL and expected
+     * to move on the first boot. A row pinning the particle count would redden on a legitimate
+     * tuning; this one reddens only if the weapon starts sharing somebody else's visual.
+     */
+    @Test
+    void theTrailIsItsOwnVisualRatherThanTheFlintStaffs() {
+        assertEquals("dragons_breath_trail", cast().trail(),
+                "seven concurrent trails is not the case flint_trail was tuned for");
     }
 
     /**
@@ -272,11 +338,11 @@ class ScatterShotContentTest {
      *
      * <p>A quiver binds left-click to the reload, so a weapon declaring both is refused outright.
      * Asserted rather than assumed because the refusal is fail-soft: a file that authored one would
-     * be SKIPPED ENTIRELY, and the failure a reader would see is "scatter_shot does not exist".
+     * be SKIPPED ENTIRELY, and the failure a reader would see is "dragons_breath does not exist".
      */
     @Test
     void theOnlyTriggerIsRightClickBecauseTheQuiverOwnsLeftClick() {
         assertEquals(List.of("right_click"),
-                scatterShot().triggers().stream().map(TriggerBinding::input).toList());
+                dragonsBreath().triggers().stream().map(TriggerBinding::input).toList());
     }
 }

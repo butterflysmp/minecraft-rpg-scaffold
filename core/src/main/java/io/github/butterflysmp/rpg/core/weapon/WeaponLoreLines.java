@@ -240,17 +240,30 @@ public final class WeaponLoreLines {
      * <p><b>WHAT OVERTURNED IT IS GEOMETRY, NOT A CHANGE OF MIND -- and that is why the reason is
      * recorded HERE, beside the rule, rather than in a plan.</b> The objection was never that a
      * simultaneous count is meaningless; it was that <b>no single target receives the payloads in
-     * full</b>, so the number is a promise the weapon cannot keep. <b>The Scatter Shot's 5-degree
+     * full</b>, so the number is a promise the weapon cannot keep. <b>The Dragon's Breath's 3-degree
      * ring is the answer to exactly that objection.</b> The angle was chosen so a full seven-arrow
      * hit EXISTS:
      *
      * <pre>
-     * spread diameter = 2 * d * tan(5 deg)      a player-sized target is ~0.6 blocks wide
+     * spread diameter = 2 * d * tan(3 deg)      a player-sized target is ~0.6 blocks wide
      *
-     *   d =  5 blocks   0.87   all seven can land
-     *   d = 10 blocks   1.75   centre and one or two
-     *   d = 20 blocks   3.50   centre only
+     *   d =  5 blocks   0.524   all seven can land
+     *   d = 10 blocks   1.048   centre and one or two
+     *   d = 20 blocks   2.096   centre only
+     *
+     *   the whole pattern fits a 0.6-wide target out to  5.72 blocks
+     *   the whole pattern fits a 0.9-wide target out to  8.59 blocks
      * </pre>
+     *
+     * <p><b>THESE FIGURES WERE 5 DEGREES' UNTIL 2026-09-22, AND THEY WERE REPLACED RATHER THAN
+     * LEFT.</b> The ring narrowed to 3 and every number above moved with it -- at 5 degrees the
+     * full hit reached only 3.43 blocks, against 5.72 now.
+     *
+     * <p><b>A JUSTIFICATION QUOTING NUMBERS THE CONTENT NO LONGER CARRIES IS A STALE FIGURE IN THE
+     * ONE PLACE THAT MUST NOT HAVE ONE.</b> This table is the ARGUMENT that let the rule above be
+     * overturned; if it goes stale the overturn is left resting on arithmetic nobody can reproduce,
+     * and the next reader finds a rule reversed for reasons that do not check out. <b>The narrowing
+     * makes the argument STRONGER, which is exactly why it would have been easy not to re-check.</b>
      *
      * <p>{@code DrawFan}'s ruled 10 degrees was REJECTED for this weapon for the same reason: at
      * 10 degrees the full hit is unreachable at any range and the old objection would still stand.
@@ -259,7 +272,7 @@ public final class WeaponLoreLines {
      *
      * <h2>TWO FANS, TWO ANSWERS -- A KNOWN INCONSISTENCY, WITH ITS CAUSE</h2>
      *
-     * <p>A Dragon's Plume five-arrow release <b>still renders nothing</b>, and a Scatter Shot
+     * <p>A Dragon's Plume five-arrow release <b>still renders nothing</b>, and a Dragon's Breath
      * renders {@code x 7}. The cause is structural rather than principled: {@code DrawFan} and
      * {@code ThrowEmbers} <b>are not {@code CastSpec} members and cannot reach this method</b>,
      * where {@link CastSpec.Spread} is a field on {@link CastSpec.Projectile} and does. Putting the

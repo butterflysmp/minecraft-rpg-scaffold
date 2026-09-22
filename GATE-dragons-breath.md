@@ -1,13 +1,13 @@
-# GATE — The Scatter Shot (Slice 14)
+# GATE — The Dragon's Breath (Slice 14)
 
 **Status: NOT RUN. No row below has been booted.** Every prediction was written BEFORE any boot and
 no prediction is edited once a row has been read. Readings go in the `READ` cell beside the
 prediction they answer, never over it.
 
 ```
-NOT RUN   10   R0 R1 R2 R3 R4 R5 R6 R7 R7b R8
+NOT RUN   12   R0 R1 R2 R3 R4 R5 R6 R7 R7b R8 R9 R10
          ──
-         10   = git grep -c '^### R' <ref> -- GATE-scatter-shot.md
+         12   = git grep -c '^### R' <ref> -- GATE-dragons-breath.md
 ```
 
 **GAME MODE: SURVIVAL, for every row unless the row says otherwise.** Declared per the standing
@@ -16,7 +16,7 @@ debt in `CLAUDE.md`.
 > ### WHY SURVIVAL MATTERS HERE, AND IT IS NOT A FORMALITY
 >
 > The creative-divergence register's shape is **creative removes a COST**, and this weapon is
-> almost entirely made of costs. **`hasInfiniteMaterials()` does not reach it** — the Scatter Shot
+> almost entirely made of costs. **`hasInfiniteMaterials()` does not reach it** — the Dragon's Breath
 > is a crossbow binding `right_click`, not a `BowItem`, so there is no ammunition short-circuit to
 > hit. **But R6 is a magazine row**, and a magazine is exactly the kind of cost creative is in the
 > habit of removing. Run every row in survival, and R6 especially.
@@ -29,6 +29,11 @@ debt in `CLAUDE.md`.
 > A row that fails tells you which clause broke: the count (R1), the plane (R2, R3), the absence of
 > homing (R4), the tooltip's promise (R5), the magazine (R6), the arithmetic (R7), the push (R7b),
 > or the roll (R8).
+>
+> **AND THE ELEMENT CHANGED TO FIRE ON 2026-09-22, WHICH ADDED TWO ROWS THAT ARE NOT ABOUT THE
+> SPREAD AT ALL.** R9 reads the glyph and R10 reads the burn. Both are consequences of the element
+> rather than of the geometry, so a failure in either attributes to `fire.yml` or to `Scorch`,
+> **not to this weapon** — which is the whole reason they are separate rows.
 
 ---
 
@@ -49,10 +54,10 @@ got a complete, self-consistent, entirely false set of readings out of it.
 
 | | |
 |---|---|
-| **Setup** | Unpack the DEPLOYED jar and probe for a symbol this slice introduces, plus a content key: <br><br>`Copy-Item run/plugins/rpg-<ver>.jar "$env:TEMP\deployed.zip" -Force`<br>`Expand-Archive "$env:TEMP\deployed.zip" -DestinationPath "$env:TEMP\deployed" -Force`<br>`$classes = Get-ChildItem "$env:TEMP\deployed\io\github\butterflysmp\rpg" -Recurse -Filter *.class`<br>`Write-Host "$($classes.Count) class files scanned"`<br>`$classes \| Select-String -Pattern 'SpreadPattern' -Encoding ascii \| Select-Object -ExpandProperty Path`<br>`Select-String -Path "$env:TEMP\deployed\content\weapons\scatter_shot.yml" -Pattern '^\s+count:'` |
+| **Setup** | Unpack the DEPLOYED jar and probe for a symbol this slice introduces, plus a content key: <br><br>`Copy-Item run/plugins/rpg-<ver>.jar "$env:TEMP\deployed.zip" -Force`<br>`Expand-Archive "$env:TEMP\deployed.zip" -DestinationPath "$env:TEMP\deployed" -Force`<br>`$classes = Get-ChildItem "$env:TEMP\deployed\io\github\butterflysmp\rpg" -Recurse -Filter *.class`<br>`Write-Host "$($classes.Count) class files scanned"`<br>`$classes \| Select-String -Pattern 'SpreadPattern' -Encoding ascii \| Select-Object -ExpandProperty Path`<br>`Select-String -Path "$env:TEMP\deployed\content\weapons\dragons_breath.yml" -Pattern '^\s+count:'` |
 | **Predict** | **The class count is NON-ZERO and is reported.** It is the no-op value: `0 scanned` means the unpack failed, and an absence underneath a zero means nothing. |
 | **Predict** | `SpreadPattern` is found in **at least two** class files — `core/combat/SpreadPattern.class` and `core/ability/CastExecutor.class`, which calls it. A **0** means the deployed jar predates this slice, whatever its mtime says. |
-| **Predict** | `scatter_shot.yml` is present in the jar and `count:` matches. A missing FILE and a missing KEY are different failures: the first is a deploy that did not run, the second is a jar built before the spread block was authored. |
+| **Predict** | `dragons_breath.yml` is present in the jar and `count:` matches. A missing FILE and a missing KEY are different failures: the first is a deploy that did not run, the second is a jar built before the spread block was authored. |
 | **Predict** | **`-Encoding ascii` is load-bearing.** A `.class` is binary and a text-mode read will not find a constant-pool string. If every probe returns nothing, check this before concluding anything about the jar. |
 | **Predict** | **STATE WHICH TREE THE JAR WAS BUILT FROM.** There is a second worktree at `C:/Users/Neb91/IdeaProjects/rpg-12b`, and that ambiguity is what cost the 2026-09-20 boot. |
 | **READ** | _(NOT RUN)_ |
@@ -68,7 +73,7 @@ any range short of point blank the total will not be 63 anyway. **Count the bodi
 
 | | |
 |---|---|
-| **Setup** | `/rpg give scatter_shot`. Face a flat wall about 10 blocks away, in the open, and fire ONE press. Count the arrows in flight, or the impacts on the wall. |
+| **Setup** | `/rpg give dragons_breath`. Face a flat wall about 10 blocks away, in the open, and fire ONE press. Count the arrows in flight, or the impacts on the wall. |
 | **Predict** | **SEVEN** arrows leave on one press. |
 | **Predict** | **If it reports ONE**, the spread block parsed and nothing called it — the `CastExecutor` wiring. That is `MUT14NOSPREAD`, in the field, and it was GREEN across the whole suite before `CastExecutorSpreadTest` was written. |
 | **Predict** | **If it reports SEVEN but they all travel down one line**, the basis collapsed — see R2/R3, and expect those to fail too. |
@@ -82,7 +87,7 @@ any range short of point blank the total will not be 63 anyway. **Count the bodi
 | | |
 |---|---|
 | **Setup** | Pitch **0** — level with the horizon. Fire one press at a flat wall ~10 blocks away. |
-| **Predict** | Six impacts around a seventh, evenly spaced. At 10 blocks the pattern is about **1.75 blocks** across (`2 x 10 x tan(5°)`). |
+| **Predict** | Six impacts around a seventh, evenly spaced. At 10 blocks the pattern is about **1.05 blocks** across (`2 x 10 x tan(3°)`). |
 | **Predict** | **The centre impact sits ON the crosshair.** The aim vector is fired first and undeviated; if the centre is offset, the ring was built around the wrong axis. |
 | **Predict** | **THIS ROW CANNOT SEE THE BASIS, AND IS NOT EXPECTED TO.** Measured in the suite: a world-up basis and the shooter's own agree at every pitch but the poles, so a correct-looking reading here says nothing about R3. **Do not report R2 passing as evidence for R3.** |
 | **READ** | _(NOT RUN)_ |
@@ -131,7 +136,7 @@ a bird.
 ### R4 — An arrow fired past a mob does NOT curve toward it
 
 **The absence of the homing block is a RULING, and this is the only reading that can see it.** The
-suite's only witness is one row in `ScatterShotContentTest` asserting the parsed block is null —
+suite's only witness is one row in `DragonsBreathContentTest` asserting the parsed block is null —
 measured: `MUT14HOMING` reddens that row and nothing else in 2153 tests.
 
 | | |
@@ -144,21 +149,21 @@ measured: `MUT14HOMING` reddens that row and nothing else in 2153 tests.
 
 ---
 
-### R5 — The tooltip reads `Kinetic Damage: 9 x 7`
+### R5 — The tooltip reads `Fire Damage: 9 x 7`
 
 | | |
 |---|---|
-| **Setup** | `/rpg give scatter_shot` and read the item tooltip. Hold it; do not open a menu. |
-| **Predict** | A line reading exactly **`Kinetic Damage: 9 x 7`** — element-labelled, the PER-ARROW number, the count beside it, **ONE space each side of the `x`** per slice 12d. |
+| **Setup** | `/rpg give dragons_breath` and read the item tooltip. Hold it; do not open a menu. |
+| **Predict** | A line reading exactly **`Fire Damage: 9 x 7`** — element-labelled, the PER-ARROW number, the count beside it, **ONE space each side of the `x`** per slice 12d. |
 | **Predict** | **`63` appears NOWHERE on the tooltip.** The full-hit total is true of no single arrow, and folding it in is the defect the per-shot rule exists to prevent. |
 | **Predict** | **NO `Attack Speed` line and NO `Ranged Damage` line.** This weapon's payload is a literal, so it renders an ABILITY block rather than a stat block. **That is correct, not a regression** — and it is the visible half of the "two damage-rendering shapes" finding. |
-| **Predict** | `Quiver: 4/4` on a freshly given item. **`--/4` means the mint path did not stamp it** — absence renders as dashes, never as `0`. |
+| **Predict** | `Quiver: 5/5` on a freshly given item. **`--/5` means the mint path did not stamp it** — absence renders as dashes, never as `0`. |
 | **Predict** | `Cooldown: 1.6s`. |
 | **READ** | _(NOT RUN)_ |
 
 ---
 
-### R6 — The quiver reads 4, drops by ONE per press, and reloads after the fourth
+### R6 — The quiver reads 5, drops by ONE per press, and reloads after the fifth
 
 **SOLE WITNESS FOR THE ONE-ROUND RULING IN THE FIELD.** `QuiversSignatureTest` pins the source
 expression, but the spend itself needs a live `Player` and `ItemStack`, so no module can execute
@@ -167,11 +172,11 @@ entire suite green at 2147.**
 
 | | |
 |---|---|
-| **Setup** | SURVIVAL. `/rpg give scatter_shot`. Read the tooltip, then fire four presses, reading the quiver line after each. Then hold left-click to reload. |
-| **Predict** | The count goes **4 → 3 → 2 → 1 → 0**. **ONE per press, though seven arrows leave.** |
+| **Setup** | SURVIVAL. `/rpg give dragons_breath`. Read the tooltip, then fire four presses, reading the quiver line after each. Then hold left-click to reload. |
+| **Predict** | The count goes **5 → 4 → 3 → 2 → 1 → 0**. **ONE per press, though seven arrows leave.** |
 | **Predict** | **If it drops by SEVEN and the weapon is empty after one press**, the spread was wired as a yaw FAN — `yawOffsets.length` rounds instead of one. That is the defect this row is the field witness for. |
-| **Predict** | The fifth press is REFUSED and says so. A quiver weapon that fires on empty has lost its gate. |
-| **Predict** | Left-click reloads, takes **2.00 seconds** (`reload_ticks: 40`), and restores **4**. |
+| **Predict** | The sixth press is REFUSED and says so. A quiver weapon that fires on empty has lost its gate. |
+| **Predict** | Left-click reloads, takes **2.00 seconds** (`reload_ticks: 40`), and restores **5**. |
 | **Predict** | **CREATIVE DIVERGENCE — do not read this row in creative.** A magazine is a cost, and the register's shape is that creative removes costs. |
 | **READ** | _(NOT RUN)_ |
 
@@ -181,9 +186,9 @@ entire suite green at 2147.**
 
 | | |
 |---|---|
-| **Setup** | Stand a mob **within about 3 blocks** — point blank, where the whole pattern fits a target. Confirm the weapon's gear score is **100** before reading (`/rpg gearscore`, or give a fresh one). Fire ONE press and read the damage numbers. |
+| **Setup** | Stand a mob **within about 5 blocks** — point blank, where the whole pattern fits a target. Confirm the weapon's gear score is **100** before reading (`/rpg gearscore`, or give a fresh one). Fire ONE press and read the damage numbers. |
 | **Predict** | **Seven damage numbers of 9**, totalling **63**. |
-| **Predict** | **If fewer than seven numbers appear, the range was too long** — that is the weapon working, not failing. Re-take it closer. At 5 blocks the pattern is 0.87 blocks across; at 10 it is 1.75 and a player-sized target can no longer catch it all. |
+| **Predict** | **If fewer than seven numbers appear, the range was too long** — that is the weapon working, not failing. Re-take it closer. At 5 blocks the pattern is 0.52 blocks across and the whole hexagon still fits a player-sized target out to 5.72 blocks; at 10 it is 1.05 and it no longer does. |
 | **Predict** | **If ONE number of 63 appears, the arrows are not resolving independently.** |
 | **Predict** | **THE SCORE ANCHOR IS PART OF THE READING.** 9 is the value at GS 100 and the literal is scaled by `score/100` over a legal band of 100..500 — so a scored weapon reads up to **45 per arrow and 315 a full hit**. A reading taken at an unstated score is one point on a five-fold range. |
 | **READ** | _(NOT RUN)_ |
@@ -245,6 +250,45 @@ property is INHERITED rather than built — the crit is drawn once into the snap
 
 ---
 
+### R9 — Seven gold triangles come up at once
+
+**THE ELEMENT CHANGED FROM KINETIC TO FIRE ON 2026-09-22, AND THIS IS THE VISIBLE HALF.** kinetic's
+`damage_symbol` is the empty string; fire's is `<gold>▲</gold>`. So every damage number this weapon
+deals now draws a glyph beside it, and a full hit draws **seven of them in one frame** — which is a
+thing nobody has seen, on a channel `fire.yml` says is only settled by looking.
+
+| | |
+|---|---|
+| **Setup** | Point blank, all seven landing. Fire one press and look at the damage numbers. |
+| **Predict** | **Seven gold ▲, one per number.** |
+| **Predict** | **The glyph RENDERS rather than boxing.** `fire.yml` records that U+25B2 is in the same block as the proven ◆ but is itself a hypothesis until somebody looks — "which codepoints actually render is a client-font question". **A missing-glyph box is a font finding, not a weapon defect**, and it would appear on every fire weapon equally. |
+| **Predict** | **Seven at once is legible rather than a smear.** `DamagePopupManager` jitters each number horizontally so rapid multi-hits cluster instead of stacking; that jitter was tuned for a *rapid* multi-hit, not for seven in ONE frame. **If they overlap into an unreadable pile, that is a finding about the popup jitter** and it belongs to that file, not to this weapon. |
+| **READ** | _(NOT RUN)_ |
+
+---
+
+### R10 — The burn is ONE burn, and it is not seven times anything
+
+**MEASURED IN THE SUITE FIRST — this row is the field check on a figure that is already executed.**
+`SevenArrowScorchTest` drives the real `ScorchStatus` and finds that seven arrows burn EXACTLY as
+much as one: the stack count has no consumer, the cap is overwritten by the most recent applier with
+the same number six times, and the window is merely refreshed.
+
+> **SO THE PREDICTION HERE IS A NEGATIVE, AND NEGATIVES ARE EASY TO READ WRONG.** Do not report
+> "the burn looked normal" — report the numbers.
+
+| | |
+|---|---|
+| **Setup** | SURVIVAL. A mob with a big health pool, so the cap binds and the burn is legible — a knell if one is to hand (360 max). Fire ONE press at point blank, then STOP and watch the burn tick out. |
+| **Predict** | **Six burn ticks of 4.5**, totalling **27**, over six seconds. At GS 100. |
+| **Predict** | **NOT 7 x 27.** If the burn is seven times anything, the stack count has grown a consumer or the cap is accumulating — either would be a change to `Scorch` that this weapon merely revealed. |
+| **Predict** | **CONTROL, in the same session:** fire ONE press from far enough that only the centre arrow lands, and watch that burn. **It must be the SAME 27.** Without this the row cannot tell "seven arrows burn like one" from "the burn is too small to see". |
+| **Predict** | **A Flint Staff bolt on the same mob burns MORE** — 10 per tick, 60 total — because the cap is half of ONE payload and a 20-damage bolt caps higher than a 9-damage arrow. **Counter-intuitive and measured**: the seven-arrow weapon has the weaker burn. |
+| **Predict** | **On an ordinary 20-HP mob every fire weapon burns identically (6 total)**, because the 5% arm gives 1.0 and every cap exceeds it. **Do not read this row on a chicken** — it is a big-target fact and a small target makes all three weapons look the same. |
+| **READ** | _(NOT RUN)_ |
+
+---
+
 ## WHAT THIS GATE CANNOT SEE, SAID SO IT IS NOT ASSUMED
 
 - **The reload figure is a PROPOSAL.** `reload_ticks: 40` is the only unruled number in the content
@@ -254,5 +298,5 @@ property is INHERITED rather than built — the crit is drawn once into the snap
   `quiver_stone` and this one. No row here reads it, because there is nothing to read: they are
   genuinely indistinguishable in a hotbar, and custom model data is not in this slice.
 - **The ability-block name.** No `name:` is authored, so the tooltip reads
-  `Scatter Shot  Right-Click`. That is a fallback, not a ruling — if it reads worse than a name of
+  `Dragon's Breath  Right-Click`. That is a fallback, not a ruling — if it reads worse than a name of
   its own, it is a one-word change.

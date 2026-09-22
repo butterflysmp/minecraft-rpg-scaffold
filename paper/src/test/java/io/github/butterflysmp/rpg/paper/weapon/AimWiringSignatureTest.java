@@ -75,7 +75,7 @@ class AimWiringSignatureTest {
      * *** THE PRESS FRAME GOES THROUGH {@code ViewAim}. ***
      *
      * <p>{@code WeaponFire} is the aim every weapon fires along, so this is the site that decides
-     * whether the Scatter Shot's hexagon exists at the poles. Without it the ring collapses onto
+     * whether the Dragon's Breath's hexagon exists at the poles. Without it the ring collapses onto
      * the aim vector when a player looks straight up -- and the tooltip still says {@code x 7}.
      */
     @Test

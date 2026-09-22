@@ -308,7 +308,7 @@ class WeaponLoreLinesTest {
     /**
      * A SPREAD RENDERS ITS AUTHORED BODY COUNT -- the overturn, in one row.
      *
-     * <p>{@code scatter_shot} authors {@code count: 7} and the tooltip reads
+     * <p>{@code dragons_breath} authors {@code count: 7} and the tooltip reads
      * {@code Kinetic Damage: 9 x 7}. Before 2026-09-21 this method returned empty for any
      * projectile, so <b>this row is the one that would go red if the overturn were reverted.</b>
      *
@@ -319,7 +319,7 @@ class WeaponLoreLinesTest {
     @Test
     void aSpreadRendersItsAuthoredBodyCount() {
         assertEquals(OptionalInt.of(7), WeaponLoreLines.deliveredShots(spreadBolt(7, 5)),
-                "scatter_shot: count 7, NOT the angle 5");
+                "dragons_breath: count 7, NOT the angle 5");
         assertEquals(OptionalInt.of(3), WeaponLoreLines.deliveredShots(spreadBolt(3, 12.5)));
     }
 

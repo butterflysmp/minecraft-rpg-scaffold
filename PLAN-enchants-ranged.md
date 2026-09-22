@@ -490,9 +490,9 @@ dev-weapon deletion set**:
 > **So Punch has ONE candidate weapon today — one that is leaving, and that would need knockback
 > authored onto it first — and ZERO after the deletion.**
 
-#### *** THE TRIGGER IS SATISFIED, 2026-09-21. `scatter_shot` IS THE FIRST ELIGIBLE WEAPON, AND NOTHING IS BUILT. ***
+#### *** THE TRIGGER IS SATISFIED, 2026-09-21. `dragons_breath` IS THE FIRST ELIGIBLE WEAPON, AND NOTHING IS BUILT. ***
 
-**Slice 14 shipped the Scatter Shot: `class: ranger`, `type: projectile`, and it AUTHORS
+**Slice 14 shipped the Dragon's Breath: `class: ranger`, `type: projectile`, and it AUTHORS
 KNOCKBACK** — because `CLAUDE.md`'s standing decision of 2026-09-13 reaches it and silence would
 have been an exception nobody ruled.
 
@@ -506,7 +506,7 @@ table above is superseded rather than deleted — every row in it is still true 
 | `dragons_plume` | `projectile` | **NO** | **no** — and this is the interesting row, see below |
 | `quiver_stone` | `ray` | no | no; deletion set |
 | `hunters_bow` | `projectile` | no | no; deletion set |
-| **`scatter_shot`** | **`projectile`** | **YES, `strength: 0.1`** | ***YES — the first*** |
+| **`dragons_breath`** | **`projectile`** | **YES, `strength: 0.1`** | ***YES — the first*** |
 
 > **AND `dragons_plume` IS WHY THIS ENTRY WAS STILL PARKED THIS MORNING.** It shipped as a
 > `type: projectile` ranger weapon and authors **no** knockback, so it fired §4.5's trigger by cast
@@ -520,8 +520,8 @@ one where an enchant quietly shipped. **The record is the deliverable here.**
 
 **TWO THINGS THE UNPARKER SHOULD KNOW BEFORE PRICING IT:**
 
-- **`scatter_shot`'s knockback MAGNITUDE is itself unruled.** `0.1` is a proposal pending
-  `GATE-scatter-shot.md` R7b, which measures whether seven applications in one frame **sum** or
+- **`dragons_breath`'s knockback MAGNITUDE is itself unruled.** `0.1` is a proposal pending
+  `GATE-dragons-breath.md` R7b, which measures whether seven applications in one frame **sum** or
   whether the last one **wins**. **Punch is a PERCENTAGE of that base**, so a percentage of an
   unsettled number is a number nobody has ruled twice over.
 - **This weapon delivers SEVEN bodies per press.** Punch at +60% of a per-arrow base applies seven

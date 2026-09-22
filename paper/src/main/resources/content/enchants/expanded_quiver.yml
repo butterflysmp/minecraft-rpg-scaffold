@@ -20,13 +20,13 @@
 #
 #   Boltor       (quiver_size 8)    8 -> 9, 10, 11     +12.5% / +25%   / +37.5%
 #   Locust       (quiver_size 12)  12 -> 13, 14, 15    +8.3%  / +16.7% / +25%
-#   Scatter Shot (quiver_size 4)    4 -> 5, 6, 7       +25%   / +50%   / +75%
+#   Dragon's Breath (quiver_size 5)    5 -> 6, 7, 8       +20%   / +40%   / +60%
 #
 # *** THE UNIFORMITY ARGUMENT NOW HAS A COUNTER-EXAMPLE, AND THE TABLE IS UPDATED RATHER THAN THE
 # *** SENTENCE DELETED.
 #
 # This used to read "Nearly uniform in effect across BOTH weapons, which is the argument for the
-# shape" -- true of the two rows it was measured on and FALSIFIED by scatter_shot, which ships a
+# shape" -- true of the two rows it was measured on and FALSIFIED by dragons_breath, which ships a
 # four-round magazine. Level III is +75% there against +25% on the Locust: a three-fold difference
 # in what one slot buys, which is not uniformity by any reading.
 #

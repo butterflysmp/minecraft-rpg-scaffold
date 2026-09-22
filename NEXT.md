@@ -11321,10 +11321,9 @@ it across a re-mint. Measured at slice 13a; re-check before designing, because `
 behaviour is what decides whether a repaired item keeps its enchants.
 
 ---
+# SLICE 14 — THE DRAGON'S BREATH. TWO GREEN MUTATIONS, AND A PARKED ENCHANT'S TRIGGER FIRED.
 
-# SLICE 14 — THE SCATTER SHOT. TWO GREEN MUTATIONS, AND A PARKED ENCHANT'S TRIGGER FIRED.
-
-**POINTER. The account is `PLAN-scatter-shot.md`; the rows are `GATE-scatter-shot.md`.** Kept short
+**POINTER. The account is `PLAN-dragons-breath.md`; the rows are `GATE-dragons-breath.md`.** Kept short
 on purpose — this file is read on demand and the findings below each have a home that is read at
 the point they bite.
 
@@ -11363,14 +11362,14 @@ reader can see that every module actually ran.
 
 ## PUNCH'S TRIGGER IS SATISFIED — RECORDED, NOT BUILT
 
-**`scatter_shot` is the first shipped weapon that authors knockback**, so §4.4's roll gate has a
+**`dragons_breath` is the first shipped weapon that authors knockback**, so §4.4's roll gate has a
 live candidate for the first time. Full entry, with the two things an unparker needs to know first,
 in `PLAN-enchants-ranged.md` §4.5. **Nothing was built; this slice is not the one where an enchant
 quietly ships.**
 
 ## OWED — THE RANGER CLASS NOW HAS TWO DAMAGE-RENDERING SHAPES
 
-`boltor` and `locust` render `Ranged Damage: 19`; `scatter_shot` renders `Kinetic Damage: 9`. **A
+`boltor` and `locust` render `Ranged Damage: 19`; `dragons_breath` renders `Fire Damage: 9`. **A
 player comparing two crossbows sees two labels for one idea.** Not fixed: the label follows the
 mechanism, and rendering "Ranged" over a literal effect would be the tooltip describing something
 other than what produced it. **TRIGGER: the second weapon that ships a literal payload in a class
@@ -11387,10 +11386,10 @@ in its own natural home**, and the WIRING between them is tested by nothing. Eve
 under a mutation at the join, each for a different and individually respectable reason. **It looks
 like thorough coverage and it is a feature that does not work.**
 
-| | slice 13a — the anvil transfer | slice 14 — the Scatter Shot |
+| | slice 13a — the anvil transfer | slice 14 — the Dragon's Breath |
 |---|---|---|
 | end A | `TransferKey` derivation, guarded | `SpreadPattern` geometry, guarded |
-| end B | `AnvilTransfer` comparison, guarded | `scatter_shot.yml` content, guarded |
+| end B | `AnvilTransfer` comparison, guarded | `dragons_breath.yml` content, guarded |
 | end C | — | the `x 7` tooltip, guarded |
 | **the join** | **applying a transfer to a real item** | **`CastExecutor.launch` calling `SpreadPattern`** |
 | **why it was unguarded** | **UNREACHABLE — no test can construct an `ItemStack`** | **REACHABLE, and simply nobody wrote it** |
@@ -11412,7 +11411,7 @@ like thorough coverage and it is a feature that does not work.**
 
 **Slice 14's note, since it is the generalisable half:** the join had **no natural home**.
 `SpreadPatternTest` is a geometry test and geometry tests do not ask who calls them;
-`ScatterShotContentTest` is a content test and content parses either way; the tooltip tests read a
+`DragonsBreathContentTest` is a content test and content parses either way; the tooltip tests read a
 different method entirely. **Each end sat in the obvious file for its end, and the join needed a
 THIRD file that nobody would think to create.** Coverage grew along the components and not across
 the seam between them.
@@ -11430,7 +11429,7 @@ Worked, from `MUT14NOSPREAD` — the spread branch disabled, suite **green at 21
 
 ```
 SpreadPatternTest        calls SpreadPattern DIRECTLY        -> end A
-ScatterShotContentTest   reads the YAML, which parses        -> end B
+DragonsBreathContentTest   reads the YAML, which parses        -> end B
 WeaponLoreLinesTest      a DIFFERENT method entirely         -> end C
 GoldenLoreTest           renders that different method       -> end C again
                                                              -> the JOIN: nobody
@@ -11444,3 +11443,36 @@ is what decides whether the answer is a test or a gate row.
 *"which test should have caught this?"*, and the useful question is the inverse — *"of the tests
 that DID pass, which one was even looking here?"* If the answer is none, the count of passing tests
 is not evidence of anything.
+
+## A COUNT WITH NO CONSUMER IS NOT A RATE — THE SCORCH MEASUREMENT, 2026-09-22
+
+**The Dragon's Breath became a FIRE weapon, and fire accrues scorch.** Seven arrows per press is
+seven accrual events; a full magazine at point blank is **thirty-five**. Nothing in the tree had
+ever delivered fire at that rate, and the obvious reading is that a press stacks scorch seven times
+faster than the mechanism was tuned for.
+
+**IT WAS EXECUTED RATHER THAN REASONED, AND THE ANSWER IS THE OPPOSITE:**
+
+> ### SEVEN ARROWS BURN EXACTLY AS MUCH AS ONE.
+
+Three properties of scorch, none of them a property of the weapon — the stack count **has no
+consumer**, the cap is **overwritten by the most recent applier** with the same number six times,
+and the window is merely **refreshed**. The burn reads the cap and nothing else.
+
+**AND THE COUNTER-INTUITIVE HALF, which is the part worth carrying:** the cap is HALF OF ONE
+PAYLOAD, so **a weapon firing seven small payloads burns WEAKER than one firing a single large
+one.** Measured against a knell at GS 100 — Dragon's Breath **27**, Emberblade **21**, Flint Staff
+**60**. On an ordinary 20-HP mob all three are identical at 6, because the 5% arm binds instead.
+
+**THE GENERAL FORM: BEFORE PRICING A DELIVERY-RATE WORRY, FIND OUT WHETHER ANYTHING READS THE
+COUNT.** *"N times as many applications"* is a statement about events, and it is only a statement
+about MAGNITUDE if a magnitude reads the event count. Here nothing does — `scorch.yml` says so in
+its own words, *"read ONLY as a yes/no gate"* — so the worry had no mechanism behind it.
+
+**The measurement lives in `SevenArrowScorchTest`**, which pins every figure above, rather than in
+a plan: a figure in a plan is a claim.
+
+> **AND IT LEAVES A REAL FINDING BEHIND, WHICH IS NOT THE ONE ANYBODY EXPECTED.** The lever for
+> tuning this weapon's burn is **per-arrow damage**, which moves the cap linearly. **Adding arrows
+> does not move it at all**, so anyone who lowers the per-arrow damage to compensate for "seven
+> hits" will be weakening a burn that was already the weakest of the three.

@@ -31,6 +31,20 @@
    "It asks for a moment before it answers." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- dragons_breath
+   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
+   "Quiver: --/5" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Dragon's Breath" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "A hexagon of arrows, loosed at once." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Close range is the whole weapon." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["9 x 7" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.6s" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "It does not pick a target." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It picks a direction." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Legendary Ranged Weapon" color=#FFAA00 O=. B=. S=. U=. I=F
 -- dragons_plume
    "Void" color=#AA00AA O=. B=. S=. U=. I=F
    "Quiver: --/25" color=#AAAAAA O=. B=. S=. U=. I=F
@@ -147,20 +161,6 @@
    "It measures how long you spend not shooting." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Exotic Ranged Weapon" color=#55FFFF O=. B=. S=. U=. I=F
--- scatter_shot
-   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
-   "Quiver: --/4" color=#AAAAAA O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Scatter Shot" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
-   "A hexagon of arrows, loosed at once." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Close range is the whole weapon." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["9 x 7" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "Cooldown: 1.6s" color=#555555 O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "It does not pick a target." color=#AAAAAA O=. B=. S=. U=. I=T
-   "It picks a direction." color=#AAAAAA O=. B=. S=. U=. I=T
-   "" color=- O=. B=. S=. U=. I=F
-   "Rare Ranged Weapon" color=#5555FF O=. B=. S=. U=. I=F
 -- volley_stone
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F

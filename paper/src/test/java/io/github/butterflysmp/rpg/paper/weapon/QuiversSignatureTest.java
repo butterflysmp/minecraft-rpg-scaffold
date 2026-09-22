@@ -834,7 +834,7 @@ class QuiversSignatureTest {
      * <pre>
      * a plain press          1 round        every weapon
      * a YAW FAN              N rounds       the Plume's release -- N arrows, N rounds, ruled
-     * a SPREAD               1 round        the Scatter Shot -- SEVEN bodies, ONE round, ruled
+     * a SPREAD               1 round        the Dragon's Breath -- SEVEN bodies, ONE round, ruled
      * </pre>
      *
      * <p><b>The spread costs one BY CONSTRUCTION rather than by a second rule</b>, and that is the
@@ -863,7 +863,7 @@ class QuiversSignatureTest {
         assertTrue(code.contains("yawOffsets == null ? 1 : yawOffsets.length"),
                 "WeaponFire must spend ONE round for a press with no yaw fan, and yawOffsets.length"
                         + " for one that has. A spread is NOT a fan -- it is expanded below"
-                        + " CastExecutor.commit and produces no offsets -- so the Scatter Shot's"
+                        + " CastExecutor.commit and produces no offsets -- so the Dragon's Breath's"
                         + " seven bodies cost one round through this very expression. Change it and"
                         + " a seven-body press bills seven rounds, which no other test in either"
                         + " module can see: measured 2026-09-21, MUT14QUIVER7, suite green at 2147.");

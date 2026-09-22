@@ -27,12 +27,12 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <pre>
  * SpreadPatternTest        calls SpreadPattern DIRECTLY -- it never asks whether anything calls it
- * ScatterShotContentTest   reads the YAML -- the block parses and stores whether or not it is used
+ * DragonsBreathContentTest   reads the YAML -- the block parses and stores whether or not it is used
  * WeaponLoreLinesTest      reads the tooltip path -- a different method, still saying "x 7"
  * GoldenLoreTest           renders the tooltip -- still "Kinetic Damage: 9 x 7"
  * </pre>
  *
- * <p>So the Scatter Shot would have shipped <b>firing a single arrow while its tooltip promised
+ * <p>So the Dragon's Breath would have shipped <b>firing a single arrow while its tooltip promised
  * seven</b>, and the only thing that could have caught it is a boot. That is
  * {@code CLAUDE.md}'s <i>zero callers on a new accessor</i> defect in its purest form: a value
  * authored, parsed, stored, and read by nobody -- <b>indistinguishable from one the loader silently
@@ -60,20 +60,20 @@ class CastExecutorSpreadTest {
     private static final Aim EYE_FORWARD =
             new Aim(new Vec3(0, 1.62, 0), new Vec3(1, 0, 0), new Vec3(0, 0, -1));
 
-    /** The shipped ring, read off {@code scatter_shot.yml}: seven bodies at five degrees. */
-    private static final CastSpec.Spread SHIPPED = new CastSpec.Spread(7, 5);
+    /** The shipped ring, read off {@code dragons_breath.yml}: seven bodies at five degrees. */
+    private static final CastSpec.Spread SHIPPED = new CastSpec.Spread(7, 3);
 
     /**
-     * A projectile carrying a LITERAL damage payload, like the Scatter Shot's.
+     * A projectile carrying a LITERAL damage payload, like the Dragon's Breath's.
      *
      * @param spread null for the control -- a plain bolt, and the same fixture otherwise
      */
     private static AbilityDefinition bolt(CastSpec.Spread spread) {
-        return new AbilityDefinition("scatter_shot", "Scatter Shot", "kinetic", "ranger",
+        return new AbilityDefinition("dragons_breath", "Dragon's Breath", "fire", "ranger",
                 32, ResourceCost.FREE,
                 new CastSpec.Projectile(2.5, 0.05, 120, null, "arrow", null, null, spread),
-                List.of(new EffectSpec.Damage(9, "kinetic")), List.of(),
-                List.of(new EffectSpec.Visual("scatter_cast")));
+                List.of(new EffectSpec.Damage(9, "fire")), List.of(),
+                List.of(new EffectSpec.Visual("breath_cast")));
     }
 
     private record Fired(FakeWorld world, int uses) {}
@@ -126,7 +126,7 @@ class CastExecutorSpreadTest {
 
         assertEquals(1, fired.world().markersEverSpawned.size(),
                 "a bolt with no spread block is one bolt -- every projectile shipped before the"
-                        + " Scatter Shot");
+                        + " Dragon's Breath");
     }
 
     /**
@@ -146,12 +146,12 @@ class CastExecutorSpreadTest {
     void aSpreadPressIsONESoundAndONEUse() {
         Fired fired = fire(bolt(SHIPPED));
 
-        assertEquals(List.of("scatter_cast"), fired.world().presented,
+        assertEquals(List.of("breath_cast"), fired.world().presented,
                 "you hear the press ONCE. Seven copies is the defect that would follow from"
                         + " expanding the spread above the commit");
         assertEquals(0, fired.uses(),
                 "a LITERAL damage payload is not a basic attack, so no durability is charged --"
-                        + " which is scatter_shot's own recorded consequence, not an accident");
+                        + " which is dragons_breath's own recorded consequence, not an accident");
     }
 
     /**
@@ -188,7 +188,7 @@ class CastExecutorSpreadTest {
                     "body " + i + " left at the wrong speed -- an unnormalised direction");
             double degrees = Math.toDegrees(
                     Math.acos(launches.get(i).normalize().dot(EYE_FORWARD.direction())));
-            assertEquals(5.0, degrees, 1e-9, "body " + i + " is off-angle");
+            assertEquals(3.0, degrees, 1e-9, "body " + i + " is off-angle");
 
             for (int j = 1; j < i; j++) {
                 assertNotEquals(1.0, launches.get(i).normalize().dot(launches.get(j).normalize()),

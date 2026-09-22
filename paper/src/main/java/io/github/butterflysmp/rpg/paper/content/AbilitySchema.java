@@ -61,7 +61,7 @@ final class AbilitySchema {
             // and `item` it is a SECTION rather than a scalar, and unlike them it has no partial
             // form: see parseHoming.
             // `spread` is OPTIONAL and absent means null -- ONE body down the aim vector, which is
-            // every projectile this repo shipped before the Scatter Shot. A SECTION with no partial
+            // every projectile this repo shipped before the Dragon's Breath. A SECTION with no partial
             // form, exactly like `homing`, and orthogonal to it: a spread of homing bodies is
             // authorable and means what it says.
             // `body` is OPTIONAL and absent means null. It is the OTHER kind of body: `item` renders

@@ -649,9 +649,9 @@ class WeaponLoreTest {
                 () -> "a projectile with no spread block promises no multiplier; got " + lines);
     }
 
-    /** The Scatter Shot shape: a seven-body spread over a literal payload. */
+    /** The Dragon's Breath shape: a seven-body spread over a literal payload. */
     private static WeaponDefinition scoredSpread() {
-        return spreadWeapon(new CastSpec.Spread(7, 5));
+        return spreadWeapon(new CastSpec.Spread(7, 3));
     }
 
     /** The same weapon with the spread block absent, and nothing else changed. */
@@ -666,11 +666,11 @@ class WeaponLoreTest {
      */
     private static WeaponDefinition spreadWeapon(CastSpec.Spread spread) {
         AbilityDefinition shot = new AbilityDefinition(
-                "scatter_shot/right_click", "Scatter Shot", "kinetic", "none",
+                "dragons_breath/right_click", "Dragon's Breath", "kinetic", "none",
                 32, ResourceCost.FREE,
                 new CastSpec.Projectile(2.5, 0.05, 120, null, null, null, "arrow", spread),
                 List.of(new EffectSpec.Damage(9, "kinetic")), List.of("A hexagon of arrows."));
-        return new WeaponDefinition("scatter_shot", "Scatter Shot", "kinetic", Rarity.RARE,
+        return new WeaponDefinition("dragons_breath", "Dragon's Breath", "kinetic", Rarity.RARE,
                 WeaponClass.RANGER, "crossbow", 0.0, 0.0, SweepShare.NONE,
                 WeaponDefinition.NO_QUIVER, 0,
                 List.of(new TriggerBinding("right_click", shot)), List.of("Flavour."),

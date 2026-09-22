@@ -1227,7 +1227,7 @@ public final class RpgCommand {
      * said <i>"Measured — only {@code boltor} (8) and {@code quiver_stone} (9) carry
      * {@code quiver_size} at all"</i>, which was true when written and went stale twice without
      * anyone touching this file: {@code locust} (12), {@code dragons_plume} (25) and
-     * {@code scatter_shot} (4) have shipped since. <b>A list of instances maintained by hand in the
+     * {@code dragons_breath} (4) have shipped since. <b>A list of instances maintained by hand in the
      * javadoc of the guard is a figure maintained by delta.</b> The count that matters is ZERO
      * INSTANCES OF THE HAZARD, which is a different question from how many magazines exist:
      *
@@ -1236,7 +1236,7 @@ public final class RpgCommand {
      * grep -h  '^quiver_size:'   content/weapons/*.yml      the population, if you want it
      * </pre>
      *
-     * <p><b>{@code scatter_shot} is the closest any shipped weapon has come</b>, at 4, and its own
+     * <p><b>{@code dragons_breath} is the closest any shipped weapon has come</b>, at 4, and its own
      * file records that 4 was chosen partly to stay off this trap. That is the useful fact; the
      * roster is not.
      *

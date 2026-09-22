@@ -39,9 +39,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class SpreadPatternTest {
 
-    /** The shipped spread, read off {@code scatter_shot.yml} rather than invented. */
+    /** The shipped spread, read off {@code dragons_breath.yml} rather than invented. */
     private static CastSpec.Spread shipped() {
-        return new CastSpec.Spread(7, 5);
+        return new CastSpec.Spread(7, 3);
     }
 
     /** Looking due south (+Z) at the horizon: Bukkit yaw 0. */
@@ -108,7 +108,7 @@ class SpreadPatternTest {
 
         for (int i = 1; i < directions.size(); i++) {
             double degrees = Math.toDegrees(Math.acos(directions.get(i).dot(SOUTH)));
-            assertEquals(5.0, degrees, 1e-9, "ring body " + i + " is off-angle");
+            assertEquals(3.0, degrees, 1e-9, "ring body " + i + " is off-angle");
         }
     }
 
@@ -184,7 +184,7 @@ class SpreadPatternTest {
             Vec3 d = directions.get(i);
             assertFalse(Double.isNaN(d.x() + d.y() + d.z()), "ring body " + i + " is NaN");
             assertEquals(1.0, d.length(), 1e-9);
-            assertEquals(5.0, Math.toDegrees(Math.acos(d.dot(UP))), 1e-9,
+            assertEquals(3.0, Math.toDegrees(Math.acos(d.dot(UP))), 1e-9,
                     "ring body " + i + " collapsed onto the aim -- the basis degenerated");
         }
     }
@@ -198,7 +198,7 @@ class SpreadPatternTest {
         for (int i = 1; i < directions.size(); i++) {
             Vec3 d = directions.get(i);
             assertFalse(Double.isNaN(d.x() + d.y() + d.z()), "ring body " + i + " is NaN");
-            assertEquals(5.0, Math.toDegrees(Math.acos(d.dot(DOWN))), 1e-9,
+            assertEquals(3.0, Math.toDegrees(Math.acos(d.dot(DOWN))), 1e-9,
                     "ring body " + i + " collapsed onto the aim -- the basis degenerated");
         }
     }
@@ -255,7 +255,7 @@ class SpreadPatternTest {
             Vec3 forward = new Vec3(0, Math.sin(p), Math.cos(p));
 
             for (Vec3 d : SpreadPattern.directionsFor(forward, RIGHT_AT_SOUTH, shipped()).subList(1, 7)) {
-                assertEquals(5.0, Math.toDegrees(Math.acos(d.dot(forward.normalize()))), 1e-6,
+                assertEquals(3.0, Math.toDegrees(Math.acos(d.dot(forward.normalize()))), 1e-6,
                         "the ring degrades at pitch " + pitch);
             }
         }

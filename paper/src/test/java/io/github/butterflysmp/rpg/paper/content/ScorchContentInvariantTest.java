@@ -58,8 +58,24 @@ class ScorchContentInvariantTest {
      * schema" -- which is the defect CLAUDE.md records twice and the reason this file exists. So
      * the count was re-pointed at what now carries the invariant rather than retired: the cap basis
      * is a damage amount either way, and there are MORE of them than there were explicit statuses.
+     *
+     * <p><b>12 -> 13 on 2026-09-22, when {@code dragons_breath} changed element from kinetic to
+     * fire, and this row is what noticed</b> -- on the first full-reactor run after the rebrand,
+     * which is the behaviour this constant exists for. One new site: the weapon's single literal
+     * {@code damage} effect.
+     *
+     * <p><b>AND ONE SITE IS NOT ONE ACCRUAL, WHICH IS THE INTERESTING PART AND IS WHY IT IS
+     * RECORDED HERE.</b> That single authored site fires SEVEN payloads per press -- the weapon is
+     * a spread -- so it is the first content site in the tree whose accrual count per press is not
+     * one. <b>It buys no extra burn</b>: scorch's stack count has no consumer, the cap is
+     * overwritten by the most recent applier with the same number six times, and the window is
+     * merely refreshed. Executed rather than reasoned, in {@code SevenArrowScorchTest}.
+     *
+     * <p>So this constant counts AUTHORED SITES and not accrual events, and the two have now
+     * diverged. Said plainly because a future reader counting fire weapons to predict this number
+     * will be right, and a future reader counting fire HITS will not.
      */
-    private static final int KNOWN_FIRE_DAMAGE_SITES = 12;
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 13;
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare
