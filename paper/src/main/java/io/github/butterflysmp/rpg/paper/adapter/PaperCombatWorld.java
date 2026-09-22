@@ -55,6 +55,44 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
+     * The same point, ROTATED to look along {@code direction} -- what a body must spawn wearing if
+     * its first rendered frame is to point where it is going.
+     *
+     * <h2>*** WHY THIS IS NOT ALREADY TRUE: A Vec3 CARRIES NO ROTATION ***</h2>
+     *
+     * <p>{@link #toLocation} builds a {@code Location} from three doubles, so its yaw and pitch are
+     * the constructor's defaults -- <b>0 and 0, which is due south and level.</b> A body spawned at
+     * such a location wears that rotation on the frame it appears, whatever velocity it was given
+     * in the same breath.
+     *
+     * <p><b>Setting the velocity at creation does NOT fix this, and it was believed to.</b>
+     * {@link #spawnBoltMarker}'s own comment says the launch velocity is part of creating the body
+     * <i>"so a body spawned still has no direction on its first frame"</i> -- correct about the
+     * problem and incomplete as a remedy. An arrow's rotation comes from {@code atan2} over
+     * {@code deltaMovement} <b>inside its own {@code tick()}</b>, so the velocity is right one tick
+     * BEFORE the rotation derived from it is. <b>The frame in between renders due south.</b>
+     *
+     * <p>Two independent quantities were being set and only one of them was the one that renders.
+     *
+     * <h2>IT AFFECTS EVERY ARROW BODY IN THE TREE, NOT ONE WEAPON</h2>
+     *
+     * <p>{@code dragons_plume} has shipped with this since the arrow body landed -- observed on it
+     * directly, which is what identified this as a defect in this method rather than in whatever
+     * weapon happened to surface it.
+     *
+     * <p><b>A ZERO DIRECTION IS LEFT ALONE RATHER THAN NORMALISED.</b> {@code setDirection} on a
+     * zero vector writes {@code pitch = 90} -- straight down -- which is a worse answer than the
+     * default and is arrived at silently. No caller produces one today ({@code launch} scales a
+     * normalised aim by a positive speed), so this is a guard against a future caller rather than a
+     * live case, and the honest behaviour for "no direction" is to leave the rotation as it was.
+     */
+    private static Location facing(Location at, Vec3 direction) {
+        if (direction.lengthSquared() == 0) return at;
+        at.setDirection(new Vector(direction.x(), direction.y(), direction.z()));
+        return at;
+    }
+
+    /**
      * MUST run on the thread that owns {@code center}'s region.
      * World#getNearbyEntities is illegal anywhere else.
      *
@@ -646,7 +684,7 @@ public final class PaperCombatWorld implements CombatWorld {
      */
     @Override
     public UUID spawnBoltMarker(Vec3 at, Vec3 velocity, int expectedLifetimeTicks) {
-        Arrow body = world.spawn(toLocation(at), Arrow.class, arrow -> {
+        Arrow body = world.spawn(facing(toLocation(at), velocity), Arrow.class, arrow -> {
             // THE ONE SWITCH. Block collision, entity collision, ProjectileHitEvent, in-ground
             // sticking and gravity, all off together -- see this method's javadoc for the gate.
             arrow.setNoPhysics(true);
@@ -671,10 +709,19 @@ public final class PaperCombatWorld implements CombatWorld {
             arrow.setPersistent(false);              // unload backstop, exactly as configureMarker
 
             // THE LAUNCH VELOCITY IS PART OF CREATING THIS BODY, NOT SOMETHING DONE TO IT AFTER.
-            // An arrow's rotation is derived from its own deltaMovement inside its own tick, so a
-            // body spawned still has no direction on its first frame and visibly snaps into line a
-            // tick later. This is the exact inverse of configureMarker's zeroing rule, which is
-            // right for items and wrong here -- see CombatWorld.spawnBoltMarker.
+            // This is the exact inverse of configureMarker's zeroing rule, which is right for items
+            // and wrong here -- see CombatWorld.spawnBoltMarker.
+            //
+            // *** AND IT IS HALF OF WHAT THE FIRST FRAME NEEDS, NOT ALL OF IT. THIS COMMENT USED TO
+            // CLAIM OTHERWISE. *** It read: "An arrow's rotation is derived from its own
+            // deltaMovement inside its own tick, so a body spawned still has no direction on its
+            // first frame and visibly snaps into line a tick later" -- offered as the REASON the
+            // velocity is set here, i.e. as though setting it here removed the snap. It does not.
+            // The rotation is derived in tick(), so it is still one tick behind this line; what the
+            // spawn frame renders is the LOCATION's yaw and pitch. See facing() above, which is
+            // where that is now supplied.
+            // This line and facing() set DIFFERENT quantities -- motion and rotation -- and reading
+            // them as one is exactly how this shipped.
             arrow.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z()));
 
             // The same tag every other marker carries, and the reason markerOf() below can find
