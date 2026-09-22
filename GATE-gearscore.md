@@ -492,26 +492,56 @@ be a ruling with no author, which is the failure the *unruled, not excluded* rul
 > *and* the answer. This question has been raised twice; without the ruling written in, it would be
 > raised a third time.
 >
-> ### AND THE RULING LEANS ON SOMETHING THAT IS NOT QUEUED ANYWHERE — BEN'S CALL, NOT MINE
+> ### ~~AND THE RULING LEANS ON SOMETHING THAT IS NOT QUEUED ANYWHERE — BEN'S CALL, NOT MINE~~
 >
-> **`ability_stone` is NOT in the dev-weapon deletion set.** That set names exactly three, measured
-> in `CLAUDE.md`'s *Standing decisions*: **`hunters_bow`, `ironblade` and `quiver_stone`.**
-> `volley_stone` is separately excluded by content (`unscored: true`), so it does not depend on this
-> ruling at all.
+> ### *** CLOSED 2026-09-22. BEN TOOK OPTION 1: `ability_stone` JOINS THE DELETION SET. ***
 >
-> **So "on their way out" is true of `quiver_stone`, already true by another mechanism for
-> `volley_stone`, and QUEUED NOWHERE for `ability_stone`.** Its removal is not scheduled, not
-> triggered and not written down — which means the ruling's premise holds for two of the three
-> stones and is an assumption for the third.
+> **The premise is now true of all three stones**, and the *leave them scored* ruling above no longer
+> rests on an assumption about any of them. `CLAUDE.md`'s *Standing decisions* names **four**:
+> `hunters_bow`, `ironblade`, `quiver_stone` (2026-09-12) and **`ability_stone` (2026-09-22)**.
 >
-> **TWO WAYS TO CLOSE IT, AND CHOOSING BETWEEN THEM IS BEN'S:**
+> **The flag is struck rather than deleted, and the argument below is kept.** A reader who finds only
+> the answer cannot tell a question that was ruled from one that was never asked — and this one was
+> raised twice before it was ruled once.
 >
-> 1. **Add `ability_stone` to the deletion set**, and the premise becomes true of all three.
-> 2. **Record that the ruling stands on its own merits** — that a scored dev stone is acceptable
->    regardless of when or whether it is deleted — and the premise stops being load-bearing.
+> > **THE FLAG AS IT STOOD, for the record:**
+> >
+> > **`ability_stone` was NOT in the dev-weapon deletion set.** That set named exactly three,
+> > measured in `CLAUDE.md`'s *Standing decisions*: **`hunters_bow`, `ironblade` and
+> > `quiver_stone`.** `volley_stone` is separately excluded by content (`unscored: true`), so it does
+> > not depend on this ruling at all.
+> >
+> > **So "on their way out" was true of `quiver_stone`, already true by another mechanism for
+> > `volley_stone`, and QUEUED NOWHERE for `ability_stone`.** Its removal was not scheduled, not
+> > triggered and not written down — which meant the ruling's premise held for two of the three
+> > stones and was an assumption for the third.
+> >
+> > **TWO WAYS TO CLOSE IT, AND CHOOSING BETWEEN THEM IS BEN'S:**
+> >
+> > 1. **Add `ability_stone` to the deletion set**, and the premise becomes true of all three.
+> > 2. **Record that the ruling stands on its own merits** — that a scored dev stone is acceptable
+> >    regardless of when or whether it is deleted — and the premise stops being load-bearing.
+> >
+> > **Neither is chosen here.** Writing either one in would be inventing the second ruling to prop up
+> > the first, which is the same defect as an exclusion with no author, one level up.
 >
-> **Neither is chosen here.** Writing either one in would be inventing the second ruling to prop up
-> the first, which is the same defect as an exclusion with no author, one level up.
+> **AND ONE CONSEQUENCE THE RULING CREATES, NAMED HERE BECAUSE NOTHING ELSE WILL FIND IT.** Three
+> shipped content files call `ability_stone` **PERMANENT**, and one of them is the stone's own file:
+>
+> ```
+> ability_stone.yml   "Permanent, like /rpg apply -- NOT a _TEMP fixture."
+> quiver_stone.yml:5  "PERMANENT, like ability_stone and volley_stone -- NOT a _TEMP fixture."
+> volley_stone.yml:14 "PERMANENT, like ability_stone and /rpg apply -- NOT a _TEMP fixture."
+> ```
+>
+> **Whether that is a contradiction is Ben's, not this file's.** *"PERMANENT, not `_TEMP`"* is a
+> claim about a **removal convention** — that the stone is not scaffolding awaiting the content pass
+> — and the deletion set is a **queue parked on replacements shipping**. The two can be read as
+> compatible. **But the first file now asserts permanence about an item queued for deletion, and the
+> other two cite it as the exemplar of permanence**, so if they are compatible the files should say
+> why, and if they are not, three comments are false. **Not edited here: this slice carries a gate
+> reading and a doc re-homing, and rewriting shipped content prose on my own reading of a ruling is
+> the exact move the *unruled, not excluded* rule forbids.**
 
 ---
 
