@@ -103,7 +103,6 @@ fi
 # --- Build -----------------------------------------------------------------
 
 if [ "$DO_BUILD" -eq 1 ]; then
-  echo "==> Building"
   # 'clean' here is belt and braces, not a correctness requirement. A plain build
   # already recompiles paper/ when core/ changes -- measured, see ContentValidator's
   # javadoc. What we do want before booting a server is a jar with nothing stale in
