@@ -634,9 +634,11 @@ public final class PaperCombatWorld implements CombatWorld {
      *       ticking and on rotation packets, and neither was read. What is measured is the server
      *       value. It is the reason <i>the later flight was already correct</i> is an OPEN question
      *       rather than a settled one -- see {@code GATE-arrow-body-orientation.md}.
-     *       <br><b>{@link #driveMarker} re-writes the correct yaw every tick</b>, in the
-     *       scheduler phase that runs before both the tracker send and the arrow's own
-     *       tick; the measured order is quoted there.</li>
+     *       <br><b>AND IT IS NOT COMPENSATED FOR, BY DECISION.</b> A per-tick corrective write in
+     *       {@link #driveMarker} was written and removed: the operator observed a bolt settling on
+     *       its travel direction unaided, so the client converges without us, and nothing in this
+     *       codebase reads a marker's rotation. <b>So {@code getYaw()} on a bolt body in flight is
+     *       about 180 degrees out from its travel, knowingly.</b> See {@link #driveMarker}.</li>
      *   <li><b>Fire and lava: the body can BURN but is not destroyed.</b> {@code baseTick} handles
      *       fire ticks and lava; an arrow is not a stack that can be consumed, so unlike a flint
      *       marker there is no "the body simply vanishes" case from this axis.</li>
@@ -833,35 +835,34 @@ public final class PaperCombatWorld implements CombatWorld {
         if (marker != null) {
             marker.setVelocity(new Vector(stepVelocity.x(), stepVelocity.y(), stepVelocity.z()));
 
-            // *** AND THE ROTATION IS RE-WRITTEN EVERY TICK, BECAUSE THE PLATFORM UNDOES IT. ***
+            // *** THERE IS DELIBERATELY NO ROTATION WRITE HERE, AND ONE WAS REMOVED. ***
             //
-            // AbstractArrow.tick eases the yaw toward atan2(-x, -z) -- REVERSED -- for a noPhysics
-            // arrow, at Mth.lerp(0.2f, ..) a tick, and every bolt body is noPhysics. A single write
-            // at spawn is 20% gone one tick later. This is the correcting write.
+            // A per-tick setRotation was written and then taken out, because it had NO READER. The
+            // decision rests on three things, two measured and one observed:
             //
-            // AND THE PHASE IS WHY ONE LINE IS ENOUGH. Measured from the pinned jar's bytecode,
-            // within ONE server tick:
+            //   1. THE OPERATOR WATCHED IT SETTLE. On the build where the spawn rotation was never
+            //      applied at all, a bolt "took a few seconds but did correct itself eventually".
+            //      So the CLIENT converges on the travel direction from its own copy of the arrow
+            //      tick, and no server-side rotation write changes what a player sees after the
+            //      first frames.
+            //   2. THE SERVER'S VALUE BARELY TRAVELS ANYWAY. ServerEntity.sendChanges reconsiders
+            //      rotation only on forceStateResync, tickCount % updateInterval == 0, needsSync,
+            //      or dirty entity data -- and EntityType.ARROW is built with updateInterval(20),
+            //      while needsSync is set by setPosRaw only for types whose interval is
+            //      Integer.MAX_VALUE, so movement does not set it. About one packet in twenty ticks.
+            //   3. NOTHING IN THIS CODEBASE READS A MARKER'S ROTATION. markerOf is private with
+            //      exactly three callers -- this method, removeMarker and markerLocation -- and the
+            //      only things that ever leave are getUniqueId() and markerLocation's Vec3, which
+            //      has no rotation field. The port cannot carry it, so core cannot see it.
             //
-            //   MinecraftServer.tickChildren  bc 31   FoliaGlobalRegionScheduler.tick()   <-- HERE
-            //   ServerLevel.tick              bc 436  ServerChunkCache.tick -> ChunkMap.tick()
-            //                                         -> newTrackerTick -> ServerEntity.sendChanges
-            //   ServerLevel.tick              bc 591  EntityTickList.forEach -> the arrow's tick()
+            // THE SPAWN-CONSUMER WRITE STAYS. That one has a reader: the add-entity packet's yaw and
+            // pitch are what the FIRST rendered frame wears, and nothing else supplies them.
             //
-            // We run BEFORE the tracker sends and BEFORE the arrow ticks, so the value broadcast is
-            // always this one, un-eroded, and the lerp's damage never leaves the server.
-            //
-            // WHAT THIS STILL CANNOT DO: the CLIENT runs the same arrow tick on its own copy, and
-            // ServerEntity.sendChanges only reconsiders rotation when forceStateResync, or
-            // tickCount % updateInterval == 0 -- updateInterval is 20 for EntityType.ARROW -- or the
-            // entity data is dirty. So the server's value reaches a client about every 20 ticks and
-            // the client fills in the rest itself. Nothing server-side can settle what it draws.
-            //
-            // ARROW BODIES ONLY. An Item marker's rotation is not rendered, so asking for it would
-            // be a write with no meaning rather than a harmless one.
-            if (marker instanceof AbstractArrow) {
-                BodyRotation rotation = BodyRotation.along(stepVelocity);
-                if (rotation != null) marker.setRotation(rotation.yaw(), rotation.pitch());
-            }
+            // AND THE SERVER-SIDE YAW STAYS FLIPPED, KNOWN AND UNFIXED. AbstractArrow.tick eases a
+            // noPhysics arrow's yaw toward atan2(-x, -z) -- reversed -- at Mth.lerp(0.2f, ..) a
+            // tick, so getYaw() on a bolt body in flight is about 180 degrees out from its travel.
+            // That is a real property of the entity and it is left alone: it renders as nothing, and
+            // the first thing that ever READS it will need this comment rather than a repair.
         }
         // Silently absent is CORRECT here and is a reachable state, not a defensive one: a driven
         // ITEM body is a fully participating item entity, and fire, lava and cactus destroy those.

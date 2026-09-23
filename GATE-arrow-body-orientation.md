@@ -132,7 +132,7 @@ target is the REVERSED yaw, so the interesting question is what the body does ov
 |---|---|
 | **Setup** | `/rpg give dragons_plume`. Plain arrow in the off-hand (R5's workaround). Fire a **tap** (held 3–8 ticks) aimed **EAST**, along a long sightline, and **watch the bolt all the way out** — not the first frame. |
 | **Predict** | **It points along its travel from the frame it appears AND STAYS THERE.** No flick at the muzzle, and **no slow swing** over the following second. |
-| **Predict** | **THE SLOW SWING IS THE READING THAT MATTERS, AND IT IS NEW.** If the body starts correct and turns to point backwards over roughly ten ticks, the per-tick write is not landing — or is landing and losing. That is a different failure from the muzzle flick and has a different cause; **say which of the two you saw.** |
+| **Predict** | **THE SLOW SWING IS A SEPARATE READING FROM THE MUZZLE FLICK, AND THERE IS NO LONGER A WRITE TO BLAME FOR IT.** A per-tick corrective write was built and then **removed**, because the operator's own reading showed the client settling on the travel direction unaided. So if the body starts correct and then turns to point backwards and STAYS there, the finding is that **the client is not converging after all** — not that a write failed. **Say which of the two you saw**, and for how long. |
 | **Predict** | **East is staged because it is NOT a no-op of either mirror.** The look-convention mirror leaves north and south alone; the `noPhysics` flip leaves east and west alone **in the server's own target** but not in what a correct fix must write. East fails visibly under the first and is the direction R1 was staged on, so it is the continuity reading. |
 | **READ** | _(NOT RUN)_ |
 
@@ -183,16 +183,30 @@ vertical shot is where ninety degrees of it is unmissable.
 look-convention mirror, south is the **no-op value**: yaw `0` under both conventions, so a south bolt
 read as a clean pass with the defect fully present. **That is not true of the `noPhysics` flip.**
 
-> **A SOUTH BOLT UNDER THE FLIP POINTS NORTH.** The flip's target is `atan2(-x, -z)`, which for
-> `(0, 0, +1)` is `180` — due north — against the correct `0`. **So south is the no-op of the mirror
-> and the WORST CASE of the flip**, and a row staged south now separates "the per-tick write works"
-> from "the platform's easing wins".
+> **THIS ROW'S REASONING WAS CORRECTED BEFORE ITS BOOT, 2026-09-23, AND THE CORRECTION IS THE
+> INTERESTING PART.** It said: *a south bolt under the `noPhysics` flip points NORTH, so this row
+> separates "the per-tick write works" from "the platform's easing wins".* **The arithmetic is right
+> and the conclusion is not.** The flip's target for `(0, 0, +1)` really is `180` — due north — but
+> **that is a fact about the SERVER's `getYaw()`, and the operator's reading shows it does not
+> render**: on `7b5b936`, with no rotation applied at all, a bolt *"took a few seconds but did
+> correct itself eventually"*. A flip that reached the client would have settled it BACKWARDS, not
+> correct. **So the flip is invisible, and there is no per-tick write any more for this row to be
+> about.**
+>
+> **SOUTH IS STILL THE RIGHT CONTROL, FOR THE ORIGINAL REASON ONLY.** It is the **no-op value of the
+> look-convention mirror** — yaw `0` under both conventions — so it is the one direction that reads as
+> a clean pass with that defect fully present. **The row's job is to prove the spawn write is being
+> applied at all**, by being the shot that cannot distinguish the two conventions: if south looks right
+> and R3's east does not, the write is landing in the wrong convention rather than not landing.
+>
+> **AND IF A SOUTH BOLT DOES SETTLE POINTING NORTH, THAT IS A NEW FINDING**, not the expected failure:
+> it would mean the server's flipped yaw reaches the client after all, against the reading above.
 
 | | |
 |---|---|
 | **Setup** | Same weapon and setup. Fire a tap aimed **SOUTH** and watch the bolt out for a full second. |
 | **Predict** | **It points SOUTH for the whole flight.** |
-| **Predict** | **IF IT TURNS TO POINT NORTH, THE PLATFORM'S EASING IS WINNING** — the write is being overwritten, or is not reaching the client. That is the most diagnostic single reading in this file, and it is available from one shot. |
+| **Predict** | **IF IT TURNS TO POINT NORTH, THAT CONTRADICTS THE READING THIS ROW WAS REASONED FROM** — the server's flipped yaw would be reaching the client, which the 2026-09-22 boot indicates it does not. **Report it as a contradiction, not as a failure of the fix**; the two call for different work. |
 | **Predict** | **THIS ROW IS NOT A NO-OP AND THE PREVIOUS SOUTH ROW WAS.** Stated here because the two look identical in the log: *"fired south, looked right"* means nothing on `7b5b936` and everything on this tip. |
 | **READ** | _(NOT RUN)_ |
 
@@ -229,13 +243,41 @@ the client is not in this jar. **This row is what settles it.**
 |---|---|
 | **Setup** | Any of R3–R6, watched for **several seconds** on a long flight rather than a short one. The Plume's charged release is the longest-lived body available. |
 | **Predict** | **The body's heading does not drift, oscillate, or snap periodically.** A **periodic** correction — a visible twitch roughly once a second — would be the twenty-tick sync arriving and disagreeing with what the client had drawn in between. |
-| **Predict** | *** IF THE BOLT STILL FLIES BACKWARDS ON THIS BUILD, THE SERVER'S ROTATION IS LOSING TO THE CLIENT'S OWN TICK, AND THE FIX IS IN THE WRONG LAYER. *** No further server-side write helps: `driveMarker` already runs in the earliest phase of the tick and already precedes both the send and the arrow's own tick. **The next move would be a packet, not a setter** — which crosses into PacketEvents and needs a ruling, not a patch. |
+| **Predict** | *** IF THE BOLT STILL FLIES BACKWARDS ON THIS BUILD, THE SERVER'S ROTATION IS LOSING TO THE CLIENT'S OWN TICK, AND THE FIX IS IN THE WRONG LAYER. *** No further server-side write helps, and that is measured rather than assumed: `driveMarker` runs in the earliest phase of the tick, before both the tracker send and the arrow's own tick, so **a write placed there was the best a setter could do — and it was removed for want of a reader.** **The next move would be a packet, not a setter** — which crosses into PacketEvents and needs a ruling, not a patch. |
 | **Predict** | **AND A PASS HERE DOES NOT PROVE THE MECHANISM, ONLY THE OUTCOME.** If the bolts look right, we still will not know whether it is our write or the client's own arithmetic doing it. **Record that as a pass with the mechanism unresolved**, rather than as confirmation of the paragraph above. |
 | **READ** | _(NOT RUN)_ |
 
 ---
 
-## WHY BOTH ROWS FAILED — MEASURED 2026-09-22, AFTER THE BOOT
+## AND THE OPERATOR'S SECOND OBSERVATION, WHICH SETTLED THE LAYER QUESTION
+
+**Reported 2026-09-23, about the same `7b5b936` boot**, and recorded here rather than in R1's or R2's
+`READ` cell because **those rows are closed and a reading is not edited once written**:
+
+> the bolt **"took a few seconds but did correct itself eventually"**.
+
+**THAT IS THE ANSWER TO WHETHER THE SERVER'S FLIPPED YAW RENDERS, AND IT IS NO.** On that build no
+rotation was applied at spawn at all, and the server's own steady-state target for a `noPhysics` arrow
+is `atan2(-x, -z)` — **backwards**. Had that value been what the client drew, the bolt would have
+settled pointing the wrong way and stayed there. It settled CORRECT. **So the client converges on the
+travel direction from its own copy of the arrow tick, and the server's rotation is not what determines
+what a player sees after the first frames.**
+
+**WHAT IT COST, AND THE COST IS THE POINT:** a per-tick corrective write in `driveMarker` was designed,
+measured into the right scheduler phase, built and tested — and then **removed**, because this one
+sentence shows it has no reader. The spawn-consumer write stays: the add-entity packet's yaw and pitch
+are the only thing supplying the first rendered frame. **The server-side yaw of a bolt in flight
+remains about 180 degrees out from its travel, known and unfixed.**
+
+**AND THE SEQUENCE IS WORTH KEEPING.** The order was read from the bytecode *before* the per-tick line
+was written, which is what made the line correct; it was **one observation from the operator that made
+it pointless.** Neither step was wasted and neither could have replaced the other — the measurement
+established what a server-side write can do, and the observation established that nothing needs it.
+
+---
+
+## WHY BOTH ROWS FAILED
+ — MEASURED 2026-09-22, AFTER THE BOOT
 
 **NO PREDICTION ABOVE IS EDITED.** Every `Predict` cell stands exactly as it was written before the
 boot. This section is the post-hoc account, and it was produced by **reading the shipped artifacts**

@@ -40,8 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p><b>The arithmetic is not scanned, it is TESTED</b> -- {@code BodyRotationTest} has the seven
  * directions in degrees and executes the rival convention as a mutation. What is left here is the
- * WIRING: that the value is computed from the right vector, written to the right object, at the right
- * two sites, and that a null answer is skipped rather than written as {@code (0, 0)}.
+ * WIRING: that the value is computed from the right vector and written to the right object at the ONE
+ * site that has a reader, that a null answer is skipped rather than written as {@code (0, 0)}, and
+ * that the per-tick write which was removed for want of a reader has not come back.
  *
  * <h2>IT IS NOT ABOUT ONE WEAPON</h2>
  *
@@ -109,51 +110,45 @@ class BoltBodySignatureTest {
                 "the facing() helper is deleted. A call to it surviving means the inert path is back.");
     }
 
+
     /**
-     * *** AND THE ROTATION IS RE-WRITTEN EVERY TICK, FROM THE SAME TICK'S VELOCITY. ***
+     * *** AND THERE IS DELIBERATELY NO PER-TICK ROTATION WRITE. ONE WAS WRITTEN AND REMOVED. ***
      *
-     * <p>A single write at spawn is not enough and the reason is in the platform:
-     * {@code AbstractArrow.tick} eases the yaw toward {@code atan2(-x, -z)} -- reversed -- for a
-     * {@code noPhysics} arrow, at {@code Mth.lerp(0.2f, ..)} a tick, and every bolt body is
-     * {@code noPhysics}. <b>One write is 20% gone after one tick.</b>
+     * <p>This row guards an ABSENCE, which is unusual and is the point: the obvious next edit to this
+     * area is to add a corrective write in {@code driveMarker}, and it would be wrong for a reason
+     * nothing else in the tree records.
      *
-     * <p>Pinned on {@code stepVelocity} rather than on any vector, because rotating to the CASTER'S
-     * aim, or to the launch velocity, is correct for a straight single bolt and wrong for every
-     * steered or spread one -- and indistinguishable from correct in any single-bolt test anyone
-     * would write.
+     * <p><b>It had no reader.</b> The operator watched a bolt on the build where the spawn rotation
+     * was never applied at all and reported that it <i>"took a few seconds but did correct itself
+     * eventually"</i> -- so the CLIENT converges on the travel direction from its own copy of the
+     * arrow tick, and no server-side write changes what a player sees past the first frames. The
+     * server's value barely travels anyway ({@code EntityType.ARROW} is built with
+     * {@code updateInterval(20)}), and <b>nothing in this codebase reads a marker's rotation</b>:
+     * {@code markerOf} is private with three callers, and the only things that leave
+     * {@code PaperCombatWorld} are {@code getUniqueId()} and {@code markerLocation}'s {@code Vec3},
+     * which has no rotation field.
+     *
+     * <p><b>So the server-side yaw of a bolt in flight stays about 180 degrees out from its travel,
+     * knowingly.</b> Whoever adds the first READER of that value is the person who should delete this
+     * row, and they will need {@code driveMarker}'s comment to know what they are undoing.
      */
     @Test
-    void theRotationIsRewrittenEveryTickFromThatTicksVelocity() throws IOException {
+    void thereIsNoPerTickRotationWriteAndThatIsDeliberate() throws IOException {
         List<String> lines = read(COMBAT_WORLD, 400);
 
-        int drive = indexOf(lines, "public void driveMarker(UUID markerId, Vec3 stepVelocity) {");
-        int computed = indexOf(lines, "BodyRotation rotation = BodyRotation.along(stepVelocity);");
-
-        assertTrue(drive >= 0, "driveMarker's signature moved; this scan is no longer anchored");
-        assertTrue(computed > drive,
-                "driveMarker must re-write the rotation from THIS tick's velocity. Without it the"
-                        + " platform's own lerp toward atan2(-x, -z) walks the body round to point"
-                        + " backwards, 20% of the way per tick.");
+        assertEquals(-1, indexOf(lines, "marker.setRotation("),
+                "driveMarker must NOT write a rotation. It had no reader -- the client converges on"
+                        + " its own, the server sends rotation about once every 20 ticks, and nothing"
+                        + " here reads a marker's rotation. If you are adding one back, say what"
+                        + " reads it.");
+        assertEquals(-1, indexOf(lines, "BodyRotation.along(stepVelocity)"),
+                "the per-tick rotation is not computed either. Computing it and not writing it would"
+                        + " be worse than both: a reader would take its presence for a write.");
     }
 
     /**
-     * AND THE PER-TICK WRITE IS GATED TO ARROW BODIES.
-     *
-     * <p>{@code driveMarker} drives ITEM markers too, and an item entity's rotation is not rendered.
-     * Writing one would not be harmless belt-and-braces; it would be a write with no meaning, which
-     * is the kind of line a later reader deletes for the right reason and the wrong target.
-     */
-    @Test
-    void thePerTickWriteIsGatedToArrowBodies() throws IOException {
-        List<String> lines = read(COMBAT_WORLD, 400);
-
-        assertTrue(indexOf(lines, "if (marker instanceof AbstractArrow) {") > 0,
-                "the per-tick rotation write must be gated on the marker being an arrow. driveMarker"
-                        + " also drives item markers, whose rotation nothing renders.");
-    }
-
-    /**
-     * A ZERO VELOCITY IS SKIPPED AT BOTH SITES, NOT WRITTEN AS {@code (0, 0)}.
+     * A ZERO VELOCITY IS SKIPPED AT THE ONE WRITE SITE
+, NOT WRITTEN AS {@code (0, 0)}.
      *
      * <p>{@code BodyRotation.along} answers {@code null} for a zero vector, and {@code (0, 0)} is due
      * south and level -- <b>the exact defect this whole slice removes</b>, so a caller that wrote the
@@ -165,13 +160,11 @@ class BoltBodySignatureTest {
      * check three files away.
      */
     @Test
-    void aZeroVelocityIsSkippedAtBothWriteSites() throws IOException {
+    void aZeroVelocityIsSkippedAtTheWriteSite() throws IOException {
         List<String> lines = read(COMBAT_WORLD, 400);
 
         assertTrue(indexOf(lines, "if (spawnRotation != null) {") > 0,
                 "the spawn write must skip a null rotation rather than writing (0, 0)");
-        assertTrue(indexOf(lines, "if (rotation != null) marker.setRotation(") > 0,
-                "the per-tick write must skip a null rotation rather than writing (0, 0)");
     }
 
     // --- helpers, and their own controls --------------------------------------------------------
