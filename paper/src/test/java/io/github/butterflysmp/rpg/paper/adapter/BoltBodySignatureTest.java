@@ -14,6 +14,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * *** A BOLT BODY MUST SPAWN ALREADY POINTING WHERE IT IS GOING. ***
  *
+ * <h2>*** EVERY ROW BELOW IS GREEN AND THE CHANGE THEY PIN DOES NOTHING. READ THIS FIRST. ***</h2>
+ *
+ * <p>Measured 2026-09-22, after the boot gate FAILED on {@code 7b5b936}: <b>{@code world.spawn}
+ * discards a {@code Location}'s rotation for an arrow.</b> {@code CraftEntityTypes} registers
+ * {@code EntityType.ARROW} through {@code createAndMoveEmptyRot}, whose positioner is
+ * {@code MOVE_EMPTY_ROT} -- {@code Entity.snapTo(x, y, z, 0.0F, 0.0F)}, both floats constant. So the
+ * rows below prove the source says what it was meant to say, and it does; <b>the arrow never sees
+ * any of it.</b>
+ *
+ * <p><b>THAT IS NOT A REASON TO DELETE THEM, AND IT IS THE WHOLE VALUE OF READING IT HERE: A SOURCE
+ * SCAN CAN ONLY EVER PROVE THE SOURCE.</b> These rows are honest about their subject -- <i>is the
+ * spawn location rotated, and to the velocity</i> -- and were never able to answer <i>does the body
+ * point where it is going</i>. Only the boot row answers that, and the boot row is what failed.
+ *
+ * <p><b>A GREEN GUARD BESIDE A DEAD FIX IS WORSE THAN NO GUARD</b>, because it is read as evidence
+ * the fix works -- which is this file's own subject arriving one level up: the guard was mechanical
+ * precisely so a comment could not stand in for a mechanism, and the mechanism it pinned turned out
+ * to be unreachable. <b>The next version of these rows must assert the rotation is written to the
+ * ENTITY inside the spawn consumer</b>, not to the {@code Location}.
+ *
+ * <p>Account: {@code GATE-arrow-body-orientation.md}, section <i>WHY BOTH ROWS FAILED</i>.
+ *
  * <h2>WHY THIS IS A SOURCE SCAN AND NOT A BEHAVIOURAL TEST</h2>
  *
  * <p>{@code spawnBoltMarker} needs a live {@code World} and returns an entity id; nothing in either

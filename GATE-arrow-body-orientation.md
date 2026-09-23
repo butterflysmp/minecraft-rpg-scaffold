@@ -24,6 +24,17 @@ derives its own rotation from `atan2` over `deltaMovement` **inside its own `tic
 velocity set at creation is right one tick BEFORE the rotation derived from it is. **The frame in
 between renders due south, whichever way the bolt is actually travelling.**
 
+> **TWO WORDS IN THAT PARAGRAPH DID NOT SURVIVE THE POST-BOOT READ — *"the frame"*. 2026-09-22.**
+> The diagnosis holds: a `Vec3` carries no rotation, and the body does spawn due south and level.
+> **What is refuted is that it is ONE frame.** There is no first-tick snap to be one frame long:
+> `xRotO` and `yRotO` do not appear in `AbstractArrow` at all, and the easing is **unconditional**
+> — `lerpRotation(getYRot(), target)`, which is `Mth.lerp(0.2f, ..)` after normalising. A pre-fix
+> body **eased** out of due south over roughly ten ticks instead of flicking once.
+>
+> **SO THIS PARAGRAPH UNDERSTATES WHAT SHIPPED**, and it is left standing rather than reworded
+> because the understatement is the thing worth seeing: the mechanism was read correctly and the
+> DURATION was assumed. Account: *WHY BOTH ROWS FAILED* below.
+
 **It shipped with the arrow body and affects every `body: arrow` cast in the tree** — `dragons_plume`'s
 charged release and its three tap bands. It was observed on the Plume, which is on `master` and
 predates slice 14; slice 14 touched neither `spawnBoltMarker` nor `ProjectileFlight`, measured:
@@ -230,6 +241,19 @@ because this file's subject is one frame.
 - **Whether the bolt's later flight looks right.** That is unchanged by this fix and was already
   correct: the rotation has always been derived from `deltaMovement` every tick after the first.
   **This fix touches exactly one frame.**
+
+  > **BOTH SENTENCES ABOVE ARE ASSERTIONS, AND BOTH ARE NOW OPEN OR FALSE. 2026-09-22.**
+  >
+  > ***"was already correct"* — OPEN, never read.** This bullet reasoned from *the rotation is
+  > derived from `deltaMovement` every tick*, which is true and insufficient.
+  > **`AbstractArrow.tick` derives the yaw as `atan2(-x, -z)` when `isNoPhysics()`** — and every
+  > bolt body sets `setNoPhysics(true)` — so the **server's** steady-state yaw for a bolt is
+  > **180° from its travel, for the whole flight.** Whether a player sees that is **not**
+  > established: client-side ticking and rotation packets were not read, and no claim is made
+  > about them. The point is only that this bullet cites a reading nobody took.
+  >
+  > ***"touches exactly one frame"* — FALSE.** It touches none: `world.spawn` discards a
+  > `Location`'s rotation for an arrow. See *WHY BOTH ROWS FAILED* below.
 - **The scatter/spread case.** That weapon is on `feat/14-scatter-shot` and this branch is off
   `master`, deliberately. Seven bodies per press is a louder version of the same frame and will be
   visible there once both have merged — it is not a reason to read this row on that branch.

@@ -55,6 +55,34 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
+     * *** THIS METHOD IS INERT AS SHIPPED. READ THIS BEFORE THE DESCRIPTION BELOW. ***
+     *
+     * <p><b>{@code world.spawn} DISCARDS A LOCATION'S ROTATION FOR AN ARROW.</b>
+     * {@code CraftEntityTypes} registers {@code EntityType.ARROW} through
+     * {@code createAndMoveEmptyRot}, whose positioner is {@code MOVE_EMPTY_ROT}:
+     * {@code Entity.snapTo(x, y, z, 0.0F, 0.0F)} -- both floats constant. A sibling positioner,
+     * {@code MOVE}, <i>does</i> read {@code SpawnData.yaw()} and {@code SpawnData.pitch()};
+     * {@code ARROW} is not registered with it. <b>So everything this method computes is thrown away
+     * and the body still spawns at yaw 0 / pitch 0 -- due south and level, which is the exact defect
+     * described below.</b>
+     *
+     * <p><b>THE FIX IS NOT A DIFFERENT CONVENTION HERE; IT IS A DIFFERENT PLACE.</b> The rotation has
+     * to be written to the ENTITY, inside the spawn consumer -- which runs before
+     * {@code addEntityToWorld}, and therefore before any add-entity packet exists. <b>Nothing written
+     * onto a {@code Location} can reach an arrow</b>, in any convention, so swapping
+     * {@code setDirection} for {@code setYaw}/{@code setPitch} would be just as inert.
+     *
+     * <p>Measured 2026-09-22, after the boot gate FAILED on {@code 7b5b936}: read from
+     * {@code run/versions/26.1.2/paper-26.1.2.jar}, whose manifest says {@code Build-Number: 74} --
+     * the {@code paper.version} {@code pom.xml} pins, and the build the boot logs name. The account
+     * -- the four sign conventions, the refuted rival hypothesis, and what the fix must do instead --
+     * is {@code GATE-arrow-body-orientation.md}, section <i>WHY BOTH ROWS FAILED</i>. <b>This is the
+     * pointer; that is the account.</b>
+     *
+     * <p>The description that follows is left standing rather than rewritten: it is an accurate
+     * account of the defect, and of what was believed about the remedy, which is the one thing this
+     * method has actually taught.
+     *
      * The same point, ROTATED to look along {@code direction} -- what a body must spawn wearing if
      * its first rendered frame is to point where it is going.
      *
@@ -587,7 +615,21 @@ public final class PaperCombatWorld implements CombatWorld {
      *   if (flag) clipIncludingBorder(..) -&gt; stepMoveAndHit(hit)
      *   else      setPos(position + delta)
      *   if (flag &amp;&amp; !isInGround()) applyGravity()
+     *   setYRot(flag ? atan2(x, z) : atan2(-x, -z))   ADDED 2026-09-22 -- see below
      * </pre>
+     *
+     * <p><b>*** THE FIFTH USE OF {@code flag} WAS MISSED BY THIS ENUMERATION FOR AS LONG AS IT HAS
+     * EXISTED, AND THE ENUMERATION WAS MEASURED. ***</b> The four rows above were read off the jar
+     * and are right. The yaw row was not read at all -- and <b>why it was missed is worth more than
+     * the row</b>: this table was built by asking <i>what does {@code noPhysics} turn OFF</i>, and the
+     * yaw is the one place the flag <b>changes a value instead of removing a behaviour</b>. A question
+     * shaped like "what is disabled" cannot see a sign flip.
+     *
+     * <p>{@code flag} is {@code !isNoPhysics()}, assigned once at the top of {@code tick()} and never
+     * reassigned, so the yaw branch is keyed on {@code noPhysics} <b>alone</b> -- no
+     * {@code isInGround}, no {@code shakeTime}, no water test. And because the in-ground branch is
+     * itself {@code isInGround() &amp;&amp; flag}, a {@code noPhysics} body <b>reaches the negated
+     * branch every tick it is alive.</b>
      *
      * <p>{@code stepMoveAndHit} is the ONLY route to {@code onHitBlock}, {@code findHitEntities},
      * {@code hitTargetsOrDeflectSelf} and {@code CraftEventFactory.callProjectileHitEvent}. So
@@ -631,9 +673,18 @@ public final class PaperCombatWorld implements CombatWorld {
      *       {@code !isRemoved() &amp;&amp; !noPhysics}, and {@code applyEffectsFromBlocks(List)} gates its
      *       entire body on it. That one guard removes {@code checkInsideBlocks}, {@code stepOn},
      *       cobwebs, powder snow, honey, berry bushes, magma, climbables and rails in one go.</li>
-     *   <li><b>Deflection (wind charges) and block-hit side effects: GONE</b>, because
-     *       {@code preHitTargetOrDeflectSelf} is reached only from {@code stepMoveAndHit}.</li>
-     *   <li><b>WATER: SURVIVES, AND IT BITES HARDER THAN IT DOES ON AN ITEM.</b>
+     *   <li><b>Rotation: SURVIVES, and it is why we use an arrow at all</b> -- {@code atan2} over
+     *       {@code deltaMovement} into {@code setXRot}/{@code setYRot}, every tick.
+     *       <br><b>*** "OUTSIDE THE GATE" WAS HALF RIGHT, AND THE HALF THAT IS WRONG IS THE YAW.
+     *       CORRECTED 2026-09-22. ***</b> The PITCH is outside the gate. The YAW is INSIDE it -- and
+     *       the flag does not switch the yaw off, it <b>changes its sign</b>:
+     *       {@code flag ? atan2(x, z) : atan2(-x, -z)}. Every bolt body clears that flag, so the yaw
+     *       the SERVER eases toward is <b>180 degrees from the direction of travel</b>, at
+     *       {@code Mth.lerp(0.2f, ..)} a tick, for the whole flight.
+     *       <br>NOT claimed as a visible defect: what a client renders also depends on client-side
+     *       ticking and on rotation packets, and neither was read. What is measured is the server
+     *       value. It is the reason <i>the later flight was already correct</i> is an OPEN question
+     *       rather than a settled one -- see {@code GATE-arrow-body-orientation.md}.</li>
      *       {@code Projectile.tick() -&gt; Entity.tick() -&gt; baseTick()} runs unconditionally at the
      *       END of {@code AbstractArrow.tick()}, and {@code baseTick} calls
      *       {@code updateFluidInteraction()}. The resulting {@code isInWater()} is read back at the
@@ -699,6 +750,14 @@ public final class PaperCombatWorld implements CombatWorld {
             arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
 
             // Belt on the same trousers: a body that somehow resolved a hit would deal zero.
+            //
+            // *** AND facing() DOES NOT SUPPLY THE ROTATION EITHER. MEASURED 2026-09-22. ***
+            // ARROW's spawn positioner is CraftEntityTypes' MOVE_EMPTY_ROT --
+            // snapTo(x, y, z, 0.0F, 0.0F) -- so the Location's rotation is DISCARDED, and this body
+            // still spawns due south and level. The note above is RIGHT that rotation is the missing
+            // quantity and WRONG that facing() is where it arrives, which is the same mistake one
+            // layer out. The rotation has to be set on THIS entity, in THIS consumer.
+            // See facing()'s javadoc and GATE-arrow-body-orientation.md.
             arrow.setDamage(0.0);
             arrow.setKnockbackStrength(0);
             arrow.setCritical(false);
