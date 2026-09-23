@@ -1,18 +1,57 @@
 # GATE — The anvil screen (Slices 13a and 13b)
 
-**Status: NOT RUN.** Every prediction below was written BEFORE any boot, and **no prediction is
-edited once a row has been read.** Readings go in the `READ` cell beside the prediction they answer,
-never over it.
+**Status: READ — 32 of 32 PASS.** Booted by Ben on `feat/13b-anvil-confirm`, recorded 2026-09-22.
+Every prediction below was written BEFORE the boot, and **no prediction was edited once a row had
+been read.** Readings sit in the `READ` cell beside the prediction they answer, never over it.
 
-**SLICE 13b ADDED R21–R30 AND NONE HAS BEEN BOOTED.** The file now spans two slices; the block below
-says which rows belong to which.
+**FIGURES ARE NOT CAPTURED AND THE VERDICT IS THE READING** — Ben's ruling, 2026-09-20. It is cited
+rather than restated; the entry is in `GATE-gearscore.md`'s status section.
 
 ```
-NOT RUN, 13a   22   R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R12b R13 R14 R15 R16 R17 R18 R19 R20
-NOT RUN, 13b   10   R21 R22 R23 R24 R25 R26 R27 R28 R29 R30
-               ──
-               32   = git grep -c '^### R[0-9]' <ref> -- GATE-anvil.md
+PASS, 13a   22   R0 R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R12b R13 R14 R15 R16 R17 R18 R19 R20
+PASS, 13b   10   R21 R22 R23 R24 R25 R26 R27 R28 R29 R30
+            ──
+            32   = git grep -c '^### R[0-9]' <ref> -- GATE-anvil.md
 ```
+
+**Both figures are re-derived from the cells, not adjusted from the old block:** `grep -c` for the
+`READ` cell marker returns **32**, every one of those cells is byte-identical to the others
+(`grep ... | sort -u | wc -l` is **1**), and the unread placeholder survives in **no** `READ` cell.
+So every row carries a reading and none was missed. The `32` on the tally line is the file's own
+count command, unchanged.
+
+> **THE PLACEHOLDER COUNT IS DESCRIBED RATHER THAN QUOTED, AND THAT IS DELIBERATE.** The first draft
+> of this paragraph asserted the literal `not-run` marker was gone **while containing that marker**,
+> so the count it claimed was `0` and the true count was `1` — **the sentence falsified itself by
+> being written.** Same defect as `CLAUDE.md`'s test-count debt entry, which is why that one gives a
+> command and no live figure. **Run the grep; do not read a number off this page.**
+
+> ### *** THE BINDING IS A RULING, NOT A PROBE READING, AND THIS IS THE WEAKEST LINK IN THE FILE ***
+>
+> **R0 DID NOT REPORT A TREE.** Its fourth prediction asks the boot to state which tree the jar was
+> built from, and that field was not filled.
+>
+> **The readings are bound to `5f429a9` (tree `ba7aab07`) by Ben's statement that he booted this
+> branch — not by the probe.** Ben ruled the binding; it is recorded here as a ruling with an
+> author, which is what makes it different from an assumption nobody made.
+>
+> **THE ONLY CORROBORATION IS CIRCUMSTANTIAL, AND IT IS NAMED SO NOBODY LATER MISTAKES IT FOR THE
+> PROBE:** the working tree was checked out to `feat/13b-anvil-confirm` at **22:09:35** and back to
+> `master` at 22:24:14 (`git reflog`), and `run/plugins/rpg-0.1.0-SNAPSHOT.jar` was written at
+> **22:09**, the same size as `paper/target/`'s. **That is consistent with the boot and proves
+> nothing about it** — a jar in the right place at the right time is exactly what a wrong-worktree
+> build produced on 2026-09-20.
+>
+> **THE COST, STATED PLAINLY: R0 IS THE SOLE WITNESS FOR EVERY OTHER ROW IN THIS FILE, AND ITS
+> BINDING IS THE ONE LINK THAT WAS NOT MEASURED.** Thirty-one rows rest on a jar identification
+> that rests on a statement. If the jar was not built from `5f429a9`, every PASS above is a true
+> reading of the wrong subject — which is the failure mode R0 exists to close and, here, did not.
+>
+> **AND THE BOOT DATE WAS NOT CAPTURED.** `2026-09-22` is the date the readings were RECORDED. The
+> date of the boot itself is not in the record and cannot now be recovered from it.
+>
+> **Ruled by Ben. Do not re-litigate it and do not soften it.** It is written down at this strength
+> so that a later reader weighing this file knows exactly which plank is load-bearing.
 
 > ***THE 13b ROWS ARE THE DESTRUCTIVE ONES, AND THEY ARE WHAT THE SPLIT BOUGHT.*** Every 13a row
 > could be read with nothing at stake. From R21 down, **a wrong reading costs the player an item and
@@ -57,7 +96,7 @@ the wrong worktree whose mtime was current and which passed every staleness chec
 | **Predict** | **The class count is non-zero**, and it is RECORDED in the reading. **`0 scanned` means the unpack failed, and an absence underneath a zero means nothing at all.** |
 | **Predict** | At least one path is printed, and it includes `TransferKey.class`. A **zero-match** result means the deployed jar predates this slice, whatever its mtime says. |
 | **Predict** | **STATE WHICH TREE THE JAR WAS BUILT FROM.** A worktree checkout makes "the repo" ambiguous, and that ambiguity is what cost slice 12b a boot. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 > `-Encoding ascii` is load-bearing: a `.class` file is binary, and a text-mode read will not find a
 > constant-pool string it is perfectly capable of matching.
@@ -75,7 +114,7 @@ the wrong worktree whose mtime was current and which passed every staleness chec
 | **Setup** | Open the Nexus star at any level. Look at row 4. |
 | **Predict** | Five stations, **left to right with no gap**: ender chest, anvil, crafting table, enchanting table, grindstone. The anvil is an **ANVIL** item, third from the left of the run. |
 | **Predict** | **No black filler pane anywhere inside 29–33.** The hole at 30 that `VAULT_SLOT`'s javadoc held open is closed. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R2 — Locked at level 6, with all three lore lines
 
@@ -84,7 +123,7 @@ the wrong worktree whose mtime was current and which passed every staleness chec
 | **Setup** | `/rpg playerxp set <you> 6 levels`, open the hub, **hover** the anvil. |
 | **Predict** | The name reads **Anvil**, dimmed. Three lore lines, exactly:<br>`Locked -- unlocks at level 7`<br>`You are level 6.`<br>`An anvil in the world still works.` |
 | **Predict** | **The icon is still an ANVIL, not a barrier** — `NexusMenu.station` dims the name and keeps the material, which is precisely why R3's message is mandatory. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R3 — A locked click SPEAKS, and says both facts
 
@@ -93,7 +132,7 @@ the wrong worktree whose mtime was current and which passed every staleness chec
 | **Setup** | At level 6, **click** the anvil cell. |
 | **Predict** | Nothing opens, and chat says exactly:<br>`Anvil unlocks at level 7. You are level 6. An anvil in the world still works.` |
 | **Predict** | **Capital "A" on the third sentence.** A draft lower-cased the equivalent line for the grindstone and produced a sentence opening in lower case mid-message. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R4 — Opens at EXACTLY 7, and the boundary is read on both sides
 
@@ -105,7 +144,7 @@ open one. `set N levels` lands on the threshold with zero progress, so "level 7"
 |---|---|
 | **Setup** | `/rpg playerxp set <you> 6 levels`, click. Then `set 7 levels`, re-open, click. |
 | **Predict** | At **6** the click refuses with R3's sentence. At **7** the anvil screen opens. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R5 — Back from the hub returns to the hub
 
@@ -114,7 +153,7 @@ open one. `set N levels` lands on the threshold with zero progress, so "level 7"
 | **Setup** | At level 7+, open the anvil **from the hub**. Look at 48, then click it. |
 | **Predict** | Slot 48 is an **ARROW** reading "Back to the Nexus". Clicking it returns to the hub. |
 | **Predict** | The bottom row's coloured panes are **SEVEN** cells — 45, 46, 47, 50, 51, 52, 53 — with 48 and 49 as buttons. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
@@ -131,7 +170,7 @@ lived-in world mostly contains. A missing entry opens **vanilla** and presents a
 | **Setup** | At level **1** (below the hub gate), place and right-click each of: an **anvil**, a **chipped anvil**, a **damaged anvil**. |
 | **Predict** | All three open OUR screen. **The vanilla anvil screen never appears** — no two-slot-plus-rename bar, no "Repair & Name" text field. |
 | **Predict** | Level 1 is deliberate: **the world block is not gated**, only the hub route is. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R7 — Vanilla rename and vanilla repair are GONE, with no fallthrough
 
@@ -140,7 +179,7 @@ lived-in world mostly contains. A missing entry opens **vanilla** and presents a
 | **Setup** | Right-click an anvil holding a damaged vanilla iron sword, and again holding a name tag. |
 | **Predict** | Our screen opens both times. **There is no way to rename anything and no way to repair anything.** Ben's ruling; this is the expected reading, not a defect. |
 | **Predict** | `NEXT.md` carries the parked entry for repair. **If this row surprises you, read that entry before filing anything.** |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R8 — From a block there is NO Back button, and 48 is readout
 
@@ -149,7 +188,7 @@ lived-in world mostly contains. A missing entry opens **vanilla** and presents a
 | **Setup** | Open from a world anvil. Look at 48. |
 | **Predict** | **EIGHT** coloured panes in the bottom row — 45, 46, 47, **48**, 50, 51, 52, 53 — and Close alone at 49. **No arrow, and no black filler pane sitting in the middle of a coloured row.** |
 | **Predict** | Clicking 48 does **nothing**. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
@@ -165,7 +204,7 @@ from one verdict, so a row where they disagree is a finding regardless of which 
 | **Setup** | Open the screen and touch nothing. |
 | **Predict** | Bar **GRAY**. Slot 24 is a **BARRIER** named `Place the item to upgrade, and one to sacrifice.` in **gray**. |
 | **Predict** | **It is not an error face.** This is what the screen looks like the moment it opens, and it should read as an instruction to a player who has never seen it. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R10 — One item in: still GRAY, still the empty face
 
@@ -173,7 +212,7 @@ from one verdict, so a row where they disagree is a finding regardless of which 
 |---|---|
 | **Setup** | Put a weapon in slot 20. Leave 22 empty. Then move it to 22 and leave 20 empty. |
 | **Predict** | Bar stays **GRAY** and the sentence is unchanged, **both ways round**. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R11 — A tool: RED, and NOT the mismatch sentence
 
@@ -182,7 +221,7 @@ from one verdict, so a row where they disagree is a finding regardless of which 
 | **Setup** | `/rpg give` a tool into both slots. |
 | **Predict** | Bar **RED**. Sentence: `Both items must be gear that carries a score.` |
 | **Predict** | **It must NOT say "Both items must be …" naming a kind.** Two pickaxes ARE the same kind; telling the player so would be true and useless. This is the distinction `AnvilTransferTest` pins, read here on the real screen. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R12 — Boots into a helmet: RED, and the sentence names HELMETS
 
@@ -194,7 +233,7 @@ distinguishes them.
 | **Setup** | A **helmet** in slot 20, a **pair of boots** in slot 22. |
 | **Predict** | Bar **RED**. Sentence: `Both items must be helmets.` — the **TARGET's** kind, plural. |
 | **Predict** | Swap them: sentence becomes `Both items must be boots.` |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R12b — SOLE WITNESS: a real helmet derives ARMOR_HEAD, and that key drives the refusal
 
@@ -227,7 +266,7 @@ transfer is the armour split.
 | **Predict** | The bar is **RED** and slot 24 reads `Both items must be helmets.` |
 | **Predict** | ***IT MUST NOT BE LIME.*** A LIME face here means the four armour keys have collapsed and **a pair of boots is about to hand its roll to a helmet** — which is the half of Ben's rule `GearClass` cannot express, arriving in the one place nothing else can see it. |
 | **Predict** | **It must not read `The sacrifice must score above 140.`** either. That sentence means the key rule never ran and the refusal came from the score comparison instead — the pair would then be refused today and legal the moment somebody raised the helmet's score. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 > **WHAT TO DO IF THIS ROW FAILS:** do not look at the screen code. The suspects are
 > `TransferKey.ofArmor` (four arms collapsed), `AnvilMenu.armorSlotOf` (returning the wrong slot or
@@ -241,7 +280,7 @@ transfer is the armour split.
 | **Setup** | Two items of the same kind at the **same** gear score. Use `/rpg` to stamp them equal if needed. |
 | **Predict** | Bar **RED**. Sentence: `The sacrifice must score above <N>. This one is <N>.` with the same N twice. |
 | **Predict** | **EQUAL IS REFUSED, not accepted as a harmless no-op.** Ben's ruling: accepting it would eat the donor in 13b and change nothing. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R14 — A lower donor: RED, and the numbers differ
 
@@ -249,7 +288,7 @@ transfer is the armour split.
 |---|---|
 | **Setup** | Target at a **higher** score than the donor. |
 | **Predict** | Sentence names the target's score first and the donor's second, and **they differ** — so the player can see how far short it is without hovering two tooltips. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R15 — A legal pair: LIME, the item, the new score and the cost
 
@@ -260,7 +299,7 @@ transfer is the armour split.
 | **Predict** | Lore ends with `Sacrifice to raise this to <donor score>.`, then `Costs <N> XP.`, then `Preview only -- you cannot take this.`, then `Confirm upgrades the item on the LEFT.` |
 | **Predict** | **The cost is in XP POINTS and the LEVEL figure appears nowhere.** A RARE target reads **910**, an EPIC **2920**. |
 | **Predict** | **THE LAST LINE NAMES THE DESTINATION, AND THAT IS THE POINT OF READING IT.** This screen mutates the target IN PLACE, so the result appears in slot **20** — the cell the player loaded — and **not** in slot 24, the cell they were watching. A player who presses confirm and looks at 24 sees the preview redraw as GRAY and their upgraded item nowhere in sight unless they know to look left. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 > ***THIS PREDICTION WAS EDITED ON 2026-09-21, BEFORE ANY BOOT, AND THAT IS THE ONLY CONDITION
 > UNDER WHICH IT MAY BE.*** The rule is that a prediction is not edited **once a row has been
@@ -275,7 +314,7 @@ transfer is the armour split.
 | **Setup** | A **COMMON** target and an **EXOTIC** donor of the same kind, donor higher. Then reverse the rarities. |
 | **Predict** | COMMON target: **160 XP**. EXOTIC target: **24045 XP**. The two are unmistakable for one another. |
 | **Predict** | **Upgrading a cheap item stays cheap however precious the thing you feed it.** |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
@@ -292,7 +331,7 @@ after state, and every row below is written against loss while a duplicate satis
 | **Setup** | With a LIME preview showing, try on slot 24: **left-click**, **right-click**, **shift-click**, **double-click**, a **number key**, and **F**. |
 | **Predict** | **Nothing leaves slot 24 on any of the six.** Nothing reaches the cursor, the hotbar or the offhand. The player's item count is unchanged after all six. |
 | **Predict** | The two input items stay exactly where they are. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R18 — Closing returns BOTH items and nothing else
 
@@ -301,7 +340,7 @@ after state, and every row below is written against loss while a duplicate satis
 | **Setup** | Both slots full, LIME preview showing. Close with **Esc**, then repeat and close with the **49 button**, then repeat and close with **Back** from the hub. |
 | **Predict** | **Exactly two items** come back, all three times. **No third item**, and no copy of the preview. |
 | **Predict** | Identical items — same score, same enchants, same durability. The preview never wrote to either of them. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R19 — The screen survives a disconnect and a shutdown with the items intact
 
@@ -309,7 +348,7 @@ after state, and every row below is written against loss while a duplicate satis
 |---|---|
 | **Setup** | Both slots full: (i) disconnect and rejoin; (ii) with the screen open, `stop` the server and restart. |
 | **Predict** | Both items are in the player's inventory afterwards, both times. **Two items, not three.** |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
@@ -323,7 +362,7 @@ is also a BARRIER, so a refused screen carries two.
 | **Setup** | With a RED face showing, hover slot **49**, then slot **24**. One screenshot reads both. |
 | **Predict** | **49 is a barrier with NO LORE AT ALL** — its whole content is its name. **24 is a barrier that is ALL LORE** — the instruction as its name, plus `Nothing is spent until you confirm.` |
 | **Predict** | **Neither reads "Not implemented yet."** That string belongs to `MenuIcons.placeholder`, which means NOT BUILT; a refusal is a working readout and this project has shipped a working readout in placeholder clothes once already. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
@@ -344,7 +383,7 @@ spends XP, so each needs its own `/rpg give` and its own `/xp query` before and 
 | **Setup** | Open the screen from the hub. Put a legal, affordable pair in 20 and 22. Watch slot **31** and the bottom row. |
 | **Predict** | 31 holds a dye reading **`Arming... 3`**, then `2`, then `1`, then **`Raise to <N> -- <C> XP`**. The bar is **YELLOW** while it counts and **LIME** when it lands. |
 | **Predict** | **The bar and the button move together, always.** They are two lookups on one state; a screenshot showing a lime bar under a yellow button is a defect regardless of which looks right. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R22 — A click during the lockout does NOTHING and SAYS nothing
 
@@ -353,7 +392,7 @@ spends XP, so each needs its own `/rpg give` and its own `/xp query` before and 
 | **Setup** | `/xp query` first. Place the pair, then click 31 **five times** while the bar is yellow. `/xp query` again. |
 | **Predict** | Nothing is consumed, nothing is stamped, **the XP figure is identical**, and **no chat line appears at all** — not even a refusal. The countdown is the feedback. |
 | **Predict** | **If clicking during yellow transfers anything, the arming delay does not exist** — it is a decoration over a live button, which is worse than no delay because the player trusts it. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R23 — *** THE DONOR IS CONSUMED EXACTLY ONCE. SOLE WITNESS. ***
 
@@ -363,7 +402,7 @@ spends XP, so each needs its own `/rpg give` and its own `/xp query` before and 
 | **Predict** | Slot 22 is **EMPTY**. Slot 20 holds **exactly one** item. **Your inventory gains nothing.** The XP figure drops by exactly the number the button displayed. |
 | **Predict** | Now click 31 **four more times, fast**. **Still nothing** — the donor slot is empty so the face is GRAY, and a GRAY click is silent. The XP figure does not move again. |
 | **Predict** | ***THE NUMBER TO WRITE DOWN IS ONE DONOR CONSUMED AND ONE CHARGE MADE.*** A build that consumed twice, or charged twice, passes every other row in this block. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R24 — The target keeps everything except its score
 
@@ -372,7 +411,7 @@ spends XP, so each needs its own `/rpg give` and its own `/xp query` before and 
 | **Setup** | Use a target that is **enchanted**, **damaged** (swing it at something first) and carries its normal name. Note all three. Transfer onto it. |
 | **Predict** | Same name, same enchant lines, **same durability bar**, and the `Gear Score:` line is now the donor's number. |
 | **Predict** | **Losing durability here would be a relog-to-repair exploit and losing the enchants a relog-to-unlock one** — both are carried by `carryInstanceData`, and this row is what reads that the in-place write did not bypass it. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R25 — The XP deducted equals the figure the button displayed
 
@@ -381,7 +420,7 @@ spends XP, so each needs its own `/rpg give` and its own `/xp query` before and 
 | **Setup** | `/xp query`. Note the button's number. Confirm. `/xp query`. |
 | **Predict** | `before − after` equals the button's number **exactly**. Not approximately, and not off by one. |
 | **Predict** | **Check at a part-full bar, not on a round level.** The wallet is read and written in points through the curve's exact inverse; a build using `setLevel(getLevel() − n)` loses the fraction and is invisible at a full bar. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R26 — *** CONFIRM AFTER SWAPPING AN INPUT MID-ARM. THE ROW THIS SLICE EXISTS FOR. ***
 
@@ -391,7 +430,7 @@ spends XP, so each needs its own `/rpg give` and its own `/xp query` before and 
 | **Predict** | **Nothing happens, NO MESSAGE appears, and the countdown is visibly back at 3.** The restarting countdown IS the feedback; this row reads it. |
 | **Predict** | Wait for LIME again and click: **now** it transfers, using the NEW donor's score. |
 | **Predict** | **A build that transferred on the first click has used the score of an item that is no longer in the slot.** Silent, plausible and permanent. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R27 — Spend XP elsewhere while the face is LIME, then confirm
 
@@ -403,7 +442,7 @@ a spoken refusal. They are different mechanisms and neither can pass for the oth
 | **Setup** | Get to LIME with a wallet **barely** above the cost. **Without touching either slot**, spend XP elsewhere — a second player, a command block, or `/xp set` from another account. Click 31. |
 | **Predict** | Refused **WITH a chat line**: `This transfer costs <C> XP; you have <W>.` Nothing consumed, nothing stamped. |
 | **Predict** | **THE WINDOW IS HALF A SECOND AND THAT IS NOT A DEFECT.** The repaint re-decides every ten ticks, so after that the face is already RED and the click is silent. **If the row is hard to stage, say so and rely on `AnvilReconcileTest` — the unit rows are the primary witness here and this boot row is best-effort by construction.** |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R28 — Gain XP while the face is RED: it must go YELLOW, never straight to LIME
 
@@ -412,7 +451,7 @@ a spoken refusal. They are different mechanisms and neither can pass for the oth
 | **Setup** | Stage a legal pair you **cannot afford**. The bar is RED and 31 reads `This transfer costs … you have …`. **Without touching either slot**, gain XP until you cross the price. |
 | **Predict** | The moment it crosses, the cell goes **YELLOW at 3 seconds** — a fresh countdown — and only then LIME. |
 | **Predict** | ***IT MUST NOT ARRIVE LIME.*** A face that becomes actionable with no countdown is a click already in flight landing on an irreversible action through the one path the arm does not otherwise watch. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R29 — Close, death and disconnect mid-arm return both items and consume nothing
 
@@ -420,7 +459,7 @@ a spoken refusal. They are different mechanisms and neither can pass for the oth
 |---|---|
 | **Setup** | Both slots full, countdown running. (i) **Esc**. (ii) re-stage, **`/kill`**. (iii) re-stage, **disconnect and rejoin**. (iv) re-stage, **`stop` the server** and restart. |
 | **Predict** | **Exactly two items** back each time, unchanged, and the XP figure never moves. No third item, and no copy of the preview. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ### R30 — THE CONTROL: thirty seconds of ticking destroys nothing
 
@@ -433,4 +472,4 @@ clobbers an input cell on its tenth fire never gets the chance to show itself.**
 | **Setup** | Put both items in and **walk away for thirty seconds** without clicking anything. |
 | **Predict** | Both items are still in 20 and 22, unchanged. The preview still shows the result. The bar is LIME and the button reads its ready text. |
 | **Predict** | Thirty seconds is chosen to **outlast every other row's dwell time**, not because thirty is significant. |
-| **READ** | _(not run)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-22. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
