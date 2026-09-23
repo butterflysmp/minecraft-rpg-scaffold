@@ -178,6 +178,15 @@ public final class RpgPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        // *** WHICH BUILD IS THIS? FIRST LINE, BEFORE ANYTHING CAN FAIL. ***
+        //
+        // A boot reading is bound to a jar, and on 2026-09-23 one was credited to the wrong branch
+        // because nothing in a log could tell two jars apart: same version string, same content
+        // counts, and the only distinguishing symbol was a command that logs nothing. Diagnosing it
+        // took the archived logs, the reflog and a jar probe. THIS LINE REPLACES ALL THREE.
+        //
+        // It is logged FIRST so that a jar which then fails to enable still says what it was.
+        getLogger().info("Build: " + buildCommit());
         this.scheduler = new PaperScheduler(this);
 
         // Every NamespacedKey in the plugin, built once. Never inline at a call site.
@@ -559,7 +568,39 @@ public final class RpgPlugin extends JavaPlugin {
     }
 
     /**
+     * The commit this jar was built from, or a sentence saying it is unknown.
+     *
+     * <p>Read from {@code build-id.properties}, which Maven filters from the {@code build.commit}
+     * property. {@code scripts/dev-server.sh} supplies it as {@code git rev-parse --short HEAD},
+     * with a {@code -dirty} suffix when the working tree has uncommitted changes.
+     *
+     * <p><b>{@code unknown} IS INFORMATION RATHER THAN A FAILURE.</b> It means the jar was not built
+     * by {@code dev-server.sh} -- a hand {@code ./mvnw package}, an IDE build, another tree -- and
+     * that is precisely what a boot reading needs to be told. <b>So this returns a sentence, not a
+     * blank</b>: a reader of the log should not have to know that an empty field means anything.
+     *
+     * <p>Never throws. A missing or unreadable resource is reported in the line itself, because a
+     * plugin that refuses to enable over its own build stamp would be a worse outcome than not
+     * knowing the build.
+     */
+    private String buildCommit() {
+        try (java.io.InputStream in = getResource("build-id.properties")) {
+            if (in == null) return "unknown (build-id.properties missing from the jar)";
+            java.util.Properties p = new java.util.Properties();
+            p.load(in);
+            String commit = p.getProperty("commit", "").trim();
+            if (commit.isEmpty() || commit.equals("unknown")) {
+                return "unknown -- NOT built by dev-server.sh, so this jar cannot be bound to a commit";
+            }
+            return commit;
+        } catch (Exception e) {
+            return "unknown (" + e.getClass().getSimpleName() + " reading build-id.properties)";
+        }
+    }
+
+    /**
      * Copy every content/**.yml out of the plugin jar into the data folder, once.
+OLD
      *
      * Enumerated with JarFile rather than through the resource API, and that is not a
      * stylistic choice. JavaPlugin.getResource returns an InputStream, so it cannot list

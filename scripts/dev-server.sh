@@ -108,7 +108,16 @@ if [ "$DO_BUILD" -eq 1 ]; then
   # already recompiles paper/ when core/ changes -- measured, see ContentValidator's
   # javadoc. What we do want before booting a server is a jar with nothing stale in
   # it, and the seconds this costs are lost in the JVM's startup anyway.
-  ./mvnw -q clean package
+  # -Dbuild.commit IS WHAT MAKES A BOOT IDENTIFIABLE FROM ITS LOG. Without it the jar reports
+  # `unknown`, and on 2026-09-23 a boot was credited to the wrong branch for exactly that reason:
+  # two jars, same version string, same content counts, nothing in the log to tell them apart.
+  #
+  # The `-dirty` suffix is not decoration. A jar built from a modified tree IS NOT ANY COMMIT, and
+  # printing a bare hash for it would be a lie with a plausible shape.
+  COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  if ! git diff --quiet HEAD 2>/dev/null; then COMMIT="$COMMIT-dirty"; fi
+  echo "==> Building $COMMIT"
+  ./mvnw -q clean package "-Dbuild.commit=$COMMIT"
 fi
 
 # check-jar.sh owns jar identity. It asserts there is exactly one candidate --

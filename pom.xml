@@ -18,6 +18,13 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- THE BUILD COMMIT, FOR THE ENABLE-TIME LOG LINE. Default `unknown` ON PURPOSE: it
+         means the jar was NOT built by scripts/dev-server.sh, which is exactly what a boot
+         reading needs to know. dev-server.sh overrides it with the short hash, plus -dirty
+         when the tree is modified. See paper/src/main/resources/build-id.properties and
+         GATE R0 startup-line convention in .claude/rules/verification.md. -->
+    <build.commit>unknown</build.commit>
     <maven.compiler.release>25</maven.compiler.release>
 
     <!-- ==========================================================

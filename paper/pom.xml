@@ -37,12 +37,18 @@
       <resource>
         <directory>src/main/resources</directory>
         <filtering>true</filtering>
-        <includes><include>paper-plugin.yml</include></includes>
+        <includes>
+          <include>paper-plugin.yml</include>
+          <include>build-id.properties</include>
+        </includes>
       </resource>
       <resource>
         <directory>src/main/resources</directory>
         <filtering>false</filtering>
-        <excludes><exclude>paper-plugin.yml</exclude></excludes>
+        <excludes>
+          <exclude>paper-plugin.yml</exclude>
+          <exclude>build-id.properties</exclude>
+        </excludes>
       </resource>
     </resources>
     <plugins>
