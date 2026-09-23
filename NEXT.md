@@ -11238,3 +11238,84 @@ nothing.
 **TRIGGER: the next time anything touches the max-health reconcile block, or the next enchant that
 adds a THIRD source to any reconciled stat** — a third source is when the inline shape stops being
 two lines and starts being a place to lose one.
+
+---
+
+## PARKED — DURABILITY REPAIR, WITH NO ROUTE IN THE GAME AS OF SLICE 13a
+
+**Operator ruling, 2026-09-21, on the anvil hijack:**
+
+> *"vanilla rename and vanilla repair are BOTH GONE. Renaming has no place in this project; repair is
+> a later conversation."*
+
+**This entry exists because the ruling is correct and its CONSEQUENCE is easy to lose.** Slice 13a
+adds `ANVIL`, `CHIPPED_ANVIL` and `DAMAGED_ANVIL` to `RpgListeners.hijackedBlocks`, so every anvil in
+the world opens our screen. The vanilla anvil was **the only repair mechanism in the game**, and
+nothing replaced it.
+
+> ### SO, AS OF THIS SLICE: NOTHING RESTORES DURABILITY EXCEPT `/rpg durability`, WHICH IS A DEV COMMAND.
+
+**A player whose weapon wears down has no way to fix it.** `BrokenNotice` still tells them to —
+*"Your weapon is broken -- repair it before using it."* — and there is now no action that sentence
+names. That line is not edited here: **the sentence is right and the feature is missing**, and
+changing it would hide the gap rather than close it.
+
+### IT IS A RULING, NOT A REGRESSION, AND THAT IS EXACTLY WHY IT NEEDS AN ENTRY
+
+**Nothing is broken, nothing is red, and no test can see it** — which is the shape this file exists
+for. The hijack is deliberate, the loss is understood, and the only thing that would make it a
+defect is **forgetting**. A line in a PR body is read once; this is read every time someone opens
+the file.
+
+**Recorded rather than fixed, because fixing it inside 13a would widen a display-and-refusal slice
+into an economy design.** Repair has to answer what it costs, what it costs it in, whether it is a
+station or an item, and whether a broken item can be repaired at all or only a worn one. None of
+those is a slice-13a question.
+
+> ### TRIGGER: THE FIRST OF THESE THAT HAPPENS.
+>
+> An **event**, not a date:
+>
+> - **A player reports a worn or broken item they cannot fix** — the first real report is the
+>   strongest possible argument for a design, and it is what says the gap is reached in practice
+>   rather than in principle.
+> - ~~**13b lands**, at which point the anvil has a confirm button, an XP spend and a consumption
+>   path — i.e. every mechanism repair would need, already built and already gated.~~
+>   ***FIRED. 13b has landed.*** Struck rather than deleted, so the list records that a trigger
+>   fired rather than silently losing one — the same reason the standing-debt list keeps its paid
+>   rows struck.
+> - **A player reports a worn or broken item they cannot fix.** *(still open — see above)*
+> - **Anything proposes a second use for the anvil screen.** The cell at 31 is **taken** — it is
+>   13b's confirm — so a third function now needs a layout conversation for real, and repair should
+>   be in the room for it.
+
+> ### *** WHAT 13b ACTUALLY BUILT, SO THE DESIGN DOES NOT START FROM NOTHING ***
+>
+> **Every mechanism repair would need now exists and is gated:**
+>
+> | mechanism | where |
+> |---|---|
+> | a confirm button with a three-second arm | `AnvilButton`, `AnvilMenuLayout.CONFIRM_SLOT` |
+> | an XP spend, points-symmetric | `AnvilMenu.attemptTransfer`'s third write |
+> | an item consumed from a menu slot | the second write — **the first deliberate deletion in `paper/menu/`** |
+> | a re-evaluation at the moment of the click | `AnvilReconcile` |
+> | a cost table keyed on rarity | `AnvilCost` — **the first consumer of `Rarity` as a cost axis** |
+>
+> **THE QUESTION IS STILL NOT ANSWERED AND THIS ENTRY STILL DOES NOT ANSWER IT.** Whether repair is
+> the anvil's job, what it costs, what it costs it IN, and whether a *broken* item can be repaired
+> at all or only a worn one — none of those is settled by 13b having shipped. **What changed is that
+> the argument "we would have to build the machinery first" is no longer available.**
+>
+> **And the gap got slightly worse, which is worth saying plainly.** 13b hijacks `ANVIL`,
+> `CHIPPED_ANVIL` and `DAMAGED_ANVIL`, so **the vanilla repair a player might still have reached by
+> accident is now gone on all three**. Nothing in the game restores durability except
+> `/rpg durability`.
+
+**What is deliberately NOT decided here:** whether repair is the anvil's job at all. It is the
+obvious home and that is not the same as the right one — a grindstone, a material cost, or a
+consumable are all live. **This entry parks the QUESTION and does not pre-answer it.**
+
+**The measurement, so the next person does not re-derive it:** `/rpg durability` is the wear source
+and the only restore, `WeaponItems` mints with vanilla durability, and `GearItems.carryWear` moves
+it across a re-mint. Measured at slice 13a; re-check before designing, because `carryWear`'s
+behaviour is what decides whether a repaired item keeps its enchants.

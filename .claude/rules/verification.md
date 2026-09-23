@@ -1016,6 +1016,29 @@ either found nothing or done nothing, and those are the same picture.
 > **AND NARROWING VISIBILITY IS WHAT MAKES THE THIRD FINDABLE.** Making a method package-private turns
 > *"who calls this"* into a question with a **checkable** answer, and everything left over is prose
 > claiming to be code.
+>
+> > ### *** ROWS THREE AND FOUR ARE ONE FAMILY SEEN FROM OPPOSITE SIDES, AND BOTH WERE MET IN ONE SESSION ***
+> >
+> > They read as separate mechanisms and they are not. **The needle's scope and the code's scope
+> > differ — and it can differ in either direction:**
+> >
+> > | | the needle | what it did |
+> > |---|---|---|
+> > | **TOO NARROW** (row four) | `"  x ` — anchored to an opening quote the instances do not carry | **missed two real sites**, both of them the ones that would have gone red |
+> > | **TOO BROAD** (row three) | `GearScore.carriesScore` — bare, matching prose as well as code | **found a site that was not there**, reporting a perfectly-applied mutation as surviving |
+> >
+> > **2026-09-21, both in one session, one slice apart.** The narrow one reported *"one site, nothing
+> > to consolidate"*; the broad one reported *"original gone: 1"* for an edit that had landed
+> > cleanly. **Neither looked like a mistake: each returned a small, plausible integer.**
+> >
+> > ***THE FALSE ABSENCE AND THE FALSE PRESENCE ARE THE SAME DEFECT WEARING OPPOSITE SIGNS, AND THE
+> > FIX IS ONE QUESTION, NOT TWO:*** **does this needle's anchoring hold for every instance I expect
+> > to find, and for nothing else?** Anchor to the syntax only where the instances actually carry it
+> > — and where they do not, filter the commentary out instead of loosening the needle.
+> >
+> > **The cheapest control covers both directions at once:** run the needle over a scope you KNOW
+> > contains the thing and require the hit, then read the hits rather than counting them. A count
+> > alone cannot distinguish three of the right sites from one right and two wrong.
 
 > ### *** THE LINE DELTA IS NOT A WARRANT AND IS NOT WORTHLESS. IT IS THE SOLE INSTRUMENT FOR THE ONE CLASS THE BUILD CANNOT SEE. ***
 >
@@ -1139,6 +1162,32 @@ together: **each guard catches the previous failure and cannot see the one below
 > — luck of the fixture, the same *"by luck of ordering, not by design"* that caught the third
 > instrument in the table above. Restored byte-identical from a scratchpad copy and redone with an
 > editor on the specific lines.
+>
+> > ### *** AND IT IS SHARPER THAN "BLIND": THE `ORIGINAL GONE` HALF CANNOT SEE OVERREACH AT ALL ***
+> >
+> > The row above says the marker grep is blind to overreach *because at the target site both halves
+> > read correctly*. **That understates it, and the understatement is what makes the grep look
+> > salvageable.** The `original gone` half is not merely uninformative here — **it is satisfied
+> > MORE emphatically the worse the overreach gets.**
+> >
+> > ```
+> > removing ONE site   ->  original gone: 0      the answer a correct edit gives
+> > removing FORTY      ->  original gone: 0      the identical answer
+> > ```
+> >
+> > **A count of zero cannot distinguish "the one I meant" from "every one there was", because zero
+> > is the floor.** No amount of care with the needle changes that; it is arithmetic, not anchoring.
+> > **The `marker present` half is the only one with any signal** — a correct edit gives `1` and an
+> > overreaching one gives `N` — and it is the half most people skip once `original gone` reads `0`.
+> >
+> > **2026-09-21.** A mutation pattern matched `AnvilDecision current = decide(target, donor);` at
+> > **both** its call sites — the repaint's and the confirm's. `marker present: 2`, `original gone:
+> > 0`, `delta: 2`. **The zero was the correct answer to the wrong question**, and the two non-`1`
+> > figures beside it are what reported the overreach. Re-done scoped by line number, region printed.
+> >
+> > **Practically: predict BOTH figures before running, and `1` and `0` are the only pair that means
+> > a single-site edit landed.** Then the line delta against the pristine copy, which is the
+> > instrument that does not depend on either.
 
 > **THE SEVENTH ROW IS ONE OF TWO WHERE THE MUTATION WORKED PERFECTLY, AND THAT IS WHAT MAKES IT
 > HARD TO SEE.** (It said *"the ONLY one"* until the eighth row was added on 2026-09-16 — **a claim
@@ -1585,6 +1634,39 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   > and that ambiguity is what cost the boot.
   >
   > **If R0 fails, STOP. No other row in the file is readable.**
+  >
+  > > ### *** AND THE SAME INSTRUMENT FAILURE ARRIVES WITHOUT A JAR: A CHARACTER CLASS THE TOOL DOES NOT READ AS ONE ***
+  > >
+  > > **The jar case is easy to believe because the input is obviously binary.** The general form is
+  > > not about binaries at all: **an instrument that cannot express what it is being asked does not
+  > > say so — it answers something else, in the right shape.**
+  > >
+  > > **2026-09-21.** `grep -c '[^\x00-\x7F]' <file>` was run to find non-ASCII characters in a Java
+  > > source file and reported **163** — of roughly 170 lines. The pattern was not being read as a
+  > > byte range at all, so what executed matched essentially every line. The file's true count was
+  > > **one**: a zero-width non-joiner inside a method name.
+  > >
+  > > **IT FAILED IN THE OPPOSITE DIRECTION FROM THE JAR, WHICH IS WHY IT IS WORTH RECORDING
+  > > BESIDE IT.** The jar returns **0 for everything** and reads as *"the symbol is absent"*; this
+  > > returned **almost everything** and reads as *"the file is full of them"*. **Both are the same
+  > > defect** — the instrument cannot express the question — and **neither announces itself**,
+  > > because a count is a count.
+  > >
+  > > **The tell was the RATIO, not the value.** 163 out of ~170 is not a plausible answer to
+  > > *"which lines contain a non-ASCII character"* for a file of ordinary Java. **A number that is
+  > > implausible for the quantity claimed is the only warning either case gives** — and the NUL
+  > > entry above records the mirror image, a figure that was plausible and therefore survived.
+  > >
+  > > **Practically: the same one-line control the NUL entry prescribes, pointed at a class instead
+  > > of a byte.** Feed the instrument an input you KNOW contains the thing, and require the hit:
+  > >
+  > > ```bash
+  > > printf 'plain\nzw\xe2\x80\x8cjoin\n' | perl -ne 'print "line $.\n" if /[^\x00-\x7f]/'
+  > > ```
+  > >
+  > > It prints `line 2` and nothing else, which is what licenses believing the run over the real
+  > > file. **`perl` was not chosen because it is more thorough** — it was chosen because it reads
+  > > the escape, and the control is what established that.
   >
   > > ### *** AND THE RULE UNDERNEATH R0 IS NOT ABOUT JARS. IT IS ABOUT BINDING. ***
   > >

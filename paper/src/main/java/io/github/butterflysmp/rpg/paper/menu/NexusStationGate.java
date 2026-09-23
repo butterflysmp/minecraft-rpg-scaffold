@@ -66,10 +66,18 @@ final class NexusStationGate {
      *
      * <h2>THE THRESHOLDS ARE BEN'S, NOT DERIVED FROM THE CURVE</h2>
      *
-     * {@code 3 / 10 / 13}. They are content decisions and there is no formula behind them --
-     * do not "regularise" them into a progression, and do not re-derive them from the XP totals.
-     * {@code PlayerLevelTest} pins the totals those levels correspond to
-     * ({@code 2,090 / 12,940 / 19,980}) so a curve retune moves the XP and never the levels.
+     * <b>Crafting, the anvil, enchanting and the grindstone each carry a literal.</b> They are
+     * content decisions and there is no formula behind them -- do not "regularise" them into a
+     * progression, and do not re-derive them from the XP totals. {@code PlayerLevelTest} pins the
+     * cumulative total each of those levels corresponds to, so a curve retune moves the XP and
+     * never the levels.
+     *
+     * <p><b>The stations are NAMED here rather than counted, and the numbers are not restated.</b>
+     * This paragraph read {@code "3 / 10 / 13"} and quoted three XP totals; the anvil falsified both
+     * lists, and the vault had already falsified the sentence above it once -- <b>this javadoc's own
+     * note says a count in a heading cannot be raised by appending, and a list of literals is the
+     * same trap one line down.</b> The levels are on the constants below, where they cannot go
+     * stale, and the totals are in the test that pins them.
      *
      * <p><b>The VAULT's threshold is the exception and is READ rather than authored</b>: it is
      * {@code VaultPageGate.HUB_SHORTCUT_LEVEL}. This javadoc said "the three stations" until the
@@ -83,6 +91,25 @@ final class NexusStationGate {
      */
     enum Station {
         CRAFTING(3, "Crafting", "A crafting table in the world still works."),
+
+        /**
+         * The anvil. <b>Level 7, and it is free real estate on the ladder</b> -- it sits between
+         * crafting's 3 and enchanting's 10 without moving either.
+         *
+         * <h2>ITS THIRD LINE IS TRUE IN THE ORDINARY WAY, UNLIKE THE VAULT'S</h2>
+         *
+         * <b>An anvil in the world opens our screen at every level</b>, exactly as a crafting table
+         * and a grindstone do, so the sentence needs no qualification. The vault is the odd one out
+         * of the five, not this one.
+         *
+         * <p><b>It does NOT mean vanilla anvil behaviour survives.</b> Ben's ruling for slice 13a:
+         * vanilla rename and vanilla repair are <b>both gone</b>, with no fallthrough -- renaming
+         * has no place in this project and repair is a later conversation. What "still works" names
+         * is the ROUTE: a sub-7 player who walks to an anvil gets this feature, which is what the
+         * line exists to tell them.
+         */
+        ANVIL(7, "Anvil", "An anvil in the world still works."),
+
         ENCHANTING(10, "Enchanting", "An enchanting table in the world still works."),
         GRINDSTONE(13, "Grindstone", "A grindstone in the world still works."),
 
@@ -157,6 +184,7 @@ final class NexusStationGate {
      * a third copy of a slot number is how a gate comes to protect a cell nothing renders.
      */
     static Optional<Station> at(int slot) {
+        if (slot == NexusMenuLayout.ANVIL_SLOT) return Optional.of(Station.ANVIL);
         if (slot == NexusMenuLayout.CRAFTING_SLOT) return Optional.of(Station.CRAFTING);
         if (slot == NexusMenuLayout.ENCHANT_SLOT) return Optional.of(Station.ENCHANTING);
         if (slot == NexusMenuLayout.GRINDSTONE_SLOT) return Optional.of(Station.GRINDSTONE);

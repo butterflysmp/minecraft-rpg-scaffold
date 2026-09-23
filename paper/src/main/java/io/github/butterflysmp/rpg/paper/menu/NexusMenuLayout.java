@@ -116,42 +116,63 @@ final class NexusMenuLayout {
      *   29 ender chest   30 anvil   31 crafting   32 enchanting   33 grindstone
      * </pre>
      *
-     * <b>Five stations spanning 29-33, centred on 31 in a row of 27-35.</b> Ours is <b>31, 32 and
-     * 33 -- the RIGHT-HAND three</b>; the two that are missing are <b>29 and 30, both to the
-     * LEFT</b>.
+     * <b>Five stations spanning 29-33, centred on 31 in a row of 27-35.</b>
      *
-     * <p><b>So the block sits right of centre, and it will keep sitting right of centre until an
-     * ender chest and an anvil exist.</b> That is the correct appearance of an unfinished row, and
-     * <b>re-centring the three we have is a move that would have to be undone twice</b> -- once to
-     * add 30, once to add 29.
+     * <h2>*** THE ROW IS COMPLETE AS OF SLICE 13a, AND THIS NOTE IS KEPT RATHER THAN DELETED ***</h2>
      *
-     * <p>Recorded here so the next person to notice the asymmetry finds the answer instead of
-     * fixing it. <b>It is NOT a ruling that 29 and 30 will be built</b> -- neither has been
-     * designed -- only that the row was laid out expecting them.
+     * <b>Ours was 31, 32 and 33 -- the RIGHT-HAND three</b>, and this javadoc said the block
+     * <i>"will keep sitting right of centre until an ender chest and an anvil exist."</i> The vault
+     * took 29 and <b>the anvil has now taken 30</b>, so the run is the contiguous 29-33 the
+     * predecessor had and the asymmetry is gone.
+     *
+     * <p><b>The argument it records is the part worth keeping.</b> Re-centring the three we had
+     * would have been a move undone twice -- once to add 30, once to add 29 -- and the row reaching
+     * its designed shape without a single icon moving is that call paying off. <b>The next person
+     * to propose re-centring a partial row should find this rather than re-derive it.</b>
+     *
+     * <p><b>What is NOT kept is the prediction attached to it.</b> This note used to end <i>"It is
+     * NOT a ruling that 29 and 30 will be built -- neither has been designed"</i>, which was true
+     * when written and is now false twice over. A prediction left standing after its subject ships
+     * reads as a live open question, and the next reader would spend the time finding out it is
+     * closed.
      */
     static final int GRINDSTONE_SLOT = 33;
 
     /**
      * The vault. <b>Row 4, column 2 -- and it is 29, which the row above says was reserved for it.</b>
      *
-     * <h2>THE ROW IS NOW FOUR OF FIVE, AND THE HOLE THAT IS LEFT IS 30</h2>
+     * <h2>THE ROW IS FIVE OF FIVE, AND THE GAP THIS JAVADOC WARNED ABOUT IS CLOSED</h2>
      *
      * The predecessor's row, quoted in {@link #GRINDSTONE_SLOT}'s javadoc:
      *
      * <pre>
      *   29 ender chest   30 anvil   31 crafting   32 enchanting   33 grindstone
-     *                    ^^^^^^^^ still missing
      * </pre>
      *
-     * <b>So the block is no longer contiguous: 29, then a gap at 30, then 31-33.</b> That reads as
-     * an unfinished row with a hole in it, and it is correct -- {@code GRINDSTONE_SLOT}'s note says
-     * the row "was laid out expecting them" and that re-centring is a move that would have to be
-     * undone twice. <b>Do not close the gap by moving the vault to 30</b>: the anvil's cell is 30,
-     * and a vault sitting in it would have to move the day an anvil ships.
+     * <b>The block is contiguous again: 29-33, centred on 31.</b>
      *
-     * <p><b>It is NOT a ruling that the anvil will be built.</b> Neither has been designed.
+     * <p><b>This entry earned its keep and is kept for that reason.</b> It said <i>"Do not close the
+     * gap by moving the vault to 30: the anvil's cell is 30, and a vault sitting in it would have to
+     * move the day an anvil ships."</i> <b>That day is slice 13a, and nothing moved.</b> A cell held
+     * empty on a prediction, by a note nobody could falsify at the time, is the cheapest kind of
+     * correctness there is -- and the next person tempted to fill a reserved hole should find this
+     * worked rather than assume it was over-caution.
+     *
+     * @see #ANVIL_SLOT the cell this note was holding
      */
     static final int VAULT_SLOT = 29;
+
+    /**
+     * The anvil. <b>Row 4, column 3 -- the cell {@link #VAULT_SLOT}'s note has been holding open.</b>
+     *
+     * <p>Slice 13a. Ben's ruling on its level is in {@code NexusStationGate.Station}; the screen
+     * itself is {@code AnvilMenu}.
+     *
+     * <p><b>Read this constant, never the literal 30.</b> {@code NexusStationGate.at} says why: the
+     * hub has already paid for two hand-maintained lists checked against each other, and a third
+     * copy of a slot number is how a gate comes to protect a cell nothing renders.
+     */
+    static final int ANVIL_SLOT = 30;
 
     /**
      * Every slot that is plain filler -- the whole menu except the buttons and the stations.
@@ -186,7 +207,7 @@ final class NexusMenuLayout {
      */
     static final Set<Integer> PAINTED_SLOTS = Set.of(
             CLOSE_SLOT, SETTINGS_SLOT, STATS_SLOT,
-            VAULT_SLOT, CRAFTING_SLOT, ENCHANT_SLOT, GRINDSTONE_SLOT);
+            VAULT_SLOT, ANVIL_SLOT, CRAFTING_SLOT, ENCHANT_SLOT, GRINDSTONE_SLOT);
 
     /**
      * *** THE SUBTRACTION READS {@link #PAINTED_SLOTS}. IT USED TO RESTATE IT BY HAND. ***

@@ -31,6 +31,9 @@ class NexusMenuLayoutTest {
                         + "move between our screens");
         assertEquals(50, NexusMenuLayout.SETTINGS_SLOT, "Settings is slot 50");
         assertEquals(54, NexusMenuLayout.SIZE, "six rows");
+        assertEquals(30, NexusMenuLayout.ANVIL_SLOT,
+                "the anvil is row 4, column 3 -- the cell VAULT_SLOT's javadoc held open for it, "
+                        + "and the literal is what proves nothing moved to make room");
         assertEquals(31, NexusMenuLayout.CRAFTING_SLOT, "crafting is row 4, column 4");
         assertEquals(32, NexusMenuLayout.ENCHANT_SLOT, "enchanting is row 4, column 5");
         assertEquals(13, NexusMenuLayout.STATS_SLOT,
@@ -114,6 +117,15 @@ class NexusMenuLayoutTest {
         // its comment -- "so a third cannot silently split them" -- stopped describing anything
         // the row checked. A row whose comment outlives what it asserts is the stale-prose defect
         // with a green tick beside it.
+        //
+        // *** THE RUN IS NOW COMPLETE AT 29-33, AND THE ANVIL CLOSED THE LAST GAP. *** The vault
+        // sat at 29 with a HOLE at 30 between it and crafting, held open by VAULT_SLOT's javadoc
+        // against exactly this slice. The chain below is walked end to end rather than in pairs, so
+        // a sixth station cannot be dropped on either end without reddening here.
+        assertEquals(1, NexusMenuLayout.ANVIL_SLOT - NexusMenuLayout.VAULT_SLOT,
+                "the anvil sits immediately right of the vault -- the gap at 30 is closed");
+        assertEquals(1, NexusMenuLayout.CRAFTING_SLOT - NexusMenuLayout.ANVIL_SLOT,
+                "and crafting immediately right of the anvil");
         assertEquals(1, NexusMenuLayout.ENCHANT_SLOT - NexusMenuLayout.CRAFTING_SLOT,
                 "enchanting sits immediately right of crafting");
         assertEquals(1, NexusMenuLayout.GRINDSTONE_SLOT - NexusMenuLayout.ENCHANT_SLOT,
@@ -121,7 +133,11 @@ class NexusMenuLayoutTest {
         assertEquals(NexusMenuLayout.CRAFTING_SLOT / 9, NexusMenuLayout.ENCHANT_SLOT / 9,
                 "adjacent IN A ROW -- consecutive indices can straddle a row boundary");
         assertEquals(NexusMenuLayout.CRAFTING_SLOT / 9, NexusMenuLayout.GRINDSTONE_SLOT / 9,
-                "all three in ONE row, for the same reason");
+                "all of them in ONE row, for the same reason");
+        assertEquals(NexusMenuLayout.CRAFTING_SLOT / 9, NexusMenuLayout.VAULT_SLOT / 9,
+                "including the left-hand end of the run");
+        assertEquals(NexusMenuLayout.CRAFTING_SLOT / 9, NexusMenuLayout.ANVIL_SLOT / 9,
+                "and the anvil, which is the cell that completed it");
         assertEquals(3, NexusMenuLayout.GRINDSTONE_SLOT / 9,
                 "and that row is the crafting-type band, row 4 -- their KIND picked it");
 
@@ -188,6 +204,8 @@ class NexusMenuLayoutTest {
                 "filler must never cover the stats head -- a pane painted over it would hide a "
                         + "working readout behind a black square, and nothing would say so");
 
+        assertFalse(NexusMenuLayout.FILLER_SLOTS.contains(NexusMenuLayout.ANVIL_SLOT),
+                "nor the anvil");
         assertFalse(NexusMenuLayout.FILLER_SLOTS.contains(NexusMenuLayout.CRAFTING_SLOT),
                 "nor the crafting station");
         assertFalse(NexusMenuLayout.FILLER_SLOTS.contains(NexusMenuLayout.ENCHANT_SLOT),
@@ -204,13 +222,30 @@ class NexusMenuLayoutTest {
         //
         // IT DID IT AGAIN FOR THE THIRD STATION -- 49 against 48 -- and that was the ONLY row that
         // reddened when the grindstone was added, exactly as designed.
-        assertEquals(NexusMenuLayout.SIZE - 7, NexusMenuLayout.FILLER_SLOTS.size(),
-                "every slot except the two buttons, the head and the FOUR stations is filler");
+        //
+        // AND AGAIN FOR THE ANVIL -- 47 against 46. Three stations, three times this row was the
+        // one that said so with a number.
+        //
+        // *** THE SUBTRAHEND STAYS A LITERAL, AND WRITING IT AS PAINTED_SLOTS.size() WAS TRIED AND
+        // REVERTED IN THE SAME SLICE. *** That form spares an edit here every time a station lands,
+        // and it does so by making this row assert
+        //
+        //     SIZE - PAINTED.size() == FILLER.size()
+        //
+        // which is the partition row below, rearranged. Two rows, one claim, and the cheap one
+        // deleted: the literal is what forces somebody to look at a NUMBER when the screen's shape
+        // changes, and it is the only row here that can disagree with PAINTED_SLOTS at all.
+        //
+        // The count and the noun move together or this comment lies, which is why the message says
+        // neither. See the partition row for the paint list's own size.
+        assertEquals(NexusMenuLayout.SIZE - 8, NexusMenuLayout.FILLER_SLOTS.size(),
+                "every slot except the two buttons, the head and the stations is filler");
         for (int slot = 0; slot < NexusMenuLayout.SIZE; slot++) {
             boolean isButton = slot == NexusMenuLayout.CLOSE_SLOT
                     || slot == NexusMenuLayout.SETTINGS_SLOT
                     || slot == NexusMenuLayout.STATS_SLOT
                     || slot == NexusMenuLayout.VAULT_SLOT
+                    || slot == NexusMenuLayout.ANVIL_SLOT
                     || slot == NexusMenuLayout.CRAFTING_SLOT
                     || slot == NexusMenuLayout.ENCHANT_SLOT
                     || slot == NexusMenuLayout.GRINDSTONE_SLOT;
@@ -255,8 +290,9 @@ class NexusMenuLayoutTest {
 
         // AND THE PAINT LIST IS NOT EMPTY, without which the partition is satisfied by "everything
         // is filler" -- the blank-screen reading the cardinality row above also guards against.
-        assertEquals(7, NexusMenuLayout.PAINTED_SLOTS.size(),
-                "Close, Settings, the head, and the four stations");
+        assertEquals(8, NexusMenuLayout.PAINTED_SLOTS.size(),
+                "Close, Settings, the head, and the five stations -- vault, anvil, crafting, "
+                        + "enchanting, grindstone");
         // Mutation: drop GRINDSTONE_SLOT from PAINTED_SLOTS -> slot 33 is neither -> reddens.
         // THAT MUTATION IS THE SHIPPED DEFECT, and nothing in this file reddened on it before.
     }
