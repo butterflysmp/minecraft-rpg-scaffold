@@ -673,6 +673,20 @@ public final class PaperCombatWorld implements CombatWorld {
      *       {@code !isRemoved() &amp;&amp; !noPhysics}, and {@code applyEffectsFromBlocks(List)} gates its
      *       entire body on it. That one guard removes {@code checkInsideBlocks}, {@code stepOn},
      *       cobwebs, powder snow, honey, berry bushes, magma, climbables and rails in one go.</li>
+     *   <li><b>Deflection (wind charges) and block-hit side effects: GONE</b>, because
+     *       {@code preHitTargetOrDeflectSelf} is reached only from {@code stepMoveAndHit}.</li>
+     *   <li><b>WATER: SURVIVES, AND IT BITES HARDER THAN IT DOES ON AN ITEM.</b>
+     *       {@code Projectile.tick() -&gt; Entity.tick() -&gt; baseTick()} runs unconditionally at the
+     *       END of {@code AbstractArrow.tick()}, and {@code baseTick} calls
+     *       {@code updateFluidInteraction()}. The resulting {@code isInWater()} is read back at the
+     *       TOP of the next arrow tick, OUTSIDE the noPhysics gate, and applies
+     *       {@code getWaterInertia() = 0.6f} -- a 40% velocity cut per tick. It is cosmetic only:
+     *       {@code castRay} owns resolution and never consults the body, so a bolt fired across a
+     *       pond resolves on its computed segment while the body falls behind it.</li>
+     *   <li><b>Inertia: SURVIVES, and it is new.</b> {@code applyInertia(0.99f)} is gated only on
+     *       {@code isInWater()}, never on {@code noPhysics}. Harmless while the flight is driving --
+     *       {@link #driveMarker} overwrites the velocity every tick before it can accumulate -- and
+     *       it is the whole reason an ORPHAN travels rather than hangs. See below.</li>
      *   <li><b>Rotation: SURVIVES, and it is why we use an arrow at all</b> -- {@code atan2} over
      *       {@code deltaMovement} into {@code setXRot}/{@code setYRot}, every tick.
      *       <br><b>*** "OUTSIDE THE GATE" WAS HALF RIGHT, AND THE HALF THAT IS WRONG IS THE YAW.
@@ -685,20 +699,6 @@ public final class PaperCombatWorld implements CombatWorld {
      *       ticking and on rotation packets, and neither was read. What is measured is the server
      *       value. It is the reason <i>the later flight was already correct</i> is an OPEN question
      *       rather than a settled one -- see {@code GATE-arrow-body-orientation.md}.</li>
-     *       {@code Projectile.tick() -&gt; Entity.tick() -&gt; baseTick()} runs unconditionally at the
-     *       END of {@code AbstractArrow.tick()}, and {@code baseTick} calls
-     *       {@code updateFluidInteraction()}. The resulting {@code isInWater()} is read back at the
-     *       TOP of the next arrow tick, OUTSIDE the noPhysics gate, and applies
-     *       {@code getWaterInertia() = 0.6f} -- a 40% velocity cut per tick. It is cosmetic only:
-     *       {@code castRay} owns resolution and never consults the body, so a bolt fired across a
-     *       pond resolves on its computed segment while the body falls behind it.</li>
-     *   <li><b>Inertia: SURVIVES, and it is new.</b> {@code applyInertia(0.99f)} is gated only on
-     *       {@code isInWater()}, never on {@code noPhysics}. Harmless while the flight is driving --
-     *       {@link #driveMarker} overwrites the velocity every tick before it can accumulate -- and
-     *       it is the whole reason an ORPHAN travels rather than hangs. See below.</li>
-     *   <li><b>Rotation: SURVIVES, and it is why we use an arrow at all.</b> {@code atan2} over
-     *       {@code deltaMovement} into {@code setXRot}/{@code setYRot}, outside the gate. The body
-     *       points along the velocity {@link #driveMarker} gave it -- for free, every tick.</li>
      *   <li><b>Fire and lava: the body can BURN but is not destroyed.</b> {@code baseTick} handles
      *       fire ticks and lava; an arrow is not a stack that can be consumed, so unlike a flint
      *       marker there is no "the body simply vanishes" case from this axis.</li>
@@ -750,14 +750,6 @@ public final class PaperCombatWorld implements CombatWorld {
             arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
 
             // Belt on the same trousers: a body that somehow resolved a hit would deal zero.
-            //
-            // *** AND facing() DOES NOT SUPPLY THE ROTATION EITHER. MEASURED 2026-09-22. ***
-            // ARROW's spawn positioner is CraftEntityTypes' MOVE_EMPTY_ROT --
-            // snapTo(x, y, z, 0.0F, 0.0F) -- so the Location's rotation is DISCARDED, and this body
-            // still spawns due south and level. The note above is RIGHT that rotation is the missing
-            // quantity and WRONG that facing() is where it arrives, which is the same mistake one
-            // layer out. The rotation has to be set on THIS entity, in THIS consumer.
-            // See facing()'s javadoc and GATE-arrow-body-orientation.md.
             arrow.setDamage(0.0);
             arrow.setKnockbackStrength(0);
             arrow.setCritical(false);
@@ -781,6 +773,14 @@ public final class PaperCombatWorld implements CombatWorld {
             // where that is now supplied.
             // This line and facing() set DIFFERENT quantities -- motion and rotation -- and reading
             // them as one is exactly how this shipped.
+            //
+            // *** AND facing() DOES NOT SUPPLY THE ROTATION EITHER. MEASURED 2026-09-22. ***
+            // ARROW's spawn positioner is CraftEntityTypes' MOVE_EMPTY_ROT --
+            // snapTo(x, y, z, 0.0F, 0.0F) -- so the Location's rotation is DISCARDED, and this body
+            // still spawns due south and level. The note above is RIGHT that rotation is the missing
+            // quantity and WRONG that facing() is where it arrives, which is the same mistake one
+            // layer out. The rotation has to be set on THIS entity, in THIS consumer.
+            // See facing()'s javadoc and GATE-arrow-body-orientation.md.
             arrow.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z()));
 
             // The same tag every other marker carries, and the reason markerOf() below can find
