@@ -1,10 +1,12 @@
 # GATE — the Plume body is a real vanilla arrow
 
-**Status: NOT RUN.** Every prediction was written BEFORE any boot and no prediction is edited once a
-row has been read. Readings go in the `READ` cell beside the prediction they answer.
+**Status: R0 FAILED, 2026-09-23. R1-R8 NOT READ.** Every prediction was written BEFORE any boot
+and no prediction is edited once a row has been read. Readings go in the `READ` cell beside the
+prediction they answer, never over it.
 
 ```
-NOT RUN   9   R0 R1 R2 R3 R4 R5 R6 R7 R8
+FAIL      1   R0                        -- probe run 2026-09-23 by the review seat
+NOT RUN   8   R1 R2 R3 R4 R5 R6 R7 R8   -- the deployed jar did not carry this slice
          ──
          9   = git grep -c '^### R' <ref> -- GATE-plume-vanilla-body.md
 ```
@@ -16,6 +18,81 @@ reading it in creative measures nothing.
 
 ---
 
+## *** R0 FAILED. THE DEPLOYED JAR WAS THE SPIKE'S, NOT THIS SLICE'S. ***
+
+**Ben booted on 2026-09-23 and reported *"Gates all look good."* That reading is honest and it is about
+what he saw. It is not bound to `f44826f`, and the probe is what says so** — run after the fact, by the
+review seat, because the reflog was ambiguous.
+
+**THE MEASUREMENT, over `run/plugins/rpg-0.1.0-SNAPSHOT.jar` as it stands:**
+
+```
+509 class files scanned                       (non-zero, so the unpack worked)
+onPlumeBodyHit    -> ABSENT                   the symbol THIS SLICE ADDS. Should be present.
+setNoPhysics      -> 3 files                  the line THIS SLICE REMOVES. Should be 0.
+plumebody         -> 1 file                   *** THE SPIKE'S COMMAND. Should not exist at all. ***
+onPlumeBodyHitZZ  -> 0 files                  the control: the scan CAN return absent, so the
+                                              readings above are not a blind instrument
+```
+
+**AND THE BOOT LOG IS THE STRONGER WITNESS, because it says what RAN rather than what is on disk:**
+
+```
+run/logs/latest.log
+  [18:33:37] Starting minecraft server version 26.1.2        <- the only start in this log
+  [18:36:12] [plume] A MARKER BODY dealt damage to TROPICAL_FISH -- setNoPhysics(true) DID NOT TAKE...
+  [18:37:38] [plume] A MARKER BODY dealt damage to COW           -- setNoPhysics(true) DID NOT TAKE...
+  [18:38:21] [plume] A MARKER BODY dealt damage to PLAYER        -- setNoPhysics(true) DID NOT TAKE...
+  [18:38:23] [plume] A MARKER BODY dealt damage to SPIDER        -- setNoPhysics(true) DID NOT TAKE...
+```
+
+**That message text exists only in the PRE-SLICE code.** This slice rewrote it — it now names
+`onPlumeBodyHit`'s cancel instead of a switch that no longer exists. **Four lines of the old wording
+is four proofs that the old code was running.** The deployed jar's mtime is `18:33`, matching the
+start; `git reflog` shows the working tree was moved to `spike/plume-body-modes` at `18:33:11`; and
+the second worktree at `C:/Users/Neb91/IdeaProjects/rpg-12b` holds **no** deployed jar and **no**
+boot log, so it is not the source either.
+
+> ### AND THIS IS NOT THE ANVIL'S CASE, WHICH IS WHY IT IS RECORDED AS A FAILURE RATHER THAN A RULING
+>
+> `GATE-anvil.md` records a binding that **rests on Ben's statement because the probe was never run**,
+> with circumstantial evidence that is *consistent* with it. **Here the probe WAS run and it
+> CONTRADICTS the statement.** A ruling can settle what nobody measured; it cannot settle what a
+> measurement refutes. **So there is no binding to record, and R1-R8 are NOT READ.**
+>
+> That file's own warning is what this is: *"a jar in the right place at the right time is exactly what
+> a wrong-worktree build produced on 2026-09-20."* **The jar was in the right place, at a plausible
+> time, and it was the wrong jar.**
+
+### WHAT THE BOOT DID ESTABLISH, BECAUSE IT IS NOT NOTHING
+
+- **PHYSICS WAS ON.** The four warnings require `stepMoveAndHit` to have found entities, which is gated
+  on `!noPhysics`. **So the spike was in mode C, D or E** — not A and not B. (`PlumeBodyMode.current`
+  initialises to `A` on every start, so Ben must have switched during the session.)
+- ***AND IT MEASURED THAT THIS SLICE'S CANCEL IS NECESSARY.*** With physics on and no
+  `onPlumeBodyHit`, the entity hit reached `AbstractArrow.onHitEntity` and was stopped only by the
+  **backstop**, four times. `doKnockback` lives *inside* `onHitEntity` and runs **before** the damage
+  event the backstop listens to — **so those four mobs were knocked back.** R5 predicts that must not
+  happen, and the log is direct evidence that the late cancel is not sufficient. **The design is
+  right; it just was not deployed.**
+- **The LOOK rows are PLAUSIBLY fine and are still not read.** Spike mode E is, by construction, the
+  shape this slice ships, so a session that ended in mode E would have shown the correct look. **That
+  is an argument, not a reading**, and R1 is the sole witness for a line no unit test guards — which
+  is exactly the row that cannot be settled by inference.
+
+### WHAT IT COSTS AND WHAT FIXES IT
+
+**Nothing merges.** `#144` stays open.
+
+```
+git checkout feat/plume-vanilla-body     # f44826f, or the rebased tip
+./scripts/dev-server.sh                  # builds AND deploys, so the jar cannot be stale
+```
+
+then **R0 first**, and this time its fourth prediction — *state which tree the jar was built from* —
+is the field that would have caught this in one line.
+
+---
 ## WHAT THIS SLICE DID, AND WHAT IT IS ANSWERING FOR
 
 `spawnBoltMarker` now calls **`world.spawnArrow`** with **no `setNoPhysics`** and **no
@@ -59,7 +136,7 @@ JRE shim with no `javap`.
 | **Predict** | ***AND THE THIRD PATTERN IS THE CONTROL, BECAUSE AN ABSENCE PROVES NOTHING UNLESS THE SCAN CAN PRODUCE ONE.*** `onPlumeBodyHitZZ` cannot be in any jar. It must return **0 files** — printing nothing. If it returns a hit, the scan is matching something other than what it is asked for and **the `setNoPhysics` zero above means nothing either.** <br><br>Measured at build time, all four together: `505 scanned`, `onPlumeBodyHit` in `RpgListeners.class`, `setNoPhysics` **0**, `onPlumeBodyHitZZ` **0**. |
 | **Predict** | **`-Encoding ascii` is load-bearing**: a `.class` is binary and a text-mode read will not find a constant-pool string. |
 | **Predict** | **STATE WHICH TREE THE JAR WAS BUILT FROM.** There is a second worktree at `C:/Users/Neb91/IdeaProjects/rpg-12b`, and that ambiguity cost a boot on 2026-09-20. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | ***FAIL -- 2026-09-23.*** The probe was run by the review seat after Ben reported *"Gates all look good"*, because `git reflog` was ambiguous about which branch the deployed jar was built from. **It is the SPIKE's jar.** 509 classes scanned; `onPlumeBodyHit` **ABSENT**; `setNoPhysics` in **3** files; `plumebody` in **1**; control needle `onPlumeBodyHitZZ` **0**, so the scan is not blind. <br><br>**`run/logs/latest.log` corroborates and is the stronger witness:** the only server start is `18:33:37`, and four `[plume] A MARKER BODY dealt damage` lines carry the **pre-slice wording** (*"setNoPhysics(true) DID NOT TAKE"*), which this slice rewrote. The jar's mtime is `18:33` and the reflog shows the tree moved to `spike/plume-body-modes` at `18:33:11`. <br><br>**The fourth prediction -- state which tree the jar was built from -- was NOT reported, and it is the one line that would have caught this before the session.** See the account above. |
 
 ---
 
