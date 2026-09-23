@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.Aim;
+import io.github.butterflysmp.rpg.core.combat.BodyRotation;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.BeamSamples;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
@@ -52,72 +53,6 @@ public final class PaperCombatWorld implements CombatWorld {
 
     private Location toLocation(Vec3 v) {
         return new Location(world, v.x(), v.y(), v.z());
-    }
-
-    /**
-     * *** THIS METHOD IS INERT AS SHIPPED. READ THIS BEFORE THE DESCRIPTION BELOW. ***
-     *
-     * <p><b>{@code world.spawn} DISCARDS A LOCATION'S ROTATION FOR AN ARROW.</b>
-     * {@code CraftEntityTypes} registers {@code EntityType.ARROW} through
-     * {@code createAndMoveEmptyRot}, whose positioner is {@code MOVE_EMPTY_ROT}:
-     * {@code Entity.snapTo(x, y, z, 0.0F, 0.0F)} -- both floats constant. A sibling positioner,
-     * {@code MOVE}, <i>does</i> read {@code SpawnData.yaw()} and {@code SpawnData.pitch()};
-     * {@code ARROW} is not registered with it. <b>So everything this method computes is thrown away
-     * and the body still spawns at yaw 0 / pitch 0 -- due south and level, which is the exact defect
-     * described below.</b>
-     *
-     * <p><b>THE FIX IS NOT A DIFFERENT CONVENTION HERE; IT IS A DIFFERENT PLACE.</b> The rotation has
-     * to be written to the ENTITY, inside the spawn consumer -- which runs before
-     * {@code addEntityToWorld}, and therefore before any add-entity packet exists. <b>Nothing written
-     * onto a {@code Location} can reach an arrow</b>, in any convention, so swapping
-     * {@code setDirection} for {@code setYaw}/{@code setPitch} would be just as inert.
-     *
-     * <p>Measured 2026-09-22, after the boot gate FAILED on {@code 7b5b936}: read from
-     * {@code run/versions/26.1.2/paper-26.1.2.jar}, whose manifest says {@code Build-Number: 74} --
-     * the {@code paper.version} {@code pom.xml} pins, and the build the boot logs name. The account
-     * -- the four sign conventions, the refuted rival hypothesis, and what the fix must do instead --
-     * is {@code GATE-arrow-body-orientation.md}, section <i>WHY BOTH ROWS FAILED</i>. <b>This is the
-     * pointer; that is the account.</b>
-     *
-     * <p>The description that follows is left standing rather than rewritten: it is an accurate
-     * account of the defect, and of what was believed about the remedy, which is the one thing this
-     * method has actually taught.
-     *
-     * The same point, ROTATED to look along {@code direction} -- what a body must spawn wearing if
-     * its first rendered frame is to point where it is going.
-     *
-     * <h2>*** WHY THIS IS NOT ALREADY TRUE: A Vec3 CARRIES NO ROTATION ***</h2>
-     *
-     * <p>{@link #toLocation} builds a {@code Location} from three doubles, so its yaw and pitch are
-     * the constructor's defaults -- <b>0 and 0, which is due south and level.</b> A body spawned at
-     * such a location wears that rotation on the frame it appears, whatever velocity it was given
-     * in the same breath.
-     *
-     * <p><b>Setting the velocity at creation does NOT fix this, and it was believed to.</b>
-     * {@link #spawnBoltMarker}'s own comment says the launch velocity is part of creating the body
-     * <i>"so a body spawned still has no direction on its first frame"</i> -- correct about the
-     * problem and incomplete as a remedy. An arrow's rotation comes from {@code atan2} over
-     * {@code deltaMovement} <b>inside its own {@code tick()}</b>, so the velocity is right one tick
-     * BEFORE the rotation derived from it is. <b>The frame in between renders due south.</b>
-     *
-     * <p>Two independent quantities were being set and only one of them was the one that renders.
-     *
-     * <h2>IT AFFECTS EVERY ARROW BODY IN THE TREE, NOT ONE WEAPON</h2>
-     *
-     * <p>{@code dragons_plume} has shipped with this since the arrow body landed -- observed on it
-     * directly, which is what identified this as a defect in this method rather than in whatever
-     * weapon happened to surface it.
-     *
-     * <p><b>A ZERO DIRECTION IS LEFT ALONE RATHER THAN NORMALISED.</b> {@code setDirection} on a
-     * zero vector writes {@code pitch = 90} -- straight down -- which is a worse answer than the
-     * default and is arrived at silently. No caller produces one today ({@code launch} scales a
-     * normalised aim by a positive speed), so this is a guard against a future caller rather than a
-     * live case, and the honest behaviour for "no direction" is to leave the rotation as it was.
-     */
-    private static Location facing(Location at, Vec3 direction) {
-        if (direction.lengthSquared() == 0) return at;
-        at.setDirection(new Vector(direction.x(), direction.y(), direction.z()));
-        return at;
     }
 
     /**
@@ -698,7 +633,10 @@ public final class PaperCombatWorld implements CombatWorld {
      *       <br>NOT claimed as a visible defect: what a client renders also depends on client-side
      *       ticking and on rotation packets, and neither was read. What is measured is the server
      *       value. It is the reason <i>the later flight was already correct</i> is an OPEN question
-     *       rather than a settled one -- see {@code GATE-arrow-body-orientation.md}.</li>
+     *       rather than a settled one -- see {@code GATE-arrow-body-orientation.md}.
+     *       <br><b>{@link #driveMarker} re-writes the correct yaw every tick</b>, in the
+     *       scheduler phase that runs before both the tracker send and the arrow's own
+     *       tick; the measured order is quoted there.</li>
      *   <li><b>Fire and lava: the body can BURN but is not destroyed.</b> {@code baseTick} handles
      *       fire ticks and lava; an arrow is not a stack that can be consumed, so unlike a flint
      *       marker there is no "the body simply vanishes" case from this axis.</li>
@@ -735,7 +673,7 @@ public final class PaperCombatWorld implements CombatWorld {
      */
     @Override
     public UUID spawnBoltMarker(Vec3 at, Vec3 velocity, int expectedLifetimeTicks) {
-        Arrow body = world.spawn(facing(toLocation(at), velocity), Arrow.class, arrow -> {
+        Arrow body = world.spawn(toLocation(at), Arrow.class, arrow -> {
             // THE ONE SWITCH. Block collision, entity collision, ProjectileHitEvent, in-ground
             // sticking and gravity, all off together -- see this method's javadoc for the gate.
             arrow.setNoPhysics(true);
@@ -769,19 +707,31 @@ public final class PaperCombatWorld implements CombatWorld {
             // first frame and visibly snaps into line a tick later" -- offered as the REASON the
             // velocity is set here, i.e. as though setting it here removed the snap. It does not.
             // The rotation is derived in tick(), so it is still one tick behind this line; what the
-            // spawn frame renders is the LOCATION's yaw and pitch. See facing() above, which is
-            // where that is now supplied.
-            // This line and facing() set DIFFERENT quantities -- motion and rotation -- and reading
-            // them as one is exactly how this shipped.
-            //
-            // *** AND facing() DOES NOT SUPPLY THE ROTATION EITHER. MEASURED 2026-09-22. ***
-            // ARROW's spawn positioner is CraftEntityTypes' MOVE_EMPTY_ROT --
-            // snapTo(x, y, z, 0.0F, 0.0F) -- so the Location's rotation is DISCARDED, and this body
-            // still spawns due south and level. The note above is RIGHT that rotation is the missing
-            // quantity and WRONG that facing() is where it arrives, which is the same mistake one
-            // layer out. The rotation has to be set on THIS entity, in THIS consumer.
-            // See facing()'s javadoc and GATE-arrow-body-orientation.md.
+            // spawn frame renders is the ENTITY's yaw and pitch, and the block below is where that
+            // is supplied. Motion and rotation are DIFFERENT quantities, and reading them as one is
+            // exactly how this shipped.
             arrow.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z()));
+
+            // *** THE ROTATION GOES ON THE ENTITY. A LOCATION'S ROTATION CANNOT REACH AN ARROW. ***
+            //
+            // CraftEntityTypes registers EntityType.ARROW through createAndMoveEmptyRot, whose
+            // positioner is MOVE_EMPTY_ROT -- Entity.snapTo(x, y, z, 0.0F, 0.0F), both floats
+            // constant. A sibling positioner, MOVE, does read SpawnData.yaw() and pitch(); ARROW is
+            // not registered with it. The previous fix here was a facing() helper calling
+            // Location.setDirection: INERT, and it read as working. Measured from the pinned jar
+            // after the boot gate FAILED on 7b5b936.
+            //
+            // AND THIS CONSUMER IS THE RIGHT PLACE, ALSO MEASURED: CraftRegionAccessor.addEntity
+            // calls consumer.accept(getBukkitEntity()) and only THEN addEntityToWorld, so a rotation
+            // written here is in place before any add-entity packet exists -- and that packet's yaw
+            // and pitch are what the FIRST RENDERED FRAME wears.
+            //
+            // The convention is Projectile.shoot's, computed in core: see BodyRotation. The account,
+            // including the four sign conventions, is GATE-arrow-body-orientation.md.
+            BodyRotation spawnRotation = BodyRotation.along(velocity);
+            if (spawnRotation != null) {
+                arrow.setRotation(spawnRotation.yaw(), spawnRotation.pitch());
+            }
 
             // The same tag every other marker carries, and the reason markerOf() below can find
             // this entity without knowing which kind it is.
@@ -882,6 +832,36 @@ public final class PaperCombatWorld implements CombatWorld {
         Entity marker = markerOf(markerId);
         if (marker != null) {
             marker.setVelocity(new Vector(stepVelocity.x(), stepVelocity.y(), stepVelocity.z()));
+
+            // *** AND THE ROTATION IS RE-WRITTEN EVERY TICK, BECAUSE THE PLATFORM UNDOES IT. ***
+            //
+            // AbstractArrow.tick eases the yaw toward atan2(-x, -z) -- REVERSED -- for a noPhysics
+            // arrow, at Mth.lerp(0.2f, ..) a tick, and every bolt body is noPhysics. A single write
+            // at spawn is 20% gone one tick later. This is the correcting write.
+            //
+            // AND THE PHASE IS WHY ONE LINE IS ENOUGH. Measured from the pinned jar's bytecode,
+            // within ONE server tick:
+            //
+            //   MinecraftServer.tickChildren  bc 31   FoliaGlobalRegionScheduler.tick()   <-- HERE
+            //   ServerLevel.tick              bc 436  ServerChunkCache.tick -> ChunkMap.tick()
+            //                                         -> newTrackerTick -> ServerEntity.sendChanges
+            //   ServerLevel.tick              bc 591  EntityTickList.forEach -> the arrow's tick()
+            //
+            // We run BEFORE the tracker sends and BEFORE the arrow ticks, so the value broadcast is
+            // always this one, un-eroded, and the lerp's damage never leaves the server.
+            //
+            // WHAT THIS STILL CANNOT DO: the CLIENT runs the same arrow tick on its own copy, and
+            // ServerEntity.sendChanges only reconsiders rotation when forceStateResync, or
+            // tickCount % updateInterval == 0 -- updateInterval is 20 for EntityType.ARROW -- or the
+            // entity data is dirty. So the server's value reaches a client about every 20 ticks and
+            // the client fills in the rest itself. Nothing server-side can settle what it draws.
+            //
+            // ARROW BODIES ONLY. An Item marker's rotation is not rendered, so asking for it would
+            // be a write with no meaning rather than a harmless one.
+            if (marker instanceof AbstractArrow) {
+                BodyRotation rotation = BodyRotation.along(stepVelocity);
+                if (rotation != null) marker.setRotation(rotation.yaw(), rotation.pitch());
+            }
         }
         // Silently absent is CORRECT here and is a reachable state, not a defensive one: a driven
         // ITEM body is a fully participating item entity, and fire, lava and cactus destroy those.

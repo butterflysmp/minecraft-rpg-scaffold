@@ -1,15 +1,22 @@
 # GATE — The arrow body's first frame
 
-**Status: R1 and R2 FAILED, read 2026-09-22 on `7b5b936`. R0 NOT RUN.** Every prediction was
+**Status: R1 and R2 FAILED, read 2026-09-22 on `7b5b936`, and CLOSED. R0 and R3-R7 NOT RUN.** Every prediction was
 written BEFORE any boot and no prediction is edited once a row has been read. Readings go in the
 `READ` cell beside the prediction they answer.
 
 ```
-FAIL      2   R1 R2    -- read 2026-09-22, bound to 7b5b936
-NOT RUN   1   R0
+FAIL      2   R1 R2                 -- read 2026-09-22, bound to 7b5b936, CLOSED
+NOT RUN   6   R0 R3 R4 R5 R6 R7     -- written before any boot of the new tip
          ──
-         3   = git grep -c '^### R' <ref> -- GATE-arrow-body-orientation.md
+         8   = git grep -c '^### R' <ref> -- GATE-arrow-body-orientation.md
 ```
+
+> **THE BOOT SHA WAS REWRITTEN BY A REBASE, 2026-09-23.** R1 and R2 were read on **`7b5b936`**,
+> which is the SHA Ben booted, and that is what the readings stay bound to. The branch was then
+> rebased onto `d125507`, so that commit lives at **`90b2037`** now and `7b5b936` is unreachable
+> on the branch. **The reading keeps the SHA that was actually booted** -- renaming it to
+> `90b2037` would claim a boot that never happened -- and the mapping is recorded here so the
+> tree can still be found.
 
 **GAME MODE: SURVIVAL**, for every row. Nothing here is a cost, so no creative divergence applies —
 declared anyway, per the standing debt in `CLAUDE.md`.
@@ -59,9 +66,11 @@ is a JRE shim with no `javap`.
 
 | | |
 |---|---|
-| **Setup** | `Copy-Item run/plugins/rpg-<ver>.jar "$env:TEMP\deployed.zip" -Force`<br>`Expand-Archive "$env:TEMP\deployed.zip" -DestinationPath "$env:TEMP\deployed" -Force`<br>`$classes = Get-ChildItem "$env:TEMP\deployed\io\github\butterflysmp\rpg" -Recurse -Filter *.class`<br>`Write-Host "$($classes.Count) class files scanned"`<br>`$classes \| Select-String -Pattern 'setDirection' -Encoding ascii \| Select-Object -ExpandProperty Path` |
+| **Setup** | `Copy-Item run/plugins/rpg-<ver>.jar "$env:TEMP\deployed.zip" -Force`<br>`Expand-Archive "$env:TEMP\deployed.zip" -DestinationPath "$env:TEMP\deployed" -Force`<br>`$classes = Get-ChildItem "$env:TEMP\deployed\io\github\butterflysmp\rpg" -Recurse -Filter *.class`<br>`Write-Host "$($classes.Count) class files scanned"`<br>`$classes \| Select-String -Pattern 'setDirection' -Encoding ascii \| Select-Object -ExpandProperty Path`<br>`$classes \| Select-String -Pattern 'BodyRotation' -Encoding ascii \| Select-Object -ExpandProperty Path` |
 | **Predict** | **The class count is NON-ZERO and is reported.** It is the no-op value: `0 scanned` means the unpack failed, and an absence underneath a zero means nothing. |
-| **Predict** | `setDirection` is found in **`PaperCombatWorld.class`**. A **0** means the deployed jar predates this fix, whatever its mtime says. |
+| **Predict** | *** THE NEEDLES ARE INVERTED FROM THIS ROW'S FIRST VERSION, AND R0 HAS NEVER BEEN READ. *** The first version predicted `setDirection` PRESENT, because the fix then routed the rotation through `Location.setDirection`. That fix was measured INERT and is deleted, so the needle it named is now the ABSENT one. **Rewriting a prediction is legal here only because this row carries no reading** -- see R1 and R2, which do, and are closed rather than re-pointed. |
+| **Predict** | **`setDirection` is found in NOTHING: zero hits across every scanned class.** A hit means the deleted helper is back, or the jar predates this slice. |
+| **Predict** | **`BodyRotation` is found in `PaperCombatWorld.class`** -- the PRESENT needle, and a symbol that exists only because of this slice. A `BodyRotation.class` of its own is in the jar too, under `io/github/butterflysmp/rpg/core/combat/`, and the scan above walks `io/github/butterflysmp/rpg`, so it sees both. **Zero hits means the deployed jar predates this slice, whatever its mtime says.** |
 | **Predict** | `-Encoding ascii` is load-bearing: a `.class` is binary and a text-mode read will not find a constant-pool string. |
 | **Predict** | **STATE WHICH TREE THE JAR WAS BUILT FROM.** There is a second worktree at `C:/Users/Neb91/IdeaProjects/rpg-12b`, and that ambiguity cost a boot on 2026-09-20. |
 | **READ** | _(NOT RUN)_ |
@@ -95,6 +104,134 @@ the largest error the defect could produce and the easiest to see.
 | **Predict** | **Both, not one.** A sign error in the pitch reaches one and not the other. |
 | **Predict** | **It does not point at the FLOOR when fired up.** `Location.setDirection` on a zero vector writes `pitch = 90` — straight down — and a guard leaves a zero direction alone instead. No caller produces one today; this predicts the guard is not firing spuriously. |
 | **READ** | **FAIL — 2026-09-22, on `7b5b936`.** Same boot, same ruling, no figures. <br><br>**The third prediction is now known to have been UNREADABLE on this tip**, which is not the same as its being wrong: `facing()`'s rotation never reaches the arrow at all, so the zero-vector guard could neither fire nor fire spuriously. See *WHY BOTH ROWS FAILED* below. |
+
+---
+
+## R1 AND R2 ARE CLOSED AT FAIL AND ARE NOT RE-READ
+
+**They were read on `7b5b936`, where the fix was inert, and their readings stand.** The rows below
+replace them on the new tip: R1's staging was EAST-or-WEST *at the muzzle*, and R2's third prediction
+rested on a zero-vector guard that no longer exists. **Re-pointing a row that has been read is exactly
+what the no-edit-after-reading rule forbids**, so they are left closed and new rows are written
+instead — before the boot, as every prediction in this file was.
+
+**WHAT CHANGED IN THE CODE, so the rows below can be read against something:** the rotation is now
+computed in `core` (`BodyRotation.along`, the `Projectile.shoot` convention) and written to the
+**ENTITY** at two sites — `Entity#setRotation` inside the spawn consumer, and again in `driveMarker`
+**every tick**. `facing()` and `Location.setDirection` are deleted.
+
+---
+
+### R3 — *** AN EAST BOLT POINTS EAST FOR ITS WHOLE FLIGHT, NOT JUST AT THE MUZZLE ***
+
+**This is the row R1 should have been.** R1 watched the muzzle, because the diagnosis was a one-frame
+defect. It is not one frame: the platform's easing is unconditional, and for a `noPhysics` arrow its
+target is the REVERSED yaw, so the interesting question is what the body does over a second of flight.
+
+| | |
+|---|---|
+| **Setup** | `/rpg give dragons_plume`. Plain arrow in the off-hand (R5's workaround). Fire a **tap** (held 3–8 ticks) aimed **EAST**, along a long sightline, and **watch the bolt all the way out** — not the first frame. |
+| **Predict** | **It points along its travel from the frame it appears AND STAYS THERE.** No flick at the muzzle, and **no slow swing** over the following second. |
+| **Predict** | **THE SLOW SWING IS THE READING THAT MATTERS, AND IT IS NEW.** If the body starts correct and turns to point backwards over roughly ten ticks, the per-tick write is not landing — or is landing and losing. That is a different failure from the muzzle flick and has a different cause; **say which of the two you saw.** |
+| **Predict** | **East is staged because it is NOT a no-op of either mirror.** The look-convention mirror leaves north and south alone; the `noPhysics` flip leaves east and west alone **in the server's own target** but not in what a correct fix must write. East fails visibly under the first and is the direction R1 was staged on, so it is the continuity reading. |
+| **READ** | _(NOT RUN)_ |
+
+---
+
+### R4 — SOUTH-EAST, THE ONLY STAGING THAT SEPARATES ALL THREE CONVENTIONS
+
+**Added because R1 could not have failed under the rival hypothesis, and that was a defect in the gate
+rather than in the code.** R1's staging (east/west) and its south control agree with each other on one
+of the three candidate conventions each. **South-east agrees with none of them**, so it is the one shot
+whose reading names which convention is live.
+
+Yaw in degrees, for a velocity in each direction — computed, not eyeballed:
+
+| shot | `Projectile.shoot` (correct) | `Location.setDirection` (the inert fix) | the `noPhysics` tick target |
+|---|---|---|---|
+| **south** | `0` | `0` | `180` |
+| **east** | `90` | `270` | `90` |
+| **south-east** | `45` | `315` | `225` |
+
+| | |
+|---|---|
+| **Setup** | Same weapon and setup. Fire a tap aimed **SOUTH-EAST** — diagonally, roughly 45° between south and east — and watch the bolt out. |
+| **Predict** | **The bolt points SOUTH-EAST.** Not south-west (the look-convention mirror), and not north-west (the `noPhysics` flip). **Three distinguishable answers, and only one of them is a pass.** |
+| **Predict** | **NAME WHICH WAY IT POINTED IF IT IS WRONG.** A bare *"wrong"* here loses the whole value of the row: the direction identifies the convention, and that is the only cheap diagnosis available. |
+| **READ** | _(NOT RUN)_ |
+
+---
+
+### R5 — Straight up and straight down, where the pitch error is largest
+
+**The pitch is the half of the old convention error that the look convention also got wrong**, and a
+vertical shot is where ninety degrees of it is unmissable.
+
+| | |
+|---|---|
+| **Setup** | Same weapon and setup. Fire a tap straight **UP**, then straight **DOWN** at the floor. Watch each for a full second. |
+| **Predict** | **The arrow points UP, then DOWN, from the frame it appears and for the whole flight.** |
+| **Predict** | **BOTH, NOT ONE.** A sign error in the pitch reaches one and not the other, and the two rows are one boot apart. |
+| **Predict** | **The yaw carries no information on a vertical shot** — with no horizontal component it is a roll about the body's own axis. `BodyRotation` pins it at 0 so a change is deliberate; **do not read anything into the fletching's orientation here.** |
+| **READ** | _(NOT RUN)_ |
+
+---
+
+### R6 — SOUTH, AND THIS TIME THE CONTROL CAN FAIL
+
+**R1's south shot was a control that could not fail, and this row is the correction.** Under the
+look-convention mirror, south is the **no-op value**: yaw `0` under both conventions, so a south bolt
+read as a clean pass with the defect fully present. **That is not true of the `noPhysics` flip.**
+
+> **A SOUTH BOLT UNDER THE FLIP POINTS NORTH.** The flip's target is `atan2(-x, -z)`, which for
+> `(0, 0, +1)` is `180` — due north — against the correct `0`. **So south is the no-op of the mirror
+> and the WORST CASE of the flip**, and a row staged south now separates "the per-tick write works"
+> from "the platform's easing wins".
+
+| | |
+|---|---|
+| **Setup** | Same weapon and setup. Fire a tap aimed **SOUTH** and watch the bolt out for a full second. |
+| **Predict** | **It points SOUTH for the whole flight.** |
+| **Predict** | **IF IT TURNS TO POINT NORTH, THE PLATFORM'S EASING IS WINNING** — the write is being overwritten, or is not reaching the client. That is the most diagnostic single reading in this file, and it is available from one shot. |
+| **Predict** | **THIS ROW IS NOT A NO-OP AND THE PREVIOUS SOUTH ROW WAS.** Stated here because the two look identical in the log: *"fired south, looked right"* means nothing on `7b5b936` and everything on this tip. |
+| **READ** | _(NOT RUN)_ |
+
+---
+
+### R7 — *** THE LAYER ROW: NOTHING SERVER-SIDE CAN SEE WHAT THE CLIENT DRAWS ***
+
+**Every other row in this file is read with eyes on a client, and the fix is written on a server.** This
+row exists because the gap between those two is measured to be real, and no amount of reading the
+server jar closes it.
+
+**WHAT IS MEASURED, from the pinned build:**
+
+```
+MinecraftServer.tickChildren  bc 31   FoliaGlobalRegionScheduler.tick()   <- driveMarker runs here
+ServerLevel.tick              bc 436  ServerChunkCache.tick -> ChunkMap.tick()
+                                      -> newTrackerTick -> ServerEntity.sendChanges()
+ServerLevel.tick              bc 591  EntityTickList.forEach -> AbstractArrow.tick()
+```
+
+`ServerEntity.sendChanges` reconsiders rotation only when `forceStateResync`, or
+`tickCount % updateInterval == 0`, or `needsSync`, or the entity data is dirty — and
+**`EntityType.ARROW` is built with `updateInterval(20)`**, while `needsSync` is set by `setPosRaw`
+only for types whose interval is `Integer.MAX_VALUE`. **So the server's yaw reaches a client roughly
+once every twenty ticks, and the client fills in the other nineteen itself.**
+
+**WHAT IS NOT MEASURED, AND IS NOT GUESSED AT HERE:** the client runs the same `AbstractArrow.tick`
+on its own copy, and whether it takes the flipped branch depends on `isNoPhysics()` — **a field the
+server does not sync.** So the client's copy probably computes the UNflipped `atan2(x, z)`, which is
+the correct convention, and would then agree with our write. **That is reasoning, not a reading**, and
+the client is not in this jar. **This row is what settles it.**
+
+| | |
+|---|---|
+| **Setup** | Any of R3–R6, watched for **several seconds** on a long flight rather than a short one. The Plume's charged release is the longest-lived body available. |
+| **Predict** | **The body's heading does not drift, oscillate, or snap periodically.** A **periodic** correction — a visible twitch roughly once a second — would be the twenty-tick sync arriving and disagreeing with what the client had drawn in between. |
+| **Predict** | *** IF THE BOLT STILL FLIES BACKWARDS ON THIS BUILD, THE SERVER'S ROTATION IS LOSING TO THE CLIENT'S OWN TICK, AND THE FIX IS IN THE WRONG LAYER. *** No further server-side write helps: `driveMarker` already runs in the earliest phase of the tick and already precedes both the send and the arrow's own tick. **The next move would be a packet, not a setter** — which crosses into PacketEvents and needs a ruling, not a patch. |
+| **Predict** | **AND A PASS HERE DOES NOT PROVE THE MECHANISM, ONLY THE OUTCOME.** If the bolts look right, we still will not know whether it is our write or the client's own arithmetic doing it. **Record that as a pass with the mechanism unresolved**, rather than as confirmation of the paragraph above. |
+| **READ** | _(NOT RUN)_ |
 
 ---
 
