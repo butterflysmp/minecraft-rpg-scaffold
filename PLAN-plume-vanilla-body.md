@@ -6,35 +6,62 @@ before it was closed unmerged, the measurements that decide the design, and a re
 
 ---
 
-## THE RULING — Ben, 2026-09-23
+## THE RULINGS — Ben, 2026-09-23
 
-> **SPIKE MODE D IS THE LOOK.** The Plume body is a real vanilla arrow: spawned with
-> `world.spawnArrow`, **physics ON**, **gravity ON**, and **NOT driven per tick**.
+> **MODE E IS THE LOOK** — *"perfect, exactly what we're looking for."* And **mode B** *"still has the
+> problem."*
+>
+> **THIS SLICE GOES WITH OPTION (1-prime):** the Plume body is a real vanilla arrow, spawned with
+> `world.spawnArrow`, **physics ON**, **gravity ON**, and **DRIVEN** by `driveMarker` every tick.
 
-**THIS REVERSES SLICE K (`#90`)'s INERT-BODY DESIGN.** That slice's whole argument was that the body
-is decoration and must be unable to affect anything: `setNoPhysics(true)` as *"THE ONE SWITCH"*, no
-collision, no hit event, no in-ground sticking, and a velocity driven by us every tick. **The ruling
-keeps the visual requirement and discards the mechanism**, so every guarantee that switch bought has
-to be re-established by other means or given up deliberately. The list is in *WHAT OPTION (1) COSTS*
-below.
+**No figures** — Ben's ruling of 2026-09-20.
 
-### WHAT WAS AND WAS NOT REPORTED, STATED BECAUSE THE DIFFERENCE IS THE WHOLE VALUE OF THE SPIKE
+> **AN EARLIER RULING NAMED MODE D AND IS SUPERSEDED, NOT CONTRADICTED.** On the same day Ben first
+> ruled *"spike mode D is the look"* — `spawnArrow`, physics ON, gravity ON, **NOT driven** — before
+> mode E existed. E is D plus the driving, E reads *perfect*, and **E is what ships.** D's reading is
+> not withdrawn; it was simply the best shape available when it was made.
+
+### *** THE ATTRIBUTION IS NOW COMPLETE, AND IT COST ONE MORE MODE ***
+
+**`setNoPhysics(true)` CAUSED THE ORIGINAL DEFECT.**
+
+**E and B differ in that ONE line.** Both are `world.spawnArrow`. Both are driven by `driveMarker`
+every tick. B sets `setNoPhysics(true)`; E does not. **B swings and E is straight.** That is a
+one-variable pair with opposite readings, so it is an attribution rather than an inference.
+
+> **AND IT CLOSES A QUESTION THAT WAS EXPLICITLY LEFT OPEN.** The first four modes were designed
+> around the pair *(A wrong, C/D right)*, and **A and C were never reported**, so that pair could not
+> conclude anything. This file said so in those words. **The B/E pair is a better instrument than the
+> one the spike was designed around**: A differs from C and D in *three* variables (spawn path,
+> physics, driving), while B differs from E in one.
+>
+> **The lesson is about the design of the spike rather than about arrows:** the modes were laid out as
+> a chain in which each step changed one thing *from its neighbour*, and the pair that actually
+> answered the question was **not adjacent in that chain** — it was B and E, which sit at opposite ends
+> of it. **A chain of single-variable steps does not guarantee that any two of its members form a
+> single-variable pair.** Ask which pair isolates the suspect, then build for that pair.
+
+### WHAT WAS AND WAS NOT REPORTED
 
 | mode | shape | reading |
 |---|---|---|
 | **A** | `world.spawn` + `setNoPhysics(true)` + `setRotation` + driven | **NOT REPORTED** |
-| **B** | `world.spawnArrow` + `setNoPhysics(true)` + driven | **NOT REPORTED** |
+| **B** | `world.spawnArrow` + `setNoPhysics(true)` + driven | ***"still has the problem"*** |
 | **C** | `world.spawnArrow`, physics ON, gravity OFF, not driven | **NOT REPORTED** |
-| **D** | `world.spawnArrow`, physics ON, gravity ON, not driven | **THE LOOK** — operator's ruling |
+| **D** | `world.spawnArrow`, physics ON, gravity ON, not driven | **the look**, superseded by E |
+| **E** | `world.spawnArrow`, physics ON, gravity ON, **DRIVEN** | ***"perfect, exactly what we're looking for"*** — **SHIPS** |
 
-> ***A, B AND C ARE NOT READINGS AND MUST NOT BE INFERRED FROM D.*** D being the look does not make
-> A wrong, B wrong or C wrong; it makes them **unread**. The spike's own decision table needed the
-> pair *(A wrong, C/D right)* to conclude that `noPhysics` is the cause, and **that pair was never
-> completed.** So the cause of the original defect remains **unattributed** — what is settled is
-> which shape Ben wants, which is a different question and the one that matters for shipping.
->
-> `spike/plume-body-modes` (`f8274e9`) is kept until this slice lands. **It is the evidence**, and it
-> is the only place A, B and C can still be read if anyone wants the attribution.
+> ***A AND C ARE STILL NOT READINGS AND MUST NOT BE INFERRED.*** E shipping does not make A wrong or
+> C wrong; it makes them **unread**, and they stay that way — **the question they were staged to answer
+> has been answered by B and E instead**, so nobody needs to boot them. `spike/plume-body-modes`
+> (`850db75`) carries all five until the slice lands.
+
+**THIS REVERSES SLICE K (`#90`)'s INERT-BODY DESIGN.** That slice's whole argument was that the body is
+decoration and must be unable to affect anything: `setNoPhysics(true)` as *"THE ONE SWITCH"*, no
+collision, no hit event, no in-ground sticking. **The ruling keeps the visual requirement and discards
+the mechanism**, so every guarantee that switch bought has to be re-established by other means or given
+up deliberately — and the driving, which slice K also introduced, is **kept**. The list is in *WHAT
+OPTION (1) COSTS* and *what it still owes* below.
 
 ---
 
@@ -253,7 +280,7 @@ physics on too:
 
 #### The condition, stated so the ranking is falsifiable
 
-**(1-prime) replaces (1) only if mode E reads STRAIGHT.** `spike/plume-body-modes` carries it as
+**(1-prime) replaced (1) BECAUSE mode E read STRAIGHT** -- *"perfect, exactly what we're looking for"*, against mode B's *"still has the problem"*. `spike/plume-body-modes` carries it as
 `/plumebody e`, with the prediction written before the boot. **And the pair that decides it is B and E,
 not A and D:** both are `spawnArrow` and both are driven, so they differ in `noPhysics` **alone** —
 which is the attribution the A/C/D combination was meant to deliver and never did.
@@ -272,13 +299,16 @@ custom health store, element accrual, crit roll and damage-popup path hangs off 
 what a `body: arrow` weapon *is* — every non-arrow body (`spawnMarker`'s items) would still resolve
 through core, so the engine would have two damage paths keyed on the body kind.
 
-## RECOMMENDATION: (1-prime) FIRST, (1) AS ITS FALLBACK, (2) LAST
+## DECIDED: OPTION (1-prime). THE CONDITION IT WAITED ON HAS BEEN READ.
 
-**RANKED 2026-09-23, and the ranking is conditional on ONE boot row.**
+**RANKED 2026-09-23, AND NO LONGER CONDITIONAL.** The row it waited on is read: mode E is
+*"perfect, exactly what we're looking for"* and mode B *"still has the problem"*. **(1-prime)**
+ships; the other two are kept below because the reasoning against them is what makes the choice
+checkable.
 
 | rank | option | conditional on | cost |
 |---|---|---|---|
-| **1st** | **(1-prime)** -- real arrow, DRIVEN | **spike mode E reading straight** | the physics costs only: hit cancel, block-stick, the lost detector. **`core/` untouched.** |
+| ***SHIPS*** | **(1-prime)** -- real arrow, DRIVEN | **READ: mode E is *"perfect"*** | the physics costs only: hit cancel, block-stick, the pickup guard going live. **`core/` untouched.** |
 | 2nd | (1) -- real arrow, not driven | nothing; it is the ruling as written | the same physics costs **PLUS** drag in `core/`, a re-ruled reach, and ten casts moving |
 | 3rd | (2) -- the arrow is the authority | nothing | forks the damage path permanently |
 
@@ -286,7 +316,7 @@ through core, so the engine would have two damage paths keyed on the body kind.
 being on, and none of the cost that comes from the two paths disagreeing -- because driven, they
 do not disagree. **If E reads straight, there is no argument for (1) over it.**
 
-**THE RULING NAMES D, NOT E, AND THAT IS WORTH SAYING OUT LOUD.** Ben ruled *"physics ON, gravity
+**THE FIRST RULING NAMED D AND IS SUPERSEDED, WHICH IS RECORDED RATHER THAN TIDIED.** Ben first ruled *"physics ON, gravity
 ON, NOT driven"*. (1-prime) keeps the driving, so **it is a variation on the ruled shape rather
 than the ruled shape** -- and it is offered because the old project drove its arrow and because
 the alternative is changing `core/`. **If the ruling meant the body must fly on vanilla physics as
