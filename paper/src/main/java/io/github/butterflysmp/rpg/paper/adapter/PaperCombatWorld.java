@@ -646,48 +646,91 @@ public final class PaperCombatWorld implements CombatWorld {
      */
     @Override
     public UUID spawnBoltMarker(Vec3 at, Vec3 velocity, int expectedLifetimeTicks) {
-        Arrow body = world.spawn(toLocation(at), Arrow.class, arrow -> {
-            // THE ONE SWITCH. Block collision, entity collision, ProjectileHitEvent, in-ground
-            // sticking and gravity, all off together -- see this method's javadoc for the gate.
-            arrow.setNoPhysics(true);
+        // *** world.spawnArrow, NOT world.spawn -- AND THE DIFFERENCE IS NOT STYLE. ***
+        //
+        // CraftWorld.spawnArrow is a different construction path end to end, read from the pinned
+        // jar: EntityType.ARROW.create directly rather than the CraftEntityTypes table, snapTo WITH
+        // the Location's rotation rather than snapTo(x, y, z, 0.0F, 0.0F), and AbstractArrow.shoot,
+        // which writes setYRot(atan2(x, z)) / setXRot(atan2(y, h)) ITSELF from the direction.
+        //
+        // SO NOTHING HERE COMPUTES A ROTATION, AND NOTHING SHOULD. Two earlier fixes did -- one onto
+        // a Location, which MOVE_EMPTY_ROT discards for an arrow, and one onto the entity, which
+        // landed and was still wrong. shoot() supplies it. See GATE-plume-vanilla-body.md.
+        //
+        // The direction and the speed reproduce the old displacement exactly: shoot normalises the
+        // direction and scales it by the speed, so passing the velocity as the direction and its own
+        // length as the speed gives the same vector back, with spread 0.
+        Arrow body = world.spawnArrow(toLocation(at),
+                new Vector(velocity.x(), velocity.y(), velocity.z()),
+                (float) Math.sqrt(velocity.lengthSquared()), 0.0f, Arrow.class);
 
-            // NOT redundant with the line above, and not a substitute for it either: applyGravity
-            // is suppressed by BOTH, and neither alone should have to be right.
-            arrow.setGravity(false);
+        // *** DO NOT ADD setNoPhysics(true) BACK. IT IS THE DEFECT, MEASURED. ***
+        //
+        // Spike modes B and E differ in that one line -- both world.spawnArrow, both driven by
+        // driveMarker every tick -- and the operator read B as "still has the problem" and E as
+        // "perfect, exactly what we're looking for". A one-variable pair with opposite readings is
+        // an attribution, not an inference.
+        //
+        // AND NO UNIT TEST GUARDS THIS. Measured: splicing setNoPhysics(true) back in reddens
+        // NOTHING in a 2000-row suite, because every consequence is a rendered frame. Its sole
+        // witness is GATE-plume-vanilla-body.md's EAST row. That is why this comment is long: it is
+        // the only thing standing between the next tidy-up and a re-shipped defect.
+        //
+        // WHAT THE LINE USED TO BUY, AND WHERE EACH GUARANTEE WENT:
+        //   block collision       GONE. The body now collides and sticks -- see the stick note below.
+        //   entity collision      replaced by RpgListeners.onPlumeBodyHit, which cancels the event.
+        //   ProjectileHitEvent    now RAISED, and cancelled for a tagged body. That is the mechanism.
+        //   in-ground sticking    now HAPPENS, and the armed lifetime removes the body -- see below.
+        //   gravity               now APPLIES, and is inert: driveMarker overwrites the velocity
+        //                         before the arrow's own gravity can reach a move.
 
-            // *** LOAD-BEARING. playerTouch's guard is `isInGround() OR isNoPhysics()`, so the line
-            // above just OPENED a mid-air pickup path that no ordinary arrow has. Deleting this as
-            // redundant mints a free arrow per shot. ***
-            arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+        // *** LOAD-BEARING, AND MORE SO THAN IT WAS. ***
+        //
+        // playerTouch's guard is `isInGround() OR isNoPhysics()`. Under the old switch the SECOND
+        // disjunct was always true, so the body was pickable in MID-AIR and this line was what
+        // refused it. Now the second disjunct is always FALSE and the FIRST one goes live the instant
+        // the body sticks in a block: a stuck arrow is a pickable arrow, and without this line every
+        // bolt that meets a wall mints a free arrow for whoever walks into it.
+        //
+        // The hazard moved from mid-air to in-ground. It did not go away.
+        body.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
 
-            // Belt on the same trousers: a body that somehow resolved a hit would deal zero.
-            arrow.setDamage(0.0);
-            arrow.setKnockbackStrength(0);
-            arrow.setCritical(false);
+        // Belt on the same trousers: a body that somehow resolved a hit would deal zero. These are
+        // not the mechanism -- onPlumeBodyHit is -- and they are kept because the mechanism is a
+        // cancelled event and a cancelled event is one listener registration away from not happening.
+        body.setDamage(0.0);
+        body.setKnockbackStrength(0);
+        body.setCritical(false);
 
-            // No shooter. castRay owns every hit; an owner would only give vanilla a reason to
-            // treat this as somebody's arrow in whatever path we have not read.
-            arrow.setShooter(null);
-            arrow.setPersistent(false);              // unload backstop, exactly as configureMarker
+        // No shooter. castRay owns every hit; an owner would only give vanilla a reason to treat this
+        // as somebody's arrow in whatever path we have not read.
+        body.setShooter(null);
+        body.setPersistent(false);              // unload backstop, exactly as configureMarker
 
-            // THE LAUNCH VELOCITY IS PART OF CREATING THIS BODY, NOT SOMETHING DONE TO IT AFTER.
-            // An arrow's rotation is derived from its own deltaMovement inside its own tick, so a
-            // body spawned still has no direction on its first frame and visibly snaps into line a
-            // tick later. This is the exact inverse of configureMarker's zeroing rule, which is
-            // right for items and wrong here -- see CombatWorld.spawnBoltMarker.
-            arrow.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z()));
+        // The same tag every other marker carries, and the reason markerOf() below can find this
+        // entity without knowing which kind it is. *** AND onPlumeBodyHit READS IT ***, so it is now
+        // load-bearing for the hit cancel as well as for the lookup.
+        body.getPersistentDataContainer()
+                .set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);
 
-            // The same tag every other marker carries, and the reason markerOf() below can find
-            // this entity without knowing which kind it is.
-            arrow.getPersistentDataContainer()
-                    .set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);
-
-            // ARMED SELF-DESTRUCT -- config-independent by construction. See ARMED_ARROW_LIFETIME.
-            // expectedLifetimeTicks is deliberately NOT read: unlike the item path there is no
-            // arithmetic to do, because we cannot influence WHEN the first despawn tick arrives,
-            // only that it is fatal when it does.
-            arrow.setLifetimeTicks(ARMED_ARROW_LIFETIME);
-        });
+        // *** ARMED SELF-DESTRUCT, AND IT IS NOW THE STICK CLEANUP TOO. ***
+        //
+        // shoot() sets life = 0, so this must come AFTER the spawn rather than inside a consumer.
+        //
+        // READ BEFORE CHOOSING, rather than reaching for a poll: when a driven arrow sticks,
+        // AbstractArrow.tick takes the in-ground branch, calls tickDespawn() and RETURNS EARLY --
+        // before the move, before the rotation, before the inertia. tickDespawn is `life++; if (life
+        // >= <config despawn rate>) discard(DESPAWN)`, and life is armed at Integer.MAX_VALUE - 1,
+        // so the FIRST in-ground tick discards the body whatever that config says.
+        //
+        // AND DRIVING DOES NOT UN-STICK IT: CraftEntity.setVelocity is a plain setDeltaMovement plus
+        // hurtMarked, and it does not touch inGround. Only lerpMotion and startFalling clear that,
+        // and we call neither.
+        //
+        // SO NO STICK-CLEANUP CODE IS NEEDED. The body is visible in the wall for ONE TICK. A poll,
+        // a listener or a scheduled sweep would all be a second mechanism for something the armed
+        // lifetime already does in one tick, and the second mechanism is the one that rots.
+        body.setLifetimeTicks(ARMED_ARROW_LIFETIME);
         return body.getUniqueId();
     }
 
