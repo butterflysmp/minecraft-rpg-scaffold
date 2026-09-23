@@ -200,10 +200,17 @@ the opposite because the material suggests it.**
   > day it landed. It shipped in one PR and was copied into `lapis_staff.yml` in the next. Only a
   > gate row that physically stacked two staves caught it.
 
-- **NEW CONTENT CITES THE BOLTOR, NOT `hunters_bow`, `ironblade` OR `quiver_stone`.** Those three are
-  **in a deletion set** (ruled 2026-09-12, parked on *enough shipped weapons to replace them* — see
+- **NEW CONTENT CITES THE BOLTOR, NOT `hunters_bow`, `ironblade`, `quiver_stone` OR `ability_stone`.**
+  Those **four** are **in a deletion set**, parked on *enough shipped weapons to replace them* (see
   `NEXT.md`). Every citation of one written between now and then is a comment that will point at a
   file that does not exist.
+
+  **THE SET WAS RULED IN TWO SITTINGS, AND THE DATES ARE KEPT SEPARATE BECAUSE THE MEASUREMENTS
+  BELOW ARE.** `hunters_bow`, `ironblade` and `quiver_stone` — **2026-09-12**. `ability_stone` —
+  **2026-09-22**, Ben, closing `GATE-gearscore.md`'s open flag: the 2026-09-21 *leave the stones
+  scored* ruling rested on their being *"on their way out"*, which was true of `quiver_stone`, true
+  of `volley_stone` by another mechanism, and **queued nowhere for `ability_stone`.** Adding it makes
+  the premise true of all three rather than an assumption about one.
 
   **When a dev weapon is genuinely the only precedent, cite it AND MARK the citation** as standing on
   a weapon in the deletion set, so the eventual sweep finds it by **grepping for the marker** instead
@@ -212,12 +219,23 @@ the opposite because the material suggests it.**
   > **THE PLAN HAS A LOOP IN IT AND THIS IS THE FREE HALF OF THE FIX.** The precondition for deleting
   > the dev weapons is **more real weapons** — and new weapons are also **what adds references to the
   > dev weapons**, because the dev weapons are the precedents new prose derives from. `boltor.yml`,
-  > the newest weapon in the project, **cites all three.** So every weapon authored between now and
-  > the deletion raises the deletion's cost.
+  > the newest weapon in the project, **cites all three of the 2026-09-12 set.** So every weapon
+  > authored between now and the deletion raises the deletion's cost.
   >
   > It compounds quietly because it is **staleness, not breakage**: nothing fails, nothing is listed,
   > and the bill arrives later as a sweep nobody scoped. Measured at `2a3fb68`: **every mention of
   > these three in `main` is a comment except one**, so the deletion's real cost is prose, not code.
+  >
+  > **THAT FIGURE COVERS THE 2026-09-12 THREE AND NOTHING ELSE — IT WAS TAKEN BEFORE THE FOURTH
+  > EXISTED, so folding `ability_stone` into it would extend a measurement over a member it never
+  > looked at.** Measured separately at `35f5a2a`, 2026-09-22:
+  > `git grep -h ability_stone -- '*/src/main/java/*'` returns **13** lines and **all 13 are
+  > comments, 0 code** (`grep -cE '^[[:space:]]*(\*|//|/\*)'`, controlled against a code line, which
+  > it correctly does not count). Same shape as the other three: the cost is prose.
+  >
+  > **`boltor.yml` does NOT cite `ability_stone`** — measured `0` at the same revision, against
+  > `hunters_bow 7`, `quiver_stone 7`, `ironblade 2`. **So the newest weapon raises the cost of the
+  > first three and not of the fourth**, which is the one thing the loop above does not predict.
 
   **TWO THINGS TO KNOW ABOUT THE BOLTOR, SINCE IT IS NOW THE REFERENCE POINT:**
 
