@@ -105,6 +105,7 @@ import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -472,21 +473,70 @@ public final class RpgListeners implements Listener {
     }
 
     /**
-     * THE ARROW BODY MUST NEVER DEAL DAMAGE, AND ITS FIRING IS THE SIGNAL.
+     * *** THE ENTITY-HIT CANCEL. THIS IS THE MECHANISM, AND IT IS NEW. ***
+     *
+     * <p>The Plume's body is a REAL vanilla arrow now -- physics on, so it finds hit entities and
+     * raises this event. {@code castRay} owns every hit in this engine, so a hit FROM the body would
+     * be a second, competing resolution: damage the ability never authored, on a target the flight
+     * may not have chosen, plus vanilla knockback and the arrow's own removal.
+     *
+     * <h2>WHY CANCELLING IS ENOUGH, MEASURED FROM THE PINNED JAR</h2>
+     *
+     * <p>{@code Projectile.preHitTargetOrDeflectSelf} raises this event and then reads its own
+     * {@code hitCancelled} flag: <b>if it is set, {@code hitTargetOrDeflectSelf} is never called</b>,
+     * so {@code onHit} and {@code AbstractArrow.onHitEntity} never run. That one method is where
+     * {@code hurtOrSimulate}, {@code doKnockback} and {@code discard} all live. <b>Cancelling
+     * removes all three at once.</b>
+     *
+     * <h2>*** WHAT IT DOES NOT PREVENT, AND THE GATE ROW SAYS SO RATHER THAN PROMISING OTHERWISE ***</h2>
+     *
+     * <p>{@code stepMoveAndHit} calls {@code setPos(firstHit.getLocation())} <b>BEFORE</b> the event
+     * is raised. So a mob in the path still CLAMPS the body to its surface for that tick -- a
+     * one-tick hitch of up to the bolt's per-tick step, which is 2.5 blocks on the Plume. The next
+     * tick {@link PaperCombatWorld#driveMarker} sets the velocity again and the body flies on, so it
+     * passes through rather than stopping. <b>A pass-through is not a clean pass-through</b>, and the
+     * boot row is what says whether that hitch is visible.
+     *
+     * <p>{@code ENTITY} only. A BLOCK hit is left alone deliberately: the body is meant to stick, and
+     * the armed lifetime removes it on the next tick -- see {@code spawnBoltMarker}.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onPlumeBodyHit(ProjectileHitEvent event) {
+        if (event.getHitEntity() == null) return;               // a block hit is not ours to refuse
+        if (!event.getEntity().getPersistentDataContainer()
+                .has(adapters.keys().markerEntity, PersistentDataType.BYTE)) {
+            return;
+        }
+        // SILENT. Unlike the backstop below, this firing is the NORMAL case -- every bolt that meets
+        // a mob raises it -- so a log line here would be one per hit rather than a signal.
+        event.setCancelled(true);
+    }
+
+    /**
+     * THE ARROW BODY MUST NEVER DEAL DAMAGE, AND ITS FIRING IS STILL THE SIGNAL.
      *
      * <p>{@code castRay} owns every hit in this engine. The body is decoration driven along the
      * segment the ray already traced, so a hit FROM it would be a second, competing resolution --
      * damage the ability never authored, on a target the flight may not have chosen.
      *
-     * <p>With {@code setNoPhysics(true)} there is no route to it at all: {@code stepMoveAndHit} is
-     * gated on {@code !noPhysics} and is the only caller of {@code findHitEntities} and
-     * {@code hitTargetsOrDeflectSelf}. <b>So if this fires, the switch did not take</b> -- which
-     * also means the body is colliding with blocks and sticking in them, and the whole visual
-     * contract is broken rather than just this one hit.
+     * <h2>*** IT NOW GUARDS A LIVE PATH INSTEAD OF AN IMPOSSIBLE ONE, AND THAT CHANGES WHAT ITS
+     * FIRING MEANS ***</h2>
      *
-     * <p>Cancelled AND logged, for {@code suppressManagedBowShot}'s reason: a silent cancel would
-     * leave a body that collides with the world and nobody would ever learn why the bolts stopped
-     * mid-air.
+     * <p>It used to read: <i>"With {@code setNoPhysics(true)} there is no route to it at all ... so if
+     * this fires, the switch did not take."</i> <b>That switch is gone.</b> The body is a real arrow
+     * with physics on, {@code stepMoveAndHit} runs every tick, and {@code findHitEntities} really does
+     * find mobs. <b>The route is open by design.</b>
+     *
+     * <p>So this is a BACKSTOP behind {@link #onPlumeBodyHit}, not a detector of an impossible state.
+     * If it fires, the meaning is narrower and still worth knowing: <b>the cancel did not happen</b> --
+     * the listener was not registered, or something re-fired the hit, or a path exists that does not
+     * go through {@code preHitTargetOrDeflectSelf}. It is no longer evidence that the body is also
+     * sticking in blocks, because the body sticks in blocks now on purpose.
+     *
+     * <p><b>It stays LOUD, and that is a deliberate choice against the grain.</b> A backstop for a
+     * case that should never arrive is exactly the shape that rots into a silent second mechanism;
+     * logging is what makes its firing a finding rather than a no-op. {@code suppressManagedBowShot}'s
+     * argument, on a path whose premise has changed underneath it.
      */
     @EventHandler(ignoreCancelled = true)
     public void onPlumeBodyDamage(EntityDamageByEntityEvent event) {
@@ -497,10 +547,11 @@ public final class RpgListeners implements Listener {
         event.setCancelled(true);
         adapters.log().warning(
                 "[plume] A MARKER BODY dealt damage to " + event.getEntity().getType()
-                        + " -- setNoPhysics(true) DID NOT TAKE. stepMoveAndHit is the only route to"
-                        + " findHitEntities and it is gated on !noPhysics, so this body is also"
-                        + " colliding with blocks and sticking in them. The damage is cancelled"
-                        + " here; castRay owns every hit -- see PaperCombatWorld.spawnBoltMarker.");
+                        + " -- onPlumeBodyHit's ProjectileHitEvent CANCEL DID NOT TAKE. The body is a"
+                        + " real arrow with physics on, so the route is open by design; the cancel is"
+                        + " what closes it. Check that onPlumeBodyHit is registered and that this hit"
+                        + " came through preHitTargetOrDeflectSelf. The damage is cancelled here;"
+                        + " castRay owns every hit -- see PaperCombatWorld.spawnBoltMarker.");
     }
 
     @EventHandler
