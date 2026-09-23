@@ -1787,3 +1787,45 @@ A reason shared with every sibling goes second, or in the shared place. **The te
 construct on one path and not its sibling, justified by a reason true of both.** Account, and the
 week it cost, in `#107`'s body.
 
+**AND THE FOURTH, WHICH IS THE WORST OF THEM: A COMMENT THAT NAMES A HAZARD READS AS A GUARD
+AGAINST IT.** The three above are prose that is stale, or player-facing, or mis-emphasised.
+**This one is ACCURATE, CURRENT, and describes the defect the code still has** — and it is read as
+the fix, by everyone, including the person auditing for exactly this.
+
+> **A stale comment is refuted by the code beside it. A comment that correctly names the problem is
+> CONFIRMED by the code beside it**, because the problem is there to be seen. Nothing about reading
+> it more carefully helps; the sentence is true.
+>
+> **2026-09-22, `PaperCombatWorld.spawnBoltMarker`.** The launch velocity is set at creation, and
+> the comment explaining why read: *"An arrow's rotation is derived from its own deltaMovement
+> inside its own tick, so a body spawned still has no direction on its first frame and visibly
+> snaps into line a tick later."* **Its MECHANISM is true and its DURATION is not** -- see the
+> correction below. It was offered as the REASON that line sits
+> there — and it does not remove the snap, because the rotation is derived a tick LATER than the
+> velocity is set. The arrow spawned facing due south, on every `body: arrow` weapon in the tree,
+> for as long as the arrow body has existed. **It was found by a player looking at it, not by
+> anybody reading the file.**
+>
+> > **CORRECTED 2026-09-23, AND THE CORRECTION IS EVIDENCE FOR THIS ENTRY RATHER THAN AGAINST IT.**
+> > This paragraph first read *"Every word true"* and *"for one frame"*. Both are false, measured
+> > from the pinned jar: `AbstractArrow.tick`'s easing is **UNCONDITIONAL** --
+> > `lerpRotation(getYRot(), target)`, which is `Mth.lerp(0.2f, ..)` after normalising -- and there
+> > is **no first-tick snap branch at all** (`xRotO` and `yRotO` do not appear in that class). So the
+> > body eased out of due south over roughly **ten ticks**, and the operator's own reading of the
+> > same build was that it *"took a few seconds but did correct itself eventually"*.
+> >
+> > ***THE ONE CLAUSE THAT WAS FALSE IS THE ONLY OUTCOME-SHAPED CLAUSE IN THE COMMENT*** -- *"snaps
+> > into line a tick later"*. Its mechanism half -- *"the rotation is derived from deltaMovement
+> > inside its own tick"* -- is exactly true. **That is this entry's own practical test firing on
+> > its own worked example:** the description was reliable and the outcome assertion was not.
+>
+> **THE SHAPE, NAMED SO IT CAN BE LOOKED FOR: TWO QUANTITIES ARE SET AND ONLY ONE OF THEM IS THE
+> ONE THAT RENDERS — AND THE COMMENT DISCUSSES THE ONE THAT WAS SET.** Motion and rotation here;
+> elsewhere it will be a value and its cache, a field and its index, a model and its view.
+>
+> **Practically, and it is one question: does this comment DESCRIBE the mechanism, or does it
+> assert an OUTCOME?** *"An arrow derives its rotation in tick()"* is a description and proves
+> nothing. *"So the body points where it is going on the first frame"* is an outcome and is
+> checkable. **A comment that never states the outcome has not claimed the bug is fixed, and must
+> not be read as though it had.**
+
