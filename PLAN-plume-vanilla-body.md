@@ -179,7 +179,7 @@ is named as such rather than presented beside the measured numbers as though it 
 
 ---
 
-## THE TWO OPTIONS
+## THE THREE OPTIONS
 
 ### Option (1) — core keeps hit authority; the real arrow is visual
 
@@ -193,6 +193,74 @@ is named as such rather than presented beside the measured numbers as though it 
 | **`onPlumeBodyDamage`** | **it stops being a detector and becomes the fix.** Its javadoc's premise is *"With `setNoPhysics(true)` there is no route to it at all … So if this fires, the switch did not take"*. Under (1) the route is open by design, so it must cancel **silently** — and the loud detector is lost. | Same for the pickup guard's reasoning: `playerTouch`'s `isInGround() \|\| isNoPhysics()` disjunction is no longer satisfied in mid-air, so **`setPickupStatus(DISALLOWED)` stops being load-bearing in flight** and starts mattering only once a body sticks. |
 | **drag in core** | required, per the measurement above, with the ruled-reach consequence | |
 
+### Option (1-prime) — (1), but the arrow is DRIVEN. *** NO DRAG IN CORE, NO RE-RULED REACH ***
+
+**Added 2026-09-23, on Ben's instruction, and it is a strictly better (1) if spike mode E reads
+straight.** The arrow is a real vanilla arrow — `spawnArrow`, physics ON, gravity ON — **and
+`driveMarker` keeps setting its velocity every tick, exactly as mode A did.**
+
+**THIS IS WHAT THE OLD PROJECT ACTUALLY SHIPPED.** `cfde822`'s
+`DragonsPlumeWeapon.attachDragonsPlumeHoming` set the velocity per tick on a **physics** arrow and flew
+straight. Mode D — the shape the ruling names — drops the driving; (1-prime) keeps it.
+
+#### The measurement that makes it work, read before the mode was wired
+
+`AbstractArrow.tick`, by bytecode offset, from `run/versions/26.1.2/paper-26.1.2.jar`:
+
+```
+ 13..17  getDeltaMovement() -> local 2 (vec3)     the delta, captured at the TOP of tick
+585      stepMoveAndHit(hit)                      THE MOVE, physics branch     -- both use vec3
+598      setPos(position.add(vec3))               THE MOVE, noPhysics branch
+616      applyInertia(0.99f)                      DRAG,    *** AFTER *** the move
+631      applyGravity()                           GRAVITY, *** AFTER *** the move
+```
+
+**The move happens before the velocity is touched**, and `driveMarker` runs in an earlier phase of the
+same server tick than `EntityTickList.forEach`. So the delta the arrow moves by is **exactly the
+velocity core just handed it**, and the drag and gravity the arrow computes land on a delta that is
+overwritten before it can reach a move. **They never accumulate and never apply.**
+
+| core has travelled | **(1-prime)** | (1-prime) IF drag ran first | (1) / mode D, not driven |
+|---|---|---|---|
+| **10 blocks** | **0.000** | 0.221 | 0.149 |
+| **20 blocks** | **0.000** | 0.435 | 0.687 |
+| **40 blocks** | **0.000** | 0.841 | 2.877 |
+
+**Path agreement is arithmetic, not a tolerance judgement** — which means the `RAY_SIZE = 0.0`
+awkwardness above simply stops mattering: there is nothing to be within.
+
+#### What (1-prime) does NOT owe, and it is the whole argument for it
+
+- **no drag in `core/`** — `ProjectileFlight` is untouched;
+- **no re-ruled reach** — `dragons_plume.yml`'s *"R11 ruled the reach at ~300 blocks"* stands;
+- **none of the TEN projectile casts across SEVEN content files changes**;
+- `ProjectileFlight`'s *"a flat stray lands about 22.5 blocks"* stays true;
+- **homing is untouched** — `steer` keeps scaling by a `velocity.length()` that no drag decays.
+
+#### What it still owes, unchanged from (1)
+
+**Every cost in (1)'s table that comes from PHYSICS BEING ON survives**, because (1-prime) turns
+physics on too:
+
+- **the entity-hit cancel** — a **new** `ProjectileHitEvent` listener, and cancelling *"does NOT prevent
+  block collisions"*;
+- **block-stick handling** — no API; a stuck body must be **removed**, and until it is the visual has
+  stopped while the ray flies on. **Driving does not prevent a stick**: `stepMoveAndHit` clips the
+  segment `position -> position + vec3` and stops at a block whatever set the velocity;
+- **`onPlumeBodyDamage`'s role** — it stops being a loud detector and becomes a silent fix;
+- and `setPickupStatus(DISALLOWED)` stops being load-bearing in flight, mattering only once a body
+  sticks.
+
+#### The condition, stated so the ranking is falsifiable
+
+**(1-prime) replaces (1) only if mode E reads STRAIGHT.** `spike/plume-body-modes` carries it as
+`/plumebody e`, with the prediction written before the boot. **And the pair that decides it is B and E,
+not A and D:** both are `spawnArrow` and both are driven, so they differ in `noPhysics` **alone** —
+which is the attribution the A/C/D combination was meant to deliver and never did.
+
+> **IF E SWINGS, (1-prime) IS DEAD AND (1) NEEDS DRAG.** That would also contradict `cfde822`, which
+> drove a physics arrow per tick and flew straight — so the next step would not be another mode.
+
 ### Option (2) — the vanilla arrow is the authority, as in the old project
 
 The arrow's own hit resolves the damage; core stops tracing. This is what `cfde822` did.
@@ -204,9 +272,30 @@ custom health store, element accrual, crit roll and damage-popup path hangs off 
 what a `body: arrow` weapon *is* — every non-arrow body (`spawnMarker`'s items) would still resolve
 through core, so the engine would have two damage paths keyed on the body kind.
 
-## RECOMMENDATION: OPTION (1), WITH DRAG ADOPTED IN CORE AND THE REACH RE-RULED
+## RECOMMENDATION: (1-prime) FIRST, (1) AS ITS FALLBACK, (2) LAST
 
-**Because the divergence is along-track rather than lateral, and because (2) forks the damage path.**
+**RANKED 2026-09-23, and the ranking is conditional on ONE boot row.**
+
+| rank | option | conditional on | cost |
+|---|---|---|---|
+| **1st** | **(1-prime)** -- real arrow, DRIVEN | **spike mode E reading straight** | the physics costs only: hit cancel, block-stick, the lost detector. **`core/` untouched.** |
+| 2nd | (1) -- real arrow, not driven | nothing; it is the ruling as written | the same physics costs **PLUS** drag in `core/`, a re-ruled reach, and ten casts moving |
+| 3rd | (2) -- the arrow is the authority | nothing | forks the damage path permanently |
+
+**(1-prime) IS STRICTLY (1) MINUS THE CORE CHANGE.** It owes every cost that comes from physics
+being on, and none of the cost that comes from the two paths disagreeing -- because driven, they
+do not disagree. **If E reads straight, there is no argument for (1) over it.**
+
+**THE RULING NAMES D, NOT E, AND THAT IS WORTH SAYING OUT LOUD.** Ben ruled *"physics ON, gravity
+ON, NOT driven"*. (1-prime) keeps the driving, so **it is a variation on the ruled shape rather
+than the ruled shape** -- and it is offered because the old project drove its arrow and because
+the alternative is changing `core/`. **If the ruling meant the body must fly on vanilla physics as
+a matter of design rather than of look, (1) is correct and the drag cost is real.**
+
+### WHY (1) OVER (2), WHICHEVER OF (1) AND (1-prime) WINS
+
+**Because (2) forks the damage path**, and because the divergence that (1) has to pay for is
+along-track rather than lateral -- a lag on the right line, not a miss.
 
 - (1) keeps one hit authority, which is the invariant everything else in `core/` is built on.
 - The drag line is small and its cost is **a ruling, not a rewrite** — Ben re-rules the reach, and the
