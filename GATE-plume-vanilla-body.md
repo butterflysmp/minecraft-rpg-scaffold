@@ -92,6 +92,95 @@ git checkout feat/plume-vanilla-body     # f44826f, or the rebased tip
 then **R0 first**, and this time its fourth prediction — *state which tree the jar was built from* —
 is the field that would have caught this in one line.
 
+> ### *** THE ACCOUNT ABOVE IS CORRECTED, 2026-09-23: THE PROBE DOES NOT REFUTE BEN'S BOOT, AND THE LOG TIMELINE DOES ***
+>
+> **Ben's explanation is right about the instrument.** `dev-server.sh` builds AND deploys, so the
+> `18:33` spike start overwrote both `run/plugins`' jar and `latest.log`. **The probe measured the jar
+> as it stands NOW, not the jar he played** — so *"the probe contradicts the statement"*, as first
+> written, was too strong. **It cannot see the earlier jar at all.**
+>
+> **SO THE QUESTION WAS PUT TO THE ARCHIVED LOGS INSTEAD, AND THEY ANSWER IT.** Every session on
+> 2026-09-23, with its start time from its own first line and its rotation time from the `.gz` mtime:
+>
+> ```
+>  -4.log.gz   started 15:38:27   rotated 17:47:37
+>  -5.log.gz   started 17:47:41   rotated 17:49:11
+>  -6.log.gz   started 17:49:14   rotated 18:28:27      <- ran through the whole window
+>  -7.log.gz   started 18:28:30   rotated 18:33:34
+>  latest.log  started 18:33:37   (the spike, per the probe)
+> ```
+>
+> against `git reflog`:
+>
+> ```
+>  17:59:44  checkout -> master (pull --ff-only)
+>  18:02:16  checkout master -> feat/plume-vanilla-body
+>  18:10:35  commit f44826f                              <- #144's code first exists
+>  18:28:03  checkout feat/plume-vanilla-body -> feat/14-scatter-shot
+>  18:33:11  checkout feat/14-scatter-shot -> spike/plume-body-modes
+> ```
+>
+> ***NO SERVER STARTED BETWEEN 17:49:14 AND 18:28:27.*** Session `-6` held the log for that entire
+> stretch, and **a running server does not pick up a new jar.** `f44826f` came into existence at
+> `18:10:35`, inside that stretch. **So no boot could have loaded #144's code.**
+>
+> **AND EACH OF THE THREE CANDIDATE SESSIONS IS IDENTIFIED POSITIVELY, not by timing alone:**
+>
+> | session | identified by | is it #144? |
+> |---|---|---|
+> | `-6` (17:49) | **13 weapons** in the content line, **14** `[plume]` warnings in the **PRE-SLICE wording**, and physics demonstrably ON (those warnings need `stepMoveAndHit`) | **NO — the SPIKE**, in modes C/D/E. 39 minutes, five modes: this is the session Ben read the spike in. |
+> | `-7` (18:28) | ***14 weapons, 22 visuals*** — `feat/14-scatter-shot` adds the 14th weapon; every other branch loads **13** | **NO — `feat/14-scatter-shot`.** Its log carries **zero** `[plume]` lines, so it is uninformative about wording either way; the content count is what identifies it. |
+> | `latest` (18:33) | the probe: `plumebody` present, `setNoPhysics` in 3 files, `onPlumeBodyHit` absent | **NO — the SPIKE again.** |
+>
+> **THE DISCRIMINATORS, REPORTED IN FULL INCLUDING THE ZEROES:**
+>
+> ```
+>                                        -6.log.gz   -7.log.gz   latest.log (CONTROL)
+>   "setNoPhysics(true) DID NOT TAKE"        14           0            4
+>   "CANCEL DID NOT TAKE"  (#144's)           0           0            0
+>   "PlayerPickupArrowEvent fired..."         0           0            0
+>   any "[plume]" line                       14           0            4
+> ```
+>
+> **The control is `latest.log` and it does show the old wording**, so the search is not blind — an
+> absence in `-7` is a real absence and not a broken needle. **But `-7` has no `[plume]` activity at
+> all, so its zero is an absence of EVIDENCE rather than evidence of absence.**
+>
+> ### *** AND THERE IS NO LINE ONLY #144'S BUILD CAN PRINT. NONE DOES. ***
+>
+> Asked directly and answered directly. `[Rpg] Loading server plugin Rpg v0.1.0-SNAPSHOT` and
+> `[Rpg] Enabling Rpg v0.1.0-SNAPSHOT` are **identical on every branch** — the version carries no
+> build id. The content-count line distinguishes `feat/14-scatter-shot` (14 weapons) from everything
+> else, and **nothing distinguishes #144 from the spike**: same content, same version, and the spike's
+> `/plumebody` registration logs nothing. #144's only new log text is the rewritten backstop, which
+> **R5 predicts never fires.**
+>
+> **SO #144 IS UNIDENTIFIABLE FROM A LOG, AND THAT IS THE REAL GAP THIS INCIDENT EXPOSES.** R0's
+> fourth prediction — *state which tree the jar was built from* — is currently the only instrument,
+> and it is a human field that was not filled. **Owed work, named and not done here: one line at
+> enable carrying the branch or a build marker would have bound this boot in one grep.**
+>
+> ### WHAT SURVIVES, WHAT IS WITHDRAWN, AND WHAT IT COSTS
+>
+> **SURVIVES:** `R1-R8` are **NOT READ**, and the reason is now stronger rather than weaker — not
+> *"the probe disagrees"* but ***"no session in the log timeline could have run this code."***
+>
+> **WITHDRAWN:** the claim that the probe refutes Ben's statement. It does not; it is silent about the
+> earlier jar. The `834788d` measurement stands **as a true statement about the `18:33` jar** and is
+> kept for that.
+>
+> **AND THE BOOT IS NOT WORTHLESS, WHICH IS THE PART WORTH CARRYING.** Session `-6` is where mode E
+> was read, and **mode E is by construction the shape this slice ships** — so the LOOK is validated as
+> a shape. What has never executed is #144's own code: the `spawnArrow` call, `onPlumeBodyHit`'s
+> cancel, the stick behaviour and the pickup guard under physics. **R5, R6 and R7 test code that has
+> never run**, and session `-6`'s fourteen backstop warnings are positive evidence of the state R5
+> exists to remove: `doKnockback` runs inside `onHitEntity`, before the damage event the backstop
+> listens to, so **those fourteen mobs were knocked back.**
+>
+> **THE RE-BOOT IS OWED.** `./scripts/dev-server.sh` on this branch, then **R0 first**, and fill its
+> fourth field.
+
+
 ---
 ## WHAT THIS SLICE DID, AND WHAT IT IS ANSWERING FOR
 
