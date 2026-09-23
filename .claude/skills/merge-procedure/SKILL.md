@@ -175,6 +175,55 @@ Then `git branch -D <branch>`, `git push origin --delete <branch>` if it exists 
 `git fetch --prune` to drop the stale tracking ref. **List `git ls-remote --heads origin` before and
 after** — the wire, not a local ref, is what says the remote branch is gone.
 
+> ### *** BEFORE THAT DELETE: RETARGET EVERY PR STACKED ON THIS BRANCH, OR LOSE IT PERMANENTLY ***
+>
+> **`gh pr edit <n> --base master` for every open PR whose base is the branch you are about to
+> delete.** It is free while they are open and **unavailable one second later.**
+>
+> **A `git push origin --delete` OF A BASE BRANCH CLOSES THE PRs POINTING AT IT, AND THEY CANNOT BE
+> REOPENED.** Not "awkward to reopen" — the two calls deadlock against each other:
+>
+> ```
+> gh pr edit <n> --base master   ->  Cannot change the base branch of a closed pull request
+> gh pr reopen <n>               ->  Could not open the pull request
+> ```
+>
+> **AND RESTORING THE BASE BRANCH DOES NOT HELP**, which is the part worth knowing, because it is
+> the obvious repair and it costs a push to find out. **2026-09-22:** `#139` was open and approved
+> on `docs/claude-md-split`; that base merged as `40df010` and was deleted, closing `#139`. The base
+> was pushed back at `3fb83a1` and **both calls failed identically with the ref present.** The
+> closure is terminal, not a missing-ref problem. The change was re-opened as `#140` from the same
+> branch; the approval and the review discussion stayed behind on `#139`.
+>
+> > ### *** THE CAUSE IS SCOPED TO THE DELETION METHOD THAT WAS OBSERVED, AND ONLY THAT ONE ***
+> >
+> > **This entry's first draft named the cause as *"deleting a base branch"*, full stop. Only ONE
+> > deletion method was ever observed**, and writing the general form asserted something about the
+> > others that nobody measured — an over-scoped claim, which is a **false absence**: it tells a
+> > reader who deletes some other way that the rule does not concern them.
+> >
+> > **The two discriminating facts, so the scope is checkable rather than asserted:**
+> >
+> > - **`delete_branch_on_merge` is `false` on this repo** (`gh api repos/<owner>/<repo> --jq
+> >   .delete_branch_on_merge`), so GitHub did not auto-delete anything.
+> > - **`git push origin --delete docs/claude-md-split` was the only deletion in the incident.**
+> >   The merge call carried no `--delete-branch` and no button was pressed. `#138`'s
+> >   `head_ref_deleted` and `#139`'s `base_ref_deleted` + `closed` all fired within one second of
+> >   that push (`gh api repos/<owner>/<repo>/issues/<n>/timeline`).
+> >
+> > ***UNVERIFIED, AND DELIBERATELY NOT GUESSED: whether GitHub RETARGETS a stacked PR instead of
+> > closing it when GITHUB does the deleting*** — the web "Delete branch" button, the
+> > `delete_branch_on_merge` setting, or `gh pr merge --delete-branch`. **That is plausible and it
+> > is untested here.** Assume nothing either way.
+> >
+> > **It changes no action, which is why it was left untested rather than settled by experiment.**
+> > The retarget below is free while the PRs are open and correct under every hypothesis; an
+> > experiment would have bought an explanation and two throwaway PRs in the history.
+>
+> **Find them before deleting:** `gh pr list --state open --json number,baseRefName` and read the
+> `baseRefName` column. **On this repo that was empty for months** — nothing had been stacked until
+> that day, which is exactly why the procedure did not mention it.
+
 ### A LONG-LIVED BRANCH: DISTANCE IS NOT THE PREDICTOR OF ROT. OVERLAP IS
 
 **A branch does not decay with time. It decays when something lands on the files it touches.**
