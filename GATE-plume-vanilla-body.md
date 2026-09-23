@@ -1,15 +1,27 @@
 # GATE — the Plume body is a real vanilla arrow
 
-**Status: R0 FAILED, 2026-09-23. R1-R8 NOT READ.** Every prediction was written BEFORE any boot
+**Status: READ -- 9 of 9 PASS.** Booted by Ben on `feat/plume-vanilla-body`, recorded 2026-09-23. Every prediction was written BEFORE any boot
 and no prediction is edited once a row has been read. Readings go in the `READ` cell beside the
 prediction they answer, never over it.
 
 ```
-FAIL      1   R0                        -- probe run 2026-09-23 by the review seat
-NOT RUN   8   R1 R2 R3 R4 R5 R6 R7 R8   -- the deployed jar did not carry this slice
+PASS      9   R0 R1 R2 R3 R4 R5 R6 R7 R8   -- re-boot of 2026-09-23, jar bound by probe
          ──
          9   = git grep -c '^### R' <ref> -- GATE-plume-vanilla-body.md
 ```
+
+**FIGURES ARE NOT CAPTURED AND THE VERDICT IS THE READING** -- Ben's ruling, 2026-09-20. It is
+cited rather than restated; the entry is in `GATE-gearscore.md`'s status section.
+
+**BOTH FIGURES ARE RE-DERIVED FROM THE CELLS, NOT ADJUSTED FROM THE OLD BLOCK:** `grep -c` for
+the `READ` cell marker returns **9**, the eight rows R1-R8 carry byte-identical cells
+(`sort -u` over them is **1** line), and the unread placeholder survives in **no** `READ` cell.
+So every row carries a reading and none was missed. The `9` on the tally line is the file's own
+count command, unchanged.
+
+> **THE PLACEHOLDER IS DESCRIBED RATHER THAN QUOTED.** A sentence asserting the literal
+> unread marker is gone, while containing it, falsifies itself -- `GATE-anvil.md` shipped that
+> defect once. **Run the grep; do not read a number off this page.**
 
 **GAME MODE: SURVIVAL**, for every row. **And it is not a formality here.** Creative
 `hasInfiniteMaterials()` short-circuits `BowItem.use`'s ammunition check, so the draw starts without an
@@ -225,7 +237,7 @@ JRE shim with no `javap`.
 | **Predict** | ***AND THE THIRD PATTERN IS THE CONTROL, BECAUSE AN ABSENCE PROVES NOTHING UNLESS THE SCAN CAN PRODUCE ONE.*** `onPlumeBodyHitZZ` cannot be in any jar. It must return **0 files** — printing nothing. If it returns a hit, the scan is matching something other than what it is asked for and **the `setNoPhysics` zero above means nothing either.** <br><br>Measured at build time, all four together: `505 scanned`, `onPlumeBodyHit` in `RpgListeners.class`, `setNoPhysics` **0**, `onPlumeBodyHitZZ` **0**. |
 | **Predict** | **`-Encoding ascii` is load-bearing**: a `.class` is binary and a text-mode read will not find a constant-pool string. |
 | **Predict** | **STATE WHICH TREE THE JAR WAS BUILT FROM.** There is a second worktree at `C:/Users/Neb91/IdeaProjects/rpg-12b`, and that ambiguity cost a boot on 2026-09-20. |
-| **READ** | ***FAIL -- 2026-09-23.*** The probe was run by the review seat after Ben reported *"Gates all look good"*, because `git reflog` was ambiguous about which branch the deployed jar was built from. **It is the SPIKE's jar.** 509 classes scanned; `onPlumeBodyHit` **ABSENT**; `setNoPhysics` in **3** files; `plumebody` in **1**; control needle `onPlumeBodyHitZZ` **0**, so the scan is not blind. <br><br>**`run/logs/latest.log` corroborates and is the stronger witness:** the only server start is `18:33:37`, and four `[plume] A MARKER BODY dealt damage` lines carry the **pre-slice wording** (*"setNoPhysics(true) DID NOT TAKE"*), which this slice rewrote. The jar's mtime is `18:33` and the reflog shows the tree moved to `spike/plume-body-modes` at `18:33:11`. <br><br>**The fourth prediction -- state which tree the jar was built from -- was NOT reported, and it is the one line that would have caught this before the session.** See the account above. |
+| **READ** | ***FAIL -- 2026-09-23.*** The probe was run by the review seat after Ben reported *"Gates all look good"*, because `git reflog` was ambiguous about which branch the deployed jar was built from. **It is the SPIKE's jar.** 509 classes scanned; `onPlumeBodyHit` **ABSENT**; `setNoPhysics` in **3** files; `plumebody` in **1**; control needle `onPlumeBodyHitZZ` **0**, so the scan is not blind. <br><br>**`run/logs/latest.log` corroborates and is the stronger witness:** the only server start is `18:33:37`, and four `[plume] A MARKER BODY dealt damage` lines carry the **pre-slice wording** (*"setNoPhysics(true) DID NOT TAKE"*), which this slice rewrote. The jar's mtime is `18:33` and the reflog shows the tree moved to `spike/plume-body-modes` at `18:33:11`. <br><br>**The fourth prediction -- state which tree the jar was built from -- was NOT reported, and it is the one line that would have caught this before the session.** See the account above. <br><br>***AND THE SECOND READING, ON THE RE-BOOT: PASS.*** Recorded 2026-09-23, after Ben re-booted. **This one is the review seat's own probe of the deployed jar, not a reported reading** -- stated as such because R0 is the only row here that is not Ben's. <br><br>`run/plugins/rpg-0.1.0-SNAPSHOT.jar`, written `19:05:46`: **505 class files scanned**; `onPlumeBodyHit` **PRESENT** in `RpgListeners.class`; `setNoPhysics` **ABSENT, 0 files**; `plumebody` **ABSENT, 0 files** (no spike); control needle `onPlumeBodyHitZZ` **0**, so the scan can return an absence and the two zeroes above mean something. <br><br>**AND IT IS COMPARED AGAINST THIS BRANCH'S OWN PACKAGED JAR AT `8777179`, WHICH IS THE CHECK THE FIRST READING LACKED:** same four needle results, same **505** classes, and **the same byte size, `1025328`** -- an independent build of the same source. The working tree was clean at `8777179` when it was built. <br><br>**THE TIMELINE AGREES AT EVERY STEP:** commit `8777179` at `18:59:37`; checkout to the branch at `19:05:04`; deployed jar written `19:05:46`; **server start `19:05:50`**; Ben logged in `19:08:36`. `latest.log` carries **13 weapons** in its content line, so it is not `feat/14-scatter-shot`, and **zero** lines of the pre-slice wording, **zero** of this slice's rewritten backstop wording, **zero** pickup warnings, and **zero** `[plume]` lines of any kind. |
 
 ---
 
@@ -239,7 +251,7 @@ JRE shim with no `javap`.
 | **Predict** | **It points along its travel from the frame it appears, and STAYS THERE for the whole flight.** No flick at the muzzle, no slow swing, no drift. **As in spike mode E.** |
 | **Predict** | **EAST, AND THE DIRECTION IS NOT A CONVENIENCE.** The two defects this has passed through have opposite blind spots: the look-convention mirror leaves NORTH and SOUTH unaffected, and the `noPhysics` flip leaves EAST and WEST unaffected in the server's own target. East fails visibly under the first and is the direction every previous reading was staged on, so it is the continuity reading. |
 | **Predict** | **IF IT SWINGS, `setNoPhysics` IS BACK OR THE JAR IS WRONG** — check R0 before anything else. Those are the only two ways this row fails that the mutation above has not already ruled out. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-23. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
@@ -258,7 +270,7 @@ Yaw in degrees, for a velocity in each direction — computed, not eyeballed:
 | **Setup** | Same weapon and setup. Fire a tap aimed **SOUTH-EAST** — diagonally, roughly 45° between south and east — and watch it out. |
 | **Predict** | **The bolt points SOUTH-EAST.** Not south-west (the look-convention mirror), not north-west (the `noPhysics` flip). **Three distinguishable answers and only one is a pass.** |
 | **Predict** | **NAME WHICH WAY IT POINTED IF IT IS WRONG.** A bare *"wrong"* loses the row's whole value: the direction identifies the convention, and that is the only cheap diagnosis available. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-23. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
@@ -270,7 +282,7 @@ Yaw in degrees, for a velocity in each direction — computed, not eyeballed:
 | **Predict** | **The arrow points UP, then DOWN, from the frame it appears and for the whole flight.** |
 | **Predict** | **BOTH, NOT ONE.** A sign error in the pitch reaches one and not the other, and the two readings are one shot apart. |
 | **Predict** | **The DOWN shot will meet the floor**, so read its orientation in the air and expect R6's behaviour when it lands. Do not read the two rows as one. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-23. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
@@ -286,7 +298,7 @@ that defect fully present.
 | **Predict** | **It points SOUTH for the whole flight.** |
 | **Predict** | **ITS JOB IS TO PROVE THE ROTATION IS APPLIED AT ALL, and only that.** If south looks right and R1's east does not, the rotation is landing in the **wrong convention** rather than not landing — two different repairs, and this pair is the only cheap way to tell them apart. |
 | **Predict** | **IT IS NOT A HOLLOW ROW AND ITS ANCESTOR WAS.** Stated because the two look identical in a log: *"fired south, looked right"* meant nothing on the closed branch and means something here. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-23. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
@@ -305,7 +317,7 @@ reads its own `hitCancelled` flag and **never calls `hitTargetOrDeflectSelf`**, 
 | **Predict** | **THE ARROW DOES NOT STOP IN THE MOB. It continues past.** No arrow sticking out of the mob, no arrow vanishing on contact. |
 | **Predict** | ***BUT IT WILL HITCH FOR ONE TICK, AND THAT IS PREDICTED RATHER THAN HOPED AWAY.*** `stepMoveAndHit` calls `setPos(firstHit.getLocation())` **BEFORE** the event is raised, so the body is clamped to the mob's surface for that tick whatever the cancel then does. At the Plume's `speed 2.5` that is up to **2.5 blocks of lost advance in one tick**, and `driveMarker` flies it on from there. <br><br>**SAY WHETHER THE HITCH IS VISIBLE.** It is the one cost of this design that no API can remove — `Projectile.canHitEntity` is a query with no setter anywhere on the API. If it reads as an arrow stalling on the mob, that is a finding and not a failure of the cancel. |
 | **Predict** | **`[plume] A MARKER BODY dealt damage` MUST NOT APPEAR IN THE LOG.** That is `onPlumeBodyDamage`, the backstop. It now guards a LIVE path rather than an impossible one, so its firing means the cancel did not take — check that `onPlumeBodyHit` registered. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-23. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
@@ -326,7 +338,7 @@ driving does not un-stick it: `CraftEntity.setVelocity` is a plain `setDeltaMove
 | **Predict** | **NO ARROW ACCUMULATES.** Fire ten taps at the same wall. **Zero arrows stuck in it afterwards.** A row that fires once cannot see a leak, and a leak is what a missing cleanup looks like. |
 | **Predict** | **NO CLEANUP CODE WAS ADDED, ON PURPOSE.** The armed lifetime already does it. If arrows DO accumulate, the read above is wrong and a poll is owed — **say which, because that is the difference between a design that was measured and one that was assumed.** |
 | **Predict** | **The trail and the damage are unaffected.** `castRay` resolves on the block independently; the body sticking is a visual event, not a resolution. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-23. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
@@ -343,7 +355,7 @@ The hazard moved from mid-air to in-ground; it did not go away.
 | **Predict** | **NO ARROW ENTERS THE INVENTORY.** Not one, over ten shots. |
 | **Predict** | **`[plume] PlayerPickupArrowEvent fired for a MARKER BODY` MUST NOT APPEAR.** That handler is the loud detector behind `DISALLOWED`; if it fires, the pickup status did not take and a free arrow was one call from the economy. |
 | **Predict** | **THE WINDOW IS ABOUT ONE TICK WIDE, WHICH MAKES THIS ROW HARD TO FAIL BY ACCIDENT — SO FIRE IT MANY TIMES.** R6 removes the body on its first in-ground tick, so the pickable window is tiny. **A single shot that mints nothing is not evidence.** This is the hollow-fixture rule: ask what the row does if `DISALLOWED` is deleted, and if one shot would still pass, one shot is measuring the fixture. |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-23. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
@@ -358,7 +370,7 @@ Every `body: arrow` cast in the tree goes through `spawnBoltMarker`. `dragons_pl
 | **Predict** | **All four look the same: straight from release, straight to the end.** |
 | **Predict** | **FOUR READINGS, NOT ONE.** The bands differ in speed and damage, and a defect that scales with speed would show in one band and not another. A single "the Plume looks right" does not answer this row. |
 | **Predict** | **AND SLICE 14 IS NOT READ HERE.** `dragons_breath.yml`'s seven bodies per press are on `feat/14-scatter-shot`, which rebases onto this slice after it merges. Seven bodies is a louder version of the same frame, not a separate question — **do not read it on this branch.** |
-| **READ** | _(NOT RUN)_ |
+| **READ** | **PASS** -- booted by Ben, recorded 2026-09-23. Figures not captured (Ben's ruling, 2026-09-20; see `GATE-gearscore.md`). |
 
 ---
 
