@@ -1,0 +1,20 @@
+# The Dragon's Plume's BAND-2 TAP release -- what you hear on a partial draw let go in band 2
+# (held 9-14 ticks). Id is the filename: dragons_plume_cast_tap2.
+#
+# Sound only. dragons_plume_cast_draw.yml carries the full account -- why this weapon had NO
+# release sound before (vanilla's BowItem.releaseUsing never executes, so its shoot sound never
+# played), why there are FOUR files for one weapon, and the whole pitch derivation.
+#
+# THIS BAND'S NUMBERS, from vanilla's own curve at the tick anchor R14's ruled speed uses:
+#
+#     t = 12     power = 0.5200     vanilla@centre = 0.9743     AUTHORED 1.0
+#
+# PROVISIONAL -- the derivation is sound, the FEEL is unheard. GATE-release-sounds.md rules it.
+#
+# KEY VERIFIED on the pinned 26.1.2 jar: ARROW_SHOOT is declared in SoundEvents.class.
+
+steps:
+  - type: sound
+    key: entity.arrow.shoot
+    volume: 1.0
+    pitch: 1.0
