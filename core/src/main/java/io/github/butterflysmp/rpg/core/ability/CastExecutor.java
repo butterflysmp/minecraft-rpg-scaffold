@@ -11,6 +11,7 @@ import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.ProjectileFlight;
 import io.github.butterflysmp.rpg.core.combat.RayHit;
+import io.github.butterflysmp.rpg.core.combat.SpreadPattern;
 import io.github.butterflysmp.rpg.core.combat.SweptLine;
 
 import java.util.List;
@@ -133,8 +134,13 @@ public final class CastExecutor {
 
         Caster source = commit(ability, caster, aim, charges);
         for (double yaw : yawOffsets) {
-            dispatch(ability, caster, source, new Aim(aim.origin(), aim.direction().rotateAboutY(yaw)),
-                    charges);
+            // `pointing` rather than `new Aim(origin, rotated)`: the two-argument constructor would
+            // RE-DERIVE the shooter's right from the rotated direction and discard the real one,
+            // which is a silent loss for any inner cast that reads the view plane. The fan itself
+            // does not care -- a yaw rotation needs no basis -- so this is carrying a field
+            // across rather than fixing a live bug, and it is what stops a fanned SPREAD from
+            // inheriting a basis that was quietly rebuilt from the wrong vector.
+            dispatch(ability, caster, source, aim.pointing(aim.direction().rotateAboutY(yaw)), charges);
         }
     }
 
@@ -352,6 +358,35 @@ public final class CastExecutor {
      * over, so the freeze is explicit at the boundary where the per-tick region hop happens.
      */
     private void launch(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec) {
+        // ONE ROLL, N DELIVERIES -- AND THE ROLL IS NOT MADE HERE, WHICH IS THE POINT.
+        //
+        // Every body below shares the single `caster` this method was handed. That Caster was
+        // built ONCE in commit(), from a snapshot taken ONCE on the player's own thread, and the
+        // CRIT WAS DRAWN INTO THAT SNAPSHOT -- BukkitCombatant.snapshot says so in those words:
+        // "drawn HERE and frozen -- once per cast, never per damage arm". So a seven-body spread
+        // crits as a unit, the same way a Burst catching five bodies already does.
+        //
+        // *** SAY IT HERE BECAUSE A BUILD THAT RE-ROLLED PER BODY WOULD PASS EVERY TEST THAT DOES
+        // NOT STAGE A CRIT. *** Without a crit the seven amounts are identical either way, so the
+        // defect is invisible to any row that does not deliberately produce one. The property is
+        // INHERITED from where the snapshot is taken, not built here -- which means the way to
+        // break it is to move the expansion ABOVE commit(), not to change anything in this method.
+        //
+        // The loop is here rather than in paper for exactly that reason: WeaponFire's fan path
+        // spends one quiver round PER OFFSET (`yawOffsets.length`), so a spread expanded there
+        // would bill seven rounds for one press. Expanded below commit it bills one, by
+        // construction rather than by a second rule that could drift.
+        if (spec.spread() != null) {
+            for (Vec3 direction : SpreadPattern.directionsFor(aim.direction(), aim.right(), spec.spread())) {
+                launchOne(ability, caster, aim.pointing(direction), spec);
+            }
+            return;
+        }
+        launchOne(ability, caster, aim, spec);
+    }
+
+    /** One body, down one direction. The spread above is N of these; everything else is one. */
+    private void launchOne(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec) {
         ProjectileFlight.launch(world, caster, aim.origin(), aim.direction().scale(spec.speed()),
                 spec.gravity(), spec.maxLifetimeTicks(),
                 // All three presentation fields, mapped straight across. The exclusion between

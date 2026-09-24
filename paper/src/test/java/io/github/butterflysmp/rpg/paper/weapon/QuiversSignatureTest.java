@@ -816,6 +816,60 @@ class QuiversSignatureTest {
     }
 
     /**
+     * *** HOW MANY ROUNDS ONE PRESS COSTS -- AND THIS ROW EXISTS BECAUSE A MUTATION CAME BACK
+     * GREEN. ***
+     *
+     * <p>2026-09-21, slice 14: {@code MUT14QUIVER7} changed {@code WeaponFire}'s spend from
+     * {@code 1} to {@code 7} and <b>the entire suite stayed green at 2147 tests.</b> Nothing
+     * anywhere could see a weapon billing seven rounds for one press. That is not a gap in the
+     * quiver tests; it is the shape of the whole path -- {@code Quivers.spendRounds} needs a live
+     * {@code Player} and a live {@code ItemStack}, so no module can call it.
+     *
+     * <p><b>The green run is the measurement and this row is the receipt.</b> The identical
+     * mutation was re-applied after this was written and it reddened, which is what makes
+     * "nothing else could see this" a measured claim rather than an assertion.
+     *
+     * <h2>WHAT THE RULE ACTUALLY IS, AND WHY THE SPREAD DOES NOT CHANGE IT</h2>
+     *
+     * <pre>
+     * a plain press          1 round        every weapon
+     * a YAW FAN              N rounds       the Plume's release -- N arrows, N rounds, ruled
+     * a SPREAD               1 round        the Dragon's Breath -- SEVEN bodies, ONE round, ruled
+     * </pre>
+     *
+     * <p><b>The spread costs one BY CONSTRUCTION rather than by a second rule</b>, and that is the
+     * property worth guarding: a spread is expanded inside {@code CastExecutor.launch}, below the
+     * commit, so it never produces a {@code yawOffsets} array and this expression never sees it.
+     * <b>Had the spread been wired as a fan, it would have billed seven rounds and nothing would
+     * have said so.</b>
+     *
+     * <p>Anchored on the whole conditional rather than on {@code 1}, because a bare {@code 1} occurs
+     * everywhere and a prefix would keep matching after a widening -- the failure mode
+     * {@code heldScore(player, keys)} demonstrated by staying a prefix of its own replacement.
+     */
+    @Test
+    void onePressSpendsOneRoundUnlessItIsAYawFan() throws IOException {
+        Path weaponFire = Path.of("src", "main", "java", "io", "github", "butterflysmp", "rpg",
+                "paper", "weapon", "WeaponFire.java");
+        String raw = Files.readString(weaponFire, StandardCharsets.UTF_8);
+        assertTrue(raw.lines().count() > 200,
+                "the scan did not read WeaponFire.java -- finding nothing here would make the"
+                        + " assertion below pass by default");
+
+        // Comments stripped: the spend site carries a paragraph naming both branches, so an
+        // unfiltered match would report the expression present after somebody changed it.
+        String code = raw.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+
+        assertTrue(code.contains("yawOffsets == null ? 1 : yawOffsets.length"),
+                "WeaponFire must spend ONE round for a press with no yaw fan, and yawOffsets.length"
+                        + " for one that has. A spread is NOT a fan -- it is expanded below"
+                        + " CastExecutor.commit and produces no offsets -- so the Dragon's Breath's"
+                        + " seven bodies cost one round through this very expression. Change it and"
+                        + " a seven-body press bills seven rounds, which no other test in either"
+                        + " module can see: measured 2026-09-21, MUT14QUIVER7, suite green at 2147.");
+    }
+
+    /**
      * EVERY EXTERNAL READER OF THE MAGAZINE IS NAMED HERE WITH ITS ROLE -- <b>settles</b>, or
      * <b>display only</b>.
      *

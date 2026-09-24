@@ -53,7 +53,7 @@ public sealed interface CastSpec {
      * other, so neither defaults from the other.
      */
     record Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item,
-                      Homing homing, String body) implements CastSpec {
+                      Homing homing, String body, Spread spread) implements CastSpec {
 
         /**
          * <b>{@code item} AND {@code body} ARE MUTUALLY EXCLUSIVE, AND IT IS ENFORCED HERE RATHER
@@ -79,6 +79,23 @@ public sealed interface CastSpec {
                         "a projectile cast declares ONE body: 'item: " + item + "' and 'body: "
                                 + body + "' are mutually exclusive");
             }
+        }
+
+        /**
+         * A projectile that fires ONE body down the aim vector -- every projectile in this repo
+         * before the Dragon's Breath, and the shape any weapon keeps by simply not authoring a
+         * {@code spread} block.
+         *
+         * <p>THE NEW FIELD WENT ON THE END, WHICH IS THE LADDER'S OWN RULE rather than a
+         * preference, and it is the third time this record has applied it. Each convenience
+         * constructor drops the TAIL, never a middle field, so a reader counting arguments never
+         * has to work out which one was omitted. {@code spread} reads more naturally beside
+         * {@code homing} -- they are the two blocks that shape a flight -- and putting it there
+         * would have renumbered every existing call site.
+         */
+        public Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item,
+                          Homing homing, String body) {
+            this(speed, gravity, maxLifetimeTicks, trail, item, homing, body, null);
         }
 
         /**
@@ -215,6 +232,94 @@ public sealed interface CastSpec {
                         + searchRadius + ". combatantsNear on a radius at or below zero finds"
                         + " nothing, forever, so the bolt never acquires a target.");
             }
+        }
+    }
+
+    /**
+     * A projectile that leaves the muzzle as SEVERAL bodies at once, in a ring around the aim.
+     * Null on a {@link Projectile} means one body down the aim vector, which is every projectile
+     * this repo shipped before the Dragon's Breath.
+     *
+     * <p>{@code count} is the TOTAL number of payloads. One flies down the aim vector; the
+     * remaining {@code count - 1} are spaced evenly around a ring {@code angleDegrees} off-axis,
+     * in the SHOOTER'S VIEW PLANE. <b>The hexagon falls out of {@code 7 - 1 = 6}</b> rather than
+     * being a second authored number that could disagree with the first.
+     *
+     * <h2>WHY A FIELD HERE AND NOT A SEVENTH {@link CastSpec} MEMBER</h2>
+     *
+     * <p>{@link Volley} is the nearest existing thing and is not this: it repeats a cast over TIME
+     * and <i>"re-reads its caster before every shot -- fresh aim, fresh crit roll, fresh price"</i>,
+     * which is a burst the player steers. <b>A spread is the opposite: one decision, delivered
+     * seven ways, in one frame.</b>
+     *
+     * <p>That record's own javadoc names the trap this field avoids -- it asks the next person
+     * wanting a new shape to reuse rather than propose <i>"a seventh member of a sealed interface
+     * that did not need one."</i> <b>A field composes; a member does not.</b> As a field it sits
+     * beside {@code speed}, {@code gravity}, {@code trail}, {@code body} and the absent
+     * {@code homing}, so <b>a spread of HOMING arrows is expressible with no second mechanism</b>,
+     * and {@link CastSpec#minimumCooldownTicks}'s exhaustive switch needs no new arm.
+     *
+     * <h2>WHAT IS REFUSED, AND WHY EACH ONE IS SILENT RATHER THAN LOUD</h2>
+     *
+     * <p><b>Every one of these produces a spread block that resolves perfectly and spreads
+     * nothing</b> -- {@link Homing}'s own doctrine, and the failure mode {@code CLAUDE.md} names:
+     * a file advertising a mechanism the player never receives, with nothing going red.
+     *
+     * <pre>
+     * count            must be &gt;= 2
+     *                    &lt;= 1   a spread of one IS a projectile. It is not wrong, it is a
+     *                           block that does nothing -- so the weapon should omit it and say
+     *                           so, rather than author a ring with no ring in it.
+     *
+     * angleDegrees     must be in (0, 90)
+     *                    &lt;= 0   EVERY body on the aim vector: N exactly-overlapping copies of
+     *                           one shot. The tooltip would say `x 7` and the player would see
+     *                           one arrow.
+     *                    &gt;= 90  the ring is perpendicular to the aim (90) or BEHIND the
+     *                           shooter (&gt; 90). At exactly 90 the forward component is zero and
+     *                           the ring bodies travel sideways forever.
+     * </pre>
+     *
+     * <p><b>The tests are written as positive assertions, which also refuses NaN for free</b> --
+     * every comparison against NaN is false, so {@code angle_degrees: nan} fails
+     * {@code angleDegrees > 0} and is named rather than firing a fan in an undefined direction.
+     *
+     * <p><b>The loader's half is PRESENCE, not range</b>, exactly as {@link Homing} splits it:
+     * {@code AbilitySchema} requires both keys because this record <i>holds no defaults</i>, and
+     * this constructor judges the values because a value rule belongs where a unit test reaches it
+     * without a server.
+     *
+     * <p><b>NO BUNDLED CONTENT REACHES ANY OF THESE ARMS, AND IT IS SAID HERE SO THE NEXT READER
+     * DOES NOT ASSUME PRODUCTION COVERS THEM.</b> {@code dragons_breath} authors two sane numbers and
+     * every other weapon authors no spread block at all. <b>The only exercise these arms get is
+     * {@code CastSpecSpreadTest}, which CAUSES each condition</b>, and {@code AbilityLoaderTest},
+     * which causes them through a real YAML walk and reads the named, skipped file back out of the
+     * log.
+     */
+    record Spread(int count, double angleDegrees) {
+
+        public Spread {
+            if (count < 2) {
+                throw new IllegalArgumentException("spread count must be >= 2 -- got " + count
+                        + ". A spread of one is a plain projectile: omit the spread block rather"
+                        + " than authoring a ring with nothing in it.");
+            }
+            if (!(angleDegrees > 0)) {
+                throw new IllegalArgumentException("spread angle_degrees must be > 0 -- got "
+                        + angleDegrees + ". At or below zero every body flies down the aim vector,"
+                        + " so the cast delivers " + count + " exactly-overlapping copies of one"
+                        + " shot while the tooltip advertises a spread.");
+            }
+            if (!(angleDegrees < 90)) {
+                throw new IllegalArgumentException("spread angle_degrees must be < 90 -- got "
+                        + angleDegrees + ". At 90 the ring is perpendicular to the aim and its"
+                        + " bodies travel sideways forever; past 90 they fly behind the shooter.");
+            }
+        }
+
+        /** How many bodies sit on the ring: everything but the one down the aim vector. */
+        public int ringCount() {
+            return count - 1;
         }
     }
 

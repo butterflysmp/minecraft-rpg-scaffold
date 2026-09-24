@@ -18,12 +18,31 @@
 # WHAT THE NUMBERS DO. Whole arrows added to the held weapon's authored magazine, resolved by
 # QuiverSize.resolve. Across the live range:
 #
-#   Boltor  (quiver_size 8)    8 -> 9, 10, 11     +12.5% / +25%   / +37.5%
-#   Locust  (quiver_size 12)  12 -> 13, 14, 15    +8.3%  / +16.7% / +25%
+#   Boltor       (quiver_size 8)    8 -> 9, 10, 11     +12.5% / +25%   / +37.5%
+#   Locust       (quiver_size 12)  12 -> 13, 14, 15    +8.3%  / +16.7% / +25%
+#   Dragon's Breath (quiver_size 5)    5 -> 6, 7, 8       +20%   / +40%   / +60%
 #
-# Nearly uniform in effect across both weapons, which is the argument for the shape. A flat +N loses
-# relevance as magazines grow -- +3 on a 40-round weapon is 7.5%, real but not worth a slot. THE
-# TRIGGER for revisiting: the first weapon shipped with quiver_size materially above 20. Not a date.
+# *** THE UNIFORMITY ARGUMENT NOW HAS A COUNTER-EXAMPLE, AND THE TABLE IS UPDATED RATHER THAN THE
+# *** SENTENCE DELETED.
+#
+# This used to read "Nearly uniform in effect across BOTH weapons, which is the argument for the
+# shape" -- true of the two rows it was measured on and FALSIFIED by dragons_breath, which ships a
+# four-round magazine. Level III is +75% there against +25% on the Locust: a three-fold difference
+# in what one slot buys, which is not uniformity by any reading.
+#
+# THE SHAPE IS NOT RE-RULED BY THIS COMMENT. Flat is still right for the reason the section above
+# gives -- a PERCENTAGE tier below one whole arrow grants ZERO, and at a magazine of 4 a percentage
+# would be worse still, since 25% of 4 is the smallest tier that grants anything at all. What has
+# gone is the claim that the flat shape happens to be EVEN across the range; it is even across the
+# middle of the range and steep at the bottom.
+#
+# A flat +N also loses relevance as magazines grow -- +3 on a 40-round weapon is 7.5%, real but not
+# worth a slot. So the shape is now known to be wrong at BOTH ends and right in between.
+#
+# THE TRIGGERS for revisiting, and there are now two. Neither is a date:
+#   - the first weapon shipped with quiver_size materially above 20  (the original trigger)
+#   - a SECOND weapon below quiver_size 8, which would make the steep end a class of its own
+#     rather than one outlier
 # Quiver.applyPercent exists and is tested if that day comes, carrying the recorded obligation that
 # any percentage reaching a capacity must pass through resolve.
 #

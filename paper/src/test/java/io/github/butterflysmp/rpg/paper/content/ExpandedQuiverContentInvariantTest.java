@@ -62,8 +62,9 @@ class ExpandedQuiverContentInvariantTest {
 
     /**
      * Ranger weapons in shipped content: {@code boltor}, {@code dragons_plume}, {@code locust},
-     * {@code quiver_stone}, {@code hunters_bow}. <b>Asserted rather than logged</b>, so a regex that
-     * stops matching the schema reddens instead of reporting a clean verdict over an empty set.
+     * {@code quiver_stone}, {@code dragons_breath}, {@code hunters_bow}. <b>Asserted rather than
+     * logged</b>, so a regex that stops matching the schema reddens instead of reporting a clean
+     * verdict over an empty set.
      *
      * <p>Expected to CHANGE, and in both directions -- the dev-weapon deletion removes two of these.
      * Update it with the content; do not relax it to a lower bound.
@@ -74,8 +75,20 @@ class ExpandedQuiverContentInvariantTest {
      * {@link #everyRangerWeaponAuthorsAMagazineOrIsAnExemptDevWeapon} passes on it unchanged and
      * Expanded Quiver rolling onto it grants ACTUAL arrows -- the opposite of {@code hunters_bow},
      * which is exempt by name precisely because it has no magazine for the enchant to enlarge.
+     *
+     * <p><b>5 -> 6 when {@code dragons_breath.yml} landed, and this row noticed again</b> -- on the
+     * first full-reactor run of that slice, which is the behaviour this constant exists for. Same
+     * reasoning as the Plume: it authors {@code quiver_size: 5}, so the invariant below passed on it
+     * unedited and only the population count moved.
+     *
+     * <p><b>AND IT IS THE STEEPEST MAGAZINE THE ENCHANT HAS EVER ROLLED ONTO.</b> A flat {@code +3}
+     * is {@code +60%} of five, against {@code +25%} on the Locust -- so
+     * {@code expanded_quiver.yml}'s "nearly uniform in effect" argument now has a counter-example,
+     * and that file's table was updated in the same slice. <b>Recorded here because this is the row
+     * a future author meets first</b>, and the interesting fact about a sixth ranger weapon is not
+     * that there are six.
      */
-    private static final int KNOWN_RANGER_WEAPONS = 5;
+    private static final int KNOWN_RANGER_WEAPONS = 6;
 
     /**
      * THE ONE EXEMPTION, AND IT IS A DEV WEAPON IN THE DELETION SET.

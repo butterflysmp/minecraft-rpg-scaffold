@@ -60,6 +60,10 @@ final class AbilitySchema {
             // which is every projectile this repo shipped before the Dragon's Plume. Unlike `trail`
             // and `item` it is a SECTION rather than a scalar, and unlike them it has no partial
             // form: see parseHoming.
+            // `spread` is OPTIONAL and absent means null -- ONE body down the aim vector, which is
+            // every projectile this repo shipped before the Dragon's Breath. A SECTION with no partial
+            // form, exactly like `homing`, and orthogonal to it: a spread of homing bodies is
+            // authorable and means what it says.
             // `body` is OPTIONAL and absent means null. It is the OTHER kind of body: `item` renders
             // a dropped item driven along the flight, `body` renders a real arrow oriented along its
             // travel with every interaction switched off. MUTUALLY EXCLUSIVE with `item` -- a bolt
@@ -75,7 +79,8 @@ final class AbilitySchema {
                     s.getDouble("speed", 1.0), s.getDouble("gravity", 0.03),
                     s.getInt("max_lifetime_ticks", 100), s.getString("trail"), s.getString("item"),
                     parseHoming(s.getConfigurationSection("homing")),
-                    parseBody(s.getString("body")));
+                    parseBody(s.getString("body")),
+                    parseSpread(s.getConfigurationSection("spread")));
             case "dash"       -> new CastSpec.Dash(
                     s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4),
                     parseDashDirection(s.getString("direction", "movement_else_forward")));
@@ -191,6 +196,44 @@ final class AbilitySchema {
         if (s == null) return null;
         return new CastSpec.Homing(reqDouble(s, "lerp"), reqDouble(s, "activation_blocks"),
                 reqDouble(s, "search_radius"));
+    }
+
+    /**
+     * The {@code spread:} block, or null for a projectile that fires ONE body down the aim vector.
+     *
+     * <p><b>Presence only, and the values are judged in {@code core}</b> -- the split
+     * {@link #parseHoming} already uses, and for the stated reason: a value rule belongs where a
+     * unit test reaches it without a server, and a question about what is in a FILE belongs here.
+     *
+     * <p><b>Both keys are required because {@link CastSpec.Spread} holds no defaults.</b> A count
+     * with no angle would resolve to a ring at zero degrees -- N bodies down one line, advertised
+     * on the tooltip as a spread -- and an angle with no count would resolve to nothing at all.
+     * Neither has a reading worth inventing, so both are {@code reqInt}/{@code reqDouble} and a
+     * half-authored block is a named, skipped file.
+     */
+    private static CastSpec.Spread parseSpread(ConfigurationSection s) {
+        if (s == null) return null;
+        return new CastSpec.Spread(reqInt(s, "count"), reqDouble(s, "angle_degrees"));
+    }
+
+    /**
+     * An int that has no sensible default. {@link #reqDouble}'s sibling, same contract.
+     *
+     * <p>An INT rather than a rounded double, for {@code QuiverSize}'s reason: a body count is a
+     * count of bodies. {@code getInt} on an authored {@code 7.5} truncates silently, so the
+     * fractional form is refused here rather than becoming a seven nobody typed.
+     */
+    private static int reqInt(ConfigurationSection s, String path) {
+        if (!s.isSet(path)) {
+            throw new IllegalArgumentException("Missing required field: " + s.getName() + "." + path);
+        }
+        double raw = s.getDouble(path);
+        if (raw != Math.rint(raw)) {
+            throw new IllegalArgumentException(s.getName() + "." + path + " must be a whole number,"
+                    + " got " + raw + "; it counts bodies, and a fraction of a body is not a thing"
+                    + " this cast can fire");
+        }
+        return s.getInt(path);
     }
 
     /**

@@ -226,12 +226,62 @@ public final class WeaponLoreLines {
      * named is that the payloads arrive one at a time, each individually aimable, not that they
      * arrive at one place.
      *
-     * <h2>A FAN OR A SPREAD IS EXCLUDED, AND NOT FOR WANT OF A COUNT</h2>
+     * <h2>*** A FAN OR A SPREAD IS EXCLUDED -- OVERTURNED 2026-09-21. THE CRITERION IS NOW COUNT,
+     * SEQUENTIAL OR SIMULTANEOUS ***</h2>
      *
-     * {@code EffectSpec.ThrowEmbers} releases its payloads AT ONCE across fixed angles -- its count
-     * is the length of {@code angles_degrees} -- and {@code DrawFan} does the same with a count that
-     * varies by charge step. <b>No single target receives them in full</b>, so {@code x 3} there
-     * would promise damage the player will not receive.
+     * <p><b>The superseded rule is kept rather than edited away</b>, because a reversed argument
+     * that vanishes leaves the next reader unable to tell a decision from a default:
+     *
+     * <blockquote><i>"{@code EffectSpec.ThrowEmbers} releases its payloads AT ONCE across fixed
+     * angles -- its count is the length of {@code angles_degrees} -- and {@code DrawFan} does the
+     * same with a count that varies by charge step. <b>No single target receives them in full</b>,
+     * so {@code x 3} there would promise damage the player will not receive."</i></blockquote>
+     *
+     * <p><b>WHAT OVERTURNED IT IS GEOMETRY, NOT A CHANGE OF MIND -- and that is why the reason is
+     * recorded HERE, beside the rule, rather than in a plan.</b> The objection was never that a
+     * simultaneous count is meaningless; it was that <b>no single target receives the payloads in
+     * full</b>, so the number is a promise the weapon cannot keep. <b>The Dragon's Breath's 3-degree
+     * ring is the answer to exactly that objection.</b> The angle was chosen so a full seven-arrow
+     * hit EXISTS:
+     *
+     * <pre>
+     * spread diameter = 2 * d * tan(3 deg)      a player-sized target is ~0.6 blocks wide
+     *
+     *   d =  5 blocks   0.524   all seven can land
+     *   d = 10 blocks   1.048   centre and one or two
+     *   d = 20 blocks   2.096   centre only
+     *
+     *   the whole pattern fits a 0.6-wide target out to  5.72 blocks
+     *   the whole pattern fits a 0.9-wide target out to  8.59 blocks
+     * </pre>
+     *
+     * <p><b>THESE FIGURES WERE 5 DEGREES' UNTIL 2026-09-22, AND THEY WERE REPLACED RATHER THAN
+     * LEFT.</b> The ring narrowed to 3 and every number above moved with it -- at 5 degrees the
+     * full hit reached only 3.43 blocks, against 5.72 now.
+     *
+     * <p><b>A JUSTIFICATION QUOTING NUMBERS THE CONTENT NO LONGER CARRIES IS A STALE FIGURE IN THE
+     * ONE PLACE THAT MUST NOT HAVE ONE.</b> This table is the ARGUMENT that let the rule above be
+     * overturned; if it goes stale the overturn is left resting on arithmetic nobody can reproduce,
+     * and the next reader finds a rule reversed for reasons that do not check out. <b>The narrowing
+     * makes the argument STRONGER, which is exactly why it would have been easy not to re-check.</b>
+     *
+     * <p>{@code DrawFan}'s ruled 10 degrees was REJECTED for this weapon for the same reason: at
+     * 10 degrees the full hit is unreachable at any range and the old objection would still stand.
+     * <b>So the overturn is conditional on the geometry, and a spread authored wide enough to make
+     * a full hit impossible re-opens it.</b>
+     *
+     * <h2>TWO FANS, TWO ANSWERS -- A KNOWN INCONSISTENCY, WITH ITS CAUSE</h2>
+     *
+     * <p>A Dragon's Plume five-arrow release <b>still renders nothing</b>, and a Dragon's Breath
+     * renders {@code x 7}. The cause is structural rather than principled: {@code DrawFan} and
+     * {@code ThrowEmbers} <b>are not {@code CastSpec} members and cannot reach this method</b>,
+     * where {@link CastSpec.Spread} is a field on {@link CastSpec.Projectile} and does. Putting the
+     * spread on {@code Projectile} is precisely what made a fan reachable here for the first time.
+     *
+     * <p><b>It is recorded rather than smoothed over.</b> The Plume's fan is also 10 degrees apart
+     * and does not satisfy the geometry test above, so a count there would still be the promise the
+     * old rule refused -- the two answers happen to be defensible, but <b>they are not being
+     * DECIDED by the same mechanism</b>, and the next person to move either should know that.
      *
      * <h2>"DELIVERED IN FULL" IS TRUE BY DEFAULT AND FALSE ON INTERRUPTION, AND THAT IS ACCEPTED</h2>
      *
@@ -241,11 +291,28 @@ public final class WeaponLoreLines {
      *
      * <h2>AN EXHAUSTIVE SWITCH, SO A SEVENTH SHAPE CANNOT SKIP THE QUESTION</h2>
      *
-     * {@code Volley} is the only {@link CastSpec} member carrying a count today, so this is
-     * currently equivalent to an {@code instanceof} check -- <b>and is deliberately not written as
-     * one.</b> {@code CastSpec} is sealed, so listing every member makes a new shape a COMPILE ERROR
-     * here, which forces the next author to apply the criterion above instead of inheriting a
-     * silent {@code 1}. Prefer the compile error to the scanner.
+     * {@code CastSpec} is sealed, so listing every member makes a new shape a COMPILE ERROR here,
+     * which forces the next author to apply the criterion above instead of inheriting a silent
+     * {@code 1}. Prefer the compile error to the scanner.
+     *
+     * <p><b>AND IT HAS ALREADY EARNED ITS KEEP ONCE, WHICH IS WORTH RECORDING.</b> This javadoc
+     * used to add that {@code Volley} was "the only {@code CastSpec} member carrying a count today,
+     * so this is currently equivalent to an {@code instanceof} check". <b>That stopped being true
+     * when the spread landed</b> -- and the switch is what made the question unavoidable rather
+     * than letting a projectile inherit {@code 1} in silence. <b>A count arrived through a FIELD on
+     * an existing member rather than through a new member, which the sealed switch did NOT catch:
+     * the {@code Projectile} arm still compiled.</b> Prefer the compile error, and know its limit.
+     *
+     * <h2>A VOLLEY OF A SPREAD MULTIPLIES, AND NO SHIPPED CONTENT DOES IT</h2>
+     *
+     * <p>{@code AbilitySchema.innerCast} admits a {@code projectile} as a volley's inner cast, so
+     * <b>a three-shot volley of a seven-body spread is authorable today</b> and delivers 21
+     * payloads from one press. Reading only the outer count would render {@code x 3} on a weapon
+     * that delivers 21 -- the same class of lie this method exists to prevent, arriving through
+     * composition rather than through a new shape.
+     *
+     * <p>So the volley arm multiplies by its inner cast's own count. Nesting deeper is
+     * unrepresentable: {@code Volley}'s compact constructor refuses a volley of a volley.
      *
      * <p>Empty rather than {@code 1}: the renderer's question is "is there a multiplier to print",
      * and a literal {@code x 1} on every single-shot weapon in the game is noise. {@code Volley}'s
@@ -253,15 +320,27 @@ public final class WeaponLoreLines {
      * what is worth SAYING, not about defending against a bad count.
      */
     public static OptionalInt deliveredShots(CastSpec cast) {
-        int shots = switch (cast) {
-            case CastSpec.Volley volley -> volley.shots();
+        int shots = payloadsOf(cast);
+        return shots > 1 ? OptionalInt.of(shots) : OptionalInt.empty();
+    }
+
+    /**
+     * The raw count, always at least 1, so the volley arm can multiply without special-casing.
+     *
+     * <p>Split from {@link #deliveredShots} only because a volley needs its inner cast's answer and
+     * the public method converts to an {@code OptionalInt}. Recursion terminates at depth one: a
+     * volley of a volley is refused by {@code Volley}'s own compact constructor.
+     */
+    private static int payloadsOf(CastSpec cast) {
+        return switch (cast) {
+            case CastSpec.Volley volley -> volley.shots() * payloadsOf(volley.of());
+            case CastSpec.Projectile projectile ->
+                    projectile.spread() == null ? 1 : projectile.spread().count();
             case CastSpec.Self ignored -> 1;
             case CastSpec.Melee ignored -> 1;
             case CastSpec.Ray ignored -> 1;
-            case CastSpec.Projectile ignored -> 1;
             case CastSpec.Dash ignored -> 1;
         };
-        return shots > 1 ? OptionalInt.of(shots) : OptionalInt.empty();
     }
 
     private static boolean isFree(ResourceCost cost) {

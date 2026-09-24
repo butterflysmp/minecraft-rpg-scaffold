@@ -11319,3 +11319,171 @@ consumable are all live. **This entry parks the QUESTION and does not pre-answer
 and the only restore, `WeaponItems` mints with vanilla durability, and `GearItems.carryWear` moves
 it across a re-mint. Measured at slice 13a; re-check before designing, because `carryWear`'s
 behaviour is what decides whether a repaired item keeps its enchants.
+
+---
+# SLICE 14 — THE DRAGON'S BREATH. TWO GREEN MUTATIONS, AND A PARKED ENCHANT'S TRIGGER FIRED.
+
+**POINTER. The account is `PLAN-dragons-breath.md`; the rows are `GATE-dragons-breath.md`.** Kept short
+on purpose — this file is read on demand and the findings below each have a home that is read at
+the point they bite.
+
+## THE TWO MUTATIONS THAT CAME BACK GREEN
+
+**Both are the same shape and it is this project's oldest one: a thing that is authored, parsed,
+stored, and READ BY NOBODY looks exactly like a thing that works.**
+
+| | the mutation | suite at the time | what would have shipped |
+|---|---|---|---|
+| `MUT14NOSPREAD` | the spread branch in `CastExecutor.launch` disabled | **GREEN at 2148** | the weapon firing **ONE** arrow while its tooltip promised **seven** |
+| `MUT14QUIVER7` | `WeaponFire`'s round spend `1` -> `7` | **GREEN at 2147** | a seven-round bill for one press |
+
+**Each got its guard written afterwards and the identical mutation re-applied — same marker
+figures, same line delta — and each reddened.** `CastExecutorSpreadTest` (3 rows) and
+`QuiversSignatureTest.onePressSpendsOneRoundUnlessItIsAYawFan` (1 row).
+
+> **THE FIRST ONE IS THE WARNING WORTH CARRYING.** Four separate checks kept passing under it, each
+> for a reason that made it useless: the geometry test calls `SpreadPattern` **directly** and never
+> asks whether anything calls it; the content test reads the **YAML**, which parses either way; the
+> tooltip tests read a **different method**. **A feature can be fully tested at both ends and
+> unwired in the middle.**
+
+## AN INSTRUMENT FINDING: A FAILING `core` HIDES THE WHOLE OF `paper`
+
+**`./mvnw test` stops at the first failing module, and `paper` depends on `core`** — so a mutation
+that reddens a core row leaves `paper` **never executed**, and its kill set reads as empty.
+**`-fae` does NOT help**: the skip is a dependency skip, not a failure skip.
+
+**Only `-Dmaven.test.failure.ignore=true` produces a true cross-module kill set.** Two kill sets in
+this slice were measured wrongly before this was noticed and were re-measured. *A zero in the wrong
+scope is indistinguishable from an absence*, arriving through the build tool.
+
+**Practically: quote the per-module `Tests run:` line with any cross-module mutation claim**, so a
+reader can see that every module actually ran.
+
+## PUNCH'S TRIGGER IS SATISFIED — RECORDED, NOT BUILT
+
+**`dragons_breath` is the first shipped weapon that authors knockback**, so §4.4's roll gate has a
+live candidate for the first time. Full entry, with the two things an unparker needs to know first,
+in `PLAN-enchants-ranged.md` §4.5. **Nothing was built; this slice is not the one where an enchant
+quietly ships.**
+
+## OWED — THE RANGER CLASS NOW HAS TWO DAMAGE-RENDERING SHAPES
+
+`boltor` and `locust` render `Ranged Damage: 19`; `dragons_breath` renders `Fire Damage: 9`. **A
+player comparing two crossbows sees two labels for one idea.** Not fixed: the label follows the
+mechanism, and rendering "Ranged" over a literal effect would be the tooltip describing something
+other than what produced it. **TRIGGER: the second weapon that ships a literal payload in a class
+whose other weapons are basic attacks** — one is an outlier, two is a rendering rule nobody chose.
+
+## *** THE BOTH-ENDS FAMILY: EVERY END GUARDED, THE JOIN UNGUARDED ***
+
+**TWO INSTANCES, ONE SHAPE, OPPOSITE REMEDIES.** Recorded together because either alone reads as a
+one-off, and because recording only the SHAPE would send the next reader to a gate file when a unit
+row would do — or the reverse, which is worse.
+
+**THE SHAPE:** a feature is split across several components, **each component is genuinely tested
+in its own natural home**, and the WIRING between them is tested by nothing. Every end-test passes
+under a mutation at the join, each for a different and individually respectable reason. **It looks
+like thorough coverage and it is a feature that does not work.**
+
+| | slice 13a — the anvil transfer | slice 14 — the Dragon's Breath |
+|---|---|---|
+| end A | `TransferKey` derivation, guarded | `SpreadPattern` geometry, guarded |
+| end B | `AnvilTransfer` comparison, guarded | `dragons_breath.yml` content, guarded |
+| end C | — | the `x 7` tooltip, guarded |
+| **the join** | **applying a transfer to a real item** | **`CastExecutor.launch` calling `SpreadPattern`** |
+| **why it was unguarded** | **UNREACHABLE — no test can construct an `ItemStack`** | **REACHABLE, and simply nobody wrote it** |
+| **the remedy** | **a boot row, FOREVER: `GATE-anvil.md` R12b** | **a unit row, written the same day: `CastExecutorSpreadTest`** |
+
+> **CITATION WARNING, because the halves live in different places right now.** The 13a names —
+> `TransferKey`, `AnvilTransfer`, `GATE-anvil.md` R12b — are **on PRs #132/#133 and NOT on
+> `master`** at the time of writing. A grep of `master` for them returns nothing, and **that
+> absence is about the merge queue, not about this entry being wrong.**
+
+### THE REMEDIES ARE OPPOSITE, AND THAT IS THE WHOLE REASON TO RECORD BOTH
+
+- **An UNREACHABLE join earns a boot row, permanently.** R12b is not a stopgap awaiting a clever
+  test — no module can build an `ItemStack`, so there will never be one. **The row must say it is
+  permanent**, or the next person reads it as unfinished work and goes looking for the unit test
+  that was never possible.
+- **A REACHABLE join earns a unit row AND a note saying why nobody wrote it.** The row alone fixes
+  this instance; the note is what stops the next one.
+
+**Slice 14's note, since it is the generalisable half:** the join had **no natural home**.
+`SpreadPatternTest` is a geometry test and geometry tests do not ask who calls them;
+`DragonsBreathContentTest` is a content test and content parses either way; the tooltip tests read a
+different method entirely. **Each end sat in the obvious file for its end, and the join needed a
+THIRD file that nobody would think to create.** Coverage grew along the components and not across
+the seam between them.
+
+### *** THE DIAGNOSTIC, WHICH IS THE PART THAT GENERALISES ***
+
+**WHEN A MUTATION AT THE WIRING LEAVES EVERY END-TEST GREEN, ASK OF EACH SURVIVING TEST WHICH END
+IT SITS ON.**
+
+**FOUR PASSES WITH FOUR DIFFERENT REASONS IS NOT FOUR GUARDS.** It is one uncovered seam with four
+witnesses to something else. The tell is that the reasons do not rhyme: if you can write down why
+each test survived and the four sentences are unrelated, none of them was watching the join.
+
+Worked, from `MUT14NOSPREAD` — the spread branch disabled, suite **green at 2148**:
+
+```
+SpreadPatternTest        calls SpreadPattern DIRECTLY        -> end A
+DragonsBreathContentTest   reads the YAML, which parses        -> end B
+WeaponLoreLinesTest      a DIFFERENT method entirely         -> end C
+GoldenLoreTest           renders that different method       -> end C again
+                                                             -> the JOIN: nobody
+```
+
+**Four green, four reasons, zero coverage of the thing that was mutated.** The same table drawn for
+13a's transfer has the identical shape and a different last line — *the join: unreachable* — which
+is what decides whether the answer is a test or a gate row.
+
+**Practically: the question is cheap and it is the one nobody asks.** A green mutation prompts
+*"which test should have caught this?"*, and the useful question is the inverse — *"of the tests
+that DID pass, which one was even looking here?"* If the answer is none, the count of passing tests
+is not evidence of anything.
+
+## A COUNT WITH NO CONSUMER IS NOT A RATE — THE SCORCH MEASUREMENT, 2026-09-22
+
+**The Dragon's Breath became a FIRE weapon, and fire accrues scorch.** Seven arrows per press is
+seven accrual events; a full magazine at point blank is **thirty-five**. Nothing in the tree had
+ever delivered fire at that rate, and the obvious reading is that a press stacks scorch seven times
+faster than the mechanism was tuned for.
+
+**IT WAS EXECUTED RATHER THAN REASONED, AND THE ANSWER IS THE OPPOSITE:**
+
+> ### SEVEN ARROWS BURN EXACTLY AS MUCH AS ONE.
+
+Three properties of scorch, none of them a property of the weapon — the stack count **has no
+consumer**, the cap is **overwritten by the most recent applier** with the same number six times,
+and the window is merely **refreshed**. The burn reads the cap and nothing else.
+
+> **THE FIRST OF THOSE IS NOT A DISCOVERY AND IS NOT RE-RECORDED HERE.** It is the ruling of
+> **2026-09-09** — *THE RULING DELETED THE COUNT'S ONLY CONSUMER, SO SCORCH STOPS BEING A STACKING
+> STATUS*, in this file — and **this entry is that consequence biting a SECOND time, on a weapon
+> designed seven months after it.**
+>
+> **That is the part worth having twice: not the mechanism, but the fact that it caught somebody
+> again.** A ruling whose consequence is invisible at authoring time will keep producing this
+> question, because the weapon author is reasoning about *their* weapon and the answer lives in a
+> status's history. The remedy is not a better memory — it is the sentence now sitting beside
+> `dragons_breath.yml`'s `amount: 9`, where the decision actually gets made.
+
+**AND THE COUNTER-INTUITIVE HALF, which is the part worth carrying:** the cap is HALF OF ONE
+PAYLOAD, so **a weapon firing seven small payloads burns WEAKER than one firing a single large
+one.** Measured against a knell at GS 100 — Dragon's Breath **27**, Emberblade **21**, Flint Staff
+**60**. On an ordinary 20-HP mob all three are identical at 6, because the 5% arm binds instead.
+
+**THE GENERAL FORM: BEFORE PRICING A DELIVERY-RATE WORRY, FIND OUT WHETHER ANYTHING READS THE
+COUNT.** *"N times as many applications"* is a statement about events, and it is only a statement
+about MAGNITUDE if a magnitude reads the event count. Here nothing does — `scorch.yml` says so in
+its own words, *"read ONLY as a yes/no gate"* — so the worry had no mechanism behind it.
+
+**The measurement lives in `SevenArrowScorchTest`**, which pins every figure above, rather than in
+a plan: a figure in a plan is a claim.
+
+> **AND IT LEAVES A REAL FINDING BEHIND, WHICH IS NOT THE ONE ANYBODY EXPECTED.** The lever for
+> tuning this weapon's burn is **per-arrow damage**, which moves the cap linearly. **Adding arrows
+> does not move it at all**, so anyone who lowers the per-arrow damage to compensate for "seven
+> hits" will be weakening a burn that was already the weakest of the three.

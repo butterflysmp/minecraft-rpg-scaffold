@@ -490,6 +490,45 @@ dev-weapon deletion set**:
 > **So Punch has ONE candidate weapon today — one that is leaving, and that would need knockback
 > authored onto it first — and ZERO after the deletion.**
 
+#### *** THE TRIGGER IS SATISFIED, 2026-09-21. `dragons_breath` IS THE FIRST ELIGIBLE WEAPON, AND NOTHING IS BUILT. ***
+
+**Slice 14 shipped the Dragon's Breath: `class: ranger`, `type: projectile`, and it AUTHORS
+KNOCKBACK** — because `CLAUDE.md`'s standing decision of 2026-09-13 reaches it and silence would
+have been an exception nobody ruled.
+
+**That is the condition §4.4's roll gate tests, met by a live weapon for the first time.** The
+table above is superseded rather than deleted — every row in it is still true of its own weapon:
+
+| ranger weapon | cast | authors knockback | Punch eligible |
+|---|---|---|---|
+| `boltor` | `ray` | no | **no — correct by design** |
+| `locust` | `ray` | no | **no — correct by design** |
+| `dragons_plume` | `projectile` | **NO** | **no** — and this is the interesting row, see below |
+| `quiver_stone` | `ray` | no | no; deletion set |
+| `hunters_bow` | `projectile` | no | no; deletion set |
+| **`dragons_breath`** | **`projectile`** | **YES, `strength: 0.1`** | ***YES — the first*** |
+
+> **AND `dragons_plume` IS WHY THIS ENTRY WAS STILL PARKED THIS MORNING.** It shipped as a
+> `type: projectile` ranger weapon and authors **no** knockback, so it fired §4.5's trigger by cast
+> shape and then failed the roll gate by content. **A weapon being a projectile was never the
+> condition; authoring the base was.** Worth keeping in front of whoever unparks this, because the
+> Plume looks like a counter-example to the table above and is not.
+
+**NOTHING IS BUILT BY SLICE 14, AND THAT IS DELIBERATE.** Unparking Punch is a decision with a roll
+table, a tooltip and a gate behind it, and folding it into a weapon slice would make that slice the
+one where an enchant quietly shipped. **The record is the deliverable here.**
+
+**TWO THINGS THE UNPARKER SHOULD KNOW BEFORE PRICING IT:**
+
+- **`dragons_breath`'s knockback MAGNITUDE is itself unruled.** `0.1` is a proposal pending
+  `GATE-dragons-breath.md` R7b, which measures whether seven applications in one frame **sum** or
+  whether the last one **wins**. **Punch is a PERCENTAGE of that base**, so a percentage of an
+  unsettled number is a number nobody has ruled twice over.
+- **This weapon delivers SEVEN bodies per press.** Punch at +60% of a per-arrow base applies seven
+  times at point blank and once at range. **Nobody has ruled what a percentage knockback enchant
+  means on a weapon whose application count varies with distance** — which is a genuinely new
+  question this weapon creates, not one §4 answered.
+
 #### THE ARGUMENT FOR PARKING IS TESTABILITY, NOT DOUBT
 
 **The design is finished. That is exactly what a parked entry preserves.**

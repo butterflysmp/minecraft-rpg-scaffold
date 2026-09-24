@@ -603,6 +603,80 @@ class WeaponLoreTest {
                 () -> "30 would be the volley total, which is true of no single hit; got " + lines);
     }
 
+    /**
+     * *** A SCORED SPREAD RENDERS ITS SCALED PER-BODY FIGURE BESIDE ITS BODY COUNT. ***
+     *
+     * <p>The 2026-09-21 overturn, read off the rendered string rather than off
+     * {@code deliveredShots}. Before it, a projectile rendered no multiplier at all and this line
+     * would have read {@code Kinetic Damage: 18} -- so <b>this row is what goes red if the overturn
+     * is reverted at either layer</b>, the criterion or the renderer.
+     *
+     * <p>Staged so <b>no two quantities the row reads are equal</b>, which is the whole reason the
+     * numbers look arbitrary: authored 9, score 200, scaled 18, count 7, and the product 126.
+     * <b>126 is asserted ABSENT</b> -- it is the full-hit total, which is true of no single arrow,
+     * and folding it in is the defect the per-shot rule exists to prevent.
+     *
+     * <p>The five-argument {@code build} is deliberate: {@code golden-lore.txt} and the
+     * two-argument overloads render with an EMPTY score, where scaling is the identity and this row
+     * would be blind to half of what it claims.
+     */
+    @Test
+    void aScoredSpreadRendersItsScaledPerBodyFigureBesideItsBodyCount() {
+        List<String> lines = textLines(WeaponLore.build(scoredSpread(), elementsWithFire(),
+                OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(200)));
+
+        assertTrue(lines.contains("Kinetic Damage: 18 x 7"),
+                () -> "9 authored x 200/100 = 18, seven bodies beside it; got " + lines);
+        assertFalse(lines.stream().anyMatch(l -> l.contains("126")),
+                () -> "126 is the full-hit total, true of no single arrow; got " + lines);
+    }
+
+    /**
+     * AND A PROJECTILE WITHOUT A SPREAD STILL RENDERS NO MULTIPLIER -- the control.
+     *
+     * <p>Without this, the row above passes on a build that renders {@code x N} for every
+     * projectile using any number to hand. <b>The two fixtures differ in exactly one field</b>, the
+     * spread block, so neither row can pass for a reason the other explains.
+     */
+    @Test
+    void aProjectileWithoutASpreadRendersNoMultiplier() {
+        List<String> lines = textLines(WeaponLore.build(scoredPlainBolt(), elementsWithFire(),
+                OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(200)));
+
+        assertTrue(lines.contains("Kinetic Damage: 18"),
+                () -> "the same scaled figure, with no count beside it; got " + lines);
+        assertFalse(lines.stream().anyMatch(l -> l.contains(" x ")),
+                () -> "a projectile with no spread block promises no multiplier; got " + lines);
+    }
+
+    /** The Dragon's Breath shape: a seven-body spread over a literal payload. */
+    private static WeaponDefinition scoredSpread() {
+        return spreadWeapon(new CastSpec.Spread(7, 3));
+    }
+
+    /** The same weapon with the spread block absent, and nothing else changed. */
+    private static WeaponDefinition scoredPlainBolt() {
+        return spreadWeapon(null);
+    }
+
+    /**
+     * One builder, one field. Mirrors {@link #volleyStone}'s discipline: the two fixtures above
+     * differ in the spread block and in nothing else, so a row that passes for the wrong reason
+     * cannot be explained by any other difference between them.
+     */
+    private static WeaponDefinition spreadWeapon(CastSpec.Spread spread) {
+        AbilityDefinition shot = new AbilityDefinition(
+                "dragons_breath/right_click", "Dragon's Breath", "kinetic", "none",
+                32, ResourceCost.FREE,
+                new CastSpec.Projectile(2.5, 0.05, 120, null, null, null, "arrow", spread),
+                List.of(new EffectSpec.Damage(9, "kinetic")), List.of("A hexagon of arrows."));
+        return new WeaponDefinition("dragons_breath", "Dragon's Breath", "kinetic", Rarity.RARE,
+                WeaponClass.RANGER, "crossbow", 0.0, 0.0, SweepShare.NONE,
+                WeaponDefinition.NO_QUIVER, 0,
+                List.of(new TriggerBinding("right_click", shot)), List.of("Flavour."),
+                java.util.Optional.empty(), false);
+    }
+
     /** A three-shot volley of a literal payload, DECLARED UNSCORED: the volley_stone shape. */
     private static WeaponDefinition unscoredStone() {
         return volleyStone(true);

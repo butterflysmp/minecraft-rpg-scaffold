@@ -200,7 +200,10 @@ public final class WeaponFire {
         if (BasicMelee.isVanillaDriven(binding.get().ability())) return Optional.empty();
 
         Location eye = player.getEyeLocation();
-        Aim aim = new Aim(toVec3(eye), toVec3(eye.getDirection()));
+        // ViewAim, not `new Aim(origin, direction)`: the two-argument form derives the shooter's
+        // right from the direction and yields ZERO at pitch +/-90, which is where a spread's ring
+        // would collapse. AimWiringSignatureTest is what keeps this line on the right constructor.
+        Aim aim = ViewAim.of(eye);
         // Snapshot on the player's own thread, before the region hop below. This is also where the
         // caster's attack speed is frozen -- the swing's cadence is decided from it a moment later,
         // and reading the store after the hop would be the cross-thread read this split prevents.
