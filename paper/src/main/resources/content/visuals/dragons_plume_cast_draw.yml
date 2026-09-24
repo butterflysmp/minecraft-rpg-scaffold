@@ -1,0 +1,67 @@
+# The Dragon's Plume's FULL-CHARGE release -- what you hear the instant you let go of a charged
+# draw. Id is the filename: dragons_plume_cast_draw.
+#
+# Sound only. The arrows themselves are drawn by dragons_plume_trail, one mote per tick per body.
+#
+# ================== WHY THIS WEAPON HAD NO RELEASE SOUND AT ALL ==================
+#
+# *** IT IS NOT THAT VANILLA'S WAS QUIET. VANILLA'S NEVER RUNS. *** PlumeDraw.onRelease calls
+# Player.clearActiveItem() before dispatching, which empties LivingEntity.useItem -- and the
+# re-read at offset 72 of releaseUsingItem then yields EMPTY, so ItemStack.releaseUsing resolves
+# to Items.AIR.releaseUsing, a pure no-op. BowItem.releaseUsing NEVER EXECUTES.
+#
+# That is the same lever R5 rests on (no draw(), so no arrow is consumed), and the shoot sound is
+# played INSIDE the method that never runs. So there is no vanilla sound to double up with and
+# none to suppress: before this file the release was SILENT.
+#
+# ================== FOUR FILES FOR ONE WEAPON, AND THE REASON IS THE PITCH ==================
+#
+# *** THE BRIEF SAID "ONE FILE PER WEAPON", AND THIS IS FOUR. THE DEVIATION IS DELIBERATE. ***
+#
+# That rule exists so a shared visual cannot couple two weapons -- change a sound for one and the
+# other moves with it. FOUR FILES FOR THE *SAME* WEAPON COUPLE NOTHING: no other weapon references
+# any of them, which is the property the rule protects.
+#
+# They exist because pitch rises with charge, and a visual is referenced by ID from `on_cast`.
+# There is no per-cast override in the grammar, so ONE file means ONE pitch for all four bands --
+# which would delete the charge feedback this sound is for. The alternative was a code change to
+# the visual schema, and the brief said code only if the read demands it. It does not.
+#
+# ================== THE PITCH LADDER, DERIVED FROM VANILLA'S OWN BOW ==================
+#
+# Ben's request: "pitch rises with charge the way vanilla's bow does". Vanilla's BowItem plays
+# ENTITY_ARROW_SHOOT at:
+#
+#     pitch = 1.0 / (random * 0.4 + 1.2) + power * 0.5
+#
+# The random term spans 1/1.6 = 0.6250 to 1/1.2 = 0.8333, centre 1/1.4 = 0.7143. We have no
+# per-shot random, so the CENTRE is taken and the ladder is the `power * 0.5` half.
+#
+# Power is vanilla's charge curve p = (f^2 + 2f)/3 with f = t/20, evaluated at the same tick
+# anchors R14's ruled tap SPEEDS use -- t = 5 / 12 / 18 -- so the sound and the flight are
+# indexed off one set of numbers rather than two that could drift:
+#
+#     band    t     power     vanilla@centre     AUTHORED
+#     tap1     5    0.1875      0.8080             0.8
+#     tap2    12    0.5200      0.9743             1.0
+#     tap3    18    0.8700      1.1493             1.15
+#     draw    20    1.0000      1.2143             1.2     <- this file
+#
+# *** PROVISIONAL. *** The derivation is sound and the FEEL is not established -- nobody has heard
+# it. GATE-release-sounds.md's question row is where it is ruled.
+#
+#   AND THE TOP TWO ARE CLOSE ON PURPOSE AND MAY BE TOO CLOSE: 1.15 against 1.2 is what vanilla's
+#   own curve gives between t=18 and t=20, because the curve flattens as it approaches full draw.
+#   If tap3 and a full draw are indistinguishable by ear, that is a finding about the curve, not
+#   about these numbers -- and the fix is to spread the ladder rather than to move one value.
+#
+# KEY VERIFIED AGAINST THE PINNED JAR, not recalled: ARROW_SHOOT is declared in
+# net/minecraft/sounds/SoundEvents.class on run/versions/26.1.2/paper-26.1.2.jar. soundKey()
+# resolves at LOAD, so a bad key is a named boot failure rather than a silent no-op -- but
+# flint_cast.yml records that a remembered API name is exactly what a gate row once cost.
+
+steps:
+  - type: sound
+    key: entity.arrow.shoot
+    volume: 1.0
+    pitch: 1.2

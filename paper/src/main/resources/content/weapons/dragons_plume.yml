@@ -354,6 +354,13 @@ triggers:
     # THIS IS THE LINE THAT MAKES "Ranged Damage: 34" RENDER. WeaponLore's stat block is gated on
     # DamagePayload.isBasicAttack, which is exactly this effect type -- see the attack_damage comment
     # above, which said the line "appears when H2 authors the payload, not before". This is that.
+    # WHAT YOU HEAR WHEN YOU LET GO. on_cast, not on_hit: on_hit fires at the IMPACT point
+    # after flight, so a release noise put there would arrive at the far end of the shot.
+    # Fires ONCE PER PRESS -- executeFan commits once and dispatches N times, so a
+    # five-arrow release is one sound, not five. See CastExecutor.executeFan.
+    on_cast:
+      - type: visual
+        visual_id: dragons_plume_cast_draw
     on_hit:
       - type: weapon_damage
         element: void
@@ -618,6 +625,13 @@ triggers:
       # WITH NO HOMING". AbilitySchema maps a missing section to null and a null Seek makes
       # ProjectileFlight.steer return the velocity untouched on its first line.
       # DO NOT "COMPLETE" THIS BY COPYING THE BLOCK FROM `draw:`.
+    # WHAT YOU HEAR WHEN YOU LET GO. on_cast, not on_hit: on_hit fires at the IMPACT point
+    # after flight, so a release noise put there would arrive at the far end of the shot.
+    # Fires ONCE PER PRESS -- executeFan commits once and dispatches N times, so a
+    # five-arrow release is one sound, not five. See CastExecutor.executeFan.
+    on_cast:
+      - type: visual
+        visual_id: dragons_plume_cast_tap1
     on_hit:
       - type: damage
         amount: 9
@@ -647,6 +661,13 @@ triggers:
       # NO homing BLOCK, AND ITS ABSENCE IS THE RULING. Same as band 1 and for the same reason;
       # repeated at each binding rather than stated once, because an absence is invisible and a
       # reader checking THIS binding must not have to find the note on another one.
+    # WHAT YOU HEAR WHEN YOU LET GO. on_cast, not on_hit: on_hit fires at the IMPACT point
+    # after flight, so a release noise put there would arrive at the far end of the shot.
+    # Fires ONCE PER PRESS -- executeFan commits once and dispatches N times, so a
+    # five-arrow release is one sound, not five. See CastExecutor.executeFan.
+    on_cast:
+      - type: visual
+        visual_id: dragons_plume_cast_tap2
     on_hit:
       - type: damage
         amount: 17
@@ -676,6 +697,13 @@ triggers:
       # this is one tick from a charged release that DOES home, for 34 rather than 26. The two
       # shots are adjacent in the player's hand and different in every other way; the absent block
       # is what makes that true.
+    # WHAT YOU HEAR WHEN YOU LET GO. on_cast, not on_hit: on_hit fires at the IMPACT point
+    # after flight, so a release noise put there would arrive at the far end of the shot.
+    # Fires ONCE PER PRESS -- executeFan commits once and dispatches N times, so a
+    # five-arrow release is one sound, not five. See CastExecutor.executeFan.
+    on_cast:
+      - type: visual
+        visual_id: dragons_plume_cast_tap3
     on_hit:
       - type: damage
         amount: 26

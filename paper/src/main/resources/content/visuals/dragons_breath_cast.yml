@@ -1,0 +1,60 @@
+# The Dragon's Breath firing -- what you hear the instant you press right-click, with seven arrows
+# still in the air. Id is the filename: dragons_breath_cast.
+#
+# Sound only. The seven bodies are drawn by dragons_breath_trail.
+#
+# ================== ONE FILE, BECAUSE THIS WEAPON HAS ONE CAST ==================
+#
+# The Plume needs four (one per charge band, because pitch rises with charge and a visual is
+# referenced by id with no per-cast override). This weapon binds a single `right_click`, so one
+# file is the whole story and the brief's "one file per weapon" is literal here.
+#
+# ================== ONE SOUND PER PRESS, NOT SEVEN -- AND THAT WAS READ, NOT ASSUMED ==================
+#
+# *** THE OBVIOUS FEAR WITH THIS WEAPON IS SEVEN STACKED SHOTS, AND IT DOES NOT HAPPEN. ***
+#
+# on_cast fires inside CastExecutor.commit(), which runs ONCE per press. The spread expands in
+# CastExecutor.launch(), which is reached from dispatch() BELOW commit -- so the seven bodies are
+# produced after the sound has already been played once. launch()'s own comment states the
+# ordering and what depends on it: "the way to break it is to move the expansion ABOVE commit()".
+#
+# The same ordering is what makes a seven-body press cost ONE quiver round and roll ONE crit, so
+# the sound is not a third rule -- it is the same commit-once boundary, and anything that broke it
+# would break the round cost and the crit together. QuiversSignatureTest's
+# onePressSpendsOneRoundUnlessItIsAYawFan guards that boundary from the quiver side.
+#
+# ================== NO VANILLA SOUND TO DOUBLE UP WITH ==================
+#
+# This weapon is `material: crossbow` and binds `right_click`, and RpgListeners cancels the vanilla
+# interaction for exactly that case -- "Present == this weapon binds right_click. Suppress the
+# vanilla interaction". CrossbowItem.use therefore never runs, so neither its charging sound nor
+# its shoot sound is ever played. *** BEFORE THIS FILE THE PRESS WAS SILENT. ***
+#
+# ================== THE TWO LAYERS ==================
+#
+# item.crossbow.shoot is the shape of the press: this weapon IS a crossbow and the release should
+# read as one. entity.blaze.shoot sits UNDER it at low volume for the fire element -- the same
+# two-layer idiom flint_cast.yml uses (item.flintandsteel.use at 1.0 with entity.blaze.shoot at
+# 0.6 beneath), and the same second key.
+#
+# *** PROVISIONAL, AND THE FIRE LAYER ESPECIALLY. *** 0.35 is BELOW flint_cast's 0.6 deliberately:
+# that staff fires one bolt on a 24-tick cooldown, and this fires seven bodies on 32 -- a layer
+# tuned for one shot is a layer nobody tuned for seven. The number is a starting point for an ear,
+# not a derivation. GATE-release-sounds.md's question row is where it is ruled, and "drop the layer
+# entirely" is one of its options.
+#
+# BOTH KEYS VERIFIED AGAINST THE PINNED JAR, not recalled: CROSSBOW_SHOOT and BLAZE_SHOOT are both
+# declared in net/minecraft/sounds/SoundEvents.class on run/versions/26.1.2/paper-26.1.2.jar.
+# soundKey() resolves at LOAD, so a bad key is a named boot failure rather than a silent no-op --
+# but flint_cast.yml records that a remembered API name is exactly what a gate row once cost.
+
+steps:
+  - type: sound
+    key: item.crossbow.shoot      # the press -- it is a crossbow and should read as one
+    volume: 1.0
+    pitch: 1.0
+
+  - type: sound
+    key: entity.blaze.shoot       # the fire element, layered under it. flint_cast's second key
+    volume: 0.35
+    pitch: 1.2
