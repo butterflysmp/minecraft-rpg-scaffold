@@ -155,6 +155,28 @@ class QuiversSignatureTest {
      * cost already priced for {@code WeaponLoader.KNOWN_KEYS} — with the same conclusion: <b>it fails
      * towards NOISE.</b> A legitimate new reader reddens loudly and someone adds it on purpose;
      * nothing goes quietly unguarded. The set is named rather than counted, so a reader can check it.
+     *
+     * <h2>*** IT FIRED ON A NAME AND NOT ON A KEY, 2026-09-24. RECORDED, NOT FIXED ***</h2>
+     *
+     * <p>The needles are the BARE identifiers {@code quiverLoaded} and {@code quiverCapacity}, which
+     * are the names of the {@code Keys} fields. <b>{@code StatsBarText} landed on this list having
+     * touched no key at all</b>: its new quiver parameters were called {@code quiverLoaded} and
+     * {@code quiverCapacity}, and a bare identifier cannot tell {@code keys.quiverLoaded} from
+     * {@code int quiverLoaded}. That is a FALSE PRESENCE -- the reading was real, the conclusion was
+     * about something else -- and it is the harder direction, because a hit reads as confirmation.
+     *
+     * <p><b>It was resolved by RENAMING the parameters</b> to {@code loadedRounds} and
+     * {@code magazineCapacity}, not by adding {@code StatsBarText} to the list and not by loosening the
+     * needle. Adding it would have been false: the file does not touch the key, and the list is the
+     * thing a reader trusts. The rename also happens to be the better name for a pure formatter, which
+     * describes a quantity rather than a storage key.
+     *
+     * <p><b>The needle's breadth is a standing cost and is named for whoever owns this row.</b>
+     * {@code quiverLoaded} is a natural local-variable name, so this will fire again. Anchoring to
+     * {@code .quiverLoaded} would fix it -- every real touch is a field access, including
+     * {@code Keys}' own {@code this.quiverLoaded = ...} -- but tightening a needle is how a guard goes
+     * blind, and that judgement belongs to whoever can re-derive this list rather than to a slice that
+     * merely tripped over it.
      */
     @Test
     void theCountKeyIsTouchedInExactlyTwoFilesAcrossAllOfPaper() throws IOException {
@@ -850,6 +872,8 @@ class QuiversSignatureTest {
      * ON THIS LIST
      *   PlumeDraw.cap           SETTLES       decides the cap, and via DrawRelease.decide whether
      *                                         the release fires at all. The #147 site.
+     *   StatsBarSystem          SETTLES       the action-bar quiver field. Added 2026-09-24. It
+     *     .heldMagazine                       DRAWS, and it settles anyway -- see below.
      *   QuiverSweep.reassert    DISPLAY ONLY  reloadTicksRemaining -> the hotbar overlay. Its own
      *                                         javadoc already forbids resolveForShot here.
      * NOT ON IT, AND WHY
@@ -863,6 +887,35 @@ class QuiversSignatureTest {
      *
      * <p><b>A site that SETTLES without obtaining a state is correctly absent</b>, because it cannot
      * commit the defect: there is no stale number for it to decide on. The list watches the readers.
+     *
+     * <h2>*** TWO DRAWING SURFACES, OPPOSITE ROLES, AND "DISPLAY ONLY" IS NOT THE CRITERION ***</h2>
+     *
+     * <p>{@code QuiverSweep} and {@code StatsBarSystem} both DRAW, and one settles while the other
+     * must not. That looks like an inconsistency and is not; the criterion is narrower than
+     * decide-versus-display:
+     *
+     * <pre>
+     * SETTLE where settling CHANGES what you are about to show or decide.
+     * DO NOT where it cannot.
+     * </pre>
+     *
+     * <p><b>{@code QuiverSweep} draws from {@code reloadTicksRemaining}, which is 0 for a matured
+     * reload whether or not it has been settled</b> -- so a settle there writes an item and changes
+     * nothing drawn, which is precisely the <i>"commit a matured reload as a side effect of drawing a
+     * progress bar"</i> its javadoc refuses. <b>The stats bar draws the COUNT, which is 0 before the
+     * settle and full after.</b> There the settle is not a side effect of rendering; it is what makes
+     * the render true.
+     *
+     * <p>So the rule stated at {@code Quivers} widens from <i>deciders</i> to <i>deciders and honest
+     * readouts</i>, and {@code QuiverSweep} is untouched by the widening rather than grandfathered out
+     * of it. The trigger for the HUD is concrete: reload, switch slots, let it mature unheld, switch
+     * back -- nothing has settled it, and the bar would read {@code 0/25} until the player acted.
+     *
+     * <blockquote><b>THIS ROW CAUGHT {@code StatsBarSystem} BEFORE THE LIST WAS EDITED, WHICH IS ITS
+     * POSITIVE CONTROL.</b> The HUD reader was written first and this list left alone, and it reported
+     * <i>"expected: &lt;[PlumeDraw.java, QuiverSweep.java]&gt; but was: &lt;[PlumeDraw.java,
+     * QuiverSweep.java, StatsBarSystem.java]&gt;"</i> -- a new reader forced to declare its role,
+     * which is the whole job. Two days old and it has caught one.</blockquote>
      */
     @Test
     void everyExternalReaderOfTheMagazineDeclaresWhetherItSettles() throws IOException {
@@ -912,14 +965,17 @@ class QuiversSignatureTest {
 
         java.util.Collections.sort(readers);
         assertEquals(
-                List.of("PlumeDraw.java", "QuiverSweep.java"),
+                List.of("PlumeDraw.java", "QuiverSweep.java", "StatsBarSystem.java"),
                 readers,
                 "the set of files that obtain a QuiverState from outside Quivers has changed. Each one "
                         + "must declare, in its own comment, whether it SETTLES a matured reload or is "
-                        + "DISPLAY ONLY:\n"
+                        + "DISPLAY ONLY. The test is NOT decide-versus-display -- it is whether "
+                        + "settling CHANGES what you are about to show or decide:\n"
                         + "  PlumeDraw.cap    SETTLES -- it DECIDES (DrawRelease.decide refuses on it)\n"
-                        + "  QuiverSweep      DISPLAY ONLY -- it draws a progress bar and must not "
-                        + "commit a reload as a side effect of rendering\n"
+                        + "  StatsBarSystem   SETTLES -- it DRAWS, but it draws the COUNT, which is 0 "
+                        + "before the settle and full after\n"
+                        + "  QuiverSweep      DISPLAY ONLY -- it draws from reloadTicksRemaining, "
+                        + "which is 0 either way, so a settle there would change nothing drawn\n"
                         + "A reader that DECIDES and does not settle is the #147 defect again: a "
                         + "refusal taken on a stale magazine, which then stops anything looking "
                         + "again. Add your file here and write down which it is.");

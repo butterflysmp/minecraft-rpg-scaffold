@@ -495,8 +495,11 @@ public final class RpgPlugin extends JavaPlugin {
         // A weapon trigger fires through the same cooldown/mana machinery, gate-free.
         this.weaponService = new WeaponService(abilityService);
 
-        // The action-bar HUD reads both stores; it owns no state beyond its per-player loops.
-        this.statsBar = new StatsBarSystem(scheduler, stats, resources);
+        // The action-bar HUD reads the three stores; it owns no state beyond its per-player loops.
+        // adapters is the fourth argument as of 2026-09-24, for the quiver field: keys() to read the
+        // held item's magazine and weapons() to resolve its definition. Built at line 444, well above
+        // this -- said because a reader checking whether that ordering holds should not have to look.
+        this.statsBar = new StatsBarSystem(scheduler, stats, resources, adapters);
 
         // Passive health regeneration: its own per-player loop, on its own clock. See the class
         // javadoc for why it is not folded into the reconcile loop that already visits everyone.

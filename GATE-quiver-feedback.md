@@ -384,3 +384,78 @@ wording could not see.
 > read, or guarded behind a condition that is never true, satisfies it exactly as correct code does.
 > **P1 is the row that can tell those apart, and nothing in the suite can.** Do not read a green suite
 > as proof the call is in the right place.
+
+---
+
+## THE ROWS — THE QUIVER FIELD ON THE STATS BAR
+
+**Ben's ruling, 2026-09-24, recorded as his:** the quiver count shows in the action-bar stats line,
+**between health and defense**, while a weapon with a quiver is held, and it **always shows
+`loaded/max`, including mid-reload.**
+
+**Icon `➹` (U+27B9), colour AQUA.** The icon is Ben's suggestion and is kept because
+`Character.getName(0x27B9)` is *HEAVY BLACK-FEATHERED NORTH EAST ARROW* — a **fletched** arrow, which
+is what a quiver holds — and because it is in DINGBATS, the block `❤` and `✦` already come from. The
+colour is the only bright hue not already spoken for; the argument and the rejected alternative are at
+`StatsBarText.QUIVER_COLOR`.
+
+| # | what to do | PREDICTION | READING |
+|---|---|---|---|
+| **H1** | Hold a Boltor and look at the action bar. | The field renders as **`➹ 8/25`**-shaped text — **a fletched arrow glyph, NOT a missing-glyph box `□`.** This is the only row that can answer whether the font has this codepoint. | _(not run)_ |
+| **H2** | Switch from the quiver weapon to a sword, then back. | The field **disappears and reappears**, within half a second each way. Health, defense and mana never move position on the sword — they close up, they do not shift. | _(not run)_ |
+| **H3** | Fire single shots and watch the count. | It **counts down one per shot**, `25 → 24 → 23`. On the Plume's fanned release it drops by the **arrow count**, not by one. | _(not run)_ |
+| **H4** | Reload and watch the field as the `loading_end` click plays. | It reads **full ON the click**. Mid-reload it keeps showing the **old count** — `➹ 0/25` — and never a timer, a dash or a spinner. | _(not run)_ |
+| **H5** | With no armour on (defense hidden), read the bar. | **`❤ … ➹ … ✦ …`** — three fields, and **aqua next to blue is legible at a glance.** This is the one adjacency on the bar worth a real screen; if the two read as one colour, say so and the colour is re-picked. | _(not run)_ |
+| **H6** | Put armour on and read it again. | **Four fields, `❤ ➹ ⛨ ✦`** — the quiver sits **between health and defense**, Ben's order. Nothing wraps or truncates at the bar's width. | _(not run)_ |
+| **H7** | **THE ROW THE SETTLE EXISTS FOR.** Reload, switch to another hotbar slot before it matures, wait past maturity, switch back. | The field reads **full within half a second** of switching back. **Without the settle it would read `➹ 0/25` until the player acted** — nothing else settles a reload that matured while the weapon was unheld. | _(not run)_ |
+| **H8** | Empty the magazine completely and look. | **`➹ 0/25` — the field is STILL THERE.** It does not vanish at zero. This is the opposite rule to defense, deliberately: an empty quiver is why the weapon will not fire, so it is exactly when the readout matters. | _(not run)_ |
+
+> ### *** H7 IS THE ROW WHOSE PREDICTION DIFFERS FROM THE CODE'S PREVIOUS BEHAVIOUR, SO READ IT CAREFULLY ***
+>
+> Every other H row would read the same with or without the settle. **H7 is the discriminator**, and
+> it is the reason a DISPLAY surface was allowed to write at all. The argument, and why
+> `QuiverSweep` stays display-only under the same rule, is at `StatsBarSystem.heldMagazine`.
+
+### *** MEASURED: HOW LONG A QUIVER NOTICE SURVIVES BEFORE THE BAR OVERWRITES IT ***
+
+**Ben asked for this figure and explicitly did NOT ask for a fix. It is reported, and nothing about the
+notices was changed.**
+
+Both surfaces write the same action bar. `StatsBarSystem` repaints every `BAR_PERIOD_TICKS = 10`;
+`QuiverNotice` and `PlumeNotice` both throttle at `THROTTLE_TICKS = 40`.
+
+**Measured, not reasoned** — a `RepeatingTask` at period 10 driven over 100 ticks on `FakeTickTarget`,
+the clock fake whose own fidelity `RepeatingTaskFidelityTest` pins:
+
+```
+paints over 100 ticks : [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+gaps                  : [10, 10, 10, 10, 10, 10, 10, 10, 10, 10]   <- period IS the interval
+survival by send-tick : 1->9  2->8  3->7 ... 9->1  10->0  11->9 ...
+```
+
+| quantity | value |
+|---|---|
+| repaint interval | **exactly 10 ticks (0.5 s)** — the first paint is at tick 10, not 0 |
+| notice survives | **0 to 9 ticks (0 to 0.45 s)**, by phase |
+| mean survival | **4.5 ticks (0.225 s)** |
+| notice throttle | **40 ticks (2 s)** |
+
+**SO A NOTICE OCCUPIES THE BAR FOR AT MOST 0.45 s OF ITS 2 s THROTTLE WINDOW — under a quarter of it
+— AND ONE PHASE IN TEN IS ZERO.** A notice sent on a paint tick is overwritten within the same tick if
+the paint runs second, and the player never sees it at all.
+
+> **WHAT THIS MEASURES AND WHAT IT DOES NOT.** The interval and the phase distribution are properties
+> of the scheduling and are now measured. **Which of the two runs first WITHIN a shared tick is not** —
+> that is a live-server ordering question the fake cannot answer, and it is the whole difference
+> between "0 ticks" and "9 ticks" for one send in ten. A boot row could settle it; none is written,
+> because the remedy is not yet asked for.
+>
+> **THE FIGURE IS NOT NEW TO THIS SLICE AND THE QUIVER FIELD DOES NOT CAUSE IT.** `QuiverNotice` has
+> been on the action bar since this branch's first commit and the bar has repainted at 10 ticks since
+> long before that, so **every quiver notice has always been overwritten inside half a second.** Item
+> 4 extended the same condition to the Plume's two. **The field added here changes none of it** — it
+> is drawn by the repaint that was already overwriting them.
+>
+> **If it wants fixing, the cheap shapes are: suppress the repaint for N ticks after a notice, or
+> render the notice INTO the stats line as a transient field.** Neither is done and neither is
+> designed; **Ben rules.**
