@@ -5,10 +5,21 @@ no prediction is edited once a row has been read. Readings go in the `READ` cell
 prediction they answer, never over it.
 
 ```
-NOT RUN   12   R0 R1 R2 R3 R4 R5 R6 R7 R7b R8 R9 R10
+NOT RUN   20   R0 R1 R2 R3 R4 R5 R6 R7 R7b R8 R9 R10 R11 R12 R13 R14 R15 R16 R17 R18
          ──
-         12   = git grep -c '^### R' <ref> -- GATE-dragons-breath.md
+         20   = git grep -c '^### R' <ref> -- GATE-dragons-breath.md
 ```
+
+> **THE COUNT WAS RE-DERIVED FROM THE COMMAND, NOT ADJUSTED BY THE DELTA OF THIS CHANGE.** It read
+> **12** until 2026-09-24; eight rows were added on the rebase onto `d336199` (R11-R13 for the real
+> arrow body, R14-R16 for the quiver feedback the Breath inherits, R17-R18 the question rows).
+> **A figure maintained by delta is wrong forever and by a growing amount**, so the number above is
+> what the command printed.
+>
+> **AND THE NEW ROWS CONTINUE THE `R` SEQUENCE DELIBERATELY.** `B1`/`Q1` would have read better and
+> would have been INVISIBLE to `^### R` — the count would still have said 12 and nobody would have
+> looked. A naming scheme that the file's own instrument cannot see is the needle-scope defect this
+> repo records, applied to itself.
 
 **GAME MODE: SURVIVAL, for every row unless the row says otherwise.** Declared per the standing
 debt in `CLAUDE.md`.
@@ -52,8 +63,45 @@ got a complete, self-consistent, entirely false set of readings out of it.
 > row is a row that does not get run**, and an unread R0 makes every row below unreadable.
 > `CLAUDE.md`'s own `unzip -p` example is the form that does **not** run here.
 
+> ### *** BOOT WITH `--refresh-content`, AND THIS IS NOT OPTIONAL ***
+>
+> **`dragons_breath.yml` and `dragons_breath_trail.yml` are NEW content files**, and the plugin ships
+> content with `saveResource(path, false)`, which **never overwrites an existing file**. A new file
+> IS copied, so the weapon would load — **but `dragons_plume.yml` and every other file already in
+> `run/plugins/Rpg/content/` would stay at whatever an earlier boot left there.**
+>
+> **That is not hypothetical on this tree.** `#146` changed `dragons_plume.yml`'s tap speeds and
+> cooldowns and `#147` changed nothing in content; a stale deployed Plume would make any comparison
+> row between the two weapons read against a Plume that no longer exists. **`GATE-plume-trail.md`
+> records this trap stranding a whole slice once already.**
+>
+> ```
+> ./scripts/dev-server.sh --refresh-content
+> ```
+
+> ### *** AND THE BUILD LINE IS THE FIRST INSTRUMENT, BECAUSE IT NEEDS NO UNPACKING ***
+>
+> `#145` (`3ae97ff`) added a line at enable naming the commit the jar was built from. **It did not
+> exist when this gate was written**, and it is strictly better than an mtime: it cannot be confused
+> with a different jar, and it distinguishes a hand build from a `dev-server.sh` one.
+>
+> ```powershell
+> Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' | Select-Object -First 1
+> ```
+>
+> | it says | means |
+> |---|---|
+> | this branch's tip | **bound.** Compare it to the tip you meant to boot. |
+> | `<hash>-dirty` | built from a MODIFIED tree, so it is **not any commit** |
+> | `unknown -- NOT built by dev-server.sh` | a hand build or another tree. **Unbound.** |
+>
+> **The class and content probes below are still owed**, because this line proves which commit BUILT
+> the jar and the probes prove which SYMBOLS are in it — and a checkout of the wrong branch followed
+> by a correct build satisfies neither on its own.
+
 | | |
 |---|---|
+| **Predict** | **The `[Rpg] Build:` line names this branch's tip**, and is not `-dirty` and not `unknown`. |
 | **Setup** | Unpack the DEPLOYED jar and probe for a symbol this slice introduces, plus a content key: <br><br>`Copy-Item run/plugins/rpg-<ver>.jar "$env:TEMP\deployed.zip" -Force`<br>`Expand-Archive "$env:TEMP\deployed.zip" -DestinationPath "$env:TEMP\deployed" -Force`<br>`$classes = Get-ChildItem "$env:TEMP\deployed\io\github\butterflysmp\rpg" -Recurse -Filter *.class`<br>`Write-Host "$($classes.Count) class files scanned"`<br>`$classes \| Select-String -Pattern 'SpreadPattern' -Encoding ascii \| Select-Object -ExpandProperty Path`<br>`Select-String -Path "$env:TEMP\deployed\content\weapons\dragons_breath.yml" -Pattern '^\s+count:'` |
 | **Predict** | **The class count is NON-ZERO and is reported.** It is the no-op value: `0 scanned` means the unpack failed, and an absence underneath a zero means nothing. |
 | **Predict** | `SpreadPattern` is found in **at least two** class files — `core/combat/SpreadPattern.class` and `core/ability/CastExecutor.class`, which calls it. A **0** means the deployed jar predates this slice, whatever its mtime says. |
@@ -289,6 +337,120 @@ the same number six times, and the window is merely refreshed.
 
 ---
 
+
+---
+
+## THE BODY ROWS — ADDED 2026-09-24, BECAUSE THE BODY STOPPED BEING INERT
+
+**This slice was written when a body was a `noPhysics` marker that collided with nothing.** #144
+removed that switch. `PLAN-dragons-breath.md` §12 is the walk; these are the rows it owes. **None of
+the three can be seen by any unit test** — `spawnBoltMarker` needs a live World.
+
+### R11 — All seven bodies carry the marker tag, so none of them deals a vanilla hit
+
+| | |
+|---|---|
+| **Setup** | Fire one press point-blank into a mob and watch the damage numbers, then read `latest.log`. |
+| **Predict** | **Seven numbers of 9 and nothing else.** No number that is not 9, no vanilla arrow damage on top. |
+| **Predict** | **NO `[plume] EntityDamageByEntityEvent` backstop line in the log.** That backstop fires only when a body resolved a hit, which means its `ProjectileHitEvent` cancel did not take — and the cancel keys on the marker tag. **A single untagged body out of seven shows up here and nowhere else.** |
+| **Predict** | The structural argument says this cannot fail: a spread makes seven separate `spawnBoltMarker` calls and the tag is set inside it, so there is no arm that tags some and not others. **The row exists because that is an argument and not a measurement.** |
+| **READ** | _(NOT RUN)_ |
+
+### R12 — The one-tick hitch, now up to seven times on one target
+
+| | |
+|---|---|
+| **Setup** | Fire one press at a mob at about **5 blocks**, where the whole hexagon still fits it, and watch the bodies as they reach it. |
+| **Predict** | **The bodies pass THROUGH and do not stop.** `stepMoveAndHit` calls `setPos(firstHit.getLocation())` **before** the event is raised, so cancelling cannot stop a body being clamped to the mob's surface for one tick; `driveMarker` sets the velocity again next tick and it flies on. |
+| **Predict** | **WHAT IS BEING READ IS WHETHER THE HITCH IS VISIBLE, not whether it happens.** The Plume's note prices it at one body hitching by up to its per-tick step — 2.5 blocks here. **Seven bodies can hitch on the same mob in the same tick**, and this weapon's designed range is exactly where all seven are still in the cone. |
+| **Predict** | If it reads as a visible stutter or a momentary cluster at the mob's surface, **that is a finding about the shared body, not about this weapon** — the Plume has it too, one body at a time. |
+| **READ** | _(NOT RUN)_ |
+
+### R13 — Point blank: bodies spawning inside or against a mob
+
+| | |
+|---|---|
+| **Setup** | Stand **touching** a mob — inside its hitbox if you can — and fire one press. Then fire one with the mob against a wall directly behind it. |
+| **Predict** | **Still seven damage numbers of 9.** The tag is set at spawn, before the body ticks at all, so a hit raised on the very first tick is cancelled like any other. |
+| **Predict** | **No arrow is left stuck in the world and none is pickable.** A body that reaches the wall sticks, and the armed lifetime discards it on its first in-ground tick; pickup is `DISALLOWED` regardless. |
+| **Predict** | **No `PlayerPickupArrowEvent` warning in the log**, walking over the spot afterwards. |
+| **Predict** | **THE PLUME'S BOOTS DO NOT COVER THIS.** They were taken at range, and *"close range is the whole weapon"* is this one's own tooltip. |
+| **READ** | _(NOT RUN)_ |
+
+---
+
+## THE QUIVER-FEEDBACK ROWS — WHAT THE BREATH INHERITS FROM #147
+
+**Every quiver surface keys on `WeaponDefinition.hasQuiver()`, which is `quiverSize > 0`.** The Breath
+authors `quiver_size: 5`, so it inherits all of them **by construction rather than by wiring** — there
+is no per-weapon opt-in anywhere in the path. These rows read that the construction holds.
+
+> **ONE INHERITANCE IT DOES *NOT* GET, AND IT IS WORTH SAYING.** `PlumeDraw.cap`'s settle is
+> **draw-weapon only** — `drawWeapon` filters on `material: bow` AND on the weapon binding no
+> `right_click`. The Breath is `material: crossbow` binding `right_click`, so `PlumeDraw` never sees
+> it. **Its settles come from the reload cue, the stats bar, and the shot path** — three routes, none
+> of them the Plume's.
+
+### R14 — The HUD field reads the Breath's 5-round magazine
+
+| | |
+|---|---|
+| **Setup** | Hold the Dragon's Breath and read the action-bar stats line. Fire once. |
+| **Predict** | **`➹ 5/5`** between health and defense, in aqua. Then **`➹ 4/5`** after one press — **one round for seven bodies**, which is the spread-is-not-a-fan rule, guarded by `onePressSpendsOneRoundUnlessItIsAYawFan`. |
+| **Predict** | Switch to a sword: **the field disappears.** Switch back: it returns. |
+| **READ** | _(NOT RUN)_ |
+
+### R15 — The sweep, the reload sound, and the settle all reach it
+
+| | |
+|---|---|
+| **Setup** | Empty the magazine, left-click to reload, and watch the Breath's hotbar slot and the action bar. |
+| **Predict** | *"Reloading..."* on the **action bar** with the crossbow loading-start sound, and the cooldown **sweep** wiping across the Breath's icon over the reload's length. |
+| **Predict** | **One `loading_end` click as the sweep empties, and the HUD reads `➹ 5/5` ON that click** — not on the next action. That is #147's cue settle, reached here through the same `Quivers.beginReload`. |
+| **Predict** | **Only the Breath sweeps.** Put another quiver weapon in the hotbar: its icon is untouched. The cooldown group is per weapon id. |
+| **READ** | _(NOT RUN)_ |
+
+### R16 — The settle survives switching away mid-reload
+
+| | |
+|---|---|
+| **Setup** | Start a reload, switch to another hotbar slot before it matures, wait past maturity, switch back. |
+| **Predict** | The HUD reads **`➹ 5/5` within half a second** of switching back. Nothing settled it while it was unheld — the cue declined because a different weapon was in hand — so **this is the stats-bar settle doing it**, which is #147's `StatsBarSystem.heldMagazine`. |
+| **Predict** | And the weapon **fires immediately**; no press is wasted re-settling. |
+| **READ** | _(NOT RUN)_ |
+
+---
+
+## THE QUESTION ROWS — BEN RULES AT THE BOOT
+
+**These are PROPOSALS, not rulings.** They ship at the values below so the weapon is bootable; the
+row is where the number is decided.
+
+### R17 — Reload feel: is 40 right?
+
+| | |
+|---|---|
+| **Setup** | Fire five presses, run dry, reload, and repeat until you have a feel for the cycle. |
+| **Question** | `reload_ticks: 40` is **2.0 seconds**, PROPOSED. Against the neighbours: the Boltor is 60 (3.0s) for 8 rounds, the Plume 60 for 25. **This weapon empties in five presses at 32-tick cooldown — about 1.6s of firing for 2.0s of reloading**, which is the tightest fire-to-reload ratio in the project. |
+| **Options** | (a) **32** — a reload no longer than the cooldown between presses; the weapon never really stops. (b) **40** — as shipped. (c) **60** — the project's standing reload, and the Breath becomes a burst weapon with a real pause. |
+| **ANSWER** | _(NOT RUN)_ |
+
+### R18 — Knockback feel: is 0.1 right?
+
+| | |
+|---|---|
+| **Setup** | Fire point-blank at a mob so all seven land, then at range so one or two do. |
+| **Question** | `strength: 0.1` is PROPOSED, and its VALUE is what is being asked — **the rule that a travelling ranged weapon authors knockback at all is settled** (operator's ruling, 2026-09-13). |
+| **Question** | **READ R7b FIRST.** Whether seven pushes SUM or OVERWRITE changes what 0.1 means by a factor of seven, and the answer decides whether this question is about 0.1 or about 0.7. |
+| **Options** | (a) as shipped. (b) too weak to read at all — raise it. (c) too strong at point blank, where all seven land. |
+| **ANSWER** | _(NOT RUN)_ |
+
+> ### *** MATERIAL AND NAME ARE FLAGGED, NOT ASKED ***
+>
+> `material: crossbow` and the name colliding with vanilla's `DRAGON_BREATH` bottle (and with
+> `dragons_plume`) are recorded in `PLAN-dragons-breath.md` §11.5 as the operator's to want. **They
+> are deliberately NOT question rows**: a gate row asks something a boot can answer, and neither of
+> these is answered by looking at the weapon in play.
 ## WHAT THIS GATE CANNOT SEE, SAID SO IT IS NOT ASSUMED
 
 - **The reload figure is a PROPOSAL.** `reload_ticks: 40` is the only unruled number in the content

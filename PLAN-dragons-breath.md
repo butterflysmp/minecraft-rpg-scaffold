@@ -518,3 +518,89 @@ Neither is a defect and both are the operator's to want. Written down so nobody 
 oversight — and noting that the two weapons are otherwise easy to confuse in a log: both are
 `class: ranger`, both author `body: arrow`, and `dragons_plume` is the only weapon that may author
 a homing block while this one is ruled not to.
+
+---
+
+# 12. THE RE-READ AGAINST THE REAL-ARROW BODY — 2026-09-24
+
+**This slice was written when a body was an inert `noPhysics` marker. It is not one any more.** #144
+(`16939b6`, `895e5d2`) removed `setNoPhysics(true)` from `PaperCombatWorld.spawnBoltMarker` — measured
+rather than reasoned: spike modes B and E differ in that one line, and the operator read B as *"still
+has the problem"* and E as *"perfect, exactly what we're looking for"*.
+
+**Every body claim in this slice was walked on the rebase onto `d336199`.** What follows is what
+changed, what did not, and — the half that is easy to skip — **what turned out not to have depended
+on the body at all.**
+
+## 12.1 WHAT NO LONGER HOLDS, AND IS CORRECTED IN PLACE
+
+**`dragons_breath.yml`'s `body:` note read _"A real arrow, oriented along its travel, INERT IN EVERY
+OTHER WAY"_.** The second half is withdrawn. The old text is quoted in the file rather than deleted,
+because it was true when written.
+
+A body now **collides with blocks and sticks** (the armed lifetime discards it on its first in-ground
+tick), **collides with entities** and raises `ProjectileHitEvent`, is explicitly **pickup-DISALLOWED**,
+and carries damage 0 / knockback 0 / not-critical as the fallback behind a cancel that might not
+register. Gravity applies and is inert, because `driveMarker` overwrites the velocity every tick.
+
+## 12.2 THE THREE THINGS THAT ARE NEW *BECAUSE THERE ARE SEVEN*
+
+**The Plume has one body per shot. This weapon has seven, and two of the body's properties scale with
+that count while one does not.**
+
+- **THE MARKER TAG IS ON ALL SEVEN, BY CONSTRUCTION.** `onPlumeBodyHit` cancels a hit only for a body
+  carrying `keys().markerEntity`, so an untagged body deals a real vanilla arrow hit — damage this
+  weapon never authored, on a target `castRay` may not have chosen. **A spread produces seven separate
+  calls to `spawnBoltMarker`, not one call with seven arguments**, and the tag is set inside it, so
+  there is no arm in which some bodies are tagged and others are not. **This is a structural argument,
+  not a measurement**, and nothing in either module can see it — `spawnBoltMarker` needs a live World.
+  **GATE row B1.**
+
+- **THE ONE-TICK HITCH IS NOW UP TO SEVEN HITCHES ON ONE TARGET.** `stepMoveAndHit` calls
+  `setPos(firstHit.getLocation())` **before** raising the event, so cancelling cannot prevent the body
+  being clamped to a mob's surface for that tick. The Plume's note prices this at one body hitching by
+  up to its 2.5-block step. **This weapon fires seven bodies at 2.5 speed into a 3-degree cone, and its
+  own content says seven arrows reach one target only inside about six blocks — which is exactly where
+  every body is still in the cone.** So the worst case is not hypothetical: it is the weapon's designed
+  range. Nobody has seen it. **GATE row B2.**
+
+- **POINT-BLANK IS A CASE THE PLUME NEVER HAD.** *"Close range is the whole weapon"* is this weapon's
+  own tooltip. A body spawned at the shooter's eye, against or inside a mob's hitbox, may raise its hit
+  on the **first** tick — before `driveMarker` has run once. The cancel still applies (the tag is set at
+  spawn, before the body ever ticks), so the outcome should be a clamp-then-fly rather than a hit. **It
+  is not measured and it is not derivable from the Plume's boots, which were taken at range. GATE row B3.**
+
+## 12.3 WHAT DID **NOT** CHANGE, CHECKED RATHER THAN ASSUMED
+
+- **`SevenArrowScorchTest` asserts nothing about the body.** Its six rows are scorch ARITHMETIC — burn
+  counts, the half-payload cap, refresh-not-stack, and the comparison against a Flint Staff bolt — all
+  driven through `ScorchStatus` against `FakeScorchSink` and `FakeTickTarget`. **It never spawns a body
+  and never asserts one is inert**, so #144 does not reach it. Said explicitly because "seven arrows" in
+  the name invites the opposite assumption.
+- **The spread arithmetic, the ring geometry and the damage table** are all pre-flight: they decide
+  direction vectors, and a body is spawned from the result. Nothing in them reads a body's physics.
+- **`onePressSpendsOneRoundUnlessItIsAYawFan`** — the quiver-cost guard — is about `WeaponFire`'s spend
+  expression, above the body entirely.
+
+## 12.4 A DEFECT FOUND IN THE WALK, IN MASTER, **NOT FIXED HERE**
+
+**`RpgListeners.onPlumeBodyPickup`'s javadoc and its log message both still describe the PRE-#144
+body**, and they are the explanation a person reads at the moment that guard fires:
+
+> *"playerTouch's guard is `isInGround() OR isNoPhysics()`, and the body runs noPhysics, so nothing
+> else refuses this."*
+
+**The body does not run `noPhysics`.** `spawnBoltMarker` states the corrected mechanism directly:
+*"Under the old switch the SECOND disjunct was always true, so the body was pickable in MID-AIR …
+Now the second disjunct is always FALSE and the FIRST one goes live the instant the body sticks."*
+**The hazard INVERTED — mid-air to in-ground — and this guard's account describes the old half.**
+
+**Not fixed in this slice.** It is master's file, this branch touches it nowhere else, and a hunk in an
+unrelated file is how a revision regresses what it was not revising. **The correction is written out
+here so whoever takes it has nothing to re-derive:** the two sentences should say the body is pickable
+**once it sticks in a block**, and that `DISALLOWED` is what refuses a *stuck* arrow rather than a
+flying one. **TRIGGER: the next commit that touches `RpgListeners`' Plume-body handlers at all.**
+
+> **It matters more than a stale comment usually does, because this guard's own javadoc argues that
+> its firing IS the detector** — *"a guard that logs when it fires cannot be hollow"*. A detector
+> whose message misexplains the mechanism sends the next person to look for a switch that is gone.

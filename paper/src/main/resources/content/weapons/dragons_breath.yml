@@ -225,8 +225,43 @@ triggers:
       gravity: 0.05
       max_lifetime_ticks: 120
 
-      # A real arrow, oriented along its travel, inert in every other way -- and mutually exclusive
-      # with `item:`, which the loader refuses rather than resolves. Seven of them, point-first.
+      # ================== `body: arrow` -- SEVEN REAL ARROWS, AND "INERT" IS WITHDRAWN ==================
+      #
+      # *** THIS LINE READ "A real arrow, oriented along its travel, INERT IN EVERY OTHER WAY" UNTIL
+      # 2026-09-24, AND THE SECOND HALF IS NO LONGER TRUE. *** It was written when a body was a
+      # `noPhysics` marker that collided with nothing. #144 removed `setNoPhysics(true)` -- measured
+      # as THE defect, spike modes B and E differing in that one line and the operator reading E as
+      # "perfect, exactly what we're looking for" -- so the body now has physics ON.
+      #
+      # The old text is quoted rather than deleted because it was correct when written, and a claim
+      # that quietly becomes false is the thing this project keeps finding.
+      #
+      # WHAT A BODY NOW DOES, AND ALL SEVEN DO IT INDEPENDENTLY. Read off PaperCombatWorld
+      # .spawnBoltMarker, which every body goes through -- there is no second spawn path:
+      #
+      #   collides with BLOCKS   yes, and STICKS. The armed lifetime (life = MAX_VALUE - 1) discards
+      #                          the body on its first in-ground tick, so a stuck arrow lasts a tick.
+      #   collides with ENTITIES yes -- it raises ProjectileHitEvent, which RpgListeners
+      #                          .onPlumeBodyHit CANCELS for any body carrying the marker tag.
+      #   pickup                 DISALLOWED, explicitly. A stuck arrow is a pickable arrow, and
+      #                          seven per press would be seven free arrows per wall.
+      #   damage / knockback     0 and 0, and not critical. Belt on the same trousers: the CANCEL is
+      #                          the mechanism, and these are what a cancel that did not register
+      #                          would fall back to.
+      #   gravity                applies, and is inert -- driveMarker overwrites the velocity every
+      #                          tick before the arrow's own gravity can reach a move.
+      #
+      # *** THE MARKER TAG IS ON ALL SEVEN BY CONSTRUCTION, AND THAT IS WHAT MAKES THE CANCEL WORK. ***
+      # spawnBoltMarker sets keys().markerEntity on every body it spawns, and a spread produces seven
+      # calls to it rather than one call with seven arguments -- so there is no arm in which some
+      # bodies are tagged and others are not. onPlumeBodyHit READS that tag, so an untagged body would
+      # deal a real vanilla hit. GATE row B1 is the reading; nothing in the suite can see it.
+      #
+      # *** AND THE ONE-TICK HITCH IS NOW A SEVEN-BODY PROBLEM. *** stepMoveAndHit calls
+      # setPos(firstHit.getLocation()) BEFORE raising the event, so the cancel cannot prevent the body
+      # being CLAMPED to a mob's surface for that tick. On the Plume that is one body hitching by up
+      # to its 2.5-block step. Here SEVEN bodies can hitch on the same mob in the same tick, and at
+      # close range -- which is the whole weapon -- they will. Nobody has seen it. GATE row B2.
       body: arrow
 
       # ================== THE TRAIL: AUTHORED FIRST, DENSITY PROVISIONAL ==================
