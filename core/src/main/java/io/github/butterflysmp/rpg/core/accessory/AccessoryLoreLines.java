@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core.accessory;
 
+import io.github.butterflysmp.rpg.core.combat.StatsSheetLines;
 import io.github.butterflysmp.rpg.core.weapon.AccessoryDefinition;
 
 import java.math.BigDecimal;
@@ -21,6 +22,11 @@ import java.util.Map;
  * last digit this project has learned not to predict (see {@code StatsSheetLines} on
  * {@code 1.5000000000000002}); {@code AccessoryLoreLinesTest} asserts every shipped value.
  *
+ * <p><b>Rates are the exception, deliberately:</b> health and mana regen go through
+ * {@code StatsSheetLines.perFiveSeconds}, the formatter the stats sheet's own regen lines use, so an
+ * accessory's "-0.20/5s Health Regen" and the sheet's "Health Regen: 0.80/5s" are one unit from one
+ * formatter. That formatter rounds to two decimals, which is what absorbs the arithmetic.
+ *
  * <h2>Drawbacks come last</h2>
  *
  * Bonuses first, then drawbacks, each group in {@link AccessoryStat} order. The paper side colours a
@@ -36,7 +42,12 @@ public final class AccessoryLoreLines {
         BigDecimal magnitude = BigDecimal.valueOf(Math.abs(amount));
         return switch (stat) {
             case CRIT_CHANCE, CRIT_DAMAGE -> sign + plain(magnitude.movePointRight(2)) + "% " + stat.label();
-            case HEALTH_REGEN, MANA_REGEN -> sign + plain(magnitude) + "/s " + stat.label();
+            // THE SHEET'S UNIT AND THE SHEET'S FORMATTER, not a per-second one of this class's own. The
+            // stats sheet prints every rate over StatsSheetLines.RATE_WINDOW_SECONDS ("0.80/5s"), and
+            // an item that said "-0.04/s" beside a total that says "0.80/5s" makes a player do the
+            // conversion to check either. One unit, one formatter: the Quiver reads "-0.20/5s".
+            case HEALTH_REGEN, MANA_REGEN ->
+                    sign + StatsSheetLines.perFiveSeconds(Math.abs(amount)) + " " + stat.label();
             case CLASS_DAMAGE -> sign + plain(magnitude) + " " + classLabel + " " + stat.label();
             case MAX_HEALTH, MAX_MANA, DEFENSE -> sign + plain(magnitude) + " " + stat.label();
         };

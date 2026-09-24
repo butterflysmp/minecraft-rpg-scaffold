@@ -5,9 +5,9 @@ prediction, never over it, and a prediction is not edited once its row has been 
 verdicts, not figures, unless the row asks for a figure.
 
 ```
-ROWS     17   R0a R0b R0c A1 A2 A3 A3b A4 A5 A6 A7 A8 A9 A10 A11 A12 A13
+ROWS     18   R0a R0b R0c A1 A2 A3 A3b A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14
          ──
-         17   = git grep -c '^### R\|^### A' <ref> -- GATE-accessories-a.md
+         18   = git grep -c '^### R\|^### A' <ref> -- GATE-accessories-a.md
 ```
 
 **Plan:** `PLAN-accessories.md` §3 and §5.2, with the RULINGS (Q1-Q7) applied, and the roster and
@@ -80,7 +80,7 @@ the reason they exist.
 
 | prediction | READING |
 |---|---|
-| `/rpg give fletchers_quiver` twice → **two separate items in two slots**, never one stack of 2. The name reads `Fletcher's Quiver` in the rare colour. The lore, top to bottom: `+5% Crit Chance` (green), `+3 Ranged Damage` (green), `-0.04/s Health Regen` (**red**), `Ranger class accessory` (grey), a blank, the italic flavour line, a blank, `Rare Accessory`. **No enchant glint, and no Gear Score line.** | _(not run)_ |
+| `/rpg give fletchers_quiver` twice → **two separate items in two slots**, never one stack of 2. The name reads `Fletcher's Quiver` in the rare colour. The lore, top to bottom: `+5% Crit Chance` (green), `+3 Ranged Damage` (green), `-0.20/5s Health Regen` (**red**), `Ranger class accessory` (grey), a blank, the italic flavour line, a blank, `Rare Accessory`. **No enchant glint, and no Gear Score line.** | _(not run)_ |
 
 ### A2 — accessory Defense MERGES with armour Defense; neither wipes the other
 
@@ -203,7 +203,34 @@ does not consume, so every "not consumed" reading would pass for free.
 
 | prediction | READING |
 |---|---|
-| Ranger, quiver in slot 0, Ward Charm in slot 1. `/rpg stats` ends with `Accessories`, then `  Fletcher's Quiver: +5% Crit Chance, +3 Ranged Damage, -0.04/s Health Regen`, then `  Ward Charm: +3 Defense`. The **Nexus hub's stats head** tooltip ends with the **same three lines**. Unequip both → the block is **gone** from both, not a header over nothing. | _(not run)_ |
+| Ranger, quiver in slot 0, Ward Charm in slot 1. `/rpg stats` ends with `Accessories`, then `  Fletcher's Quiver: +5% Crit Chance, +3 Ranged Damage, -0.20/5s Health Regen`, then `  Ward Charm: +3 Defense`. The **Nexus hub's stats head** tooltip ends with the **same three lines**. Unequip both → the block is **gone** from both, not a header over nothing. | _(not run)_ |
+
+### A14 — class damage lands PER HIT on a real volley: the Dragon's Breath, 9 then 12
+
+**Risk:** the class grant reaching the stats sheet (A3b) but not the hit — or reaching the press once
+rather than every arrow. Added at the seat's review of `c381545`; prediction written before any boot.
+
+**Staging — each step removes a different reason the popup would not read 9:**
+
+- a **ranger** profile, holding a **Dragon's Breath**;
+- `/rpg enchant clear` on it — a give-time roll can put **Power** on it, which multiplies the 9;
+- `/rpg gearscore set 100` on it — the literal 9 is scaled by `score / 100`, and **100 is the identity**;
+- the target is a Knell (`/rpg spawn knell`): 360 HP, so it survives several volleys, and no defense
+  key. Fire at close range so several of the seven arrows land.
+
+| prediction | READING |
+|---|---|
+| Quiver **unequipped**: one volley → every **non-crit** arrow's popup reads **9** (after the fire glyph). `/rpg accessory equip 0` holding the Fletcher's Quiver, then one more volley → every **non-crit** arrow's popup reads **12**. **Flat +3 PER HIT, before crit** — not +3 per press, and not +3 spread across seven arrows. **Read non-crit arrows only**: a crit doubles the whole hit, class bonus included (18 without, 24 with), and at 15-20% chance some of the seven will crit. **And read the IMPACT popups only**, not the Scorch burn ticks that follow, which are smaller and are not this row's quantity. | _(not run)_ |
+
+---
+
+## PREDICTIONS EDITED BEFORE ANY READING — seat review of `c381545`
+
+**A1 and A13 were edited, not read.** Both printed the Quiver's drawback as `-0.04/s Health Regen`. The
+seat ruled that the accessory lore and the sheet block use the stats sheet's own rate formatter, so the
+same drawback now reads `-0.20/5s Health Regen`, in the unit the sheet's `Health Regen: 0.80/5s` total
+uses. **No row in this file had been read when the edit was made**, which is the only condition under
+which a prediction may be changed. A14 was ADDED at the same review, and is equally unread.
 
 ---
 
@@ -215,3 +242,7 @@ does not consume, so every "not consumed" reading would pass for free.
 - **A3 and A3b are two gates on one item.** A3 is the profile class (who may wear it), A3b the held
   weapon (when its damage applies). A3 passing with A3b adding damage under a staff means the grant
   was merged after `matching`.
+- **A3b and A14 read one number through two doors.** A3b reads the +3 off the stats sheet, and A14
+  reads it off real hits. If A3b passes and A14 reads 9 with the quiver on, the stat converged but the
+  cast path does not read it. If A14 reads 12 on only one arrow of the seven, it is being applied per
+  press rather than per hit.

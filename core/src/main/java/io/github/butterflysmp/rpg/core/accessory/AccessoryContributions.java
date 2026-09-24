@@ -1,5 +1,7 @@
 package io.github.butterflysmp.rpg.core.accessory;
 
+import io.github.butterflysmp.rpg.core.combat.HealthRegen;
+import io.github.butterflysmp.rpg.core.combat.ManaRegen;
 import io.github.butterflysmp.rpg.core.weapon.AccessoryDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ClassDamageModifiers.ClassGrant;
 
@@ -87,11 +89,35 @@ public record AccessoryContributions(Map<AccessoryStat, Map<String, Double>> byS
                     grants.put(key, new ClassGrant(accessory.accessoryClass(), modifier.getValue()));
                 } else {
                     byStat.computeIfAbsent(modifier.getKey(), s -> new HashMap<>())
-                            .put(key, modifier.getValue());
+                            .put(key, sourceValue(modifier.getKey(), modifier.getValue()));
                 }
             }
         }
         return new AccessoryContributions(byStat, grants);
+    }
+
+    /**
+     * The modifier an authored amount becomes, per stat.
+     *
+     * <p><b>Mana regen goes through {@link ManaRegen#contribution}</b>, the seam
+     * {@code ManaRegenModifierItems} already uses: its javadoc names it THE one place a mana-regen
+     * bonus becomes a stat modifier, so a future cap or curve lands there and reaches every source.
+     * It is the identity today, so nothing an accessory contributes changes -- the point is that the
+     * seam covers this source too, rather than being a rule every source but one obeys.
+     *
+     * <p><b>Health regen goes through {@link HealthRegen#contribution} for the identical reason</b> --
+     * its javadoc makes the same "the ONE place" claim, for {@code HealthRegenModifierItems}.
+     *
+     * <p><b>Max mana deliberately does NOT go through {@code ManaBank.contribution}</b>: that seam's
+     * claim is about a MANA BANK bonus -- an enchant -- and an accessory's max mana is not one. Max
+     * health likewise has no stat-level seam ({@code Growth.contribution} is the Growth enchant's).
+     */
+    static double sourceValue(AccessoryStat stat, double amount) {
+        return switch (stat) {
+            case MANA_REGEN -> ManaRegen.contribution(amount);
+            case HEALTH_REGEN -> HealthRegen.contribution(amount);
+            case MAX_HEALTH, MAX_MANA, CRIT_CHANCE, CRIT_DAMAGE, DEFENSE, CLASS_DAMAGE -> amount;
+        };
     }
 
     /** The desired sources for one stat. Never null; empty when nothing contributes. */

@@ -19,12 +19,12 @@ class AccessoryLoreLinesTest {
     void everyShippedModifierPrintsAsAuthored() {
         assertEquals("+3 Defense", AccessoryLoreLines.modifier(AccessoryStat.DEFENSE, 3, "Ranged"));
         assertEquals("+5% Crit Chance", AccessoryLoreLines.modifier(AccessoryStat.CRIT_CHANCE, 0.05, "Ranged"));
-        assertEquals("+0.1/s Health Regen", AccessoryLoreLines.modifier(AccessoryStat.HEALTH_REGEN, 0.1, "Ranged"));
+        assertEquals("+0.50/5s Health Regen", AccessoryLoreLines.modifier(AccessoryStat.HEALTH_REGEN, 0.1, "Ranged"));
         assertEquals("+3 Melee Damage", AccessoryLoreLines.modifier(AccessoryStat.CLASS_DAMAGE, 3, "Melee"));
         assertEquals("+25% Crit Damage", AccessoryLoreLines.modifier(AccessoryStat.CRIT_DAMAGE, 0.25, "Melee"));
         assertEquals("-10 Max Mana", AccessoryLoreLines.modifier(AccessoryStat.MAX_MANA, -10, "Melee"));
         assertEquals("+3 Ranged Damage", AccessoryLoreLines.modifier(AccessoryStat.CLASS_DAMAGE, 3, "Ranged"));
-        assertEquals("-0.04/s Health Regen", AccessoryLoreLines.modifier(AccessoryStat.HEALTH_REGEN, -0.04, "Ranged"));
+        assertEquals("-0.20/5s Health Regen", AccessoryLoreLines.modifier(AccessoryStat.HEALTH_REGEN, -0.04, "Ranged"));
         assertEquals("+3 Magic Damage", AccessoryLoreLines.modifier(AccessoryStat.CLASS_DAMAGE, 3, "Magic"));
         assertEquals("+20 Max Mana", AccessoryLoreLines.modifier(AccessoryStat.MAX_MANA, 20, "Magic"));
         assertEquals("-3% Crit Chance", AccessoryLoreLines.modifier(AccessoryStat.CRIT_CHANCE, -0.03, "Magic"));
@@ -33,15 +33,37 @@ class AccessoryLoreLinesTest {
     @Test
     void theRemainingStatsFormatToo() {
         assertEquals("+10 Max Health", AccessoryLoreLines.modifier(AccessoryStat.MAX_HEALTH, 10, "x"));
-        assertEquals("+0.5/s Mana Regen", AccessoryLoreLines.modifier(AccessoryStat.MANA_REGEN, 0.5, "x"));
+        assertEquals("+2.50/5s Mana Regen", AccessoryLoreLines.modifier(AccessoryStat.MANA_REGEN, 0.5, "x"));
         assertEquals("+2.5 Defense", AccessoryLoreLines.modifier(AccessoryStat.DEFENSE, 2.5, "x"));
         assertEquals("+12.5% Crit Chance", AccessoryLoreLines.modifier(AccessoryStat.CRIT_CHANCE, 0.125, "x"));
+    }
+
+    /**
+     * *** ONE UNIT, ONE FORMATTER. The row the per-second-form mutation must redden. ***
+     *
+     * <p>An accessory's regen and the stats sheet's regen total are the same kind of number, so they
+     * are printed by the same function in the same unit -- a player reading "-0.20/5s" on the Quiver
+     * and "0.80/5s" on the sheet compares them without converting.
+     */
+    @Test
+    void regenPrintsInTheStatsSheetsUnit_throughItsFormatter() {
+        for (AccessoryStat rate : new AccessoryStat[] {AccessoryStat.HEALTH_REGEN, AccessoryStat.MANA_REGEN}) {
+            assertEquals("+" + io.github.butterflysmp.rpg.core.combat.StatsSheetLines.perFiveSeconds(0.1)
+                            + " " + rate.label(),
+                    AccessoryLoreLines.modifier(rate, 0.1, "x"), rate.token());
+            assertEquals("-" + io.github.butterflysmp.rpg.core.combat.StatsSheetLines.perFiveSeconds(0.04)
+                            + " " + rate.label(),
+                    AccessoryLoreLines.modifier(rate, -0.04, "x"), rate.token());
+        }
+        assertEquals("1.00/5s", io.github.butterflysmp.rpg.core.combat.StatsSheetLines.perFiveSeconds(0.2),
+                "control: the formatter is the one the sheet's '1.00/5s' base comes from");
+        // Mutation: restore the per-second form (sign + plain(magnitude) + "/s ") -> reddens.
     }
 
     @Test
     void drawbacksComeLast() {
         AccessoryDefinition quiver = AccessoryFixtures.fletchersQuiver();
-        assertEquals(List.of("+5% Crit Chance", "+3 Ranged Damage", "-0.04/s Health Regen"),
+        assertEquals(List.of("+5% Crit Chance", "+3 Ranged Damage", "-0.20/5s Health Regen"),
                 AccessoryLoreLines.modifiers(quiver, "Ranged"));
     }
 

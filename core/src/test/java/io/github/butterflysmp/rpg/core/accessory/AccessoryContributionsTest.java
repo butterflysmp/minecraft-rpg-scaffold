@@ -109,6 +109,30 @@ class AccessoryContributionsTest {
         // Mutation: return `gear` or `accessories` alone from merged() -> reddens.
     }
 
+    /**
+     * Accessory mana regen goes through {@code ManaRegen.contribution}, the seam every mana-regen
+     * source uses.
+     *
+     * <p><b>WHAT THIS ROW CAN AND CANNOT SEE, stated because it is weaker than it looks.</b>
+     * {@code contribution} is the IDENTITY today, so deleting the routing leaves the value unchanged and
+     * this row GREEN. It becomes a discriminating row the day {@code contribution} gains a rule (a cap,
+     * a curve) -- which is exactly the day it matters, because that is when an unrouted source would
+     * silently escape the rule. Until then the routing is carried by the call itself.
+     */
+    @Test
+    void manaRegenGoesThroughTheSameSeamAsEveryOtherSource() {
+        AccessoryDefinition flow = AccessoryFixtures.universal("flow", Map.of(AccessoryStat.MANA_REGEN, 0.5));
+        AccessoryContributions c = AccessoryContributions.of(slots(null, flow, null, null), "none");
+        assertEquals(Map.of("accessory:1", io.github.butterflysmp.rpg.core.combat.ManaRegen.contribution(0.5)),
+                c.sources(AccessoryStat.MANA_REGEN));
+
+        // And health regen, through HealthRegen.contribution, for the same reason and with the same
+        // limit: identity today, so this reads the value and not the routing.
+        AccessoryContributions q = AccessoryContributions.of(slots(quiver, null, null, null), "ranger");
+        assertEquals(Map.of("accessory:0", io.github.butterflysmp.rpg.core.combat.HealthRegen.contribution(-0.04)),
+                q.sources(AccessoryStat.HEALTH_REGEN));
+    }
+
     @Test
     void theGrantMergeFeedsMatching_soTheHeldWeaponStillGates() {
         Map<String, ClassGrant> worn = Map.of("HEAD", new ClassGrant(WeaponClass.MAGE, 2.0));
