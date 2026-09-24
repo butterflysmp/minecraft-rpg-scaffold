@@ -30,9 +30,20 @@ final class FakeScorchSink implements ScorchSink {
         this.maxHealth = maxHealth;
     }
 
+    /**
+     * Make {@link #deal} throw, so the scorch loop's body fails.
+     *
+     * <p>Added 2026-09-24 for the loop-isolation rows. Dealing damage is the ONLY thing the scorch
+     * body does that touches anything outside itself, so it is both the realistic failure and the
+     * only injectable one. Not one-shot: a scorch that kept ticking would burn again, and this row
+     * wants that to be visible rather than silently absorbed.
+     */
+    boolean throwOnDeal = false;
+
     @Override public double victimMaxHealth() { return maxHealth; }
 
     @Override public void deal(double amount, UUID applierId, String element) {
+        if (throwOnDeal) throw new IllegalStateException("staged failure inside deal");
         burns.add(new Burn(amount, applierId, clock.now(), element));
     }
 

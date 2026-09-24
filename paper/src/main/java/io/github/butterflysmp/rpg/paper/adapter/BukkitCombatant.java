@@ -248,7 +248,7 @@ public final class BukkitCombatant {
                             entity.setFireTicks(
                                     Math.max(entity.getFireTicks(), accrued.durationTicks()));
                             ctx.scorch().apply(entity.getUniqueId(),
-                                    new EntityTaskTarget(entity, ctx.scheduler()),
+                                    new EntityTaskTarget(entity, ctx.scheduler(), ctx.log()),
                                     new EntityScorchSink(entity, ctx),
                                     accrued.stacks(), accrued.cap(), sourceId,
                                     accrued.durationTicks(), element, accrual.depth() + 1);
@@ -422,7 +422,7 @@ public final class BukkitCombatant {
                         // that used to compare them was retired when the content pass removed its
                         // second authoring route. Halve here too, or do not author one.
                         ctx.scorch().apply(entity.getUniqueId(),
-                                new EntityTaskTarget(entity, ctx.scheduler()),
+                                new EntityTaskTarget(entity, ctx.scheduler(), ctx.log()),
                                 new EntityScorchSink(entity, ctx),
                                 1, cap, applierId, durationTicks,
                                 // NO ELEMENT: a dev-applied scorch has no element behind it, so its
@@ -455,7 +455,7 @@ public final class BukkitCombatant {
                     // ctx.freeze().isImmobilized(id) holds.
                     case StatusDefinition.Immobilize immobilize -> {
                         if (entity instanceof Player) return;
-                        RepeatingTaskTarget target = new EntityTaskTarget(entity, ctx.scheduler());
+                        RepeatingTaskTarget target = new EntityTaskTarget(entity, ctx.scheduler(), ctx.log());
                         // Captured ONCE here, on the entity thread. A refresh (re-apply) reuses the
                         // running task and its original anchor -- the mob is already pinned there, so
                         // it can't have walked between casts. holdInPlace pins position while the AI
@@ -484,7 +484,7 @@ public final class BukkitCombatant {
                     // cleanup logic lives in SoakedStatus; here we only bind the two seams.
                     case StatusDefinition.Soaked ignored -> {
                         if (entity instanceof Player) return;
-                        RepeatingTaskTarget target = new EntityTaskTarget(entity, ctx.scheduler());
+                        RepeatingTaskTarget target = new EntityTaskTarget(entity, ctx.scheduler(), ctx.log());
                         SpeedAttribute speed = new EntitySpeedAttribute(entity, ctx.keys().soaked);
                         ctx.soaked().apply(entity.getUniqueId(), target, speed, durationTicks);
                     }

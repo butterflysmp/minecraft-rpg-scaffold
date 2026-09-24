@@ -427,8 +427,8 @@ public final class RpgPlugin extends JavaPlugin {
         // Custom health: the store is the source of truth; TWO displays ride its HealthChange seam,
         // fanned out by a composite listener -- the player heart bar and the per-viewer mob nameplate.
         // Two-step bind breaks the cycle (the store needs a listener, each display needs the store).
-        this.healthSystem = new PlayerHealthSystem(scheduler, keys, weapons, enchants);
-        this.nameplates = new MobNameplateManager(scheduler, new PacketNameplateSender(), keys, mobs);
+        this.healthSystem = new PlayerHealthSystem(scheduler, keys, weapons, enchants, getLogger());
+        this.nameplates = new MobNameplateManager(scheduler, new PacketNameplateSender(), keys, mobs, getLogger());
         // Third display: the per-dealer damage-number popup. Pure seam consumer -- reads amount/dealer
         // off the event, so no bind(stats) and no mob-lifecycle hooks (unlike the nameplate).
         this.popups = new DamagePopupManager(scheduler, new PacketDamagePopupSender(), elements);
@@ -503,7 +503,7 @@ public final class RpgPlugin extends JavaPlugin {
 
         // Passive health regeneration: its own per-player loop, on its own clock. See the class
         // javadoc for why it is not folded into the reconcile loop that already visits everyone.
-        this.healthRegen = new HealthRegenSystem(scheduler, stats);
+        this.healthRegen = new HealthRegenSystem(scheduler, stats, getLogger());
 
         // One thread: file writes for a single player must not race each other,
         // and a serialised queue is plenty for milestone-1 storage. Not a daemon

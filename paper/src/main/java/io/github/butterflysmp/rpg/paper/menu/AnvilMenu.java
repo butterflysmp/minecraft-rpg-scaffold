@@ -395,8 +395,8 @@ public final class AnvilMenu extends Menu {
     // ------------------------------------------------------------------ the arming delay
 
     private void startArmingTask() {
-        EntityTaskTarget target = new EntityTaskTarget(viewer, adapters.scheduler());
-        armingTask = RepeatingTask.start(target, AnvilButton.PERIOD_TICKS, () -> {
+        EntityTaskTarget target = new EntityTaskTarget(viewer, adapters.scheduler(), adapters.log());
+        armingTask = RepeatingTask.start(target, AnvilButton.PERIOD_TICKS, "anvil-arming", () -> {
             if (remainingTicks > 0) {
                 remainingTicks = Math.max(0, remainingTicks - AnvilButton.PERIOD_TICKS);
             }

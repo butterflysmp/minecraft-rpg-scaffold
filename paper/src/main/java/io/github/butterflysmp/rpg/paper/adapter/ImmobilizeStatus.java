@@ -64,7 +64,42 @@ public final class ImmobilizeStatus {
             return true;
         };
         // start() only schedules the first tick, so the task never fires before we store it.
-        a.task = RepeatingTask.start(target, 1, tick, () -> active.remove(id, a));
+        //
+        // *** onStop RELEASES THE MODIFIER AS WELL AS FORGETTING THE ENTRY, AND THAT IS THE WHOLE
+        // POINT OF THE 2026-09-24 RULE. *** The expiry arm above removes it on the normal path; a
+        // body that THROWS never reaches that arm, and before RepeatingTask gained isolation it
+        // never reached onStop either -- so the 0-modifier stayed on the entity forever. This
+        // class's own javadoc names that outcome: "a leaked 0-modifier is a permanently-frozen mob."
+        //
+        // Double removal is safe and is the seam's stated contract -- SpeedAttribute.removeSpeedModifier
+        // is "Remove our keyed modifier IF PRESENT" -- so the normal path calling it twice is a no-op
+        // rather than something needing a hasSpeedModifier() guard here.
+        //
+        // ON-THREAD BY CONSTRUCTION, not by luck: nothing calls cancel() on an immobilize task
+        // (measured 2026-09-24 -- the only cancel() callers are ScorchStatus.forget, which owns no
+        // attribute, and the display/menu loops), so stop() is reachable only from inside step(),
+        // which runs on the entity's own thread.
+        //
+        // *** THAT PROPERTY IS UNGUARDED, AND SAYING SO IS THE POINT. *** Adding a cancel() for
+        // immobilize -- a dispel, a /rpg clear -- would move this release onto the CANCELLER's
+        // thread, which on Folia is a cross-region attribute write. Nothing in the suite would go
+        // red. This comment is a measurement of today's call graph, not an enforced invariant, and
+        // it is written as one rather than pointing at a signature test that does not exist.
+        //
+        // *** AND THE RELEASE IS GATED ON isActive(), WHICH IS NOT BELT-AND-BRACES. ***
+        // onStop runs on EVERY ending, and one of them is RepeatingTask's removed/dead arm, whose
+        // own comment is "stop, touch nothing". An ungated release there reaches for the attribute
+        // of a mob that no longer exists -- this project's cardinal hazard, and
+        // ImmobilizeStatusTest.whenTheMobDiesCleanupTouchesNothingAndLeavesNoState caught exactly
+        // that when this release was first written without the gate.
+        //
+        // It is also the right SEMANTICS rather than merely the safe ones: a removed entity took its
+        // attributes with it, so there is nothing left to restore and the leak this rule exists to
+        // prevent cannot happen on that path.
+        a.task = RepeatingTask.start(target, 1, "immobilize", tick, () -> {
+            if (target.isActive()) speed.removeSpeedModifier();
+            active.remove(id, a);
+        });
         active.put(id, a);
     }
 

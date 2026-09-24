@@ -229,7 +229,18 @@ public final class ScorchStatus {
             na.remaining -= Scorch.PERIOD_TICKS;
             return na.remaining > 0;
         };
-        na.task = RepeatingTask.start(target, Scorch.PERIOD_TICKS, tick, () -> active.remove(id, na));
+        // THE MAP ENTRY IS THE ONLY THING THIS LOOP OWNS, so onStop is unchanged by the 2026-09-24
+        // release rule -- there is no attribute to restore. Said rather than left, because the rule's
+        // other two subjects (Immobilize, Soaked) both grew a release here and a reader checking the
+        // third would otherwise wonder whether it was missed.
+        //
+        // WHAT A CRASHED LOOP USED TO LEAK HERE IS STILL REAL AND IS NOW FIXED BY THE ISOLATION
+        // ALONE: apply() takes its refresh branch on `a.task.isRunning()`, and before the fix a
+        // thrown body left running == true forever -- so the victim could never be scorched again,
+        // and trackedVictims() counted them for the rest of the session. Now the loop stops, onStop
+        // clears the entry, and the next apply() starts a fresh one.
+        na.task = RepeatingTask.start(target, Scorch.PERIOD_TICKS, "scorch",
+                tick, () -> active.remove(id, na));
         active.put(id, na);
     }
 

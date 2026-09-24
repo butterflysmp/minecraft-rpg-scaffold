@@ -193,8 +193,8 @@ public final class GrindstoneMenu extends Menu {
     // ------------------------------------------------------------------ the arming delay
 
     private void startArmingTask() {
-        EntityTaskTarget target = new EntityTaskTarget(viewer, adapters.scheduler());
-        armingTask = RepeatingTask.start(target, GrindstoneButton.PERIOD_TICKS, () -> {
+        EntityTaskTarget target = new EntityTaskTarget(viewer, adapters.scheduler(), adapters.log());
+        armingTask = RepeatingTask.start(target, GrindstoneButton.PERIOD_TICKS, "grindstone-arming", () -> {
             if (remainingTicks > 0) {
                 remainingTicks = Math.max(0, remainingTicks - GrindstoneButton.PERIOD_TICKS);
             }

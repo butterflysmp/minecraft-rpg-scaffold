@@ -54,6 +54,8 @@ public final class MobNameplateManager implements HealthListener {
     private static final double VIEW_RADIUS = 64.0;
 
     private final Scheduler scheduler;
+    /** Where a crashed repeating loop is reported -- see EntityTaskTarget.loopFailed. */
+    private final java.util.logging.Logger log;
     private final NameplateSender sender;
     private final Keys keys;
     private final MobRegistry mobs;
@@ -68,7 +70,9 @@ public final class MobNameplateManager implements HealthListener {
      * {@code PlayerHealthSystem(scheduler, keys, weapons)}, which already takes a content registry
      * exactly this way.
      */
-    public MobNameplateManager(Scheduler scheduler, NameplateSender sender, Keys keys, MobRegistry mobs) {
+    public MobNameplateManager(Scheduler scheduler, NameplateSender sender, Keys keys, MobRegistry mobs,
+                                java.util.logging.Logger log) {
+        this.log = log;
         this.scheduler = scheduler;
         this.sender = sender;
         this.keys = keys;
@@ -162,9 +166,9 @@ public final class MobNameplateManager implements HealthListener {
 
     /** Start this viewer's nameplate loop. Self-cancels when the player leaves (EntityTaskTarget inactive). */
     public void onViewerJoin(Player viewer) {
-        EntityTaskTarget target = new EntityTaskTarget(viewer, scheduler);
+        EntityTaskTarget target = new EntityTaskTarget(viewer, scheduler, log);
         ViewerNameplateState state = new ViewerNameplateState();
-        RepeatingTask.start(target, NAMEPLATE_PERIOD_TICKS, () -> {
+        RepeatingTask.start(target, NAMEPLATE_PERIOD_TICKS, "nameplates", () -> {
             tickViewer(viewer, state);
             return true;                              // runs until the viewer is gone
         }, () -> { });
