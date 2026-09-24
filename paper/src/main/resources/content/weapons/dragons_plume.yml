@@ -421,14 +421,35 @@ triggers:
   # *** BEN'S RULING, 2026-09-24, RECORDED AS HIS: tap1 0.5, tap2 1.3, tap3 2.2. `draw:` STAYS 2.5,
   # so R11's ruled ~300-block reach is untouched. ***
   #
-  # The stated basis is vanilla's own power curve at each band's midpoint, times 2.5:
+  # *** THE DERIVATION, CORRECTED 2026-09-24. IT IS THE CURVE AT t = 5 / 12 / 18. ***
   #
   #     f = t / 20            p = (f^2 + 2f) / 3            speed = 2.5 * p
   #
-  # *** THE ARITHMETIC IS SHOWN BECAUSE IT WAS ASKED FOR, AND SHOWING IT FOUND THAT IT DOES NOT
-  # REPRODUCE TWO OF THE THREE VALUES. THE VALUES SHIP AS RULED; THE DERIVATION IS FLAGGED. ***
+  #     t = 5   ->  0.468750  ->  0.5
+  #     t = 12  ->  1.300000  ->  1.3
+  #     t = 18  ->  2.175000  ->  2.2
   #
-  # Computed, not reasoned -- the curve at every tick a tap can occupy:
+  #   All three, to one decimal place. Computed, not reasoned.
+  #
+  # *** THIS BLOCK FIRST SAID "AT EACH BAND'S MIDPOINT", AND THAT WAS THE REVIEW SEAT'S ERROR, NOT
+  # BEN'S. *** The seat's brief described the values as the curve at the band midpoints; they are
+  # not, because the seat guessed the band edges wrongly. Ben's values were right the whole time and
+  # only the stated reason was wrong. The correction is Ben's, 2026-09-24.
+  #
+  #   THE MEASURED MIDPOINT TABLE IS KEPT BESIDE IT, because it is what caught the error and because
+  #   a reader who reaches for "the midpoint" should meet the numbers that reading actually gives.
+  #   BANDS (DrawRelease.bandFor): band 1 = 3..8, band 2 = 9..14, band 3 = 15..19.
+  #
+  #   | band | midpoint t | curve x2.5 AT THE MIDPOINT | BEN RULED | midpoint reproduces it? |
+  #   |------|------------|----------------------------|-----------|-------------------------|
+  #   |  1   |    5.5     |           0.5214           |    0.5    |   yes, by rounding      |
+  #   |  2   |   11.5     |           1.2339           |    1.3    |   NO -- gives 1.2       |
+  #   |  3   |   17.0     |           2.0188           |    2.2    |   NO -- gives 2.0       |
+  #
+  #   So the midpoint reading reproduces ONE of three and the t = 5/12/18 reading reproduces ALL
+  #   THREE. That is what settles which derivation is the real one.
+  #
+  # The curve at every tick a tap can occupy, so both readings can be checked against one table:
   #
   #     t     3      4      5      6      7      8   |   9     10     11     12     13     14
   #   2.5p  0.269  0.367  0.469  0.575  0.685  0.800 | 0.919  1.042  1.169  1.300  1.435  1.575
@@ -436,32 +457,10 @@ triggers:
   #     t    15     16     17     18     19   |  20
   #   2.5p  1.719  1.867  2.019  2.175  2.335 | 2.500
   #
-  #   BANDS (DrawRelease.bandFor): band 1 = 3..8, band 2 = 9..14, band 3 = 15..19.
-  #
-  #   | band | midpoint t | curve x2.5 at it | BEN RULED | agrees? |
-  #   |------|------------|------------------|-----------|---------|
-  #   |  1   |    5.5     |      0.5214      |    0.5    |   YES   |
-  #   |  2   |   11.5     |      1.2339      |    1.3    |   no    |
-  #   |  3   |   17.0     |      2.0188      |    2.0    |   no    |
-  #
-  #   INVERTING THE CURVE, the ruled values sit at t = 5.2982, t = 12.0000 and t = 18.1576. The
-  #   second and third are ABOVE their band midpoints -- 12 is band 2's upper half and 18 is band 3's.
-  #
-  #   TWO READINGS THAT EACH FIT ONE VALUE AND NOT THE OTHERS, so neither is the rule:
-  #     - half-open midpoints (3..9, 9..15, 15..20) give t = 6, 12, 17.5 -> 0.575, 1.300, 2.096.
-  #       This reproduces tap2 EXACTLY and misses tap1 (0.6) and tap3 (2.1).
-  #     - integer band midpoints reproduce tap1 and miss the other two.
-  #
-  # *** SO: THE THREE NUMBERS ARE BEN'S AND THEY SHIP. WHAT IS NOT ESTABLISHED IS THE SENTENCE
-  # "these are the curve at the band midpoints", WHICH IS TRUE OF ONE OF THEM. *** It is written
-  # this way rather than silently rounding 1.2339 up to 1.3 and 2.0188 up to 2.2, because a
-  # derivation that does not reproduce its own values is the defect `CLAUDE.md` names -- a general
-  # form must reproduce the worked rows it sits above. OPEN FOR BEN: either the values are ruled
-  # outright (and this block says so and drops the midpoint claim), or the intended midpoint
-  # convention is named and the values move to match it.
-  #
-  #   NOTHING IS BLOCKED BY THAT. The ruled values are authored below and the weapon behaves as Ben
-  #   asked; only the RECORDED REASON is open.
+  #   *** THE VALUES NEVER MOVED AND WERE NEVER IN DOUBT. *** What changed is the sentence next to
+  #   them. Recorded this way rather than quietly rewritten, because "these are the midpoints" was
+  #   published in a squash body and in this file, and a derivation corrected without saying so reads
+  #   a month later like one nobody ever got wrong.
   #
   # ================== KNOWN CONSEQUENCES OF THE SPLIT -- STATED, NOT FIXED ==================
   #
@@ -601,9 +600,10 @@ triggers:
     cooldown_ticks: 8
     cast:
       type: projectile
-      # R14, Ben's ruling 2026-09-24. Vanilla's power curve is the stated basis; the derivation
-      # block above shows the arithmetic AND records that it reproduces this value and not the
-      # other two. FLAT REACH: 4.5 blocks -- speed * 9, and 9 is the ticks to fall an eye height
+      # R14, Ben's ruling 2026-09-24. The curve at t = 5 is 0.468750, which is 0.5 to one decimal.
+      # (This comment briefly said the derivation reproduced here and not on the other two bands;
+      # that was the review seat's mistaken midpoint reading. All three reproduce at t = 5/12/18.)
+      # FLAT REACH: 4.5 blocks -- speed * 9, and 9 is the ticks to fall an eye height
       # under gravity 0.05 whatever the speed. That is barely past melee, on the band that exists
       # so the weapon is "never dead at close range". Flagged above, not changed.
       speed: 0.5
@@ -632,9 +632,9 @@ triggers:
     cooldown_ticks: 8
     cast:
       type: projectile
-      # R14, Ben's ruling 2026-09-24. NOTE: the midpoint derivation gives 1.2339 here, not 1.3 --
-      # 1.3 is the curve at t = 12.0 exactly, which is band 2's upper half. The value is Ben's and
-      # ships; the recorded REASON is the open half. See the block above.
+      # R14, Ben's ruling 2026-09-24. The curve at t = 12 is 1.300000 EXACTLY -- no rounding at all
+      # on this band. (This comment briefly claimed the derivation was band 2's midpoint and did not
+      # reproduce; the midpoint was the review seat's mistaken reading. See the block above.)
       # FLAT REACH: 11.7 blocks.
       speed: 1.3
       gravity: 0.05
@@ -659,9 +659,9 @@ triggers:
     cooldown_ticks: 8
     cast:
       type: projectile
-      # R14, Ben's ruling 2026-09-24. NOTE: the midpoint derivation gives 2.0188 here, not 2.2 --
-      # 2.2 is the curve at t = 18.16, above band 3's midpoint of 17. Value is Ben's and ships; the
-      # reason is open. See the block above.
+      # R14, Ben's ruling 2026-09-24. The curve at t = 18 is 2.175000, which is 2.2 to one decimal.
+      # (This comment briefly claimed the derivation was band 3's midpoint and did not reproduce; the
+      # midpoint was the review seat's mistaken reading. See the block above.)
       # FLAT REACH: 19.8 blocks -- the closest of the three to the charged shot's 22.5, which is
       # what a band one tick short of a full charge should look like.
       speed: 2.2
