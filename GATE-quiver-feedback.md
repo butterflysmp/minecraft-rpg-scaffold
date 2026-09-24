@@ -74,8 +74,15 @@ branch followed by a correct build satisfies neither.
 `use_cooldown` group did not land: without a group the cooldown keys on `minecraft:bow` and **every
 bow sweeps and every bow is blocked.**
 
-**S2 is a behaviour change and is predicted as such, not discovered.** A reloading weapon that cannot
-be drawn is the intent; the row exists so that if Ben disagrees, it is a ruling and not a bug report.
+**S2 IS RULED INTENDED -- Ben, 2026-09-24, recorded as his.** A reloading weapon that cannot be drawn
+is the design, not a side effect to be tolerated. The prediction stands as written and is now the
+**expected** reading rather than an open question: a boot that shows the bow refusing to draw mid-reload
+is S2 **passing**.
+
+> **It is still worth a row rather than a sentence.** The behaviour comes from vanilla's own
+> `useItem` short-circuit, so it would arrive whether or not anyone wanted it -- and a ruled behaviour
+> with no reading is indistinguishable from an unnoticed one. **The row is what makes the ruling
+> checkable.**
 
 ---
 
@@ -92,9 +99,13 @@ be drawn is the intent; the row exists so that if Ben disagrees, it is a ruling 
 
 ---
 
-## ITEM 3 — THE RELOAD-COMPLETE CUE: PROPOSED, NOT BUILT. **THIS WAITS FOR BEN.**
+## ITEM 3 — THE RELOAD-COMPLETE CUE. **RULED AND BUILT.**
 
-**The brief said propose the mechanism and stop, and the read confirms why it had to be asked.**
+> **Ben's ruling, 2026-09-24, recorded as his: option (1), one scheduled task per reload, sound
+> `item.crossbow.loading_end`.** The three options and their costs are kept below as the record of
+> what was chosen against, not as an open question.
+
+**Why a task was needed at all, and it is the read that forced the question to be put:**
 
 **THE RELOAD IS LAZY. NOTHING RUNS AT MATURITY.** `Quivers`' own javadoc: *"No task is queued when a
 reload starts. `resolveForShot` asks the item whether its deadline has passed and completes it in
@@ -130,5 +141,44 @@ is free and answers a different question; option (3) rebuilds the state the desi
 **The sound is vanilla's `item.crossbow.loading_end`**, the natural partner to the
 `item.crossbow.loading_start` that `reloadStarted` already plays.
 
-**Nothing of item 3 is in this branch.** When Ben rules, it is its own slice with its own rows —
-`GATE-quiver-feedback.md` gains a `C` block, or a new file, whichever he prefers.
+**Item 3 is now in this branch**, built on the same tip so that one boot reads all three items. Its
+rows are the `C` block below.
+
+---
+
+## THE ROWS — ITEM 3, THE RELOAD-COMPLETE CUE
+
+**Predictions written before any boot, as with every row above.** The cue is
+`item.crossbow.loading_end`, booked for the reload's post-modifier length, and it sounds only if the
+held item still carries the very deadline the task was made for.
+
+| # | what to do | PREDICTION | READING |
+|---|---|---|---|
+| **C1** | Reload and wait, holding the weapon, watching the hotbar. | **One** `loading_end` click, **as the sweep empties** -- not before it, not a beat after. The magazine reads full at the same moment. | _(not run)_ |
+| **C2** | Reload, then switch to another hotbar slot and stay there past maturity. | **No sound at all.** The held item is not the weapon the task was made for. | _(not run)_ |
+| **C3** | Reload one Plume, switch to a **second** Plume and reload it too, then hold the second and wait. | **Two sounds, each at its own time** -- and each one is only heard if that weapon is the one in hand when its own deadline passes. So expect the second Plume's cue for certain and the first one's only if you are holding it then. | _(not run)_ |
+| **C4** | Reload, then **fire at the exact moment of maturity**. | **One sound at most, never two.** If the shot settles the reload first the cue is silent -- the stamps are gone, so there is nothing for it to match. | _(not run)_ |
+| **C5** | Reload, then **log out** before maturity. Read the log. | **No error, no stack trace**, nothing mentioning `QuiverReloadCue`. The entity task is dropped rather than run against a departed player. | _(not run)_ |
+
+> ### *** C3 IS THE ROW WHOSE PREDICTION IS NOT "TWO SOUNDS", AND THE DIFFERENCE IS THE DESIGN ***
+>
+> A cue sounds **for the weapon in your hand**, because that is the only weapon whose finish the
+> player can see. Two staggered reloads therefore produce two sounds **only if the player is holding
+> the right one at each deadline** -- which is what makes the row worth running rather than assuming.
+>
+> **The alternative would be worse and was rejected by the ruling:** a cue that sounded for any
+> reloading Plume would tell the player a magazine is ready while they hold an empty one.
+
+> ### *** C4's ONE-TICK CORNER IS DECLARED, NOT DISCOVERED ***
+>
+> If the shot runs before the task in the maturity tick, **the cue is silent and that is correct** --
+> the player got the magazine and the shot. The window is exactly one tick wide. It is written here
+> because a silent C4 would otherwise read as a failure of C1.
+
+> ### *** WHAT NO BOOT ROW CAN SEE, AND WHERE IT IS GUARDED INSTEAD ***
+>
+> The deadline comparison is the whole safety of the task, and a boot cannot show it working -- a
+> passing C1 looks identical with the comparison in place and with it replaced by `true`. **Measured:
+> that exact mutation left all 2164 tests green** before `QuiverCueTest` existed, and reddens exactly
+> one row now. **C2, C3 and C4 are the behavioural witnesses; `QuiverCueTest` is the guard.** Neither
+> substitutes for the other.

@@ -29,14 +29,26 @@ import java.util.OptionalLong;
  * hand. Both call sites ({@code WeaponFire.attempt}, {@code WeaponSwingListener.onSwing} past its
  * Netty hop) already are.
  *
- * <h2>THE RELOAD IS EVALUATED ON READ, NOT SCHEDULED</h2>
+ * <h2>THE RELOAD IS EVALUATED ON READ. ONE TASK IS SCHEDULED, AND IT DECIDES NOTHING</h2>
  *
- * <p>No task is queued when a reload starts. {@link #resolveForShot} asks the item whether its deadline
- * has passed and completes it in place if so. <b>That is what makes the reload leak-proof</b>: a
- * scheduled task needs an expiry event, and an expiry event can be missed -- the player swaps the
- * weapon away, drops it, dies, logs out. {@code ModifierReconciler}'s javadoc makes the identical
- * argument for diffing over listening: <i>"a single missed event LEAKS."</i> There is nothing here
- * to miss, because the state is simply read again from whatever item is in hand.
+ * <p><b>THIS SECTION SAID "No task is queued when a reload starts" UNTIL 2026-09-24, AND THAT IS NO
+ * LONGER TRUE.</b> The reload-complete cue (operator's ruling; {@link QuiverReloadCue}) books one
+ * entity task per reload, because <b>nothing runs at maturity</b> and a cue's whole value is its
+ * timing. The sentence is rewritten rather than deleted, because the argument under it survives intact
+ * and is the reason the task is shaped the way it is.
+ *
+ * <p>{@link #resolveForShot} still asks the item whether its deadline has passed and completes it in
+ * place if so. <b>That is still what makes the reload leak-proof</b>: a scheduled task needs an expiry
+ * event, and an expiry event can be missed -- the player swaps the weapon away, drops it, dies, logs
+ * out. {@code ModifierReconciler}'s javadoc makes the identical argument for diffing over listening:
+ * <i>"a single missed event LEAKS."</i> There is nothing in the STATE to miss, because it is simply
+ * read again from whatever item is in hand.
+ *
+ * <p><b>THE ITEM STAMP IS STILL THE AUTHORITY, AND THE TASK IS SUBORDINATE TO IT.</b> The cue holds no
+ * state but the deadline it was created for, and at fire time it asks the item whether that deadline is
+ * still the one in hand. So a missed or stale task costs <b>a sound</b> and can never cost a reload:
+ * every other path -- the refill, the refusal, the remaining time, the sweep -- reads the item and
+ * would behave identically if the task never ran at all.
  *
  * <p>It also settles, for free, the case a per-player timer gets wrong: cooldowns are keyed per
  * player per {@code weaponId/input} and could not tell two identical quivers apart, so a swap
@@ -298,11 +310,17 @@ public final class Quivers {
         // A no-op in creative: supply() returns no draws there, so no second mode check is needed.
         QuiverAmmo.consume(player, supply.draws());
 
+        // ONE DEADLINE, COMPUTED ONCE. It is stamped on the item AND handed to the cue task, and the
+        // two must be the same number: the task's only question at fire time is whether the item still
+        // carries the deadline it was made for. Recomputing it in the scheduler call would be a second
+        // source for one value -- which is how a cue goes silent for a reason nobody can see.
+        long completesAt = Quiver.reloadCompletesAt(now, reloadTicks);
+
         held.editMeta(meta -> {
             meta.getPersistentDataContainer().set(keys.quiverReloadStartedAt,
                     PersistentDataType.LONG, now);
             meta.getPersistentDataContainer().set(keys.quiverReloadCompletesAt,
-                    PersistentDataType.LONG, Quiver.reloadCompletesAt(now, reloadTicks));
+                    PersistentDataType.LONG, completesAt);
             // THE PENDING COUNT, written with the two stamps and removed with them. It exists because
             // the amount was decided HERE, from an inventory that will have moved on by the time the
             // reload matures -- see Keys.quiverReloadPending for why re-deriving is wrong twice over.
@@ -326,6 +344,14 @@ public final class Quivers {
         // reloadTicks rather than a re-read of the deadline: this is the one moment the two cannot
         // disagree, because the deadline was computed from this very number three lines ago.
         QuiverSweep.show(player, weapon.id(), keys, reloadTicks);
+
+        // THE CUE, BOOKED FOR THE RELOAD'S REAL LENGTH -- reloadTicks is post-modifier, resolved above
+        // through ReloadTime.resolve, so a player with a reload-time bonus hears it on time rather
+        // than at the authored number.
+        //
+        // AFTER the item is back in the hand, for the same reason the sweep is: the task will read the
+        // main hand when it fires, and the stamped copy has to be the one sitting there.
+        QuiverReloadCue.schedule(player, weapon, adapters, completesAt, reloadTicks);
         return true;
     }
 
