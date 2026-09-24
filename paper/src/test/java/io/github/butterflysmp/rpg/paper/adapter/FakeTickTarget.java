@@ -2,7 +2,9 @@ package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTaskTarget;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.PriorityQueue;
 
 /**
@@ -31,7 +33,24 @@ final class FakeTickTarget implements RepeatingTaskTarget {
     private long now = 0L;
     private long seq = 0L;
 
+    /**
+     * Every loop failure this target was told about, newest last.
+     *
+     * <p><b>RECORDED RATHER THAN PRINTED, because the reporting is the thing under test.</b> A fake
+     * that swallowed {@code loopFailed} would make "the loop reported before it stopped" untestable,
+     * and a fake that printed it would make a passing suite noisy enough that nobody reads it.
+     */
+    final List<String> failures = new ArrayList<>();
+
+    /** The causes, kept beside {@link #failures} so a row can assert the ORIGINAL throwable survives. */
+    final List<RuntimeException> failureCauses = new ArrayList<>();
+
     @Override public boolean isActive() { return active; }
+
+    @Override public void loopFailed(String loopName, RuntimeException cause) {
+        failures.add(loopName);
+        failureCauses.add(cause);
+    }
 
     @Override public void scheduleTick(int delayTicks, Runnable run) {
         if (delayTicks < 1) {

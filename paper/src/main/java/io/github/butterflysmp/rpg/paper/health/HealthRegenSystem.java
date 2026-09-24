@@ -65,6 +65,8 @@ public final class HealthRegenSystem {
     static final int REGEN_PERIOD_TICKS = 20;
 
     private final Scheduler scheduler;
+    /** Where a crashed repeating loop is reported -- see EntityTaskTarget.loopFailed. */
+    private final java.util.logging.Logger log;
     private final CombatantStats stats;
 
     /**
@@ -75,7 +77,8 @@ public final class HealthRegenSystem {
      */
     private final Map<UUID, TaskHandle> tasks = new ConcurrentHashMap<>();
 
-    public HealthRegenSystem(Scheduler scheduler, CombatantStats stats) {
+    public HealthRegenSystem(Scheduler scheduler, CombatantStats stats, java.util.logging.Logger log) {
+        this.log = log;
         this.scheduler = scheduler;
         this.stats = stats;
     }
@@ -106,8 +109,8 @@ public final class HealthRegenSystem {
         TaskHandle existing = tasks.get(id);
         if (existing != null && existing.isRunning()) return;
 
-        EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
-        TaskHandle task = RepeatingTask.start(target, REGEN_PERIOD_TICKS, () -> {
+        EntityTaskTarget target = new EntityTaskTarget(player, scheduler, log);
+        TaskHandle task = RepeatingTask.start(target, REGEN_PERIOD_TICKS, "health-regen", () -> {
             // Not yet bootstrapped: skip rather than throw. current/max THROW for an untracked id.
             // Health registers synchronously in PlayerHealthSystem.onJoin, so this is the edge.
             if (!stats.tracks(id)) return true;

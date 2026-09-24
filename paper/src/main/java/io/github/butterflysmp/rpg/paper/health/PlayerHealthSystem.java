@@ -42,6 +42,8 @@ public final class PlayerHealthSystem implements HealthListener {
     private static final int RECONCILE_PERIOD_TICKS = 5;
 
     private final Scheduler scheduler;
+    /** Where a crashed repeating loop is reported -- see EntityTaskTarget.loopFailed. */
+    private final java.util.logging.Logger log;
     private final Keys keys;
     private final WeaponRegistry weapons;
     private final EnchantRegistry enchants;
@@ -50,11 +52,12 @@ public final class PlayerHealthSystem implements HealthListener {
     private ResourcePool resources;
 
     public PlayerHealthSystem(Scheduler scheduler, Keys keys, WeaponRegistry weapons,
-                              EnchantRegistry enchants) {
+                              EnchantRegistry enchants, java.util.logging.Logger log) {
         this.scheduler = scheduler;
         this.keys = keys;
         this.weapons = weapons;
         this.enchants = enchants;
+        this.log = log;
     }
 
     /** Wire the store this renders. Called once in onEnable, right after the store is built. */
@@ -165,9 +168,9 @@ public final class PlayerHealthSystem implements HealthListener {
      * task stops. Cleanup of the store is the quit handler's job, not the loop's.
      */
     private void startReconcileLoop(Player player) {
-        EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
+        EntityTaskTarget target = new EntityTaskTarget(player, scheduler, log);
         UUID id = player.getUniqueId();
-        RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, () -> {
+        RepeatingTask.start(target, RECONCILE_PERIOD_TICKS, "health-reconcile", () -> {
             // EVERY STAT THIS LOOP CONVERGES IS RECONCILED BELOW -- the reconcile calls in this body
             // ARE the list, so this sentence cannot disagree with itself. Five of them, to show the
             // shape: max HP from +HP items, attack damage from the held weapon's declared

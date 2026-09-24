@@ -32,7 +32,7 @@ class RepeatingTaskFidelityTest {
     void aRepeatingTaskFiresOncePerPeriodAndStaysScheduled() {
         var target = new FakeTickTarget();
         int[] ticks = {0};
-        RepeatingTask.start(target, 1, () -> { ticks[0]++; return true; }, () -> {});
+        RepeatingTask.start(target, 1, "fidelity", () -> { ticks[0]++; return true; }, () -> {});
 
         assertEquals(1, target.pending(), "the first tick is armed, not run, by start()");
         assertEquals(0, ticks[0], "nothing has fired yet");
@@ -52,7 +52,7 @@ class RepeatingTaskFidelityTest {
         int[] ticks = {0};
         boolean[] stopped = {false};
         TaskHandle handle = RepeatingTask.start(
-                target, 1, () -> { ticks[0]++; return true; }, () -> stopped[0] = true);
+                target, 1, "fidelity", () -> { ticks[0]++; return true; }, () -> stopped[0] = true);
 
         target.advance(1);
         assertEquals(1, ticks[0]);
@@ -72,7 +72,7 @@ class RepeatingTaskFidelityTest {
         int[] ticks = {0};
         boolean[] stopped = {false};
         // Fire twice, then signal done.
-        RepeatingTask.start(target, 1, () -> { ticks[0]++; return ticks[0] < 2; }, () -> stopped[0] = true);
+        RepeatingTask.start(target, 1, "fidelity", () -> { ticks[0]++; return ticks[0] < 2; }, () -> stopped[0] = true);
 
         target.advance(10);
         assertEquals(2, ticks[0], "stops the tick it returns false");

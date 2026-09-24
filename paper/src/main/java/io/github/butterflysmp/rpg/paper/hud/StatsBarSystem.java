@@ -98,8 +98,8 @@ public final class StatsBarSystem {
         TaskHandle existing = tasks.get(id);
         if (existing != null && existing.isRunning()) return;
 
-        EntityTaskTarget target = new EntityTaskTarget(player, scheduler);
-        TaskHandle task = RepeatingTask.start(target, BAR_PERIOD_TICKS, () -> {
+        EntityTaskTarget target = new EntityTaskTarget(player, scheduler, adapters.log());
+        TaskHandle task = RepeatingTask.start(target, BAR_PERIOD_TICKS, "stats-bar", () -> {
             // Not yet bootstrapped: skip this frame rather than inventing numbers. CombatantStats
             // .current/.max THROW for an untracked id -- they do not return 0 -- so an unguarded read
             // would throw every period rather than merely display something wrong. Health registers

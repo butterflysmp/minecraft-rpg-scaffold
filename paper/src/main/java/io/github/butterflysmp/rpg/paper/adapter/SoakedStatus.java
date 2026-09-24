@@ -68,7 +68,21 @@ public final class SoakedStatus {
             na.remaining--;
             return true;                       // countdown only -- the one modifier persists between ticks
         };
-        na.task = RepeatingTask.start(target, 1, tick, () -> active.remove(id, na));
+        // onStop RELEASES, not just forgets -- the 2026-09-24 rule, and the same argument as
+        // ImmobilizeStatus's. The expiry arm above removes the modifier on the normal path; a body
+        // that throws never reaches it, and the entity would stay slowed for good. Soaked's leak is
+        // quieter than Rooted's -- a permanently slowed mob rather than a frozen one -- which is
+        // exactly why it needed writing down rather than noticing.
+        //
+        // removeSpeedModifier is "remove IF PRESENT", so the normal path calling it twice is a no-op.
+        // GATED ON isActive() for ImmobilizeStatus' reason, which the suite proved rather than
+        // predicted: onStop also runs on RepeatingTask's removed/dead arm ("stop, touch nothing"),
+        // and an ungated release there touches an entity that is gone.
+        // SoakedStatusTest.whenTheMobDiesCleanupRunsWithoutTouchingItAndLeavesNoState is the row.
+        na.task = RepeatingTask.start(target, 1, "soaked", tick, () -> {
+            if (target.isActive()) speed.removeSpeedModifier();
+            active.remove(id, na);
+        });
         active.put(id, na);
     }
 

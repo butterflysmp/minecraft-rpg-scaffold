@@ -23,9 +23,31 @@ final class FakeSpeedAttribute implements SpeedAttribute {
         if (!target.isActive()) throw new AssertionError("touched a removed entity");
     }
 
+    /**
+     * Make the NEXT {@link #removeSpeedModifier} throw, once, and then behave normally.
+     *
+     * <p>Added 2026-09-24 for the loop-isolation rows. {@code SoakedStatus}'s body only counts down
+     * and calls this at expiry, so <b>there is no other way to make that body throw through its
+     * public API</b> -- and without a throwing body there is nothing to prove that {@code onStop}
+     * releases the modifier when the expiry arm is skipped.
+     *
+     * <p><b>ONE-SHOT ON PURPOSE.</b> The release under test is the SECOND call, from {@code onStop};
+     * a latch that stayed set would make that call throw too and the row could not tell "onStop
+     * released it" from "onStop was never reached".
+     */
+    boolean failNextRemove = false;
+
     @Override public boolean hasSpeedModifier() { guard(); return modifiers > 0; }
     @Override public void addSpeedModifier(double f) { guard(); modifiers++; factor = f; }
-    @Override public void removeSpeedModifier() { guard(); modifiers = 0; factor = 1.0; }
+    @Override public void removeSpeedModifier() {
+        guard();
+        if (failNextRemove) {
+            failNextRemove = false;
+            throw new IllegalStateException("staged failure inside removeSpeedModifier");
+        }
+        modifiers = 0;
+        factor = 1.0;
+    }
 
     /** How many of our modifiers are on the entity. The single-stable-modifier probe. */
     int modifierCount() { return modifiers; }
